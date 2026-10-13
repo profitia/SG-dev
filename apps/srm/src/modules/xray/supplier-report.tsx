@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { SupplierWebIdentity, type SupplierWebIdentityData, defaultFinancialScope, indicatorContent, useKysOverview, type KysOverviewModel, type KysDetailTarget, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
-  KysPdfButton, type KysPdfSelection, VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
+  KysPdfButton, KysKrsButton, type KysPdfSelection, VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
 import { FinancialPeriodSelector } from "./financial-period-selector";
 import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
@@ -59,10 +59,11 @@ function FinancialLimitations({ state, onReadMetadata }: { state: ReportState; o
   </>;
 }
 
-export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPesel, onDownloadExcel, onDownloadKysPdf, slots = {} }: {
+export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPesel, onDownloadExcel, onDownloadKysPdf, onDownloadKrsPdf, slots = {} }: {
   state: ReportState; onFetchKys: () => void; onReadMetadata: () => void;
   onRevealPesel: (token: string) => Promise<string>; onDownloadExcel: (scope: Scope, years: string[]) => Promise<void>;
   onDownloadKysPdf?: (selection: KysPdfSelection, signal: AbortSignal) => Promise<void>;
+  onDownloadKrsPdf?: (selection: KysPdfSelection, signal: AbortSignal) => Promise<void>;
   slots?: SupplierReportSlots;
 }) {
   const root = useRef<HTMLDivElement>(null), kysDetails = useRef<HTMLDetailsElement>(null);
@@ -183,6 +184,12 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         key={`${supplierNip(supplier)}:${supplier.entityType}:${metadata.kys.exportRef}`}
         selection={{ nip: supplierNip(supplier) ?? "", entityType: supplier.entityType, retrievedAt: metadata.kys.freshness.retrievedAt, exportRef: metadata.kys.exportRef }}
         onDownload={onDownloadKysPdf} />}
+      {supplier.entityType === "COMPANY" && kysOverviewModel.available && metadata?.kys.exportRef && metadata.kys.freshness.retrievedAt &&
+        /^\d{10}$/.test(state.kys.data?.company?.krs ?? "") && /^\d{9}$/.test(state.kys.data?.company?.regon ?? "") &&
+        /^[A-Za-z0-9_-]{8,100}$/.test(state.kys.data?.correlationId ?? "") && onDownloadKrsPdf && <KysKrsButton
+        key={`krs:${supplierNip(supplier)}:${metadata.kys.exportRef}`}
+        selection={{ nip: supplierNip(supplier) ?? "", entityType: "COMPANY", retrievedAt: metadata.kys.freshness.retrievedAt, exportRef: metadata.kys.exportRef }}
+        onDownload={onDownloadKrsPdf} />}
       {kysOverviewModel.available && !metadata?.kys.exportRef && <p role="status">Nie potwierdzono wersji do eksportu PDF. Szczegóły raportu pozostają dostępne.</p>}
       <details className="report-detail" id="report-kys-details" ref={kysDetails}><summary>Pełny raport KYS</summary><div className="report-detail-body">
         {state.kys.status === "NOT_REQUESTED" ? <p>Raport KYS nie został jeszcze pobrany. Zamów go przyciskiem „Pobierz raport KYS”.</p>

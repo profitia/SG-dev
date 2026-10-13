@@ -62,6 +62,24 @@ export default function Home() {
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
+  async function downloadKrsPdf(selection: KysPdfSelection, signal: AbortSignal): Promise<void> {
+    const response = await fetch("/api/xray/kys/krs", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(selection), cache: "no-store", signal });
+    if (!response.ok) {
+      const payload: unknown = await response.json().catch(() => null);
+      throw new Error(payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
+        ? reportMessage(payload.error) : "Nie udało się pobrać odpisu KRS.");
+    }
+    if (!response.headers.get("Content-Type")?.startsWith("application/pdf")) throw new Error("Dostawca nie zwrócił poprawnego pliku PDF.");
+    const filename = response.headers.get("X-Download-Filename") ?? `KRS_${selection.nip}.pdf`;
+    if (!/^KRS_[0-9]{10}(?:_[0-9-]{10})?\.pdf$/.test(filename)) throw new Error("Nieprawidłowa nazwa dokumentu.");
+    const blob = await response.blob();
+    if (signal.aborted) return;
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
   async function downloadFinancialExcel(scope: "standalone" | "consolidated", years: string[]): Promise<void> {
     const nip = state.result?.entityType === "COMPANY" ? state.result.card.identity.nip : null;
     if (!nip) throw new Error("Brak numeru NIP spółki.");
@@ -111,7 +129,7 @@ export default function Home() {
       {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
       {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}
       {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state}
-        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} onDownloadKysPdf={downloadKysPdf} slots={{ summary: summarySlot, scanner: scannerSlot, kys: kysSlot }} />}
+        onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} onDownloadKysPdf={downloadKysPdf} onDownloadKrsPdf={downloadKrsPdf} slots={{ summary: summarySlot, scanner: scannerSlot, kys: kysSlot }} />}
     </div>
   </main>;
 }

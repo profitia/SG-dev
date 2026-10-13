@@ -50,6 +50,7 @@ export type { KysDetailTarget, KysOverviewInput, KysOverviewModel } from "./kys-
 export { kysPdfDocument, kysPdfCoverage } from "./kys-pdf-document";
 export type { KysPdfSelection, KysPdfDocument, KysPdfSection, KysPdfRecord } from "./kys-pdf-document";
 export { KysPdfButton } from "./kys-pdf-button";
+export { KysKrsButton } from "./kys-krs-button";
 
 export { FinancialScannerMount } from "./financial-scanner";
 
