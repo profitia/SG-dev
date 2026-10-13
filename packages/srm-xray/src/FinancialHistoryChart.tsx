@@ -1,9 +1,10 @@
 "use client";
+import { CanonElement, CanonButton } from './ui-canon';
 import React, { useId, useLayoutEffect, useRef, useState } from 'react';
-import { historyDomain, yearColor, historyInformation } from './financial-history-export';
-export { yearColor } from './financial-history-export';
+import { historyInformation, historyDomain, yearColor } from './financial-history-export';
 import type { FinancialHistoryPoint } from './financial-history-export';
 type Props = {
+  overview?: boolean;
   name: string;
   unit: string;
   selectedYear?: number;
@@ -12,12 +13,13 @@ type Props = {
 const number = (value: number, digits = 2) => value.toLocaleString('pl-PL', {
   maximumFractionDigits: digits
 });
-const suffix = (unit: string) => unit === 'PLN' ? 'zł' : unit === 'PERCENT' ? '%' : unit === 'DAYS' ? 'dni' : '×';
+const suffix = (unit: string) => unit === 'PLN_THOUSANDS' ? 'tys. zł' : unit === 'PLN' ? 'zł' : unit === 'PERCENT' ? '%' : unit === 'DAYS' ? 'dni' : '×';
 const fullValue = (value: number | null, unit: string) => value === null ? 'Brak danych' : value.toLocaleString('pl-PL', {
-  minimumFractionDigits: unit === 'PLN' ? 2 : 0,
-  maximumFractionDigits: unit === 'PLN' ? 2 : 6
+  minimumFractionDigits: unit === 'PLN' || unit === 'PLN_THOUSANDS' ? 2 : 0,
+  maximumFractionDigits: unit === 'PLN' || unit === 'PLN_THOUSANDS' ? 2 : 6
 }) + (unit === 'PERCENT' || unit === 'RATIO' ? '' : ' ') + suffix(unit);
 function compact(value: number, unit: string) {
+  if (unit === 'PLN_THOUSANDS') return Math.abs(value) >= 1000 ? [number(value / 1000), 'mln zł'] : [number(value), 'tys. zł'];
   if (unit === 'PLN') {
     if (Math.abs(value) >= 1e9) return [number(value / 1e9), 'mld zł'];
     if (Math.abs(value) >= 1e6) return [number(value / 1e6), 'mln zł'];
@@ -29,7 +31,8 @@ export function FinancialHistoryChart({
   name,
   unit,
   selectedYear,
-  points
+  points,
+  overview = false
 }: Props) {
   const id = useId();
   const chartScroll = useRef<HTMLDivElement>(null);
@@ -43,7 +46,7 @@ export function FinancialHistoryChart({
     return () => resize.disconnect();
   }, []);
   const sorted = [...points].sort((a, b) => a.year - b.year);
-  const initial = selectedYear ?? sorted.at(-1)?.year;
+  const initial = overview ? undefined : selectedYear ?? sorted.at(-1)?.year;
   const [pinned, setPinned] = useState(initial);
   const [hovered, setHovered] = useState<number | null>(null);
   const [focused, setFocused] = useState<number | null>(null);
@@ -54,15 +57,16 @@ export function FinancialHistoryChart({
   const span = scale.max - scale.min;
   const zero = scale.max / span * 100;
   const maxMagnitude = Math.max(0, ...values.map(Math.abs));
-  const divisor = unit === 'PLN' ? maxMagnitude >= 1e9 ? 1e9 : maxMagnitude >= 1e6 ? 1e6 : maxMagnitude >= 1e3 ? 1e3 : 1 : 1;
-  const axisUnit = unit === 'PLN' ? divisor === 1e9 ? 'mld zł' : divisor === 1e6 ? 'mln zł' : divisor === 1e3 ? 'tys. zł' : 'zł' : suffix(unit);
+  const divisor = unit === 'PLN_THOUSANDS' ? maxMagnitude >= 1000 ? 1000 : 1 : unit === 'PLN' ? maxMagnitude >= 1e9 ? 1e9 : maxMagnitude >= 1e6 ? 1e6 : maxMagnitude >= 1e3 ? 1e3 : 1 : 1;
+  const axisUnit = unit === 'PLN_THOUSANDS' ? divisor === 1000 ? 'mln zł' : 'tys. zł' : unit === 'PLN' ? divisor === 1e9 ? 'mld zł' : divisor === 1e6 ? 'mln zł' : divisor === 1e3 ? 'tys. zł' : 'zł' : suffix(unit);
   const description = values.length === 0 ? 'Brak dostępnych wartości dla pokazanych lat.' : 'Wspólna skala od zera. Odcień wskazuje rok, nie ocenę wyniku.';
   if (!active) return <p className="srm-history-chart-empty">Brak okresów sprawozdawczych.</p>;
-  return <section className="srm-history-chart" aria-label={'Wykres historii: ' + name}>
-    <div className="srm-history-readout" aria-live="polite" aria-atomic="true">
+  return <CanonElement as="section" canonId="SRM-C21" usage="FinancialHistoryChart:01" className="srm-history-chart" aria-label={'Wykres historii: ' + name}>
+    {!overview && <CanonElement as="div" canonId="SRM-C24" usage="FinancialHistoryChart:02" className="srm-history-readout" aria-live="polite" aria-atomic="true">
       <div><span className="srm-history-readout-year">{active.year}{active.year === selectedYear && <small>Wybrany okres</small>}</span><strong>{fullValue(active.value, unit)}</strong></div>
       {(active.value === 0 || historyInformation(active)) && <p>{active.value === 0 ? 'Wartość wynosi zero — widoczne jest tylko tło słupka.' : historyInformation(active)}</p>}
-    </div>
+    </CanonElement>}
+    {overview && activeYear !== undefined && <div className="srm-overview-tooltip" role="status"><span>{active.year}</span><strong>{fullValue(active.value, unit)}</strong></div>}
     <p className="srm-sr-only" id={`${id}-help`}>Od najstarszego do najnowszego roku. Wskaż słupek, użyj Tab lub strzałek, albo dotknij roku, aby odczytać dokładną wartość. {description}</p>
     <div ref={chartScroll} className="srm-history-chart-scroll" role="region" aria-label="Lata sprawozdawcze i wartości" tabIndex={0}>
       <div className="srm-history-chart-canvas" style={{
@@ -90,12 +94,18 @@ export function FinancialHistoryChart({
               '--history-color': yearColor(index, sorted.length),
               '--history-label-ink': inside && index / Math.max(1, sorted.length - 1) > .58 ? '#FFFFFF' : '#003366'
             } as React.CSSProperties;
-            return <button key={point.year} type="button" className={'srm-history-column' + (active.year === point.year ? ' is-active' : '') + (point.year === selectedYear ? ' is-selected-period' : '')} style={style} aria-label={`${point.year}: ${fullValue(v, unit)}${point.year === selectedYear ? ', wybrany okres' : ''}`} aria-describedby={`${id}-help`} aria-pressed={pinned === point.year} data-year={point.year} data-value={v ?? 'missing'} onPointerEnter={e => {
+            return <CanonButton canonId="SRM-C22" usage="FinancialHistoryChart:03" key={point.year} type="button" className={'srm-history-column' + (activeYear === point.year ? ' is-active' : '') + (point.year === selectedYear ? ' is-selected-period' : '')} style={style} aria-label={`${point.year}: ${fullValue(v, unit)}${point.year === selectedYear ? ', wybrany okres' : ''}`} aria-describedby={`${id}-help`} aria-pressed={pinned === point.year} data-year={point.year} data-value={v ?? 'missing'} onPointerEnter={e => {
               if (e.pointerType !== 'touch') setHovered(point.year);
             }} onPointerLeave={() => setHovered(null)} onFocus={() => {
               setHovered(null);
               setFocused(point.year);
             }} onBlur={() => setFocused(null)} onClick={() => setPinned(point.year)} onKeyDown={e => {
+              if (overview && e.key === 'Escape') {
+                setPinned(undefined);
+                setHovered(null);
+                setFocused(null);
+                return;
+              }
               const next = e.key === 'ArrowRight' ? Math.min(index + 1, sorted.length - 1) : e.key === 'ArrowLeft' ? Math.max(index - 1, 0) : e.key === 'Home' ? 0 : e.key === 'End' ? sorted.length - 1 : null;
               if (next === null) return;
               e.preventDefault();
@@ -111,13 +121,14 @@ export function FinancialHistoryChart({
                     top: `${labelTop}%`
                   }}><b>{label[0]}</b><small>{label[1]}</small></span>
               </span></span>
-              <span className="srm-history-year-marker" aria-hidden="true"><i /></span><span className="srm-history-year">{point.year}</span>
-            </button>;
+              <CanonElement as="span" canonId="SRM-C23" usage="FinancialHistoryChart:04" className="srm-history-year-marker" aria-hidden="true"><i /></CanonElement><span className="srm-history-year">{point.year}</span>
+            </CanonButton>;
           })}
         </div>
       </div>
     </div>
     <div className="srm-history-chart-caption"><p><span className="srm-history-color-ramp" aria-hidden="true" />Starsze → nowsze</p><p>{description}</p></div>
     <p className="srm-history-mobile-hint">Przesuń wykres w poziomie, aby zobaczyć pozostałe lata.</p>
-  </section>;
+  </CanonElement>;
 }
+export { yearColor } from './financial-history-export';

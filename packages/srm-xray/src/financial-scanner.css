@@ -4,6 +4,8 @@
 @import "./srm-history-table.css";
 @import "./srm-interaction-motion.css";
 @import "./srm-radar-motion.css";
+@import "./srm-statement-workspace.css";
+@import "./ui-canon.css";
 /* SRM UI COLOR CANON v0.1 — prototype, 12.10.2026.
 Brand roles are stable across screens; semantic radar colors are independent.
 No financial formula, qualification or normalization is changed here. */

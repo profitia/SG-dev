@@ -1,4 +1,5 @@
 "use client";
+import { CanonLink, CanonInput, CanonButton } from '@profitia/srm-xray';
 
 import "@profitia/srm-xray/financial-scanner.css";
 
@@ -19,7 +20,7 @@ const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <Exe
 const kysSlot: NonNullable<SupplierReportSlots["kys"]> = context => <KysOverview model={context.kysOverview} onDetails={context.onKysDetails} />;
 
 const scannerSlot: NonNullable<SupplierReportSlots["scanner"]> = context => context.supplier.entityType === "COMPANY"
-  ? <FinancialScannerMount report={context.metadata} loading={context.metadataBusy}
+  ? <FinancialScannerMount indicatorsTarget={context.financialIndicatorsTarget} report={context.metadata} loading={context.metadataBusy}
       assistant={{ name: context.supplier.card.general.data?.legalName ?? context.supplier.card.identity.name ?? "Dostawca",
         krs: context.supplier.card.identity.krs,
         avatars: { male: "/spendguru/assistant-male.png", anna: "/spendguru/assistant-female.png" } }} /> : null;
@@ -104,23 +105,23 @@ export default function Home() {
   }
 
   return <main className="appshield">
-    {!inactive && <a className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</a>}
+    {!inactive && <CanonLink canonId="SRM-C55" usage="page:01" className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</CanonLink>}
     <header className="appshield-header">
       <div className="appshield-brand"><img src="/spendguru/logo.svg" alt="SpendGuru" width={144} height={47} /><h1>Supplier Intelligence Dashboard</h1></div>
       {!inactive && <form id="supplier-search" tabIndex={-1} className="appshield-search appshield-header-search" aria-label="Wyszukaj dostawcę" onSubmit={search}>
         <label className="srm-sr-only" htmlFor="identifier">Numer NIP dostawcy</label>
         <div className="appshield-search-fields">
-          <input ref={inputRef} id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={14}
+          <CanonInput canonId="SRM-C06" usage="page:02" ref={inputRef} id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={14}
             placeholder="Wpisz numer NIP…" required value={identifier} aria-describedby="supplier-search-help" onChange={event => {
               controller.reset(); setIdentifier(event.target.value.replace(/[\s-]/g, ""));
             }} />
-          <button type="submit" disabled={state.busy}>{state.busy ? "Wyszukiwanie…" : "Wyszukaj"}</button>
+          <CanonButton canonId="SRM-C01" usage="page:03" type="submit" disabled={state.busy}>{state.busy ? "Wyszukiwanie…" : "Wyszukaj"}</CanonButton>
         </div>
         <small className="srm-sr-only" id="supplier-search-help">Dane finansowe i rejestrowe są pobierane przy wyszukiwaniu. Raport KYS zamawiasz osobno.</small>
       </form>}
       <div className="appshield-actions">
-        {(state.result || state.busy) && <button type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</button>}
-        {!inactive && <form action="/api/auth/logout" method="post"><button type="submit" className="appshield-new-report">Wyloguj się</button></form>}
+        {(state.result || state.busy) && <CanonButton canonId="SRM-C02" usage="page:04" type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</CanonButton>}
+        {!inactive && <form action="/api/auth/logout" method="post"><CanonButton canonId="SRM-C01" usage="page:05" type="submit" className="appshield-new-report">Wyloguj się</CanonButton></form>}
       </div>
     </header>
     <div className="appshield-content report-page">

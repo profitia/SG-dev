@@ -1,4 +1,5 @@
 "use client";
+import { CanonButton, CanonElement, CanonSummary, CanonTextarea } from './ui-canon';
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDetachedAssistantWindow } from './useDetachedAssistantWindow';
@@ -129,9 +130,9 @@ export function SpendGuruAssessment({
   };
   const chat = <>
     <div ref={panel} id={`${id}-panel`} className="srm-chat-motion" aria-hidden={collapsed || undefined} onTransitionEnd={event => finishSlide(event, 'expanded')}>
-      {!windowHost.detached && <button ref={collapseTrigger} type="button" className="srm-chat-collapse" onClick={() => toggleAssistant(true)} aria-label="Zwiń asystenta do prawej krawędzi" title="Zwiń asystenta" aria-expanded={!collapsed} aria-controls={`${id}-panel`}><ChatIcon kind="collapse" /></button>}
+      {!windowHost.detached && <CanonButton canonId="SRM-C37" usage="SpendGuruAssessment:01" ref={collapseTrigger} type="button" className="srm-chat-collapse" onClick={() => toggleAssistant(true)} aria-label="Zwiń asystenta do prawej krawędzi" title="Zwiń asystenta" aria-expanded={!collapsed} aria-controls={`${id}-panel`}><ChatIcon kind="collapse" /></CanonButton>}
       <div className="srm-chat-window">
-        <header className="srm-chat-header">
+        <CanonElement as="header" canonId="SRM-C32" usage="SpendGuruAssessment:02" className="srm-chat-header">
           <div className="srm-chat-greeting"><h3>Cześć! Jestem SpendGuru, {persona === 'anna' ? 'twoja doradczyni' : 'twój doradca'}</h3></div>
           <div className="srm-chat-tools" ref={controls} onBlur={event => {
             if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPopup(null);
@@ -142,38 +143,38 @@ export function SpendGuruAssessment({
               setPopup(null);
             }
           }}>
-            <button ref={detachTrigger} className="srm-chat-tool" type="button" aria-label={windowHost.detached ? 'Przyłącz czat do dashboardu' : 'Otwórz czat w osobnym oknie'} title={windowHost.detached ? 'Przyłącz do dashboardu' : 'Otwórz w osobnym oknie'} onClick={() => {
+            <CanonButton canonId="SRM-C38" usage="SpendGuruAssessment:03" ref={detachTrigger} className="srm-chat-tool" type="button" aria-label={windowHost.detached ? 'Przyłącz czat do dashboardu' : 'Otwórz czat w osobnym oknie'} title={windowHost.detached ? 'Przyłącz do dashboardu' : 'Otwórz w osobnym oknie'} onClick={() => {
               setPopup(null);
               setAvatarPulse(null);
               pendingAvatarPulse.current = null;
               if (windowHost.detached) windowHost.attach();else windowHost.detach();
-            }}><ChatIcon kind={windowHost.detached ? 'attach' : 'detach'} /></button>
-            <button ref={historyTrigger} className="srm-chat-tool" type="button" aria-label="Historia rozmowy" title="Historia rozmowy" aria-expanded={popup === 'history'} aria-controls={popup === 'history' ? `${id}-history` : undefined} onClick={() => setPopup(p => p === 'history' ? null : 'history')}><ChatIcon kind="clock" /></button>
-            <button ref={menuTrigger} className="srm-chat-tool" type="button" aria-label="Zmień awatar SpendGuru" title="Zmień awatar" aria-haspopup="menu" aria-expanded={popup === 'avatar'} onClick={() => setPopup(p => p === 'avatar' ? null : 'avatar')} onKeyDown={event => {
+            }}><ChatIcon kind={windowHost.detached ? 'attach' : 'detach'} /></CanonButton>
+            <CanonButton canonId="SRM-C40" usage="SpendGuruAssessment:04" ref={historyTrigger} className="srm-chat-tool" type="button" aria-label="Historia rozmowy" title="Historia rozmowy" aria-expanded={popup === 'history'} aria-controls={popup === 'history' ? `${id}-history` : undefined} onClick={() => setPopup(p => p === 'history' ? null : 'history')}><ChatIcon kind="clock" /></CanonButton>
+            <CanonButton canonId="SRM-C39" usage="SpendGuruAssessment:05" ref={menuTrigger} className="srm-chat-tool" type="button" aria-label="Zmień awatar SpendGuru" title="Zmień awatar" aria-haspopup="menu" aria-expanded={popup === 'avatar'} onClick={() => setPopup(p => p === 'avatar' ? null : 'avatar')} onKeyDown={event => {
               if (event.key === 'ArrowDown') {
                 event.preventDefault();
                 setPopup('avatar');
               }
-            }}><ChatIcon kind="more" /></button>
+            }}><ChatIcon kind="more" /></CanonButton>
             {popup === 'avatar' && <div className="srm-chat-popover srm-chat-avatar-menu" role="menu" aria-label="Wybór awatara" onKeyDown={event => {
               if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
                 event.preventDefault();
                 popupFirst.current?.focus();
               }
             }}>
-              <button ref={popupFirst} type="button" role="menuitem" onClick={() => {
+              <CanonButton canonId="SRM-C39" usage="SpendGuruAssessment:06" ref={popupFirst} type="button" role="menuitem" onClick={() => {
                 setPersona(nextPersona);
                 setPopup(null);
                 setAnnouncement(nextPersona === 'anna' ? 'Wybrano Annę.' : 'Wybrano wersję męską.');
                 menuTrigger.current?.focus();
-              }}><span className="srm-chat-mini-avatar"><img src={avatars[nextPersona]} alt="" /></span>{actionLabel}</button>
+              }}><span className="srm-chat-mini-avatar"><img src={avatars[nextPersona]} alt="" /></span>{actionLabel}</CanonButton>
             </div>}
-            {popup === 'history' && <div className="srm-chat-popover srm-chat-history" id={`${id}-history`} role="region" aria-label="Historia bieżącej rozmowy"><h4>Historia rozmowy</h4><p>Bieżąca sesja</p><button ref={popupFirst} type="button" onClick={() => jumpTo()}><span>Podsumowanie danych</span><small>{company} · {year}</small></button></div>}
+            {popup === 'history' && <div className="srm-chat-popover srm-chat-history" id={`${id}-history`} role="region" aria-label="Historia bieżącej rozmowy"><h4>Historia rozmowy</h4><p>Bieżąca sesja</p><CanonButton canonId="SRM-C02" usage="SpendGuruAssessment:07" ref={popupFirst} type="button" onClick={() => jumpTo()}><span>Podsumowanie danych</span><small>{company} · {year}</small></CanonButton></div>}
           </div>
-        </header>
-        <div className="srm-chat-context" aria-label="Bieżący kontekst dashboardu">
+        </CanonElement>
+        <CanonElement as="div" canonId="SRM-C41" usage="SpendGuruAssessment:08" className="srm-chat-context" aria-label="Bieżący kontekst dashboardu">
           <span>{windowHost.detached ? 'Połączony z dashboardem' : 'Kontekst dashboardu'}</span>
-          <details><summary>Radar {year}{context.view.radar.comparisonYear ? ' / ' + context.view.radar.comparisonYear : ''} · {contextLabel}</summary>
+          <details><CanonSummary canonId="SRM-C49" usage="SpendGuruAssessment:09">Radar {year}{context.view.radar.comparisonYear ? ' / ' + context.view.radar.comparisonYear : ''} · {contextLabel}</CanonSummary>
             <div className="srm-chat-context-detail"><strong>{context.supplier.name}</strong>
               <p>Radar: {year}{context.view.radar.comparisonYear ? ' · porównanie z ' + context.view.radar.comparisonYear : ''}</p>
               <p>Odniesienie: {context.view.radar.referenceSelection === 'auto' ? 'automatyczne' : context.view.radar.referenceKind === 'peers' ? 'benchmark dostawców' : 'najlepsze historyczne'}{context.view.radar.referenceStatus === 'unconfirmed' ? ' · wymaga potwierdzenia' : ''}</p>
@@ -182,7 +183,7 @@ export function SpendGuruAssessment({
               {context.view.history && <p>Otwarta historia: {[...context.financialSummary, ...context.view.indicators.items].find(item => item.code === context.view.history?.code)?.name || 'wybrany wskaźnik'} · {context.view.history.year}</p>}
             </div>
           </details>
-        </div>
+        </CanonElement>
         {windowHost.error && <p className="srm-chat-window-error" role="alert">{windowHost.error}</p>}
         <div className="srm-chat-transcript" ref={transcript} role="region" aria-label="Podsumowanie danych finansowych dostawcy" tabIndex={0}>
           <div className="srm-chat-intro">
@@ -196,12 +197,12 @@ export function SpendGuruAssessment({
         </div>
         <form className="srm-chat-composer" onSubmit={event => event.preventDefault()}>
           <label htmlFor={`${id}-input`}>O co chcesz zapytać?</label>
-          <div className="srm-chat-input-wrap"><textarea id={`${id}-input`} rows={2} placeholder="Napisz wiadomość…" aria-describedby={`${id}-hint`} value={draft} onChange={event => setDraft(event.target.value)} /><button type="submit" aria-label="Wyślij wiadomość" title="Wyślij wiadomość" disabled><ChatIcon kind="send" /></button></div>
+          <div className="srm-chat-input-wrap"><CanonTextarea canonId="SRM-C35" usage="SpendGuruAssessment:10" id={`${id}-input`} rows={2} placeholder="Napisz wiadomość…" aria-describedby={`${id}-hint`} value={draft} onChange={event => setDraft(event.target.value)} /><CanonButton canonId="SRM-C01" usage="SpendGuruAssessment:11" type="submit" aria-label="Wyślij wiadomość" title="Wyślij wiadomość" disabled><ChatIcon kind="send" /></CanonButton></div>
           <div className="srm-chat-composer-meta" id={`${id}-hint`}><span>Możesz przygotować pytanie. Wysyłanie do doradcy będzie dostępne w kolejnym etapie.</span></div>
         </form>
       </div>
     </div>
-    {!windowHost.detached && <button ref={expandTrigger} className="srm-chat-ribbon" type="button" tabIndex={collapsed ? 0 : -1} aria-hidden={!collapsed || undefined} aria-label="Rozwiń asystenta SpendGuru" title="Rozwiń asystenta" aria-expanded={!collapsed} aria-controls={`${id}-panel`} onClick={() => toggleAssistant(false)} onTransitionEnd={event => finishSlide(event, 'collapsed')}><span className={`srm-chat-ribbon-avatar${avatarPulse === 'collapsed' ? ' is-pulsing' : ''}`} onAnimationEnd={finishAvatarPulse}><img src={avatars[persona]} alt="" /></span><ChatIcon kind="expand" /></button>}
+    {!windowHost.detached && <CanonButton canonId="SRM-C36" usage="SpendGuruAssessment:12" ref={expandTrigger} className="srm-chat-ribbon" type="button" tabIndex={collapsed ? 0 : -1} aria-hidden={!collapsed || undefined} aria-label="Rozwiń asystenta SpendGuru" title="Rozwiń asystenta" aria-expanded={!collapsed} aria-controls={`${id}-panel`} onClick={() => toggleAssistant(false)} onTransitionEnd={event => finishSlide(event, 'collapsed')}><span className={`srm-chat-ribbon-avatar${avatarPulse === 'collapsed' ? ' is-pulsing' : ''}`} onAnimationEnd={finishAvatarPulse}><img src={avatars[persona]} alt="" /></span><ChatIcon kind="expand" /></CanonButton>}
     <span className="srm-sr-only" role="status">{announcement}</span>
   </>;
   return <>
@@ -209,10 +210,10 @@ export function SpendGuruAssessment({
       {windowHost.target ? <div className="srm-chat-detached-ribbon">
         <span className="srm-chat-ribbon-avatar"><img src={avatars[persona]} alt="" /></span>
         <span className="srm-chat-detached-caption">Czat w osobnym oknie</span>
-        <button className="srm-text-link" type="button" onClick={windowHost.focus}>Pokaż okno</button>
-        <button type="button" className="srm-chat-attach-button" onClick={windowHost.attach} aria-label="Przyłącz czat do dashboardu" title="Przyłącz do dashboardu"><ChatIcon kind="attach" /></button>
+        <CanonButton canonId="SRM-C55" usage="SpendGuruAssessment:13" className="srm-text-link" type="button" onClick={windowHost.focus}>Pokaż okno</CanonButton>
+        <CanonButton canonId="SRM-C38" usage="SpendGuruAssessment:14" type="button" className="srm-chat-attach-button" onClick={windowHost.attach} aria-label="Przyłącz czat do dashboardu" title="Przyłącz do dashboardu"><ChatIcon kind="attach" /></CanonButton>
       </div> : chat}
     </section>
-    {windowHost.target && createPortal(<div className="srm-ui srm-detached-shell"><section className="srm-chat-slot is-window" aria-label="Asystent SpendGuru w osobnym oknie">{chat}</section></div>, windowHost.target)}
+    {windowHost.target && createPortal(<div className="srm-ui srm-detached-shell"><CanonElement as="section" canonId="SRM-C31" usage="SpendGuruAssessment:15" className="srm-chat-slot is-window" aria-label="Asystent SpendGuru w osobnym oknie">{chat}</CanonElement></div>, windowHost.target)}
   </>;
 }

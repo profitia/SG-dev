@@ -6,7 +6,7 @@ export type FinancialHistoryPoint = {
   information?: string;
 };
 
-export const historyUnit = (unit: string) => unit === 'PLN' ? 'PLN' : unit === 'PERCENT' ? '%' : unit === 'DAYS' ? 'dni' : '×';
+export const historyUnit = (unit: string) => unit === 'PLN_THOUSANDS' ? 'tys. zł' : unit === 'PLN' ? 'PLN' : unit === 'PERCENT' ? '%' : unit === 'DAYS' ? 'dni' : '×';
 
 export function historyInformation(point: FinancialHistoryPoint) {
   const information = point.information && point.information !== '—' ? point.information.replace(/Brak potwierdzonego odniesienia historycznego\.?/gi, '').trim() : '';
@@ -18,8 +18,8 @@ export function historyInformation(point: FinancialHistoryPoint) {
 
 export function historyNumber(point: FinancialHistoryPoint, unit: string) {
   return point.value === null || !Number.isFinite(point.value) ? 'Brak danych' : point.value.toLocaleString('pl-PL', {
-    minimumFractionDigits: unit === 'PLN' ? 2 : 0,
-    maximumFractionDigits: unit === 'PLN' ? 2 : 6
+    minimumFractionDigits: (unit === 'PLN' || unit === 'PLN_THOUSANDS') ? 2 : 0,
+    maximumFractionDigits: (unit === 'PLN' || unit === 'PLN_THOUSANDS') ? 2 : 6
   });
 }
 
