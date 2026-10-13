@@ -1,0 +1,17 @@
+/* Sector and its complete label share the same 20% scale and timing. */
+.srm-sector-motion,
+.srm-label-motion {
+  transform-box: view-box;
+  transform: scale(1);
+  transition: transform 200ms cubic-bezier(.22,.75,.25,1);
+  pointer-events: none;
+}
+.srm-sector-motion.is-emphasized,
+.srm-label-motion.is-emphasized { transform: scale(1.2); }
+.srm-sector[data-radar-sector] { touch-action: manipulation; }
+@media (prefers-reduced-motion: reduce) {
+  .srm-sector-motion,
+  .srm-sector-motion.is-emphasized,
+  .srm-label-motion,
+  .srm-label-motion.is-emphasized { transform: none; transition: none; }
+}

@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 
+import type { IndicatorViewContext } from "./assistant-context";
+
 type Card = {
   code: string;
   name: string;
@@ -32,6 +34,7 @@ type Props = {
   getMetric: (code: string, year: number) => Metric;
   formatValue: (value: string | null, unit: string, full?: boolean) => string;
   onHistory: (code: string, year?: number) => void;
+  onContextChange?: (context: IndicatorViewContext) => void;
 };
 const emptyPrefs = (): Prefs => ({
   tab: "overview",
@@ -430,6 +433,7 @@ export function IndicatorExplorer({
   getMetric,
   formatValue,
   onHistory,
+  onContextChange,
 }: Props) {
   const getYears = (code: string) =>
     years
@@ -498,6 +502,17 @@ export function IndicatorExplorer({
       : isCustom
         ? "Twój zestaw wskaźników"
         : groups.find((g) => g.id === prefs.tab)?.name;
+  // Publish the actual visible selection, including independently chosen years.
+  const viewSignature = JSON.stringify({
+    tab: prefs.tab, label: title ?? "Wskaźniki",
+    items: shown.map(card => {
+      const year = isCustom ? validYear(prefs.customYears[card.code], getYears(card.code)) : tabYear;
+      const metric = year === undefined ? null : getMetric(card.code, year);
+      return { code: card.code, name: card.name, year: year ?? null, value: metric?.value ?? null,
+        unit: card.unit, availability: metric?.value != null ? "available" : "missing", reason: metric?.reason ?? null };
+    }),
+  });
+  useEffect(() => { onContextChange?.(JSON.parse(viewSignature) as IndicatorViewContext); }, [viewSignature, onContextChange]);
   const setTab = (tab: string) => {
     setPrefs((old) => ({ ...old, tab }));
     setMessage("");

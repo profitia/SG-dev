@@ -13,6 +13,9 @@ import {
 import { compactFinancialValue } from "./financial-value";
 import { financialValue } from "./financial-history";
 import { IndicatorExplorer } from "./financial-explorer";
+import { FinancialHistoryView } from "./FinancialHistoryView";
+import { SpendGuruAssessment } from "./SpendGuruAssessment";
+import type { AssistantApplicationContext, IndicatorViewContext } from "./assistant-context";
 type Period = FinancialScannerProjection["periods"][number];
 type Card = {
   code: string;
@@ -172,11 +175,64 @@ function Radar({
   period,
   comparison,
   onSelect,
+  loadKey,
 }: {
+  loadKey: string | null;
   period?: Period;
   comparison?: Period;
   onSelect: (code: string) => void;
 }) {
+  const svg = useRef<SVGSVGElement>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [introIndex, setIntroIndex] = useState<number | null>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const introCancelled = useRef(false);
+  const stopIntro = () => {
+    introCancelled.current = true;
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setIntroIndex(null);
+  };
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReducedMotion(preference.matches);
+    preference.addEventListener('change', update);
+    return () => preference.removeEventListener('change', update);
+  }, []);
+  useEffect(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    introCancelled.current = false;
+    setIntroIndex(null);
+    if (reducedMotion || !loadKey || !svg.current) return;
+    let started = false;
+    const start = () => {
+      if (started || introCancelled.current) return;
+      started = true;
+      axes.forEach((_, index) => {
+        timers.current.push(setTimeout(() => setIntroIndex(index), 160 + index * 480));
+        timers.current.push(setTimeout(() => setIntroIndex(null), 440 + index * 480));
+      });
+    };
+    // Begin only when the loaded radar enters the viewport; scrolling back does not replay it.
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        start();
+        observer.disconnect();
+      }
+    }, {
+      threshold: 0.35
+    });
+    observer.observe(svg.current);
+    return () => {
+      observer.disconnect();
+      timers.current.forEach(clearTimeout);
+      timers.current = [];
+    };
+  }, [loadKey, reducedMotion]);
+  const emphasizedIndex = hoverIndex ?? focusIndex ?? introIndex;
   const year = period?.to.slice(0, 4) ?? "—",
     compare = comparison?.to.slice(0, 4);
   const cx = 350,
@@ -243,12 +299,12 @@ function Radar({
       anchor: "middle",
     },
     {
-      x: 548,
+      x: 532,
       y: 128,
       anchor: "start",
     },
     {
-      x: 548,
+      x: 532,
       y: 310,
       anchor: "start",
     },
@@ -258,20 +314,22 @@ function Radar({
       anchor: "middle",
     },
     {
-      x: 152,
+      x: 168,
       y: 302,
       anchor: "end",
     },
     {
-      x: 152,
+      x: 168,
       y: 120,
       anchor: "end",
     },
   ];
   return (
     <svg
+      ref={svg}
+      data-emphasized-sector={emphasizedIndex === null ? "" : axes[emphasizedIndex].code}
       className="srm-radar srm-sector-radar"
-      viewBox="0 0 700 510"
+      viewBox="-12 -16 724 546"
       role="group"
       aria-label={
         "Profil finansowy w sześciu wycinkach koła, " +
@@ -305,56 +363,16 @@ function Radar({
           <line x1="0" y1="0" x2="0" y2="8" stroke="#e4eaf0" strokeWidth="2" />
         </pattern>
       </defs>
-      {axes.map((a, i) => {
-        const value = scores[i],
-          p = labels[i],
-          old = previous?.[i];
-        const axis = period?.axes.find((x) => x.code === a.code);
-        const tone = axis?.tone ?? "unknown",
-          colors = radarColors[tone];
-        const appearance = {
-          tone,
-          text: colors.text,
-          alert: axis?.alerts.some((x) => x !== "LIQUIDITY_SCALE_SATURATED"),
-          description:
-            axis?.alerts.map((x) => alertLabels[x] ?? x).join(". ") ||
-            reason(axis?.reasonCode),
-        };
-        const labelHeight = a.label.length === 2 ? 36 : 22;
-        const scoreLabel =
-          value === null ? "Bez punktacji" : pl(value, 0) + " pkt";
-        return (
-          <g
-            key={a.code}
-            className={
-              "srm-axis srm-sector " + (value === null ? "is-pending" : "")
-            }
-            role="button"
-            tabIndex={0}
-            aria-label={
-              a.label.join(" ") +
-              ", " +
-              fmt(raw[i], a.unit) +
-              ", " +
-              scoreLabel +
-              ", " +
-              appearance.description
-            }
-            onClick={() => onSelect(a.code)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onSelect(a.code);
-              }
-            }}
-          >
-            <title>
-              {a.label.join(" ")}: {fmt(raw[i], a.unit)}. {scoreLabel}.{" "}
-              {appearance.description}. {a.dir}.{" "}
-              {old !== null && old !== undefined
-                ? "Porównanie " + compare + ": " + pl(old, 0) + " pkt."
-                : ""}
-            </title>
+      <g pointerEvents="none" aria-hidden="true">
+        {axes.map((_, i) => i).sort((a,b) => Number(a === emphasizedIndex)-Number(b === emphasizedIndex)).map(i => {
+          const value = scores[i], old = previous?.[i];
+          const axis = period?.axes.find(x => x.code === axes[i].code);
+          const colors = radarColors[axis?.tone ?? "unknown"];
+          const appearance = { tone: axis?.tone ?? "unknown", alert: axis?.alerts.some(x => x !== "LIQUIDITY_SCALE_SATURATED") };
+          const [x,y] = polar((inner+outer)/2, -90+i*60);
+          return <g key={axes[i].code} data-motion-sector={axes[i].code}
+            className={"srm-sector-motion"+(i===emphasizedIndex?" is-emphasized":"")}
+            style={{transformOrigin:`${x}px ${y}px`}}>
             <path
               className="srm-sector-track"
               d={sector(i, outer)}
@@ -397,6 +415,64 @@ function Radar({
                 />
               </g>
             )}
+          </g>;
+        })}
+      </g>
+      {axes.map((a, i) => {
+        const value = scores[i],
+          p = labels[i],
+          old = previous?.[i];
+        const axis = period?.axes.find((x) => x.code === a.code);
+        const tone = axis?.tone ?? "unknown",
+          colors = radarColors[tone];
+        const appearance = {
+          tone,
+          text: colors.text,
+          alert: axis?.alerts.some((x) => x !== "LIQUIDITY_SCALE_SATURATED"),
+          description:
+            axis?.alerts.map((x) => alertLabels[x] ?? x).join(". ") ||
+            reason(axis?.reasonCode),
+        };
+        const labelHeight = a.label.length === 2 ? 36 : 22;
+        const scoreLabel =
+          value === null ? "Bez punktacji" : pl(value, 0) + " pkt";
+        return (
+          <g
+            key={a.code}
+            className={
+              "srm-axis srm-sector " + (value === null ? "is-pending" : "")
+            }
+            role="button"
+            data-radar-sector={a.code}
+            aria-haspopup="dialog"
+            onPointerEnter={event => { if(event.pointerType!=="touch") { stopIntro(); setHoverIndex(i); } }}
+            onPointerLeave={() => setHoverIndex(null)}
+            onFocus={event => { if(event.currentTarget.matches(":focus-visible")) { stopIntro();setFocusIndex(i); } }}
+            onBlur={() => setFocusIndex(null)}
+            tabIndex={0}
+            aria-label={
+              a.label.join(" ") +
+              ", " +
+              fmt(raw[i], a.unit) +
+              ", " +
+              scoreLabel +
+              ", " +
+              appearance.description
+            }
+            onClick={() => { stopIntro();onSelect(a.code); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                stopIntro();onSelect(a.code);
+              }
+            }}
+          >
+            <title>{`${a.label.join(" ")}: ${fmt(raw[i], a.unit)}. ${scoreLabel}. ${appearance.description}. ${a.dir}. ${old !== null && old !== undefined ? "Porównanie " + compare + ": " + pl(old, 0) + " pkt." : ""}`}</title>
+            <path d={sector(i, outer)} fill="transparent" pointerEvents="all" />
+            <rect x={p.anchor === "end" ? p.x-170 : p.anchor === "middle" ? p.x-95 : p.x} y={p.y-17}
+              width={p.anchor === "middle" ? 190 : 170} height={labelHeight+46} fill="transparent" pointerEvents="all" />
+            <g className={"srm-label-motion"+(i===emphasizedIndex?" is-emphasized":"")} data-motion-label={a.code}
+              style={{transformOrigin:`${p.x}px ${p.y+(labelHeight+8)/2}px`}} aria-hidden="true">
             <text
               x={p.x}
               y={p.y}
@@ -432,6 +508,7 @@ function Radar({
               {scoreLabel}
               {appearance.alert ? " · sygnał" : ""}
             </text>
+            </g>
           </g>
         );
       })}
@@ -465,20 +542,28 @@ function Radar({
 export function FinancialScannerMount({
   report,
   loading = false,
+  assistant,
 }: {
   report: SupplierReportData | null;
   loading?: boolean;
+  assistant?: { name: string; krs?: string | null; avatars: { male: string; anna: string } };
 }) {
+  const instanceId = useId();
+  const [indicatorView, setIndicatorView] = useState<IndicatorViewContext>({ tab: "overview", label: "Przegląd", items: [] });
   const [scope, setScope] = useState<"standalone" | "consolidated">(
     "standalone",
   );
   const [periodId, setPeriodId] = useState<string | null>(null),
-    [compare, setCompare] = useState(false),
-    [comparisonId, setComparisonId] = useState("reference");
+    [comparisonId, setComparisonId] = useState("");
+  const compare = comparisonId !== "";
   const [history, setHistory] = useState<{
     code: string;
     year?: number;
   } | null>(null);
+  useEffect(() => {
+    const available = report?.financial.scanner?.periods ?? [];
+    if (available.length && !available.some(p => p.scope === scope)) setScope(available[0].scope);
+  }, [report?.financial.scanner?.periods, scope]);
   const periods = (report?.financial.scanner?.periods ?? [])
     .filter((p) => p.scope === scope)
     .slice()
@@ -525,6 +610,19 @@ export function FinancialScannerMount({
   const storageKey = report?.preferenceScope
     ? `srm:finance-preferences:v1:${report.preferenceScope}:${report.nip}:${scope}`
     : null;
+  const context: AssistantApplicationContext = {
+    schemaVersion: 1, dashboardInstanceId: instanceId, application: "SRM",
+    source: { kind: "financial-data-module", version: report?.financial.sourceVersion ?? null,
+      capturedOn: report?.financial.freshness.retrievedAt ?? null, statementScope: scope },
+    supplier: { id: report?.nip ?? "", nip: report?.nip ?? null, name: assistant?.name ?? "Dostawca", krs: assistant?.krs ?? null },
+    view: { page: "supplier-intelligence-dashboard",
+      radar: { year: selected ? Number(selected.to.slice(0,4)) : null, comparisonYear: compared ? Number(compared.to.slice(0,4)) : null,
+        referenceSelection: "history", referenceKind: "history", referenceStatus: "unconfirmed" },
+      indicators: indicatorView, history: history ? { code: history.code, year: history.year ?? null } : null },
+    financialSummary: axes.map(a => { const v=selected?.axes.find(x=>x.code===a.code)?.rawValue ?? null;
+      return { code:a.code,name:a.label.join(" "),year:selected?Number(selected.to.slice(0,4)):null,value:v,unit:a.unit,
+        availability:v===null?"missing":"available",reason:null }; }),
+  };
   return (
     <div className="srm-ui srm-finance-module">
       <div className="srm-section-heading">
@@ -546,7 +644,7 @@ export function FinancialScannerMount({
               onClick={() => {
                 setScope(s);
                 setPeriodId(null);
-                setComparisonId("reference");
+                setComparisonId("");
                 setHistory(null);
               }}
             >
@@ -566,7 +664,7 @@ export function FinancialScannerMount({
                 disabled={!periods.length}
                 onChange={(e) => {
                   setPeriodId(e.target.value);
-                  setComparisonId("reference");
+                  setComparisonId("");
                 }}
               >
                 {!periods.length && <option value="">Brak okresów</option>}
@@ -591,33 +689,13 @@ export function FinancialScannerMount({
                 </option>
               </select>
             </label>
-            <label className="srm-compare">
-              <input
-                type="checkbox"
-                checked={compare}
-                onChange={(e) => setCompare(e.target.checked)}
-              />
-              Porównaj
+            <label>Porównaj
+              <select aria-label="Okres porównania" value={comparisonId} onChange={e => setComparisonId(e.target.value)} disabled={!selected}>
+                <option value="">Bez porównania</option>
+                <option value="reference">Punkt odniesienia</option>
+                {periods.filter(p => !selected || p.to <= selected.to).map(p => <option key={p.id} value={p.id}>{p.to.slice(0,4)}</option>)}
+              </select>
             </label>
-            {compare && (
-              <label>
-                Porównanie
-                <select
-                  aria-label="Okres porównania"
-                  value={comparisonId}
-                  onChange={(e) => setComparisonId(e.target.value)}
-                >
-                  <option value="reference">Punkt odniesienia</option>
-                  {periods
-                    .filter((p) => !selected || p.to <= selected.to)
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.to.slice(0, 4)}
-                      </option>
-                    ))}
-                </select>
-              </label>
-            )}
           </div>
           {loading ? (
             <p role="status">Przygotowywanie zapisanych wyników…</p>
@@ -629,6 +707,7 @@ export function FinancialScannerMount({
             )
           )}
           <Radar
+            loadKey={!loading && selected ? report?.nip ?? null : null}
             period={selected}
             comparison={compared}
             onSelect={(code) =>
@@ -687,16 +766,16 @@ export function FinancialScannerMount({
             </p>
           </details>
         </section>
-        <section className="srm-ai-panel" aria-label="Ocena SpendGuru">
-          <h3>Ocena SpendGuru</h3>
-          <div
-            className="srm-ai-blank"
-            aria-label="Miejsce na ocenę SpendGuru"
-          />
-        </section>
+        {assistant ? <SpendGuruAssessment key={report?.nip ?? "loading"} context={context} avatars={assistant.avatars}
+          year={selected ? Number(selected.to.slice(0,4)) : null} company={assistant.name}
+          values={axes.map(a => { const v=selected?.axes.find(x=>x.code===a.code)?.rawValue;return v==null?null:Number(v); })}
+          formatted={axes.map(a => fmt(selected?.axes.find(x=>x.code===a.code)?.rawValue,a.unit))} />
+          : <section className="srm-ai-panel" aria-label="Ocena SpendGuru"><h3>Ocena SpendGuru</h3><div className="srm-ai-blank" aria-label="Miejsce na ocenę SpendGuru" /></section>}
+
       </div>
       <IndicatorExplorer
         key={`${storageKey}:${report?.financial.representationVersion ?? "empty"}`}
+        onContextChange={setIndicatorView}
         cards={cards}
         groups={groups}
         overviewCodes={axes.map((a) => a.code)}
@@ -740,79 +819,34 @@ function ScannerHistory({
   comparison?: Period;
   onClose: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null),
-    title = useId();
-  const card = cards.find((c) => c.code === code)!;
+  const dialog = useRef<HTMLDialogElement>(null), title = useId();
+  const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
+  const card = cards.find(c => c.code === code)!;
   useEffect(() => {
-    const el = dialog.current,
-      previous = document.activeElement as HTMLElement | null;
+    const el = dialog.current, previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     el?.showModal();
-    return () => {
-      el?.close();
-      previous?.focus();
-    };
+    return () => { el?.close(); document.body.style.overflow=overflow; previous?.focus({preventScroll:true}); };
   }, []);
-  return (
-    <dialog
-      ref={dialog}
-      className="srm-ui srm-history"
-      aria-labelledby={title}
-      onCancel={(e) => {
-        e.preventDefault();
-        onClose();
-      }}
-    >
-      <header>
-        <div>
-          <h2 id={title}>{card.name}</h2>
-          <p>
-            Historia ·{" "}
-            {periods[0]?.scope === "consolidated"
-              ? "skonsolidowane"
-              : "jednostkowe"}
-          </p>
-        </div>
-        <button className="srm-btn" autoFocus onClick={onClose}>
-          Zamknij
-        </button>
-      </header>
-      <p>{card.definition}</p>
-      <p>
-        <strong>Dla kupca: </strong>
-        {card.buyer}
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>Okres</th>
-            <th>Wartość</th>
-            <th>Informacja</th>
-          </tr>
-        </thead>
-        <tbody>
-          {years.map((y) => {
-            const m = getMetric(code, y),
-              p = periods.find((p) => Number(p.to.slice(0, 4)) === y),
-              a = p?.axes.find((a) => a.code === code);
-            return (
-              <tr key={y} aria-current={year === y ? "true" : undefined}>
-                <th>
-                  {p?.from} – {p?.to}
-                  {year === y ? " · wybrany" : ""}
-                  {comparison?.id === p?.id ? " · porównanie" : ""}
-                </th>
-                <td>{fmt(m.value, m.unit, true)}</td>
-                <td>
-                  {a?.alerts.map((a) => alertLabels[a] ?? a).join(". ") ||
-                    m.reason ||
-                    "Wartość dostępna"}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      {!years.length && <p>Brak zapisanych okresów.</p>}
-    </dialog>
-  );
+  const points = years.map(y => {
+    const metric = getMetric(code,y), p=periods.find(p=>Number(p.to.slice(0,4))===y), axis=p?.axes.find(a=>a.code===code);
+    return { year:y, value:metric.value===null?null:Number(metric.value), rawValue:metric.value,
+      information: axis?.alerts.filter(a=>a!=="LIQUIDITY_SCALE_SATURATED").map(a=>alertLabels[a]??a).join(". ") || metric.reason || "" };
+  });
+  return <dialog ref={dialog} className="srm-ui srm-history srm-history-detail" aria-labelledby={title}
+    onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget) {
+      const bounds=e.currentTarget.getBoundingClientRect();
+      if(e.clientX<bounds.left||e.clientX>bounds.right||e.clientY<bounds.top||e.clientY>bounds.bottom) onClose();
+    }}}>
+    <header className="srm-history-detail-head"><div><h2 id={title}>{card.name}</h2>
+      <p>Historia · {periods[0]?.scope === "consolidated" ? "skonsolidowane" : "jednostkowe"}</p></div>
+      <div className="srm-history-head-actions"><div ref={setToolbar} /><button type="button" className="srm-btn" autoFocus onClick={onClose}>Zamknij</button></div>
+    </header>
+    <div className="srm-history-detail-body">
+      <div className="srm-history-summary"><p className="srm-history-definition">{card.definition}</p><p className="srm-history-buyer"><strong>Dla kupca: </strong>{card.buyer}</p></div>
+      <FinancialHistoryView name={card.name} unit={card.unit} selectedYear={year} points={points} toolbarTarget={toolbar} />
+      <footer className="srm-history-detail-footer"><p>Wartości ze sprawozdań finansowych · {periods[0]?.scope === "consolidated" ? "skonsolidowane" : "jednostkowe"}</p>{comparison && <p>Porównanie: {comparison.to.slice(0,4)}</p>}</footer>
+    </div>
+  </dialog>;
 }
