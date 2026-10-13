@@ -1,0 +1,86 @@
+name: Platform contract integration
+
+on:
+  pull_request:
+    paths:
+      - 'packages/platform-contracts/**'
+      - 'apps/architecture-lab/**'
+      - 'apps/sg-runtime/development-integration.json'
+      - 'apps/sg-runtime/tests/platform-contract.test.mjs'
+      - 'apps/sg-runtime/package.json'
+      - 'apps/srm/development-integration.json'
+      - 'apps/srm/scripts/platform-contract.test.mjs'
+      - 'apps/srm/package.json'
+      - 'Canon/registries/development-workspaces-v1.json'
+      - 'Canon/registries/profitia-projects-v1.json'
+      - '.github/workflows/platform-contracts-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/platform-contracts/**'
+      - 'apps/architecture-lab/**'
+      - 'apps/sg-runtime/development-integration.json'
+      - 'apps/sg-runtime/tests/platform-contract.test.mjs'
+      - 'apps/sg-runtime/package.json'
+      - 'apps/srm/development-integration.json'
+      - 'apps/srm/scripts/platform-contract.test.mjs'
+      - 'apps/srm/package.json'
+      - 'Canon/registries/development-workspaces-v1.json'
+      - 'Canon/registries/profitia-projects-v1.json'
+      - '.github/workflows/platform-contracts-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  producer:
+    name: Architecture contract and lab
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test contract and laboratory guards without credentials or database access
+        run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs
+      - name: Validate registered routing and workspace isolation
+        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs
+
+  consumers:
+    name: ${{ matrix.project }} contract adoption
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - project: SG2
+            directory: apps/sg-runtime
+          - project: SRM
+            directory: apps/srm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify actual consumer binding and explicitly accepted source digest
+        working-directory: ${{ matrix.directory }}
+        run: npm run test:platform-contract
+      - name: Record sanitized validation identity
+        working-directory: ${{ matrix.directory }}
+        env:
+          CANDIDATE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import { execFileSync } from 'node:child_process';
+          const accepted = JSON.parse(fs.readFileSync('development-integration.json', 'utf8'));
+          fs.writeFileSync('/tmp/platform-integration-proof.json', JSON.stringify({projectKey: accepted.projectKey, targetEnvironment: 'development', acceptedVersion: accepted.contract.acceptedVersion, sourceDigest: accepted.contract.sourceDigest, producerSourceSha: accepted.producer.sourceSha, validationSha: execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(), candidateHeadSha: process.env.CANDIDATE_HEAD_SHA, productDeploymentPerformed: false}, null, 2));
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform-contract-${{ matrix.project }}
+          path: /tmp/platform-integration-proof.json
+          retention-days: 30
