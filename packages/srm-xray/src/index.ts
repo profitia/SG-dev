@@ -1,6 +1,7 @@
 export type {
   SectionStatus,
   SupplierIdentity,
+  SupplierWebIdentityData,
   SourceProvenance,
   SectionEnvelope,
   GeneralCompanyData,
@@ -51,3 +52,5 @@ export type { KysPdfSelection, KysPdfDocument, KysPdfSection, KysPdfRecord } fro
 export { KysPdfButton } from "./kys-pdf-button";
 
 export { FinancialScannerMount } from "./financial-scanner";
+
+export { SupplierWebIdentity, type SupplierWebIdentityGateway } from "./supplier-web-identity";

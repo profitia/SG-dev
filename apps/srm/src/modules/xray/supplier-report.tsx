@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { defaultFinancialScope, indicatorContent, useKysOverview, type KysOverviewModel, type KysDetailTarget, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { SupplierWebIdentity, type SupplierWebIdentityData, defaultFinancialScope, indicatorContent, useKysOverview, type KysOverviewModel, type KysDetailTarget, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
   KysPdfButton, type KysPdfSelection, VerclyKysMount, type FinancialPeriod, type FinancialPeriodSelection, type FinancialFactEvidence, type SupplierReportData } from "@profitia/srm-xray";
 import { FinancialPeriodSelector } from "./financial-period-selector";
 import { ReportNavigation, navigateReportSection } from "./report-navigation";
@@ -140,8 +140,8 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   const name = supplier.entityType === "JDG" ? supplier.section.data?.entries[0]?.name : supplier.card.general.data?.legalName ?? supplier.card.identity.name;
   return <ReportContext.Provider value={context}><div ref={root} className="supplier-report">
     <section id="supplier-identity" className="report-identity" aria-labelledby="supplier-identity-title">
-      <div className="report-identity-heading"><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
-        <p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}</p></div>
+      <div className="report-identity-heading"><ReportWebIdentity key={`${supplier.entityType}:${supplierNip(supplier)}`} nip={supplierNip(supplier) ?? ""} entityType={supplier.entityType} name={name ?? "Dostawca"}><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
+        <p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}</p></div></ReportWebIdentity>
         {!scanner && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
       </div>
     </section>
@@ -191,4 +191,16 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
       </div></details>
     </section>
   </div></ReportContext.Provider>;
+}
+
+function ReportWebIdentity({ nip, entityType, name, children }: {
+  nip: string; entityType: "COMPANY" | "JDG"; name: string; children: ReactNode;
+}) {
+  const load = useCallback(async (signal: AbortSignal): Promise<SupplierWebIdentityData> => {
+    const response = await fetch("/api/xray/web-identity", { method: "POST", signal,
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: nip, entityType }) });
+    if (!response.ok) throw new Error("WEBSITE_UNAVAILABLE");
+    return response.json() as Promise<SupplierWebIdentityData>;
+  }, [nip, entityType]);
+  return <SupplierWebIdentity name={name} load={load}>{children}</SupplierWebIdentity>;
 }

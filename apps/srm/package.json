@@ -9,7 +9,7 @@
     "postbuild": "mkdir -p .next/standalone/public && cp -R public/. .next/standalone/public/",
     "start": "next start --port 3400",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/server/*.test.ts src/server/integrations/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 src/server/*.test.ts src/server/integrations/*.test.ts",
     "migrate:development": "node scripts/migrate.mjs",
     "test:promotion": "node --test --test-concurrency=1 scripts/promotion.test.mjs scripts/staging-lifecycle.test.mjs scripts/runtime-permissions.test.mjs",
     "promote:staging": "node scripts/promote-staging.mjs",
@@ -18,12 +18,15 @@
   },
   "dependencies": {
     "@profitia/srm-xray": "file:../../packages/srm-xray",
+    "cheerio": "1.1.2",
     "exceljs": "^4.4.0",
+    "ipaddr.js": "2.2.0",
     "next": "16.3.8",
     "pdfkit": "0.20.2",
     "pg": "^8.23.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sharp": "0.34.5"
   },
   "devDependencies": {
     "@types/node": "^20",

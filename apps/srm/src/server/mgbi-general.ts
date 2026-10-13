@@ -71,6 +71,7 @@ export function mapMgbiGeneralRecord(record: unknown, retrievedAt: string): Mgbi
     registeredAddress: address(rawAddress),
     registeredAt: str(at(header, "dataRejestracjiWKRS")),
     mainPkd: pkd(activity),
+    website: str(at(excerpt, "dane", "dzial1", "siedzibaIAdres", "adresStronyInternetowej")),
   };
   const missing = FIELD_NAMES.filter((field) => data[field] === null);
   const hasData = missing.length < FIELD_NAMES.length;
