@@ -1,0 +1,15 @@
+{
+  "name": "SG-dev Architecture",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {"ghcr.io/devcontainers/features/node:1": {"version": "24"}},
+  "customizations": {"codespaces": {"repositories": {"profitia/project-history-repository": {"permissions": {"contents": "write"}}}}},
+  "containerEnv": {
+    "PMOS_PROJECT_NAME": "ARCHITECTURE",
+    "PMOS_WORKSPACE_NAME": "SG-dev Architecture",
+    "PMOS_EXECUTION_ENVIRONMENT": "codespaces",
+    "TARGET_ENVIRONMENT": "development",
+    "PMOS_MEMOROS_MODE": "disabled"
+  },
+  "forwardPorts": [3203, 3500],
+  "portsAttributes": {"3203": {"label": "Architecture PMOS"}, "3500": {"label": "Architecture Lab"}}
+}
