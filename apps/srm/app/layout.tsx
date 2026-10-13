@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SRM X-Ray",
+  title: "X-Ray | Supplier Intelligence Dashboard",
+  icons: { icon: [{ url: "/spendguru/favicon.svg", type: "image/svg+xml" }] },
   description: "Karta dostawcy SRM",
 };
 

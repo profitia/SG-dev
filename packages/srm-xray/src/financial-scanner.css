@@ -1,3 +1,9 @@
+@import "./srm-history-detail.css";
+@import "./spendguru-assessment.css";
+@import "./srm-history-chart.css";
+@import "./srm-history-table.css";
+@import "./srm-interaction-motion.css";
+@import "./srm-radar-motion.css";
 /* SRM UI COLOR CANON v0.1 — prototype, 12.10.2026.
 Brand roles are stable across screens; semantic radar colors are independent.
 No financial formula, qualification or normalization is changed here. */
@@ -2165,3 +2171,25 @@ No financial formula, qualification or normalization is changed here. */
   flex: 0 0 auto;
   min-width: max-content;
 }
+
+
+/* MagicPath revision 460669159668338688: production sizing and scoped interaction roles. */
+.srm-finance-module .srm-overview { grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:stretch; }
+.srm-finance-module .srm-radar-panel { padding:24px; }
+.srm-finance-module .srm-controls { display:grid;grid-template-columns:1fr 1.45fr 1.15fr;gap:12px; }
+.srm-finance-module .srm-controls label { min-width:0; }
+.srm-finance-module .srm-controls select { width:100%;max-width:none;font-size:12px; }
+.srm-finance-module .srm-radar { overflow:visible;max-height:none; }
+.srm-finance-module .srm-chat-slot { min-height:650px; }
+.srm-ui .srm-chat-greeting h3 { font-size:clamp(8px,2.65cqw,14px); }
+.srm-explorer .srm-card-footer { display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px; }
+.srm-explorer .srm-card-footer :is(.srm-card-period,.srm-importance,.srm-text-link) { font-size:11px;line-height:20px;white-space:nowrap; }
+.srm-explorer .srm-card-actions,.srm-explorer .srm-importance { display:inline-flex;align-items:center;gap:10px; }
+.srm-ui.srm-history.srm-history-detail { width:min(1080px,calc(100vw - 32px));max-width:none;max-height:none;padding:0;overflow:hidden; }
+.srm-history.srm-history-detail>header { margin:0;align-items:center; }
+.srm-history.srm-history-detail p { margin:0; }
+.srm-history.srm-history-detail .srm-history-table-scroll { max-height:none; }
+.srm-ui.srm-picker { position:fixed;inset:0;margin:auto; }
+@media(max-width:1100px) { .srm-finance-module .srm-overview { grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px; } .srm-finance-module .srm-radar-panel { padding:18px; } }
+@media(max-width:900px) { .srm-finance-module .srm-overview { grid-template-columns:minmax(0,1fr); } .srm-finance-module .srm-chat-slot { min-height:640px; } }
+@media(max-width:520px) { .srm-finance-module .srm-controls { grid-template-columns:1fr 1fr; } .srm-finance-module .srm-controls label:last-child { grid-column:1/-1; } .srm-explorer .srm-card-footer { flex-wrap:wrap; } }

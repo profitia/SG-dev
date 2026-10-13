@@ -19,7 +19,10 @@ const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <Exe
 const kysSlot: NonNullable<SupplierReportSlots["kys"]> = context => <KysOverview model={context.kysOverview} onDetails={context.onKysDetails} />;
 
 const scannerSlot: NonNullable<SupplierReportSlots["scanner"]> = context => context.supplier.entityType === "COMPANY"
-  ? <FinancialScannerMount report={context.metadata} loading={context.metadataBusy} /> : null;
+  ? <FinancialScannerMount report={context.metadata} loading={context.metadataBusy}
+      assistant={{ name: context.supplier.card.general.data?.legalName ?? context.supplier.card.identity.name ?? "Dostawca",
+        krs: context.supplier.card.identity.krs,
+        avatars: { male: "/spendguru/assistant-male.png", anna: "/spendguru/assistant-female.png" } }} /> : null;
 
 export default function Home() {
   const { state, controller } = useSupplierReport();
@@ -85,24 +88,25 @@ export default function Home() {
   return <main className="appshield">
     {!inactive && <a className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</a>}
     <header className="appshield-header">
-      <h1>Supplier Intelligence Dashboard</h1>
+      <div className="appshield-brand"><img src="/spendguru/logo.svg" alt="SpendGuru" width={144} height={47} /><h1>Supplier Intelligence Dashboard</h1></div>
+      {!inactive && <form id="supplier-search" tabIndex={-1} className="appshield-search appshield-header-search" aria-label="Wyszukaj dostawcę" onSubmit={search}>
+        <label className="srm-sr-only" htmlFor="identifier">Numer NIP dostawcy</label>
+        <div className="appshield-search-fields">
+          <input ref={inputRef} id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={14}
+            placeholder="Wpisz numer NIP…" required value={identifier} aria-describedby="supplier-search-help" onChange={event => {
+              controller.reset(); setIdentifier(event.target.value.replace(/[\s-]/g, ""));
+            }} />
+          <button type="submit" disabled={state.busy}>{state.busy ? "Wyszukiwanie…" : "Wyszukaj"}</button>
+        </div>
+        <small className="srm-sr-only" id="supplier-search-help">Dane finansowe i rejestrowe są pobierane przy wyszukiwaniu. Raport KYS zamawiasz osobno.</small>
+      </form>}
       <div className="appshield-actions">
         {(state.result || state.busy) && <button type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</button>}
         {!inactive && <form action="/api/auth/logout" method="post"><button type="submit" className="appshield-new-report">Wyloguj się</button></form>}
       </div>
     </header>
     <div className="appshield-content report-page">
-      {!inactive && <form id="supplier-search" tabIndex={-1} className={`appshield-search ${state.result ? "appshield-search--compact" : ""}`} aria-label="Wyszukaj dostawcę" onSubmit={search}>
-        <label htmlFor="identifier">Numer NIP dostawcy</label>
-        <div className="appshield-search-fields">
-          <input ref={inputRef} id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={14}
-            placeholder="Wpisz numer NIP…" required value={identifier} aria-describedby="supplier-search-help" onChange={event => {
-              controller.reset(); setIdentifier(event.target.value.replace(/[\s-]/g, ""));
-            }} />
-          <button type="submit" disabled={state.busy}>{state.busy ? "Wyszukiwanie…" : "Wyszukaj dostawcę"}</button>
-        </div>
-        <small id="supplier-search-help">Dane finansowe i rejestrowe są pobierane przy wyszukiwaniu. Raport KYS zamawiasz osobno.</small>
-      </form>}
+
       {state.busy && <p role="status" className="report-loading">Wyszukiwanie dostawcy. Poczekaj na wynik…</p>}
       {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
       {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}
