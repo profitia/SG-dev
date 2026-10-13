@@ -2,7 +2,7 @@
   "name": "@sg/runtime",
   "version": "0.1.0",
   "private": true,
-  "description": "SpendGuru 2.0 — Application Runtime",
+  "description": "SpendGuru 2.0 \u2014 Application Runtime",
   "scripts": {
     "dev": "next dev --port 3001",
     "postinstall": "prisma generate && prisma generate --schema prisma-market-data/schema.prisma",
@@ -29,7 +29,8 @@
     "forecast:snapshot:rolling-daily": "node --import tsx scripts/persist-rolling-daily-current-forecast-snapshot.ts",
     "market-data:generate": "prisma generate --schema prisma-market-data/schema.prisma",
     "market-data:migrate": "prisma migrate dev --schema prisma-market-data/schema.prisma",
-    "market-data:migrate:deploy": "prisma migrate deploy --schema prisma-market-data/schema.prisma"
+    "market-data:migrate:deploy": "prisma migrate deploy --schema prisma-market-data/schema.prisma",
+    "test:platform-contract": "node --test tests/platform-contract.test.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
