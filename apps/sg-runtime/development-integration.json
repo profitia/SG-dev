@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "SG2",
+  "workspaceName": "SG-dev",
+  "targetEnvironment": "development",
+  "sourceSurface": "apps/sg-runtime",
+  "contract": {
+    "name": "@profitia/platform-contracts/development-context",
+    "acceptedVersion": "1.0.0",
+    "sourceDigest": "7de5e2d709afad621f7f331069f99a71da7e3ad732f178b9742c58f56d55da56"
+  },
+  "producer": {
+    "projectKey": "ARCHITECTURE",
+    "taskId": "ARCHITECTURE-E0-A-06-CONTRACT-PRODUCER-20261013",
+    "repository": "profitia/SG-dev",
+    "pullRequest": 280,
+    "sourceSha": "ad17af99c171d077b10b1101adb50f3301099f5d"
+  },
+  "adoptionTaskId": "SG2-E0-A-06-CONTRACT-INTEGRATION-20261013",
+  "scope": "DEVELOPMENT_VERIFICATION_ONLY",
+  "automaticProductDeployment": false
+}
