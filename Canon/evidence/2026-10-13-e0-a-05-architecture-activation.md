@@ -4,7 +4,7 @@ Data dowodów: 13 października 2026. Zakres: Development, przygotowanie E0-A; b
 
 ## Stan publikacji
 
-Źródła profilu, adaptera i topologii są przygotowane do kontrolowanej publikacji. Tożsamości serwisów są rzeczywiste; pełny odbiór wymaga jeszcze merge, wdrożenia konkretnego SHA i rzeczywistej rejestracji ARCHITECTURE. Niniejszy dokument na tym etapie nie ogłasza zakończenia 05 ani gotowości 06–09.
+Profil, adapter i topologię opublikowano w PR278. Źródło merge: 78e4e669045fb70331202158f08c465af01ef6ec; commit implementacji: 09b10569a7edd615c26fac97dc9ea41dfe9a2e95. CI PR38456484940 i main38456754248: SUCCESS. Wszystkie 17 zadeklarowanych ścieżek źródłowych zweryfikowano niezależnie przez GitHub Contents względem lokalnych bajtów. Odbiór przygotowania profilu i runtime jest potwierdzony poniżej; końcowa publikacja tego dowodu i closeout własnego zadania są następnymi operacjami tego samego odbioru. 06–09 pozostają do wykonania.
 
 ## Fakty i izolacja
 
@@ -22,6 +22,18 @@ GitHub architecture-development: ID24168168252, repo profitia/SG-dev ID124766555
 
 ## Weryfikacja i granice
 
-Inicjalizator odrzuca niezgodny host, bazę, właściciela, pooler, istniejące dane oraz niewłaściwą gałąź walidacyjną. Nie resetuje schematów lub haseł istniejących ról. Chronione konfiguracje mają tryb0600 i pozostają poza Git/Canon/PHR. Niezależne zapytania potwierdziły atrybuty wszystkich trzech ról. Rzeczywiste połączenia SG-role do SRM-lab oraz SRM-role do SG-lab odrzucono komunikatem PostgreSQL permission denied for database. Właściwy odczyt tabel przeszedł; odczyt markera właściciela i CREATE są zabronione. Odbiór runtime zostanie dopisany po wykonaniu.
+Inicjalizator odrzuca niezgodny host, bazę, właściciela, pooler, istniejące dane oraz niewłaściwą gałąź walidacyjną. Nie resetuje schematów lub haseł istniejących ról. Chronione konfiguracje mają tryb0600 i pozostają poza Git/Canon/PHR. Niezależne zapytania potwierdziły atrybuty wszystkich trzech ról. Rzeczywiste połączenia SG-role do SRM-lab oraz SRM-role do SG-lab odrzucono komunikatem PostgreSQL permission denied for database. Właściwy odczyt tabel przeszedł; odczyt markera właściciela i CREATE są zabronione. Odbiór runtime opisano poniżej.
 
 Cloud Codespaces nie uruchomiono; odtwarzalne konfiguracje i trzy rzeczywiste lokalne checkouty są wynikiem 04. Pełne logowanie, tenancy, płatności, RLS i SaaS są nadal osobnym zakresem architektury produktu. Pierwotny freeze oraz odrębne dowody 01–04 pozostają historyczne.
+
+## Rzeczywisty runtime i ciągłość
+
+Architecture PMOS LIVE: deploy dep-db78ivrbc2fs73e7ia20, SHA78e4e669045fb70331202158f08c465af01ef6ec. SG2 PMOS po automatycznej publikacji wspólnego rejestru: dep-db78igfavr4c73evmrng, LIVE z tym samym SHA. Żadnego runtime produktu SG2/SRM nie wdrożono w etapie05.
+
+Prawdziwy odczyt HTTP z prywatnej sieci wykonano krótkim one-off job job-db78k4ei0phs73c7tdtg na plan-srv-006: SUCCEEDED. Test sprawdzał API/conversations HTTP200, strukturę odpowiedzi, rzeczywistą bazę architecture_pmos, connected_role architecture_pmos_runtime oraz exact SHA procesu job. Nie dodawano publicznego endpointu lub klucza SSH. Próba SSH nie powiodła się wskutek braku dopuszczonego publickey; zastosowano oficjalny jednorazowy job odczytowy. Job zakończono, bez nowej trwałej usługi.
+
+Własny checkout architektury i chroniona konfiguracja: profitia-development/architecture; własny PHR: profitia-development/architecture-phr. Port lokalny PMOS3203. Workspace check --require-config, budowanie kanonicznego kontekstu i pmos:verify-runtime: PASS. Pierwszy pełny Development preflight i require-begin: PASS. Rzeczywista rejestracja ARCHITECTURE-E0-A-05-ACTIVATION-ACCEPTANCE-20261013: cmv739kj20000c2nekkj7lwxc; conversationId pmos-task-v2:d5fe94121ad6b23efdb08ce5b1c2f07eab08563e30bd6122cbbd1dc78a417b34. Zapis jest w architecture_pmos, a nie SG2 lub SRM.
+
+Walidacja publikacji05: 27/27 testów governance/workspace/initializer, 55/55 lifecycle/PHR, oba typechecki i production build PMOS. Testy nieznanego profilu pozostały; historyczne oczekiwanie, że ARCHITECTURE jest nieznane, zmieniono na stan po legalnym onboardingu. Nowe negatywne testy odrzucają host o obcym suffixie, rolę właściciela, brak TLS oraz podmianę projektów, baz i ról laboratorium. Nie wyłączono bramek ani nie osłabiono polityk starych profili.
+
+Bootstrap był rozliczony osobnymi zarejestrowanymi zadaniami SG2 Development: SG2-GOVERNANCE-E0-A-05-BOOTSTRAP-20261013, SG2-GOVERNANCE-E0-A-05-IDENTITY-GUARDS-20261013 i SG2-GOVERNANCE-E0-A-05-LIFECYCLE-FIXTURES-20261013. Nie jest to docelowy routing zwykłych zadań architektury. Kolejne prace ARCHITECTURE używają własnego profilu i własnej historii; pełne dowody PHR i równoległości będą uzupełnione w07–09.
