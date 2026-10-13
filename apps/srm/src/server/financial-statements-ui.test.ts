@@ -34,3 +34,10 @@ test('overview card has no selected-year headline and exposes compact table and 
  assert.ok(!html.includes('srm-history-readout'));
  assert.ok(html.includes('data-value="0"')&&html.includes('data-value="missing"')&&html.includes('is-negative'));
 });
+
+test('statement export keeps the source decimal when binary division differs by one ULP',()=>{
+ const points=statementPoints([period(2025,'2045878338.35'),period(2024,'2231084474.93')],'PALA_NPL');
+ assert.equal(points[0].rawValue,'2045878.33835');
+ assert.equal(points[0].value,Number('2045878.33835'));
+ assert.equal(financialHistoryTsv(points,'PLN_THOUSANDS').split('\r\n')[2],'2025\t2045878,33835\ttys. zł\t');
+});

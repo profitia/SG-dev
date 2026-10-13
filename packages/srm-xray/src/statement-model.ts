@@ -13,8 +13,12 @@ export function statementRawThousands(amount:string, unit:string):string {
 export function statementPoints(periods:readonly FinancialPeriod[],code:string):FinancialHistoryPoint[] {
  return periods.map(p=>{
    const fact=p.facts.find(f=>f.metricCode===code);
-   const value=fact?amountInThousands(fact.amount,fact.currency,fact.unit):null;
-   return {year:Number(p.to.slice(0,4)),value,rawValue:fact&&value!==null?statementRawThousands(fact.amount,fact.unit):null};
+   const validated=fact?amountInThousands(fact.amount,fact.currency,fact.unit):null;
+   const rawValue=fact&&validated!==null?statementRawThousands(fact.amount,fact.unit):null;
+   // Parse the shifted decimal once: dividing an already-parsed float can differ
+   // by one ULP and make the shared export reject its exact source string.
+   const value=rawValue===null?null:Number(rawValue);
+   return {year:Number(p.to.slice(0,4)),value,rawValue};
  });
 }
 export function statementRows(periods:readonly FinancialPeriod[]):StatementRow[] {
