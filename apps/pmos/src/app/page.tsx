@@ -1,9 +1,11 @@
 import { EventLedgerTable } from '@/components/event-ledger/EventLedgerTable'
 import { eventLedgerQuery } from '@/lib/event-ledger-query'
+import { resolvePmosRuntimeLabel } from '@/lib/pmos/runtime-label'
 
 export const dynamic = 'force-dynamic'
 
 export default async function EventLedgerPage() {
+  const runtimeLabel = resolvePmosRuntimeLabel()
   try {
     const { events, stats, sourceRecords, handoffArtifactsByConversationId } = await eventLedgerQuery()
   const serializedEvents = events.map((event) => ({
@@ -17,7 +19,7 @@ export default async function EventLedgerPage() {
       <div className="flex h-full flex-col px-6 py-5">
         <div className="mb-6 flex items-end justify-between gap-6 border-b border-bg-border pb-5">
           <div>
-            <h1 className="text-xl font-semibold text-text-primary">PMOS Event Ledger</h1>
+            <h1 className="text-xl font-semibold text-text-primary">{runtimeLabel.title}</h1>
             <p className="mt-1 text-sm text-text-secondary">Database-first event feed from PostgreSQL only.</p>
           </div>
           <div className="text-right font-mono text-xs text-text-secondary">
@@ -56,7 +58,7 @@ export default async function EventLedgerPage() {
       <div className="flex h-full flex-col px-6 py-5">
         <div className="mb-6 flex items-end justify-between gap-6 border-b border-bg-border pb-5">
           <div>
-            <h1 className="text-xl font-semibold text-text-primary">PMOS Event Ledger</h1>
+            <h1 className="text-xl font-semibold text-text-primary">{runtimeLabel.title}</h1>
             <p className="mt-1 text-sm text-text-secondary">Runtime diagnostics for the PostgreSQL-backed event feed.</p>
           </div>
           <div className="text-right font-mono text-xs text-text-secondary">

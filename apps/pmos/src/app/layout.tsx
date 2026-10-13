@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
+import { resolvePmosRuntimeLabel } from '@/lib/pmos/runtime-label'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'PMOS Event Ledger',
-  description: 'PostgreSQL event ledger for PMOS runtime history',
+export function generateMetadata(): Metadata {
+  return {
+    title: resolvePmosRuntimeLabel().title,
+    description: 'PostgreSQL event ledger for PMOS runtime history',
+  }
 }
 
 export default async function RootLayout({
