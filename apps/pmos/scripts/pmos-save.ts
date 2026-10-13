@@ -93,7 +93,6 @@ import {
   CANONICAL_PMOS_PROJECT_NAMES,
   CANONICAL_PMOS_WORKSPACE_NAMES,
   getConfiguredPmosWorkspaceName,
-  isPhrSatisfiedForCloseout,
   normalizePmosProjectName,
   normalizePmosWorkspaceName,
   requireCanonicalMemorosProjectId,
@@ -1634,7 +1633,7 @@ function mapFinalVerdict(closeout: CloseoutEvidence, context: HandoffFinalizatio
   if (closeout.pmosSaveStatus !== 'SUCCEEDED') return closeout.pmosSaveStatus === 'FAILED' ? 'FAIL' : 'BLOCKED'
   if (closeout.closeoutState !== CloseoutState.CLOSEOUT_COMPLETE) return 'WARNING'
   if (context.memorosMode === 'disabled') {
-    if (isPhrSatisfiedForCloseout(resolvePmosProjectProfile({ projectName: SRM_PMOS_PROJECT_NAME, memorosMode: 'disabled' }), context.phrPublicationStatus)) {
+    if (!context.phrRequiredForCompletion || isSuccessfulPhrPublicationStatus(context.phrPublicationStatus)) {
       return 'PASS'
     }
 
@@ -1698,7 +1697,7 @@ function buildDerivedHandoffPayloadWithContext(
   if (context.memorosMode === 'disabled') {
     completedWork.push(`Finalized: ${context.memorosAuditStatus}`)
     if (context.phrRequiredForCompletion) {
-      completedWork.push('Finalized: PHR publication is the mandatory completion gate for SRM closeout.')
+      completedWork.push(`Finalized: PHR publication is the mandatory completion gate for ${artifact.metadata.project} closeout.`)
     }
   }
 
@@ -1973,11 +1972,11 @@ function buildHandoffFinalizationContext(params: {
   }
 }
 
-function getStableSrmPhrPublicationTimestamp(artifact: FlightRecordV1): string {
+function getStablePhrOnlyPublicationTimestamp(artifact: FlightRecordV1): string {
   return artifact.metadata.timestamp
 }
 
-function buildDeterministicSrmPhrStateHistory(): CloseoutState[] {
+function buildDeterministicPhrOnlyStateHistory(): CloseoutState[] {
   return [
     CloseoutState.INITIATED,
     CloseoutState.PENDING_ARTIFACT_CREATED,
@@ -1993,15 +1992,16 @@ function buildDeterministicSrmPhrStateHistory(): CloseoutState[] {
   ]
 }
 
-function buildDeterministicSrmFactPreservationNotes(): string[] {
+function buildDeterministicPhrOnlyFactPreservationNotes(): string[] {
   return ['MEMOROS_DISABLED_BY_PROJECT_PROFILE']
 }
 
-function buildDeterministicSrmPhrCloseoutSnapshot(params: {
+function buildDeterministicPhrOnlyCloseoutSnapshot(params: {
   artifact: FlightRecordV1
   closeout: CloseoutEvidence
+  projectName: string
 }): CloseoutEvidence {
-  const completedAt = getStableSrmPhrPublicationTimestamp(params.artifact)
+  const completedAt = getStablePhrOnlyPublicationTimestamp(params.artifact)
   const candidateCloseout: CloseoutEvidence = {
     closeoutStartedAt: null,
     closeoutState: CloseoutState.CLOSEOUT_COMPLETE,
@@ -2038,11 +2038,11 @@ function buildDeterministicSrmPhrCloseoutSnapshot(params: {
     recoveryRequired: false,
     recoveryReason: null,
     manualRecoveryInstructions: [
-      'PHR publication is the mandatory completion gate for SRM closeout.',
+      `PHR publication is the mandatory completion gate for ${params.projectName} closeout.`,
       'This canonical closeout candidate may be materialized only after the publisher returns PUBLISHED or IDEMPOTENT.',
     ],
-    stateHistory: buildDeterministicSrmPhrStateHistory(),
-    factPreservationNotes: buildDeterministicSrmFactPreservationNotes(),
+    stateHistory: buildDeterministicPhrOnlyStateHistory(),
+    factPreservationNotes: buildDeterministicPhrOnlyFactPreservationNotes(),
   }
 
   return candidateCloseout
@@ -2064,16 +2064,24 @@ export function buildPhrPublicationReadyHandoff(params: {
   })
 }
 
-export function buildSrmPhrPublicationCandidate(params: {
+export function buildPhrOnlyPublicationCandidate(params: {
   artifact: FlightRecordV1
   closeout: CloseoutEvidence
   closeoutRef: string
+  projectProfile: PmosProjectProfile
   pendingArtifactSlotFinal?: HandoffFinalizationContext['pendingArtifactSlotFinal']
 }): { closeout: CloseoutEvidence; handoff: GptHandoffArtifactV1 } {
-  const completedAt = getStableSrmPhrPublicationTimestamp(params.artifact)
-  const candidateCloseout = buildDeterministicSrmPhrCloseoutSnapshot({
+  if (params.projectProfile.memorosMode !== 'disabled' || !params.projectProfile.phrRequiredForCloseout) {
+    throw new Error('PHR-only closeout requires a profile with MEMOROS disabled and PHR required.')
+  }
+  if (normalizePmosProjectName(params.artifact.metadata.project) !== params.projectProfile.projectName) {
+    throw new Error('PHR-only closeout project does not match the task artifact.')
+  }
+  const completedAt = getStablePhrOnlyPublicationTimestamp(params.artifact)
+  const candidateCloseout = buildDeterministicPhrOnlyCloseoutSnapshot({
     artifact: params.artifact,
     closeout: params.closeout,
+    projectName: params.projectProfile.projectName,
   })
 
   return {
@@ -2083,7 +2091,7 @@ export function buildSrmPhrPublicationCandidate(params: {
       closeout: candidateCloseout,
       closeoutRef: params.closeoutRef,
       finalizationContext: buildHandoffFinalizationContext({
-        profile: resolvePmosProjectProfile({ projectName: SRM_PMOS_PROJECT_NAME, memorosMode: 'disabled' }),
+        profile: params.projectProfile,
         pendingArtifactSlotFinal: params.pendingArtifactSlotFinal ?? 'OCCUPIED',
         phrPublicationStatus: 'NOT_ATTEMPTED',
         phrPublicationPostcondition: 'SATISFIED_ON_PUBLISHER_SUCCESS',
@@ -2091,6 +2099,15 @@ export function buildSrmPhrPublicationCandidate(params: {
       createdAt: completedAt,
     }),
   }
+}
+
+// Retain the existing SRM helper contract for callers and recovery tooling.
+// New runtime calls use the profile already verified by the PMOS identity gates.
+export function buildSrmPhrPublicationCandidate(params: Omit<Parameters<typeof buildPhrOnlyPublicationCandidate>[0], 'projectProfile'>): ReturnType<typeof buildPhrOnlyPublicationCandidate> {
+  return buildPhrOnlyPublicationCandidate({
+    ...params,
+    projectProfile: resolvePmosProjectProfile({ projectName: SRM_PMOS_PROJECT_NAME, memorosMode: 'disabled' }),
+  })
 }
 
 export function publishOptionalSpendGuruPhrAfterPendingClear(params: {
@@ -2194,7 +2211,7 @@ export function applyRequiredPhrPublicationOutcome(params: {
   return { canCompleteTask: false, canClearPending: false }
 }
 
-export function applySrmPhrPublicationOutcome(params: {
+export function applyPhrOnlyPublicationOutcome(params: {
   evidence: CloseoutEvidence
   publication: { status: PhrPublicationResult['status']; error: string | null }
   projectName: string
@@ -2218,7 +2235,7 @@ export function applySrmPhrPublicationOutcome(params: {
   params.evidence.handoffPublicationCompletedAt = completedAt
   params.evidence.handoffPublicationError = `PHR publication required for ${params.projectName} failed: ${params.publication.error ?? params.publication.status}`
   params.evidence.recoveryRequired = true
-  params.evidence.recoveryReason = 'PHR publication is mandatory for SRM closeout and did not succeed.'
+  params.evidence.recoveryReason = `PHR publication is mandatory for ${params.projectName} closeout and did not succeed.`
   params.evidence.manualRecoveryInstructions = [
     'Resolve the PHR publication failure and rerun the closeout publication step.',
     'Do not call task_complete. Task state is INCOMPLETE — RECOVERY REQUIRED.',
@@ -2227,6 +2244,10 @@ export function applySrmPhrPublicationOutcome(params: {
   appendState(params.evidence, CloseoutState.CLOSEOUT_PARTIAL)
   appendState(params.evidence, CloseoutState.RECOVERY_REQUIRED)
   return { canCompleteTask: false, canClearPending: false }
+}
+
+export function applySrmPhrPublicationOutcome(params: Parameters<typeof applyPhrOnlyPublicationOutcome>[0]): ReturnType<typeof applyPhrOnlyPublicationOutcome> {
+  return applyPhrOnlyPublicationOutcome(params)
 }
 
 async function persistGptHandoffArtifact(params: {
@@ -3359,7 +3380,7 @@ async function main() {
   writeJson(closeoutEvidencePath, evidence)
 
   let persistedHandoff: GptHandoffArtifactV1 | null = null
-  let srmPublicationCandidate: { closeout: CloseoutEvidence; handoff: GptHandoffArtifactV1 } | null = null
+  let phrOnlyPublicationCandidate: { closeout: CloseoutEvidence; handoff: GptHandoffArtifactV1 } | null = null
   if (projectProfile.memorosEnabled) {
     persistedHandoff = await persistGptHandoffArtifact({
       artifact,
@@ -3378,17 +3399,18 @@ async function main() {
       source: 'pmos-save/handoff',
     })
   } else {
-    srmPublicationCandidate = buildSrmPhrPublicationCandidate({
+    phrOnlyPublicationCandidate = buildPhrOnlyPublicationCandidate({
       artifact,
       closeout: evidence,
+      projectProfile,
       closeoutRef: relativize(closeoutEvidencePath),
       pendingArtifactSlotFinal: 'OCCUPIED',
     })
-    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, 'Prepared canonical SRM closeout candidate for the required PHR publication gate.', {
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.ARTIFACT_CREATED, `Prepared canonical ${projectProfile.projectKey} closeout candidate for the required PHR publication gate.`, {
       details: {
         artifactKind: ArtifactKind.HANDOFF,
-        artifactId: srmPublicationCandidate.handoff.id,
-        closeoutState: srmPublicationCandidate.closeout.closeoutState,
+        artifactId: phrOnlyPublicationCandidate.handoff.id,
+        closeoutState: phrOnlyPublicationCandidate.closeout.closeoutState,
       },
       status: ExecutionTrailEventStatus.SUCCEEDED,
       source: 'pmos-save/handoff',
@@ -3462,15 +3484,15 @@ async function main() {
   if (!projectProfile.memorosEnabled) {
     phrPublicationResult = publishPhrPublicationOnCompletedCloseout({
       artifact: canonicalFlightRecordPayload,
-      handoff: srmPublicationCandidate?.handoff ?? null,
-      closeout: srmPublicationCandidate?.closeout ?? evidence,
+      handoff: phrOnlyPublicationCandidate?.handoff ?? null,
+      closeout: phrOnlyPublicationCandidate?.closeout ?? evidence,
       closeoutRef: relativize(closeoutEvidencePath),
       conversationArtifactPath: relativize(jsonPath),
       sidecarPath: path.join(PHR_PUBLICATIONS_DIR, `${baseName}.json`),
       repositoryPath: process.env.PHR_REPOSITORY_PATH ?? '',
     })
 
-    const publicationOutcome = applySrmPhrPublicationOutcome({
+    const publicationOutcome = applyPhrOnlyPublicationOutcome({
       evidence,
       publication: {
         status: phrPublicationResult.result?.status ?? 'FAILED',
@@ -3480,7 +3502,7 @@ async function main() {
     })
 
     if (!publicationOutcome.canCompleteTask) {
-      appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_FAILED, 'PHR publication failed for SRM profile with MEMOROS disabled.', {
+      appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_FAILED, `PHR publication failed for ${projectProfile.projectKey} profile with MEMOROS disabled.`, {
         details: { error: evidence.handoffPublicationError, phrStatus: phrPublicationResult.result?.status ?? 'FAILED' },
         status: ExecutionTrailEventStatus.FAILED,
         severity: ExecutionTrailEventSeverity.ERROR,
@@ -3489,7 +3511,7 @@ async function main() {
       throw new Error(evidence.handoffPublicationError)
     }
 
-    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_SUCCEEDED, 'PHR publication satisfied SRM closeout with MEMOROS disabled by project profile.', {
+    appendTrailEventSafe(baseName, artifact.metadata.taskId, ExecutionTrailEventType.HANDOFF_PUBLICATION_SUCCEEDED, `PHR publication satisfied ${projectProfile.projectKey} closeout with MEMOROS disabled by project profile.`, {
       details: { phrStatus: phrPublicationResult.result?.status ?? 'FAILED', auditStatus: projectProfile.memorosAuditStatus },
       status: ExecutionTrailEventStatus.SUCCEEDED,
       source: 'pmos-save/handoff',
