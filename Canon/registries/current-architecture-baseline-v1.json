@@ -375,6 +375,99 @@
       "allowedProjectKeys": [
         "SRM"
       ]
+    },
+    {
+      "id": "ARCH-BASE-001",
+      "capability": "Platform Contracts",
+      "name": "Platform Contracts",
+      "pathPatterns": [
+        "packages/platform-contracts/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Framework-neutral platform contracts and consumer compatibility checks.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "9a9f0db248e96f5d69f16b9a8dabb8e342378f6d",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "E0-A-04–09 Full Autopilot, owner instruction 2026-10-13"
+    },
+    {
+      "id": "ARCH-BASE-002",
+      "capability": "Architecture Lab",
+      "name": "Architecture Integration Laboratory",
+      "pathPatterns": [
+        "apps/architecture-lab/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Isolated test adapters and synthetic fixtures; no business Development credentials.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "9a9f0db248e96f5d69f16b9a8dabb8e342378f6d",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "E0-A-04–09 Full Autopilot, owner instruction 2026-10-13"
+    },
+    {
+      "id": "ARCH-BASE-003",
+      "capability": "Architecture Workspace",
+      "name": "Architecture Development Workspace",
+      "pathPatterns": [
+        ".devcontainer/architecture/**"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "Architecture workspace bootstrap, isolated configuration and continuity artifacts.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "9a9f0db248e96f5d69f16b9a8dabb8e342378f6d",
+      "allowedProjectKeys": [
+        "SG2",
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "E0-A-04–09 Full Autopilot, owner instruction 2026-10-13"
+    },
+    {
+      "id": "SG2-BASE-021",
+      "capability": "SG2 Workspace",
+      "name": "SG2 Development Workspace",
+      "pathPatterns": [
+        ".devcontainer/sg2/**"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "SG2 workspace bootstrap, isolated configuration and continuity artifacts.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "9a9f0db248e96f5d69f16b9a8dabb8e342378f6d",
+      "allowedProjectKeys": [
+        "SG2"
+      ],
+      "onboardingAuthorization": "E0-A-04–09 Full Autopilot, owner instruction 2026-10-13"
+    },
+    {
+      "id": "ARCH-BASE-004",
+      "capability": "Shared Contract CI",
+      "name": "Shared Platform Consumer CI",
+      "pathPatterns": [
+        ".github/workflows/platform-contracts-ci.yml"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "Compatibility validation of platform contracts and their SG2/SRM consumers.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "9a9f0db248e96f5d69f16b9a8dabb8e342378f6d",
+      "allowedProjectKeys": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "E0-A-04–09 Full Autopilot, owner instruction 2026-10-13"
     }
   ],
   "cleanupFindings": [
