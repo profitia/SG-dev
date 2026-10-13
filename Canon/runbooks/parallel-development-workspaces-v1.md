@@ -2,7 +2,7 @@
 
 **Status:** ACTIVE_RUNBOOK — przygotowanie przestrzeni nie zastępuje aktywacji profilu ani odbioru równoległości.
 
-**Wersja:** 1.0, 13 października 2026.
+**Wersja:** 1.1, 13 października 2026.
 
 Źródłem konfiguracji jest [rejestr przestrzeni](../registries/development-workspaces-v1.json). Każda przestrzeń korzysta z osobnego checkoutu SG-dev, instalacji zależności, lokalnych konfiguracji, katalogów PMOS i klonu profitia/project-history-repository na main. Implementacja PMOS pozostaje wspólna.
 
@@ -14,7 +14,7 @@ Z aktualnego checkoutu profitia/SG-dev uruchom dla każdego klucza SG2, SRM i AR
 node scripts/governance/development-workspace.mjs prepare --project SG2 --parent /absolute/path/to/development
 ```
 
-Polecenie pobiera świeży main, tworzy nowy checkout na odłączonym HEAD i własny klon PHR. Nie resetuje istniejącego katalogu, nie nadpisuje konfiguracji ani pracy. Istniejąca przestrzeń musi mieć właściwe repozytorium, aktualny main i brak zmian. Przygotowanie ARCHITECTURE jest dozwolone przed aktywacją, lecz nie pozwala rozpocząć zwykłego zadania z nieaktywnym profilem.
+Polecenie pobiera świeży main, tworzy nowy checkout na odłączonym HEAD i własny klon PHR. Nie resetuje istniejącego katalogu, nie nadpisuje konfiguracji ani pracy. Istniejąca przestrzeń musi mieć właściwe repozytorium, aktualny main i brak zmian. Przygotowanie ARCHITECTURE było dozwolone przed aktywacją05; zwykłe zadanie nadal wymaga ACTIVE profilu i pełnych bramek.
 
 Zależności instaluje się osobno w danej przestrzeni:
 
@@ -39,9 +39,9 @@ Pełne sprawdzenie odrzuca błędny projekt, środowisko, host lub nazwę bazy, 
 | --- | --- | --- |
 | SG2 | 3201 | runtime 3001, dashboard 3002 |
 | SRM | 3202 | runtime 3400 |
-| ARCHITECTURE | 3203 | laboratoryjny adapter 3500 |
+| ARCHITECTURE | 3203 | techniczny CLI;3500 reserved |
 
-Port PMOS należy przekazać jawnie do Next (`node node_modules/next/dist/bin/next dev --port 3201` z apps/pmos). Dotychczasowe skrypty produktu zachowują swoje porty. Przyszły most z 09 wybierze port i kontekst automatycznie po pełnych bramkach.
+Port PMOS należy przekazać jawnie do Next (`node node_modules/next/dist/bin/next dev --port 3201` z apps/pmos). Dotychczasowe skrypty produktu zachowują swoje porty. Most09 development-bridge.mjs wybiera port/kontekst z rejestru i deleguje pełny preflight; nie uruchamia nowego lifecycle lub automatycznie pomija begin. [Instrukcja startowa](parallel-development-startup-and-architecture-bridge-v1.md).
 
 ## Codespaces
 
@@ -53,4 +53,6 @@ Konfiguracja devcontainer jest receptą uruchomienia. Sam plik lub lokalna prób
 
 PMOS `.pmos`, `.context`, pending, closeout i lock są lokalne dla checkoutu. Żaden workspace nie jest właścicielem wszystkich projektów tylko dlatego, że zawiera całe monorepo. Przed zadaniem trzeba utworzyć krótki branch, załadować kanon, wykonać pełny preflight i zarejestrować własny taskId. Trzy przestrzenie i ich porty nie są Organisation ID ani User ID produktu.
 
-Po 04 aktywacja, rzeczywiste zapisy ARCHITECTURE i próba trzech torów wymagają 05–08. Istniejące bazy produktu, Staging/Production, CIC i historyczny freeze są zachowane.
+Stan po odbiorze09: profil ARCHITECTURE aktywowany05, rzeczywiste własne zapisy i PHR potwierdzone05–08, trzy procesy zapisu i publikacje wykonane równolegle08. [Końcowy odbiór](../evidence/2026-10-13-e0-a-04-09-final-acceptance.md). Istniejące bazy produktu, Staging/Production, CIC i historyczny freeze są zachowane.
+
+Po aktualizacji źródeł lokalnego file dependency odśwież jego zainstalowaną kopię z istniejącego lockfile. SRM: npm ci --install-links; polecenie install --project SRM --product również stosuje tę opcję. Build może wytworzyć tracked generated outputs; nie myl ich z własną zmianą funkcji i zachowaj/uzgodnij je przed commit.
