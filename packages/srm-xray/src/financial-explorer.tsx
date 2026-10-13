@@ -1,4 +1,5 @@
 "use client";
+import { CanonElement, CanonButton, CanonInput } from './ui-canon';
 import React, { useEffect, useRef, useState } from "react";
 
 import type { IndicatorViewContext } from "./assistant-context";
@@ -90,7 +91,7 @@ import { validYear, validatePreferences } from "./financial-explorer-model";
 function Importance({ level }: { level: number }) {
   const label = ["", "Pomocniczy", "Istotny", "Kluczowy"][level] || "Istotny";
   return (
-    <span
+    <CanonElement as="span" canonId="SRM-C15" usage="financial-explorer:01"
       className="srm-importance"
       data-level={level}
       aria-label={label}
@@ -102,7 +103,7 @@ function Importance({ level }: { level: number }) {
         ))}
       </span>
       <span>{label}</span>
-    </span>
+    </CanonElement>
   );
 }
 function YearPills({
@@ -143,7 +144,7 @@ function YearPills({
       aria-label={label}
     >
       {years.map((y, index) => (
-        <button
+        <CanonButton canonId="SRM-C09" usage="financial-explorer:02"
           key={y}
           type="button"
           role="radio"
@@ -155,7 +156,7 @@ function YearPills({
           onKeyDown={(e) => handleKey(e, index)}
         >
           {y}
-        </button>
+        </CanonButton>
       ))}
     </div>
   );
@@ -177,7 +178,7 @@ function CategoryCheck({
   }, [count, total]);
   return (
     <label className="srm-picker-group-check">
-      <input
+      <CanonInput canonId="SRM-C11" usage="financial-explorer:03"
         ref={ref}
         type="checkbox"
         checked={total > 0 && count === total}
@@ -268,7 +269,7 @@ function IndicatorPicker({
     onApply(ids, years);
   };
   return (
-    <dialog
+    <CanonElement as="dialog" canonId="SRM-C12" usage="financial-explorer:04"
       ref={dialog}
       className="srm-ui srm-picker srm-period-picker"
       aria-labelledby="picker-title"
@@ -290,14 +291,14 @@ function IndicatorPicker({
             zestawu.
           </p>
         </div>
-        <button className="srm-btn" onClick={onClose}>
+        <CanonButton canonId="SRM-C02" usage="financial-explorer:05" className="srm-btn" onClick={onClose}>
           Zamknij
-        </button>
+        </CanonButton>
       </div>
       <div className="srm-picker-search">
         <label htmlFor="indicator-search">Szukaj wskaźnika lub kategorii</label>
         <div>
-          <input
+          <CanonInput canonId="SRM-C06" usage="financial-explorer:06"
             ref={search}
             id="indicator-search"
             value={query}
@@ -305,7 +306,7 @@ function IndicatorPicker({
             placeholder="Np. płynność, marża, kapitał…"
           />
           {query && (
-            <button
+            <CanonButton canonId="SRM-C55" usage="financial-explorer:07"
               className="srm-text-link"
               onClick={() => {
                 setQuery("");
@@ -313,20 +314,20 @@ function IndicatorPicker({
               }}
             >
               Wyczyść
-            </button>
+            </CanonButton>
           )}
         </div>
       </div>
       <div className="srm-picker-tools">
         <span aria-live="polite">Wybrano {draft.length}</span>
         <span>Pokazujemy tylko lata z dostępną wartością.</span>
-        <button
+        <CanonButton canonId="SRM-C55" usage="financial-explorer:08"
           className="srm-text-link"
           onClick={() => setDraft([])}
           disabled={!draft.length}
         >
           Odznacz wszystkie
-        </button>
+        </CanonButton>
       </div>
       <div className="srm-picker-list">
         <div className="srm-picker-column-labels" aria-hidden="true">
@@ -340,9 +341,9 @@ function IndicatorPicker({
             <p>
               Zmień nazwę lub wyczyść wyszukiwanie. Twój wybór został zachowany.
             </p>
-            <button className="srm-btn" onClick={() => setQuery("")}>
+            <CanonButton canonId="SRM-C02" usage="financial-explorer:09" className="srm-btn" onClick={() => setQuery("")}>
               Pokaż wszystkie
-            </button>
+            </CanonButton>
           </div>
         )}
         {visibleGroups.map((group) => {
@@ -372,7 +373,7 @@ function IndicatorPicker({
                     data-indicator={code}
                   >
                     <label className="srm-period-indicator">
-                      <input
+                      <CanonInput canonId="SRM-C10" usage="financial-explorer:10"
                         type="checkbox"
                         checked={isSelected}
                         disabled={!years.length}
@@ -413,15 +414,15 @@ function IndicatorPicker({
       <div className="srm-picker-foot">
         <p>Wskaźniki i lata pozostaną po odświeżeniu tej karty.</p>
         <div>
-          <button className="srm-btn" onClick={onClose}>
+          <CanonButton canonId="SRM-C02" usage="financial-explorer:11" className="srm-btn" onClick={onClose}>
             Anuluj
-          </button>
-          <button className="srm-primary-button" onClick={apply}>
+          </CanonButton>
+          <CanonButton canonId="SRM-C01" usage="financial-explorer:12" className="srm-primary-button" onClick={apply}>
             Pokaż wybrane ({draft.length})
-          </button>
+          </CanonButton>
         </div>
       </div>
-    </dialog>
+    </CanonElement>
   );
 }
 export function IndicatorExplorer({
@@ -543,7 +544,7 @@ export function IndicatorExplorer({
           </h2>
           <p>Przeglądaj obszary lub zbuduj własny zestaw.</p>
         </div>
-        <button
+        <CanonButton canonId="SRM-C55" usage="financial-explorer:13"
           className="srm-text-link srm-reset-view"
           onClick={() => {
             setPrefs(emptyPrefs());
@@ -551,7 +552,7 @@ export function IndicatorExplorer({
           }}
         >
           Przywróć domyślny widok
-        </button>
+        </CanonButton>
       </div>
       <div
         ref={tabList}
@@ -560,7 +561,7 @@ export function IndicatorExplorer({
         aria-label="Kategorie wskaźników finansowych"
       >
         {tabs.map((tab, index) => (
-          <button
+          <CanonButton canonId="SRM-C08" usage="financial-explorer:14"
             key={tab.id}
             id={"metric-tab-" + tab.id}
             role="tab"
@@ -571,7 +572,7 @@ export function IndicatorExplorer({
             onKeyDown={(e) => selectTabWithKey(e, index)}
           >
             {tab.label}
-          </button>
+          </CanonButton>
         ))}
       </div>
       <div
@@ -589,12 +590,12 @@ export function IndicatorExplorer({
             )}
           </div>
           {isCustom && shown.length > 0 && (
-            <button
+            <CanonButton canonId="SRM-C01" usage="financial-explorer:15"
               className="srm-primary-button"
               onClick={() => setPicker(true)}
             >
               Wybierz wskaźniki i lata
-            </button>
+            </CanonButton>
           )}
         </div>
         {!isCustom && (
@@ -630,9 +631,9 @@ export function IndicatorExplorer({
             <p>
               Połącz wybrane wskaźniki i dobierz rok osobno dla każdego z nich.
             </p>
-            <button className="srm-btn" onClick={() => setPicker(true)}>
+            <CanonButton canonId="SRM-C02" usage="financial-explorer:16" className="srm-btn" onClick={() => setPicker(true)}>
               Utwórz własny zestaw
-            </button>
+            </CanonButton>
           </div>
         )}
         <div className="srm-card-grid">
@@ -674,7 +675,7 @@ export function IndicatorExplorer({
                   <span>Dla kupca</span>
                   {shortBuyer[card.code] || card.buyer}
                 </p>
-                <div className="srm-card-footer">
+                <CanonElement as="div" canonId="SRM-C14" usage="financial-explorer:17" className="srm-card-footer">
                   <span className="srm-card-period">
                     {period !== undefined
                       ? "Sprawozdanie " + period
@@ -683,15 +684,15 @@ export function IndicatorExplorer({
                   </span>
                   <span className="srm-card-actions">
                     <Importance level={m.importance} />
-                    <button
+                    <CanonButton canonId="SRM-C03" usage="financial-explorer:18"
                       className="srm-text-link"
                       aria-label={"Zobacz historię: " + card.name}
                       onClick={() => onHistory(card.code, period)}
                     >
                       Zobacz historię
-                    </button>
+                    </CanonButton>
                   </span>
-                </div>
+                </CanonElement>
               </article>
             );
           })}

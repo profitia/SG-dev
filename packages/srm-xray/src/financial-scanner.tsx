@@ -1,4 +1,7 @@
 "use client";
+import { CanonElement, CanonButton, CanonSelect, CanonSummary } from './ui-canon';
+import { createPortal } from "react-dom";
+import { FinancialHistoryDialog } from "./FinancialHistoryDialog";
 import React, { useEffect, useId, useRef, useState } from "react";
 import type {
   SupplierReportData,
@@ -325,7 +328,7 @@ function Radar({
     },
   ];
   return (
-    <svg
+    <CanonElement as="svg" canonId="SRM-C16" usage="financial-scanner:radar"
       ref={svg}
       data-emphasized-sector={emphasizedIndex === null ? "" : axes[emphasizedIndex].code}
       className="srm-radar srm-sector-radar"
@@ -437,7 +440,7 @@ function Radar({
         const scoreLabel =
           value === null ? "Bez punktacji" : pl(value, 0) + " pkt";
         return (
-          <g
+          <CanonElement as="g" canonId="SRM-C17" usage="financial-scanner:01"
             key={a.code}
             className={
               "srm-axis srm-sector " + (value === null ? "is-pending" : "")
@@ -509,7 +512,7 @@ function Radar({
               {appearance.alert ? " · sygnał" : ""}
             </text>
             </g>
-          </g>
+          </CanonElement>
         );
       })}
       <g pointerEvents="none" aria-hidden="true">
@@ -534,7 +537,7 @@ function Radar({
           OKRES
         </text>
       </g>
-    </svg>
+    </CanonElement>
   );
 }
 
@@ -543,7 +546,9 @@ export function FinancialScannerMount({
   report,
   loading = false,
   assistant,
+  indicatorsTarget,
 }: {
+  indicatorsTarget?: HTMLElement | null;
   report: SupplierReportData | null;
   loading?: boolean;
   assistant?: { name: string; krs?: string | null; avatars: { male: string; anna: string } };
@@ -623,6 +628,18 @@ export function FinancialScannerMount({
       return { code:a.code,name:a.label.join(" "),year:selected?Number(selected.to.slice(0,4)):null,value:v,unit:a.unit,
         availability:v===null?"missing":"available",reason:null }; }),
   };
+  const indicators = (<IndicatorExplorer
+        key={`${storageKey}:${report?.financial.representationVersion ?? "empty"}`}
+        onContextChange={setIndicatorView}
+        cards={cards}
+        groups={groups}
+        overviewCodes={axes.map((a) => a.code)}
+        years={years}
+        storageKey={storageKey}
+        getMetric={getMetric}
+        formatValue={fmt}
+        onHistory={(code, year) => setHistory({ code, year })}
+      />);
   return (
     <div className="srm-ui srm-finance-module">
       <div className="srm-section-heading">
@@ -637,7 +654,7 @@ export function FinancialScannerMount({
           aria-label="Zakres sprawozdania"
         >
           {(["standalone", "consolidated"] as const).map((s) => (
-            <button
+            <CanonButton canonId="SRM-C02" usage="financial-scanner:02"
               key={s}
               type="button"
               aria-pressed={scope === s}
@@ -649,16 +666,16 @@ export function FinancialScannerMount({
               }}
             >
               {s === "standalone" ? "Jednostkowe" : "Skonsolidowane"}
-            </button>
+            </CanonButton>
           ))}
         </div>
       )}
-      <div className="srm-overview">
+      <CanonElement as="div" canonId="SRM-C43" usage="financial-scanner:03" className="srm-overview">
         <section className="srm-radar-panel" aria-label="Radar finansowy">
-          <div className="srm-controls">
+          <CanonElement as="div" canonId="SRM-C20" usage="financial-scanner:04" className="srm-controls">
             <label>
               Okres
-              <select
+              <CanonSelect canonId="SRM-C07" usage="financial-scanner:05"
                 aria-label="Okres radaru"
                 value={selected?.id ?? ""}
                 disabled={!periods.length}
@@ -674,11 +691,11 @@ export function FinancialScannerMount({
                     {annual(p) ? "" : " · okres niepełny"}
                   </option>
                 ))}
-              </select>
+              </CanonSelect>
             </label>
             <label>
               Odniesienie
-              <select
+              <CanonSelect canonId="SRM-C07" usage="financial-scanner:06"
                 aria-label="Odniesienie radaru"
                 value="history"
                 onChange={() => {}}
@@ -687,16 +704,16 @@ export function FinancialScannerMount({
                 <option value="peers" disabled>
                   Benchmark dostawców — niedostępny
                 </option>
-              </select>
+              </CanonSelect>
             </label>
             <label>Porównaj
-              <select aria-label="Okres porównania" value={comparisonId} onChange={e => setComparisonId(e.target.value)} disabled={!selected}>
+              <CanonSelect canonId="SRM-C07" usage="financial-scanner:07" aria-label="Okres porównania" value={comparisonId} onChange={e => setComparisonId(e.target.value)} disabled={!selected}>
                 <option value="">Bez porównania</option>
                 <option value="reference">Punkt odniesienia</option>
                 {periods.filter(p => !selected || p.to <= selected.to).map(p => <option key={p.id} value={p.id}>{p.to.slice(0,4)}</option>)}
-              </select>
+              </CanonSelect>
             </label>
-          </div>
+          </CanonElement>
           {loading ? (
             <p role="status">Przygotowywanie zapisanych wyników…</p>
           ) : (
@@ -757,7 +774,7 @@ export function FinancialScannerMount({
               </p>
             )}
           <details className="srm-source-note">
-            <summary>Jak czytać radar</summary>
+            <CanonSummary canonId="SRM-C49" usage="financial-scanner:08">Jak czytać radar</CanonSummary>
             <p>
               Płynność używa stałej skali SRM, z maksimum przy 2,0. Pozostałe
               osie pozostają bez punktacji do potwierdzenia porównywalności
@@ -772,19 +789,8 @@ export function FinancialScannerMount({
           formatted={axes.map(a => fmt(selected?.axes.find(x=>x.code===a.code)?.rawValue,a.unit))} />
           : <section className="srm-ai-panel" aria-label="Ocena SpendGuru"><h3>Ocena SpendGuru</h3><div className="srm-ai-blank" aria-label="Miejsce na ocenę SpendGuru" /></section>}
 
-      </div>
-      <IndicatorExplorer
-        key={`${storageKey}:${report?.financial.representationVersion ?? "empty"}`}
-        onContextChange={setIndicatorView}
-        cards={cards}
-        groups={groups}
-        overviewCodes={axes.map((a) => a.code)}
-        years={years}
-        storageKey={storageKey}
-        getMetric={getMetric}
-        formatValue={fmt}
-        onHistory={(code, year) => setHistory({ code, year })}
-      />
+      </CanonElement>
+      {indicatorsTarget === undefined ? indicators : indicatorsTarget ? createPortal(<div className="srm-ui srm-indicators-slot">{indicators}</div>, indicatorsTarget) : null}
       {history && (
         <ScannerHistory
           code={history.code}
@@ -819,34 +825,18 @@ function ScannerHistory({
   comparison?: Period;
   onClose: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null), title = useId();
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   const card = cards.find(c => c.code === code)!;
-  useEffect(() => {
-    const el = dialog.current, previous = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    el?.showModal();
-    return () => { el?.close(); document.body.style.overflow=overflow; previous?.focus({preventScroll:true}); };
-  }, []);
   const points = years.map(y => {
     const metric = getMetric(code,y), p=periods.find(p=>Number(p.to.slice(0,4))===y), axis=p?.axes.find(a=>a.code===code);
     return { year:y, value:metric.value===null?null:Number(metric.value), rawValue:metric.value,
       information: axis?.alerts.filter(a=>a!=="LIQUIDITY_SCALE_SATURATED").map(a=>alertLabels[a]??a).join(". ") || metric.reason || "" };
   });
-  return <dialog ref={dialog} className="srm-ui srm-history srm-history-detail" aria-labelledby={title}
-    onCancel={e=>{e.preventDefault();onClose();}} onClick={e=>{if(e.target===e.currentTarget) {
-      const bounds=e.currentTarget.getBoundingClientRect();
-      if(e.clientX<bounds.left||e.clientX>bounds.right||e.clientY<bounds.top||e.clientY>bounds.bottom) onClose();
-    }}}>
-    <header className="srm-history-detail-head"><div><h2 id={title}>{card.name}</h2>
-      <p>Historia · {periods[0]?.scope === "consolidated" ? "skonsolidowane" : "jednostkowe"}</p></div>
-      <div className="srm-history-head-actions"><div ref={setToolbar} /><button type="button" className="srm-btn" autoFocus onClick={onClose}>Zamknij</button></div>
-    </header>
+  return <FinancialHistoryDialog title={card.name} subtitle={`Historia · ${periods[0]?.scope === "consolidated" ? "skonsolidowane" : "jednostkowe"}`} onClose={onClose} actions={<div ref={setToolbar} />}>
     <div className="srm-history-detail-body">
       <div className="srm-history-summary"><p className="srm-history-definition">{card.definition}</p><p className="srm-history-buyer"><strong>Dla kupca: </strong>{card.buyer}</p></div>
       <FinancialHistoryView name={card.name} unit={card.unit} selectedYear={year} points={points} toolbarTarget={toolbar} />
       <footer className="srm-history-detail-footer"><p>Wartości ze sprawozdań finansowych · {periods[0]?.scope === "consolidated" ? "skonsolidowane" : "jednostkowe"}</p>{comparison && <p>Porównanie: {comparison.to.slice(0,4)}</p>}</footer>
     </div>
-  </dialog>;
+  </FinancialHistoryDialog>;
 }

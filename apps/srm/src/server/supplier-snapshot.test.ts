@@ -87,7 +87,7 @@ function statementHtml(scope: "standalone" | "consolidated", from = "2025-07-01"
 }
 test("RZiS and balance highlight every header/group/ordinary/subtotal/empty row for the full selected period", () => {
   for (const scope of ["standalone", "consolidated"] as const) {
-    const html = statementHtml(scope), tables = [...html.matchAll(/<table class="financial-table">([\s\S]*?)<\/table>/g)];
+    const html = statementHtml(scope), tables = [...html.matchAll(/<table class="financial-table"[^>]*>([\s\S]*?)<\/table>/g)];
     assert.equal(tables.length, 2);
     for (const table of tables) {
       const rows = [...table[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
@@ -99,15 +99,15 @@ test("RZiS and balance highlight every header/group/ordinary/subtotal/empty row 
   // Same year, different full period must not select a column.
   assert.doesNotMatch(statementHtml("standalone", "2025-01-01"), /data-selected-period="true"/);
 });
-test("duplicate analysis is absent from render, all 16 definitions stay in Cockpit and the unique noncalculated definition remains", () => {
+test("duplicate analysis is absent from render, all 16 definitions stay in Cockpit and the supplemental definition is absent", () => {
   const html = statementHtml("standalone"); assert.doesNotMatch(html, /Analiza wskaźnikowa|financial-indicators-preview/);
   const groups = Object.values(healthGroups).flat(); assert.equal(groups.length, 16);
   for (const definition of indicatorGroups.flatMap(g => g.indicators)) {
     if (definition.code) assert(groups.includes(definition.code as typeof groups[number]));
-    else { assert(html.includes(definition.name)); assert(html.includes(definition.formula)); assert(html.includes(definition.description)); }
+    else { assert(!html.includes(definition.name)); }
   }
-  for (const group of indicatorGroups) assert(html.includes(group.description));
-  assert.match(html, /Brak zatwierdzonej kalkulacji/);
+  for (const group of indicatorGroups) assert(!html.includes(group.description));
+  assert.doesNotMatch(html, /Brak zatwierdzonej kalkulacji/);
   const input = fixture(); const cards = Object.keys(healthGroups).map(area => renderToStaticMarkup(React.createElement(FinancialHealthArea, {
     area: area as keyof typeof healthGroups, financial: input.metadata!.financial, scope: input.scope, selectedPeriod: input.selectedPeriod,
   }))).join("");

@@ -1,4 +1,5 @@
 "use client";
+import { CanonButton, CanonElement, CanonSummary, CanonLink } from '@profitia/srm-xray';
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { SupplierWebIdentity, type SupplierWebIdentityData, defaultFinancialScope, indicatorContent, useKysOverview, type KysOverviewModel, type KysDetailTarget, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
@@ -11,6 +12,7 @@ import { supplierNip, inactiveSupplier, type DisplayCard, type ReportState, type
 
 type Scope = FinancialPeriod["scope"];
 export type SupplierReportContext = {
+  financialIndicatorsTarget: HTMLElement | null;
   supplier: SearchResult;
   metadata: SupplierReportData | null;
   financial: DisplayCard["financial"] | null;
@@ -55,7 +57,7 @@ function FinancialLimitations({ state, onReadMetadata }: { state: ReportState; o
   return <>
     {notes.map(note => <p key={note} className="health-data-note">{note}</p>)}
     {state.metadataBusy && <p role="status" className="report-metadata-note">Przygotowywanie zapisanych wyników…</p>}
-    {!state.metadata && !state.metadataBusy && <div className="report-metadata-note"><p role="status">Nie można odczytać zapisanych wyników. Dostępne sprawozdania pozostają w szczegółach.</p><button type="button" onClick={onReadMetadata}>Ponów odczyt wyników</button></div>}
+    {!state.metadata && !state.metadataBusy && <div className="report-metadata-note"><p role="status">Nie można odczytać zapisanych wyników. Dostępne sprawozdania pozostają w szczegółach.</p><CanonButton canonId="SRM-C02" usage="supplier-report:01" type="button" onClick={onReadMetadata}>Ponów odczyt wyników</CanonButton></div>}
   </>;
 }
 
@@ -66,6 +68,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   onDownloadKrsPdf?: (selection: KysPdfSelection, signal: AbortSignal) => Promise<void>;
   slots?: SupplierReportSlots;
 }) {
+  const [financialIndicatorsTarget, setFinancialIndicatorsTarget] = useState<HTMLDivElement | null>(null);
   const root = useRef<HTMLDivElement>(null), kysDetails = useRef<HTMLDetailsElement>(null);
   const financial = state.result?.entityType === "COMPANY" ? state.result.card.financial : null;
   const kysOverviewModel = useKysOverview({ nip: supplierNip(state.result) ?? "", entityType: state.result?.entityType ?? "COMPANY", section: state.kys, metadata: state.metadata, loading: state.kysBusy || state.metadataBusy });
@@ -129,7 +132,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   if (!state.result) return null;
   if (inactiveSupplier(state.result)) return <div ref={root} className="supplier-report"><section className="report-identity"><p role="status">{state.result.entityType === "JDG" ? inactiveJdgMessage(state.result.section.data) : inactiveCompanyMessage(state.result.card.general.data)}</p></section></div>;
   const supplier = state.result, metadata = state.metadata;
-  const context: SupplierReportContext = { supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, kysOverview: kysOverviewModel, onKysDetails, periods,
+  const context: SupplierReportContext = { financialIndicatorsTarget, supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, kysOverview: kysOverviewModel, onKysDetails, periods,
     metadataBusy: state.metadataBusy, metadataError: state.metadataError };
   const scanner = slots.scanner?.(context);
   const summary = scanner ? null : slots.summary?.(context), observations = slots.observations?.(context), kysOverview = slots.kys?.(context);
@@ -141,10 +144,10 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   const name = supplier.entityType === "JDG" ? supplier.section.data?.entries[0]?.name : supplier.card.general.data?.legalName ?? supplier.card.identity.name;
   return <ReportContext.Provider value={context}><div ref={root} className="supplier-report">
     <section id="supplier-identity" className="report-identity" aria-labelledby="supplier-identity-title">
-      <div className="report-identity-heading"><ReportWebIdentity key={`${supplier.entityType}:${supplierNip(supplier)}`} nip={supplierNip(supplier) ?? ""} entityType={supplier.entityType} name={name ?? "Dostawca"}><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
+      <CanonElement as="div" canonId="SRM-C53" usage="supplier-report:02" className="report-identity-heading"><ReportWebIdentity key={`${supplier.entityType}:${supplierNip(supplier)}`} nip={supplierNip(supplier) ?? ""} entityType={supplier.entityType} name={name ?? "Dostawca"}><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
         <p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}</p></div></ReportWebIdentity>
         {!scanner && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
-      </div>
+      </CanonElement>
     </section>
     {!scanner && <ReportNavigation root={root} items={navigation} />}
     {scanner && <section id="report-finance" className="report-content-section report-scanner" aria-labelledby="scanner-title">{scanner}<FinancialLimitations state={state} onReadMetadata={onReadMetadata} /></section>}
@@ -152,7 +155,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     {!scanner && !!areas.length && <section id="report-finance" className="report-content-section" aria-labelledby="report-finance-title"><h2 id="report-finance-title" tabIndex={-1}>Kondycja finansowa</h2>
       <p className="health-dashboard-note">Zapisane wyniki finansowe. Istotność wskaźnika nie jest oceną ryzyka; kierunek zmiany nie oznacza poprawy ani pogorszenia kondycji.</p>
       {selectionPeriods.length > 0 && <div className="health-context-controls">
-        <div className="health-scope-controls" role="group" aria-label="Zakres dashboardu">{(["standalone", "consolidated"] as const).filter(choice => financialPeriodsByScope(financial?.data, choice).length).map(choice => <button key={choice} type="button" aria-pressed={scope === choice} onClick={() => setScope(choice)}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}</div>
+        <div className="health-scope-controls" role="group" aria-label="Zakres dashboardu">{(["standalone", "consolidated"] as const).filter(choice => financialPeriodsByScope(financial?.data, choice).length).map(choice => <CanonButton canonId="SRM-C02" usage="supplier-report:03" key={choice} type="button" aria-pressed={scope === choice} onClick={() => setScope(choice)}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</CanonButton>)}</div>
         <FinancialPeriodSelector periods={selectionPeriods} selected={selectedPeriod} onSelect={setPeriod} />
       </div>}
       <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />
@@ -160,10 +163,11 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     {observations && <section id="report-observations" className="report-content-section" aria-labelledby="report-observations-title"><h2 id="report-observations-title" tabIndex={-1}>Obserwacje i kwestie do sprawdzenia</h2>{observations}</section>}
     <section id="report-details" className="report-details" aria-labelledby="report-details-title">
       <div className="report-details-heading"><h2 id="report-details-title" tabIndex={-1}>Dane szczegółowe</h2><p>Pełne zestawienia i dotychczasowe funkcje raportowania.</p></div>
-      <details className="report-detail" id="report-registry-details"><summary>Dane identyfikacyjne i rejestrowe</summary><div className="report-detail-body">
+      <details className="report-detail" id="report-registry-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:04">Dane identyfikacyjne i rejestrowe</CanonSummary><div className="report-detail-body">
         {supplier.entityType === "JDG" ? <JdgRegistryMount section={supplier.section} /> : <GeneralCompanyDataMount section={supplier.card.general} />}
       </div></details>
-      {supplier.entityType === "COMPANY" && <details className="report-detail" id="report-financial-details" open><summary>Sprawozdania finansowe i wskaźniki</summary><div className="report-detail-body">
+      {scanner && <details className="report-detail" id="report-indicator-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:05">Wskaźniki finansowe</CanonSummary><div className="report-detail-body" ref={setFinancialIndicatorsTarget} /></details>}
+      {supplier.entityType === "COMPANY" && <details className="report-detail" id="report-financial-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:06">Sprawozdania finansowe i wskaźniki</CanonSummary><div className="report-detail-body">
         {!scanner && !areas.length && <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />}
         <FinancialDataMount section={supplier.card.financial} onDownloadExcel={onDownloadExcel} selectedScope={scope} onScopeChange={setScope} selectedPeriod={selectedPeriod} />
       </div></details>}
@@ -172,10 +176,10 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
       <div className="report-kys-action"><div><h2 id="report-kys-title" tabIndex={-1}>Raport KYS</h2><p>{state.kys.status === "NOT_REQUESTED" ? "Raport KYS nie został jeszcze pobrany w tym widoku." : "Pełny raport i stan pobierania znajdziesz poniżej."}</p>
         <p>Raport pobierasz tylko na własne żądanie.</p>
         {state.kys.status === "NOT_REQUESTED" && metadata?.kys.reportAvailable && <p>Zapisany raport jest dostępny. Użyj przycisku, aby go wyświetlić.</p>}</div>
-        <button type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}>
-          {state.kysBusy ? "Przygotowywanie raportu KYS…" : state.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz raport KYS ponownie"}</button>
+        <CanonButton canonId="SRM-C02" usage="supplier-report:07" type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}>
+          {state.kysBusy ? "Przygotowywanie raportu KYS…" : state.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz raport KYS ponownie"}</CanonButton>
         {state.kysError && <p role="alert" className="search-error">{reportMessage(state.kysError)}</p>}
-        {state.kys.status !== "NOT_REQUESTED" && <a href="#report-kys-details" onClick={event => { event.preventDefault(); if (root.current) navigateReportSection(root.current, "report-kys-details"); }}>Przejdź do pełnego raportu KYS</a>}
+        {state.kys.status !== "NOT_REQUESTED" && <CanonLink canonId="SRM-C55" usage="supplier-report:08" href="#report-kys-details" onClick={event => { event.preventDefault(); if (root.current) navigateReportSection(root.current, "report-kys-details"); }}>Przejdź do pełnego raportu KYS</CanonLink>}
       </div>
       {kysOverview}
       {metadata?.kys.freshness.freshness === "EXPIRED" && <p className="health-data-note">Poprzedni raport KYS stracił ważność. Pobranie wymaga osobnego działania.</p>}
@@ -191,7 +195,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         selection={{ nip: supplierNip(supplier) ?? "", entityType: "COMPANY", retrievedAt: metadata.kys.freshness.retrievedAt, exportRef: metadata.kys.exportRef }}
         onDownload={onDownloadKrsPdf} />}
       {kysOverviewModel.available && !metadata?.kys.exportRef && <p role="status">Nie potwierdzono wersji do eksportu PDF. Szczegóły raportu pozostają dostępne.</p>}
-      <details className="report-detail" id="report-kys-details" ref={kysDetails}><summary>Pełny raport KYS</summary><div className="report-detail-body">
+      <details className="report-detail" id="report-kys-details" ref={kysDetails}><CanonSummary canonId="SRM-C49" usage="supplier-report:09">Pełny raport KYS</CanonSummary><div className="report-detail-body">
         {state.kys.status === "NOT_REQUESTED" ? <p>Raport KYS nie został jeszcze pobrany. Zamów go przyciskiem „Pobierz raport KYS”.</p>
           : state.kys.data && !kysOverviewModel.available ? <p role="status">{state.kysBusy || state.metadataBusy ? "Sprawdzanie dostępności raportu…" : kysOverviewModel.message}</p>
           : <VerclyKysMount section={state.kys} entityType={supplier.entityType} onRevealPesel={onRevealPesel} />}

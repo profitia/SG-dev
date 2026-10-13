@@ -1,0 +1,35 @@
+/* SRM UI CANON v1. Change tokens here; every canonical usage consumes this source. */
+:root {--canon-overviewHeight:300px;--canon-overviewControl:24px;--canon-overviewIcon:12px;--canon-overviewStroke:1.4;--canon-overviewRadius:6px;--canon-overviewBorder:.75px;--canon-actionRadius:7px;--canon-actionFont:12px;--canon-actionHeight:32px;--canon-cardRadius:9px;--canon-hoverAction:1.03;--canon-hoverText:1.025;--canon-hoverPill:1.06;--canon-motionMs:220ms;}
+/* One styling contract for actual nodes in both application and library views. */
+.srm-ui [data-library-component='SRM-C01'],.srm-ui [data-library-component='SRM-C02']{min-height:var(--canon-actionHeight,32px);border-radius:var(--canon-actionRadius,7px);font-size:var(--canon-actionFont,12px);font-weight:550;padding:7px 14px;line-height:1.35;display:inline-flex;justify-content:center;align-items:center;gap:7px;background:white;border:1px solid var(--line);color:var(--brand-dark);}
+.srm-ui [data-library-component='SRM-C01']{background:var(--brand);border-color:var(--brand);color:white;}
+.srm-ui [data-library-component='SRM-C03'],.srm-ui [data-library-component='SRM-C55']{color:var(--brand);}
+.srm-ui [data-library-component='SRM-C13']{border-radius:var(--canon-cardRadius,9px);}
+.srm-ui [data-library-component='SRM-C09']{--srm-hover-scale:var(--canon-hoverPill,1.06);}
+.srm-ui [data-library-component='SRM-C01'],.srm-ui [data-library-component='SRM-C02']{--srm-hover-scale:var(--canon-hoverAction,1.03);}
+.srm-ui [data-library-component='SRM-C03'],.srm-ui [data-library-component='SRM-C55']{--srm-hover-scale:var(--canon-hoverText,1.025);}
+.srm-ui{--srm-motion-time:var(--canon-motionMs,220ms);}
+.srm-ui .srm-statement-chart-card,.srm-ui .srm-add-chart-tile{height:var(--canon-overviewHeight,300px);}
+.srm-ui .srm-statement-card-actions :is(.srm-history-view-switch button,.srm-history-copy,.srm-statement-icon){width:var(--canon-overviewControl,24px);height:var(--canon-overviewControl,24px);min-height:0;min-width:0;padding:0;border-width:var(--canon-overviewBorder,.75px);border-radius:var(--canon-overviewRadius,6px);}
+.srm-ui .srm-statement-card-actions :is(.srm-history-view-switch button,.srm-history-copy,.srm-statement-icon) svg{width:var(--canon-overviewIcon,12px);height:var(--canon-overviewIcon,12px);stroke-width:var(--canon-overviewStroke,1.4);}
+.srm-ui .srm-statement-card-actions .srm-history-view-switch{border-width:var(--canon-overviewBorder,.75px);border-radius:var(--canon-overviewRadius,6px);}
+.srm-ui .srm-card-footer{font-size:11px;line-height:24px;align-items:center;}
+.srm-ui .srm-card-footer :is(.srm-card-period,.srm-importance,.srm-text-link){font-size:inherit;line-height:inherit;}
+.srm-ui [data-canon-issue=true]{outline:2px dashed #C8554C!important;outline-offset:4px;}
+@media(prefers-reduced-motion:reduce){.srm-ui [data-canon-usage]{transition:none!important;animation:none!important;}}
+
+.srm-ui.srm-indicators-slot,.srm-ui.financial-dashboard {min-height:0;background:transparent;}
+.srm-indicators-slot .srm-explorer,.srm-indicators-slot .srm-indicator-explorer {margin-top:0;}
+.srm-ui.financial-dashboard .financial-table {border-spacing:0;font-size:12px;}
+.srm-ui.financial-dashboard .financial-table tbody td {font-size:14px;font-variant-numeric:tabular-nums;}
+.srm-ui.financial-dashboard .financial-table .srm-history-year-bar {width:108px;min-height:30px;font-size:12px;margin-left:auto;}
+.srm-ui.financial-dashboard .financial-table :is(th,td) {vertical-align:middle;}
+.srm-ui.financial-dashboard .financial-table-group :is(th,td) {background:#F1F5F8;}
+.srm-ui.financial-dashboard .financial-accordion {margin-top:20px;}
+.srm-ui.financial-dashboard .financial-accordion-body {padding:16px;}
+
+.srm-ui .is-compact .srm-history-value-table.is-values-only {min-width:240px;}
+.srm-ui .is-compact .srm-history-table-scroll {max-height:none;overflow:auto;}
+.srm-ui .is-compact .srm-history-chart-canvas {min-width:250px!important;}
+.srm-ui .is-compact .srm-history-chart-scroll {overflow-x:auto;overflow-y:hidden;}
+@media(pointer:coarse) {.srm-ui .srm-statement-card-actions :is(.srm-history-view-switch button,.srm-history-copy,.srm-statement-icon) {width:32px;height:32px;}}

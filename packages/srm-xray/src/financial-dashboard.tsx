@@ -1,13 +1,16 @@
 "use client";
+import { CanonButton, CanonElement, CanonSummary, CanonInput } from './ui-canon';
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import type { FinancialData, FinancialPeriod } from "./contracts";
 import { amountInThousands } from "./financial-labels";
 
 type Scope = FinancialPeriod["scope"];
 type Fact = FinancialPeriod["facts"][number];
 type Row = { code: string; label: string; strong?: boolean };
-import { indicatorGroups } from "./financial-indicator-content";
+import { StatementWorkspace, StatementHistory, StatementIcon } from './statement-workspace';
+import { statementRows, statementPoints } from './statement-model';
+import { yearColor } from './financial-history-export';
 export type FinancialPeriodSelection = { from: string; to: string };
 
 const incomeGroups: { title: string; rows: Row[] }[] = [
@@ -104,45 +107,6 @@ function formatNumber(number: number | null): string {
   }).format(number);
 }
 
-function MetricChart({ periods, code, title, color }: { periods: readonly FinancialPeriod[]; code: string; title: string; color: string }) {
-  const points = periods.map((period) => ({ year: period.to.slice(0, 4), value: numberFor(period, code) }));
-  const available = points.filter((point): point is { year: string; value: number } => point.value !== null);
-  if (!available.length) return <div className="financial-chart financial-chart-empty"><h4>{title}</h4><p>brak danych</p></div>;
-  const width = Math.max(480, periods.length * 84 + 40);
-  const maxPositive = Math.max(0, ...available.map((point) => point.value));
-  const minNegative = Math.min(0, ...available.map((point) => point.value));
-  const hasNegative = minNegative < 0;
-  const baseline = hasNegative ? 118 : 176;
-  const positiveHeight = hasNegative ? 100 : 150;
-  const negativeHeight = 54;
-  return <div className="financial-chart">
-    <h4>{title}</h4>
-    <div className="financial-chart-scroll">
-      <svg viewBox={`0 0 ${width} 220`} role="img" aria-label={`${title}; wartości w tysiącach złotych, lata ${points.map((point) => point.year).join(", ")}`}>
-        <line x1="20" x2={width - 18} y1={baseline} y2={baseline} stroke="#D9D9D9" strokeWidth="1" />
-        {points.map((point, index) => {
-          const x = 30 + index * ((width - 60) / points.length);
-          const barWidth = Math.min(44, (width - 60) / points.length - 12);
-          const height = point.value === null ? 0 : point.value >= 0
-            ? (maxPositive ? point.value / maxPositive * positiveHeight : 0)
-            : (minNegative ? point.value / minNegative * negativeHeight : 0);
-          const y = point.value !== null && point.value < 0 ? baseline : baseline - height;
-          const labelY = point.value !== null && point.value < 0
-            ? Math.min(195, baseline + height + 15)
-            : Math.max(14, y - 7);
-          return <g key={`${point.year}-${index}`}>
-            {point.value !== null && <rect x={x} y={y} width={barWidth} height={Math.max(1, height)} rx="3" fill={color}>
-              <title>{`${point.year}: ${formatNumber(point.value)} tys. zł`}</title>
-            </rect>}
-            {point.value !== null && <text className="financial-chart-value" x={x + barWidth / 2} y={labelY} textAnchor="middle" fontSize="12" fill="#242F44">{formatNumber(point.value)}</text>}
-            <text x={x + barWidth / 2} y="210" textAnchor="middle" fontSize="12" fill="#767171">{point.year}</text>
-          </g>;
-        })}
-      </svg>
-    </div>
-  </div>;
-}
-
 function FinancialTable({
   groups, periods, allPeriods, onChart, selectedPeriod,
 }: {
@@ -160,22 +124,22 @@ function FinancialTable({
     <div className="financial-table-tools">
       <span>Kwoty w tys. zł · kolumny według roku sprawozdania</span>
       {selectedIsOlder && <span>Pokazujemy wszystkie lata, aby zachować wybrany starszy okres.</span>}
-      {allPeriods.length > 8 && !selectedIsOlder && <button type="button" onClick={() => setShowMore(!showMore)} aria-expanded={showMore}>
+      {allPeriods.length > 8 && !selectedIsOlder && <CanonButton canonId="SRM-C02" usage="financial-dashboard:01" type="button" onClick={() => setShowMore(!showMore)} aria-expanded={showMore}>
         {showMore ? "Pokaż 8 ostatnich lat" : `Więcej lat (${allPeriods.length - 8})`}
-      </button>}
+      </CanonButton>}
     </div>
     <div className="financial-table-scroll" ref={scrollRef} tabIndex={0} aria-label="Tabela finansowa przewijana poziomo">
-      <table className="financial-table">
-        <thead><tr><th scope="col">Pozycja sprawozdania</th>{visible.map((period) => <th scope="col" key={period.documentId} title={`${period.from} – ${period.to}`} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined} aria-current={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>{period.to.slice(0, 4)}</th>)}<th scope="col">Wykres</th></tr></thead>
+      <CanonElement as="table" canonId="SRM-C48" usage="financial-dashboard:02" className="financial-table">
+        <thead><tr><th scope="col">Pozycja sprawozdania</th>{visible.map((period,index) => <th scope="col" key={period.documentId} title={`${period.from} – ${period.to}`} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined} aria-current={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}><span className="srm-history-year-bar" style={{backgroundColor:yearColor(visible.length-1-index,visible.length),color:index<visible.length*.42?'white':'#003366'}}>{period.to.slice(0,4)}</span></th>)}<th scope="col">Wykres</th></tr></thead>
         <tbody>{groups.map((group) => {
           const rows = group.rows.filter((row) => allPeriods.some((period) => numberFor(period, row.code) !== null));
           return <FragmentGroup key={group.title} title={group.title} rows={rows} visible={visible} onChart={onChart} selectedPeriod={selectedPeriod} />;
         })}</tbody>
-      </table>
+      </CanonElement>
     </div>
     {allPeriods.length > 5 && <div className="financial-scroll-controls" aria-label="Przewijanie lat">
-      <button type="button" aria-label="Przesuń tabelę w lewo" onClick={() => scrollRef.current?.scrollBy({ left: -320, behavior: "smooth" })}>←</button>
-      <button type="button" aria-label="Przesuń tabelę w prawo" onClick={() => scrollRef.current?.scrollBy({ left: 320, behavior: "smooth" })}>→</button>
+      <CanonButton canonId="SRM-C02" usage="financial-dashboard:03" type="button" aria-label="Przesuń tabelę w lewo" onClick={() => scrollRef.current?.scrollBy({ left: -320, behavior: "smooth" })}>←</CanonButton>
+      <CanonButton canonId="SRM-C02" usage="financial-dashboard:04" type="button" aria-label="Przesuń tabelę w prawo" onClick={() => scrollRef.current?.scrollBy({ left: 320, behavior: "smooth" })}>→</CanonButton>
     </div>}
   </>;
 }
@@ -186,9 +150,9 @@ function FragmentGroup({ title, rows, visible, onChart, selectedPeriod }: { titl
     {rows.length ? rows.map((row) => <tr className={row.strong ? "financial-table-total" : undefined} key={row.code}>
       <th scope="row">{row.label}</th>
       {visible.map((period) => <td key={period.documentId} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>{formatNumber(numberFor(period, row.code))}</td>)}
-      <td><button className="financial-row-chart" data-financial-metric={row.code} type="button" aria-label={`Pokaż wykres: ${row.label}`} onClick={() => onChart(row)}>
-        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2" y="10" width="3" height="8" rx="1" /><rect x="8" y="5" width="3" height="13" rx="1" /><rect x="14" y="2" width="3" height="16" rx="1" /></svg>
-      </button></td>
+      <td><CanonButton canonId="SRM-C04" usage="financial-dashboard:05" className="srm-statement-icon srm-row-chart" data-financial-metric={row.code} type="button" aria-label={`Pokaż wykres: ${row.label}`} onClick={() => onChart(row)}>
+        <StatementIcon />
+      </CanonButton></td>
     </tr>) : <tr><th scope="row">brak danych</th>{visible.map(period => <td key={period.documentId} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>brak danych</td>)}<td /></tr>}
   </>;
 }
@@ -201,85 +165,60 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
   const [yearSelection, setYearSelection] = useState<{ scope: Scope; years: string[] } | null>(null);
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+
   const scopes = Array.from(new Set(availablePeriods(data).map((period) => period.scope)));
   const preferredScope = selectedScope === undefined ? requestedScope : selectedScope;
   const scope = preferredScope && scopes.includes(preferredScope) ? preferredScope : initialScope;
   const allPeriods = scope ? financialPeriodsByScope(data, scope) : [];
   const activePeriod = selectedPeriod === undefined ? allPeriods[0] : allPeriods.find(period => period.from === selectedPeriod?.from && period.to === selectedPeriod?.to);
   const eightPeriods = allPeriods.slice(0, 8);
-  const chartPeriods = eightPeriods;
+  const rows = statementRows(allPeriods);
   const availableYears = allPeriods.map((period) => period.to.slice(0, 4));
   const selectedYears = yearSelection?.scope === scope ? yearSelection.years.filter((year) => availableYears.includes(year)) : availableYears;
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (selectedRow && !dialog.open) dialog.showModal();
-    if (!selectedRow && dialog.open) dialog.close();
-  }, [selectedRow]);
-
   if (!allPeriods.length) return <p>brak danych</p>;
 
-  return <div className="financial-dashboard">
+  return <div className="srm-ui financial-dashboard">
     <div className="financial-dashboard-meta">
       <p>Dane finansowe prezentowane są w tysiącach złotych (tys. zł). Wartości na ekranie są zaokrąglone do 0,01 tys. zł.</p>
       {scopes.length > 1 && <div className="financial-scope" role="group" aria-label="Rodzaj sprawozdania">
-        {scopes.map((choice) => <button type="button" key={choice} aria-pressed={scope === choice} onClick={() => { setRequestedScope(choice); onScopeChange?.(choice); }}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</button>)}
+        {scopes.map((choice) => <CanonButton canonId="SRM-C02" usage="financial-dashboard:06" type="button" key={choice} aria-pressed={scope === choice} onClick={() => { setRequestedScope(choice); onScopeChange?.(choice); }}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</CanonButton>)}
       </div>}
       <p>Wybrany okres: {activePeriod ? `${activePeriod.from} – ${activePeriod.to}` : "brak pasującego sprawozdania"}</p>
       <p>Ostatni dostępny raport: {allPeriods[0].to.slice(0, 4)} · {scope === "standalone" ? "dane jednostkowe" : "dane skonsolidowane"}</p>
     </div>
     {onDownloadExcel && <details className="financial-excel-export">
-      <summary>Pobierz do Excela</summary>
+      <CanonSummary canonId="SRM-C49" usage="financial-dashboard:07">Pobierz do Excela</CanonSummary>
       <p>Wybierz lata do pobrania. Plik zawiera pełne pozycje bilansu i RZiS wybranych sprawozdań. Kwoty zachowują walutę, skalę i dokładność źródła.</p>
       <div className="financial-excel-years" role="group" aria-label="Lata do pobrania">
-        {availableYears.map((year) => <label key={year}><input type="checkbox" checked={selectedYears.includes(year)} onChange={(event) => {
+        {availableYears.map((year) => <label key={year}><CanonInput canonId="SRM-C06" usage="financial-dashboard:08" type="checkbox" checked={selectedYears.includes(year)} onChange={(event) => {
           const next = event.target.checked ? [...selectedYears, year] : selectedYears.filter((selected) => selected !== year);
           setYearSelection({ scope: scope!, years: next });
         }} />{year}</label>)}
       </div>
       <div className="financial-excel-actions">
-        <button type="button" onClick={() => setYearSelection({ scope: scope!, years: availableYears })}>Wszystkie lata</button>
-        <button type="button" disabled={!selectedYears.length || exportBusy} onClick={async () => {
+        <CanonButton canonId="SRM-C09" usage="financial-dashboard:09" type="button" onClick={() => setYearSelection({ scope: scope!, years: availableYears })}>Wszystkie lata</CanonButton>
+        <CanonButton canonId="SRM-C02" usage="financial-dashboard:10" type="button" disabled={!selectedYears.length || exportBusy} onClick={async () => {
           setExportBusy(true);
           setExportError(null);
           try { await onDownloadExcel(scope!, selectedYears); }
           catch (error) { setExportError(error instanceof Error ? error.message : "Nie udało się pobrać pliku."); }
           finally { setExportBusy(false); }
-        }}>{exportBusy ? "Przygotowywanie pliku…" : "Pobierz wybrane lata"}</button>
+        }}>{exportBusy ? "Przygotowywanie pliku…" : "Pobierz wybrane lata"}</CanonButton>
       </div>
       {exportError && <p role="alert" className="search-error">{exportError}</p>}
     </details>}
+    <StatementWorkspace key={scope} rows={rows} years={availableYears.map(Number)} showTables={false} />
     <details className="financial-accordion" open>
-      <summary>Rachunek zysków i strat</summary>
+      <CanonSummary canonId="SRM-C49" usage="financial-dashboard:11">Rachunek zysków i strat</CanonSummary>
       <div className="financial-accordion-body">
-        <div className="financial-charts">
-          <MetricChart periods={chartPeriods} code="PALA_NRFS" title="Przychody" color="#242F44" />
-          <MetricChart periods={chartPeriods} code="PALA_OAC" title="Koszty" color="#006D9E" />
-          <MetricChart periods={chartPeriods} code="PALA_NPL" title="Wynik finansowy netto" color="#0092D9" />
-        </div>
         <FinancialTable groups={incomeGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} />
       </div>
     </details>
     <details className="financial-accordion" open>
-      <summary>Bilans</summary>
+      <CanonSummary canonId="SRM-C49" usage="financial-dashboard:12">Bilans</CanonSummary>
       <div className="financial-accordion-body"><FinancialTable groups={balanceGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} /></div>
     </details>
-    <details className="financial-accordion financial-supplemental-definition">
-      <summary>Uzupełniająca definicja przepływów</summary>
-      <div className="financial-accordion-body">{indicatorGroups.flatMap(group => group.indicators).filter(indicator => !indicator.code).map(indicator => <section key={indicator.name}>
-        <h3>{indicator.name}</h3><p>{indicator.description}</p>
-        <p><strong>Wzór:</strong> {indicator.formula}</p><p>{indicator.requirement}</p>
-        <p>Definicja informacyjna. Brak zatwierdzonej kalkulacji; nie prezentujemy wartości tego wskaźnika.</p>
-      </section>)}<details><summary>Znaczenie grup wskaźników</summary>{indicatorGroups.map(group => <section key={group.title}><h3>{group.title}</h3><p>{group.description}</p></section>)}</details></div>
-    </details>
-    <dialog className="financial-chart-dialog" ref={dialogRef} onClose={() => setSelectedRow(null)}>
-      {selectedRow && <>
-        <div className="financial-dialog-header"><h3>{selectedRow.label}</h3><button type="button" onClick={() => dialogRef.current?.close()} aria-label="Zamknij wykres">×</button></div>
-        <p>Wartości w tysiącach złotych (tys. zł).</p>
-        <MetricChart periods={allPeriods} code={selectedRow.code} title={selectedRow.label} color="#242F44" />
-      </>}
-    </dialog>
+    {selectedRow && <StatementHistory row={{id:selectedRow.code,name:selectedRow.label,section:scope==='standalone'?'Jednostkowe':'Skonsolidowane',group:'Sprawozdanie finansowe',points:statementPoints(allPeriods,selectedRow.code)}} onClose={()=>setSelectedRow(null)} />}
   </div>;
 }

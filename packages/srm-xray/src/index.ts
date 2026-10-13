@@ -55,3 +55,6 @@ export { KysKrsButton } from "./kys-krs-button";
 export { FinancialScannerMount } from "./financial-scanner";
 
 export { SupplierWebIdentity, type SupplierWebIdentityGateway } from "./supplier-web-identity";
+
+export { CanonButton, CanonInput, CanonSelect, CanonTextarea, CanonSummary, CanonLink, CanonElement, uiCanon, canonAttributes } from './ui-canon';
+export type { CanonId } from './ui-canon';
