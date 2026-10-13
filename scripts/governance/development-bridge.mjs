@@ -33,7 +33,7 @@ export function buildBridgePreflight(plan, options, root) {
     mode: 'development', project: plan.projectKey, target_environment: 'development',
     task_id: options.taskId, title: options.title, scope: options.scope,
     workspace: plan.workspace, execution_environment: env.PMOS_EXECUTION_ENVIRONMENT,
-    hostConversationId: options.hostConversationId,
+    host_conversation_id: options.hostConversationId,
     hostConversationUnavailable: Boolean(options.hostConversationUnavailable),
     targets: options.targets, legacyExceptions: [], repository_root: root,
     ci: false, offline: false, allowDirty: false, requireBegin: Boolean(options.requireBegin), skipRuntime: false, checkEstate: false,

@@ -27,6 +27,7 @@ test('bridge delegates full gates and refuses missing or ambiguous host identity
   const result = buildBridgePreflight(plan, options, root)
   assert.equal(result.project, 'ARCHITECTURE')
   assert.equal(result.requireBegin, true)
+  assert.equal(result.host_conversation_id, 'actual-chat-001')
   for (const key of ['ci', 'offline', 'allowDirty', 'skipRuntime']) assert.equal(result[key], false)
   assert.throws(() => buildBridgePreflight(plan, { ...options, hostConversationId: undefined }, root), /actual host/)
   assert.throws(() => buildBridgePreflight(plan, { ...options, hostConversationUnavailable: true }, root), /actual host/)
