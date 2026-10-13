@@ -46,6 +46,19 @@ test('rejects completion evidence, blocked gates, and escaping paths', () => {
   assert.throws(() => validateExecutionRegistrationInput({ ...input, declaredTargetPaths: ['../other-repo/file'] }), /repository-relative/)
 })
 
+test('new registration refuses scopes that cannot enter canonical closeout', () => {
+  const current = { ...input, schemaVersion: '2.0', hostConversationId: 'actual-host-001', conversationId: undefined }
+  for (const scope of ['governance', 'architecture', 'implementation', 'audit', 'product', 'documentation']) {
+    assert.doesNotThrow(() => assertNewRegistrationInput(validateExecutionRegistrationInput({ ...current, scope })))
+  }
+  for (const scope of ['platform', 'integration', 'arch', 'unknown']) {
+    const parsed = validateExecutionRegistrationInput({ ...current, scope })
+    assert.throws(() => assertNewRegistrationInput(parsed), /canonical scope/)
+    // Exact historical replay still reads its original input; never rewrite it.
+    assert.equal(parsed.scope, scope)
+  }
+})
+
 test('SRM PMOS registration and PHR closeout require a verified Development target', () => {
   const srm = {
     ...input, project: 'SRM', workspace: 'SG-dev Codespaces SRM', executionEnvironment: 'development',

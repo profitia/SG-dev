@@ -2,6 +2,7 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 
 import { requirePmosProjectProfile } from './project-profile'
+import { CANONICAL_SCOPE_CLASSIFICATIONS } from '../../../../../packages/governance/src'
 
 export const EXECUTION_REGISTRATION_SCHEMA_VERSION = '2.0' as const
 export const LEGACY_EXECUTION_REGISTRATION_SCHEMA_VERSION = '1.0' as const
@@ -163,6 +164,9 @@ export function registrationGateSnapshot(input: ExecutionRegistrationInput): Rec
 export function assertNewRegistrationInput(input: ExecutionRegistrationInput): void {
   if (input.schemaVersion !== EXECUTION_REGISTRATION_SCHEMA_VERSION || input.hostConversationId === undefined) {
     throw new Error('New PMOS registrations require schemaVersion 2.0 and an explicit hostConversationId (or null if unavailable). SchemaVersion 1.0 may only resume an existing registration.')
+  }
+  if (!CANONICAL_SCOPE_CLASSIFICATIONS.has(input.scope)) {
+    throw new Error(`New PMOS registrations require a canonical scope: ${[...CANONICAL_SCOPE_CLASSIFICATIONS].join(', ')}.`)
   }
 }
 
