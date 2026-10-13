@@ -1,12 +1,18 @@
 # E0-A-03: instrukcja przygotowania zasobów Architecture Development
 
-**Status:** AWAITING_USER_ACTIONS — instrukcja opublikowana; zasoby nie zostały utworzone ani zweryfikowane jako gotowe.
+**Status:** RESOURCE_CONFIGURATION_VERIFIED / NEON_PLAN_SCOPE_EXCEPTION — właściciel utworzył zasoby; konfiguracja została sprawdzona i skorygowana. Najniższy płatny plan Neon wymaga osobnego rozstrzygnięcia zakresu wspólnej organizacji.
 
-**Wersja:** 1.0, 13 października 2026.
+**Wersja:** 1.1, 13 października 2026.
 
 **Podstawa:** [plan wykonawczy E0-A](../v1.0-architecture-parallel-development-onboarding-plan.md) i [dowody wykonania 01–02](../evidence/2026-10-13-e0-a-01-02-implementation-verification.md).
 
 Właściciel wykonuje poniższe czynności, a następnie potwierdza ich wykonanie i poleca kontynuację E0-A-03. Agent odczyta rzeczywiste ID przez istniejące połączenia i sprawdzi przeznaczenie, konfigurację oraz koszt. Ta instrukcja przygotowuje infrastrukturę; nie aktywuje profilu ARCHITECTURE ani nie potwierdza gotowości trzech torów.
+
+## Aktualny wynik wykonania
+
+Instrukcję wykonano i zweryfikowano 13 października. [Dowody zasobów i korekt](../evidence/2026-10-13-e0-a-03-resource-configuration-verification.md) zawierają rzeczywiste ID, koszty, granice potwierdzenia i wyjątek Neon. Poprawne przypisanie: PMOS to billowing-credit-07394675 / br-curly-dream-b94be6uh, laboratorium to fancy-cell-49425728 / br-divine-fog-baohc5ay. Oba compute i project defaults mają 0.25–1 CU i 300 sekund usypiania. Render development jest pusty i ma Blocked cross-environment connections. GitHub environment jest poprawny, a konto profitia otrzymało miesięczny Pro.
+
+Poniższe kroki pozostają instrukcją odtworzenia. Nie należy ponownie tworzyć wymienionych zasobów. Wcześniejsze oczekiwanie na czynności właściciela zakończyło się; dalsze etapy 04–09 nie zostały rozpoczęte.
 
 ## 1. Neon — dwa nowe projekty i puste bazy
 
