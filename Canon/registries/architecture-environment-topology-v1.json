@@ -40,7 +40,7 @@
   "environments": {
     "development": {
       "status": "ACTIVE",
-      "verificationStatus": "IDENTITIES_VERIFIED_RUNTIME_ACCEPTANCE_PENDING",
+      "verificationStatus": "VERIFIED",
       "github": {
         "environmentName": "architecture-development",
         "environmentId": 24168168252,
@@ -61,7 +61,10 @@
             "type": "private_service",
             "publicUrl": null,
             "autoDeploy": false,
-            "acceptanceStatus": "PENDING_EXACT_SHA_DEPLOY"
+            "acceptanceStatus": "EXACT_SHA_LIVE_VERIFIED",
+            "currentDeployId": "dep-db78ivrbc2fs73e7ia20",
+            "deployedSha": "78e4e669045fb70331202158f08c465af01ef6ec",
+            "internalAddress": "http://architecture-development-pmos:3203"
           }
         }
       },

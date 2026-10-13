@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "projectKey": "ARCHITECTURE",
   "targetEnvironment": "development",
-  "status": "DATABASES_INITIALIZED_LIMITED_ROLES_VERIFIED_RUNTIME_ACCEPTANCE_PENDING",
+  "status": "DEVELOPMENT_PROFILE_ACTIVE_RUNTIME_VERIFIED",
   "organizationId": "org-nameless-field-92563437",
   "resources": [
     {
