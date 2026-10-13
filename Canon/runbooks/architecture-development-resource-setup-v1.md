@@ -1,8 +1,8 @@
 # E0-A-03: instrukcja przygotowania zasobów Architecture Development
 
-**Status:** RESOURCE_CONFIGURATION_VERIFIED / NEON_PLAN_SCOPE_EXCEPTION — właściciel utworzył zasoby; konfiguracja została sprawdzona i skorygowana. Najniższy płatny plan Neon wymaga osobnego rozstrzygnięcia zakresu wspólnej organizacji.
+**Status:** E0_A_03_COMPLETE — właściciel przyjął pozostanie w obecnej organizacji Neon Scale; zasoby i konfiguracja zostały odebrane. Profil ARCHITECTURE pozostaje nieaktywny.
 
-**Wersja:** 1.1, 13 października 2026.
+**Wersja:** 1.2, 13 października 2026.
 
 **Podstawa:** [plan wykonawczy E0-A](../v1.0-architecture-parallel-development-onboarding-plan.md) i [dowody wykonania 01–02](../evidence/2026-10-13-e0-a-01-02-implementation-verification.md).
 
@@ -10,9 +10,9 @@ Właściciel wykonuje poniższe czynności, a następnie potwierdza ich wykonani
 
 ## Aktualny wynik wykonania
 
-Instrukcję wykonano i zweryfikowano 13 października. [Dowody zasobów i korekt](../evidence/2026-10-13-e0-a-03-resource-configuration-verification.md) zawierają rzeczywiste ID, koszty, granice potwierdzenia i wyjątek Neon. Poprawne przypisanie: PMOS to billowing-credit-07394675 / br-curly-dream-b94be6uh, laboratorium to fancy-cell-49425728 / br-divine-fog-baohc5ay. Oba compute i project defaults mają 0.25–1 CU i 300 sekund usypiania. Render development jest pusty i ma Blocked cross-environment connections. GitHub environment jest poprawny, a konto profitia otrzymało miesięczny Pro.
+Instrukcję wykonano i zweryfikowano 13 października. [Historyczne dowody zasobów i korekt](../evidence/2026-10-13-e0-a-03-resource-configuration-verification.md) zachowują pierwotne ustalenia i otwarty wówczas wyjątek kosztowy. [Końcowy odbiór 03](../evidence/2026-10-13-e0-a-03-shared-organization-acceptance.md) rozstrzyga ten wyjątek decyzją właściciela: oba projekty pozostają w org-nameless-field-92563437 na Scale, bez nowej organizacji i transferu. Poprawne przypisanie: PMOS to billowing-credit-07394675 / br-curly-dream-b94be6uh, laboratorium to fancy-cell-49425728 / br-divine-fog-baohc5ay. Oba compute i project defaults mają 0.25–1 CU i 300 sekund usypiania. Render development jest pusty i ma Blocked cross-environment connections. GitHub environment jest poprawny, a konto profitia korzysta z miesięcznego Pro.
 
-Poniższe kroki pozostają instrukcją odtworzenia. Nie należy ponownie tworzyć wymienionych zasobów. Wcześniejsze oczekiwanie na czynności właściciela zakończyło się; dalsze etapy 04–09 nie zostały rozpoczęte.
+Poniższe kroki pozostają instrukcją odtworzenia. Nie należy ponownie tworzyć wymienionych zasobów. Etap 03 zakończono; dalsze etapy 04–09 nie zostały rozpoczęte i nie są uruchamiane przez tę instrukcję.
 
 ## 1. Neon — dwa nowe projekty i puste bazy
 
@@ -97,9 +97,9 @@ PHR zachowuje repozytorium profitia/project-history-repository. Dla tego przebie
 
 CIC, SpendGuru, SRM, Memoros, MGBI i Vercly nie wymagają czynności serwisowych w tym punkcie. Laboratorium otrzyma kontrolowane dane testowe w późniejszym zakresie; nie importuje prywatnych danych PORR.
 
-## 5. Potwierdzenie i dalsza praca
+## 5. Procedura potwierdzenia przy odtwarzaniu zasobów
 
-Możesz przekazać potwierdzenie w tej postaci, uzupełniając kwoty i ewentualne odstępstwa:
+Aktualny odbiór E0-A-03 jest zakończony. Przy odtwarzaniu zasobów można przekazać potwierdzenie w tej postaci, uzupełniając kwoty i ewentualne odstępstwa:
 
 > Neon: oba projekty i development bez automatycznego wygasania utworzone; trzy puste bazy gotowe; compute 0.25–1 CU, Scale to Zero 5 minut, również na początkowych gałęziach.
 >
