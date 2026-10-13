@@ -24,8 +24,8 @@ function makeEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv 
   return { ...process.env, ...values }
 }
 
-test('registry exposes isolated SG2, SRM, and CIC profiles', () => {
-  assert.deepEqual(listActivePmosProjectProfiles().map((profile) => profile.projectKey), ['SG2', 'SRM', 'CIC'])
+test('registry exposes isolated SG2, SRM, CIC and Architecture profiles', () => {
+  assert.deepEqual(listActivePmosProjectProfiles().map((profile) => profile.projectKey), ['SG2', 'SRM', 'CIC', 'ARCHITECTURE'])
   assert.notEqual(requirePmosProjectProfile('SG2').database.projectId, requirePmosProjectProfile('CIC').database.projectId)
   assert.equal(requirePmosProjectProfile('SG2').continuity.controlPlaneEnvironment, 'development')
   assert.equal(requirePmosProjectProfile('SRM').continuity.controlPlaneEnvironment, 'development')
@@ -110,4 +110,19 @@ test('MEMOROS destination identity is canonical and isolated per enabled project
   assert.equal(requireCanonicalMemorosProjectId(cic), 'cmubasxat03t71glbo4x0nhfn')
   assert.notEqual(requireCanonicalMemorosProjectId(sg2), requireCanonicalMemorosProjectId(cic))
   assert.throws(() => requireCanonicalMemorosProjectId(srm), /disabled/)
+})
+
+
+test('Architecture has its own Development continuity, required PHR and disabled Memoros', async () => {
+  const profile = resolvePmosProjectProfile({ projectName: 'ARCHITECTURE', workspaceName: 'SG-dev Architecture', memorosMode: 'disabled' })
+  assert.equal(profile.database.databaseName, 'architecture_pmos')
+  assert.equal(profile.database.projectId, 'billowing-credit-07394675')
+  assert.equal(profile.phrRequiredForCloseout, true)
+  assert.equal(profile.memorosEnabled, false)
+  assert.equal(buildNamespacedPublicationId('ARCHITECTURE', 'TASK-1'), 'ARCHITECTURE:TASK-1')
+  assert.throws(() => assertPmosControlPlaneEnvironment(profile, 'staging'), /conflicts/)
+  assert.throws(() => resolvePmosProjectProfile({ projectName: 'ARCHITECTURE', workspaceName: 'SG-dev' }), /not allowed/)
+  const publication = await runMemorosPublicationIfEnabled(profile, async () => { throw new Error('must not publish') })
+  assert.equal(publication.attempted, false)
+  assert.equal(publication.auditStatus, 'MEMOROS_DISABLED_BY_PROJECT_PROFILE')
 })

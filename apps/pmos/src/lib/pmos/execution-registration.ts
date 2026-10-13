@@ -269,8 +269,10 @@ export function assertDatabaseIdentity(actualDatabaseName: string, project: stri
   }
 
   let actualHost: string
+  let connection: URL
   try {
-    actualHost = new URL(databaseUrl).hostname
+    connection = new URL(databaseUrl)
+    actualHost = connection.hostname
   } catch {
     throw new Error(`PMOS database endpoint identity cannot be verified for project ${profile.projectKey}: DATABASE_URL is invalid.`)
   }
@@ -279,6 +281,13 @@ export function assertDatabaseIdentity(actualDatabaseName: string, project: stri
   const allowed = profile.database.allowedHosts.some((host) => endpointIdentity(host) === actualEndpoint)
   if (!allowed) {
     throw new Error(`PMOS database endpoint identity mismatch: project ${profile.projectKey} is not allowed to use host ${actualHost}.`)
+  }
+  if (profile.database.runtimeRole && (!profile.database.allowedHosts.includes(actualHost)
+    || decodeURIComponent(connection.username) !== profile.database.runtimeRole
+    || decodeURIComponent(connection.pathname.slice(1)) !== expected
+    || !['postgres:', 'postgresql:'].includes(connection.protocol)
+    || connection.searchParams.get('sslmode') !== 'require')) {
+    throw new Error(`PMOS runtime role or exact connection identity mismatch for ${profile.projectKey}.`)
   }
 }
 
