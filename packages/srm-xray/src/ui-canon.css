@@ -45,3 +45,16 @@
 .srm-explorer { overflow-anchor:none; }
 
 .srm-ui .is-compact .srm-history-chart-canvas { min-width:var(--history-canvas-width)!important; }
+
+/* SRM-C61 / SRM-B40 — neutral, inert backdrop; the notice stays readable. */
+.srm-report-unavailable { position:relative; isolation:isolate; display:grid; place-items:center; min-height:28rem; padding:clamp(1rem,3vw,2rem); overflow:hidden; border:.0625rem solid #d5e1eb; border-radius:1rem; background:#f8f9fa; color:#003366; }
+.srm-availability-skeleton { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:space-around; padding:2rem; filter:blur(.35rem); opacity:.5; pointer-events:none; user-select:none; }
+.srm-availability-controls { display:flex; width:100%; gap:1rem; }
+.srm-availability-controls i { flex:1; height:2rem; background:#d5e1eb; border-radius:.375rem; }
+.srm-availability-radar { width:min(20rem,70%); aspect-ratio:1; border-radius:50%; background:repeating-conic-gradient(#d5e1eb 0deg 58deg,transparent 58deg 60deg); mask:radial-gradient(circle,transparent 0 18%,black 18%); }
+.srm-availability-line { width:65%; height:.75rem; background:#d5e1eb; border-radius:.375rem; }
+.srm-availability-notice { position:relative; width:100%; max-width:32rem; padding:clamp(1rem,3vw,1.5rem); background:#fff; border:.0625rem solid #d5e1eb; border-top:.2rem solid #d2b48c; border-radius:.75rem; box-shadow:0 .5rem 2rem #00336615; }
+.srm-availability-notice h3 { margin:0 0 .75rem; font-size:1.125rem; line-height:1.4; font-weight:600; color:#003366; }
+.srm-availability-notice p { margin:0; font-size:.875rem; line-height:1.6; color:#003366; }
+.srm-scanner-unavailable .srm-chat-slot { min-height:28rem; }
+@media(max-width:40rem) { .srm-report-unavailable { min-height:23rem; } }

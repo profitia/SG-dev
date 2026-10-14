@@ -11,7 +11,16 @@ export function companyRegistration(record: unknown): { status: Status; deregist
   const content = object(object(record)?.content), current = object(content?.current_excerpt);
   const header = object(object(content?.full_excerpt)?.naglowekP), entries = header?.wpis;
   const result = (status: Status, deregisteredAt: string | null = null) => ({status,deregisteredAt});
-  if (!Array.isArray(entries) || !entries.length || entries.length > 10_000) return result(current ? "ACTIVE" : "UNKNOWN");
+  const liquidation = object(object(current?.dane)?.dzial6)?.likwidacja;
+  const entriesInLiquidation = Array.isArray(liquidation) ? liquidation : liquidation ? [liquidation] : [];
+  // Current KRS section 6, not a company-name substring or an old full-excerpt entry.
+  const inLiquidation = entriesInLiquidation.some(value => {
+    const entry = object(value), opening = entry?.otwarcieLikwidacji;
+    return typeof opening === "string" && !!opening.trim() && !/^(brak|nie dotyczy)$/i.test(opening.trim())
+      && !entry?.zakonczenieLikwidacji && !entry?.uchylenieLikwidacji;
+  });
+  const currentStatus = inLiquidation ? "LIQUIDATION" : "ACTIVE";
+  if (!Array.isArray(entries) || !entries.length || entries.length > 10_000) return result(current ? currentStatus : "UNKNOWN");
   const parsed = entries.map(value => {
     const entry = object(value), raw = entry?.numerWpisu;
     const n = typeof raw === "number" && Number.isSafeInteger(raw) ? String(raw) : raw;
@@ -20,7 +29,7 @@ export function companyRegistration(record: unknown): { status: Status; deregist
   if (parsed.some(value => !value) || new Set(parsed.map(value => value!.number)).size !== parsed.length) return result("UNKNOWN");
   const latest = parsed.reduce((a,b) => a!.number > b!.number ? a : b)!;
   const description = typeof latest.entry.opis === "string" ? latest.entry.opis.normalize("NFD").replace(/\p{Diacritic}/gu, "").trim().replace(/\s+/g," ").toUpperCase() : "";
-  if (description !== "WYKRESLENIE Z KRAJOWEGO REJESTRU SADOWEGO") return result(current ? "ACTIVE" : "UNKNOWN");
+  if (description !== "WYKRESLENIE Z KRAJOWEGO REJESTRU SADOWEGO") return result(current ? currentStatus : "UNKNOWN");
   if (current || String(header?.stanPozycji) !== "2") return result("UNKNOWN");
   const match = typeof latest.entry.dataWpisu === "string" ? /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(latest.entry.dataWpisu) : null;
   if (!match) return result("DEREGISTERED");
@@ -32,10 +41,16 @@ export function companyRegistration(record: unknown): { status: Status; deregist
 export function companyRegistrationStatus(record: unknown): Status { return companyRegistration(record).status; }
 
 // Archive fallback is restricted to the authenticated organization and exact
-// NIP/record. Only register headers cross the DB boundary; no person data.
+// NIP/record. Only status evidence crosses the DB boundary; representative lists are excluded.
 export const COMPANY_ACTIVITY_SQL = `SELECT c.general_json#>>'{data,registrationStatus}' AS status, c.general_json#>>'{data,deregisteredAt}' AS "deregisteredAt",
   (SELECT jsonb_build_object('content',jsonb_build_object(
-    'current_excerpt',CASE WHEN jsonb_typeof(r.record#>'{content,current_excerpt}')='object' THEN '{}'::jsonb ELSE 'null'::jsonb END,
+    'current_excerpt',CASE WHEN jsonb_typeof(r.record#>'{content,current_excerpt}')='object' THEN jsonb_build_object('dane',jsonb_build_object('dzial6',jsonb_build_object('likwidacja',
+      (SELECT jsonb_agg(jsonb_build_object('otwarcieLikwidacji',l->'otwarcieLikwidacji',
+        'zakonczenieLikwidacji',l->'zakonczenieLikwidacji','uchylenieLikwidacji',l->'uchylenieLikwidacji'))
+       FROM jsonb_array_elements(CASE jsonb_typeof(r.record#>'{content,current_excerpt,dane,dzial6,likwidacja}')
+         WHEN 'array' THEN r.record#>'{content,current_excerpt,dane,dzial6,likwidacja}'
+         WHEN 'object' THEN jsonb_build_array(r.record#>'{content,current_excerpt,dane,dzial6,likwidacja}')
+         ELSE '[]'::jsonb END) l)))) ELSE 'null'::jsonb END,
     'full_excerpt',jsonb_build_object('naglowekP',r.record#>'{content,full_excerpt,naglowekP}')))
    FROM srm.mgbi_source_archives a
    CROSS JOIN LATERAL jsonb_array_elements(a.payload_json->'pages') page
@@ -50,6 +65,8 @@ export async function readCompanyRegistration(organizationId: string, nip: strin
   return withOrganization(organizationId, async client => {
     const row = (await client.query<{status?: Status; deregisteredAt?: string; record?: unknown}>(COMPANY_ACTIVITY_SQL,[nip,organizationId])).rows[0];
     const archived = companyRegistration(row?.record);
+    if (row?.record) return archived;
+    if (row?.status === "LIQUIDATION") return {status:"LIQUIDATION",deregisteredAt:null};
     if (row?.status === "ACTIVE") return {status:"ACTIVE",deregisteredAt:null};
     if (row?.status === "DEREGISTERED") return {status:"DEREGISTERED",deregisteredAt:row.deregisteredAt ?? archived.deregisteredAt};
     return archived;

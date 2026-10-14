@@ -22,7 +22,9 @@ export type {
 } from "./contracts";
 
 export { JdgRegistryMount } from "./jdg";
-export { INACTIVE_COMPANY_MESSAGE, inactiveCompanyMessage, isDeregisteredCompany, jdgDeregistration, isDeregisteredJdg, inactiveJdgMessage } from "./company-activity";
+export { AVAILABLE_REPORT, IAS_UNAVAILABLE_MESSAGE, LIQUIDATION_MESSAGE, reportAvailability, type ReportAvailability } from "./report-availability";
+export { ReportAvailabilityView } from "./report-availability-view";
+export { isCompanyReportRestricted, isRestrictedRegistrationStatus, INACTIVE_COMPANY_MESSAGE, inactiveCompanyMessage, isDeregisteredCompany, jdgDeregistration, isDeregisteredJdg, inactiveJdgMessage } from "./company-activity";
 
 export {
   GeneralCompanyDataMount,

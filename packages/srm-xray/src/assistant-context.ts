@@ -22,6 +22,7 @@ export type IndicatorViewContext = {
   items: ContextMetric[];
 };
 export type AssistantApplicationContext = {
+  reportAvailability?: import("./report-availability").ReportAvailability;
   schemaVersion: 1;
   dashboardInstanceId: string;
   application: 'SRM';

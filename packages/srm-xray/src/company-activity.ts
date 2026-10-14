@@ -1,5 +1,11 @@
 import type { GeneralCompanyData, JdgRegistryData } from "./contracts";
-export const INACTIVE_COMPANY_MESSAGE = "Spółka jest wykreślona z KRS i jest nieaktywna. Moduł publikuje dane finansowe i raporty tylko dla aktywnych spółek.";
+export const INACTIVE_COMPANY_MESSAGE = "Spółka została wykreślona z KRS. Supplier Intelligence Dashboard nie udostępnia dla tego podmiotu analizy finansowej ani raportów szczegółowych.";
+export function isRestrictedRegistrationStatus(status: GeneralCompanyData["registrationStatus"]): boolean {
+  return status === "DEREGISTERED" || status === "LIQUIDATION";
+}
+export function isCompanyReportRestricted(data: GeneralCompanyData | null | undefined): boolean {
+  return isRestrictedRegistrationStatus(data?.registrationStatus);
+}
 export function isDeregisteredCompany(data: GeneralCompanyData | null | undefined): boolean {
   return data?.registrationStatus === "DEREGISTERED";
 }
@@ -9,7 +15,7 @@ export function inactiveCompanyMessage(data: GeneralCompanyData | null | undefin
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return INACTIVE_COMPANY_MESSAGE;
   const date = new Date(value + "T00:00:00Z");
   if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0,10) !== value) return INACTIVE_COMPANY_MESSAGE;
-  return `Spółka została wykreślona z KRS ${value.slice(8,10)}.${value.slice(5,7)}.${value.slice(0,4)} r. i jest nieaktywna. Moduł publikuje dane finansowe i raporty tylko dla aktywnych spółek.`;
+  return `Spółka została wykreślona z KRS ${value.slice(8,10)}.${value.slice(5,7)}.${value.slice(0,4)} r. Supplier Intelligence Dashboard nie udostępnia dla tego podmiotu analizy finansowej ani raportów szczegółowych.`;
 }
 
 /** A suspended or unknown entry, or any active entry for this NIP, prevents a removal verdict. */

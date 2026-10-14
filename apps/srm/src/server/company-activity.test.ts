@@ -75,3 +75,30 @@ test("removed JDG suppresses saved KYS/report access using tenant-scoped date/st
  assert.equal(await readStoredKysPdf(org,{nip,entityType:"JDG"},f.pool),null);assert(!f.calls.includes(KYS_PDF_SQL));assert(!f.calls.includes(REPORT_DATA_SQL));
  assert.match(JDG_ACTIVITY_SQL,/s\.organization_id=\$2::uuid/);assert.match(JDG_ACTIVITY_SQL,/retention_until>now/);assert.doesNotMatch(JDG_ACTIVITY_SQL,/wlasciciel|pesel|name|payload_json/);
 });
+
+const liquidating=()=>({content:{current_excerpt:{dane:{dzial6:{likwidacja:[{otwarcieLikwidacji:"21.05.2008 R. UCHWAŁA O OTWARCIU LIKWIDACJI"}]}}}}});
+test("liquidation is established from the current KRS field, never the name or historic entries",()=>{
+ assert.deepEqual(companyRegistration(liquidating()),{status:"LIQUIDATION",deregisteredAt:null});
+ assert.equal(companyRegistration({content:{current_excerpt:{dane:{nazwa:"SPÓŁKA W LIKWIDACJI"}}}}).status,"ACTIVE");
+ for(const value of [null,[],{},[{otwarcieLikwidacji:""}],[{otwarcieLikwidacji:"BRAK"}],[{otwarcieLikwidacji:"data",zakonczenieLikwidacji:"zakończono"}]])
+  assert.equal(companyRegistration({content:{current_excerpt:{dane:{dzial6:{likwidacja:value}}}}}).status,"ACTIVE");
+ assert.equal(companyRegistration({content:{current_excerpt:null,full_excerpt:{dane:{dzial6:{likwidacja:[{otwarcieLikwidacji:"data"}]}}}}}).status,"UNKNOWN");
+});
+test("archived current liquidation corrects old cached ACTIVE without refetching or personal data",async()=>{
+ const f=pool({status:"ACTIVE",record:liquidating()});
+ assert.deepEqual(await readCompanyRegistration(org,nip,f.pool),{status:"LIQUIDATION",deregisteredAt:null});
+ assert.match(COMPANY_ACTIVITY_SQL,/otwarcieLikwidacji/);
+ assert.doesNotMatch(COMPANY_ACTIVITY_SQL,/likwidator|pesel|nazwisko/i);
+ const restored=pool({status:"LIQUIDATION",record:{content:{current_excerpt:{dane:{}}}}});
+ assert.equal((await readCompanyRegistration(org,nip,restored.pool)).status,"ACTIVE");
+});
+test("liquidation blocks financial retrieval and stored report/PDF access as deregistration does",async()=>{
+ const general=mapMgbiGeneralRecord(removed(),"2026-10-12").section.data!;
+ const skipped=await fetchCompanyFinancial({...general,registrationStatus:"LIQUIDATION"},{type:"NIP",value:nip},async()=>{throw Error("provider must not run")});
+ assert.equal(skipped.section.status,"NOT_REQUESTED");
+ const f=pool({status:"ACTIVE",record:liquidating()});
+ const report=await readReportData(org,{nip,entityType:"COMPANY"},new Date(),f.pool);
+ assert.equal(report.financial.periods.length,0);assert.equal(report.kys.reportAvailable,false);
+ assert.equal(await readStoredKysPdf(org,{nip,entityType:"COMPANY"},f.pool),null);
+ assert(!f.calls.includes(REPORT_DATA_SQL));assert(!f.calls.includes(KYS_PDF_SQL));
+});

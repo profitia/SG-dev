@@ -1,4 +1,4 @@
-import { isDeregisteredJdg } from "@profitia/srm-xray";
+import { isDeregisteredJdg, isCompanyReportRestricted } from "@profitia/srm-xray";
 import type { JdgRegistryData, SectionEnvelope, SupplierReportData, SupplierXRayCard } from "@profitia/srm-xray";
 
 export type DisplayCard = { identity: SupplierXRayCard["identity"]; general: Omit<SupplierXRayCard["general"], "source">;
@@ -18,7 +18,7 @@ export type ReportState = {
 export const emptySection = (): DisplayCard["kys"] => ({ status: "NOT_REQUESTED", retrievedAt: null, effectiveAt: null, data: null, warnings: [] });
 const initialState = (): ReportState => ({ result: null, busy: false, error: null, kys: emptySection(), kysBusy: false, kysError: null,
   metadata: null, metadataBusy: false, metadataError: null });
-export function inactiveSupplier(result: SearchResult | null): boolean { return result?.entityType === "JDG" ? isDeregisteredJdg(result.section.data) : result?.entityType === "COMPANY" && result.card.general.data?.registrationStatus === "DEREGISTERED"; }
+export function inactiveSupplier(result: SearchResult | null): boolean { return result?.entityType === "JDG" ? isDeregisteredJdg(result.section.data) : result?.entityType === "COMPANY" && isCompanyReportRestricted(result.card.general.data); }
 export function supplierNip(result: SearchResult | null): string | null { return result?.entityType === "JDG" ? result.nip : result?.card.identity.nip ?? null; }
 function message(error: unknown, fallback: string): string { return error instanceof Error ? error.message : fallback; }
 

@@ -1,0 +1,21 @@
+import type { GeneralCompanyData, FinancialData, SectionEnvelope } from "./contracts";
+import { inactiveCompanyMessage } from "./company-activity";
+export type ReportAvailability = {
+  code: "AVAILABLE" | "UNSUPPORTED_IAS" | "LIQUIDATION" | "DEREGISTERED";
+  title: string;
+  message: string;
+  hideDetails: boolean;
+};
+export const IAS_UNAVAILABLE_MESSAGE = "Supplier Intelligence Dashboard nie obsługuje sprawozdań w trybie międzynarodowego standardu rachunkowości. Wkrótce planujemy dołączyć tę możliwość.";
+export const LIQUIDATION_MESSAGE = "Spółka jest w trakcie likwidacji. Supplier Intelligence Dashboard nie udostępnia dla tego podmiotu analizy finansowej ani raportów szczegółowych.";
+export const AVAILABLE_REPORT: ReportAvailability = { code: "AVAILABLE", title: "", message: "", hideDetails: false };
+/** Empty financial values alone never establish a legal status or accounting standard.
+ * The backend supplies verified register status and a document-derived warning.
+ */
+export function reportAvailability(general: GeneralCompanyData | null | undefined, financial: Pick<SectionEnvelope<FinancialData>, "status" | "data" | "warnings"> | null | undefined): ReportAvailability {
+  if (general?.registrationStatus === "DEREGISTERED") return {code:"DEREGISTERED",title:"Spółka wykreślona z KRS",message:inactiveCompanyMessage(general),hideDetails:true};
+  if (general?.registrationStatus === "LIQUIDATION") return {code:"LIQUIDATION",title:"Spółka w trakcie likwidacji",message:LIQUIDATION_MESSAGE,hideDetails:true};
+  if (financial?.status === "EMPTY" && !financial.data && financial.warnings.some(w => w === "MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS" || w === "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE"))
+    return {code:"UNSUPPORTED_IAS",title:"Sprawozdania MSR / MSSF",message:IAS_UNAVAILABLE_MESSAGE,hideDetails:false};
+  return AVAILABLE_REPORT;
+}

@@ -27,10 +27,10 @@ test("XML dictionary rejects excessive complexity and malformed amounts; '>' pat
  assert.throws(() => projectFinancialDocuments([input]), /Invalid financial XML amount/);
 });
 
-test("saved empty MSR reports disclose unresolved format and preserve technical error states", () => {
+test("saved empty MSR reports disclose accounting-standard limitation and preserve technical error states", () => {
  const docs = projectFinancialDocuments([record({content:{}})]);
  const section = {status:"EMPTY" as const,source:{provider:"MGBI" as const,model:"pl-krs-rdf-record",recordId:null},retrievedAt:null,effectiveAt:null,data:null,warnings:["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"]};
- assert.deepEqual(applyFinancialDocumentMetadata(section,docs).warnings,["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
+ assert.deepEqual(applyFinancialDocumentMetadata(section,docs).warnings,["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"]);
  assert.deepEqual(applyFinancialDocumentMetadata({...section,status:"ERROR"},docs).warnings,section.warnings);
 });
 
@@ -52,4 +52,13 @@ test("XML schema variant and system code are retained per document without alter
  const input=record();Object.assign(input.content.extracted_fields,{"Naglowek.WariantSprawozdania":"2","Naglowek.KodSprawozdania.@kodSystemowy":"SFJINZ (2)"});
  const [d]=projectFinancialDocuments([input]);assert.equal(d.schemaVariant,"2");assert.equal(d.schemaSystemCode,"SFJINZ (2)");
  assert.equal(d.rows[0].amounts.KwotaA,"1234567890123456.789");
+});
+
+test("mixed, unknown or supported financial documents never acquire an unsupported IAS verdict", () => {
+ const section={status:"EMPTY" as const,source:{provider:"MGBI" as const,model:"pl-krs-rdf-record",recordId:null},retrievedAt:null,effectiveAt:null,data:null,warnings:[]};
+ for(const documents of [projectFinancialDocuments([record()]),projectFinancialDocuments([record({content:{}}),record({id:"unknown",document:{type:"financial_statement"},content:{}})])]) {
+  assert.ok(!applyFinancialDocumentMetadata(section,documents).warnings.includes("MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"));
+ }
+ const docs=projectFinancialDocuments([record({content:{}})]);
+ assert.ok(!applyFinancialDocumentMetadata({...section,warnings:["MGBI_PAGINATION_TRUNCATED"]},docs).warnings.includes("MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"));
 });

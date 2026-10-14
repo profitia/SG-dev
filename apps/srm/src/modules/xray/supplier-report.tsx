@@ -7,11 +7,12 @@ import { SupplierWebIdentity, type SupplierWebIdentityData, defaultFinancialScop
 import { FinancialPeriodSelector } from "./financial-period-selector";
 import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
-import { inactiveCompanyMessage, inactiveJdgMessage } from "@profitia/srm-xray";
+import { reportAvailability, ReportAvailabilityView, type ReportAvailability, inactiveJdgMessage } from "@profitia/srm-xray";
 import { supplierNip, inactiveSupplier, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
 
 type Scope = FinancialPeriod["scope"];
 export type SupplierReportContext = {
+  availability: ReportAvailability;
   financialIndicatorsTarget: HTMLElement | null;
   supplier: SearchResult;
   metadata: SupplierReportData | null;
@@ -132,15 +133,16 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
   }, [state.kysTiming, state.kysBusy, state.metadataBusy, state.kys.status]);
   if (!state.result) return null;
-  if (inactiveSupplier(state.result)) return <div ref={root} className="supplier-report"><section className="report-identity"><p role="status">{state.result.entityType === "JDG" ? inactiveJdgMessage(state.result.section.data) : inactiveCompanyMessage(state.result.card.general.data)}</p></section></div>;
+  if (state.result.entityType === "JDG" && inactiveSupplier(state.result)) return <div ref={root} className="supplier-report"><section className="report-identity"><p role="status">{inactiveJdgMessage(state.result.section.data)}</p></section></div>;
   const supplier = state.result, metadata = state.metadata;
-  const context: SupplierReportContext = { financialIndicatorsTarget, supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, kysOverview: kysOverviewModel, onKysDetails, periods,
+  const availability = reportAvailability(supplier.entityType === "COMPANY" ? supplier.card.general.data : null, financial);
+  const context: SupplierReportContext = { availability, financialIndicatorsTarget, supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, kysOverview: kysOverviewModel, onKysDetails, periods,
     metadataBusy: state.metadataBusy, metadataError: state.metadataError };
   const scanner = slots.scanner?.(context);
-  const summary = scanner ? null : slots.summary?.(context), observations = slots.observations?.(context), kysOverview = slots.kys?.(context);
-  const areas = Object.entries(financialAreas).map(([key, title]) => ({ key, title, content: slots.financial?.[key as keyof typeof financialAreas]?.(context) })).filter(area => area.content != null && area.content !== false);
+  const summary = scanner || availability.code !== "AVAILABLE" ? null : slots.summary?.(context), observations = availability.hideDetails ? null : slots.observations?.(context), kysOverview = availability.hideDetails ? null : slots.kys?.(context);
+  const areas = availability.code !== "AVAILABLE" ? [] : Object.entries(financialAreas).map(([key, title]) => ({ key, title, content: slots.financial?.[key as keyof typeof financialAreas]?.(context) })).filter(area => area.content != null && area.content !== false);
   const navigation = [{ id: summary ? "report-summary" : "supplier-identity", label: "Podsumowanie" },
-    ...(scanner || areas.length || supplier.entityType === "COMPANY" ? [{ id: scanner || areas.length ? "report-finance" : "report-financial-details", label: "Finanse" }] : []),
+    ...(scanner || areas.length || (supplier.entityType === "COMPANY" && availability.code === "AVAILABLE") ? [{ id: scanner || areas.length ? "report-finance" : "report-financial-details", label: "Finanse" }] : []),
     ...(observations ? [{ id: "report-observations", label: "Obserwacje" }] : []),
     { id: "report-details", label: "Dane szczegółowe" }, { id: "report-kys", label: "KYS" }];
   const primaryPkd = supplier.entityType === "COMPANY" ? supplier.card.general.data : null;
@@ -149,11 +151,12 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     <section id="supplier-identity" className="report-identity" aria-labelledby="supplier-identity-title">
       <CanonElement as="div" canonId="SRM-C53" usage="supplier-report:02" className="report-identity-heading"><ReportWebIdentity key={`${supplier.entityType}:${supplierNip(supplier)}`} nip={supplierNip(supplier) ?? ""} entityType={supplier.entityType} name={name ?? "Dostawca"}><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
         <p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}{primaryPkd?.mainPkd && <> · <span className="report-primary-pkd">PKD {primaryPkd.mainPkd}{primaryPkd.mainPkdDescription ? ` — ${primaryPkd.mainPkdDescription}` : ""}</span></>}</p></div></ReportWebIdentity>
-        {!scanner && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
+        {!scanner && availability.code === "AVAILABLE" && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
       </CanonElement>
     </section>
-    {!scanner && <ReportNavigation root={root} items={navigation} />}
-    {scanner && <section id="report-finance" className="report-content-section report-scanner" aria-labelledby="scanner-title">{scanner}<FinancialLimitations state={state} onReadMetadata={onReadMetadata} /></section>}
+    {!scanner && !availability.hideDetails && <ReportNavigation root={root} items={navigation} />}
+    {scanner && <section id="report-finance" className="report-content-section report-scanner" aria-labelledby="scanner-title">{scanner}{availability.code === "AVAILABLE" && <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />}</section>}
+    {!scanner && availability.code !== "AVAILABLE" && <div className="srm-ui"><ReportAvailabilityView availability={availability} /></div>}
     {summary && <section id="report-summary" className="report-content-section" aria-labelledby="report-summary-title"><h2 id="report-summary-title" tabIndex={-1}>Najważniejsze informacje</h2>{summary}</section>}
     {!scanner && !!areas.length && <section id="report-finance" className="report-content-section" aria-labelledby="report-finance-title"><h2 id="report-finance-title" tabIndex={-1}>Kondycja finansowa</h2>
       <p className="health-dashboard-note">Zapisane wyniki finansowe. Istotność wskaźnika nie jest oceną ryzyka; kierunek zmiany nie oznacza poprawy ani pogorszenia kondycji.</p>
@@ -164,13 +167,13 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
       <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />
       <div className="report-financial-areas">{areas.map(area => <section key={area.key} aria-label={area.title}><h3 className="health-area-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d={area.key === "liquidity" ? "M4 8h16v12H4z M8 8V4h8v4 M4 12h16 M10 15h4" : area.key === "debt" ? "M3 9l9-6 9 6H3z M5 11v8 M10 11v8 M15 11v8 M20 11v8 M3 21h18" : area.key === "profitability" ? "M4 3v17h17 M7 15l5-5 4 3 5-8 M17 5h4v4" : "M3 7h18v12H3z M3 11h18 M15 15h3 M6 7V4h12"} /></svg>{area.title}</h3>{area.content}</section>)}</div></section>}
     {observations && <section id="report-observations" className="report-content-section" aria-labelledby="report-observations-title"><h2 id="report-observations-title" tabIndex={-1}>Obserwacje i kwestie do sprawdzenia</h2>{observations}</section>}
-    <section id="report-details" className="report-details" aria-labelledby="report-details-title">
+    {!availability.hideDetails && <section id="report-details" className="report-details" aria-labelledby="report-details-title">
       <div className="report-details-heading"><h2 id="report-details-title" tabIndex={-1}>Dane szczegółowe</h2></div>
       <details className="report-detail" id="report-registry-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:04">Dane identyfikacyjne i rejestrowe</CanonSummary><div className="report-detail-body">
         {supplier.entityType === "JDG" ? <JdgRegistryMount section={supplier.section} /> : <GeneralCompanyDataMount section={supplier.card.general} />}
       </div></details>
-      {scanner && <details className="report-detail" id="report-indicator-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:05">Wskaźniki finansowe</CanonSummary><div className="report-detail-body" ref={setFinancialIndicatorsTarget} /></details>}
-      {supplier.entityType === "COMPANY" && <details className="report-detail" id="report-financial-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:06">Sprawozdania finansowe i wskaźniki</CanonSummary><div className="report-detail-body">
+      {scanner && availability.code === "AVAILABLE" && <details className="report-detail" id="report-indicator-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:05">Wskaźniki finansowe</CanonSummary><div className="report-detail-body" ref={setFinancialIndicatorsTarget} /></details>}
+      {supplier.entityType === "COMPANY" && availability.code === "AVAILABLE" && <details className="report-detail" id="report-financial-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:06">Sprawozdania finansowe i wskaźniki</CanonSummary><div className="report-detail-body">
         {!scanner && !areas.length && <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />}
         <FinancialDataMount section={supplier.card.financial} onDownloadExcel={onDownloadExcel} selectedScope={scope} onScopeChange={setScope} selectedPeriod={selectedPeriod} />
       </div></details>}
@@ -207,7 +210,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
       </div>
     </CanonElement></div>
       </div></details>
-    </section>
+    </section>}
   </div></ReportContext.Provider>;
 }
 
