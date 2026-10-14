@@ -42,9 +42,9 @@ function SectionFrame({
   const missingFinancialReason = section.data == null && section.warnings.find((warning) => ["FINANCIAL_NO_STRUCTURED_DATA", "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE", "FINANCIAL_NO_XML", "FINANCIAL_UNKNOWN_FORMAT", "FINANCIAL_UNSUPPORTED_XML"].includes(warning));
   return (
     <section className="xray-section" aria-label={title}>
-      <header className="xray-section-header">
+      <header className={"xray-section-header" + (actions ? " has-actions" : "")}>
         <h2>{title}</h2>
-        <div className="financial-section-actions"><span>{statusLabel[section.status]}</span>{actions}</div>
+        <div className="financial-section-actions"><span>{statusLabel[section.status]}</span>{actions && <div className="srm-ui financial-export-action">{actions}</div>}</div>
       </header>
       {section.status === "PENDING" ? <div role="status"><p>Raport jest przygotowywany. Poczekaj na wynik…</p>{title === "Raport KYS" && <div className="kys-progress" role="progressbar" aria-label="Postęp pobierania raportu KYS" aria-valuetext="Pobieranie trwa"><span /></div>}</div> : section.data == null ? <p>{missingFinancialReason ? warningLabel(missingFinancialReason) : "brak danych"}</p> : children}
       {section.warnings.filter((warning) => warning !== missingFinancialReason && warning !== "FINANCIAL_COST_SIGN_UNVERIFIED").map((warning, index) => <p className="xray-warning" key={index}>{warningLabel(warning)}</p>)}

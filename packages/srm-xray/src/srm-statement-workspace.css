@@ -153,3 +153,6 @@
 .financial-excel-years{display:flex;flex-wrap:wrap;gap:.75rem 1rem;margin-block:1rem;}
 .financial-excel-years label{display:inline-flex;align-items:center;gap:.5rem;cursor:pointer;}
 .financial-excel-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.75rem;margin-top:1rem;}
+
+.xray-section-header.has-actions{align-items:center;flex-wrap:wrap;}
+.srm-ui.financial-export-action{min-height:0;background:transparent;}
