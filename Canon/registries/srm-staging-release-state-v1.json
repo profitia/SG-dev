@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "d7da9dcc308480a78ba2c4dd15ca95be0a3db659cd9b8cc56b12333a53517fb5",
+  "publicationNonce": "8edd4395ea46cf80de203e0c43a35e414a9317abedf767c5ea6e1bfe33527a05",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 99,
+  "generation": 100,
   "release": {
     "authorizationDigest": "4b541e53f74c62b9ef83b93c9a1c775fa52cb4d1a8929544c4fbd214a3fb8ab0",
     "authorizationKeyOrder": [
@@ -5086,7 +5086,7 @@
         }
       },
       "deploy": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-14T18:07:46.513Z",
@@ -5565,10 +5565,10 @@
             ]
           }
         },
-        "snapshotDigest": "e1dffdd593065a9254daef5aa8a810a4746ac299c0fc7edf332e4a110257c665",
+        "snapshotDigest": "ad4554b1371a4c1c0edfe29e0081dc4884fca2fe287f0a58ea73876642424339",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-14T18:07:46.513Z",
+          "capturedAt": "2026-10-14T18:10:18.529Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -5637,8 +5637,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-14T18:07:46Z",
-            "pushed_at": "2026-10-14T18:07:41Z",
+            "updated_at": "2026-10-14T18:08:46Z",
+            "pushed_at": "2026-10-14T18:08:42Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -5904,22 +5904,22 @@
               "suspended": "not_suspended",
               "suspenders": [],
               "type": "web_service",
-              "updatedAt": "2026-10-14T04:32:52.720264Z"
+              "updatedAt": "2026-10-14T18:10:13.563603Z"
             }
           ],
           "liveDeploy": {
-            "id": "dep-db7gb8vavr4c7385cet0",
+            "id": "dep-db7sacei0phs73afpt10",
             "commit": {
-              "id": "d0a251bd4624a9ab7deb6df177338deb74f6884a",
-              "message": "Merge pull request #277 from profitia/fix/srm-canonical-ui-decimal-export-20261013\n\nSRM: preserve source decimal precision in statement clipboard export",
-              "createdAt": "2026-10-13T18:32:11Z"
+              "id": "b59a893bb9fef03eeb9c5ea6c1a39b8d8d352649",
+              "message": "fix(srm): distinguish IAS, liquidation and deregistered reports (#306)",
+              "createdAt": "2026-10-14T17:39:55Z"
             },
             "status": "live",
             "trigger": "api",
-            "createdAt": "2026-10-14T04:31:31.630932Z",
-            "updatedAt": "2026-10-14T04:33:26.411182Z",
-            "startedAt": "2026-10-14T04:31:31.603713Z",
-            "finishedAt": "2026-10-14T04:32:52.719083Z"
+            "createdAt": "2026-10-14T18:08:49.611432Z",
+            "updatedAt": "2026-10-14T18:10:13.553049Z",
+            "startedAt": "2026-10-14T18:08:49.585184Z",
+            "finishedAt": "2026-10-14T18:10:13.552709Z"
           },
           "domains": [
             {
@@ -6044,7 +6044,10 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "deployId": "dep-db7sacei0phs73afpt10",
+          "sha": "b59a893bb9fef03eeb9c5ea6c1a39b8d8d352649"
+        }
       }
     },
     "lastKnownGood": {
