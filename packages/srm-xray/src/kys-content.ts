@@ -1,4 +1,5 @@
-// Shared existing display semantics for the full KYS view and its document export.
+import type { VerclyKysData } from "./contracts";
+// Shared display semantics for the full KYS view, overview and document export.
 export function value(text: string | null | undefined): string {
   return text == null || text === "" ? "brak danych" : text;
 }
@@ -54,6 +55,35 @@ export function polishCode(input: string | null | undefined, labels: Record<stri
 
 export function yesNo(input: boolean | null | undefined): string {
   return input === true ? "Tak" : input === false ? "Nie" : "nie ustalono";
+}
+
+/** The overview and detailed registry consume the same labels and returned values. */
+export function kysRegistryRows(data: VerclyKysData) {
+  return [
+    ["Krajowy Rejestr Zadłużonych", yesNo(data.registryChecks?.krzListed)],
+    ["Podatnik VAT czynny", yesNo(data.registryChecks?.vatActive)],
+    ["Podatnik VAT UE", yesNo(data.registryChecks?.euVat)],
+    ["Status działalności", polishCode(data.company?.activityStatus, activityStatusLabels)],
+    ["Podmiot i bezpośrednio powiązani na listach sankcyjnych", yesNo(data.screeningSummary?.directlyRelatedSanctions)],
+    ["Beneficjenci i powiązane podmioty na listach sankcyjnych", yesNo(data.screeningSummary?.beneficiaryRelatedSanctions)],
+    ["Podmiot na pozostałych listach", yesNo(data.screeningSummary?.otherLists)],
+  ] as const;
+}
+
+export function kysListRows(data: VerclyKysData) {
+  return (data.screenedLists ?? []).map(entry => ({
+    label: verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " "),
+    result: yesNo(entry.matched), matched: entry.matched,
+  }));
+}
+
+/** Stored report acquisition time, never report-as-of, PDF download or render time. */
+export function formatKysRetrievedAt(timestamp: string | null | undefined): string | null {
+  if (!timestamp || !/(?:Z|[+-]\d{2}:\d{2})$/.test(timestamp)) return null;
+  const date = new Date(timestamp);
+  if (!Number.isFinite(date.getTime())) return null;
+  return new Intl.DateTimeFormat("pl-PL", { timeZone: "Europe/Warsaw", day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).format(date);
 }
 
 export function capitalInThousands(input: string | null | undefined): string {

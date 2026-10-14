@@ -20,16 +20,16 @@ const row = (i: KysOverviewInput, label: string) => rows(i).find(r => r.label ==
 const html = (i: KysOverviewInput) => renderToStaticMarkup(React.createElement(KysOverview, { model: kysOverview(i, now), onDetails: () => {} }));
 
 test("explicit returned registry booleans prove the returned result only; null is unknown", () => {
-  const i = fixture(); assert.equal(row(i, "KRZ").execution, "PERFORMED"); assert.match(row(i, "KRZ").result, /nie wskazano wpisu/);
-  assert.equal(row(i, "VAT").execution, "PERFORMED"); assert.equal(row(i, "VAT UE (VIES)").execution, "UNKNOWN");
+  const i = fixture(); assert.equal(row(i, "Krajowy Rejestr Zadłużonych").execution, "PERFORMED"); assert.equal(row(i, "Krajowy Rejestr Zadłużonych").result, "Nie");
+  assert.equal(row(i, "Podatnik VAT czynny").execution, "PERFORMED"); assert.equal(row(i, "Podatnik VAT UE").execution, "UNKNOWN");
   i.section.data!.registryChecks = { krzListed: true, vatActive: false, euVat: false };
-  assert.match(row(i, "KRZ").result, /wpis w KRZ.*Sprawdź/); assert.match(row(i, "VAT").result, /nieczynny/);
+  assert.equal(row(i, "Krajowy Rejestr Zadłużonych").result, "Tak"); assert.equal(row(i, "Podatnik VAT czynny").result, "Nie");
   assert.doesNotMatch(JSON.stringify(rows(i)), /Dostawca jest niewypłacalny|Dostawca jest bezpieczny/);
 });
 
 test("queried registers prove execution independently of an unknown returned status", () => {
   const i = fixture(); i.section.data!.registryChecks = undefined; i.section.data!.queriedRegisters = ["VAT Information Exchange System", "National Debt Register"];
-  for (const label of ["KRZ", "VAT", "VAT UE (VIES)"]) { assert.equal(row(i,label).execution, label === "VAT" ? "UNKNOWN" : "PERFORMED"); assert.match(row(i,label).result,/Nie ustalono/); }
+  for (const label of ["Krajowy Rejestr Zadłużonych", "Podatnik VAT czynny", "Podatnik VAT UE"]) { assert.equal(row(i,label).execution, label === "Podatnik VAT czynny" ? "UNKNOWN" : "PERFORMED"); assert.equal(row(i,label).result,"nie ustalono"); }
 });
 
 test("empty and missing list arrays do not prove screening execution or zero risk", () => {
@@ -37,15 +37,23 @@ test("empty and missing list arrays do not prove screening execution or zero ris
 });
 
 test("explicit no-match concerns returned list scope; matching entries are verification signals", () => {
-  const i = fixture(); assert.match(row(i,"Wyniki dla badanego podmiotu").result,/wynikach 1 list.*zwróconego zakresu/);
+  const i = fixture(); assert.match(row(i,"Wyniki dla badanego podmiotu").result,/wynikach 1 list/);
   i.section.data!.screenedLists = [{name:"LIST_A",type:"SANCTIONS",matched:true},{name:"LIST_B",type:"WARNING",matched:false}];
-  const r = row(i,"Wyniki dla badanego podmiotu"); assert.match(r.result,/dopasowania: 1.*2 list.*Wymagają weryfikacji/); assert.equal(r.execution,"PERFORMED");
+  const r = row(i,"LIST A"); assert.equal(r.result,"Tak"); assert.equal(r.execution,"PERFORMED"); assert(!rows(i).some(row => row.label === "LIST B"));
 });
 
 test("aggregate related-group sanctions are never attributed directly to supplier", () => {
   const i=fixture(); i.section.data!.screeningSummary={directlyRelatedSanctions:true,beneficiaryRelatedSanctions:true,otherLists:null};
   assert.match(row(i,"Podmiot i bezpośrednio powiązani").result,/Nie ustalono, kogo dotyczy/);
   assert.match(row(i,"Beneficjenci i powiązane podmioty").result,/Nie jest wynikiem bezpośrednio przypisanym/);
+});
+
+test("ten-list no-match wording requires ten explicit negative results", () => {
+  const i = fixture();
+  i.section.data!.screenedLists = Array.from({length: 10}, (_, index) => ({name: `LIST_${index}`, type: "SANCTIONS", matched: false}));
+  assert.equal(row(i, "Wyniki dla badanego podmiotu").result, "Nie odnotowano w wynikach wyszukiwania dziesięciu list.");
+  i.section.data!.screenedLists[0].matched = null as unknown as boolean;
+  assert.doesNotMatch(row(i, "Wyniki dla badanego podmiotu").result, /Nie odnotowano/);
 });
 
 test("PEP count comes only from returned match entries, never total persons or position counts", () => {
@@ -105,7 +113,7 @@ test("public overview has no person/raw IDs/provider branding/scoring/CTA, and a
   for(const r of rows(i))assert(full.includes(`data-kys-detail="${r.target}"`));
   const twice=renderToStaticMarkup(React.createElement(React.Fragment,null,React.createElement(VerclyKysMount,{section:i.section}),React.createElement(VerclyKysMount,{section:i.section})));
   const ids=[...twice.matchAll(/ id="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length);
-  assert.match(text,/Wykonanie: nie ustalono/);assert.match(text,/Kompletność raportu/);
+  assert.match(text,/Wykonanie: nie ustalono/);assert.doesNotMatch(text,/Kompletność raportu|Raport jest dostępny i zakończony/);
 });
 
 

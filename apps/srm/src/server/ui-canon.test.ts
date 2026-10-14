@@ -6,9 +6,9 @@ import ts from 'typescript';
 import { uiCanon, canonAttributes, type CanonId } from '@profitia/srm-xray';
 const root=path.resolve(process.cwd(),'../..');
 /** Guard the approved MagicPath surfaces, including newly imported presentation files.
- * Provider, KYS and registry detail mounts are separate existing capabilities, not design-library implementations.
+ * KYS presentation now consumes the same canonical registry; provider adapters remain separate.
  */
-const files=['apps/srm/app/page.tsx','apps/srm/src/modules/xray/supplier-report.tsx',...['financial-scanner','financial-dashboard','financial-explorer','SpendGuruAssessment','FinancialHistoryChart','FinancialHistoryView','FinancialHistoryDialog','statement-workspace'].map(name=>`packages/srm-xray/src/${name}.tsx`)];
+const files=['apps/srm/app/page.tsx','apps/srm/src/modules/xray/supplier-report.tsx',...['financial-scanner','financial-dashboard','financial-explorer','SpendGuruAssessment','FinancialHistoryChart','FinancialHistoryView','FinancialHistoryDialog','statement-workspace','kys-report','kys-overview','kys-pdf-button','kys-krs-button'].map(name=>`packages/srm-xray/src/${name}.tsx`)];
 const native=new Set(['button','input','select','textarea','summary','a','dialog','table']);
 function audit(source:string,file:string){
  const errors:string[]=[], usages:string[]=[], ast=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);

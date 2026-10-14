@@ -126,7 +126,7 @@ test("KYS retains all approved records, masking, data groups and contextual limi
     const html = renderToStaticMarkup(React.createElement(VerclyKysMount, { entityType, section: { status: "PARTIAL", retrievedAt: "2026-10-08T11:00:00Z", effectiveAt: null, warnings: [], data } }));
     assert.equal((html.match(/class="kys-person-entry"/g) ?? []).length, 62);
     assert.doesNotMatch(html, /PRIVATE_|12345678901|MGBI|Vercly|Identyfikator raportu|Identyfikator zapytania/i);
-    assert.match(html, /Stan na dzień 07.10.2026/); assert.match(html, /Dopasowania wymagają weryfikacji/);
+    assert.doesNotMatch(html, /Stan na dzień 07.10.2026|Dopasowania wymagają weryfikacji/);
     assert.match(html, /sprawdzenia tożsamości/); assert.match(html, /Dane częściowe/);
     assert.equal(html.includes('data-kys-detail="relations"'), entityType === "COMPANY");
   }

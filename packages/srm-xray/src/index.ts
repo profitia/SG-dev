@@ -58,3 +58,6 @@ export { SupplierWebIdentity, type SupplierWebIdentityGateway } from "./supplier
 
 export { CanonButton, CanonInput, CanonSelect, CanonTextarea, CanonSummary, CanonLink, CanonElement, uiCanon, canonAttributes } from './ui-canon';
 export type { CanonId } from './ui-canon';
+
+export { formatKysRetrievedAt, kysRegistryRows, kysListRows } from "./kys-content";
+export { KysIcon } from "./kys-report";

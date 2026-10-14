@@ -138,7 +138,7 @@ test("KYS error and identifier mismatch never fabricate retrieval dates or block
 
 test("page composition preserves all feature mounts and hides empty future analysis", async () => {
   const { instance } = controller(); await instance.search(nipA); const html = markup(instance.getSnapshot());
-  for (const name of ["Dane identyfikacyjne i rejestrowe", "Rachunek zysków i strat", "Bilans", "Pobierz do Excela", "Pełny raport KYS"]) assert.ok(html.includes(name), name);
+  for (const name of ["Dane identyfikacyjne i rejestrowe", "Rachunek zysków i strat", "Bilans", "Pobierz do Excela", "Raport KYS"]) assert.ok(html.includes(name), name);
   for (const id of ["report-summary", "report-finance\"", "report-observations"]) assert.equal(html.includes(id), false);
   assert.match(html, /Raport KYS nie został jeszcze pobrany/);
   assert.equal(html.includes("PRIVATE_DOCUMENT"), false); assert.equal(html.includes("PRIVATE_MODEL"), false);
@@ -174,7 +174,7 @@ test("partial, empty finance and KYS states remain independent and preserve sour
 
 test("JDG preserves its registry and explicit KYS without company-financial mount", async () => {
   const { instance } = controller(jdg()); await instance.search(nipA); const html = markup(instance.getSnapshot());
-  assert.ok(html.includes("Test JDG")); assert.ok(html.includes("Pełny raport KYS"));
+  assert.ok(html.includes("Test JDG")); assert.ok(html.includes("Raport KYS"));
   assert.equal(html.includes("Sprawozdania finansowe i wskaźniki"), false); assert.equal(html.includes("Pobierz do Excela"), false);
 });
 
@@ -289,7 +289,7 @@ test("scanner composition replaces legacy summary and health cards while preserv
  assert.doesNotMatch(html,/Legacy summary marker|Legacy health marker|report-summary|Okres finansowy:/);
  assert.ok(html.indexOf('id="report-finance"')>html.indexOf('id="supplier-identity"'));
  assert.ok(html.indexOf('id="report-finance"')<html.indexOf('id="report-financial-details"'));
- for(const title of ["Rachunek zysków i strat","Bilans","Pobierz do Excela","Pełny raport KYS"])assert.ok(html.includes(title),title);
+ for(const title of ["Rachunek zysków i strat","Bilans","Pobierz do Excela","Raport KYS"])assert.ok(html.includes(title),title);
  assert.equal(JSON.stringify(state.metadata),before);
  assert.deepEqual(calls,["/api/xray/search","/api/xray/report-data"]);
 });

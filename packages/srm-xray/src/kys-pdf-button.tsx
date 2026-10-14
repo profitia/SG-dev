@@ -1,5 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import { CanonButton } from "./ui-canon";
+import { KysIcon } from "./kys-report";
 import type { KysPdfSelection } from "./kys-pdf-document";
 
 export function KysPdfButton({ selection, onDownload }: { selection: KysPdfSelection;
@@ -14,8 +16,8 @@ export function KysPdfButton({ selection, onDownload }: { selection: KysPdfSelec
     catch (e) { if (!controller.signal.aborted) setError(e instanceof Error ? e.message : "Nie udało się przygotować PDF. Spróbuj ponownie."); }
     finally { if (!controller.signal.aborted) { active.current = null; setBusy(false); } }
   }
-  return <div className="kys-pdf-export"><button type="button" onClick={download} disabled={busy} aria-busy={busy}>
-    {busy ? "Przygotowywanie PDF…" : "Pobierz raport KYS (PDF)"}</button>
+  return <div className="kys-pdf-export"><CanonButton canonId="SRM-C01" usage="kys-pdf-button.tsx:download" type="button" onClick={download} disabled={busy} aria-busy={busy}>
+    <KysIcon kind="download" />{busy ? "Przygotowywanie PDF…" : "Pobierz raport KYS (PDF)"}</CanonButton>
     {busy && <p role="status">Przygotowywanie dokumentu z zapisanego raportu…</p>}
     {error && <p role="alert">{error}</p>}
   </div>;

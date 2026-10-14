@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-/** MagicPath library 460628347660177408, revision 460743895437963264.
+/** MagicPath library 460628347660177408, revision 461065160585543680 (KYS C56–C59).
  * Definitions -> shared components and tokens -> application. Never reverse this dependency.
  * Register a new definition in the design library before adding an application primitive.
  */
@@ -811,7 +811,11 @@ export const uiCanon = {
       "SRM-T01"
     ],
     "numbers": []
-  }
+  },
+  "SRM-C56": { name: "Raport KYS z zakładkami", behaviors: ["SRM-B13"], fonts: ["SRM-T03", "SRM-T27", "SRM-T28"], numbers: ["SRM-N15"] },
+  "SRM-C57": { name: "Tabela i dane rejestrowe KYS", behaviors: [], fonts: ["SRM-T27", "SRM-T28"], numbers: ["SRM-N01"] },
+  "SRM-C58": { name: "PESEL · maska i kontrolka", behaviors: ["SRM-B39"], fonts: ["SRM-T27"], numbers: [] },
+  "SRM-C59": { name: "Przełącznik widoczności PESEL", behaviors: ["SRM-B39", "SRM-B04", "SRM-B11"], fonts: [], numbers: [] }
 } as const;
 export type CanonId = keyof typeof uiCanon;
 type CanonProps = { canonId: CanonId; usage: string };
