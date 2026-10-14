@@ -1,8 +1,39 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { projectFinancialDocuments, applyFinancialDocumentMetadata } from "./financial-documents";
+import { projectFinancialDocuments, applyFinancialDocumentMetadata, projectArchivedFinancialDocuments } from "./financial-documents";
+import { createHash } from "node:crypto";
 const record = (overrides: Record<string, unknown> = {}) => ({ id: "xml-1", document: { type: "financial_statement", period_from_date: "2025-02-01", period_to_date: "2026-01-31", is_ias_compliant: true }, content: { schema: { name: "JednostkaInnaWZlotych", version: "1-3" },
  extracted_fields: { "Naglowek.OkresOd": "2025-02-01", "Naglowek.OkresDo": "2026-01-31", "Bilans.Aktywa.KwotaA": "1234567890123456.789", "Bilans.Aktywa.KwotaB": null, "RZiS.RZiSKalk.A.KwotaA": "-17.3456", "RZiS.RZiSKalk.A.KwotaB1": "0", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.NazwaPozycji": "=1+1", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.KwotyPozycji.KwotaA": "1", "RachPrzeplywow.A.KwotaA": "999", "InformacjeDodatkowe.KwotaA": "888" }, standardized_fields: { bs: { a_ta_cfy: 1234567890123456.8 } } }, ...overrides });
+
+const archiveOrg = "11111111-1111-4111-8111-111111111111", archiveNip = "5213390341";
+function archived(records: unknown[] = [record({identifiers:{pl_nip:archiveNip}})]) {
+  const payload_text = JSON.stringify({pages:[{results:records}]},null,2);
+  return {organization_id:archiveOrg,nip:archiveNip,model:"pl-krs-rdf-record",payload_text,
+    payload_jsonb_sha256:createHash("sha256").update(payload_text).digest("hex"),record_count:records.length};
+}
+test("archive reconstruction verifies persisted bytes rather than reserialized JSON key order", () => {
+  const source=archived();const [document]=projectArchivedFinancialDocuments(source,archiveOrg,archiveNip);
+  assert.equal(document.recordId,"xml-1");assert.equal(document.rows[0].amounts.KwotaA,"1234567890123456.789");
+  assert.notEqual(createHash("sha256").update(JSON.stringify(JSON.parse(source.payload_text))).digest("hex"),source.payload_jsonb_sha256);
+});
+test("archive reconstruction rejects other tenants, suppliers and provider models", () => {
+  for(const change of [{organization_id:"22222222-2222-4222-8222-222222222222"},{nip:"6310200831"},{model:"pl-krs-wp-record"}])
+    assert.throws(()=>projectArchivedFinancialDocuments({...archived(),...change},archiveOrg,archiveNip),/identity mismatch/);
+});
+test("archive reconstruction rejects altered bytes and missing or altered checksum", () => {
+  for(const change of [{payload_text:archived().payload_text.replace("1234567890123456.789","0")},{payload_jsonb_sha256:"a".repeat(64)},{payload_jsonb_sha256:""}])
+    assert.throws(()=>projectArchivedFinancialDocuments({...archived(),...change},archiveOrg,archiveNip),/checksum mismatch/);
+});
+test("archive reconstruction rejects incomplete inventory, mixed supplier rows and duplicate documents", () => {
+  assert.throws(()=>projectArchivedFinancialDocuments({...archived(),record_count:2},archiveOrg,archiveNip),/record count mismatch/);
+  assert.throws(()=>projectArchivedFinancialDocuments(archived([record({identifiers:{pl_nip:"6310200831"}})]),archiveOrg,archiveNip),/supplier mismatch/);
+  assert.throws(()=>projectArchivedFinancialDocuments(archived([record({identifiers:{pl_nip:archiveNip}}),record({identifiers:{pl_nip:archiveNip}})]),archiveOrg,archiveNip),/Duplicate/);
+  const malformed=archived();malformed.payload_text=JSON.stringify({pages:[{}]});malformed.payload_jsonb_sha256=createHash("sha256").update(malformed.payload_text).digest("hex");
+  assert.throws(()=>projectArchivedFinancialDocuments(malformed,archiveOrg,archiveNip),/Incomplete/);
+});
+test("a malformed source aborts reconstruction rather than manufacturing financial values", () => {
+  assert.throws(()=>projectArchivedFinancialDocuments(archived([record({identifiers:{pl_nip:archiveNip},content:{schema:{name:"JednostkaInnaWZlotych",version:"1-3"},extracted_fields:{"Bilans.Aktywa.KwotaA":"NaN"}}})]),archiveOrg,archiveNip),/Invalid financial XML amount/);
+});
 test("complete XML sections retain custom hierarchy, exact values, null, signs and unassigned comparison dates; derived subset is not duplicated", () => {
  const [d] = projectFinancialDocuments([record()]);
  assert.equal(d.rows.length, 3); assert.equal(d.standard, "IAS_IFRS"); assert.equal(d.format, "XML");
