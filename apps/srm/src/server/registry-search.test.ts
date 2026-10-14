@@ -59,7 +59,14 @@ test("missing from both registries is distinct from provider failure", async () 
     jdg: async () => jdg("ERROR"), company: async () => company("EMPTY"),
   });
   assert.equal(notFound.entityType, "NOT_FOUND");
-  assert.equal(unavailable.entityType, "UNAVAILABLE");
+  assert.deepEqual(unavailable, { entityType: "UNAVAILABLE", unavailableProvider: "CEIDG" });
+});
+
+test("a company provider failure is not reported as CEIDG unavailability", async () => {
+  const result = await searchRegistryByNip("org", request, {
+    jdg: async () => jdg("EMPTY"), company: async () => company("ERROR"),
+  });
+  assert.deepEqual(result, { entityType: "UNAVAILABLE", unavailableProvider: null });
 });
 
 test("company report can resolve a NIP when CEIDG is unavailable", async () => {
@@ -73,5 +80,5 @@ test("a mismatched company identifier cannot select a company", async () => {
   const result = await searchRegistryByNip("org", request, {
     jdg: async () => jdg("EMPTY"), company: async () => company("SUCCESS", "5272443955"),
   });
-  assert.equal(result.entityType, "UNAVAILABLE");
+  assert.deepEqual(result, { entityType: "UNAVAILABLE", unavailableProvider: null });
 });
