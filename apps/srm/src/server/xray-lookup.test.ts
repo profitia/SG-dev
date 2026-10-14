@@ -163,9 +163,9 @@ test("KYS mount expands provider sanctions codes to list names", () => {
   assert.match(html, /Aktywny/);
   assert.match(html, /332\s?905,97 tys\. PLN/);
   assert.match(html, /System wymiany informacji o VAT \(VIES\)/);
-  assert.match(html, /Krajowym Rejestrze Zadłużonych<\/dt><dd>Nie/);
-  assert.match(html, /Podatnik VAT czynny<\/dt><dd>Tak/);
-  assert.match(html, /Podatnik VAT UE<\/dt><dd>nie ustalono/);
+  assert.match(html, /Krajowy Rejestr Zadłużonych<\/th><td>Nie/);
+  assert.match(html, /Podatnik VAT czynny<\/th><td>Tak/);
+  assert.match(html, /Podatnik VAT UE<\/th><td>nie ustalono/);
   assert.ok(!html.includes("brak trafienia"));
   assert.ok(!html.includes("VERCLY"));
   assert.ok(!html.includes("Vercly"));
@@ -187,21 +187,14 @@ test("KYS mount masks PESEL and keeps beneficiary details aligned without birth 
   assert.match(html, /Beneficjenci rzeczywiści/);
   assert.ok(!html.includes("10987654321"));
   assert.ok(!html.includes("12345678901"));
-  assert.equal((html.match(/>Pokaż<\/button>/g) ?? []).length, 2);
-  assert.equal((html.match(/<dt>Data urodzenia<\/dt>/g) ?? []).length, 1);
+  assert.equal((html.match(/aria-label="Pokaż PESEL"/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /<dt>Data urodzenia<\/dt>|<details class="kys-person-entry"/);
   assert.match(html, /CRBR/);
-  assert.equal((html.match(/<details class="kys-person-entry">/g) ?? []).length, 2);
-  assert.match(html, /<summary class="kys-person-summary">/);
-  assert.match(html, /kys-person-preview/);
-  assert.equal((html.match(/>PESEL<\/span>/g) ?? []).length, 2);
-  assert.equal((html.match(/>Sankcje<\/span>/g) ?? []).length, 2);
-  assert.equal((html.match(/>PEP<\/span>/g) ?? []).length, 2);
-  assert.match(html, /Powiązanie \/ rejestr/);
-  assert.match(html, /kys-person-status">Nie/);
-  assert.match(html, /kys-person-status">Tak/);
-  assert.match(html, /<dt>Rejestr<\/dt><dd>CRBR, Bardzo długa nazwa podmiotu powiązanego<\/dd>/);
-  assert.match(html, /kys-person-open-label">Rozwiń/);
-  assert.match(html, /kys-person-close-label">Zwiń/);
+  assert.equal((html.match(/class="kys-person-entry"/g) ?? []).length, 2);
+  for (const label of ["PESEL", "Sankcje", "PEP"]) assert.equal((html.match(new RegExp(`>${label}</th>`, "g")) ?? []).length, 2);
+  assert.match(html, /Powiązanie \/ rejestr<\/dt><dd>CRBR, Bardzo długa nazwa podmiotu powiązanego<\/dd>/);
+  assert.match(html, /<td>Nie<\/td>/); assert.match(html, /<td>Tak<\/td>/);
+  assert.equal((html.match(/>Rozwiń<svg/g) ?? []).length, 1);
   assert.ok(!html.includes("Szczegóły osób i ich identyfikatory nie są udostępniane"));
 });
 
@@ -225,7 +218,8 @@ test("KYS mount shows person-level PEP evidence without exposing a PESEL by defa
   assert.match(html, /90%/);
   assert.match(html, /Obywatelstwo: POLSKA/);
   assert.ok(!html.includes("12345678901"));
-  assert.match(html, /<button type="button" class="kys-pesel-button">Pokaż<\/button>/);
+  assert.match(html, /aria-label="Pokaż PESEL"[^>]*class="kys-pesel-button"/);
+  assert.doesNotMatch(html, />Pokaż<\/button>/);
   assert.ok(!html.includes("person-token"));
 });
 

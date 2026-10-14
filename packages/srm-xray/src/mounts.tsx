@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import type {
   FinancialData,
   FinancialPeriod,
@@ -8,11 +8,11 @@ import type {
   SectionEnvelope,
   SectionStatus,
   SupplierXRayCard,
-  VerclyKysData,
-  VerclyPerson,
 } from "./contracts";
-import { value, warningLabel, polishCode, yesNo, capitalInThousands, legalFormLabels, activityStatusLabels, registerLabels, verclyListLabels } from "./kys-content";
+import { value, warningLabel } from "./kys-content";
 import { FinancialDashboard, type FinancialPeriodSelection } from "./financial-dashboard";
+
+import { VerclyKysReport } from "./kys-report";
 
 type DisplaySection<T> = Omit<SectionEnvelope<T>, "source">;
 
@@ -24,90 +24,6 @@ const statusLabel: Record<SectionStatus, string> = {
   NOT_REQUESTED: "Nie pobrano",
   PENDING: "Pobieranie",
 };
-
-
-function pepMatchCount(count: number): string {
-  const form = new Intl.PluralRules("pl-PL").select(count);
-  return `${count} ${form === "one" ? "dopasowanie" : form === "few" ? "dopasowania" : "dopasowań"} w raporcie`;
-}
-
-
-
-function PeselReveal({ token, onReveal }: { token: string | null | undefined; onReveal?: (token: string) => Promise<string> }) {
-  const [revealed, setRevealed] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(false);
-  const currentToken = useRef(token);
-  currentToken.current = token;
-  useEffect(() => { setRevealed(null); setError(false); }, [token]);
-  useEffect(() => {
-    if (!revealed) return;
-    const timer = window.setTimeout(() => setRevealed(null), 60_000);
-    const hideWhenNotVisible = () => { if (document.hidden) setRevealed(null); };
-    const hideWhenUnfocused = () => setRevealed(null);
-    document.addEventListener("visibilitychange", hideWhenNotVisible);
-    window.addEventListener("blur", hideWhenUnfocused);
-    return () => {
-      window.clearTimeout(timer);
-      document.removeEventListener("visibilitychange", hideWhenNotVisible);
-      window.removeEventListener("blur", hideWhenUnfocused);
-    };
-  }, [revealed]);
-  return <span className="kys-person-id">
-    {revealed ? <span>{revealed}</span> : token ? <span className="kys-pesel-mask" aria-label="Numer ukryty">•••••••••••</span> : "brak danych"}
-    {token && onReveal && <button type="button" className="kys-pesel-button" disabled={busy} onClick={async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (revealed) { setRevealed(null); return; }
-      setBusy(true);
-      setError(false);
-      try {
-        const pesel = await onReveal(token);
-        if (currentToken.current === token && !document.hidden && document.hasFocus() && /^\d{11}$/.test(pesel)) setRevealed(pesel);
-        else if (currentToken.current === token) setError(true);
-      } catch { if (currentToken.current === token) setError(true); }
-      finally { if (currentToken.current === token) setBusy(false); }
-    }}>{busy ? "Pobieranie…" : revealed ? "Ukryj" : "Pokaż"}</button>}
-    {error && <span className="kys-pesel-error" role="alert">Nie udało się ujawnić numeru.</span>}
-  </span>;
-}
-
-function KysPeopleTable({ people, onRevealPesel, showBirthDate = true, kind = "manager" }: {
-  people: readonly VerclyPerson[] | undefined;
-  onRevealPesel?: (token: string) => Promise<string>;
-  showBirthDate?: boolean;
-  kind?: "manager" | "beneficiary";
-}) {
-  if (!people?.length) return <p>brak danych</p>;
-  return <div className="kys-person-scroll"><div className={`kys-person-list kys-person-list--${kind}`}>
-    <div className="kys-person-columns">
-      <span>Imię i nazwisko</span><span>Rola / funkcja</span>
-      {kind === "beneficiary" && <span>Powiązanie / rejestr</span>}
-      <span>PESEL</span><span>Sankcje</span><span>PEP</span><span aria-hidden="true" />
-    </div>
-    {people.map((person, index) => {
-    const position = person.positions.join(", ");
-    const foundIn = person.foundIn.join(", ");
-    const preview = [position, foundIn].filter(Boolean).join(" · ");
-    return <details className="kys-person-entry" key={`${person.fullName}:${index}`}>
-      <summary className="kys-person-summary">
-        <strong className="kys-person-name">{person.fullName}</strong>
-        <span className="kys-person-preview">{kind === "beneficiary" ? position || "brak danych" : preview || "brak danych"}</span>
-        {kind === "beneficiary" && <span className="kys-person-preview">{foundIn || "brak danych"}</span>}
-        <PeselReveal token={person.peselRevealToken} onReveal={onRevealPesel} />
-        <span className="kys-person-status">{yesNo(person.sanctionsMatch)}</span>
-        <span className="kys-person-status">{yesNo(person.pepMatch)}</span>
-        <span className="kys-person-toggle" aria-hidden="true"><span className="kys-person-open-label">Rozwiń</span><span className="kys-person-close-label">Zwiń</span></span>
-      </summary>
-      <dl className="kys-person-details">
-        <dt>Funkcja / powiązanie</dt><dd>{person.positions.join(", ") || "brak danych"}</dd>
-        <dt>Obywatelstwo</dt><dd>{person.citizenship.join(", ") || "brak danych"}</dd>
-        <dt>Rejestr</dt><dd>{person.foundIn.join(", ") || "brak danych"}</dd>
-        {showBirthDate && <><dt>Data urodzenia</dt><dd>{value(person.birthDate)}</dd></>}
-      </dl>
-    </details>;
-  })}</div></div>;
-}
 
 
 function SectionFrame({
@@ -169,126 +85,8 @@ export function kysStateDate(stateAsOf: string | null | undefined): string {
   return `Stan na dzień ${match[3]}.${match[2]}.${match[1]}`;
 }
 
-export function VerclyKysMount({ section, entityType = "COMPANY", onRevealPesel }: {
-  section: DisplaySection<VerclyKysData>;
-  entityType?: "COMPANY" | "JDG";
-  onRevealPesel?: (token: string) => Promise<string>;
-}) {
-  const detailId = useId();
-  const target = (group: string) => ({ id: `${detailId}-${group}`, "data-kys-detail": group, tabIndex: -1 });
-  const data = section.data;
-  const company = data?.company;
-  const countLabel = (count: number | null | undefined) => count == null ? "brak danych" : `${count} wpisów w raporcie`;
-  const lists = data?.screenedLists ?? [];
-  return (
-    <SectionFrame title="Raport KYS" section={section}>
-      <div className="kys-report">
-        <div className="kys-summary">
-          <strong>{value(company?.name)}</strong>
-          <span>Poziom ryzyka: {value(data?.riskLevel)}</span>
-          <span>Sankcje: {yesNo(lists.some((entry) => entry.type.toUpperCase() === "SANCTIONS" && entry.matched) ? true : lists.some((entry) => entry.type.toUpperCase() === "SANCTIONS") ? false : null)}</span>
-          <span>Stan raportu: {data?.isComplete ? "zakończony" : "w toku"}</span>
-        </div>
-        <div className="kys-grid">
-          <section className="kys-panel" aria-label="Dane rejestrowe KYS" {...target("identity")}>
-            <h3>Dane rejestrowe</h3>
-            <dl className="xray-facts">
-              <dt>Nazwa</dt><dd>{value(company?.name)}</dd>
-              {entityType === "COMPANY" && <><dt>KRS</dt><dd>{value(company?.krs)}</dd></>}
-              <dt>NIP</dt><dd>{value(company?.nip)}</dd>
-              <dt>REGON</dt><dd>{value(company?.regon)}</dd>
-              <dt>Forma prawna</dt><dd>{polishCode(company?.legalForm, legalFormLabels)}</dd>
-              <dt>Adres</dt><dd>{value(company?.address)}</dd>
-              <dt>Telefon</dt><dd>{value(company?.phone)}</dd>
-              <dt>Dzielnica / gmina</dt><dd>{value(company?.municipality)}</dd>
-              <dt>Powiat</dt><dd>{value(company?.district)}</dd>
-              <dt>Województwo</dt><dd>{value(company?.voivodship)}</dd>
-              <dt>Kraj</dt><dd>{company?.country === "PL" ? "Polska" : value(company?.country)}</dd>
-              <dt>Kraj głównej siedziby</dt><dd>{value(company?.headquarterCountry)}</dd>
-              <dt>Status działalności</dt><dd>{polishCode(company?.activityStatus, activityStatusLabels)}</dd>
-              <dt>Data powstania</dt><dd>{value(company?.createdAt)}</dd>
-              <dt>Data wpisu</dt><dd>{value(company?.registeredAt)}</dd>
-              <dt>Data rozpoczęcia działalności</dt><dd>{value(company?.commencedAt)}</dd>
-              <dt>Ostatnia zmiana</dt><dd>{value(company?.lastChangedAt)}</dd>
-              <dt>PKD</dt><dd>{value(company?.mainPkd)}</dd>
-              {entityType === "COMPANY" && <><dt>Kapitał zakładowy</dt><dd>{capitalInThousands(company?.shareCapital)}</dd>
-              <dt>Zasady reprezentacji</dt><dd>{value(company?.representation)}</dd>
-              <dt>Organ rejestrowy</dt><dd>{value(company?.registerAuthority)}</dd>
-              <dt>Forma własności</dt><dd>{value(company?.ownershipForm)}</dd></>}
-            </dl>
-          </section>
-          <div className="kys-column">
-          <section className="kys-panel" aria-label="Rejestry i statusy" {...target("registry")}>
-            <h3>Rejestry i statusy</h3>
-            <dl className="xray-facts">
-              <dt>Odpytane rejestry</dt><dd>{data?.queriedRegisters.length ? data.queriedRegisters.map((name) => registerLabels[name] ?? name).join(", ") : "nie ustalono"}</dd>
-              <dt>Wpis w Krajowym Rejestrze Zadłużonych</dt><dd>{yesNo(data?.registryChecks?.krzListed)}</dd>
-              <dt>Podatnik VAT czynny</dt><dd>{yesNo(data?.registryChecks?.vatActive)}</dd>
-              <dt>Podatnik VAT UE</dt><dd>{yesNo(data?.registryChecks?.euVat)}</dd>
-              <dt>Podmiot i bezpośrednio powiązani na listach sankcyjnych</dt><dd>{yesNo(data?.screeningSummary?.directlyRelatedSanctions)}</dd>
-              <dt>Beneficjenci i powiązane podmioty na listach sankcyjnych</dt><dd>{yesNo(data?.screeningSummary?.beneficiaryRelatedSanctions)}</dd>
-              <dt>Podmiot na pozostałych listach</dt><dd>{yesNo(data?.screeningSummary?.otherLists)}</dd>
-            </dl>
-          </section>
-          <section className="kys-panel" aria-label="Listy sankcyjne i ostrzeżenia" {...target("lists")}>
-            <h3>Listy sankcyjne i ostrzeżenia</h3>
-            <p className="kys-note">Dopasowania wymagają weryfikacji. Brak wpisu w zwróconym zakresie nie potwierdza stanu niesprawdzonego rejestru.</p>
-            {lists.length ? <table className="kys-lists"><thead><tr><th>Lista</th><th>Wynik</th></tr></thead><tbody>
-              {lists.map((entry) => <tr key={`${entry.type}:${entry.name}`}><td>{verclyListLabels[entry.name] ?? entry.name.replaceAll("_", " ")}</td><td>{yesNo(entry.matched)}</td></tr>)}
-            </tbody></table> : <p>brak danych</p>}
-          </section>
-          </div>
-        </div>
-        <section className="kys-panel" aria-label="Osoby pełniące funkcje kierownicze i nadzorcze" {...target("people")}>
-          <h3>Osoby pełniące funkcje kierownicze i nadzorcze</h3>
-          <p className="kys-note">{countLabel(data?.relatedPersonsCount)}</p>
-          <KysPeopleTable people={data?.relatedPersons} onRevealPesel={onRevealPesel} />
-        </section>
-        <section className="kys-panel" aria-label="Beneficjenci rzeczywiści" {...target("beneficiaries")}>
-          <h3>Beneficjenci rzeczywiści</h3>
-          <p className="kys-note">{countLabel(data?.beneficialOwnersCount)}</p>
-          <KysPeopleTable people={data?.beneficialOwners} onRevealPesel={onRevealPesel} showBirthDate={false} kind="beneficiary" />
-        </section>
-        <section className="kys-panel kys-pep-panel" aria-label="Osoby na eksponowanych stanowiskach politycznych" {...target("pep")}>
-          <h3>Osoby na eksponowanych stanowiskach politycznych</h3>
-          <p className="kys-note">Dopasowanie wymaga sprawdzenia tożsamości. Wartość dopasowania nie jest prawdopodobieństwem naruszenia.</p>
-          <p className="kys-note">{data?.pepMatches ? pepMatchCount(data.pepMatches.length) : "brak danych"}</p>
-          {data?.pepMatches?.length ? <div className="kys-table-scroll"><table className="kys-lists kys-pep-table">
-            <thead><tr><th>Dopasowano na podstawie</th><th>Osoba na liście</th><th>Data urodzenia</th><th>Stanowisko</th><th>Prawdopodobieństwo dopasowania</th></tr></thead>
-            <tbody>{data.pepMatches.map((match, index) => {
-              const person = data[match.personGroup]?.[match.personIndex];
-              return <tr key={`${match.personGroup}:${match.personIndex}:${index}`}>
-                <td><strong>{value(match.searchPhrase ?? match.personName)}</strong>
-                  <small>{match.personName}</small>
-                  {match.identifierMatchesPesel && <small>PESEL: <PeselReveal token={person?.peselRevealToken} onReveal={onRevealPesel} /></small>}
-                  {person?.citizenship.length ? <small>Obywatelstwo: {person.citizenship.join(", ")}</small> : null}
-                </td>
-                <td><strong>{value(match.matchedName)}</strong>
-                  {match.aliases.length ? <small>Inne nazwy: {match.aliases.join(", ")}</small> : null}
-                </td>
-                <td>{value(match.birthDate)}</td>
-                <td>{match.positions.length ? match.positions.join("; ") : "Szczegóły stanowiska niedostępne"}</td>
-                <td>{match.probabilityPercent === null ? "nie ustalono" : `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(match.probabilityPercent)}%`}</td>
-              </tr>;
-            })}</tbody>
-          </table></div> : <p>{data?.pepMatches ? "Nie zwrócono dopasowań PEP w danych osób objętych raportem." : "Nie ustalono dostępności wyników PEP."}</p>}
-        </section>
-        {entityType === "COMPANY" && <section className="kys-panel" aria-label="Struktura właścicielska i powiązane podmioty" {...target("relations")}>
-          <h3>Struktura właścicielska i powiązane podmioty</h3>
-          {data?.relatedEntities?.length ? <div className="kys-table-scroll"><table className="kys-lists"><thead><tr><th>Podmiot</th><th>Powiązanie</th><th>Identyfikatory</th><th>Okres</th><th>Sankcje</th></tr></thead><tbody>
-            {data.relatedEntities.map((entry, index) => <tr key={`${entry.name}:${index}`}>
-              <td><strong>{entry.name}</strong>{entry.stakeDescription && <small>{entry.stakeDescription}</small>}</td>
-              <td>{entry.role === "SHAREHOLDER" ? "Udziałowiec" : value(entry.role)}</td>
-              <td>{[entry.krs && `KRS ${entry.krs}`, entry.nip && `NIP ${entry.nip}`, entry.regon && `REGON ${entry.regon}`].filter(Boolean).join(" · ") || "brak danych"}</td>
-              <td>{[entry.relationshipStart, entry.relationshipEnd].filter(Boolean).join(" – ") || "brak danych"}</td>
-              <td>{yesNo(entry.sanctionsMatch)}</td>
-            </tr>)}
-          </tbody></table></div> : <p>brak danych</p>}
-        </section>}
-        <p className="kys-state-date">{kysStateDate(data?.stateAsOf)}</p>
-      </div>
-    </SectionFrame>
-  );
+export function VerclyKysMount(props: React.ComponentProps<typeof VerclyKysReport>) {
+  return <VerclyKysReport {...props} />;
 }
 
 export function SupplierXRayMount({ card }: { card: SupplierXRayCard }) {

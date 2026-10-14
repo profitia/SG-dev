@@ -1,3 +1,4 @@
+@import "./kys-report.css";
 /* SRM UI CANON v1. Change tokens here; every canonical usage consumes this source. */
 :root {--canon-overviewHeight:300px;--canon-overviewControl:24px;--canon-overviewIcon:12px;--canon-overviewStroke:1.4;--canon-overviewRadius:6px;--canon-overviewBorder:.75px;--canon-actionRadius:7px;--canon-actionFont:12px;--canon-actionHeight:32px;--canon-cardRadius:9px;--canon-hoverAction:1.03;--canon-hoverText:1.025;--canon-hoverPill:1.06;--canon-motionMs:220ms;}
 /* One styling contract for actual nodes in both application and library views. */

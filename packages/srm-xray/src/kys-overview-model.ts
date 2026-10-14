@@ -1,3 +1,4 @@
+import { kysRegistryRows, kysListRows } from "./kys-content";
 import type { SectionEnvelope, SupplierReportData, VerclyKysData } from "./contracts";
 
 export type KysDetailTarget = "identity" | "registry" | "lists" | "people" | "beneficiaries" | "pep" | "relations";
@@ -38,9 +39,10 @@ export function kysOverview(input: KysOverviewInput, now = Date.now()): KysOverv
     VAT: ["WYKAZ PODMIOTÓW ZAREJESTROWANYCH JAKO PODATNICY VAT, NIEZAREJESTROWANYCH ORAZ WYKREŚLONYCH I PRZYWRÓCONYCH DO REJESTRU VAT"],
     "VAT UE (VIES)": ["VAT Information Exchange System"],
   };
-  const check = (label: string, value: boolean | null | undefined, yes: string, no: string): KysOverviewRow => ({
-    label, execution: typeof value === "boolean" || registerEvidence[label]?.some(name => queried.has(name)) ? "PERFORMED" : "UNKNOWN",
-    result: value === true ? yes : value === false ? no : "Nie ustalono wyniku.", target: "registry",
+  const registryRows = kysRegistryRows(d);
+  const check = (index: 0 | 1 | 2, key: string, value: boolean | null | undefined): KysOverviewRow => ({
+    label: registryRows[index][0], execution: typeof value === "boolean" || registerEvidence[key]?.some(name => queried.has(name)) ? "PERFORMED" : "UNKNOWN",
+    result: registryRows[index][1], target: "registry",
   });
   const lists = d.screenedLists ?? [], matching = lists.filter(l => l.matched === true).length;
   const listEvidence = lists.length > 0 && lists.every(l => typeof l.matched === "boolean" && !!l.name);
@@ -50,16 +52,18 @@ export function kysOverview(input: KysOverviewInput, now = Date.now()): KysOverv
   const beneficiaryCount = count(d.beneficialOwnersCount);
   const groups: KysOverviewGroup[] = [
     { id: "registries", title: "Rejestry i status działalności", rows: [
-      check("KRZ", d.registryChecks?.krzListed, "Raport wskazuje wpis w KRZ. Sprawdź szczegóły.", "W zwróconym wyniku nie wskazano wpisu w KRZ."),
-      check("VAT", d.registryChecks?.vatActive, "Zwrócony status: podatnik VAT czynny.", "Zwrócony status: podatnik VAT nieczynny."),
-      check("VAT UE (VIES)", d.registryChecks?.euVat, "Zwrócony status VAT UE: tak.", "Zwrócony status VAT UE: nie."),
-      { label: "Status działalności", result: ({ ACTIVE: "Aktywny", INACTIVE: "Nieaktywny", SUSPENDED: "Zawieszony", CLOSED: "Zakończony", LIQUIDATION: "W likwidacji", BANKRUPT: "W upadłości", DISSOLVED: "Rozwiązany", DELETED: "Wykreślony" } as Record<string, string>)[d.company?.activityStatus ?? ""] ?? "Nie ustalono.", target: "identity" },
+      check(0, "KRZ", d.registryChecks?.krzListed),
+      check(1, "VAT", d.registryChecks?.vatActive),
+      check(2, "VAT UE (VIES)", d.registryChecks?.euVat),
+      { label: registryRows[3][0], result: registryRows[3][1], target: "registry" },
     ] },
     { id: "lists", title: "Listy sankcyjne i ostrzegawcze", rows: [
-      { label: "Wyniki dla badanego podmiotu", execution: listEvidence ? "PERFORMED" : "UNKNOWN", result: listEvidence
-        ? matching ? `Zwrócone dopasowania: ${matching} (wyniki ${lists.length} list). Wymagają weryfikacji; nie potwierdzają naruszenia.`
-          : `Nie zwrócono dopasowania w wynikach ${lists.length} list. Dotyczy to wyłącznie zwróconego zakresu.`
-        : "Nie ustalono zakresu ani wyniku kontroli list.", target: "lists" },
+      ...(matching > 0 ? kysListRows(d).filter(row => row.matched === true).map(row => ({
+        label: row.label, execution: "PERFORMED" as const, result: row.result, target: "lists" as const,
+      })) : [{ label: "Wyniki dla badanego podmiotu", execution: listEvidence ? "PERFORMED" as const : "UNKNOWN" as const,
+        result: listEvidence
+          ? lists.length === 10 ? "Nie odnotowano w wynikach wyszukiwania dziesięciu list." : `Nie odnotowano dopasowań w wynikach ${lists.length} list.`
+          : "Nie ustalono zakresu ani wyniku kontroli list.", target: "lists" as const }]),
       ...(d.screeningSummary?.directlyRelatedSanctions === true ? [{ label: "Podmiot i bezpośrednio powiązani", result: "Sygnał w grupie podmiotu i bezpośrednio powiązanych. Nie ustalono, kogo dotyczy; wymaga weryfikacji.", target: "registry" as const }] : []),
       ...(d.screeningSummary?.beneficiaryRelatedSanctions === true ? [{ label: "Beneficjenci i powiązane podmioty", result: "Sygnał dotyczący beneficjentów lub powiązanych podmiotów. Nie jest wynikiem bezpośrednio przypisanym dostawcy.", target: "registry" as const }] : []),
       ...(d.screeningSummary?.otherLists === true ? [{ label: "Pozostałe listy", result: "Zwrócono dopasowanie do pozostałych list. Wymaga weryfikacji.", target: "registry" as const }] : []),

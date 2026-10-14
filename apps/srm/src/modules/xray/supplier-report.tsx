@@ -1,5 +1,5 @@
 "use client";
-import { CanonButton, CanonElement, CanonSummary, CanonLink } from '@profitia/srm-xray';
+import { CanonButton, CanonElement, CanonSummary, KysIcon, formatKysRetrievedAt } from '@profitia/srm-xray';
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { SupplierWebIdentity, type SupplierWebIdentityData, defaultFinancialScope, indicatorContent, useKysOverview, type KysOverviewModel, type KysDetailTarget, FinancialDataMount, financialPeriodsByScope, GeneralCompanyDataMount, JdgRegistryMount,
@@ -69,7 +69,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   slots?: SupplierReportSlots;
 }) {
   const [financialIndicatorsTarget, setFinancialIndicatorsTarget] = useState<HTMLDivElement | null>(null);
-  const root = useRef<HTMLDivElement>(null), kysDetails = useRef<HTMLDetailsElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const financial = state.result?.entityType === "COMPANY" ? state.result.card.financial : null;
   const kysOverviewModel = useKysOverview({ nip: supplierNip(state.result) ?? "", entityType: state.result?.entityType ?? "COMPANY", section: state.kys, metadata: state.metadata, loading: state.kysBusy || state.metadataBusy });
   const initialScope = defaultFinancialScope(financial?.data);
@@ -101,11 +101,14 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   function onNavigate(id: string) { if (root.current) navigateReportSection(root.current, id); }
   function onKysDetails(group: KysDetailTarget) {
     if (!root.current || !kysOverviewModel.available) return;
-    const target = Array.from(root.current.querySelectorAll<HTMLElement>("[data-kys-detail]")).find(node => node.dataset.kysDetail === group);
-    if (!target) return;
-    navigateReportSection(root.current, target.id);
-    const heading = target.querySelector<HTMLElement>("h3");
-    if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+    root.current.querySelector<HTMLButtonElement>(`[data-kys-tab-for~="${group}"]`)?.click();
+    window.requestAnimationFrame(() => {
+      const target = root.current?.querySelector<HTMLElement>(`[data-kys-detail="${group}"]`);
+      if (!target) return;
+      target.scrollIntoView({ block: "start", behavior: "smooth" });
+      const heading = target.querySelector<HTMLElement>("h3");
+      if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
+    });
   }
   function onIndicator(code: string, history = false) {
     if (!root.current || !Object.hasOwn(indicatorContent, code)) return;
@@ -128,7 +131,6 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     }); });
     return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
   }, [state.kysTiming, state.kysBusy, state.metadataBusy, state.kys.status]);
-  useEffect(() => { if (state.kys.status !== "NOT_REQUESTED" && kysDetails.current) kysDetails.current.open = true; }, [state.kys]);
   if (!state.result) return null;
   if (inactiveSupplier(state.result)) return <div ref={root} className="supplier-report"><section className="report-identity"><p role="status">{state.result.entityType === "JDG" ? inactiveJdgMessage(state.result.section.data) : inactiveCompanyMessage(state.result.card.general.data)}</p></section></div>;
   const supplier = state.result, metadata = state.metadata;
@@ -172,18 +174,8 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         <FinancialDataMount section={supplier.card.financial} onDownloadExcel={onDownloadExcel} selectedScope={scope} onScopeChange={setScope} selectedPeriod={selectedPeriod} />
       </div></details>}
     </section>
-    <section id="report-kys" className="report-content-section" aria-labelledby="report-kys-title">
-      <div className="report-kys-action"><div><h2 id="report-kys-title" tabIndex={-1}>Raport KYS</h2><p>{state.kys.status === "NOT_REQUESTED" ? "Raport KYS nie został jeszcze pobrany w tym widoku." : "Pełny raport i stan pobierania znajdziesz poniżej."}</p>
-        <p>Raport pobierasz tylko na własne żądanie.</p>
-        {state.kys.status === "NOT_REQUESTED" && metadata?.kys.reportAvailable && <p>Zapisany raport jest dostępny. Użyj przycisku, aby go wyświetlić.</p>}</div>
-        <CanonButton canonId="SRM-C02" usage="supplier-report:07" type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}>
-          {state.kysBusy ? "Przygotowywanie raportu KYS…" : state.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz raport KYS ponownie"}</CanonButton>
-        {state.kysError && <p role="alert" className="search-error">{reportMessage(state.kysError)}</p>}
-        {state.kys.status !== "NOT_REQUESTED" && <CanonLink canonId="SRM-C55" usage="supplier-report:08" href="#report-kys-details" onClick={event => { event.preventDefault(); if (root.current) navigateReportSection(root.current, "report-kys-details"); }}>Przejdź do pełnego raportu KYS</CanonLink>}
-      </div>
-      {kysOverview}
-      {metadata?.kys.freshness.freshness === "EXPIRED" && <p className="health-data-note">Poprzedni raport KYS stracił ważność. Pobranie wymaga osobnego działania.</p>}
-      {(state.kys.status === "PARTIAL" || metadata?.kys.completeness === "PARTIAL") && <p className="health-data-note">Raport KYS jest częściowy. Nie wszystkie sprawdzenia zwróciły dane.</p>}
+    <div className="srm-ui srm-kys-scope"><CanonElement as="section" canonId="SRM-C56" usage="supplier-report:kys" id="report-kys" className="report-content-section srm-kys" aria-labelledby="report-kys-title">
+      <div className="srm-kys-heading"><h2 id="report-kys-title" tabIndex={-1}>Raport KYS</h2><div className="srm-kys-downloads">
       {kysOverviewModel.available && metadata?.kys.exportRef && metadata.kys.freshness.retrievedAt && onDownloadKysPdf && <KysPdfButton
         key={`${supplierNip(supplier)}:${supplier.entityType}:${metadata.kys.exportRef}`}
         selection={{ nip: supplierNip(supplier) ?? "", entityType: supplier.entityType, retrievedAt: metadata.kys.freshness.retrievedAt, exportRef: metadata.kys.exportRef }}
@@ -194,13 +186,25 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         key={`krs:${supplierNip(supplier)}:${metadata.kys.exportRef}`}
         selection={{ nip: supplierNip(supplier) ?? "", entityType: "COMPANY", retrievedAt: metadata.kys.freshness.retrievedAt, exportRef: metadata.kys.exportRef }}
         onDownload={onDownloadKrsPdf} />}
+      </div></div>
+      <div className="srm-kys-report-meta">
+        {kysOverviewModel.available && <span data-number-format="SRM-N15">Raport pobrano: {formatKysRetrievedAt(state.kys.retrievedAt)
+          ? <time dateTime={state.kys.retrievedAt!} title="Czas lokalny: Europe/Warsaw">{formatKysRetrievedAt(state.kys.retrievedAt)}</time> : "nie ustalono"}</span>}
+        <CanonButton canonId="SRM-C55" usage="supplier-report:07" className="srm-text-link srm-kys-refresh" type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}>
+          <KysIcon kind="refresh" />{state.kysBusy ? "Przygotowywanie raportu KYS…" : state.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz raport KYS ponownie"}
+        </CanonButton>
+      </div>
+      {state.kysError && <p role="alert" className="search-error">{reportMessage(state.kysError)}</p>}
+      {state.kys.status === "NOT_REQUESTED" && metadata?.kys.reportAvailable && <p>Zapisany raport jest dostępny. Użyj przycisku, aby go wyświetlić.</p>}
+      {metadata?.kys.freshness.freshness === "EXPIRED" && <p className="health-data-note">Poprzedni raport KYS stracił ważność. Pobranie wymaga osobnego działania.</p>}
+      {(state.kys.status === "PARTIAL" || metadata?.kys.completeness === "PARTIAL") && <p className="health-data-note">Raport KYS jest częściowy. Nie wszystkie sprawdzenia zwróciły dane.</p>}
       {kysOverviewModel.available && !metadata?.kys.exportRef && <p role="status">Nie potwierdzono wersji do eksportu PDF. Szczegóły raportu pozostają dostępne.</p>}
-      <details className="report-detail" id="report-kys-details" ref={kysDetails}><CanonSummary canonId="SRM-C49" usage="supplier-report:09">Pełny raport KYS</CanonSummary><div className="report-detail-body">
+      <div id="report-kys-details">
         {state.kys.status === "NOT_REQUESTED" ? <p>Raport KYS nie został jeszcze pobrany. Zamów go przyciskiem „Pobierz raport KYS”.</p>
           : state.kys.data && !kysOverviewModel.available ? <p role="status">{state.kysBusy || state.metadataBusy ? "Sprawdzanie dostępności raportu…" : kysOverviewModel.message}</p>
-          : <VerclyKysMount section={state.kys} entityType={supplier.entityType} onRevealPesel={onRevealPesel} />}
-      </div></details>
-    </section>
+          : <VerclyKysMount key={`${supplierNip(supplier)}:${state.kys.retrievedAt}`} section={state.kys} entityType={supplier.entityType} onRevealPesel={onRevealPesel} overview={kysOverview} />}
+      </div>
+    </CanonElement></div>
   </div></ReportContext.Provider>;
 }
 
