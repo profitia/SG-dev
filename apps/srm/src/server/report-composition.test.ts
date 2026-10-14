@@ -40,6 +40,29 @@ function controller(result: SearchResult = company(), overrides: Partial<Record<
 }
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>(r => { resolve = r; }); return { promise, resolve }; }
 const tick = () => new Promise<void>(resolve => setImmediate(resolve));
+test("KYS user request time is independent of API/cache acquisition and updates only after explicit successful requests", async () => {
+  let now="2026-10-14T11:30:01Z", failure=false;
+  const sourceTime="2026-10-08T21:26:59Z";
+  for (const entityType of ["COMPANY", "JDG"] as const) for (const mode of ["PROVIDER", "CACHE", "FOLLOWER"]) {
+    const transport:typeof fetch=async url=> {
+      if(String(url).endsWith("/search")) return Response.json(entityType === "COMPANY" ? company() : jdg());
+      if(String(url).endsWith("/report-data")) return Response.json(metadata(nipA,entityType));
+      if(failure) return Response.json({error:"Unavailable"},{status:503});
+      return Response.json({section:{...sampleCard.kys,retrievedAt:sourceTime}}, {headers:{"X-SRM-Request-Id":"11111111-1111-4111-8111-111111111111","X-SRM-KYS-Mode":mode}});
+    };
+    now="2026-10-14T11:30:01Z";failure=false;
+    const instance=new SupplierReportController(transport,()=>new Date(now));
+    await instance.search(nipA);assert.equal(instance.getSnapshot().kysRequestedAt,undefined);
+    await instance.fetchKys();assert.equal(instance.getSnapshot().kysRequestedAt,new Date(now).toISOString());
+    assert.equal(instance.getSnapshot().kys.retrievedAt,sourceTime);
+    now="2026-10-14T11:35:02Z";
+    await instance.refreshMetadata();assert.equal(instance.getSnapshot().kysRequestedAt,"2026-10-14T11:30:01.000Z");
+    await instance.fetchKys();assert.equal(instance.getSnapshot().kysRequestedAt,new Date(now).toISOString());
+    failure=true;await instance.fetchKys();assert.equal(instance.getSnapshot().kysRequestedAt,undefined);
+    instance.reset();assert.equal(instance.getSnapshot().kysRequestedAt,undefined);
+  }
+});
+
 test("default browser transport does not bind native fetch to the controller", async () => {
   const original = globalThis.fetch;
   try {
@@ -251,7 +274,7 @@ test("full KYS is withheld when stored metadata cannot confirm authorized versio
 test("PDF action is adjacent full KYS only for explicitly displayed bound fresh report; no export from stale or unrelated context", async () => {
   const { instance } = controller(); await instance.search(nipA);
   const extra = { onDownloadKysPdf: async () => {} };
-  assert(!markup(instance.getSnapshot(), extra).includes("Pobierz raport KYS (PDF)"));
+  assert(!markup(instance.getSnapshot(), extra).includes("kys-pdf-export"));
   const state = instance.getSnapshot(), acquired = new Date().toISOString(), until = new Date(Date.now() + 3600000).toISOString();
   const data = { ...sampleCard.kys.data!, company: { ...sampleCard.kys.data?.company!, nip: nipA }, pepMatches: [] };
   const kys = { ...sampleCard.kys, status: "SUCCESS" as const, retrievedAt: acquired, data };
@@ -259,12 +282,12 @@ test("PDF action is adjacent full KYS only for explicitly displayed bound fresh 
     freshness: { ...state.metadata!.kys.freshness, freshness: "FRESH" as const, retrievedAt: acquired, retentionUntil: until, cacheExpiresAt: until } } };
   const ready = { ...state, kys, metadata: meta };
   const html = markup(ready, extra);
-  assert(html.includes("Pobierz raport KYS (PDF)")); assert(html.indexOf("Sprawozdania finansowe i wskaźniki") < html.indexOf("Pobierz raport KYS (PDF)"));
-  assert(html.indexOf("Pobierz raport KYS (PDF)") < html.indexOf('id="report-kys-details"'));
+  assert(html.includes("kys-pdf-export")); assert(html.indexOf("Sprawozdania finansowe i wskaźniki") < html.indexOf("kys-pdf-export"));
+  assert(html.indexOf("kys-pdf-export") < html.indexOf('id="report-kys-details"'));
   for (const unavailable of [ { ...ready, kys: { ...kys, status: "NOT_REQUESTED" as const } },
     { ...ready, metadata: { ...meta, nip: nipB } }, { ...ready, metadata: { ...meta, kys: { ...meta.kys, exportRef: null } } },
     { ...ready, metadata: { ...meta, kys: { ...meta.kys, freshness: { ...meta.kys.freshness, freshness: "EXPIRED" as const } } } },
-    { ...ready, kysBusy: true } ]) assert(!markup(unavailable, extra).includes("Pobierz raport KYS (PDF)"));
+    { ...ready, kysBusy: true } ]) assert(!markup(unavailable, extra).includes("kys-pdf-export"));
 });
 
 test("HTTP KYS failure retains opaque server timing for the committed error render without report contents", async () => {

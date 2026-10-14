@@ -10,6 +10,8 @@ class ReportRequestError extends Error {
  constructor(message: string, readonly timing?: Omit<KysRenderTiming, "startedAt" | "apiMs">) { super(message); }
 }
 export type ReportState = {
+  /** Time the user requested the displayed KYS; never source freshness or export identity. */
+  kysRequestedAt?: string;
   kysTiming?: KysRenderTiming; result: SearchResult | null; busy: boolean; error: string | null;
   kys: DisplayCard["kys"]; kysBusy: boolean; kysError: string | null;
   metadata: SupplierReportData | null; metadataBusy: boolean; metadataError: string | null };
@@ -28,7 +30,8 @@ export class SupplierReportController {
   private metadataSequence = 0;
   private requests = new Set<AbortController>();
   private metadataRequest?: AbortController;
-  constructor(private readonly transport: typeof fetch = (input, init) => fetch(input, init)) {}
+  constructor(private readonly transport: typeof fetch = (input, init) => fetch(input, init),
+    private readonly now: () => Date = () => new Date()) {}
   getSnapshot = (): ReportState => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private update(change: Partial<ReportState>) { this.state = { ...this.state, ...change }; for (const listener of this.listeners) listener(); }
@@ -76,14 +79,14 @@ export class SupplierReportController {
   fetchKys = async () => {
     const result = this.state.result, nip = supplierNip(result);
     if (this.state.busy || this.state.kysBusy || !result || !nip || inactiveSupplier(result)) return;
-    const generation = this.generation, startedAt = performance.now();
-    this.update({ kysTiming: undefined, kysBusy: true, kysError: null, kys: { ...emptySection(), status: "PENDING" } });
+    const generation = this.generation, startedAt = performance.now(), requestedAt = this.now().toISOString();
+    this.update({ kysRequestedAt: undefined, kysTiming: undefined, kysBusy: true, kysError: null, kys: { ...emptySection(), status: "PENDING" } });
     try {
       const payload = await this.json(result.entityType === "JDG" ? "/api/xray/jdg/kys" : "/api/xray/kys", { identifier: nip }, new AbortController()) as { section: DisplayCard["kys"]; timing?: Omit<KysRenderTiming, "startedAt" | "apiMs"> };
       if (generation !== this.generation) return;
       if (!payload?.section || !["SUCCESS", "PARTIAL", "EMPTY", "ERROR", "PENDING", "NOT_REQUESTED"].includes(payload.section.status)
         || (payload.section.data?.company?.nip && payload.section.data.company.nip !== nip)) throw new Error("Nie udało się potwierdzić raportu KYS tego dostawcy.");
-      this.update({ kys: payload.section, kysTiming: payload.timing ? { ...payload.timing, startedAt, apiMs: performance.now() - startedAt } : undefined });
+      this.update({ kys: payload.section, kysRequestedAt: payload.section.data && ["SUCCESS", "PARTIAL"].includes(payload.section.status) ? requestedAt : undefined, kysTiming: payload.timing ? { ...payload.timing, startedAt, apiMs: performance.now() - startedAt } : undefined });
     } catch (error) { if (generation === this.generation) this.update({ kysTiming: error instanceof ReportRequestError && error.timing ? { ...error.timing, startedAt, apiMs: performance.now() - startedAt } : undefined, kysError: message(error, "Nie udało się pobrać raportu KYS."), kys: { ...emptySection(), status: "ERROR", warnings: ["REPORT_WARNING"] } }); }
     finally { if (generation === this.generation) { this.update({ kysBusy: false }); await this.refreshMetadata(); } }
   };

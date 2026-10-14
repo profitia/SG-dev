@@ -60,7 +60,7 @@ export function GeneralCompanyDataMount({ section }: { section: DisplaySection<G
         <dt>REGON</dt><dd>{value(data?.regon)}</dd>
         <dt>Adres</dt><dd>{value(data?.registeredAddress)}</dd>
         <dt>Data rejestracji</dt><dd>{value(data?.registeredAt)}</dd>
-        <dt>PKD</dt><dd>{value(data?.mainPkd)}</dd>
+        <dt>PKD</dt><dd>{value(data?.mainPkd)}{data?.mainPkd && data.mainPkdDescription ? ` — ${data.mainPkdDescription}` : ""}</dd>
       </dl>
     </SectionFrame>
   );

@@ -39,12 +39,13 @@ function address(value: unknown): string | null {
     .map((key) => str(object(value)?.[key])).filter((part): part is string => part !== null);
   return parts.length ? parts.join(", ") : null;
 }
-function pkd(value: unknown): string | null {
+export function mapPrimaryPkd(value: unknown): { code: string | null; description: string | null } {
   const entry = object(first(value));
-  if (!entry) return null;
+  if (!entry) return { code: null, description: null };
   const code = ["kodDzial", "kodKlasa", "kodPodklasa"]
     .map((key) => str(entry[key])).filter((part): part is string => part !== null).join(".");
-  return str(entry.kod) ?? (code || null);
+  const primaryCode = str(entry.kod) ?? (code || null);
+  return { code: primaryCode, description: primaryCode ? str(entry.opis) : null };
 }
 function empty(status: "EMPTY" | "ERROR", retrievedAt: string | null, warning: string, errorCode: string | null): MgbiGeneralResult {
   return { section: { status, source: SOURCE, retrievedAt, effectiveAt: null, data: null, warnings: [warning] }, rawRecord: null, errorCode };
@@ -70,7 +71,8 @@ export function mapMgbiGeneralRecord(record: unknown, retrievedAt: string): Mgbi
     regon: str(identifiers?.pl_regon),
     registeredAddress: address(rawAddress),
     registeredAt: str(at(header, "dataRejestracjiWKRS")),
-    mainPkd: pkd(activity),
+    mainPkd: mapPrimaryPkd(activity).code,
+    mainPkdDescription: mapPrimaryPkd(activity).description,
     website: str(at(excerpt, "dane", "dzial1", "siedzibaIAdres", "adresStronyInternetowej")),
   };
   const missing = FIELD_NAMES.filter((field) => data[field] === null);

@@ -1,5 +1,5 @@
 "use client";
-import { CanonLink, CanonInput, CanonButton } from '@profitia/srm-xray';
+import { CanonLink, CanonInput, CanonButton, SupplierHeader } from '@profitia/srm-xray';
 
 import "@profitia/srm-xray/financial-scanner.css";
 
@@ -30,6 +30,7 @@ export default function Home() {
   const [identifier, setIdentifier] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const inactive = inactiveSupplier(state.result);
+  const entry = !state.result;
   function newReport() { controller.reset(); setIdentifier(""); requestAnimationFrame(() => inputRef.current?.focus()); }
   async function search(event: FormEvent<HTMLFormElement>) { event.preventDefault(); await controller.search(identifier); }
 
@@ -104,31 +105,34 @@ export default function Home() {
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
-  return <main className="appshield">
-    {!inactive && <CanonLink canonId="SRM-C55" usage="page:01" className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</CanonLink>}
-    <header className="appshield-header">
-      <div className="appshield-brand"><img src="/spendguru/logo.svg" alt="SpendGuru" width={144} height={47} /><h1>Supplier Intelligence Dashboard</h1></div>
-      {!inactive && <form id="supplier-search" tabIndex={-1} className="appshield-search appshield-header-search" aria-label="Wyszukaj dostawcę" onSubmit={search}>
-        <label className="srm-sr-only" htmlFor="identifier">Numer NIP dostawcy</label>
+  const searchForm = <form id="supplier-search" tabIndex={-1} className={entry ? "srm-entry-search" : "appshield-search appshield-header-search"} aria-label="Wyszukaj dostawcę" onSubmit={search}>
+        <label className={entry ? "srm-entry-label" : "srm-sr-only"} htmlFor="identifier">Wpisz NIP</label>
         <div className="appshield-search-fields">
           <CanonInput canonId="SRM-C06" usage="page:02" ref={inputRef} id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={14}
             placeholder="Wpisz numer NIP…" required value={identifier} aria-describedby="supplier-search-help" onChange={event => {
-              controller.reset(); setIdentifier(event.target.value.replace(/[\s-]/g, ""));
+              setIdentifier(event.target.value.replace(/[\s-]/g, ""));
             }} />
           <CanonButton canonId="SRM-C01" usage="page:03" type="submit" disabled={state.busy}>{state.busy ? "Wyszukiwanie…" : "Wyszukaj"}</CanonButton>
         </div>
         <small className="srm-sr-only" id="supplier-search-help">Dane finansowe i rejestrowe są pobierane przy wyszukiwaniu. Raport KYS zamawiasz osobno.</small>
-      </form>}
-      <div className="appshield-actions">
-        {(state.result || state.busy) && <CanonButton canonId="SRM-C02" usage="page:04" type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</CanonButton>}
-        {!inactive && <form action="/api/auth/logout" method="post"><CanonButton canonId="SRM-C01" usage="page:05" type="submit" className="appshield-new-report">Wyloguj się</CanonButton></form>}
-      </div>
-    </header>
+      </form>;
+
+  return <main className="appshield">
+    {!inactive && <CanonLink canonId="SRM-C55" usage="page:01" className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</CanonLink>}
+    <SupplierHeader>
+      {!entry && <>
+        {!inactive && searchForm}
+        <div className="appshield-actions">
+          <CanonButton canonId="SRM-C02" usage="page:04" type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</CanonButton>
+          {!inactive && <form action="/api/auth/logout" method="post"><CanonButton canonId="SRM-C02" usage="page:05" type="submit" className="appshield-new-report">Wyloguj się</CanonButton></form>}
+        </div>
+      </>}
+    </SupplierHeader>
+    {entry && <section className="srm-ui srm-entry-main" aria-label="Wyszukiwanie dostawcy">{searchForm}</section>}
     <div className="appshield-content report-page">
 
       {state.busy && <p role="status" className="report-loading">Wyszukiwanie dostawcy. Poczekaj na wynik…</p>}
       {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
-      {!state.result && !state.busy && !state.error && <div className="report-empty"><h2>Raport dostawcy</h2><p>Wpisz NIP, aby zobaczyć dostępne dane finansowe i rejestrowe.</p></div>}
       {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state}
         onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} onDownloadKysPdf={downloadKysPdf} onDownloadKrsPdf={downloadKrsPdf} slots={{ summary: summarySlot, scanner: scannerSlot, kys: kysSlot }} />}
     </div>

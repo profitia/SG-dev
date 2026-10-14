@@ -1,0 +1,9 @@
+/* C52: stable brand shell, optional host controls. MagicPath CanonHeader. */
+.srm-ui.srm-canon-header { width:100%; min-height:4.5rem; padding:.5rem 1.5rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; border-bottom:1px solid var(--line); background:var(--surface); }
+.srm-header-brand { display:flex; align-items:center; gap:1rem; min-width:0; }
+.srm-header-logo { display:block; flex:0 0 9rem; width:9rem; }
+.srm-header-logo img { display:block; width:100%; height:auto; }
+.srm-canon-header .srm-header-brand h1 { margin:0; font-size:1.1875rem; font-weight:650; line-height:1.3; color:var(--brand-dark); letter-spacing:-.025em; }
+.srm-header-actions { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:.75rem; min-width:0; }
+@media(max-width:38.75rem) { .srm-ui.srm-canon-header { padding:.5rem 1rem; } .srm-header-brand { gap:.75rem; } .srm-header-logo { width:6.5rem; flex-basis:6.5rem; } .srm-canon-header .srm-header-brand h1 { font-size:.875rem; } .srm-header-actions { width:100%; } }
+@media(max-width:23.75rem) { .srm-header-logo { width:5.75rem; flex-basis:5.75rem; } .srm-canon-header .srm-header-brand h1 { font-size:.8125rem; } }

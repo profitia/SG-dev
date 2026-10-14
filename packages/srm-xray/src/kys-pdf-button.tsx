@@ -17,7 +17,7 @@ export function KysPdfButton({ selection, onDownload }: { selection: KysPdfSelec
     finally { if (!controller.signal.aborted) { active.current = null; setBusy(false); } }
   }
   return <div className="kys-pdf-export"><CanonButton canonId="SRM-C01" usage="kys-pdf-button.tsx:download" type="button" onClick={download} disabled={busy} aria-busy={busy}>
-    <KysIcon kind="download" />{busy ? "Przygotowywanie PDF…" : "Pobierz raport KYS (PDF)"}</CanonButton>
+    <KysIcon kind="download" />{busy ? "Przygotowywanie PDF…" : "Pobierz raport KYS"}</CanonButton>
     {busy && <p role="status">Przygotowywanie dokumentu z zapisanego raportu…</p>}
     {error && <p role="alert">{error}</p>}
   </div>;

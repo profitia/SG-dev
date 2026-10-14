@@ -65,7 +65,7 @@ function PeselReveal({ token, onReveal }: { token: string | null | undefined; on
         else if (alive.current && currentToken.current === token) setError(true);
       } catch { if (alive.current && currentToken.current === token) setError(true); }
       finally { if (alive.current && currentToken.current === token) setBusy(false); }
-    }}><KysIcon kind={revealed ? "eye-open" : "eye-closed"} /></CanonButton>}
+    }}><KysIcon kind={revealed ? "eye-closed" : "eye-open"} /></CanonButton>}
     {error && <span className="kys-pesel-error" role="alert">Nie udało się ujawnić numeru.</span>}
   </CanonElement>;
 }
