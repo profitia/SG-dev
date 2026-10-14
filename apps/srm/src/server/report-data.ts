@@ -4,6 +4,7 @@ import { productEnvironmentReady, productOrganizationId } from "./runtime-enviro
 import { financialScanner } from "./financial-scanner";
 import { qualifyScannerSources } from "./financial-scanner-source";
 import type { FinancialSourceDocument } from "./financial-documents";
+import { restoreFinancialDocumentsFromArchive } from "./financial-documents";
 import { createHmac, createHash } from "node:crypto";
 import { kysExportRef } from "./kys-pdf-access";
 import type { FinancialData, FinancialFactEvidence, FinancialHistoryPoint, FinancialIndicatorResult, FinancialPeriod, ReportFreshness, SectionEnvelope, SupplierReportData } from "@profitia/srm-xray";
@@ -233,6 +234,7 @@ export async function readReportData(organizationId: string, selection: ReportSe
   if (isRestrictedRegistrationStatus(await readSupplierRegistrationStatus(organizationId, selection.nip, selection.entityType, pool)))
     return projectReportData(selection, { nip: selection.nip, financial_json: null, financial_sha256: null, financial_checked_at: null, facts: [], indicators: [], kys: null }, now);
   return withOrganization(organizationId, async client => {
+    if (selection.entityType === "COMPANY") await restoreFinancialDocumentsFromArchive(client, organizationId, selection.nip);
     const result = await client.query<ReportReadRow>(REPORT_DATA_SQL, [selection.nip, organizationId, selection.entityType, FINANCIAL_INDICATOR_FORMULA_VERSION]);
     const row = result.rows[0];
     const report = projectReportData(selection, { ...row, scannerTenantScope: organizationId }, now);

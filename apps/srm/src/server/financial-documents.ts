@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { FinancialData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization } from "./db";
+import type { PoolClient } from "pg";
 
 export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-10-xml-financial-v3";
 export type AccountingStandard = "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
@@ -95,23 +96,102 @@ export function projectFinancialDocuments(records: unknown[]): FinancialSourceDo
 }
 export function financialRecordsFromPages(pages: unknown[]): unknown[] { return pages.flatMap((page) => Array.isArray(object(page).results) ? object(page).results as unknown[] : []); }
 
+type DocumentClient = Pick<PoolClient, "query">;
+export type FinancialArchive = { organization_id: string; nip: string; model: string;
+  payload_text: string; payload_jsonb_sha256: string; record_count: number };
+const checksum = (value: string) => createHash("sha256").update(value, "utf8").digest("hex");
+const hashFormat = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+
+/** Verify exact persisted JSONB bytes before parsing. Never hash a reserialized object
+ * against the historical wire hash, follow URLs, or obtain another tenant's source. */
+export function projectArchivedFinancialDocuments(archive: FinancialArchive, organizationId: string, nip: string): FinancialSourceDocument[] {
+  if (archive.organization_id !== organizationId || archive.nip !== nip || archive.model !== "pl-krs-rdf-record")
+    throw new Error("Financial archive identity mismatch");
+  if (!hashFormat(archive.payload_jsonb_sha256) || typeof archive.payload_text !== "string" || archive.payload_text.length > 20_000_000
+      || checksum(archive.payload_text) !== archive.payload_jsonb_sha256) throw new Error("Financial archive checksum mismatch");
+  const payload = object(JSON.parse(archive.payload_text));
+  if (!Array.isArray(payload.pages) || payload.pages.length === 0 || payload.pages.length > 100
+      || payload.pages.some(page => !Array.isArray(object(page).results))) throw new Error("Incomplete financial archive");
+  const records = financialRecordsFromPages(payload.pages);
+  if (!Number.isSafeInteger(archive.record_count) || archive.record_count < 0 || records.length !== archive.record_count || records.length > 10_000)
+    throw new Error("Financial archive record count mismatch");
+  if (records.some(record => object(object(record).identifiers).pl_nip !== nip)) throw new Error("Financial archive supplier mismatch");
+  const documents = projectFinancialDocuments(records);
+  if (new Set(documents.map(d => d.recordId)).size !== documents.length) throw new Error("Duplicate financial archive document");
+  return documents;
+}
+
 export async function saveFinancialDocuments(organizationId: string, nip: string, pages: unknown[]): Promise<{ documents: number; positions: number }> {
   const documents = projectFinancialDocuments(financialRecordsFromPages(pages));
-  return withOrganization(organizationId, async (client) => {
+  return withOrganization(organizationId, client => persistFinancialDocuments(client, organizationId, nip, documents));
+}
+
+async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
+  documents: readonly FinancialSourceDocument[], archiveChecksum: string | null = null): Promise<{ documents: number; positions: number }> {
     for (const document of documents) await client.query(
-      `INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version)
-       VALUES ($1,$2,$3,$4::jsonb,$5,$6) ON CONFLICT (organization_id,nip,record_id) DO UPDATE SET
+      `INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256)
+       VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) ON CONFLICT (organization_id,nip,record_id) DO UPDATE SET
        document_json=EXCLUDED.document_json,checksum_sha256=EXCLUDED.checksum_sha256,mapping_version=EXCLUDED.mapping_version,updated_at=now()
-       WHERE (srm.financial_source_documents.checksum_sha256,srm.financial_source_documents.mapping_version) IS DISTINCT FROM (EXCLUDED.checksum_sha256,EXCLUDED.mapping_version)
+       ,archive_jsonb_sha256=CASE WHEN EXCLUDED.archive_jsonb_sha256 IS NOT NULL OR
+         (srm.financial_source_documents.checksum_sha256,srm.financial_source_documents.mapping_version) IS DISTINCT FROM (EXCLUDED.checksum_sha256,EXCLUDED.mapping_version)
+         THEN EXCLUDED.archive_jsonb_sha256 ELSE srm.financial_source_documents.archive_jsonb_sha256 END
+       WHERE ((srm.financial_source_documents.checksum_sha256,srm.financial_source_documents.mapping_version) IS DISTINCT FROM (EXCLUDED.checksum_sha256,EXCLUDED.mapping_version)
+         OR (EXCLUDED.archive_jsonb_sha256 IS NOT NULL AND srm.financial_source_documents.archive_jsonb_sha256 IS DISTINCT FROM EXCLUDED.archive_jsonb_sha256))
        AND (EXCLUDED.document_json->>'availability' = 'XML_SUPPORTED' OR srm.financial_source_documents.document_json->>'availability' <> 'XML_SUPPORTED')
        AND (EXCLUDED.document_json->>'validation' = 'VALID' OR srm.financial_source_documents.document_json->>'validation' <> 'VALID')`,
-      [organizationId,nip,document.recordId,JSON.stringify(document),document.checksum,document.mappingVersion]);
+      [organizationId,nip,document.recordId,JSON.stringify(document),document.checksum,document.mappingVersion,archiveChecksum]);
     return { documents: documents.length, positions: documents.reduce((count, document) => count + document.rows.length, 0) };
-  });
 }
+
+type StoredDocument = { organization_id: string; nip: string; record_id: string; document_json: FinancialSourceDocument;
+  checksum_sha256: string; mapping_version: string; archive_jsonb_sha256: string | null; document_text: string; document_jsonb_sha256: string };
+async function storedDocuments(client: DocumentClient, organizationId: string, nip: string): Promise<StoredDocument[]> {
+  const rows = (await client.query<StoredDocument>(
+    "SELECT organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256,document_json::text AS document_text,document_jsonb_sha256 FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2 ORDER BY record_id", [organizationId,nip])).rows;
+  if (rows.some(r => r.organization_id !== organizationId || r.nip !== nip || r.record_id !== r.document_json?.recordId
+      || !hashFormat(r.checksum_sha256) || r.checksum_sha256 !== r.document_json?.checksum || r.mapping_version !== r.document_json?.mappingVersion
+      || !hashFormat(r.document_jsonb_sha256) || typeof r.document_text !== "string" || checksum(r.document_text) !== r.document_jsonb_sha256))
+    throw new Error("Financial document identity or checksum mismatch");
+  return rows;
+}
+
+/** Caller owns the withOrganization transaction. A shared archive lock fences provider
+ * replacement until all derived rows commit; concurrent restores use the same upsert. */
+export async function restoreFinancialDocumentsFromArchive(client: DocumentClient, organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
+  const archive = (await client.query<FinancialArchive & { observed_checksum: string; financial_record_ids: string[]; observed_record_count: number; mismatched_supplier_count: number; page_count: number }>(
+    `SELECT organization_id,nip,model,payload_jsonb_sha256,record_count,
+       encode(sha256(convert_to(payload_json::text,'UTF8')),'hex') AS observed_checksum,
+       jsonb_array_length(payload_json->'pages') AS page_count,
+       (SELECT count(*)::int FROM jsonb_array_elements(payload_json->'pages') page CROSS JOIN LATERAL jsonb_array_elements(page->'results') r) AS observed_record_count,
+       (SELECT count(*)::int FROM jsonb_array_elements(payload_json->'pages') page CROSS JOIN LATERAL jsonb_array_elements(page->'results') r WHERE r#>>'{identifiers,pl_nip}' IS DISTINCT FROM nip) AS mismatched_supplier_count,
+       ARRAY(SELECT r->>'id' FROM jsonb_array_elements(payload_json->'pages') page
+         CROSS JOIN LATERAL jsonb_array_elements(page->'results') r
+         WHERE r#>>'{document,type}' IN ('financial_statement','consolidated_financial_statement') AND r->>'id' IS NOT NULL) AS financial_record_ids
+     FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE`, [organizationId,nip])).rows[0];
+  const stored = await storedDocuments(client,organizationId,nip);
+  if (!archive) return stored.map(r => r.document_json);
+  if (archive.organization_id !== organizationId || archive.nip !== nip || archive.model !== "pl-krs-rdf-record"
+      || !hashFormat(archive.payload_jsonb_sha256) || archive.payload_jsonb_sha256 !== archive.observed_checksum)
+    throw new Error("Financial archive identity or checksum mismatch");
+  const ids = archive.financial_record_ids;
+  if (!Number.isSafeInteger(archive.record_count) || archive.record_count < 0 || archive.record_count > 10_000
+      || archive.record_count !== archive.observed_record_count || archive.mismatched_supplier_count !== 0
+      || archive.page_count < 1 || archive.page_count > 100 || !Array.isArray(ids) || new Set(ids).size !== ids.length)
+    throw new Error("Incomplete or ambiguous financial archive inventory");
+  const expected = stored.filter(r => ids.includes(r.record_id));
+  if (expected.length === ids.length && expected.every(r => r.archive_jsonb_sha256 === archive.payload_jsonb_sha256
+      && r.mapping_version === FINANCIAL_DOCUMENT_MAPPING_VERSION)) return expected.map(r => r.document_json);
+  const payload = (await client.query<{ payload_text: string }>(
+    "SELECT payload_json::text AS payload_text FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'", [organizationId,nip])).rows[0];
+  if (!payload) throw new Error("Financial archive changed during reconstruction");
+  const documents = projectArchivedFinancialDocuments({...archive,...payload},organizationId,nip);
+  await persistFinancialDocuments(client,organizationId,nip,documents,archive.payload_jsonb_sha256);
+  // Return the actual rows, including any better-quality preserved projection.
+  return (await storedDocuments(client,organizationId,nip)).filter(r => ids.includes(r.record_id)).map(r => r.document_json);
+}
+
 export async function readFinancialDocuments(organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
-  return withOrganization(organizationId, async (client) => (await client.query<{ document_json: FinancialSourceDocument }>(
-    "SELECT document_json FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2 ORDER BY record_id", [organizationId,nip])).rows.map((row) => row.document_json));
+  return withOrganization(organizationId, client => restoreFinancialDocumentsFromArchive(client,organizationId,nip));
 }
 
 /** Enrich saved tenant reports without re-fetching, revaluing facts or expanding the shared catalog. */
