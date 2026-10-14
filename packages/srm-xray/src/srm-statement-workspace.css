@@ -155,4 +155,5 @@
 .financial-excel-actions{display:flex;align-items:center;flex-wrap:wrap;gap:.75rem;margin-top:1rem;}
 
 .xray-section-header.has-actions{align-items:center;flex-wrap:wrap;}
-.srm-ui.financial-export-action{min-height:0;background:transparent;}
+.xray-section-header.has-actions h2{margin:0;}
+.srm-ui.financial-export-action{width:auto;flex:0 0 auto;min-height:0;background:transparent;}
