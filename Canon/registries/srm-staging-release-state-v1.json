@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "a57b0599815e8480e4a80101b511e4d924ac98638420d35bf2e6417c0deba3b0",
+  "publicationNonce": "9ec295e0c528de422e407deb341c54d5874ae353f11a668a8e34b5b4745505d6",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 91,
+  "generation": 92,
   "release": {
     "authorizationDigest": "dc99367bf8d5335de0c8c642999ac949f394157a657cd39422b40816acff2df0",
     "authorizationKeyOrder": [
@@ -5078,7 +5078,7 @@
         }
       },
       "deploy": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-14T04:30:43.499Z",
@@ -5557,10 +5557,10 @@
             ]
           }
         },
-        "snapshotDigest": "513e7bfba0917b40855341256a0fbe35262409a248ab5a62198c633f08c05cd8",
+        "snapshotDigest": "33402a86df3d6a1215dfad902bd4da26d1dc6b4783f2da45983e8a9fc6d382ad",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-14T04:30:43.499Z",
+          "capturedAt": "2026-10-14T04:32:55.028Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -5629,8 +5629,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-14T04:30:43Z",
-            "pushed_at": "2026-10-14T04:30:38Z",
+            "updated_at": "2026-10-14T04:31:32Z",
+            "pushed_at": "2026-10-14T04:31:25Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -5755,12 +5755,12 @@
             "default": false,
             "protected": false,
             "cpu_used_sec": 0,
-            "compute_time_seconds": 312889,
-            "active_time_seconds": 1131912,
+            "compute_time_seconds": 315081,
+            "active_time_seconds": 1138080,
             "written_data_bytes": 0,
-            "data_transfer_bytes": 6839694,
+            "data_transfer_bytes": 6852264,
             "created_at": "2026-09-22T17:09:28Z",
-            "updated_at": "2026-10-14T04:22:57Z",
+            "updated_at": "2026-10-14T04:32:54Z",
             "created_by": {
               "name": "",
               "image": ""
@@ -5896,22 +5896,22 @@
               "suspended": "not_suspended",
               "suspenders": [],
               "type": "web_service",
-              "updatedAt": "2026-10-12T17:47:59.878536Z"
+              "updatedAt": "2026-10-14T04:32:52.720264Z"
             }
           ],
           "liveDeploy": {
-            "id": "dep-db6hq0lg1s2s739b67o0",
+            "id": "dep-db7gb8vavr4c7385cet0",
             "commit": {
-              "id": "bbcdccd28e7e01695bfaec9a36323124a05469af",
-              "message": "Merge pull request #258 from profitia/feat/srm-inactive-company-state-20261012\n\nSRM: dated inactive supplier notice for deregistered companies and JDG",
-              "createdAt": "2026-10-12T17:09:33Z"
+              "id": "d0a251bd4624a9ab7deb6df177338deb74f6884a",
+              "message": "Merge pull request #277 from profitia/fix/srm-canonical-ui-decimal-export-20261013\n\nSRM: preserve source decimal precision in statement clipboard export",
+              "createdAt": "2026-10-13T18:32:11Z"
             },
             "status": "live",
             "trigger": "api",
-            "createdAt": "2026-10-12T17:46:42.617235Z",
-            "updatedAt": "2026-10-12T17:48:33.775474Z",
-            "startedAt": "2026-10-12T17:46:42.58532Z",
-            "finishedAt": "2026-10-12T17:47:59.877075Z"
+            "createdAt": "2026-10-14T04:31:31.630932Z",
+            "updatedAt": "2026-10-14T04:32:52.719294Z",
+            "startedAt": "2026-10-14T04:31:31.603713Z",
+            "finishedAt": "2026-10-14T04:32:52.719083Z"
           },
           "domains": [
             {
@@ -6036,7 +6036,10 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "deployId": "dep-db7gb8vavr4c7385cet0",
+          "sha": "d0a251bd4624a9ab7deb6df177338deb74f6884a"
+        }
       }
     },
     "lastKnownGood": {
