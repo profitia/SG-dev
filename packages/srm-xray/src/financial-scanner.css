@@ -2196,3 +2196,9 @@ No financial formula, qualification or normalization is changed here. */
 @media(max-width:1100px) { .srm-finance-module .srm-overview { grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px; } .srm-finance-module .srm-radar-panel { padding:18px; } }
 @media(max-width:900px) { .srm-finance-module .srm-overview { grid-template-columns:minmax(0,1fr); } .srm-finance-module .srm-chat-slot { min-height:640px; } }
 @media(max-width:520px) { .srm-finance-module .srm-controls { grid-template-columns:1fr 1fr; } .srm-finance-module .srm-controls label:last-child { grid-column:1/-1; } .srm-explorer .srm-card-footer { flex-wrap:wrap; } }
+
+/* SRM-C16/C17 historical reference: score geometry, comparison color and absolute alerts are separate. */
+.srm-radar-alerts { color:var(--negative-text,#A63830);padding-inline-start:1.25rem;font-size:.75rem;line-height:1.5; }
+.srm-reference-evidence { padding-inline-start:1.25rem;line-height:1.6; }
+.srm-chat-comparison ul { padding-inline-start:1.15rem; margin:.5rem 0 0; }
+.srm-chat-comparison li { margin-block:.3rem;font-variant-numeric:tabular-nums; }

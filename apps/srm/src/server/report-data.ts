@@ -1,6 +1,8 @@
 import { readSupplierRegistrationStatus } from "./company-activity";
 import { productEnvironmentReady, productOrganizationId } from "./runtime-environment";
 import { financialScanner } from "./financial-scanner";
+import { qualifyScannerSources } from "./financial-scanner-source";
+import type { FinancialSourceDocument } from "./financial-documents";
 import { createHmac, createHash } from "node:crypto";
 import { kysExportRef } from "./kys-pdf-access";
 import type { FinancialData, FinancialFactEvidence, FinancialHistoryPoint, FinancialIndicatorResult, FinancialPeriod, ReportFreshness, SectionEnvelope, SupplierReportData } from "@profitia/srm-xray";
@@ -16,6 +18,8 @@ export type ReportSelection = { nip: string; entityType: "COMPANY" | "JDG" };
 type StoredFinancial = SectionEnvelope<FinancialData> & { catalogMappingVersion?: string };
 export type ReportReadRow = {
   nip: string;
+  scannerTenantScope?: string;
+  scanner_documents?: FinancialSourceDocument[];
   financial_json: StoredFinancial | null;
   financial_sha256: string | null;
   financial_checked_at: string | Date | null;
@@ -175,7 +179,8 @@ export function projectReportData(selection: ReportSelection, row: ReportReadRow
       : section.status === "SUCCESS" && periods.every(p => p.facts.length && p.facts.every(f => f.validation === "VERIFIED")) ? "COMPLETE" : "PARTIAL",
     limitations, mappingVersion: section?.catalogMappingVersion ?? null, sourceVersion,
     representationVersion: section ? opaque([selection.nip, sourceVersion, periods, history]) : null, periods, history };
-  financial.scanner = financialScanner(financial);
+  const scannerAsOf = financial.freshness.retrievedAt ?? now.toISOString();
+  financial.scanner = financialScanner(financial, qualifyScannerSources(financial, selected, row.scanner_documents ?? [], scannerAsOf), { tenantScope: row.scannerTenantScope ?? selection.nip, asOf: scannerAsOf });
   const k = row.kys, retrievedAt = iso(k?.retrievedAt), retentionUntil = iso(k?.retentionUntil), ttl = kysCacheTtlMs(env);
   const cacheExpiresAt = retrievedAt && retentionUntil ? new Date(Math.min(Date.parse(retentionUntil), Date.parse(retrievedAt) + ttl)).toISOString() : null;
   const fresh = isFreshKys(retrievedAt, retentionUntil, now, ttl);
@@ -190,7 +195,7 @@ export function projectReportData(selection: ReportSelection, row: ReportReadRow
       : !k.currentProjection ? ["KYS_PROJECTION_OUTDATED"] : k.isComplete !== true ? ["KYS_INCOMPLETE_SOURCES"] : !k.completionConfirmed ? ["KYS_COMPLETENESS_UNCONFIRMED"] : [], reportAvailable: Boolean(k?.hasProjection && k.currentProjection && fresh) } };
 }
 
-/** One PostgreSQL statement gives a coherent snapshot; no cache writes, leases, purges or calculations. */
+/** One PostgreSQL statement captures source evidence coherently. Scanner frames are appended separately; source caches never change on reads. */
 export const REPORT_DATA_SQL = `SELECT requested.nip, c.financial_json, c.financial_sha256, c.financial_checked_at,
   COALESCE((SELECT jsonb_agg(jsonb_build_object('metricCode', f.metric_code, 'periodStart', f.period_start::text,
     'periodEnd', f.period_end::text, 'statementScope', f.statement_scope, 'amount', f.amount::text,
@@ -203,6 +208,7 @@ export const REPORT_DATA_SQL = `SELECT requested.nip, c.financial_json, c.financ
     'importance', i.importance, 'reasonCode', i.reason_code, 'inputFacts', i.input_facts,
     'sourceSnapshotIds', i.source_snapshot_ids, 'sourceDocumentIds', i.source_document_ids))
     FROM srm.catalog_financial_indicators i WHERE i.nip = requested.nip AND i.formula_version = $4 AND $3 = 'COMPANY'), '[]'::jsonb) AS indicators,
+  COALESCE((SELECT jsonb_agg(d.document_json ORDER BY d.record_id) FROM srm.financial_source_documents d WHERE d.organization_id=$2::uuid AND d.nip=requested.nip AND $3='COMPANY'), '[]'::jsonb) AS scanner_documents,
   k.metadata AS kys
 FROM (VALUES ($1::text)) requested(nip)
 LEFT JOIN srm.catalog_companies c ON c.nip = requested.nip AND $3 = 'COMPANY'
@@ -228,7 +234,13 @@ export async function readReportData(organizationId: string, selection: ReportSe
   return withOrganization(organizationId, async client => {
     const result = await client.query<ReportReadRow>(REPORT_DATA_SQL, [selection.nip, organizationId, selection.entityType, FINANCIAL_INDICATOR_FORMULA_VERSION]);
     const row = result.rows[0];
-    const report = projectReportData(selection, row, now);
+    const report = projectReportData(selection, { ...row, scannerTenantScope: organizationId }, now);
+    if (report.financial.scanner?.referenceFrames?.length) {
+      const scanner = report.financial.scanner;
+      for (const frame of scanner.referenceFrames!) await client.query(
+        `INSERT INTO srm.financial_scanner_frames(organization_id,nip,frame_id,frame_json) VALUES($1,$2,$3,$4::jsonb) ON CONFLICT DO NOTHING`,
+        [organizationId, selection.nip, frame.id, JSON.stringify({ ...scanner, referenceFrames:[frame], periods:scanner.periods.filter(p=>p.referenceFrameId===frame.id) })]);
+    }
     report.kys.exportRef = report.kys.reportAvailable && row.kys ? kysExportRef(organizationId, selection, row.kys, process.env.SRM_DEMO_SESSION_SECRET) : null;
     return report;
   }, pool);

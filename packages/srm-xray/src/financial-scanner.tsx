@@ -18,6 +18,7 @@ import { financialValue } from "./financial-history";
 import { IndicatorExplorer } from "./financial-explorer";
 import { FinancialHistoryView } from "./FinancialHistoryView";
 import { SpendGuruAssessment } from "./SpendGuruAssessment";
+import { previousAnnualPeriod, canOverlay, axisTone, comparisonLabel, bestHistoryPeriod } from "./financial-scanner-model";
 import type { AssistantApplicationContext, IndicatorViewContext } from "./assistant-context";
 type Period = FinancialScannerProjection["periods"][number];
 type Card = {
@@ -142,6 +143,7 @@ const radarColors = {
 };
 const alertLabels: Record<string, string> = {
   NET_LOSS: "Strata netto",
+  BASIC_COSTS_EXCEED_REVENUE: "Koszty podstawowe przekraczają przychody",
   OPERATING_LOSS: "Strata operacyjna",
   LIABILITIES_EXCEED_ASSETS: "Zobowiązania i rezerwy przekraczają aktywa",
   CURRENT_ASSETS_BELOW_CURRENT_LIABILITIES:
@@ -150,6 +152,8 @@ const alertLabels: Record<string, string> = {
   LIQUIDITY_SCALE_SATURATED: "Osiągnięto górny zakres skali płynności",
 };
 function reason(code: string | null | undefined): string {
+  const labels: Record<string,string> = { INSUFFICIENT_HISTORY:"Mniej niż trzy kwalifikowane okresy.", NO_HISTORICAL_VARIATION:"Brak zróżnicowania w historii.", ACCOUNTING_STANDARD_UNCONFIRMED:"Niepotwierdzony standard rachunkowości.", SOURCE_REVISION_UNRESOLVED:"Nierozstrzygnięta wersja sprawozdania.", SOURCE_DOCUMENT_UNAVAILABLE:"Brak potwierdzonego dokumentu źródłowego.", UNSUPPORTED_SOURCE_BASIS:"Niepotwierdzona podstawa sprawozdania.", SOURCE_PERIOD_UNCONFIRMED:"Niepotwierdzone daty kolumny porównawczej.", SOURCE_BASIS_MISMATCH:"Inna podstawa niż w wybranej ramie.", OUT_OF_POLICY_DOMAIN:"Wartość poza zakresem metodologii." };
+  if(code && labels[code]) return labels[code];
   if (code === "DOCUMENT_COMPARABILITY_UNCONFIRMED")
     return "Brak potwierdzonego odniesienia historycznego.";
   if (code === "SOURCE_MAPPING_UNCONFIRMED")
@@ -237,7 +241,7 @@ function Radar({
   }, [loadKey, reducedMotion]);
   const emphasizedIndex = hoverIndex ?? focusIndex ?? introIndex;
   const year = period?.to.slice(0, 4) ?? "—",
-    compare = comparison?.to.slice(0, 4);
+    compare = comparison?.id === "reference" ? "najlepsza historia" : comparison?.to.slice(0, 4);
   const cx = 350,
     cy = 237,
     inner = 42,
@@ -247,7 +251,7 @@ function Radar({
     return s == null ? null : Number(s);
   });
   const previous =
-    comparison && comparison.documentRef === period?.documentRef
+    comparison && canOverlay(period, comparison)
       ? axes.map((a) => {
           const s = comparison.axes.find(
             (x) => x.code === a.code,
@@ -338,7 +342,7 @@ function Radar({
         "Profil finansowy w sześciu wycinkach koła, " +
         year +
         ". " +
-        "Płynność według stałej skali SRM. Pozostałe osie wymagają potwierdzonego odniesienia."
+        "Płynność według stałej skali SRM. Pozostałe osie względem kwalifikowanej historii."
       }
     >
       <defs>
@@ -370,8 +374,9 @@ function Radar({
         {axes.map((_, i) => i).sort((a,b) => Number(a === emphasizedIndex)-Number(b === emphasizedIndex)).map(i => {
           const value = scores[i], old = previous?.[i];
           const axis = period?.axes.find(x => x.code === axes[i].code);
-          const colors = radarColors[axis?.tone ?? "unknown"];
-          const appearance = { tone: axis?.tone ?? "unknown", alert: axis?.alerts.some(x => x !== "LIQUIDITY_SCALE_SATURATED") };
+          const tone = axisTone(axis, comparison);
+          const colors = radarColors[tone];
+          const appearance = { tone, alert: axis?.alerts.some(x => x !== "LIQUIDITY_SCALE_SATURATED") };
           const [x,y] = polar((inner+outer)/2, -90+i*60);
           return <g key={axes[i].code} data-motion-sector={axes[i].code}
             className={"srm-sector-motion"+(i===emphasizedIndex?" is-emphasized":"")}
@@ -382,9 +387,9 @@ function Radar({
               fill={
                 value === null
                   ? "url(#" + uid + "srm-sector-pending)"
-                  : "#edf1f5"
+                  : colors.soft
               }
-              stroke={appearance.alert ? colors.fill : "#D6E0E9"}
+              stroke={appearance.alert ? radarColors.negative.fill : "#D6E0E9"}
               strokeWidth={appearance.alert ? 1.8 : 0.8}
             />
             {old !== null && old !== undefined && old > 0 && (
@@ -400,6 +405,7 @@ function Radar({
                 fill={"url(#" + uid + "srm-fill-" + appearance.tone + ")"}
               />
             )}
+            {value === 0 && <path className="srm-sector-zero" d={comparisonArc(i,0)} fill="none" stroke={colors.fill} strokeWidth="3" strokeLinecap="round" />}
             {old !== null && old !== undefined && (
               <g pointerEvents="none">
                 <path
@@ -426,7 +432,7 @@ function Radar({
           p = labels[i],
           old = previous?.[i];
         const axis = period?.axes.find((x) => x.code === a.code);
-        const tone = axis?.tone ?? "unknown",
+        const tone = axisTone(axis, comparison),
           colors = radarColors[tone];
         const appearance = {
           tone,
@@ -439,6 +445,7 @@ function Radar({
         const labelHeight = a.label.length === 2 ? 36 : 22;
         const scoreLabel =
           value === null ? "Bez punktacji" : pl(value, 0) + " pkt";
+        const deltaLabel = comparisonLabel(axis,comparison);
         return (
           <CanonElement as="g" canonId="SRM-C17" usage="financial-scanner:01"
             key={a.code}
@@ -508,7 +515,7 @@ function Radar({
               fontSize="10"
               fontWeight="500"
             >
-              {scoreLabel}
+              {deltaLabel ?? scoreLabel}
               {appearance.alert ? " · sygnał" : ""}
             </text>
             </g>
@@ -559,16 +566,12 @@ export function FinancialScannerMount({
     "standalone",
   );
   const [periodId, setPeriodId] = useState<string | null>(null),
-    [comparisonId, setComparisonId] = useState("");
-  const compare = comparisonId !== "";
+    [comparisonId, setComparisonId] = useState("auto");
   const [history, setHistory] = useState<{
     code: string;
     year?: number;
   } | null>(null);
-  useEffect(() => {
-    const available = report?.financial.scanner?.periods ?? [];
-    if (available.length && !available.some(p => p.scope === scope)) setScope(available[0].scope);
-  }, [report?.financial.scanner?.periods, scope]);
+  useEffect(() => { setScope("standalone"); setPeriodId(null); setComparisonId("auto"); setHistory(null); }, [report?.nip]);
   const periods = (report?.financial.scanner?.periods ?? [])
     .filter((p) => p.scope === scope)
     .slice()
@@ -581,9 +584,15 @@ export function FinancialScannerMount({
     periods.find((p) => p.id === periodId) ??
     periods.find((p) => annual(p) && p.axes.some((a) => a.rawValue !== null)) ??
     periods[0];
-  const compared = compare
-    ? periods.find((p) => p.id === comparisonId)
-    : undefined;
+  const resolvedComparisonId = comparisonId === "auto" ? previousAnnualPeriod(periods,selected)?.id ?? "" : comparisonId;
+  const compared = resolvedComparisonId === "reference" ? bestHistoryPeriod(report?.financial.scanner, selected) : periods.find(p=>p.id===resolvedComparisonId);
+  const compare = Boolean(compared);
+  const frame = report?.financial.scanner?.referenceFrames?.find(f=>f.id===selected?.referenceFrameId);
+  const activeAlerts = selected?.axes.flatMap(a=>a.alerts.filter(x=>x!=="LIQUIDITY_SCALE_SATURATED").map(x=>`${axes.find(d=>d.code===a.code)!.label.join(" ")}: ${alertLabels[x]??x}`)) ?? [];
+  const comparisonSummary = compared && compared.id !== "reference" ? axes.flatMap(a=>{
+    const axis=selected?.axes.find(x=>x.code===a.code), label=comparisonLabel(axis,compared);
+    return label ? [`${a.label.join(" ")}: ${label}.`] : [];
+  }) : [];
   const years = [...new Set(periods.map((p) => Number(p.to.slice(0, 4))))];
   const getMetric = (code: string, year: number) => {
     const p = periods.find((p) => Number(p.to.slice(0, 4)) === year),
@@ -621,8 +630,8 @@ export function FinancialScannerMount({
       capturedOn: report?.financial.freshness.retrievedAt ?? null, statementScope: scope },
     supplier: { id: report?.nip ?? "", nip: report?.nip ?? null, name: assistant?.name ?? "Dostawca", krs: assistant?.krs ?? null },
     view: { page: "supplier-intelligence-dashboard",
-      radar: { year: selected ? Number(selected.to.slice(0,4)) : null, comparisonYear: compared ? Number(compared.to.slice(0,4)) : null,
-        referenceSelection: "history", referenceKind: "history", referenceStatus: "unconfirmed" },
+      radar: { year: selected ? Number(selected.to.slice(0,4)) : null, comparisonYear: compared && compared.id !== "reference" ? Number(compared.to.slice(0,4)) : null,
+        referenceSelection: "history", referenceKind: "history", referenceStatus: selected?.axes.some(a=>a.basis==="HISTORICAL_BEST" && a.normalizedScore!==null) ? "available" : "unconfirmed", referenceFrameId: selected?.referenceFrameId ?? null },
       indicators: indicatorView, history: history ? { code: history.code, year: history.year ?? null } : null },
     financialSummary: axes.map(a => { const v=selected?.axes.find(x=>x.code===a.code)?.rawValue ?? null;
       return { code:a.code,name:a.label.join(" "),year:selected?Number(selected.to.slice(0,4)):null,value:v,unit:a.unit,
@@ -661,7 +670,7 @@ export function FinancialScannerMount({
               onClick={() => {
                 setScope(s);
                 setPeriodId(null);
-                setComparisonId("");
+                setComparisonId("auto");
                 setHistory(null);
               }}
             >
@@ -681,7 +690,7 @@ export function FinancialScannerMount({
                 disabled={!periods.length}
                 onChange={(e) => {
                   setPeriodId(e.target.value);
-                  setComparisonId("");
+                  setComparisonId("auto");
                 }}
               >
                 {!periods.length && <option value="">Brak okresów</option>}
@@ -707,10 +716,10 @@ export function FinancialScannerMount({
               </CanonSelect>
             </label>
             <label>Porównaj
-              <CanonSelect canonId="SRM-C07" usage="financial-scanner:07" aria-label="Okres porównania" value={comparisonId} onChange={e => setComparisonId(e.target.value)} disabled={!selected}>
+              <CanonSelect canonId="SRM-C07" usage="financial-scanner:07" aria-label="Okres porównania" value={resolvedComparisonId} onChange={e => setComparisonId(e.target.value)} disabled={!selected}>
                 <option value="">Bez porównania</option>
-                <option value="reference">Punkt odniesienia</option>
-                {periods.filter(p => !selected || p.to <= selected.to).map(p => <option key={p.id} value={p.id}>{p.to.slice(0,4)}</option>)}
+                <option value="reference" disabled={!frame}>Najlepsze wartości historyczne</option>
+                {periods.filter(p => !selected || p.to < selected.to).map(p => <option key={p.id} value={p.id}>{p.to.slice(0,4)}</option>)}
               </CanonSelect>
             </label>
           </CanonElement>
@@ -737,12 +746,12 @@ export function FinancialScannerMount({
           <div className="srm-chart-legend">
             <span>
               <i className="current" />
-              Wybrany okres
+              {selected?.to.slice(0,4) ?? "Wybrany okres"}
             </span>
             {compare && (
               <span>
                 <i className="previous" />
-                Odniesienie
+                {compared?.id === "reference" ? "Najlepsze wartości" : compared?.to.slice(0,4)}
               </span>
             )}
             <span>0–100 · pozycja na osi</span>
@@ -750,43 +759,37 @@ export function FinancialScannerMount({
           <div className="srm-semantic-legend">
             <span>
               <i className="positive" />
-              Brak sygnału płynności
+              Korzystny kierunek
             </span>
             <span>
               <i className="caution" />
-              Ograniczony bufor
+              Bez zmiany
             </span>
             <span>
               <i className="negative" />
-              Sygnał do sprawdzenia
+              Niekorzystny kierunek
             </span>
             <span>
               <i className="unknown" />
               Bez punktacji
             </span>
           </div>
-          {compare &&
-            (!compared || compared.documentRef !== selected?.documentRef) && (
-              <p className="srm-source-note">
-                {compared
-                  ? "Wartości obu okresów znajdziesz po kliknięciu obszaru. Brak potwierdzonej porównywalności do nałożenia punktacji."
-                  : "Odniesienie historyczne jest niedostępne: wymagane są co najmniej trzy potwierdzone, porównywalne okresy."}
-              </p>
-            )}
+          <p className="srm-source-note">Wypełnienie: pozycja we własnej historii. Kolor: kierunek zmiany; płynność według stałych progów.</p>
+          {activeAlerts.length>0 && <ul className="srm-radar-alerts" aria-label="Sygnały finansowe">{activeAlerts.map(a=><li key={a}>{a}</li>)}</ul>}
           <details className="srm-source-note">
             <CanonSummary canonId="SRM-C49" usage="financial-scanner:08">Jak czytać radar</CanonSummary>
             <p>
-              Płynność używa stałej skali SRM, z maksimum przy 2,0. Pozostałe
-              osie pozostają bez punktacji do potwierdzenia porównywalności
-              danych. Kolor i wypełnienie nie stanowią łącznej oceny dostawcy.
-              Kliknij obszar, aby zobaczyć wartości i historię.
+              Płynność używa stałej skali SRM, z maksimum przy 2,0. Pozostałe osie pokazują pozycję od najniższej do najlepszej wartości w kwalifikowanej historii (minimum trzy okresy). Niższy udział kosztów i zobowiązań oznacza korzystny kierunek. To porównanie danych, nie rating bezpieczeństwa firmy. Kolor bez porównania jest neutralny. Przerywana linia pokazuje porównywany okres; rekordy mogą pochodzić z różnych lat. Kliknij obszar, aby zobaczyć historię.
             </p>
+            {frame && <ul className="srm-reference-evidence">{frame.axes.filter(a=>a.code!=="CURRENT_RATIO").map(a=><li key={a.code}><strong>{axes.find(d=>d.code===a.code)!.label.join(" ")}: </strong>{a.periodIds.length ? a.periodIds.map(id=>periods.find(p=>p.id===id)?.to.slice(0,4)).join(", ") : "brak kwalifikowanych lat"}. {a.bestValue!==null ? `Najlepsza wartość: ${fmt(a.bestValue,axes.find(d=>d.code===a.code)!.unit)}.` : ""}</li>)}</ul>}
+            <p>Sprawozdania z niepotwierdzonym standardem, rewizją lub podstawą obliczeń pozostają dostępne jako wartości źródłowe, ale nie budują punktacji. Wysoki wynik historyczny nie znosi sygnału straty ani zadłużenia.</p>
           </details>
         </section>
         {assistant ? <SpendGuruAssessment key={report?.nip ?? "loading"} context={context} avatars={assistant.avatars}
           year={selected ? Number(selected.to.slice(0,4)) : null} company={assistant.name}
           values={axes.map(a => { const v=selected?.axes.find(x=>x.code===a.code)?.rawValue;return v==null?null:Number(v); })}
-          formatted={axes.map(a => fmt(selected?.axes.find(x=>x.code===a.code)?.rawValue,a.unit))} />
+          formatted={axes.map(a => fmt(selected?.axes.find(x=>x.code===a.code)?.rawValue,a.unit))}
+          comparisonSummary={comparisonSummary} comparisonYear={compared?.id!=="reference" ? compared?.to.slice(0,4) : undefined} />
           : <section className="srm-ai-panel" aria-label="Ocena SpendGuru"><h3>Ocena SpendGuru</h3><div className="srm-ai-blank" aria-label="Miejsce na ocenę SpendGuru" /></section>}
 
       </CanonElement>
@@ -836,7 +839,7 @@ function ScannerHistory({
     <div className="srm-history-detail-body">
       <div className="srm-history-summary"><p className="srm-history-definition">{card.definition}</p><p className="srm-history-buyer"><strong>Dla kupca: </strong>{card.buyer}</p></div>
       <FinancialHistoryView name={card.name} unit={card.unit} selectedYear={year} points={points} toolbarTarget={toolbar} />
-      <footer className="srm-history-detail-footer"><p>Wartości ze sprawozdań finansowych · {periods[0]?.scope === "consolidated" ? "skonsolidowane" : "jednostkowe"}</p>{comparison && <p>Porównanie: {comparison.to.slice(0,4)}</p>}</footer>
+      <footer className="srm-history-detail-footer"><p>Wartości ze sprawozdań finansowych · {periods[0]?.scope === "consolidated" ? "skonsolidowane" : "jednostkowe"}</p>{comparison && <p>Porównanie: {comparison.id === "reference" ? "Najlepsze wartości historyczne" : comparison.to.slice(0,4)}</p>}</footer>
     </div>
   </FinancialHistoryDialog>;
 }
