@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import React, { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { SectionEnvelope, VerclyKysData, VerclyPerson } from "./contracts";
 import { CanonButton, CanonElement } from "./ui-canon";
 import { value, warningLabel, polishCode, yesNo, capitalInThousands, legalFormLabels, registerLabels, kysRegistryRows, kysListRows } from "./kys-content";
@@ -100,17 +100,36 @@ export function VerclyKysReport({ section, entityType = "COMPANY", onRevealPesel
 }) {
   const id = useId(), tablist = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<KysTab>("summary");
+  const tabAnchor = useRef<number | null>(null);
+  const [panelFloor, setPanelFloor] = useState(0);
+  useLayoutEffect(() => {
+    if (tabAnchor.current === null || !tablist.current) return;
+    const delta = tablist.current.getBoundingClientRect().top - tabAnchor.current;
+    tabAnchor.current = null;
+    // Preserve the navigation position, including browser scroll anchoring.
+    if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: "instant" });
+  }, [tab]);
   const availableTabs = tabs.filter(item => entityType === "COMPANY" || item.id !== "ownership");
   const data = section.data, company = data?.company;
   const target = (group: string) => ({ id: `${id}-${group}`, "data-kys-detail": group, tabIndex: -1 });
-  const select = (selected: KysTab) => setTab(selected);
+  const select = (selected: KysTab) => {
+    if (selected === tab) return;
+    const rect = tablist.current?.getBoundingClientRect();
+    if (rect) {
+      tabAnchor.current = rect.top;
+      // Reserve only the visible space below the tabs, not the previous panel's height.
+      // This prevents the document bottom from clamping scroll on shorter tabs.
+      setPanelFloor(Math.max(0, window.innerHeight - rect.bottom));
+    }
+    setTab(selected);
+  };
   function keyboard(event: React.KeyboardEvent, index: number) {
     let next: number | undefined;
     if (event.key === "ArrowRight") next = (index + 1) % availableTabs.length;
     if (event.key === "ArrowLeft") next = (index + availableTabs.length - 1) % availableTabs.length;
     if (event.key === "Home") next = 0;
     if (event.key === "End") next = availableTabs.length - 1;
-    if (next !== undefined) { event.preventDefault(); select(availableTabs[next].id); tablist.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus(); }
+    if (next !== undefined) { event.preventDefault(); select(availableTabs[next].id); tablist.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus({ preventScroll: true }); }
   }
   if (section.status === "PENDING") return <div role="status"><p>Raport jest przygotowywany. Poczekaj na wynik…</p><div className="kys-progress" role="progressbar" aria-label="Postęp pobierania raportu KYS" aria-valuetext="Pobieranie trwa"><span /></div></div>;
   if (!data || !["SUCCESS", "PARTIAL"].includes(section.status)) return <p role="status">{section.status === "ERROR" ? "Raport KYS jest niedostępny." : "brak danych"}</p>;
@@ -132,7 +151,7 @@ export function VerclyKysReport({ section, entityType = "COMPANY", onRevealPesel
     <div className="srm-category-tabs srm-kys-tabs" role="tablist" aria-label="Obszary raportu KYS" ref={tablist}>{availableTabs.map((item, index) =>
       <CanonButton canonId="SRM-C08" usage="kys-report:tab" type="button" key={item.id} role="tab" id={`${id}-tab-${item.id}`} aria-selected={tab === item.id} aria-controls={`${id}-panel-${item.id}`} data-kys-tab-for={item.targets.join(" ")} tabIndex={tab === item.id ? 0 : -1} onClick={() => select(item.id)} onKeyDown={event => keyboard(event,index)}>{item.label}</CanonButton>
     )}</div>
-    {availableTabs.map(item => <div key={item.id} id={`${id}-panel-${item.id}`} role="tabpanel" aria-labelledby={`${id}-tab-${item.id}`} hidden={tab !== item.id} tabIndex={0} className="srm-kys-panel">
+    {availableTabs.map(item => <div key={item.id} id={`${id}-panel-${item.id}`} role="tabpanel" aria-labelledby={`${id}-tab-${item.id}`} hidden={tab !== item.id} tabIndex={0} className="srm-kys-panel" style={{ minHeight: panelFloor }}>
       {/* Changing tabs unmounts any revealed identifier, including in-flight requests. */}
       <div key={tab}>
       {item.id === "summary" && <>

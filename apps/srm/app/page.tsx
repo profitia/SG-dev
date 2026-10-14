@@ -118,12 +118,11 @@ export default function Home() {
       </form>;
 
   return <main className="appshield">
-    {!inactive && <CanonLink canonId="SRM-C55" usage="page:01" className="report-skip-link" href="#supplier-search">Przejdź do wyszukiwania</CanonLink>}
+    {!inactive && <CanonLink canonId="SRM-C55" usage="page:01" className="report-skip-link" href={entry ? "#supplier-search" : "#new-report"}>Przejdź do wyszukiwania</CanonLink>}
     <SupplierHeader>
       {!entry && <>
-        {!inactive && searchForm}
         <div className="appshield-actions">
-          <CanonButton canonId="SRM-C02" usage="page:04" type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</CanonButton>
+          <CanonButton canonId="SRM-C02" usage="page:04" id="new-report" type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</CanonButton>
           {!inactive && <form action="/api/auth/logout" method="post"><CanonButton canonId="SRM-C02" usage="page:05" type="submit" className="appshield-new-report">Wyloguj się</CanonButton></form>}
         </div>
       </>}

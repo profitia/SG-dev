@@ -239,14 +239,17 @@ test("C1 presentation hides providers and technical header while retaining contr
   assert.deepEqual(calls, ["/api/xray/search", "/api/xray/report-data"]);
 });
 
-test("C1 keeps stale, partial and unverified limitations in financial/KYS context, without timestamps", async () => {
+test("C1 preserves data limitations but omits redundant general warnings under the radar", async () => {
   const { instance } = controller(); await instance.search(nipA); const state = instance.getSnapshot();
   const data = structuredClone(state.metadata!); data.financial.freshness.freshness = "EXPIRED";
   data.financial.completeness = "PARTIAL"; data.financial.limitations = ["FINANCIAL_CACHE_EXPIRED", "MAPPING_VERSION_OUTDATED", "FINANCIAL_FACTS_UNVERIFIED"];
   data.kys.freshness.freshness = "EXPIRED"; data.kys.completeness = "PARTIAL";
   const html = markup({ ...state, metadata: data });
-  for (const text of ["Dane finansowe mogą być nieaktualne", "Dane finansowe są częściowe", "Część wyników wymaga aktualizacji", "Część danych nie została potwierdzona", "Poprzedni raport KYS stracił ważność", "Raport KYS jest częściowy"]) assert.ok(html.includes(text), text);
+  for (const text of ["Dane finansowe mogą być nieaktualne", "Część wyników wymaga aktualizacji", "Poprzedni raport KYS stracił ważność", "Raport KYS jest częściowy"]) assert.ok(html.includes(text), text);
   assert.equal(html.includes(data.financial.freshness.checkedAt!), false);
+  assert.ok(!html.includes("Dane finansowe są częściowe"));
+  assert.ok(!html.includes("Część danych nie została potwierdzona"));
+  assert.ok(data.financial.limitations.includes("FINANCIAL_FACTS_UNVERIFIED"));
   assert.ok(html.indexOf("Dane finansowe mogą") > html.indexOf('id="report-financial-details"'));
   assert.ok(html.indexOf("Poprzedni raport KYS") > html.indexOf('id="report-kys"'));
 });

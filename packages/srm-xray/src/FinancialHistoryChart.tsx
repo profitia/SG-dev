@@ -127,7 +127,7 @@ export function FinancialHistoryChart({
         </div>
       </div>
     </div>
-    <div className="srm-history-chart-caption"><p><span className="srm-history-color-ramp" aria-hidden="true" />Starsze → nowsze</p><p>{description}</p></div>
+    <div className="srm-history-chart-caption"><p>{description}</p></div>
     <p className="srm-history-mobile-hint">Przesuń wykres w poziomie, aby zobaczyć pozostałe lata.</p>
   </CanonElement>;
 }

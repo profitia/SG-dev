@@ -2,6 +2,8 @@
 import { CanonButton, CanonElement, CanonSummary, CanonInput } from './ui-canon';
 
 import React, { useRef, useState } from "react";
+import { FinancialHistoryDialog } from "./FinancialHistoryDialog";
+import { KysIcon } from "./kys-report";
 import type { FinancialData, FinancialPeriod } from "./contracts";
 import { amountInThousands } from "./financial-labels";
 
@@ -130,10 +132,10 @@ function FinancialTable({
     </div>
     <div className="financial-table-scroll" ref={scrollRef} tabIndex={0} aria-label="Tabela finansowa przewijana poziomo">
       <CanonElement as="table" canonId="SRM-C48" usage="financial-dashboard:02" className="financial-table">
-        <thead><tr><th scope="col">Pozycja sprawozdania</th>{visible.map((period,index) => <th scope="col" key={period.documentId} title={`${period.from} – ${period.to}`} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined} aria-current={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}><span className="srm-history-year-bar" style={{backgroundColor:yearColor(visible.length-1-index,visible.length),color:index<visible.length*.42?'white':'#003366'}}>{period.to.slice(0,4)}</span></th>)}<th scope="col">Wykres</th></tr></thead>
+        <thead><tr><th scope="col">Pozycja sprawozdania</th>{visible.map((period,index) => <th scope="col" key={period.documentId} title={`${period.from} – ${period.to}`}><span className="srm-history-year-bar" style={{backgroundColor:yearColor(visible.length-1-index,visible.length),color:index<visible.length*.42?'white':'#003366'}}>{period.to.slice(0,4)}</span></th>)}<th scope="col">Wykres</th></tr></thead>
         <tbody>{groups.map((group) => {
           const rows = group.rows.filter((row) => allPeriods.some((period) => numberFor(period, row.code) !== null));
-          return <FragmentGroup key={group.title} title={group.title} rows={rows} visible={visible} onChart={onChart} selectedPeriod={selectedPeriod} />;
+          return <FragmentGroup key={group.title} title={group.title} rows={rows} visible={visible} onChart={onChart} />;
         })}</tbody>
       </CanonElement>
     </div>
@@ -144,21 +146,23 @@ function FinancialTable({
   </>;
 }
 
-function FragmentGroup({ title, rows, visible, onChart, selectedPeriod }: { title: string; rows: Row[]; visible: readonly FinancialPeriod[]; onChart: (row: Row) => void; selectedPeriod?: FinancialPeriodSelection | null }) {
+function FragmentGroup({ title, rows, visible, onChart }: { title: string; rows: Row[]; visible: readonly FinancialPeriod[]; onChart: (row: Row) => void; }) {
   return <>
-    <tr className="financial-table-group"><th scope="rowgroup">{title}</th>{visible.map(period => <td key={period.documentId} aria-hidden="true" data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined} />)}<td aria-hidden="true" /></tr>
+    <tr className="financial-table-group"><th scope="rowgroup">{title}</th>{visible.map(period => <td key={period.documentId} aria-hidden="true" />)}<td aria-hidden="true" /></tr>
     {rows.length ? rows.map((row) => <tr className={row.strong ? "financial-table-total" : undefined} key={row.code}>
       <th scope="row">{row.label}</th>
-      {visible.map((period) => <td key={period.documentId} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>{formatNumber(numberFor(period, row.code))}</td>)}
+      {visible.map((period) => <td key={period.documentId}>{formatNumber(numberFor(period, row.code))}</td>)}
       <td><CanonButton canonId="SRM-C04" usage="financial-dashboard:05" className="srm-statement-icon srm-row-chart" data-financial-metric={row.code} type="button" aria-label={`Pokaż wykres: ${row.label}`} onClick={() => onChart(row)}>
         <StatementIcon />
       </CanonButton></td>
-    </tr>) : <tr><th scope="row">brak danych</th>{visible.map(period => <td key={period.documentId} data-selected-period={period.from === selectedPeriod?.from && period.to === selectedPeriod?.to ? "true" : undefined}>brak danych</td>)}<td /></tr>}
+    </tr>) : <tr><th scope="row">brak danych</th>{visible.map(period => <td key={period.documentId}>brak danych</td>)}<td /></tr>}
   </>;
 }
 
-export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onScopeChange, selectedPeriod }: { data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void>;
-  selectedScope?: Scope | null; onScopeChange?: (scope: Scope) => void; selectedPeriod?: FinancialPeriodSelection | null }) {
+export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onScopeChange, selectedPeriod, exportOpen, onCloseExport }: { data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void>;
+  selectedScope?: Scope | null; onScopeChange?: (scope: Scope) => void; selectedPeriod?: FinancialPeriodSelection | null; exportOpen?: boolean; onCloseExport?: () => void }) {
+  const [localExportOpen, setLocalExportOpen] = useState(false);
+  const closeExport = () => { setLocalExportOpen(false); onCloseExport?.(); };
   const initialScope = defaultFinancialScope(data);
   const [requestedScope, setRequestedScope] = useState<Scope | null>(null);
   const [selectedRow, setSelectedRow] = useState<Row | null>(null);
@@ -187,8 +191,8 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
       <p>Wybrany okres: {activePeriod ? `${activePeriod.from} – ${activePeriod.to}` : "brak pasującego sprawozdania"}</p>
       <p>Ostatni dostępny raport: {allPeriods[0].to.slice(0, 4)} · {scope === "standalone" ? "dane jednostkowe" : "dane skonsolidowane"}</p>
     </div>
-    {onDownloadExcel && <details className="financial-excel-export">
-      <CanonSummary canonId="SRM-C49" usage="financial-dashboard:07">Pobierz do Excela</CanonSummary>
+    {onDownloadExcel && exportOpen === undefined && <div className="financial-export-toolbar"><CanonButton canonId="SRM-C02" usage="financial-dashboard:07" type="button" onClick={() => setLocalExportOpen(true)} aria-haspopup="dialog"><KysIcon kind="download" />Pobierz do Excela</CanonButton></div>}
+    {onDownloadExcel && (exportOpen ?? localExportOpen) && <FinancialHistoryDialog compact title="Pobierz do Excela" subtitle="Wybierz lata sprawozdawcze" onClose={closeExport}><div className="financial-excel-export">
       <p>Wybierz lata do pobrania. Plik zawiera pełne pozycje bilansu i RZiS wybranych sprawozdań. Kwoty zachowują walutę, skalę i dokładność źródła.</p>
       <div className="financial-excel-years" role="group" aria-label="Lata do pobrania">
         {availableYears.map((year) => <label key={year}><CanonInput canonId="SRM-C06" usage="financial-dashboard:08" type="checkbox" checked={selectedYears.includes(year)} onChange={(event) => {
@@ -201,13 +205,13 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
         <CanonButton canonId="SRM-C02" usage="financial-dashboard:10" type="button" disabled={!selectedYears.length || exportBusy} onClick={async () => {
           setExportBusy(true);
           setExportError(null);
-          try { await onDownloadExcel(scope!, selectedYears); }
+          try { await onDownloadExcel(scope!, selectedYears); closeExport(); }
           catch (error) { setExportError(error instanceof Error ? error.message : "Nie udało się pobrać pliku."); }
           finally { setExportBusy(false); }
         }}>{exportBusy ? "Przygotowywanie pliku…" : "Pobierz wybrane lata"}</CanonButton>
       </div>
       {exportError && <p role="alert" className="search-error">{exportError}</p>}
-    </details>}
+    </div></FinancialHistoryDialog>}
     <StatementWorkspace key={scope} rows={rows} years={availableYears.map(Number)} showTables={false} />
     <details className="financial-accordion" open>
       <CanonSummary canonId="SRM-C49" usage="financial-dashboard:11">Rachunek zysków i strat</CanonSummary>

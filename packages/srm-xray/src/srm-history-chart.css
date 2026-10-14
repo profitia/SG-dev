@@ -41,7 +41,6 @@
 .srm-history-column.is-active .srm-history-year-marker i { box-shadow:0 0 0 5px var(--blue-soft); }
 .srm-history-chart-caption { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px 20px; margin-top:10px; font-size:10px; color:var(--muted); }
 .srm-history-chart-caption p { display:flex; align-items:center; gap:8px; }
-.srm-history-color-ramp { display:block; width:50px; height:5px; border-radius:6px; background:linear-gradient(90deg,#ADCADA,#005A9C); }
 .srm-history-mobile-hint { display:none; font-size:10px; color:var(--muted); margin-top:10px!important; }
 .srm-history-chart-empty { padding:25px; color:var(--muted); }
 @media(hover:hover) and (pointer:fine) { .srm-history-column:hover .srm-history-bar-visual { transform:scale(1.045); } .srm-history-column:hover .srm-history-year-marker i { scale:1.15; } }

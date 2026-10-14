@@ -189,18 +189,6 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .financial-chart h4 { margin: 0 0 10px; color: var(--srm-brand); }
 .financial-chart p { color: var(--srm-muted); }
 .financial-strength-preview { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 18px; border: 1px solid var(--srm-border); border-left: 4px solid var(--srm-data-accent); border-radius: var(--srm-radius); background: var(--srm-interaction-soft); }
-.financial-excel-export { margin: 16px 0 22px; padding: 14px 16px; border: 1px solid var(--srm-border); border-radius: var(--srm-radius); background: var(--srm-surface); }
-.financial-excel-export summary { cursor: pointer; color: var(--srm-brand); font-weight: 700; }
-.financial-excel-export p { margin: 12px 0; }
-.financial-excel-years { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 14px 0; }
-.financial-excel-years label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.financial-excel-years input { accent-color: var(--srm-interaction); }
-.financial-excel-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.financial-excel-actions button { padding: 9px 13px; border: 1px solid var(--srm-interaction); border-radius: var(--srm-radius-small); background: white; color: var(--srm-interaction); font: inherit; font-weight: 700; cursor: pointer; }
-.financial-excel-actions button:last-child { border-color: var(--srm-brand); background: var(--srm-brand); color: white; }
-.financial-excel-actions button:hover:not(:disabled) { background: var(--srm-interaction-soft); }
-.financial-excel-actions button:last-child:hover:not(:disabled) { background: var(--srm-interaction); color: white; }
-.financial-excel-actions button:disabled { opacity: .55; cursor: not-allowed; }
 .financial-strength-preview h3, .financial-indicator-group h3, .financial-indicator h4 { margin: 0; color: var(--srm-brand); }
 .financial-strength-preview p { max-width: var(--srm-reading-width); margin: 7px 0 0; line-height: 1.5; }
 .financial-indicator-group { margin-top: 26px; }
@@ -407,7 +395,7 @@ body { margin: 0; color: var(--srm-text); background: var(--srm-background); }
 .health-history-table caption { text-align: left; margin-bottom: 8px; color: var(--srm-text-secondary); }
 .health-history-table th, .health-history-table td { vertical-align: top; padding: 8px; border-bottom: 1px solid var(--srm-border); min-width: 120px; }
 .health-history-table small { display: block; font-size: .75rem; line-height: 1.5; margin-top: 4px; }
-.health-history-table tr[aria-current="true"], .financial-table [aria-current="true"], .financial-table [data-selected-period="true"] { background: var(--srm-interaction-soft); color: var(--srm-brand); }
+.health-history-table tr[aria-current="true"] { background: var(--srm-interaction-soft); color: var(--srm-brand); }
 .health-card :is(button, summary):focus-visible, .health-context-controls :is(button, select):focus-visible, .health-history-table-scroll:focus-visible { outline: 3px solid var(--srm-focus); outline-offset: 3px; }
 @media (max-width: 1300px) { .health-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 1100px) { .health-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -571,8 +559,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; letter-spacing: -.02em; line-height: 
 .summary-period { margin-top: 0; }
 .summary-actions { border-top: 1px solid var(--srm-border); padding-top: var(--srm-space-3); }
 /* Shared period highlight wins over stripe, subtotal and hover backgrounds. */
-.financial-table :is(thead, tbody) tr > :is(th, td)[data-selected-period="true"] { background: var(--srm-interaction-soft); color: var(--srm-brand); box-shadow: inset 2px 0 0 var(--srm-data-accent), inset -2px 0 0 var(--srm-data-accent); }
-.financial-table thead th[data-selected-period="true"] { border-top: 3px solid var(--srm-interaction); }
 .financial-table thead th { position: sticky; top: 0; z-index: 2; }
 .financial-table thead th:first-child { z-index: 3; }
 .financial-table tbody th[scope="rowgroup"] { position: sticky; left: 0; text-align: left; z-index: 1; }
