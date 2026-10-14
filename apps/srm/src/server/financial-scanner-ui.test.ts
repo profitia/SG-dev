@@ -138,3 +138,37 @@ test("colors follow server-qualified direction and liquidity retains its absolut
     "negative",
   );
 });
+
+test("small changes retain direction instead of rounding to signed zero", () => {
+  const prior = period(2024);
+  const axis: Period["axes"][number] = {
+    code: "OPERATING_COST_RATIO",
+    rawValue: "96.6",
+    unit: "PERCENT",
+    normalizedScore: "10",
+    basis: "HISTORICAL_BEST",
+    reasonCode: null,
+    alerts: [],
+    tone: "caution",
+    comparisons: [
+      {
+        periodId: prior.id,
+        delta: "-0.022",
+        deltaPercent: null,
+        direction: "DOWN",
+        favorable: "BETTER",
+      },
+    ],
+  };
+  assert.equal(comparisonLabel(axis, prior), "-0,02 pp");
+  assert.equal(
+    comparisonLabel(
+      {
+        ...axis,
+        comparisons: [{ ...axis.comparisons![0], delta: "-0.000001" }],
+      },
+      prior,
+    ),
+    "−<0,01 pp",
+  );
+});
