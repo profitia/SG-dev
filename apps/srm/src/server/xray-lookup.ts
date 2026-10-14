@@ -1,3 +1,4 @@
+import { enrichCompanyPkd } from "./company-pkd";
 import { isDeregisteredCompany } from "@profitia/srm-xray";
 import { readSupplierRegistrationStatus, readCompanyRegistration } from "./company-activity";
 import { atLookupStage, logProviderOutcome, providerExceptionCode } from "./lookup-diagnostics";
@@ -105,8 +106,11 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
   const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier));
   const cached = await atLookupStage("cache_read", () => readFreshCompany(organizationId, request.identifier.value));
   if (cached) {
-    const registration = await readCompanyRegistration(organizationId, request.identifier.value);
-    const general = { ...cached.general, data: cached.general.data && { ...cached.general.data,
+    const [registration, companyData] = await Promise.all([
+      readCompanyRegistration(organizationId, request.identifier.value),
+      enrichCompanyPkd(organizationId, request.identifier.value, cached.general),
+    ]);
+    const general = { ...cached.general, data: companyData && { ...companyData,
       registrationStatus: registration.status, deregisteredAt: registration.deregisteredAt } };
     if (isDeregisteredCompany(general.data)) return {
       identity: { krs: general.data?.krs ?? null, nip: request.identifier.value, name: general.data?.legalName ?? null },

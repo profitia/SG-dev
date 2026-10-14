@@ -61,3 +61,5 @@ export type { CanonId } from './ui-canon';
 
 export { formatKysRetrievedAt, kysRegistryRows, kysListRows } from "./kys-content";
 export { KysIcon } from "./kys-report";
+
+export { SupplierHeader, SUPPLIER_HEADER_TITLE } from "./header";

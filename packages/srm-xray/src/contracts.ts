@@ -39,6 +39,8 @@ export type GeneralCompanyData = {
   registeredAddress: string | null;
   registeredAt: string | null;
   mainPkd: string | null;
+  /** Description from the same current MGBI primary activity; absent in legacy records. */
+  mainPkdDescription?: string | null;
   /** Optional current registry hint; not yet a verified website. */
   website?: string | null;
 };

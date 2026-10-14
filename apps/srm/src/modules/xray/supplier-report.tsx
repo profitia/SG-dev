@@ -143,11 +143,12 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     ...(scanner || areas.length || supplier.entityType === "COMPANY" ? [{ id: scanner || areas.length ? "report-finance" : "report-financial-details", label: "Finanse" }] : []),
     ...(observations ? [{ id: "report-observations", label: "Obserwacje" }] : []),
     { id: "report-details", label: "Dane szczegółowe" }, { id: "report-kys", label: "KYS" }];
+  const primaryPkd = supplier.entityType === "COMPANY" ? supplier.card.general.data : null;
   const name = supplier.entityType === "JDG" ? supplier.section.data?.entries[0]?.name : supplier.card.general.data?.legalName ?? supplier.card.identity.name;
   return <ReportContext.Provider value={context}><div ref={root} className="supplier-report">
     <section id="supplier-identity" className="report-identity" aria-labelledby="supplier-identity-title">
       <CanonElement as="div" canonId="SRM-C53" usage="supplier-report:02" className="report-identity-heading"><ReportWebIdentity key={`${supplier.entityType}:${supplierNip(supplier)}`} nip={supplierNip(supplier) ?? ""} entityType={supplier.entityType} name={name ?? "Dostawca"}><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
-        <p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}</p></div></ReportWebIdentity>
+        <p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}{primaryPkd?.mainPkd && <> · <span className="report-primary-pkd">PKD {primaryPkd.mainPkd}{primaryPkd.mainPkdDescription ? ` — ${primaryPkd.mainPkdDescription}` : ""}</span></>}</p></div></ReportWebIdentity>
         {!scanner && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
       </CanonElement>
     </section>
@@ -188,8 +189,8 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         onDownload={onDownloadKrsPdf} />}
       </div></div>
       <div className="srm-kys-report-meta">
-        {kysOverviewModel.available && <span data-number-format="SRM-N15">Raport pobrano: {formatKysRetrievedAt(state.kys.retrievedAt)
-          ? <time dateTime={state.kys.retrievedAt!} title="Czas lokalny: Europe/Warsaw">{formatKysRetrievedAt(state.kys.retrievedAt)}</time> : "nie ustalono"}</span>}
+        {kysOverviewModel.available && <span data-number-format="SRM-N15">Raport pobrano: {formatKysRetrievedAt(state.kysRequestedAt ?? null)
+          ? <time dateTime={state.kysRequestedAt!} title="Czas wywołania raportu przez użytkownika · Europe/Warsaw">{formatKysRetrievedAt(state.kysRequestedAt ?? null)}</time> : "nie ustalono"}</span>}
         <CanonButton canonId="SRM-C55" usage="supplier-report:07" className="srm-text-link srm-kys-refresh" type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}>
           <KysIcon kind="refresh" />{state.kysBusy ? "Przygotowywanie raportu KYS…" : state.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz raport KYS ponownie"}
         </CanonButton>
