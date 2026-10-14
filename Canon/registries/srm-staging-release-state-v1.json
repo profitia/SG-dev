@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "860bb319ce50e64efc0541c3029301b9448aafad4bcbfde9e982e1cd02daa02a",
+  "publicationNonce": "3e08c43411425c20a8c4361b027ad29648926f9fd2c909ea09c4d88bb98e759f",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 85,
+  "generation": 86,
   "release": {
     "authorizationDigest": "8b28f4166438bb2e50337e784efeba3e02fbddc6d0b733c11d437cbf27126285",
     "authorizationKeyOrder": [
@@ -8130,5 +8130,166 @@
     "serviceId": "srv-db496b3tqb8s73eh5sfg",
     "evidenceDigest": "9dd074af0fe3a9c37d8a0d41ad0cf07c488ab297c49f6d3057f1b07f8a44df51",
     "verifiedAt": "2026-10-12T17:51:21.775Z"
-  }
+  },
+  "managementCredentialRepairs": [
+    {
+      "id": "render-management-repair-for-github-run-38507605415",
+      "status": "INTENT",
+      "projectKey": "SRM",
+      "targetEnvironment": "staging",
+      "operation": "github-bindings",
+      "repository": "profitia/SG-dev",
+      "repositoryId": 1247665550,
+      "githubEnvironmentId": 23853126630,
+      "secretName": "RENDER_API_KEY",
+      "bindingReceiptName": "SRM_RELEASE_BINDING_RECEIPT",
+      "sourceFailedWorkflowRunId": 38507605415,
+      "acceptedApplicationSha": "d0a251bd4624a9ab7deb6df177338deb74f6884a",
+      "authorization": {
+        "source": "EXPLICIT_USER_REQUEST",
+        "request": "Autoryzuję podmianę sekretu RENDER_API_KEY dla SRM Staging i ponowienie promocji.",
+        "hostConversationId": "01a11c3a-6570-7292-99b4-5666c5a2496b",
+        "recordedAt": "2026-10-14T04:17:31.823Z",
+        "expiresAt": "2026-10-14T04:43:51.661Z",
+        "scope": [
+          "RENDER_API_KEY",
+          "SRM_RELEASE_BINDING_RECEIPT"
+        ]
+      },
+      "operator": {
+        "source": "ACTUAL_GITHUB_AUTHENTICATED_IDENTITY",
+        "login": "profitia",
+        "id": 275643368,
+        "executionEnvironment": "Owner-authorized Codex desktop credential-repair operator"
+      },
+      "before": {
+        "environmentId": 23853126630,
+        "protection": [
+          {
+            "id": 68213351,
+            "node_id": "GA_kwDOSl3djs4EENpn",
+            "type": "required_reviewers",
+            "prevent_self_review": false,
+            "reviewers": [
+              {
+                "type": "User",
+                "reviewer": {
+                  "login": "profitia",
+                  "id": 275643368,
+                  "node_id": "U_kgDOEG376A",
+                  "avatar_url": "https://avatars.githubusercontent.com/u/275643368?v=4",
+                  "gravatar_id": "",
+                  "url": "https://api.github.com/users/profitia",
+                  "html_url": "https://github.com/profitia",
+                  "followers_url": "https://api.github.com/users/profitia/followers",
+                  "following_url": "https://api.github.com/users/profitia/following{/other_user}",
+                  "gists_url": "https://api.github.com/users/profitia/gists{/gist_id}",
+                  "starred_url": "https://api.github.com/users/profitia/starred{/owner}{/repo}",
+                  "subscriptions_url": "https://api.github.com/users/profitia/subscriptions",
+                  "organizations_url": "https://api.github.com/users/profitia/orgs",
+                  "repos_url": "https://api.github.com/users/profitia/repos",
+                  "events_url": "https://api.github.com/users/profitia/events{/privacy}",
+                  "received_events_url": "https://api.github.com/users/profitia/received_events",
+                  "type": "User",
+                  "user_view_type": "public",
+                  "site_admin": false
+                }
+              }
+            ]
+          },
+          {
+            "id": 68213352,
+            "node_id": "GA_kwDOSl3djs4EENpo",
+            "type": "branch_policy"
+          }
+        ],
+        "branchPolicy": {
+          "protected_branches": false,
+          "custom_branch_policies": true
+        },
+        "secrets": [
+          {
+            "name": "CEIDG_API_KEY",
+            "created_at": "2026-10-09T07:00:11Z",
+            "updated_at": "2026-10-09T07:00:11Z"
+          },
+          {
+            "name": "MGBI_API_KEY",
+            "created_at": "2026-10-09T06:59:59Z",
+            "updated_at": "2026-10-09T06:59:59Z"
+          },
+          {
+            "name": "NEON_API_KEY",
+            "created_at": "2026-10-09T07:00:34Z",
+            "updated_at": "2026-10-09T07:00:34Z"
+          },
+          {
+            "name": "RENDER_API_KEY",
+            "created_at": "2026-10-09T07:00:28Z",
+            "updated_at": "2026-10-09T07:00:28Z"
+          },
+          {
+            "name": "SRM_APP_DATABASE_PASSWORD",
+            "created_at": "2026-10-09T06:59:42Z",
+            "updated_at": "2026-10-09T06:59:42Z"
+          },
+          {
+            "name": "SRM_APP_DIRECT_URL",
+            "created_at": "2026-10-09T07:00:17Z",
+            "updated_at": "2026-10-09T07:00:17Z"
+          },
+          {
+            "name": "SRM_DEMO_PASSWORD",
+            "created_at": "2026-10-09T06:59:47Z",
+            "updated_at": "2026-10-09T08:23:40Z"
+          },
+          {
+            "name": "SRM_DEMO_SESSION_SECRET",
+            "created_at": "2026-10-09T06:59:53Z",
+            "updated_at": "2026-10-09T06:59:53Z"
+          },
+          {
+            "name": "SRM_RELEASE_GITHUB_TOKEN",
+            "created_at": "2026-10-09T07:00:23Z",
+            "updated_at": "2026-10-09T07:00:23Z"
+          },
+          {
+            "name": "VERCLY_API_KEY",
+            "created_at": "2026-10-09T07:00:04Z",
+            "updated_at": "2026-10-09T07:00:04Z"
+          }
+        ],
+        "receipt": {
+          "approvalId": "SRM-STAGING-LOGIN-PASSWORD-20261009",
+          "environmentId": 23853126630,
+          "updates": {
+            "SRM_APP_DATABASE_PASSWORD": "2026-10-09T06:59:42Z",
+            "SRM_DEMO_PASSWORD": "2026-10-09T08:23:40Z",
+            "SRM_DEMO_SESSION_SECRET": "2026-10-09T06:59:53Z",
+            "MGBI_API_KEY": "2026-10-09T06:59:59Z",
+            "VERCLY_API_KEY": "2026-10-09T07:00:04Z",
+            "CEIDG_API_KEY": "2026-10-09T07:00:11Z",
+            "SRM_APP_DIRECT_URL": "2026-10-09T07:00:17Z",
+            "SRM_RELEASE_GITHUB_TOKEN": "2026-10-09T07:00:23Z",
+            "RENDER_API_KEY": "2026-10-09T07:00:28Z",
+            "NEON_API_KEY": "2026-10-09T07:00:34Z"
+          }
+        }
+      },
+      "replacementValidation": {
+        "httpStatus": 200,
+        "developmentDeployId": "dep-db77j825b2lc73equti0",
+        "developmentLiveSha": "d0a251bd4624a9ab7deb6df177338deb74f6884a"
+      },
+      "baselinePreserved": {
+        "generation": 85,
+        "sha": "bbcdccd28e7e01695bfaec9a36323124a05469af",
+        "deployId": "dep-db6hq0lg1s2s739b67o0",
+        "serviceId": "srv-db496b3tqb8s73eh5sfg",
+        "evidenceDigest": "9dd074af0fe3a9c37d8a0d41ad0cf07c488ab297c49f6d3057f1b07f8a44df51",
+        "verifiedAt": "2026-10-12T17:51:21.775Z"
+      },
+      "noProductMutation": true
+    }
+  ]
 }
