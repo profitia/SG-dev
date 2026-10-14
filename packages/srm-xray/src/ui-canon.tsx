@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-/** MagicPath library 460628347660177408, revision 461065160585543680 (KYS C56–C59).
+/** MagicPath library 460628347660177408, revision 461107753134481408 (C60 close, C24 tooltip, KYS disclosure).
  * Definitions -> shared components and tokens -> application. Never reverse this dependency.
  * Register a new definition in the design library before adding an application primitive.
  */
@@ -362,7 +362,7 @@ export const uiCanon = {
     ]
   },
   "SRM-C24": {
-    "name": "Panel odczytu wartości",
+    "name": "Dokładna wartość w dymku",
     "behaviors": [
       "SRM-B18",
       "SRM-B29",
@@ -815,6 +815,7 @@ export const uiCanon = {
   "SRM-C56": { name: "Raport KYS z zakładkami", behaviors: ["SRM-B13"], fonts: ["SRM-T03", "SRM-T27", "SRM-T28"], numbers: ["SRM-N15"] },
   "SRM-C57": { name: "Tabela i dane rejestrowe KYS", behaviors: [], fonts: ["SRM-T27", "SRM-T28"], numbers: ["SRM-N01"] },
   "SRM-C58": { name: "PESEL · maska i kontrolka", behaviors: ["SRM-B39"], fonts: ["SRM-T27"], numbers: [] },
+  "SRM-C60": { name: "Zamknięcie okna", behaviors: ["SRM-B04", "SRM-B10", "SRM-B11", "SRM-B35"], fonts: [], numbers: [] },
   "SRM-C59": { name: "Przełącznik widoczności PESEL", behaviors: ["SRM-B39", "SRM-B04", "SRM-B11"], fonts: [], numbers: [] }
 } as const;
 export type CanonId = keyof typeof uiCanon;
@@ -831,4 +832,10 @@ export function CanonSummary({canonId,usage,...props}: React.ComponentPropsWithR
 export function CanonLink({canonId,usage,...props}: React.ComponentPropsWithRef<'a'> & CanonProps) { return <a {...props} {...canonAttributes(canonId,usage)} />; }
 export function CanonElement<T extends keyof React.JSX.IntrinsicElements>({as,canonId,usage,...props}: {as:T} & CanonProps & Omit<React.ComponentPropsWithRef<T>,'as'|'canonId'|'usage'>) {
   return React.createElement(as,{...props,...canonAttributes(canonId,usage)});
+}
+
+export function CanonCloseButton({ canonId = "SRM-C60", usage, className = "", ...props }: React.ComponentPropsWithRef<'button'> & { canonId?: 'SRM-C60'; usage: string }) {
+  return <CanonButton {...props} canonId={canonId} usage={usage} type="button" className={'srm-close-window ' + className} aria-label={props['aria-label'] ?? 'Zamknij'} title={props.title ?? 'Zamknij'}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+  </CanonButton>;
 }

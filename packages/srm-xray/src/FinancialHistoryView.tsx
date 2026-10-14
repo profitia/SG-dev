@@ -106,7 +106,7 @@ export function FinancialHistoryView({
         <CanonButton canonId="SRM-C28" usage="FinancialHistoryView:01" type="button" aria-pressed={view === 'chart'} aria-controls={`${id}-chart`} onClick={() => setView('chart')} aria-label="Pokaż wykres" title="Pokaż wykres"><ViewIcon kind="chart" />{!overview && "Wykres"}</CanonButton>
         <CanonButton canonId="SRM-C28" usage="FinancialHistoryView:02" type="button" aria-pressed={view === 'table'} aria-controls={`${id}-table`} onClick={() => setView('table')} aria-label="Pokaż tabelę" title="Pokaż tabelę"><ViewIcon kind="table" />{!overview && "Tabela"}</CanonButton>
       </div>
-      {view === 'table' && <CanonButton canonId="SRM-C29" usage="FinancialHistoryView:03" type="button" className="srm-history-copy" aria-label="Skopiuj do schowka" title="Skopiuj do schowka" onClick={copyTable} disabled={!sorted.length || copyState === 'copying'}><ViewIcon kind={copyState === 'success' ? 'check' : 'copy'} />{!overview && (copyState === 'success' ? 'Skopiowano' : copyState === 'copying' ? 'Kopiowanie…' : compact ? 'Kopiuj' : 'Skopiuj do schowka')}</CanonButton>}
+      {view === 'table' && <CanonButton canonId="SRM-C29" usage="FinancialHistoryView:03" type="button" className="srm-history-copy" aria-label="Skopiuj do schowka" title="Skopiuj do schowka" onClick={copyTable} disabled={!sorted.length || copyState === 'copying'}><ViewIcon kind={copyState === 'success' ? 'check' : 'copy'} /></CanonButton>}
     </div>;
   return <div className={"srm-history-view" + (compact ? " is-compact" : "") + (overview ? " is-overview" : "")} ref={container}>
     {toolbarTarget ? createPortal(toolbar, toolbarTarget) : toolbar}

@@ -1,10 +1,4 @@
 .srm-history-chart { margin-top:24px; --history-plot-height:240px; }
-.srm-history-readout { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:16px 20px; border:1px solid var(--faint-line); border-radius:12px; background:var(--mist); min-height:83px; }
-.srm-history-readout>div { flex:none; }
-.srm-history-readout-year { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--muted); margin-bottom:5px; }
-.srm-history-readout-year small { font-size:9px; color:var(--brand); background:var(--blue-soft); border-radius:20px; padding:3px 8px; }
-.srm-history-readout strong { display:block; font-size:23px; line-height:1.25; letter-spacing:-.5px; font-variant-numeric:tabular-nums; color:var(--brand-dark); }
-.srm-history-readout>p { max-width:350px; font-size:11px; line-height:1.55; color:var(--muted); }
 .srm-history-chart-scroll { overflow:auto; overscroll-behavior-x:contain; scrollbar-width:thin; padding:36px 4px 8px; }
 .srm-history-chart-scroll:focus-visible { outline:2px solid var(--brand-light); outline-offset:2px; border-radius:8px; }
 .srm-history-chart-canvas { position:relative; padding-left:62px; padding-top:10px; }
@@ -24,12 +18,8 @@
 .srm-history-bar-fill { position:absolute; left:0; right:0; background:var(--history-color); border-radius:23px 23px 8px 8px; }
 .srm-history-bar-fill.is-negative { border-radius:8px 8px 23px 23px; }
 .srm-history-bar-label { position:absolute; left:50%; width:max-content; max-width:90px; text-align:center; color:var(--history-label-ink); font-variant-numeric:tabular-nums; line-height:1.1; }
-.srm-history-bar-label b { display:block; font-size:13px; font-weight:650; letter-spacing:-.35px; }
-.srm-history-bar-label small { display:block; margin-top:4px; font-size:8px; font-weight:500; }
-.srm-history-bar-label.positive-inside { transform:translate(-50%,10px); }
-.srm-history-bar-label.negative-inside { transform:translate(-50%,calc(-100% - 10px)); }
-.srm-history-bar-label.positive-outside { transform:translate(-50%,calc(-100% - 7px)); color:var(--brand-dark); }
-.srm-history-bar-label.negative-outside { transform:translate(-50%,7px); color:var(--brand-dark); }
+.srm-history-bar-label b { display:block; font-size:.8125rem; font-weight:650; letter-spacing:-.35px; }
+.srm-history-bar-label small { display:block; margin-top:4px; font-size:.5rem; font-weight:500; }
 .srm-history-bar-label.is-missing { color:var(--muted); }
 .srm-history-year-marker { height:28px; display:grid; place-items:center; position:relative; margin-top:36px; }
 .srm-history-year-marker:before { content:''; position:absolute; height:1px; background:var(--line); width:100%; left:-50%; top:50%; }
@@ -45,5 +35,6 @@
 .srm-history-chart-empty { padding:25px; color:var(--muted); }
 @media(hover:hover) and (pointer:fine) { .srm-history-column:hover .srm-history-bar-visual { transform:scale(1.045); } .srm-history-column:hover .srm-history-year-marker i { scale:1.15; } }
 .srm-history-column:focus-visible .srm-history-bar-visual { transform:scale(1.045); }
-@media(max-width:760px) { .srm-history-chart { --history-plot-height:215px; } .srm-history-readout { align-items:flex-start; flex-direction:column; gap:10px; padding:14px; } .srm-history-readout strong { font-size:21px; } .srm-history-mobile-hint { display:block; } .srm-history-chart-caption { align-items:flex-start; } }
 @media(prefers-reduced-motion:reduce) { .srm-history-bar-visual,.srm-history-year-marker i { transition:none!important; transform:none!important; scale:1!important; } }
+
+.srm-history-bar-label.above-bar { transform:translate(-50%,calc(-100% - .5rem)); color:var(--brand-dark); white-space:nowrap; }

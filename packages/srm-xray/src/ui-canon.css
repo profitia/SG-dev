@@ -34,3 +34,14 @@
 .srm-ui .is-compact .srm-history-chart-canvas {min-width:250px!important;}
 .srm-ui .is-compact .srm-history-chart-scroll {overflow-x:auto;overflow-y:hidden;}
 @media(pointer:coarse) {.srm-ui .srm-statement-card-actions :is(.srm-history-view-switch button,.srm-history-copy,.srm-statement-icon) {width:32px;height:32px;}}
+
+/* SRM-C60 / SRM-C29: shared icon actions; visible keyboard focus. */
+.srm-close-window, .srm-history-copy { width:2.25rem; height:2.25rem; min-width:2.25rem; min-height:2.25rem; padding:0; display:inline-flex; align-items:center; justify-content:center; flex:none; border:1px solid var(--line,#D5E1EC); border-radius:.4375rem; background:white; color:var(--brand,#005A9C); cursor:pointer; transition:transform 220ms cubic-bezier(.22,.75,.25,1),background 220ms; }
+.srm-close-window svg { width:1.125rem; height:1.125rem; }
+.srm-close-window:focus-visible { outline:2px solid var(--brand-light,#66B2FF); outline-offset:3px; }
+@media(hover:hover) and (pointer:fine) { .srm-close-window:hover { transform:scale(1.07); background:var(--mist,#F8F9FA); } }
+@media(pointer:coarse) { .srm-close-window { width:2.75rem;height:2.75rem; } }
+@media(prefers-reduced-motion:reduce) { .srm-close-window { transition:none;transform:none; } }
+.srm-explorer { overflow-anchor:none; }
+
+.srm-ui .is-compact .srm-history-chart-canvas { min-width:var(--history-canvas-width)!important; }

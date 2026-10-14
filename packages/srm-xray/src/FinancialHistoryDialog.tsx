@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useId, useLayoutEffect } from 'react';
-import { CanonElement, CanonButton } from './ui-canon';
+import { CanonElement, CanonButton, CanonCloseButton } from './ui-canon';
 export function FinancialHistoryDialog({
   title,
   subtitle,
@@ -74,5 +74,5 @@ export function FinancialHistoryDialog({
       if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) onClose();
     }
   }}>
- <header className="srm-history-detail-head"><div><h2 id={id}>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><div className="srm-history-head-actions">{actions}<CanonButton canonId="SRM-C02" usage="FinancialHistoryDialog:02" type="button" className="srm-btn" onClick={onClose} autoFocus>Zamknij</CanonButton></div></header>{children}</CanonElement>;
+ <header className="srm-history-detail-head"><div><h2 id={id}>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><div className="srm-history-head-actions">{actions}<CanonCloseButton canonId="SRM-C60" usage="FinancialHistoryDialog:02" onClick={onClose} autoFocus /></div></header>{children}</CanonElement>;
 }

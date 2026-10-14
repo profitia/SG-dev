@@ -163,7 +163,9 @@ test("page composition preserves all feature mounts and hides empty future analy
   const { instance } = controller(); await instance.search(nipA); const html = markup(instance.getSnapshot());
   for (const name of ["Dane identyfikacyjne i rejestrowe", "Rachunek zysków i strat", "Bilans", "Pobierz do Excela", "Raport KYS"]) assert.ok(html.includes(name), name);
   for (const id of ["report-summary", "report-finance\"", "report-observations"]) assert.equal(html.includes(id), false);
-  assert.match(html, /Raport KYS nie został jeszcze pobrany/);
+  assert.doesNotMatch(html, /Raport KYS nie został jeszcze pobrany|Zapisany raport jest dostępny/);
+  assert.match(html, /<details class="report-detail" id="report-kys"><summary[^>]+data-library-component="SRM-C49"/);
+  assert.match(html, /data-canon-usage="supplier-report:kys-request"/);
   assert.equal(html.includes("PRIVATE_DOCUMENT"), false); assert.equal(html.includes("PRIVATE_MODEL"), false);
   for (const target of html.matchAll(/href="#([^\"]+)"/g)) assert.ok(html.includes(`id="${target[1]}"`));
 });
@@ -276,15 +278,18 @@ test("full KYS is withheld when stored metadata cannot confirm authorized versio
 
 test("PDF action is adjacent full KYS only for explicitly displayed bound fresh report; no export from stale or unrelated context", async () => {
   const { instance } = controller(); await instance.search(nipA);
-  const extra = { onDownloadKysPdf: async () => {} };
+  const extra = { onDownloadKysPdf: async () => {}, onDownloadKrsPdf: async () => {} };
   assert(!markup(instance.getSnapshot(), extra).includes("kys-pdf-export"));
   const state = instance.getSnapshot(), acquired = new Date().toISOString(), until = new Date(Date.now() + 3600000).toISOString();
-  const data = { ...sampleCard.kys.data!, company: { ...sampleCard.kys.data?.company!, nip: nipA }, pepMatches: [] };
+  const data = { ...sampleCard.kys.data!, correlationId: "test-report-123", company: { ...sampleCard.kys.data?.company!, nip: nipA, krs: "0000000001", regon: "123456789" }, pepMatches: [] };
   const kys = { ...sampleCard.kys, status: "SUCCESS" as const, retrievedAt: acquired, data };
   const meta = { ...state.metadata!, kys: { ...state.metadata!.kys, status: "SUCCESS" as const, reportAvailable: true, exportRef: "a".repeat(64),
     freshness: { ...state.metadata!.kys.freshness, freshness: "FRESH" as const, retrievedAt: acquired, retentionUntil: until, cacheExpiresAt: until } } };
   const ready = { ...state, kys, metadata: meta };
   const html = markup(ready, extra);
+  assert(html.indexOf("Zapisz PDF") < html.indexOf("Pobierz aktualny KRS"));
+  assert(html.indexOf("Pobierz aktualny KRS") < html.indexOf("Pobierz ponownie"));
+  assert.match(html, /data-library-component="SRM-C02"[^>]*data-canon-usage="supplier-report:07"/);
   assert(html.includes("kys-pdf-export")); assert(html.indexOf("Sprawozdania finansowe i wskaźniki") < html.indexOf("kys-pdf-export"));
   assert(html.indexOf("kys-pdf-export") < html.indexOf('id="report-kys-details"'));
   for (const unavailable of [ { ...ready, kys: { ...kys, status: "NOT_REQUESTED" as const } },

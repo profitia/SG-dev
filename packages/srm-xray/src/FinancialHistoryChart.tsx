@@ -1,7 +1,7 @@
 "use client";
 import { CanonElement, CanonButton } from './ui-canon';
 import React, { useId, useLayoutEffect, useRef, useState } from 'react';
-import { historyInformation, historyDomain, yearColor } from './financial-history-export';
+import { historyDomain, yearColor } from './financial-history-export';
 import type { FinancialHistoryPoint } from './financial-history-export';
 type Props = {
   overview?: boolean;
@@ -40,14 +40,14 @@ export function FinancialHistoryChart({
     const scroll = chartScroll.current;
     if (!scroll) return;
     const resize = new ResizeObserver(() => {
-      if (scroll.clientHeight > 0) scroll.style.setProperty('--history-plot-height', `${Math.max(36, scroll.clientHeight - 96)}px`);
+      if (scroll.clientHeight > 0) scroll.style.setProperty('--history-plot-height', `${Math.max(36, scroll.clientHeight - 140)}px`);
     });
     resize.observe(scroll);
     return () => resize.disconnect();
   }, []);
   const sorted = [...points].sort((a, b) => a.year - b.year);
-  const initial = overview ? undefined : selectedYear ?? sorted.at(-1)?.year;
-  const [pinned, setPinned] = useState(initial);
+  const initial: number | undefined = undefined;
+  const [pinned, setPinned] = useState<number | undefined>(initial);
   const [hovered, setHovered] = useState<number | null>(null);
   const [focused, setFocused] = useState<number | null>(null);
   const activeYear = hovered ?? focused ?? pinned;
@@ -62,15 +62,12 @@ export function FinancialHistoryChart({
   const description = values.length === 0 ? 'Brak dostępnych wartości dla pokazanych lat.' : 'Wspólna skala od zera. Odcień wskazuje rok, nie ocenę wyniku.';
   if (!active) return <p className="srm-history-chart-empty">Brak okresów sprawozdawczych.</p>;
   return <CanonElement as="section" canonId="SRM-C21" usage="FinancialHistoryChart:01" className="srm-history-chart" aria-label={'Wykres historii: ' + name}>
-    {!overview && <CanonElement as="div" canonId="SRM-C24" usage="FinancialHistoryChart:02" className="srm-history-readout" aria-live="polite" aria-atomic="true">
-      <div><span className="srm-history-readout-year">{active.year}{active.year === selectedYear && <small>Wybrany okres</small>}</span><strong>{fullValue(active.value, unit)}</strong></div>
-      {(active.value === 0 || historyInformation(active)) && <p>{active.value === 0 ? 'Wartość wynosi zero — widoczne jest tylko tło słupka.' : historyInformation(active)}</p>}
-    </CanonElement>}
-    {overview && activeYear !== undefined && <div className="srm-overview-tooltip" role="status"><span>{active.year}</span><strong>{fullValue(active.value, unit)}</strong></div>}
+    {activeYear !== undefined && <CanonElement as="div" canonId="SRM-C24" usage="FinancialHistoryChart:02" className="srm-overview-tooltip" role="status"><span>{active.year}</span><strong>{fullValue(active.value, unit)}</strong></CanonElement>}
     <p className="srm-sr-only" id={`${id}-help`}>Od najstarszego do najnowszego roku. Wskaż słupek, użyj Tab lub strzałek, albo dotknij roku, aby odczytać dokładną wartość. {description}</p>
     <div ref={chartScroll} className="srm-history-chart-scroll" role="region" aria-label="Lata sprawozdawcze i wartości" tabIndex={0}>
       <div className="srm-history-chart-canvas" style={{
         minWidth: Math.max(440, sorted.length * 78 + 62),
+        '--history-canvas-width': `${Math.max(440, sorted.length * 78 + 62)}px`,
         '--history-zero': `${zero}%`
       } as React.CSSProperties}>
         <div className="srm-history-yaxis" aria-hidden="true"><span className="srm-history-axis-unit">{axisUnit}</span>{!scale.emptyScale && scale.ticks.map(t => <span key={t} style={{
@@ -87,12 +84,11 @@ export function FinancialHistoryChart({
             const height = v === null ? 0 : Math.abs(v) / span * 100;
             const top = v !== null && v > 0 ? (scale.max - v) / span * 100 : zero;
             const label = v === null ? ['—', 'Brak danych'] : compact(v, unit);
-            const inside = height >= 23;
-            const labelTop = v === null || v === 0 ? zero : v > 0 ? top : top + height;
-            const labelClass = v !== null && v < 0 ? inside ? 'negative-inside' : 'negative-outside' : inside ? 'positive-inside' : 'positive-outside';
+            const labelTop = top;
+            const labelClass = 'above-bar';
             const style = {
               '--history-color': yearColor(index, sorted.length),
-              '--history-label-ink': inside && index / Math.max(1, sorted.length - 1) > .58 ? '#FFFFFF' : '#003366'
+              '--history-label-ink': '#003366'
             } as React.CSSProperties;
             return <CanonButton canonId="SRM-C22" usage="FinancialHistoryChart:03" key={point.year} type="button" className={'srm-history-column' + (activeYear === point.year ? ' is-active' : '') + (point.year === selectedYear ? ' is-selected-period' : '')} style={style} aria-label={`${point.year}: ${fullValue(v, unit)}${point.year === selectedYear ? ', wybrany okres' : ''}`} aria-describedby={`${id}-help`} aria-pressed={pinned === point.year} data-year={point.year} data-value={v ?? 'missing'} onPointerEnter={e => {
               if (e.pointerType !== 'touch') setHovered(point.year);
@@ -100,7 +96,7 @@ export function FinancialHistoryChart({
               setHovered(null);
               setFocused(point.year);
             }} onBlur={() => setFocused(null)} onClick={() => setPinned(point.year)} onKeyDown={e => {
-              if (overview && e.key === 'Escape') {
+              if (e.key === 'Escape') {
                 setPinned(undefined);
                 setHovered(null);
                 setFocused(null);
@@ -109,7 +105,7 @@ export function FinancialHistoryChart({
               const next = e.key === 'ArrowRight' ? Math.min(index + 1, sorted.length - 1) : e.key === 'ArrowLeft' ? Math.max(index - 1, 0) : e.key === 'Home' ? 0 : e.key === 'End' ? sorted.length - 1 : null;
               if (next === null) return;
               e.preventDefault();
-              (e.currentTarget.parentElement?.children[next] as HTMLButtonElement)?.focus();
+              (e.currentTarget.parentElement?.children[next] as HTMLButtonElement)?.focus({ preventScroll: true });
             }}>
               <span className="srm-history-bar-stage" aria-hidden="true"><span className="srm-history-bar-visual">
                 <span className="srm-history-bar-track" />

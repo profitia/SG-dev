@@ -15,3 +15,7 @@
   .srm-label-motion,
   .srm-label-motion.is-emphasized { transform: none; transition: none; }
 }
+
+/* Pointer selection never outlines the SVG bounding box; keyboard focus follows the sector. */
+.srm-axis.srm-sector, .srm-axis.srm-sector:focus, .srm-axis.srm-sector:focus-visible { outline:none; }
+.srm-sector:focus-visible > path { stroke:var(--brand,#005A9C); stroke-width:2.5; vector-effect:non-scaling-stroke; }

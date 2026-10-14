@@ -125,3 +125,7 @@
 
 /* Tab navigation anchors the visible tab bar; hidden panels cannot anchor scroll. */
 .srm-kys-report,.srm-kys-content{overflow-anchor:none;}
+
+.report-detail-body .srm-ui .srm-kys { margin:0; padding:0; border:0; box-shadow:none; }
+.srm-kys-downloads { align-items:flex-start; }
+.srm-kys-downloads .srm-kys-refresh { margin:0; }

@@ -99,6 +99,8 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   function onNavigate(id: string) { if (root.current) navigateReportSection(root.current, id); }
   function onKysDetails(group: KysDetailTarget) {
     if (!root.current || !kysOverviewModel.available) return;
+    const disclosure = root.current.querySelector<HTMLDetailsElement>("details#report-kys");
+    if (disclosure) disclosure.open = true;
     root.current.querySelector<HTMLButtonElement>(`[data-kys-tab-for~="${group}"]`)?.click();
     window.requestAnimationFrame(() => {
       const target = root.current?.querySelector<HTMLElement>(`[data-kys-detail="${group}"]`);
@@ -163,7 +165,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
       <div className="report-financial-areas">{areas.map(area => <section key={area.key} aria-label={area.title}><h3 className="health-area-heading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d={area.key === "liquidity" ? "M4 8h16v12H4z M8 8V4h8v4 M4 12h16 M10 15h4" : area.key === "debt" ? "M3 9l9-6 9 6H3z M5 11v8 M10 11v8 M15 11v8 M20 11v8 M3 21h18" : area.key === "profitability" ? "M4 3v17h17 M7 15l5-5 4 3 5-8 M17 5h4v4" : "M3 7h18v12H3z M3 11h18 M15 15h3 M6 7V4h12"} /></svg>{area.title}</h3>{area.content}</section>)}</div></section>}
     {observations && <section id="report-observations" className="report-content-section" aria-labelledby="report-observations-title"><h2 id="report-observations-title" tabIndex={-1}>Obserwacje i kwestie do sprawdzenia</h2>{observations}</section>}
     <section id="report-details" className="report-details" aria-labelledby="report-details-title">
-      <div className="report-details-heading"><h2 id="report-details-title" tabIndex={-1}>Dane szczegółowe</h2><p>Pełne zestawienia i dotychczasowe funkcje raportowania.</p></div>
+      <div className="report-details-heading"><h2 id="report-details-title" tabIndex={-1}>Dane szczegółowe</h2></div>
       <details className="report-detail" id="report-registry-details"><CanonSummary canonId="SRM-C49" usage="supplier-report:04">Dane identyfikacyjne i rejestrowe</CanonSummary><div className="report-detail-body">
         {supplier.entityType === "JDG" ? <JdgRegistryMount section={supplier.section} /> : <GeneralCompanyDataMount section={supplier.card.general} />}
       </div></details>
@@ -172,8 +174,8 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         {!scanner && !areas.length && <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />}
         <FinancialDataMount section={supplier.card.financial} onDownloadExcel={onDownloadExcel} selectedScope={scope} onScopeChange={setScope} selectedPeriod={selectedPeriod} />
       </div></details>}
-    </section>
-    <div className="srm-ui srm-kys-scope"><CanonElement as="section" canonId="SRM-C56" usage="supplier-report:kys" id="report-kys" className="report-content-section srm-kys" aria-labelledby="report-kys-title">
+      <details className="report-detail" id="report-kys"><CanonSummary canonId="SRM-C49" usage="supplier-report:kys-disclosure">Raport KYS</CanonSummary><div className="report-detail-body">
+    <div className="srm-ui srm-kys-scope"><CanonElement as="section" canonId="SRM-C56" usage="supplier-report:kys" className="report-content-section srm-kys" aria-labelledby="report-kys-title">
       <div className="srm-kys-heading"><h2 id="report-kys-title" tabIndex={-1}>Raport KYS</h2><div className="srm-kys-downloads">
       {kysOverviewModel.available && metadata?.kys.exportRef && metadata.kys.freshness.retrievedAt && onDownloadKysPdf && <KysPdfButton
         key={`${supplierNip(supplier)}:${supplier.entityType}:${metadata.kys.exportRef}`}
@@ -185,25 +187,27 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         key={`krs:${supplierNip(supplier)}:${metadata.kys.exportRef}`}
         selection={{ nip: supplierNip(supplier) ?? "", entityType: "COMPANY", retrievedAt: metadata.kys.freshness.retrievedAt, exportRef: metadata.kys.exportRef }}
         onDownload={onDownloadKrsPdf} />}
+        {kysOverviewModel.available ? <CanonButton canonId="SRM-C02" usage="supplier-report:07" className="srm-kys-refresh" type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}>
+          <KysIcon kind="refresh" />{state.kysBusy ? "Przygotowywanie raportu KYS…" : state.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz ponownie"}
+        </CanonButton> : <CanonButton canonId="SRM-C01" usage="supplier-report:kys-request" type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}><KysIcon kind="download" />{state.kysBusy ? "Przygotowywanie raportu KYS…" : "Pobierz raport KYS"}</CanonButton>}
       </div></div>
       <div className="srm-kys-report-meta">
         {kysOverviewModel.available && <span data-number-format="SRM-N15">Raport pobrano: {formatKysRetrievedAt(state.kysRequestedAt ?? null)
           ? <time dateTime={state.kysRequestedAt!} title="Czas wywołania raportu przez użytkownika · Europe/Warsaw">{formatKysRetrievedAt(state.kysRequestedAt ?? null)}</time> : "nie ustalono"}</span>}
-        <CanonButton canonId="SRM-C55" usage="supplier-report:07" className="srm-text-link srm-kys-refresh" type="button" onClick={onFetchKys} disabled={state.kysBusy || (supplier.entityType === "JDG" && !supplier.section.data?.entries.length)}>
-          <KysIcon kind="refresh" />{state.kysBusy ? "Przygotowywanie raportu KYS…" : state.kys.status === "NOT_REQUESTED" ? "Pobierz raport KYS" : "Pobierz raport KYS ponownie"}
-        </CanonButton>
+
       </div>
       {state.kysError && <p role="alert" className="search-error">{reportMessage(state.kysError)}</p>}
-      {state.kys.status === "NOT_REQUESTED" && metadata?.kys.reportAvailable && <p>Zapisany raport jest dostępny. Użyj przycisku, aby go wyświetlić.</p>}
       {metadata?.kys.freshness.freshness === "EXPIRED" && <p className="health-data-note">Poprzedni raport KYS stracił ważność. Pobranie wymaga osobnego działania.</p>}
       {(state.kys.status === "PARTIAL" || metadata?.kys.completeness === "PARTIAL") && <p className="health-data-note">Raport KYS jest częściowy. Nie wszystkie sprawdzenia zwróciły dane.</p>}
       {kysOverviewModel.available && !metadata?.kys.exportRef && <p role="status">Nie potwierdzono wersji do eksportu PDF. Szczegóły raportu pozostają dostępne.</p>}
       <div id="report-kys-details">
-        {state.kys.status === "NOT_REQUESTED" ? <p>Raport KYS nie został jeszcze pobrany. Zamów go przyciskiem „Pobierz raport KYS”.</p>
+        {state.kys.status === "NOT_REQUESTED" ? null
           : state.kys.data && !kysOverviewModel.available ? <p role="status">{state.kysBusy || state.metadataBusy ? "Sprawdzanie dostępności raportu…" : kysOverviewModel.message}</p>
           : <VerclyKysMount key={`${supplierNip(supplier)}:${state.kys.retrievedAt}`} section={state.kys} entityType={supplier.entityType} onRevealPesel={onRevealPesel} overview={kysOverview} />}
       </div>
     </CanonElement></div>
+      </div></details>
+    </section>
   </div></ReportContext.Provider>;
 }
 
