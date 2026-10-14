@@ -67,7 +67,8 @@ export function comparisonLabel(
             ? "%"
             : " zł"
           : "";
-  return `${n > 0 ? "+" : ""}${n.toLocaleString("pl-PL", { maximumFractionDigits: axis.unit === "RATIO" ? 2 : 1 })}${unit}`;
+  if (n !== 0 && Math.abs(n) < 0.005) return `${n > 0 ? "+" : "−"}<0,01${unit}`;
+  return `${n > 0 ? "+" : ""}${n.toLocaleString("pl-PL", { maximumFractionDigits: axis.unit === "RATIO" || Math.abs(n) < 1 ? 2 : 1 })}${unit}`;
 }
 export function bestHistoryPeriod(
   scanner: FinancialScannerProjection | undefined,
