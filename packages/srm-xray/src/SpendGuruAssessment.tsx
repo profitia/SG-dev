@@ -197,8 +197,7 @@ export function SpendGuruAssessment({
         </div>
         <form className="srm-chat-composer" onSubmit={event => event.preventDefault()}>
           <label htmlFor={`${id}-input`}>O co chcesz zapytać?</label>
-          <div className="srm-chat-input-wrap"><CanonTextarea canonId="SRM-C35" usage="SpendGuruAssessment:10" id={`${id}-input`} rows={2} placeholder="Napisz wiadomość…" aria-describedby={`${id}-hint`} value={draft} onChange={event => setDraft(event.target.value)} /><CanonButton canonId="SRM-C01" usage="SpendGuruAssessment:11" type="submit" aria-label="Wyślij wiadomość" title="Wyślij wiadomość" disabled><ChatIcon kind="send" /></CanonButton></div>
-          <div className="srm-chat-composer-meta" id={`${id}-hint`}><span>Możesz przygotować pytanie. Wysyłanie do doradcy będzie dostępne w kolejnym etapie.</span></div>
+          <div className="srm-chat-input-wrap"><CanonTextarea canonId="SRM-C35" usage="SpendGuruAssessment:10" id={`${id}-input`} rows={2} placeholder="Napisz wiadomość…" value={draft} onChange={event => setDraft(event.target.value)} /><CanonButton canonId="SRM-C01" usage="SpendGuruAssessment:11" type="submit" aria-label="Wyślij wiadomość" title="Wyślij wiadomość" disabled><ChatIcon kind="send" /></CanonButton></div>
         </form>
       </div>
     </div>

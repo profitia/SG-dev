@@ -135,7 +135,7 @@ export function FinancialHistoryView({
         </CanonElement>
         {!sorted.length && <p className="srm-history-chart-empty">Brak okresów sprawozdawczych.</p>}
       </div>
-      <div className="srm-history-table-caption"><span><i className="srm-history-color-ramp" aria-hidden="true" />Starsze → nowsze</span><span>Pełne wartości · gotowe do wklejenia do Excela</span></div>
+      <div className="srm-history-table-caption"><span>Pełne wartości · gotowe do wklejenia do Excela</span></div>
       <CanonElement as="p" canonId="SRM-C30" usage="FinancialHistoryView:06" className="srm-history-copy-message" role="status" aria-live="polite">{copyMessage}</CanonElement>
       {copyState === 'manual' && <div className="srm-history-manual-copy"><label htmlFor={`${id}-copy`}>Dane do skopiowania</label><CanonTextarea canonId="SRM-C06" usage="FinancialHistoryView:07" id={`${id}-copy`} ref={manualCopy} value={tsv} readOnly rows={5} /></div>}
     </div>

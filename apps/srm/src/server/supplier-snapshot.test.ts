@@ -85,13 +85,13 @@ function statements(): FinancialData {
 function statementHtml(scope: "standalone" | "consolidated", from = "2025-07-01") {
   return renderToStaticMarkup(React.createElement(FinancialDashboard, { data: statements(), selectedScope: scope, selectedPeriod: { from, to: "2025-12-31" } }));
 }
-test("RZiS and balance highlight every header/group/ordinary/subtotal/empty row for the full selected period", () => {
+test("RZiS and balance leave every header/group/ordinary/subtotal/empty row unhighlighted", () => {
   for (const scope of ["standalone", "consolidated"] as const) {
     const html = statementHtml(scope), tables = [...html.matchAll(/<table class="financial-table"[^>]*>([\s\S]*?)<\/table>/g)];
     assert.equal(tables.length, 2);
     for (const table of tables) {
       const rows = [...table[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
-      for (const row of rows) assert.equal((row[1].match(/data-selected-period="true"/g) ?? []).length, 1);
+      for (const row of rows) assert.equal((row[1].match(/data-selected-period="true"/g) ?? []).length, 0);
       assert.match(table[1], /financial-table-total/); assert.match(table[1], /financial-table-group/);
     }
     assert.match(html, scope === "standalone" ? /dane jednostkowe/ : /dane skonsolidowane/);

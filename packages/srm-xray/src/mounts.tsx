@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type ReactNode } from "react";
+import React, { useState, type ReactNode } from "react";
 import type {
   FinancialData,
   FinancialPeriod,
@@ -12,6 +12,8 @@ import type {
 import { value, warningLabel } from "./kys-content";
 import { FinancialDashboard, type FinancialPeriodSelection } from "./financial-dashboard";
 
+import { CanonButton } from "./ui-canon";
+import { KysIcon } from "./kys-report";
 import { VerclyKysReport } from "./kys-report";
 
 type DisplaySection<T> = Omit<SectionEnvelope<T>, "source">;
@@ -30,17 +32,19 @@ function SectionFrame({
   title,
   section,
   children,
+  actions,
 }: {
   title: string;
   section: DisplaySection<unknown>;
   children: ReactNode;
+  actions?: ReactNode;
 }) {
   const missingFinancialReason = section.data == null && section.warnings.find((warning) => ["FINANCIAL_NO_STRUCTURED_DATA", "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE", "FINANCIAL_NO_XML", "FINANCIAL_UNKNOWN_FORMAT", "FINANCIAL_UNSUPPORTED_XML"].includes(warning));
   return (
     <section className="xray-section" aria-label={title}>
       <header className="xray-section-header">
         <h2>{title}</h2>
-        <span>{statusLabel[section.status]}</span>
+        <div className="financial-section-actions"><span>{statusLabel[section.status]}</span>{actions}</div>
       </header>
       {section.status === "PENDING" ? <div role="status"><p>Raport jest przygotowywany. Poczekaj na wynik…</p>{title === "Raport KYS" && <div className="kys-progress" role="progressbar" aria-label="Postęp pobierania raportu KYS" aria-valuetext="Pobieranie trwa"><span /></div>}</div> : section.data == null ? <p>{missingFinancialReason ? warningLabel(missingFinancialReason) : "brak danych"}</p> : children}
       {section.warnings.filter((warning) => warning !== missingFinancialReason && warning !== "FINANCIAL_COST_SIGN_UNVERIFIED").map((warning, index) => <p className="xray-warning" key={index}>{warningLabel(warning)}</p>)}
@@ -68,9 +72,10 @@ export function GeneralCompanyDataMount({ section }: { section: DisplaySection<G
 
 export function FinancialDataMount({ section, onDownloadExcel, selectedScope, onScopeChange, selectedPeriod }: { section: DisplaySection<FinancialData>; onDownloadExcel?: (scope: "standalone" | "consolidated", years: string[]) => Promise<void>;
   selectedScope?: FinancialPeriod["scope"] | null; onScopeChange?: (scope: FinancialPeriod["scope"]) => void; selectedPeriod?: FinancialPeriodSelection | null }) {
+  const [exportOpen, setExportOpen] = useState(false);
   return (
-    <SectionFrame title="Dane finansowe" section={section}>
-      {section.data ? <FinancialDashboard data={section.data} onDownloadExcel={onDownloadExcel} selectedScope={selectedScope} onScopeChange={onScopeChange} selectedPeriod={selectedPeriod} /> : <p>brak danych</p>}
+    <SectionFrame title="Dane finansowe" section={section} actions={onDownloadExcel && section.data?.periods.some(period => period.facts.length) && <CanonButton canonId="SRM-C02" usage="FinancialDataMount:export" type="button" aria-haspopup="dialog" onClick={() => setExportOpen(true)}><KysIcon kind="download" />Pobierz do Excela</CanonButton>}>
+      {section.data ? <FinancialDashboard exportOpen={exportOpen} onCloseExport={() => setExportOpen(false)} data={section.data} onDownloadExcel={onDownloadExcel} selectedScope={selectedScope} onScopeChange={onScopeChange} selectedPeriod={selectedPeriod} /> : <p>brak danych</p>}
     </SectionFrame>
   );
 }

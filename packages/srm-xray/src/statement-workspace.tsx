@@ -1,7 +1,7 @@
 "use client";
 import { FinancialHistoryDialog as StatementDialog } from './FinancialHistoryDialog';
 import { CanonElement, CanonButton, CanonInput } from './ui-canon';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { FinancialHistoryView } from './FinancialHistoryView';
 import { yearColor } from './FinancialHistoryChart';
 import { historyNumber, type FinancialHistoryPoint } from './financial-history-export';
@@ -16,9 +16,9 @@ const unit = 'PLN_THOUSANDS';
 export function StatementIcon({
   kind = 'chart'
 }: {
-  kind?: 'chart' | 'plus' | 'expand' | 'search';
+  kind?: 'chart' | 'plus' | 'expand' | 'search' | 'close';
 }) {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{kind === 'plus' ? <path d="M12 5v14M5 12h14" /> : kind === 'expand' ? <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" /> : kind === 'search' ? <><circle cx="10" cy="10" r="6" /><path d="m15 15 5 5" /></> : <><path d="M3 21h18" /><rect x="4" y="12" width="3" height="6" rx="1.5" /><rect x="10" y="7" width="3" height="11" rx="1.5" /><rect x="16" y="3" width="3" height="15" rx="1.5" /></>}</svg>;
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{kind === 'close' ? <path d="m6 6 12 12M18 6 6 18" /> : kind === 'plus' ? <path d="M12 5v14M5 12h14" /> : kind === 'expand' ? <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" /> : kind === 'search' ? <><circle cx="10" cy="10" r="6" /><path d="m15 15 5 5" /></> : <><path d="M3 21h18" /><rect x="4" y="12" width="3" height="6" rx="1.5" /><rect x="10" y="7" width="3" height="11" rx="1.5" /><rect x="16" y="3" width="3" height="15" rx="1.5" /></>}</svg>;
 }
 export function StatementHistory({
   row,
@@ -64,13 +64,15 @@ const titles: Record<string, string> = {
 };
 export function StatementChartCard({
   row,
-  onExpand
+  onExpand,
+  onRemove
 }: {
   row: StatementRow;
   onExpand: () => void;
+  onRemove?: () => void;
 }) {
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
-  return <CanonElement as="article" canonId="SRM-C51" usage="StatementWorkspace:13" className="srm-statement-chart-card is-overview-card" data-statement-chart={row.id}><header><div className="srm-statement-card-title"><h4 title={row.name}>{titles[row.id] ?? row.name}</h4><p>tys. zł · {Math.min(...row.points.map(p => p.year))}–{Math.max(...row.points.map(p => p.year))}</p></div><div className="srm-statement-card-actions"><div ref={setToolbar} /><CanonButton canonId="SRM-C04" usage="StatementWorkspace:08" type="button" className="srm-statement-icon" onClick={onExpand} title={'Powiększ: ' + row.name} aria-label={'Powiększ: ' + row.name}><StatementIcon kind="expand" /></CanonButton></div></header><FinancialHistoryView compact overview toolbarTarget={toolbar} name={row.name} unit={unit} points={row.points} /></CanonElement>;
+  return <CanonElement as="article" canonId="SRM-C51" usage="StatementWorkspace:13" className="srm-statement-chart-card is-overview-card" data-statement-chart={row.id}><header><div className="srm-statement-card-title"><h4 title={row.name}>{titles[row.id] ?? row.name}</h4><p>tys. zł · {Math.min(...row.points.map(p => p.year))}–{Math.max(...row.points.map(p => p.year))}</p></div><div className="srm-statement-card-actions"><div ref={setToolbar} /><CanonButton canonId="SRM-C04" usage="StatementWorkspace:08" type="button" className="srm-statement-icon" onClick={onExpand} title={'Powiększ: ' + row.name} aria-label={'Powiększ: ' + row.name}><StatementIcon kind="expand" /></CanonButton>{onRemove && !Object.hasOwn(titles,row.id) && <CanonButton canonId="SRM-C04" usage="StatementWorkspace:remove" type="button" className="srm-statement-icon" onClick={onRemove} title={"Usuń wykres: " + row.name} aria-label={"Usuń wykres: " + row.name}><StatementIcon kind="close" /></CanonButton>}</div></header><FinancialHistoryView compact overview toolbarTarget={toolbar} name={row.name} unit={unit} points={row.points} /></CanonElement>;
 }
 export function StatementTable({
   title,
@@ -103,13 +105,18 @@ export function StatementWorkspace({
   years: number[];
   showTables?: boolean;
 }) {
+  const workspace = useRef<HTMLDivElement>(null);
   const [added, setAdded] = useState(['PALA_NRFS', 'PALA_OAC', 'PALA_NPL']),
     [picker, setPicker] = useState(false),
     [history, setHistory] = useState<StatementRow | null>(null),
     [message, setMessage] = useState('');
-  return <div className="srm-statement-workspace"><div className={"srm-statement-chart-grid" + (added.length > 3 ? " has-extra" : "")}>{added.map(id => {
+  return <div className="srm-statement-workspace" ref={workspace}><div className={"srm-statement-chart-grid" + (added.length > 3 ? " has-extra" : "")}>{added.map(id => {
         const row = rows.find(r => r.id === id);
-        return row && <StatementChartCard key={id} row={row} onExpand={() => setHistory(row)} />;
+        return row && <StatementChartCard key={id} row={row} onExpand={() => setHistory(row)} onRemove={Object.hasOwn(titles,id) ? undefined : () => {
+          setAdded(previous => previous.filter(chart => chart !== id));
+          setMessage("Usunięto wykres: " + row.name);
+          requestAnimationFrame(() => workspace.current?.querySelector<HTMLButtonElement>(".srm-add-chart-tile")?.focus({preventScroll:true}));
+        }} />;
       })}<AddChartTile onClick={() => setPicker(true)} /></div><CanonElement as="p" canonId="SRM-C54" usage="StatementWorkspace:12" className="srm-statement-feedback" role="status">{message}</CanonElement>{showTables && Array.from(new Set(rows.map(r => r.section))).map(section => <StatementTable key={section} title={section} rows={rows.filter(r => r.section === section)} years={years} onChart={setHistory} />)}{picker && <StatementPicker rows={rows} added={added} onClose={() => setPicker(false)} onAdd={id => {
       setAdded(previous => previous.includes(id) ? previous : [...previous, id]);
       setPicker(false);

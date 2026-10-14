@@ -122,3 +122,6 @@
 @media(max-width:30rem){.srm-ui .srm-kys .srm-kys-overview-card li{grid-template-columns:1fr;}.srm-ui .srm-kys .kys-overview-execution,.srm-ui .srm-kys .kys-overview-execution+p{grid-column:1;}}
 
 .srm-ui.srm-kys-scope{min-height:0;background:transparent;padding:0;}
+
+/* Tab navigation anchors the visible tab bar; hidden panels cannot anchor scroll. */
+.srm-kys-report,.srm-kys-content{overflow-anchor:none;}

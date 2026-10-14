@@ -51,9 +51,7 @@ function FinancialLimitations({ state, onReadMetadata }: { state: ReportState; o
   const metadata = state.metadata?.financial;
   const notes: string[] = [];
   if (metadata?.freshness.freshness === "EXPIRED") notes.push("Dane finansowe mogą być nieaktualne. Wyniki dotyczą wskazanego okresu.");
-  if (financial.status === "PARTIAL" || metadata?.completeness === "PARTIAL") notes.push("Dane finansowe są częściowe. Nie wszystkie wyniki są dostępne.");
   if (metadata?.limitations.includes("MAPPING_VERSION_OUTDATED")) notes.push("Część wyników wymaga aktualizacji. Dostępne sprawozdania pozostają w szczegółach.");
-  if (metadata?.limitations.includes("FINANCIAL_FACTS_UNVERIFIED")) notes.push("Część danych nie została potwierdzona. Sprawdź ograniczenia poszczególnych wskaźników.");
   return <>
     {notes.map(note => <p key={note} className="health-data-note">{note}</p>)}
     {state.metadataBusy && <p role="status" className="report-metadata-note">Przygotowywanie zapisanych wyników…</p>}

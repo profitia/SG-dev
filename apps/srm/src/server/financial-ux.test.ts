@@ -43,3 +43,30 @@ test("assistant SSR displays supplied identity and explicit no-data, without bro
   assert.doesNotMatch(html,/Unilever|5213390341|542|przykładowa analiza|magicpath-prototype/);
   assert.equal((html.match(/data-radar-sector=/g)||[]).length,6);
 });
+
+import { load } from 'cheerio';
+import { FinancialDataMount, type FinancialData } from '@profitia/srm-xray';
+import { StatementChartCard, type StatementRow } from '../../node_modules/@profitia/srm-xray/src/statement-workspace';
+const data: FinancialData = {periods: [2025,2024].map(year => ({
+  from:`${year}-01-01`,to:`${year}-12-31`,scope:'standalone',documentId:`doc-${year}`,
+  facts:['PALA_NRFS','PALA_OAC','PALA_NPL','BS_A_TA'].map(metricCode => ({metricCode,amount:'100000',currency:'PLN',unit:'PLN'}))
+}))};
+test('statement and balance keep all values without a selected-year column; export belongs to heading', () => {
+  const $ = load(renderToStaticMarkup(React.createElement(FinancialDataMount, {
+    section:{status:'SUCCESS',data,retrievedAt:null,effectiveAt:null,warnings:[]},
+    selectedPeriod:{from:'2025-01-01',to:'2025-12-31'},onDownloadExcel:async()=>{}
+  })));
+  assert.equal($('.financial-table').length,2);
+  assert.equal($('.financial-table [data-selected-period], .financial-table [aria-current]').length,0);
+  assert.equal($('.financial-table th').filter((_,el)=>$(el).text()==='2025').length,2);
+  assert.equal($('.xray-section-header button').text(),'Pobierz do Excela');
+  assert.equal($('details summary').filter((_,el)=>$(el).text()==='Pobierz do Excela').length,0);
+});
+test('remove control is available only on custom charts, even if a built-in receives a callback', () => {
+  for (const id of ['PALA_NRFS','PALA_OAC','PALA_NPL','BS_A_TA']) {
+    const row:StatementRow={id,name:id,section:'Bilans',group:'Aktywa',points:[{year:2025,value:100}]};
+    const $=load(renderToStaticMarkup(React.createElement(StatementChartCard,{row,onExpand:()=>{},onRemove:()=>{}})));
+    assert.equal($('button[aria-label^="Usuń wykres"]').length,id==='BS_A_TA'?1:0);
+    assert.equal($('button[aria-label^="Powiększ"]').length,1);
+  }
+});
