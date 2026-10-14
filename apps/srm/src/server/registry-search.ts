@@ -18,7 +18,7 @@ export type RegistrySearchResult =
   | { entityType: "JDG"; nip: string; section: SectionEnvelope<JdgRegistryData> }
   | { entityType: "COMPANY"; card: SupplierXRayCard }
   | { entityType: "NOT_FOUND" }
-  | { entityType: "UNAVAILABLE" };
+  | { entityType: "UNAVAILABLE"; unavailableProvider: "CEIDG" | null };
 
 /** A known company is served from the catalog; unknown NIPs still check CEIDG first. */
 export async function searchRegistryByNip(
@@ -45,5 +45,5 @@ export async function searchRegistryByNip(
 
   return jdg.status === "EMPTY" && company.general.status === "EMPTY"
     ? { entityType: "NOT_FOUND" }
-    : { entityType: "UNAVAILABLE" };
+    : { entityType: "UNAVAILABLE", unavailableProvider: jdg.status === "ERROR" ? "CEIDG" : null };
 }

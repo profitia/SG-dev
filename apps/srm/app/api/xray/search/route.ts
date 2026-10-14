@@ -39,7 +39,9 @@ export async function POST(request: Request) {
         } }, { headers });
       }
       if (result.entityType === "NOT_FOUND") return NextResponse.json({ error: "Nie znaleziono podmiotu o podanym numerze NIP." }, { status: 404, headers });
-      return NextResponse.json({ error: "Nie udało się ustalić typu podmiotu. Spróbuj ponownie później." }, { status: 503, headers });
+      return NextResponse.json({ error: result.unavailableProvider === "CEIDG"
+        ? "Baza CEIDG chwilowo niedostępna. Spróbuj później."
+        : "Nie udało się ustalić typu podmiotu. Spróbuj ponownie później." }, { status: 503, headers });
     } catch (error) {
       logLookupFailure(error);
       return NextResponse.json({ error: "Nie udało się pobrać i zapisać danych. Spróbuj ponownie później." }, { status: 503 });
