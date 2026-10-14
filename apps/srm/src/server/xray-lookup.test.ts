@@ -289,8 +289,8 @@ test("financial mount explains confirmed international-standard report availabil
     retrievedAt: null, effectiveAt: null, data: null, warnings: ["FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE"],
   };
   const html = renderToStaticMarkup(createElement(FinancialDataMount, { section }));
-  assert.match(html, /Sprawozdanie finansowe jest dostępne/);
-  assert.match(html, /międzynarodowych standardów rachunkowości/);
+  assert.match(html, /Supplier Intelligence Dashboard nie obsługuje sprawozdań/);
+  assert.match(html, /międzynarodowego standardu rachunkowości/);
   assert.ok(!html.includes("MGBI"));
   assert.ok(!html.includes("brak danych</p>"));
 });

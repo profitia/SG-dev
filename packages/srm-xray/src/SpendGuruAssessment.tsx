@@ -73,6 +73,7 @@ export function SpendGuruAssessment({
       preventScroll: true
     }));
   });
+  const unavailable = context.reportAvailability && context.reportAvailability.code !== "AVAILABLE" ? context.reportAvailability : null;
   const indicatorYears = [...new Set(context.view.indicators.items.map(item => item.year).filter(year => year !== null))];
   const contextLabel = `${context.view.indicators.label}${indicatorYears.length === 1 ? ' · ' + indicatorYears[0] : indicatorYears.length > 1 ? ' · różne lata' : ''}`;
   const id = useId();
@@ -176,7 +177,7 @@ export function SpendGuruAssessment({
         </CanonElement>
         <CanonElement as="div" canonId="SRM-C41" usage="SpendGuruAssessment:08" className="srm-chat-context" aria-label="Bieżący kontekst dashboardu">
           <span>{windowHost.detached ? 'Połączony z dashboardem' : 'Kontekst dashboardu'}</span>
-          <details><CanonSummary canonId="SRM-C49" usage="SpendGuruAssessment:09">Radar {year}{context.view.radar.comparisonYear ? ' / ' + context.view.radar.comparisonYear : ''} · {contextLabel}</CanonSummary>
+          {unavailable ? <p>{unavailable.title}</p> : <details><CanonSummary canonId="SRM-C49" usage="SpendGuruAssessment:09">Radar {year}{context.view.radar.comparisonYear ? ' / ' + context.view.radar.comparisonYear : ''} · {contextLabel}</CanonSummary>
             <div className="srm-chat-context-detail"><strong>{context.supplier.name}</strong>
               <p>Radar: {year}{context.view.radar.comparisonYear ? ' · porównanie z ' + context.view.radar.comparisonYear : ''}</p>
               <p>Odniesienie: {context.view.radar.referenceSelection === 'auto' ? 'automatyczne' : context.view.radar.referenceKind === 'peers' ? 'benchmark dostawców' : 'najlepsze historyczne'}{context.view.radar.referenceStatus === 'unconfirmed' ? ' · wymaga potwierdzenia' : ''}</p>
@@ -184,24 +185,25 @@ export function SpendGuruAssessment({
               <ul>{context.view.indicators.items.map(item => <li key={item.code}>{item.name} · {item.year ?? 'brak okresu'}{item.availability === 'missing' ? ' · brak danych' : ''}</li>)}</ul>
               {context.view.history && <p>Otwarta historia: {[...context.financialSummary, ...context.view.indicators.items].find(item => item.code === context.view.history?.code)?.name || 'wybrany wskaźnik'} · {context.view.history.year}</p>}
             </div>
-          </details>
+          </details>}
         </CanonElement>
         {windowHost.error && <p className="srm-chat-window-error" role="alert">{windowHost.error}</p>}
         <div className="srm-chat-transcript" ref={transcript} role="region" aria-label="Podsumowanie danych finansowych dostawcy" tabIndex={0}>
           <div className="srm-chat-intro">
             <div className={`srm-chat-avatar${avatarPulse === 'expanded' ? ' is-pulsing' : ''}`} onAnimationEnd={finishAvatarPulse}><img src={avatars[persona]} alt={avatarAlt} width={96} height={96} /></div>
-            <div className="srm-chat-intro-copy"><span>PRZYJRZYJMY SIĘ DOSTAWCY</span><strong>{company}</strong><small>{year ? `Wybrane dane finansowe za ${year}` : "Brak dostępnego okresu finansowego"}</small></div>
+            <div className="srm-chat-intro-copy"><span>PRZYJRZYJMY SIĘ DOSTAWCY</span><strong>{company}</strong><small>{unavailable ? unavailable.title : year ? `Wybrane dane finansowe za ${year}` : "Brak dostępnego okresu finansowego"}</small></div>
           </div>
           <article className="srm-chat-message is-assistant srm-chat-analysis" ref={initialMessage} tabIndex={-1}>
-            <p>{year ? <>Przyjrzyjmy się danym za <strong>{year}</strong>. </> : null}Przychody wynoszą <strong>{summaryPLN(values[1])}</strong>, a wynik netto to <strong>{summaryPLN(values[0])}</strong>.</p>
+            {unavailable ? <p role="status">{unavailable.message}</p> : <><p>{year ? <>Przyjrzyjmy się danym za <strong>{year}</strong>. </> : null}Przychody wynoszą <strong>{summaryPLN(values[1])}</strong>, a wynik netto to <strong>{summaryPLN(values[0])}</strong>.</p>
             <p>Płynność bieżąca: <strong>{summaryValue(2)}</strong>. Marża operacyjna: <strong>{summaryValue(3)}</strong>. Udział zobowiązań i rezerw w aktywach: <strong>{summaryValue(5)}</strong>.</p>
             {comparisonSummary.length>0 && <div className="srm-chat-comparison"><p><strong>Zmiana względem {comparisonYear}</strong></p><ul>{comparisonSummary.map(line=><li key={line}>{line}</li>)}</ul></div>}
+            </>}
           </article>
         </div>
-        <form className="srm-chat-composer" onSubmit={event => event.preventDefault()}>
+        {!unavailable && <form className="srm-chat-composer" onSubmit={event => event.preventDefault()}>
           <label htmlFor={`${id}-input`}>O co chcesz zapytać?</label>
           <div className="srm-chat-input-wrap"><CanonTextarea canonId="SRM-C35" usage="SpendGuruAssessment:10" id={`${id}-input`} rows={2} placeholder="Napisz wiadomość…" value={draft} onChange={event => setDraft(event.target.value)} /><CanonButton canonId="SRM-C01" usage="SpendGuruAssessment:11" type="submit" aria-label="Wyślij wiadomość" title="Wyślij wiadomość" disabled><ChatIcon kind="send" /></CanonButton></div>
-        </form>
+        </form>}
       </div>
     </div>
     {!windowHost.detached && <CanonButton canonId="SRM-C36" usage="SpendGuruAssessment:12" ref={expandTrigger} className="srm-chat-ribbon" type="button" tabIndex={collapsed ? 0 : -1} aria-hidden={!collapsed || undefined} aria-label="Rozwiń asystenta SpendGuru" title="Rozwiń asystenta" aria-expanded={!collapsed} aria-controls={`${id}-panel`} onClick={() => toggleAssistant(false)} onTransitionEnd={event => finishSlide(event, 'collapsed')}><span className={`srm-chat-ribbon-avatar${avatarPulse === 'collapsed' ? ' is-pulsing' : ''}`} onAnimationEnd={finishAvatarPulse}><img src={avatars[persona]} alt="" /></span><ChatIcon kind="expand" /></CanonButton>}

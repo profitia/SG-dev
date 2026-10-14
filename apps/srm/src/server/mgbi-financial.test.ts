@@ -182,7 +182,7 @@ test("identifies a complete set of international-standard statements without dis
   } });
   assert.equal(requests, 1);
   assert.equal(result.section.status, "EMPTY");
-  assert.deepEqual(result.section.warnings, ["MGBI_FINANCIAL_UNKNOWN_FORMAT"]);
+  assert.deepEqual(result.section.warnings, ["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"]);
 });
 
 test("does not attribute unknown or partial missing statements to international standards", async () => {

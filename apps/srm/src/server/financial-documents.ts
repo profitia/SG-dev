@@ -123,6 +123,11 @@ export function applyFinancialDocumentMetadata(section: SectionEnvelope<Financia
    isIasCompliant: document.isIasCompliant, xmlSchema: {name:document.schemaName,version:document.schemaVersion} } : period;
  }) } };
  if (section.status !== "EMPTY") return section;
+ // IAS is an accounting-standard explanation; file-format warnings are secondary.
+ // Supported or conflicting XML and mixed standards must never be classified as unsupported IAS.
+ if (documents.every(document => document.standard === "IAS_IFRS" && document.availability !== "XML_SUPPORTED" && !document.rows.length)
+     && !section.warnings.some(value => /TRUNCAT|PAGINAT|PARTIAL/.test(value)))
+   return {...section,warnings:["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS",...section.warnings.filter(value=>!["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS","MGBI_NO_STRUCTURED_FINANCIAL_DATA"].includes(value))]};
  const availability = documents.map(document => document.availability);
  const warning = availability.every(value=>value === "NO_XML") ? "MGBI_FINANCIAL_NO_XML" : availability.includes("UNSUPPORTED_XML") ? "MGBI_FINANCIAL_UNSUPPORTED_XML" : availability.includes("UNKNOWN_FORMAT") ? "MGBI_FINANCIAL_UNKNOWN_FORMAT" : null;
  return warning ? {...section,warnings:[...section.warnings.filter(value=>!["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS","MGBI_NO_STRUCTURED_FINANCIAL_DATA"].includes(value)),warning]} : section;

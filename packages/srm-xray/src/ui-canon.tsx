@@ -1,10 +1,11 @@
 "use client";
 import React from 'react';
-/** MagicPath library 460628347660177408, revision 461107753134481408 (C60 close, C24 tooltip, KYS disclosure).
+/** MagicPath library 460628347660177408, revision 461170570843811840 (C61 report availability, B40 blocking).
  * Definitions -> shared components and tokens -> application. Never reverse this dependency.
  * Register a new definition in the design library before adding an application primitive.
  */
 export const uiCanon = {
+  "SRM-C61": { name: "Stan dostępności raportu", behaviors: ["SRM-B40"], fonts: ["SRM-T03", "SRM-T05"], numbers: [] },
   "SRM-C01": {
     "name": "Przycisk główny",
     "behaviors": [

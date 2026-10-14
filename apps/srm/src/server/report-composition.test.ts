@@ -326,17 +326,16 @@ test("scanner composition replaces legacy summary and health cards while preserv
 });
 
 
-test("deregistered company has one dated notice, no analysis/KYS/exports or metadata requests, and resets to new report",async()=>{
- const result=company();assert.equal(result.entityType,"COMPANY");if(result.entityType!=="COMPANY")return;
- result.card.general.data!.registrationStatus="DEREGISTERED";result.card.general.data!.deregisteredAt="2009-01-19";
+for(const registrationStatus of ["DEREGISTERED","LIQUIDATION"] as const)test(`${registrationStatus} preserves identity and scanner status while hiding details and requests`,async()=>{
+ const result=company();if(result.entityType!=="COMPANY")throw Error("fixture");
+ result.card.general.data!.registrationStatus=registrationStatus;result.card.general.data!.deregisteredAt="2009-01-19";
  const {instance,calls}=controller(result);await instance.search(nipA);await instance.fetchKys();await instance.refreshMetadata();
  assert.deepEqual(calls,["/api/xray/search"]);assert.equal(instance.getSnapshot().metadata,null);
- const html=markup({...instance.getSnapshot(),kys:{...sampleCard.kys},metadata:metadata()},{slots:{scanner:()=>{throw Error("inactive scanner mounted")},kys:()=>{throw Error("inactive KYS mounted")}}});
- assert.match(html,/Spółka została wykreślona z KRS 19\.01\.2009 r\. i jest nieaktywna/);
- assert.match(html,/Moduł publikuje dane finansowe i raporty tylko dla aktywnych spółek/);
- assert.equal((html.match(/role="status"/g)||[]).length,1);
- assert.doesNotMatch(html,/Supplier Finance Scanner|Nazwa niedostępna|Raport KYS|Dane szczegółowe|button|<nav|Pobierz|PRIVATE_DOCUMENT/);
- result.card.general.data!.deregisteredAt=null;const withoutDate=controller(result);await withoutDate.instance.search(nipA);assert.match(markup(withoutDate.instance.getSnapshot()),/Spółka jest wykreślona z KRS i jest nieaktywna/);
+ const html=markup({...instance.getSnapshot(),kys:{...sampleCard.kys},metadata:metadata()},{slots:{kys:()=>{throw Error("restricted KYS mounted")}}});
+ assert.match(html,registrationStatus==="DEREGISTERED"?/Spółka została wykreślona z KRS 19\.01\.2009 r\./:/Spółka jest w trakcie likwidacji/);
+ assert.match(html,/data-library-component="SRM-C61"/);
+ assert.match(html,/NIP:/);assert.match(html,/KRS:/);
+ assert.doesNotMatch(html,/Raport KYS|Dane szczegółowe|PRIVATE_DOCUMENT|report-financial-details|report-indicator-details/);
  instance.reset();assert.equal(instance.getSnapshot().result,null);assert.equal(instance.getSnapshot().metadata,null);
 });
 
@@ -348,4 +347,19 @@ test("removed JDG has only the dated CEIDG notice and never mounts registry or K
  assert.match(html,/Działalność jest wykreślona z CEIDG od 18\.08\.2018 r\. i jest nieaktywna/);
  assert.doesNotMatch(html,/Test JDG|Dane szczegółowe|Raport KYS|button|<nav|Pobierz/);assert.equal((html.match(/role="status"/g)||[]).length,1);
  instance.reset();assert.equal(instance.getSnapshot().result,null);
+});
+
+
+test("unsupported IAS hides financial details but preserves registry and explicit KYS", async () => {
+  const result = company(); assert.equal(result.entityType, "COMPANY");
+  if (result.entityType !== "COMPANY") return;
+  result.card.general.data!.registrationStatus = "ACTIVE";
+  result.card.financial = { ...emptyCard.financial, status: "EMPTY", warnings: ["FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE"] };
+  const { instance } = controller(result); await instance.search(nipA);
+  const html = markup(instance.getSnapshot());
+  assert.match(html, /Sprawozdania MSR \/ MSSF/);
+  assert.match(html, /Dane identyfikacyjne i rejestrowe/);
+  assert.match(html, /Pobierz raport KYS/);
+  assert.doesNotMatch(html, /id="report-financial-details"|id="report-indicator-details"|Rachunek zysków i strat|Pobierz do Excela/);
+  for (const target of html.matchAll(/href="#([^\"]+)"/g)) assert.ok(html.includes(`id="${target[1]}"`));
 });

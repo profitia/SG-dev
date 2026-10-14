@@ -1,5 +1,7 @@
 "use client";
 import { CanonElement, CanonButton, CanonSelect, CanonSummary } from './ui-canon';
+import { AVAILABLE_REPORT, type ReportAvailability } from "./report-availability";
+import { ReportAvailabilityView } from "./report-availability-view";
 import { createPortal } from "react-dom";
 import { FinancialHistoryDialog } from "./FinancialHistoryDialog";
 import React, { useEffect, useId, useRef, useState } from "react";
@@ -554,12 +556,16 @@ export function FinancialScannerMount({
   loading = false,
   assistant,
   indicatorsTarget,
+  availability = AVAILABLE_REPORT,
 }: {
+  availability?: ReportAvailability;
   indicatorsTarget?: HTMLElement | null;
   report: SupplierReportData | null;
   loading?: boolean;
-  assistant?: { name: string; krs?: string | null; avatars: { male: string; anna: string } };
+  assistant?: { nip?: string; name: string; krs?: string | null; avatars: { male: string; anna: string } };
 }) {
+  // Never derive analysis or context from a stale report when availability blocks it.
+  if (availability.code !== "AVAILABLE") report = null;
   const instanceId = useId();
   const [indicatorView, setIndicatorView] = useState<IndicatorViewContext>({ tab: "overview", label: "Przegląd", items: [] });
   const [scope, setScope] = useState<"standalone" | "consolidated">(
@@ -628,7 +634,8 @@ export function FinancialScannerMount({
     schemaVersion: 1, dashboardInstanceId: instanceId, application: "SRM",
     source: { kind: "financial-data-module", version: report?.financial.sourceVersion ?? null,
       capturedOn: report?.financial.freshness.retrievedAt ?? null, statementScope: scope },
-    supplier: { id: report?.nip ?? "", nip: report?.nip ?? null, name: assistant?.name ?? "Dostawca", krs: assistant?.krs ?? null },
+    reportAvailability: availability,
+    supplier: { id: assistant?.nip ?? report?.nip ?? "", nip: assistant?.nip ?? report?.nip ?? null, name: assistant?.name ?? "Dostawca", krs: assistant?.krs ?? null },
     view: { page: "supplier-intelligence-dashboard",
       radar: { year: selected ? Number(selected.to.slice(0,4)) : null, comparisonYear: compared && compared.id !== "reference" ? Number(compared.to.slice(0,4)) : null,
         referenceSelection: "history", referenceKind: "history", referenceStatus: selected?.axes.some(a=>a.basis==="HISTORICAL_BEST" && a.normalizedScore!==null) ? "available" : "unconfirmed", referenceFrameId: selected?.referenceFrameId ?? null },
@@ -637,6 +644,14 @@ export function FinancialScannerMount({
       return { code:a.code,name:a.label.join(" "),year:selected?Number(selected.to.slice(0,4)):null,value:v,unit:a.unit,
         availability:v===null?"missing":"available",reason:null }; }),
   };
+  if (availability.code !== "AVAILABLE") return <div className="srm-ui srm-finance-module srm-scanner-unavailable">
+    <div className="srm-section-heading"><h2 id="scanner-title">Supplier Finance Scanner</h2></div>
+    <CanonElement as="div" canonId="SRM-C43" usage="financial-scanner:unavailable-layout" className="srm-overview">
+      <ReportAvailabilityView availability={availability} />
+      {assistant && <SpendGuruAssessment key={`${assistant.nip}:${availability.code}`} context={{...context, financialSummary:[],view:{...context.view,indicators:{tab:"overview",label:availability.title,items:[]},history:null}}}
+        avatars={assistant.avatars} year={null} company={assistant.name} values={[]} formatted={[]} />}
+    </CanonElement>
+  </div>;
   const indicators = (<IndicatorExplorer
         key={`${storageKey}:${report?.financial.representationVersion ?? "empty"}`}
         onContextChange={setIndicatorView}

@@ -140,7 +140,7 @@ function isInternationalStatementWithoutFacts(records: unknown[], identifier: Co
     return string(field(record, "identifiers", idKey)) === identifier.value
       && (type === "financial_statement" || type === "consolidated_financial_statement");
   });
-  return statements.length > 0 && statements.every((record) => field(record, "document", "is_ias_compliant") === true);
+  return statements.length > 0 && projectFinancialDocuments(statements).length === statements.length && projectFinancialDocuments(statements).every(document => document.standard === "IAS_IFRS" && document.availability !== "XML_SUPPORTED" && !document.rows.length);
 }
 
 export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyIdentifier, retrievedAt: string, totalCount = records.length): MgbiFinancialResult {
@@ -286,7 +286,7 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
     if (response.errorCode) return empty("ERROR", retrievedAt, `MGBI_${response.errorCode}`, response.errorCode);
     mapping = true;
     const mapped = mapMgbiFinancialRecords(response.records, identifier, retrievedAt, response.count);
-    const result = mapped.section.status === "EMPTY" && mapped.section.warnings.includes(NO_FINANCIAL_FACTS) && isInternationalStatementWithoutFacts(response.records, identifier, response.count)
+    const result = mapped.section.status === "EMPTY" && isInternationalStatementWithoutFacts(response.records, identifier, response.count)
       ? empty("EMPTY", retrievedAt, INTERNATIONAL_STATEMENT, null) : mapped;
     return { ...result, rawResponse: { pages: response.pages, recordCount: response.count } };
   } catch (error) {

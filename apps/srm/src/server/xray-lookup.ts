@@ -1,5 +1,6 @@
+import { isRestrictedRegistrationStatus } from "@profitia/srm-xray";
 import { enrichCompanyPkd } from "./company-pkd";
-import { isDeregisteredCompany } from "@profitia/srm-xray";
+import { isCompanyReportRestricted } from "@profitia/srm-xray";
 import { readSupplierRegistrationStatus, readCompanyRegistration } from "./company-activity";
 import { atLookupStage, logProviderOutcome, providerExceptionCode } from "./lookup-diagnostics";
 import type { SectionEnvelope, SupplierXRayCard } from "@profitia/srm-xray";
@@ -94,7 +95,7 @@ async function persistSection(
 }
 
 export async function fetchCompanyFinancial(data: SupplierXRayCard["general"]["data"], identifier: CompanyIdentifier, provider: typeof fetchMgbiFinancial = fetchMgbiFinancial) {
-  return isDeregisteredCompany(data)
+  return isCompanyReportRestricted(data)
     ? { section: emptyCard.financial, facts: [], rawResponse: undefined, sourceData: undefined, errorCode: null }
     : await provider(identifier).catch((error) => ({
       section: { ...emptyCard.financial, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
@@ -112,7 +113,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
     ]);
     const general = { ...cached.general, data: companyData && { ...companyData,
       registrationStatus: registration.status, deregisteredAt: registration.deregisteredAt } };
-    if (isDeregisteredCompany(general.data)) return {
+    if (isCompanyReportRestricted(general.data)) return {
       identity: { krs: general.data?.krs ?? null, nip: request.identifier.value, name: general.data?.legalName ?? null },
       general, financial: emptyCard.financial, kys: emptyCard.kys,
     };
@@ -138,7 +139,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
     }));
   const financial = await fetchCompanyFinancial(general.section.data, request.identifier);
   logProviderOutcome("MGBI", "general", general.section.status, general.errorCode);
-  if (!isDeregisteredCompany(general.section.data)) logProviderOutcome("MGBI", "financial", financial.section.status, financial.errorCode);
+  if (!isCompanyReportRestricted(general.section.data)) logProviderOutcome("MGBI", "financial", financial.section.status, financial.errorCode);
   // Keep complete provider responses in a tenant-scoped store, separate from
   // the normalized, person-free catalog reused across organizations.
   await atLookupStage("source_archive", () => Promise.all([
@@ -152,7 +153,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
       : Promise.resolve(),
   ]));
   const generalSnapshotId = await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
-  const financialSnapshotId = isDeregisteredCompany(general.section.data) ? null : await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
+  const financialSnapshotId = isCompanyReportRestricted(general.section.data) ? null : await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
   await atLookupStage("catalog_persistence", () => saveSharedCompany(organizationId, request.identifier.value, {
     general: general.section, financial: financial.section,
     generalSnapshotId, financialSnapshotId, facts: financial.facts,
@@ -175,7 +176,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
 }
 
 export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY", signal?: AbortSignal): Promise<{ section: SupplierXRayCard["kys"]; snapshotId: string | null }> {
-  if (await readSupplierRegistrationStatus(organizationId, request.identifier.value, entityType) === "DEREGISTERED")
+  if (isRestrictedRegistrationStatus(await readSupplierRegistrationStatus(organizationId, request.identifier.value, entityType)))
     return { section: emptyCard.kys, snapshotId: null };
   await atLookupStage("retention_cleanup", () => Promise.all([purgeExpiredKysPersonal(organizationId), purgeExpiredSharedKys(organizationId)]), "kys");
   const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier, entityType));
