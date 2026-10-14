@@ -1,6 +1,6 @@
 "use client";
-import { CanonElement, CanonButton, CanonInput } from './ui-canon';
-import React, { useEffect, useRef, useState } from "react";
+import { CanonElement, CanonButton, CanonInput, CanonCloseButton } from './ui-canon';
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import type { IndicatorViewContext } from "./assistant-context";
 
@@ -133,7 +133,7 @@ function YearPills({
       onChange(years[next]);
       container.current
         ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-        [next]?.focus();
+        [next]?.focus({ preventScroll: true });
     }
   };
   return (
@@ -222,7 +222,7 @@ function IndicatorPicker({
     search.current?.focus();
     return () => {
       dialog.current?.close();
-      previous?.focus();
+      previous?.focus({ preventScroll: true });
     };
   }, []);
   const visibleGroups = groups
@@ -291,9 +291,7 @@ function IndicatorPicker({
             zestawu.
           </p>
         </div>
-        <CanonButton canonId="SRM-C02" usage="financial-explorer:05" className="srm-btn" onClick={onClose}>
-          Zamknij
-        </CanonButton>
+        <CanonCloseButton canonId="SRM-C60" usage="financial-explorer:05" onClick={onClose} />
       </div>
       <div className="srm-picker-search">
         <label htmlFor="indicator-search">Szukaj wskaźnika lub kategorii</label>
@@ -449,6 +447,14 @@ export function IndicatorExplorer({
     [storageAvailable, setStorageAvailable] = useState(true),
     [message, setMessage] = useState("");
   const tabList = useRef<HTMLDivElement>(null);
+  const tabAnchor = useRef<number | null>(null);
+  const [panelFloor, setPanelFloor] = useState(0);
+  useLayoutEffect(() => {
+    if (tabAnchor.current === null || !tabList.current) return;
+    const delta = tabList.current.getBoundingClientRect().top - tabAnchor.current;
+    tabAnchor.current = null;
+    if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: 'instant' });
+  }, [prefs.tab]);
   const tabs = [
     { id: "overview", label: "Przegląd" },
     ...groups.map((g) => ({ id: g.id, label: shortLabels[g.id] || g.name })),
@@ -515,6 +521,9 @@ export function IndicatorExplorer({
   });
   useEffect(() => { onContextChange?.(JSON.parse(viewSignature) as IndicatorViewContext); }, [viewSignature, onContextChange]);
   const setTab = (tab: string) => {
+    if (tab === prefs.tab) return;
+    const rect = tabList.current?.getBoundingClientRect();
+    if (rect) { tabAnchor.current = rect.top; setPanelFloor(Math.max(0, window.innerHeight - rect.bottom)); }
     setPrefs((old) => ({ ...old, tab }));
     setMessage("");
   };
@@ -529,7 +538,7 @@ export function IndicatorExplorer({
       setTab(tabs[next].id);
       tabList.current
         ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-        [next]?.focus();
+        [next]?.focus({ preventScroll: true });
     }
   };
   return (
@@ -580,7 +589,7 @@ export function IndicatorExplorer({
         role="tabpanel"
         aria-labelledby={"metric-tab-" + prefs.tab}
         tabIndex={0}
-        className="srm-metric-tabpanel"
+        className="srm-metric-tabpanel" style={{ minHeight: panelFloor }}
       >
         <div className="srm-panel-toolbar">
           <div>

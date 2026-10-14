@@ -23,19 +23,14 @@
 .is-compact .srm-history-view-switch button {padding:4px 7px;gap:5px;font-size:10px;min-height:30px;}
 .is-compact .srm-history-copy {font-size:10px;padding:5px 7px;min-height:34px;}
 .is-compact .srm-history-presentation:not([hidden]) {display:flex;flex-direction:column;flex:1;min-height:0;}
-.is-compact .srm-history-chart {display:grid;grid-template-rows:auto minmax(0,1fr) auto;flex:1;min-height:0;margin:0;}
-.is-compact .srm-history-readout {min-height:56px;padding:8px 10px;display:block;}
-.is-compact .srm-history-readout strong {font-size:17px;letter-spacing:-.25px;}
-.is-compact .srm-history-readout-year {font-size:10px;margin:0 0 4px;}
-.is-compact .srm-history-readout-year small {display:none;}
-.is-compact .srm-history-readout>p {font-size:9px;margin:4px 0 0;}
-.is-compact .srm-history-chart-scroll {min-height:0;overflow:hidden;padding:25px 2px 5px;}
+.is-compact .srm-history-chart {display:grid;grid-template-rows:minmax(0,1fr) auto;flex:1;min-height:0;margin:0;}
+.is-compact .srm-history-chart-scroll {min-height:0;overflow:hidden;padding:60px 2px 5px;}
 .is-compact .srm-history-chart-canvas {min-width:0!important;padding-left:31px;}
 .is-compact .srm-history-yaxis {width:25px;font-size:8px;}
 .is-compact .srm-history-grid {left:31px;}
 .is-compact .srm-history-axis-unit {font-size:8px;top:-18px;}
 .is-compact .srm-history-bar-stage {width:65%;max-width:24px;}
-.is-compact .srm-history-bar-label {display:none;}
+.is-compact .srm-history-bar-label {display:block;}
 .is-compact .srm-history-year-marker {margin-top:12px;height:16px;}
 .is-compact .srm-history-year-marker i {width:6px;height:6px;box-shadow:0 0 0 2px white;}
 .is-compact .srm-history-year {font-size:9px;line-height:14px;letter-spacing:-.3px;margin:2px 0 0;}

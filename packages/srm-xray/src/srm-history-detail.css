@@ -25,13 +25,8 @@
 .srm-history-detail-footer>div:last-child { flex-shrink:0; }
 .srm-history-detail .srm-history-view { margin:0; min-height:0; display:flex; flex-direction:column; }
 .srm-history-detail .srm-history-presentation:not([hidden]) { flex:1; display:flex; flex-direction:column; min-height:0; }
-.srm-history-detail .srm-history-chart { margin:0; flex:1; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr) auto; }
-.srm-history-detail .srm-history-readout { min-height:56px; padding:10px 14px; gap:16px; }
-.srm-history-detail .srm-history-readout>div { display:flex; align-items:baseline; gap:16px; }
-.srm-history-detail .srm-history-readout-year { margin:0; font-size:11px; }
-.srm-history-detail .srm-history-readout strong { font-size:21px; }
-.srm-history-detail .srm-history-readout>p { font-size:10px; line-height:1.4; }
-.srm-history-detail .srm-history-chart-scroll { min-height:0; overflow-x:auto; overflow-y:hidden; padding:28px 4px 4px; }
+.srm-history-detail .srm-history-chart { position:relative; margin:0; flex:1; min-height:0; display:grid; grid-template-rows:minmax(0,1fr) auto; }
+.srm-history-detail .srm-history-chart-scroll { min-height:0; overflow-x:auto; overflow-y:hidden; padding:64px 4px 4px; }
 .srm-history-detail .srm-history-year-marker { margin-top:16px; height:20px; }
 .srm-history-detail .srm-history-year { font-size:11px; line-height:16px; margin:1px 0 0; }
 .srm-history-detail .srm-history-chart-caption { margin:6px 0 0; gap:4px 12px; font-size:10px; line-height:1.4; }
@@ -64,17 +59,12 @@
   .srm-history-detail-head .srm-btn { padding:8px 10px; font-size:11px; }
   .srm-history-detail-body { padding:12px 14px; gap:10px; }
   .srm-history-definition,.srm-history-buyer { font-size:11px; line-height:1.4; }
-  .srm-history-detail .srm-history-readout { flex-direction:row; flex-wrap:wrap; gap:4px; padding:8px 10px; min-height:52px; }
-  .srm-history-detail .srm-history-readout>div { gap:8px; flex-wrap:wrap; }
-  .srm-history-detail .srm-history-readout strong { font-size:18px; }
   .srm-history-detail-footer { gap:10px; padding-top:8px; }
   .srm-history-detail-footer p { font-size:10px; }
 }
 @media(max-height:600px) {
   .srm-history-detail-head { padding-top:10px; padding-bottom:10px; }
   .srm-history-detail-body { padding-top:10px; padding-bottom:10px; gap:8px; }
-  .srm-history-detail .srm-history-readout { min-height:44px; padding:6px 10px; }
-  .srm-history-detail .srm-history-readout strong { font-size:18px; }
   .srm-history-detail-footer { padding-top:6px; }
 }
 

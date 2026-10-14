@@ -70,3 +70,26 @@ test('remove control is available only on custom charts, even if a built-in rece
     assert.equal($('button[aria-label^="Powiększ"]').length,1);
   }
 });
+
+import { FinancialHistoryChart } from '../../node_modules/@profitia/srm-xray/src/FinancialHistoryChart';
+import { FinancialHistoryDialog } from '../../node_modules/@profitia/srm-xray/src/FinancialHistoryDialog';
+test('history keeps signs, zero and missing distinct while all values sit outside bars with no selected-year strip', () => {
+  const points=[{year:2022,value:-42},{year:2023,value:0},{year:2024,value:null},{year:2025,value:100}];
+  for(const overview of [false,true]) {
+    const $=load(renderToStaticMarkup(React.createElement(FinancialHistoryChart,{name:'Wynik',unit:'PLN',selectedYear:2025,points,overview})));
+    assert.equal($('.srm-history-readout').length,0);
+    assert.equal($('.srm-history-bar-label.above-bar').length,4);
+    assert.equal($('.srm-history-bar-fill').length,2);
+    assert.equal($('[data-year="2022"] .is-negative').length,1);
+    assert.match($('[data-year="2022"] .srm-history-bar-label').text(),/-42/);
+    assert.match($('[data-year="2023"] .srm-history-bar-label').text(),/^0/);
+    assert.match($('[data-year="2024"] .srm-history-bar-label').text(),/Brak danych/);
+    assert.equal($('.srm-overview-tooltip').length,0);
+  }
+});
+test('history dialog close is the shared icon control with an accessible name and no visible text', () => {
+  const $=load(renderToStaticMarkup(React.createElement(FinancialHistoryDialog,{title:'Historia',onClose:()=>{},children:'Dane'})));
+  const close=$('button[aria-label="Zamknij"]');
+  assert.equal(close.length,1);assert.equal(close.text(),'');assert.equal(close.find('svg').length,1);
+  assert.equal(close.attr('data-library-component'),'SRM-C60');
+});

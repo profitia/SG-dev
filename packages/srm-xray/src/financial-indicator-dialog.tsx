@@ -1,4 +1,5 @@
 "use client";
+import { CanonCloseButton } from "./ui-canon";
 
 import React, { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { FinancialFactEvidence, FinancialHistoryPoint } from "./contracts";
@@ -73,7 +74,7 @@ export function FinancialIndicatorDialog({ code, points, selectedPeriod, initial
     }}>
     <header className="health-dialog-header"><div><p className="report-eyebrow">{view === "history" ? "Historia wskaźnika" : "Metodologia i dowody"}</p><h2 id={titleId}>{indicatorContent[code].name}</h2>
       <p className="health-muted">Wybrany okres: {selectedPeriod ? `${selectedPeriod.from} – ${selectedPeriod.to}` : "nie ustalono"} · {points[0]?.scope === "consolidated" ? "skonsolidowane" : "jednostkowe"}</p></div>
-      <button type="button" aria-label="Zamknij analizę wskaźnika" autoFocus onClick={onClose}>✕</button></header>
+      <CanonCloseButton canonId="SRM-C60" usage="FinancialIndicatorDialog:close" aria-label="Zamknij analizę wskaźnika" autoFocus onClick={onClose} /></header>
     <div className="health-dialog-switch" role="group" aria-label="Widok analizy wskaźnika">
       <button type="button" aria-pressed={view === "history"} onClick={() => setView("history")}>Historia</button>
       <button type="button" aria-pressed={view === "methodology"} onClick={() => setView("methodology")}>Jak to obliczamy?</button>
