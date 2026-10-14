@@ -64,6 +64,10 @@ const gateMessages = [
   "Approved migration source differs from mechanism", "Approved runtime contract differs from mechanism",
   "Repository authority identity mismatch", "Full approved SHA required", "Unverified release revision",
   "Release contract absent", "Release lacks staging runtime",
+  "Unexpected service name, storage, scaling or suspended state", "Concurrent foreign deployment",
+  "Initial provider deployment not observed; never trigger blindly", "Initial deployment source not pinned",
+  "Authorized deployment attempt budget exhausted", "Deployment failed; preserve schema and evidence",
+  "Wrong or unverified deployed SHA", "Unknown provider deployment state; do not create a duplicate",
 ];
 export function safeProviderMessage(value) {
   if (messages.some(([,v]) => v === value)) return value;
@@ -114,8 +118,12 @@ export class ReleaseDiagnosticError extends Error {
   }
 }
 export function diagnosticError(error, context = {}) {
+  // The provider adapter emits this exact fixed string, without a response body.
+  // Recover only its numeric status; never serialize arbitrary error messages.
+  const status = /^Provider request rejected \(([1-5][0-9]{2})\)$/.exec(error?.message ?? "");
   return new ReleaseDiagnosticError({
-    category: "RELEASE_GATE", message: gateMessages.includes(error?.message) ? error.message : undefined, requestReachedGitHub: "UNKNOWN",
+    category: status ? "HTTP_REJECTION" : "RELEASE_GATE", httpStatus: status ? Number(status[1]) : undefined,
+    message: gateMessages.includes(error?.message) ? error.message : undefined, requestReachedGitHub: "UNKNOWN",
     ...context, ...(error instanceof ReleaseDiagnosticError ? error.diagnostic : {}),
   });
 }

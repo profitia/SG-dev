@@ -7,6 +7,25 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import pg from "pg";
 import {githubResponse,githubMetadata,reportDiagnostic,childDiagnostic,diagnosticError,ReleaseDiagnosticError,createGithubRequester,createGithubRequestMetrics,githubRequestIdentity} from "./release-diagnostics.mjs";
+
+test("provider rejection diagnostics preserve only the exact numeric status and safe deployment gates", () => {
+  for (const status of [400, 401, 403, 429, 500, 503]) {
+    const d = diagnosticError(Error(`Provider request rejected (${status})`), {stage:"provider-operation",operation:"deploy"}).diagnostic;
+    assert.equal(d.httpStatus, status);
+    assert.equal(d.category, "HTTP_REJECTION");
+    assert.equal(d.operation, "deploy");
+    assert.equal(d.message, undefined);
+    assert.equal(d.retryDecision, undefined);
+  }
+  for (const message of ["Provider request rejected (401) password=private", "Provider request rejected (999)", "private-token-401"]) {
+    const d = diagnosticError(Error(message)).diagnostic;
+    assert.equal(d.httpStatus, undefined);
+    assert.equal(d.message, undefined);
+    assert.ok(!JSON.stringify(d).includes("private"));
+  }
+  const d = diagnosticError(Error("Concurrent foreign deployment")).diagnostic;
+  assert.equal(d.message, "Concurrent foreign deployment");
+});
 import {prepareResume,assertResumeFence} from "./resume-staging.mjs";
 import {manifestFrom} from "./staging-lifecycle.mjs";
 import {digest,operations} from "../../../scripts/governance/srm-release-lifecycle.mjs";
