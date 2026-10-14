@@ -11,6 +11,8 @@ type Props = {
   company: string;
   values: (number | null)[];
   formatted: string[];
+  comparisonSummary?: string[];
+  comparisonYear?: string;
 };
 // Canonical financial-summary template v1: deterministic source values only.
 // Missing values remain explicit; this view makes no model calls or simulated replies.
@@ -42,7 +44,7 @@ export function SpendGuruAssessment({
   year,
   company,
   values,
-  formatted
+  formatted, comparisonSummary=[], comparisonYear
 }: Props) {
   // Conversation state survives reparenting; both presentations share this owner.
   const [draft, setDraft] = useState('');
@@ -193,6 +195,7 @@ export function SpendGuruAssessment({
           <article className="srm-chat-message is-assistant srm-chat-analysis" ref={initialMessage} tabIndex={-1}>
             <p>{year ? <>Przyjrzyjmy się danym za <strong>{year}</strong>. </> : null}Przychody wynoszą <strong>{summaryPLN(values[1])}</strong>, a wynik netto to <strong>{summaryPLN(values[0])}</strong>.</p>
             <p>Płynność bieżąca: <strong>{summaryValue(2)}</strong>. Marża operacyjna: <strong>{summaryValue(3)}</strong>. Udział zobowiązań i rezerw w aktywach: <strong>{summaryValue(5)}</strong>.</p>
+            {comparisonSummary.length>0 && <div className="srm-chat-comparison"><p><strong>Zmiana względem {comparisonYear}</strong></p><ul>{comparisonSummary.map(line=><li key={line}>{line}</li>)}</ul></div>}
           </article>
         </div>
         <form className="srm-chat-composer" onSubmit={event => event.preventDefault()}>

@@ -124,18 +124,29 @@ export type FinancialHistoryPoint = FinancialIndicatorResult & {
 };
 
 export type ScannerAxisCode = "NET_RESULT" | "REVENUE" | "CURRENT_RATIO" | "OPERATING_MARGIN" | "OPERATING_COST_RATIO" | "LIABILITIES_TO_ASSETS";
-/** Read-only UI projection over stored facts. Relative scoring remains unavailable
- * until the financial module supplies verified lineage and a qualified reference. */
+/** Server-owned scoring over qualified source observations; no client-side financial formulas. */
 export type FinancialScannerProjection = {
-  version: "1.0"; methodologyVersion: "1.0.0"; qualification: "PARTIAL_SOURCE_VIEW";
+  version: "1.0" | "1.1"; methodologyVersion: "1.0.0"; qualification: "PARTIAL_SOURCE_VIEW" | "QUALIFIED_HISTORY";
   sourceVersion: string | null;
+  referenceFrames?: readonly {
+    id: string; scope: FinancialPeriod["scope"]; anchorPeriodId: string; asOf: string;
+    qualificationRule: "XML_SOURCE_BASIS_V1";
+    axes: readonly { code: ScannerAxisCode; periodIds: readonly string[]; bestValue: string | null;
+      worstValue: string | null; bestPeriodIds: readonly string[]; basisKey: string | null }[];
+  }[];
   periods: readonly {
     id: string; from: string; to: string; scope: FinancialPeriod["scope"]; documentRef: string;
+    referenceFrameId?: string;
     axes: readonly {
       code: ScannerAxisCode; rawValue: string | null; unit: "PLN" | "PERCENT" | "RATIO";
       normalizedScore: string | null; basis: "POLICY" | "HISTORICAL_BEST";
       reasonCode: string | null; alerts: readonly string[];
       tone: "positive" | "caution" | "negative" | "unknown";
+      qualification?: "VERIFIED" | "UNKNOWN" | "NOT_COMPARABLE";
+      sourceEvidenceRef?: string | null;
+      comparisons?: readonly { periodId: string; delta: string; deltaPercent: string | null;
+        direction: "UP" | "DOWN" | "UNCHANGED"; favorable: "BETTER" | "WORSE" | "UNCHANGED";
+      }[];
     }[];
   }[];
 };

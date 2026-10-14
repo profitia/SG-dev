@@ -214,7 +214,7 @@ test("no stored finance and JDG expose explicit unavailable histories, never inv
   assert.ok(jdg.financial.history.every(i => i.reasonCode === "JDG_FINANCIAL_REPORT_NOT_AVAILABLE"));
 });
 
-test("stored read uses one parameterized snapshot and tenant context, without writes/providers/calculation", async () => {
+test("stored read uses one coherent tenant source snapshot and appends immutable scanner frames without provider calls", async () => {
   const calls: Array<[string, unknown[] | undefined]> = [];
   const org = "00000000-0000-4000-8000-000000000001";
   const client = { release() {}, async query(sql: string, params?: unknown[]) { calls.push([sql, params]);
@@ -226,7 +226,9 @@ test("stored read uses one parameterized snapshot and tenant context, without wr
   assert.equal(calls.filter(([sql]) => sql === REPORT_DATA_SQL).length, 1);
   assert.deepEqual(calls.find(([sql]) => sql === REPORT_DATA_SQL)![1], [selection.nip, org, "COMPANY", "1.2"]);
   assert.ok(calls.some(([sql, params]) => sql.includes("set_config") && params?.[0] === org));
-  assert.equal(calls.some(([sql]) => /\b(INSERT|UPDATE|DELETE)\b/.test(sql)), false);
+  assert.equal(calls.some(([sql]) => /\b(UPDATE|DELETE)\b/.test(sql)), false);
+  assert.ok(calls.filter(([sql])=>sql.includes("INSERT")).every(([sql,params])=>sql.includes("srm.financial_scanner_frames") && sql.includes("ON CONFLICT DO NOTHING") && params?.[0]===org));
+  assert.match(REPORT_DATA_SQL, /d\.organization_id=\$2::uuid/);
   assert.equal(REPORT_DATA_SQL.includes("payload_json"), false);
   assert.match(REPORT_DATA_SQL, /l\.organization_id = \$2::uuid/);
   assert.match(REPORT_DATA_SQL, /l\.entity_type = \$3/);

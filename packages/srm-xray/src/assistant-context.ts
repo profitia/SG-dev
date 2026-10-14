@@ -40,6 +40,7 @@ export type AssistantApplicationContext = {
       referenceSelection: string;
       referenceKind: 'history' | 'peers';
       referenceStatus: 'unconfirmed' | 'available';
+      referenceFrameId?: string | null;
     };
     indicators: IndicatorViewContext;
     history: { code: string; year: number | null } | null;

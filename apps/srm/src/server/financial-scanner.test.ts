@@ -154,3 +154,142 @@ test("unverified, foreign-unit and nonannual data do not get a score; no consoli
   assert.ok(result.periods[0].axes.every((a) => a.normalizedScore === null));
   assert.equal(result.periods[0].axes[0].rawValue, null);
 });
+
+import { historicalPosition } from "./financial-scanner";
+import type { ScannerSourceEvidence } from "./financial-scanner-source";
+test("historical normalization: negative profits, lower-is-better, exact decimals, no invented equal score", () => {
+  assert.equal(
+    historicalPosition("-5", ["-10", "-5", "-2"]).score,
+    "62.500000",
+  );
+  assert.equal(
+    historicalPosition("-2", ["-10", "-5", "-2"]).score,
+    "100.000000",
+  );
+  assert.equal(
+    historicalPosition("90", ["80", "90", "100"], true).score,
+    "50.000000",
+  );
+  assert.equal(
+    historicalPosition("150", ["100", "150", "200"]).score,
+    "50.000000",
+  );
+  assert.equal(historicalPosition("2", ["1", "2", "4"]).score, "33.333333");
+  assert.equal(
+    historicalPosition("5", ["5", "5", "5"]).reason,
+    "NO_HISTORICAL_VARIATION",
+  );
+  assert.equal(
+    historicalPosition("5", ["5", "10"]).reason,
+    "INSUFFICIENT_HISTORY",
+  );
+  assert.equal(historicalPosition("bad", ["1", "2", "3"]).score, null);
+});
+function scoredFixture() {
+  const f = financial();
+  f.sourceVersion = "source-1";
+  f.representationVersion = "representation-1";
+  f.freshness.retrievedAt = "2026-10-14T12:00:00Z";
+  const sources: ScannerSourceEvidence = {};
+  f.periods = [2025, 2024, 2023].map((year, i) => {
+    const from = `${year}-01-01`,
+      to = `${year}-12-31`,
+      id = `standalone:${from}:${to}`;
+    sources[id] = {
+      reason: null,
+      evidenceRef: `proof-${year}`,
+      basis: {
+        NET_RESULT: "net",
+        REVENUE: "sales",
+        OPERATING_COST_RATIO: "costs",
+      },
+      costs: String([80, 90, 100][i]),
+    };
+    return {
+      from,
+      to,
+      year: String(year),
+      scope: "standalone",
+      documentRef: `doc-${year}`,
+      facts: [
+        fact("PALA_NPL", String([-2, -5, -10][i])),
+        fact("PALA_NRFS", "100"),
+      ].map((x) => ({
+        ...x,
+        periodStart: from,
+        periodEnd: to,
+        documentRef: `doc-${year}`,
+      })),
+    };
+  });
+  return { f, sources };
+}
+test("fixed frame: qualified costs, absolute loss retained at100, pp deltas and no divide by negative prior", () => {
+  const { f, sources } = scoredFixture(),
+    r = financialScanner(f, sources, {
+      tenantScope: "a",
+      asOf: f.freshness.retrievedAt!,
+    });
+  const current = r.periods[0].axes,
+    previous = r.periods[1].axes;
+  assert.equal(current[0].normalizedScore, "100.000000");
+  assert.ok(current[0].alerts.includes("NET_LOSS"));
+  assert.equal(current[0].comparisons?.[0].delta, "3.000000");
+  assert.equal(current[0].comparisons?.[0].deltaPercent, null);
+  assert.equal(current[4].rawValue, "80.000000");
+  assert.equal(current[4].normalizedScore, "100.000000");
+  assert.equal(previous[4].normalizedScore, "50.000000");
+  assert.equal(current[4].comparisons?.[0].delta, "-10.000000");
+  assert.equal(current[4].comparisons?.[0].favorable, "BETTER");
+  assert.equal(current[1].normalizedScore, null);
+  assert.equal(current[1].reasonCode, "NO_HISTORICAL_VARIATION");
+  assert.equal(r.periods[0].referenceFrameId, r.periods[1].referenceFrameId);
+  assert.equal(
+    financialScanner(f, sources, {
+      tenantScope: "a",
+      asOf: f.freshness.retrievedAt!,
+    }).referenceFrames?.[0].id,
+    r.referenceFrames?.[0].id,
+  );
+  assert.notEqual(
+    financialScanner(f, sources, {
+      tenantScope: "b",
+      asOf: f.freshness.retrievedAt!,
+    }).referenceFrames?.[0].id,
+    r.referenceFrames?.[0].id,
+  );
+});
+test("unknown source and mismatched bases cannot build a three-year sample; corrections create a new frame", () => {
+  const { f, sources } = scoredFixture(),
+    id = f.periods[2];
+  const baseline = financialScanner(f, sources);
+  sources[`standalone:${id.from}:${id.to}`].reason =
+    "SOURCE_REVISION_UNRESOLVED";
+  const unknown = financialScanner(f, sources);
+  assert.equal(unknown.periods[0].axes[0].normalizedScore, null);
+  assert.equal(unknown.periods[0].axes[0].reasonCode, "INSUFFICIENT_HISTORY");
+  assert.notEqual(
+    unknown.referenceFrames?.[0].id,
+    baseline.referenceFrames?.[0].id,
+  );
+  sources[`standalone:${id.from}:${id.to}`].reason = null;
+  sources[`standalone:${id.from}:${id.to}`].basis.NET_RESULT = "other";
+  assert.equal(
+    financialScanner(f, sources).periods[0].axes[0].normalizedScore,
+    null,
+  );
+});
+test("zero revenue cannot produce margin/costs; no year-on-year delta across a gap", () => {
+  const { f, sources } = scoredFixture();
+  f.periods = f.periods
+    .map((p, i) => ({
+      ...p,
+      facts: p.facts.map((x) =>
+        i === 0 && x.metricCode === "PALA_NRFS" ? { ...x, amount: "0" } : x,
+      ),
+    }))
+    .filter((_, i) => i !== 1);
+  const r = financialScanner(f, sources);
+  assert.equal(r.periods[0].axes[4].rawValue, null);
+  assert.equal(r.periods[0].axes[0].comparisons?.length, 0);
+});

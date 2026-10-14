@@ -64,3 +64,77 @@ test("empty independent mount has six sectors, functional explorer and empty AI 
   );
   assert.match(html, /aria-label="Miejsce na ocenę SpendGuru"/);
 });
+
+import {
+  previousAnnualPeriod,
+  canOverlay,
+  axisTone,
+  comparisonLabel,
+  bestHistoryPeriod,
+} from "../../../../packages/srm-xray/src/financial-scanner-model";
+import type { FinancialScannerProjection } from "@profitia/srm-xray";
+type Period = FinancialScannerProjection["periods"][number];
+const period = (year: number, frame = "frame"): Period => ({
+  id: `standalone:${year}-01-01:${year}-12-31`,
+  from: `${year}-01-01`,
+  to: `${year}-12-31`,
+  scope: "standalone",
+  documentRef: `doc-${year}`,
+  referenceFrameId: frame,
+  axes: [],
+});
+test("automatic comparison chooses exactly adjacent annual period; never bridges missing years or scopes", () => {
+  const latest = period(2025),
+    prior = period(2024),
+    old = period(2023);
+  assert.equal(previousAnnualPeriod([old, latest, prior], latest), prior);
+  assert.equal(previousAnnualPeriod([latest, old], latest), undefined);
+  assert.equal(
+    previousAnnualPeriod([latest, { ...prior, scope: "consolidated" }], latest),
+    undefined,
+  );
+  assert.equal(canOverlay(latest, prior), true);
+  assert.equal(canOverlay(latest, period(2024, "other-frame")), false);
+});
+test("colors follow server-qualified direction and liquidity retains its absolute policy", () => {
+  const prior = period(2024);
+  const a: Period["axes"][number] = {
+    code: "OPERATING_COST_RATIO",
+    rawValue: "80",
+    unit: "PERCENT",
+    normalizedScore: "90",
+    basis: "HISTORICAL_BEST",
+    reasonCode: null,
+    alerts: [],
+    tone: "caution",
+    comparisons: [
+      {
+        periodId: prior.id,
+        delta: "-10",
+        deltaPercent: null,
+        direction: "DOWN",
+        favorable: "BETTER",
+      },
+    ],
+  };
+  assert.equal(axisTone(a, prior), "positive");
+  assert.equal(comparisonLabel(a, prior), "-10 pp");
+  assert.equal(
+    axisTone(
+      { ...a, comparisons: [{ ...a.comparisons![0], favorable: "WORSE" }] },
+      prior,
+    ),
+    "negative",
+  );
+  assert.equal(
+    axisTone(
+      { ...a, comparisons: [{ ...a.comparisons![0], favorable: "UNCHANGED" }] },
+      prior,
+    ),
+    "caution",
+  );
+  assert.equal(
+    axisTone({ ...a, code: "CURRENT_RATIO", tone: "negative" }, prior),
+    "negative",
+  );
+});
