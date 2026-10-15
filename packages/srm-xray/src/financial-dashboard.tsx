@@ -193,6 +193,10 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
       </div>}
       <p>Wybrany okres: {activePeriod ? `${activePeriod.from} – ${activePeriod.to}` : "brak pasującego sprawozdania"}</p>
       <p>Ostatni dostępny raport: {allPeriods[0].to.slice(0, 4)} · {scope === "standalone" ? "dane jednostkowe" : "dane skonsolidowane"}</p>
+      {viewPeriods.some(p=>p.sourceRegistration?.relationship==='PREDECESSOR') && <div data-financial-registry-history="true">
+        <p>Historia finansowa obejmuje sprawozdania sprzed przekształcenia. Podmiot składający pozostaje wskazany przy każdym okresie. Zmiana KRS, standardu lub zakresu sprawozdania może ograniczać porównywalność.</p>
+        <ul>{viewPeriods.map(p=><li key={p.documentId+p.from}>{p.from} – {p.to}: {p.sourceRegistration?.legalName ?? 'Podmiot źródłowy'} · KRS {p.sourceRegistration?.krs ?? 'niepotwierdzony'}{p.sourceRegistration?.relationship==='PREDECESSOR'?' · poprzednik przed przekształceniem':''}</li>)}</ul>
+      </div>}
     </div>
     {onDownloadExcel && exportOpen === undefined && <div className="financial-export-toolbar"><CanonButton canonId="SRM-C02" usage="financial-dashboard:07" type="button" onClick={() => setLocalExportOpen(true)} aria-haspopup="dialog"><KysIcon kind="download" />Pobierz do Excela</CanonButton></div>}
     {onDownloadExcel && (exportOpen ?? localExportOpen) && <FinancialHistoryDialog compact title="Pobierz do Excela" subtitle="Wybierz lata sprawozdawcze" onClose={closeExport}><div className="financial-excel-export">

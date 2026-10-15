@@ -23,10 +23,10 @@ export type MsrCandidate = { recordId: string; nip: string; from: string; to: st
 
 /** Latest filing per independent scope. Older periods disclosed in that filing are retained.
  * At most two paid originals per lookup; never download every historical filing speculatively. */
-export function selectMsrCandidates(records: readonly unknown[], nip: string): MsrCandidate[] {
+export function selectMsrCandidates(records: readonly unknown[], nip: string, allowedKrs?:readonly string[]): MsrCandidate[] {
   const candidates = records.flatMap(raw => {
     const r = obj(raw), d = obj(r.document), original = obj(obj(obj(r.files).main_document).original);
-    if (obj(r.identifiers).pl_nip !== nip
+    if (obj(r.identifiers).pl_nip !== nip || allowedKrs && !allowedKrs.includes(String(obj(r.identifiers).pl_krs))
         || !["financial_statement", "consolidated_financial_statement"].includes(String(d.type))
         || typeof r.id !== "string" || !/^[a-f0-9]{24}$/.test(r.id)
         || typeof d.period_from_date !== "string" || typeof d.period_to_date !== "string"

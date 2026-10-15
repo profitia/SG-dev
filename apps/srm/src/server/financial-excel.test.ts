@@ -5,6 +5,14 @@ import type { FinancialData } from "@profitia/srm-xray";
 import { buildFinancialExcel, exactExcelAmount, financialExcelDate, validateFinancialExcelSelection } from "./financial-excel";
 import { projectFinancialDocuments } from "./financial-documents";
 const data: FinancialData = { periods: [{ from: "2025-01-01", to: "2025-12-31", scope: "standalone", documentId: "doc-1:cfy", facts: [{ metricCode: "BS_A_TA", amount: "1", currency: "PLN", unit: "PLN" }, { metricCode: "PALA_NPL", amount: "-17.3456", currency: "PLN", unit: "PLN" }] }] };
+test("Excel preserves predecessor legal name and KRS in a business source sheet without technical columns",async()=>{
+ const input=structuredClone(data);input.periods[0].sourceRegistration={krs:"0001102066",legalName:"ROCKFIN S.A.",relationship:"PREDECESSOR"};
+ const result=await buildFinancialExcel(input,{nip:"5850205607",scope:"standalone",years:["2025"]},new Date("2026-10-15"),documents);
+ const book=new ExcelJS.Workbook();await book.xlsx.load(result.bytes as unknown as Parameters<typeof book.xlsx.load>[0]);
+ const sheet=book.getWorksheet("Źródła")!;assert.ok(sheet);
+ const strings=JSON.stringify(sheet.getSheetValues());assert.match(strings,/0001102066/);assert.match(strings,/ROCKFIN S\.A\./);assert.match(strings,/Poprzednik przed przekształceniem/);
+ assert.doesNotMatch(strings,/doc-1|SHA256|KwotaA|source_path/);
+});
 const documents = projectFinancialDocuments([{ id: "doc-1", document: { type: "financial_statement", period_from_date: "2025-01-01", period_to_date: "2025-12-31", is_ias_compliant: true }, content: { schema: { name: "JednostkaInnaWZlotych", version: "1-3" }, extracted_fields: { "Bilans.Aktywa.KwotaA": "1234567890123456.789", "Bilans.Aktywa.KwotaB": null, "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.NazwaPozycji": "=SUM(A1:A9)", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.KwotyPozycji.KwotaA": "-17.3456", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.KwotyPozycji.KwotaB1": "0" } } }]);
 test("workbook round trip contains only headers, item labels and exact amounts, without comments or source metadata", async () => {
  const { filename, bytes } = await buildFinancialExcel(data, { nip: "8650004194", scope: "standalone", years: ["2025"] }, new Date("2026-10-10T10:00:00Z"), documents);

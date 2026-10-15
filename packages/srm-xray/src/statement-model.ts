@@ -18,7 +18,8 @@ export function statementPoints(periods:readonly FinancialPeriod[],code:string):
    // Parse the shifted decimal once: dividing an already-parsed float can differ
    // by one ULP and make the shared export reject its exact source string.
    const value=rawValue===null?null:Number(rawValue);
-   return {year:Number(p.to.slice(0,4)),value,rawValue};
+   const source=p.sourceRegistration;
+   return {year:Number(p.to.slice(0,4)),value,rawValue,...(source?{information:`Sprawozdanie: ${source.legalName ?? 'podmiot'} · KRS ${source.krs}${source.relationship==='PREDECESSOR'?' · poprzednik przed przekształceniem':''}.`}:{})};
  });
 }
 export function statementRows(periods:readonly FinancialPeriod[]):StatementRow[] {

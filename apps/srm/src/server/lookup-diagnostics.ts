@@ -52,7 +52,7 @@ export async function atLookupStage<T>(stage: LookupStage, action: () => Promise
   }
 }
 
-const providerCodes = new Set(["NOT_CONFIGURED", "TIMEOUT", "NETWORK_ERROR", "FETCH_ERROR", "INVALID_JSON", "INVALID_RESPONSE", "INVALID_REPORT", "IDENTIFIER_MISMATCH", "CORRELATION_MISMATCH", "INVALID_CORRELATION_ID", "RESULT_LIMIT", "INCOMPLETE_RESPONSE", "POLLING_TIMEOUT", "MAPPING_ERROR", "POST_OUTCOME_UNKNOWN", "ABORTED"]);
+const providerCodes = new Set(["NOT_CONFIGURED", "TIMEOUT", "NETWORK_ERROR", "FETCH_ERROR", "INVALID_JSON", "INVALID_RESPONSE", "INVALID_REPORT", "IDENTIFIER_MISMATCH", "COMPANY_IDENTITY_AMBIGUOUS", "COMPANY_IDENTITY_UNRESOLVED", "CORRELATION_MISMATCH", "INVALID_CORRELATION_ID", "RESULT_LIMIT", "INCOMPLETE_RESPONSE", "POLLING_TIMEOUT", "MAPPING_ERROR", "POST_OUTCOME_UNKNOWN", "ABORTED"]);
 export function safeProviderCode(code: unknown): string {
   const normalized = typeof code === "string" ? code.replace(/^(MGBI|VERCLY|CEIDG)_/, "") : "";
   if (normalized === "REPORT_NOT_READY") return "POLLING_TIMEOUT";
@@ -74,7 +74,7 @@ function category(code: string, constraint?: string): string {
   if (code === "HTTP_429") return "PROVIDER_RATE_LIMIT";
   if (code.includes("TIMEOUT")) return "PROVIDER_TIMEOUT";
   if (code === "NOT_CONFIGURED") return "PROVIDER_CONFIGURATION";
-  if (["INVALID_JSON", "INVALID_RESPONSE", "INVALID_REPORT", "MAPPING_ERROR", "IDENTIFIER_MISMATCH", "CORRELATION_MISMATCH", "SERIALIZATION_ERROR"].includes(code)) return "SERIALIZATION_OR_MAPPING";
+  if (["INVALID_JSON", "INVALID_RESPONSE", "INVALID_REPORT", "MAPPING_ERROR", "IDENTIFIER_MISMATCH", "COMPANY_IDENTITY_AMBIGUOUS", "COMPANY_IDENTITY_UNRESOLVED", "CORRELATION_MISMATCH", "SERIALIZATION_ERROR"].includes(code)) return "SERIALIZATION_OR_MAPPING";
   if (/^[0-9A-Z]{5}$/.test(code)) return "DATABASE_ERROR";
   return "LOOKUP_ERROR";
 }
@@ -85,7 +85,9 @@ export function sanitizedLookupFailure(error: unknown) {
   const record = cause && typeof cause === "object" ? cause as Record<string, unknown> : {};
   const sqlCodes = new Set(["42501", "23514", "23503", "23505", "23502", "22P02", "22003", "40001", "40P01", "53300", "53400", "57014", "57P01", "08001", "08003", "08006", "28P01", "3D000", "42P01", "42703", "25P02"]);
   const sqlstate = typeof record.code === "string" && sqlCodes.has(record.code) ? record.code : undefined;
-  const code = sqlstate ?? (cause instanceof SyntaxError || cause instanceof TypeError ? "SERIALIZATION_ERROR" : "PERSISTENCE_ERROR");
+  const identityCode = cause instanceof Error && ["MGBI_COMPANY_IDENTITY_AMBIGUOUS", "MGBI_COMPANY_IDENTITY_UNRESOLVED"].includes(cause.message)
+    ? safeProviderCode(cause.message) : undefined;
+  const code = sqlstate ?? identityCode ?? (cause instanceof SyntaxError || cause instanceof TypeError ? "SERIALIZATION_ERROR" : "PERSISTENCE_ERROR");
   // PostgreSQL detail, message, query and values can contain personal/provider data.
   // Only known schema constraint names and the SQLSTATE cross the logging boundary.
   const constraint = typeof record.constraint === "string" && ["financial_facts_verified_cost_magnitude_check", "catalog_financial_facts_verified_cost_magnitude_check"].includes(record.constraint) ? record.constraint : undefined;

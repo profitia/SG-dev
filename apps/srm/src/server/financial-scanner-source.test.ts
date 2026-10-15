@@ -11,6 +11,14 @@ import {
 } from "./financial-documents";
 import { qualifyScannerSources } from "./financial-scanner-source";
 const id = "standalone:2025-01-01:2025-12-31";
+test("scanner revision families and comparison bases stay separated by filing issuer KRS",()=>{
+  const {f,selected,doc}=fixture();doc.sourceKrs="0000000001";
+  const other={...structuredClone(doc),recordId:"successor",sourceKrs:"0000000002",checksum:"b".repeat(64)};
+  const first=qualifyScannerSources(f,selected,[doc,other],"2026-10-14")[id];
+  assert.ok(first.basis.REVENUE);assert.match(first.basis.REVENUE!,/:KRS:0000000001:/);
+  const successor=qualifyScannerSources(f,selected,[{...doc,sourceKrs:"0000000002"}],"2026-10-14")[id];
+  assert.notEqual(first.basis.REVENUE,successor.basis.REVENUE);
+});
 function fixture() {
   const values = [
     ["PALA_NRFS", "100", "RZiS.RZiSPor.A"],

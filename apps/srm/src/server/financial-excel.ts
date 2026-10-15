@@ -94,6 +94,15 @@ function addSheet(workbook: ExcelJS.Workbook, name: string, section: "Bilans" | 
   sheet.pageSetup = { fitToPage: true, fitToWidth: 1, fitToHeight: 0, orientation: "landscape", printTitlesRow: "1:1" };
 }
 
+function registrySources(sheet: ExcelJS.Worksheet, periods: readonly FinancialPeriod[]): void {
+  if (!periods.some(p=>p.sourceRegistration)) return;
+  sheet.addRow(["Pochodzenie sprawozdań — zachowane KRS podmiotów składających"]);
+  sheet.addRow(["Okres od","Okres do","Podmiot składający","KRS źródłowy","Relacja"]);
+  for (const p of periods) sheet.addRow([p.from,p.to,p.sourceRegistration?.legalName ?? "niepotwierdzony",p.sourceRegistration?.krs ?? "niepotwierdzony",
+    p.sourceRegistration?.relationship === "PREDECESSOR" ? "Poprzednik przed przekształceniem" : p.sourceRegistration?.relationship === "CURRENT" ? "Aktualny podmiot" : "Relacja niepotwierdzona"]);
+  sheet.addRow(["Porównywalność","Ciągłość rejestrowa nie zastępuje potwierdzenia zgodności standardu, zakresu i okresów sprawozdawczych."]);
+}
+
 export async function buildFinancialExcel(data: FinancialData, selection: FinancialExcelSelection, now = new Date(), sourceDocuments: readonly FinancialSourceDocument[] = []): Promise<{ filename: string; bytes: Buffer }> {
   const available = new Map(periodsForExcel(data, selection.scope).map((period) => [period.to.slice(0, 4), period]));
   if (selection.years.some((year) => !available.has(year))) throw new Error("Wybrane lata nie są dostępne w zapisanym raporcie.");
@@ -114,6 +123,7 @@ export async function buildFinancialExcel(data: FinancialData, selection: Financ
     const meta=workbook.addWorksheet("Źródła");meta.addRow(["Standard","MSR/MSSF · XHTML/iXBRL"]);
     meta.addRow(["NIP",selection.nip]);meta.addRow(["Zakres",selection.scope]);meta.addRow(["Wartości","Jednostki podstawowe po zastosowaniu skali iXBRL; zachowane znaki źródłowe"]);
     for(const d of sourceDocuments.filter(d=>selectedPeriods.some(p=>p.documentId.startsWith(d.recordId+":")))) meta.addRow(["Dokument MGBI",d.recordId,d.checksum,d.mappingVersion]);
+    registrySources(meta,selectedPeriods);
     return {filename:`Financials_MSR_${selection.nip}_${financialExcelDate(now)}.xlsx`,bytes:Buffer.from(await workbook.xlsx.writeBuffer())};
   }
   if (selectedPeriods.some(p=>p.accountingStandard === "IAS_IFRS")) throw new Error("Wybierz lata o jednym standardzie sprawozdawczym do jednego eksportu.");
@@ -132,5 +142,6 @@ export async function buildFinancialExcel(data: FinancialData, selection: Financ
   workbook.creator = "SRM X-Ray"; workbook.created = now; workbook.title = `Dane finansowe ${selection.nip}`;
   addSheet(workbook, `ProfitLoss_${selection.nip}_${date}`, "RZiS", documents);
   addSheet(workbook, `Balance_${selection.nip}_${date}`, "Bilans", documents);
+  if (selectedPeriods.some(p=>p.sourceRegistration)) registrySources(workbook.addWorksheet("Źródła"),selectedPeriods);
   return { filename: `Financials_${selection.nip}_${date}.xlsx`, bytes: Buffer.from(await workbook.xlsx.writeBuffer()) };
 }

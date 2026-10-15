@@ -41,3 +41,8 @@ test('statement export keeps the source decimal when binary division differs by 
  assert.equal(points[0].value,Number('2045878.33835'));
  assert.equal(financialHistoryTsv(points,'PLN_THOUSANDS').split('\r\n')[2],'2025\t2045878,33835\ttys. zł\t');
 });
+test('statement charts and copied history retain the filing KRS across a transformation',()=>{
+ const p=period(2025,'-1000');p.sourceRegistration={krs:'0001102066',legalName:'ROCKFIN S.A.',relationship:'PREDECESSOR'};
+ const points=statementPoints([p],'PALA_NPL');assert.equal(points[0].rawValue,'-1');assert.match(points[0].information!,/0001102066.*poprzednik/);
+ assert.match(financialHistoryTsv(points,'PLN_THOUSANDS'),/ROCKFIN S\.A\./);
+});

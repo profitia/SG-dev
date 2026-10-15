@@ -43,9 +43,25 @@ export type GeneralCompanyData = {
   mainPkdDescription?: string | null;
   /** Optional current registry hint; not yet a verified website. */
   website?: string | null;
+  /** Person-free, explicitly evidenced KRS incarnations. Array order is not identity authority. */
+  registryHistory?: {
+    version: "KRS_CONTINUITY_V1";
+    currentKrs: string;
+    members: readonly {
+      krs: string; legalName: string | null; legalForm: string | null;
+      registeredAt: string | null; deregisteredAt: string | null;
+      status: "ACTIVE" | "LIQUIDATION" | "DEREGISTERED" | "UNKNOWN";
+    }[];
+    links: readonly { predecessorKrs: string; successorKrs: string; basis: "KRS_FORMATION_TRANSFORMATION" }[];
+    unlinkedKrs: readonly string[];
+  };
 };
 
 export type FinancialPeriod = {
+  sourceRegistration?: {
+    krs: string; legalName: string | null;
+    relationship: "CURRENT" | "PREDECESSOR" | "UNCONFIRMED";
+  };
   effectiveRevisionId?: string;
   revisionStatus?: "RESOLVED" | "UNRESOLVED";
   accountingStandard?: "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
@@ -84,6 +100,7 @@ export type FinancialIndicatorResult = {
 };
 
 export type FinancialData = {
+  registryHistoryVersion?: "KRS_CONTINUITY_V1";
   revisionRule?: string;
   periods: readonly FinancialPeriod[];
   indicators?: readonly FinancialIndicatorResult[];
@@ -179,6 +196,7 @@ export type SupplierReportData = {
     periods: readonly {
       from: string; to: string; year: string; scope: FinancialPeriod["scope"];
       accountingStandard?: FinancialPeriod["accountingStandard"];
+      sourceRegistration?: FinancialPeriod["sourceRegistration"];
       documentRef: string; facts: readonly FinancialFactEvidence[];
     }[];
     history: readonly { code: string; reasonCode: string | null; points: readonly FinancialHistoryPoint[] }[];
