@@ -1,6 +1,8 @@
 import type { FinancialScannerProjection } from "./contracts";
 type Period = FinancialScannerProjection["periods"][number];
 type Axis = Period["axes"][number];
+export const SCANNER_METHODOLOGY_VERSION = "2.0.0" as const;
+export const MIN_HISTORICAL_PERIODS = 2;
 export function previousAnnualPeriod(
   periods: readonly Period[],
   selected?: Period,
@@ -9,12 +11,14 @@ export function previousAnnualPeriod(
   const annual = (p: Period) =>
     [365, 366].includes((Date.parse(p.to) - Date.parse(p.from)) / 86400000 + 1);
   return annual(selected)
-    ? periods.find(
-        (p) =>
-          p.scope === selected.scope &&
-          annual(p) &&
-          Date.parse(p.to) + 86400000 === Date.parse(selected.from),
-      )
+    ? periods
+        .filter(
+          (p) =>
+            p.scope === selected.scope &&
+            annual(p) &&
+            Date.parse(p.to) < Date.parse(selected.from),
+        )
+        .sort((a, b) => Date.parse(b.to) - Date.parse(a.to))[0]
     : undefined;
 }
 export function canOverlay(current?: Period, other?: Period): boolean {
@@ -94,7 +98,7 @@ export function bestHistoryPeriod(
             ? "100.000000"
             : ref?.bestValue !== null &&
                 ref?.periodIds.length &&
-                ref.periodIds.length >= 3 &&
+                ref.periodIds.length >= MIN_HISTORICAL_PERIODS &&
                 ref.bestValue !== ref.worstValue
               ? "100.000000"
               : null,
