@@ -2,6 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { atLookupStage, logLookupFailure, logProviderOutcome, sanitizedLookupFailure, withLookupDiagnostics, withKysDiagnostics, lookupRequestId, kysMode } from "./lookup-diagnostics";
 
+test("unresolved registry identity is a safe mapping diagnostic rather than a database failure",()=>{
+  for(const code of ["COMPANY_IDENTITY_AMBIGUOUS","COMPANY_IDENTITY_UNRESOLVED"]){
+    const result=sanitizedLookupFailure(new Error("MGBI_"+code));assert.equal(result.code,code);assert.equal(result.category,"SERIALIZATION_OR_MAPPING");
+  }
+  const result=sanitizedLookupFailure(new Error("MGBI_COMPANY_IDENTITY_AMBIGUOUS secret 12345678901"));
+  assert.equal(result.code,"PERSISTENCE_ERROR");assert.doesNotMatch(JSON.stringify(result),/secret|12345678901/);
+});
+
 test("permission and financial constraint diagnostics distinguish actual persistence stages", async () => {
   for (const [code, category] of [["42501", "DATABASE_PERMISSION"], ["23514", "FINANCIAL_CONSTRAINT"]]) {
     let error: unknown;

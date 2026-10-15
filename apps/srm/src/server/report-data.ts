@@ -121,6 +121,7 @@ export function projectReportData(selection: ReportSelection, row: ReportReadRow
   const quality = new Map<string, FinancialFactEvidence>();
   const periods = selected.map(period => ({ from: period.from, to: period.to, year: period.to.slice(0, 4), scope: period.scope,
     accountingStandard: period.accountingStandard ?? "UNKNOWN",
+    ...(period.sourceRegistration ? {sourceRegistration:period.sourceRegistration} : {}),
     documentRef: documentRef(selection.nip, period),
     facts: period.facts.map(displayed => {
       const key = `${periodKey(period.from, period.to, period.scope)}:${displayed.metricCode}`;

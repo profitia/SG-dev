@@ -55,7 +55,7 @@ export function financialContentHash(d: FinancialSourceDocument): string | null 
   if (d.validation !== "VALID" || !d.rows.length || d.rows.some(r => Object.keys(r.amounts).length === 0)) return null;
   const keys = d.rows.map(r => `${r.section}:${r.sourcePath.replaceAll(">", ".")}`);
   if (new Set(keys).size !== keys.length) return null;
-  return digest([d.scope,d.from,d.to,d.standard,d.schemaName,d.schemaVersion,d.currency,d.scale,
+  return digest([d.sourceKrs ?? null,d.scope,d.from,d.to,d.standard,d.schemaName,d.schemaVersion,d.currency,d.scale,
     [...d.columns].sort((a,b)=>a.sourceColumn.localeCompare(b.sourceColumn)),
     d.rows.map(r=>[r.section,r.sourcePath.replaceAll(">", "."),Object.entries(r.amounts).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,canonicalAmount(v)])])
       .sort((a,b)=>JSON.stringify(a.slice(0,2)).localeCompare(JSON.stringify(b.slice(0,2))))]);

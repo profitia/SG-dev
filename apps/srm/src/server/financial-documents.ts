@@ -2,13 +2,15 @@ import { createHash } from "node:crypto";
 import type { FinancialData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization } from "./db";
 import type { PoolClient } from "pg";
+import { financialRegistration, COMPANY_IDENTITY_VERSION, type RegistryHistory } from "./company-continuity";
 
-export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-10-xml-financial-v3";
+export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-15-xml-financial-krs-v4";
 export type AccountingStandard = "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
 export type FinancialAvailability = "XML_SUPPORTED" | "IXBRL_SUPPORTED" | "XHTML_SUPPORTED" | "NO_XML" | "UNKNOWN_FORMAT" | "UNSUPPORTED_XML";
 export type FinancialSourceRow = { section: "Bilans" | "RZiS"; sourcePath: string; label: string; depth: number;
   amounts: Record<string, string | null>; canonicalMetricCode?: string };
 export type FinancialSourceDocument = {
+  sourceKrs?: string;
   recordId: string; documentId: string | null; scope: "standalone" | "consolidated"; from: string | null; to: string | null;
   standard: AccountingStandard; isIasCompliant: boolean | null; standardBasis: string;
   provider: "MGBI"; model: "pl-krs-rdf-record"; format: "XML" | "XHTML" | "PDF" | "UNKNOWN";
@@ -86,7 +88,8 @@ export function projectFinancialDocuments(records: unknown[]): FinancialSourceDo
       role: sourceColumn === "KwotaA" ? "CURRENT" as const : sourceColumn === "KwotaB" ? "COMPARATIVE" as const : "UNKNOWN" as const,
       from: sourceColumn === "KwotaA" ? from : null, to: sourceColumn === "KwotaA" ? to : null,
       basis: sourceColumn === "KwotaA" ? "XML_HEADER" : "SOURCE_COLUMN_DATES_UNRESOLVED" }));
-    return [{ recordId: String(record.id), documentId: typeof document.document_id === "number" || typeof document.document_id === "string" ? String(document.document_id) : null,
+    const sourceKrs = text(object(record.identifiers).pl_krs);
+    return [{ ...(sourceKrs && /^\d{10}$/.test(sourceKrs) ? {sourceKrs} : {}), recordId: String(record.id), documentId: typeof document.document_id === "number" || typeof document.document_id === "string" ? String(document.document_id) : null,
       scope: document.type === "consolidated_financial_statement" ? "consolidated" as const : "standalone" as const,
       from, to, standard, isIasCompliant, standardBasis: standardConflict ? "MGBI_IAS_FLAG_CONFLICTS_WITH_XML_UOR_DECLARATION" : isIasCompliant === true ? "MGBI_DOCUMENT_IAS_FLAG" : standard === "POLISH_UOR" ? "MGBI_DOCUMENT_FLAG_AND_POLISH_XML_SCHEMA" : "UNDETERMINED",
       provider: "MGBI" as const, model: "pl-krs-rdf-record" as const, format, availability, formatBasis: mime ? "MGBI_ORIGINAL_CONTENT_TYPE" : hasXmlFields && recognized ? "MGBI_XML_DICTIONARY_AND_SCHEMA" : "UNDETERMINED",
@@ -164,10 +167,12 @@ async function storedDocuments(client: DocumentClient, organizationId: string, n
 /** Caller owns the withOrganization transaction. A shared archive lock fences provider
  * replacement until all derived rows commit; concurrent restores use the same upsert. */
 export async function restoreFinancialDocumentsFromArchive(client: DocumentClient, organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
-  const archive = (await client.query<FinancialArchive & { observed_checksum: string; financial_record_ids: string[]; observed_record_count: number; mismatched_supplier_count: number; page_count: number }>(
+  const archive = (await client.query<FinancialArchive & { observed_checksum: string; financial_record_ids: string[]; observed_record_count: number; mismatched_supplier_count: number; page_count: number; source_registrations?:Record<string,string> }>(
     `SELECT organization_id,nip,model,payload_jsonb_sha256,record_count,
        encode(sha256(convert_to(payload_json::text,'UTF8')),'hex') AS observed_checksum,
        jsonb_array_length(payload_json->'pages') AS page_count,
+       (SELECT jsonb_object_agg(r->>'id',r#>>'{identifiers,pl_krs}') FROM jsonb_array_elements(payload_json->'pages') page CROSS JOIN LATERAL jsonb_array_elements(page->'results') r
+        WHERE r->>'id' IS NOT NULL AND r#>>'{identifiers,pl_krs}' ~ '^[0-9]{10}$') AS source_registrations,
        (SELECT count(*)::int FROM jsonb_array_elements(payload_json->'pages') page CROSS JOIN LATERAL jsonb_array_elements(page->'results') r) AS observed_record_count,
        (SELECT count(*)::int FROM jsonb_array_elements(payload_json->'pages') page CROSS JOIN LATERAL jsonb_array_elements(page->'results') r WHERE r#>>'{identifiers,pl_nip}' IS DISTINCT FROM nip) AS mismatched_supplier_count,
        ARRAY(SELECT r->>'id' FROM jsonb_array_elements(payload_json->'pages') page
@@ -175,6 +180,10 @@ export async function restoreFinancialDocumentsFromArchive(client: DocumentClien
          WHERE r#>>'{document,type}' IN ('financial_statement','consolidated_financial_statement') AND r->>'id' IS NOT NULL) AS financial_record_ids
      FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE`, [organizationId,nip])).rows[0];
   const stored = await storedDocuments(client,organizationId,nip);
+  const origins = (documents:FinancialSourceDocument[]) => documents.map(d => {
+    const krs=archive?.source_registrations?.[d.recordId];
+    return krs && /^\d{10}$/.test(krs) ? {...d,sourceKrs:krs} : d;
+  });
   if (!archive) return stored.map(r => r.document_json);
   if (archive.organization_id !== organizationId || archive.nip !== nip || archive.model !== "pl-krs-rdf-record"
       || !hashFormat(archive.payload_jsonb_sha256) || archive.payload_jsonb_sha256 !== archive.observed_checksum)
@@ -186,14 +195,14 @@ export async function restoreFinancialDocumentsFromArchive(client: DocumentClien
     throw new Error("Incomplete or ambiguous financial archive inventory");
   const expected = stored.filter(r => ids.includes(r.record_id));
   if (expected.length === ids.length && expected.every(r => r.archive_jsonb_sha256 === archive.payload_jsonb_sha256
-      && (r.mapping_version === FINANCIAL_DOCUMENT_MAPPING_VERSION || ["IXBRL_SUPPORTED","XHTML_SUPPORTED"].includes(r.document_json.availability)))) return expected.map(r => r.document_json);
+      && (r.mapping_version === FINANCIAL_DOCUMENT_MAPPING_VERSION || ["IXBRL_SUPPORTED","XHTML_SUPPORTED"].includes(r.document_json.availability)))) return origins(expected.map(r => r.document_json));
   const payload = (await client.query<{ payload_text: string }>(
     "SELECT payload_json::text AS payload_text FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'", [organizationId,nip])).rows[0];
   if (!payload) throw new Error("Financial archive changed during reconstruction");
   const documents = projectArchivedFinancialDocuments({...archive,...payload},organizationId,nip);
   await persistFinancialDocuments(client,organizationId,nip,documents,archive.payload_jsonb_sha256);
   // Return the actual rows, including any better-quality preserved projection.
-  return (await storedDocuments(client,organizationId,nip)).filter(r => ids.includes(r.record_id)).map(r => r.document_json);
+  return origins((await storedDocuments(client,organizationId,nip)).filter(r => ids.includes(r.record_id)).map(r => r.document_json));
 }
 
 export async function readFinancialDocuments(organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
@@ -201,13 +210,19 @@ export async function readFinancialDocuments(organizationId: string, nip: string
 }
 
 /** Enrich saved tenant reports without re-fetching, revaluing facts or expanding the shared catalog. */
-export function applyFinancialDocumentMetadata(section: SectionEnvelope<FinancialData>, documents: readonly FinancialSourceDocument[]): SectionEnvelope<FinancialData> {
+export function applyFinancialDocumentMetadata(section: SectionEnvelope<FinancialData>, documents: readonly FinancialSourceDocument[], history?:RegistryHistory): SectionEnvelope<FinancialData> {
  if (!documents.length) return section;
- if (section.data) return { ...section, data: { ...section.data, periods: section.data.periods.map(period => {
+ if (section.data) {
+  const periods=section.data.periods.filter(period=>!history || history.members.some(member=>member.krs===documents.find(d=>d.recordId===period.documentId.replace(/:(cfy|pfy)$/,"")&&d.scope===period.scope)?.sourceKrs)).map(period => {
   const document = documents.find(item => item.recordId === period.documentId.replace(/:(cfy|pfy)$/, "") && item.scope === period.scope);
-  return document ? { ...period, accountingStandard: document.standard, accountingStandardBasis: document.standardBasis,
+  return document ? { ...period, ...(financialRegistration(document.sourceKrs,history)?{sourceRegistration:financialRegistration(document.sourceKrs,history)}:{}), accountingStandard: document.standard, accountingStandardBasis: document.standardBasis,
    isIasCompliant: document.isIasCompliant, xmlSchema: {name:document.schemaName,version:document.schemaVersion} } : period;
- }) } };
+  });
+  const excluded=periods.length!==section.data.periods.length;
+  return {...section,status:excluded?(periods.length?"PARTIAL":"EMPTY"):section.status,
+   warnings:excluded?[...section.warnings,"MGBI_REGISTRY_FINANCIAL_IDENTITY_UNCONFIRMED"]:section.warnings,
+   data:{...section.data,...(history?{registryHistoryVersion:COMPANY_IDENTITY_VERSION}:{}),periods}};
+ }
  if (section.status !== "EMPTY") return section;
  // IAS is an accounting-standard explanation; file-format warnings are secondary.
  // Supported or conflicting XML and mixed standards must never be classified as unsupported IAS.

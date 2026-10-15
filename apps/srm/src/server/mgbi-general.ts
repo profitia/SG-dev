@@ -1,6 +1,7 @@
 import type { GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
 import { fetchMgbiPages } from "./mgbi-archive";
 import { companyRegistration } from "./company-activity";
+import { resolveCompanyRecords } from "./company-continuity";
 
 export type CompanyIdentifier = { type: "NIP" | "KRS"; value: string };
 export type MgbiGeneralResult = {
@@ -92,6 +93,15 @@ export function mapMgbiGeneralRecord(record: unknown, retrievedAt: string): Mgbi
   };
 }
 
+export function mapMgbiGeneralRecords(records: readonly unknown[], identifier: CompanyIdentifier, retrievedAt: string): MgbiGeneralResult {
+  const resolution = resolveCompanyRecords(records, identifier);
+  if (resolution.error) return empty("ERROR",retrievedAt,`MGBI_${resolution.error}`,resolution.error);
+  const mapped = mapMgbiGeneralRecord(resolution.record,retrievedAt);
+  if (mapped.section.data) mapped.section.data = {...mapped.section.data,registryHistory:resolution.history};
+  if (resolution.history.unlinkedKrs.length) mapped.section.warnings = [...mapped.section.warnings,"MGBI_UNCONFIRMED_REGISTRY_PREDECESSORS"];
+  return mapped;
+}
+
 export async function fetchMgbiGeneral(identifier: CompanyIdentifier, options: MgbiGeneralOptions = {}): Promise<MgbiGeneralResult> {
   if (!/^[0-9]{10}$/.test(identifier.value) || (identifier.type !== "NIP" && identifier.type !== "KRS")) {
     throw new Error("A valid ten-digit NIP or KRS is required");
@@ -116,11 +126,8 @@ export async function fetchMgbiGeneral(identifier: CompanyIdentifier, options: M
     const results = response.records;
     if (results.length === 0) return { ...empty("EMPTY", retrievedAt, "MGBI_NO_RECORD", null),
       rawResponse: { pages: response.pages, recordCount: response.count } };
-    const key = identifier.type === "NIP" ? "pl_nip" : "pl_krs";
-    const record = results.find((candidate) => str(at(candidate, "identifiers", key)) === identifier.value);
-    if (!record) return empty("ERROR", retrievedAt, "MGBI_IDENTIFIER_MISMATCH", "IDENTIFIER_MISMATCH");
     mapping = true;
-    return { ...mapMgbiGeneralRecord(record, retrievedAt),
+    return { ...mapMgbiGeneralRecords(results, identifier, retrievedAt),
       rawResponse: { pages: response.pages, recordCount: response.count } };
   } catch (error) {
     const timedOut = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");

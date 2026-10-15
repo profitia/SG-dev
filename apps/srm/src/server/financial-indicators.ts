@@ -98,7 +98,8 @@ function annual(period: FinancialPeriod): boolean {
   return Number.isInteger(days) && days >= 365 && days <= 366;
 }
 function comparablePrior(current: FinancialPeriod, prior: FinancialPeriod): boolean {
-  return prior.scope === current.scope && prior.accountingStandard === current.accountingStandard && annual(current) && annual(prior)
+  return prior.scope === current.scope && prior.accountingStandard === current.accountingStandard
+    && prior.sourceRegistration?.krs === current.sourceRegistration?.krs && annual(current) && annual(prior)
     && dateMs(prior.to) + 86_400_000 === dateMs(current.from);
 }
 export function selectedPeriods(data: FinancialData): FinancialPeriod[] {

@@ -5,6 +5,7 @@ import { withOrganization } from "./db";
 import { createLookup } from "./xray-repository";
 import { readCompanyRegistration, readSupplierRegistrationStatus } from "./company-activity";
 import { mapMgbiFinancialRecords } from "./mgbi-financial";
+import { readFreshCompany, FINANCIAL_MAPPING_VERSION } from "./shared-catalog";
 import { migrationManifest, runMigrations } from "../../scripts/staging-migrate.mjs";
 
 test("PostgreSQL: forward migration preserves history, accepts reconciled COGS, rejects false magnitude and enforces tenant isolation with SELECT-only organization access", { skip: !process.env.SRM_MIGRATION_TEST_URL }, async () => {
@@ -84,6 +85,21 @@ test("PostgreSQL: forward migration preserves history, accepts reconciled COGS, 
     // The same NIP and shared person-free catalog never authorize another tenant's archive.
     await owner.query("UPDATE srm.catalog_companies SET general_json=$1,general_sha256=repeat('d',64),general_checked_at=now(),general_source_organization_id=$2,general_source_snapshot_id=$3 WHERE nip='1111111111'",[JSON.stringify({source:{recordId:"different-record"}}),organizationId,snapshot]);
     assert.deepEqual(await readCompanyRegistration(organizationId,"1111111111",pool),{status:"UNKNOWN",deregisteredAt:null});
+    // A formerly selected deleted KRS must not hide a verified current successor.
+    const registry=(krs:string,active:boolean,previous?:string)=>({id:"wp-"+krs,identifiers:{pl_nip:"1111111111",pl_krs:krs},content:{
+      current_excerpt:active?{naglowekA:{numerKRS:krs,stanPozycji:1},dane:{dzial1:{danePodmiotu:{nazwa:"Current company"},sposobPowstaniaPodmiotu:{okolicznosciPowstania:"PRZEKSZTAŁCENIE",podmioty:[{krs:{krs:previous}}]}}}}:null,
+      full_excerpt:{naglowekP:{numerKRS:krs,stanPozycji:active?1:2,wpis:active?[]:[{numerWpisu:2,opis:"WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO",dataWpisu:"19.01.2009"}]}}}});
+    const archivePayload=JSON.stringify({pages:[{results:[registry("0000000001",false),registry("0000000002",true,"0000000001")]}]});
+    await owner.query("UPDATE srm.mgbi_source_archives SET payload_json=$1,record_count=2 WHERE organization_id=$2 AND nip='1111111111'",[archivePayload,organizationId]);
+    const oldGeneral={status:"PARTIAL",source:{provider:"MGBI",model:"pl-krs-wp-record",recordId:"wp-0000000001"},data:{nip:"1111111111",krs:"0000000001",registrationStatus:"DEREGISTERED"},warnings:[],retrievedAt:new Date().toISOString()};
+    const financial={status:"EMPTY",source:{provider:"MGBI",model:"pl-krs-rdf-record",recordId:null},data:null,warnings:[],catalogMappingVersion:FINANCIAL_MAPPING_VERSION};
+    await owner.query("UPDATE srm.catalog_companies SET general_json=$1,financial_json=$2,financial_sha256=repeat('e',64),general_checked_at=now(),financial_checked_at=now() WHERE nip='1111111111'",[JSON.stringify(oldGeneral),JSON.stringify(financial)]);
+    const restored=await readFreshCompany(organizationId,"1111111111",new Date(),pool);
+    assert.equal(restored?.generalReprojected,true);assert.equal(restored?.general.data?.krs,"0000000002");assert.equal(restored?.general.data?.registrationStatus,"ACTIVE");
+    assert.equal(restored?.general.data?.registryHistory?.members.length,2);
+    assert.equal(await readFreshCompany(foreignId,"1111111111",new Date(),pool),null,"Shared catalog does not expose another tenant's source archive");
+    assert.equal((await owner.query("SELECT payload_json::text AS payload FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip='1111111111'",[organizationId])).rows.length,1);
+    assert.equal((await owner.query("SELECT general_json->'data'->>'krs' AS krs FROM srm.catalog_companies WHERE nip='1111111111'")).rows[0].krs,"0000000001","Reading reprojects without overwriting the historical catalog or archive");
   } finally {
     await pool.end(); await owner.end();
     try {

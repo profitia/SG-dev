@@ -63,6 +63,12 @@ export const COMPANY_ACTIVITY_SQL = `SELECT c.general_json#>>'{data,registration
 
 export async function readCompanyRegistration(organizationId: string, nip: string, pool?: DatabasePool): Promise<{status:Status;deregisteredAt:string|null}> {
   return withOrganization(organizationId, async client => {
+    // A successor can differ from the legacy catalog selection. Resolve the
+    // whole public identity inventory before withholding analytical/KYS data.
+    const {readArchivedCompanyGeneral} = await import("./company-general-cache");
+    const resolved = await readArchivedCompanyGeneral(client,organizationId,nip);
+    if (resolved?.errorCode) throw new Error("MGBI_COMPANY_IDENTITY_UNRESOLVED");
+    if (resolved?.section.data?.registryHistory) return {status:resolved.section.data.registrationStatus ?? "UNKNOWN",deregisteredAt:resolved.section.data.deregisteredAt ?? null};
     const row = (await client.query<{status?: Status; deregisteredAt?: string; record?: unknown}>(COMPANY_ACTIVITY_SQL,[nip,organizationId])).rows[0];
     const archived = companyRegistration(row?.record);
     if (row?.record) return archived;

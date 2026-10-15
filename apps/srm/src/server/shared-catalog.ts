@@ -1,9 +1,12 @@
 import { isRestrictedRegistrationStatus } from "@profitia/srm-xray";
 import { readCompanyRegistrationStatus } from "./company-activity";
+import { readArchivedCompanyGeneral } from "./company-general-cache";
+import { COMPANY_IDENTITY_VERSION } from "./company-continuity";
 import { isCompanyReportRestricted } from "@profitia/srm-xray";
 import { createHash } from "node:crypto";
 import type { FinancialData, GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization } from "./db";
+import type { Pool } from "pg";
 import type { FinancialSourceFact } from "./mgbi-financial";
 import { calculateFinancialIndicators, FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from "./financial-indicators";
 
@@ -26,7 +29,7 @@ type FinancialSection = SectionEnvelope<FinancialData>;
 type StoredFinancialSection = FinancialSection & { catalogMappingVersion?: string };
 type CatalogSection = "general" | "financial";
 
-export type SharedCompany = { general: GeneralSection; financial: FinancialSection };
+export type SharedCompany = { general: GeneralSection; financial: FinancialSection; generalReprojected?: boolean };
 
 function sha256(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
@@ -42,20 +45,27 @@ export function isCurrentFinancialMapping(section: StoredFinancialSection | null
   return section?.catalogMappingVersion === FINANCIAL_MAPPING_VERSION;
 }
 
-export async function readFreshCompany(organizationId: string, nip: string, now = new Date()): Promise<SharedCompany | null> {
+export async function readFreshCompany(organizationId: string, nip: string, now = new Date(), pool?: Pool): Promise<SharedCompany | null> {
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{
       general_json: GeneralSection | null; financial_json: StoredFinancialSection | null;
       general_checked_at: Date | null; financial_checked_at: Date | null;
     }>("SELECT general_json, financial_json, general_checked_at, financial_checked_at FROM srm.catalog_companies WHERE nip = $1", [nip]);
     const row = result.rows[0];
+    let generalReprojected = false;
+    if (row?.general_json?.data && row.general_json.data.registryHistory?.version !== COMPANY_IDENTITY_VERSION) {
+      const restored = await readArchivedCompanyGeneral(client,organizationId,nip);
+      if (!restored || restored.errorCode || !restored.section.data) return null;
+      row.general_json = restored.section;
+      generalReprojected = true;
+    }
     if (row?.general_json?.data && isFreshCatalogEntry(row.general_checked_at, now) && isCompanyReportRestricted(row.general_json.data))
-      return { general: row.general_json, financial: { status: "NOT_REQUESTED", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null }, data: null, retrievedAt: null, effectiveAt: null, warnings: [] } };
+      return { general: row.general_json, generalReprojected, financial: { status: "NOT_REQUESTED", source: { provider: "MGBI", model: "pl-krs-rdf-record", recordId: null }, data: null, retrievedAt: null, effectiveAt: null, warnings: [] } };
     if (!row?.general_json?.data || !row.financial_json ||
       !isFreshCatalogEntry(row.general_checked_at, now) || !isFreshCatalogEntry(row.financial_checked_at, now)) return null;
     if (!Array.isArray(row.financial_json.warnings) || !isCurrentFinancialMapping(row.financial_json)) return null;
-    return { general: row.general_json, financial: row.financial_json };
-  });
+    return { general: row.general_json, financial: row.financial_json, generalReprojected };
+  }, pool);
 }
 
 /** Export reads the already stored projection and never initiates a provider request. */

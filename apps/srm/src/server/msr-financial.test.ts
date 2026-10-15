@@ -10,6 +10,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MsrFinancialTables,formatMsrAmount } from "../../node_modules/@profitia/srm-xray/src/msr-financial-tables";
 
 export const candidate:MsrCandidate={recordId:"68373e33935a5dc0776e1c56",nip:"5272443955",from:"2024-01-01",to:"2024-12-31",scope:"consolidated",filingDate:"2025-05-27",correction:false,documentId:"9559394"};
+test("verified KRS allowlist filters MSR before latest-filing selection without changing receipt identity",()=>{
+  const record=(id:string,krs:string,year:number)=>({id,identifiers:{pl_nip:candidate.nip,pl_krs:krs},document:{type:"financial_statement",is_ias_compliant:true,period_from_date:`${year}-01-01`,period_to_date:`${year}-12-31`}});
+  const accepted=record("a".repeat(24),"0000000001",2024),foreign=record("b".repeat(24),"0000000002",2025);
+  const selected=selectMsrCandidates([accepted,foreign],candidate.nip,["0000000001"]);
+  assert.deepEqual(selected,selectMsrCandidates([accepted],candidate.nip));assert.equal(selected[0].recordId,accepted.id);
+  assert.deepEqual(selectMsrCandidates([accepted],candidate.nip,[]),[]);
+});
 export const original:MsrOriginal={recordId:candidate.recordId,format:"XHTML",container:"DOCUMENT",checksum:"a".repeat(64),bytes:Buffer.from("source"),files:[],retrievedAt:"2026-10-15T00:00:00Z"};
 const ns="https://xbrl.ifrs.org/taxonomy/2022-03-24/ifrs-full";
 test("MSR selects the latest filing before its standard: newer UoR, unknown or PDF never falls back to paid historical IAS",()=>{

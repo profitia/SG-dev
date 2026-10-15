@@ -48,14 +48,14 @@ export type MsrStore = {
   project?(candidate:MsrCandidate,projection:MsrProjection,archiveChecksum:string):Promise<void>;
   block(candidate:MsrCandidate,claimId:string,code:string):Promise<void>;
 };
-export function msrStore(organizationId:string,nip:string,requestId:string):MsrStore {
+export function msrStore(organizationId:string,nip:string,requestId:string,allowedKrs?:readonly string[]):MsrStore {
   return {
     candidates:() => withOrganization(organizationId, async client => {
       const archive = (await client.query<FinancialArchive>(
         "SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'", [organizationId,nip])).rows[0];
       if (!archive) return null;
       projectArchivedFinancialDocuments(archive,organizationId,nip); // checksum, complete inventory and supplier identity
-      const records=financialRecordsFromPages(JSON.parse(archive.payload_text).pages),candidates=selectMsrCandidates(records,nip);
+      const records=financialRecordsFromPages(JSON.parse(archive.payload_text).pages),candidates=selectMsrCandidates(records,nip,allowedKrs);
       return {candidates,archiveChecksum:archive.payload_jsonb_sha256,metadataMissing:candidates.some(c=>records.some(r=>{
         const v=r as Record<string,unknown>;return v.id===c.recordId && !Object.hasOwn(v,'files');
       }))};
@@ -93,9 +93,9 @@ export function msrStore(organizationId:string,nip:string,requestId:string):MsrS
 /** One download per record for the lifetime of its receipt, including ambiguous failures.
  * A blocked receipt needs explicit evidence-based operator reconciliation, never cache deletion. */
 export async function enrichMsrFinancial(organizationId:string,nip:string,base:MgbiFinancialResult,
-  options:{requestId?:string;store?:MsrStore;download?:typeof downloadMsrOriginal;parse?:typeof parseMsrOriginal;refreshMetadata?:()=>Promise<void>} = {}):Promise<MgbiFinancialResult & {msrChanged:boolean}> {
+  options:{requestId?:string;store?:MsrStore;download?:typeof downloadMsrOriginal;parse?:typeof parseMsrOriginal;refreshMetadata?:()=>Promise<void>;allowedKrs?:readonly string[]} = {}):Promise<MgbiFinancialResult & {msrChanged:boolean}> {
   if(!options.store && !options.requestId)throw new Error("MSR_LOOKUP_CONTEXT_REQUIRED");
-  const store = options.store ?? msrStore(organizationId,nip,options.requestId!);let archive = await store.candidates();
+  const store = options.store ?? msrStore(organizationId,nip,options.requestId!,options.allowedKrs);let archive = await store.candidates();
   if(archive?.metadataMissing && options.refreshMetadata){await options.refreshMetadata();archive=await store.candidates();}
   if (!archive?.candidates.length) return {...base,msrChanged:false};
   const projections:MsrProjection[] = [], warnings:string[] = [];

@@ -5,6 +5,7 @@ import type { FinancialData, FinancialPeriod, SectionEnvelope } from "@profitia/
 import type { CompanyIdentifier, MgbiGeneralOptions } from "./mgbi-general";
 import { projectFinancialDocuments } from "./financial-documents";
 import { fetchMgbiPages } from "./mgbi-archive";
+import { COMPANY_IDENTITY_VERSION, financialRegistration, type RegistryHistory } from "./company-continuity";
 
 type RecordObject = Record<string, unknown>;
 export type FinancialSourceFact = {
@@ -146,14 +147,16 @@ function isInternationalStatementWithoutFacts(records: unknown[], identifier: Co
   return statements.length > 0 && projectFinancialDocuments(statements).length === statements.length && projectFinancialDocuments(statements).every(document => document.standard === "IAS_IFRS" && document.availability !== "XML_SUPPORTED" && !document.rows.length);
 }
 
-export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyIdentifier, retrievedAt: string, totalCount = records.length): MgbiFinancialResult {
+export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyIdentifier, retrievedAt: string, totalCount = records.length, history?:RegistryHistory): MgbiFinancialResult {
   const idKey = identifier.type === "KRS" ? "pl_krs" : "pl_nip";
-  const matching = records.filter((record) => string(field(record, "identifiers", idKey)) === identifier.value);
-  if (records.length && !matching.length) return empty("ERROR", retrievedAt, "MGBI_IDENTIFIER_MISMATCH", "IDENTIFIER_MISMATCH");
+  const identityMatching = records.filter((record) => string(field(record, "identifiers", idKey)) === identifier.value);
+  if (records.length && !identityMatching.length) return empty("ERROR", retrievedAt, "MGBI_IDENTIFIER_MISMATCH", "IDENTIFIER_MISMATCH");
+  const matching = history ? identityMatching.filter(r=>history.members.some(m=>m.krs===field(r,"identifiers","pl_krs"))) : identityMatching;
+  const rank = (r:unknown) => history?.members.findIndex(m=>m.krs===field(r,"identifiers","pl_krs")) ?? 0;
   const selected = matching.filter((record) => {
     const type = string(field(record, "document", "type"));
     return type === "financial_statement" || type === "consolidated_financial_statement";
-  }).sort((a, b) => (string(field(b, "document", "filing_date")) ?? "").localeCompare(string(field(a, "document", "filing_date")) ?? "") || (string(field(b, "document", "period_to_date")) ?? "").localeCompare(string(field(a, "document", "period_to_date")) ?? ""));
+  }).sort((a, b) => rank(a)-rank(b) || (string(field(b, "document", "filing_date")) ?? "").localeCompare(string(field(a, "document", "filing_date")) ?? "") || (string(field(b, "document", "period_to_date")) ?? "").localeCompare(string(field(a, "document", "period_to_date")) ?? ""));
 
   const documents = new Map(projectFinancialDocuments(selected).map((document) => [document.recordId, document]));
   const periods: FinancialPeriod[] = [];
@@ -171,13 +174,17 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     const recordId = string(field(record, "id"));
     if (!from || !to || !recordId || from > to) continue;
     const scope = document?.type === "consolidated_financial_statement" ? "CONSOLIDATED" : "UNIT";
-    // Reserve a whole period, even if a newer full filing omits a previously present metric.
-    for (const [start,end] of [[from,to],[previousYear(from),previousYear(to)]]) {
+    // Reserve only periods actually disclosed by this filing. A missing metric
+    // in a declared comparative column is not filled from another document;
+    // absence of that entire column cannot hide an older annual statement.
+    const hasPriorColumn=documentMetadata?.columns.some(c=>c.sourceColumn==="KwotaB")
+      || [standardized,extracted].some(dictionary=>Object.values(dictionary ?? {}).some(group=>Object.keys(obj(group) ?? {}).some(key=>key.endsWith("_pfy"))));
+    for (const [start,end] of [[from,to],...(hasPriorColumn?[[previousYear(from),previousYear(to)]]:[])]) {
       const key = `${scope}:${start}:${end}`;
       if (!owners.has(key)) owners.set(key,recordId);
     }
     if ((!standardized && !extracted) || documentMetadata?.availability === "NO_XML" || documentMetadata?.availability === "UNSUPPORTED_XML") continue;
-    const revision = resolveDocumentFamily([...documents.values()].filter(d=>d.scope===documentMetadata?.scope && d.from===from && d.to===to));
+    const revision = resolveDocumentFamily([...documents.values()].filter(d=>d.scope===documentMetadata?.scope && d.from===from && d.to===to && d.sourceKrs===documentMetadata?.sourceKrs));
     const schema = string(field(record, "content", "schema", "name")) ?? "";
     const unitCode = /wtysiacachzlotych/i.test(schema) ? "THOUSAND_PLN" : /wzlotych/i.test(schema) ? "PLN" : "UNKNOWN";
     const validationStatus = unitCode === "PLN" ? "VALID" : "REVIEW";
@@ -257,7 +264,13 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     const warning = availability.length && availability.every(value => value === "NO_XML") ? "MGBI_FINANCIAL_NO_XML" : availability.includes("UNSUPPORTED_XML") ? "MGBI_FINANCIAL_UNSUPPORTED_XML" : availability.includes("UNKNOWN_FORMAT") ? "MGBI_FINANCIAL_UNKNOWN_FORMAT" : NO_FINANCIAL_FACTS;
     return empty("EMPTY", retrievedAt, warning, null);
   }
-  const sourceData: FinancialData = structuredClone({ periods, revisionRule:FINANCIAL_REVISION_RULE });
+  for (const period of periods) {
+    const document = documents.get(period.documentId.replace(/:(cfy|pfy)$/, ""));
+    const registration = financialRegistration(document?.sourceKrs,history);
+    if (registration) period.sourceRegistration=registration;
+  }
+  const identityMetadata=history?{registryHistoryVersion:COMPANY_IDENTITY_VERSION}:{};
+  const sourceData: FinancialData = structuredClone({ periods, revisionRule:FINANCIAL_REVISION_RULE,...identityMetadata });
   const unverifiedCosts = reconcileCosts(periods, facts, sourceDocuments);
   const incomplete = totalCount > records.length;
   return {
@@ -266,7 +279,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
       source: { ...SOURCE, recordId: string(field(selected[0], "id")) },
       retrievedAt,
       effectiveAt: date(field(selected[0], "document", "period_to_date")),
-      data: { periods, revisionRule:FINANCIAL_REVISION_RULE },
+      data: { periods, revisionRule:FINANCIAL_REVISION_RULE,...identityMetadata },
       warnings: [...(incomplete ? ["MGBI_SEARCH_RESULT_LIMIT"] : []), ...(unverifiedCosts ? ["MGBI_COST_SIGN_UNVERIFIED"] : [])],
     },
     sourceData,
@@ -275,7 +288,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
   };
 }
 
-export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options: MgbiGeneralOptions = {}): Promise<MgbiFinancialResult> {
+export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options: MgbiGeneralOptions & {companyHistory?:RegistryHistory} = {}): Promise<MgbiFinancialResult> {
   if (!/^[0-9]{10}$/.test(identifier.value) || (identifier.type !== "NIP" && identifier.type !== "KRS")) throw new Error("A valid ten-digit NIP or KRS is required");
   const key = options.apiKey ?? process.env.MGBI_API_KEY;
   if (!key?.trim()) throw new Error("MGBI_API_KEY is required");
@@ -295,8 +308,9 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
     const retrievedAt = now().toISOString();
     if (response.errorCode) return empty("ERROR", retrievedAt, `MGBI_${response.errorCode}`, response.errorCode);
     mapping = true;
-    const mapped = mapMgbiFinancialRecords(response.records, identifier, retrievedAt, response.count);
-    const result = mapped.section.status === "EMPTY" && isInternationalStatementWithoutFacts(response.records, identifier, response.count)
+    const eligible = options.companyHistory ? response.records.filter(r=>options.companyHistory!.members.some(m=>m.krs===field(r,"identifiers","pl_krs"))) : response.records;
+    const mapped = mapMgbiFinancialRecords(response.records, identifier, retrievedAt, response.count,options.companyHistory);
+    const result = mapped.section.status === "EMPTY" && isInternationalStatementWithoutFacts(eligible, identifier, eligible.length)
       ? empty("EMPTY", retrievedAt, INTERNATIONAL_STATEMENT, null) : mapped;
     return { ...result, rawResponse: { pages: response.pages, recordCount: response.count } };
   } catch (error) {
@@ -308,12 +322,12 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
 
 /** Offline reconstruction from the tenant's verified archive. No provider call,
  * no source receipt deletion, and no implicit cross-version gap filling. */
-export async function reprojectFinancialArchive(organizationId:string,nip:string):Promise<MgbiFinancialResult|null> {
+export async function reprojectFinancialArchive(organizationId:string,nip:string,history?:RegistryHistory):Promise<MgbiFinancialResult|null> {
   return withOrganization(organizationId,async client=>{
     const row=(await client.query<FinancialArchive & {retrieved_at:Date|string}>(
       "SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,last_checked_at AS retrieved_at FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE",[organizationId,nip])).rows[0];
     if(!row)return null;
     projectArchivedFinancialDocuments(row,organizationId,nip);
-    return mapMgbiFinancialRecords(financialRecordsFromPages(JSON.parse(row.payload_text).pages),{type:"NIP",value:nip},new Date(row.retrieved_at).toISOString(),row.record_count);
+    return mapMgbiFinancialRecords(financialRecordsFromPages(JSON.parse(row.payload_text).pages),{type:"NIP",value:nip},new Date(row.retrieved_at).toISOString(),row.record_count,history);
   });
 }

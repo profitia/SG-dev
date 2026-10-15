@@ -67,7 +67,7 @@ export function qualifyScannerSources(
         [id(p), { ...result, reason }] as const;
       if (!doc || !original) return reject("SOURCE_DOCUMENT_UNAVAILABLE");
       if (!annual(p) || !annual(doc)) return reject("NON_ANNUAL_PERIOD");
-      const family = documents.filter(d => d.scope === doc.scope && d.from === doc.from && d.to === doc.to && d.filingDate && d.filingDate <= asOf.slice(0,10));
+      const family = documents.filter(d => d.sourceKrs === doc.sourceKrs && d.scope === doc.scope && d.from === doc.from && d.to === doc.to && d.filingDate && d.filingDate <= asOf.slice(0,10));
       const revision = resolveDocumentFamily(family);
       if (doc.standard === "IAS_IFRS") return [id(p), qualifyMsrPeriod(p, doc, revision, asOf)];
       if (
@@ -105,7 +105,7 @@ export function qualifyScannerSources(
         return reject("SOURCE_PERIOD_UNCONFIRMED");
       const candidates = documents.filter(
         (d) =>
-          d.scope === p.scope &&
+          d.sourceKrs === doc.sourceKrs && d.scope === p.scope &&
           d.from &&
           d.to &&
           d.filingDate &&
@@ -160,7 +160,7 @@ export function qualifyScannerSources(
             : v === x)
         );
       };
-      const base = `POLISH_UOR:${p.scope}:PLN:${p.from.slice(5)}:${p.to.slice(5)}`;
+      const base = `POLISH_UOR:${p.scope}:PLN:${p.from.slice(5)}:${p.to.slice(5)}` + (doc.sourceKrs ? `:KRS:${doc.sourceKrs}` : "");
       const basis: ScannerSourceEvidence[string]["basis"] = {};
       if (hasPor && !hasKalk && match("PALA_NPL", "RZiS.RZiSPor.L"))
         basis.NET_RESULT = base + ":NET_RESULT";
@@ -279,7 +279,7 @@ function qualifyMsrPeriod(p: SupplierReportData["financial"]["periods"][number],
       f.currency==="PLN" && f.unit==="PLN" && f.scope===p.scope && f.documentRef===p.documentRef &&
       f.periodStart===p.from && f.periodEnd===p.to && amount(f.amount)!==null && amount(f.amount)===amount(e.value);
   };
-  const base = `IAS_IFRS:${doc.schemaName}:${p.scope}:PLN:${p.from.slice(5)}:${p.to.slice(5)}`;
+  const base = `IAS_IFRS:${doc.schemaName}:${p.scope}:PLN:${p.from.slice(5)}:${p.to.slice(5)}` + (doc.sourceKrs ? `:KRS:${doc.sourceKrs}` : "");
   if (match("PALA_NPL","ProfitLoss")) result.basis.NET_RESULT=base+":ProfitLoss";
   if (match("MSR_REVENUE","Revenue")) {
     result.basis.REVENUE=base+":Revenue";
