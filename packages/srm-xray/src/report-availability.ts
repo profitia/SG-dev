@@ -6,7 +6,7 @@ export type ReportAvailability = {
   message: string;
   hideDetails: boolean;
 };
-export const IAS_UNAVAILABLE_MESSAGE = "Supplier Intelligence Dashboard nie obsługuje sprawozdań w trybie międzynarodowego standardu rachunkowości. Wkrótce planujemy dołączyć tę możliwość.";
+export const IAS_UNAVAILABLE_MESSAGE = "Dla tego sprawozdania MSR/MSSF nie są dostępne dane w obsługiwanym formacie XHTML/iXBRL. Moduł nie pobiera plików PDF.";
 export const LIQUIDATION_MESSAGE = "Spółka jest w trakcie likwidacji. Supplier Intelligence Dashboard nie udostępnia dla tego podmiotu analizy finansowej ani raportów szczegółowych.";
 export const AVAILABLE_REPORT: ReportAvailability = { code: "AVAILABLE", title: "", message: "", hideDetails: false };
 /** Empty financial values alone never establish a legal status or accounting standard.

@@ -121,10 +121,11 @@ export async function saveSharedCompany(organizationId: string, nip: string, inp
   general: GeneralSection; financial: FinancialSection;
   generalSnapshotId: string | null; financialSnapshotId: string | null;
   facts: FinancialSourceFact[];
+  preserveGeneral?: boolean;
 }): Promise<void> {
   await withOrganization(organizationId, async (client) => {
     await client.query("INSERT INTO srm.catalog_companies(nip) VALUES ($1) ON CONFLICT DO NOTHING", [nip]);
-    await upsertSection(client, nip, "general", input.general, organizationId, input.generalSnapshotId);
+    if (!input.preserveGeneral) await upsertSection(client, nip, "general", input.general, organizationId, input.generalSnapshotId);
     await upsertSection(client, nip, "financial", input.financial, organizationId, input.financialSnapshotId);
     if (!input.financialSnapshotId || !input.facts.length || !input.financial.retrievedAt) return;
     const rows = input.facts.map((fact) => ({ ...fact, nip, sourceOrganizationId: organizationId,

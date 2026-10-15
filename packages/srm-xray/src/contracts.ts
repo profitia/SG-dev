@@ -50,6 +50,12 @@ export type FinancialPeriod = {
   accountingStandardBasis?: string;
   isIasCompliant?: boolean | null;
   xmlSchema?: { name: string | null; version: string | null };
+  /** Numeric, person-free statement positions; raw notes and original files stay tenant-only. */
+  msrRows?: readonly {
+    key: string; label: string; section: "Bilans" | "RZiS" | "CashFlow" | "Equity" | "ComprehensiveIncome" | "Other";
+    amount: string | null; currency: string | null; unit: string; validation: "VALID" | "REVIEW";
+    dimensions: readonly string[];
+  }[];
   from: string;
   to: string;
   scope: "standalone" | "consolidated";

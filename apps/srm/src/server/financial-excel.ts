@@ -19,13 +19,14 @@ export function validateFinancialExcelSelection(input: unknown): FinancialExcelS
 }
 
 function complete(period: FinancialPeriod): boolean {
+  if (period.accountingStandard === "IAS_IFRS") return Boolean(period.msrRows?.some(r=>r.section === "Bilans") && period.msrRows?.some(r=>r.section === "RZiS"));
   return period.facts.some((fact) => fact.metricCode.startsWith("BS_"))
     && period.facts.some((fact) => fact.metricCode.startsWith("PALA_"));
 }
 
 /** Match the dashboard's best-report-per-year rule without asking MGBI again. */
 export function periodsForExcel(data: FinancialData, scope: Scope): FinancialPeriod[] {
-  const candidates = data.periods.filter((period) => period.scope === scope && period.facts.length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(period.to))
+  const candidates = data.periods.filter((period) => period.scope === scope && (period.facts.length > 0 || period.msrRows?.length) && /^\d{4}-\d{2}-\d{2}$/.test(period.to))
     .sort((a, b) => b.to.localeCompare(a.to) || Number(complete(b)) - Number(complete(a)) || b.facts.length - a.facts.length);
   const byYear = new Map<string, FinancialPeriod>();
   for (const period of candidates) {
@@ -97,6 +98,25 @@ export async function buildFinancialExcel(data: FinancialData, selection: Financ
   const available = new Map(periodsForExcel(data, selection.scope).map((period) => [period.to.slice(0, 4), period]));
   if (selection.years.some((year) => !available.has(year))) throw new Error("Wybrane lata nie są dostępne w zapisanym raporcie.");
   const selected = new Map<string, { document: FinancialSourceDocument; years: string[] }>();
+  const selectedPeriods = selection.years.map(year=>available.get(year)!);
+  if (selectedPeriods.every(p=>p.accountingStandard === "IAS_IFRS")) {
+    for (const period of selectedPeriods) if (!sourceDocuments.some(d=>d.recordId === period.documentId.replace(/:(cfy|pfy)$/,"") && d.scope === selection.scope && d.availability === "IXBRL_SUPPORTED"))
+      throw new Error("Oryginalne dane MSR nie są dostępne w tej organizacji.");
+    const workbook = new ExcelJS.Workbook(); workbook.creator="SRM X-Ray";workbook.created=now;
+    const sheet=workbook.addWorksheet("MSR_MSSF",{views:[{state:"frozen",xSplit:3,ySplit:1}]});
+    sheet.columns=[{header:"Sekcja",key:"section",width:24},{header:"Pozycja",key:"label",width:75},{header:"Jednostka",key:"unit",width:18},
+      ...selectedPeriods.map((p,i)=>({header:p.from+" – "+p.to,key:"p"+i,width:28}))];
+    const rows=new Map<string,NonNullable<FinancialPeriod["msrRows"]>[number]>();
+    for (const p of selectedPeriods) for(const r of p.msrRows ?? []) rows.set(r.section+":"+r.key,r);
+    for(const [key,r] of rows) sheet.addRow([r.section,r.label,r.currency ?? r.unit,
+      ...selectedPeriods.map(p=>{const v=p.msrRows?.find(v=>v.section+":"+v.key===key);return v?.validation === "VALID" ? exactExcelAmount(v.amount) : "DO WERYFIKACJI / BRAK DANYCH";})]);
+    sheet.getRow(1).font={bold:true};
+    const meta=workbook.addWorksheet("Źródła");meta.addRow(["Standard","MSR/MSSF · XHTML/iXBRL"]);
+    meta.addRow(["NIP",selection.nip]);meta.addRow(["Zakres",selection.scope]);meta.addRow(["Wartości","Jednostki podstawowe po zastosowaniu skali iXBRL; zachowane znaki źródłowe"]);
+    for(const d of sourceDocuments.filter(d=>selectedPeriods.some(p=>p.documentId.startsWith(d.recordId+":")))) meta.addRow(["Dokument MGBI",d.recordId,d.checksum,d.mappingVersion]);
+    return {filename:`Financials_MSR_${selection.nip}_${financialExcelDate(now)}.xlsx`,bytes:Buffer.from(await workbook.xlsx.writeBuffer())};
+  }
+  if (selectedPeriods.some(p=>p.accountingStandard === "IAS_IFRS")) throw new Error("Wybierz lata o jednym standardzie sprawozdawczym do jednego eksportu.");
   for (const year of [...selection.years].sort().reverse()) {
     const period = available.get(year)!;
     const recordId = period.documentId.replace(/:(cfy|pfy)$/, "");

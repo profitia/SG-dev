@@ -9,6 +9,7 @@ import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
 import { saveFinancialDocuments, readFinancialDocuments, applyFinancialDocumentMetadata } from "./financial-documents";
 import { saveMgbiArchive } from "./mgbi-archive";
+import { enrichMsrFinancial } from "./msr-repository";
 import { fetchVerclyKys } from "./vercly-kys";
 import { getOrFetchKys, kysExpiry, purgeExpiredSharedKys } from "./kys-cache";
 import { readFreshCompany, recordDemoInterest, refreshFinancialIndicators, saveSharedCompany } from "./shared-catalog";
@@ -119,7 +120,18 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
     };
     logProviderOutcome("MGBI", "general", cached.general.status, null, "CACHE");
     logProviderOutcome("MGBI", "financial", cached.financial.status, null, "CACHE");
-    const savedFinancial = applyFinancialDocumentMetadata(cached.financial, await readFinancialDocuments(organizationId, request.identifier.value));
+    const msr = await atLookupStage("financial_persistence", () => enrichMsrFinancial(organizationId,request.identifier.value,
+      {section:cached.financial,facts:[],errorCode:null},{requestId:lookup.requestId,refreshMetadata:async()=>{
+        const latest=await fetchMgbiFinancial(request.identifier);
+        if (!latest.rawResponse || !latest.section.retrievedAt) throw new Error("MSR_METADATA_REFRESH_FAILED");
+        await saveMgbiArchive(organizationId,request.identifier.value,"pl-krs-rdf-record",latest.rawResponse.pages,latest.rawResponse.recordCount,latest.section.retrievedAt,lookup.requestId);
+        await saveFinancialDocuments(organizationId,request.identifier.value,latest.rawResponse.pages);
+      }}),"financial");
+    if (msr.msrChanged) {
+      const snapshotId = await persistSection(organizationId,lookup,"financial",msr.section,msr.errorCode,msr.facts,undefined,msr.sourceData,"CACHE");
+      await saveSharedCompany(organizationId,request.identifier.value,{general,financial:msr.section,generalSnapshotId:null,financialSnapshotId:snapshotId,facts:msr.facts,preserveGeneral:true});
+    }
+    const savedFinancial = applyFinancialDocumentMetadata(msr.section, await readFinancialDocuments(organizationId, request.identifier.value));
     const financial = savedFinancial.data
       ? { ...savedFinancial, data: { ...savedFinancial.data, indicators: await refreshFinancialIndicators(organizationId, request.identifier.value, savedFinancial.data) } }
       : savedFinancial;
@@ -137,7 +149,7 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
       section: { ...emptyCard.general, status: "ERROR" as const, retrievedAt: new Date().toISOString(), warnings: ["MGBI_NOT_CONFIGURED"] },
       rawRecord: null, rawResponse: undefined, errorCode: providerExceptionCode(error),
     }));
-  const financial = await fetchCompanyFinancial(general.section.data, request.identifier);
+  let financial = await fetchCompanyFinancial(general.section.data, request.identifier);
   logProviderOutcome("MGBI", "general", general.section.status, general.errorCode);
   if (!isCompanyReportRestricted(general.section.data)) logProviderOutcome("MGBI", "financial", financial.section.status, financial.errorCode);
   // Keep complete provider responses in a tenant-scoped store, separate from
@@ -152,6 +164,8 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
         financial.rawResponse.pages, financial.rawResponse.recordCount, financial.section.retrievedAt, lookup.requestId).then(() => saveFinancialDocuments(organizationId, request.identifier.value, financial.rawResponse!.pages))
       : Promise.resolve(),
   ]));
+  if (!isCompanyReportRestricted(general.section.data) && financial.rawResponse)
+    financial = await atLookupStage("financial_persistence", () => enrichMsrFinancial(organizationId,request.identifier.value,financial,{requestId:lookup.requestId}),"financial");
   const generalSnapshotId = await persistSection(organizationId, lookup, "general", general.section, general.errorCode);
   const financialSnapshotId = isCompanyReportRestricted(general.section.data) ? null : await persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
   await atLookupStage("catalog_persistence", () => saveSharedCompany(organizationId, request.identifier.value, {

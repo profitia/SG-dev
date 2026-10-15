@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import "@profitia/srm-xray/msr-financial-tables.css";
 
 export const metadata: Metadata = {
   title: "X-Ray | Supplier Intelligence Dashboard",

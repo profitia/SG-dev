@@ -97,6 +97,12 @@ function base() {
   return { environment: environment === "development" || environment === "staging" ? environment : "unavailable", requestId: context.getStore()?.requestId ?? randomUUID() };
 }
 
+/** Caller supplies only internal error codes; source IDs, URLs and payloads never enter telemetry. */
+export function logMsrOutcome(method: "PROVIDER" | "CACHE", errorCode: string | null): void {
+  const code = errorCode && /^MSR_[A-Z0-9_]{1,80}$/.test(errorCode) ? errorCode : errorCode ? "MSR_UNKNOWN_FAILURE" : null;
+  console.info(JSON.stringify({event:"srm_msr_outcome",...base(),stage:"financial_original",method,code,status:code ? "INCOMPLETE" : "SUCCESS"}));
+}
+
 export function logLookupFailure(error: unknown): void {
   console.error(JSON.stringify({ event: "srm_lookup_failure", ...base(), ...sanitizedLookupFailure(error) }));
 }

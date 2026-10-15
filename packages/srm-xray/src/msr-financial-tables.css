@@ -1,0 +1,6 @@
+/* MSR presentation belongs to Financial Data and can be styled independently of UoR. */
+.srm-msr-financial { min-width: 0; }
+.srm-msr-financial-notice { color: var(--srm-text, #294d70); font-size: .875rem; }
+.srm-msr-financial-table td { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.srm-msr-financial-table th[scope="row"] { min-width: 20rem; white-space: normal; }
+.srm-msr-financial-table thead th:nth-child(2) { min-width: 6rem; }
