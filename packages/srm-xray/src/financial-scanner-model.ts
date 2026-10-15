@@ -1,7 +1,7 @@
 import type { FinancialScannerProjection } from "./contracts";
 type Period = FinancialScannerProjection["periods"][number];
 type Axis = Period["axes"][number];
-export const SCANNER_METHODOLOGY_VERSION = "2.0.0" as const;
+export const SCANNER_METHODOLOGY_VERSION = "3.0.0" as const;
 export const MIN_HISTORICAL_PERIODS = 2;
 export function previousAnnualPeriod(
   periods: readonly Period[],
