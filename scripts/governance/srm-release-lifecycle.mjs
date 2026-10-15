@@ -34,6 +34,36 @@ export function authorizationFromRelease(release) {
 const requireFact = (ok, message) => {
   if (!ok) throw Error(message);
 };
+// SRM release safety is independent of the ordinary ACTIVE/VERIFIED gate.
+// An older application may run with an explicitly approved, complete newer
+// ledger; this never permits ignoring unknown ledger rows or undoing SQL.
+export function assertRestorePoint(plan, c, now = Date.now()) {
+  const p=plan?.restorePoint, db=p?.database;
+  requireFact(c.projectKey==='SRM' && plan?.schemaVersion==='1.0' &&
+    /^[a-f0-9]{40}$/.test(plan.candidateSha) && p?.candidateSha===plan.candidateSha &&
+    p.status==='VERIFIED' && /^[a-f0-9]{40}$/.test(p.sha) &&
+    p.serviceId==='srv-db496b3tqb8s73eh5sfg' && /^dep-[a-z0-9]+$/.test(p.deployId) &&
+    Number.isFinite(Date.parse(p.verifiedAt)) && Date.parse(p.verifiedAt)<=now && now-Date.parse(p.verifiedAt)<=86400000,
+    'Fresh exact SRM Staging Last Known Good required');
+  requireFact(p.artifact?.sourceSha===p.sha && p.artifact.algorithm==='sha256-sorted-path-type-content-v1' &&
+    /^[a-f0-9]{64}$/.test(p.artifact.digest) && /^job-[a-z0-9]+$/.test(p.artifact.jobId) &&
+    /^[a-f0-9]{64}$/.test(p.configuration?.fingerprint) && p.configuration.unchangedAfterMeasurement===true &&
+    p.configuration.algorithm==='sha256-selected-service-config-and-sorted-resolved-env-pairs-v1',
+    'Measured retained artifact and compatible configuration required');
+  requireFact(db?.projectId===c.neon.projectId && db.databaseName==='srm_app' && db.sourceBranchId===c.neon.branchId &&
+    /^br-[a-z0-9-]+$/.test(db.recoveryBranchId) && db.recoveryBranchId!==c.neon.branchId &&
+    /^br-[a-z0-9-]+$/.test(db.restoreRehearsalBranchId) && db.restoreRehearsalBranchId!==db.recoveryBranchId &&
+    db.restoreRehearsalParentId===db.recoveryBranchId && db.restoreRehearsalVerified===true &&
+    /^[A-F0-9]+\/[A-F0-9]+$/.test(db.parentLsn) && db.automaticSchemaOrDataRollbackAllowed===false,
+    'Verified independent Neon recovery point required');
+  const old=db.inventories?.migrations, full=plan.schemaMigrations;
+  requireFact(Array.isArray(old)&&old.length>0&&Array.isArray(full)&&full.length>=old.length &&
+    digest(old)===digest(full.slice(0,old.length)) && full.every(x=>typeof x.version==='string'&&/^[a-f0-9]{64}$/.test(x.checksum)),
+    'Complete approved schema ledger with unchanged LKG prefix required');
+  if(full.length!==old.length) requireFact(c.rollback.compatibilityEdges?.some(e=>e.runtimeSha===p.sha&&e.runtimeMigrationsDigest===digest(old)&&e.schemaMigrationsDigest===digest(full)&&e.isolatedPostgresTestRequired===true),
+    'Reviewed additive schema compatibility proof required');
+  return true;
+}
 // SRM-only protection policy. This validates observed state; it never changes GitHub.
 export function assertStagingGitHubProtection(ge, c, reviewerIds = null) {
   requireFact(
@@ -197,6 +227,11 @@ export function assertLifecycleAuthorization(a, m, c, now = Date.now()) {
         a.githubReviewerIds.every((x) => x > 0),
       "Fresh provider price evidence and bounded exact reviewers required",
     );
+  if(a.mode==='rollback' && c.rollback.requireVerifiedRestorePoint) {
+    assertRestorePoint(m.rollbackPlan,c,now);
+    requireFact(m.rollbackPlan.restorePoint.sha===m.sha && digest(m.migrations)===digest(m.rollbackPlan.schemaMigrations),
+      'Rollback must bind retained application source and complete approved ledger');
+  }
   return true;
 }
 // Observe an existing binding only. No domain or DNS operation is authorized here.
@@ -341,7 +376,8 @@ export function assertOperation({
     );
   if (t.status === "ACTIVE" && s.liveDeploy)
     requireFact(
-      [t.render.services?.runtime?.baselineSha, m.sha].includes(
+      [t.render.services?.runtime?.baselineSha, m.sha,
+        ...(a.mode==='rollback' && a.supersedes && j.interruptedReleases?.at(-1)?.approvalId===a.supersedes.approvalId ? [j.interruptedReleases.at(-1).manifest.sha] : [])].includes(
         s.liveDeploy.commit?.id,
       ),
       "Unexpected deployed source drift",
@@ -369,7 +405,7 @@ export function assertOperation({
       "Unregistered service cannot be adopted",
     );
   if (known) requireFact(service?.id === known, "Approved service missing");
-  if (t.status === "ACTIVE" && !j.release.steps.deploy) {
+  if (t.status === "ACTIVE" && !j.release.steps.deploy && !(a.mode==='rollback' && a.supersedes && j.interruptedReleases?.at(-1)?.approvalId===a.supersedes.approvalId)) {
     const p = {
       capturedAt: s.capturedAt,
       source: { render: "render-api", neon: "neon-api" },
@@ -434,6 +470,20 @@ export function claimRelease(
       : undefined,
   });
   if (old && old.phase !== "VERIFIED") {
+    // A rollback is a new protected approval, never an authorization renewal.
+    // Preserve the entire interrupted release, and require actual stopped-owner
+    // proof plus a review-bound digest of exactly the state being superseded.
+    if (a.mode === 'rollback' && old.approvalId !== a.approvalId) {
+      requireFact(previousExecutorStopped && a.supersedes?.journalDigest===digest(state) &&
+        a.supersedes.generation===state.generation && a.supersedes.approvalId===old.approvalId &&
+        a.supersedes.owner===old.owner && a.rollbackSchemaCompatible===true &&
+        digest(m.rollbackPlan?.restorePoint)===digest(old.lastKnownGood?.restorePoint),
+        'Separately reviewed stopped-release rollback handoff required');
+      next.interruptedReleases=[...(next.interruptedReleases??[]),structuredClone(old)];
+      next.release=null;
+      // Reuse the ordinary new-release constructor without rewriting history.
+      return claimRelease(next,a,m,owner,false);
+    }
     requireFact(
       old.approvalId === a.approvalId &&
         old.manifestDigest === digest(m) &&
@@ -605,6 +655,12 @@ export function reconciliation(
     digest(proof.migrations) === digest(manifest.migrations),
     "Schema ledger does not match release manifest",
   );
+  if(authorization.mode==='rollback' && contract.rollback.requireVerifiedRestorePoint) {
+    const p=manifest.rollbackPlan.restorePoint;
+    requireFact(proof.artifact?.source==='LIVE_RENDER_JOB' && proof.artifact.digest===p.artifact.digest &&
+      proof.artifact.algorithm===p.artifact.algorithm && proof.artifact.retainedDeployId===p.deployId &&
+      /^job-[a-z0-9]+$/.test(proof.artifact.jobId), 'Actual retained rollback artifact proof required');
+  }
   const domains = assertStagingDomainBinding(snapshot, contract);
   if (domains.length) requireFact(Array.isArray(proof.domainBindings) && digest(proof.domainBindings) === digest(domains), "Domain verification proof mismatch");
   const r = structuredClone(registry),

@@ -367,6 +367,7 @@ async function main() {
     const { verifyLifecycleSource, manifestFrom } = await import(
       "./staging-lifecycle.mjs"
     );
+    const {prepareRollbackPlan}=await import('./staging-rollback.mjs');
     verifyLifecycleSource(sha);
     const evidence = await liveEvidence(sha, {
       ...process.env,
@@ -381,7 +382,7 @@ async function main() {
       throw Error("Release provenance incomplete");
     console.log(
       JSON.stringify(
-        manifestFrom(
+        {...manifestFrom(
           {
             repositoryId: evidence.repositoryId,
             approvedMainAncestor: evidence.approvedMainAncestor,
@@ -389,7 +390,7 @@ async function main() {
             developmentLiveSha: evidence.developmentLiveSha,
           },
           sha,
-        ),
+        ),rollbackPlan:prepareRollbackPlan(JSON.parse(fs.readFileSync(path.join(root,'Canon/registries/srm-staging-release-state-v1.json'))),sha)},
         null,
         2,
       ),
