@@ -246,8 +246,8 @@ function Radar({
     compare = comparison?.id === "reference" ? "najlepsza historia" : comparison?.to.slice(0, 4);
   const cx = 350,
     cy = 237,
-    inner = 42,
-    outer = 167;
+    inner = 42 * radarLabelLayout.circleScale,
+    outer = 167 * radarLabelLayout.circleScale;
   const scores = axes.map((a) => {
     const s = period?.axes.find((x) => x.code === a.code)?.normalizedScore;
     return s == null ? null : Number(s);
@@ -280,7 +280,7 @@ function Radar({
   const sector = (i: number, edge: number) => {
     const start = -90 + i * 60 - 28.5,
       end = start + 57;
-    const corner = Math.min(9, (edge - inner) / 2);
+    const corner = Math.min(9 * radarLabelLayout.circleScale, (edge - inner) / 2);
     const outerOffset = ((corner / edge) * 180) / Math.PI;
     const innerOffset = ((corner / inner) * 180) / Math.PI;
     return `M ${xy(edge - corner, start)}
@@ -320,7 +320,7 @@ function Radar({
             id={uid + "srm-fill-" + tone}
             cx="350"
             cy="237"
-            r="167"
+            r={outer}
             gradientUnits="userSpaceOnUse"
           >
             <stop offset="0%" stopColor={colors.soft} />
