@@ -175,6 +175,7 @@ export type SupplierReportData = {
     representationVersion: string | null;
     periods: readonly {
       from: string; to: string; year: string; scope: FinancialPeriod["scope"];
+      accountingStandard?: FinancialPeriod["accountingStandard"];
       documentRef: string; facts: readonly FinancialFactEvidence[];
     }[];
     history: readonly { code: string; reasonCode: string | null; points: readonly FinancialHistoryPoint[] }[];

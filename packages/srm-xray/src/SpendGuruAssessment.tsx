@@ -7,6 +7,8 @@ import { useDetachedAssistantWindow } from './useDetachedAssistantWindow';
 import { spendGuruCopy } from './ui-copy-canon';
 import { useAssistantWelcome } from './useAssistantWelcome';
 import type { AssistantApplicationContext } from './assistant-context';
+import type { MsrReportingState } from './msr-reporting-state';
+import { formatMsrAmount } from './msr-financial-tables';
 type Props = {
   context: AssistantApplicationContext;
   avatars: { male: string; anna: string };
@@ -16,6 +18,7 @@ type Props = {
   formatted: string[];
   comparisonSummary?: ComparisonSummaryLine[];
   comparisonYear?: string;
+  sourceSummary?: MsrReportingState | null;
 };
 // Canonical financial-summary template v1: deterministic source values only.
 // Missing values remain explicit; this view makes no model calls or simulated replies.
@@ -47,7 +50,7 @@ export function SpendGuruAssessment({
   year,
   company,
   values,
-  formatted, comparisonSummary=[], comparisonYear
+  formatted, comparisonSummary=[], comparisonYear, sourceSummary
 }: Props) {
   // Conversation state survives reparenting; both presentations share this owner.
   const [draft, setDraft] = useState('');
@@ -201,7 +204,11 @@ export function SpendGuruAssessment({
             <div className="srm-chat-intro-copy"><span>PRZYJRZYJMY SIĘ DOSTAWCY</span><strong>{company}</strong><small>{unavailable ? unavailable.title : year ? `Wybrane dane finansowe za ${year}` : "Brak dostępnego okresu finansowego"}</small></div>
           </div>
           <article className="srm-chat-message is-assistant srm-chat-analysis" ref={initialMessage} tabIndex={-1}>
-            {unavailable ? <p role="status">{unavailable.message}</p> : <><p>{year ? <>Przyjrzyjmy się danym za <strong>{year}</strong>. </> : null}Przychody wynoszą <strong>{summaryPLN(values[1])}</strong>, a wynik netto to <strong>{summaryPLN(values[0])}</strong>.</p>
+            {unavailable ? <p role="status">{unavailable.message}</p> : sourceSummary ? <>
+              {sourceSummary.year && <p>Sprawozdanie MSR/MSSF za <strong>{sourceSummary.year}</strong>.</p>}
+              {sourceSummary.values.map(value=><p key={value.code}>{value.label}: <strong>{formatMsrAmount(value.amount)} {value.currency}</strong>.</p>)}
+              <p>{sourceSummary.notice}</p>
+            </> : <><p>{year ? <>Przyjrzyjmy się danym za <strong>{year}</strong>. </> : null}Przychody wynoszą <strong>{summaryPLN(values[1])}</strong>, a wynik netto to <strong>{summaryPLN(values[0])}</strong>.</p>
             <p>Płynność bieżąca: <strong>{summaryValue(2)}</strong>. Marża operacyjna: <strong>{summaryValue(3)}</strong>. Udział zobowiązań i rezerw w aktywach: <strong>{summaryValue(5)}</strong>.</p>
             {comparisonSummary.length>0 && <div className="srm-chat-comparison"><p><strong>Zmiana względem {comparisonYear}</strong></p><ul>{comparisonSummary.map(line=><li key={line.code} data-comparison-tone={line.tone}>{line.text}</li>)}</ul></div>}
             </>}

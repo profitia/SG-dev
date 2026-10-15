@@ -22,9 +22,10 @@ export function statementPoints(periods:readonly FinancialPeriod[],code:string):
  });
 }
 export function statementRows(periods:readonly FinancialPeriod[]):StatementRow[] {
- const codes=new Set(['PALA_NRFS','PALA_OAC','PALA_NPL',...periods.flatMap(p=>p.facts.map(f=>f.metricCode))]);
- return [...codes].filter(c=>c.startsWith('PALA_')||c.startsWith('BS_')).map(code=>({
-  id:code,name:financialLabels[code]?.label??code,
+ const msr=periods.length>0&&periods.every(p=>p.accountingStandard==='IAS_IFRS');
+ const codes=new Set([...(msr?[]:['PALA_NRFS','PALA_OAC','PALA_NPL']),...periods.flatMap(p=>p.facts.map(f=>f.metricCode))]);
+ return [...codes].filter(c=>c.startsWith('PALA_')||c.startsWith('BS_')||c==='MSR_REVENUE').map(code=>({
+  id:code,name:code==='MSR_REVENUE'?'Przychody MSR/MSSF':financialLabels[code]?.label??code,
   section:financialLabels[code]?.group??(code.startsWith('BS_')?'Bilans':'Rachunek zysków i strat'),
   group:financialLabels[code]?.group??'Pozycja źródłowa',points:statementPoints(periods,code)
  }));

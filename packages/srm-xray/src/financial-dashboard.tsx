@@ -177,8 +177,9 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
   const allPeriods = scope ? financialPeriodsByScope(data, scope) : [];
   const activePeriod = selectedPeriod === undefined ? allPeriods[0] : allPeriods.find(period => period.from === selectedPeriod?.from && period.to === selectedPeriod?.to);
   const isMsr = activePeriod?.accountingStandard === "IAS_IFRS";
-  const eightPeriods = allPeriods.slice(0, 8);
-  const rows = statementRows(allPeriods);
+  const viewPeriods = allPeriods.filter(period => (period.accountingStandard === "IAS_IFRS") === isMsr);
+  const eightPeriods = viewPeriods.slice(0, 8);
+  const rows = statementRows(viewPeriods);
   const availableYears = allPeriods.map((period) => period.to.slice(0, 4));
   const selectedYears = yearSelection?.scope === scope ? yearSelection.years.filter((year) => availableYears.includes(year)) : availableYears;
 
@@ -214,17 +215,18 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
       </div>
       {exportError && <p role="alert" className="search-error">{exportError}</p>}
     </div></FinancialHistoryDialog>}
-    <StatementWorkspace key={scope} rows={rows} years={availableYears.map(Number)} showTables={false} />
-    {isMsr ? <MsrFinancialTables periods={allPeriods} /> : <><details className="financial-accordion" open>
+    <StatementWorkspace key={`${scope}:${isMsr ? "IAS_IFRS" : "POLISH_UOR"}`} rows={rows} years={viewPeriods.map(p=>Number(p.to.slice(0,4)))} showTables={false}
+      initialMetrics={isMsr ? ['MSR_REVENUE','PALA_PLFOA','PALA_NPL'].filter(code=>rows.some(row=>row.id===code&&row.points.some(p=>p.value!==null))) : undefined} />
+    {isMsr ? <MsrFinancialTables periods={viewPeriods} /> : <><details className="financial-accordion" open>
       <CanonSummary canonId="SRM-C49" usage="financial-dashboard:11">Rachunek zysków i strat</CanonSummary>
       <div className="financial-accordion-body">
-        <FinancialTable groups={incomeGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} />
+        <FinancialTable groups={incomeGroups} periods={eightPeriods} allPeriods={viewPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} />
       </div>
     </details>
     <details className="financial-accordion" open>
       <CanonSummary canonId="SRM-C49" usage="financial-dashboard:12">Bilans</CanonSummary>
-      <div className="financial-accordion-body"><FinancialTable groups={balanceGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} /></div>
+      <div className="financial-accordion-body"><FinancialTable groups={balanceGroups} periods={eightPeriods} allPeriods={viewPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} /></div>
     </details></>}
-    {selectedRow && <StatementHistory row={{id:selectedRow.code,name:selectedRow.label,section:scope==='standalone'?'Jednostkowe':'Skonsolidowane',group:'Sprawozdanie finansowe',points:statementPoints(allPeriods,selectedRow.code)}} onClose={()=>setSelectedRow(null)} />}
+    {selectedRow && <StatementHistory row={{id:selectedRow.code,name:selectedRow.label,section:scope==='standalone'?'Jednostkowe':'Skonsolidowane',group:'Sprawozdanie finansowe',points:statementPoints(viewPeriods,selectedRow.code)}} onClose={()=>setSelectedRow(null)} />}
   </div>;
 }

@@ -78,13 +78,14 @@ export function executiveSummary(input: ExecutiveSummaryInput): ExecutiveSummary
   };
   const representationKnown = !!financial.mappingVersion && !!financial.representationVersion && !financial.limitations.includes("MAPPING_VERSION_OUTDATED") && ["SUCCESS", "PARTIAL"].includes(financial.status);
   if (representationKnown) {
-    const revenue = source("PALA_NRFS"), net = source("PALA_NPL"), workingCapital = result("NET_WORKING_CAPITAL", ["BS_A_CA", "BS_LAE_LAPFL_STL"]);
-    if (revenue) model.facts.push({ id: "revenue", text: `Przychody za wybrany okres wynoszą ${financialValue(revenue.amount, "PLN")}.`, explanation: "Zweryfikowana pozycja przychodów z wybranego sprawozdania.", evidence: { kind: "source", fact: revenue } });
+    const msr = period.accountingStandard === "IAS_IFRS";
+    const revenue = source(msr ? "MSR_REVENUE" : "PALA_NRFS"), net = source("PALA_NPL"), workingCapital = result("NET_WORKING_CAPITAL", ["BS_A_CA", "BS_LAE_LAPFL_STL"]);
+    if (revenue) model.facts.push({ id: "revenue", text: `Przychody${msr ? " MSR/MSSF" : ""} za wybrany okres wynoszą ${financialValue(revenue.amount, "PLN")}.`, explanation: "Zweryfikowana pozycja przychodów z wybranego sprawozdania.", evidence: { kind: "source", fact: revenue } });
     if (net) model.facts.push({ id: "net", text: `Wynik netto za wybrany okres wynosi ${financialValue(net.amount, "PLN")}.`, explanation: "Zweryfikowana pozycja wyniku netto z wybranego sprawozdania; znak wartości pozostaje bez zmian.", evidence: { kind: "source", fact: net } });
     if (workingCapital) model.facts.push({ id: "working-capital", text: `Kapitał obrotowy netto wynosi ${financialValue(workingCapital.value, "PLN")}.`, explanation: "Zapisany wynik backendu, oparty na zweryfikowanych aktywach obrotowych i zobowiązaniach krótkoterminowych.", evidence: { kind: "indicator", code: "NET_WORKING_CAPITAL" } });
     // A revenue growth value is not the difference between two revenue-growth percentages.
     // Only the backend-confirmed comparison enables an additional historical assertion.
-    const growth = result("REVENUE_YOY", ["PALA_NRFS"]);
+    const growth = msr ? null : result("REVENUE_YOY", ["PALA_NRFS"]);
     const prior = growth?.comparison.previousPeriod;
     if (revenue && growth?.comparison.status === "COMPARABLE" && prior && growth.evidence.length === 2 && growth.evidence.filter(fact => fact.metricCode === "PALA_NRFS" && fact.periodStart === prior.from && fact.periodEnd === prior.to).length === 1) {
       model.facts[0] = { id: "revenue", text: `${model.facts[0].text} Zmiana przychodów rok do roku: ${financialValue(growth.value, "PERCENT")}.`, explanation: "Zapisany wskaźnik zmiany przychodów, nie zmiana wartości tego wskaźnika. Backend potwierdził porównywalność okresów; ich pełne daty i dane wejściowe są w historii.", evidence: { kind: "indicator", code: "REVENUE_YOY", history: true } };

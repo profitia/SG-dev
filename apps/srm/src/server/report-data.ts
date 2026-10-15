@@ -120,6 +120,7 @@ export function projectReportData(selection: ReportSelection, row: ReportReadRow
   const factMap = new Map(row.facts.map(f => [`${f.periodStart}:${f.periodEnd}:${f.statementScope === "UNIT" ? "standalone" : f.statementScope === "CONSOLIDATED" ? "consolidated" : "unknown"}:${f.metricCode}`, f]));
   const quality = new Map<string, FinancialFactEvidence>();
   const periods = selected.map(period => ({ from: period.from, to: period.to, year: period.to.slice(0, 4), scope: period.scope,
+    accountingStandard: period.accountingStandard ?? "UNKNOWN",
     documentRef: documentRef(selection.nip, period),
     facts: period.facts.map(displayed => {
       const key = `${periodKey(period.from, period.to, period.scope)}:${displayed.metricCode}`;
