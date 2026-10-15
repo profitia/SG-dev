@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "932f48b9dbd4f31621e8399f105d77111844920a6ef1e30134e4cf6d26835614",
+  "publicationNonce": "11648f9bdf248840c84d61c1b9290abdc3cb5b20f1f3eef409a786688cf1704f",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 124,
+  "generation": 125,
   "release": {
     "authorizationDigest": "fd98d05cd049a8bcbeaad1718d03e88fa2452222b348e45e3e32bec81549813a",
     "authorizationKeyOrder": [
@@ -9158,5 +9158,82 @@
       "environmentProtectionUnchanged": true,
       "providerCredentialVerification": "PENDING_PROTECTED_RELEASE_READ"
     }
-  ]
+  ],
+  "postReleaseEvidence": {
+    "approvalId": "SRM-STAGING-38762086730-1",
+    "source": "INDEPENDENT_LIVE_HTTP_AND_PROVIDER_READS_PLUS_RUNTIME_READ_ONLY_SQL",
+    "recordedAt": "2026-10-15T16:05:22.457Z",
+    "executor": "Authorized SRM Codex acceptance executor",
+    "hostConversationId": "01a11c3a-6570-7292-99b4-5666c5a2496b",
+    "sha": "4f2b9b3797f6210e6c1af98af6a69abfd9c48391",
+    "deployId": "dep-db8fare89jmc73a0nsh0",
+    "workflowRunId": 38762086730,
+    "health": "PASS",
+    "authentication": {
+      "unauthenticated": "PASS",
+      "incorrectPassword": "PASS",
+      "login": "PASS",
+      "secureCookie": "PASS",
+      "authenticatedPage": "PASS",
+      "loginPage": "PASS",
+      "session": "PASS",
+      "logout": "PASS",
+      "sessionCrossEnvironmentRejection": "PASS"
+    },
+    "persistence": {
+      "persisted": true,
+      "synthetic": true,
+      "recordId": "0f548087-799a-4d05-a3b3-aea922527618"
+    },
+    "catalogForceRls": "PASS",
+    "databaseIsolation": "PASS",
+    "bindingsUnchanged": true,
+    "developmentUnchanged": true,
+    "productionMutationsPerformed": 0,
+    "sg2MutationsPerformed": 0,
+    "radar": {
+      "nip": "5213390341",
+      "qualification": "QUALIFIED_HISTORY",
+      "period": "2025-12-31",
+      "axesPresent": 6,
+      "availableAxes": [
+        "NET_RESULT",
+        "REVENUE",
+        "OPERATING_COST_RATIO"
+      ],
+      "unavailableAxes": [
+        {
+          "code": "CURRENT_RATIO",
+          "reason": "MISSING_FIELD"
+        },
+        {
+          "code": "OPERATING_MARGIN",
+          "reason": "MISSING_FIELD"
+        },
+        {
+          "code": "LIABILITIES_TO_ASSETS",
+          "reason": "MISSING_FIELD"
+        }
+      ],
+      "developmentProjectionParity": "PASS_READ_ONLY_COMPARISON",
+      "repeatReadIdempotence": "PASS",
+      "sourceArchiveAndDatesUnchanged": true,
+      "supplierAttemptsAdded": 0
+    },
+    "finding": {
+      "code": "COMMON_RADAR_MISSING_FIELD",
+      "scope": "CURRENT_DEVELOPMENT_AND_STAGING",
+      "axisCodes": [
+        "CURRENT_RATIO",
+        "OPERATING_MARGIN",
+        "LIABILITIES_TO_ASSETS"
+      ],
+      "promotionRegression": false,
+      "rootCause": "NOT_ASSERTED; same result verified from each environment own database with approved source",
+      "nextStep": "Separate Development analysis if business acceptance requires these fields; no cross-environment data copy or business-code corrective performed"
+    },
+    "businessUat": "NOT_PERFORMED",
+    "realProviderRollback": "NOT_EXECUTED",
+    "proofDigest": "6f002bd621766b21d092952f9c6684eb3759384f7db9e6dada7c433d7af8c3e6"
+  }
 }
