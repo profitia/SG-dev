@@ -469,7 +469,7 @@ for (const dest of [
   );
 test("checksums and contiguous prefix support exact idempotent retry", () => {
   const ms = migrationManifest();
-  assert.equal(ms.at(-1).version, "0016_mgbi_archive_integrity");
+  assert.equal(ms.at(-1).version, "0017_msr_ixbrl_sources");
   const rows = ms.map((m) => ({
     version: m.version,
     checksum_sha256: m.checksum,
@@ -616,7 +616,7 @@ test(
       const tables = await c.query(
         "SELECT count(*)::int AS count FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='srm' AND c.relkind='r' AND c.relname<>'schema_migrations' AND c.relrowsecurity AND c.relforcerowsecurity",
       );
-      assert.equal(tables.rows[0].count, 18);
+      assert.equal(tables.rows[0].count, 19);
       const role = (
         await c.query(
           "SELECT rolcanlogin,rolsuper,rolbypassrls FROM pg_roles WHERE rolname='srm_app_runtime'",

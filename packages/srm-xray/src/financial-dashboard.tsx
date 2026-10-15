@@ -13,6 +13,7 @@ type Row = { code: string; label: string; strong?: boolean };
 import { StatementWorkspace, StatementHistory, StatementIcon } from './statement-workspace';
 import { statementRows, statementPoints } from './statement-model';
 import { yearColor } from './financial-history-export';
+import { MsrFinancialTables } from './msr-financial-tables';
 export type FinancialPeriodSelection = { from: string; to: string };
 
 const incomeGroups: { title: string; rows: Row[] }[] = [
@@ -64,11 +65,11 @@ function isComplete(period: FinancialPeriod): boolean {
 }
 
 function periodQuality(period: FinancialPeriod): number {
-  return (isComplete(period) ? 100000 : 0) + period.facts.length;
+  return (isComplete(period) ? 100000 : 0) + period.facts.length + (period.msrRows?.length ?? 0);
 }
 
 function availablePeriods(data: FinancialData | null | undefined): FinancialPeriod[] {
-  return (data?.periods ?? []).filter((period) => period.facts.length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(period.to));
+  return (data?.periods ?? []).filter((period) => (period.facts.length > 0 || period.msrRows?.length) && /^\d{4}-\d{2}-\d{2}$/.test(period.to));
 }
 
 export function defaultFinancialScope(data: FinancialData | null | undefined): Scope | null {
@@ -175,6 +176,7 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
   const scope = preferredScope && scopes.includes(preferredScope) ? preferredScope : initialScope;
   const allPeriods = scope ? financialPeriodsByScope(data, scope) : [];
   const activePeriod = selectedPeriod === undefined ? allPeriods[0] : allPeriods.find(period => period.from === selectedPeriod?.from && period.to === selectedPeriod?.to);
+  const isMsr = activePeriod?.accountingStandard === "IAS_IFRS";
   const eightPeriods = allPeriods.slice(0, 8);
   const rows = statementRows(allPeriods);
   const availableYears = allPeriods.map((period) => period.to.slice(0, 4));
@@ -184,7 +186,7 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
 
   return <div className="srm-ui financial-dashboard">
     <div className="financial-dashboard-meta">
-      <p>Dane finansowe prezentowane są w tysiącach złotych (tys. zł). Wartości na ekranie są zaokrąglone do 0,01 tys. zł.</p>
+      <p>{isMsr ? "Sprawozdanie według MSR/MSSF. Tabele zachowują jednostki i dokładność oznaczonych danych źródłowych." : "Dane finansowe prezentowane są w tysiącach złotych (tys. zł). Wartości na ekranie są zaokrąglone do 0,01 tys. zł."}</p>
       {scopes.length > 1 && <div className="financial-scope" role="group" aria-label="Rodzaj sprawozdania">
         {scopes.map((choice) => <CanonButton canonId="SRM-C02" usage="financial-dashboard:06" type="button" key={choice} aria-pressed={scope === choice} onClick={() => { setRequestedScope(choice); onScopeChange?.(choice); }}>{choice === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</CanonButton>)}
       </div>}
@@ -213,7 +215,7 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
       {exportError && <p role="alert" className="search-error">{exportError}</p>}
     </div></FinancialHistoryDialog>}
     <StatementWorkspace key={scope} rows={rows} years={availableYears.map(Number)} showTables={false} />
-    <details className="financial-accordion" open>
+    {isMsr ? <MsrFinancialTables periods={allPeriods} /> : <><details className="financial-accordion" open>
       <CanonSummary canonId="SRM-C49" usage="financial-dashboard:11">Rachunek zysków i strat</CanonSummary>
       <div className="financial-accordion-body">
         <FinancialTable groups={incomeGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} />
@@ -222,7 +224,7 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
     <details className="financial-accordion" open>
       <CanonSummary canonId="SRM-C49" usage="financial-dashboard:12">Bilans</CanonSummary>
       <div className="financial-accordion-body"><FinancialTable groups={balanceGroups} periods={eightPeriods} allPeriods={allPeriods} onChart={setSelectedRow} selectedPeriod={activePeriod} /></div>
-    </details>
+    </details></>}
     {selectedRow && <StatementHistory row={{id:selectedRow.code,name:selectedRow.label,section:scope==='standalone'?'Jednostkowe':'Skonsolidowane',group:'Sprawozdanie finansowe',points:statementPoints(allPeriods,selectedRow.code)}} onClose={()=>setSelectedRow(null)} />}
   </div>;
 }

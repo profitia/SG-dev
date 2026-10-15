@@ -9,7 +9,8 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./financial-scanner.css": "./src/financial-scanner.css"
+    "./financial-scanner.css": "./src/financial-scanner.css",
+    "./msr-financial-tables.css": "./src/msr-financial-tables.css"
   },
   "peerDependencies": {
     "react": "^19.2.0"

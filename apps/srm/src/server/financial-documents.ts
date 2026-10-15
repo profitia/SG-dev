@@ -5,13 +5,13 @@ import type { PoolClient } from "pg";
 
 export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-10-xml-financial-v3";
 export type AccountingStandard = "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
-export type FinancialAvailability = "XML_SUPPORTED" | "NO_XML" | "UNKNOWN_FORMAT" | "UNSUPPORTED_XML";
+export type FinancialAvailability = "XML_SUPPORTED" | "IXBRL_SUPPORTED" | "NO_XML" | "UNKNOWN_FORMAT" | "UNSUPPORTED_XML";
 export type FinancialSourceRow = { section: "Bilans" | "RZiS"; sourcePath: string; label: string; depth: number;
   amounts: Record<string, string | null>; canonicalMetricCode?: string };
 export type FinancialSourceDocument = {
   recordId: string; documentId: string | null; scope: "standalone" | "consolidated"; from: string | null; to: string | null;
   standard: AccountingStandard; isIasCompliant: boolean | null; standardBasis: string;
-  provider: "MGBI"; model: "pl-krs-rdf-record"; format: "XML" | "PDF" | "UNKNOWN";
+  provider: "MGBI"; model: "pl-krs-rdf-record"; format: "XML" | "XHTML" | "PDF" | "UNKNOWN";
   availability: FinancialAvailability; formatBasis: string; schemaName: string | null; schemaVersion: string | null; schemaVariant?: string | null; schemaSystemCode?: string | null;
   currency: string | null; scale: string | null; correction: boolean | null; filingDate: string | null;
   checksum: string; mappingVersion: string; validation: "VALID" | "REVIEW";
@@ -126,7 +126,7 @@ export async function saveFinancialDocuments(organizationId: string, nip: string
   return withOrganization(organizationId, client => persistFinancialDocuments(client, organizationId, nip, documents));
 }
 
-async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
+export async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
   documents: readonly FinancialSourceDocument[], archiveChecksum: string | null = null): Promise<{ documents: number; positions: number }> {
     for (const document of documents) await client.query(
       `INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256)
@@ -137,7 +137,7 @@ async function persistFinancialDocuments(client: DocumentClient, organizationId:
          THEN EXCLUDED.archive_jsonb_sha256 ELSE srm.financial_source_documents.archive_jsonb_sha256 END
        WHERE ((srm.financial_source_documents.checksum_sha256,srm.financial_source_documents.mapping_version) IS DISTINCT FROM (EXCLUDED.checksum_sha256,EXCLUDED.mapping_version)
          OR (EXCLUDED.archive_jsonb_sha256 IS NOT NULL AND srm.financial_source_documents.archive_jsonb_sha256 IS DISTINCT FROM EXCLUDED.archive_jsonb_sha256))
-       AND (EXCLUDED.document_json->>'availability' = 'XML_SUPPORTED' OR srm.financial_source_documents.document_json->>'availability' <> 'XML_SUPPORTED')
+       AND (EXCLUDED.document_json->>'availability' IN ('XML_SUPPORTED','IXBRL_SUPPORTED') OR srm.financial_source_documents.document_json->>'availability' NOT IN ('XML_SUPPORTED','IXBRL_SUPPORTED'))
        AND (EXCLUDED.document_json->>'validation' = 'VALID' OR srm.financial_source_documents.document_json->>'validation' <> 'VALID')`,
       [organizationId,nip,document.recordId,JSON.stringify(document),document.checksum,document.mappingVersion,archiveChecksum]);
     return { documents: documents.length, positions: documents.reduce((count, document) => count + document.rows.length, 0) };
@@ -180,7 +180,7 @@ export async function restoreFinancialDocumentsFromArchive(client: DocumentClien
     throw new Error("Incomplete or ambiguous financial archive inventory");
   const expected = stored.filter(r => ids.includes(r.record_id));
   if (expected.length === ids.length && expected.every(r => r.archive_jsonb_sha256 === archive.payload_jsonb_sha256
-      && r.mapping_version === FINANCIAL_DOCUMENT_MAPPING_VERSION)) return expected.map(r => r.document_json);
+      && (r.mapping_version === FINANCIAL_DOCUMENT_MAPPING_VERSION || r.document_json.availability === "IXBRL_SUPPORTED"))) return expected.map(r => r.document_json);
   const payload = (await client.query<{ payload_text: string }>(
     "SELECT payload_json::text AS payload_text FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'", [organizationId,nip])).rows[0];
   if (!payload) throw new Error("Financial archive changed during reconstruction");
