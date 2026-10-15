@@ -110,3 +110,18 @@
 @keyframes srm-detached-arrive { from { opacity:0; transform:translateX(14px); } to { opacity:1; transform:translateX(0); } }
 @media(max-width:420px) { .srm-ui.srm-detached-shell { padding:7px; } .srm-detached-shell .srm-chat-transcript { padding:20px 15px; } .srm-chat-context { padding:9px 13px; } }
 @media(prefers-reduced-motion:reduce) { .srm-chat-detached-ribbon { animation:none; } }
+
+/* AST-04 / SRM-C62–63: one incoming message, shared across both chat hosts. */
+.srm-chat-transcript { overflow-anchor:none; }
+.srm-chat-welcome-live { margin-top:1.5rem; }
+.srm-chat-welcome-live:empty { display:none; }
+.srm-chat-incoming { display:flex; align-items:flex-start; gap:0.75rem; min-width:0; padding:0.25rem 0 0.5rem; }
+.srm-chat-incoming .srm-chat-message-avatar { width:3.84rem; height:3.84rem; box-shadow:0 0 0 0.1875rem var(--sand-soft); margin-top:0.125rem; }
+.srm-chat-incoming .srm-chat-welcome-bubble { flex:1; min-width:0; margin:0; padding:1rem; background:#EFF6FC; border-color:#D8E8F5; border-radius:0.375rem 1.25rem 1.25rem 1.25rem; box-shadow:0 0.1875rem 0.75rem #00336606; transform-origin:top left; animation:srm-message-arrive 420ms cubic-bezier(.22,1,.36,1) both; }
+.srm-chat-incoming .srm-chat-welcome-bubble strong { font-weight:600; }
+.srm-chat-incoming .srm-chat-typing-bubble { display:flex; align-items:center; justify-content:center; gap:0.375rem; min-width:5rem; height:3.25rem; margin-top:0.125rem; border:1px solid #D8E8F5; border-radius:0.375rem 1.25rem 1.25rem 1.25rem; background:#EFF6FC; animation:srm-message-arrive 260ms cubic-bezier(.22,1,.36,1) both; }
+.srm-chat-typing-bubble .srm-chat-typing-dots { gap:0.375rem; }
+.srm-chat-typing-bubble .srm-chat-typing-dots i { width:0.375rem; height:0.375rem; animation-duration:1100ms; }
+.srm-ui .srm-chat-new-message { align-self:center; flex:none; margin:0 0 0.5rem; padding:0.375rem 0.75rem; border:1px solid #D8E8F5; border-radius:999px; background:#EFF6FC; color:var(--brand); font:inherit; font-size:0.75rem; box-shadow:0 0.125rem 0.5rem #00336608; }
+@keyframes srm-message-arrive { from { opacity:0; transform:translateY(0.625rem) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+@media(prefers-reduced-motion:reduce) { .srm-chat-incoming .srm-chat-welcome-bubble,.srm-chat-incoming .srm-chat-typing-bubble { animation:none; } }
