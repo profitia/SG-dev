@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-/** MagicPath library 460628347660177408, revision 461170570843811840 (C61 report availability, B40 blocking).
+/** MagicPath library 460628347660177408, revision 461337827804868608 (C18 label typography and comparison colors, C34 summary, C49 help).
  * Definitions -> shared components and tokens -> application. Never reverse this dependency.
  * Register a new definition in the design library before adding an application primitive.
  */

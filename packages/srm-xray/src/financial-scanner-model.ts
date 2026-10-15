@@ -51,6 +51,14 @@ export function axisTone(
         : "caution"
     : axis.tone;
 }
+/** Comparison color is independent of the absolute liquidity fill policy. */
+export function comparisonTone(axis: Axis | undefined, comparison?: Period): Axis["tone"] {
+  const change = axisComparison(axis, comparison);
+  return change?.favorable === "BETTER" ? "positive"
+    : change?.favorable === "WORSE" ? "negative"
+    : change?.favorable === "UNCHANGED" ? "caution" : "unknown";
+}
+export type ComparisonSummaryLine = { code: string; text: string; tone: Axis["tone"] };
 export function comparisonLabel(
   axis: Axis | undefined,
   comparison?: Period,
