@@ -126,7 +126,8 @@ test("positive person and other-list signals keep their party scope and do not c
 });
 
 
-test("neutral executive summary consumes view eligibility when cache expires before personal retention", () => {
+test("neutral executive summary consumes view eligibility when cache expires before personal retention", context => {
+  context.mock.timers.enable({apis:["Date"],now});
   const i=fixture();i.metadata!.kys.freshness.cacheExpiresAt="2026-10-08T12:00:00Z";
   i.metadata!.financial={periods:[],history:[]} as unknown as SupplierReportData["financial"];
   const view=kysOverview(i,now);
