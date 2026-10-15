@@ -99,14 +99,16 @@ export function StatementTable({
 export function StatementWorkspace({
   rows,
   years,
-  showTables = true
+  showTables = true,
+  initialMetrics = ['PALA_NRFS', 'PALA_OAC', 'PALA_NPL']
 }: {
   rows: StatementRow[];
   years: number[];
   showTables?: boolean;
+  initialMetrics?: readonly string[];
 }) {
   const workspace = useRef<HTMLDivElement>(null);
-  const [added, setAdded] = useState(['PALA_NRFS', 'PALA_OAC', 'PALA_NPL']),
+  const [added, setAdded] = useState([...initialMetrics]),
     [picker, setPicker] = useState(false),
     [history, setHistory] = useState<StatementRow | null>(null),
     [message, setMessage] = useState('');

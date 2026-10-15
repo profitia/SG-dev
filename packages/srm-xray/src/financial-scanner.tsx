@@ -22,6 +22,7 @@ import { FinancialHistoryView } from "./FinancialHistoryView";
 import { SpendGuruAssessment } from "./SpendGuruAssessment";
 import { previousAnnualPeriod, canOverlay, axisTone, comparisonTone, comparisonLabel, bestHistoryPeriod } from "./financial-scanner-model";
 import type { AssistantApplicationContext, IndicatorViewContext } from "./assistant-context";
+import { msrReportingState } from "./msr-reporting-state";
 type Period = FinancialScannerProjection["periods"][number];
 type Card = {
   code: string;
@@ -550,6 +551,7 @@ export function FinancialScannerMount({
     periods.find((p) => p.id === periodId) ??
     periods.find((p) => annual(p) && p.axes.some((a) => a.rawValue !== null)) ??
     periods[0];
+  const msr = msrReportingState(report?.financial, scope, selected);
   const resolvedComparisonId = comparisonId === "auto" ? previousAnnualPeriod(periods,selected)?.id ?? "" : comparisonId;
   const compared = resolvedComparisonId === "reference" ? bestHistoryPeriod(report?.financial.scanner, selected) : periods.find(p=>p.id===resolvedComparisonId);
   const compare = Boolean(compared);
@@ -600,7 +602,7 @@ export function FinancialScannerMount({
       radar: { year: selected ? Number(selected.to.slice(0,4)) : null, comparisonYear: compared && compared.id !== "reference" ? Number(compared.to.slice(0,4)) : null,
         referenceSelection: "history", referenceKind: "history", referenceStatus: selected?.axes.some(a=>a.basis==="HISTORICAL_BEST" && a.normalizedScore!==null) ? "available" : "unconfirmed", referenceFrameId: selected?.referenceFrameId ?? null },
       indicators: indicatorView, history: history ? { code: history.code, year: history.year ?? null } : null },
-    financialSummary: axes.map(a => { const v=selected?.axes.find(x=>x.code===a.code)?.rawValue ?? null;
+    financialSummary: axes.map(a => { const v=msr ? msr.values.find(value=>value.code===a.code)?.amount ?? null : selected?.axes.find(x=>x.code===a.code)?.rawValue ?? null;
       return { code:a.code,name:a.label.join(" "),year:selected?Number(selected.to.slice(0,4)):null,value:v,unit:a.unit,
         availability:v===null?"missing":"available",reason:null }; }),
   };
@@ -698,10 +700,11 @@ export function FinancialScannerMount({
               </CanonSelect>
             </label>
           </CanonElement>
+          {msr && !loading && <p role="status" className="srm-source-note">{msr.notice}</p>}
           {loading ? (
             <p role="status">Przygotowywanie zapisanych wyników…</p>
           ) : (
-            !periods.length && (
+            !periods.length && !msr && (
               <p role="status">
                 Brak dostępnych danych finansowych dla tego zakresu.
               </p>
@@ -759,6 +762,7 @@ export function FinancialScannerMount({
           </details>
         </section>
         {assistant ? <SpendGuruAssessment key={report?.nip ?? "loading"} context={context} avatars={assistant.avatars}
+          sourceSummary={msr}
           year={selected ? Number(selected.to.slice(0,4)) : null} company={assistant.name}
           values={axes.map(a => { const v=selected?.axes.find(x=>x.code===a.code)?.rawValue;return v==null?null:Number(v); })}
           formatted={axes.map(a => fmt(selected?.axes.find(x=>x.code===a.code)?.rawValue,a.unit))}
