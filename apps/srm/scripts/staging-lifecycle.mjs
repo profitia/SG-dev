@@ -35,7 +35,9 @@ import {
   statePath,
   topologyPath,
   operations,
+  assertRestorePoint,
 } from "../../../scripts/governance/srm-release-lifecycle.mjs";
+import {runtimeMigrations,assertRuntimeSchema,configurationFingerprint,artifactCommand} from './staging-rollback.mjs';
 const GH = "https://api.github.com",
   R = "https://api.render.com/v1",
   N = "https://console.neon.tech/api/v2";
@@ -62,6 +64,7 @@ export function manifestFrom(source, sha) {
 export function verifyLifecycleSource(
   sha,
   git = (args) => spawnSync("git", args, { cwd: root, encoding: "utf8" }),
+  options = {},
 ) {
   fail(
     git(["remote", "get-url", "origin"])
@@ -110,7 +113,12 @@ export function verifyLifecycleSource(
     git(["merge-base", "--is-ancestor", sha, "origin/main"]).status === 0,
     "Unverified release revision",
   );
-  fail(
+  if(options.mode==='rollback') {
+    assertRestorePoint(options.rollbackPlan,contract);
+    fail(options.rollbackPlan.restorePoint.sha===sha,'Rollback source must be recorded LKG');
+    assertRuntimeSchema(runtimeMigrations(sha,git),options.rollbackPlan.schemaMigrations,sha);
+    fail(digest(options.rollbackPlan.schemaMigrations)===digest(migrationManifest().map(({version,checksum})=>({version,checksum}))), 'Rollback full schema differs from current controller');
+  } else fail(
     git(["diff", "--exit-code", sha, "HEAD", "--", "apps/srm/db/migrations"])
       .status === 0,
     "Approved migration source differs from mechanism",
@@ -144,8 +152,8 @@ export function verifyLifecycleSource(
   );
   return true;
 }
-export function lifecyclePreflight(sha, approvalId) {
-  verifyLifecycleSource(sha);
+export function lifecyclePreflight(sha, approvalId, options={}) {
+  verifyLifecycleSource(sha,undefined,options);
   const targets = [
     "apps/srm/scripts/staging-lifecycle.mjs",
     "scripts/governance/srm-release-lifecycle.mjs",
@@ -718,7 +726,7 @@ export async function runLifecycle({
         owner,
       });
       result = await diagnosticStage({stage:"provider-operation",operation:op,failureDomain:"PROVIDER_OPERATION"},
-        () => action(snap, state));
+        () => action(snap, state, {recovered:!!old}));
       mutations.push(op);
     }
     snap = await p.snapshot();
@@ -747,7 +755,7 @@ export async function runLifecycle({
   await step("service", () => p.service(m, a));
   await step("deploy", (s) => p.deploy(s, m));
   await step("source-rebind", (s) => p.rebind(s));
-  await step("verify", (s) => p.verify(s, m, true));
+  await step("verify", (s,j,context) => p.verify(s, m, true, {allowArtifactCreate:!context.recovered}));
   const snap = await p.snapshot(),
     proof = await p.verify(snap, m);
   diagnosticSnapshot = snap;
@@ -807,6 +815,7 @@ export function createProvider(
   manifest,
   owner,
   fetcher = fetch,
+  sourceAuthority = lifecyclePreflight,
 ) {
   assertLifecycleAuthorization(approval, manifest, contract);
   let observedJournalGeneration;
@@ -817,7 +826,7 @@ export function createProvider(
     if(options.method !== "GET") {
       await diagnosticStage({stage:"github-write-preflight",requestReachedGitHub:"NOT_SENT"},()=>{
         assertLifecycleAuthorization(approval,manifest,contract);
-        lifecyclePreflight(manifest.sha,approval.approvalId);
+        sourceAuthority(manifest.sha,approval.approvalId,{mode:approval.mode,rollbackPlan:manifest.rollbackPlan});
       });
     }
     return fetcher(url,options);
@@ -826,7 +835,7 @@ export function createProvider(
   const request = async (base, url, method = "GET", body, readOptions = {}) => {
     if (method !== "GET" && base !== GH) {
       assertLifecycleAuthorization(approval, manifest, contract);
-      lifecyclePreflight(manifest.sha, approval.approvalId);
+      sourceAuthority(manifest.sha, approval.approvalId,{mode:approval.mode,rollbackPlan:manifest.rollbackPlan});
     }
     const token =
       base === GH
@@ -1096,7 +1105,7 @@ export function createProvider(
 
   const mutationFence = async (operation) => {
     assertLifecycleAuthorization(approval, manifest, contract);
-    lifecyclePreflight(manifest.sha, approval.approvalId);
+    sourceAuthority(manifest.sha, approval.approvalId,{mode:approval.mode,rollbackPlan:manifest.rollbackPlan});
     const current = await store.read(),
       s = await snapshot();
     assertOperation({
@@ -1154,7 +1163,7 @@ export function createProvider(
   const provider = {
     store,
     githubRequestMetrics: metrics.read,
-    authority: lifecyclePreflight,
+    authority: (sha,id)=>sourceAuthority(sha,id,{mode:approval.mode,rollbackPlan:manifest.rollbackPlan}),
     snapshot,
     sourceChecks: sha => request(GH,repo+"/commits/"+sha+"/check-runs?per_page=100"),
 
@@ -1180,6 +1189,20 @@ export function createProvider(
           ).map((x) => [x.envVar.key, x.envVar.value]),
         );
         await verifyBindings(values);
+        assertRestorePoint(manifest.rollbackPlan,contract);
+        fail(approval.mode==='rollback'||manifest.rollbackPlan.candidateSha===manifest.sha,'Restore point must bind this exact promotion candidate');
+        const point=manifest.rollbackPlan.restorePoint;
+        const current=await store.read();
+        const recorded=current.state.release?.approvalId===approval.approvalId || approval.mode==='rollback'||current.state.release?.phase!=='VERIFIED'
+          ? current.state.release?.lastKnownGood?.restorePoint : current.state.baseline?.restorePoint;
+        fail(digest(recorded)===digest(point),'Reviewed Last Known Good differs from canonical journal');
+        fail(digest(manifest.migrations)===digest(manifest.rollbackPlan.schemaMigrations),'Release schema and rollback plan differ');
+        fail(configurationFingerprint(snapshot.services[0],values)===point.configuration.fingerprint,'Last Known Good configuration drift');
+        const old=await request(R,'/services/'+point.serviceId+'/deploys/'+point.deployId);
+        fail(old?.id===point.deployId&&old.commit?.id===point.sha&&['live','deactivated'].includes(old.status),'Retained Last Known Good provider deployment unavailable');
+        const backup=(await request(N,'/projects/'+contract.neon.projectId+'/branches/'+point.database.recoveryBranchId))?.branch;
+        const rehearsal=(await request(N,'/projects/'+contract.neon.projectId+'/branches/'+point.database.restoreRehearsalBranchId))?.branch;
+        fail(backup?.id===point.database.recoveryBranchId&&backup.project_id===contract.neon.projectId&&backup.parent_id===contract.neon.branchId&&backup.parent_lsn===point.database.parentLsn&&backup.current_state==='ready'&&rehearsal?.parent_id===backup.id&&rehearsal.parent_lsn===point.database.parentLsn,'Neon recovery point identity or availability drift');
       }
     },
     async githubBindings() {
@@ -1278,7 +1301,8 @@ export function createProvider(
           GH,
           repo + "/actions/runs/" + previous.slice(11),
         );
-        return r?.status === "completed";
+        return r?.status === "completed" && String(r.id)===previous.slice(11) &&
+          r.repository?.id===contract.repositoryId && r.repository.full_name===contract.repository;
       }
       if (previous.startsWith("codespace:")) {
         const cs = await request(GH, "/user/codespaces/" + previous.slice(10));
@@ -1368,6 +1392,26 @@ export function createProvider(
       const srv = s.services[0];
       verifyService(srv);
       const rows = await paged("/services/" + srv.id + "/deploys");
+      if(approval.mode==='rollback') {
+        const point=m.rollbackPlan.restorePoint;
+        fail(point.serviceId===srv.id&&point.sha===m.sha,'Exact retained rollback target required');
+        const normalized=rows.map(x=>x.deploy??x);
+        fail(normalized.every(x=>['live','deactivated','build_failed','update_failed','pre_deploy_failed','canceled'].includes(x.status)||x.commit?.id===m.sha),'Concurrent foreign deployment');
+        let d=selectReusableDeploy(rows,m.sha);
+        if(!d) {
+          // The published INTENT permits one request. An interrupted/ambiguous
+          // request is observed by the lifecycle, never blindly repeated.
+          d=await request(R,'/services/'+srv.id+'/rollback','POST',{deployId:point.deployId});
+        }
+        fail(d?.id&&d.commit?.id===m.sha,'Rollback acknowledgement identity mismatch');
+        for(let i=0;i<240&&d.status!=='live';i++) {
+          fail(!['build_failed','update_failed','pre_deploy_failed','canceled','deactivated'].includes(d.status),'Retained rollback failed; preserve data');
+          await new Promise(r=>setTimeout(r,5000));
+          d=await request(R,'/services/'+srv.id+'/deploys/'+d.id);
+        }
+        fail(d.status==='live'&&d.commit?.id===m.sha,'Retained rollback not verified live');
+        return {deployId:d.id,sha:m.sha,retainedDeployId:point.deployId,strategy:'RENDER_RETAINED_DEPLOYMENT'};
+      }
       const retry = deployRetryEvidence(
         rows,
         m,
@@ -1428,7 +1472,7 @@ export function createProvider(
         });
       return { branch: "main", autoDeploy: "off" };
     },
-    async verify(s, m, writeProbe = false) {
+    async verify(s, m, writeProbe = false, {allowArtifactCreate=false} = {}) {
       assertSnapshot(s, contract);
       const domainBindings = assertStagingDomainBinding(s, contract);
       const srv = s.services[0];
@@ -1442,6 +1486,31 @@ export function createProvider(
         ]),
       );
       await verifyBindings(values);
+      let artifactProof;
+      if(approval.mode==='rollback') {
+        const point=m.rollbackPlan.restorePoint;
+        fail(configurationFingerprint(srv,values)===point.configuration.fingerprint,'Rollback configuration mismatch');
+        const command=artifactCommand(point,approval.approvalId);
+        const jobs=await paged('/services/'+srv.id+'/jobs');
+        const matches=jobs.map(x=>x.job??x).filter(x=>x.startCommand===command);
+        fail(matches.length<=1,'Ambiguous retained artifact verification jobs');
+        let job=matches[0];
+        if(!job) {
+          fail(writeProbe,'Retained artifact proof absent; write requires verified operation gate');
+          fail(allowArtifactCreate,'Ambiguous prior artifact job outcome; observe provider before any authorized retry');
+          await mutationFence('verify');
+          job=await request(R,'/services/'+srv.id+'/jobs','POST',{startCommand:command});
+        }
+        fail(job?.id,'Artifact verification job acknowledgement missing');
+        for(let i=0;i<90&&!['succeeded','failed','canceled'].includes(job.status);i++) {
+          await new Promise(r=>setTimeout(r,2000));
+          job=await request(R,'/services/'+srv.id+'/jobs/'+job.id);
+        }
+        fail(job.status==='succeeded','Retained artifact byte verification failed or pending');
+        const fresh=await snapshot();
+        fail(fresh.liveDeploy?.id===s.liveDeploy?.id,'Deployment changed during artifact verification');
+        artifactProof={digest:point.artifact.digest,algorithm:point.artifact.algorithm,jobId:job.id,retainedDeployId:point.deployId,source:'LIVE_RENDER_JOB'};
+      }
       fail(
         digest(await ledger(true)) === digest(m.migrations),
         "Schema ledger drift",
@@ -1482,6 +1551,7 @@ export function createProvider(
         authentication: "PASS",
         persistence: "PASS",
         migrations: await ledger(),
+        ...(artifactProof?{artifact:artifactProof}:{}),
       };
     },
     async observe(op, s, j, m, a) {
@@ -1568,8 +1638,7 @@ export function createProvider(
         return {
           complete:
             s.liveDeploy?.status === "live" && s.liveDeploy.commit.id === m.sha,
-          recoverable: deployRetryEvidence(rows, m, a, j.release.steps.deploy)
-            .recoverable,
+          recoverable: a.mode==='rollback' ? !!d : deployRetryEvidence(rows, m, a, j.release.steps.deploy).recoverable,
           result: { deployId: s.liveDeploy?.id, sha: s.liveDeploy?.commit.id },
         };
       }
@@ -1585,8 +1654,7 @@ export function createProvider(
         } catch (e) {
           if (
             j.release.steps.verify.status === "INTENT" &&
-            e.message ===
-              "Durable probe absent; write requires verified operation gate"
+            ["Durable probe absent; write requires verified operation gate","Retained artifact proof absent; write requires verified operation gate"].includes(e.message)
           )
             return { complete: false, recoverable: true };
           throw e;
@@ -1725,7 +1793,7 @@ export async function lifecycleApply(authorization, env = process.env) {
   const source = authorization.manifest;
   assertLifecycleAuthorization(authorization, source, contract);
   promotionExecutorEnvironment(env);
-  verifyLifecycleSource(source.sha);
+  verifyLifecycleSource(source.sha,undefined,{mode:authorization.mode,rollbackPlan:source.rollbackPlan});
   const owner =
     env.GITHUB_ACTIONS === "true"
       ? "github-run:" + env.GITHUB_RUN_ID
@@ -1766,6 +1834,14 @@ export async function lifecycleApply(authorization, env = process.env) {
         ["live", "deactivated"].includes(x.status) &&
         x.commit?.id === source.sha,
     );
+    if(!development) {
+      const recorded=source.rollbackPlan?.developmentSourceProof;
+      fail(recorded?.source==='LIVE_GITHUB_RENDER'&&recorded.sha===source.sha&&recorded.developmentServiceId===contract.development.renderServiceId&&/^dep-[a-z0-9]+$/.test(recorded.developmentDeployId),'Recorded rollback Development provenance required');
+      const r=await fetch(R+'/services/'+contract.development.renderServiceId+'/deploys/'+recorded.developmentDeployId,{headers:{Authorization:'Bearer '+env.RENDER_API_KEY},signal:AbortSignal.timeout(30000)});
+      fail(r.ok,'Historical rollback Development deployment unavailable');const d=await r.json();
+      fail(d.id===recorded.developmentDeployId&&d.commit?.id===source.sha&&['live','deactivated'].includes(d.status),'Rollback Development provenance mismatch');
+      development=d;
+    }
   }
   if (
     !development &&

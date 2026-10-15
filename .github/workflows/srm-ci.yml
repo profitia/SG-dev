@@ -14,6 +14,11 @@ on:
         description: "Exact accepted Development release SHA (40 characters)"
         required: true
         type: string
+      release_mode:
+        description: "Promotion or separately reviewed retained-artifact rollback"
+        type: choice
+        options: ["promote", "rollback"]
+        default: "promote"
       staging_deployment_authorized:
         description: "Separate explicit Staging deployment authorization"
         type: choice
@@ -70,6 +75,8 @@ jobs:
         working-directory: apps/srm
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
@@ -98,6 +105,7 @@ jobs:
       - run: npm --prefix apps/srm ci --install-links
       - name: Verify registered target and owner-review policy before protected job
         env:
+          RELEASE_MODE: ${{ inputs.release_mode || 'promote' }}
           APPROVED_SHA: ${{ inputs.approved_sha }}
           COST_OWNER: ${{ inputs.cost_owner }}
           APPROVED_BY: ${{ github.actor }}
@@ -112,13 +120,21 @@ jobs:
           import fs from 'node:fs';
           import {contract,assertAuthorization} from './apps/srm/scripts/staging-migrate.mjs';
           import {assertDispatchTarget} from './apps/srm/scripts/promote-staging.mjs';
-          import {verifyLifecycleSource} from './apps/srm/scripts/staging-lifecycle.mjs';
+          import {verifyLifecycleSource,manifestFrom} from './apps/srm/scripts/staging-lifecycle.mjs';
           import {prepareResume} from './apps/srm/scripts/resume-staging.mjs';
+          import {prepareRollbackPlan} from './apps/srm/scripts/staging-rollback.mjs';
+          import {digest} from './scripts/governance/srm-release-lifecycle.mjs';
+          const state=JSON.parse(fs.readFileSync('Canon/registries/srm-staging-release-state-v1.json'));
+          const mode=process.env.RELEASE_MODE;
+          if(!['promote','rollback'].includes(mode))throw Error('Unknown release mode');
+          if(mode==='rollback' && process.env.INITIALIZE==='true')throw Error('Rollback cannot initialize or migrate');
+          const rollbackPlan=(process.env.RESUME_APPROVAL_ID && state.release?.manifest?.rollbackPlan) || prepareRollbackPlan(state,process.env.APPROVED_SHA,undefined,mode);
+          if(mode==='rollback' && process.env.APPROVED_SHA!==rollbackPlan.restorePoint.sha)throw Error('Rollback must target exact recorded LKG');
           const resume=!!(process.env.RESUME_APPROVAL_ID || process.env.RESUME_MANIFEST_DIGEST);
           let prepared;
           if(resume){
             if(process.env.INITIALIZE==='true')throw Error('Resume cannot initialize another release');
-            verifyLifecycleSource(process.env.APPROVED_SHA);
+            verifyLifecycleSource(process.env.APPROVED_SHA,undefined,{mode,rollbackPlan});
             const state=JSON.parse(fs.readFileSync('Canon/registries/srm-staging-release-state-v1.json','utf8'));
             const priorId=/^github-run:(\d+)$/.exec(state.release?.owner)?.[1];
             if(!priorId)throw Error('Existing GitHub executor identity required');
@@ -131,7 +147,19 @@ jobs:
           if(prepared)a=prepared.authorization;
           else assertAuthorization(a,a.releaseSha,'deploy');
           assertDispatchTarget();
-          verifyLifecycleSource(a.releaseSha);
+          verifyLifecycleSource(a.releaseSha,undefined,{mode,rollbackPlan});
+          if(!prepared){
+            const checks=await fetch('https://api.github.com/repos/'+contract.repository+'/commits/'+a.releaseSha+'/check-runs?per_page=100',{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN},signal:AbortSignal.timeout(30000)});
+            if(!checks.ok)throw Error('Exact candidate CI unavailable');
+            const ci=await checks.json();
+            const check=ci.check_runs?.filter(x=>x.name==='srm-build'&&x.head_sha===a.releaseSha).sort((a,b)=>b.id-a.id)[0];
+            if(ci.total_count>100 || check?.conclusion!=='success')throw Error('Exact candidate CI not successful');
+            a.releaseMode=mode;a.rollbackPlan=rollbackPlan;a.journalFence={generation:state.generation,journalDigest:digest(state)};
+            // Freeze the expected provenance now. Protected execution must
+            // independently prove the actual Render source before any mutation.
+            a.manifest={...manifestFrom({repositoryId:contract.repositoryId,approvedMainAncestor:true,ciPassed:true,developmentLiveSha:a.releaseSha,provenanceGate:'LIVE_RENDER_PROOF_REQUIRED_BEFORE_MUTATION'},a.releaseSha),rollbackPlan};
+            a.manifestDigest=digest(a.manifest);
+          }else if(a.mode!==mode)throw Error('Resume cannot change release mode');
           const response=await fetch('https://api.github.com/repos/'+contract.repository+'/environments/srm-staging',{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,'X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(30000)});
           if(!response.ok)throw new Error('Registered protected GitHub environment unavailable');
           const policy=assertDispatchTarget(await response.json());
@@ -171,6 +199,7 @@ jobs:
           path: /tmp/srm-staging-approval
       - name: Promote explicit approved SHA and record sanitized evidence
         env:
+          RELEASE_MODE: ${{ inputs.release_mode || 'promote' }}
           APPROVED_SHA: ${{ inputs.approved_sha }}
           SRM_RELEASE_DIAGNOSTIC_PATH: /tmp/srm-staging-diagnostic.json
           TARGET_ENVIRONMENT: staging
@@ -198,17 +227,25 @@ jobs:
           const {manifestFrom,lifecycleApply}=await import('./apps/srm/scripts/staging-lifecycle.mjs');
           const {contract}=await import('./apps/srm/scripts/staging-migrate.mjs');
           const {digest,operations}=await import('./scripts/governance/srm-release-lifecycle.mjs');
+          const {assertRuntimeSchema,runtimeMigrations}=await import('./apps/srm/scripts/staging-rollback.mjs');
           const old=JSON.parse(fs.readFileSync('/tmp/srm-staging-approval/srm-staging-authorization.json','utf8'));
           const evidence=await liveEvidence(old.releaseSha,{...process.env,GITHUB_TOKEN:process.env.SRM_RELEASE_GITHUB_TOKEN});
-          const manifest=manifestFrom({repositoryId:evidence.repositoryId,approvedMainAncestor:evidence.approvedMainAncestor,ciPassed:evidence.ciPassed,developmentLiveSha:evidence.developmentLiveSha},old.releaseSha);
-          let a={...old,schemaVersion:'2.0',mode:'promote',stagingMutationsAllowed:true,manifest,manifestDigest:digest(manifest),repositoryId:contract.repositoryId,renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonEndpointId:contract.neon.endpointId,operations,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true,maxDeploymentAttempts:3}};
+          const mode=old.mode??old.releaseMode;
+          const state=JSON.parse(fs.readFileSync('Canon/registries/srm-staging-release-state-v1.json'));
+          if(old.journalFence && (digest(state)!==old.journalFence.journalDigest || state.generation!==old.journalFence.generation))throw Error('Release journal changed during protected review');
+          if(!evidence.ciPassed || !evidence.approvedMainAncestor || (mode==='promote' && evidence.developmentLiveSha!==old.releaseSha))throw Error('Approved source provenance changed');
+          const manifest={...manifestFrom(old.manifest.source,old.releaseSha),rollbackPlan:old.manifest.rollbackPlan};
+          if(digest(manifest)!==old.manifestDigest)throw Error('Manifest changed after protected review');
+          if(mode==='rollback')assertRuntimeSchema(runtimeMigrations(old.releaseSha),manifest.migrations,old.releaseSha);
+          let a={...old,schemaVersion:'2.0',mode,rollbackSchemaCompatible:mode==='rollback',stagingMutationsAllowed:true,manifest,manifestDigest:digest(manifest),repositoryId:contract.repositoryId,renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonEndpointId:contract.neon.endpointId,operations,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true,maxDeploymentAttempts:3}};
+          if(mode==='rollback' && state.release?.phase!=='VERIFIED')a.supersedes={...old.journalFence,approvalId:state.release.approvalId,owner:state.release.owner};
           if(old.schemaVersion==='2.0'){
             const {assertResumeFence}=await import('./apps/srm/scripts/resume-staging.mjs');
             const {verifyLifecycleSource}=await import('./apps/srm/scripts/staging-lifecycle.mjs');
-            verifyLifecycleSource(old.releaseSha);
+            verifyLifecycleSource(old.releaseSha,undefined,{mode,rollbackPlan:old.manifest.rollbackPlan});
             const prepared=JSON.parse(fs.readFileSync('/tmp/srm-staging-approval/srm-staging-resume.json','utf8'));
             assertResumeFence(JSON.parse(fs.readFileSync('Canon/registries/srm-staging-release-state-v1.json','utf8')),prepared);
-            if(!evidence.ciPassed || !evidence.approvedMainAncestor || digest(manifestFrom(old.manifest.source,old.releaseSha))!==old.manifestDigest)throw Error('Existing release source or manifest changed');
+            if(!evidence.ciPassed || !evidence.approvedMainAncestor || digest({...manifestFrom(old.manifest.source,old.releaseSha),rollbackPlan:old.manifest.rollbackPlan})!==old.manifestDigest)throw Error('Existing release source or manifest changed');
             a=old;
           }
           fs.writeFileSync('/tmp/srm-staging-lifecycle-authorization.json',JSON.stringify(a));
@@ -218,7 +255,9 @@ jobs:
           if [ -f /tmp/srm-staging-approval/srm-staging-resume.json ]; then
             resume_args=(--resume-fence /tmp/srm-staging-approval/srm-staging-resume.json)
           fi
-          node apps/srm/scripts/promote-staging.mjs --apply --sha "$APPROVED_SHA" --authorization /tmp/srm-staging-lifecycle-authorization.json "${resume_args[@]}" > /tmp/srm-staging-evidence.json
+          rollback_args=()
+          if [ "${RELEASE_MODE}" = "rollback" ]; then rollback_args=(--rollback); fi
+          node apps/srm/scripts/promote-staging.mjs "${rollback_args[@]}" --apply --sha "$APPROVED_SHA" --authorization /tmp/srm-staging-lifecycle-authorization.json "${resume_args[@]}" > /tmp/srm-staging-evidence.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

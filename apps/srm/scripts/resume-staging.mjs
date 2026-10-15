@@ -5,7 +5,7 @@ const fail = (ok, message) => { if (!ok) throw Error(message); };
 export function prepareResume(state, input, previousRun, now = Date.now()) {
   const r = state?.release;
   fail(state?.schemaVersion === "1.0" && state.projectKey === "SRM" && state.targetEnvironment === "staging" && Number.isSafeInteger(state.generation), "Exact SRM Staging journal required");
-  fail(r && ["ONBOARDING_AUTHORIZED","PROVISIONING","VERIFYING"].includes(r.phase) && r.mode === "promote", "An unfinished existing promotion is required");
+  fail(r && ["ONBOARDING_AUTHORIZED","PROVISIONING","VERIFYING"].includes(r.phase) && ["promote","rollback"].includes(r.mode), "An unfinished existing promotion is required");
   fail(input.approvalId === r.approvalId && input.manifestDigest === r.manifestDigest && input.sha === r.manifest?.sha && digest(r.manifest) === r.manifestDigest, "Resume identity or manifest mismatch");
   fail(r.manifest.contractDigest === digest(contract), "Resume contract changed; obtain a separate governed decision");
   const runId = /^github-run:(\d+)$/.exec(r.owner)?.[1];

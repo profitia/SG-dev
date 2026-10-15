@@ -57,7 +57,11 @@
       "repositoryId": 1247665550,
       "environmentName": "srm-staging",
       "environmentId": 23853126630,
-      "requiredReviewer": { "type": "User", "id": 275643368, "login": "profitia" },
+      "requiredReviewer": {
+        "type": "User",
+        "id": 275643368,
+        "login": "profitia"
+      },
       "preventSelfReview": false,
       "applicationGate": "SEPARATE_EXPLICIT_OWNER_APPROVAL_REQUIRED"
     }
@@ -97,7 +101,22 @@
     "codeOnly": true,
     "automaticSchemaRollback": false,
     "branchResetAllowed": false,
-    "previousDeployAndShaRequired": true
+    "previousDeployAndShaRequired": true,
+    "strategy": "RENDER_RETAINED_DEPLOYMENT",
+    "requireVerifiedRestorePoint": true,
+    "restorePointMaxAgeSeconds": 86400,
+    "automaticRollback": false,
+    "separateProtectedRollbackApproval": true,
+    "compatibilityEdges": [
+      {
+        "runtimeSha": "ad16371e646e03bbe7a001d88823e173a6b0a377",
+        "runtimeMigrationsDigest": "05e70d1a8e98921f2af4472df847335fb61efc00c228936db5237b6cd9d7bb5e",
+        "schemaMigrationsDigest": "22da68741284d0d4f09bf57aae9f7441e7f88ffb874866b4fc5f580f342bdde0",
+        "isolatedPostgresTestRequired": true,
+        "evidence": "SRM-RELEASE-ROLLBACK-HARDENING-20261015; isolated PostgreSQL old-runtime/full-ledger integration test; migration bytes bound by both digests",
+        "schemaRollbackAllowed": false
+      }
+    ]
   },
   "lifecycle": {
     "authority": "Profitia Governance",

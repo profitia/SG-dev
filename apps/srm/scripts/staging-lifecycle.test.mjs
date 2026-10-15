@@ -14,6 +14,7 @@ import {
   assertStagingDomainBinding,
   operations,
 } from "../../../scripts/governance/srm-release-lifecycle.mjs";
+import './staging-rollback.test.mjs';
 const sha = "a".repeat(40);
 const manifest = manifestFrom(
   {
@@ -247,7 +248,7 @@ function fixture() {
       done.add("source-rebind");
       return {};
     },
-    verify: async () => {
+    verify: async (_snapshot,expected=manifest) => {
       done.add("verify");
       return {
         source: "LIVE_RUNTIME_AND_SQL",
@@ -267,6 +268,7 @@ function fixture() {
         authentication: "PASS",
         persistence: "PASS",
         migrations: manifest.migrations,
+        ...(expected.rollbackPlan?{artifact:{source:"LIVE_RENDER_JOB",digest:expected.rollbackPlan.restorePoint.artifact.digest,algorithm:expected.rollbackPlan.restorePoint.artifact.algorithm,retainedDeployId:expected.rollbackPlan.restorePoint.deployId,jobId:"job-synthetic"}}:{}),
       };
     },
     observe: async (op) => ({
@@ -367,13 +369,19 @@ test("normal promotion and compatible code rollback share lifecycle", async () =
     authorization: {
       ...approval("rollback"),
       approvalId: "synthetic-rollback",
+      manifest:{...manifest,rollbackPlan:syntheticRestorePlan(manifest)},
+      manifestDigest:digest({...manifest,rollbackPlan:syntheticRestorePlan(manifest)}),
     },
-    manifest,
+    manifest:{...manifest,rollbackPlan:syntheticRestorePlan(manifest)},
     provider: f.p,
     owner: "github-run:3",
   });
   assert.equal(f.writes.filter((x) => x === "service").length, 1);
 });
+const syntheticRestoreTime=new Date().toISOString();
+function syntheticRestorePlan(m) {
+  return {schemaVersion:'1.0',candidateSha:m.sha,schemaMigrations:m.migrations,restorePoint:{status:'VERIFIED',candidateSha:m.sha,sha:m.sha,serviceId:'srv-db496b3tqb8s73eh5sfg',deployId:'dep-synthetic',verifiedAt:syntheticRestoreTime,artifact:{sourceSha:m.sha,algorithm:'sha256-sorted-path-type-content-v1',digest:'a'.repeat(64),jobId:'job-synthetic'},configuration:{fingerprint:'b'.repeat(64),algorithm:'sha256-selected-service-config-and-sorted-resolved-env-pairs-v1',unchangedAfterMeasurement:true},database:{projectId:contract.neon.projectId,databaseName:'srm_app',sourceBranchId:contract.neon.branchId,recoveryBranchId:'br-backup',restoreRehearsalBranchId:'br-rehearsal',restoreRehearsalParentId:'br-backup',restoreRehearsalVerified:true,parentLsn:'0/ABCD',automaticSchemaOrDataRollbackAllowed:false,inventories:{migrations:m.migrations}}}};
+}
 test("no authorization reaches any provider write or journal claim", async () => {
   const f = fixture();
   await assert.rejects(
