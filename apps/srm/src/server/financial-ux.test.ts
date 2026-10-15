@@ -40,7 +40,9 @@ test("assistant SSR displays supplied identity and explicit no-data, without bro
   const html=renderToStaticMarkup(React.createElement(FinancialScannerMount,{report:null,assistant:{name:"Supplier without data",avatars:{male:"/male.png",anna:"/female.png"}}}));
   assert.match(html,/Cześć! Jestem SpendGuru/);assert.match(html,/Supplier without data/);assert.match(html,/Brak dostępnego okresu finansowego/);
   assert.match(html,/Otwórz czat w osobnym oknie/);assert.match(html,/Wyślij wiadomość[^>]*disabled/);
-  assert.doesNotMatch(html,/Unilever|5213390341|542|przykładowa analiza|magicpath-prototype/);
+  assert.doesNotMatch(html,/Unilever|5213390341|przykładowa analiza|magicpath-prototype/);
+  // Check displayed sample amounts, not coincidental numbers in SVG path coordinates.
+  assert.doesNotMatch(load(html).text(),/542/);
   assert.equal((html.match(/data-radar-sector=/g)||[]).length,6);
 });
 

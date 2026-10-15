@@ -1,24 +1,25 @@
 "use client";
 import React from 'react';
-/** MagicPath library 460628347660177408, revision 461347134223028224 (SP15 radar label clearance, C34 message typography).
+/** MagicPath library 460628347660177408, revision 461359638781255680 (SP15 circle scale and radar label clearance).
  * Definitions -> shared components and tokens -> application. Never reverse this dependency.
  * Register a new definition in the design library before adding an application primitive.
  */
 /** SRM-SP15 / C16–C18: SVG-space clearance, proportionally responsive with the chart.
  * Reserve at least 24 units (1.5 label em) between text and the 120% sector envelope.
- * The viewBox also contains enlarged labels; neither data nor radial reach changes.
+ * The circle is 15% larger; the viewBox width and label font stay fixed. Scoring is unchanged.
  */
 export const radarLabelLayout = {
   minClearance: 24,
+  circleScale: 1.15,
   emphasisScale: 1.2,
-  viewBox: "-104 -64 908 632",
+  viewBox: "-112 -92 908 660",
   labels: [
-    { x: 350, y: -28, anchor: "middle" },
-    { x: 560, y: 128, anchor: "start" },
-    { x: 560, y: 310, anchor: "start" },
-    { x: 350, y: 470, anchor: "middle" },
-    { x: 140, y: 302, anchor: "end" },
-    { x: 140, y: 120, anchor: "end" },
+    { x: 350, y: -56, anchor: "middle" },
+    { x: 588, y: 128, anchor: "start" },
+    { x: 588, y: 310, anchor: "start" },
+    { x: 350, y: 498, anchor: "middle" },
+    { x: 112, y: 302, anchor: "end" },
+    { x: 112, y: 120, anchor: "end" },
   ],
 } as const;
 
