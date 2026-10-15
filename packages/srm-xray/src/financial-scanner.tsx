@@ -1,5 +1,5 @@
 "use client";
-import { CanonElement, CanonButton, CanonSelect, CanonSummary } from './ui-canon';
+import { CanonElement, CanonButton, CanonSelect, CanonSummary, radarLabelLayout } from './ui-canon';
 import { AVAILABLE_REPORT, type ReportAvailability } from "./report-availability";
 import { ReportAvailabilityView } from "./report-availability-view";
 import { createPortal } from "react-dom";
@@ -297,48 +297,14 @@ function Radar({
       start = -90 + i * 60 - 23;
     return `M ${xy(r, start)} A ${r} ${r} 0 0 1 ${xy(r, start + 46)}`;
   };
-  const labels: {
-    x: number;
-    y: number;
-    anchor: "start" | "middle" | "end";
-  }[] = [
-    {
-      x: 350,
-      y: 22,
-      anchor: "middle",
-    },
-    {
-      x: 532,
-      y: 128,
-      anchor: "start",
-    },
-    {
-      x: 532,
-      y: 310,
-      anchor: "start",
-    },
-    {
-      x: 350,
-      y: 449,
-      anchor: "middle",
-    },
-    {
-      x: 168,
-      y: 302,
-      anchor: "end",
-    },
-    {
-      x: 168,
-      y: 120,
-      anchor: "end",
-    },
-  ];
+  const labels = radarLabelLayout.labels;
   return (
     <CanonElement as="svg" canonId="SRM-C16" usage="financial-scanner:radar"
       ref={svg}
       data-emphasized-sector={emphasizedIndex === null ? "" : axes[emphasizedIndex].code}
       className="srm-radar srm-sector-radar"
-      viewBox="-48 -16 796 546"
+      viewBox={radarLabelLayout.viewBox}
+      data-spacing-rule="SRM-SP15"
       role="group"
       aria-label={
         "Profil finansowy w sześciu wycinkach koła, " +
@@ -783,7 +749,6 @@ export function FinancialScannerMount({
               Bez punktacji
             </span>
           </div>
-          <p className="srm-source-note">Wypełnienie: pozycja we własnej historii. Kolor: kierunek zmiany; płynność według stałych progów.</p>
           {activeAlerts.length>0 && <ul className="srm-radar-alerts" aria-label="Sygnały finansowe">{activeAlerts.map(a=><li key={a}>{a}</li>)}</ul>}
           <details className="srm-source-note srm-radar-help">
             <CanonSummary canonId="SRM-C49" usage="financial-scanner:08">Jak czytać radar</CanonSummary>

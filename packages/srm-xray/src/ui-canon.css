@@ -71,3 +71,9 @@
 .srm-ui .srm-radar-help, .srm-ui .srm-radar-help :is(summary,p,ul,li) { font-family: inherit; font-size: var(--canon-radar-help-size); line-height: 1.6; }
 .srm-ui .srm-chat-comparison ul { margin: .375rem 0 0; padding-left: 1.25rem; }
 .srm-ui .srm-chat-comparison li { margin-top: .25rem; }
+
+/* SRM-C34: comparison bullets are message content, not smaller metadata. */
+.srm-ui .srm-chat-message { font-size: .875rem; line-height: 1.6; }
+.srm-ui .srm-chat-message :is(p,ul,li,.srm-chat-comparison) { font-family: inherit; font-size: inherit; line-height: inherit; }
+/* SRM-SP15: the larger canvas supplies clearance without clipping the 120% motion. */
+@media (min-width: 68.75rem) { .srm-ui .srm-overview[data-library-component="SRM-C43"] { grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); } }
