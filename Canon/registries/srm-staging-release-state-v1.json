@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "a745fbef4a57609030602e36fb3f729b86d899d0b6823e631aed332c97b51197",
+  "publicationNonce": "1ac25edd535d9cc17b1b139c1dd04ffa696905205ff0069473afc6b207bc4dcc",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 132,
+  "generation": 133,
   "release": {
     "authorizationDigest": "d1ccc7968515e044925381e3bd73abc4b29fd7c7bdde5923b85f329cd88f4b6e",
     "authorizationKeyOrder": [
@@ -673,7 +673,7 @@
     "mode": "promote",
     "publicationIdentityVersion": "2.0",
     "owner": "github-run:38784845103",
-    "phase": "VERIFYING",
+    "phase": "VERIFIED",
     "resources": {
       "githubEnvironmentId": 23853126630,
       "databaseId": 509272,
@@ -8773,186 +8773,114 @@
       "developmentDeployId": "dep-db8h8vl9fdbs73eaeiu0",
       "developmentServiceId": "srv-db1vu6gm7kps73d0e3r0",
       "capturedAt": "2026-10-15T18:24:17.126Z"
+    },
+    "proof": {
+      "source": "LIVE_RUNTIME_AND_SQL",
+      "sha": "bb60604cefa1ae071f2df1715591a37705d9d96d",
+      "deployId": "dep-db8hlnom7kps73fsfd00",
+      "serviceId": "srv-db496b3tqb8s73eh5sfg",
+      "branchId": "br-broad-butterfly-b11t4v01",
+      "databaseId": 509272,
+      "githubEnvironmentId": 23853126630,
+      "domainBindings": [
+        {
+          "id": "cdm-db4btcvlk1mc73fhn7sg",
+          "name": "demo-srm-porr.spendguru.app",
+          "verificationStatus": "verified",
+          "serviceId": "srv-db496b3tqb8s73eh5sfg"
+        }
+      ],
+      "configuration": "PASS",
+      "githubProtection": "PASS",
+      "schema": "PASS",
+      "runtimeRole": "PASS",
+      "tenantIsolation": "PASS",
+      "health": "PASS",
+      "authentication": "PASS",
+      "persistence": "PASS",
+      "migrations": [
+        {
+          "version": "0001_xray_foundation",
+          "checksum": "14b18a8dfa4f45fb2c5fd6cdbffd4220db4826dead5d8a205e8663a1a9dd8445"
+        },
+        {
+          "version": "0002_ceidg_jdg",
+          "checksum": "365904ec0c70d56f57c7702c0e2516ec114b41737f05c1ff38e9a03004a78a25"
+        },
+        {
+          "version": "0003_financial_cost_normalization",
+          "checksum": "2e4f35bf603a207096562f88d8a0903c799cc906c2475eccb380434c2d6b07da"
+        },
+        {
+          "version": "0004_financial_other_cost_normalization",
+          "checksum": "fb78a2476249daedbe53fe87c2c6e8a66b2a3e06abd31b388603ac1ce3ad3c76"
+        },
+        {
+          "version": "0005_kys_personal",
+          "checksum": "c309f92b4ec31362c3dc6a004def889d37c90b095dcc9624d3f7f91298a3344a"
+        },
+        {
+          "version": "0006_kys_retention_privilege",
+          "checksum": "60629673484b92fd8877aa0a4355bd1e79818d51be3f7f88b4ceee19d9c8d771"
+        },
+        {
+          "version": "0007_shared_financial_catalog",
+          "checksum": "31c0bb7b7b0a54476cfa95033d463b7ee4071d1fac37090082dd4c7ede4f5b54"
+        },
+        {
+          "version": "0008_financial_indicators",
+          "checksum": "e1ab3ac396537fb52c17a99343379068c2a3c8b5be03890f95ce8405c19a91c5"
+        },
+        {
+          "version": "0009_financial_indicator_days",
+          "checksum": "f4a62fcaf826f1db90cbc0a930eafde2e8fe8e290b24c65bcdf9f98ffb45bcd2"
+        },
+        {
+          "version": "0010_kys_shared_cache",
+          "checksum": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44"
+        },
+        {
+          "version": "0011_mgbi_raw_reports",
+          "checksum": "202e415b49dbe6d2df232392dc4b058f4aa8ed86f570b531efcee760ffe0d77c"
+        },
+        {
+          "version": "0012_verified_cogs_cost_magnitude",
+          "checksum": "e4775e05a15deee9412a4d76ba4e518acdeaa280ce153df0f169f299241a16ac"
+        },
+        {
+          "version": "0013_financial_source_documents",
+          "checksum": "ddc3987a805df1e8f9af3297f21e600981264ed74c06aa077e3209195fc6208c"
+        },
+        {
+          "version": "0014_supplier_web_identity",
+          "checksum": "ddfcddf14ea4ab04356403910b7f86b48fef8f2df83edb6caa8e0b35f94ae0de"
+        },
+        {
+          "version": "0015_financial_scanner_frames",
+          "checksum": "efe06b955d459bd1d33c8f3515599e55f9143c0fc9a816b7772da62fc468ec74"
+        },
+        {
+          "version": "0016_mgbi_archive_integrity",
+          "checksum": "2b48875d74411f4c83f648929ec11d820ceeb2fea2d0055823407d05057ffffa"
+        },
+        {
+          "version": "0017_msr_ixbrl_sources",
+          "checksum": "19bff61b1dff8c106758586b2fdc6c5d612e17ae8b3f8a7be66f20dc587ac120"
+        },
+        {
+          "version": "0018_msr_versioned_projections",
+          "checksum": "99951df5a2bdb78bc1ba43c1fdd0ae74ff33062476a2b7fcaa47b582cc5a4657"
+        }
+      ]
     }
   },
   "baseline": {
-    "generation": 124,
-    "sha": "4f2b9b3797f6210e6c1af98af6a69abfd9c48391",
-    "deployId": "dep-db8fare89jmc73a0nsh0",
+    "generation": 133,
+    "sha": "bb60604cefa1ae071f2df1715591a37705d9d96d",
+    "deployId": "dep-db8hlnom7kps73fsfd00",
     "serviceId": "srv-db496b3tqb8s73eh5sfg",
-    "evidenceDigest": "3f5368d42c3018e3b75d9f29a191a8dde4e080edef8045ff2d165515f5715742",
-    "verifiedAt": "2026-10-15T15:52:28.873Z",
-    "restorePointPreparation": {
-      "taskId": "SRM-STAGING-PROMOTION-20261015-BB60604",
-      "candidateSha": "bb60604cefa1ae071f2df1715591a37705d9d96d",
-      "phase": "DONE",
-      "requestedBy": "ACTUAL_USER_REQUEST_IN_THIS_CHAT",
-      "hostConversationId": "01a11c3a-6570-7292-99b4-5666c5a2496b",
-      "recordedAt": "2026-10-15T18:13:00.731Z",
-      "scope": "SRM Staging only: retained-artifact read-only one-off job; bounded no-compute recovery branch and isolated recovery rehearsal; no application deployment, Stage migration, reset, secret/config change or Production operation",
-      "resources": {
-        "renderServiceId": "srv-db496b3tqb8s73eh5sfg",
-        "renderDeployId": "dep-db8fare89jmc73a0nsh0",
-        "neonProjectId": "snowy-breeze-40315151",
-        "sourceNeonBranchId": "br-broad-butterfly-b11t4v01"
-      },
-      "costOwner": "Profit.ia",
-      "costScope": "Existing $7/month service plus previously accepted provider usage; artifact job uses existing service plan; backup has no compute; rehearsal bounded to 0.25 CU with 300-second suspend",
-      "completedAt": "2026-10-15T18:18:48.187Z"
-    },
-    "restorePoint": {
-      "schemaVersion": "1.0",
-      "status": "VERIFIED",
-      "verifiedScope": "RESTORE_POINT_INTEGRITY_AND_RESTORABILITY_ONLY; NOT_PERMISSION_TO_PROMOTE",
-      "verifiedAt": "2026-10-15T18:17:59.413Z",
-      "taskId": "SRM-STAGING-PROMOTION-20261015-BB60604",
-      "sha": "4f2b9b3797f6210e6c1af98af6a69abfd9c48391",
-      "deployId": "dep-db8fare89jmc73a0nsh0",
-      "candidateSha": "bb60604cefa1ae071f2df1715591a37705d9d96d",
-      "serviceId": "srv-db496b3tqb8s73eh5sfg",
-      "artifact": {
-        "sourceSha": "4f2b9b3797f6210e6c1af98af6a69abfd9c48391",
-        "fileCount": 1666,
-        "algorithm": "sha256-sorted-path-type-content-v1",
-        "digest": "6da9bd497fe393316df5de0ad5976fb55a8dd3bd633dde889e230b8ee19914e1",
-        "buildId": "wnyc7O7EDdebNfX1T5d5Y",
-        "jobId": "job-db8hg1qjnfac73fppd00",
-        "providerLogId": "c0862ecb-39fd-44f5-9bb6-4cbf24750115",
-        "providerLogTimestamp": "2026-10-15T18:15:05.661671093Z"
-      },
-      "configuration": {
-        "fingerprint": "fb41ad8c006fb5a00a17de87a9527f53d43947dd30441b7a2646babed177ffbd",
-        "algorithm": "sha256-selected-service-config-and-sorted-resolved-env-pairs-v1",
-        "unchangedAfterMeasurement": true,
-        "providerRetainsDeploymentConfiguration": true,
-        "secretValuesPublished": false
-      },
-      "database": {
-        "projectId": "snowy-breeze-40315151",
-        "databaseName": "srm_app",
-        "sourceBranchId": "br-broad-butterfly-b11t4v01",
-        "recoveryBranchId": "br-flat-breeze-b1f3ge4b",
-        "recoveryBranchName": "srm-staging-lkg-20261015-4f2b9b3",
-        "parentLsn": "0/505DAD8",
-        "backupHasNoCompute": true,
-        "restoreRehearsalBranchId": "br-delicate-feather-b1r9asjb",
-        "restoreRehearsalParentId": "br-flat-breeze-b1f3ge4b",
-        "restoreRehearsalVerified": true,
-        "restoreRehearsalEndpointId": "ep-long-water-b1nxn0mv",
-        "restoreRehearsalComputeMaxCu": 0.25,
-        "providerRequiredIdleTimeoutSeconds": 300,
-        "runtimeRole": "srm_app_runtime",
-        "runtimeRoleUnprivileged": true,
-        "ownTenantArchives": 44,
-        "foreignTenantArchives": 0,
-        "noTenantArchives": 0,
-        "inventories": {
-          "database_name": "srm_app",
-          "migrations": [
-            {
-              "version": "0001_xray_foundation",
-              "checksum": "14b18a8dfa4f45fb2c5fd6cdbffd4220db4826dead5d8a205e8663a1a9dd8445"
-            },
-            {
-              "version": "0002_ceidg_jdg",
-              "checksum": "365904ec0c70d56f57c7702c0e2516ec114b41737f05c1ff38e9a03004a78a25"
-            },
-            {
-              "version": "0003_financial_cost_normalization",
-              "checksum": "2e4f35bf603a207096562f88d8a0903c799cc906c2475eccb380434c2d6b07da"
-            },
-            {
-              "version": "0004_financial_other_cost_normalization",
-              "checksum": "fb78a2476249daedbe53fe87c2c6e8a66b2a3e06abd31b388603ac1ce3ad3c76"
-            },
-            {
-              "version": "0005_kys_personal",
-              "checksum": "c309f92b4ec31362c3dc6a004def889d37c90b095dcc9624d3f7f91298a3344a"
-            },
-            {
-              "version": "0006_kys_retention_privilege",
-              "checksum": "60629673484b92fd8877aa0a4355bd1e79818d51be3f7f88b4ceee19d9c8d771"
-            },
-            {
-              "version": "0007_shared_financial_catalog",
-              "checksum": "31c0bb7b7b0a54476cfa95033d463b7ee4071d1fac37090082dd4c7ede4f5b54"
-            },
-            {
-              "version": "0008_financial_indicators",
-              "checksum": "e1ab3ac396537fb52c17a99343379068c2a3c8b5be03890f95ce8405c19a91c5"
-            },
-            {
-              "version": "0009_financial_indicator_days",
-              "checksum": "f4a62fcaf826f1db90cbc0a930eafde2e8fe8e290b24c65bcdf9f98ffb45bcd2"
-            },
-            {
-              "version": "0010_kys_shared_cache",
-              "checksum": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44"
-            },
-            {
-              "version": "0011_mgbi_raw_reports",
-              "checksum": "202e415b49dbe6d2df232392dc4b058f4aa8ed86f570b531efcee760ffe0d77c"
-            },
-            {
-              "version": "0012_verified_cogs_cost_magnitude",
-              "checksum": "e4775e05a15deee9412a4d76ba4e518acdeaa280ce153df0f169f299241a16ac"
-            },
-            {
-              "version": "0013_financial_source_documents",
-              "checksum": "ddc3987a805df1e8f9af3297f21e600981264ed74c06aa077e3209195fc6208c"
-            },
-            {
-              "version": "0014_supplier_web_identity",
-              "checksum": "ddfcddf14ea4ab04356403910b7f86b48fef8f2df83edb6caa8e0b35f94ae0de"
-            },
-            {
-              "version": "0015_financial_scanner_frames",
-              "checksum": "efe06b955d459bd1d33c8f3515599e55f9143c0fc9a816b7772da62fc468ec74"
-            },
-            {
-              "version": "0016_mgbi_archive_integrity",
-              "checksum": "2b48875d74411f4c83f648929ec11d820ceeb2fea2d0055823407d05057ffffa"
-            },
-            {
-              "version": "0017_msr_ixbrl_sources",
-              "checksum": "19bff61b1dff8c106758586b2fdc6c5d612e17ae8b3f8a7be66f20dc587ac120"
-            },
-            {
-              "version": "0018_msr_versioned_projections",
-              "checksum": "99951df5a2bdb78bc1ba43c1fdd0ae74ff33062476a2b7fcaa47b582cc5a4657"
-            }
-          ],
-          "archives": "44",
-          "archive_inventory_sha256": "8f916fcf160f2e45cc4f6aa2de0781337bd9e19cf9b26b9e1135e58ef9031710",
-          "invalid_archives": "0",
-          "documents": "129",
-          "document_inventory_sha256": "f7ecc349519e431bb1409cb88590ec63d91671df0d3e28f43fd5adda517e2727",
-          "invalid_documents": "0",
-          "force_rls_tables": "20"
-        },
-        "sourceStageWrites": 0,
-        "developmentDataCopied": false,
-        "automaticSchemaOrDataRollbackAllowed": false,
-        "restoreRehearsalComputeState": "idle"
-      },
-      "canonicalRollback": {
-        "ready": true,
-        "mode": "SEPARATE_PROTECTED_RETAINED_ARTIFACT_ROLLBACK_REQUIRED",
-        "schemaCompatible": true,
-        "fullMigrationCount": 18,
-        "realProviderRollback": "NOT_EXECUTED"
-      },
-      "budget": {
-        "costOwner": "Profit.ia",
-        "newRecurringRenderServiceCreated": false,
-        "artifactJobExistingServicePlan": true,
-        "recoveryBackupComputeCreated": false,
-        "rehearsalComputeMaxCu": 0.25,
-        "backupStorageUsageRetained": true,
-        "rehearsalComputeStopped": true
-      },
-      "noCrossProviderAtomicityClaimed": true
-    }
+    "evidenceDigest": "084b8962370372b2fe51d50dea8c6726eaeb58498d4a4e6b7466806826d5842f",
+    "verifiedAt": "2026-10-15T18:31:43.566Z"
   },
   "managementCredentialRepairs": [
     {
