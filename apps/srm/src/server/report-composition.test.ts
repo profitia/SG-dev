@@ -326,7 +326,7 @@ test("scanner composition replaces legacy summary and health cards while preserv
 });
 
 
-for(const registrationStatus of ["DEREGISTERED","LIQUIDATION"] as const)test(`${registrationStatus} preserves identity and scanner status while hiding details and requests`,async()=>{
+for(const registrationStatus of ["DEREGISTERED","LIQUIDATION"] as const)test(`${registrationStatus} preserves its governed availability view while hiding details and requests`,async()=>{
  const result=company();if(result.entityType!=="COMPANY")throw Error("fixture");
  result.card.general.data!.registrationStatus=registrationStatus;result.card.general.data!.deregisteredAt="2009-01-19";
  const {instance,calls}=controller(result);await instance.search(nipA);await instance.fetchKys();await instance.refreshMetadata();
@@ -334,7 +334,8 @@ for(const registrationStatus of ["DEREGISTERED","LIQUIDATION"] as const)test(`${
  const html=markup({...instance.getSnapshot(),kys:{...sampleCard.kys},metadata:metadata()},{slots:{kys:()=>{throw Error("restricted KYS mounted")}}});
  assert.match(html,registrationStatus==="DEREGISTERED"?/Spółka została wykreślona z KRS 19\.01\.2009 r\./:/Spółka jest w trakcie likwidacji/);
  assert.match(html,/data-library-component="SRM-C61"/);
- assert.match(html,/NIP:/);assert.match(html,/KRS:/);
+ if(registrationStatus==="DEREGISTERED") assert.doesNotMatch(html,/NIP:|KRS:|Supplier Finance Scanner|Asystent SpendGuru|<button/);
+ else {assert.match(html,/NIP:/);assert.match(html,/KRS:/);}
  assert.doesNotMatch(html,/Raport KYS|Dane szczegółowe|PRIVATE_DOCUMENT|report-financial-details|report-indicator-details/);
  instance.reset();assert.equal(instance.getSnapshot().result,null);assert.equal(instance.getSnapshot().metadata,null);
 });
