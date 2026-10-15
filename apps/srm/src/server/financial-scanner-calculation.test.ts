@@ -46,8 +46,8 @@ function report(row: ReportReadRow) { return projectReportData({ nip, entityType
 test("two calculation years produce six qualified axes, correct B+D+E ratios and comparison colors without writes", () => {
   const row = fixture(), before = JSON.stringify(row), scanner = report(row);
   assert.equal(JSON.stringify(row), before);
-  assert.equal(scanner.methodologyVersion, "3.0.0");
-  assert.equal(scanner.referenceFrames![0].qualificationRule, "XML_SOURCE_BASIS_V2");
+  assert.equal(scanner.methodologyVersion, "4.0.0");
+  assert.equal(scanner.referenceFrames![0].qualificationRule, "FINANCIAL_SOURCE_BASIS_V3");
   assert.equal(scanner.periods.length, 2);
   const current = scanner.periods.find(p => p.to.startsWith("2025"))!;
   const older = previousAnnualPeriod(scanner.periods, current)!;

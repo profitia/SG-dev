@@ -129,7 +129,7 @@ export function financialScanner(
           code === "NET_RESULT"
             ? "PALA_NPL"
             : code === "REVENUE"
-              ? "PALA_NRFS"
+              ? (p.accountingStandard === "IAS_IFRS" ? "MSR_REVENUE" : "PALA_NRFS")
               : null;
         const fact = metric
           ? p.facts.find((f) => f.metricCode === metric)
@@ -152,7 +152,7 @@ export function financialScanner(
             ? point.value
             : null;
         if (code === "OPERATING_COST_RATIO") {
-          const revenue = p.facts.find((f) => f.metricCode === "PALA_NRFS"),
+          const revenue = p.facts.find((f) => f.metricCode === (p.accountingStandard === "IAS_IFRS" ? "MSR_REVENUE" : "PALA_NRFS")),
             r = scannerDecimal(revenue?.amount),
             c = scannerDecimal(source?.costs);
           rawValue =
@@ -227,6 +227,7 @@ export function financialScanner(
         if (
           code === "CURRENT_RATIO" &&
           annual(p) &&
+          (p.accountingStandard !== "IAS_IFRS" || qualified) &&
           point?.evidence.length &&
           point.evidence.every((f) => f.validation === "VERIFIED")
         ) {
@@ -262,7 +263,8 @@ export function financialScanner(
     );
     if (!anchor || !context.asOf) continue;
     const frameAxes = axes.map((code) => {
-      const basis = sources[anchor.id]?.basis[code] ?? null;
+      const axisAnchor = scoped.find(p => p.axes.some(a => a.code === code && a.qualification === "VERIFIED"));
+      const basis = axisAnchor ? sources[axisAnchor.id]?.basis[code] ?? null : null;
       const eligible = scoped.filter(
         (p) =>
           p.to <= anchor.to &&

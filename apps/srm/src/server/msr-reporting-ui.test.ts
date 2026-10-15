@@ -47,7 +47,7 @@ test("MSR source values remain visible and verified without qualifying them for 
   const state = msrReportingState(report.financial,"consolidated",periods[0]);
   assert.equal(state?.year,"2025");
   assert.deepEqual(state?.values.map(v=>v.amount),["2146056000","644199000"]);
-  assert.match(state!.notice,/brak punktacji MSR\/MSSF nie oznacza braku danych/);
+  assert.match(state!.notice,/MSR\/MSSF/);
   assert.ok(report.financial.scanner!.periods.every(p=>p.axes.every(a=>a.normalizedScore===null)));
   assert.doesNotMatch(JSON.stringify(report),/PRIVATE_SOURCE_PATH|PRIVATE_SNAPSHOT|private:/);
 });

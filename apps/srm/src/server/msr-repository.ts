@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withOrganization } from "./db";
 import { persistFinancialDocuments, projectArchivedFinancialDocuments, financialRecordsFromPages, type FinancialArchive } from "./financial-documents";
-import { selectMsrCandidates, projectMsrFinancial, mergeMsrFinancial, type MsrCandidate, type MsrProjection } from "./msr-financial";
+import { MSR_PROJECTION_VERSION, selectMsrCandidates, projectMsrFinancial, mergeMsrFinancial, type MsrCandidate, type MsrProjection } from "./msr-financial";
 import { MSR_MAPPING_VERSION, parseMsrOriginal, MsrParserError, type MsrParsed } from "./msr-parser";
 import { decodeMsrOriginal, downloadMsrOriginal, MsrSourceError, type MsrOriginal } from "./msr-source";
 import type { MgbiFinancialResult } from "./mgbi-financial";
@@ -45,6 +45,7 @@ export type MsrStore = {
   read(candidate:MsrCandidate):Promise<MsrReceipt|null>;
   receive(candidate:MsrCandidate,claimId:string,original:MsrOriginal):Promise<void>;
   save(candidate:MsrCandidate,claimId:string,original:MsrOriginal,parsed:MsrParsed,projection:MsrProjection,archiveChecksum:string):Promise<void>;
+  project?(candidate:MsrCandidate,projection:MsrProjection,archiveChecksum:string):Promise<void>;
   block(candidate:MsrCandidate,claimId:string,code:string):Promise<void>;
 };
 export function msrStore(organizationId:string,nip:string,requestId:string):MsrStore {
@@ -76,7 +77,12 @@ export function msrStore(organizationId:string,nip:string,requestId:string):MsrS
          WHERE organization_id=$1 AND nip=$2 AND record_id=$3 AND claim_id=$4 AND state='RECEIVED' AND identity_sha256=$12 RETURNING record_id`,
         [organizationId,nip,c.recordId,id,original.bytes,original.checksum,original.format,original.container,JSON.stringify(parsed),MSR_MAPPING_VERSION,original.retrievedAt,identity(c)]);
       if (result.rows.length !== 1) throw new Error("MSR_SOURCE_FENCE_CONFLICT");
-      await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum);
+      const verified = await persistMsrProjection(client,organizationId,c,projection);
+      await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum,verified);
+    }),
+    project:(c,projection,archiveChecksum) => withOrganization(organizationId,async client => {
+      const verified = await persistMsrProjection(client,organizationId,c,projection);
+      await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum,verified);
     }),
     block:(c,id,code) => withOrganization(organizationId, async client => { await client.query(
       `UPDATE srm.msr_sources SET state=CASE WHEN state='REQUESTED' AND $5 IN ('MSR_FILE_BUDGET_EXHAUSTED','MSR_BUDGET_UNAVAILABLE','MSR_PROVIDER_NOT_CONFIGURED') THEN 'DEFERRED' ELSE 'BLOCKED' END,
@@ -99,8 +105,21 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
     if (existing && existing.state !== "RECEIVED" && existing.state !== "DEFERRED") {
       const saved = verifyMsrReceipt(candidate,existing);
       if (saved) {
-        projections.push(projectMsrFinancial(candidate,saved.original,saved.parsed));
+        const projection = projectMsrFinancial(candidate,saved.original,saved.parsed);
+        await store.project?.(candidate,projection,archive.archiveChecksum);
+        projections.push(projection);
         logMsrOutcome("CACHE",null);
+      } else if(existing.state === "BLOCKED" && existing.error_code === "MSR_XML_DTD_EXCLUDED" && existing.original_bytes && store.project) {
+        // A new evidenced parser version reuses the immutable licensed bytes.
+        // No paid retry, receipt reset or source overwrite is permitted.
+        if(hash(existing.original_bytes)!==existing.original_sha256 || !existing.retrieved_at)throw new Error("MSR_STORED_INTEGRITY_FAILURE");
+        try {
+          const original=decodeMsrOriginal(candidate.recordId,existing.original_bytes,"application/xhtml+xml",new Date(existing.retrieved_at).toISOString());
+          const parsed=(options.parse ?? parseMsrOriginal)(original,candidate);
+          const projection=projectMsrFinancial(candidate,original,parsed);
+          await store.project(candidate,projection,archive.archiveChecksum);
+          projections.push(projection);
+        } catch(error) {warnings.push(error instanceof MsrParserError ? error.code : "MSR_PERSISTENCE_OR_MAPPING_FAILURE");}
       } else { warnings.push(existing.state === "REQUESTED" ? "MSR_DOWNLOAD_RECONCILIATION_REQUIRED" : existing.error_code ?? "MSR_SOURCE_BLOCKED"); }
       continue;
     }
@@ -114,7 +133,7 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
         : await (options.download ?? downloadMsrOriginal)(candidate.recordId);
       // Keep the successfully received licensed original even if parsing or projection fails.
       if (!received) await store.receive(candidate,claimId,original);
-      const parsed = (options.parse ?? parseMsrOriginal)(original), projection = projectMsrFinancial(candidate,original,parsed);
+      const parsed = (options.parse ?? parseMsrOriginal)(original,candidate), projection = projectMsrFinancial(candidate,original,parsed);
       // A durable original+full parsed source and document projection commit atomically.
       await store.save(candidate,claimId,original,parsed,projection,archive.archiveChecksum);
       projections.push(projection); changed = true; logMsrOutcome("PROVIDER",null);
@@ -129,4 +148,18 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
   // A previously persisted original can reconstruct a missing public projection without downloading it.
   const before = JSON.stringify(base.section.data?.periods ?? []), after = JSON.stringify(merged.section.data?.periods ?? []);
   return {...merged,msrChanged:changed || before !== after};
+}
+
+/** Append a projection of the verified licensed original. Same version must be
+ * byte-equivalent in JSONB; a changed mapping requires a new version. */
+export async function persistMsrProjection(client:Client,organizationId:string,c:MsrCandidate,projection:MsrProjection):Promise<{version:string;checksum:string}> {
+  const payload=JSON.stringify(projection);
+  await client.query(`INSERT INTO srm.msr_projections(organization_id,nip,record_id,projection_version,original_sha256,projection_json,projection_sha256)
+    VALUES($1,$2,$3,$4,$5,$6::jsonb,encode(sha256(convert_to(($6::jsonb)::text,'UTF8')),'hex')) ON CONFLICT DO NOTHING`,
+    [organizationId,c.nip,c.recordId,MSR_PROJECTION_VERSION,projection.document.checksum,payload]);
+  const saved=await client.query(`SELECT 1 FROM srm.msr_projections WHERE organization_id=$1 AND nip=$2 AND record_id=$3 AND projection_version=$4
+    AND original_sha256=$5 AND projection_json=$6::jsonb AND projection_sha256=encode(sha256(convert_to(projection_json::text,'UTF8')),'hex')`,
+    [organizationId,c.nip,c.recordId,MSR_PROJECTION_VERSION,projection.document.checksum,payload]);
+  if(saved.rows.length!==1)throw new Error("MSR_PROJECTION_VERSION_CONFLICT");
+  return {version:MSR_PROJECTION_VERSION,checksum:projection.document.checksum};
 }

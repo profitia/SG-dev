@@ -224,7 +224,7 @@ test("stored read uses one coherent tenant source snapshot and appends immutable
   } };
   await readReportData(org, selection, now, { connect: async () => client as unknown as pg.PoolClient });
   assert.equal(calls.filter(([sql]) => sql === REPORT_DATA_SQL).length, 1);
-  assert.deepEqual(calls.find(([sql]) => sql === REPORT_DATA_SQL)![1], [selection.nip, org, "COMPANY", "1.2"]);
+  assert.deepEqual(calls.find(([sql]) => sql === REPORT_DATA_SQL)![1], [selection.nip, org, "COMPANY", "1.3"]);
   assert.ok(calls.some(([sql, params]) => sql.includes("set_config") && params?.[0] === org));
   assert.equal(calls.some(([sql]) => /\b(UPDATE|DELETE)\b/.test(sql)), false);
   assert.ok(calls.filter(([sql])=>sql.includes("INSERT")).every(([sql,params])=>sql.includes("srm.financial_scanner_frames") && sql.includes("ON CONFLICT DO NOTHING") && params?.[0]===org));

@@ -335,7 +335,7 @@ test("MGBI two-year regression: six axes receive scores with qualified deltas; g
     }));
     const before = JSON.stringify({ f, sources });
     const result = financialScanner(f, sources);
-    assert.equal(result.methodologyVersion, "3.0.0");
+    assert.equal(result.methodologyVersion, "4.0.0");
     assert.equal(result.qualification, "QUALIFIED_HISTORY");
     assert.deepEqual(result.periods[0].axes.map((a) => a.normalizedScore), ["0.000000", "100.000000", "100.000000", "0.000000", "0.000000", "100.000000"]);
     assert.deepEqual(result.periods[0].axes.map((a) => a.comparisons?.[0].favorable), ["WORSE", "BETTER", "BETTER", "WORSE", "WORSE", "BETTER"]);

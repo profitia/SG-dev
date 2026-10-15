@@ -48,7 +48,7 @@ test("first-wave formulas use unrounded stored facts and retain exact source evi
     assert.equal(result.value, value, code);
     assert.equal(result.reasonCode, null);
     assert.equal(result.nip, "5213390341");
-    assert.equal(result.formulaVersion, "1.2");
+    assert.equal(result.formulaVersion, "1.3");
     assert.ok(result.inputFacts.length >= 2, code);
     assert.ok(result.sourceDocumentIds.includes("document-2025:cfy"));
   }

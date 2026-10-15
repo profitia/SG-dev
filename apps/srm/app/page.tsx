@@ -20,7 +20,7 @@ const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <Exe
 const kysSlot: NonNullable<SupplierReportSlots["kys"]> = context => <KysOverview model={context.kysOverview} onDetails={context.onKysDetails} />;
 
 const scannerSlot: NonNullable<SupplierReportSlots["scanner"]> = context => context.supplier.entityType === "COMPANY"
-  ? <FinancialScannerMount key={supplierNip(context.supplier)} availability={context.availability} indicatorsTarget={context.financialIndicatorsTarget} report={context.metadata} loading={context.metadataBusy}
+  ? <FinancialScannerMount selectedScope={context.scope} onScopeChange={context.setScope} key={supplierNip(context.supplier)} availability={context.availability} indicatorsTarget={context.financialIndicatorsTarget} report={context.metadata} loading={context.metadataBusy}
       assistant={{ nip: supplierNip(context.supplier) ?? undefined, name: context.supplier.card.general.data?.legalName ?? context.supplier.card.identity.name ?? "Dostawca",
         krs: context.supplier.card.identity.krs,
         avatars: { male: "/spendguru/assistant-male.png", anna: "/spendguru/assistant-female.png" } }} /> : null;

@@ -46,6 +46,8 @@ export type GeneralCompanyData = {
 };
 
 export type FinancialPeriod = {
+  effectiveRevisionId?: string;
+  revisionStatus?: "RESOLVED" | "UNRESOLVED";
   accountingStandard?: "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
   accountingStandardBasis?: string;
   isIasCompliant?: boolean | null;
@@ -82,6 +84,7 @@ export type FinancialIndicatorResult = {
 };
 
 export type FinancialData = {
+  revisionRule?: string;
   periods: readonly FinancialPeriod[];
   indicators?: readonly FinancialIndicatorResult[];
 };
@@ -132,11 +135,11 @@ export type FinancialHistoryPoint = FinancialIndicatorResult & {
 export type ScannerAxisCode = "NET_RESULT" | "REVENUE" | "CURRENT_RATIO" | "OPERATING_MARGIN" | "OPERATING_COST_RATIO" | "LIABILITIES_TO_ASSETS";
 /** Server-owned scoring over qualified source observations; no client-side financial formulas. */
 export type FinancialScannerProjection = {
-  version: "1.0" | "1.1"; methodologyVersion: "1.0.0" | "2.0.0" | "3.0.0"; qualification: "PARTIAL_SOURCE_VIEW" | "QUALIFIED_HISTORY";
+  version: "1.0" | "1.1"; methodologyVersion: "1.0.0" | "2.0.0" | "3.0.0" | "4.0.0"; qualification: "PARTIAL_SOURCE_VIEW" | "QUALIFIED_HISTORY";
   sourceVersion: string | null;
   referenceFrames?: readonly {
     id: string; scope: FinancialPeriod["scope"]; anchorPeriodId: string; asOf: string;
-    qualificationRule: "XML_SOURCE_BASIS_V1" | "XML_SOURCE_BASIS_V2";
+    qualificationRule: "XML_SOURCE_BASIS_V1" | "XML_SOURCE_BASIS_V2" | "FINANCIAL_SOURCE_BASIS_V3";
     axes: readonly { code: ScannerAxisCode; periodIds: readonly string[]; bestValue: string | null;
       worstValue: string | null; bestPeriodIds: readonly string[]; basisKey: string | null }[];
   }[];

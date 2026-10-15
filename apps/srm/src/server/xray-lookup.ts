@@ -6,7 +6,7 @@ import { atLookupStage, logProviderOutcome, providerExceptionCode } from "./look
 import type { SectionEnvelope, SupplierXRayCard } from "@profitia/srm-xray";
 import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
-import { fetchMgbiFinancial, type FinancialSourceFact } from "./mgbi-financial";
+import { fetchMgbiFinancial, reprojectFinancialArchive, type FinancialSourceFact } from "./mgbi-financial";
 import { saveFinancialDocuments, readFinancialDocuments, applyFinancialDocumentMetadata } from "./financial-documents";
 import { saveMgbiArchive } from "./mgbi-archive";
 import { enrichMsrFinancial } from "./msr-repository";
@@ -120,14 +120,16 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
     };
     logProviderOutcome("MGBI", "general", cached.general.status, null, "CACHE");
     logProviderOutcome("MGBI", "financial", cached.financial.status, null, "CACHE");
+    const needsRevisionProjection = cached.financial.data?.revisionRule !== "FINANCIAL_REVISIONS_V1";
+    const reconstructed = needsRevisionProjection ? await reprojectFinancialArchive(organizationId,request.identifier.value) : null;
     const msr = await atLookupStage("financial_persistence", () => enrichMsrFinancial(organizationId,request.identifier.value,
-      {section:cached.financial,facts:[],errorCode:null},{requestId:lookup.requestId,refreshMetadata:async()=>{
+      reconstructed ?? {section:cached.financial,facts:[],errorCode:null},{requestId:lookup.requestId,refreshMetadata:async()=>{
         const latest=await fetchMgbiFinancial(request.identifier);
         if (!latest.rawResponse || !latest.section.retrievedAt) throw new Error("MSR_METADATA_REFRESH_FAILED");
         await saveMgbiArchive(organizationId,request.identifier.value,"pl-krs-rdf-record",latest.rawResponse.pages,latest.rawResponse.recordCount,latest.section.retrievedAt,lookup.requestId);
         await saveFinancialDocuments(organizationId,request.identifier.value,latest.rawResponse.pages);
       }}),"financial");
-    if (msr.msrChanged) {
+    if (msr.msrChanged || reconstructed) {
       const snapshotId = await persistSection(organizationId,lookup,"financial",msr.section,msr.errorCode,msr.facts,undefined,msr.sourceData,"CACHE");
       await saveSharedCompany(organizationId,request.identifier.value,{general,financial:msr.section,generalSnapshotId:null,financialSnapshotId:snapshotId,facts:msr.facts,preserveGeneral:true});
     }

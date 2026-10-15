@@ -518,8 +518,12 @@ export function FinancialScannerMount({
   assistant,
   indicatorsTarget,
   availability = AVAILABLE_REPORT,
+  selectedScope,
+  onScopeChange,
 }: {
   availability?: ReportAvailability;
+  selectedScope?: "standalone" | "consolidated" | null;
+  onScopeChange?: (scope: "standalone" | "consolidated") => void;
   indicatorsTarget?: HTMLElement | null;
   report: SupplierReportData | null;
   loading?: boolean;
@@ -529,16 +533,19 @@ export function FinancialScannerMount({
   if (availability.code !== "AVAILABLE") report = null;
   const instanceId = useId();
   const [indicatorView, setIndicatorView] = useState<IndicatorViewContext>({ tab: "overview", label: "Przegląd", items: [] });
-  const [scope, setScope] = useState<"standalone" | "consolidated">(
+  const [localScope, setLocalScope] = useState<"standalone" | "consolidated">(
     "standalone",
   );
+  const scope = selectedScope ?? localScope;
+  const setScope = (next: "standalone" | "consolidated") => { setLocalScope(next); onScopeChange?.(next); };
   const [periodId, setPeriodId] = useState<string | null>(null),
     [comparisonId, setComparisonId] = useState("auto");
   const [history, setHistory] = useState<{
     code: string;
     year?: number;
   } | null>(null);
-  useEffect(() => { setScope("standalone"); setPeriodId(null); setComparisonId("auto"); setHistory(null); }, [report?.nip]);
+  useEffect(() => { setLocalScope("standalone"); setPeriodId(null); setComparisonId("auto"); setHistory(null); }, [report?.nip]);
+  useEffect(() => { setPeriodId(null); setComparisonId("auto"); setHistory(null); }, [scope]);
   const periods = (report?.financial.scanner?.periods ?? [])
     .filter((p) => p.scope === scope)
     .slice()
@@ -552,6 +559,7 @@ export function FinancialScannerMount({
     periods.find((p) => annual(p) && p.axes.some((a) => a.rawValue !== null)) ??
     periods[0];
   const msr = msrReportingState(report?.financial, scope, selected);
+  const qualifiedMsr = selected?.axes.some(a=>a.qualification === "VERIFIED");
   const resolvedComparisonId = comparisonId === "auto" ? previousAnnualPeriod(periods,selected)?.id ?? "" : comparisonId;
   const compared = resolvedComparisonId === "reference" ? bestHistoryPeriod(report?.financial.scanner, selected) : periods.find(p=>p.id===resolvedComparisonId);
   const compare = Boolean(compared);
@@ -602,7 +610,7 @@ export function FinancialScannerMount({
       radar: { year: selected ? Number(selected.to.slice(0,4)) : null, comparisonYear: compared && compared.id !== "reference" ? Number(compared.to.slice(0,4)) : null,
         referenceSelection: "history", referenceKind: "history", referenceStatus: selected?.axes.some(a=>a.basis==="HISTORICAL_BEST" && a.normalizedScore!==null) ? "available" : "unconfirmed", referenceFrameId: selected?.referenceFrameId ?? null },
       indicators: indicatorView, history: history ? { code: history.code, year: history.year ?? null } : null },
-    financialSummary: axes.map(a => { const v=msr ? msr.values.find(value=>value.code===a.code)?.amount ?? null : selected?.axes.find(x=>x.code===a.code)?.rawValue ?? null;
+    financialSummary: axes.map(a => { const v=msr && !qualifiedMsr ? msr.values.find(value=>value.code===a.code)?.amount ?? null : selected?.axes.find(x=>x.code===a.code)?.rawValue ?? null;
       return { code:a.code,name:a.label.join(" "),year:selected?Number(selected.to.slice(0,4)):null,value:v,unit:a.unit,
         availability:v===null?"missing":"available",reason:null }; }),
   };
@@ -762,7 +770,7 @@ export function FinancialScannerMount({
           </details>
         </section>
         {assistant ? <SpendGuruAssessment key={report?.nip ?? "loading"} context={context} avatars={assistant.avatars}
-          sourceSummary={msr}
+          sourceSummary={qualifiedMsr ? null : msr}
           year={selected ? Number(selected.to.slice(0,4)) : null} company={assistant.name}
           values={axes.map(a => { const v=selected?.axes.find(x=>x.code===a.code)?.rawValue;return v==null?null:Number(v); })}
           formatted={axes.map(a => fmt(selected?.axes.find(x=>x.code===a.code)?.rawValue,a.unit))}

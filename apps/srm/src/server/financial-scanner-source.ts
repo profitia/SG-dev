@@ -9,7 +9,10 @@ import {
   type FinancialSourceDocument,
 } from "./financial-documents";
 
-export const SCANNER_SOURCE_RULE = "XML_SOURCE_BASIS_V2" as const;
+import { resolveDocumentFamily } from "./financial-revisions";
+import { MSR_PROJECTION_VERSION } from "./msr-financial";
+
+export const SCANNER_SOURCE_RULE = "FINANCIAL_SOURCE_BASIS_V3" as const;
 export type ScannerSourceEvidence = Record<
   string,
   {
@@ -64,6 +67,9 @@ export function qualifyScannerSources(
         [id(p), { ...result, reason }] as const;
       if (!doc || !original) return reject("SOURCE_DOCUMENT_UNAVAILABLE");
       if (!annual(p) || !annual(doc)) return reject("NON_ANNUAL_PERIOD");
+      const family = documents.filter(d => d.scope === doc.scope && d.from === doc.from && d.to === doc.to && d.filingDate && d.filingDate <= asOf.slice(0,10));
+      const revision = resolveDocumentFamily(family);
+      if (doc.standard === "IAS_IFRS") return [id(p), qualifyMsrPeriod(p, doc, revision, asOf)];
       if (
         doc.mappingVersion !== FINANCIAL_DOCUMENT_MAPPING_VERSION ||
         doc.validation !== "VALID" ||
@@ -83,7 +89,7 @@ export function qualifyScannerSources(
       if (
         !doc.filingDate ||
         doc.filingDate > asOf.slice(0, 10) ||
-        doc.correction !== false
+        revision.status !== "RESOLVED"
       )
         return reject("SOURCE_REVISION_UNRESOLVED");
       const comparative = original.documentId.endsWith(":pfy");
@@ -110,25 +116,14 @@ export function qualifyScannerSources(
               prior(d.from) === p.from &&
               prior(d.to) === p.to)),
       );
-      // A later selected comparative column is an explicit restatement, never an extra observation.
-      // Competing same-period filings and correction flags need a correction lineage adapter, not completeness ranking.
-      if (
-        candidates.some(
-          (d) => d.correction !== false || d.filingDate! > doc.filingDate!,
-        ) ||
-        candidates.some(
-          (d) => d.recordId !== doc.recordId && d.filingDate === doc.filingDate,
-        )
-      )
+      // Equivalent filings do not create additional observations. A later report
+      // may explicitly restate a comparative column, but cannot mix its missing fields.
+      if (candidates.some(d => d.filingDate! > doc.filingDate! && (d.from !== doc.from || d.to !== doc.to)))
         return reject("SOURCE_REVISION_UNRESOLVED");
-      if (
-        candidates.some((d, i) =>
-          candidates.some(
-            (e, j) => j < i && d.from === e.from && d.to === e.to,
-          ),
-        )
-      )
-        return reject("SOURCE_REVISION_UNRESOLVED");
+      for (const candidate of candidates) {
+        const group = candidates.filter(d => d.from === candidate.from && d.to === candidate.to);
+        if (resolveDocumentFamily(group).status !== "RESOLVED") return reject("SOURCE_REVISION_UNRESOLVED");
+      }
       const column = comparative ? "KwotaB" : "KwotaA";
       const rows = new Map(
         doc.rows.map((r) => [path(r.sourcePath), amount(r.amounts[column])]),
@@ -234,6 +229,7 @@ export function qualifyScannerSources(
             doc.checksum,
             doc.mappingVersion,
             doc.filingDate,
+            revision.id,
             column,
             p.from,
             p.to,
@@ -261,4 +257,40 @@ function calculationCosts(rows: Map<string, bigint | null>): bigint | null {
   if ([b, d, e].some((n) => n > 0n) || a == null || c == null || f == null ||
       a - magnitude(b) !== c || c - magnitude(d) - magnitude(e) !== f) return null;
   return magnitude(b) + magnitude(d) + magnitude(e);
+}
+
+/** Explicit iXBRL concepts and contexts, never amount/name heuristics or issuer
+ * extension aliases. Missing current liabilities must not become total liabilities. */
+function qualifyMsrPeriod(p: SupplierReportData["financial"]["periods"][number], doc: FinancialSourceDocument,
+  revision: ReturnType<typeof resolveDocumentFamily>, asOf:string): ScannerSourceEvidence[string] {
+  const result:ScannerSourceEvidence[string] = {reason:null,evidenceRef:null,basis:{},costs:null};
+  const reject = (reason:string) => ({...result,reason});
+  if (doc.mappingVersion !== MSR_PROJECTION_VERSION || !["IXBRL_SUPPORTED","XHTML_SUPPORTED"].includes(doc.availability) ||
+      !/^[a-f0-9]{64}$/.test(doc.checksum) || doc.scale !== "1") return reject("UNVERIFIED_SOURCE");
+  if (!doc.filingDate || doc.filingDate > asOf.slice(0,10) || revision.status !== "RESOLVED") return reject("SOURCE_REVISION_UNRESOLVED");
+  if (!doc.columns.some(c=>c.from===p.from && c.to===p.to && c.basis===(doc.schemaName==="POSITIONED_XHTML" ? "XHTML_EXPLICIT_PRIMARY_COLUMNS" : "XBRL_EXPLICIT_CONTEXT"))) return reject("SOURCE_PERIOD_UNCONFIRMED");
+  const observations = doc.metricEvidence?.filter(e=>e.from===p.from && e.to===p.to) ?? [];
+  const match = (code:string, concept:string) => {
+    const evidence = observations.filter(e=>e.code===code && e.semanticBasis===concept &&
+      (/^\{https?:\/\/xbrl\.ifrs\.org\/taxonomy\/\d{4}-\d{2}-\d{2}\/ifrs-full\}/.test(e.concept) || (doc.schemaName==="POSITIONED_XHTML" && e.concept.startsWith("{urn:profitia:msr:positioned-xhtml-primary:v1}"))));
+    const facts = p.facts.filter(f=>f.metricCode===code);
+    const e=evidence[0], f=facts[0];
+    return evidence.length===1 && facts.length===1 && e.currency==="PLN" && f.validation==="VERIFIED" &&
+      f.currency==="PLN" && f.unit==="PLN" && f.scope===p.scope && f.documentRef===p.documentRef &&
+      f.periodStart===p.from && f.periodEnd===p.to && amount(f.amount)!==null && amount(f.amount)===amount(e.value);
+  };
+  const base = `IAS_IFRS:${doc.schemaName}:${p.scope}:PLN:${p.from.slice(5)}:${p.to.slice(5)}`;
+  if (match("PALA_NPL","ProfitLoss")) result.basis.NET_RESULT=base+":ProfitLoss";
+  if (match("MSR_REVENUE","Revenue")) {
+    result.basis.REVENUE=base+":Revenue";
+    if(match("PALA_PLFOA","ProfitLossFromOperatingActivities")) result.basis.OPERATING_MARGIN=base+":ProfitLossFromOperatingActivities:Revenue";
+    if(match("MSR_OPERATING_COSTS","ExpenseByNature")) {
+      const value=observations.find(e=>e.code==="MSR_OPERATING_COSTS")!.value;
+      if(amount(value)! >= 0n) {result.costs=value;result.basis.OPERATING_COST_RATIO=base+":ExpenseByNature:Revenue";}
+    }
+  }
+  if(match("BS_A_TA","Assets") && match("BS_LAE_LAPFL","Liabilities")) result.basis.LIABILITIES_TO_ASSETS=base+":Liabilities:Assets";
+  if(match("BS_A_CA","CurrentAssets") && match("BS_LAE_LAPFL_STL","CurrentLiabilities")) result.basis.CURRENT_RATIO=base+":CurrentAssets:CurrentLiabilities";
+  result.evidenceRef=hash([SCANNER_SOURCE_RULE,doc.checksum,doc.mappingVersion,revision.id,p.from,p.to,observations,result.basis]);
+  return result;
 }

@@ -1,7 +1,7 @@
 import type { FinancialData, FinancialPeriod } from "@profitia/srm-xray";
 type FinancialIndicatorResult = NonNullable<FinancialData["indicators"]>[number];
 
-export const FINANCIAL_INDICATOR_FORMULA_VERSION = "1.2";
+export const FINANCIAL_INDICATOR_FORMULA_VERSION = "1.3";
 export const FINANCIAL_INDICATOR_CODES = [
   "CURRENT_RATIO", "NET_WORKING_CAPITAL", "LIABILITIES_TO_ASSETS", "EQUITY_TO_ASSETS",
   "OPERATING_MARGIN", "NET_MARGIN", "REVENUE_YOY", "MATERIALS_ENERGY_SHARE", "ROA", "ROE",
@@ -67,7 +67,7 @@ export const definitions: readonly Definition[] = [
   { code: "CASH_CONVERSION_CYCLE", unit: "DAYS", importance: 2, fields: [...CCC_BALANCE_FIELDS, "PALA_NET_SALES", "PALA_COGS"], priorFields: CCC_BALANCE_FIELDS },
 ];
 
-export const FINANCIAL_INDICATOR_INPUT_CODES = [...new Set(definitions.flatMap((item) => [...item.fields, ...(item.prior ? [item.prior] : []), ...(item.priorFields ?? [])]))];
+export const FINANCIAL_INDICATOR_INPUT_CODES = [...new Set(["MSR_REVENUE", ...definitions.flatMap((item) => [...item.fields, ...(item.prior ? [item.prior] : []), ...(item.priorFields ?? [])])])];
 
 const SCALE = 10_000n;
 const RESULT_SCALE = 1_000_000n;
@@ -98,19 +98,19 @@ function annual(period: FinancialPeriod): boolean {
   return Number.isInteger(days) && days >= 365 && days <= 366;
 }
 function comparablePrior(current: FinancialPeriod, prior: FinancialPeriod): boolean {
-  return prior.scope === current.scope && annual(current) && annual(prior)
+  return prior.scope === current.scope && prior.accountingStandard === current.accountingStandard && annual(current) && annual(prior)
     && dateMs(prior.to) + 86_400_000 === dateMs(current.from);
 }
 export function selectedPeriods(data: FinancialData): FinancialPeriod[] {
   const candidates = data.periods.filter((period) => Number.isFinite(dateMs(period.from)) && Number.isFinite(dateMs(period.to)) && period.from <= period.to)
-    .sort((a, b) => b.to.localeCompare(a.to) || b.facts.length - a.facts.length);
+    .sort((a, b) => b.to.localeCompare(a.to));
   const selected = new Map<string, FinancialPeriod>();
   for (const period of candidates) {
     const key = `${period.scope}:${period.to.slice(0, 4)}`;
     const previous = selected.get(key);
     const quality = (p: FinancialPeriod) => (p.facts.some((f) => f.metricCode.startsWith("BS_"))
       && p.facts.some((f) => f.metricCode.startsWith("PALA_")) ? 100000 : 0) + p.facts.length;
-    if (!previous || quality(period) > quality(previous)) selected.set(key, period);
+    if (!previous || (!data.revisionRule && quality(period) > quality(previous))) selected.set(key, period);
   }
   return [...selected.values()].sort((a, b) => b.to.localeCompare(a.to));
 }
@@ -148,7 +148,8 @@ function indicatorFor(
   for (const [sourcePeriod, codes] of sourcePeriods) {
     const currentSnapshotIds = new Set<string>();
     for (const code of codes) {
-      const fact = facts.get(factKey(sourcePeriod, code));
+      const sourceCode = code === "PALA_NRFS" && sourcePeriod.accountingStandard === "IAS_IFRS" ? "MSR_REVENUE" : code;
+      const fact = facts.get(factKey(sourcePeriod, sourceCode));
       if (!fact) return finish("MISSING_FIELD");
       if (fact.validationStatus !== "VALID") return finish("UNVERIFIED_FIELD");
       if (fact.currencyCode !== "PLN" || fact.unitCode !== "PLN") return finish("UNSUPPORTED_UNIT");
@@ -157,12 +158,12 @@ function indicatorFor(
       if (!fact.sourceSnapshotId) return finish("UNVERIFIED_SOURCE");
       const value = scaledAmount(fact.amount);
       if (value === null) return finish("INVALID_AMOUNT");
-      const displayed = sourcePeriod.facts.find((item) => item.metricCode === code);
+      const displayed = sourcePeriod.facts.find((item) => item.metricCode === sourceCode);
       if (!displayed || scaledAmount(displayed.amount) !== value || displayed.currency !== "PLN" || displayed.unit !== "PLN") {
         return finish("DOCUMENT_MISMATCH");
       }
       currentSnapshotIds.add(fact.sourceSnapshotId);
-      inputs.push({ metricCode: code, periodStart: sourcePeriod.from, periodEnd: sourcePeriod.to,
+      inputs.push({ metricCode: sourceCode, periodStart: sourcePeriod.from, periodEnd: sourcePeriod.to,
         amount: fact.amount, sourcePath: fact.sourcePath, sourceSnapshotId: fact.sourceSnapshotId,
         documentId: sourcePeriod.documentId });
       values.set(`${sourcePeriod.from}:${code}`, value);

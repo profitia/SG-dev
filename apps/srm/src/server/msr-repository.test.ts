@@ -66,3 +66,17 @@ test("MSR stale pre-licensing metadata is refreshed before selection; a known PD
   const result=await enrichMsrFinancial("org",c.nip,base(),{store:f.store,refreshMetadata:async()=>{refreshed++;},download:async()=>{downloaded++;return source();}});
   assert.equal(refreshed,1);assert.equal(downloaded,0);assert.equal(result.section.status,"EMPTY");
 });
+
+test("a newer projection of READY source is appended without changing receipt or downloading again",async()=>{
+  const f=fixture();await enrichMsrFinancial("org",c.nip,base(),{store:f.store,download:async()=>source()});
+  const before=JSON.stringify(f.get());let projects=0;
+  f.store.project=async(_c,p)=>{projects++;assert.equal(p.document.mappingVersion,"2026-10-15-msr-projection-v2");};
+  await enrichMsrFinancial("org",c.nip,base(),{store:f.store,download:async()=>{throw Error("paid retry");}});
+  assert.equal(projects,1);assert.equal(JSON.stringify(f.get()),before);
+});
+test("verified legacy DTD-blocked original can be reprojected without resetting or retrying the paid receipt",async()=>{
+  const f=fixture();await f.store.claim(c,"claim");await f.store.receive(c,"claim",source());await f.store.block(c,"claim","MSR_XML_DTD_EXCLUDED");
+  const before=JSON.stringify(f.get());let projects=0;f.store.project=async()=>{projects++;};
+  const result=await enrichMsrFinancial("org",c.nip,base(),{store:f.store,download:async()=>{throw Error("paid retry");}});
+  assert.equal(projects,1);assert.equal(result.facts[0].amount,"123");assert.equal(JSON.stringify(f.get()),before);
+});
