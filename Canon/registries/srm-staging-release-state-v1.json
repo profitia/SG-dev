@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "c0b69384340fcad4f5afbec0bf608a84f1c1811a85b705f7038a0c09e161b197",
+  "publicationNonce": "d7e19b8a4116787999ec8a95e46c99dae3f41825cef1c9c8b0ad74334c22509f",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 129,
+  "generation": 130,
   "release": {
     "authorizationDigest": "d1ccc7968515e044925381e3bd73abc4b29fd7c7bdde5923b85f329cd88f4b6e",
     "authorizationKeyOrder": [
@@ -5600,7 +5600,7 @@
         }
       },
       "deploy": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-15T18:25:32.735Z",
@@ -6079,10 +6079,10 @@
             ]
           }
         },
-        "snapshotDigest": "de664c982af3b08afb06d677fb55652209825b72ea630ddd1ce9ccd515eab8dd",
+        "snapshotDigest": "bc24a51c918fd30f78d7d313467384312414f53596ec0bf8e40cbc9f32f4bbd0",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-15T18:25:32.735Z",
+          "capturedAt": "2026-10-15T18:28:07.572Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -6151,8 +6151,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-15T18:25:16Z",
-            "pushed_at": "2026-10-15T18:25:11Z",
+            "updated_at": "2026-10-15T18:26:38Z",
+            "pushed_at": "2026-10-15T18:26:32Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -6418,22 +6418,22 @@
               "suspended": "not_suspended",
               "suspenders": [],
               "type": "web_service",
-              "updatedAt": "2026-10-15T15:48:47.583781Z"
+              "updatedAt": "2026-10-15T18:28:07.472435Z"
             }
           ],
           "liveDeploy": {
-            "id": "dep-db8fare89jmc73a0nsh0",
+            "id": "dep-db8hlnom7kps73fsfd00",
             "commit": {
-              "id": "4f2b9b3797f6210e6c1af98af6a69abfd9c48391",
-              "message": "SRM: radar MSR, wspólny zakres i wersjonowane projekcje finansowe (#339)\n\n* feat(srm): qualify MSR radar and version financial projections\n\n* fix(srm): retain verified XHTML projection across archive refresh\n\n* test(srm): include projection table in tenant isolation check",
-              "createdAt": "2026-10-15T13:06:42Z"
+              "id": "bb60604cefa1ae071f2df1715591a37705d9d96d",
+              "message": "fix(srm): resolve verified company transformations and retain filing provenance (#354)",
+              "createdAt": "2026-10-15T17:56:51Z"
             },
             "status": "live",
             "trigger": "api",
-            "createdAt": "2026-10-15T15:46:53.667508Z",
-            "updatedAt": "2026-10-15T15:49:20.298127Z",
-            "startedAt": "2026-10-15T15:46:53.636254Z",
-            "finishedAt": "2026-10-15T15:48:47.581527Z"
+            "createdAt": "2026-10-15T18:26:39.912446Z",
+            "updatedAt": "2026-10-15T18:28:07.471269Z",
+            "startedAt": "2026-10-15T18:26:39.885795Z",
+            "finishedAt": "2026-10-15T18:28:07.471019Z"
           },
           "domains": [
             {
@@ -6558,7 +6558,10 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "deployId": "dep-db8hlnom7kps73fsfd00",
+          "sha": "bb60604cefa1ae071f2df1715591a37705d9d96d"
+        }
       }
     },
     "lastKnownGood": {
