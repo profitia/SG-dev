@@ -1516,7 +1516,7 @@ export function createProvider(
         }
         // Provider's native rollback contract reuses the retained artifact. Do
         // not pretend a latest-build one-off job measures the restored runtime.
-        Object.assign(artifactProof,{digest:point.artifact.digest,algorithm:point.artifact.algorithm,retainedDeployId:point.deployId,liveDeployId:s.liveDeploy.id,physicalDigestMeasuredAt:point.verifiedAt,physicalDigestRemeasuredAfterRollback:false});
+        Object.assign(artifactProof,{digest:point.artifact.digest,algorithm:point.artifact.algorithm,retainedDeployId:point.deployId,liveDeployId:s.liveDeploy.id,physicalDigestMeasuredAt:point.artifact.providerLogTimestamp,physicalDigestRemeasuredAfterRollback:false});
       }
       fail(
         digest(await ledger(true)) === digest(m.migrations),
