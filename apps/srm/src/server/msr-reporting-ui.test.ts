@@ -9,8 +9,20 @@ import { statementRows } from "../../node_modules/@profitia/srm-xray/src/stateme
 import { projectReportData, type ReportReadRow } from "./report-data";
 import { FINANCIAL_MAPPING_VERSION } from "./shared-catalog";
 import { executiveSummary } from "../../node_modules/@profitia/srm-xray/src/executive-summary-rules";
+import { SupplierReportController } from "../modules/xray/report-controller";
+import { SupplierReport } from "../modules/xray/supplier-report";
+import { sampleCard } from "../demo/fixture";
 
 const nip = "5272443955";
+test("inactive company bypasses financial scanner, assistant and KYS composition and retains the removal date",()=>{
+  const state={...new SupplierReportController().getSnapshot(),result:{entityType:"COMPANY" as const,card:{...sampleCard,
+    general:{...sampleCard.general,data:{...sampleCard.general.data!,registrationStatus:"DEREGISTERED" as const,deregisteredAt:"2009-01-19"}}}}};
+  const fail=()=>{throw Error("Inactive supplier must not execute analysis or KYS");};
+  const html=renderToStaticMarkup(React.createElement(SupplierReport,{state,onFetchKys:fail,onReadMetadata:fail,onRevealPesel:fail,onDownloadExcel:fail,
+    slots:{scanner:fail,summary:fail,kys:fail}}));
+  assert.match(html,/19\.01\.2009/);
+  assert.doesNotMatch(html,/Supplier Finance Scanner|Asystent SpendGuru|Raport KYS|financial-dashboard|<button/);
+});
 function fixture() {
   const periods: FinancialPeriod[] = [2025, 2024].map(year => ({
     from: `${year}-01-01`, to: `${year}-12-31`, scope: "consolidated", documentId: `private:${year}`,

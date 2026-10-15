@@ -136,6 +136,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   if (state.result.entityType === "JDG" && inactiveSupplier(state.result)) return <div ref={root} className="supplier-report"><section className="report-identity"><p role="status">{inactiveJdgMessage(state.result.section.data)}</p></section></div>;
   const supplier = state.result, metadata = state.metadata;
   const availability = reportAvailability(supplier.entityType === "COMPANY" ? supplier.card.general.data : null, financial);
+  if (supplier.entityType === "COMPANY" && availability.code === "DEREGISTERED") return <div ref={root} className="supplier-report"><section className="report-identity"><ReportAvailabilityView availability={availability} /></section></div>;
   const context: SupplierReportContext = { availability, financialIndicatorsTarget, supplier, metadata, financial, kys: state.kys, scope, setScope, selectedPeriod, setPeriod, onSource, onIndicator, onNavigate, kysOverview: kysOverviewModel, onKysDetails, periods,
     metadataBusy: state.metadataBusy, metadataError: state.metadataError };
   const scanner = slots.scanner?.(context);

@@ -12,6 +12,17 @@ import { MsrFinancialTables,formatMsrAmount } from "../../node_modules/@profitia
 export const candidate:MsrCandidate={recordId:"68373e33935a5dc0776e1c56",nip:"5272443955",from:"2024-01-01",to:"2024-12-31",scope:"consolidated",filingDate:"2025-05-27",correction:false,documentId:"9559394"};
 export const original:MsrOriginal={recordId:candidate.recordId,format:"XHTML",container:"DOCUMENT",checksum:"a".repeat(64),bytes:Buffer.from("source"),files:[],retrievedAt:"2026-10-15T00:00:00Z"};
 const ns="https://xbrl.ifrs.org/taxonomy/2022-03-24/ifrs-full";
+test("MSR selects the latest filing before its standard: newer UoR, unknown or PDF never falls back to paid historical IAS",()=>{
+  const record=(id:string,year:number,ias:unknown,scope="financial_statement",pdf=false)=>({id,identifiers:{pl_nip:candidate.nip},
+    document:{type:scope,is_ias_compliant:ias,period_from_date:`${year}-01-01`,period_to_date:`${year}-12-31`},
+    files:{main_document:{original:{content_type:pdf ? "application/pdf" : "application/xhtml+xml"}}}});
+  const old=record("a".repeat(24),2024,true);
+  for (const latest of [record("b".repeat(24),2025,false),record("b".repeat(24),2025,null),record("b".repeat(24),2025,true,"financial_statement",true)])
+    assert.deepEqual(selectMsrCandidates([old,latest],candidate.nip),[]);
+  const group=record("c".repeat(24),2025,true,"consolidated_financial_statement");
+  const selected=selectMsrCandidates([old,record("b".repeat(24),2025,false),group],candidate.nip);
+  assert.equal(selected.length,1);assert.equal(selected[0].scope,"consolidated");assert.equal(selected[0].recordId,group.id);
+});
 function fact(name:string,amount:string,contextRef="duration",extra:Partial<MsrFact>={}):MsrFact{return {id:name+contextRef,concept:"{"+ns+"}"+name,namespace:ns,localName:name,contextRef,unitRef:"PLN",numeric:true,rawText:amount,sourceAmount:amount,amount,scale:0,sign:null,decimals:"0",format:null,label:name,statements:[contextRef==="instant" ? "Bilans" : "RZiS"],order:0,validation:"VALID",reason:null,...extra};}
 function parsed():MsrParsed{return {mappingVersion:MSR_MAPPING_VERSION,sourceChecksum:original.checksum,standard:"IAS_IFRS",warnings:[],relationships:[],
   contexts:[{id:"duration",entity:"ISSUER",scheme:"lei",from:candidate.from,to:candidate.to,instant:false,dimensions:{}},{id:"instant",entity:"ISSUER",scheme:"lei",from:null,to:candidate.to,instant:true,dimensions:{}},

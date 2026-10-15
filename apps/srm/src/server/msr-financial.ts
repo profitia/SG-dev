@@ -24,7 +24,7 @@ export type MsrCandidate = { recordId: string; nip: string; from: string; to: st
 export function selectMsrCandidates(records: readonly unknown[], nip: string): MsrCandidate[] {
   const candidates = records.flatMap(raw => {
     const r = obj(raw), d = obj(r.document), original = obj(obj(obj(r.files).main_document).original);
-    if (obj(r.identifiers).pl_nip !== nip || d.is_ias_compliant !== true
+    if (obj(r.identifiers).pl_nip !== nip
         || !["financial_statement", "consolidated_financial_statement"].includes(String(d.type))
         || typeof r.id !== "string" || !/^[a-f0-9]{24}$/.test(r.id)
         || typeof d.period_from_date !== "string" || typeof d.period_to_date !== "string"
@@ -34,10 +34,14 @@ export function selectMsrCandidates(records: readonly unknown[], nip: string): M
       scope: d.type === "financial_statement" ? "standalone" as const : "consolidated" as const,
       filingDate: typeof d.filing_date === "string" ? d.filing_date : null, correction: d.is_correction === true,
       documentId: typeof d.document_id === "string" || typeof d.document_id === "number" ? String(d.document_id) : null,
+      ias: d.is_ias_compliant === true,
       excludedPdf: typeof original.content_type === "string" && original.content_type.toLowerCase().split(";")[0].trim() === "application/pdf" }];
   }).sort((a,b) => b.to.localeCompare(a.to) || (b.filingDate ?? "").localeCompare(a.filingDate ?? "")
     || Number(b.correction)-Number(a.correction) || a.recordId.localeCompare(b.recordId));
-  return candidates.filter((c,i) => candidates.findIndex(v => v.scope === c.scope) === i && !c.excludedPdf).map(({excludedPdf:_,...c})=>c);
+  // Decide the current filing first. A historical IAS flag cannot justify a paid
+  // download when that scope has since moved to UoR, an unknown basis or PDF.
+  return candidates.filter((c,i) => candidates.findIndex(v => v.scope === c.scope) === i && c.ias && !c.excludedPdf)
+    .map(({excludedPdf:_,ias:__,...c})=>c);
 }
 
 export type MsrProjection = { data: FinancialData; facts: FinancialSourceFact[]; document: FinancialSourceDocument; retrievedAt:string };
