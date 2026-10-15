@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createWelcomeSequence, welcomeScrollTop, type WelcomePhase } from '../../../../packages/srm-xray/src/chat-welcome-contract';
+import { createWelcomeSequence, resumesFollowing, welcomeScrollTop, type WelcomePhase } from '../../../../packages/srm-xray/src/chat-welcome-contract';
 
 test('welcome shows typing before the authored message, once per supplier sequence', context => {
   context.mock.timers.enable({ apis: ['setTimeout'] });
@@ -46,4 +46,11 @@ test('chat scroll reveals a complete short message and the start of a long mobil
   assert.equal(welcomeScrollTop(250, 600, 400, 850), 234);
   assert.equal(welcomeScrollTop(0, 600, 400, 600), 0);
   assert.equal(welcomeScrollTop(0, 100, 400, 100), 0);
+});
+
+test('reading upward near the bottom never resumes automatic scrolling', () => {
+  assert.equal(resumesFollowing(38, 0, 547, 585), false);
+  assert.equal(resumesFollowing(0, 0, 547, 585), false);
+  assert.equal(resumesFollowing(0, 38, 547, 585), true);
+  assert.equal(resumesFollowing(0, 38, 547, 800), false);
 });

@@ -24,3 +24,8 @@ export function createWelcomeSequence(onPhase: (phase: WelcomePhase) => void) {
 export function welcomeScrollTop(rowTop: number, rowHeight: number, viewportHeight: number, scrollHeight: number) {
   return Math.max(0, rowHeight > viewportHeight - 32 ? rowTop - 16 : scrollHeight - viewportHeight);
 }
+
+/** A deliberate upward scroll stays respected even within the bottom tolerance. */
+export function resumesFollowing(previousTop: number, top: number, viewportHeight: number, scrollHeight: number) {
+  return top > previousTop && scrollHeight - viewportHeight - top < 48;
+}
