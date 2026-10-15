@@ -64,6 +64,17 @@ export function assertRestorePoint(plan, c, now = Date.now()) {
     'Reviewed additive schema compatibility proof required');
   return true;
 }
+export function assertNativeRollbackAcknowledgement(a,p,now=Date.now()) {
+  requireFact(a?.schemaVersion==='1.0' && a.provider==='render-api' && a.httpStatus===201 &&
+    a.method==='POST' && a.path==='/services/'+p.serviceId+'/rollback' &&
+    a.serviceId===p.serviceId && a.requestBody?.deployId===p.deployId &&
+    a.sha===p.sha && a.measuredLkgArtifactDigest===p.artifact.digest &&
+    /^dep-[a-z0-9]+$/.test(a.deployId) && a.deployId!==p.deployId &&
+    Number.isFinite(Date.parse(a.acceptedAt)) && Date.parse(a.acceptedAt)<=now &&
+    Date.parse(a.acceptedAt)>=Date.parse(p.verifiedAt),
+    'Exact native retained rollback acknowledgement required');
+  return true;
+}
 // SRM-only protection policy. This validates observed state; it never changes GitHub.
 export function assertStagingGitHubProtection(ge, c, reviewerIds = null) {
   requireFact(
@@ -518,7 +529,11 @@ export function claimRelease(
       phase: "ONBOARDING_AUTHORIZED",
       resources: {},
       steps: {},
-      lastKnownGood: next.baseline ?? null,
+      lastKnownGood: a.mode==='rollback' && m.rollbackPlan ? {
+        sha:m.rollbackPlan.restorePoint.sha,deployId:m.rollbackPlan.restorePoint.deployId,
+        serviceId:m.rollbackPlan.restorePoint.serviceId,restorePoint:structuredClone(m.rollbackPlan.restorePoint),
+      } : next.baseline ?? null,
+      ...(a.mode==='rollback'?{previousBaseline:structuredClone(next.baseline)}:{}),
     };
   }
   next.generation++;
@@ -657,9 +672,16 @@ export function reconciliation(
   );
   if(authorization.mode==='rollback' && contract.rollback.requireVerifiedRestorePoint) {
     const p=manifest.rollbackPlan.restorePoint;
-    requireFact(proof.artifact?.source==='LIVE_RENDER_JOB' && proof.artifact.digest===p.artifact.digest &&
+    const artifact=proof.artifact;
+    requireFact(artifact?.digest===p.artifact.digest &&
       proof.artifact.algorithm===p.artifact.algorithm && proof.artifact.retainedDeployId===p.deployId &&
-      /^job-[a-z0-9]+$/.test(proof.artifact.jobId), 'Actual retained rollback artifact proof required');
+      artifact.physicalDigestRemeasuredAfterRollback===false && artifact.liveDeployId===d.id,
+      'Retained rollback artifact provenance required');
+    if(artifact.source==='LIVE_RENDER_NATIVE_ROLLBACK_RECEIPT') {
+      assertNativeRollbackAcknowledgement(artifact.acknowledgement,p);
+      requireFact(artifact.acknowledgement.deployId===d.id,'Native acknowledgement must identify actual LIVE deploy');
+    } else requireFact(artifact.source==='OBSERVED_MEASURED_LKG_ALREADY_LIVE' && d.id===p.deployId,
+      'Only exact existing measured LKG can be reused without a native rollback');
   }
   const domains = assertStagingDomainBinding(snapshot, contract);
   if (domains.length) requireFact(Array.isArray(proof.domainBindings) && digest(proof.domainBindings) === digest(domains), "Domain verification proof mismatch");

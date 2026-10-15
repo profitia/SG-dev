@@ -36,8 +36,9 @@ import {
   topologyPath,
   operations,
   assertRestorePoint,
+  assertNativeRollbackAcknowledgement,
 } from "../../../scripts/governance/srm-release-lifecycle.mjs";
-import {runtimeMigrations,assertRuntimeSchema,configurationFingerprint,artifactCommand} from './staging-rollback.mjs';
+import {runtimeMigrations,assertRuntimeSchema,configurationFingerprint} from './staging-rollback.mjs';
 const GH = "https://api.github.com",
   R = "https://api.render.com/v1",
   N = "https://console.neon.tech/api/v2";
@@ -726,7 +727,15 @@ export async function runLifecycle({
         owner,
       });
       result = await diagnosticStage({stage:"provider-operation",operation:op,failureDomain:"PROVIDER_OPERATION"},
-        () => action(snap, state, {recovered:!!old}));
+        () => action(snap, state, {recovered:!!old,
+          providerAcknowledgement:state.release.steps[op]?.result?.providerAcknowledgement,
+          recordAcknowledgement:async acknowledgement=>{
+            fail(op==='deploy'&&a.mode==='rollback','Native acknowledgement belongs only to rollback deploy');
+            assertNativeRollbackAcknowledgement(acknowledgement,m.rollbackPlan.restorePoint);
+            const actual=await p.snapshot();assertSnapshot(actual,contract);
+            const next=recordStep(withObservations(),owner,op,'INTENT',actual,{providerAcknowledgement:acknowledgement});
+            await save({[statePath]:next},'SRM durable native rollback acknowledgement');
+          }}));
       mutations.push(op);
     }
     snap = await p.snapshot();
@@ -753,9 +762,9 @@ export async function runLifecycle({
   await step("database", (s) => p.database(s));
   await step("schema", () => p.schema(a.mode));
   await step("service", () => p.service(m, a));
-  await step("deploy", (s) => p.deploy(s, m));
+  await step("deploy", (s,j,context) => p.deploy(s, m, context));
   await step("source-rebind", (s) => p.rebind(s));
-  await step("verify", (s,j,context) => p.verify(s, m, true, {allowArtifactCreate:!context.recovered}));
+  await step("verify", (s) => p.verify(s, m, true));
   const snap = await p.snapshot(),
     proof = await p.verify(snap, m);
   diagnosticSnapshot = snap;
@@ -860,6 +869,7 @@ export function createProvider(
     const res = await fetcher(base + url, options);
     if (res.status === 404 && method === "GET") return null;
     fail(res.ok, "Provider request rejected (" + res.status + ")");
+    if(base===R && method==='POST' && url.endsWith('/rollback'))fail(res.status===201,'Ambiguous native rollback acknowledgement status');
     return res.status === 204 ? null : res.json();
   };
   const paged = async (url) => {
@@ -1388,7 +1398,7 @@ export function createProvider(
         renderServicePayload(manifest, stageEnv(), approval.approvalId),
       );
     },
-    async deploy(s, m) {
+    async deploy(s, m, context={}) {
       const srv = s.services[0];
       verifyService(srv);
       const rows = await paged("/services/" + srv.id + "/deploys");
@@ -1397,20 +1407,25 @@ export function createProvider(
         fail(point.serviceId===srv.id&&point.sha===m.sha,'Exact retained rollback target required');
         const normalized=rows.map(x=>x.deploy??x);
         fail(normalized.every(x=>['live','deactivated','build_failed','update_failed','pre_deploy_failed','canceled'].includes(x.status)||x.commit?.id===m.sha),'Concurrent foreign deployment');
-        let d=selectReusableDeploy(rows,m.sha);
-        if(!d) {
-          // The published INTENT permits one request. An interrupted/ambiguous
-          // request is observed by the lifecycle, never blindly repeated.
+        let ack=context.providerAcknowledgement,d;
+        if(ack){
+          assertNativeRollbackAcknowledgement(ack,point);
+          d=await request(R,'/services/'+srv.id+'/deploys/'+ack.deployId);
+        } else {
+          fail(!context.recovered && typeof context.recordAcknowledgement==='function','Ambiguous native rollback outcome; durable acknowledgement required');
           d=await request(R,'/services/'+srv.id+'/rollback','POST',{deployId:point.deployId});
+          fail(d?.id&&d.commit?.id===m.sha,'Rollback acknowledgement identity mismatch');
+          ack={schemaVersion:'1.0',provider:'render-api',httpStatus:201,method:'POST',path:'/services/'+srv.id+'/rollback',serviceId:srv.id,requestBody:{deployId:point.deployId},deployId:d.id,sha:m.sha,measuredLkgArtifactDigest:point.artifact.digest,acceptedAt:new Date().toISOString()};
+          await context.recordAcknowledgement(ack);
         }
-        fail(d?.id&&d.commit?.id===m.sha,'Rollback acknowledgement identity mismatch');
+        fail(d?.id===ack.deployId&&d.commit?.id===m.sha,'Rollback acknowledgement identity mismatch');
         for(let i=0;i<240&&d.status!=='live';i++) {
           fail(!['build_failed','update_failed','pre_deploy_failed','canceled','deactivated'].includes(d.status),'Retained rollback failed; preserve data');
           await new Promise(r=>setTimeout(r,5000));
-          d=await request(R,'/services/'+srv.id+'/deploys/'+d.id);
+          d=await request(R,'/services/'+srv.id+'/deploys/'+ack.deployId);
         }
-        fail(d.status==='live'&&d.commit?.id===m.sha,'Retained rollback not verified live');
-        return {deployId:d.id,sha:m.sha,retainedDeployId:point.deployId,strategy:'RENDER_RETAINED_DEPLOYMENT'};
+        fail(d.status==='live'&&d.commit?.id===m.sha&&d.id===ack.deployId,'Retained rollback not verified live');
+        return {deployId:d.id,sha:m.sha,retainedDeployId:point.deployId,strategy:'RENDER_RETAINED_DEPLOYMENT',providerAcknowledgement:ack};
       }
       const retry = deployRetryEvidence(
         rows,
@@ -1472,7 +1487,7 @@ export function createProvider(
         });
       return { branch: "main", autoDeploy: "off" };
     },
-    async verify(s, m, writeProbe = false, {allowArtifactCreate=false} = {}) {
+    async verify(s, m, writeProbe = false) {
       assertSnapshot(s, contract);
       const domainBindings = assertStagingDomainBinding(s, contract);
       const srv = s.services[0];
@@ -1490,26 +1505,18 @@ export function createProvider(
       if(approval.mode==='rollback') {
         const point=m.rollbackPlan.restorePoint;
         fail(configurationFingerprint(srv,values)===point.configuration.fingerprint,'Rollback configuration mismatch');
-        const command=artifactCommand(point,approval.approvalId);
-        const jobs=await paged('/services/'+srv.id+'/jobs');
-        const matches=jobs.map(x=>x.job??x).filter(x=>x.startCommand===command);
-        fail(matches.length<=1,'Ambiguous retained artifact verification jobs');
-        let job=matches[0];
-        if(!job) {
-          fail(writeProbe,'Retained artifact proof absent; write requires verified operation gate');
-          fail(allowArtifactCreate,'Ambiguous prior artifact job outcome; observe provider before any authorized retry');
-          await mutationFence('verify');
-          job=await request(R,'/services/'+srv.id+'/jobs','POST',{startCommand:command});
+        const current=await store.read(),ack=current.state.release.steps.deploy?.result?.providerAcknowledgement;
+        if(s.liveDeploy?.id===point.deployId) {
+          artifactProof={source:'OBSERVED_MEASURED_LKG_ALREADY_LIVE'};
+        }else{
+          assertNativeRollbackAcknowledgement(ack,point);
+          const actual=await request(R,'/services/'+srv.id+'/deploys/'+ack.deployId);
+          fail(actual?.id===s.liveDeploy?.id&&actual.status==='live'&&actual.commit?.id===m.sha,'Actual native rollback deployment mismatch');
+          artifactProof={source:'LIVE_RENDER_NATIVE_ROLLBACK_RECEIPT',acknowledgement:ack};
         }
-        fail(job?.id,'Artifact verification job acknowledgement missing');
-        for(let i=0;i<90&&!['succeeded','failed','canceled'].includes(job.status);i++) {
-          await new Promise(r=>setTimeout(r,2000));
-          job=await request(R,'/services/'+srv.id+'/jobs/'+job.id);
-        }
-        fail(job.status==='succeeded','Retained artifact byte verification failed or pending');
-        const fresh=await snapshot();
-        fail(fresh.liveDeploy?.id===s.liveDeploy?.id,'Deployment changed during artifact verification');
-        artifactProof={digest:point.artifact.digest,algorithm:point.artifact.algorithm,jobId:job.id,retainedDeployId:point.deployId,source:'LIVE_RENDER_JOB'};
+        // Provider's native rollback contract reuses the retained artifact. Do
+        // not pretend a latest-build one-off job measures the restored runtime.
+        Object.assign(artifactProof,{digest:point.artifact.digest,algorithm:point.artifact.algorithm,retainedDeployId:point.deployId,liveDeployId:s.liveDeploy.id,physicalDigestMeasuredAt:point.verifiedAt,physicalDigestRemeasuredAfterRollback:false});
       }
       fail(
         digest(await ledger(true)) === digest(m.migrations),
@@ -1637,9 +1644,9 @@ export function createProvider(
         const d = selectReusableDeploy(rows, m.sha);
         return {
           complete:
-            s.liveDeploy?.status === "live" && s.liveDeploy.commit.id === m.sha,
-          recoverable: a.mode==='rollback' ? !!d : deployRetryEvidence(rows, m, a, j.release.steps.deploy).recoverable,
-          result: { deployId: s.liveDeploy?.id, sha: s.liveDeploy?.commit.id },
+            s.liveDeploy?.status === "live" && s.liveDeploy.commit.id === m.sha && (a.mode!=='rollback' || s.liveDeploy.id===m.rollbackPlan.restorePoint.deployId || s.liveDeploy.id===j.release.steps.deploy?.result?.providerAcknowledgement?.deployId),
+          recoverable: a.mode==='rollback' ? !!j.release.steps.deploy?.result?.providerAcknowledgement && !!d && d.id===j.release.steps.deploy.result.providerAcknowledgement.deployId : deployRetryEvidence(rows, m, a, j.release.steps.deploy).recoverable,
+          result: { deployId: s.liveDeploy?.id, sha: s.liveDeploy?.commit.id, ...(a.mode==='rollback'&&j.release.steps.deploy?.result?.providerAcknowledgement?{providerAcknowledgement:j.release.steps.deploy.result.providerAcknowledgement}:{}) },
         };
       }
       if (op === "source-rebind")
@@ -1654,7 +1661,7 @@ export function createProvider(
         } catch (e) {
           if (
             j.release.steps.verify.status === "INTENT" &&
-            ["Durable probe absent; write requires verified operation gate","Retained artifact proof absent; write requires verified operation gate"].includes(e.message)
+            e.message === "Durable probe absent; write requires verified operation gate"
           )
             return { complete: false, recoverable: true };
           throw e;
