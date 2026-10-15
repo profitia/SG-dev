@@ -135,7 +135,7 @@ test("unknown standards, corrections, future filings, duplicate revisions and va
     qualifyScannerSources(
       f,
       selected,
-      [doc, { ...doc, recordId: "duplicate", filingDate: "2026-08-01" }],
+      [doc, { ...doc, recordId: "duplicate", filingDate: "2026-08-01", rows: doc.rows.slice(1) }],
       "2026-10-14",
     )[id].reason,
     "SOURCE_REVISION_UNRESOLVED",

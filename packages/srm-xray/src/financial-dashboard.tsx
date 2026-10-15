@@ -73,19 +73,19 @@ function availablePeriods(data: FinancialData | null | undefined): FinancialPeri
 }
 
 export function defaultFinancialScope(data: FinancialData | null | undefined): Scope | null {
-  const periods = availablePeriods(data).sort((a, b) => b.to.localeCompare(a.to) || periodQuality(b) - periodQuality(a));
-  return (periods.find(isComplete) ?? periods[0])?.scope ?? null;
+  const periods = availablePeriods(data).sort((a, b) => b.to.localeCompare(a.to) || (data?.revisionRule ? 0 : periodQuality(b) - periodQuality(a)));
+  return (periods.find(p => p.scope === "standalone") ?? periods[0])?.scope ?? null;
 }
 
 /** One best available statement per year and basis; no source values are changed. */
 export function financialPeriodsByScope(data: FinancialData | null | undefined, scope: Scope): FinancialPeriod[] {
   const candidates = availablePeriods(data).filter((period) => period.scope === scope)
-    .sort((a, b) => b.to.localeCompare(a.to) || periodQuality(b) - periodQuality(a));
+    .sort((a, b) => b.to.localeCompare(a.to) || (data?.revisionRule ? 0 : periodQuality(b) - periodQuality(a)));
   const byYear = new Map<string, FinancialPeriod>();
   for (const period of candidates) {
     const year = period.to.slice(0, 4);
     const previous = byYear.get(year);
-    if (!previous || periodQuality(period) > periodQuality(previous)) byYear.set(year, period);
+    if (!previous || (!data?.revisionRule && periodQuality(period) > periodQuality(previous))) byYear.set(year, period);
   }
   return [...byYear.values()].sort((a, b) => b.to.localeCompare(a.to));
 }

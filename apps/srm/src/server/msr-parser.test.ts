@@ -58,3 +58,40 @@ test("MSR parser never classifies untagged XHTML as structured financial data", 
   assert.throws(() => parseMsrOriginal(fixture("<table><tr><td>Revenue</td><td>100</td></tr></table>")),
     (e: unknown) => e instanceof MsrParserError && e.code === "MSR_NO_IXBRL_FACTS");
 });
+
+function positionedFixture() {
+  const cell=(x:string,y:string,t:string)=>`<div class="c ${x} ${y}"><div class="t">${t}</div></div>`;
+  const page=(title:string,section:string,rows:[string,string,string][])=>`<div class="pf" id="${section}"><div class="t">Jednostkowe sprawozdanie ${title}</div>`
+    +cell("x1","y1","(w tys. PLN)")+cell("x2","y1",`${section==="pnl"?"12 MIESIĘCY ZAKOŃCZONY ":""}31.12.2025`)+cell("x3","y1",`${section==="pnl"?"12 MIESIĘCY ZAKOŃCZONY ":""}31.12.2024`)
+    +rows.map(([label,a,b],i)=>cell("x1",`y${i+2}`,label)+cell("x2",`y${i+2}`,a)+cell("x3",`y${i+2}`,b)).join("")+"</div>";
+  const xml='<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><body><p>NIP: 5272443955</p>'
+    +page("z dochodów całkowitych","pnl",[["Przychody z działalności operacyjnej razem","1 200","1 000"],["Koszty działalności operacyjnej razem","(800)","(750)"],["Zysk z działalności operacyjnej","400","250"],["Zysk netto","200","150"]])
+    +page("z sytuacji finansowej","balance",[["Aktywa razem","2 000","1 800"],["Zobowiązania razem","900","1 000"]])+"</body></html>";
+  return decodeMsrOriginal("a".repeat(24),Buffer.from(xml),"application/xhtml+xml","2026-10-15");
+}
+const expected={nip:"5272443955",from:"2025-01-01",to:"2025-12-31",scope:"standalone" as const};
+test("positioned XHTML reads only explicit primary cells with entity, scope, unit, dates and sign reconciliation",()=>{
+  const p=parseMsrOriginal(positionedFixture(),expected);
+  assert.equal(p.sourceType,"POSITIONED_XHTML");
+  assert.equal(p.facts.find(f=>f.localName==="Revenue")?.amount,"1200000");
+  assert.equal(p.facts.find(f=>f.localName==="ExpenseByNature")?.amount,"800000");
+  assert.equal(p.facts.find(f=>f.localName==="ExpenseByNature")?.reason,"VERIFIED_SIGNED_OPERATING_EXPENSE");
+  assert.ok(p.contexts.some(c=>c.to==="2024-12-31"));
+  assert.ok(p.facts.every(f=>f.namespace.startsWith("urn:profitia:")));
+});
+test("positioned XHTML rejects identity/scope/date/unit mismatch and never resolves external entities",()=>{
+  const original=positionedFixture();
+  for(const identity of [{...expected,nip:"1111111111"},{...expected,scope:"consolidated" as const},{...expected,to:"2026-12-31"}]) assert.throws(()=>parseMsrOriginal(original,identity),MsrParserError);
+  for(const [from,to] of [["(w tys. PLN)","(w tys. EUR)"],["31.12.2025","30.12.2025"],["<html",'<!ENTITY x SYSTEM "file:///etc/passwd"><html']]) {
+    const bad={...original,files:original.files.map(f=>({...f,text:f.text.replaceAll(from,to)}))};
+    assert.throws(()=>parseMsrOriginal(bad,expected),MsrParserError);
+  }
+});
+test("unreconciled negative expenses and missing amounts remain REVIEW rather than fabricated costs",()=>{
+  const original=positionedFixture();
+  const bad={...original,files:original.files.map(f=>({...f,text:f.text.replace("(800)","(850)").replace(">200<",">—<")}))};
+  const p=parseMsrOriginal(bad,expected);
+  assert.equal(p.facts.find(f=>f.localName==="ExpenseByNature")?.validation,"REVIEW");
+  assert.equal(p.facts.find(f=>f.localName==="ProfitLoss")?.amount,null);
+  assert.equal(p.facts.find(f=>f.localName==="Revenue")?.validation,"VALID");
+});

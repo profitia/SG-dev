@@ -38,6 +38,6 @@ export function msrReportingState(
       values.push({ code, label, amount: fact.amount, currency: fact.currency });
   }
   return { year: period.year, values,
-    notice: "Dostępne są dane MSR/MSSF z XHTML/iXBRL. Sprawozdanie i dostępne wykresy znajdziesz w szczegółach danych finansowych. Punktacja radaru obejmuje obecnie sprawozdania według polskiej ustawy o rachunkowości; brak punktacji MSR/MSSF nie oznacza braku danych.",
+    notice: "Dane MSR/MSSF. Radar porównuje zweryfikowane pozycje w tym samym zakresie sprawozdania. Brak wymaganej pozycji lub niepotwierdzone mapowanie wyłącza tylko zależne od niej wskaźniki.",
   };
 }

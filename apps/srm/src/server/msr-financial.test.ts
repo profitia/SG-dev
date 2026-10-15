@@ -71,3 +71,19 @@ test("MSR Excel reuses stored sources and preserves all public statement rows, e
   assert.equal(book.worksheets[0].getCell("D5").value,-22882000);assert.equal(book.worksheets[1].getCell("B1").value,"MSR/MSSF · XHTML/iXBRL");
   await assert.rejects(buildFinancialExcel(projection.data,{nip:candidate.nip,scope:candidate.scope,years:["2024"]}),/tej organizacji/);
 });
+
+test("equivalent contexts with conflicting values never select the first fact",()=>{
+  const p=parsed();p.contexts.push({...p.contexts[0],id:"same-duration"});
+  p.facts.push(fact("Revenue","1","same-duration"));
+  const r=projectMsrFinancial(candidate,original,p);
+  assert.ok(!r.facts.some(f=>f.metricCode==="MSR_REVENUE"));
+  assert.equal(r.data.periods[0].msrRows?.find(r=>r.label==="Revenue")?.validation,"REVIEW");
+  assert.equal(r.facts.find(f=>f.metricCode==="PALA_NPL")?.amount,"856856000");
+});
+test("a newly projected filing replaces the whole period instead of keeping an older more complete version",()=>{
+  const current=projectMsrFinancial(candidate,original,parsed());
+  const older={...current.data.periods[0],documentId:"old:cfy",facts:[{metricCode:"OLD_ONLY",amount:"99",currency:"PLN",unit:"PLN"}]};
+  const merged=mergeMsrFinancial({section:{status:"SUCCESS",data:{periods:[older]},source:{provider:"MGBI",model:"rdf",recordId:"old"},retrievedAt:original.retrievedAt,effectiveAt:null,warnings:[]},facts:[],errorCode:null},[current],[]);
+  assert.equal(merged.section.data?.periods.length,1);assert.equal(merged.section.data?.periods[0].documentId,current.data.periods[0].documentId);
+  assert.ok(!merged.section.data?.periods[0].facts.some(f=>f.metricCode==="OLD_ONLY"));
+});

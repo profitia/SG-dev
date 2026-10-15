@@ -5,7 +5,7 @@ import type { PoolClient } from "pg";
 
 export const FINANCIAL_DOCUMENT_MAPPING_VERSION = "2026-10-10-xml-financial-v3";
 export type AccountingStandard = "POLISH_UOR" | "IAS_IFRS" | "UNKNOWN";
-export type FinancialAvailability = "XML_SUPPORTED" | "IXBRL_SUPPORTED" | "NO_XML" | "UNKNOWN_FORMAT" | "UNSUPPORTED_XML";
+export type FinancialAvailability = "XML_SUPPORTED" | "IXBRL_SUPPORTED" | "XHTML_SUPPORTED" | "NO_XML" | "UNKNOWN_FORMAT" | "UNSUPPORTED_XML";
 export type FinancialSourceRow = { section: "Bilans" | "RZiS"; sourcePath: string; label: string; depth: number;
   amounts: Record<string, string | null>; canonicalMetricCode?: string };
 export type FinancialSourceDocument = {
@@ -16,6 +16,9 @@ export type FinancialSourceDocument = {
   currency: string | null; scale: string | null; correction: boolean | null; filingDate: string | null;
   checksum: string; mappingVersion: string; validation: "VALID" | "REVIEW";
   columns: { sourceColumn: string; role: "CURRENT" | "COMPARATIVE" | "UNKNOWN"; from: string | null; to: string | null; basis: string }[];
+  /** Verified primary metric observations; immutable original checksum binds their provenance. */
+  metricEvidence?: { code: string; from: string; to: string; value: string; currency: string;
+    concept: string; contextRef: string; factId: string; semanticBasis: string }[];
   rows: FinancialSourceRow[];
 };
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -180,7 +183,7 @@ export async function restoreFinancialDocumentsFromArchive(client: DocumentClien
     throw new Error("Incomplete or ambiguous financial archive inventory");
   const expected = stored.filter(r => ids.includes(r.record_id));
   if (expected.length === ids.length && expected.every(r => r.archive_jsonb_sha256 === archive.payload_jsonb_sha256
-      && (r.mapping_version === FINANCIAL_DOCUMENT_MAPPING_VERSION || r.document_json.availability === "IXBRL_SUPPORTED"))) return expected.map(r => r.document_json);
+      && (r.mapping_version === FINANCIAL_DOCUMENT_MAPPING_VERSION || ["IXBRL_SUPPORTED","XHTML_SUPPORTED"].includes(r.document_json.availability)))) return expected.map(r => r.document_json);
   const payload = (await client.query<{ payload_text: string }>(
     "SELECT payload_json::text AS payload_text FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'", [organizationId,nip])).rows[0];
   if (!payload) throw new Error("Financial archive changed during reconstruction");

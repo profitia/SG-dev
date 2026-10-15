@@ -1,3 +1,6 @@
+import { withOrganization } from "./db";
+import { projectArchivedFinancialDocuments, financialRecordsFromPages, type FinancialArchive } from "./financial-documents";
+import { resolveDocumentFamily, FINANCIAL_REVISION_RULE } from "./financial-revisions";
 import type { FinancialData, FinancialPeriod, SectionEnvelope } from "@profitia/srm-xray";
 import type { CompanyIdentifier, MgbiGeneralOptions } from "./mgbi-general";
 import { projectFinancialDocuments } from "./financial-documents";
@@ -150,24 +153,31 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
   const selected = matching.filter((record) => {
     const type = string(field(record, "document", "type"));
     return type === "financial_statement" || type === "consolidated_financial_statement";
-  }).sort((a, b) => (string(field(b, "document", "period_to_date")) ?? "").localeCompare(string(field(a, "document", "period_to_date")) ?? ""));
+  }).sort((a, b) => (string(field(b, "document", "filing_date")) ?? "").localeCompare(string(field(a, "document", "filing_date")) ?? "") || (string(field(b, "document", "period_to_date")) ?? "").localeCompare(string(field(a, "document", "period_to_date")) ?? ""));
 
   const documents = new Map(projectFinancialDocuments(selected).map((document) => [document.recordId, document]));
   const periods: FinancialPeriod[] = [];
   const facts: FinancialSourceFact[] = [];
   const sourceDocuments = new Map<FinancialSourceFact, string>();
   const seen = new Set<string>();
+  const owners = new Map<string,string>();
   for (const record of selected) {
     const document = obj(field(record, "document"));
     const documentMetadata = documents.get(string(field(record, "id")) ?? "");
-    if (documentMetadata?.availability === "NO_XML" || documentMetadata?.availability === "UNSUPPORTED_XML") continue;
     const standardized = obj(field(record, "content", "standardized_fields"));
     const extracted = obj(field(record, "content", "extracted_fields"));
     const from = date(document?.period_from_date);
     const to = date(document?.period_to_date);
     const recordId = string(field(record, "id"));
-    if ((!standardized && !extracted) || !from || !to || !recordId || from > to) continue;
+    if (!from || !to || !recordId || from > to) continue;
     const scope = document?.type === "consolidated_financial_statement" ? "CONSOLIDATED" : "UNIT";
+    // Reserve a whole period, even if a newer full filing omits a previously present metric.
+    for (const [start,end] of [[from,to],[previousYear(from),previousYear(to)]]) {
+      const key = `${scope}:${start}:${end}`;
+      if (!owners.has(key)) owners.set(key,recordId);
+    }
+    if ((!standardized && !extracted) || documentMetadata?.availability === "NO_XML" || documentMetadata?.availability === "UNSUPPORTED_XML") continue;
+    const revision = resolveDocumentFamily([...documents.values()].filter(d=>d.scope===documentMetadata?.scope && d.from===from && d.to===to));
     const schema = string(field(record, "content", "schema", "name")) ?? "";
     const unitCode = /wtysiacachzlotych/i.test(schema) ? "THOUSAND_PLN" : /wzlotych/i.test(schema) ? "PLN" : "UNKNOWN";
     const validationStatus = unitCode === "PLN" ? "VALID" : "REVIEW";
@@ -189,7 +199,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
           const periodStart = prior ? previousYear(from) : from;
           const periodEnd = prior ? previousYear(to) : to;
           const unique = [scope, periodStart, periodEnd, metricCode].join(":");
-          if (seen.has(unique)) continue;
+          if (owners.get(`${scope}:${periodStart}:${periodEnd}`) !== recordId || seen.has(unique)) continue;
           seen.add(unique);
           const periodType = periodStart.slice(0, 4) === periodEnd.slice(0, 4) && periodStart.endsWith("-01-01") && periodEnd.endsWith("-12-31") ? "YEAR" : "OTHER";
           facts.push({ metricCode, periodStart, periodEnd, periodType, statementScope: scope,
@@ -199,7 +209,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
           sourceDocuments.set(facts.at(-1)!, key);
           let period = byPeriod.get(key);
           if (!period) {
-            period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, accountingStandard: documents.get(recordId)?.standard, accountingStandardBasis: documents.get(recordId)?.standardBasis, isIasCompliant: documents.get(recordId)?.isIasCompliant, xmlSchema: { name: documents.get(recordId)?.schemaName ?? null, version: documents.get(recordId)?.schemaVersion ?? null }, facts: [] };
+            period = { effectiveRevisionId:revision.id, revisionStatus:revision.status, from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, accountingStandard: documents.get(recordId)?.standard, accountingStandardBasis: documents.get(recordId)?.standardBasis, isIasCompliant: documents.get(recordId)?.isIasCompliant, xmlSchema: { name: documents.get(recordId)?.schemaName ?? null, version: documents.get(recordId)?.schemaVersion ?? null }, facts: [] };
             byPeriod.set(key, period);
             periods.push(period);
           }
@@ -219,7 +229,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
         const metricCode = `${sectionName}_${match[1]}`.toUpperCase();
         if (metricCode.length > 80) continue;
         const unique = `${scope}:${periodStart}:${periodEnd}:${metricCode}`;
-        if (seen.has(unique)) continue;
+        if (owners.get(`${scope}:${periodStart}:${periodEnd}`) !== recordId || seen.has(unique)) continue;
         seen.add(unique);
         const periodType = periodStart.slice(0, 4) === periodEnd.slice(0, 4) && periodStart.endsWith("-01-01") && periodEnd.endsWith("-12-31") ? "YEAR" : "OTHER";
         const fact: FinancialSourceFact = {
@@ -233,7 +243,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
         sourceDocuments.set(fact, key);
         let period = byPeriod.get(key);
         if (!period) {
-          period = { from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, accountingStandard: documents.get(recordId)?.standard, accountingStandardBasis: documents.get(recordId)?.standardBasis, isIasCompliant: documents.get(recordId)?.isIasCompliant, xmlSchema: { name: documents.get(recordId)?.schemaName ?? null, version: documents.get(recordId)?.schemaVersion ?? null }, facts: [] };
+          period = { effectiveRevisionId:revision.id, revisionStatus:revision.status, from: periodStart, to: periodEnd, scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: key, accountingStandard: documents.get(recordId)?.standard, accountingStandardBasis: documents.get(recordId)?.standardBasis, isIasCompliant: documents.get(recordId)?.isIasCompliant, xmlSchema: { name: documents.get(recordId)?.schemaName ?? null, version: documents.get(recordId)?.schemaVersion ?? null }, facts: [] };
           byPeriod.set(key, period);
           periods.push(period);
         }
@@ -247,7 +257,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     const warning = availability.length && availability.every(value => value === "NO_XML") ? "MGBI_FINANCIAL_NO_XML" : availability.includes("UNSUPPORTED_XML") ? "MGBI_FINANCIAL_UNSUPPORTED_XML" : availability.includes("UNKNOWN_FORMAT") ? "MGBI_FINANCIAL_UNKNOWN_FORMAT" : NO_FINANCIAL_FACTS;
     return empty("EMPTY", retrievedAt, warning, null);
   }
-  const sourceData: FinancialData = structuredClone({ periods });
+  const sourceData: FinancialData = structuredClone({ periods, revisionRule:FINANCIAL_REVISION_RULE });
   const unverifiedCosts = reconcileCosts(periods, facts, sourceDocuments);
   const incomplete = totalCount > records.length;
   return {
@@ -256,7 +266,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
       source: { ...SOURCE, recordId: string(field(selected[0], "id")) },
       retrievedAt,
       effectiveAt: date(field(selected[0], "document", "period_to_date")),
-      data: { periods },
+      data: { periods, revisionRule:FINANCIAL_REVISION_RULE },
       warnings: [...(incomplete ? ["MGBI_SEARCH_RESULT_LIMIT"] : []), ...(unverifiedCosts ? ["MGBI_COST_SIGN_UNVERIFIED"] : [])],
     },
     sourceData,
@@ -294,4 +304,16 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
     const code = timeout ? "TIMEOUT" : mapping ? "MAPPING_ERROR" : "NETWORK_ERROR";
     return empty("ERROR", now().toISOString(), `MGBI_${code}`, code);
   } finally { clearTimeout(timer); }
+}
+
+/** Offline reconstruction from the tenant's verified archive. No provider call,
+ * no source receipt deletion, and no implicit cross-version gap filling. */
+export async function reprojectFinancialArchive(organizationId:string,nip:string):Promise<MgbiFinancialResult|null> {
+  return withOrganization(organizationId,async client=>{
+    const row=(await client.query<FinancialArchive & {retrieved_at:Date|string}>(
+      "SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,last_checked_at AS retrieved_at FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE",[organizationId,nip])).rows[0];
+    if(!row)return null;
+    projectArchivedFinancialDocuments(row,organizationId,nip);
+    return mapMgbiFinancialRecords(financialRecordsFromPages(JSON.parse(row.payload_text).pages),{type:"NIP",value:nip},new Date(row.retrieved_at).toISOString(),row.record_count);
+  });
 }
