@@ -1190,6 +1190,7 @@ export function createProvider(
         );
         await verifyBindings(values);
         assertRestorePoint(manifest.rollbackPlan,contract);
+        fail(approval.mode==='rollback'||manifest.rollbackPlan.candidateSha===manifest.sha,'Restore point must bind this exact promotion candidate');
         const point=manifest.rollbackPlan.restorePoint;
         const current=await store.read();
         const recorded=current.state.release?.approvalId===approval.approvalId || approval.mode==='rollback'||current.state.release?.phase!=='VERIFIED'

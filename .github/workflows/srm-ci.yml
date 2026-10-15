@@ -120,7 +120,7 @@ jobs:
           import fs from 'node:fs';
           import {contract,assertAuthorization} from './apps/srm/scripts/staging-migrate.mjs';
           import {assertDispatchTarget} from './apps/srm/scripts/promote-staging.mjs';
-          import {verifyLifecycleSource} from './apps/srm/scripts/staging-lifecycle.mjs';
+          import {verifyLifecycleSource,manifestFrom} from './apps/srm/scripts/staging-lifecycle.mjs';
           import {prepareResume} from './apps/srm/scripts/resume-staging.mjs';
           import {prepareRollbackPlan} from './apps/srm/scripts/staging-rollback.mjs';
           import {digest} from './scripts/governance/srm-release-lifecycle.mjs';
@@ -148,7 +148,18 @@ jobs:
           else assertAuthorization(a,a.releaseSha,'deploy');
           assertDispatchTarget();
           verifyLifecycleSource(a.releaseSha,undefined,{mode,rollbackPlan});
-          if(!prepared){a.releaseMode=mode;a.rollbackPlan=rollbackPlan;a.journalFence={generation:state.generation,journalDigest:digest(state)};}else if(a.mode!==mode)throw Error('Resume cannot change release mode');
+          if(!prepared){
+            const checks=await fetch('https://api.github.com/repos/'+contract.repository+'/commits/'+a.releaseSha+'/check-runs?per_page=100',{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN},signal:AbortSignal.timeout(30000)});
+            if(!checks.ok)throw Error('Exact candidate CI unavailable');
+            const ci=await checks.json();
+            const check=ci.check_runs?.filter(x=>x.name==='srm-build'&&x.head_sha===a.releaseSha).sort((a,b)=>b.id-a.id)[0];
+            if(ci.total_count>100 || check?.conclusion!=='success')throw Error('Exact candidate CI not successful');
+            a.releaseMode=mode;a.rollbackPlan=rollbackPlan;a.journalFence={generation:state.generation,journalDigest:digest(state)};
+            // Freeze the expected provenance now. Protected execution must
+            // independently prove the actual Render source before any mutation.
+            a.manifest={...manifestFrom({repositoryId:contract.repositoryId,approvedMainAncestor:true,ciPassed:true,developmentLiveSha:a.releaseSha,provenanceGate:'LIVE_RENDER_PROOF_REQUIRED_BEFORE_MUTATION'},a.releaseSha),rollbackPlan};
+            a.manifestDigest=digest(a.manifest);
+          }else if(a.mode!==mode)throw Error('Resume cannot change release mode');
           const response=await fetch('https://api.github.com/repos/'+contract.repository+'/environments/srm-staging',{headers:{Authorization:'Bearer '+process.env.GITHUB_TOKEN,'X-GitHub-Api-Version':'2022-11-28'},signal:AbortSignal.timeout(30000)});
           if(!response.ok)throw new Error('Registered protected GitHub environment unavailable');
           const policy=assertDispatchTarget(await response.json());
@@ -223,7 +234,8 @@ jobs:
           const state=JSON.parse(fs.readFileSync('Canon/registries/srm-staging-release-state-v1.json'));
           if(old.journalFence && (digest(state)!==old.journalFence.journalDigest || state.generation!==old.journalFence.generation))throw Error('Release journal changed during protected review');
           if(!evidence.ciPassed || !evidence.approvedMainAncestor || (mode==='promote' && evidence.developmentLiveSha!==old.releaseSha))throw Error('Approved source provenance changed');
-          const manifest={...manifestFrom({repositoryId:evidence.repositoryId,approvedMainAncestor:evidence.approvedMainAncestor,ciPassed:evidence.ciPassed,developmentLiveSha:evidence.developmentLiveSha},old.releaseSha),rollbackPlan:old.rollbackPlan??old.manifest?.rollbackPlan};
+          const manifest={...manifestFrom(old.manifest.source,old.releaseSha),rollbackPlan:old.manifest.rollbackPlan};
+          if(digest(manifest)!==old.manifestDigest)throw Error('Manifest changed after protected review');
           if(mode==='rollback')assertRuntimeSchema(runtimeMigrations(old.releaseSha),manifest.migrations,old.releaseSha);
           let a={...old,schemaVersion:'2.0',mode,rollbackSchemaCompatible:mode==='rollback',stagingMutationsAllowed:true,manifest,manifestDigest:digest(manifest),repositoryId:contract.repositoryId,renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonEndpointId:contract.neon.endpointId,operations,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true,maxDeploymentAttempts:3}};
           if(mode==='rollback' && state.release?.phase!=='VERIFIED')a.supersedes={...old.journalFence,approvalId:state.release.approvalId,owner:state.release.owner};
