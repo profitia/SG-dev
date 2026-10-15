@@ -130,7 +130,8 @@ export async function saveFinancialDocuments(organizationId: string, nip: string
 }
 
 export async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
-  documents: readonly FinancialSourceDocument[], archiveChecksum: string | null = null): Promise<{ documents: number; positions: number }> {
+  documents: readonly FinancialSourceDocument[], archiveChecksum: string | null = null,
+  verifiedProjection?: { version:string; checksum:string }): Promise<{ documents: number; positions: number }> {
     for (const document of documents) await client.query(
       `INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256)
        VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) ON CONFLICT (organization_id,nip,record_id) DO UPDATE SET
@@ -140,9 +141,11 @@ export async function persistFinancialDocuments(client: DocumentClient, organiza
          THEN EXCLUDED.archive_jsonb_sha256 ELSE srm.financial_source_documents.archive_jsonb_sha256 END
        WHERE ((srm.financial_source_documents.checksum_sha256,srm.financial_source_documents.mapping_version) IS DISTINCT FROM (EXCLUDED.checksum_sha256,EXCLUDED.mapping_version)
          OR (EXCLUDED.archive_jsonb_sha256 IS NOT NULL AND srm.financial_source_documents.archive_jsonb_sha256 IS DISTINCT FROM EXCLUDED.archive_jsonb_sha256))
-       AND (EXCLUDED.document_json->>'availability' IN ('XML_SUPPORTED','IXBRL_SUPPORTED') OR srm.financial_source_documents.document_json->>'availability' NOT IN ('XML_SUPPORTED','IXBRL_SUPPORTED'))
-       AND (EXCLUDED.document_json->>'validation' = 'VALID' OR srm.financial_source_documents.document_json->>'validation' <> 'VALID')`,
-      [organizationId,nip,document.recordId,JSON.stringify(document),document.checksum,document.mappingVersion,archiveChecksum]);
+       AND (EXCLUDED.document_json->>'availability' IN ('XML_SUPPORTED','IXBRL_SUPPORTED','XHTML_SUPPORTED') OR srm.financial_source_documents.document_json->>'availability' NOT IN ('XML_SUPPORTED','IXBRL_SUPPORTED','XHTML_SUPPORTED'))
+       AND (EXCLUDED.document_json->>'validation' = 'VALID' OR srm.financial_source_documents.document_json->>'validation' <> 'VALID'
+         OR $8::boolean)`,
+      [organizationId,nip,document.recordId,JSON.stringify(document),document.checksum,document.mappingVersion,archiveChecksum,
+        verifiedProjection?.version===document.mappingVersion && verifiedProjection?.checksum===document.checksum]);
     return { documents: documents.length, positions: documents.reduce((count, document) => count + document.rows.length, 0) };
 }
 

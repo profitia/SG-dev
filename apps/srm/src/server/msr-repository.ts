@@ -77,12 +77,12 @@ export function msrStore(organizationId:string,nip:string,requestId:string):MsrS
          WHERE organization_id=$1 AND nip=$2 AND record_id=$3 AND claim_id=$4 AND state='RECEIVED' AND identity_sha256=$12 RETURNING record_id`,
         [organizationId,nip,c.recordId,id,original.bytes,original.checksum,original.format,original.container,JSON.stringify(parsed),MSR_MAPPING_VERSION,original.retrievedAt,identity(c)]);
       if (result.rows.length !== 1) throw new Error("MSR_SOURCE_FENCE_CONFLICT");
-      await persistMsrProjection(client,organizationId,c,projection);
-      await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum);
+      const verified = await persistMsrProjection(client,organizationId,c,projection);
+      await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum,verified);
     }),
     project:(c,projection,archiveChecksum) => withOrganization(organizationId,async client => {
-      await persistMsrProjection(client,organizationId,c,projection);
-      await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum);
+      const verified = await persistMsrProjection(client,organizationId,c,projection);
+      await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum,verified);
     }),
     block:(c,id,code) => withOrganization(organizationId, async client => { await client.query(
       `UPDATE srm.msr_sources SET state=CASE WHEN state='REQUESTED' AND $5 IN ('MSR_FILE_BUDGET_EXHAUSTED','MSR_BUDGET_UNAVAILABLE','MSR_PROVIDER_NOT_CONFIGURED') THEN 'DEFERRED' ELSE 'BLOCKED' END,
@@ -152,7 +152,7 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
 
 /** Append a projection of the verified licensed original. Same version must be
  * byte-equivalent in JSONB; a changed mapping requires a new version. */
-export async function persistMsrProjection(client:Client,organizationId:string,c:MsrCandidate,projection:MsrProjection):Promise<void> {
+export async function persistMsrProjection(client:Client,organizationId:string,c:MsrCandidate,projection:MsrProjection):Promise<{version:string;checksum:string}> {
   const payload=JSON.stringify(projection);
   await client.query(`INSERT INTO srm.msr_projections(organization_id,nip,record_id,projection_version,original_sha256,projection_json,projection_sha256)
     VALUES($1,$2,$3,$4,$5,$6::jsonb,encode(sha256(convert_to(($6::jsonb)::text,'UTF8')),'hex')) ON CONFLICT DO NOTHING`,
@@ -161,4 +161,5 @@ export async function persistMsrProjection(client:Client,organizationId:string,c
     AND original_sha256=$5 AND projection_json=$6::jsonb AND projection_sha256=encode(sha256(convert_to(projection_json::text,'UTF8')),'hex')`,
     [organizationId,c.nip,c.recordId,MSR_PROJECTION_VERSION,projection.document.checksum,payload]);
   if(saved.rows.length!==1)throw new Error("MSR_PROJECTION_VERSION_CONFLICT");
+  return {version:MSR_PROJECTION_VERSION,checksum:projection.document.checksum};
 }

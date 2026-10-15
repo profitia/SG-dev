@@ -28,3 +28,5 @@ Stop propagation; keep auto-deploy off. Roll back only srv-db1vu6gm7kps73d0e3r0 
 ## Validation status
 
 Local PostgreSQL full suite: 406/406 passed, zero skips, including final context-conflict and cache-reprojection regressions. Typecheck and production build passed. Retained artifact job succeeded at 2026-10-15T12:35:17Z; Development health HTTP200 and unchanged config hash verified. Final CI, deployed SHA and business E2E pending publication; this file is not a release-GO claim.
+
+Read-only offline regression on verified current Development archives: 5272691601 (equivalent corrected filings), 5213688827 (RZiSKalk), 5221054994, 5213390341 and 7010446505 each qualifies all six current axes. Two-year and gapped-year tests remain passing. On the isolated Neon clone both actual XTB projections passed append/readback/idempotency, with transaction rollback. Promotion suite 283 passed / 2 skipped / 0 failed; platform-contract 2 passed; shared lifecycle 165 passed.
