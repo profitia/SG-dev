@@ -83,12 +83,12 @@ const period = (year: number, frame = "frame"): Period => ({
   referenceFrameId: frame,
   axes: [],
 });
-test("automatic comparison chooses exactly adjacent annual period; never bridges missing years or scopes", () => {
+test("automatic comparison chooses nearest earlier available annual period across gaps, never other scopes", () => {
   const latest = period(2025),
     prior = period(2024),
     old = period(2023);
   assert.equal(previousAnnualPeriod([old, latest, prior], latest), prior);
-  assert.equal(previousAnnualPeriod([latest, old], latest), undefined);
+  assert.equal(previousAnnualPeriod([latest, old], latest), old);
   assert.equal(
     previousAnnualPeriod([latest, { ...prior, scope: "consolidated" }], latest),
     undefined,
@@ -171,4 +171,34 @@ test("small changes retain direction instead of rounding to signed zero", () => 
     ),
     "−<0,01 pp",
   );
+});
+
+test("previous available selector rejects overlapping, short and future periods without mutating order", () => {
+  const latest = period(2025), old = period(2023);
+  const candidates = [period(2026), { ...period(2024), from: "2024-07-01" },
+    { ...period(2024), from: "2024-07-01", to: "2025-06-30" }, latest, old];
+  const before = JSON.stringify(candidates);
+  assert.equal(previousAnnualPeriod(candidates, latest), old);
+  assert.equal(previousAnnualPeriod(candidates, { ...latest, from: "2025-07-01" }), undefined);
+  assert.equal(previousAnnualPeriod([latest], latest), undefined);
+  assert.equal(previousAnnualPeriod(candidates), undefined);
+  assert.equal(JSON.stringify(candidates), before);
+});
+
+test("best-history overlay accepts two different qualified observations, preserves singleton/equal guards", () => {
+  const selected = period(2025);
+  selected.axes = [{ code: "NET_RESULT", rawValue: "5", normalizedScore: "0", unit: "PLN",
+    basis: "HISTORICAL_BEST", reasonCode: null, alerts: [], tone: "negative" }];
+  const scanner: FinancialScannerProjection = {
+    version: "1.1", methodologyVersion: "2.0.0", qualification: "QUALIFIED_HISTORY", sourceVersion: "test",
+    periods: [selected], referenceFrames: [{ id: "frame", scope: "standalone", anchorPeriodId: selected.id,
+      asOf: "2026-10-15T00:00:00Z", qualificationRule: "XML_SOURCE_BASIS_V1", axes: [{ code: "NET_RESULT",
+        periodIds: [selected.id, period(2023).id], bestValue: "10", worstValue: "5", bestPeriodIds: [], basisKey: "net" }] }],
+  };
+  assert.equal(bestHistoryPeriod(scanner, selected)?.axes[0].normalizedScore, "100.000000");
+  scanner.referenceFrames![0].axes[0].worstValue = "10";
+  assert.equal(bestHistoryPeriod(scanner, selected)?.axes[0].normalizedScore, null);
+  scanner.referenceFrames![0].axes[0].worstValue = "5";
+  scanner.referenceFrames![0].axes[0].periodIds = [selected.id];
+  assert.equal(bestHistoryPeriod(scanner, selected)?.axes[0].normalizedScore, null);
 });

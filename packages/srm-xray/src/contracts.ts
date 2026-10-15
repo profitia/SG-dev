@@ -126,7 +126,7 @@ export type FinancialHistoryPoint = FinancialIndicatorResult & {
 export type ScannerAxisCode = "NET_RESULT" | "REVENUE" | "CURRENT_RATIO" | "OPERATING_MARGIN" | "OPERATING_COST_RATIO" | "LIABILITIES_TO_ASSETS";
 /** Server-owned scoring over qualified source observations; no client-side financial formulas. */
 export type FinancialScannerProjection = {
-  version: "1.0" | "1.1"; methodologyVersion: "1.0.0"; qualification: "PARTIAL_SOURCE_VIEW" | "QUALIFIED_HISTORY";
+  version: "1.0" | "1.1"; methodologyVersion: "1.0.0" | "2.0.0"; qualification: "PARTIAL_SOURCE_VIEW" | "QUALIFIED_HISTORY";
   sourceVersion: string | null;
   referenceFrames?: readonly {
     id: string; scope: FinancialPeriod["scope"]; anchorPeriodId: string; asOf: string;

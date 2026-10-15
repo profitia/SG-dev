@@ -1,4 +1,9 @@
 import { createHash } from "node:crypto";
+import {
+  MIN_HISTORICAL_PERIODS,
+  SCANNER_METHODOLOGY_VERSION,
+  previousAnnualPeriod,
+} from "@profitia/srm-xray";
 import type {
   FinancialScannerProjection,
   ScannerAxisCode,
@@ -45,7 +50,8 @@ export function historicalPosition(
   if (x === null || ns.some((n) => n === null))
     return { ...empty, reason: "INVALID_STORED_VALUE" };
   const numbers = ns as bigint[];
-  if (numbers.length < 3) return { ...empty, reason: "INSUFFICIENT_HISTORY" };
+  if (numbers.length < MIN_HISTORICAL_PERIODS)
+    return { ...empty, reason: "INSUFFICIENT_HISTORY" };
   const utilities = numbers.map((n) => (lowerIsBetter ? -n : n)),
     u = lowerIsBetter ? -x : x;
   const best = utilities.reduce((a, b) => (a > b ? a : b)),
@@ -310,7 +316,7 @@ export function financialScanner(
           financial.sourceVersion,
           financial.representationVersion,
           context.asOf,
-          "1.0.0",
+          SCANNER_METHODOLOGY_VERSION,
           SCANNER_SOURCE_RULE,
           anchor.id,
           frameAxes,
@@ -338,10 +344,7 @@ export function financialScanner(
     });
     for (const p of scoped) {
       p.referenceFrameId = frameId;
-      const previous = scoped.find(
-        (old) =>
-          Date.parse(old.to) + 86400000 === Date.parse(p.from) && annual(old),
-      );
+      const previous = previousAnnualPeriod(scoped, p);
       if (!previous || !annual(p)) continue;
       for (const a of p.axes) {
         const b = previous.axes.find((b) => b.code === a.code)!;
@@ -378,7 +381,7 @@ export function financialScanner(
   }
   return {
     version: "1.1",
-    methodologyVersion: "1.0.0",
+    methodologyVersion: SCANNER_METHODOLOGY_VERSION,
     qualification: periods.some((p) =>
       p.axes.some(
         (a) => a.basis === "HISTORICAL_BEST" && a.normalizedScore !== null,

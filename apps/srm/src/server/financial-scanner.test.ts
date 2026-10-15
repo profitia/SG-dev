@@ -180,7 +180,7 @@ test("historical normalization: negative profits, lower-is-better, exact decimal
     "NO_HISTORICAL_VARIATION",
   );
   assert.equal(
-    historicalPosition("5", ["5", "10"]).reason,
+    historicalPosition("5", ["5"]).reason,
     "INSUFFICIENT_HISTORY",
   );
   assert.equal(historicalPosition("bad", ["1", "2", "3"]).score, null);
@@ -259,10 +259,12 @@ test("fixed frame: qualified costs, absolute loss retained at100, pp deltas and 
     r.referenceFrames?.[0].id,
   );
 });
-test("unknown source and mismatched bases cannot build a three-year sample; corrections create a new frame", () => {
-  const { f, sources } = scoredFixture(),
-    id = f.periods[2];
+test("unknown source and mismatched bases cannot build a two-period sample; corrections create a new frame", () => {
+  const { f, sources } = scoredFixture();
+  f.periods = f.periods.slice(0, 2);
+  const id = f.periods[1];
   const baseline = financialScanner(f, sources);
+  assert.equal(baseline.periods[0].axes[0].normalizedScore, "100.000000");
   sources[`standalone:${id.from}:${id.to}`].reason =
     "SOURCE_REVISION_UNRESOLVED";
   const unknown = financialScanner(f, sources);
@@ -279,7 +281,7 @@ test("unknown source and mismatched bases cannot build a three-year sample; corr
     null,
   );
 });
-test("zero revenue cannot produce margin/costs; no year-on-year delta across a gap", () => {
+test("zero revenue cannot produce costs; qualified gap comparison uses the previous available period", () => {
   const { f, sources } = scoredFixture();
   f.periods = f.periods
     .map((p, i) => ({
@@ -291,5 +293,55 @@ test("zero revenue cannot produce margin/costs; no year-on-year delta across a g
     .filter((_, i) => i !== 1);
   const r = financialScanner(f, sources);
   assert.equal(r.periods[0].axes[4].rawValue, null);
-  assert.equal(r.periods[0].axes[0].comparisons?.length, 0);
+  assert.equal(r.periods[0].axes[0].comparisons?.[0].periodId, "standalone:2023-01-01:2023-12-31");
+  assert.equal(r.periods[0].axes[0].comparisons?.[0].delta, "8.000000");
+  assert.equal(r.periods[0].axes[0].comparisons?.[0].deltaPercent, null);
+  assert.equal(r.periods[0].axes[0].normalizedScore, "100.000000");
+});
+
+test("two observations preserve extrema, lower-is-better, losses and the no-variation guard", () => {
+  for (const [value, values, lower, score] of [
+    ["5", ["5", "10"], false, "0.000000"],
+    ["10", ["5", "10"], false, "100.000000"],
+    ["80", ["80", "90"], true, "100.000000"],
+    ["90", ["80", "90"], true, "0.000000"],
+    ["-2", ["-5", "-2"], false, "100.000000"],
+    ["0", ["0", "5"], false, "0.000000"],
+  ] as const) assert.equal(historicalPosition(value, values, lower).score, score);
+  assert.equal(historicalPosition("5", ["5", "5"]).reason, "NO_HISTORICAL_VARIATION");
+  assert.equal(historicalPosition("5", ["5", "bad"]).reason, "INVALID_STORED_VALUE");
+});
+
+test("MGBI two-year regression: six axes receive scores with qualified deltas; gap keeps actual years", () => {
+  for (const previousYear of [2024, 2023]) {
+    const { f, sources } = scoredFixture();
+    f.periods = f.periods.filter((p) => p.year === "2025" || p.year === String(previousYear));
+    const values = [
+      { net: "235763.07", sales: "3255147.67", ratio: "6.838063", margin: "7.222298", debt: "14.171854", cost: "3020061.48" },
+      { net: "276714.65", sales: "3101755.86", ratio: "5.447408", margin: "9.380358", debt: "17.451342", cost: "2812672.97" },
+    ];
+    f.periods.forEach((p, i) => {
+      p.facts = p.facts.map((a) => ({ ...a, amount: a.metricCode === "PALA_NPL" ? values[i].net : values[i].sales }));
+      const source = sources[`standalone:${p.from}:${p.to}`];
+      source.costs = values[i].cost;
+      Object.assign(source.basis, { CURRENT_RATIO: "current", OPERATING_MARGIN: "margin", LIABILITIES_TO_ASSETS: "debt" });
+    });
+    f.history = (["CURRENT_RATIO", "OPERATING_MARGIN", "LIABILITIES_TO_ASSETS"] as const).map((code) => ({
+      code, reasonCode: null, points: f.periods.map((p, i) => ({
+        ...point(values[i][code === "CURRENT_RATIO" ? "ratio" : code === "OPERATING_MARGIN" ? "margin" : "debt"]),
+        code, periodStart: p.from, periodEnd: p.to, year: p.year, documentRef: p.documentRef,
+        unit: code === "CURRENT_RATIO" ? "RATIO" : "PERCENT",
+      })),
+    }));
+    const before = JSON.stringify({ f, sources });
+    const result = financialScanner(f, sources);
+    assert.equal(result.methodologyVersion, "2.0.0");
+    assert.equal(result.qualification, "QUALIFIED_HISTORY");
+    assert.deepEqual(result.periods[0].axes.map((a) => a.normalizedScore), ["0.000000", "100.000000", "100.000000", "0.000000", "0.000000", "100.000000"]);
+    assert.deepEqual(result.periods[0].axes.map((a) => a.comparisons?.[0].favorable), ["WORSE", "BETTER", "BETTER", "WORSE", "WORSE", "BETTER"]);
+    assert.ok(result.periods[0].axes.every((a) => a.comparisons?.[0].periodId === `standalone:${previousYear}-01-01:${previousYear}-12-31`));
+    assert.equal(result.periods[0].axes[0].comparisons?.[0].deltaPercent, "-14.799209");
+    assert.equal(result.periods[0].axes[1].comparisons?.[0].deltaPercent, "4.945322");
+    assert.equal(JSON.stringify({ f, sources }), before);
+  }
 });

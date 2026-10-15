@@ -55,6 +55,7 @@ export { KysPdfButton } from "./kys-pdf-button";
 export { KysKrsButton } from "./kys-krs-button";
 
 export { FinancialScannerMount } from "./financial-scanner";
+export { SCANNER_METHODOLOGY_VERSION, MIN_HISTORICAL_PERIODS, previousAnnualPeriod } from "./financial-scanner-model";
 
 export { SupplierWebIdentity, type SupplierWebIdentityGateway } from "./supplier-web-identity";
 
