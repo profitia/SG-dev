@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "0c7bd923930dfb38576e9de32272f26cbc301ec21ac1ef55b7b3ad033449441a",
+  "publicationNonce": "1cb48f41a6bff4d55de7a83a7c5ce7d9caf976b1a3da7049f1f573d838b10183",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 114,
+  "generation": 115,
   "release": {
     "authorizationDigest": "14832825cf86e92916ed13b9f3c0df3a400a3c799e88f6a1c152802f352753a1",
     "authorizationKeyOrder": [
@@ -8203,7 +8203,24 @@
     "deployId": "dep-db7tp5ff3r2c739df3ag",
     "serviceId": "srv-db496b3tqb8s73eh5sfg",
     "evidenceDigest": "d998c3316add3cdfdfbd1ccb6836eac07bc0b36bb97aaeae8b9e5f48876c0506",
-    "verifiedAt": "2026-10-15T03:35:38.951Z"
+    "verifiedAt": "2026-10-15T03:35:38.951Z",
+    "restorePointPreparation": {
+      "taskId": "SRM-STAGING-PROMOTION-20261015-4F2B9B3",
+      "candidateSha": "4f2b9b3797f6210e6c1af98af6a69abfd9c48391",
+      "phase": "INTENT",
+      "requestedBy": "ACTUAL_USER_REQUEST_IN_THIS_CHAT",
+      "hostConversationId": "01a11c3a-6570-7292-99b4-5666c5a2496b",
+      "recordedAt": "2026-10-15T13:49:14.260Z",
+      "scope": "SRM Staging only: retained-artifact read-only one-off job; bounded no-compute recovery branch and isolated recovery rehearsal; no application deployment, Stage migration, reset, secret/config change or Production operation",
+      "resources": {
+        "renderServiceId": "srv-db496b3tqb8s73eh5sfg",
+        "renderDeployId": "dep-db7tp5ff3r2c739df3ag",
+        "neonProjectId": "snowy-breeze-40315151",
+        "sourceNeonBranchId": "br-broad-butterfly-b11t4v01"
+      },
+      "costOwner": "Profit.ia",
+      "costScope": "Existing $7/month service plus previously accepted provider usage; artifact job uses existing service plan; backup has no compute; rehearsal bounded to 0.25 CU with 30-second suspend"
+    }
   },
   "managementCredentialRepairs": [
     {
