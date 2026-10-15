@@ -20,7 +20,7 @@ import { financialValue } from "./financial-history";
 import { IndicatorExplorer } from "./financial-explorer";
 import { FinancialHistoryView } from "./FinancialHistoryView";
 import { SpendGuruAssessment } from "./SpendGuruAssessment";
-import { previousAnnualPeriod, canOverlay, axisTone, comparisonLabel, bestHistoryPeriod } from "./financial-scanner-model";
+import { previousAnnualPeriod, canOverlay, axisTone, comparisonTone, comparisonLabel, bestHistoryPeriod } from "./financial-scanner-model";
 import type { AssistantApplicationContext, IndicatorViewContext } from "./assistant-context";
 type Period = FinancialScannerProjection["periods"][number];
 type Card = {
@@ -338,7 +338,7 @@ function Radar({
       ref={svg}
       data-emphasized-sector={emphasizedIndex === null ? "" : axes[emphasizedIndex].code}
       className="srm-radar srm-sector-radar"
-      viewBox="-12 -16 724 546"
+      viewBox="-48 -16 796 546"
       role="group"
       aria-label={
         "Profil finansowy w sześciu wycinkach koła, " +
@@ -444,7 +444,7 @@ function Radar({
             axis?.alerts.map((x) => alertLabels[x] ?? x).join(". ") ||
             reason(axis?.reasonCode),
         };
-        const labelHeight = a.label.length === 2 ? 36 : 22;
+        const labelHeight = a.label.length === 2 ? 44 : 22;
         const scoreLabel =
           value === null ? "Bez punktacji" : pl(value, 0) + " pkt";
         const deltaLabel = comparisonLabel(axis,comparison);
@@ -481,20 +481,18 @@ function Radar({
           >
             <title>{`${a.label.join(" ")}: ${fmt(raw[i], a.unit)}. ${scoreLabel}. ${appearance.description}. ${a.dir}. ${old !== null && old !== undefined ? "Porównanie " + compare + ": " + pl(old, 0) + " pkt." : ""}`}</title>
             <path d={sector(i, outer)} fill="transparent" pointerEvents="all" />
-            <rect x={p.anchor === "end" ? p.x-170 : p.anchor === "middle" ? p.x-95 : p.x} y={p.y-17}
-              width={p.anchor === "middle" ? 190 : 170} height={labelHeight+46} fill="transparent" pointerEvents="all" />
-            <g className={"srm-label-motion"+(i===emphasizedIndex?" is-emphasized":"")} data-motion-label={a.code}
+            <rect x={p.anchor === "end" ? p.x-210 : p.anchor === "middle" ? p.x-105 : p.x} y={p.y-17}
+              width={210} height={labelHeight+50} fill="transparent" pointerEvents="all" />
+            <CanonElement as="g" canonId="SRM-C18" usage="financial-scanner:label" data-comparison-tone={comparisonTone(axis, comparison)} className={"srm-label-motion"+(i===emphasizedIndex?" is-emphasized":"")} data-motion-label={a.code}
               style={{transformOrigin:`${p.x}px ${p.y+(labelHeight+8)/2}px`}} aria-hidden="true">
             <text
               x={p.x}
               y={p.y}
               textAnchor={p.anchor}
-              fill="#294D70"
-              fontSize="12.5"
-              fontWeight="500"
+              fill="currentColor"
             >
               {a.label.map((line, j) => (
-                <tspan key={line} x={p.x} dy={j ? 16 : 0}>
+                <tspan key={line} x={p.x} dy={j ? 22 : 0}>
                   {line}
                 </tspan>
               ))}
@@ -503,24 +501,20 @@ function Radar({
               x={p.x}
               y={p.y + labelHeight}
               textAnchor={p.anchor}
-              fill={raw[i] === null ? "#526A82" : "#003366"}
-              fontSize={raw[i] === null ? 13 : 16}
-              fontWeight="650"
+              fill="currentColor"
             >
               {raw[i] === null ? "Do potwierdzenia" : fmt(raw[i], a.unit)}
             </text>
             <text
               x={p.x}
-              y={p.y + labelHeight + 17}
+              y={p.y + labelHeight + 22}
               textAnchor={p.anchor}
-              fill={appearance.text}
-              fontSize="10"
-              fontWeight="500"
+              fill="currentColor"
             >
               {deltaLabel ?? scoreLabel}
               {appearance.alert ? " · sygnał" : ""}
             </text>
-            </g>
+            </CanonElement>
           </CanonElement>
         );
       })}
@@ -597,7 +591,7 @@ export function FinancialScannerMount({
   const activeAlerts = selected?.axes.flatMap(a=>a.alerts.filter(x=>x!=="LIQUIDITY_SCALE_SATURATED").map(x=>`${axes.find(d=>d.code===a.code)!.label.join(" ")}: ${alertLabels[x]??x}`)) ?? [];
   const comparisonSummary = compared && compared.id !== "reference" ? axes.flatMap(a=>{
     const axis=selected?.axes.find(x=>x.code===a.code), label=comparisonLabel(axis,compared);
-    return label ? [`${a.label.join(" ")}: ${label}.`] : [];
+    return label ? [{code: a.code, text: `${a.label.join(" ")}: ${label}.`, tone: comparisonTone(axis, compared)}] : [];
   }) : [];
   const years = [...new Set(periods.map((p) => Number(p.to.slice(0, 4))))];
   const getMetric = (code: string, year: number) => {
@@ -791,13 +785,12 @@ export function FinancialScannerMount({
           </div>
           <p className="srm-source-note">Wypełnienie: pozycja we własnej historii. Kolor: kierunek zmiany; płynność według stałych progów.</p>
           {activeAlerts.length>0 && <ul className="srm-radar-alerts" aria-label="Sygnały finansowe">{activeAlerts.map(a=><li key={a}>{a}</li>)}</ul>}
-          <details className="srm-source-note">
+          <details className="srm-source-note srm-radar-help">
             <CanonSummary canonId="SRM-C49" usage="financial-scanner:08">Jak czytać radar</CanonSummary>
             <p>
-              Płynność używa stałej skali SRM, z maksimum przy 2,0. Pozostałe osie pokazują pozycję od najniższej do najlepszej wartości w kwalifikowanej historii (minimum dwa okresy). Niższy udział kosztów i zobowiązań oznacza korzystny kierunek. To porównanie danych, nie rating bezpieczeństwa firmy. Kolor bez porównania jest neutralny. Domyślne porównanie wybiera najbliższy wcześniejszy dostępny pełny okres roczny, także przez lukę w latach. Zmiana dotyczy wskazanych okresów i nie jest annualizowana. Przerywana linia pokazuje porównywany okres; rekordy mogą pochodzić z różnych lat. Kliknij obszar, aby zobaczyć historię.
+              Płynność używa stałej skali z maksimum przy 2,0. Pozostałe osie pokazują pozycję od najniższej do najlepszej wartości w kwalifikowanej historii (minimum dwa okresy). Niższy udział kosztów i zobowiązań oznacza korzystny kierunek. Domyślne porównanie wybiera najbliższy wcześniejszy dostępny pełny okres roczny. Zmiana dotyczy wskazanych okresów i nie jest annualizowana. Przerywana linia pokazuje porównywany okres. Kliknij obszar, aby zobaczyć historię.
             </p>
             {frame && <ul className="srm-reference-evidence">{frame.axes.filter(a=>a.code!=="CURRENT_RATIO").map(a=><li key={a.code}><strong>{axes.find(d=>d.code===a.code)!.label.join(" ")}: </strong>{a.periodIds.length ? a.periodIds.map(id=>periods.find(p=>p.id===id)?.to.slice(0,4)).join(", ") : "brak kwalifikowanych lat"}. {a.bestValue!==null ? `Najlepsza wartość: ${fmt(a.bestValue,axes.find(d=>d.code===a.code)!.unit)}.` : ""}</li>)}</ul>}
-            <p>Sprawozdania z niepotwierdzonym standardem, rewizją lub podstawą obliczeń pozostają dostępne jako wartości źródłowe, ale nie budują punktacji. Wysoki wynik historyczny nie znosi sygnału straty ani zadłużenia.</p>
           </details>
         </section>
         {assistant ? <SpendGuruAssessment key={report?.nip ?? "loading"} context={context} avatars={assistant.avatars}

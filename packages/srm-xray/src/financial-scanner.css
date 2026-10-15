@@ -386,9 +386,6 @@ No financial formula, qualification or normalization is changed here. */
 .srm-axis {
   cursor: pointer;
 }
-.srm-axis:hover text {
-  fill: var(--brand);
-}
 .srm-chart-legend {
   display: flex;
   align-items: center;
@@ -1244,9 +1241,6 @@ No financial formula, qualification or normalization is changed here. */
 .srm-sector:focus-visible .srm-sector-track {
   stroke: var(--brand);
   stroke-width: 1.5;
-}
-.srm-axis:hover text {
-  fill: var(--brand-dark);
 }
 .srm-semantic-legend {
   display: flex;

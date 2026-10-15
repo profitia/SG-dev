@@ -69,6 +69,7 @@ import {
   previousAnnualPeriod,
   canOverlay,
   axisTone,
+  comparisonTone,
   comparisonLabel,
   bestHistoryPeriod,
 } from "../../../../packages/srm-xray/src/financial-scanner-model";
@@ -201,4 +202,25 @@ test("best-history overlay accepts two different qualified observations, preserv
   scanner.referenceFrames![0].axes[0].worstValue = "5";
   scanner.referenceFrames![0].axes[0].periodIds = [selected.id];
   assert.equal(bestHistoryPeriod(scanner, selected)?.axes[0].normalizedScore, null);
+});
+
+
+test("label and assistant comparison colors follow favorable direction, including lower-is-better and missing comparisons", () => {
+  const prior = period(2024);
+  const axis: Period["axes"][number] = {
+    code: "LIABILITIES_TO_ASSETS", rawValue: "14", unit: "PERCENT",
+    normalizedScore: "100", basis: "HISTORICAL_BEST", reasonCode: null,
+    alerts: [], tone: "positive",
+    comparisons: [{periodId: prior.id, delta: "-3.3", deltaPercent: null, direction: "DOWN", favorable: "BETTER"}],
+  };
+  assert.equal(comparisonTone(axis, prior), "positive");
+  const worse = {...axis, code: "OPERATING_COST_RATIO" as const, comparisons: [{...axis.comparisons![0], delta: "2.1", direction: "UP" as const, favorable: "WORSE" as const}]};
+  assert.equal(comparisonTone(worse, prior), "negative");
+  const liquidity = {...worse, code: "CURRENT_RATIO" as const};
+  assert.equal(comparisonTone(liquidity, prior), "negative");
+  assert.equal(axisTone(liquidity, prior), "positive", "absolute liquidity fill policy is unchanged");
+  assert.equal(comparisonTone({...axis, comparisons: [{...axis.comparisons![0], delta: "0", direction: "UNCHANGED", favorable: "UNCHANGED"}]}, prior), "caution");
+  assert.equal(comparisonTone(axis), "unknown");
+  assert.equal(comparisonTone(axis, period(2023)), "unknown");
+  assert.equal(comparisonTone(undefined, prior), "unknown");
 });

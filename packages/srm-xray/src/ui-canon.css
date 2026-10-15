@@ -58,3 +58,16 @@
 .srm-availability-notice p { margin:0; font-size:.875rem; line-height:1.6; color:#003366; }
 .srm-scanner-unavailable .srm-chat-slot { min-height:28rem; }
 @media(max-width:40rem) { .srm-report-unavailable { min-height:23rem; } }
+
+/* SRM-C18 / T06–T08: one typography and comparison tone for the full label.
+   Liquidity fill keeps its fixed scale; label tone describes period-to-period change. */
+.srm-ui { --canon-radar-label-size: 1rem; --canon-radar-label-weight: 650; --canon-radar-help-size: .875rem; }
+.srm-ui [data-comparison-tone="positive"] { color: #176747; }
+.srm-ui [data-comparison-tone="negative"] { color: #A63830; }
+.srm-ui [data-comparison-tone="caution"] { color: #805400; }
+.srm-ui [data-comparison-tone="unknown"] { color: #526A82; }
+.srm-ui .srm-label-motion[data-library-component="SRM-C18"] text { font-family: inherit; font-size: var(--canon-radar-label-size); font-weight: var(--canon-radar-label-weight); fill: currentColor; }
+.srm-ui .srm-radar-panel :is(.srm-chart-legend,.srm-semantic-legend) { justify-content: flex-start; text-align: left; flex-wrap: wrap; }
+.srm-ui .srm-radar-help, .srm-ui .srm-radar-help :is(summary,p,ul,li) { font-family: inherit; font-size: var(--canon-radar-help-size); line-height: 1.6; }
+.srm-ui .srm-chat-comparison ul { margin: .375rem 0 0; padding-left: 1.25rem; }
+.srm-ui .srm-chat-comparison li { margin-top: .25rem; }
