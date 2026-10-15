@@ -1,15 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import vm from 'node:vm';
-import {createRequire} from 'node:module';
 import {spawnSync} from 'node:child_process';
 import pg from 'pg';
-import {prepareRollbackPlan,runtimeMigrations,assertRuntimeSchema,ledgerManifest,artifactCommand,configurationFingerprint} from './staging-rollback.mjs';
+import {prepareRollbackPlan,runtimeMigrations,assertRuntimeSchema,ledgerManifest,configurationFingerprint} from './staging-rollback.mjs';
 import {contract,migrationManifest,runMigrations} from './staging-migrate.mjs';
-import {assertRestorePoint,digest,claimRelease} from '../../../scripts/governance/srm-release-lifecycle.mjs';
+import {assertRestorePoint,assertNativeRollbackAcknowledgement,digest,claimRelease} from '../../../scripts/governance/srm-release-lifecycle.mjs';
 import {operations} from '../../../scripts/governance/srm-release-lifecycle.mjs';
 import {createProvider,manifestFrom} from './staging-lifecycle.mjs';
 // Synthetic provider fixture; immutable source/migration bytes come from Git.
@@ -53,21 +49,6 @@ test('rollback handoff requires stopped executor, exact reviewed journal and pre
     const bad=structuredClone(a);bad.supersedes[field]='wrong';assert.throws(()=>claimRelease(s,bad,m,'github-run:999',true));
   }
 });
-test('artifact verifier checks actual sorted file bytes and exact runtime SHA',()=>{
-  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'srm-artifact-fixture-'));
-  try {
-    const artifact=path.join(dir,'apps/srm/.next/standalone');fs.mkdirSync(artifact,{recursive:true});fs.writeFileSync(path.join(artifact,'one.txt'),'fixture bytes');
-    const p=prepareRollbackPlan(example(),journal.baseline.restorePoint.candidateSha).restorePoint;
-    const command=artifactCommand(p,'synthetic-approval');
-    const js=command.slice(command.indexOf("'")+1,-1).replaceAll("'\\''","'");
-    const run=(sha)=>spawnSync('node',['-e',js],{cwd:dir,env:{...process.env,RENDER_GIT_COMMIT:sha},encoding:'utf8'});
-    assert.notEqual(run('e'.repeat(40)).status,0);assert.match(run(p.sha).stderr,/Artifact digest mismatch/);
-    const crypto=createRequire(import.meta.url)('node:crypto');p.artifact.digest=crypto.createHash('sha256').update(JSON.stringify([['one.txt','file',crypto.createHash('sha256').update('fixture bytes').digest('hex')]])).digest('hex');
-    const good=artifactCommand(p,'synthetic-approval'),program=good.slice(good.indexOf("'")+1,-1).replaceAll("'\\''","'");
-    assert.equal(spawnSync('node',['-e',program],{cwd:dir,env:{...process.env,RENDER_GIT_COMMIT:p.sha}}).status,0);
-    fs.writeFileSync(path.join(artifact,'one.txt'),'changed');assert.notEqual(spawnSync('node',['-e',program],{cwd:dir,env:{...process.env,RENDER_GIT_COMMIT:p.sha}}).status,0);
-  } finally {fs.rmSync(dir,{recursive:true,force:true});}
-});
 test('configuration fingerprint detects secret drift without publishing secrets',()=>{
   const a=configurationFingerprint({id:'srv-fixture'},{KEY:'synthetic-only'});
   assert.match(a,/^[a-f0-9]{64}$/);assert.notEqual(a,configurationFingerprint({id:'srv-fixture'},{KEY:'changed'}));
@@ -77,29 +58,59 @@ function retainedProviderFixture(response='live') {
   const m={...manifestFrom({repositoryId:contract.repositoryId,approvedMainAncestor:true,ciPassed:true},sha),rollbackPlan:plan};
   const a={schemaVersion:'2.0',projectKey:'SRM',targetEnvironment:'staging',stagingDeploymentAuthorized:true,stagingMutationsAllowed:true,productionMutationsAllowed:false,manifest:m,releaseSha:sha,manifestDigest:digest(m),repository:contract.repository,repositoryId:contract.repositoryId,renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonProjectId:contract.neon.projectId,neonBranchId:contract.neon.branchId,neonEndpointId:contract.neon.endpointId,databaseName:'srm_app',approvalId:'synthetic-rollback',approvedBy:'synthetic',costOwner:'synthetic',expiresAt:new Date(Date.now()+3600000).toISOString(),operations,mode:'rollback',rollbackSchemaCompatible:true,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true,maxDeploymentAttempts:3}};
   const srv={id:plan.restorePoint.serviceId,name:contract.render.serviceName,ownerId:contract.render.workspaceId,environmentId:contract.render.environmentId,repo:'https://github.com/'+contract.repository,autoDeployTrigger:'off',branch:'main',rootDir:'',type:'web_service',suspended:'not_suspended',serviceDetails:{region:contract.render.region,plan:contract.render.plan,runtime:'node',numInstances:1,healthCheckPath:contract.render.healthCheckPath,previews:{generation:'off'},envSpecificDetails:{buildCommand:contract.render.buildCommand,startCommand:contract.render.startCommand}}};
-  const calls=[],rows=[{deploy:{id:'dep-old',status:'deactivated',commit:{id:sha}}},{deploy:{id:'dep-current',status:'live',commit:{id:plan.candidateSha}}}];let fences=0;
-  const fetcher=async(url,options)=>{calls.push({url,method:options.method,body:options.body});if(options.method==='GET')return new Response(JSON.stringify(rows));if(response==='ambiguous')throw new TypeError('synthetic connection lost');return new Response(JSON.stringify({id:'dep-rollback',status:'live',commit:{id:response==='wrong'?'f'.repeat(40):sha}}),{status:201});};
+  const calls=[],rows=[{deploy:{id:'dep-old',status:'deactivated',commit:{id:sha}}},{deploy:{id:'dep-current',status:'live',commit:{id:plan.candidateSha}}}];let fences=0,acknowledgement;
+  const fetcher=async(url,options)=>{calls.push({url,method:options.method,body:options.body});if(options.method==='GET')return new Response(JSON.stringify(url.endsWith('/deploys/dep-rollback')?{id:'dep-rollback',status:'live',commit:{id:sha}}:rows));if(response==='ambiguous')throw new TypeError('synthetic connection lost');return new Response(JSON.stringify({id:'dep-rollback',status:'live',commit:{id:response==='wrong'?'f'.repeat(40):sha}}),{status:201});};
   const p=createProvider({RENDER_API_KEY:'synthetic'},a,m,'github-run:999',fetcher,()=>{fences++;});
-  return {p,srv,m,calls,rows,get fences(){return fences;}};
+  return {p,srv,m,calls,rows,context:{recovered:false,recordAcknowledgement:async a=>{acknowledgement=a;}},get acknowledgement(){return acknowledgement;},get fences(){return fences;}};
 }
 test('provider adapter uses native retained deployment ID, never rebuilds the old commit',async()=>{
-  const f=retainedProviderFixture(),r=await f.p.deploy({services:[f.srv]},f.m);
+  const f=retainedProviderFixture(),r=await f.p.deploy({services:[f.srv]},f.m,f.context);
   const writes=f.calls.filter(c=>c.method==='POST');assert.equal(writes.length,1);
   assert.equal(writes[0].url,'https://api.render.com/v1/services/'+f.srv.id+'/rollback');
   assert.deepEqual(JSON.parse(writes[0].body),{deployId:f.m.rollbackPlan.restorePoint.deployId});
   assert.equal(r.strategy,'RENDER_RETAINED_DEPLOYMENT');assert.equal(f.fences,1);
+  assert.equal(assertNativeRollbackAcknowledgement(f.acknowledgement,f.m.rollbackPlan.restorePoint),true);
 });
 test('native rollback rejects a wrong actual provider SHA',async()=>{
-  const f=retainedProviderFixture('wrong');await assert.rejects(f.p.deploy({services:[f.srv]},f.m),/acknowledgement/);
+  const f=retainedProviderFixture('wrong');await assert.rejects(f.p.deploy({services:[f.srv]},f.m,f.context),/acknowledgement/);
 });
 test('ambiguous native rollback is issued once and an existing INTENT is not recoverable without an observed effect',async()=>{
-  const f=retainedProviderFixture('ambiguous');await assert.rejects(f.p.deploy({services:[f.srv]},f.m));assert.equal(f.calls.filter(c=>c.method==='POST').length,1);
+  const f=retainedProviderFixture('ambiguous');await assert.rejects(f.p.deploy({services:[f.srv]},f.m,f.context));assert.equal(f.calls.filter(c=>c.method==='POST').length,1);
   const observed=await f.p.observe('deploy',{databases:[],services:[f.srv],liveDeploy:{status:'live',commit:{id:f.m.rollbackPlan.candidateSha}}},{release:{steps:{deploy:{status:'INTENT'}}}},f.m,{mode:'rollback'});
   assert.equal(observed.complete,false);assert.equal(observed.recoverable,false);assert.equal(f.calls.filter(c=>c.method==='POST').length,1);
 });
 test('native rollback rejects concurrent foreign deployments before mutation',async()=>{
   const f=retainedProviderFixture();f.rows.push({deploy:{id:'dep-concurrent',status:'build_in_progress',commit:{id:'f'.repeat(40)}}});
-  await assert.rejects(f.p.deploy({services:[f.srv]},f.m),/Concurrent/);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+  await assert.rejects(f.p.deploy({services:[f.srv]},f.m,f.context),/Concurrent/);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+});
+test('durable native acknowledgement resumes only its actual deployment without another rollback request',async()=>{
+  const f=retainedProviderFixture();await f.p.deploy({services:[f.srv]},f.m,f.context);
+  const writes=f.calls.filter(c=>c.method==='POST').length;
+  const result=await f.p.deploy({services:[f.srv]},f.m,{recovered:true,providerAcknowledgement:f.acknowledgement});
+  assert.equal(result.deployId,f.acknowledgement.deployId);
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,writes);
+  assert.ok(f.calls.some(c=>c.method==='GET'&&c.url.endsWith('/deploys/'+f.acknowledgement.deployId)));
+});
+test('acknowledgement publication failure stops before polling or another provider mutation',async()=>{
+  const f=retainedProviderFixture();
+  await assert.rejects(f.p.deploy({services:[f.srv]},f.m,{recordAcknowledgement:async()=>{throw Error('synthetic CAS publication failed');}}),/publication/);
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,1);
+  await assert.rejects(f.p.deploy({services:[f.srv]},f.m,{recovered:true}),/durable acknowledgement/);
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,1);
+});
+test('native acknowledgement cannot substitute another service, artifact, source, target or result',async()=>{
+  const f=retainedProviderFixture();await f.p.deploy({services:[f.srv]},f.m,f.context);
+  for(const [key,value] of [['serviceId',contract.development.renderServiceId],['httpStatus',200],['method','PATCH'],['path','/services/foreign/rollback'],['sha','f'.repeat(40)],['measuredLkgArtifactDigest','f'.repeat(64)],['deployId',f.m.rollbackPlan.restorePoint.deployId],['requestBody',{deployId:'dep-foreign'}]]) {
+    const a={...f.acknowledgement,[key]:value};assert.throws(()=>assertNativeRollbackAcknowledgement(a,f.m.rollbackPlan.restorePoint));
+  }
+});
+test('rollback after successful promotion keeps the original recorded target across resume',()=>{
+  const s=example(),target=s.baseline.restorePoint;
+  s.baseline={sha:target.candidateSha,deployId:'dep-newly-accepted'};s.release.lastKnownGood={restorePoint:target};
+  const m={sha:target.sha,rollbackPlan:{restorePoint:target}};
+  const next=claimRelease(s,{approvalId:'new-reviewed-rollback',mode:'rollback'},m,'github-run:999');
+  assert.equal(next.release.lastKnownGood.sha,target.sha);assert.equal(next.release.lastKnownGood.restorePoint.deployId,target.deployId);
+  assert.deepEqual(next.release.previousBaseline,s.baseline);
 });
 test('isolated PostgreSQL: historical LKG persistence code survives full additive schema without data rollback',{skip:!process.env.SRM_MIGRATION_TEST_URL},async()=>{
   const u=new URL(process.env.SRM_MIGRATION_TEST_URL);

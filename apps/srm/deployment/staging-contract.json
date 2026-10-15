@@ -116,7 +116,10 @@
         "evidence": "SRM-RELEASE-ROLLBACK-HARDENING-20261015; isolated PostgreSQL old-runtime/full-ledger integration test; migration bytes bound by both digests",
         "schemaRollbackAllowed": false
       }
-    ]
+    ],
+    "artifactVerification": "MEASURED_LKG_NATIVE_PROVIDER_RECEIPT",
+    "postRollbackPhysicalDigestRemeasurement": false,
+    "nativeAcknowledgementMustBeDurableBeforePolling": true
   },
   "lifecycle": {
     "authority": "Profitia Governance",

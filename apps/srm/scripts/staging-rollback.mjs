@@ -32,10 +32,3 @@ export function configurationFingerprint(service,values) {
   const selected=Object.fromEntries(['id','ownerId','environmentId','repo','branch','rootDir','autoDeploy','autoDeployTrigger','type','serviceDetails'].map(k=>[k,service[k]]));
   return createHash('sha256').update(JSON.stringify([selected,Object.entries(values).sort(([a],[b])=>a.localeCompare(b))])).digest('hex');
 }
-// The job uses the retained successful build. It fails itself on a byte mismatch;
-// the controller observes its provider status, never trusts caller-supplied SHA.
-export function artifactCommand(point,approvalId) {
-  fail(/^[a-f0-9]{40}$/.test(point.sha)&&/^[a-f0-9]{64}$/.test(point.artifact?.digest)&&/^[A-Za-z0-9_-]{1,150}$/.test(approvalId),'Bounded artifact job identity required');
-  const js=`const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');if(process.env.RENDER_GIT_COMMIT!==${JSON.stringify(point.sha)})throw Error('Wrong artifact source');const root=path.resolve('apps/srm/.next/standalone'),entries=[];let bytes=0;function walk(dir){for(const name of fs.readdirSync(dir).sort()){const p=path.join(dir,name),s=fs.lstatSync(p),r=path.relative(root,p);if(s.isDirectory())walk(p);else if(s.isSymbolicLink())entries.push([r,'link',fs.readlinkSync(p)]);else if(s.isFile()){bytes+=s.size;if(bytes>1073741824||entries.length>20000)throw Error('Artifact bounds exceeded');entries.push([r,'file',crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex')]);}}}walk(root);if(crypto.createHash('sha256').update(JSON.stringify(entries)).digest('hex')!==${JSON.stringify(point.artifact.digest)})throw Error('Artifact digest mismatch');console.log('SRM_ROLLBACK_ARTIFACT_VERIFIED '+${JSON.stringify(approvalId)});`;
-  return 'timeout 120s node -e '+"'"+js.replaceAll("'","'\\''")+"'";
-}

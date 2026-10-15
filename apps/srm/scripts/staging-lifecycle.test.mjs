@@ -268,7 +268,7 @@ function fixture() {
         authentication: "PASS",
         persistence: "PASS",
         migrations: manifest.migrations,
-        ...(expected.rollbackPlan?{artifact:{source:"LIVE_RENDER_JOB",digest:expected.rollbackPlan.restorePoint.artifact.digest,algorithm:expected.rollbackPlan.restorePoint.artifact.algorithm,retainedDeployId:expected.rollbackPlan.restorePoint.deployId,jobId:"job-synthetic"}}:{}),
+        ...(expected.rollbackPlan?{artifact:{source:"OBSERVED_MEASURED_LKG_ALREADY_LIVE",liveDeployId:"dep-synthetic",physicalDigestRemeasuredAfterRollback:false,digest:expected.rollbackPlan.restorePoint.artifact.digest,algorithm:expected.rollbackPlan.restorePoint.artifact.algorithm,retainedDeployId:expected.rollbackPlan.restorePoint.deployId}}:{}),
       };
     },
     observe: async (op) => ({
@@ -382,6 +382,23 @@ const syntheticRestoreTime=new Date().toISOString();
 function syntheticRestorePlan(m) {
   return {schemaVersion:'1.0',candidateSha:m.sha,schemaMigrations:m.migrations,restorePoint:{status:'VERIFIED',candidateSha:m.sha,sha:m.sha,serviceId:'srv-db496b3tqb8s73eh5sfg',deployId:'dep-synthetic',verifiedAt:syntheticRestoreTime,artifact:{sourceSha:m.sha,algorithm:'sha256-sorted-path-type-content-v1',digest:'a'.repeat(64),jobId:'job-synthetic'},configuration:{fingerprint:'b'.repeat(64),algorithm:'sha256-selected-service-config-and-sorted-resolved-env-pairs-v1',unchangedAfterMeasurement:true},database:{projectId:contract.neon.projectId,databaseName:'srm_app',sourceBranchId:contract.neon.branchId,recoveryBranchId:'br-backup',restoreRehearsalBranchId:'br-rehearsal',restoreRehearsalParentId:'br-backup',restoreRehearsalVerified:true,parentLsn:'0/ABCD',automaticSchemaOrDataRollbackAllowed:false,inventories:{migrations:m.migrations}}}};
 }
+test('rollback acknowledgement survives interruption in the fenced canonical INTENT',async()=>{
+  const f=fixture();await runLifecycle({authorization:approval(),manifest,provider:f.p,owner:'github-run:1'});
+  const m={...manifest,rollbackPlan:syntheticRestorePlan(manifest)};
+  const a={...approval('rollback'),approvalId:'synthetic-durable-ack',manifest:m,manifestDigest:digest(m)};
+  f.done.delete('deploy');f.done.delete('verify');
+  let ack;
+  f.p.deploy=async(s,approved,context)=>{
+    ack={schemaVersion:'1.0',provider:'render-api',httpStatus:201,method:'POST',path:'/services/'+m.rollbackPlan.restorePoint.serviceId+'/rollback',serviceId:m.rollbackPlan.restorePoint.serviceId,requestBody:{deployId:m.rollbackPlan.restorePoint.deployId},deployId:'dep-rollback',sha:m.sha,measuredLkgArtifactDigest:m.rollbackPlan.restorePoint.artifact.digest,acceptedAt:new Date().toISOString()};
+    await context.recordAcknowledgement(ack);
+    throw Error('synthetic interruption after durable acknowledgement');
+  };
+  await assert.rejects(runLifecycle({authorization:a,manifest:m,provider:f.p,owner:'github-run:2'}));
+  assert.ok(ack);
+  assert.equal(f.state.release.steps.deploy.status,'INTENT');
+  assert.deepEqual(f.state.release.steps.deploy.result.providerAcknowledgement,ack);
+  assert.equal(f.state.release.steps.verify,undefined);
+});
 test("no authorization reaches any provider write or journal claim", async () => {
   const f = fixture();
   await assert.rejects(
