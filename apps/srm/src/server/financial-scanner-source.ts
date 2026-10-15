@@ -9,7 +9,7 @@ import {
   type FinancialSourceDocument,
 } from "./financial-documents";
 
-export const SCANNER_SOURCE_RULE = "XML_SOURCE_BASIS_V1" as const;
+export const SCANNER_SOURCE_RULE = "XML_SOURCE_BASIS_V2" as const;
 export type ScannerSourceEvidence = Record<
   string,
   {
@@ -133,8 +133,15 @@ export function qualifyScannerSources(
       const rows = new Map(
         doc.rows.map((r) => [path(r.sourcePath), amount(r.amounts[column])]),
       );
-      if (doc.rows.some((r) => path(r.sourcePath).startsWith("RZiS.RZiSKalk.")))
-        return reject("UNSUPPORTED_SOURCE_BASIS");
+      // A duplicated path is ambiguous even when its values happen to agree.
+      const seen = new Set<string>();
+      for (const row of doc.rows) {
+        const key = path(row.sourcePath);
+        if (seen.has(key)) rows.set(key, null);
+        seen.add(key);
+      }
+      const hasPor = [...rows.keys()].some((key) => key.startsWith("RZiS.RZiSPor."));
+      const hasKalk = [...rows.keys()].some((key) => key.startsWith("RZiS.RZiSKalk."));
       const match = (code: string, xml: string, cost = false) => {
         const f = p.facts.find((f) => f.metricCode === code),
           x = rows.get(xml),
@@ -142,6 +149,10 @@ export function qualifyScannerSources(
         return (
           !!f &&
           f.validation === "VERIFIED" &&
+          f.scope === p.scope &&
+          f.periodStart === p.from &&
+          f.periodEnd === p.to &&
+          f.documentRef === p.documentRef &&
           f.currency === "PLN" &&
           f.unit === "PLN" &&
           x != null &&
@@ -156,9 +167,9 @@ export function qualifyScannerSources(
       };
       const base = `POLISH_UOR:${p.scope}:PLN:${p.from.slice(5)}:${p.to.slice(5)}`;
       const basis: ScannerSourceEvidence[string]["basis"] = {};
-      if (match("PALA_NPL", "RZiS.RZiSPor.L"))
+      if (hasPor && !hasKalk && match("PALA_NPL", "RZiS.RZiSPor.L"))
         basis.NET_RESULT = base + ":NET_RESULT";
-      if (match("PALA_NRFS", "RZiS.RZiSPor.A")) {
+      if (hasPor && !hasKalk && match("PALA_NRFS", "RZiS.RZiSPor.A")) {
         basis.REVENUE = base + ":SALES_AND_EQUIVALENTS";
         if (match("PALA_PLFOA", "RZiS.RZiSPor.F"))
           basis.OPERATING_MARGIN =
@@ -180,6 +191,27 @@ export function qualifyScannerSources(
           )!.amount;
         }
       }
+      // MF full UoR schemas: consolidated O is negative goodwill, not net result.
+      const calculationSchema = ["1-0", "1-1", "1-0E", "1-2", "1-3"].includes(doc.schemaVersion ?? "") &&
+        doc.schemaName === (p.scope === "consolidated" ? "SkonsolidowanaJednostkaInnaWZlotych" : "JednostkaInnaWZlotych");
+      if (hasKalk && !hasPor && calculationSchema) {
+        const netPath = p.scope === "consolidated" ? "RZiS.RZiSKalk.W" : "RZiS.RZiSKalk.O";
+        if (match("PALA_NPL", netPath))
+          basis.NET_RESULT = base + ":NET_RESULT";
+        if (match("PALA_NRFS", "RZiS.RZiSKalk.A")) {
+          // Sales-only is deliberately not comparable with comparative A (sales + equivalents).
+          basis.REVENUE = base + ":SALES_ONLY";
+          if (match("PALA_PLFOA", "RZiS.RZiSKalk.I"))
+            basis.OPERATING_MARGIN = base + ":OPERATING_RESULT:SALES_ONLY";
+          const costs = calculationCosts(rows);
+          if (costs !== null) {
+            basis.OPERATING_COST_RATIO =
+              base + ":CALCULATION_BASIC_OPERATING_COSTS:SALES_ONLY";
+            result.costs = `${costs / 1_000_000n}.${String(costs % 1_000_000n).padStart(6, "0")}`;
+          }
+        }
+      }
+      // The balance sheet is independent of the presence/variant/quality of P&L rows.
       if (
         match("BS_LAE_LAPFL", "Bilans.Pasywa.Pasywa_B") &&
         match("BS_A_TA", "Bilans.Aktywa")
@@ -211,4 +243,22 @@ export function qualifyScannerSources(
       ];
     }),
   );
+}
+
+/** Explicit XML calculation-variant mapping, scoped to one qualified document/column.
+ * Non-negative B/D/E are source expense magnitudes: never infer them from margin or
+ * substitute the catalog's PALA_OAC/COGS. Negative presentation requires exact
+ * reconciliation of both subtotals before any sign normalization. Missing != zero.
+ */
+function calculationCosts(rows: Map<string, bigint | null>): bigint | null {
+  const get = (letter: string) => rows.get(`RZiS.RZiSKalk.${letter}`);
+  const b = get("B"), d = get("D"), e = get("E");
+  if (b == null || d == null || e == null) return null;
+  if (b >= 0n && d >= 0n && e >= 0n) return b + d + e;
+  const a = get("A"), c = get("C"), f = get("F");
+  const magnitude = (n: bigint) => n < 0n ? -n : n;
+  // Uniform non-positive presentation only; mixed signs may be real reversals.
+  if ([b, d, e].some((n) => n > 0n) || a == null || c == null || f == null ||
+      a - magnitude(b) !== c || c - magnitude(d) - magnitude(e) !== f) return null;
+  return magnitude(b) + magnitude(d) + magnitude(e);
 }

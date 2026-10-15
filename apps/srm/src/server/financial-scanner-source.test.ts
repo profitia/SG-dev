@@ -160,3 +160,127 @@ test("scope and comparative-date mismatch are not silently repaired", () => {
     "SOURCE_PERIOD_UNCONFIRMED",
   );
 });
+
+function kalkFixture() {
+  const x = fixture();
+  const paths: Record<string, string> = { A: "A", B: "B", C: "C", L: "O", F: "I" };
+  for (const row of x.doc.rows) row.sourcePath = `RZiS.RZiSKalk.${paths[row.sourcePath.split('.').at(-1)!]}`;
+  for (const [letter, value] of [["D", "3"], ["E", "2"], ["F", "15"]])
+    x.doc.rows.push({ section: "RZiS", sourcePath: `RZiS.RZiSKalk.${letter}`, label: letter, depth: 2, amounts: { KwotaA: value } });
+  for (const [metricCode, value, sourcePath] of [
+    ["BS_A_TA", "100", "Bilans.Aktywa"],
+    ["BS_LAE_LAPFL", "30", "Bilans.Pasywa.Pasywa_B"],
+    ["BS_A_CA", "50", "Bilans.Aktywa.Aktywa_B"],
+    ["BS_LAE_LAPFL_STL", "20", "Bilans.Pasywa.Pasywa_B.Pasywa_B_III"],
+  ]) {
+    x.f.periods[0].facts = [...x.f.periods[0].facts, { ...x.f.periods[0].facts[0], metricCode, amount: value, sourceAmount: value }];
+    x.doc.rows.push({ section: "Bilans", sourcePath, label: metricCode, depth: 2, amounts: { KwotaA: value } });
+  }
+  return x;
+}
+function qualified(x: ReturnType<typeof fixture>) { return qualifyScannerSources(x.f, x.selected, [x.doc], "2026-10-14")[id]; }
+function setXml(x: ReturnType<typeof fixture>, letter: string, value: string | null) {
+  x.doc.rows.find(r => r.sourcePath === `RZiS.RZiSKalk.${letter}`)!.amounts.KwotaA = value;
+}
+
+test("calculation variant validates O, A and I; costs use B+D+E from the same column, not catalog OAC or 100-margin", () => {
+  const x = kalkFixture(), q = qualified(x);
+  assert.equal(q.reason, null);
+  assert.equal(Object.keys(q.basis).length, 6);
+  assert.match(q.basis.REVENUE!, /:SALES_ONLY$/);
+  assert.match(q.basis.OPERATING_MARGIN!, /:OPERATING_RESULT:SALES_ONLY$/);
+  assert.match(q.basis.OPERATING_COST_RATIO!, /:CALCULATION_BASIC_OPERATING_COSTS:SALES_ONLY$/);
+  assert.equal(q.costs, "85.000000");
+  // A catalog cost normalization review must not alter the directly mapped positive XML amounts.
+  x.f.periods[0].facts[1].validation = "UNVERIFIED";
+  x.f.periods[0].facts[1].amount = "999";
+  setXml(x, "C", "20.03");
+  assert.equal(qualified(x).costs, "85.000000");
+});
+
+test("each calculation cost component is required; missing, malformed and duplicate are not zero", () => {
+  for (const letter of ["B", "D", "E"]) {
+    for (const missing of [null, "", "NaN"]) {
+      const x = kalkFixture(); setXml(x, letter, missing);
+      assert.equal(qualified(x).costs, null, `${letter}:${missing}`);
+      assert.ok(qualified(x).basis.NET_RESULT);
+      assert.ok(qualified(x).basis.LIABILITIES_TO_ASSETS);
+    }
+    const x = kalkFixture();
+    x.doc.rows.push(structuredClone(x.doc.rows.find(r => r.sourcePath === `RZiS.RZiSKalk.${letter}`)!));
+    assert.equal(qualified(x).costs, null);
+  }
+  const x = kalkFixture(); setXml(x, "D", "0"); setXml(x, "E", "0");
+  assert.equal(qualified(x).costs, "80.000000");
+});
+
+test("negative cost presentation requires both exact subtotal identities; mixed/reversed signs fail closed", () => {
+  const x = kalkFixture();
+  for (const letter of ["B", "D", "E"]) {
+    const row = x.doc.rows.find(r => r.sourcePath === `RZiS.RZiSKalk.${letter}`)!;
+    row.amounts.KwotaA = `-${row.amounts.KwotaA}`;
+  }
+  assert.equal(qualified(x).costs, "85.000000");
+  setXml(x, "C", "20.03"); assert.equal(qualified(x).costs, null);
+  setXml(x, "C", "20"); setXml(x, "F", "16"); assert.equal(qualified(x).costs, null);
+  setXml(x, "F", "15"); setXml(x, "D", "3"); assert.equal(qualified(x).costs, null);
+});
+
+test("balance axes survive absent, unsupported or ambiguous P&L, but not invalid balance sources", () => {
+  for (const mode of ["absent", "mixed", "unsupported"]) {
+    const x = kalkFixture();
+    if (mode === "absent") x.doc.rows = x.doc.rows.filter(r => r.section !== "RZiS");
+    if (mode === "mixed") x.doc.rows.push(fixture().doc.rows[0]);
+    if (mode === "unsupported") for (const r of x.doc.rows) r.sourcePath = r.sourcePath.replace("RZiSKalk", "RZiSOther");
+    const q = qualified(x);
+    assert.ok(q.basis.CURRENT_RATIO); assert.ok(q.basis.LIABILITIES_TO_ASSETS);
+    assert.equal(q.basis.NET_RESULT, undefined); assert.equal(q.costs, null);
+    x.doc.rows.find(r => r.sourcePath === "Bilans.Aktywa")!.amounts.KwotaA = "101";
+    assert.equal(qualified(x).basis.LIABILITIES_TO_ASSETS, undefined);
+  }
+});
+
+test("calculation mapping keeps standards, revisions, source amount equality and column guards", () => {
+  for (const patch of [{ standard: "IAS_IFRS" }, { standard: "UNKNOWN" }, { correction: true }, { correction: null },
+    { scale: "1000" }, { currency: "EUR" }, { validation: "REVIEW" }, { checksum: "invalid" }, { mappingVersion: "old" }]) {
+    const x = kalkFixture(); Object.assign(x.doc, patch);
+    assert.ok(qualified(x).reason); assert.equal(qualified(x).costs, null);
+  }
+  for (const [letter, axis] of [["A", "REVENUE"], ["I", "OPERATING_MARGIN"], ["O", "NET_RESULT"]] as const) {
+    const x = kalkFixture(); setXml(x, letter, "987");
+    assert.equal(qualified(x).basis[axis], undefined);
+  }
+  const x = kalkFixture();
+  for (const r of x.doc.rows) { r.amounts.KwotaB = r.amounts.KwotaA; r.amounts.KwotaA = "999"; }
+  const p = x.f.periods[0]; p.from = "2024-01-01"; p.to = "2024-12-31"; p.year = "2024";
+  for (const f of p.facts) { f.periodStart = p.from; f.periodEnd = p.to; }
+  x.selected = [{ ...p, documentId: "record:pfy" }];
+  assert.equal(qualifyScannerSources(x.f, x.selected, [x.doc], "2026-10-14")["standalone:2024-01-01:2024-12-31"].costs, "85.000000");
+});
+
+
+test("facts from a different period, scope or document cannot qualify an XML axis", () => {
+  for (const patch of [{ periodStart: "2024-01-01" }, { periodEnd: "2024-12-31" }, { scope: "consolidated" }, { documentRef: "another" }]) {
+    const x = kalkFixture(); Object.assign(x.f.periods[0].facts[0], patch);
+    assert.equal(qualified(x).basis.REVENUE, undefined);
+    assert.equal(qualified(x).costs, null);
+  }
+});
+
+test("consolidated calculation net result is W, never O even when O happens to equal the catalog amount", () => {
+  const x = kalkFixture(), p = x.f.periods[0];
+  p.scope = "consolidated";
+  for (const f of p.facts) f.scope = "consolidated";
+  x.selected[0].scope = "consolidated"; x.doc.scope = "consolidated";
+  x.doc.schemaName = "SkonsolidowanaJednostkaInnaWZlotych";
+  const get = () => qualifyScannerSources(x.f, x.selected, [x.doc], "2026-10-14")["consolidated:2025-01-01:2025-12-31"];
+  assert.equal(get().basis.NET_RESULT, undefined);
+  assert.equal(get().costs, "85.000000");
+  x.doc.rows.push({ section: "RZiS", sourcePath: "RZiS.RZiSKalk.W", label: "Net", depth: 2, amounts: { KwotaA: "10" } });
+  assert.match(get().basis.NET_RESULT!, /NET_RESULT$/);
+  for (const version of ["1-0", "1-1", "1-0E", "1-2", "1-3"]) {
+    x.doc.schemaVersion = version; assert.ok(get().basis.NET_RESULT);
+  }
+  x.doc.schemaVersion = "unknown"; assert.equal(get().basis.NET_RESULT, undefined);
+  assert.ok(get().basis.LIABILITIES_TO_ASSETS);
+});
