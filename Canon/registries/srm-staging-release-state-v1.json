@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "6188aa592985b6d5e2e3dc06e2350ebe13c9808d3a0f8c3b2394404942648f69",
+  "publicationNonce": "ba8e7af04ca8173e2b4acf6b1a8ef7815e2a39d546b3458ac86ddc2d42a7c6d8",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 120,
+  "generation": 121,
   "release": {
     "authorizationDigest": "fd98d05cd049a8bcbeaad1718d03e88fa2452222b348e45e3e32bec81549813a",
     "authorizationKeyOrder": [
@@ -5587,7 +5587,7 @@
         }
       },
       "deploy": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-15T15:45:44.601Z",
@@ -6066,10 +6066,10 @@
             ]
           }
         },
-        "snapshotDigest": "0a4523544b0e3bdaeb85b13c4f24ac46e6e2a9e01fa75e7de9d553412556cf4c",
+        "snapshotDigest": "eb80323c64b71ebff66313b7babc20309371f320107460b38dc4832a169d71c9",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-15T15:45:44.601Z",
+          "capturedAt": "2026-10-15T15:48:52.785Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -6138,8 +6138,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-15T15:45:44Z",
-            "pushed_at": "2026-10-15T15:45:38Z",
+            "updated_at": "2026-10-15T15:46:50Z",
+            "pushed_at": "2026-10-15T15:46:44Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -6320,10 +6320,10 @@
             "pooler_mode": "transaction",
             "disabled": false,
             "passwordless_access": true,
-            "last_active": "2026-10-15T15:40:34Z",
+            "last_active": "2026-10-15T15:47:23Z",
             "creation_source": "console",
             "created_at": "2026-09-22T17:09:28Z",
-            "updated_at": "2026-10-15T15:40:46Z",
+            "updated_at": "2026-10-15T15:47:31Z",
             "started_at": "2026-09-22T17:40:26Z",
             "proxy_host": "c-5.eu-central-1.aws.neon.tech",
             "suspend_timeout_seconds": -1,
@@ -6405,22 +6405,22 @@
               "suspended": "not_suspended",
               "suspenders": [],
               "type": "web_service",
-              "updatedAt": "2026-10-14T21:47:46.082421Z"
+              "updatedAt": "2026-10-15T15:48:47.583781Z"
             }
           ],
           "liveDeploy": {
-            "id": "dep-db7tp5ff3r2c739df3ag",
+            "id": "dep-db8fare89jmc73a0nsh0",
             "commit": {
-              "id": "ad16371e646e03bbe7a001d88823e173a6b0a377",
-              "message": "fix(srm): rebuild financial documents from tenant archives (#315)",
-              "createdAt": "2026-10-14T18:58:02Z"
+              "id": "4f2b9b3797f6210e6c1af98af6a69abfd9c48391",
+              "message": "SRM: radar MSR, wspólny zakres i wersjonowane projekcje finansowe (#339)\n\n* feat(srm): qualify MSR radar and version financial projections\n\n* fix(srm): retain verified XHTML projection across archive refresh\n\n* test(srm): include projection table in tenant isolation check",
+              "createdAt": "2026-10-15T13:06:42Z"
             },
             "status": "live",
             "trigger": "api",
-            "createdAt": "2026-10-14T19:48:37.630554Z",
-            "updatedAt": "2026-10-14T21:47:46.080863Z",
-            "startedAt": "2026-10-14T19:48:37.586405Z",
-            "finishedAt": "2026-10-14T21:47:46.080574Z"
+            "createdAt": "2026-10-15T15:46:53.667508Z",
+            "updatedAt": "2026-10-15T15:48:47.581755Z",
+            "startedAt": "2026-10-15T15:46:53.636254Z",
+            "finishedAt": "2026-10-15T15:48:47.581527Z"
           },
           "domains": [
             {
@@ -6545,7 +6545,10 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "deployId": "dep-db8fare89jmc73a0nsh0",
+          "sha": "4f2b9b3797f6210e6c1af98af6a69abfd9c48391"
+        }
       }
     },
     "lastKnownGood": {
