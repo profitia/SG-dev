@@ -266,3 +266,21 @@ test("facts from a different period, scope or document cannot qualify an XML axi
     assert.equal(qualified(x).costs, null);
   }
 });
+
+test("consolidated calculation net result is W, never O even when O happens to equal the catalog amount", () => {
+  const x = kalkFixture(), p = x.f.periods[0];
+  p.scope = "consolidated";
+  for (const f of p.facts) f.scope = "consolidated";
+  x.selected[0].scope = "consolidated"; x.doc.scope = "consolidated";
+  x.doc.schemaName = "SkonsolidowanaJednostkaInnaWZlotych";
+  const get = () => qualifyScannerSources(x.f, x.selected, [x.doc], "2026-10-14")["consolidated:2025-01-01:2025-12-31"];
+  assert.equal(get().basis.NET_RESULT, undefined);
+  assert.equal(get().costs, "85.000000");
+  x.doc.rows.push({ section: "RZiS", sourcePath: "RZiS.RZiSKalk.W", label: "Net", depth: 2, amounts: { KwotaA: "10" } });
+  assert.match(get().basis.NET_RESULT!, /NET_RESULT$/);
+  for (const version of ["1-0", "1-1", "1-0E", "1-2", "1-3"]) {
+    x.doc.schemaVersion = version; assert.ok(get().basis.NET_RESULT);
+  }
+  x.doc.schemaVersion = "unknown"; assert.equal(get().basis.NET_RESULT, undefined);
+  assert.ok(get().basis.LIABILITIES_TO_ASSETS);
+});

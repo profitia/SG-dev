@@ -191,8 +191,12 @@ export function qualifyScannerSources(
           )!.amount;
         }
       }
-      if (hasKalk && !hasPor) {
-        if (match("PALA_NPL", "RZiS.RZiSKalk.O"))
+      // MF full UoR schemas: consolidated O is negative goodwill, not net result.
+      const calculationSchema = ["1-0", "1-1", "1-0E", "1-2", "1-3"].includes(doc.schemaVersion ?? "") &&
+        doc.schemaName === (p.scope === "consolidated" ? "SkonsolidowanaJednostkaInnaWZlotych" : "JednostkaInnaWZlotych");
+      if (hasKalk && !hasPor && calculationSchema) {
+        const netPath = p.scope === "consolidated" ? "RZiS.RZiSKalk.W" : "RZiS.RZiSKalk.O";
+        if (match("PALA_NPL", netPath))
           basis.NET_RESULT = base + ":NET_RESULT";
         if (match("PALA_NRFS", "RZiS.RZiSKalk.A")) {
           // Sales-only is deliberately not comparable with comparative A (sales + equivalents).
