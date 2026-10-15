@@ -23,7 +23,10 @@ export const radarLabelLayout = {
   ],
 } as const;
 
+// Chat definitions from MagicPath revision 461384673386459136; menu definitions are excluded.
 export const uiCanon = {
+  "SRM-C62": { name: "Przychodząca chmurka wiadomości", behaviors: ["SRM-B41", "SRM-B43"], fonts: ["SRM-T05"], numbers: [] },
+  "SRM-C63": { name: "Wskaźnik pisania", behaviors: ["SRM-B42"], fonts: ["SRM-T05"], numbers: [] },
   "SRM-C61": { name: "Stan dostępności raportu", behaviors: ["SRM-B40"], fonts: ["SRM-T03", "SRM-T05"], numbers: [] },
   "SRM-C01": {
     "name": "Przycisk główny",

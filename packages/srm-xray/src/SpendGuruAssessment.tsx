@@ -4,6 +4,8 @@ import { CanonButton, CanonElement, CanonSummary, CanonTextarea } from './ui-can
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDetachedAssistantWindow } from './useDetachedAssistantWindow';
+import { spendGuruCopy } from './ui-copy-canon';
+import { useAssistantWelcome } from './useAssistantWelcome';
 import type { AssistantApplicationContext } from './assistant-context';
 type Props = {
   context: AssistantApplicationContext;
@@ -75,6 +77,7 @@ export function SpendGuruAssessment({
     }));
   });
   const unavailable = context.reportAvailability && context.reportAvailability.code !== "AVAILABLE" ? context.reportAvailability : null;
+  const welcome = useAssistantWelcome(context.supplier.id, !unavailable, collapsed, windowHost.target, transcript);
   const indicatorYears = [...new Set(context.view.indicators.items.map(item => item.year).filter(year => year !== null))];
   const contextLabel = `${context.view.indicators.label}${indicatorYears.length === 1 ? ' · ' + indicatorYears[0] : indicatorYears.length > 1 ? ' · różne lata' : ''}`;
   const id = useId();
@@ -119,6 +122,7 @@ export function SpendGuruAssessment({
   }, [popup, windowHost.target]);
   const summaryValue = (index: number) => values[index] == null || !Number.isFinite(values[index]) ? 'brak danych' : formatted[index];
   const jumpTo = () => {
+    welcome.userScrollIntent();
     setPopup(null);
     const target = initialMessage.current;
     if (target && transcript.current) {
@@ -137,7 +141,7 @@ export function SpendGuruAssessment({
       {!windowHost.detached && <CanonButton canonId="SRM-C37" usage="SpendGuruAssessment:01" ref={collapseTrigger} type="button" className="srm-chat-collapse" onClick={() => toggleAssistant(true)} aria-label="Zwiń asystenta do prawej krawędzi" title="Zwiń asystenta" aria-expanded={!collapsed} aria-controls={`${id}-panel`}><ChatIcon kind="collapse" /></CanonButton>}
       <div className="srm-chat-window">
         <CanonElement as="header" canonId="SRM-C32" usage="SpendGuruAssessment:02" className="srm-chat-header">
-          <div className="srm-chat-greeting"><h3>Cześć! Jestem SpendGuru, {persona === 'anna' ? 'twoja doradczyni' : 'twój doradca'}</h3></div>
+          <div className="srm-chat-greeting"><h3>{spendGuruCopy.greeting[persona]}</h3></div>
           <div className="srm-chat-tools" ref={controls} onBlur={event => {
             if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPopup(null);
           }} onKeyDown={event => {
@@ -189,7 +193,9 @@ export function SpendGuruAssessment({
           </details>}
         </CanonElement>
         {windowHost.error && <p className="srm-chat-window-error" role="alert">{windowHost.error}</p>}
-        <div className="srm-chat-transcript" ref={transcript} role="region" aria-label="Podsumowanie danych finansowych dostawcy" tabIndex={0}>
+        <div className="srm-chat-transcript" ref={transcript} onScroll={welcome.trackConversationScroll} onWheel={welcome.userScrollIntent} onTouchStart={welcome.userScrollIntent} onPointerDown={welcome.userScrollIntent} onKeyDown={event => {
+          if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) welcome.userScrollIntent();
+        }} role="region" aria-label="Podsumowanie danych finansowych dostawcy" tabIndex={0}>
           <div className="srm-chat-intro">
             <div className={`srm-chat-avatar${avatarPulse === 'expanded' ? ' is-pulsing' : ''}`} onAnimationEnd={finishAvatarPulse}><img src={avatars[persona]} alt={avatarAlt} width={96} height={96} /></div>
             <div className="srm-chat-intro-copy"><span>PRZYJRZYJMY SIĘ DOSTAWCY</span><strong>{company}</strong><small>{unavailable ? unavailable.title : year ? `Wybrane dane finansowe za ${year}` : "Brak dostępnego okresu finansowego"}</small></div>
@@ -200,7 +206,20 @@ export function SpendGuruAssessment({
             {comparisonSummary.length>0 && <div className="srm-chat-comparison"><p><strong>Zmiana względem {comparisonYear}</strong></p><ul>{comparisonSummary.map(line=><li key={line.code} data-comparison-tone={line.tone}>{line.text}</li>)}</ul></div>}
             </>}
           </article>
+          <div className="srm-chat-welcome-live" aria-live="polite" aria-atomic="true" aria-relevant="additions text">
+            {welcome.phase !== 'idle' && <CanonElement as="div" canonId="SRM-C62" usage="SpendGuruAssessment:welcome-row" className="srm-chat-incoming" ref={welcome.welcomeRow} data-phase={welcome.phase}>
+              <CanonElement as="div" canonId="SRM-C33" usage="SpendGuruAssessment:welcome-avatar" className="srm-chat-avatar srm-chat-message-avatar"><img src={avatars[persona]} alt={avatarAlt} width={61.44} height={61.44} /></CanonElement>
+              {welcome.phase === 'typing' ? <CanonElement as="div" canonId="SRM-C63" usage="SpendGuruAssessment:welcome-typing" className="srm-chat-typing-bubble" key="typing">
+                <span className="srm-chat-typing-dots" aria-hidden="true"><i /><i /><i /></span>
+                <span className="srm-sr-only">SpendGuru pisze…</span>
+              </CanonElement> : <article className="srm-chat-message srm-chat-welcome-bubble" key="welcome" aria-label="Powitanie SpendGuru">
+                <p><strong>Cześć, jestem {persona === 'anna' ? 'Twoją doradczynią' : 'Twoim doradcą'} w SpendGuru.</strong></p>
+                <p>Wkrótce będziesz tutaj otrzymywać informacje na temat Twoich dostawców, takie jak nowości, artykuły, raporty o Twoich kategoriach, wydarzenia makroekonomiczne mające wpływ na Twoje kategorie i dostawców oraz wszystko to, co jest dla Ciebie ważne, aby być na bieżąco z najważniejszymi faktami.</p>
+              </article>}
+            </CanonElement>}
+          </div>
         </div>
+        {welcome.hasUnreadWelcome && <CanonButton canonId="SRM-C55" usage="SpendGuruAssessment:new-message" className="srm-chat-new-message" type="button" onClick={welcome.revealWelcome}>Nowa wiadomość <span aria-hidden="true">↓</span></CanonButton>}
         {!unavailable && <form className="srm-chat-composer" onSubmit={event => event.preventDefault()}>
           <label htmlFor={`${id}-input`}>O co chcesz zapytać?</label>
           <div className="srm-chat-input-wrap"><CanonTextarea canonId="SRM-C35" usage="SpendGuruAssessment:10" id={`${id}-input`} rows={2} placeholder="Napisz wiadomość…" value={draft} onChange={event => setDraft(event.target.value)} /><CanonButton canonId="SRM-C01" usage="SpendGuruAssessment:11" type="submit" aria-label="Wyślij wiadomość" title="Wyślij wiadomość" disabled><ChatIcon kind="send" /></CanonButton></div>
