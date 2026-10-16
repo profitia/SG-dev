@@ -37,6 +37,21 @@ jobs:
   producer:
     name: Architecture contract and lab
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: architecture_test_owner
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: sg2_operation_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      OPERATION_FIXTURE_OWNER_URL: postgresql://architecture_test_owner:isolated_ci_only@127.0.0.1:5432/sg2_operation_test
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,6 +59,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Install public isolated test fixture dependencies
+        run: npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
       - name: Test contract and laboratory guards without credentials or database access
         run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs
       - name: Validate registered routing and workspace isolation
