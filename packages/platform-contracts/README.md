@@ -2,7 +2,7 @@
 
 Owner: ARCHITECTURE. The Development contract identifies a governance track; `projectKey` does not replace Organisation ID or User ID. SG2 and SRM retain separate governed adoption tasks, versions and source digests. Source merge and product deployment remain separate. Run `npm test` and `npm run build` here; see `Canon/runbooks/shared-development-contract-integration-v1.md` for the existing adoption protocol.
 
-`development-context` retains contract 1.0.0 and its existing source digest. Package 1.1.0 adds a separate `operation-context` export: contract `profitia.operation-context` 1.0.0, implementation `1.0.0-candidate.1`. No network service or framework upgrade is required.
+`development-context` retains contract 1.0.0 and its existing source digest. Package 1.1.2 supplies the separate `operation-context` export: contract `profitia.operation-context` 1.0.0, implementation `1.0.0-candidate.2`. The Node24 import and require conditions point to the same implementation; hosts use `isOperationDenied` to transport errors safely across bundler/module copies. No network service or framework upgrade is required.
 
 ## Bounded operation candidate
 

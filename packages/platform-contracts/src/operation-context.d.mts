@@ -59,9 +59,10 @@ export interface OperationExecutor<Transaction = unknown> {
   contract: Readonly<{ id: string; version: string; implementation: string }>
   execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractVersion: string; value: T }>>
 }
-export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.1' }>
+export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.2' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
+export declare function isOperationDenied(error: unknown): error is OperationDenied
 export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
 export declare function createOperationExecutor<Transaction>(options: {
