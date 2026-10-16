@@ -1,3 +1,4 @@
+import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import { createHash } from "node:crypto";
 import type { FinancialData, FinancialPeriod } from "@profitia/srm-xray";
 import type { FinancialSourceDocument } from "./financial-documents";
@@ -130,7 +131,7 @@ export function mergeMsrFinancial(base: MgbiFinancialResult, projections: readon
   const projectedPeriods = projections.flatMap(p => p.data.periods);
   const periods = [...projectedPeriods, ...(base.section.data?.periods ?? []).filter(p =>
     !projectedPeriods.some(n => n.scope===p.scope && n.from===p.from && n.to===p.to))];
-  const data = {periods,revisionRule:"FINANCIAL_REVISIONS_V1"};
+  const data = {...base.section.data,periods,qualityRule:FINANCIAL_QUALITY_RULE,revisionRule:"FINANCIAL_REVISIONS_V1"};
   return {...base,sourceData:data,facts:[...base.facts.filter(f=>!projections.some(p=>p.data.periods.some(period=>period.from===f.periodStart && period.to===f.periodEnd && (period.scope==="standalone"?"UNIT":"CONSOLIDATED")===f.statementScope))),...projections.flatMap(p => p.facts)],errorCode:null,section:{...base.section,status:warnings.length ? "PARTIAL" : "SUCCESS",data,
     retrievedAt:[base.section.retrievedAt ?? "",...projections.map(p=>p.retrievedAt)].sort().at(-1)!,
     warnings:[...new Set([...base.section.warnings.filter(w => !["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS","MGBI_NO_STRUCTURED_FINANCIAL_DATA","MGBI_FINANCIAL_UNKNOWN_FORMAT","MGBI_FINANCIAL_UNSUPPORTED_XML","MGBI_FINANCIAL_NO_XML"].includes(w)),...warnings])]} };

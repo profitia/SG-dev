@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { type FinancialData, type FinancialPeriod } from "@profitia/srm-xray";
+import { financialQualityIssues, financialQualityLabels, financialLabels, type FinancialData, type FinancialPeriod } from "@profitia/srm-xray";
 
 type Scope = FinancialPeriod["scope"];
 import { financialRowPresentation } from "./financial-schema-labels";
@@ -69,7 +69,7 @@ function addSheet(workbook: ExcelJS.Workbook, name: string, section: "Bilans" | 
   const rows = new Map<string, DisplayRow>();
   for (const { document } of documents) for (const item of document.rows.filter(row => row.section === section)) {
     const presentation = financialRowPresentation(document, item);
-    const family = document.schemaName?.replace(/(WZlotych|WTysiacachZlotych)$/, "") ?? document.schemaName ?? "";
+    const family = document.schemaName?.replace(/(WZlotych|WTysiacach(?:Zlotych)?)$/, "") ?? document.schemaName ?? "";
     // Merge only the same source position with the same verified meaning across selected documents.
     // Amounts always stay in that document's own columns; name or amount alone is never an identity.
     const key = JSON.stringify([family, item.sourcePath.replaceAll(">", "."), presentation.label]);
@@ -103,6 +103,27 @@ function registrySources(sheet: ExcelJS.Worksheet, periods: readonly FinancialPe
   sheet.addRow(["Porównywalność","Ciągłość rejestrowa nie zastępuje potwierdzenia zgodności standardu, zakresu i okresów sprawozdawczych."]);
 }
 
+/** Preserve source amounts; disclose quality and alternative comparisons alongside them. */
+function qualitySheet(workbook: ExcelJS.Workbook, periods: readonly FinancialPeriod[]): void {
+  if (!periods.some(p => financialQualityIssues(p).length || p.comparativeData)) return;
+  const sheet = workbook.addWorksheet("Jakość danych");
+  sheet.columns = [50, 65, 32, 32, 28].map(width=>({width}));
+  sheet.addRow(["Okres / zakres", "Uwaga / pozycja", "Dane zwykłe", "Dane przekształcone", "Jednostka"]);
+  sheet.getRow(1).font = {bold: true};
+  for (const p of periods) {
+    const title = `${p.from} – ${p.to} · ${p.scope === "standalone" ? "jednostkowe" : "skonsolidowane"}`;
+    for (const issue of financialQualityIssues(p)) sheet.addRow([title,financialQualityLabels[issue]]);
+    if (!p.comparativeData) continue;
+    sheet.addRow([title,p.comparativeData.dateBasis === "UNCONFIRMED" ? "Okres danych przekształconych niepotwierdzony" : "Poprzedni rok kalendarzowy"]);
+    const {original,restated}=p.comparativeData;
+    for (const code of new Set([...original,...restated].map(f=>f.metricCode))) {
+      const a=original.find(f=>f.metricCode===code), b=restated.find(f=>f.metricCode===code);
+      sheet.addRow([title,financialLabels[code]?.label ?? "Pozycja źródłowa",exactExcelAmount(a?.amount ?? null),exactExcelAmount(b?.amount ?? null),
+        a?.unit === b?.unit ? a?.unit : `zwykłe: ${a?.unit ?? "brak"}; przekształcone: ${b?.unit ?? "brak"}`]);
+    }
+  }
+}
+
 export async function buildFinancialExcel(data: FinancialData, selection: FinancialExcelSelection, now = new Date(), sourceDocuments: readonly FinancialSourceDocument[] = []): Promise<{ filename: string; bytes: Buffer }> {
   const available = new Map(periodsForExcel(data, selection.scope).map((period) => [period.to.slice(0, 4), period]));
   if (selection.years.some((year) => !available.has(year))) throw new Error("Wybrane lata nie są dostępne w zapisanym raporcie.");
@@ -124,6 +145,7 @@ export async function buildFinancialExcel(data: FinancialData, selection: Financ
     meta.addRow(["NIP",selection.nip]);meta.addRow(["Zakres",selection.scope]);meta.addRow(["Wartości","Jednostki podstawowe po zastosowaniu skali iXBRL; zachowane znaki źródłowe"]);
     for(const d of sourceDocuments.filter(d=>selectedPeriods.some(p=>p.documentId.startsWith(d.recordId+":")))) meta.addRow(["Dokument MGBI",d.recordId,d.checksum,d.mappingVersion]);
     registrySources(meta,selectedPeriods);
+    qualitySheet(workbook,selectedPeriods);
     return {filename:`Financials_MSR_${selection.nip}_${financialExcelDate(now)}.xlsx`,bytes:Buffer.from(await workbook.xlsx.writeBuffer())};
   }
   if (selectedPeriods.some(p=>p.accountingStandard === "IAS_IFRS")) throw new Error("Wybierz lata o jednym standardzie sprawozdawczym do jednego eksportu.");
@@ -143,5 +165,6 @@ export async function buildFinancialExcel(data: FinancialData, selection: Financ
   addSheet(workbook, `ProfitLoss_${selection.nip}_${date}`, "RZiS", documents);
   addSheet(workbook, `Balance_${selection.nip}_${date}`, "Bilans", documents);
   if (selectedPeriods.some(p=>p.sourceRegistration)) registrySources(workbook.addWorksheet("Źródła"),selectedPeriods);
+  qualitySheet(workbook,selectedPeriods);
   return { filename: `Financials_${selection.nip}_${date}.xlsx`, bytes: Buffer.from(await workbook.xlsx.writeBuffer()) };
 }

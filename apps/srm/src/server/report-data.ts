@@ -1,4 +1,4 @@
-import { isRestrictedRegistrationStatus } from "@profitia/srm-xray";
+import { financialQualityReason, financialQualityIssues, FINANCIAL_QUALITY_RULE, isRestrictedRegistrationStatus } from "@profitia/srm-xray";
 import { readSupplierRegistrationStatus } from "./company-activity";
 import { productEnvironmentReady, productOrganizationId } from "./runtime-environment";
 import { financialScanner } from "./financial-scanner";
@@ -101,26 +101,29 @@ function factEvidence(nip: string, period: FinancialPeriod, displayed: Financial
       : stored?.normalizationRule === "UNVERIFIED_COST_SIGN" ? "SOURCE_UNCONFIRMED" : "UNKNOWN";
   const matches = Boolean(stored?.sourceSnapshotId && decimal(stored.amount) !== null && decimal(stored.amount) === decimal(displayed.amount)
     && stored.currencyCode === displayed.currency && stored.unitCode === displayed.unit);
-  const verified = mappingCurrent && matches && stored?.validationStatus === "VALID" && normalization !== "UNKNOWN" && normalization !== "SOURCE_UNCONFIRMED";
+  const qualityReason = financialQualityReason(period, [displayed.metricCode]);
+  const verified = !qualityReason && mappingCurrent && matches && stored?.validationStatus === "VALID" && normalization !== "UNKNOWN" && normalization !== "SOURCE_UNCONFIRMED";
   return { ref: opaque([reference, period.from, period.to, displayed.metricCode]), documentRef: reference,
     metricCode: displayed.metricCode, periodStart: period.from, periodEnd: period.to, scope: period.scope,
     amount: displayed.amount, sourceAmount: matches ? stored!.sourceAmount : null, currency: displayed.currency, unit: displayed.unit,
     validation: !stored ? "UNAVAILABLE" : verified ? "VERIFIED" : "UNVERIFIED", normalization,
     normalizationRule: stored?.normalizationRule ?? null,
-    reasonCode: !stored ? "SOURCE_FACT_NOT_STORED" : !mappingCurrent ? "MAPPING_VERSION_OUTDATED" : !matches ? "REPRESENTATION_MISMATCH"
-      : verified ? null : "SOURCE_VALIDATION_UNCONFIRMED" };
+    reasonCode: qualityReason ?? (!stored ? "SOURCE_FACT_NOT_STORED" : !mappingCurrent ? "MAPPING_VERSION_OUTDATED" : !matches ? "REPRESENTATION_MISMATCH"
+      : verified ? null : "SOURCE_VALIDATION_UNCONFIRMED") };
 }
 
 /** Allowlisted projection. Neither source paths, snapshot UUIDs nor provider JSON leave this function. */
 export function projectReportData(selection: ReportSelection, row: ReportReadRow, now = new Date(), env: Readonly<Record<string, string | undefined>> = process.env): SupplierReportData {
   if (row.nip !== selection.nip || row.indicators.some(i => i.nip !== selection.nip)) throw new Error("Report supplier identity mismatch");
   const section = selection.entityType === "COMPANY" ? row.financial_json : null;
-  const mappingCurrent = section?.catalogMappingVersion === FINANCIAL_MAPPING_VERSION;
+  const mappingCurrent = section?.catalogMappingVersion === FINANCIAL_MAPPING_VERSION && (!section.data || section.data.qualityRule === FINANCIAL_QUALITY_RULE);
   const selected = section?.data ? selectedPeriods(section.data) : [];
   const factMap = new Map(row.facts.map(f => [`${f.periodStart}:${f.periodEnd}:${f.statementScope === "UNIT" ? "standalone" : f.statementScope === "CONSOLIDATED" ? "consolidated" : "unknown"}:${f.metricCode}`, f]));
   const quality = new Map<string, FinancialFactEvidence>();
   const periods = selected.map(period => ({ from: period.from, to: period.to, year: period.to.slice(0, 4), scope: period.scope,
     accountingStandard: period.accountingStandard ?? "UNKNOWN",
+    qualityIssues: financialQualityIssues(period),
+    ...(period.comparativeData ? {comparativeData: period.comparativeData} : {}),
     ...(period.sourceRegistration ? {sourceRegistration:period.sourceRegistration} : {}),
     documentRef: documentRef(selection.nip, period),
     facts: period.facts.map(displayed => {
@@ -151,7 +154,11 @@ export function projectReportData(selection: ReportSelection, row: ReportReadRow
         evidence.push(publicFact);
       }
       const matchesDefinition = result?.unit === definition.unit && result?.importance === definition.importance;
-      const reasonCode = !result ? "CALCULATION_NOT_STORED" : result.status === "UNAVAILABLE" ? result.reasonCode
+      const qualityReason = (result?.inputFacts ?? []).map(input => {
+        const source = documents.get(periodKey(input.periodStart,input.periodEnd,period.scope));
+        return source ? financialQualityReason(source,[input.metricCode]) : null;
+      }).find(Boolean);
+      const reasonCode = !result ? "CALCULATION_NOT_STORED" : qualityReason ? qualityReason : result.status === "UNAVAILABLE" ? result.reasonCode
         : !mappingCurrent ? "MAPPING_VERSION_OUTDATED" : !matchesDefinition ? "INDICATOR_CONTRACT_MISMATCH"
           : !evidenceValid ? "STORED_EVIDENCE_MISMATCH" : result.value === null || decimal(result.value) === null ? "INVALID_STORED_VALUE" : null;
       const point: FinancialHistoryPoint = { code, periodStart: period.from, periodEnd: period.to, scope: period.scope,

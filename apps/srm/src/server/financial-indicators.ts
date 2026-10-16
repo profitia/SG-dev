@@ -1,4 +1,5 @@
 import type { FinancialData, FinancialPeriod } from "@profitia/srm-xray";
+import { financialQualityReason } from "@profitia/srm-xray";
 type FinancialIndicatorResult = NonNullable<FinancialData["indicators"]>[number];
 
 export const FINANCIAL_INDICATOR_FORMULA_VERSION = "1.3";
@@ -147,6 +148,8 @@ function indicatorFor(
     sourcePeriods.push([prior, [...(definition.prior ? [definition.prior] : []), ...(definition.priorFields ?? [])]]);
   }
   for (const [sourcePeriod, codes] of sourcePeriods) {
+    const qualityReason = financialQualityReason(sourcePeriod, codes);
+    if (qualityReason) return finish(qualityReason);
     const currentSnapshotIds = new Set<string>();
     for (const code of codes) {
       const sourceCode = code === "PALA_NRFS" && sourcePeriod.accountingStandard === "IAS_IFRS" ? "MSR_REVENUE" : code;

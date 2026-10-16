@@ -1,3 +1,4 @@
+import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import test from "node:test";
 import assert from "node:assert/strict";
 import React from "react";
@@ -32,7 +33,7 @@ function fixture() {
       { metricCode: "PALA_PLFOA", amount: "832379000", currency: "PLN", unit: "PLN" },
     ], msrRows: [{ key: "revenue", label: "Przychody", section: "RZiS", amount: "2146056000", currency: "PLN", unit: "PLN", validation: "VALID", dimensions: [] }],
   }));
-  const section = { status: "PARTIAL" as const, data: { periods }, retrievedAt: "2026-10-15T07:19:52.391Z", effectiveAt: null,
+  const section = { status: "PARTIAL" as const, data: { periods, qualityRule: FINANCIAL_QUALITY_RULE }, retrievedAt: "2026-10-15T07:19:52.391Z", effectiveAt: null,
     warnings: [], source: { provider: "MGBI" as const, model: "pl-krs-rdf-record", recordId: null }, catalogMappingVersion: FINANCIAL_MAPPING_VERSION };
   const row: ReportReadRow = { nip, financial_json: section, financial_sha256: "a".repeat(64), financial_checked_at: section.retrievedAt,
     kys: null, indicators: [], facts: periods.flatMap(p => p.facts.map(f => ({...f, periodStart:p.from,periodEnd:p.to,

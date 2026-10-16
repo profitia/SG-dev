@@ -1,3 +1,4 @@
+import { financialQualityLabels } from "./financial-quality";
 export type IndicatorPreview = { name: string; description: string; formula: string; requirement?: string; code?: string };
 
 export const indicatorGroups: { title: string; description: string; indicators: IndicatorPreview[] }[] = [
@@ -29,6 +30,8 @@ export const indicatorGroups: { title: string; description: string; indicators: 
 ];
 
 export const indicatorReasons: Record<string, string> = {
+  ...financialQualityLabels,
+  MAPPING_VERSION_OUTDATED: "Zapisane dane wymagają ponownego sprawdzenia reguł jakości.",
   MISSING_FIELD: "W zapisanym sprawozdaniu brakuje potrzebnej pozycji.",
   SOURCE_MAPPING_UNCONFIRMED: "Nie potwierdzono jeszcze dokładnego mapowania pól źródłowych dla tego wzoru.",
   UNVERIFIED_FIELD: "Wartość źródłowa wymaga potwierdzenia.",
