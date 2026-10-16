@@ -1,7 +1,19 @@
-# Development integration contracts
+# Platform contracts
 
-Owner: ARCHITECTURE. This package defines the identity of a development track. `projectKey` is a governance project; it does not replace Organisation ID or User ID and does not implement SaaS tenancy.
+Owner: ARCHITECTURE. The Development contract identifies a governance track; `projectKey` does not replace Organisation ID or User ID. SG2 and SRM retain separate governed adoption tasks, versions and source digests. Source merge and product deployment remain separate. Run `npm test` and `npm run build` here; see `Canon/runbooks/shared-development-contract-integration-v1.md` for the existing adoption protocol.
 
-The source remains one implementation. SG2 and SRM adopt the contract in separate governed tasks, recording its version and source digest. A changed digest requires explicit consumer integration and CI. A monorepo folder or version string alone does not isolate an application's next build. Experiments stay on the Architecture branch until dependent checks pass; deployed products retain their accepted revisions and separate release procedures.
+`development-context` retains contract 1.0.0 and its existing source digest. Package 1.1.0 adds a separate `operation-context` export: contract `profitia.operation-context` 1.0.0, implementation `1.0.0-candidate.1`. No network service or framework upgrade is required.
 
-Run `npm test` and `npm run build` here. Product adapters and integration CI are completed in the remaining E0-A-06 tasks. See Canon/runbooks/shared-development-contract-integration-v1.md.
+## Bounded operation candidate
+
+Implemented rules: account settings read/write, market knowledge read, benchmark selection read/write, personal list read/write, supplier report pure read and organisation-local projection. Every other operation fails closed. This is not delivery of all 30 target rules, login/onboarding, role administration, delegation/jobs, metered refresh, billing, support, files or exports.
+
+The host explicitly accepts the implementation/type digest and supplies server-owned authentication, authoritative locked policy/resource/product loading, transaction and output-projection adapters. HTTP headers, a `verified` flag, role names and a previously issued decision cannot grant access. Products and actor permissions are independent. Personal data preserves both organisation and effective-user ownership. A service grant does not impersonate a person; delegation is denied in this candidate.
+
+`withTransaction` must bind the actual limited-role business connection, lock current authority rows (including entitlement/resource versions), set transaction-local organisation/user context, and roll back on any error. The action receives only this transaction and an immutable context. It must not use an owner connection, another transaction, a global singleton, external side effects or an unguarded alternate persistence path. The host projects/validates the result before release. READ operations must have no business writes. Selected WRITE operations are local, idempotent upserts/projections; paid/provider operations are not enabled.
+
+`recordAudit` durably appends INTENT before the action and DENY/FAILURE after rollback. `recordOutcome` writes OUTCOME atomically with the business transaction. If either audit step fails, no result is released and an uncommitted business effect rolls back. Audit storage is append-only to the runtime; record IDs, versions and payload digest, never credentials or payload contents. Database commit failure must retain the intent and produce failure/reconciliation evidence. Returned decisions are diagnostic receipts, not reusable bearer capabilities.
+
+`apps/architecture-lab/src/operation-test-authority.mjs` is a random-key synthetic issuer for isolated tests only. It is not a customer IdP and must never be imported by a deployed route. Real deployment adoption needs separately accepted identity, membership, policy, storage and release adapters; current PORR demo behaviour is preserved until that migration.
+
+Unit tests verify the executor and actual signature checks. Ordinary-role database/API integration, app builds and existing regression suites are separately evidenced by SG2/SRM consumer tasks. Unit PASS is not a product or production security certification.
