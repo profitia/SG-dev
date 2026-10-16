@@ -1,3 +1,5 @@
+import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
+import { verifiedXmlMultiplier, equalAmounts, multiplySourceAmount } from "./financial-unit";
 import { withOrganization } from "./db";
 import { projectArchivedFinancialDocuments, financialRecordsFromPages, type FinancialArchive } from "./financial-documents";
 import { resolveDocumentFamily, FINANCIAL_REVISION_RULE } from "./financial-revisions";
@@ -51,6 +53,23 @@ const XML_FINANCIAL_FIELDS: Record<string, string> = {
   "RachPrzeplywow.PrzeplywyBezp.A.A_III": "CFS_OPERATING_CASH_FLOW",
   "RachPrzeplywow.PrzeplywyPosr.B.B_II.B_II_1": "CFS_CAPITAL_EXPENDITURE",
   "RachPrzeplywow.PrzeplywyBezp.B.B_II.B_II_1": "CFS_CAPITAL_EXPENDITURE",
+};
+
+// Corroboration only: do not broaden extracted-only mappings or mix P&L variants.
+const XML_UNIT_FIELDS: Record<string,string> = {
+  ...XML_FINANCIAL_FIELDS,
+  "Bilans.Aktywa": "BS_A_TA",
+  "Bilans.Aktywa.Aktywa_A": "BS_A_FA",
+  "Bilans.Aktywa.Aktywa_B": "BS_A_CA",
+  "Bilans.Pasywa.Pasywa_A": "BS_LAE_E",
+  "Bilans.Pasywa.Pasywa_B": "BS_LAE_LAPFL",
+  "Bilans.Pasywa.Pasywa_B.Pasywa_B_III": "BS_LAE_LAPFL_STL",
+  "RZiS.RZiSPor.A": "PALA_NRFS",
+  "RZiS.RZiSPor.B": "PALA_OAC",
+  "RZiS.RZiSPor.C": "PALA_PLFS",
+  "RZiS.RZiSPor.F": "PALA_PLFOA",
+  "RZiS.RZiSPor.I": "PALA_GPL",
+  "RZiS.RZiSPor.L": "PALA_NPL",
 };
 
 function obj(value: unknown): RecordObject | null {
@@ -178,7 +197,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     // in a declared comparative column is not filled from another document;
     // absence of that entire column cannot hide an older annual statement.
     const hasPriorColumn=documentMetadata?.columns.some(c=>c.sourceColumn==="KwotaB")
-      || [standardized,extracted].some(dictionary=>Object.values(dictionary ?? {}).some(group=>Object.keys(obj(group) ?? {}).some(key=>key.endsWith("_pfy"))));
+      || [standardized,extracted].some(dictionary=>Object.values(dictionary ?? {}).some(group=>Object.keys(obj(group) ?? {}).some(key=>/_(pfy|cpfy)$/.test(key))));
     for (const [start,end] of [[from,to],...(hasPriorColumn?[[previousYear(from),previousYear(to)]]:[])]) {
       const key = `${scope}:${start}:${end}`;
       if (!owners.has(key)) owners.set(key,recordId);
@@ -186,8 +205,21 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     if ((!standardized && !extracted) || documentMetadata?.availability === "NO_XML" || documentMetadata?.availability === "UNSUPPORTED_XML") continue;
     const revision = resolveDocumentFamily([...documents.values()].filter(d=>d.scope===documentMetadata?.scope && d.from===from && d.to===to && d.sourceKrs===documentMetadata?.sourceKrs));
     const schema = string(field(record, "content", "schema", "name")) ?? "";
-    const unitCode = /wtysiacachzlotych/i.test(schema) ? "THOUSAND_PLN" : /wzlotych/i.test(schema) ? "PLN" : "UNKNOWN";
-    const validationStatus = unitCode === "PLN" ? "VALID" : "REVIEW";
+    const multiplier = verifiedXmlMultiplier(record, schema);
+    // Standardized values can already be PLN, even in a thousand-unit schema.
+    // Confirm each value against the extracted XML column instead of scaling twice.
+    const unitFor = (metric: string, numeric: string, column: string, dictionaryName: string): "PLN" | "UNKNOWN" => {
+      if (/WZlotych$/i.test(schema)) return "PLN";
+      if (multiplier === null || column === "RESTATED_UNCONFIRMED") return "UNKNOWN";
+      if (dictionaryName === "extracted_fields") return multiplier === 1 ? "PLN" : "UNKNOWN";
+      const paths = Object.entries(XML_UNIT_FIELDS).filter(([, code]) => code === metric);
+      return paths.some(([path]) => {
+        const source = amount(extracted?.[`${path}.${column}`]);
+        const normalized = source === null ? null : multiplySourceAmount(source, multiplier);
+        return normalized !== null && equalAmounts(numeric, normalized);
+      }) ? "PLN" : "UNKNOWN";
+    };
+    const restated: FinancialPeriod["facts"][number][] = [];
     const byPeriod = new Map<string, FinancialPeriod>();
     // MGBI defines extracted_fields as the complete XML field dictionary and
     // standardized_fields as its smaller comparable subset. Preserve the subset
@@ -209,6 +241,8 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
           if (owners.get(`${scope}:${periodStart}:${periodEnd}`) !== recordId || seen.has(unique)) continue;
           seen.add(unique);
           const periodType = periodStart.slice(0, 4) === periodEnd.slice(0, 4) && periodStart.endsWith("-01-01") && periodEnd.endsWith("-12-31") ? "YEAR" : "OTHER";
+          const unitCode = unitFor(metricCode, numeric, match![2] === "B" ? "KwotaB" : "KwotaA", dictionaryName);
+          const validationStatus = unitCode === "PLN" ? "VALID" : "REVIEW";
           facts.push({ metricCode, periodStart, periodEnd, periodType, statementScope: scope,
             amount: numeric, sourceAmount: numeric, normalizationRule: "SOURCE_VALUE", currencyCode: "PLN", unitCode,
             sourcePath: "content.extracted_fields." + xmlPath, validationStatus });
@@ -227,14 +261,20 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
       const section = obj(sectionFields);
       if (!section || !/^[a-z]{2,8}$/.test(sectionName)) continue;
       for (const [sourceKey, rawValue] of Object.entries(section)) {
-        const match = /^([a-z][a-z0-9_]{0,70})_(cfy|pfy)$/.exec(sourceKey);
+        const match = /^([a-z][a-z0-9_]{0,70})_(cfy|pfy|cpfy)$/.exec(sourceKey);
         const numeric = amount(rawValue);
         if (!match || numeric === null) continue;
-        const prior = match[2] === "pfy";
+        const prior = match[2] !== "cfy";
         const periodStart = prior ? previousYear(from) : from;
         const periodEnd = prior ? previousYear(to) : to;
         const metricCode = `${sectionName}_${match[1]}`.toUpperCase();
         if (metricCode.length > 80) continue;
+        const unitCode = unitFor(metricCode, numeric, match[2] === "cpfy" ? "RESTATED_UNCONFIRMED" : prior ? "KwotaB" : "KwotaA", dictionaryName);
+        const validationStatus = unitCode === "PLN" ? "VALID" : "REVIEW";
+        if (match[2] === "cpfy") {
+          if (!restated.some(f => f.metricCode === metricCode)) restated.push({ metricCode, amount: numeric, currency: "PLN", unit: unitCode });
+          continue;
+        }
         const unique = `${scope}:${periodStart}:${periodEnd}:${metricCode}`;
         if (owners.get(`${scope}:${periodStart}:${periodEnd}`) !== recordId || seen.has(unique)) continue;
         seen.add(unique);
@@ -258,8 +298,19 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
       }
       }
     }
+    if (restated.length && owners.get(`${scope}:${previousYear(from)}:${previousYear(to)}`) === recordId) {
+      let priorPeriod = byPeriod.get(`${recordId}:pfy`);
+      if (!priorPeriod) {
+        priorPeriod = { from: previousYear(from), to: previousYear(to), scope: scope === "UNIT" ? "standalone" : "consolidated", documentId: `${recordId}:pfy`, facts: [], effectiveRevisionId: revision.id, revisionStatus: revision.status, accountingStandard: documentMetadata?.standard };
+        periods.push(priorPeriod);
+      }
+      const original = structuredClone(priorPeriod.facts);
+      const differs = restated.some(r => !original.some(o => o.metricCode === r.metricCode && o.unit === r.unit && equalAmounts(o.amount,r.amount)));
+      priorPeriod.comparativeData = { original, restated, selected: differs ? "UNRESOLVED" : "ORIGINAL",
+        dateBasis: from.endsWith("-01-01") && to.endsWith("-12-31") ? "CALENDAR_PREVIOUS_YEAR" : "UNCONFIRMED" };
+    }
   }
-  if (!facts.length) {
+  if (!facts.length && !periods.some(p=>p.comparativeData?.restated.length)) {
     const availability = [...documents.values()].map((document) => document.availability);
     const warning = availability.length && availability.every(value => value === "NO_XML") ? "MGBI_FINANCIAL_NO_XML" : availability.includes("UNSUPPORTED_XML") ? "MGBI_FINANCIAL_UNSUPPORTED_XML" : availability.includes("UNKNOWN_FORMAT") ? "MGBI_FINANCIAL_UNKNOWN_FORMAT" : NO_FINANCIAL_FACTS;
     return empty("EMPTY", retrievedAt, warning, null);
@@ -269,7 +320,7 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     const registration = financialRegistration(document?.sourceKrs,history);
     if (registration) period.sourceRegistration=registration;
   }
-  const identityMetadata=history?{registryHistoryVersion:COMPANY_IDENTITY_VERSION}:{};
+  const identityMetadata={ qualityRule: FINANCIAL_QUALITY_RULE, ...(history?{registryHistoryVersion:COMPANY_IDENTITY_VERSION}:{}) };
   const sourceData: FinancialData = structuredClone({ periods, revisionRule:FINANCIAL_REVISION_RULE,...identityMetadata });
   const unverifiedCosts = reconcileCosts(periods, facts, sourceDocuments);
   const incomplete = totalCount > records.length;

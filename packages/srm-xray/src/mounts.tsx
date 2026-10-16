@@ -12,7 +12,9 @@ import type {
 import { value, warningLabel } from "./kys-content";
 import { FinancialDashboard, type FinancialPeriodSelection } from "./financial-dashboard";
 
-import { CanonButton } from "./ui-canon";
+import { CanonButton, CanonElement } from "./ui-canon";
+import { financialQualityIssues, financialQualityLabels } from "./financial-quality";
+import { financialLabels } from "./financial-labels";
 import { KysIcon } from "./kys-report";
 import { VerclyKysReport } from "./kys-report";
 
@@ -75,6 +77,19 @@ export function FinancialDataMount({ section, onDownloadExcel, selectedScope, on
   const [exportOpen, setExportOpen] = useState(false);
   return (
     <SectionFrame title="Dane finansowe" section={section} actions={onDownloadExcel && section.data?.periods.some(period => period.facts.length) && <CanonButton canonId="SRM-C02" usage="FinancialDataMount:export" type="button" aria-haspopup="dialog" onClick={() => setExportOpen(true)}><KysIcon kind="download" />Pobierz do Excela</CanonButton>}>
+      {section.data?.periods.filter(p => (!selectedScope || p.scope === selectedScope) && (!selectedPeriod || (p.from === selectedPeriod.from && p.to === selectedPeriod.to))).map(p => {
+        const issues = financialQualityIssues(p), comparative = p.comparativeData;
+        if (!issues.length && !comparative) return null;
+        const display = (f: FinancialPeriod["facts"][number] | undefined) => f ? `${f.amount} ${f.unit === "UNKNOWN" ? "(jednostka niepotwierdzona)" : f.unit}` : "brak danych";
+        return <div key={`${p.documentId}:${p.from}:${p.to}`} aria-label="Jakość danych finansowych">
+          <p><strong>{p.from} – {p.to} · {p.scope === "standalone" ? "dane jednostkowe" : "dane skonsolidowane"}</strong></p>
+          {issues.map(issue => <p key={issue}>{financialQualityLabels[issue]}</p>)}
+          {comparative && <><p>Dane porównawcze: zachowano oddzielnie wartości zwykłe i przekształcone. {comparative.dateBasis === "UNCONFIRMED" ? "Okres danych przekształconych wymaga potwierdzenia." : "Dane porównawcze dotyczą poprzedniego roku kalendarzowego."}</p>
+            <CanonElement as="table" canonId="SRM-C48" usage="FinancialDataMount:comparatives"><thead><tr><th>Pozycja</th><th>Dane zwykłe</th><th>Dane przekształcone</th></tr></thead><tbody>
+              {[...new Set([...comparative.original, ...comparative.restated].map(f => f.metricCode))].map(code => <tr key={code}><th>{financialLabels[code]?.label ?? "Pozycja źródłowa"}</th><td>{display(comparative.original.find(f=>f.metricCode===code))}</td><td>{display(comparative.restated.find(f=>f.metricCode===code))}</td></tr>)}
+            </tbody></CanonElement></>}
+        </div>;
+      })}
       {section.data ? <FinancialDashboard exportOpen={exportOpen} onCloseExport={() => setExportOpen(false)} data={section.data} onDownloadExcel={onDownloadExcel} selectedScope={selectedScope} onScopeChange={onScopeChange} selectedPeriod={selectedPeriod} /> : <p>brak danych</p>}
     </SectionFrame>
   );

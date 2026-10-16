@@ -1,3 +1,4 @@
+import { financialQualityReason } from "@profitia/srm-xray";
 import { createHash } from "node:crypto";
 import type {
   FinancialPeriod,
@@ -81,9 +82,9 @@ export function qualifyScannerSources(
         return reject("ACCOUNTING_STANDARD_UNCONFIRMED");
       if (
         doc.currency !== "PLN" ||
-        doc.scale !== "1" ||
-        (doc.schemaName !== "JednostkaInnaWZlotych" &&
-          doc.schemaName !== "SkonsolidowanaJednostkaInnaWZlotych")
+        !["1", "1000"].includes(doc.scale ?? "") ||
+        !/^(Skonsolidowana)?JednostkaInna(WZlotych|WTysiacach(?:Zlotych)?)$/.test(doc.schemaName ?? "") ||
+        (doc.scale === "1000" && doc.unitBasis !== "MGBI_VALIDATED_XML_MULTIPLIER")
       )
         return reject("UNSUPPORTED_SOURCE_BASIS");
       if (
@@ -126,7 +127,7 @@ export function qualifyScannerSources(
       }
       const column = comparative ? "KwotaB" : "KwotaA";
       const rows = new Map(
-        doc.rows.map((r) => [path(r.sourcePath), amount(r.amounts[column])]),
+        doc.rows.map((r) => { const raw = amount(r.amounts[column]); return [path(r.sourcePath), raw === null ? null : raw * BigInt(doc.scale!)] as const; }),
       );
       // A duplicated path is ambiguous even when its values happen to agree.
       const seen = new Set<string>();
@@ -143,6 +144,7 @@ export function qualifyScannerSources(
           v = amount(f?.amount);
         return (
           !!f &&
+          !financialQualityReason(original, [code]) &&
           f.validation === "VERIFIED" &&
           f.scope === p.scope &&
           f.periodStart === p.from &&
@@ -188,7 +190,7 @@ export function qualifyScannerSources(
       }
       // MF full UoR schemas: consolidated O is negative goodwill, not net result.
       const calculationSchema = ["1-0", "1-1", "1-0E", "1-2", "1-3"].includes(doc.schemaVersion ?? "") &&
-        doc.schemaName === (p.scope === "consolidated" ? "SkonsolidowanaJednostkaInnaWZlotych" : "JednostkaInnaWZlotych");
+        doc.schemaName?.replace(/WTysiacach(?:Zlotych)?$/, "WZlotych") === (p.scope === "consolidated" ? "SkonsolidowanaJednostkaInnaWZlotych" : "JednostkaInnaWZlotych");
       if (hasKalk && !hasPor && calculationSchema) {
         const netPath = p.scope === "consolidated" ? "RZiS.RZiSKalk.W" : "RZiS.RZiSKalk.O";
         if (match("PALA_NPL", netPath))

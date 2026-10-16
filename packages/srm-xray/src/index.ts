@@ -20,6 +20,8 @@ export type {
   VerclyKysData,
   SupplierXRayCard,
 } from "./contracts";
+export { FINANCIAL_QUALITY_RULE, financialQualityIssues, financialQualityReason, financialQualityLabels } from "./financial-quality";
+export type { FinancialQualityCode } from "./financial-quality";
 
 export { JdgRegistryMount } from "./jdg";
 export { AVAILABLE_REPORT, IAS_UNAVAILABLE_MESSAGE, LIQUIDATION_MESSAGE, reportAvailability, type ReportAvailability } from "./report-availability";

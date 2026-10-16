@@ -13,7 +13,10 @@ export function financialRowPresentation(document: FinancialSourceDocument, row:
   label: string; order: number; basis: string;
 } {
   const path = row.sourcePath.replaceAll(">", ".");
-  const prefix = `${document.schemaName}|${document.schemaVersion}|`;
+  // MGBI shortens the unit suffix; the MF table is still keyed by family,
+  // revision, variant and the complete XML path. This alias never changes amounts.
+  const schemaName = document.schemaName?.replace(/^(Skonsolidowana)?Jednostka(Inna|Mala|Mikro)WTysiacach$/, "$1Jednostka$2WTysiacachZlotych");
+  const prefix = `${schemaName}|${document.schemaVersion}|`;
   const systemVariant = /\((\d+)\)$/.exec(document.schemaSystemCode ?? "")?.[1];
   const conflictingVariant = Boolean(document.schemaVariant && systemVariant && document.schemaVariant !== systemVariant);
   const variants = conflictingVariant ? [] : document.schemaVariant ? [document.schemaVariant] : systemVariant ? [systemVariant] : ["1", "2"];

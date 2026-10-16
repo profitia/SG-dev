@@ -1,3 +1,4 @@
+import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { FinancialData, FinancialHistoryPoint } from "@profitia/srm-xray";
@@ -11,11 +12,11 @@ const selection = { nip: "8650004194", entityType: "COMPANY" as const };
 const now = new Date("2026-10-08T12:00:00Z");
 function fixture(years = [2025, 2024], scopes: Array<"standalone" | "consolidated"> = ["standalone"]): ReportReadRow {
   const facts: ReportReadRow["facts"] = [];
-  const data: FinancialData = { periods: scopes.flatMap(scope => years.map(year => {
+  const data: FinancialData = { qualityRule: FINANCIAL_QUALITY_RULE, periods: scopes.flatMap(scope => years.map(year => {
     const from = `${year}-01-01`, to = `${year}-12-31`;
     const values = FINANCIAL_INDICATOR_INPUT_CODES.map((metricCode): CatalogIndicatorFact & { sourceAmount: string } => ({
       metricCode, periodStart: from, periodEnd: to, statementScope: scope === "standalone" ? "UNIT" : "CONSOLIDATED",
-      amount: metricCode === "BS_A_CA" ? String(year === 2025 ? 200 : 150) : "100", sourceAmount: "-100",
+      amount: metricCode === "BS_A_TA" ? "200" : metricCode === "BS_A_CA" ? String(year === 2025 ? 200 : 150) : "100", sourceAmount: "-100",
       currencyCode: "PLN", unitCode: "PLN", sourcePath: `private.provider.path.${metricCode}`,
       validationStatus: "VALID", normalizationRule: metricCode.startsWith("PALA_OAC") || metricCode === "PALA_COGS" ? "VERIFIED_COST_MAGNITUDE_V1" : "SOURCE_VALUE",
       sourceSnapshotId: `00000000-0000-4000-8000-${String(year).padStart(12, "0")}`,

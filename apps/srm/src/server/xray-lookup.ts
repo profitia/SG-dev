@@ -1,3 +1,4 @@
+import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import { isRestrictedRegistrationStatus } from "@profitia/srm-xray";
 import { enrichCompanyPkd } from "./company-pkd";
 import { COMPANY_IDENTITY_VERSION } from "./company-continuity";
@@ -127,7 +128,8 @@ export async function runXrayLookup(organizationId: string, request: XrayLookupR
     logProviderOutcome("MGBI", "financial", cached.financial.status, null, "CACHE");
     const needsRevisionProjection = cached.financial.data?.revisionRule !== "FINANCIAL_REVISIONS_V1";
     const needsRegistryProjection=!!history && cached.financial.data?.registryHistoryVersion!==COMPANY_IDENTITY_VERSION;
-    const reconstructed = needsRevisionProjection || needsRegistryProjection ? await reprojectFinancialArchive(organizationId,request.identifier.value,history) : null;
+    const needsQualityProjection = !!cached.financial.data && cached.financial.data.qualityRule !== FINANCIAL_QUALITY_RULE;
+    const reconstructed = needsRevisionProjection || needsRegistryProjection || needsQualityProjection ? await reprojectFinancialArchive(organizationId,request.identifier.value,history) : null;
     const msr = await atLookupStage("financial_persistence", () => enrichMsrFinancial(organizationId,request.identifier.value,
       reconstructed ?? {section:cached.financial,facts:[],errorCode:null},{requestId:lookup.requestId,allowedKrs,refreshMetadata:async()=>{
         const latest=await fetchMgbiFinancial(request.identifier,{companyHistory:history});

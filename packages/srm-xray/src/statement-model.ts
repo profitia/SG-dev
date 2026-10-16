@@ -1,3 +1,4 @@
+import { financialQualityIssues, financialQualityLabels } from "./financial-quality";
 import type { FinancialPeriod } from './contracts';
 import { amountInThousands, financialLabels } from './financial-labels';
 import type { FinancialHistoryPoint } from './financial-history-export';
@@ -19,7 +20,8 @@ export function statementPoints(periods:readonly FinancialPeriod[],code:string):
    // by one ULP and make the shared export reject its exact source string.
    const value=rawValue===null?null:Number(rawValue);
    const source=p.sourceRegistration;
-   return {year:Number(p.to.slice(0,4)),value,rawValue,...(source?{information:`Sprawozdanie: ${source.legalName ?? 'podmiot'} · KRS ${source.krs}${source.relationship==='PREDECESSOR'?' · poprzednik przed przekształceniem':''}.`}:{})};
+   const information = [source ? `Sprawozdanie: ${source.legalName ?? 'podmiot'} · KRS ${source.krs}${source.relationship==='PREDECESSOR'?' · poprzednik przed przekształceniem':''}.` : '', ...financialQualityIssues(p).map(issue=>financialQualityLabels[issue])].filter(Boolean).join(' ');
+   return {year:Number(p.to.slice(0,4)),value,rawValue,...(information?{information}:{})};
  });
 }
 export function statementRows(periods:readonly FinancialPeriod[]):StatementRow[] {

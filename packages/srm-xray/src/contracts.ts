@@ -58,6 +58,13 @@ export type GeneralCompanyData = {
 };
 
 export type FinancialPeriod = {
+  /** Retain separate provider representations; unresolved alternatives never qualify calculations. */
+  comparativeData?: {
+    selected: "ORIGINAL" | "RESTATED" | "UNRESOLVED";
+    dateBasis: "CALENDAR_PREVIOUS_YEAR" | "UNCONFIRMED";
+    original: readonly { metricCode: string; amount: string; currency: string; unit: string }[];
+    restated: readonly { metricCode: string; amount: string; currency: string; unit: string }[];
+  };
   sourceRegistration?: {
     krs: string; legalName: string | null;
     relationship: "CURRENT" | "PREDECESSOR" | "UNCONFIRMED";
@@ -100,6 +107,7 @@ export type FinancialIndicatorResult = {
 };
 
 export type FinancialData = {
+  qualityRule?: string;
   registryHistoryVersion?: "KRS_CONTINUITY_V1";
   revisionRule?: string;
   periods: readonly FinancialPeriod[];
@@ -197,6 +205,8 @@ export type SupplierReportData = {
       from: string; to: string; year: string; scope: FinancialPeriod["scope"];
       accountingStandard?: FinancialPeriod["accountingStandard"];
       sourceRegistration?: FinancialPeriod["sourceRegistration"];
+      qualityIssues?: readonly string[];
+      comparativeData?: FinancialPeriod["comparativeData"];
       documentRef: string; facts: readonly FinancialFactEvidence[];
     }[];
     history: readonly { code: string; reasonCode: string | null; points: readonly FinancialHistoryPoint[] }[];

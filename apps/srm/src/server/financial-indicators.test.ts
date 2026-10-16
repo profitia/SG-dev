@@ -77,7 +77,7 @@ test("year comparisons require adjacent annual periods and ROE rejects nonpositi
   for (const code of ["REVENUE_YOY", "ROA", "ROE"]) {
     assert.equal(newest(code, gap.data, gap.facts).reasonCode, "PRIOR_YEAR_NOT_COMPARABLE");
   }
-  const zeroEquity = fixture({ ...current, BS_LAE_E: "-2000000" });
+  const zeroEquity = fixture({ ...current, BS_LAE_E: "-2000000", BS_LAE_LAPFL: "7000000" });
   assert.equal(newest("ROE", zeroEquity.data, zeroEquity.facts).reasonCode, "NON_POSITIVE_EQUITY");
   const zeroRevenue = fixture({ ...current, PALA_NRFS: "0" });
   assert.equal(newest("NET_MARGIN", zeroRevenue.data, zeroRevenue.facts).reasonCode, "NON_POSITIVE_DENOMINATOR");
