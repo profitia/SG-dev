@@ -110,6 +110,22 @@ test("explicit XHTML NIP accepts formatting and split cells, while conflicting i
   }
 });
 
+test("explicit Numer NIP label preserves positioned XHTML identity without accepting prose or conflicting issuers",()=>{
+  const original=positionedFixture();
+  const change=(identity:string)=>({...original,files:original.files.map(f=>({...f,text:f.text.replace('<p>NIP: 5272443955</p>',identity)}))});
+  const baseline=parseMsrOriginal(original,expected);
+  for(const identity of ['<div class="t">Numer NIP: <span> </span>5272443955</div>',
+    '<p>Numer NIP: 527-24-43-955</p>',
+    '<div class="pf"><div class="c x1 y1">Numer NIP:</div><div class="c x2 y1">5272443955</div></div>']) {
+    assert.deepEqual(parseMsrOriginal(change(identity),expected),baseline);
+  }
+  for(const identity of ['<p>REGON 015803782 oraz numer NIP 5272443955.</p>',
+    '<p>Numer NIP: 5272443955</p><p>Numer NIP: 5252674798</p>',
+    '<p>Numer NIP: 5272443956</p>','<p>Numer NIP: 15272443955</p>',
+    '<div class="pf"><div class="c x1 y1">Numer NIP:</div><div class="c x2 y2">5272443955</div></div>'])
+    assert.throws(()=>parseMsrOriginal(change(identity),expected),/MSR_XHTML_ENTITY_UNCONFIRMED/);
+});
+
 function continuationFixture(length:number,cycle=false) {
   return fixture(number("123")+'<ix:nonNumeric name="f:Notes" contextRef="c" continuedAt="n0">start </ix:nonNumeric>'
     +Array.from({length},(_,i)=>`<ix:continuation id="n${i}"${i<length-1?` continuedAt="n${i+1}"`:cycle?' continuedAt="n0"':''}>part </ix:continuation>`).join(""));

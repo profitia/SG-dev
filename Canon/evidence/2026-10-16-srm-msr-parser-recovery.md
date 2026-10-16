@@ -8,6 +8,8 @@ ORLEN `7740001454` ujawnił dwie niezależne granice: formatowany NIP w jednostk
 
 Implementacja wykonuje regułę `MSR_PARSER_RECOVERY_V1` z §18.6 aktywnego kanonu finansowego. Jest wspólna dla emitentów, bez wyjątków po NIP. Zachowuje błędne receipts i oryginały, dopisuje projekcję z nową wersją oraz nie powtarza pobrania. Zmiany nie obejmują migracji schematu ani wzorów wskaźników.
 
+Kontrola regresji XTB wykazała jawny zapis `Numer NIP: 5272443955`. Walidacja dopuszcza obie zamknięte etykiety (`NIP`, `Numer NIP`) z identycznymi kontrolami cyfr, konfliktów i wiersza. Nie akceptuje narracji zawierającej numer. Nie zmienia to mapowania kwot, okresów ani już zapisanych projekcji; test porównuje pełny wynik parsera dla równoważnych etykiet.
+
 ## Dowody i ograniczenia
 
 - Testy deterministyczne obejmują formatowane i sprzeczne tożsamości, długie kontynuacje, cykle i budżet pracy, jednostki, daty, zakres, dane przekształcone, historię wersji, integralność oryginału i brak płatnych powtórzeń.
