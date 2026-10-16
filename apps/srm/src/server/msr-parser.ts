@@ -2,7 +2,9 @@ import { SaxesParser } from "saxes";
 import { createHash } from "node:crypto";
 import type { MsrOriginal } from "./msr-source";
 
-export const MSR_MAPPING_VERSION = "2026-10-15-ixbrl-v1";
+export const MSR_MAPPING_VERSION = "2026-10-16-ixbrl-v2";
+export const MSR_PARSER_RULE = "MSR_PARSER_RECOVERY_V1";
+export const MSR_READABLE_MAPPING_VERSIONS = new Set(["2026-10-15-ixbrl-v1", MSR_MAPPING_VERSION]);
 const IX = new Set(["http://www.xbrl.org/2013/inlineXBRL", "http://www.xbrl.org/2008/inlineXBRL"]);
 const INSTANCE = "http://www.xbrl.org/2003/instance";
 const DIM = "http://xbrl.org/2006/xbrldi";
@@ -11,7 +13,7 @@ const XLINK = "http://www.w3.org/1999/xlink";
 const XSI = "http://www.w3.org/2001/XMLSchema-instance";
 export type MsrStatement = "Bilans" | "RZiS" | "CashFlow" | "Equity" | "ComprehensiveIncome" | "Other";
 export type MsrContext = { id: string; entity: string; scheme: string; from: string | null; to: string;
-  instant: boolean; dimensions: Record<string, string> };
+  instant: boolean; dimensions: Record<string, string>; restated?: boolean };
 export type MsrUnit = { id: string; currency: string | null; measure: string; denominator: string | null };
 export type MsrFact = {
   id: string; concept: string; namespace: string; localName: string; contextRef: string; unitRef: string | null;
@@ -21,6 +23,7 @@ export type MsrFact = {
   validation: "VALID" | "REVIEW"; reason: string | null;
 };
 export type MsrParsed = { mappingVersion: string; sourceChecksum: string; standard: "IAS_IFRS";
+  parserRule?: typeof MSR_PARSER_RULE;
   sourceType?: "POSITIONED_XHTML";
   contexts: MsrContext[]; units: MsrUnit[]; facts: MsrFact[]; warnings: string[];
   relationships: { role: string; arcrole: string; from: string; to: string; weight: string | null }[] };
@@ -161,10 +164,14 @@ export function parseMsrOriginal(source: MsrOriginal, expected?: MsrExpectedIden
     units.push({ id: attr(node, "id")!, currency: measures[0]!.namespace === "http://www.xbrl.org/2003/iso4217" && /^[A-Z]{3}$/.test(measures[0]!.local) ? measures[0]!.local : null,
       measure: measures[0]!.expanded, denominator: divide ? measures[1]?.expanded ?? null : null });
   }
+  // The document's finite ID graph and cycle detection bound each chain. A shared
+  // work budget also bounds repeated/empty chains, independently of text limits.
+  let continuationSteps = 0;
   function continued(node: XNode): string {
     const seen = new Set<XNode>(); let current: XNode | undefined = node, result = "";
     while (current) {
-      if (seen.has(current) || seen.size > 512) invalid("MSR_CONTINUATION_INVALID");
+      if (seen.has(current)) invalid("MSR_CONTINUATION_INVALID");
+      if (++continuationSteps > 1_000_000) invalid("MSR_CONTINUATION_WORK_LIMIT");
       seen.add(current); result += text(current);
       if (result.length > 2_000_000) invalid("MSR_TEXT_LIMIT");
       const next = attr(current, "continuedAt");
@@ -256,18 +263,45 @@ export function parseMsrOriginal(source: MsrOriginal, expected?: MsrExpectedIden
     if (!fact.statements.length) fact.statements.push("Other");
     if (fact.reason) warnings.add("MSR_" + fact.reason);
   }
-  return { mappingVersion: MSR_MAPPING_VERSION, sourceChecksum: source.checksum, standard: "IAS_IFRS", contexts, units, facts,
+  return { mappingVersion: MSR_MAPPING_VERSION, parserRule:MSR_PARSER_RULE, sourceChecksum: source.checksum, standard: "IAS_IFRS", contexts, units, facts,
     warnings: [...warnings].sort(), relationships };
 }
 
 export type MsrExpectedIdentity = { nip:string; from:string; to:string; scope:"standalone"|"consolidated" };
 const XHTML_PRIMARY_NAMESPACE = "urn:profitia:msr:positioned-xhtml-primary:v1";
+const classesOf = (n: XNode) => (attr(n,"class") ?? "").split(/\s+/);
+const position = (n: XNode, kind: string) => classesOf(n).find(c => new RegExp(`^${kind}[0-9a-f]+$`).test(c));
+const leafCells = (n: XNode) => walk(n).filter(c => classesOf(c).includes("c") && !walk(c).slice(1).some(v => classesOf(v).includes("c")));
+
+/** Explicit NIP labels only. Formatting is normalized, digits are never repaired.
+ * Positioned label/value cells must share one row; conflicting labels fail closed. */
+function confirmXhtmlNip(body: XNode, expected: string): boolean {
+  const found = new Set<string>(), nip = /^\d(?:[\s\u2010\u2011-]*\d){9}$/;
+  const add = (value: string) => { if (nip.test(value)) found.add(value.replace(/[\s\u2010\u2011-]/g,"")); };
+  for (const node of walk(body).filter(n => ["p","div","span"].includes(n.local))) {
+    if (walk(node).some(n => ["script","style","template"].includes(n.local))) continue;
+    const value = compact(text(node));
+    if (value.length <= 128 && !walk(node).some(n=>classesOf(n).includes("c"))) {
+      const inline = /^NIP\s*:?\s*(\d[\d\s\u2010\u2011-]*)$/i.exec(value);
+      if (inline) add(inline[1]);
+    }
+  }
+  for (const page of walk(body).filter(n => classesOf(n).includes("pf"))) {
+    const cells = leafCells(page);
+    for (const label of cells.filter(n => /^NIP\s*:?$/i.test(compact(text(n))))) {
+      const row = position(label,"y");
+      if (!row) continue;
+      for (const value of cells.filter(n => n !== label && position(n,"y") === row)) add(compact(text(value)));
+    }
+  }
+  return found.size === 1 && found.has(expected);
+}
 /** Narrow non-iXBRL adapter: pdf2htmlEX cell grid, explicit primary headings,
  * column dates, currency/scale and NIP. No OCR, CSS execution or financial guesses. */
 function parsePositionedXhtml(root:XNode, source:MsrOriginal, expected:MsrExpectedIdentity):MsrParsed {
   const all=walk(root), classes=(n:XNode)=>(attr(n,"class")??"").split(/\s+/);
   const body=all.find(n=>n.local==="body");
-  if(!body || !walk(body).some(n => ["p","div","span"].includes(n.local) && new RegExp(`\\bNIP\\s*:?\\s*${expected.nip}\\b`,"i").test(compact(text(n))))) invalid("MSR_XHTML_ENTITY_UNCONFIRMED");
+  if(!body || !confirmXhtmlNip(body,expected.nip)) invalid("MSR_XHTML_ENTITY_UNCONFIRMED");
   if(!expected.from.endsWith("-01-01") || expected.to!==expected.from.slice(0,4)+"-12-31") invalid("MSR_XHTML_PERIOD_UNSUPPORTED");
   const prefix=expected.scope==="standalone"?"Jednostkowe":"Skonsolidowane";
   const pages=all.filter(n=>n.local==="div" && classes(n).includes("pf"));
@@ -279,34 +313,66 @@ function parsePositionedXhtml(root:XNode, source:MsrOriginal, expected:MsrExpect
     "Zysk netto":"ProfitLoss", "Aktywa razem":"Assets", "Zobowiązania razem":"Liabilities",
     "Kapitał własny razem":"Equity", "Aktywa obrotowe":"CurrentAssets", "Zobowiązania krótkoterminowe":"CurrentLiabilities",
     "Środki pieniężne":"CashAndCashEquivalents",
+    "Przychody ze sprzedaży":"Revenue", "Zysk/(Strata) netto":"ProfitLoss",
+    "Zysk/(Strata) przed opodatkowaniem":"ProfitLossBeforeTax",
+    "Koszt własny sprzedaży":"CostOfSales", "Zysk brutto ze sprzedaży":"GrossProfit",
+    "Koszty sprzedaży":"DistributionCosts", "Koszty ogólnego zarządu":"AdministrativeExpense",
+    "Przychody finansowe":"FinanceIncome", "Koszty finansowe":"FinanceCosts",
+    "Podatek dochodowy":"IncomeTaxExpenseContinuingOperations",
+    "Środki pieniężne i ich ekwiwalenty":"CashAndCashEquivalents",
   };
   for(const [section,title] of [["RZiS","sprawozdanie z dochodów całkowitych"],["Bilans","sprawozdanie z sytuacji finansowej"]] as const) {
-    const matching=pages.filter(p=>walk(p).some(n=>classes(n).includes("t") && compact(text(n)).toLowerCase()===`${prefix} ${title}`.toLowerCase()));
+    const titles=[title,...section==="RZiS"?["sprawozdanie z zysków lub strat i innych całkowitych dochodów"]:[]];
+    const matching=pages.filter(p=>walk(p).some(n=>classes(n).includes("t") && titles.some(t=>compact(text(n)).toLowerCase()===`${prefix} ${t}`.toLowerCase())));
     if(matching.length!==1) invalid("MSR_XHTML_PRIMARY_STATEMENT_AMBIGUOUS");
-    const page=matching[0], cells=walk(page).filter(n=>classes(n).includes("c") && !walk(n).slice(1).some(c=>classes(c).includes("c")));
-    const cls=(n:XNode,kind:string)=>classes(n).find(c=>new RegExp(`^${kind}[0-9a-f]+$`).test(c));
-    const headers=cells.filter(c=>/\b31\.12\.\d{4}\b/.test(compact(text(c))) && (section==="Bilans" || /12\s+MIESIĘCY\s+ZAKOŃCZONY/i.test(compact(text(c)))));
-    if(headers.length!==2 || cls(headers[0],"y")!==cls(headers[1],"y")) invalid("MSR_XHTML_COLUMNS_UNCONFIRMED");
-    const dates=headers.map(h=>{const matches=[...compact(text(h)).matchAll(/\b31\.12\.(\d{4})\b/g)]; if(matches.length!==1)invalid("MSR_XHTML_COLUMNS_UNCONFIRMED");return matches[0][1]+"-12-31";});
+    const page=matching[0], cells=leafCells(page), cls=position;
+    let headers=cells.filter(c=>/\b31\.12\.\d{4}\b/.test(compact(text(c))) && (section==="Bilans" || /12\s+MIESIĘCY\s+ZAKOŃCZONY/i.test(compact(text(c)))));
+    const million=cells.filter(c=>compact(text(c))==="(w mln PLN)");
+    const modern= million.length===1;
+    if(modern && cells.some(c=>/^\(w (?:tys\.|mln) [A-Z]{3}\)$/.test(compact(text(c))) && compact(text(c))!=="(w mln PLN)")) invalid("MSR_XHTML_UNIT_UNCONFIRMED");
+    if(modern) headers=cells.filter(c=>section==="RZiS"
+      ? /^\d{4}(?:\s+\(dane przekształcone\*?\))?$/i.test(compact(text(c)))
+      : /^(?:31\/12|01\/01)\/\d{4}(?:\s+\(dane przekształcone\*?\))?$/i.test(compact(text(c))));
+    if(!modern && (headers.length!==2 || cls(headers[0],"y")!==cls(headers[1],"y"))
+      || modern && headers.length!==(section==="Bilans"?3:2)) invalid("MSR_XHTML_COLUMNS_UNCONFIRMED");
+    const bodyText=modern ? compact(text(body)) : "";
+    const dates=headers.map(h=>{
+      const value=compact(text(h));
+      if(modern && section==="RZiS") {
+        const year=value.slice(0,4);
+        // A bare year is usable only with the source's explicit full-year declaration.
+        if(!new RegExp(`\\bod 1 stycznia do 31 grudnia ${year} roku\\b`,"i").test(bodyText)) invalid("MSR_XHTML_PERIOD_UNCONFIRMED");
+        return year+"-12-31";
+      }
+      const matches=[...value.matchAll(/\b(31|01)[./](12|01)[./](\d{4})\b/g)];
+      if(matches.length!==1)invalid("MSR_XHTML_COLUMNS_UNCONFIRMED");
+      return matches[0][3]+"-"+matches[0][2]+"-"+matches[0][1];
+    });
     if(dates[0]!==expected.to || dates[1]>=dates[0]) invalid("MSR_XHTML_PERIOD_UNCONFIRMED");
-    const unit=cells.filter(c=>cls(c,"y")===cls(headers[0],"y") && compact(text(c))==="(w tys. PLN)");
+    if(modern && section==="Bilans" && (dates[1]!==String(Number(expected.to.slice(0,4))-1)+"-12-31" || dates[2]!==dates[1].slice(0,4)+"-01-01")) invalid("MSR_XHTML_PERIOD_UNCONFIRMED");
+    const unit=modern ? million : cells.filter(c=>cls(c,"y")===cls(headers[0],"y") && compact(text(c))==="(w tys. PLN)");
     if(unit.length!==1)invalid("MSR_XHTML_UNIT_UNCONFIRMED");
     const labelX=cls(unit[0],"x"), valueX=headers.map(h=>cls(h,"x"));
-    if(!labelX || valueX.some(x=>!x) || new Set([labelX,...valueX]).size!==3)invalid("MSR_XHTML_COLUMNS_UNCONFIRMED");
-    for(let i=0;i<2;i++) {
+    if(!labelX || valueX.some(x=>!x) || new Set([labelX,...valueX]).size!==headers.length+1)invalid("MSR_XHTML_COLUMNS_UNCONFIRMED");
+    for(let i=0;i<headers.length;i++) {
       const contextId=`${section}:${dates[i]}`;
-      contexts.push({id:contextId,entity:expected.nip,scheme:"PL:NIP",from:section==="Bilans"?null:dates[i].slice(0,4)+"-01-01",to:dates[i],instant:section==="Bilans",dimensions:{}});
+      contexts.push({id:contextId,entity:expected.nip,scheme:"PL:NIP",from:section==="Bilans"?null:dates[i].slice(0,4)+"-01-01",to:dates[i],instant:section==="Bilans",dimensions:{},
+        .../dane przekształcone/i.test(compact(text(headers[i])))?{restated:true}:{}});
       for(const labelCell of cells.filter(c=>cls(c,"x")===labelX)) {
         const label=compact(text(labelCell)), localName=definitions[label];
         if(!localName || (section==="Bilans")!==["Assets","Liabilities","Equity","CurrentAssets","CurrentLiabilities","CashAndCashEquivalents"].includes(localName))continue;
         const values=cells.filter(c=>cls(c,"y")===cls(labelCell,"y") && cls(c,"x")===valueX[i]);
         if(values.length!==1)invalid("MSR_XHTML_CELL_AMBIGUOUS");
-        const raw=compact(text(values[0])), negative=/^\([\d\s]+\)$/.test(raw);
+        const raw=compact(text(values[0]));
+        // Section headings without a value are not labelled subtotals. Do not
+        // infer a current-assets/liabilities amount from an unlabelled later row.
+        if(!raw) continue;
+        const negative=/^\([\d\s]+\)$/.test(raw);
         const lexical=negative?"-"+raw.slice(1,-1).replace(/\s/g,""):raw.replace(/\s/g,"");
-        const value=/^-?\d{1,20}$/.test(lexical)?decimal(lexical,3):null;
+        const scale=modern?6:3, value=/^-?\d{1,20}$/.test(lexical)?decimal(lexical,scale):null;
         facts.push({id:`${attr(page,"id")}:${cls(labelCell,"y")}:${valueX[i]}`,concept:`{${XHTML_PRIMARY_NAMESPACE}}${localName}`,namespace:XHTML_PRIMARY_NAMESPACE,
           localName,contextRef:contextId,unitRef:"PLN",numeric:true,rawText:raw,sourceAmount:value===null?null:lexical,amount:value,
-          scale:3,sign:negative?"-":null,decimals:"-3",format:null,label,statements:[section],order:facts.length,
+          scale,sign:negative?"-":null,decimals:String(-scale),format:null,label,statements:[section],order:facts.length,
           validation:value===null?"REVIEW":"VALID",reason:value===null?"XHTML_VALUE_UNCONFIRMED":null});
       }
     }
@@ -326,6 +392,6 @@ function parsePositionedXhtml(root:XNode, source:MsrOriginal, expected:MsrExpect
       } else {cost.validation="REVIEW";cost.reason="XHTML_COST_SIGN_UNCONFIRMED";}
     }
   }
-  return {mappingVersion:MSR_MAPPING_VERSION,sourceChecksum:source.checksum,standard:"IAS_IFRS",sourceType:"POSITIONED_XHTML",
+  return {mappingVersion:MSR_MAPPING_VERSION,parserRule:MSR_PARSER_RULE,sourceChecksum:source.checksum,standard:"IAS_IFRS",sourceType:"POSITIONED_XHTML",
     contexts,units:[{id:"PLN",currency:"PLN",measure:"PLN",denominator:null}],facts,warnings:[],relationships:[]};
 }

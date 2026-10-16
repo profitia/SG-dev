@@ -21,3 +21,14 @@ for(const status of ["LIQUIDATION","DEREGISTERED","ACTIVE"] as const)test(`block
  assert.doesNotMatch(html,/wrong-supplier|Przychody wynoszą|Płynność bieżąca:|Napisz wiadomość|srm-radar-sector|srm-indicator-grid/);
  assert.match(html,/Supplier Finance Scanner/);
 });
+test('MSR processing, budget and interrupted attempts are not described as missing XHTML',()=>{
+ for(const warning of ['MSR_XHTML_ENTITY_UNCONFIRMED','MSR_CONTINUATION_INVALID','MSR_FILE_BUDGET_EXHAUSTED','MSR_DOWNLOAD_RECONCILIATION_REQUIRED']) {
+   const availability=reportAvailability(general('ACTIVE'),{...msr,warnings:[...msr.warnings,warning]});
+   assert.equal(availability.code,warning==='MSR_FILE_BUDGET_EXHAUSTED'?'MSR_DOWNLOAD_UNAVAILABLE':warning==='MSR_DOWNLOAD_RECONCILIATION_REQUIRED'?'MSR_PENDING':'MSR_PROCESSING_ERROR');
+   assert.doesNotMatch(availability.message,/nie są dostępne dane w obsługiwanym formacie|PDF|MSR_/);
+   if(warning==='MSR_FILE_BUDGET_EXHAUSTED')assert.match(availability.message,/limitu/);
+   else if(warning==='MSR_DOWNLOAD_RECONCILIATION_REQUIRED')assert.match(availability.message,/poprzedniej próby/);
+   else assert.match(availability.message,/odczytać lub potwierdzić/);
+   assert.equal(reportAvailability(general('DEREGISTERED'),{...msr,warnings:[warning]}).code,'DEREGISTERED');
+ }
+});

@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { enrichMsrFinancial,verifyMsrReceipt,type MsrStore,type MsrReceipt } from "./msr-repository";
+import { enrichMsrFinancial,verifyMsrReceipt,recoverStoredMsrSource,type MsrStore,type MsrReceipt } from "./msr-repository";
+import { MSR_PROJECTION_VERSION } from "./msr-financial";
 import { decodeMsrOriginal,MsrSourceError } from "./msr-source";
 import { parseMsrOriginal } from "./msr-parser";
 import type { MsrCandidate } from "./msr-financial";
@@ -70,7 +71,7 @@ test("MSR stale pre-licensing metadata is refreshed before selection; a known PD
 test("a newer projection of READY source is appended without changing receipt or downloading again",async()=>{
   const f=fixture();await enrichMsrFinancial("org",c.nip,base(),{store:f.store,download:async()=>source()});
   const before=JSON.stringify(f.get());let projects=0;
-  f.store.project=async(_c,p)=>{projects++;assert.equal(p.document.mappingVersion,"2026-10-15-msr-projection-v2");};
+  f.store.project=async(_c,p)=>{projects++;assert.equal(p.document.mappingVersion,MSR_PROJECTION_VERSION);};
   await enrichMsrFinancial("org",c.nip,base(),{store:f.store,download:async()=>{throw Error("paid retry");}});
   assert.equal(projects,1);assert.equal(JSON.stringify(f.get()),before);
 });
@@ -79,4 +80,32 @@ test("verified legacy DTD-blocked original can be reprojected without resetting 
   const before=JSON.stringify(f.get());let projects=0;f.store.project=async()=>{projects++;};
   const result=await enrichMsrFinancial("org",c.nip,base(),{store:f.store,download:async()=>{throw Error("paid retry");}});
   assert.equal(projects,1);assert.equal(result.facts[0].amount,"123");assert.equal(JSON.stringify(f.get()),before);
+});
+
+for(const code of ['MSR_XHTML_ENTITY_UNCONFIRMED','MSR_CONTINUATION_INVALID']) test(`stored ${code} recovery preserves original, claim and failed receipt; repeated projections are idempotent`,async()=>{
+  const f=fixture();await f.store.claim(c,'claim');await f.store.receive(c,'claim',source());await f.store.block(c,'claim',code);
+  const before=JSON.stringify(f.get()),projects=new Map<string,string>();let downloads=0;
+  f.store.project=async(candidate,projection)=>{const key=candidate.recordId+projection.document.mappingVersion,json=JSON.stringify(projection);if(projects.has(key))assert.equal(projects.get(key),json);projects.set(key,json);};
+  for(let i=0;i<2;i++) {
+    const cached=base();cached.section.warnings=[...cached.section.warnings,code];
+    const result=await enrichMsrFinancial('org',c.nip,cached,{store:f.store,download:async()=>{downloads++;throw Error('forbidden paid retry');}});
+    assert.equal(result.section.status,'SUCCESS');assert.equal(result.facts[0].amount,'123');
+    assert.ok(!result.section.warnings.includes(code));
+  }
+  assert.equal(downloads,0);assert.equal(projects.size,1);assert.equal(JSON.stringify(f.get()),before);
+});
+test('stored recovery does not accept unknown failures, corrupted bytes, changed identity or a parser rejection',async()=>{
+  const f=fixture();await f.store.claim(c,'claim');await f.store.receive(c,'claim',source());await f.store.block(c,'claim','MSR_CONTINUATION_INVALID');
+  const row=f.get();
+  for(const code of ['MSR_FILE_TIMEOUT','MSR_DOWNLOAD_RECONCILIATION_REQUIRED','MSR_PERSISTENCE_OR_MAPPING_FAILURE'])assert.equal(recoverStoredMsrSource(c,{...row,error_code:code}),null);
+  for(const patch of [{original_bytes:Buffer.from('corrupt')},{identity_sha256:'f'.repeat(64)},{original_bytes:null}])assert.throws(()=>recoverStoredMsrSource(c,{...row,...patch}),/INTEGRITY/);
+  assert.throws(()=>recoverStoredMsrSource({...c,nip:'5252674798'},row),/INTEGRITY/);
+  assert.throws(()=>recoverStoredMsrSource(c,row,()=>{throw Error('still invalid');}),/still invalid/);
+});
+test('verified historical parser version remains readable without overwriting stored facts',async()=>{
+  const f=fixture();await enrichMsrFinancial('org',c.nip,base(),{store:f.store,download:async()=>source()});
+  const parsed={...f.get().parsed_json!,mappingVersion:'2026-10-15-ixbrl-v1'},raw=JSON.stringify(parsed);
+  const legacy={...f.get(),mapping_version:parsed.mappingVersion,parsed_json:parsed,parsed_text:raw,parsed_sha256:hash(raw)};
+  assert.equal(verifyMsrReceipt(c,legacy)!.parsed.mappingVersion,'2026-10-15-ixbrl-v1');
+  assert.throws(()=>verifyMsrReceipt(c,{...legacy,mapping_version:'unreviewed'}),/INTEGRITY/);
 });
