@@ -1,3 +1,5 @@
+import { assertRuntimeDatabaseIdentity, assertSg2Environment } from '@/lib/environment-identity'
+
 import { PrismaClient } from '@/generated/market-data-client'
 
 import { noteForecastRequestDiagnosticsPrismaQuery } from '@/lib/forecast/request-diagnostics'
@@ -5,6 +7,7 @@ import { noteForecastRequestDiagnosticsPrismaQuery } from '@/lib/forecast/reques
 declare global {
   // eslint-disable-next-line no-var
   var __sgRuntimeMarketDataPrisma__: PrismaClient | undefined
+  var __sgRuntimeMarketDataPrismaUrl__: string | undefined
 }
 
 function normalizeUrl(value?: string) {
@@ -41,9 +44,15 @@ function attachPrismaQueryTelemetry(prisma: PrismaClient) {
 }
 
 export function getMarketDataPrisma() {
+  assertSg2Environment(process.env.APP_ENV)
   const marketDataDatabaseUrl = normalizeUrl(process.env.MARKET_DATA_DATABASE_URL)
   if (!marketDataDatabaseUrl) {
     return null
+  }
+
+  assertRuntimeDatabaseIdentity(marketDataDatabaseUrl, 'market')
+  if (globalThis.__sgRuntimeMarketDataPrisma__ && globalThis.__sgRuntimeMarketDataPrismaUrl__ !== marketDataDatabaseUrl) {
+    throw new Error('SG2_MARKET_CLIENT_BINDING_CHANGED: restart with a verified binding before any query.')
   }
 
   const prisma = attachPrismaQueryTelemetry(
@@ -59,6 +68,7 @@ export function getMarketDataPrisma() {
   )
 
   globalThis.__sgRuntimeMarketDataPrisma__ = prisma
+  globalThis.__sgRuntimeMarketDataPrismaUrl__ = marketDataDatabaseUrl
 
   return prisma
 }

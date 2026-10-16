@@ -155,7 +155,7 @@ test('deployed non-point-in-time current reads use the prepared datastore when t
   let fetchCalls = 0
 
   process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://deployed-non-pit-current'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
   delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
 
@@ -212,7 +212,7 @@ test('deployed non-point-in-time verification reads use the prepared datastore w
   let fetchCalls = 0
 
   process.env.RENDER_EXTERNAL_URL = 'https://profitia-pl.onrender.com'
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://deployed-non-pit-verification'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
   delete process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN
 
@@ -610,7 +610,7 @@ test('point-in-time current forecast fails closed as unsupported for non-daily c
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_URL = 'https://sg-runtime.example.invalid'
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://market-data-present'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
 
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {
@@ -709,7 +709,7 @@ test('point-in-time current freshness trusts READY capability for the current sn
   let maintenanceReads = 0
 
   process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN = 'test-internal-token'
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://market-data-present'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
 
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {
@@ -848,7 +848,7 @@ test('monthly prepared read filters by canonical method identity and returns an 
   const previousConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
   let capturedArgs: { where: Record<string, unknown>; orderBy?: unknown } = { where: {} }
 
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://phase3-monthly-method-identity'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {
     forecastCurrentRun: {
@@ -912,7 +912,7 @@ test('monthly prepared verification filters canonical method identity and does n
   const previousConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
   let capturedWhere: Record<string, unknown> = {}
 
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://phase8-monthly-verification'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {
     forecastVerificationRun: {
@@ -1172,7 +1172,7 @@ test('point-in-time current forecast uses the persisted snapshot seam without fe
   const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
   let fetchCalled = false
 
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://stage11-prepared-read'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
 
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {
@@ -1403,7 +1403,7 @@ test('point-in-time current forecast marks the prepared snapshot stale when the 
   const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
   let fetchCalled = false
 
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://stage12-1-stale-read'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
 
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {
@@ -1577,7 +1577,7 @@ test('point-in-time current forecast preserves miss semantics and does not class
   const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
   const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
 
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://stage12-1-miss-read'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
 
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {
@@ -1638,7 +1638,7 @@ test('point-in-time verification fails closed when maintenance has not reached t
   const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
   const previousPrismaConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
 
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://verification-maintenance-incomplete'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
 
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {
@@ -1704,7 +1704,7 @@ test('point-in-time current forecast freshness contract is generic across all fo
   const requestedModels = ['naive', 'damped_holt', 'ets', 'arima'] as const
   const seenModels: string[] = []
 
-  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://stage12-1-four-models'
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
   delete process.env.DATABASE_URL
 
   marketDataGlobal.dashboardPreviewMarketDataPrisma = {

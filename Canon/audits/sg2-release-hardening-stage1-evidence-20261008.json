@@ -1,0 +1,2230 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SG2-RELEASE-HARDENING-STAGE1-20261008",
+  "authority": {
+    "repository": "profitia/SG-dev",
+    "branch": "main",
+    "sha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1"
+  },
+  "capturedAt": "2026-10-08T22:44:36.304055+00:00",
+  "render": {
+    "capturedAt": "2026-10-08T22:33:59.367259+00:00",
+    "services": [
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-09-22T15:42:57.748692Z",
+        "dashboardUrl": "https://dashboard.render.com/worker/srv-dapa40ad0e5s73f8bjm0",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "id": "srv-dapa40ad0e5s73f8bjm0",
+        "name": "sg2-development-forecast-verification-worker",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": ".",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "bash ./scripts/build-sg-runtime-private-service.sh",
+            "startCommand": "cd apps/sg-runtime && npm run forecast:worker"
+          },
+          "maxShutdownDelaySeconds": 300,
+          "numInstances": 2,
+          "plan": "standard",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "runtime": "node",
+          "sshAddress": "srv-dapa40ad0e5s73f8bjm0@ssh.frankfurt.render.com"
+        },
+        "slug": "sg2-development-forecast-verification",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "background_worker",
+        "updatedAt": "2026-09-23T14:37:49.578313Z",
+        "observedLiveDeploy": {
+          "id": "dep-dapu7g1srm7s73as83bg",
+          "commit": {
+            "id": "993f539a46bd2c8d03fb2d99551535641e4efe0b",
+            "message": "Protect SG2 Staging releases with explicit gate and Canon (#80)",
+            "createdAt": "2026-09-23T13:16:00Z"
+          },
+          "status": "live",
+          "trigger": "api",
+          "createdAt": "2026-09-23T14:35:44.957414Z",
+          "updatedAt": "2026-09-23T14:37:49.577176Z",
+          "startedAt": "2026-09-23T14:35:44.955702Z",
+          "finishedAt": "2026-09-23T14:37:49.576883Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-09-22T15:42:55.296167Z",
+        "dashboardUrl": "https://dashboard.render.com/worker/srv-dapa3vlg1s2s739vp7dg",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "id": "srv-dapa3vlg1s2s739vp7dg",
+        "name": "sg2-development-forecast-current-worker",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "bash ./scripts/build-sg-runtime-private-service.sh",
+            "startCommand": "cd apps/sg-runtime && npm run forecast:worker"
+          },
+          "numInstances": 1,
+          "plan": "1c-2g",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "runtime": "node",
+          "sshAddress": "srv-dapa3vlg1s2s739vp7dg@ssh.frankfurt.render.com"
+        },
+        "slug": "sg2-development-forecast-current-worker",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "background_worker",
+        "updatedAt": "2026-09-23T14:37:46.155863Z",
+        "observedLiveDeploy": {
+          "id": "dep-dapu7es9v7es739uoql0",
+          "commit": {
+            "id": "993f539a46bd2c8d03fb2d99551535641e4efe0b",
+            "message": "Protect SG2 Staging releases with explicit gate and Canon (#80)",
+            "createdAt": "2026-09-23T13:16:00Z"
+          },
+          "status": "live",
+          "trigger": "api",
+          "createdAt": "2026-09-23T14:35:39.37698Z",
+          "updatedAt": "2026-09-23T14:37:46.154546Z",
+          "startedAt": "2026-09-23T14:35:39.375262Z",
+          "finishedAt": "2026-09-23T14:37:46.15433Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-09-22T15:42:51.605873Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-dapa3ujm8hqs73a9t2og",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "id": "srv-dapa3ujm8hqs73a9t2og",
+        "name": "sg2-development-dashboard",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "apps/dashboard-preview",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "npm install && npm run build",
+            "startCommand": "npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "1c-2g",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-dapa3ujm8hqs73a9t2og@ssh.frankfurt.render.com",
+          "url": "https://sg2-development-dashboard.onrender.com"
+        },
+        "slug": "sg2-development-dashboard",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-09-24T05:53:06.537519Z",
+        "observedLiveDeploy": {
+          "id": "dep-daqbksk9v7es73cjdtmg",
+          "commit": {
+            "id": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119",
+            "message": "Upgrade existing Development sessions for embedded analytics",
+            "createdAt": "2026-09-24T05:51:17Z"
+          },
+          "status": "live",
+          "trigger": "api",
+          "createdAt": "2026-09-24T05:51:46.348911Z",
+          "updatedAt": "2026-09-24T05:53:39.477073Z",
+          "startedAt": "2026-09-24T05:51:46.324001Z",
+          "finishedAt": "2026-09-24T05:53:06.536364Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-09-22T15:42:47.887434Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-dapa3tid0e5s73f8bc5g",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "id": "srv-dapa3tid0e5s73f8bc5g",
+        "name": "sg2-development-runtime",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": ".",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "bash ./scripts/build-sg-runtime-private-service.sh",
+            "startCommand": "cd apps/sg-runtime && npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "2c-4g",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-dapa3tid0e5s73f8bc5g@ssh.frankfurt.render.com",
+          "url": "https://sg2-development-runtime.onrender.com"
+        },
+        "slug": "sg2-development-runtime",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-09-24T07:27:56.187701Z",
+        "observedLiveDeploy": {
+          "id": "dep-daqd0uh42hec7398f5vg",
+          "commit": {
+            "id": "c55c551091b3584673726bd0a78254eb091c7197",
+            "message": "Label SG2 browser tabs by environment (#87)",
+            "createdAt": "2026-09-24T07:24:10Z"
+          },
+          "status": "live",
+          "trigger": "api",
+          "createdAt": "2026-09-24T07:25:46.370826Z",
+          "updatedAt": "2026-09-24T07:28:24.225134Z",
+          "startedAt": "2026-09-24T07:25:46.34203Z",
+          "finishedAt": "2026-09-24T07:27:56.186042Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-09-21T15:34:23.97673Z",
+        "dashboardUrl": "https://dashboard.render.com/worker/srv-daoksvuk1f9s73cg4bk0",
+        "environmentId": "evm-d98a52eq1p3s73835qi0",
+        "id": "srv-daoksvuk1f9s73cg4bk0",
+        "name": "spendguru-forecast-current-worker",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "bash ./scripts/build-sg-runtime-private-service.sh",
+            "startCommand": "cd apps/sg-runtime && npm run forecast:worker"
+          },
+          "numInstances": 1,
+          "plan": "1c-2g",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "runtime": "node",
+          "sshAddress": "srv-daoksvuk1f9s73cg4bk0@ssh.frankfurt.render.com"
+        },
+        "slug": "spendguru-forecast-current-worker",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "background_worker",
+        "updatedAt": "2026-09-22T16:23:30.158632Z",
+        "observedLiveDeploy": {
+          "id": "dep-dapam0sja7ms73akipp0",
+          "commit": {
+            "id": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+            "message": "Merge pull request #61 from profitia/fix/ppf1-corn-verification-state-bands-20260922\n\nFix PPF-1 verification state and Naive Daily bands",
+            "createdAt": "2026-09-22T10:18:42Z"
+          },
+          "status": "live",
+          "trigger": "api",
+          "createdAt": "2026-09-22T16:21:23.622903Z",
+          "updatedAt": "2026-09-22T16:23:30.156777Z",
+          "startedAt": "2026-09-22T16:21:23.621449Z",
+          "finishedAt": "2026-09-22T16:23:30.156522Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-09-20T11:53:20.166178Z",
+        "dashboardUrl": "https://dashboard.render.com/worker/srv-dansibrtqb8s73d0nn3g",
+        "environmentId": "evm-d98a52eq1p3s73835qi0",
+        "id": "srv-dansibrtqb8s73d0nn3g",
+        "name": "spendguru-forecast-preparation-worker",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": ".",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "bash ./scripts/build-sg-runtime-private-service.sh",
+            "startCommand": "cd apps/sg-runtime && npm run forecast:worker"
+          },
+          "maxShutdownDelaySeconds": 300,
+          "numInstances": 2,
+          "plan": "standard",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "runtime": "node",
+          "sshAddress": "srv-dansibrtqb8s73d0nn3g@ssh.frankfurt.render.com"
+        },
+        "slug": "spendguru-forecast-preparation-worker",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "background_worker",
+        "updatedAt": "2026-09-22T16:23:32.819984Z",
+        "observedLiveDeploy": {
+          "id": "dep-dapam0hsrm7s73ep2v50",
+          "commit": {
+            "id": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+            "message": "Merge pull request #61 from profitia/fix/ppf1-corn-verification-state-bands-20260922\n\nFix PPF-1 verification state and Naive Daily bands",
+            "createdAt": "2026-09-22T10:18:42Z"
+          },
+          "status": "live",
+          "trigger": "api",
+          "createdAt": "2026-09-22T16:21:22.172994Z",
+          "updatedAt": "2026-09-22T16:23:32.818851Z",
+          "startedAt": "2026-09-22T16:21:22.171349Z",
+          "finishedAt": "2026-09-22T16:23:32.818687Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-09-03T11:37:05.21275Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-daclno3m8hqs73bb7rrg",
+        "environmentId": "evm-d98a52eq1p3s73835qi0",
+        "id": "srv-daclno3m8hqs73bb7rrg",
+        "name": "spendguru-porr-demo",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": ".",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "bash ./scripts/build-sg-runtime-private-service.sh",
+            "startCommand": "cd apps/sg-runtime && npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "2c-4g",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-daclno3m8hqs73bb7rrg@ssh.frankfurt.render.com",
+          "url": "https://spendguru-porr-demo.onrender.com"
+        },
+        "slug": "spendguru-porr-demo",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-10-03T10:28:48.228121Z",
+        "observedLiveDeploy": {
+          "id": "dep-db0dhbm1egvs73f70kr0",
+          "commit": {
+            "id": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+            "message": "fix(pmos): classify verified legacy SRM closeout backups (#72)",
+            "createdAt": "2026-09-22T18:53:53Z"
+          },
+          "status": "live",
+          "trigger": "deployed_by_render",
+          "createdAt": "2026-10-03T10:27:58.19Z",
+          "updatedAt": "2026-10-03T10:29:23.257977Z",
+          "startedAt": "2026-10-03T10:28:02.945749Z",
+          "finishedAt": "2026-10-03T10:28:48.226997Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-09-03T11:35:48.664156Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-dacln50jo6nc738lbag0",
+        "environmentId": "evm-d98a52eq1p3s73835qi0",
+        "id": "srv-dacln50jo6nc738lbag0",
+        "name": "spendguru-porr-dashboard",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "apps/dashboard-preview",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "npm install && npm run build",
+            "startCommand": "npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "1c-2g",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-dacln50jo6nc738lbag0@ssh.frankfurt.render.com",
+          "url": "https://spendguru-porr-dashboard.onrender.com"
+        },
+        "slug": "spendguru-porr-dashboard",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-09-22T16:22:45.794153Z",
+        "observedLiveDeploy": {
+          "id": "dep-dapam17f3r2c73c11th0",
+          "commit": {
+            "id": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+            "message": "Merge pull request #61 from profitia/fix/ppf1-corn-verification-state-bands-20260922\n\nFix PPF-1 verification state and Naive Daily bands",
+            "createdAt": "2026-09-22T10:18:42Z"
+          },
+          "status": "live",
+          "trigger": "api",
+          "createdAt": "2026-09-22T16:21:24.244814Z",
+          "updatedAt": "2026-09-22T16:23:21.687496Z",
+          "startedAt": "2026-09-22T16:21:24.214761Z",
+          "finishedAt": "2026-09-22T16:22:45.793122Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-08-19T03:32:29.603052Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-da2i7j9t0dsc73ag7qv0",
+        "id": "srv-da2i7j9t0dsc73ag7qv0",
+        "name": "dashboards-library",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "apps/dashboard-preview",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "npm install && npm run build",
+            "startCommand": "npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "starter",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-da2i7j9t0dsc73ag7qv0@ssh.frankfurt.render.com",
+          "url": "https://dashboards-library.onrender.com"
+        },
+        "slug": "dashboards-library",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-10-08T17:15:12.842106Z",
+        "observedLiveDeploy": {
+          "id": "dep-db3supp5efls73cm8qpg",
+          "commit": {
+            "id": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+            "message": "Merge pull request #61 from profitia/fix/ppf1-corn-verification-state-bands-20260922\n\nFix PPF-1 verification state and Naive Daily bands",
+            "createdAt": "2026-09-22T10:18:42Z"
+          },
+          "status": "live",
+          "trigger": "deployed_by_render",
+          "createdAt": "2026-10-08T17:14:15.456989Z",
+          "updatedAt": "2026-10-08T17:15:47.308856Z",
+          "startedAt": "2026-10-08T17:14:21.865941Z",
+          "finishedAt": "2026-10-08T17:15:12.840738Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-08-11T18:21:41.564517Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-d9tmgddbedkc739jr24g",
+        "id": "srv-d9tmgddbedkc739jr24g",
+        "name": "BENCHMARK-FINDER-CATEGORY-BUILDER",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "apps/sg-runtime",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "npm install --include=dev && npm run build",
+            "preDeployCommand": "npm run market-data:migrate:deploy",
+            "startCommand": "npm run start"
+          },
+          "healthCheckPath": "/api/health",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "1c-2g",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-d9tmgddbedkc739jr24g@ssh.frankfurt.render.com",
+          "url": "https://benchmark-finder-category-builder.onrender.com"
+        },
+        "slug": "benchmark-finder-category-builder",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-09-28T04:19:16.067397Z",
+        "observedLiveDeploy": {
+          "id": "dep-dasul56q1p3s739o57eg",
+          "commit": {
+            "id": "b7ae5a69f789146bdf209b078bf224e0778c44bb",
+            "message": "Merge pull request #36 from profitia/fix/ppf1-fast-verification-observation-20260921\n\nPPF-1: trace Fast Verification readiness",
+            "createdAt": "2026-09-21T06:04:02Z"
+          },
+          "status": "live",
+          "trigger": "deployed_by_render",
+          "createdAt": "2026-09-28T04:18:28.791343Z",
+          "updatedAt": "2026-09-28T04:19:50.482131Z",
+          "startedAt": "2026-09-28T04:18:45.350973Z",
+          "finishedAt": "2026-09-28T04:19:16.065927Z"
+        }
+      },
+      {
+        "autoDeploy": "no",
+        "autoDeployTrigger": "off",
+        "branch": "main",
+        "createdAt": "2026-07-10T07:47:26.149329Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-d98a73btqb8s73fabp90",
+        "environmentId": "evm-d98a52eq1p3s73835qi0",
+        "id": "srv-d98a73btqb8s73fabp90",
+        "name": "spendguru-stage",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": ".",
+        "serviceDetails": {
+          "autoscaling": {
+            "criteria": {
+              "cpu": {
+                "enabled": true,
+                "percentage": 60
+              },
+              "memory": {
+                "enabled": true,
+                "percentage": 60
+              }
+            },
+            "enabled": false,
+            "max": 2,
+            "min": 1
+          },
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "bash ./scripts/build-sg-runtime-private-service.sh",
+            "preDeployCommand": "cd apps/sg-runtime && npm run market-data:migrate:deploy",
+            "startCommand": "cd apps/sg-runtime && npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "2c-4g",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-d98a73btqb8s73fabp90@ssh.frankfurt.render.com",
+          "url": "https://sg2-0-charts-preview.onrender.com"
+        },
+        "slug": "sg2-0-charts-preview",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-09-30T19:48:45.201395Z",
+        "observedLiveDeploy": {
+          "id": "dep-daumen97lnhs73em7a10",
+          "commit": {
+            "id": "bd4139e727fd3f3b237cfa89afa60b7af6bec86c",
+            "message": "Merge pull request #59 from profitia/fix/ppf1-rice-readiness-followup-20260922\n\nFix PPF-1 rolling daily band readiness",
+            "createdAt": "2026-09-22T07:52:32Z"
+          },
+          "status": "live",
+          "trigger": "deployed_by_render",
+          "createdAt": "2026-09-30T19:47:41.677307Z",
+          "updatedAt": "2026-09-30T19:49:14.656643Z",
+          "startedAt": "2026-09-30T19:48:05.617839Z",
+          "finishedAt": "2026-09-30T19:48:45.199419Z"
+        }
+      },
+      {
+        "autoDeploy": "yes",
+        "autoDeployTrigger": "commit",
+        "branch": "main",
+        "buildFilter": {
+          "ignoredPaths": [],
+          "paths": [
+            "apps/pcos-explorer/**",
+            "packages/pcos-contracts/**"
+          ]
+        },
+        "createdAt": "2026-07-02T14:01:28.653171Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-d936ue3tqb8s738njptg",
+        "environmentId": "evm-d936tpbtqb8s738nie0g",
+        "id": "srv-d936ue3tqb8s738njptg",
+        "name": "sg2-pcos-cognition-explorer-preview",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "cd apps/pcos-explorer && npm ci --include=dev && npx prisma generate && PCOS_EXPLORER_PREVIEW_MODE=mock npm run build",
+            "startCommand": "cd apps/pcos-explorer && npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "starter",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-d936ue3tqb8s738njptg@ssh.frankfurt.render.com",
+          "url": "https://sg2-pcos-cognition-explorer-preview.onrender.com"
+        },
+        "slug": "sg2-pcos-cognition-explorer-preview",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-09-21T12:20:01.665798Z",
+        "observedLiveDeploy": {
+          "id": "dep-daoi13rtqb8s73bddefg",
+          "commit": {
+            "id": "5b2628d3d4660bc6f78c921cb4fad8de517700e3",
+            "message": "Merge pull request #47 from profitia/governance/pcos-isolation-cleanup-20260921\n\nGovernance: isolate PCOS from PMOS lifecycle",
+            "createdAt": "2026-09-21T12:18:21Z"
+          },
+          "status": "live",
+          "trigger": "new_commit",
+          "createdAt": "2026-09-21T12:18:23.629065Z",
+          "updatedAt": "2026-09-21T12:20:29.548285Z",
+          "startedAt": "2026-09-21T12:18:23.603309Z",
+          "finishedAt": "2026-09-21T12:20:01.66398Z"
+        }
+      },
+      {
+        "autoDeploy": "yes",
+        "autoDeployTrigger": "commit",
+        "branch": "main",
+        "createdAt": "2026-05-24T17:26:59.199634Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-d89j9oml51nc738gdsb0",
+        "environmentId": "evm-d89j645ckfvc738msv5g",
+        "id": "srv-d89j9oml51nc738gdsb0",
+        "name": "Vector-SG20",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "apps/vector",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "npm install && npm run build",
+            "startCommand": "npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 10000,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "starter",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-d89j9oml51nc738gdsb0@ssh.frankfurt.render.com",
+          "url": "https://vector-sg20.onrender.com"
+        },
+        "slug": "vector-sg20",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-09-20T06:26:06.267114Z",
+        "observedLiveDeploy": {
+          "id": "dep-dannnpp7lnhs73ebj1rg",
+          "commit": {
+            "id": "67ab6b0c06d63ac3d0d3976609e41aefefebf45e",
+            "message": "Merge pull request #9 from profitia/ppf1/stage12-post-demo-release-candidate-20260919\n\nPPF-1 Stage 12: durable execution admission and final acceptance",
+            "createdAt": "2026-09-20T06:23:30Z"
+          },
+          "status": "live",
+          "trigger": "new_commit",
+          "createdAt": "2026-09-20T06:23:35.843697Z",
+          "updatedAt": "2026-09-20T06:26:42.69925Z",
+          "startedAt": "2026-09-20T06:23:35.822583Z",
+          "finishedAt": "2026-09-20T06:26:06.265774Z"
+        }
+      },
+      {
+        "autoDeploy": "yes",
+        "autoDeployTrigger": "commit",
+        "branch": "main",
+        "buildFilter": {
+          "ignoredPaths": [],
+          "paths": [
+            "apps/pmos/**",
+            "Canon/registries/profitia-projects-v1.json",
+            "render.yaml"
+          ]
+        },
+        "createdAt": "2026-05-23T18:15:53.050199Z",
+        "dashboardUrl": "https://dashboard.render.com/web/srv-d88utm77f7vs73blrj1g",
+        "environmentId": "evm-d88urem7r5hc73csgga0",
+        "id": "srv-d88utm77f7vs73blrj1g",
+        "name": "pmos-spendguru2-development",
+        "notifyOnFail": "default",
+        "ownerId": "tea-d7lps8rbc2fs73cn80dg",
+        "repo": "https://github.com/profitia/SG-dev",
+        "rootDir": "apps/pmos",
+        "serviceDetails": {
+          "buildPlan": "performance",
+          "cache": {
+            "profile": "no-cache"
+          },
+          "env": "node",
+          "envSpecificDetails": {
+            "buildCommand": "npm install --include=dev && npx prisma generate && npx next build",
+            "startCommand": "npm run start"
+          },
+          "healthCheckPath": "",
+          "ipAllowList": [
+            {
+              "cidrBlock": "0.0.0.0/0",
+              "description": "everywhere"
+            }
+          ],
+          "maintenanceMode": {
+            "enabled": false,
+            "uri": ""
+          },
+          "numInstances": 1,
+          "openPorts": [
+            {
+              "port": 3200,
+              "protocol": "TCP"
+            }
+          ],
+          "plan": "starter",
+          "previews": {
+            "generation": "off"
+          },
+          "pullRequestPreviewsEnabled": "no",
+          "region": "frankfurt",
+          "renderSubdomainPolicy": "enabled",
+          "runtime": "node",
+          "sshAddress": "srv-d88utm77f7vs73blrj1g@ssh.frankfurt.render.com",
+          "url": "https://pmos-spendguru2-development.onrender.com"
+        },
+        "slug": "pmos-spendguru2-development",
+        "suspended": "not_suspended",
+        "suspenders": [],
+        "type": "web_service",
+        "updatedAt": "2026-09-23T07:29:36.807236Z",
+        "observedLiveDeploy": {
+          "id": "dep-dapnv7gjo6nc73cskt1g",
+          "commit": {
+            "id": "1abae93c972290ae8af5e2689320551824055ea7",
+            "message": "Merge pull request #78 from profitia/fix/pmos-immutable-replay-optional-fields-20260923\n\nFix immutable PMOS closeout replay for absent optional metadata",
+            "createdAt": "2026-09-23T07:28:27Z"
+          },
+          "status": "live",
+          "trigger": "new_commit",
+          "createdAt": "2026-09-23T07:28:30.291539Z",
+          "updatedAt": "2026-09-23T07:30:17.455436Z",
+          "startedAt": "2026-09-23T07:28:30.269259Z",
+          "finishedAt": "2026-09-23T07:29:36.805263Z"
+        }
+      }
+    ]
+  },
+  "bindings": {
+    "capturedAt": "2026-10-08T22:33:35.010623+00:00",
+    "method": "Render GET env-vars; secret values discarded in memory; only nonsecret identity metadata retained",
+    "services": [
+      {
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "connectionProbes": [
+          {
+            "variable": "DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          },
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          },
+          {
+            "variable": "SG_RUNTIME_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "APP_ENV",
+          "DASHBOARD_PREVIEW_BASE_URL",
+          "DATABASE_URL",
+          "MACROBOND_CLIENT_ID",
+          "MACROBOND_CLIENT_SECRET",
+          "MARKET_DATA_DATABASE_URL",
+          "MARKET_DATA_DIRECT_URL",
+          "NEXT_PUBLIC_APP_URL",
+          "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+          "NODE_ENV",
+          "NPM_TOKEN",
+          "PORR_DEMO_ENTRY_URL",
+          "PORR_DEMO_PASSWORD",
+          "PORR_DEMO_SESSION_SECRET",
+          "SG_RUNTIME_DATABASE_URL",
+          "SG_RUNTIME_DEV_ORG_ID",
+          "SG_RUNTIME_DEV_ORG_ROLE",
+          "SG_RUNTIME_DEV_USER_ID",
+          "SG_RUNTIME_DIRECT_URL",
+          "SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN",
+          "SG_RUNTIME_PORR_DEMO",
+          "TURNSTILE_ALLOWED_HOSTNAMES",
+          "TURNSTILE_SECRET_KEY",
+          "WEB_CONCURRENCY"
+        ],
+        "identity": {
+          "NODE_ENV": "production",
+          "DASHBOARD_PREVIEW_BASE_URL": {
+            "scheme": "https",
+            "hostname": "analytics-dev-sg2.spendguru.app",
+            "port": null
+          },
+          "APP_ENV": "development"
+        },
+        "databaseBindings": [
+          {
+            "variable": "SG_RUNTIME_DIRECT_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "DATABASE_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "MARKET_DATA_DIRECT_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "SG_RUNTIME_DATABASE_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+        "connectionProbes": [
+          {
+            "variable": "DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          },
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "APP_ENV",
+          "DASHBOARD_PREVIEW_PORR_DEMO",
+          "DATABASE_URL",
+          "MARKET_DATA_DATABASE_URL",
+          "PORR_DEMO_ENTRY_URL",
+          "PORR_DEMO_SESSION_SECRET",
+          "SG_RUNTIME_BASE_URL",
+          "SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN"
+        ],
+        "identity": {
+          "APP_ENV": "development",
+          "SG_RUNTIME_BASE_URL": {
+            "scheme": "https",
+            "hostname": "sg2-development-runtime.onrender.com",
+            "port": null
+          }
+        },
+        "databaseBindings": [
+          {
+            "variable": "DATABASE_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-dapa3vlg1s2s739vp7dg",
+        "connectionProbes": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "FORECAST_PREPARATION_WORKER_MODE",
+          "MARKET_DATA_DATABASE_URL",
+          "NODE_ENV",
+          "NPM_TOKEN"
+        ],
+        "identity": {
+          "NODE_ENV": "production",
+          "FORECAST_PREPARATION_WORKER_MODE": "CURRENT_ONLY"
+        },
+        "databaseBindings": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-dapa40ad0e5s73f8bjm0",
+        "connectionProbes": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "FORECAST_PREPARATION_WORKER_MODE",
+          "MARKET_DATA_DATABASE_URL",
+          "NODE_ENV",
+          "NPM_TOKEN"
+        ],
+        "identity": {
+          "NODE_ENV": "production",
+          "FORECAST_PREPARATION_WORKER_MODE": "VERIFICATION_ONLY"
+        },
+        "databaseBindings": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-daclno3m8hqs73bb7rrg",
+        "connectionProbes": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          },
+          {
+            "variable": "SG_RUNTIME_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          },
+          {
+            "variable": "DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "APP_ENV",
+          "DASHBOARD_PREVIEW_BASE_URL",
+          "DATABASE_URL",
+          "MACROBOND_CLIENT_ID",
+          "MACROBOND_CLIENT_SECRET",
+          "MARKET_DATA_DATABASE_URL",
+          "MARKET_DATA_DIRECT_URL",
+          "NEXT_PUBLIC_APP_URL",
+          "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+          "NODE_ENV",
+          "NODE_VERSION",
+          "NPM_TOKEN",
+          "PORR_DEMO_PASSWORD",
+          "PORR_DEMO_SESSION_SECRET",
+          "SG_RUNTIME_DATABASE_URL",
+          "SG_RUNTIME_DEV_ORG_ID",
+          "SG_RUNTIME_DEV_ORG_ROLE",
+          "SG_RUNTIME_DEV_USER_ID",
+          "SG_RUNTIME_DIRECT_URL",
+          "SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN",
+          "SG_RUNTIME_PORR_DEMO",
+          "TURNSTILE_ALLOWED_HOSTNAMES",
+          "TURNSTILE_SECRET_KEY",
+          "WEB_CONCURRENCY"
+        ],
+        "identity": {
+          "APP_ENV": "staging",
+          "DASHBOARD_PREVIEW_BASE_URL": {
+            "scheme": "https",
+            "hostname": "analytics-demo-sg-porr.spendguru.app",
+            "port": null
+          },
+          "NODE_ENV": "production"
+        },
+        "databaseBindings": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "MARKET_DATA_DIRECT_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "SG_RUNTIME_DATABASE_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "SG_RUNTIME_DIRECT_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "DATABASE_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-dacln50jo6nc738lbag0",
+        "connectionProbes": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          },
+          {
+            "variable": "DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "DASHBOARD_PREVIEW_PORR_DEMO",
+          "DATABASE_URL",
+          "MARKET_DATA_DATABASE_URL",
+          "PORR_DEMO_ENTRY_URL",
+          "PORR_DEMO_SESSION_SECRET",
+          "SG_RUNTIME_BASE_URL",
+          "SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN"
+        ],
+        "identity": {
+          "SG_RUNTIME_BASE_URL": {
+            "scheme": "https",
+            "hostname": "demo-sg-porr.spendguru.app",
+            "port": null
+          }
+        },
+        "databaseBindings": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "DATABASE_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-d98a73btqb8s73fabp90",
+        "connectionProbes": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          },
+          {
+            "variable": "SG_RUNTIME_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": true,
+              "dashboardTableExists": true,
+              "marketJobTableExists": false
+            }
+          },
+          {
+            "variable": "DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": true,
+              "dashboardTableExists": true,
+              "marketJobTableExists": false
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "APP_ENV",
+          "DASHBOARD_PREVIEW_BASE_URL",
+          "DATABASE_URL",
+          "MACROBOND_CLIENT_ID",
+          "MACROBOND_CLIENT_SECRET",
+          "MARKET_DATA_DATABASE_URL",
+          "MARKET_DATA_DIRECT_URL",
+          "NEXT_PUBLIC_APP_URL",
+          "NODE_ENV",
+          "NODE_VERSION",
+          "NPM_TOKEN",
+          "SG_RUNTIME_DATABASE_URL",
+          "SG_RUNTIME_DIRECT_URL",
+          "SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN"
+        ],
+        "identity": {
+          "DASHBOARD_PREVIEW_BASE_URL": {
+            "scheme": "https",
+            "hostname": "dashboards-library.onrender.com",
+            "port": null
+          },
+          "APP_ENV": "staging",
+          "NODE_ENV": "production"
+        },
+        "databaseBindings": [
+          {
+            "variable": "MARKET_DATA_DIRECT_URL",
+            "hostname": "ep-cool-paper-b22wpbd9.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-cool-paper-b22wpbd9-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "SG_RUNTIME_DIRECT_URL",
+            "hostname": "ep-snowy-thunder-as5b15io-pooler.c-4.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": "sg_runtime_benchmarks"
+          },
+          {
+            "variable": "SG_RUNTIME_DATABASE_URL",
+            "hostname": "ep-snowy-thunder-as5b15io-pooler.c-4.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": "sg_runtime_benchmarks"
+          },
+          {
+            "variable": "DATABASE_URL",
+            "hostname": "ep-snowy-thunder-as5b15io-pooler.c-4.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-daoksvuk1f9s73cg4bk0",
+        "connectionProbes": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "FORECAST_PREPARATION_WORKER_MODE",
+          "MARKET_DATA_DATABASE_URL",
+          "NODE_ENV",
+          "NPM_TOKEN"
+        ],
+        "identity": {
+          "FORECAST_PREPARATION_WORKER_MODE": "CURRENT_ONLY",
+          "NODE_ENV": "production"
+        },
+        "databaseBindings": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-dansibrtqb8s73d0nn3g",
+        "connectionProbes": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "FORECAST_PREPARATION_WORKER_MODE",
+          "MARKET_DATA_DATABASE_URL",
+          "NODE_ENV",
+          "NPM_TOKEN"
+        ],
+        "identity": {
+          "FORECAST_PREPARATION_WORKER_MODE": "VERIFICATION_ONLY",
+          "NODE_ENV": "production"
+        },
+        "databaseBindings": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-cool-lab-b2wm8biu.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-da2i7j9t0dsc73ag7qv0",
+        "connectionProbes": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          },
+          {
+            "variable": "DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": true,
+              "dashboardTableExists": true,
+              "marketJobTableExists": false
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "DATABASE_URL",
+          "MARKET_DATA_DATABASE_URL",
+          "SG_RUNTIME_BASE_URL",
+          "SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN"
+        ],
+        "identity": {
+          "SG_RUNTIME_BASE_URL": {
+            "scheme": "https",
+            "hostname": "sg2-0-charts-preview.onrender.com",
+            "port": null
+          }
+        },
+        "databaseBindings": [
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-cool-paper-b22wpbd9-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "DATABASE_URL",
+            "hostname": "ep-snowy-thunder-as5b15io-pooler.c-4.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-d9tmgddbedkc739jr24g",
+        "connectionProbes": [
+          {
+            "variable": "SG_RUNTIME_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": true,
+              "dashboardTableExists": false,
+              "marketJobTableExists": false
+            }
+          },
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": true
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "APP_ENV",
+          "BENCHMARK_METADATA_SOURCE",
+          "MACROBOND_CLIENT_ID",
+          "MACROBOND_CLIENT_SECRET",
+          "MARKET_DATA_DATABASE_URL",
+          "MARKET_DATA_DIRECT_URL",
+          "NEXT_PUBLIC_APP_URL",
+          "NPM_TOKEN",
+          "OPENAI_API_KEY",
+          "SG_RUNTIME_DATABASE_URL",
+          "SG_RUNTIME_DEV_ORG_ID",
+          "SG_RUNTIME_DEV_ORG_ROLE",
+          "SG_RUNTIME_DEV_USER_ID",
+          "SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN",
+          "SG_RUNTIME_TEMPORARY_PUBLIC_BENCHMARK_COMPONENT"
+        ],
+        "identity": {
+          "APP_ENV": "development"
+        },
+        "databaseBindings": [
+          {
+            "variable": "SG_RUNTIME_DATABASE_URL",
+            "hostname": "ep-ancient-bar-b166yngl-pooler.c-5.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "MARKET_DATA_DATABASE_URL",
+            "hostname": "ep-cool-paper-b22wpbd9-pooler.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "MARKET_DATA_DIRECT_URL",
+            "hostname": "ep-cool-paper-b22wpbd9.c-6.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-d89j9oml51nc738gdsb0",
+        "connectionProbes": [
+          {
+            "variable": "DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": false
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "CLERK_SECRET_KEY",
+          "DATABASE_URL",
+          "DIRECT_URL",
+          "NEXT_PUBLIC_APP_URL",
+          "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
+        ],
+        "identity": {},
+        "databaseBindings": [
+          {
+            "variable": "DATABASE_URL",
+            "hostname": "ep-square-heart-alzc9s3v-pooler.c-3.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "DIRECT_URL",
+            "hostname": "ep-square-heart-alzc9s3v.c-3.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-d88utm77f7vs73blrj1g",
+        "connectionProbes": [
+          {
+            "variable": "DATABASE_URL",
+            "status": "DIRECTLY_VERIFIED_READ_ONLY_CONNECTION",
+            "errorCategory": "NONE",
+            "identity": {
+              "database": "neondb",
+              "role": "neondb_owner",
+              "readOnly": "on",
+              "applicationSchemaExists": false,
+              "dashboardTableExists": false,
+              "marketJobTableExists": false
+            }
+          }
+        ],
+        "status": "DIRECTLY_VERIFIED_CONFIGURED_METADATA",
+        "keys": [
+          "DATABASE_URL",
+          "DIRECT_URL",
+          "MEMOROS_API_BASE_URL",
+          "MEMOROS_PROJECT_ID",
+          "NEXT_PUBLIC_APP_URL",
+          "NODE_ENV",
+          "PORT"
+        ],
+        "identity": {
+          "NODE_ENV": "production"
+        },
+        "databaseBindings": [
+          {
+            "variable": "DIRECT_URL",
+            "hostname": "ep-plain-king-al45f92h.c-3.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          },
+          {
+            "variable": "DATABASE_URL",
+            "hostname": "ep-plain-king-al45f92h-pooler.c-3.eu-central-1.aws.neon.tech",
+            "database": "neondb",
+            "role": "neondb_owner",
+            "schema": null
+          }
+        ]
+      }
+    ]
+  },
+  "runtimeHealth": {
+    "capturedAt": "2026-10-08T22:42:42.346955+00:00",
+    "probes": [
+      {
+        "url": "https://dev-sg2.spendguru.app/api/health",
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "service": "sg-runtime",
+          "environment": "development",
+          "timestamp": "2026-10-08T22:42:41.893Z"
+        },
+        "method": "GET"
+      },
+      {
+        "url": "https://demo-sg-porr.spendguru.app/api/health",
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "service": "sg-runtime",
+          "environment": "staging",
+          "timestamp": "2026-10-08T22:42:42.129Z"
+        },
+        "method": "GET"
+      },
+      {
+        "url": "https://sg2-0-charts-preview.onrender.com/api/health",
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "service": "sg-runtime",
+          "environment": "staging",
+          "timestamp": "2026-10-08T22:42:42.359Z"
+        },
+        "method": "GET"
+      }
+    ]
+  },
+  "neonBranches": [
+    {
+      "id": "br-wandering-dew-b2izo8fg",
+      "project_id": "autumn-waterfall-65938876",
+      "parent_id": "br-purple-shape-b2az1npx",
+      "parent_lsn": "1/89CF3698",
+      "parent_timestamp": "2026-09-22T14:45:44Z",
+      "name": "Staging",
+      "slug": "br-wandering-dew-b2izo8fg",
+      "project_slug": "autumn-waterfall-65938876",
+      "current_state": "ready",
+      "state_changed_at": "2026-09-22T14:46:11Z",
+      "logical_size": 1026506752,
+      "creation_source": "console",
+      "primary": false,
+      "default": false,
+      "protected": false,
+      "cpu_used_sec": 0,
+      "compute_time_seconds": 340446,
+      "active_time_seconds": 680208,
+      "written_data_bytes": 0,
+      "data_transfer_bytes": 42791876,
+      "created_at": "2026-09-22T14:46:10Z",
+      "updated_at": "2026-10-08T22:30:41Z",
+      "created_by": {
+        "name": "",
+        "image": ""
+      },
+      "init_source": "parent-data"
+    },
+    {
+      "id": "br-dry-hall-b294222f",
+      "project_id": "autumn-waterfall-65938876",
+      "parent_id": "br-purple-shape-b2az1npx",
+      "parent_lsn": "1/89CF3698",
+      "parent_timestamp": "2026-09-22T14:45:44Z",
+      "name": "Development",
+      "slug": "br-dry-hall-b294222f",
+      "project_slug": "autumn-waterfall-65938876",
+      "current_state": "ready",
+      "state_changed_at": "2026-09-22T14:46:27Z",
+      "logical_size": 1019445248,
+      "creation_source": "console",
+      "primary": false,
+      "default": false,
+      "protected": false,
+      "cpu_used_sec": 0,
+      "compute_time_seconds": 338532,
+      "active_time_seconds": 680208,
+      "written_data_bytes": 0,
+      "data_transfer_bytes": 42762704,
+      "created_at": "2026-09-22T14:46:26Z",
+      "updated_at": "2026-10-08T22:30:40Z",
+      "created_by": {
+        "name": "",
+        "image": ""
+      },
+      "init_source": "parent-data"
+    },
+    {
+      "id": "br-purple-shape-b2az1npx",
+      "project_id": "autumn-waterfall-65938876",
+      "name": "production",
+      "slug": "br-purple-shape-b2az1npx",
+      "project_slug": "autumn-waterfall-65938876",
+      "current_state": "ready",
+      "state_changed_at": "2026-08-13T09:45:55Z",
+      "logical_size": 1007484928,
+      "creation_source": "console",
+      "primary": true,
+      "default": true,
+      "protected": false,
+      "cpu_used_sec": 0,
+      "compute_time_seconds": 1101,
+      "active_time_seconds": 4128,
+      "written_data_bytes": 0,
+      "data_transfer_bytes": 233396060,
+      "created_at": "2026-08-13T09:45:53Z",
+      "updated_at": "2026-10-08T22:30:37Z",
+      "created_by": {
+        "name": "",
+        "image": ""
+      },
+      "init_source": "parent-data"
+    },
+    {
+      "id": "br-falling-glitter-b2e9x814",
+      "project_id": "autumn-waterfall-65938876",
+      "parent_id": "br-purple-shape-b2az1npx",
+      "parent_lsn": "1/1E761330",
+      "parent_timestamp": "2026-09-17T12:23:40Z",
+      "name": "task-b-full-verification-test",
+      "slug": "br-falling-glitter-b2e9x814",
+      "project_slug": "autumn-waterfall-65938876",
+      "current_state": "archived",
+      "state_changed_at": "2026-10-01T12:30:25Z",
+      "logical_size": 588685312,
+      "creation_source": "console",
+      "primary": false,
+      "default": false,
+      "protected": false,
+      "cpu_used_sec": 0,
+      "compute_time_seconds": 0,
+      "active_time_seconds": 0,
+      "written_data_bytes": 0,
+      "data_transfer_bytes": 0,
+      "created_at": "2026-09-17T12:26:01Z",
+      "updated_at": "2026-10-01T12:30:25Z",
+      "created_by": {
+        "name": "",
+        "image": ""
+      },
+      "init_source": "parent-data"
+    }
+  ],
+  "legacyEndpoints": [
+    {
+      "host": "ep-snowy-thunder-as5b15io.c-4.eu-central-1.aws.neon.tech",
+      "hosts": {
+        "read_write_host": "ep-snowy-thunder-as5b15io.c-4.eu-central-1.aws.neon.tech",
+        "read_write_pooled_host": "ep-snowy-thunder-as5b15io-pooler.c-4.eu-central-1.aws.neon.tech"
+      },
+      "id": "ep-snowy-thunder-as5b15io",
+      "slug": "ep-snowy-thunder-as5b15io",
+      "branch_slug": "br-empty-bird-asg7u58f",
+      "project_slug": "old-smoke-90429853",
+      "project_id": "old-smoke-90429853",
+      "branch_id": "br-empty-bird-asg7u58f",
+      "autoscaling_limit_min_cu": 0.25,
+      "autoscaling_limit_max_cu": 8,
+      "region_id": "aws-eu-central-1",
+      "type": "read_write",
+      "current_state": "active",
+      "group": {
+        "size": {
+          "min": 1,
+          "max": 1
+        },
+        "allow_readable_secondaries": false,
+        "computes": [
+          {
+            "binding_id": "r8c",
+            "current_state": "active",
+            "role": "read_write",
+            "compute_host": "ep-snowy-thunder-as5b15io-r8c.c-4.eu-central-1.aws.neon.tech",
+            "compute_pooled_host": "ep-snowy-thunder-as5b15io-r8c-pooler.c-4.eu-central-1.aws.neon.tech",
+            "created_at": "2026-07-08T16:50:55Z",
+            "updated_at": "2026-10-08T22:33:27Z",
+            "started_at": "2026-10-08T22:33:27Z"
+          }
+        ]
+      },
+      "settings": {
+        "pg_settings": {}
+      },
+      "pooler_enabled": false,
+      "pooler_mode": "transaction",
+      "disabled": false,
+      "passwordless_access": true,
+      "last_active": "2026-10-08T22:33:31Z",
+      "creation_source": "console",
+      "created_at": "2026-07-08T16:50:55Z",
+      "updated_at": "2026-10-08T22:33:31Z",
+      "started_at": "2026-10-08T22:33:27Z",
+      "proxy_host": "c-4.eu-central-1.aws.neon.tech",
+      "suspend_timeout_seconds": 0,
+      "provisioner": "k8s-neonvm",
+      "compute_release_version": "15213"
+    },
+    {
+      "host": "ep-bold-frost-asetmiu7.c-4.eu-central-1.aws.neon.tech",
+      "hosts": {
+        "read_write_host": "ep-bold-frost-asetmiu7.c-4.eu-central-1.aws.neon.tech",
+        "read_write_pooled_host": "ep-bold-frost-asetmiu7-pooler.c-4.eu-central-1.aws.neon.tech"
+      },
+      "id": "ep-bold-frost-asetmiu7",
+      "slug": "ep-bold-frost-asetmiu7",
+      "branch_slug": "br-old-wildflower-asw0m0uy",
+      "project_slug": "old-smoke-90429853",
+      "project_id": "old-smoke-90429853",
+      "branch_id": "br-old-wildflower-asw0m0uy",
+      "autoscaling_limit_min_cu": 0.25,
+      "autoscaling_limit_max_cu": 8,
+      "region_id": "aws-eu-central-1",
+      "type": "read_write",
+      "current_state": "idle",
+      "group": {
+        "size": {
+          "min": 1,
+          "max": 1
+        },
+        "allow_readable_secondaries": false,
+        "computes": [
+          {
+            "binding_id": "jbh",
+            "current_state": "idle",
+            "role": "read_write",
+            "compute_host": "ep-bold-frost-asetmiu7-jbh.c-4.eu-central-1.aws.neon.tech",
+            "compute_pooled_host": "ep-bold-frost-asetmiu7-jbh-pooler.c-4.eu-central-1.aws.neon.tech",
+            "created_at": "2026-07-21T11:14:49Z",
+            "updated_at": "2026-07-21T11:20:02Z",
+            "suspended_at": "2026-07-21T11:20:02Z"
+          }
+        ]
+      },
+      "settings": {
+        "pg_settings": {}
+      },
+      "pooler_enabled": false,
+      "pooler_mode": "transaction",
+      "disabled": false,
+      "passwordless_access": true,
+      "last_active": "2026-07-21T11:14:51Z",
+      "creation_source": "console",
+      "created_at": "2026-07-21T11:14:49Z",
+      "updated_at": "2026-08-01T00:35:32Z",
+      "suspended_at": "2026-07-21T11:20:02Z",
+      "proxy_host": "c-4.eu-central-1.aws.neon.tech",
+      "suspend_timeout_seconds": 0,
+      "provisioner": "k8s-neonvm"
+    }
+  ],
+  "migrationLedgerComparison": [
+    {
+      "branchId": "br-dry-hall-b294222f",
+      "applied": 20,
+      "sourceChecksumsMatch": true
+    },
+    {
+      "branchId": "br-wandering-dew-b2izo8fg",
+      "applied": 20,
+      "sourceChecksumsMatch": true
+    },
+    {
+      "branchId": "br-purple-shape-b2az1npx",
+      "applied": 20,
+      "sourceChecksumsMatch": true
+    }
+  ],
+  "localMigrationValidation": {
+    "verdict": "FAIL",
+    "database": "LOCAL_DISPOSABLE_ONLY",
+    "postgresVersion": "16.14",
+    "neonVersionCompatibility": "Neon 18 not executed here; DDL compatibility requires future PG18 isolated check",
+    "productDatabaseWrites": false,
+    "capturedAt": "2026-10-08T22:35:19.726917+00:00",
+    "results": [
+      {
+        "command": [
+          "/opt/homebrew/bin/initdb",
+          "-D"
+        ],
+        "code": 0,
+        "output": "The files belonging to this database system will be owned by user \"tomaszuscinski\".\nThis user must also own the server process.\n\nThe database cluster will be initialized with locale \"C\".\nThe default database encoding has accordingly been set to \"SQL_ASCII\".\nThe default text search configuration will be set to \"english\".\n\nData page checksums are disabled.\n\ncreating directory /private/tmp/sg2-stage1-pg-sqfmj_fb/data ... ok\ncreating subdirectories ... ok\nselecting dynamic shared memory implementation ... posix\nselecting default max_connections ... 100\nselecting default shared_buffers ... 128MB\nselecting default time zone ... Europe/Warsaw\ncreating configuration files ... ok\nrunning bootstrap script ... ok\nperforming post-bootstrap initialization ... ok\nsyncing data to disk ... ok\n\nSuccess. You can now start the database server using:\n\n    /opt/homebrew/bin/pg_ctl -D /private/tmp/sg2-stage1-pg-sqfmj_fb/data -l logfile start\n\n"
+      },
+      {
+        "command": [
+          "/opt/homebrew/bin/pg_ctl",
+          "-D"
+        ],
+        "code": 0,
+        "output": "waiting for server to start.... done\nserver started\n"
+      },
+      {
+        "command": [
+          "/opt/homebrew/bin/createdb",
+          "-h"
+        ],
+        "code": 0,
+        "output": ""
+      },
+      {
+        "command": [
+          "node",
+          "node_modules/prisma/build/index.js"
+        ],
+        "code": 0,
+        "output": "Prisma schema loaded from prisma-market-data/schema.prisma\nDatasource \"db\": PostgreSQL database \"sg2_stage1_disposable\", schema \"public\" at \"127.0.0.1:55341\"\n\n20 migrations found in prisma/migrations\n\nApplying migration `20260813100520_init_dynamic_market_data_store`\nApplying migration `20260817103000_add_benchmark_metadata_store`\nApplying migration `20260818120000_init_forecast_library_foundation`\nApplying migration `20260818153000_forecast_target_basis_identity`\nApplying migration `20260820103000_rolling_daily_incremental_maintenance`\nApplying migration `20260820113000_add_point_in_time_target_basis`\nApplying migration `20260820170000_add_rolling_daily_current_forecast_snapshots`\nApplying migration `20260822190000_generic_forecast_method_identity`\nApplying migration `20260906202500_forecast_preparation_execution_ledger`\nApplying migration `20260906221500_forecast_execution_ledger_context_fields`\nApplying migration `20260906235500_forecast_execution_ledger_stage2_contract_fix`\nApplying migration `20260907104500_forecast_artifact_training_policy_identity`\nApplying migration `20260907123000_forecast_legacy_policy_identity_constraints`\nApplying migration `20260907164000_rolling_daily_snapshot_exact_identity`\nApplying migration `20260907203000_rolling_daily_snapshot_legacy_identity_guards`\nApplying migration `20260907_forecast_stage3_canonical_execution_admission`\nApplying migration `20260918203500_forecast_artifact_frequency_identity`\nApplying migration `20260920120000_forecast_preparation_job_queue`\nApplying migration `20260920202000_forecast_e2e_correlation_id`\nApplying migration `20260920233000_forecast_action_trace_and_resource_summary`\n\nThe following migration(s) have been applied:\n\nmigrations/\n  └─ 20260813100520_init_dynamic_market_data_store/\n    └─ migration.sql\n  └─ 20260817103000_add_benchmark_metadata_store/\n    └─ migration.sql\n  └─ 20260818120000_init_forecast_library_foundation/\n    └─ migration.sql\n  └─ 20260818153000_forecast_target_basis_identity/\n    └─ migration.sql\n  └─ 20260820103000_rolling_daily_incremental_maintenance/\n    └─ migration.sql\n  └─ 20260820113000_add_point_in_time_target_basis/\n    └─ migration.sql\n  └─ 20260820170000_add_rolling_daily_current_forecast_snapshots/\n    └─ migration.sql\n  └─ 20260822190000_generic_forecast_method_identity/\n    └─ migration.sql\n  └─ 20260906202500_forecast_preparation_execution_ledger/\n    └─ migration.sql\n  └─ 20260906221500_forecast_execution_ledger_context_fields/\n    └─ migration.sql\n  └─ 20260906235500_forecast_execution_ledger_stage2_contract_fix/\n    └─ migration.sql\n  └─ 20260907104500_forecast_artifact_training_policy_identity/\n    └─ migration.sql\n  └─ 20260907123000_forecast_legacy_policy_identity_constraints/\n    └─ migration.sql\n  └─ 20260907164000_rolling_daily_snapshot_exact_identity/\n    └─ migration.sql\n  └─ 20260907203000_rolling_daily_snapshot_legacy_identity_guards/\n    └─ migration.sql\n  └─ 20260907_forecast_stage3_canonical_execution_admission/\n    └─ migration.sql\n  └─ 20260918203500_forecast_artifact_frequency_identity/\n    └─ migration.sql\n  └─ 20260920120000_forecast_preparation_job_queue/\n    └─ migration.sql\n  └─ 20260920202000_forecast_e2e_correlation_id/\n    └─ migration.sql\n  └─ 20260920233000_forecast_action_trace_and_resource_summary/\n    └─ migration.sql\n      \nAll migrations have been successfully applied.\n"
+      },
+      {
+        "command": [
+          "node",
+          "node_modules/prisma/build/index.js"
+        ],
+        "code": 2,
+        "output": "\n[*] Changed the `benchmark_metadata_facets` table\n  [*] Altered column `searchable` (default changed from `Some(Value(Boolean(true)))` to `None`)\n  [*] Altered column `featured` (default changed from `Some(Value(Boolean(false)))` to `None`)\n  [*] Altered column `allowMultipleValues` (default changed from `Some(Value(Boolean(false)))` to `None`)\n  [*] Altered column `active` (default changed from `Some(Value(Boolean(true)))` to `None`)\n  [*] Altered column `valueCount` (default changed from `Some(Value(Int(0)))` to `None`)\n  [*] Altered column `createdAt` (default changed from `Some(Now)` to `None`)\n\n[*] Changed the `benchmark_metadata_values` table\n  [-] Removed index on columns (normalizedLabel)\n  [*] Altered column `active` (default changed from `Some(Value(Boolean(true)))` to `None`)\n  [*] Altered column `firstSeenAt` (default changed from `Some(Now)` to `None`)\n  [*] Altered column `lastSeenAt` (default changed from `Some(Now)` to `None`)\n  [*] Altered column `createdAt` (default changed from `Some(Now)` to `None`)\n  [*] Renamed index `benchmark_metadata_values_providerCode_facetKey_providerValueId` to `benchmark_metadata_values_providerCode_facetKey_providerVal_key`\n\n[*] Changed the `forecast_preparation_execution_ledger` table\n  [*] Renamed index `forecast_preparation_execution_ledger_execution_id_key` to `forecast_preparation_execution_ledger_executionId_key`\n\n[*] Changed the `forecast_verification_points` table\n  [*] Renamed index `forecast_verification_points_runId_horizonLabel_forecastOriginA` to `forecast_verification_points_runId_horizonLabel_forecastOri_key`\n"
+      },
+      {
+        "command": [
+          "/opt/homebrew/bin/pg_ctl",
+          "-D"
+        ],
+        "code": 0,
+        "output": "waiting for server to shut down.... done\nserver stopped\n"
+      }
+    ]
+  },
+  "githubEnvironmentSecrets": {
+    "development": {
+      "total_count": 0,
+      "secrets": []
+    },
+    "staging": {
+      "total_count": 5,
+      "secrets": [
+        {
+          "name": "SG2_STAGING_CURRENT_WORKER_DEPLOY_HOOK",
+          "created_at": "2026-09-23T13:38:44Z",
+          "updated_at": "2026-09-23T13:38:44Z"
+        },
+        {
+          "name": "SG2_STAGING_DASHBOARD_DEPLOY_HOOK",
+          "created_at": "2026-09-23T13:37:00Z",
+          "updated_at": "2026-09-23T13:37:00Z"
+        },
+        {
+          "name": "SG2_STAGING_MAIN_RUNTIME_DEPLOY_HOOK",
+          "created_at": "2026-09-23T13:38:16Z",
+          "updated_at": "2026-09-23T13:38:16Z"
+        },
+        {
+          "name": "SG2_STAGING_RUNTIME_DEPLOY_HOOK",
+          "created_at": "2026-09-23T13:37:45Z",
+          "updated_at": "2026-09-23T13:37:45Z"
+        },
+        {
+          "name": "SG2_STAGING_VERIFICATION_WORKER_DEPLOY_HOOK",
+          "created_at": "2026-09-23T13:39:18Z",
+          "updated_at": "2026-09-23T13:39:18Z"
+        }
+      ]
+    }
+  },
+  "secretValuesIncluded": false,
+  "credentialPasswordUniqueness": "NOT_VERIFIED_AUTO_REVIEW_REJECTED",
+  "pmosRegistrationId": "cmv0318lr0000muhmmirune1g",
+  "validation": {
+    "runtimeUnit": {
+      "passed": 97,
+      "failed": 0
+    },
+    "forecastRegression": {
+      "passed": 98,
+      "failed": 0
+    },
+    "dashboard": {
+      "passed": 296,
+      "failed": 0
+    },
+    "governance": {
+      "passed": 26,
+      "failed": 0
+    },
+    "pmosLifecycleUnit": {
+      "passed": 40,
+      "failed": 0
+    },
+    "runtimeBuild": "PASS",
+    "runtimeTypecheck": "PASS",
+    "dashboardStrictBuild": "PASS",
+    "dashboardPostBuildTypecheck": "PASS",
+    "remoteProductCi": "NOT_EXECUTED_YET"
+  },
+  "noMutations": {
+    "render": true,
+    "productNeon": true,
+    "staging": true,
+    "production": true,
+    "developmentRuntimeDeployment": true
+  }
+}

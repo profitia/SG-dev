@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "SG2",
+  "sourceAuthority": "profitia/SG-dev",
+  "authorityBranch": "main",
+  "observedAuthoritySha": "886ce9d92bea5c0c2ae5dc8ae98cb2a44ee71fc1",
+  "approvedSourceSha": null,
+  "capturedAt": "2026-10-08T22:44:36.304055+00:00",
+  "evidenceExpiresAt": null,
+  "stage1Readiness": "PARTIAL",
+  "releaseStatus": "BLOCKED",
+  "gates": {
+    "liveBindings": {
+      "status": "PARTIAL"
+    },
+    "applicationSchemas": {
+      "status": "PARTIAL"
+    },
+    "legacyBridgeClosure": {
+      "status": "PARTIAL"
+    },
+    "productCi": {
+      "status": "PARTIAL"
+    },
+    "environmentConfiguration": {
+      "status": "PARTIAL"
+    },
+    "multiServiceManifest": {
+      "status": "NOT_IMPLEMENTED"
+    },
+    "forecastProducerAuthority": {
+      "status": "PARTIAL"
+    }
+  },
+  "openBlockers": [
+    "LIVE_APP_ENV_MISSING_ON_WORKERS_AND_PORR_DASHBOARD",
+    "CANONICAL_APPLICATION_AND_DASHBOARD_SCHEMAS_ABSENT",
+    "LEGACY_MAIN_RUNTIME_AND_HELPER_USE_PRODUCT_PRODUCTION_MARKET_DB",
+    "LEGACY_BRIDGE_EXACT_PATH_AUTHORIZATION_PENDING",
+    "GITHUB_NPM_TOKEN_AND_DEVELOPMENT_SPECIFIC_DB_CREDENTIAL_MISSING",
+    "MARKET_METADATA_PRISMA_SCHEMA_DIFF",
+    "SUPPORTING_VECTOR_AND_HELPER_PROJECT_IDENTITIES_NOT_VERIFIED",
+    "PRODUCTION_BRANCH_UNPROTECTED",
+    "MULTI_SERVICE_RELEASE_MANIFEST_NOT_IMPLEMENTED_STAGE2"
+  ],
+  "productionStatus": "RESERVED",
+  "activationRequiresSeparateAuthorization": true,
+  "noPermissiveOverride": true
+}

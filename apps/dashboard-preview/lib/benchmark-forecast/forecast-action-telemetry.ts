@@ -1,4 +1,4 @@
-const LOCAL_SG_RUNTIME_BASE_URL = 'http://localhost:3001'
+import { resolveRuntimeServiceUrl } from '../environment-identity'
 const INTERNAL_ACTION_TRACE_PATH = '/api/internal/forecast/action-trace'
 const FORECAST_CORRELATION_HEADER = 'x-sg-forecast-correlation-id'
 
@@ -47,7 +47,7 @@ export function resolveForecastPollingCorrelation(input: {
 }
 
 function runtimeBaseUrl() {
-  return process.env.SG_RUNTIME_BASE_URL?.trim() || LOCAL_SG_RUNTIME_BASE_URL
+  return resolveRuntimeServiceUrl()
 }
 
 export async function forwardForecastUiVisibleTelemetry(

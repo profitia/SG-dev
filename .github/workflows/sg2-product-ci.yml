@@ -1,0 +1,54 @@
+name: SG2 Product CI
+on:
+  pull_request:
+    paths: ['apps/sg-runtime/**', 'apps/dashboard-preview/**', 'packages/governance/**', 'tooling/Benchmark-Forecasting/**', 'scripts/governance/**', 'Canon/**', '.github/workflows/sg2-product-ci.yml']
+  push:
+    branches: [main]
+    paths: ['apps/sg-runtime/**', 'apps/dashboard-preview/**', 'packages/governance/**', 'tooling/Benchmark-Forecasting/**', 'scripts/governance/**', 'Canon/**', '.github/workflows/sg2-product-ci.yml']
+permissions:
+  contents: read
+concurrency:
+  group: sg2-product-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - run: node scripts/governance/validate-governance-manifest.mjs
+      - run: node --test scripts/governance/tests/*.test.mjs scripts/governance/governance.test.mjs scripts/governance/sg2-staging-release.test.mjs
+  product:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: development
+      SG_RUNTIME_BASE_URL: https://dev-sg2.spendguru.app
+      DASHBOARD_PREVIEW_BASE_URL: https://analytics-dev-sg2.spendguru.app
+      NEXT_TELEMETRY_DISABLED: '1'
+      # No product SQL credentials are provided to tests or builds.
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Require private package read credential
+        run: test -n "$NPM_TOKEN" || { echo 'Missing NPM_TOKEN for SG2 private packages'; exit 1; }
+      - run: npm ci
+        working-directory: apps/sg-runtime
+      - run: npm run typecheck
+        working-directory: apps/sg-runtime
+      - name: SG Runtime and forecast contract regressions (no live compute)
+        working-directory: apps/sg-runtime
+        run: node --import tsx --test tests/environment-identity.test.ts tests/forecast-preparation-queue.test.ts tests/forecast-library-service.test.ts tests/forecast-live-input.test.ts tests/runtime-build-contract.test.mjs tests/current-single-flight.test.ts tests/verification-single-flight.test.ts tests/forecast-preparation-route-contract.test.ts tests/forecast-production-operations.test.ts tests/forecast-identity.test.ts tests/forecast-canonical-history.test.ts tests/rolling-daily-current-ownership.test.ts tests/rolling-daily-current-forecast-snapshot.test.ts tests/rolling-daily-production-operations.test.ts tests/forecast-production-routing.test.ts tests/persistence-ownership.test.ts tests/forecast-history-fingerprint.test.ts
+      - run: npm run build
+        working-directory: apps/sg-runtime
+      - run: npm ci
+        working-directory: apps/dashboard-preview
+      - run: npm run typecheck && npm test && npm run build
+        working-directory: apps/dashboard-preview

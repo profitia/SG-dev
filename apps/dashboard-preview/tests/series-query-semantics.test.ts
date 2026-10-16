@@ -141,16 +141,17 @@ test('forwards only the shared PORR demo cookie to SG Runtime benchmark analytic
   }) as typeof global.fetch
 
   try {
-    delete process.env.APP_ENV
+    process.env.APP_ENV = 'staging'
     await getSeries(
       new URLSearchParams('seriesId=wocaes0074&range=1Y&displayName=Brent'),
       'pl',
-      'other=value; sg_porr_demo_session=signed.token; extra=1',
+      'other=value; sg_porr_demo_session_staging=signed.token; extra=1',
     )
 
-    assert.equal(capturedCookieHeader, 'sg_porr_demo_session=signed.token')
+    assert.equal(capturedCookieHeader, 'sg_porr_demo_session_staging=signed.token')
 
     process.env.APP_ENV = 'development'
+    process.env.SG_RUNTIME_BASE_URL = 'https://dev-sg2.spendguru.app'
     await getSeries(
       new URLSearchParams('seriesId=wocaes0074&range=1Y&displayName=Brent'),
       'pl',

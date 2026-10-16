@@ -52,7 +52,7 @@ function withCanonicalMatrixPrisma(prisma: NonNullable<MatrixPrisma>) {
   const marketDataGlobal = globalThis as typeof globalThis & MarketDataPrismaGlobal
   const previousPrisma = marketDataGlobal.dashboardPreviewMarketDataPrisma
   const previousConnectionString = marketDataGlobal.dashboardPreviewMarketDataPrismaConnectionString
-  const connectionString = 'postgresql://dashboard-preview-test'
+  const connectionString = 'postgresql://neondb_owner:fixture-only@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
 
   process.env.MARKET_DATA_DATABASE_URL = connectionString
   marketDataGlobal.dashboardPreviewMarketDataPrisma = prisma

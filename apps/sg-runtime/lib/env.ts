@@ -22,7 +22,7 @@ import { z } from 'zod'
 // ---------------------------------------------------------------------------
 
 const serverEnvSchema = z.object({
-  APP_ENV: z.enum(['development', 'staging', 'production']).default('development'),
+  APP_ENV: z.enum(['development', 'staging', 'production']),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
   // Database — optional until Neon is configured per environment
@@ -99,8 +99,7 @@ const _publicEnv = publicEnvSchema.safeParse(process.env)
 if (!_serverEnv.success) {
   console.error('[sg-runtime] Invalid server environment variables:')
   console.error(_serverEnv.error.flatten().fieldErrors)
-  // Do not throw at scaffold stage — external integrations may not be configured yet.
-  // Convert to throw once Neon/Clerk/OpenAI are required.
+  throw new Error('SG2 server environment validation failed; explicit identity is required.')
 }
 
 if (!_publicEnv.success) {

@@ -1,3 +1,5 @@
+import { resolveDashboardServiceUrl } from './lib/environment-identity'
+
 import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 
@@ -23,6 +25,9 @@ import { routing } from './i18n/routing'
 const handleI18nRouting = createMiddleware(routing)
 
 export default async function middleware(request: NextRequest) {
+  try { resolveDashboardServiceUrl() } catch {
+    return NextResponse.json({ error: { code: 'SG2_ENVIRONMENT_IDENTITY_NOT_READY' } }, { status: 503 })
+  }
   const intlResponse = handleI18nRouting(request)
   const runtimeConfig = resolvePorrDemoRuntimeConfig()
   if (!runtimeConfig.enabled) {
