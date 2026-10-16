@@ -282,13 +282,13 @@ function confirmXhtmlNip(body: XNode, expected: string): boolean {
     if (walk(node).some(n => ["script","style","template"].includes(n.local))) continue;
     const value = compact(text(node));
     if (value.length <= 128 && !walk(node).some(n=>classesOf(n).includes("c"))) {
-      const inline = /^NIP\s*:?\s*(\d[\d\s\u2010\u2011-]*)$/i.exec(value);
+      const inline = /^(?:Numer\s+)?NIP\s*:?\s*(\d[\d\s\u2010\u2011-]*)$/i.exec(value);
       if (inline) add(inline[1]);
     }
   }
   for (const page of walk(body).filter(n => classesOf(n).includes("pf"))) {
     const cells = leafCells(page);
-    for (const label of cells.filter(n => /^NIP\s*:?$/i.test(compact(text(n))))) {
+    for (const label of cells.filter(n => /^(?:Numer\s+)?NIP\s*:?$/i.test(compact(text(n))))) {
       const row = position(label,"y");
       if (!row) continue;
       for (const value of cells.filter(n => n !== label && position(n,"y") === row)) add(compact(text(value)));
