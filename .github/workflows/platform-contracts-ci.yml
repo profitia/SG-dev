@@ -128,6 +128,9 @@ jobs:
 
   operations:
     name: ${{ matrix.project }} operation integration
+    # Package read access is restricted to source branches in this repository.
+    # Fork pull requests still run the public producer and contract checks.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
