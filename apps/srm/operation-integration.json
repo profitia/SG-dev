@@ -13,12 +13,15 @@
   },
   "producer": {
     "projectKey": "ARCHITECTURE",
-    "taskId": "ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016",
+    "taskId": "ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017",
     "repository": "profitia/SG-dev",
-    "pullRequest": 380,
-    "sourceSha": "dde7d08262c693df7c86e0a8f16c6bcb95512f92",
-    "compatibilityPullRequest": 382,
-    "compatibilitySourceSha": "52eda56757e48ffe942629767222981cd1c76fbd"
+    "pullRequest": 382,
+    "sourceSha": "52eda56757e48ffe942629767222981cd1c76fbd",
+    "initialCandidate": {
+      "taskId": "ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016",
+      "pullRequest": 380,
+      "sourceSha": "dde7d08262c693df7c86e0a8f16c6bcb95512f92"
+    }
   },
   "hostAdapter": "src/server/operation-report-data.ts",
   "operations": [
