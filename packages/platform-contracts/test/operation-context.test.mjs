@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import test from 'node:test'
-import { createOperationExecutor, IMPLEMENTED_OPERATIONS, OperationDenied, OPERATION_CONTRACT, operationPayloadDigest, operationSourceDigest } from '../src/operation-context.mjs'
+import { createOperationExecutor, IMPLEMENTED_OPERATIONS, OperationDenied, isOperationDenied, OPERATION_CONTRACT, operationPayloadDigest, operationSourceDigest } from '../src/operation-context.mjs'
 import { createTestIdentityIssuer } from '../../../apps/architecture-lab/src/operation-test-authority.mjs'
 
 const time = Date.parse('2026-10-16T22:00:00Z')
@@ -136,4 +137,18 @@ test('trusted identity is reduced to safe fields rather than carrying an IdP tok
 test('entitlement expiring during a local write aborts before commit', async () => {
   const f = fixture('benchmark.selection.write'); let current = time; f.options.now = () => current
   await assert.rejects(createOperationExecutor(f.options).execute(f.input, (_context, tx) => { tx.push({ write: true }); current += 3_600_001; return null }), e => ['ACCESS_BASIS_INVALID', 'PRODUCT_UNAVAILABLE'].includes(e.reasonCode)); assert.deepEqual(f.writes, [])
+})
+test('the public export works for actual Node24 CommonJS/tsx consumers with the same ESM implementation', () => {
+  const loaded = createRequire(import.meta.url)('@profitia/platform-contracts/operation-context')
+  assert.equal(loaded.OPERATION_CONTRACT, OPERATION_CONTRACT)
+  assert.equal(loaded.createOperationExecutor, createOperationExecutor)
+})
+test('denials survive distinct module identities while plain client objects never become branded denials', async () => {
+  const other = await import('../src/operation-context.mjs?independent-module-copy')
+  const error = new other.OperationDenied('PERMISSION_DENIED')
+  assert.equal(error instanceof OperationDenied, false)
+  assert.equal(isOperationDenied(error), true)
+  assert.equal(isOperationDenied({ reasonCode: 'PERMISSION_DENIED', verified: true }), false)
+  assert.equal(isOperationDenied(new Error('PERMISSION_DENIED')), false)
+  const f = fixture(); await assert.rejects(createOperationExecutor(f.options).execute(f.input, () => { throw error }), e => e.reasonCode === 'PERMISSION_DENIED')
 })

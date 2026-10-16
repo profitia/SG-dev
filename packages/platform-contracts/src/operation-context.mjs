@@ -1,6 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.1' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.2' })
+const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
+const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
 // Explicit implementation, not an interpreter of the target specification JSON.
 // Everything outside this bounded candidate is denied, including jobs and billing.
@@ -29,7 +31,13 @@ export class OperationDenied extends Error {
     this.name = 'OperationDenied'
     this.reasonCode = reasonCode
     this.decisionId = decisionId
+    Object.defineProperty(this, denialBrand, { value: true })
   }
+}
+// ESM/CJS, bundlers and an installed file dependency can have distinct class
+// identities. Error transport is branded, never authorized from a JSON flag.
+export function isOperationDenied(error) {
+  return error instanceof Error && error[denialBrand] === true && denialCodes.has(error.reasonCode) && /^[a-f0-9-]{36}$/.test(error.decisionId)
 }
 const deny = (reason) => { throw new OperationDenied(reason) }
 const nonempty = (v) => typeof v === 'string' && v.length > 0 && v.length <= 256
@@ -154,7 +162,7 @@ export function createOperationExecutor(options) {
           return Object.freeze({ decision: 'ALLOW', decisionId, contractVersion: OPERATION_CONTRACT.version, value: output })
         })
       } catch (error) {
-        const rejected = error instanceof OperationDenied ? error : new OperationDenied('POLICY_UNAVAILABLE', decisionId)
+        const rejected = isOperationDenied(error) ? error : new OperationDenied('POLICY_UNAVAILABLE', decisionId)
         rejected.decisionId = decisionId
         try { await recordAudit({ ...audit, phase: intentRecorded ? 'FAILURE' : 'DECISION', decision: 'DENY', reasonCode: rejected.reasonCode }) }
         catch { throw new OperationDenied('AUDIT_UNAVAILABLE', decisionId) }
