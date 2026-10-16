@@ -266,10 +266,22 @@ export function validateReportSelection(input: unknown): ReportSelection {
   return { nip, entityType: value.entityType === "JDG" ? "JDG" : "COMPANY" };
 }
 
-/** Same host boundary as the existing exports; injectable read only for contract tests. */
-export function reportDataHandler(read = readReportData, env: Readonly<Record<string, string | undefined>> = process.env) {
+export type ReportDataOperationBoundary = (request: Request, project: (organizationId: string, selection: ReportSelection, pool?: DatabasePool, preferenceSubject?: string) => Promise<Response>) => Promise<Response>;
+
+/** Default demo boundary is preserved; a new host supplies its boundary explicitly. */
+export function reportDataHandler(read = readReportData, env: Readonly<Record<string, string | undefined>> = process.env, operationBoundary?: ReportDataOperationBoundary) {
   return async (request: Request): Promise<Response> => {
     const respond = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
+    const project = async (organizationId: string, selection: ReportSelection, pool?: DatabasePool, preferenceSubject?: string): Promise<Response> => {
+      try {
+        const report = pool ? await read(organizationId, selection, new Date(), pool) : await read(organizationId, selection);
+        // A named user's preference scope stays distinct from the shared demo actor.
+        if (env.SRM_DEMO_SESSION_SECRET) report.preferenceScope = createHmac("sha256", env.SRM_DEMO_SESSION_SECRET)
+          .update(JSON.stringify([organizationId, preferenceSubject ?? request.headers.get("cookie") ?? "", "scanner-preferences-v1"])).digest("hex");
+        return respond(report);
+      } catch { return respond({ error: "Nie udało się odczytać zapisanego raportu." }, 503); }
+    };
+    if (operationBoundary) return operationBoundary(request, project);
     if (!productEnvironmentReady(env)) return respond({ error: "Środowisko niedostępne." }, 404);
     if (!await hasDemoSession(request, { SRM_DEMO_PASSWORD: env.SRM_DEMO_PASSWORD, SRM_DEMO_SESSION_SECRET: env.SRM_DEMO_SESSION_SECRET })) return respond({ error: "Wymagane logowanie." }, 401);
     if (!isSameOriginRequest(request)) return respond({ error: "Nieprawidłowe żądanie." }, 403);
@@ -278,14 +290,6 @@ export function reportDataHandler(read = readReportData, env: Readonly<Record<st
     let selection: ReportSelection;
     try { selection = validateReportSelection(await request.json()); }
     catch { return respond({ error: "Nieprawidłowy NIP lub rodzaj dostawcy." }, 400); }
-    try {
-      const report = await read(organizationId, selection);
-      // Demo sessions represent a technical actor. Isolate preferences by the
-      // authenticated session and organization; never persist financial values.
-      if (env.SRM_DEMO_SESSION_SECRET) report.preferenceScope = createHmac("sha256", env.SRM_DEMO_SESSION_SECRET)
-        .update(JSON.stringify([organizationId, request.headers.get("cookie") ?? "", "scanner-preferences-v1"])).digest("hex");
-      return respond(report);
-    }
-    catch { return respond({ error: "Nie udało się odczytać zapisanego raportu." }, 503); }
+    return project(organizationId, selection);
   };
 }

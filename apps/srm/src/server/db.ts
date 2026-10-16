@@ -3,6 +3,15 @@ import { atLookupStage } from "./lookup-diagnostics";
 import pg, { type PoolClient } from "pg";
 
 export type DatabasePool = Pick<pg.Pool, "connect">;
+const boundTransactions = new WeakMap<DatabasePool, { organizationId: string; client: PoolClient }>();
+
+/** Server-only capability for an already authorised, active transaction. */
+export function bindOrganizationTransaction(organizationId: string, client: PoolClient): DatabasePool {
+  assertOrganizationId(organizationId);
+  const pool: DatabasePool = { connect: async () => client };
+  boundTransactions.set(pool, { organizationId, client });
+  return pool;
+}
 let sharedPool: pg.Pool | undefined;
 
 export function runtimeConnectionString(environment: Readonly<Record<string, string | undefined>> = process.env): string {
@@ -39,14 +48,18 @@ export async function withOrganization<T>(
   pool: DatabasePool = getPool(),
 ): Promise<T> {
   assertOrganizationId(organizationId);
-  if (process.env.TARGET_ENVIRONMENT && organizationId !== productOrganizationId()) {
+  const bound = boundTransactions.get(pool);
+  if (bound && bound.organizationId !== organizationId) throw new Error("SRM bound transaction organization mismatch");
+  if (!bound && process.env.TARGET_ENVIRONMENT && organizationId !== productOrganizationId()) {
     throw new Error("SRM configured organization identity mismatch");
   }
   const client = await pool.connect();
   let inTransaction = false;
   try {
-    await client.query("BEGIN");
-    inTransaction = true;
+    if (!bound) {
+      await client.query("BEGIN");
+      inTransaction = true;
+    }
     const identity = await client.query<{
       database_name: string;
       bypass_rls: boolean;
@@ -62,19 +75,24 @@ export async function withOrganization<T>(
     if (role.bypass_rls || role.superuser || role.neon_superuser_member) {
       throw new Error("SRM application role must enforce row-level security");
     }
-    await client.query("SELECT set_config('srm.organization_id', $1, true)", [organizationId]);
+    if (bound) {
+      const current = await client.query<{ organization_id: string }>("SELECT current_setting('srm.organization_id',true) AS organization_id");
+      if (current.rows[0]?.organization_id !== organizationId) throw new Error("SRM bound transaction context mismatch");
+    } else await client.query("SELECT set_config('srm.organization_id', $1, true)", [organizationId]);
     await atLookupStage("organization_context", async () => {
       const organization = await client.query("SELECT id FROM srm.organizations WHERE id = $1", [organizationId]);
       if (organization.rows.length !== 1) throw new Error("SRM organization must be provisioned before runtime use");
     });
     const result = await action(client);
-    await client.query("COMMIT");
-    inTransaction = false;
+    if (!bound) {
+      await client.query("COMMIT");
+      inTransaction = false;
+    }
     return result;
   } catch (error) {
     if (inTransaction) await client.query("ROLLBACK").catch(() => {});
     throw error;
   } finally {
-    client.release();
+    if (!bound) client.release();
   }
 }
