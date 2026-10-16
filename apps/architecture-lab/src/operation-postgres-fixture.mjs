@@ -77,7 +77,8 @@ export function createPostgresAuthority({ ownerUrl, runtimeUrl, database, role, 
     if (identity?.database_name !== database || identity.role !== role || identity.rolsuper || identity.rolbypassrls || identity.neon_member) throw Error('Actual ordinary-role connection identity mismatch')
     await setContext(query, actor.actorId, request.organisationId)
     const { rows: [authority] } = await query('SELECT document FROM operation_test.authorities WHERE application_id=$1 AND environment=$2 AND organisation_id=$3 AND actor_id=$4 FOR SHARE', [application.appId, application.environment, request.organisationId ?? '', actor.actorId])
-    const { rows: [resource] } = await query('SELECT document FROM operation_test.resources WHERE application_id=$1 AND environment=$2 AND organisation_id=$3 AND id=$4 FOR SHARE', [application.appId, application.environment, request.organisationId ?? '', request.resourceId])
+    const resourceLock = ['account.settings.write', 'benchmark.selection.write', 'personal.list.write', 'supplier.report.project'].includes(request.operation) ? 'FOR UPDATE' : 'FOR SHARE'
+    const { rows: [resource] } = await query('SELECT document FROM operation_test.resources WHERE application_id=$1 AND environment=$2 AND organisation_id=$3 AND id=$4 ' + resourceLock, [application.appId, application.environment, request.organisationId ?? '', request.resourceId])
     const state = { ...(authority?.document ?? { policyVersion: 'isolated-policy-v1', usagePolicy: 'NOT_APPLICABLE' }), resource: resource?.document, inputs: resource?.document?.inputs, applicationId: application.appId, environment: application.environment }
     return callback({ state, transaction, transactionalEffects: true, outputBoundaryVersion: 'operation-v1', recordOutcome: event => append(query, event), projectOutput })
   })
