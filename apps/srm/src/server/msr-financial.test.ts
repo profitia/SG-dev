@@ -8,6 +8,7 @@ import ExcelJS from "exceljs";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MsrFinancialTables,formatMsrAmount } from "../../node_modules/@profitia/srm-xray/src/msr-financial-tables";
+import { financialQualityReason } from "@profitia/srm-xray";
 
 export const candidate:MsrCandidate={recordId:"68373e33935a5dc0776e1c56",nip:"5272443955",from:"2024-01-01",to:"2024-12-31",scope:"consolidated",filingDate:"2025-05-27",correction:false,documentId:"9559394"};
 test("verified KRS allowlist filters MSR before latest-filing selection without changing receipt identity",()=>{
@@ -35,6 +36,19 @@ function parsed():MsrParsed{return {mappingVersion:MSR_MAPPING_VERSION,sourceChe
   contexts:[{id:"duration",entity:"ISSUER",scheme:"lei",from:candidate.from,to:candidate.to,instant:false,dimensions:{}},{id:"instant",entity:"ISSUER",scheme:"lei",from:null,to:candidate.to,instant:true,dimensions:{}},
     {id:"segment",entity:"ISSUER",scheme:"lei",from:candidate.from,to:candidate.to,instant:false,dimensions:{axis:"member"}}],
   units:[{id:"PLN",currency:"PLN",measure:"PLN",denominator:null}],facts:[fact("Revenue","1873436000"),fact("ProfitLoss","856856000"),fact("Assets","6645632000","instant"),fact("FinanceCosts","-22882000"),fact("Revenue","123","segment")]};}
+test('explicit MSR restated primary columns retain their basis; mixed unresolved columns preserve current quality gates',()=>{
+  const p=parsed();p.contexts[0].restated=true;p.contexts[1].restated=true;
+  const confirmed=projectMsrFinancial(candidate,original,p).data.periods[0];
+  assert.equal(confirmed.comparativeData!.selected,'RESTATED');
+  assert.equal(confirmed.comparativeData!.original.length,0);
+  assert.equal(confirmed.comparativeData!.restated[0].amount,'1873436000');
+  assert.equal(financialQualityReason(confirmed,['MSR_REVENUE']),null);
+  delete p.contexts[1].restated;
+  const mixed=projectMsrFinancial(candidate,original,p).data.periods[0];
+  assert.equal(mixed.comparativeData!.selected,'UNRESOLVED');
+  assert.equal(financialQualityReason(mixed,['MSR_REVENUE']),'RESTATEMENT_UNRESOLVED');
+  assert.equal(mixed.facts[0].amount,'1873436000');
+});
 test("MSR selects latest independent scopes, excludes mismatched NIP, PDF and non-statements",()=>{
   const record=(id:string,type:string,to="2024-12-31")=>({id,identifiers:{pl_nip:candidate.nip},document:{type,is_ias_compliant:true,period_from_date:"2024-01-01",period_to_date:to}});
   const rows=[record(candidate.recordId,"consolidated_financial_statement"),record("b".repeat(24),"financial_statement"),record("c".repeat(24),"financial_statement","2025-12-31"),{...record("d".repeat(24),"financial_statement"),files:{main_document:{original:{content_type:"application/pdf"}}}},record("e".repeat(24),"audit_report")];

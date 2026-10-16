@@ -3,7 +3,7 @@ import type { PoolClient } from "pg";
 import { withOrganization } from "./db";
 import { persistFinancialDocuments, projectArchivedFinancialDocuments, financialRecordsFromPages, type FinancialArchive } from "./financial-documents";
 import { MSR_PROJECTION_VERSION, selectMsrCandidates, projectMsrFinancial, mergeMsrFinancial, type MsrCandidate, type MsrProjection } from "./msr-financial";
-import { MSR_MAPPING_VERSION, parseMsrOriginal, MsrParserError, type MsrParsed } from "./msr-parser";
+import { MSR_READABLE_MAPPING_VERSIONS, parseMsrOriginal, MsrParserError, type MsrParsed } from "./msr-parser";
 import { decodeMsrOriginal, downloadMsrOriginal, MsrSourceError, type MsrOriginal } from "./msr-source";
 import type { MgbiFinancialResult } from "./mgbi-financial";
 import { logMsrOutcome } from "./lookup-diagnostics";
@@ -33,10 +33,21 @@ export function verifyMsrReceipt(candidate:MsrCandidate, row:MsrReceipt): {origi
   if (row.state !== "READY") return null;
   if (!row.original_bytes || row.original_sha256 !== hash(row.original_bytes) || !row.parsed_text
       || row.parsed_sha256 !== hash(row.parsed_text) || !row.parsed_json || row.parsed_json.sourceChecksum !== row.original_sha256
-      || row.mapping_version !== MSR_MAPPING_VERSION || row.parsed_json.mappingVersion !== MSR_MAPPING_VERSION
+      || !row.mapping_version || !MSR_READABLE_MAPPING_VERSIONS.has(row.mapping_version) || row.parsed_json.mappingVersion !== row.mapping_version
       || !row.original_format || !row.original_container || !row.retrieved_at) throw new Error("MSR_STORED_INTEGRITY_FAILURE");
   return { original:{recordId:candidate.recordId,bytes:row.original_bytes,checksum:row.original_sha256,
     format:row.original_format,container:row.original_container,files:[],retrievedAt:new Date(row.retrieved_at).toISOString()}, parsed:row.parsed_json };
+}
+
+/** MSR_PARSER_RECOVERY_V1: only evidenced parser failures with an intact original.
+ * This never resets a receipt, retries a provider call, or relaxes the new parser. */
+export function recoverStoredMsrSource(candidate:MsrCandidate,row:MsrReceipt,parse= parseMsrOriginal):{original:MsrOriginal;parsed:MsrParsed}|null {
+  if(row.state!=="BLOCKED" || !["MSR_XML_DTD_EXCLUDED","MSR_XHTML_ENTITY_UNCONFIRMED","MSR_CONTINUATION_INVALID"].includes(row.error_code ?? "")) return null;
+  if(row.identity_sha256!==identity(candidate) || !row.original_bytes || hash(row.original_bytes)!==row.original_sha256
+    || !row.retrieved_at || !row.original_format || !row.original_container) throw Error("MSR_STORED_INTEGRITY_FAILURE");
+  const original=decodeMsrOriginal(candidate.recordId,row.original_bytes,row.original_container==="ZIP"?"application/zip":"application/xhtml+xml",new Date(row.retrieved_at).toISOString());
+  if(original.checksum!==row.original_sha256 || original.format!==row.original_format || original.container!==row.original_container)throw Error("MSR_STORED_INTEGRITY_FAILURE");
+  return {original,parsed:parse(original,candidate)};
 }
 
 export type MsrStore = {
@@ -75,7 +86,7 @@ export function msrStore(organizationId:string,nip:string,requestId:string,allow
         `UPDATE srm.msr_sources SET state='READY',original_bytes=$5,original_sha256=$6,original_format=$7,original_container=$8,
          parsed_json=$9::jsonb,parsed_sha256=encode(sha256(convert_to(($9::jsonb)::text,'UTF8')),'hex'),mapping_version=$10,retrieved_at=$11
          WHERE organization_id=$1 AND nip=$2 AND record_id=$3 AND claim_id=$4 AND state='RECEIVED' AND identity_sha256=$12 RETURNING record_id`,
-        [organizationId,nip,c.recordId,id,original.bytes,original.checksum,original.format,original.container,JSON.stringify(parsed),MSR_MAPPING_VERSION,original.retrievedAt,identity(c)]);
+        [organizationId,nip,c.recordId,id,original.bytes,original.checksum,original.format,original.container,JSON.stringify(parsed),parsed.mappingVersion,original.retrievedAt,identity(c)]);
       if (result.rows.length !== 1) throw new Error("MSR_SOURCE_FENCE_CONFLICT");
       const verified = await persistMsrProjection(client,organizationId,c,projection);
       await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum,verified);
@@ -98,7 +109,7 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
   const store = options.store ?? msrStore(organizationId,nip,options.requestId!,options.allowedKrs);let archive = await store.candidates();
   if(archive?.metadataMissing && options.refreshMetadata){await options.refreshMetadata();archive=await store.candidates();}
   if (!archive?.candidates.length) return {...base,msrChanged:false};
-  const projections:MsrProjection[] = [], warnings:string[] = [];
+  const projections:MsrProjection[] = [], warnings:string[] = [], resolvedWarnings:string[] = [];
   let changed = false;
   for (const candidate of archive.candidates) {
     const existing = await store.read(candidate);
@@ -109,17 +120,22 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
         await store.project?.(candidate,projection,archive.archiveChecksum);
         projections.push(projection);
         logMsrOutcome("CACHE",null);
-      } else if(existing.state === "BLOCKED" && existing.error_code === "MSR_XML_DTD_EXCLUDED" && existing.original_bytes && store.project) {
-        // A new evidenced parser version reuses the immutable licensed bytes.
-        // No paid retry, receipt reset or source overwrite is permitted.
-        if(hash(existing.original_bytes)!==existing.original_sha256 || !existing.retrieved_at)throw new Error("MSR_STORED_INTEGRITY_FAILURE");
+      } else if(existing.state === "BLOCKED" && store.project) {
         try {
-          const original=decodeMsrOriginal(candidate.recordId,existing.original_bytes,"application/xhtml+xml",new Date(existing.retrieved_at).toISOString());
-          const parsed=(options.parse ?? parseMsrOriginal)(original,candidate);
-          const projection=projectMsrFinancial(candidate,original,parsed);
-          await store.project(candidate,projection,archive.archiveChecksum);
-          projections.push(projection);
-        } catch(error) {warnings.push(error instanceof MsrParserError ? error.code : "MSR_PERSISTENCE_OR_MAPPING_FAILURE");}
+          const recovered=recoverStoredMsrSource(candidate,existing,options.parse);
+          if(recovered) {
+            const projection=projectMsrFinancial(candidate,recovered.original,recovered.parsed);
+            await store.project(candidate,projection,archive.archiveChecksum);
+            projections.push(projection);
+            resolvedWarnings.push(existing.error_code!);
+            warnings.push(...recovered.parsed.warnings);
+            logMsrOutcome("CACHE",null);
+          } else warnings.push(existing.error_code ?? "MSR_SOURCE_BLOCKED");
+        } catch(error) {
+          const code=error instanceof MsrParserError ? error.code
+            : error instanceof Error && error.message==="MSR_STORED_INTEGRITY_FAILURE" ? error.message : "MSR_PERSISTENCE_OR_MAPPING_FAILURE";
+          warnings.push(code);logMsrOutcome("CACHE",code);
+        }
       } else { warnings.push(existing.state === "REQUESTED" ? "MSR_DOWNLOAD_RECONCILIATION_REQUIRED" : existing.error_code ?? "MSR_SOURCE_BLOCKED"); }
       continue;
     }
@@ -144,7 +160,10 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
       warnings.push(code); logMsrOutcome("PROVIDER",code);
     }
   }
-  const merged = mergeMsrFinancial(base,projections,warnings);
+  // The failed receipt remains historical evidence. Only its successfully
+  // resolved current warning is removed; another failing candidate re-adds it.
+  const currentBase={...base,section:{...base.section,warnings:base.section.warnings.filter(w=>!resolvedWarnings.includes(w))}};
+  const merged = mergeMsrFinancial(currentBase,projections,warnings);
   // A previously persisted original can reconstruct a missing public projection without downloading it.
   const before = JSON.stringify(base.section.data?.periods ?? []), after = JSON.stringify(merged.section.data?.periods ?? []);
   return {...merged,msrChanged:changed || before !== after};

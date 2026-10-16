@@ -3,10 +3,10 @@ import { createHash } from "node:crypto";
 import type { FinancialData, FinancialPeriod } from "@profitia/srm-xray";
 import type { FinancialSourceDocument } from "./financial-documents";
 import type { FinancialSourceFact, MgbiFinancialResult } from "./mgbi-financial";
-import { MSR_MAPPING_VERSION, type MsrFact, type MsrParsed } from "./msr-parser";
+import type { MsrFact, MsrParsed } from "./msr-parser";
 import type { MsrOriginal } from "./msr-source";
 
-export const MSR_PROJECTION_VERSION = "2026-10-15-msr-projection-v2";
+export const MSR_PROJECTION_VERSION = "2026-10-16-msr-projection-v3";
 
 // Equivalences are deliberately narrow. An issuer's extension/anchor is never an alias.
 // In particular IFRS Revenue is not necessarily UoR net sales: retain its own code.
@@ -112,15 +112,19 @@ export function projectMsrFinancial(candidate: MsrCandidate, original: MsrOrigin
       if (!stored) { stored = {section:row.section as "Bilans"|"RZiS",sourcePath:row.key,label:row.label,depth:0,amounts:{}}; rows.push(stored); }
       stored.amounts[sourceColumn] = row.validation === "VALID" ? row.amount : null;
     }
+    const primaryContexts=contexts.filter(c=>!Object.keys(c.dimensions).length),restated=primaryContexts.some(c=>c.restated);
     periods.push({ accountingStandard:"IAS_IFRS", accountingStandardBasis:standardBasis, isIasCompliant:true,
-      from,to,scope:candidate.scope,documentId:candidate.recordId + ":" + (sourceColumn === "cfy" ? "cfy" : "pfy"), facts:publicFacts, msrRows:numericRows });
+      from,to,scope:candidate.scope,documentId:candidate.recordId + ":" + (sourceColumn === "cfy" ? "cfy" : "pfy"), facts:publicFacts, msrRows:numericRows,
+      ...restated?{comparativeData:{selected:primaryContexts.every(c=>c.restated)?"RESTATED" as const:"UNRESOLVED" as const,
+        dateBasis:from.endsWith("-01-01")&&to.endsWith("-12-31")?"CALENDAR_PREVIOUS_YEAR" as const:"UNCONFIRMED" as const,
+        original:[],restated:publicFacts}}:{} });
   }
   if (!periods.some(p => p.from === candidate.from && p.to === candidate.to && p.msrRows?.length)) throw new Error("MSR_NO_NUMERIC_STATEMENT");
   const currencies = [...new Set(periods.flatMap(p => p.msrRows?.map(r => r.currency).filter(Boolean) ?? []))];
   return { parsed, data:{periods}, facts, retrievedAt:original.retrievedAt, document:{ recordId:candidate.recordId,documentId:candidate.documentId,scope:candidate.scope,
     from:candidate.from,to:candidate.to,standard:"IAS_IFRS",isIasCompliant:true,standardBasis,
     provider:"MGBI",model:"pl-krs-rdf-record",format:"XHTML",availability:parsed.sourceType === "POSITIONED_XHTML" ? "XHTML_SUPPORTED" : "IXBRL_SUPPORTED",formatBasis:parsed.sourceType === "POSITIONED_XHTML" ? "LICENSED_ORIGINAL_POSITIONED_XHTML" : "LICENSED_ORIGINAL_IXBRL",
-    schemaName:parsed.sourceType === "POSITIONED_XHTML" ? "POSITIONED_XHTML" : "ESEF/iXBRL",schemaVersion:MSR_MAPPING_VERSION,currency:currencies.length === 1 ? currencies[0] : null,
+    schemaName:parsed.sourceType === "POSITIONED_XHTML" ? "POSITIONED_XHTML" : "ESEF/iXBRL",schemaVersion:parsed.mappingVersion,currency:currencies.length === 1 ? currencies[0] : null,
     scale:"1",correction:candidate.correction,filingDate:candidate.filingDate,checksum:original.checksum,mappingVersion:MSR_PROJECTION_VERSION,
     validation:parsed.warnings.length ? "REVIEW" : "VALID",columns,rows,metricEvidence } };
 }

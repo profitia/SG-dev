@@ -1,12 +1,9 @@
 /** Offline projection of already licensed immutable originals. No provider calls.
  * Default: dry run. --apply appends only a new projection; user lookup refreshes
  * the shared effective financial dataset via the normal governed pipeline. */
-import { createHash } from "node:crypto";
 import { getPool } from "../src/server/db";
 import { productOrganizationId } from "../src/server/runtime-environment";
-import { msrStore,verifyMsrReceipt } from "../src/server/msr-repository";
-import { decodeMsrOriginal } from "../src/server/msr-source";
-import { parseMsrOriginal } from "../src/server/msr-parser";
+import { msrStore,verifyMsrReceipt,recoverStoredMsrSource } from "../src/server/msr-repository";
 import { projectMsrFinancial } from "../src/server/msr-financial";
 
 async function main(){
@@ -20,14 +17,9 @@ async function main(){
   for(const c of archive.candidates){
     const receipt=await store.read(c);if(!receipt)throw Error("ORIGINAL_NOT_ALREADY_STORED");
     const verified=verifyMsrReceipt(c,receipt);
-    let original=verified?.original,parsed=verified?.parsed;
-    if(!verified){
-      if(receipt.state!=="BLOCKED"||receipt.error_code!=="MSR_XML_DTD_EXCLUDED"||!receipt.original_bytes||!receipt.retrieved_at||
-        createHash("sha256").update(receipt.original_bytes).digest("hex")!==receipt.original_sha256)throw Error("SOURCE_NOT_REPROJECTABLE");
-      original=decodeMsrOriginal(c.recordId,receipt.original_bytes,"application/xhtml+xml",new Date(receipt.retrieved_at).toISOString());
-      parsed=parseMsrOriginal(original,c);
-    }
-    const projection=projectMsrFinancial(c,original!,parsed!);
+    const recovered=verified??recoverStoredMsrSource(c,receipt);
+    if(!recovered)throw Error("SOURCE_NOT_REPROJECTABLE");
+    const projection=projectMsrFinancial(c,recovered.original,recovered.parsed);
     if(args.includes("--apply"))await store.project!(c,projection,archive.archiveChecksum);
     console.log(JSON.stringify({nip,scope:c.scope,version:projection.document.mappingVersion,periods:projection.data.periods.length,facts:projection.facts.length,applied:args.includes("--apply")}));
   }
