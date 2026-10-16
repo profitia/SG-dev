@@ -130,7 +130,7 @@ export async function buildFinancialExcel(data: FinancialData, selection: Financ
   const selected = new Map<string, { document: FinancialSourceDocument; years: string[] }>();
   const selectedPeriods = selection.years.map(year=>available.get(year)!);
   if (selectedPeriods.every(p=>p.accountingStandard === "IAS_IFRS")) {
-    for (const period of selectedPeriods) if (!sourceDocuments.some(d=>d.recordId === period.documentId.replace(/:(cfy|pfy)$/,"") && d.scope === selection.scope && d.availability === "IXBRL_SUPPORTED"))
+    for (const period of selectedPeriods) if (!sourceDocuments.some(d=>d.recordId === period.documentId.replace(/:(cfy|pfy)$/,"") && d.scope === selection.scope && ["IXBRL_SUPPORTED","XHTML_SUPPORTED"].includes(d.availability)))
       throw new Error("Oryginalne dane MSR nie są dostępne w tej organizacji.");
     const workbook = new ExcelJS.Workbook(); workbook.creator="SRM X-Ray";workbook.created=now;
     const sheet=workbook.addWorksheet("MSR_MSSF",{views:[{state:"frozen",xSplit:3,ySplit:1}]});
