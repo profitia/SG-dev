@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import test from 'node:test'
 import { OPERATION_CONTRACT, operationSourceDigest } from '@profitia/platform-contracts/operation-context'
 import { operationSourceDigest as sourceDigest } from '../../../packages/platform-contracts/src/operation-context.mjs'
@@ -15,4 +17,8 @@ test('explicit consumer binds exact implemented contract and installed/source di
   assert.equal(receipt.liveRouteUsesContract, false)
   assert.equal(receipt.automaticProductDeployment, false)
   assert.equal(receipt.producer.projectKey, 'ARCHITECTURE')
+  assert.match(receipt.producer.sourceSha, /^[a-f0-9]{40}$/)
+  const source = createHash('sha256')
+  for (const file of ['operation-context.mjs', 'operation-context.d.mts']) source.update(execFileSync('git', ['show', receipt.producer.sourceSha + ':packages/platform-contracts/src/' + file]))
+  assert.equal(source.digest('hex'), receipt.contract.sourceDigest, 'Recorded producer SHA must contain the exact accepted implementation')
 })
