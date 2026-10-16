@@ -1,0 +1,1754 @@
+{
+  "schemaVersion": "1.0",
+  "registryId": "operation-access-matrix",
+  "contractId": "profitia.operation-context",
+  "contractVersion": "1.0.0",
+  "status": "ACTIVE_TARGET_SPECIFICATION",
+  "owner": "Profitia Architecture Governance",
+  "sourceAuthority": "profitia/SG-dev/main",
+  "contractDocument": "Canon/v1.0-operation-context-and-access-contract.md",
+  "executionSemantics": "SPECIFICATION_ONLY_NOT_A_RUNTIME_POLICY_ENGINE",
+  "implementationStatus": {
+    "SG2": "NOT_ADOPTED",
+    "SRM": "NOT_ADOPTED",
+    "newApplications": "NOT_ONBOARDED"
+  },
+  "defaultDecision": "DENY",
+  "matchSemantics": "ONE_EXACT_OPERATION_RULE_ALL_GUARDS_AND_CONDITIONS_REQUIRED_DENY_OVERRIDES",
+  "actorKinds": [
+    "HUMAN",
+    "SERVICE",
+    "DEMO",
+    "ANONYMOUS"
+  ],
+  "contextModes": [
+    "ORGANISATION",
+    "ACCOUNT",
+    "BOOTSTRAP",
+    "PLATFORM"
+  ],
+  "accessBasisTypes": [
+    "MEMBERSHIP",
+    "ACCOUNT_SELF",
+    "BOOTSTRAP_GRANT",
+    "SERVICE_GRANT",
+    "DELEGATED_USER",
+    "SUPPORT_GRANT"
+  ],
+  "denialReasons": [
+    "UNSUPPORTED_CONTRACT",
+    "UNVERIFIED_IDENTITY",
+    "CONTEXT_INVALID",
+    "ENVIRONMENT_MISMATCH",
+    "APPLICATION_FEATURE_UNAVAILABLE",
+    "ACCESS_BASIS_INVALID",
+    "PERMISSION_DENIED",
+    "PRODUCT_UNAVAILABLE",
+    "RESOURCE_SCOPE_MISMATCH",
+    "DATA_CLASSIFICATION_UNKNOWN",
+    "DELEGATION_INVALID",
+    "LIMIT_POLICY_UNAVAILABLE",
+    "LIMIT_EXCEEDED",
+    "IDEMPOTENCY_CONFLICT",
+    "AUDIT_UNAVAILABLE",
+    "POLICY_UNAVAILABLE",
+    "EXPLICIT_DENY"
+  ],
+  "requiredGlobalGuards": [
+    "G01_IDENTITY",
+    "G02_ENVIRONMENT",
+    "G03_APPLICATION",
+    "G04_CONTEXT_MODE",
+    "G05_ACCESS_BASIS",
+    "G06_PERMISSION",
+    "G07_PRODUCT",
+    "G08_DATA_SCOPE",
+    "G09_FAIL_CLOSED",
+    "G10_AUDIT",
+    "G11_USAGE",
+    "G12_SERVICE_DELEGATION",
+    "G13_CURRENT_POLICY",
+    "G14_OUTPUT_BOUNDARY"
+  ],
+  "globalGuards": {
+    "G01_IDENTITY": "Aktor i dowód tożsamości są zweryfikowane po stronie serwera, ważne i przeznaczone dla tego odbiorcy. Klient podaje co najwyżej żądanie, nie uprawnienie.",
+    "G02_ENVIRONMENT": "Kontekst, odbiorca tożsamości, aplikacja i własne zasoby/magazyny mają zgodne środowisko. Integracja zewnętrzna używa zatwierdzonego bindingu tego środowiska, także gdy dostawca ma jedno ogólne API. RESERVED nie jest aktywnym środowiskiem.",
+    "G03_APPLICATION": "Serwer rozpoznaje aktywną aplikację i jej profil; funkcjonalność jest włączona w tym profilu. AppShell ani App ID przesłane przez klienta nie nadają praw.",
+    "G04_CONTEXT_MODE": "Tryb ORGANISATION/ACCOUNT/BOOTSTRAP/PLATFORM jest jawny, dopuszczony przez konkretny wiersz i spełnia wymagania identyfikatorów z kontraktu.",
+    "G05_ACCESS_BASIS": "Dla ORGANISATION: aktualne członkostwo człowieka albo ograniczony SERVICE_GRANT/delegacja/SUPPORT_GRANT. Dla pozostałych trybów wyłącznie podstawa wskazana w kontrakcie i wierszu.",
+    "G06_PERMISSION": "Efektywne uprawnienie obejmuje dokładną operację, funkcję i zasób. Role administracyjne nie oznaczają wildcardu praw biznesowych.",
+    "G07_PRODUCT": "Jeżeli wiersz wskazuje produkt lub productRequirementSource, organizacja ma aktualne prawo do funkcji i wszystkich wymaganych produktów wynikających z jawnej oferty. CORE bez takiego wskazania nie wymaga produktu. Zakup nie zastępuje G06; powrót ze Stripe nie jest dowodem.",
+    "G08_DATA_SCOPE": "Klasyfikację i właścicieli zasobu rozstrzyga serwer. Prywatny zasób organizacji należy do organizacji kontekstu; osobisty również do efektywnego użytkownika. Dopuszczone wyjątki bootstrap są ograniczone do własnego wiersza.",
+    "G09_FAIL_CLOSED": "Brak dokładnego wiersza, dowodu, znanej wersji, właściciela lub rozstrzygnięcia; błąd; konflikt albo jawna odmowa skutkuje DENY. Żaden ALLOW nie znosi odmowy.",
+    "G10_AUDIT": "Chroniony, minimalny ślad decyzji i skutku jest możliwy do trwałego zapisania zgodnie z kontraktem; braku wymaganego audytu nie zastępuje niechroniony log.",
+    "G11_USAGE": "Wymagana polityka limitów/kosztów jest znana. Przed skutkiem istnieje atomowa rezerwacja albo jawny, zweryfikowany tryb niemierzony; retry nie powiela rozliczenia.",
+    "G12_SERVICE_DELEGATION": "SERVICE działa wyłącznie w ważnym własnym grancie. Przy działaniu w imieniu użytkownika wynik stanowi przecięcie grantu usługi, delegacji i aktualnych praw użytkownika, nigdy ich sumę.",
+    "G13_CURRENT_POLICY": "Członkostwo, grant, produkt i wersje praw pozostają aktualne w momencie chronionego skutku. Stary token, cache albo wpis kolejki nie utrzymuje cofniętych praw.",
+    "G14_OUTPUT_BOUNDARY": "Odpowiedź, plik, cache, log i zdarzenie zachowują zakres wszystkich danych wejściowych; sekrety i prywatne metadane zleceniodawcy nie trafiają do wspólnej wiedzy."
+  },
+  "conditions": {
+    "ACCOUNT_OWNER": "Efektywny użytkownik jest właścicielem konta; kontekst organizacji jest null.",
+    "BILLING_WORKFLOW": "Użytkownik zarządza jawną ofertą i procesem płatności lub umowy; nie ustawia samodzielnie autorytatywnego stanu dostępu do produktu. Ten stan zmienia zweryfikowane źródło rozliczeniowe lub osobny uprawniony proces umowy.",
+    "BOOTSTRAP_CREATE": "Zweryfikowane konto, jawny profil self-service i polityka dopuszczenia; nowa organizacja i jej pierwszy właściciel powstają atomowo, bez wcześniejszego fikcyjnego Organisation ID.",
+    "INVITATION_PROOF": "Serwer potwierdza ważne, nieodwołane zaproszenie, odbiorcę, organizację, profil aplikacji i dopuszczony zakres grantu; przyjęcie jest atomowe i nie ujawnia danych organizacji przed sukcesem.",
+    "ORG_RESOURCE": "Właściciel organizacyjny zasobu zgadza się z organizacją kontekstu; kolekcja i każdy rekord są ograniczone tym samym zakresem.",
+    "GRANT_CEILING": "Uprawnienia nadawane są tylko w bieżącej organizacji i w dopuszczonym zakresie zarządzania; bez nadawania ról platformy, supportu, sekretów i niezakupionych funkcji. Zwykły administrator nie nadaje właścicielstwa.",
+    "LAST_OWNER_PROTECTED": "Operacja nie usuwa, nie zawiesza ani nie degraduje ostatniego aktywnego właściciela organizacji; zmiana właściciela korzysta z odrębnej operacji.",
+    "OWNERSHIP_TRANSFER": "Aktualny właściciel, ponowne potwierdzenie tożsamości i docelowy aktywny członek; atomowo pozostaje co najmniej jeden właściciel, bez przeniesienia danych lub uprawnień platformy.",
+    "PERSONAL_OWNER": "Zasób należy do efektywnego użytkownika w bieżącej organizacji. SERVICE wymaga delegacji tego użytkownika; administrator i createdBy nie są zamiennikami właściciela.",
+    "PURE_SHARED_READ": "Operacja czyta wyłącznie dopuszczoną wspólną projekcję; nie zmienia katalogu, dokumentów, przypisań ani liczników płatnych pobrań.",
+    "PROJECTION_COMPOSITE": "Niezależnie autoryzowano również supplier.report.read. Zapis projekcji jest lokalny dla organizacji; bez nowego pobrania dostawcy i bez utraty źródła/proweniencji.",
+    "REQUEST_NOT_GLOBAL_WRITE": "Zlecenie i jego rozliczenie należą do organizacji; nie nadają użytkownikowi uprawnienia do publikacji wspólnego katalogu. Globalny zapis wymaga odrębnej operacji usługi.",
+    "EXPORT_SCOPE": "Niezależnie sprawdzono dostęp do wszystkich danych wejściowych; plik zachowuje ich ograniczenia i jest związany z docelową organizacją oraz użytkownikiem, gdy zawiera jego dane osobiste.",
+    "AUDIT_REDACTED": "Odczyt dotyczy dozwolonych metadanych bezpieczeństwa organizacji, bez treści list osobistych, sekretów i prywatnych payloadów operacji.",
+    "GLOBAL_INGEST": "Ograniczona usługa publikująca z jawnym źródłem i polityką jakości/klasyfikacji; organisationId=null; brak prywatnych danych klientów w publikacji i oddzielony ślad zlecenia.",
+    "JOB_REAUTHORIZE": "Zweryfikowany job i podpisane lub równoważnie chronione powiązanie do aktora, aplikacji, organizacji, operacji, zasobu, deadline i idempotencyKey; przed skutkiem osobna aktualna autoryzacja dokładnej operacji docelowej.",
+    "SUPPORT_SCOPED": "Oddzielna tożsamość supportu oraz ograniczony czasowo, odwoływalny grant na konkretną organizację, zasób i projekcję pól, z udokumentowaną zgodą organizacji; brak dostępu do osobistych danych i sekretów.",
+    "WEBHOOK_BINDING": "Zweryfikowany podpis/odbiorca i środowisko zdarzenia, mapowanie klient/subskrypcja do organizacji po stronie serwera, znany katalog produktów, idempotencja i rozstrzygnięcie kolejności/aktualnego stanu dostawcy.",
+    "CONTRACT_BINDING": "Ograniczona usługa wystawcy ma potwierdzony, obowiązujący rekord umowy, jej wersję, organizację i zakres funkcji. Zmiana prawa produktu odzwierciedla bieżący stan umowy z ochroną przed replay/starszą wersją; dokument lub status przesłany przez klienta nie wystarcza."
+  },
+  "dataClasses": [
+    {
+      "id": "SHARED_KNOWLEDGE",
+      "ownerKeys": [],
+      "examples": [
+        "market observations",
+        "market benchmarks and forecasts",
+        "universal supplier catalogue",
+        "universal MGBI/Vercly source data"
+      ],
+      "boundary": "PRODUCT_FEATURE",
+      "humanGlobalWrite": false
+    },
+    {
+      "id": "ORGANISATION_PRIVATE",
+      "ownerKeys": [
+        "organisationId"
+      ],
+      "examples": [
+        "supplier assignments",
+        "category and benchmark choices",
+        "organisation settings",
+        "billing state",
+        "private exports and derived projections"
+      ],
+      "boundary": "ORGANISATION"
+    },
+    {
+      "id": "USER_IN_ORGANISATION_PRIVATE",
+      "ownerKeys": [
+        "organisationId",
+        "userId"
+      ],
+      "examples": [
+        "personal supplier lists",
+        "personal categories and benchmark choices"
+      ],
+      "boundary": "ORGANISATION_AND_USER"
+    },
+    {
+      "id": "ACCOUNT_PRIVATE",
+      "ownerKeys": [
+        "userId"
+      ],
+      "examples": [
+        "language and global account preferences"
+      ],
+      "boundary": "USER"
+    },
+    {
+      "id": "OPERATION_AUDIT",
+      "ownerKeys": [
+        "scopeDependentOwner"
+      ],
+      "examples": [
+        "requester and ordering history",
+        "access decisions",
+        "usage and charging evidence",
+        "security events"
+      ],
+      "boundary": "EXPLICIT_AUDIT_POLICY"
+    },
+    {
+      "id": "TECHNICAL_CONTROL",
+      "ownerKeys": [
+        "serviceGrantScope"
+      ],
+      "examples": [
+        "secret references",
+        "service configuration",
+        "ingestion quality records"
+      ],
+      "boundary": "EXPLICIT_SERVICE_OR_OPERATOR_POLICY"
+    }
+  ],
+  "roleTemplates": [
+    {
+      "id": "MEMBER",
+      "scope": "ORGANISATION",
+      "permissions": [],
+      "note": "Samo członkostwo nie nadaje praw produktu. Uprawnienia osobiste i produktowe pochodzą z jawnych grantów lub szablonów."
+    },
+    {
+      "id": "ORGANISATION_ADMIN",
+      "scope": "ORGANISATION",
+      "permissions": [
+        "organisation.configure",
+        "membership.manage",
+        "role.grant"
+      ],
+      "note": "Nie otrzymuje automatycznie praw do danych biznesowych, osobistych, billing ani przeniesienia właścicielstwa.",
+      "grantableRoleTemplates": [
+        "MEMBER",
+        "PRODUCT_VIEWER",
+        "PRODUCT_EDITOR",
+        "PERSONAL_WORKSPACE_USER"
+      ],
+      "manageableRoleTemplates": [
+        "MEMBER",
+        "PRODUCT_VIEWER",
+        "PRODUCT_EDITOR",
+        "PERSONAL_WORKSPACE_USER"
+      ],
+      "maximumDirectGrantablePermissions": [
+        "knowledge.read",
+        "benchmark.selection.read",
+        "benchmark.selection.write",
+        "category.read",
+        "category.write",
+        "supplier.assignment.read",
+        "supplier.assignment.write",
+        "personal.list.read",
+        "personal.list.write",
+        "forecast.read",
+        "supplier.report.read",
+        "supplier.report.project"
+      ]
+    },
+    {
+      "id": "ORGANISATION_OWNER",
+      "scope": "ORGANISATION",
+      "permissions": [
+        "organisation.configure",
+        "membership.manage",
+        "role.grant",
+        "ownership.transfer",
+        "billing.manage"
+      ],
+      "note": "Pierwszy właściciel powstaje w bootstrap. Prawa modułów i do danych osobistych nie są wildcardem tej roli.",
+      "grantableRoleTemplates": [
+        "MEMBER",
+        "PRODUCT_VIEWER",
+        "PRODUCT_EDITOR",
+        "PERSONAL_WORKSPACE_USER",
+        "ORGANISATION_ADMIN",
+        "BILLING_ADMIN",
+        "SECURITY_AUDITOR"
+      ],
+      "manageableRoleTemplates": [
+        "MEMBER",
+        "PRODUCT_VIEWER",
+        "PRODUCT_EDITOR",
+        "PERSONAL_WORKSPACE_USER",
+        "ORGANISATION_ADMIN",
+        "BILLING_ADMIN",
+        "SECURITY_AUDITOR"
+      ],
+      "maximumDirectGrantablePermissions": [
+        "knowledge.read",
+        "benchmark.selection.read",
+        "benchmark.selection.write",
+        "category.read",
+        "category.write",
+        "supplier.assignment.read",
+        "supplier.assignment.write",
+        "personal.list.read",
+        "personal.list.write",
+        "forecast.read",
+        "forecast.request",
+        "supplier.report.read",
+        "supplier.report.project",
+        "supplier.report.refresh",
+        "supplier.report.export"
+      ]
+    },
+    {
+      "id": "BILLING_ADMIN",
+      "scope": "ORGANISATION",
+      "permissions": [
+        "billing.manage"
+      ],
+      "note": "Nie otrzymuje praw do raportów ani list osobistych."
+    },
+    {
+      "id": "SECURITY_AUDITOR",
+      "scope": "ORGANISATION",
+      "permissions": [
+        "audit.read_organisation"
+      ],
+      "note": "Tylko zredagowany ślad bezpieczeństwa we własnej organizacji."
+    },
+    {
+      "id": "PRODUCT_VIEWER",
+      "scope": "ORGANISATION_FEATURE",
+      "permissions": [
+        "knowledge.read",
+        "benchmark.selection.read",
+        "category.read",
+        "supplier.assignment.read",
+        "forecast.read",
+        "supplier.report.read"
+      ],
+      "note": "Szablon filtrowany do wskazanej funkcji, zasobów i dostępnych produktów; nie nadaje eksportu ani pobrania zewnętrznego."
+    },
+    {
+      "id": "PRODUCT_EDITOR",
+      "scope": "ORGANISATION_FEATURE",
+      "permissions": [
+        "benchmark.selection.write",
+        "category.write",
+        "supplier.assignment.write"
+      ],
+      "note": "Jawny szablon modyfikacji; nie implikuje pozostałych praw VIEWER, eksportu lub płatnego refreshu."
+    },
+    {
+      "id": "PERSONAL_WORKSPACE_USER",
+      "scope": "USER_IN_ORGANISATION",
+      "permissions": [
+        "personal.list.read",
+        "personal.list.write"
+      ],
+      "note": "Wyłącznie własne zasoby w danej organizacji i funkcji."
+    },
+    {
+      "id": "PLATFORM_SUPPORT",
+      "scope": "PLATFORM",
+      "permissions": [],
+      "note": "Brak automatycznego dostępu do klientów; support.read wymaga dodatkowego czasowego grantu."
+    },
+    {
+      "id": "SERVICE_PRINCIPAL",
+      "scope": "SERVICE_GRANT",
+      "permissions": [],
+      "note": "Dokładna lista operacji, zasobów, aplikacji i środowisk w osobnym grancie; bez wildcardu."
+    }
+  ],
+  "applicationProfiles": [
+    {
+      "id": "PORR_SUITE",
+      "status": "TARGET_PROFILE_NOT_PROVISIONED_HERE",
+      "organisationSelection": "FIXED_SERVER_MAPPING_PLUS_VERIFIED_ACCESS",
+      "selfServiceOrganisationCreation": false,
+      "commercialSource": "CONTRACT",
+      "maximumProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ],
+      "maximumFeatures": [
+        "account",
+        "organisation_admin",
+        "organisation_billing",
+        "market",
+        "benchmark",
+        "category",
+        "supplier_workspace",
+        "personal_workspace",
+        "forecast",
+        "supplier_report",
+        "security_audit"
+      ]
+    },
+    {
+      "id": "SUPPLIER_INTELLIGENCE_STANDALONE",
+      "status": "TARGET_PROFILE_NOT_PROVISIONED_HERE",
+      "organisationSelection": "VERIFIED_MEMBERSHIP_OR_BOOTSTRAP_INVITATION",
+      "selfServiceOrganisationCreation": true,
+      "commercialSource": "VERIFIED_BILLING_OR_EXPLICIT_OFFER",
+      "maximumProducts": [
+        "SUPPLIER_INTELLIGENCE"
+      ],
+      "maximumFeatures": [
+        "account",
+        "organisation_admin",
+        "organisation_billing",
+        "supplier_workspace",
+        "personal_workspace",
+        "supplier_report",
+        "security_audit"
+      ]
+    },
+    {
+      "id": "SPENDGURU_SAAS",
+      "status": "TARGET_PROFILE_NOT_PROVISIONED_HERE",
+      "organisationSelection": "VERIFIED_MEMBERSHIP_OR_BOOTSTRAP_INVITATION",
+      "selfServiceOrganisationCreation": true,
+      "commercialSource": "VERIFIED_BILLING_OR_EXPLICIT_OFFER",
+      "maximumProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ],
+      "maximumFeatures": [
+        "account",
+        "organisation_admin",
+        "organisation_billing",
+        "market",
+        "benchmark",
+        "category",
+        "supplier_workspace",
+        "personal_workspace",
+        "forecast",
+        "supplier_report",
+        "security_audit"
+      ]
+    },
+    {
+      "id": "PLATFORM_INTERNAL",
+      "status": "TARGET_PROFILE_NOT_PROVISIONED_HERE",
+      "organisationSelection": "EXPLICIT_SERVICE_OR_SUPPORT_GRANT",
+      "selfServiceOrganisationCreation": false,
+      "commercialSource": "NOT_A_CUSTOMER_PRODUCT",
+      "maximumProducts": [],
+      "maximumFeatures": [
+        "knowledge_ingestion",
+        "job_execution",
+        "support",
+        "billing_events",
+        "contract_entitlements"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "AM-01",
+      "operation": "account.settings.read",
+      "feature": "account",
+      "requiredProduct": null,
+      "contextMode": "ACCOUNT",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "account.settings.read",
+      "resourceType": "account_settings",
+      "dataClasses": [
+        "ACCOUNT_PRIVATE"
+      ],
+      "conditionIds": [
+        "ACCOUNT_OWNER"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-02",
+      "operation": "account.settings.write",
+      "feature": "account",
+      "requiredProduct": null,
+      "contextMode": "ACCOUNT",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "account.settings.write",
+      "resourceType": "account_settings",
+      "dataClasses": [
+        "ACCOUNT_PRIVATE"
+      ],
+      "conditionIds": [
+        "ACCOUNT_OWNER"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-03",
+      "operation": "organisation.create",
+      "feature": "organisation_admin",
+      "requiredProduct": null,
+      "contextMode": "BOOTSTRAP",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "organisation.create",
+      "resourceType": "organisation",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "BOOTSTRAP_CREATE"
+      ],
+      "usagePolicy": "ONBOARDING_POLICY",
+      "effect": "CREATE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-04",
+      "operation": "invitation.accept",
+      "feature": "organisation_admin",
+      "requiredProduct": null,
+      "contextMode": "BOOTSTRAP",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "invitation.accept",
+      "resourceType": "invitation",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "INVITATION_PROOF"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "CONTROL_WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-05",
+      "operation": "organisation.configure",
+      "feature": "organisation_admin",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "organisation.configure",
+      "resourceType": "organisation",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "CONTROL_WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-06",
+      "operation": "membership.manage",
+      "feature": "organisation_admin",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "membership.manage",
+      "resourceType": "membership",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "GRANT_CEILING",
+        "LAST_OWNER_PROTECTED"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "CONTROL_WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-07",
+      "operation": "role.grant",
+      "feature": "organisation_admin",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "role.grant",
+      "resourceType": "permission_grant",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "GRANT_CEILING",
+        "LAST_OWNER_PROTECTED"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "CONTROL_WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-08",
+      "operation": "ownership.transfer",
+      "feature": "organisation_admin",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "ownership.transfer",
+      "resourceType": "organisation",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "OWNERSHIP_TRANSFER"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "CONTROL_WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-09",
+      "operation": "billing.manage",
+      "feature": "organisation_billing",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "billing.manage",
+      "resourceType": "billing_state",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "BILLING_WORKFLOW"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "CONTROL_WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-10",
+      "operation": "knowledge.read",
+      "feature": "market",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "knowledge.read",
+      "resourceType": "market_knowledge",
+      "dataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "conditionIds": [
+        "PURE_SHARED_READ"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-11",
+      "operation": "benchmark.selection.read",
+      "feature": "benchmark",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "benchmark.selection.read",
+      "resourceType": "benchmark_selection",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-12",
+      "operation": "benchmark.selection.write",
+      "feature": "benchmark",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "benchmark.selection.write",
+      "resourceType": "benchmark_selection",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-13",
+      "operation": "category.read",
+      "feature": "category",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "category.read",
+      "resourceType": "category",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-14",
+      "operation": "category.write",
+      "feature": "category",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "category.write",
+      "resourceType": "category",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-15",
+      "operation": "supplier.assignment.read",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "supplier.assignment.read",
+      "resourceType": "supplier_assignment",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
+    },
+    {
+      "id": "AM-16",
+      "operation": "supplier.assignment.write",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "supplier.assignment.write",
+      "resourceType": "supplier_assignment",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
+    },
+    {
+      "id": "AM-17",
+      "operation": "personal.list.read",
+      "feature": "personal_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "personal.list.read",
+      "resourceType": "personal_list",
+      "dataClasses": [
+        "USER_IN_ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PERSONAL_OWNER"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT",
+      "productRequirementSource": "ALL_REFERENCED_CONTENT_PRODUCTS; empty list requires an explicit owning feature policy"
+    },
+    {
+      "id": "AM-18",
+      "operation": "personal.list.write",
+      "feature": "personal_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "personal.list.write",
+      "resourceType": "personal_list",
+      "dataClasses": [
+        "USER_IN_ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PERSONAL_OWNER"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT",
+      "productRequirementSource": "ALL_REFERENCED_CONTENT_PRODUCTS; empty list requires an explicit owning feature policy"
+    },
+    {
+      "id": "AM-19",
+      "operation": "forecast.read",
+      "feature": "forecast",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "forecast.read",
+      "resourceType": "market_forecast",
+      "dataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "conditionIds": [
+        "PURE_SHARED_READ"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-20",
+      "operation": "forecast.request",
+      "feature": "forecast",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "forecast.request",
+      "resourceType": "forecast_request",
+      "dataClasses": [
+        "OPERATION_AUDIT"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "REQUEST_NOT_GLOBAL_WRITE"
+      ],
+      "usagePolicy": "PRODUCT_POLICY",
+      "effect": "REQUEST_COMPUTE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-21",
+      "operation": "supplier.report.read",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "supplier.report.read",
+      "resourceType": "supplier_report",
+      "dataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "conditionIds": [
+        "PURE_SHARED_READ"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-22",
+      "operation": "supplier.report.project",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "supplier.report.project",
+      "resourceType": "supplier_projection",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PROJECTION_COMPOSITE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-23",
+      "operation": "supplier.report.refresh",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "supplier.report.refresh",
+      "resourceType": "supplier_report_request",
+      "dataClasses": [
+        "OPERATION_AUDIT"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "REQUEST_NOT_GLOBAL_WRITE"
+      ],
+      "usagePolicy": "PRODUCT_POLICY",
+      "effect": "REQUEST_EXTERNAL",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-24",
+      "operation": "supplier.report.export",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "supplier.report.export",
+      "resourceType": "supplier_export",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE",
+        "USER_IN_ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "EXPORT_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "EXPORT",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT",
+      "productRequirementSource": "REQUIRED_PRODUCT_AND_ALL_INPUT_RULES"
+    },
+    {
+      "id": "AM-25",
+      "operation": "audit.read_organisation",
+      "feature": "security_audit",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "audit.read_organisation",
+      "resourceType": "security_audit",
+      "dataClasses": [
+        "OPERATION_AUDIT"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "AUDIT_REDACTED"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-26",
+      "operation": "knowledge.ingest",
+      "feature": "knowledge_ingestion",
+      "requiredProduct": null,
+      "contextMode": "PLATFORM",
+      "actorKinds": [
+        "SERVICE"
+      ],
+      "requiredPermission": "knowledge.ingest",
+      "resourceType": "shared_knowledge",
+      "dataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "conditionIds": [
+        "GLOBAL_INGEST"
+      ],
+      "usagePolicy": "PLATFORM_BUDGET",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-27",
+      "operation": "job.execute",
+      "feature": "job_execution",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "SERVICE"
+      ],
+      "requiredPermission": "job.execute",
+      "resourceType": "job",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "JOB_REAUTHORIZE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "EXECUTE_BOUND_OPERATION",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT",
+      "productRequirementSource": "CURRENT_TARGET_OPERATION_RULE"
+    },
+    {
+      "id": "AM-28",
+      "operation": "support.read",
+      "feature": "support",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "support.read",
+      "resourceType": "support_projection",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPORT_SCOPED"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-29",
+      "operation": "billing.webhook.apply",
+      "feature": "billing_events",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "SERVICE"
+      ],
+      "requiredPermission": "billing.webhook.apply",
+      "resourceType": "billing_state",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "WEBHOOK_BINDING"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "CONTROL_WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-30",
+      "operation": "product.contract.apply",
+      "feature": "contract_entitlements",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "SERVICE"
+      ],
+      "requiredPermission": "product.contract.apply",
+      "resourceType": "product_entitlement",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "CONTRACT_BINDING"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "CONTROL_WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    }
+  ],
+  "acceptanceCases": [
+    {
+      "id": "OC-01",
+      "ruleId": "AM-21",
+      "scenario": "Członek organizacji A ma prawo read, aktywny produkt i dostęp do wspólnego raportu; wszystkie globalne reguły i zobowiązania spełnione.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-02",
+      "ruleId": "AM-21",
+      "scenario": "Produkt aktywny, ale brak uprawnienia operacji.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-03",
+      "ruleId": "AM-21",
+      "scenario": "Uprawnienie operacji aktywne, ale organizacja nie ma dostępu do produktu.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PRODUCT_UNAVAILABLE",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-04",
+      "ruleId": "AM-21",
+      "scenario": "Żądanie klienta zawiera podstawione role/organisationId bez zweryfikowanej tożsamości.",
+      "expectedDecision": "DENY",
+      "expectedReason": "UNVERIFIED_IDENTITY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-05",
+      "ruleId": "AM-15",
+      "scenario": "Użytkownik organizacji A wskazuje prywatne przypisanie organizacji B.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-06",
+      "ruleId": "AM-17",
+      "scenario": "Użytkownik A1 czyta własną listę w organizacji A i ma wymagane prawa do jej treści.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-07",
+      "ruleId": "AM-17",
+      "scenario": "Administrator organizacji A próbuje odczytać listę osobistą A2 bez bycia jej właścicielem.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-08",
+      "ruleId": "AM-17",
+      "scenario": "Ten sam użytkownik jest członkiem A i B, ale w kontekście B próbuje odczytać swoją listę z A.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-09",
+      "ruleId": "AM-01",
+      "scenario": "Zweryfikowany użytkownik odczytuje własny język bez organisationId i bez produktu.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-10",
+      "ruleId": "AM-02",
+      "scenario": "Użytkownik próbuje zmienić ustawienia innego konta.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-11",
+      "ruleId": "AM-03",
+      "scenario": "Zweryfikowane konto w profilu SaaS, dopuszczony onboarding, przed utworzeniem organisationId=null, skutki i pierwszy owner atomowe.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-12",
+      "ruleId": "AM-03",
+      "scenario": "Ten sam onboarding zażądany z dedykowanego profilu PORR bez zgody na self-service.",
+      "expectedDecision": "DENY",
+      "expectedReason": "APPLICATION_FEATURE_UNAVAILABLE",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-13",
+      "ruleId": "AM-04",
+      "scenario": "Potwierdzony odbiorca przyjmuje aktualne zaproszenie do A bez wcześniejszego aktywnego członkostwa; wszystkie warunki bootstrap spełnione.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-14",
+      "ruleId": "AM-04",
+      "scenario": "Zaproszenie dotyczy innego odbiorcy albo zostało odwołane.",
+      "expectedDecision": "DENY",
+      "expectedReason": "ACCESS_BASIS_INVALID",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-15",
+      "ruleId": "AM-07",
+      "scenario": "Administrator A nadaje jawne prawo funkcji dostępnej dla A w granicach swojego grantu zarządzania.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-16",
+      "ruleId": "AM-07",
+      "scenario": "Administrator A próbuje nadać rolę platformy.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-17",
+      "ruleId": "AM-06",
+      "scenario": "Operacja próbuje zdegradować ostatniego aktywnego właściciela.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-18",
+      "ruleId": "AM-21",
+      "scenario": "Sesja jest ważna, ale członkostwo zostało cofnięte.",
+      "expectedDecision": "DENY",
+      "expectedReason": "ACCESS_BASIS_INVALID",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-19",
+      "ruleId": "AM-19",
+      "scenario": "Frontend ukrywa moduł, ale klient wywołuje API bez prawa forecast.read.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-20",
+      "ruleId": "AM-26",
+      "scenario": "Ważna ograniczona usługa platformy publikuje zweryfikowaną wiedzę wspólną, bez Organisation/User ID klienta, z budżetem i audytem.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-21",
+      "ruleId": "AM-26",
+      "scenario": "Zwykły użytkownik próbuje zmienić wspólny katalog.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-22",
+      "ruleId": "AM-27",
+      "scenario": "Ważny worker ma ograniczoną delegację, a dokładna operacja docelowa jest ponownie dozwolona; brak konfliktu idempotencji.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-23",
+      "ruleId": "AM-27",
+      "scenario": "Przed wykonaniem joba cofnięto członkostwo lub grant inicjatora.",
+      "expectedDecision": "DENY",
+      "expectedReason": "DELEGATION_INVALID",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-24",
+      "ruleId": "AM-27",
+      "scenario": "Worker próbuje użyć grantu do innej operacji, organizacji, aplikacji lub zasobu.",
+      "expectedDecision": "DENY",
+      "expectedReason": "DELEGATION_INVALID",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-25",
+      "ruleId": "AM-23",
+      "scenario": "Wszystkie prawa spełnione, ale wymagana pula limitu została wyczerpana.",
+      "expectedDecision": "DENY",
+      "expectedReason": "LIMIT_EXCEEDED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-26",
+      "ruleId": "AM-23",
+      "scenario": "Brak znanej polityki limitu, a system chce potraktować to jako brak ograniczenia.",
+      "expectedDecision": "DENY",
+      "expectedReason": "LIMIT_POLICY_UNAVAILABLE",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-27",
+      "ruleId": "AM-23",
+      "scenario": "Powtórzenie tego samego requestu z tym samym idempotencyKey i zakresem; zwracany poprzedni wynik bez nowego pobrania/obciążenia; dostęp do wyniku nadal zweryfikowany.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-28",
+      "ruleId": "AM-23",
+      "scenario": "Ten sam idempotencyKey, lecz inny zakres lub payload.",
+      "expectedDecision": "DENY",
+      "expectedReason": "IDEMPOTENCY_CONFLICT",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-29",
+      "ruleId": "AM-21",
+      "scenario": "Zmieniono środowisko poświadczenia, magazynu albo endpointu w stosunku do kontekstu.",
+      "expectedDecision": "DENY",
+      "expectedReason": "ENVIRONMENT_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-30",
+      "ruleId": "AM-21",
+      "scenario": "Cache wspólnego payloadu zawiera prywatne metadane poprzedniego zleceniodawcy.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-31",
+      "ruleId": "AM-24",
+      "scenario": "Brak dostępu do jednego z prywatnych wejść eksportu, mimo prawa do raportu wspólnego.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-32",
+      "ruleId": "AM-24",
+      "scenario": "Eksport autoryzowanych wejść zachowuje wszystkie ich ograniczenia i chroniony adres pobrania.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-33",
+      "ruleId": "AM-28",
+      "scenario": "Rola platformy bez osobnego ważnego grantu do organizacji.",
+      "expectedDecision": "DENY",
+      "expectedReason": "ACCESS_BASIS_INVALID",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-34",
+      "ruleId": "AM-28",
+      "scenario": "Support ma czasowy grant zatwierdzony przez organizację na konkretną dozwoloną projekcję danych organizacyjnych; pełny audyt.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-35",
+      "ruleId": "AM-28",
+      "scenario": "Próba wykorzystania grantu supportu do osobistych list lub sekretów.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-36",
+      "ruleId": "AM-29",
+      "scenario": "Prawidłowo uwierzytelnione zdarzenie, mapowanie serwerowe, właściwe środowisko i idempotentna aktualizacja stanu.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-37",
+      "ruleId": "AM-29",
+      "scenario": "Identyfikator organizacji pochodzi wyłącznie z body/metadanych klienta bez zaufanego mapowania płatności.",
+      "expectedDecision": "DENY",
+      "expectedReason": "ACCESS_BASIS_INVALID",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-38",
+      "ruleId": "AM-21",
+      "scenario": "Powrót przeglądarki z checkout success bez potwierdzenia dostępu w źródle serwerowym.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PRODUCT_UNAVAILABLE",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-39",
+      "ruleId": "AM-21",
+      "scenario": "Nieznana wersja kontraktu lub brak rozstrzygającej polityki.",
+      "expectedDecision": "DENY",
+      "expectedReason": "UNSUPPORTED_CONTRACT",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-40",
+      "ruleId": "AM-24",
+      "scenario": "Wymaganego śladu bezpieczeństwa nie da się trwale zapisać przed ujawnieniem pliku.",
+      "expectedDecision": "DENY",
+      "expectedReason": "AUDIT_UNAVAILABLE",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-41",
+      "ruleId": "AM-22",
+      "scenario": "Autoryzowano odczyt wspólnego raportu, lecz brak prawa do zapisu projekcji organizacji.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-42",
+      "ruleId": "AM-21",
+      "scenario": "Aktor DEMO próbuje wystąpić jako zweryfikowane indywidualne konto docelowe.",
+      "expectedDecision": "DENY",
+      "expectedReason": "UNVERIFIED_IDENTITY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-43",
+      "ruleId": "AM-19",
+      "scenario": "Uprawnienie do Supplier Intelligence wykorzystane do funkcji forecast niedostępnej w profilu aplikacji stand-alone.",
+      "expectedDecision": "DENY",
+      "expectedReason": "APPLICATION_FEATURE_UNAVAILABLE",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-44",
+      "ruleId": "AM-21",
+      "scenario": "Odtworzenie starego ALLOW po cofnięciu prawa operacji.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-45",
+      "ruleId": "AM-24",
+      "scenario": "Zmiana applicationId nie zmienia Organisation/User właścicieli i nie poszerza uprawnień do zasobu. Próba odczytu B pozostaje zabroniona.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-46",
+      "ruleId": "AM-15",
+      "scenario": "Użytkownik z aktualnym członkostwem i prawem czyta swoje organizacyjne przypisania; wspólny katalog nie zawiera historii ich zlecenia.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-47",
+      "ruleId": "AM-01",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji account.settings.read na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-48",
+      "ruleId": "AM-02",
+      "scenario": "Właściwy aktor, aplikacja i tryb ACCOUNT; potwierdzony zakres zasobu i prawo account.settings.write, wszystkie G01–G14 oraz warunki ACCOUNT_OWNER spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-49",
+      "ruleId": "AM-05",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo organisation.configure, wszystkie G01–G14 oraz warunki ORG_RESOURCE spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-50",
+      "ruleId": "AM-05",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji organisation.configure na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-51",
+      "ruleId": "AM-06",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo membership.manage, wszystkie G01–G14 oraz warunki ORG_RESOURCE, GRANT_CEILING, LAST_OWNER_PROTECTED spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-52",
+      "ruleId": "AM-08",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo ownership.transfer, wszystkie G01–G14 oraz warunki ORG_RESOURCE, OWNERSHIP_TRANSFER spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-53",
+      "ruleId": "AM-08",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji ownership.transfer na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-54",
+      "ruleId": "AM-09",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo billing.manage, wszystkie G01–G14 oraz warunki ORG_RESOURCE, BILLING_WORKFLOW spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-55",
+      "ruleId": "AM-09",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji billing.manage na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-56",
+      "ruleId": "AM-10",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo knowledge.read, wszystkie G01–G14 oraz warunki PURE_SHARED_READ spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-57",
+      "ruleId": "AM-10",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji knowledge.read na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-58",
+      "ruleId": "AM-11",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo benchmark.selection.read, wszystkie G01–G14 oraz warunki ORG_RESOURCE spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-59",
+      "ruleId": "AM-11",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji benchmark.selection.read na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-60",
+      "ruleId": "AM-12",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo benchmark.selection.write, wszystkie G01–G14 oraz warunki ORG_RESOURCE spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-61",
+      "ruleId": "AM-12",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji benchmark.selection.write na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-62",
+      "ruleId": "AM-13",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo category.read, wszystkie G01–G14 oraz warunki ORG_RESOURCE spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-63",
+      "ruleId": "AM-13",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji category.read na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-64",
+      "ruleId": "AM-14",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo category.write, wszystkie G01–G14 oraz warunki ORG_RESOURCE spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-65",
+      "ruleId": "AM-14",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji category.write na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-66",
+      "ruleId": "AM-16",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo supplier.assignment.write, wszystkie G01–G14 oraz warunki ORG_RESOURCE spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-67",
+      "ruleId": "AM-16",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji supplier.assignment.write na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-68",
+      "ruleId": "AM-18",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo personal.list.write, wszystkie G01–G14 oraz warunki ORG_RESOURCE, PERSONAL_OWNER spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-69",
+      "ruleId": "AM-18",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji personal.list.write na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-70",
+      "ruleId": "AM-19",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo forecast.read, wszystkie G01–G14 oraz warunki PURE_SHARED_READ spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-71",
+      "ruleId": "AM-20",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo forecast.request, wszystkie G01–G14 oraz warunki ORG_RESOURCE, REQUEST_NOT_GLOBAL_WRITE spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-72",
+      "ruleId": "AM-20",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji forecast.request na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-73",
+      "ruleId": "AM-22",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo supplier.report.project, wszystkie G01–G14 oraz warunki ORG_RESOURCE, PROJECTION_COMPOSITE spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-74",
+      "ruleId": "AM-25",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo audit.read_organisation, wszystkie G01–G14 oraz warunki ORG_RESOURCE, AUDIT_REDACTED spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-75",
+      "ruleId": "AM-25",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji audit.read_organisation na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-76",
+      "ruleId": "AM-30",
+      "scenario": "Właściwy aktor, aplikacja i tryb ORGANISATION; potwierdzony zakres zasobu i prawo product.contract.apply, wszystkie G01–G14 oraz warunki ORG_RESOURCE, CONTRACT_BINDING spełnione, wymagane zobowiązania wykonywane.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-77",
+      "ruleId": "AM-30",
+      "scenario": "Pozostałe warunki wiersza spełnione, ale bieżąca polityka jawnie odmawia aktorowi operacji product.contract.apply na tym zasobie.",
+      "expectedDecision": "DENY",
+      "expectedReason": "EXPLICIT_DENY",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    }
+  ],
+  "openCommercialParameters": {
+    "prices": "NOT_DEFINED_HERE",
+    "numericalLimits": "NOT_DEFINED_HERE",
+    "identityProvider": "NOT_SELECTED_HERE",
+    "unknownPolicyDecision": "DENY"
+  },
+  "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń."
+}
