@@ -77,3 +77,23 @@ test("selected years become adjacent document value columns; similar labels neve
  const corrected=await buildFinancialExcel({periods:[{...data.periods[0],documentId:"correction:cfy"}]},{nip:"8650004194",scope:"standalone",years:["2025"]},new Date(),[d1,sameYearCorrection]);
  await book.xlsx.load(corrected.bytes as unknown as Parameters<typeof book.xlsx.load>[0]);assert.equal(book.worksheets[1].getCell("B2").value,77);
 });
+
+// Both licensed, already projected MSR formats use the same export contract.
+test("MSR workbook accepts tenant-owned XHTML and iXBRL sources, preserving exact signed and zero values",async()=>{
+ const msr:FinancialData={periods:[{...data.periods[0],accountingStandard:"IAS_IFRS",msrRows:[
+  {key:"assets",section:"Bilans",label:"Aktywa razem",amount:"0",currency:"PLN",unit:"PLN",validation:"VALID",dimensions:[]},
+  {key:"net",section:"RZiS",label:"Wynik netto",amount:"-17.3456",currency:"PLN",unit:"PLN",validation:"VALID",dimensions:[]}
+ ]}]};
+ const selection={nip:"8650004194",scope:"standalone" as const,years:["2025"]};
+ for(const availability of ["XHTML_SUPPORTED","IXBRL_SUPPORTED"] as const){
+  const source={...documents[0],availability,standard:"IAS_IFRS" as const};
+  const result=await buildFinancialExcel(msr,selection,new Date("2026-10-16"),[source]);
+  const book=new ExcelJS.Workbook();await book.xlsx.load(result.bytes as unknown as Parameters<typeof book.xlsx.load>[0]);
+  const sheet=book.getWorksheet("MSR_MSSF")!;assert.ok(sheet);assert.equal(sheet.getCell("D2").value,0);assert.equal(sheet.getCell("D3").value,-17.3456);
+  assert.ok(book.getWorksheet("Źródła"));
+  await assert.rejects(buildFinancialExcel(msr,selection,new Date(),[{...source,recordId:"other"}]),/Oryginalne dane MSR/);
+  await assert.rejects(buildFinancialExcel(msr,selection,new Date(),[{...source,scope:"consolidated"}]),/Oryginalne dane MSR/);
+ }
+ for(const availability of ["NO_XML","UNSUPPORTED_XML","UNKNOWN_FORMAT"] as const)
+  await assert.rejects(buildFinancialExcel(msr,selection,new Date(),[{...documents[0],availability}]),/Oryginalne dane MSR/);
+});
