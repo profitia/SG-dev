@@ -1,10 +1,10 @@
 # SG2 — izolowane przyjęcie kontekstu operacji
 
-17.10.2026. Task SG2-OPERATION-CONTEXT-INTEGRATION-20261017, profil SG2, workspace SG-dev, wykonanie lokalne, TARGET_ENVIRONMENT=development. Podstawa: odrębne zlecenie czterech etapów Full Autopilot. Producent: ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016, PR380/main dde7d08262c693df7c86e0a8f16c6bcb95512f92; rzeczywiste poprawki zgodności: PR382/main52eda56757e48ffe942629767222981cd1c76fbd.
+17.10.2026. Task SG2-OPERATION-CONTEXT-INTEGRATION-20261017, profil SG2, workspace SG-dev, wykonanie lokalne, TARGET_ENVIRONMENT=development. Podstawa: odrębne zlecenie czterech etapów Full Autopilot. Producent: ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016, PR380/main dde7d08262c693df7c86e0a8f16c6bcb95512f92; rzeczywiste poprawki zgodności: PR383/mainea06cd05df9168c01b7621baf6724bc04b74b760.
 
 ## Rzeczywiste przyjęcie
 
-`operation-integration.json` jawnie przyjmuje profitia.operation-context1.0.0, implementację1.0.0-candidate.2, pakiet1.1.2 i digest implementacji/deklaracji `fff7529fb8c8dcad9cf7c29099b79d1efb0acdef37777c3e5750609e911e2c43`. Instalowana kopia i repozytoryjne źródło muszą mieć ten sam digest. Stary Development-context pozostaje odrębny i niezmieniony.
+`operation-integration.json` jawnie przyjmuje profitia.operation-context1.0.0, implementację1.0.0-candidate.3, pakiet1.1.3 i digest implementacji/deklaracji `e37a11798ed41b1c0a30f2ac3b539c6d19db59246c8ceae94005afeb10a08455`. Instalowana kopia i repozytoryjne źródło muszą mieć ten sam digest. Stary Development-context pozostaje odrębny i niezmieniony.
 
 Nowy host-adapter createOperationBenchmarkSelectionHandlers korzysta z tego executora i tych samych handlerów, usługi selectBenchmark/getSavedBenchmarks oraz repozytorium Prisma, które obsługują dotychczasowe API. Nie zastąpiono biznesowego zapisu makietą. Opcjonalna przekazana transakcja obejmuje zarówno istniejący zapis, jak i OUTCOME audytu. Odczyt korzysta z roli mającej wyłącznie SELECT do tabel biznesowych. Operacja jest przypisana przez serwer do handlera; podmiana metody żądania nie zmienia read w write.
 
@@ -28,3 +28,5 @@ Lokalna czysta instalacja prywatnych pakietów nie była możliwa: brak jednej p
 Własne wygenerowane przez build pliki klienta zachowano w lokalnym recovery i przywrócono wyłącznie własne różnice. Inne checkouty/prace SG2 i SRM są zachowane. Dokładne12ścieżek przeszło routing ALIGNED, rejestrację PMOS cmvbizvvi0000vlr4nbm6ednl i require-begin. conversationId pmos-task-v2:f53724434cb975f51741a567ad186cd4ada0ed6f262f7c80b9a7a7a3c2e9ad50; rzeczywisty host01a133c2-c245-77a0-bb6b-33165e2ad80c. Finalny closeout wymaga własnej bazy SG2, Memoros i zdalnego PHR.
 
 Nie wdrożono nowej tożsamości klientów ani modelu członkostw do działających usług. Bieżąca granica nagłówków SG2, owner role i brak RLS w istniejącej prywatnej bazie, znane powiązania baz oraz pozostałe operacje produktu nie zostały naprawione tym testem. Testowy RLS nie jest potwierdzeniem wdrożonej migracji. Kategorie, forecast, osobiste listy aplikacji, eksporty, kolejki i płatności pozostają poza przyjęciem tego odbiorcy. Brak deploymentu i zmian danych Development/Staging/Production; przyrost wymaga osobnego zakresu aktywacji i wydania.
+
+Finalny audyt kandydata3 zapisuje czas UTC fazy i początku operacji, referencję dowodu tożsamości, wersję/źródło uprawnienia i produktu oraz klasę/właściciela/wersję zasobu. Integracja niezależnie odczytała te pola z trwałych rekordów własnej bazy testowej.

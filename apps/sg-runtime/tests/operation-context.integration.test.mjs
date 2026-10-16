@@ -124,6 +124,10 @@ test('SG2 real selection handler, service and Prisma repository enforce isolated
       await assert.rejects(writer.$executeRawUnsafe("UPDATE operation_test.authorities SET document='{}'::jsonb"), /permission denied/i)
       const text = JSON.stringify((await owner.query('SELECT event FROM operation_test.audit')).rows)
       assert(!text.includes('synthetic-no-provider-access')); assert(!text.includes('isolated-test-only')); assert(!text.includes('authorization'))
+      for (const { event } of (await owner.query('SELECT event FROM operation_test.audit')).rows) {
+        assert(Number.isFinite(Date.parse(event.occurredAt))); assert.equal(event.contractId, 'profitia.operation-context')
+        if (event.decision === 'ALLOW') { assert.equal(event.productEvidence[0].sourceRef, 'SYNTHETIC_NOT_A_COMMERCIAL_GRANT'); assert.equal(event.dataClass, 'ORGANISATION_PRIVATE') }
+      }
     })
   } finally {
     globalThis.fetch = previousFetch
