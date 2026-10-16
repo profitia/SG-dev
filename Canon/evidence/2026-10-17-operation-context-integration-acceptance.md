@@ -17,6 +17,8 @@ Rzeczywisty hostConversationId: `01a133c2-c245-77a0-bb6b-33165e2ad80c`. PMOS wyp
 
 Dla ARCHITECTURE użyto architecture_pmos i rzeczywistej ordinary roli architecture_pmos_runtime; dla SRM wyłącznie srm_pmos, dla SG2 jego zarejestrowanej bazy PMOS. Nie użyto bazy produktu jako PMOS ani raportowania CIC. MEMOROS: disabled z profilu ARCHITECTURE/SRM; SG2 wymaga własnej publikacji, której ten zapis nie deklaruje.
 
+Po publikacji tego snapshotu bieżące wykonanie SG2 i koordynacji jest zamykane kanonicznie jako **PARTIAL_SUCCESS**, z blokerem i zakresem niewykonanej walidacji. Stan completed/CLOSEOUT_COMPLETE w ich historii oznacza wówczas zakończenie zapisu i wymaganych publikacji tego częściowego wyniku; nie oznacza przyjęcia integracji ani zakończenia programu. Rzeczywiste wyniki publikacji i commity PHR wymagają odrębnego sprawdzenia po zapisie i nie są fabrykowane w tym samoodnoszącym się pliku. Kontynuacja po decyzji właściciela otrzyma nowe taskId i referencje do tych historii; nie otwiera ponownie ukończonych rekordów.
+
 ## Wynik etapów
 
 | Etap | Potwierdzony rezultat | Granica |
@@ -24,7 +26,7 @@ Dla ARCHITECTURE użyto architecture_pmos i rzeczywistej ordinary roli architect
 | Wspólny mechanizm | Jeden executor w istniejącym packages/platform-contracts; pozytywne/negatywne testy, rzeczywisty ograniczony PostgreSQL, trwały audyt. | Kandydat o jawnym zakresie, bez produkcyjnego dostawcy tożsamości. |
 | Osobne integracje | SG2: prawdziwy handler/usługa/repozytorium benchmarków w izolacji. SRM: prawdziwy reportDataHandler/readReportData, projekcja i zapis we wspólnej transakcji. | SRM przyjęte; SG2 PR otwarty z blokerem CI. Dotychczasowe opublikowane trasy nadal używają wcześniejszych granic. |
 | Weryfikacja | Testy dwóch organizacji/użytkowników, aktualnych praw i produktu, niewłaściwego kontekstu, ograniczonej roli, RLS, puli, audytu i rollbacku. SRM ma pełny pozytywny CI. | SG2 lokalne testy/build PASS, czysta instalacja CI FAIL; nie zastąpiono jej lokalnym cache. |
-| Poprawki i odbiór | Poprawiono współpracę Next/tsx/ESM, rozpoznawanie odmów, blokady rekordów i komplet audytu; osobny closeout producenta i SRM. | Cały plan, końcowy odbiór SG2 i końcowy closeout koordynacji pozostają niezakończone. |
+| Poprawki i odbiór | Poprawiono współpracę Next/tsx/ESM, rozpoznawanie odmów, blokady rekordów i komplet audytu; osobny closeout producenta i SRM. | Cały plan, końcowy odbiór SG2 i odbiór koordynacji pozostają niezakończone. Częściowy closeout zapisuje bloker, nie nadaje odbioru. |
 
 ## Kontrakt i rzeczywiste zachowanie
 
@@ -99,7 +101,7 @@ Nie wykonano deploymentu, zmiany konfiguracji, schematu lub danych tych środowi
 
 Rekomendowana opcja to powyższy ograniczony Read po wdrożonej granicy z PR #386. Nie obejmuje publikowania, Admin/Write, zmiany widoczności, Codespaces ani nowych trwałych credentiali. Dostęp dotyczyłby Actions tego repozytorium, co jest rzeczywistą zmianą granicy odczytu prywatnych pakietów; należy zachować kontrolę nad jego zaufanymi gałęziami i workflow.
 
-Po decyzji pozostają w już zleconym zakresie: potwierdzenie instalacji i realnych testów/buildów SG2 w CI, jego odbiór/merge i osobny PMOS/MEMOROS/PHR, wspólna walidacja dokładnego końcowego main, aktualny odbiór programu i końcowy closeout ARCHITECTURE. Ten zapis nie nadaje tym czynnościom statusu wykonanych.
+Po decyzji pozostają w już zleconym zakresie: potwierdzenie instalacji i realnych testów/buildów SG2 w CI, jego odbiór/merge i osobny PMOS/MEMOROS/PHR nowego wykonania, wspólna walidacja dokładnego końcowego main, aktualny odbiór programu i finalny wynik zadania odbioru ARCHITECTURE. Przed nadaniem dostępu trzeba także uzgodnić otwarty PR #384 z aktualnym main zawierającym granicę CI z PR #386; sama obecność tej granicy na main nie dowodzi jej obecności w źródle otwartego PR. Ten zapis nie nadaje tym czynnościom statusu wykonanych.
 
 ## Odstępstwa i chronologia governance
 
