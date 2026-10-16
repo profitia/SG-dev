@@ -30,15 +30,17 @@ export interface OperationState {
   access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE'; inputs?: Resource[]
 }
 export interface OperationContext {
-  decisionId: string; contractVersion: string; implementationVersion: string; applicationId: string
+  decisionId: string; contractId: string; contractVersion: string; implementationVersion: string; applicationId: string
+  applicationProfile: string; occurredAt: string; operationStartedAt: string
   deploymentId: string; configurationVersion: string; environment: Environment; operation: OperationId
   actorId: string; actorKind: 'HUMAN' | 'SERVICE'; actor: Readonly<Actor>; subjectUserId: string | null
   organisationId: string | null; mode: 'ORGANISATION' | 'ACCOUNT'; policyVersion: string; accessVersion: string
-  accessSourceRef: string; feature: string; effect: 'READ' | 'WRITE'; resourceId: string; resource: Readonly<Resource>
+  accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE'; resourceId: string; resource: Readonly<Resource>
+  productEvidence: ReadonlyArray<Pick<ProductGrant, 'product' | 'version' | 'sourceRef' | 'source' | 'expiresAt'> & { feature: string }>; usagePolicy: 'NOT_APPLICABLE'
   payload: Json; payloadDigest: string; correlationId: string
 }
 export interface AuditEvent {
-  decisionId: string; applicationId: string; environment: Environment; operation: string | null
+  decisionId: string; occurredAt: string; operationStartedAt: string; applicationId: string; environment: Environment; operation: string | null
   actorId: string | null; actorKind: string | null; subjectUserId: string | null; organisationId: string | null
   phase: 'INTENT' | 'OUTCOME' | 'DECISION' | 'FAILURE'; decision: 'ALLOW' | 'DENY'; reasonCode: string
   [key: string]: unknown
@@ -57,9 +59,9 @@ export interface OperationSession<Transaction> {
 }
 export interface OperationExecutor<Transaction = unknown> {
   contract: Readonly<{ id: string; version: string; implementation: string }>
-  execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractVersion: string; value: T }>>
+  execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractId: string; contractVersion: string; value: T }>>
 }
-export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.2' }>
+export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.3' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
 export declare function isOperationDenied(error: unknown): error is OperationDenied
