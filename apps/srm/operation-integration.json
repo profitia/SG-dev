@@ -8,15 +8,15 @@
   "contract": {
     "id": "profitia.operation-context",
     "version": "1.0.0",
-    "implementation": "1.0.0-candidate.2",
-    "sourceDigest": "fff7529fb8c8dcad9cf7c29099b79d1efb0acdef37777c3e5750609e911e2c43"
+    "implementation": "1.0.0-candidate.3",
+    "sourceDigest": "e37a11798ed41b1c0a30f2ac3b539c6d19db59246c8ceae94005afeb10a08455"
   },
   "producer": {
     "projectKey": "ARCHITECTURE",
     "taskId": "ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017",
     "repository": "profitia/SG-dev",
-    "pullRequest": 382,
-    "sourceSha": "52eda56757e48ffe942629767222981cd1c76fbd",
+    "pullRequest": 383,
+    "sourceSha": "ea06cd05df9168c01b7621baf6724bc04b74b760",
     "initialCandidate": {
       "taskId": "ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016",
       "pullRequest": 380,

@@ -121,6 +121,10 @@ test('SRM real report API, archive restoration and PostgreSQL transaction enforc
       const { reportDataHandler } = await import('../src/server/report-data.ts'); const response = await reportDataHandler(undefined, { TARGET_ENVIRONMENT: 'development', SRM_DEVELOPMENT_ORGANIZATION_ID: O.a })(request())
       assert.equal(response.status, 401); assert.equal((await owner.query('SELECT count(*)::int AS n FROM srm.schema_migrations')).rows[0].n, 18)
       assert.equal((await owner.query("SELECT count(*)::int AS n FROM operation_test.audit WHERE event->>'phase'='OUTCOME'")).rows[0].n > 0, true)
+      for (const { event } of (await owner.query('SELECT event FROM operation_test.audit')).rows) {
+        assert(Number.isFinite(Date.parse(event.occurredAt))); assert.equal(event.contractId, 'profitia.operation-context')
+        if (event.decision === 'ALLOW') { assert.equal(event.productEvidence[0].product, 'SUPPLIER_INTELLIGENCE'); assert(event.productEvidence[0].version); assert.equal(event.dataClass, 'ORGANISATION_PRIVATE') }
+      }
     })
   } finally { globalThis.fetch = previousFetch; if (authority) await authority.close(); await owner.end() }
 })
