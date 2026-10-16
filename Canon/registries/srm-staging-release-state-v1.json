@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "34c57844c86471ac971af4ada787d34484b99e27f2a7d31b4fd19550b24490bf",
+  "publicationNonce": "d157685c2976d3d63e74946c9d6a88dff8fe1a2af43f126b7492a7b9a1456e00",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 138,
+  "generation": 139,
   "release": {
     "authorizationDigest": "e1448cf44294aa75905e522feee14ac5e6559cc7ab447f7f51d155767c916e3e",
     "authorizationKeyOrder": [
@@ -5600,7 +5600,7 @@
         }
       },
       "deploy": {
-        "status": "INTENT",
+        "status": "DONE",
         "before": {
           "source": "LIVE_PROVIDER_APIS",
           "capturedAt": "2026-10-16T19:37:21.068Z",
@@ -6079,10 +6079,10 @@
             ]
           }
         },
-        "snapshotDigest": "9135dd65c4cb5321c8bef70af66f9d76ec7c558753cf2c0b1f329b545ae6e176",
+        "snapshotDigest": "b19be676ec2d0ed05845750942d49725ac2d287df5adba2328f874bd24490a81",
         "snapshot": {
           "source": "LIVE_PROVIDER_APIS",
-          "capturedAt": "2026-10-16T19:37:21.068Z",
+          "capturedAt": "2026-10-16T19:40:00.705Z",
           "repository": {
             "id": 1247665550,
             "node_id": "R_kgDOSl3djg",
@@ -6151,8 +6151,8 @@
             "releases_url": "https://api.github.com/repos/profitia/SG-dev/releases{/id}",
             "deployments_url": "https://api.github.com/repos/profitia/SG-dev/deployments",
             "created_at": "2026-05-23T16:08:41Z",
-            "updated_at": "2026-10-16T19:37:05Z",
-            "pushed_at": "2026-10-16T19:37:00Z",
+            "updated_at": "2026-10-16T19:38:25Z",
+            "pushed_at": "2026-10-16T19:38:20Z",
             "git_url": "git://github.com/profitia/SG-dev.git",
             "ssh_url": "git@github.com:profitia/SG-dev.git",
             "clone_url": "https://github.com/profitia/SG-dev.git",
@@ -6418,22 +6418,22 @@
               "suspended": "not_suspended",
               "suspenders": [],
               "type": "web_service",
-              "updatedAt": "2026-10-15T18:28:07.472435Z"
+              "updatedAt": "2026-10-16T19:39:58.870891Z"
             }
           ],
           "liveDeploy": {
-            "id": "dep-db8hlnom7kps73fsfd00",
+            "id": "dep-db97qcjl550s73d2f170",
             "commit": {
-              "id": "bb60604cefa1ae071f2df1715591a37705d9d96d",
-              "message": "fix(srm): resolve verified company transformations and retain filing provenance (#354)",
-              "createdAt": "2026-10-15T17:56:51Z"
+              "id": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+              "message": "fix(srm): export verified XHTML financial projections (#368)",
+              "createdAt": "2026-10-16T19:06:40Z"
             },
             "status": "live",
             "trigger": "api",
-            "createdAt": "2026-10-15T18:26:39.912446Z",
-            "updatedAt": "2026-10-15T18:28:47.316794Z",
-            "startedAt": "2026-10-15T18:26:39.885795Z",
-            "finishedAt": "2026-10-15T18:28:07.471019Z"
+            "createdAt": "2026-10-16T19:38:26.890279Z",
+            "updatedAt": "2026-10-16T19:39:58.869652Z",
+            "startedAt": "2026-10-16T19:38:26.849718Z",
+            "finishedAt": "2026-10-16T19:39:58.869471Z"
           },
           "domains": [
             {
@@ -6558,7 +6558,10 @@
             ]
           }
         },
-        "result": {}
+        "result": {
+          "deployId": "dep-db97qcjl550s73d2f170",
+          "sha": "6eede5cd19fd3a4519d66298effe9ef94633757a"
+        }
       }
     },
     "lastKnownGood": {
