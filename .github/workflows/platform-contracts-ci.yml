@@ -44,6 +44,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Install public isolated test fixture dependencies
+        run: npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
       - name: Test contract and laboratory guards without credentials or database access
         run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs
       - name: Validate registered routing and workspace isolation
