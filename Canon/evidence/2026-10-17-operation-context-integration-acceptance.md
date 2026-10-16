@@ -1,6 +1,6 @@
 # Kontekst operacji — stan odbioru przyrostu i bloker SG2
 
-Data: 17.10.2026, Europe/Warsaw. Stan dowodów: po publikacji SRM przez PR #385 oraz granicy CI przez PR #386. **PARTIAL — cały plan czterech etapów nie jest zakończony.** Dokument stanowi datowany zapis wykonania, nie nową zgodę na wdrożenie produktu ani potwierdzenie realizacji całych E0–E4.
+Data: 17.10.2026, Europe/Warsaw. Stan dowodów: po publikacji SRM przez PR #385, warunku CI przez PR #386 i snapshotu przez PR #387. **PARTIAL — cały plan czterech etapów nie jest zakończony.** Końcowe sprostowanie bezpieczeństwa wycofuje rekomendację bezpośredniego Read dla publicznego SG-dev. Dokument stanowi datowany zapis wykonania, nie nową zgodę na wdrożenie produktu ani potwierdzenie realizacji całych E0–E4.
 
 ## Zakres i tożsamość
 
@@ -11,13 +11,14 @@ Rzeczywisty hostConversationId: `01a133c2-c245-77a0-bb6b-33165e2ad80c`. PMOS wyp
 | Profil | taskId | Stan tego zapisu |
 | --- | --- | --- |
 | ARCHITECTURE | ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016 | Producent początkowy zakończony; canonical PMOS/PHR niezależnie potwierdzone. |
-| ARCHITECTURE | ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017 | Koordynacja, fixture, poprawki kandydata, CI i ten zapis; odbiór całego programu wstrzymany. |
-| SG2 | SG2-OPERATION-CONTEXT-INTEGRATION-20261017 | Kod i lokalne dowody zachowane w PR #384; brak odbioru czystej instalacji CI. |
+| ARCHITECTURE | ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017 | PARTIAL_SUCCESS utrwalony w PMOS/PHR; odbiór całego programu wstrzymany. |
+| SG2 | SG2-OPERATION-CONTEXT-INTEGRATION-20261017 | PARTIAL_SUCCESS utrwalony w PMOS/MEMOROS/PHR; kod w PR #384, brak odbioru czystej instalacji CI. |
 | SRM | SRM-OPERATION-CONTEXT-INTEGRATION-20261017 | Przyjęcie izolowane zakończone przez PR #385; canonical PMOS/PHR niezależnie potwierdzone. |
+| ARCHITECTURE | ARCHITECTURE-OPERATION-CONTEXT-PACKAGE-ACCESS-REVIEW-20261017 | Osobne sprostowanie zalecenia dostępu; nie otwiera ukończonej historii ani nie nadaje uprawnień. |
 
 Dla ARCHITECTURE użyto architecture_pmos i rzeczywistej ordinary roli architecture_pmos_runtime; dla SRM wyłącznie srm_pmos, dla SG2 jego zarejestrowanej bazy PMOS. Nie użyto bazy produktu jako PMOS ani raportowania CIC. MEMOROS: disabled z profilu ARCHITECTURE/SRM; SG2 wymaga własnej publikacji, której ten zapis nie deklaruje.
 
-Po publikacji tego snapshotu bieżące wykonanie SG2 i koordynacji jest zamykane kanonicznie jako **PARTIAL_SUCCESS**, z blokerem i zakresem niewykonanej walidacji. Stan completed/CLOSEOUT_COMPLETE w ich historii oznacza wówczas zakończenie zapisu i wymaganych publikacji tego częściowego wyniku; nie oznacza przyjęcia integracji ani zakończenia programu. Rzeczywiste wyniki publikacji i commity PHR wymagają odrębnego sprawdzenia po zapisie i nie są fabrykowane w tym samoodnoszącym się pliku. Kontynuacja po decyzji właściciela otrzyma nowe taskId i referencje do tych historii; nie otwiera ponownie ukończonych rekordów.
+Po publikacji pierwszego snapshotu wykonanie SG2 i koordynacji zamknięto kanonicznie jako **PARTIAL_SUCCESS**, z blokerem i zakresem niewykonanej walidacji. Stan completed/CLOSEOUT_COMPLETE oznacza zakończenie zapisu i wymaganych publikacji tego częściowego wyniku; nie oznacza przyjęcia integracji ani zakończenia programu. Niezależnie potwierdzono PHR SG2 `6afc4978657548f792c70aba13ebfc7c5fea2a3b` i ARCHITECTURE `7b66838dccaf141b9f48714415a3da7ebbd37aa6`, integralność archiwów, zwolnienie slotów/blokad oraz SG2 MEMOROS DELIVERED. Sprostowanie zalecenia ma nowy task i własny późniejszy closeout; poprzednie historie pozostają zachowane. Kontynuacja otrzyma nowe taskId i referencje do tych historii, nie otwiera ponownie ukończonych rekordów.
 
 ## Wynik etapów
 
@@ -67,7 +68,7 @@ Nowy błąd dotyczy dostępu GitHub Packages; nie jest błędem Render RENDER_AP
 
 ## CI i wersjonowanie dowodów
 
-[PR #386](https://github.com/profitia/SG-dev/pull/386), source `4e6726b59a817f6f19600f20a377e9ab589918ee`, merge `cc9aca6607ffd1b275bc19c3c9d1fe2243637334`, ogranicza job z packages:read do push/manual oraz PR ze źródła we własnym repozytorium. Forki zachowują publiczne testy producenta i dotychczasowych kontraktów. [CI poprawki](https://github.com/profitia/SG-dev/actions/runs/38979017242): SUCCESS; 25 lokalnych testów governance/workspace/bridge PASS. Poprawka nie nadaje sama praw do pakietów.
+[PR #386](https://github.com/profitia/SG-dev/pull/386), source `4e6726b59a817f6f19600f20a377e9ab589918ee`, merge `cc9aca6607ffd1b275bc19c3c9d1fe2243637334`, dodaje warunek joba z packages:read: push/manual oraz PR ze źródła we własnym repozytorium. W niezmienionym workflow forki zachowują publiczne testy producenta i dotychczasowych kontraktów. **Ten warunek nie jest niezależną granicą bezpieczeństwa dostępu do pakietów**, ponieważ źródło PR może zmienić workflow. [CI poprawki](https://github.com/profitia/SG-dev/actions/runs/38979017242): SUCCESS; 25 lokalnych testów governance/workspace/bridge PASS. Poprawka nie nadaje sama praw do pakietów i nie dowodzi izolacji wobec zmodyfikowanego workflow z forka.
 
 Zielony job operation integration bez operation-integration.json oznacza brak przyjęcia i pominięte kroki aplikacji, nie dowód działania integracji. Dotyczy m.in. SG2 na źródle PR #385/#386 oraz SRM na źródle PR #384. Odbiór wymaga dowodu faktycznie wykonanych kroków właściwego odbiorcy, dokładnego candidate SHA i validation SHA. CI odrębnych PR nie dowodzi jeszcze wspólnego końcowego main z oboma przyjęciami.
 
@@ -97,11 +98,15 @@ Nie wykonano deploymentu, zmiany konfiguracji, schematu lub danych tych środowi
 
 ## Bloker i warunek kontynuacji
 
-**BLOCKER: czysta instalacja SG2 w GitHub Actions nie ma dostępu do wymaganych prywatnych pakietów.** Kontrakt Full Autopilot wymaga decyzji właściciela przy nowej, nieprzewidzianej zmianie dostępu do infrastruktury. Wystawiono pytanie o minimalny Manage Actions access → Read wyłącznie dla repozytorium profitia/SG-dev do trzech potwierdzonych pakietów. Alternatywnie właściciel może sam wykonać tę samą konfigurację. Do czasu decyzji nie nadano dostępu. Brak odpowiedzi nie jest zgodą.
+**BLOCKER: czysta instalacja SG2 w GitHub Actions nie ma zatwierdzonego i zweryfikowanego bezpiecznego sposobu dostępu do wymaganych prywatnych pakietów.** Obserwowany błąd to 403 read_package. Kontrakt Full Autopilot wymaga decyzji właściciela przy nowej, nieprzewidzianej zmianie dostępu do infrastruktury.
 
-Rekomendowana opcja to powyższy ograniczony Read po wdrożonej granicy z PR #386. Nie obejmuje publikowania, Admin/Write, zmiany widoczności, Codespaces ani nowych trwałych credentiali. Dostęp dotyczyłby Actions tego repozytorium, co jest rzeczywistą zmianą granicy odczytu prywatnych pakietów; należy zachować kontrolę nad jego zaufanymi gałęziami i workflow.
+Końcowy odczyt GitHub potwierdził visibility=PUBLIC dla SG-dev. [Oficjalna dokumentacja GitHub Packages](https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions) ostrzega, że przy nadaniu publicznemu repozytorium dostępu do prywatnych pakietów również forki mogą uzyskać do nich dostęp. [Dokumentacja ustawień Actions](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository) wyjaśnia możliwość proponowania zmian workflow przez fork. Wniosek: warunek joba z PR #386 sam nie uzasadnia twierdzenia, że pakiety będą dostępne wyłącznie zaufanym źródłom. Nie przeprowadzono próby wykorzystania takiego dostępu i nie stwierdzono wycieku; **żaden grant nie został wykonany**.
 
-Po decyzji pozostają w już zleconym zakresie: potwierdzenie instalacji i realnych testów/buildów SG2 w CI, jego odbiór/merge i osobny PMOS/MEMOROS/PHR nowego wykonania, wspólna walidacja dokładnego końcowego main, aktualny odbiór programu i finalny wynik zadania odbioru ARCHITECTURE. Przed nadaniem dostępu trzeba także uzgodnić otwarty PR #384 z aktualnym main zawierającym granicę CI z PR #386; sama obecność tej granicy na main nie dowodzi jej obecności w źródle otwartego PR. Ten zapis nie nadaje tym czynnościom statusu wykonanych.
+Wcześniejsze zalecenie bezpośredniego Manage Actions access → Read dla SG-dev oraz wystawione pytanie w tej postaci są **wycofane**. Nie należy wykonywać tego grantu na podstawie wcześniejszego snapshotu lub odpowiedzi na stare pytanie. Zachowane częściowe rekordy PMOS/PHR dokumentują wcześniejsze rozpoznanie; to sprostowanie je uzupełnia, nie przepisuje historii.
+
+Rekomendowana dalsza decyzja dotyczy kontrolowanej autoryzacji instalacji, w której prywatne pakiety i poświadczenia nie są dostępne dla niezaufanego kodu/workflow z forków. Możliwe są osobno ocenione, ograniczone poświadczenie dla zaufanej walidacji albo prywatny tor walidacji. Konkretne źródło, zakres, przechowywanie, dopuszczone uruchomienia i negatywne testy dostępu wymagają dopracowania i akceptacji przed zmianą uprawnień lub sekretów. Nie utworzono credentiali ani nowego repozytorium/projektu; ewentualne nowe repozytorium tworzy właściciel według uzgodnionej instrukcji. Bezpośredni grant do publicznego repozytorium nie jest domyślną rekomendacją.
+
+Po zaakceptowaniu bezpiecznego modelu pozostają w już zleconym zakresie: uzgodnienie PR #384 z aktualnym main, czysta instalacja i realne testy/buildy SG2 w CI, jego odbiór/merge i osobny PMOS/MEMOROS/PHR nowego wykonania, wspólna walidacja dokładnego końcowego main oraz finalny odbiór ARCHITECTURE. To sprostowanie nie zatwierdza tworzenia zasobów ani nie nadaje tym czynnościom statusu wykonanych.
 
 ## Odstępstwa i chronologia governance
 
