@@ -1,10 +1,10 @@
 {
-  "publicationNonce": "a62274652cebae16feb8008d901ae6039b0df2b0afe0d65626013a9e35d21263",
+  "publicationNonce": "0e578ec7d625799bc1462b8ac62832a0be1598f69ed80913a7e4fc822135c332",
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "targetEnvironment": "staging",
   "owner": "Profitia Governance",
-  "generation": 142,
+  "generation": 143,
   "release": {
     "authorizationDigest": "e1448cf44294aa75905e522feee14ac5e6559cc7ab447f7f51d155767c916e3e",
     "authorizationKeyOrder": [
@@ -9179,14 +9179,14 @@
     }
   ],
   "postReleaseEvidence": {
-    "approvalId": "SRM-STAGING-38784845103-1",
+    "approvalId": "SRM-STAGING-38955678743-1",
     "source": "INDEPENDENT_LIVE_HTTP_AND_PROVIDER_READS_PLUS_RUNTIME_READ_ONLY_SQL",
-    "recordedAt": "2026-10-15T18:38:15.691Z",
+    "recordedAt": "2026-10-16T19:46:55.316Z",
     "executor": "Authorized SRM Codex acceptance executor",
     "hostConversationId": "01a11c3a-6570-7292-99b4-5666c5a2496b",
-    "sha": "bb60604cefa1ae071f2df1715591a37705d9d96d",
-    "deployId": "dep-db8hlnom7kps73fsfd00",
-    "workflowRunId": 38784845103,
+    "sha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+    "deployId": "dep-db97qcjl550s73d2f170",
+    "workflowRunId": 38955678743,
     "health": "PASS",
     "authentication": {
       "unauthenticated": "PASS",
@@ -9202,7 +9202,7 @@
     "persistence": {
       "persisted": true,
       "synthetic": true,
-      "recordId": "bcf0f9ca-38fc-44b2-aca8-026eaaba5959"
+      "recordId": "6f4a61f4-143b-4578-a2db-9aee8edade7f"
     },
     "catalogForceRls": "PASS",
     "databaseIsolation": "PASS",
@@ -9211,23 +9211,23 @@
     "productionMutationsPerformed": 0,
     "sg2MutationsPerformed": 0,
     "radar": {
-      "developmentReadOnlyMethod": "Approved archive parser in memory over each own checksum-verified archive; no Development API call or database write; stored Development projections may remain v3 until its own normal lazy read",
+      "developmentReadOnlyMethod": "Exact approved source archive parser in memory over each own checksum-verified archive; no Development API call or database write",
       "stagingDocumentMapping": "2026-10-15-xml-financial-krs-v4",
-      "qualifiedAxes": [
-        "NET_RESULT",
-        "REVENUE",
-        "OPERATING_COST_RATIO"
-      ],
+      "qualifiedAxes": [],
       "nip": "5213390341",
-      "qualification": "QUALIFIED_HISTORY",
+      "qualification": "PARTIAL_SOURCE_VIEW",
       "period": "2025-12-31",
       "axesPresent": 6,
-      "availableAxes": [
-        "NET_RESULT",
-        "REVENUE",
-        "OPERATING_COST_RATIO"
-      ],
+      "availableAxes": [],
       "unavailableAxes": [
+        {
+          "code": "NET_RESULT",
+          "reason": "MISSING_FIELD"
+        },
+        {
+          "code": "REVENUE",
+          "reason": "MISSING_FIELD"
+        },
         {
           "code": "CURRENT_RATIO",
           "reason": "MISSING_FIELD"
@@ -9237,22 +9237,30 @@
           "reason": "MISSING_FIELD"
         },
         {
+          "code": "OPERATING_COST_RATIO",
+          "reason": "SOURCE_MAPPING_UNCONFIRMED"
+        },
+        {
           "code": "LIABILITIES_TO_ASSETS",
           "reason": "MISSING_FIELD"
         }
       ],
+      "stageProjectionParity": "PASS_APPROVED_SOURCE_READ_ONLY",
       "developmentProjectionParity": "PASS_READ_ONLY_ARCHIVE_REPROJECTION",
       "repeatReadIdempotence": "PASS",
       "sourceArchiveAndDatesUnchanged": true,
       "supplierAttemptsAdded": 0
     },
     "finding": {
-      "code": "COMMON_MISSING_FIELDS_IF_PRESENT",
-      "scope": "CURRENT_DEVELOPMENT_AND_STAGING",
-      "qualification": "QUALIFIED_HISTORY",
+      "code": "SOURCE_QUALIFICATION_LIMITATION",
+      "scope": "COMMON_OWN_ARCHIVE_PROJECTION",
+      "qualification": "PARTIAL_SOURCE_VIEW",
       "axisCodes": [
+        "NET_RESULT",
+        "REVENUE",
         "CURRENT_RATIO",
         "OPERATING_MARGIN",
+        "OPERATING_COST_RATIO",
         "LIABILITIES_TO_ASSETS"
       ],
       "promotionRegression": false,
@@ -9261,7 +9269,51 @@
     },
     "businessUat": "NOT_PERFORMED",
     "realProviderRollback": "NOT_EXECUTED",
-    "proofDigest": "95a6c964a214058b64d984b33f195e92c81c4ed1d7926de577ec303d35f8cc57",
+    "financialExport": {
+      "capturedAt": "2026-10-16T19:46:21.161Z",
+      "source": "ACTUAL_STAGING_CACHED_XML_FINANCIAL_EXPORT_AND_RUNTIME_READ_ONLY_SQL",
+      "sha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+      "nip": "5213390341",
+      "scope": "standalone",
+      "years": [
+        "2025"
+      ],
+      "status": "PASS",
+      "unauthenticatedRejection": "PASS",
+      "httpStatus": 200,
+      "bytes": 11977,
+      "exportFileSha256": "9916c1c88b9957757cfbc16071666d20bf5bcd67f658a05de0b9e771507d1391",
+      "sheets": [
+        {
+          "name": "ProfitLoss_5213390341_20261016",
+          "rows": 40
+        },
+        {
+          "name": "Balance_5213390341_20261016",
+          "rows": 73
+        }
+      ],
+      "sourceArchivesUnchanged": true,
+      "documentRowsUnchanged": true,
+      "supplierAttemptsAdded": 0,
+      "paidSupplierCalls": 0,
+      "xhtmlSpecificLive": "NOT_EXERCISED_NO_QUALIFIED_OWN_STAGING_SOURCE",
+      "businessUat": "NOT_PERFORMED"
+    },
+    "sourceCi": {
+      "runId": 38952468420,
+      "applicationTests": 464,
+      "promotionTests": 311,
+      "governanceTests": 165,
+      "totalTests": 940,
+      "typecheck": "PASS",
+      "build": "PASS"
+    },
+    "pendingLiveChecks": [
+      "Business UAT",
+      "XHTML-specific export on a qualified own Staging archive; no qualified own archive available in this acceptance sample"
+    ],
+    "proofDigest": "8849a9ff30bf2cbb516944624be7ac0d4e91635a61fd7db9aab810c7637b88e6",
     "schemaMigrationCount": 18,
     "newSqlMigrationsApplied": 0,
     "applicationDatabaseEffects": "Approved synthetic release probe; own cached report may lazily rebuild derived documents/append frames; repeated read idempotence verified; no source archive write, reset or Development copy"
@@ -9343,6 +9395,94 @@
       "businessUat": "NOT_PERFORMED",
       "realProviderRollback": "NOT_EXECUTED",
       "proofDigest": "6f002bd621766b21d092952f9c6684eb3759384f7db9e6dada7c433d7af8c3e6"
+    },
+    {
+      "approvalId": "SRM-STAGING-38784845103-1",
+      "source": "INDEPENDENT_LIVE_HTTP_AND_PROVIDER_READS_PLUS_RUNTIME_READ_ONLY_SQL",
+      "recordedAt": "2026-10-15T18:38:15.691Z",
+      "executor": "Authorized SRM Codex acceptance executor",
+      "hostConversationId": "01a11c3a-6570-7292-99b4-5666c5a2496b",
+      "sha": "bb60604cefa1ae071f2df1715591a37705d9d96d",
+      "deployId": "dep-db8hlnom7kps73fsfd00",
+      "workflowRunId": 38784845103,
+      "health": "PASS",
+      "authentication": {
+        "unauthenticated": "PASS",
+        "incorrectPassword": "PASS",
+        "login": "PASS",
+        "secureCookie": "PASS",
+        "authenticatedPage": "PASS",
+        "loginPage": "PASS",
+        "session": "PASS",
+        "logout": "PASS",
+        "sessionCrossEnvironmentRejection": "PASS"
+      },
+      "persistence": {
+        "persisted": true,
+        "synthetic": true,
+        "recordId": "bcf0f9ca-38fc-44b2-aca8-026eaaba5959"
+      },
+      "catalogForceRls": "PASS",
+      "databaseIsolation": "PASS",
+      "bindingsUnchanged": true,
+      "developmentUnchanged": true,
+      "productionMutationsPerformed": 0,
+      "sg2MutationsPerformed": 0,
+      "radar": {
+        "developmentReadOnlyMethod": "Approved archive parser in memory over each own checksum-verified archive; no Development API call or database write; stored Development projections may remain v3 until its own normal lazy read",
+        "stagingDocumentMapping": "2026-10-15-xml-financial-krs-v4",
+        "qualifiedAxes": [
+          "NET_RESULT",
+          "REVENUE",
+          "OPERATING_COST_RATIO"
+        ],
+        "nip": "5213390341",
+        "qualification": "QUALIFIED_HISTORY",
+        "period": "2025-12-31",
+        "axesPresent": 6,
+        "availableAxes": [
+          "NET_RESULT",
+          "REVENUE",
+          "OPERATING_COST_RATIO"
+        ],
+        "unavailableAxes": [
+          {
+            "code": "CURRENT_RATIO",
+            "reason": "MISSING_FIELD"
+          },
+          {
+            "code": "OPERATING_MARGIN",
+            "reason": "MISSING_FIELD"
+          },
+          {
+            "code": "LIABILITIES_TO_ASSETS",
+            "reason": "MISSING_FIELD"
+          }
+        ],
+        "developmentProjectionParity": "PASS_READ_ONLY_ARCHIVE_REPROJECTION",
+        "repeatReadIdempotence": "PASS",
+        "sourceArchiveAndDatesUnchanged": true,
+        "supplierAttemptsAdded": 0
+      },
+      "finding": {
+        "code": "COMMON_MISSING_FIELDS_IF_PRESENT",
+        "scope": "CURRENT_DEVELOPMENT_AND_STAGING",
+        "qualification": "QUALIFIED_HISTORY",
+        "axisCodes": [
+          "CURRENT_RATIO",
+          "OPERATING_MARGIN",
+          "LIABILITIES_TO_ASSETS"
+        ],
+        "promotionRegression": false,
+        "rootCause": "NOT_ASSERTED; independently compare approved source and each own environment database",
+        "nextStep": "Business UAT and separate Development analysis if required; no provider retrieval or data copy performed"
+      },
+      "businessUat": "NOT_PERFORMED",
+      "realProviderRollback": "NOT_EXECUTED",
+      "proofDigest": "95a6c964a214058b64d984b33f195e92c81c4ed1d7926de577ec303d35f8cc57",
+      "schemaMigrationCount": 18,
+      "newSqlMigrationsApplied": 0,
+      "applicationDatabaseEffects": "Approved synthetic release probe; own cached report may lazily rebuild derived documents/append frames; repeated read idempotence verified; no source archive write, reset or Development copy"
     }
   ]
 }
