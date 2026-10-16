@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "SRM",
+  "scope": "ISOLATED_OPERATION_INTEGRATION_ONLY",
+  "targetEnvironment": "development",
+  "liveRouteUsesContract": false,
+  "automaticProductDeployment": false,
+  "contract": {
+    "id": "profitia.operation-context",
+    "version": "1.0.0",
+    "implementation": "1.0.0-candidate.3",
+    "sourceDigest": "e37a11798ed41b1c0a30f2ac3b539c6d19db59246c8ceae94005afeb10a08455"
+  },
+  "producer": {
+    "projectKey": "ARCHITECTURE",
+    "taskId": "ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017",
+    "repository": "profitia/SG-dev",
+    "pullRequest": 383,
+    "sourceSha": "ea06cd05df9168c01b7621baf6724bc04b74b760",
+    "initialCandidate": {
+      "taskId": "ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016",
+      "pullRequest": 380,
+      "sourceSha": "dde7d08262c693df7c86e0a8f16c6bcb95512f92"
+    }
+  },
+  "hostAdapter": "src/server/operation-report-data.ts",
+  "operations": [
+    "supplier.report.project"
+  ],
+  "requiredInputOperations": [
+    "supplier.report.read"
+  ],
+  "identityAdapter": "SYNTHETIC_SIGNED_TEST_ISSUER_ONLY",
+  "persistenceAdapter": "DISPOSABLE_LOOPBACK_POSTGRES_ONLY",
+  "deploymentAdoption": "NOT_PERFORMED",
+  "unsupported": [
+    "customer-onboarding",
+    "role-administration",
+    "delegated-jobs",
+    "paid-refresh",
+    "exports",
+    "billing",
+    "support"
+  ]
+}

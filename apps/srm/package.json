@@ -17,7 +17,8 @@
     "promote:staging": "node scripts/promote-staging.mjs",
     "migrate:staging:plan": "node scripts/staging-migrate.mjs --plan",
     "permissions:development": "node scripts/runtime-permissions.mjs",
-    "test:platform-contract": "node --test scripts/platform-contract.test.mjs"
+    "test:platform-contract": "node --test scripts/platform-contract.test.mjs",
+    "test:operation-context": "node --import tsx --test scripts/operation-context.test.mjs scripts/operation-context.integration.test.mjs"
   },
   "dependencies": {
     "@profitia/srm-xray": "file:../../packages/srm-xray",
@@ -30,7 +31,8 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "saxes": "5.0.1",
-    "sharp": "0.34.5"
+    "sharp": "0.34.5",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts"
   },
   "devDependencies": {
     "@types/node": "^20",
