@@ -152,3 +152,16 @@ test('denials survive distinct module identities while plain client objects neve
   assert.equal(isOperationDenied(new Error('PERMISSION_DENIED')), false)
   const f = fixture(); await assert.rejects(createOperationExecutor(f.options).execute(f.input, () => { throw error }), e => e.reasonCode === 'PERMISSION_DENIED')
 })
+test('audit proves when, whose authority, exact product source and classified resource permitted the effect', async () => {
+  const f = fixture('benchmark.selection.write'); let clock = time; f.options.now = () => clock
+  await createOperationExecutor(f.options).execute(f.input, context => { assert.equal(context.occurredAt, new Date(time).toISOString()); clock += 5; return null })
+  const [intent, outcome] = f.events
+  assert.equal(intent.contractId, OPERATION_CONTRACT.id)
+  assert.equal(intent.occurredAt, new Date(time).toISOString()); assert.equal(outcome.occurredAt, new Date(time + 5).toISOString())
+  assert.equal(outcome.operationStartedAt, intent.operationStartedAt)
+  assert.equal(intent.accessBasisType, 'MEMBERSHIP'); assert.equal(intent.accessSourceRef, 'membership:1'); assert.equal(intent.accessVersion, 'a1')
+  assert.match(intent.identityProofRef, /^test:/)
+  assert.equal(intent.resourceType, 'benchmark_selection'); assert.equal(intent.dataClass, 'ORGANISATION_PRIVATE'); assert.equal(intent.ownerOrganisationId, 'org-a')
+  assert.deepEqual(intent.productEvidence, [{ product: 'SPENDGURU', feature: 'benchmark', version: 'g1', sourceRef: 'contract:1', source: 'CONTRACT', expiresAt: expiry }])
+  assert.equal(intent.usagePolicy, 'NOT_APPLICABLE'); assert.equal(Object.hasOwn(intent, 'payload'), false)
+})

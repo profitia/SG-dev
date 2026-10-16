@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.2' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.3' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -79,6 +79,7 @@ function productAvailable(state, product, feature, config, ceiling, now) {
   if (!ceiling.products.includes(product)) deny('PRODUCT_UNAVAILABLE')
   const grant = state.products?.find(g => g.product === product && g.features?.includes(feature))
   if (!grant || grant.organisationId !== state.access.organisationId || grant.environment !== config.environment || grant.applicationId !== config.appId || grant.status !== 'ACTIVE' || !nonempty(grant.version) || !nonempty(grant.sourceRef) || !['CONTRACT', 'VERIFIED_BILLING', 'EXPLICIT_OFFER'].includes(grant.source) || !validUntil(grant.expiresAt, now)) deny('PRODUCT_UNAVAILABLE')
+  return { product, feature, version: grant.version, sourceRef: grant.sourceRef, source: grant.source, expiresAt: grant.expiresAt }
 }
 
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
@@ -86,13 +87,15 @@ export function createOperationExecutor(options) {
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
-  if (!ceiling || !['development', 'staging', 'production'].includes(config.environment) || !['appId', 'deploymentId', 'configurationVersion', 'identityIssuer'].every(k => nonempty(config[k])) || !Array.isArray(config.operations) || config.operations.some(op => !Object.hasOwn(rules, op)) || !Array.isArray(config.features) || config.features.some(f => !ceiling.features.includes(f)) || (ceiling.fixed && !nonempty(config.organisationId)) || (!ceiling.fixed && config.organisationId !== null) || [authenticate, withTransaction, recordAudit].some(f => typeof f !== 'function')) throw new TypeError('Explicit supported application and server authority adapters required')
+  if (!ceiling || !['development', 'staging', 'production'].includes(config.environment) || !['appId', 'deploymentId', 'configurationVersion', 'identityIssuer'].every(k => nonempty(config[k])) || !Array.isArray(config.operations) || config.operations.some(op => !Object.hasOwn(rules, op)) || !Array.isArray(config.features) || config.features.some(f => !ceiling.features.includes(f)) || (ceiling.fixed && !nonempty(config.organisationId)) || (!ceiling.fixed && config.organisationId !== null) || [authenticate, withTransaction, recordAudit, now].some(f => typeof f !== 'function')) throw new TypeError('Explicit supported application and server authority adapters required')
+  const stamp = event => ({ ...event, occurredAt: new Date(now()).toISOString() })
 
   return Object.freeze({
     contract: OPERATION_CONTRACT,
     async execute(input, action) {
       const decisionId = randomUUID()
-      let audit = { decisionId, contractVersion: OPERATION_CONTRACT.version, implementationVersion: OPERATION_CONTRACT.implementation, applicationId: config.appId, deploymentId: config.deploymentId, configurationVersion: config.configurationVersion, environment: config.environment, operation: typeof input?.operation === 'string' && input.operation.length < 128 ? input.operation : null, actorId: null, actorKind: null, subjectUserId: null, organisationId: null }
+      const operationStartedAt = new Date(now()).toISOString()
+      let audit = { decisionId, contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, implementationVersion: OPERATION_CONTRACT.implementation, applicationId: config.appId, applicationProfile: config.profileId, deploymentId: config.deploymentId, configurationVersion: config.configurationVersion, environment: config.environment, operationStartedAt, occurredAt: operationStartedAt, operation: typeof input?.operation === 'string' && input.operation.length < 128 ? input.operation : null, actorId: null, actorKind: null, subjectUserId: null, organisationId: null }
       let intentRecorded = false
       try {
         // Snapshot inputs before the first await; never execute a later, mutated payload.
@@ -110,7 +113,7 @@ export function createOperationExecutor(options) {
         if (actor.environment !== config.environment) deny('ENVIRONMENT_MISMATCH')
         if (actor.onBehalfOf != null) deny('DELEGATION_INVALID')
         const identity = freeze({ kind: actor.kind, actorId: actor.actorId, ...(actor.kind === 'HUMAN' ? { userId: actor.userId } : { serviceId: actor.serviceId }), proofRef: actor.proofRef, issuer: actor.issuer, audience: actor.audience, environment: actor.environment, expiresAt: actor.expiresAt })
-        audit = { ...audit, actorId: identity.actorId, actorKind: identity.kind, subjectUserId: identity.kind === 'HUMAN' ? identity.userId : null }
+        audit = { ...audit, actorId: identity.actorId, actorKind: identity.kind, subjectUserId: identity.kind === 'HUMAN' ? identity.userId : null, identityProofRef: identity.proofRef, identityIssuer: identity.issuer, identityAudience: identity.audience }
         return await withTransaction({ actor: identity, request }, async session => {
           const state = session.state
           if (!state || !nonempty(state.policyVersion) || state.environment !== config.environment || state.applicationId !== config.appId || typeof session.recordOutcome !== 'function' || typeof session.projectOutput !== 'function') deny('POLICY_UNAVAILABLE')
@@ -124,19 +127,20 @@ export function createOperationExecutor(options) {
             if (!nonempty(organisationId) || organisationId !== access.organisationId || (ceiling.fixed && organisationId !== config.organisationId)) deny('CONTEXT_INVALID')
             if (access.type !== (identity.kind === 'HUMAN' ? 'MEMBERSHIP' : 'SERVICE_GRANT')) deny('ACCESS_BASIS_INVALID')
           }
-          const context = { ...audit, organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId }
+          const context = { ...audit, organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId }
           audit = { ...context }
           if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
           if (state.resource.id !== request.resourceId) deny('RESOURCE_SCOPE_MISMATCH')
-          if (selected.product) productAvailable(state, selected.product, selected.feature, config, ceiling, now())
+          const productEvidence = []
+          if (selected.product) productEvidence.push(productAvailable(state, selected.product, selected.feature, config, ceiling, now()))
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') {
             if (identity.kind !== 'HUMAN') deny('DELEGATION_INVALID')
             const requirements = state.resource.contentRequirements
             if (!Array.isArray(requirements) || !requirements.length) deny('PRODUCT_UNAVAILABLE')
             for (const requirement of requirements) {
               if (!ceiling.features.includes(requirement.feature) || !config.features.includes(requirement.feature)) deny('APPLICATION_FEATURE_UNAVAILABLE')
-              productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
+              productEvidence.push(productAvailable(state, requirement.product, requirement.feature, config, ceiling, now()))
             }
           }
           if (request.operation === 'supplier.report.project') {
@@ -147,9 +151,9 @@ export function createOperationExecutor(options) {
           // refresh/export/forecast requests cannot be enabled with a missing limit.
           if (state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
-          const bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), payload, payloadDigest: request.payloadDigest, correlationId: randomUUID() })
-          audit = { ...audit, correlationId: bound.correlationId, resourceVersion: bound.resource.version, projectionVersion: bound.resource.projectionVersion }
-          try { await recordAudit({ ...audit, phase: 'INTENT', decision: 'ALLOW', reasonCode: 'AUTHORIZED' }) }
+          const bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID() })
+          audit = { ...audit, correlationId: bound.correlationId, resourceType: bound.resource.type, dataClass: bound.resource.dataClass, ownerOrganisationId: bound.resource.ownerOrganisationId, ownerUserId: bound.resource.ownerUserId, resourceVersion: bound.resource.version, projectionVersion: bound.resource.projectionVersion, productEvidence, usagePolicy: state.usagePolicy }
+          try { await recordAudit(stamp({ ...audit, phase: 'INTENT', decision: 'ALLOW', reasonCode: 'AUTHORIZED' })) }
           catch { deny('AUDIT_UNAVAILABLE') }
           intentRecorded = true
           const value = await action(bound, session.transaction)
@@ -157,14 +161,14 @@ export function createOperationExecutor(options) {
           if (!validUntil(identity.expiresAt, now()) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
           if (selected.product) productAvailable(state, selected.product, selected.feature, config, ceiling, now())
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
-          try { await session.recordOutcome({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: 'SUCCEEDED' }) }
+          try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: 'SUCCEEDED' })) }
           catch { deny('AUDIT_UNAVAILABLE') }
-          return Object.freeze({ decision: 'ALLOW', decisionId, contractVersion: OPERATION_CONTRACT.version, value: output })
+          return Object.freeze({ decision: 'ALLOW', decisionId, contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, value: output })
         })
       } catch (error) {
         const rejected = isOperationDenied(error) ? error : new OperationDenied('POLICY_UNAVAILABLE', decisionId)
         rejected.decisionId = decisionId
-        try { await recordAudit({ ...audit, phase: intentRecorded ? 'FAILURE' : 'DECISION', decision: 'DENY', reasonCode: rejected.reasonCode }) }
+        try { await recordAudit(stamp({ ...audit, phase: intentRecorded ? 'FAILURE' : 'DECISION', decision: 'DENY', reasonCode: rejected.reasonCode })) }
         catch { throw new OperationDenied('AUDIT_UNAVAILABLE', decisionId) }
         throw rejected
       }
