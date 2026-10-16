@@ -24,6 +24,8 @@ export async function initialiseAuthoritySchema(owner, roles) {
     ALTER TABLE operation_test.personal_records ENABLE ROW LEVEL SECURITY; ALTER TABLE operation_test.personal_records FORCE ROW LEVEL SECURITY;
     CREATE POLICY authority_read ON operation_test.authorities FOR SELECT USING(application_id=current_setting('operation.app_id',true) AND environment=current_setting('operation.environment',true) AND organisation_id=current_setting('operation.organisation_id',true) AND actor_id=current_setting('operation.user_id',true));
     CREATE POLICY resource_read ON operation_test.resources FOR SELECT USING(application_id=current_setting('operation.app_id',true) AND environment=current_setting('operation.environment',true) AND organisation_id=current_setting('operation.organisation_id',true));
+    CREATE POLICY authority_lock ON operation_test.authorities FOR UPDATE USING(application_id=current_setting('operation.app_id',true) AND environment=current_setting('operation.environment',true) AND organisation_id=current_setting('operation.organisation_id',true) AND actor_id=current_setting('operation.user_id',true)) WITH CHECK(false);
+    CREATE POLICY resource_lock ON operation_test.resources FOR UPDATE USING(application_id=current_setting('operation.app_id',true) AND environment=current_setting('operation.environment',true) AND organisation_id=current_setting('operation.organisation_id',true)) WITH CHECK(false);
     CREATE POLICY audit_append ON operation_test.audit FOR INSERT WITH CHECK(application_id=current_setting('operation.app_id',true));
     CREATE POLICY personal_scope ON operation_test.personal_records USING(organisation_id=current_setting('operation.organisation_id',true) AND user_id=current_setting('operation.user_id',true)) WITH CHECK(organisation_id=current_setting('operation.organisation_id',true) AND user_id=current_setting('operation.user_id',true));`)
   // PostgreSQL row locks require UPDATE on at least one column. Only a dummy
@@ -47,6 +49,7 @@ export async function putTestResource(owner, application, organisationId, resour
 }
 
 export function createPostgresAuthority({ ownerUrl, runtimeUrl, database, role, application, projectOutput, transactionDriver }) {
+  if (!['sg2_operation_runtime', 'sg2_operation_reader', 'srm_app_runtime'].includes(role)) throw Error('An ordinary test runtime role is required')
   assertIsolatedTestConnection(ownerUrl, database, 'architecture_test_owner')
   assertIsolatedTestConnection(runtimeUrl, database, role)
   const pool = new pg.Pool({ connectionString: runtimeUrl, max: 1 })
@@ -75,8 +78,7 @@ export function createPostgresAuthority({ ownerUrl, runtimeUrl, database, role, 
     await setContext(query, actor.actorId, request.organisationId)
     const { rows: [authority] } = await query('SELECT document FROM operation_test.authorities WHERE application_id=$1 AND environment=$2 AND organisation_id=$3 AND actor_id=$4 FOR SHARE', [application.appId, application.environment, request.organisationId ?? '', actor.actorId])
     const { rows: [resource] } = await query('SELECT document FROM operation_test.resources WHERE application_id=$1 AND environment=$2 AND organisation_id=$3 AND id=$4 FOR SHARE', [application.appId, application.environment, request.organisationId ?? '', request.resourceId])
-    if (!authority) throw Error('Current authority not found')
-    const state = { ...authority.document, resource: resource?.document, inputs: resource?.document?.inputs, applicationId: application.appId, environment: application.environment }
+    const state = { ...(authority?.document ?? { policyVersion: 'isolated-policy-v1', usagePolicy: 'NOT_APPLICABLE' }), resource: resource?.document, inputs: resource?.document?.inputs, applicationId: application.appId, environment: application.environment }
     return callback({ state, transaction, transactionalEffects: true, outputBoundaryVersion: 'operation-v1', recordOutcome: event => append(query, event), projectOutput })
   })
   return {
