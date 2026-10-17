@@ -39,6 +39,7 @@ export function createSrmPrivateOperationHost(options: Omit<HostOptions, "indepe
     application: options.application, binding: options.binding, module: options.module, now,
     transactionTimeoutMs: options.transactionTimeoutMs,
     readResources: options.readResources, projectOutput: options.projectOutput,
+    prepareInputs: options.prepareInputs, describeOutcome: options.describeOutcome,
     independentQuery: async (sql, values = []) => ({ rows: (await auditPool.query(sql, values)).rows }),
     createAuthenticator: ({ resolveBinding }) => createClerkIdentityAuthenticator({ client: clerk, application: identity, resolveBinding, now }),
     transact: async (work, limits) => {

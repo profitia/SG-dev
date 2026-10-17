@@ -11,6 +11,8 @@ import { readSrmPrivateReportConfiguration, getSrmReportRuntime, srmPrivatePoolC
 import { createRuntimeSrmReportHandler } from '../src/server/report-runtime.ts'
 import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
 import { POST as deployedPOST } from '../app/api/xray/report-data/route.ts'
+import { POST as deployedExportPOST } from '../app/api/xray/financial-excel/route.ts'
+import { createRuntimeSrmFinancialExcelHandler, projectPrivateFinancialExcel } from '../src/server/financial-excel-runtime.ts'
 import { middleware } from '../middleware.ts'
 const targets = JSON.parse(readFileSync(new URL('../deployment/private-runtime-targets.json', import.meta.url), 'utf8'))
 const target = targets.environments.development
@@ -59,7 +61,7 @@ test('explicit server intent binds its fixed tenant, deployment and only current
   assert.equal(config.provider, 'clerk'); assert.equal(config.application.profileId, 'PORR_SUITE')
   assert.equal(config.application.organisationId, A); assert.equal(config.application.appId, 'srm')
   assert.equal(config.application.deploymentId, `${target.serviceId}:${env.RENDER_GIT_COMMIT}`)
-  assert.deepEqual(config.application.operations, ['supplier.report.read','supplier.report.project'])
+  assert.deepEqual(config.application.operations, ['supplier.report.read','supplier.report.project','supplier.report.export'])
   assert.deepEqual(config.application.features, ['supplier_report'])
   assert.equal(readSrmPrivateReportConfiguration({ ...env, NODE_ENV: 'production' }).provider, 'clerk')
 })
@@ -122,7 +124,7 @@ test('unavailable or unknown runtime never invokes a legacy callback', async () 
   }
   assert.equal(calls,0);assert.equal((await createRuntimeSrmReportHandler(()=>({provider:'legacy_demo'}),legacy)(request())).status,200);assert.equal(calls,1)
 })
-test('middleware forwards only the adopted report API; its actual entry rejects incomplete Clerk and forged headers', async () => {
+test('middleware forwards only the adopted report/export APIs; actual entries reject incomplete Clerk and forged headers', async () => {
   const old=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
   try{
     const forwarded=await middleware(new NextRequest(request()))
@@ -132,5 +134,30 @@ test('middleware forwards only the adopted report API; its actual entry rejects 
     assert.deepEqual(await response.json(),{error:'Operation unavailable'})
     assert.equal((await middleware(new NextRequest('https://app.fixture.test/api/xray/lookup'))).status,401)
     assert.equal((await middleware(new NextRequest('https://app.fixture.test/'))).status,307)
+    const exportRequest = new Request('https://app.fixture.test/api/xray/financial-excel', { method: 'POST', headers: { origin: 'https://app.fixture.test', 'content-type': 'application/json' }, body: JSON.stringify({ nip: '8650004194', scope: 'standalone', years: ['2025'] }) })
+    assert.equal((await middleware(new NextRequest(exportRequest.clone()))).headers.get('x-middleware-next'),'1')
+    assert.equal((await deployedExportPOST(exportRequest)).status,503)
   }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old}
+})
+test('financial export dispatcher keeps legacy explicit and never falls back after a private failure', async () => {
+  let calls = 0
+  const legacy = async () => { calls++; return Response.json({ legacy: true }) }
+  for (const resolve of [() => { throw Error('private configuration unavailable') }, () => ({ provider: 'unknown' })]) {
+    const response = await createRuntimeSrmFinancialExcelHandler(resolve, legacy)(request())
+    assert.equal(response.status,503); assert.equal(response.headers.get('Cache-Control'),'private, no-store')
+  }
+  assert.equal(calls,0)
+  assert.equal((await createRuntimeSrmFinancialExcelHandler(() => ({ provider:'legacy_demo' }),legacy)(request())).status,200)
+  assert.equal(calls,1)
+})
+test('financial output fence refuses wrong company, private headers, MIME, length and unexpected data', async () => {
+  const context = { payload: { nip: '8650004194', scope: 'standalone', years: ['2025'] } }
+  const bytes = new Uint8Array([0x50,0x4b,3,4,0])
+  const headers = { 'Cache-Control':'private, no-store',Vary:'Cookie, Authorization','Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'X-Download-Filename':'Financials_8650004194_20261017.xlsx','Content-Disposition':'attachment; filename="Financials_8650004194_20261017.xlsx"','Content-Length':'5' }
+  for(const patch of [{ 'X-Download-Filename':'Financials_0123456789_20261017.xlsx' },{ 'Cache-Control':'public' },{ Vary:'' },{ 'Content-Type':'text/html' },{ 'Content-Length':'6' },{ 'Set-Cookie':'untrusted' }]){
+    await assert.rejects(projectPrivateFinancialExcel(new Response(bytes,{headers:{...headers,...patch}}),context))
+  }
+  await assert.rejects(projectPrivateFinancialExcel(new Response('plain',{headers}),context))
+  await assert.rejects(projectPrivateFinancialExcel(Response.json({error:'hidden diagnostics'},{status:404,headers}),context))
 })

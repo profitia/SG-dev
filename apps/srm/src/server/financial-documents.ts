@@ -170,7 +170,7 @@ async function storedDocuments(client: DocumentClient, organizationId: string, n
 
 /** Caller owns the withOrganization transaction. A shared archive lock fences provider
  * replacement until all derived rows commit; concurrent restores use the same upsert. */
-export async function restoreFinancialDocumentsFromArchive(client: DocumentClient, organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
+async function financialDocumentsFromArchive(client: DocumentClient, organizationId: string, nip: string, restore: boolean): Promise<FinancialSourceDocument[]> {
   const archive = (await client.query<FinancialArchive & { observed_checksum: string; financial_record_ids: string[]; observed_record_count: number; mismatched_supplier_count: number; page_count: number; source_registrations?:Record<string,string> }>(
     `SELECT organization_id,nip,model,payload_jsonb_sha256,record_count,
        encode(sha256(convert_to(payload_json::text,'UTF8')),'hex') AS observed_checksum,
@@ -200,6 +200,7 @@ export async function restoreFinancialDocumentsFromArchive(client: DocumentClien
   const expected = stored.filter(r => ids.includes(r.record_id));
   if (expected.length === ids.length && expected.every(r => r.archive_jsonb_sha256 === archive.payload_jsonb_sha256
       && (r.mapping_version === FINANCIAL_DOCUMENT_MAPPING_VERSION || ["IXBRL_SUPPORTED","XHTML_SUPPORTED"].includes(r.document_json.availability)))) return origins(expected.map(r => r.document_json));
+  if (!restore) throw new Error("Financial documents require authorised preparation");
   const payload = (await client.query<{ payload_text: string }>(
     "SELECT payload_json::text AS payload_text FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'", [organizationId,nip])).rows[0];
   if (!payload) throw new Error("Financial archive changed during reconstruction");
@@ -207,6 +208,16 @@ export async function restoreFinancialDocumentsFromArchive(client: DocumentClien
   await persistFinancialDocuments(client,organizationId,nip,documents,archive.payload_jsonb_sha256);
   // Return the actual rows, including any better-quality preserved projection.
   return origins((await storedDocuments(client,organizationId,nip)).filter(r => ids.includes(r.record_id)).map(r => r.document_json));
+}
+
+export async function restoreFinancialDocumentsFromArchive(client: DocumentClient, organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
+  return financialDocumentsFromArchive(client, organizationId, nip, true);
+}
+
+/** Same provenance/checksum/identity projection after an authorised restoration.
+ * Missing/stale prepared rows fail closed; this path performs no business writes. */
+export async function readPreparedFinancialDocuments(client: DocumentClient, organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
+  return financialDocumentsFromArchive(client, organizationId, nip, false);
 }
 
 export async function readFinancialDocuments(organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
