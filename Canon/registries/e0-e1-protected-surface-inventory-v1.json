@@ -8142,5 +8142,13 @@
     "liveProductContractAdoption": false,
     "developmentReleaseVerified": false,
     "stagingReleaseVerified": false
+  },
+  "currentSourceEffectObservation": {
+    "sourceSha": "cf2677e042d654dc223ef043401327fe064ab4fc",
+    "observedAtUtc": "2026-10-17T14:13:24.027064+00:00",
+    "registry": "Canon/registries/e0-e1-operation-effects-v1.json",
+    "status": "DATED_SOURCE_EFFECT_MAP_NOT_RUNTIME_ACCEPTANCE",
+    "historicalBaselineFieldsUnchanged": true,
+    "codeSourceAdoptionIsNotLiveDeployment": true
   }
 }
