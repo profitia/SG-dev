@@ -32,7 +32,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
   const ownerUrl = assertIsolatedTestConnection(process.env.SG2_OPERATION_TEST_OWNER_URL, 'sg2_operation_test', 'architecture_test_owner')
   const root = new pg.Client({ connectionString: ownerUrl }); await root.connect()
   const dbUrl = new URL(ownerUrl); dbUrl.pathname = `/${DATABASE}`
-  let owner, prisma
+  let owner, prisma, auditPrisma
   const previousFetch = globalThis.fetch
   try {
     if (!(await root.query('SELECT 1 FROM pg_database WHERE datname=$1', [DATABASE])).rowCount) await root.query(`CREATE DATABASE ${DATABASE}`)
@@ -43,6 +43,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       const flags = (await root.query('SELECT rolsuper,rolcreatedb,rolcreaterole,rolbypassrls,rolinherit,rolcanlogin FROM pg_roles WHERE rolname=$1', [role])).rows[0]
       assert.deepEqual(flags, { rolsuper: false, rolcreatedb: false, rolcreaterole: false, rolbypassrls: false, rolinherit: false, rolcanlogin: login })
     }
+    await root.query(`ALTER ROLE ${ROLE} CONNECTION LIMIT 4`)
     owner = new pg.Client({ connectionString: dbUrl.toString() }); await owner.connect()
     // Only this explicitly named, guarded LOOPBACK database may be reset.
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db, DATABASE)
@@ -71,8 +72,9 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'db', 'push', '--skip-generate', '--schema', 'prisma/schema.prisma'], { env: { ...process.env, SG_RUNTIME_DATABASE_URL: prismaOwnerUrl.toString(), SG_RUNTIME_DIRECT_URL: prismaOwnerUrl.toString() }, stdio: 'pipe' })
     await owner.query(fs.readFileSync(new URL('../prisma/security/benchmark-private-boundaries.sql', import.meta.url), 'utf8'))
     await owner.query(`GRANT USAGE ON SCHEMA sg_runtime_benchmarks TO ${ROLE}; GRANT SELECT,INSERT,UPDATE ON sg_runtime_benchmarks."BusinessBenchmark",sg_runtime_benchmarks."BenchmarkProviderMapping",sg_runtime_benchmarks."OrganizationBenchmarkSelection" TO ${ROLE}`)
-    const runtimeUrl = new URL(prismaOwnerUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'; runtimeUrl.searchParams.set('connection_limit', '4')
+    const runtimeUrl = new URL(prismaOwnerUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'; runtimeUrl.searchParams.set('connection_limit', '2')
     prisma = new PrismaClient({ datasources: { db: { url: runtimeUrl.toString() } } })
+    auditPrisma = new PrismaClient({ datasources: { db: { url: runtimeUrl.toString() } } })
     const login = (await prisma.$queryRawUnsafe('SELECT current_user,session_user FROM pg_roles WHERE rolname=current_user'))[0]
     assert.equal(login.current_user, ROLE); assert.equal(login.session_user, ROLE)
     process.env.SG_RUNTIME_DATABASE_URL = runtimeUrl.toString(); process.env.SG_RUNTIME_DIRECT_URL = runtimeUrl.toString()
@@ -90,7 +92,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       sessions: { async getSession(id) { return { id, userId: id.replace('session-', 'external-'), status: sdkRevoked ? 'revoked' : 'active', expireAt: Date.now() + 3600000, abandonAt: Date.now() + 3600000, actor: null } } },
       users: { async getUser(id) { return { id, banned: false, locked: false, deprovisioned: false } } },
     }
-    const configuration = { prisma, clerk, application: { appId: 'spendguru', profileId: 'SPENDGURU_SAAS', environment: 'development', deploymentId: 'isolated-sg2', configurationVersion: '1', identityIssuer: ISSUER, organisationId: null, operations: ['benchmark.selection.read', 'benchmark.selection.write'], features: ['benchmark'] }, identity: { appId: 'spendguru', environment: 'development', issuer: ISSUER, authorizedParties: [ORIGIN] }, binding: { applicationId: 'spendguru', environment: 'development', projectId: 'isolated-private-project', branchId: 'isolated-private-branch', databaseName: DATABASE, role: ROLE, schemaDigest: digest } }
+    const configuration = { prisma, auditPrisma, clerk, application: { appId: 'spendguru', profileId: 'SPENDGURU_SAAS', environment: 'development', deploymentId: 'isolated-sg2', configurationVersion: '1', identityIssuer: ISSUER, organisationId: null, operations: ['benchmark.selection.read', 'benchmark.selection.write'], features: ['benchmark'] }, identity: { appId: 'spendguru', environment: 'development', issuer: ISSUER, authorizedParties: [ORIGIN] }, binding: { applicationId: 'spendguru', environment: 'development', projectId: 'isolated-private-project', branchId: 'isolated-private-branch', databaseName: DATABASE, role: ROLE, schemaDigest: digest } }
     const host = createSg2PrivateBenchmarkHost(configuration)
     globalThis.fetch = async input => {
       const url = String(input)
@@ -131,6 +133,12 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     await t.test('SDK session revocation and wrong issuer deny the next request', async () => {
       sdkRevoked = true; assert.equal((await handlers.GET(request())).status, 401); sdkRevoked = false
       sdkIssuer = 'https://foreign.fixture.test'; assert.equal((await handlers.GET(request())).status, 401); sdkIssuer = ISSUER
+    })
+    await t.test('concurrent transactions retain independent audit capacity within the four-connection role budget', async () => {
+      const responses = await Promise.all(Array.from({ length: 6 }, () => handlers.GET(request())))
+      assert.deepEqual(responses.map(response => response.status), [200, 200, 200, 200, 200, 200])
+      const poolCounts = (await owner.query('SELECT count(*)::int AS n FROM pg_stat_activity WHERE usename=$1', [ROLE])).rows[0].n
+      assert(poolCounts <= 4)
     })
     await t.test('new explicit DENY and product revocation are authoritative', async () => {
       const id = randomUUID()
@@ -195,6 +203,6 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     })
   } finally {
     globalThis.fetch = previousFetch
-    await prisma?.$disconnect(); await owner?.end(); await root.end()
+    await prisma?.$disconnect(); await auditPrisma?.$disconnect(); await owner?.end(); await root.end()
   }
 })

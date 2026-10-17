@@ -22,6 +22,9 @@ const queryFor = (client: QueryClient): AccessQuery => async (sql, values = []) 
  * ordinary Prisma login and independently verified deployment configuration. */
 export function createSg2PrivateBenchmarkHost(options: {
   prisma: PrismaClient
+  /** Separate native pool; reserve its connections within the role's total
+   * budget so business transactions cannot exhaust audit capacity. */
+  auditPrisma: PrismaClient
   clerk: ClerkIdentityClient
   application: Application
   identity: IdentityApplication
@@ -29,11 +32,11 @@ export function createSg2PrivateBenchmarkHost(options: {
   transactionTimeoutMs?: number
   now?: () => number
 }) {
-  const { prisma, clerk, now } = options
+  const { prisma, auditPrisma, clerk, now } = options
   const application = structuredClone(options.application)
   const identity = structuredClone(options.identity)
   const binding = structuredClone(options.binding)
-  if (application.appId !== 'spendguru' || binding.applicationId !== application.appId
+  if (!auditPrisma || auditPrisma === prisma || application.appId !== 'spendguru' || binding.applicationId !== application.appId
     || identity.appId !== application.appId || identity.environment !== application.environment
     || identity.issuer !== application.identityIssuer || binding.environment !== application.environment
     || application.operations.some(operation => !['benchmark.selection.read', 'benchmark.selection.write'].includes(operation))) {
@@ -41,7 +44,7 @@ export function createSg2PrivateBenchmarkHost(options: {
   }
   return createPrivateOperationHost<Prisma.TransactionClient>({
     application, binding, now, transactionTimeoutMs: options.transactionTimeoutMs,
-    independentQuery: queryFor(prisma),
+    independentQuery: queryFor(auditPrisma),
     transact: (work, limits) => prisma.$transaction(transaction => work({
       transaction, query: queryFor(transaction),
     }), { timeout: limits.timeoutMs, maxWait: limits.maxWaitMs }),
