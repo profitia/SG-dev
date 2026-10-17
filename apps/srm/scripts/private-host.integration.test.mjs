@@ -9,6 +9,8 @@ import { identitySourceDigest } from '@profitia/platform-contracts/identity-prov
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
 import { OPERATION_CONTRACT } from '@profitia/platform-contracts/operation-context'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
+import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
+import { migrationManifest } from './staging-migrate.mjs'
 import { createSrmPrivateOperationHost } from '../src/server/private-operation-host.ts'
 import { bindOrganizationTransaction, withOrganization } from '../src/server/db.ts'
 const DATABASE = 'srm_private_host_test', ROLE = 'srm_private_host_runtime'
@@ -52,7 +54,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
     await owner.query(sql)
     await owner.query("INSERT INTO profitia_access.installation(schema_version,schema_digest,environment,project_id,branch_id,database_name) VALUES('1.0.0',$1,'development','isolated-private-project','isolated-private-branch',$2)", [digest, DATABASE])
-    await owner.query("INSERT INTO profitia_access.applications(application_id,status) VALUES('srm','ACTIVE')")
+    await owner.query("INSERT INTO profitia_access.applications(application_id,status) VALUES('srm','DISABLED')")
     await owner.query("INSERT INTO profitia_access.runtime_bindings(login_role,application_id,status) VALUES($1,'srm','ACTIVE')", [ROLE])
     for (const user of [U, V]) {
       await owner.query("INSERT INTO profitia_access.accounts(user_id,status) VALUES($1,'ACTIVE')", [user])
@@ -74,18 +76,67 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     await owner.query("INSERT INTO profitia_modules.audit_installation(envelope_version,schema_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_NOT_A_RELEASE')", [auditDigest])
     await owner.query(`GRANT USAGE ON SCHEMA profitia_modules TO ${ROLE}; GRANT EXECUTE ON FUNCTION profitia_modules.runtime_descriptor(),profitia_modules.bind_scope(text),profitia_modules.scope_allows(text,uuid,uuid),profitia_modules.audit_descriptor() TO ${ROLE}`)
     await owner.query('COMMIT')
-    const directory = new URL('../db/migrations/', import.meta.url)
-    for (const file of fs.readdirSync(directory).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
-      const migration = fs.readFileSync(new URL(file, directory), 'utf8'); await owner.query(migration)
-      await owner.query('INSERT INTO srm.schema_migrations(version,checksum_sha256) VALUES($1,$2)', [file.slice(0, -4), hash(migration)])
+    await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM profitia_access_owner`)
+    // Database ACLs are isolated to this named fixture; the legacy LOGIN role
+    // is deliberately preserved for the sibling legacy srm_app test database.
+    await owner.query(`REVOKE ALL ON DATABASE ${DATABASE} FROM PUBLIC,srm_app_runtime`)
+    await owner.query(`GRANT CONNECT ON DATABASE ${DATABASE} TO ${ROLE}`)
+    const legacyFlags = (await owner.query("SELECT rolcanlogin,rolinherit FROM pg_roles WHERE rolname='srm_app_runtime'")).rows[0]
+    const binding = { environment: 'development', projectId: 'isolated-private-project',
+      branchId: 'isolated-private-branch', databaseName: DATABASE, role: ROLE }
+    const plan = privateBusinessPlan({ binding, sourceSha: 'a'.repeat(40) })
+    const apply = async (statements = plan.sql, setup) => {
+      await owner.query('BEGIN')
+      try {
+        if (setup) await setup()
+        for (const statement of statements) await owner.query(statement)
+        await owner.query('COMMIT')
+      } catch (error) { await owner.query('ROLLBACK'); throw error }
     }
-    // Fixture-only grants reproduce existing report capabilities; this does not
-    // provision a live private business schema or approve all its RLS policies.
-    await owner.query(fs.readFileSync(new URL('../db/security/private-operation-boundaries.sql', import.meta.url), 'utf8'))
-    await owner.query(`GRANT USAGE ON SCHEMA srm TO ${ROLE}; GRANT SELECT ON ALL TABLES IN SCHEMA srm TO ${ROLE}; GRANT INSERT,UPDATE ON srm.financial_source_documents,srm.suppliers TO ${ROLE}`)
-    // PostgreSQL FOR SHARE requires an UPDATE privilege on at least one column.
-    // Reserve only harmless check metadata, not the raw archived source.
-    await owner.query(`GRANT UPDATE(last_checked_at) ON srm.mgbi_source_archives TO ${ROLE}`)
+    const absent = async () => {
+      assert.equal((await owner.query("SELECT to_regnamespace('srm') AS schema")).rows[0].schema, null)
+      assert.equal((await owner.query("SELECT has_database_privilege('profitia_access_owner',current_database(),'CREATE') AS allowed")).rows[0].allowed, false)
+      assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_access.accounts')).rows[0].n, 2)
+    }
+    await t.test('initializer rejects mismatched physical binding and preserves the directory', async () => {
+      const wrong = privateBusinessPlan({ binding: { ...binding, branchId: 'wrong-branch' }, sourceSha: 'a'.repeat(40) })
+      await assert.rejects(apply(wrong.sql), /physical control/); await absent()
+    })
+    await t.test('initializer rejects active application, legacy CONNECT and unsafe default ACL', async () => {
+      for (const [setup, message] of [
+        [() => owner.query("UPDATE profitia_access.applications SET status='ACTIVE' WHERE application_id='srm'"), /Disabled applications/],
+        [() => owner.query(`GRANT CONNECT ON DATABASE ${DATABASE} TO srm_app_runtime`), /legacy policy/],
+        [() => owner.query(`ALTER DEFAULT PRIVILEGES FOR ROLE profitia_access_owner GRANT SELECT ON TABLES TO ${ROLE}`), /default ACL/],
+      ]) { await assert.rejects(apply(plan.sql, setup), message); await absent() }
+    })
+    await t.test('initializer rejects an existing namespace without adopting or erasing it', async () => {
+      await owner.query('CREATE SCHEMA srm; CREATE TABLE srm.sentinel(id int); INSERT INTO srm.sentinel VALUES(17)')
+      await assert.rejects(apply(), /already exists/)
+      assert.equal((await owner.query('SELECT id FROM srm.sentinel')).rows[0].id, 17)
+      // Remove only this committed sentinel in the guarded loopback fixture.
+      await owner.query('DROP SCHEMA srm CASCADE'); await absent()
+    })
+    await t.test('failure after the complete plan rolls back schema, grants, receipt and temporary CREATE', async () => {
+      await assert.rejects(apply([...plan.sql, 'SELECT 1/0']), /division by zero/); await absent()
+    })
+    await apply()
+    await t.test('exact canonical ledger, all 22 controlled FORCE RLS tables and bounded ACLs', async () => {
+      const ledger = (await owner.query('SELECT version,checksum_sha256 FROM srm.schema_migrations ORDER BY version')).rows
+      assert.deepEqual(ledger, migrationManifest().slice(0, 18).map(m => ({ version: m.version, checksum_sha256: m.checksum })))
+      const tables = (await owner.query("SELECT c.relname,c.relrowsecurity,c.relforcerowsecurity,c.relowner::regrole::text AS owner FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='srm' AND c.relkind='r' ORDER BY c.relname")).rows
+      assert.deepEqual(tables.map(t => t.relname), [...plan.expectedTables].sort())
+      assert(tables.every(t => t.relrowsecurity && t.relforcerowsecurity && t.owner === 'profitia_access_owner'))
+      assert.deepEqual((await owner.query("SELECT rolcanlogin,rolinherit FROM pg_roles WHERE rolname='srm_app_runtime'")).rows[0], legacyFlags)
+      assert.equal((await owner.query("SELECT has_database_privilege('srm_app_runtime',current_database(),'CONNECT') AS allowed")).rows[0].allowed, false)
+      assert.equal((await owner.query('SELECT schema_digest FROM srm.private_installation')).rows[0].schema_digest, plan.schemaDigest)
+      for (const table of ['schema_migrations', 'private_installation', 'users', 'supplier_web_identity']) assert.equal((await owner.query(`SELECT has_table_privilege($1,$2,'SELECT') allowed`, [ROLE, `srm.${table}`])).rows[0].allowed, false)
+      assert.equal((await owner.query("SELECT has_any_column_privilege($1,'srm.catalog_companies','UPDATE') allowed", [ROLE])).rows[0].allowed, false)
+      await assert.rejects(apply(), /already exists/)
+      assert.equal((await owner.query('SELECT count(*)::int n FROM srm.schema_migrations')).rows[0].n, 18)
+    })
+    // Activation belongs only to this synthetic fixture, after checked schema
+    // initialization. The source candidate never activates a live application.
+    await owner.query("UPDATE profitia_access.applications SET status='ACTIVE' WHERE application_id='srm'")
     // Deliberately grant one shared metadata column in the fixture so the
     // negative write test proves the RLS ceiling, not just a missing ACL.
     await owner.query(`GRANT UPDATE(updated_at) ON srm.catalog_companies TO ${ROLE}`)
@@ -98,6 +149,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     }
     const financial = { status: 'SUCCESS', source: { provider: 'MGBI', model: 'synthetic-fixture', recordId: 'private-not-public' }, retrievedAt: new Date().toISOString(), effectiveAt: '2025-12-31', warnings: [], catalogMappingVersion: '2026-10-07-ccc-v2', data: { qualityRule: 'FINANCIAL_QUALITY_V1', periods: [{ from: '2025-01-01', to: '2025-12-31', scope: 'standalone', documentId: 'synthetic-financial-2025:cfy', facts: [{ metricCode: 'BS_A_TA', amount: '100', currency: 'PLN', unit: 'PLN' }] }] } }
     await owner.query('INSERT INTO srm.catalog_companies(nip,financial_json,financial_sha256,financial_checked_at) VALUES($1,$2::jsonb,$3,now())', [NIP, JSON.stringify(financial), hash(JSON.stringify(financial))])
+    await owner.query("INSERT INTO srm.catalog_kys_reports(nip,entity_type) VALUES($1,'COMPANY')", [NIP])
     const runtimeUrl = new URL(dbUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'
     pool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 2 }); auditPool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 2 })
     assert.equal((await pool.query('SELECT current_user')).rows[0].current_user, ROLE)
@@ -239,6 +291,16 @@ test('SRM real report and pg driver use the accepted private host', async t => {
         return Response.json({ nip: NIP })
       }))
       assert.equal(denied, true)
+    })
+    await t.test('unadopted KYS stays row-closed even with a valid module and accidental permissive policy', async () => {
+      assert.equal((await owner.query('SELECT count(*)::int n FROM srm.catalog_kys_reports')).rows[0].n, 1)
+      await owner.query('CREATE POLICY synthetic_accidental_kys_admission ON srm.catalog_kys_reports FOR SELECT USING(true)')
+      try {
+        await host.execute(input, async (_context, client) => {
+          assert.equal((await client.query('SELECT * FROM srm.catalog_kys_reports')).rowCount, 0)
+          return Response.json({ nip: NIP })
+        })
+      } finally { await owner.query('DROP POLICY synthetic_accidental_kys_admission ON srm.catalog_kys_reports') }
     })
     await t.test('an accidental shared write ACL does not bypass the human write ceiling', async () => {
       const before = (await owner.query('SELECT updated_at FROM srm.catalog_companies WHERE nip=$1', [NIP])).rows[0].updated_at.toISOString()
