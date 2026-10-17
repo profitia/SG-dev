@@ -269,24 +269,38 @@ type CognitionHandler<TArgs extends unknown[] = []> = (
   ...args: TArgs
 ) => Promise<NextResponse>
 
+function privateApiResponse(response: NextResponse): NextResponse {
+  response.headers.set('Cache-Control', 'private, no-store')
+  const vary = response.headers.get('Vary')?.split(',').map(value => value.trim()).filter(Boolean) ?? []
+  if (!vary.includes('*')) {
+    for (const name of ['Cookie', 'Authorization']) {
+      if (!vary.some(value => value.toLowerCase() === name.toLowerCase())) vary.push(name)
+    }
+    response.headers.set('Vary', vary.join(', '))
+  }
+  return response
+}
+
 export function withCognitionAuth<TArgs extends unknown[]>(handler: CognitionHandler<TArgs>) {
   return async (request: NextRequest, ...args: TArgs): Promise<NextResponse> => {
     const auth = await extractCognitionAuth(request)
 
     if (!auth) {
-      return cognitionError(
+      return privateApiResponse(cognitionError(
         'UNAUTHORIZED',
-        'Authentication required — Clerk org context missing',
+        'Authentication required.',
         401
-      )
+      ))
     }
 
     try {
-      return await handler(auth, request, ...args)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Internal cognition runtime error'
-      console.error(`[pcos-api] Error [org=${auth.orgId}] [req=${auth.requestId}]:`, err)
-      return cognitionError('INTERNAL_ERROR', message, 500, auth.requestId)
+      return privateApiResponse(await handler(auth, request, ...args))
+    } catch {
+      // Raw provider/SQL exceptions can contain credentials or private data.
+      // The typed operation host owns the durable access trail; this retained
+      // demo helper must not manufacture an individual identity or log payloads.
+      console.error('[pcos-api] Protected operation failed')
+      return privateApiResponse(cognitionError('INTERNAL_ERROR', 'Operation unavailable.', 500, auth.requestId))
     }
   }
 }
