@@ -178,6 +178,24 @@ export function inspectLedger(rows, manifest = migrationManifest()) {
   }
   return manifest.filter((m) => !map.has(m.version));
 }
+/** One canonical ordered source/ledger plan. Transaction, destination and
+ * authorization gates remain the responsibility of the existing guarded caller.
+ * Private-store adapters consume the same steps, not a second migration ledger. */
+export function migrationStatements(pending) {
+  if (!Array.isArray(pending)) throw new Error("Invalid pending migration set");
+  return pending.flatMap(m => {
+    if (!/^\d{4}_[a-z0-9_]+$/.test(m.version ?? "") || typeof m.sql !== "string"
+      || !/^[a-f0-9]{64}$/.test(m.checksum ?? "")
+      || createHash("sha256").update(m.sql).digest("hex") !== m.checksum) {
+      throw new Error("Migration source/checksum mismatch");
+    }
+    return [
+      { kind: "source", sql: m.sql },
+      { kind: "ledger", sql: "INSERT INTO srm.schema_migrations(version,checksum_sha256) VALUES ($1,$2)", values: [m.version, m.checksum] },
+    ];
+  });
+}
+
 export async function runMigrations(
   client,
   { dryRun = false, initialize = null } = {},
@@ -216,14 +234,9 @@ export async function runMigrations(
     )
       throw new Error("Unledgered SRM schema cannot be adopted");
     const pending = inspectLedger(rows);
-    for (const m of pending) {
-      if (!dryRun) {
-        await client.query(m.sql);
-        await client.query(
-          "INSERT INTO srm.schema_migrations(version,checksum_sha256) VALUES ($1,$2)",
-          [m.version, m.checksum],
-        );
-      }
+    if (!dryRun) for (const step of migrationStatements(pending)) {
+      if (step.values) await client.query(step.sql, step.values);
+      else await client.query(step.sql);
     }
     if (initialize) await initializeOrganization(client, initialize);
     await client.query(dryRun ? "ROLLBACK" : "COMMIT");
