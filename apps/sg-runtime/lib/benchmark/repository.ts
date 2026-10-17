@@ -51,8 +51,8 @@ function toSavedBenchmark(mapping: MappingWithRelations): SavedBenchmark {
   }
 }
 
-export async function listSavedBenchmarksForOrganization(organizationId: string) {
-  const selections = await prisma.organizationBenchmarkSelection.findMany({
+export async function listSavedBenchmarksForOrganization(organizationId: string, transaction: Pick<Prisma.TransactionClient, 'organizationBenchmarkSelection'> = prisma) {
+  const selections = await transaction.organizationBenchmarkSelection.findMany({
     where: { organizationId },
     orderBy: { createdAt: 'desc' },
     include: {
@@ -96,10 +96,10 @@ export async function saveBenchmarkSelection(params: {
   userId: string
   candidate: BenchmarkCandidate
   metadata: Record<string, unknown>
-}) {
+}, transaction?: Prisma.TransactionClient) {
   const { organizationId, userId, candidate, metadata } = params
 
-  return prisma.$transaction(async (tx) => {
+  const persist = async (tx: Prisma.TransactionClient) => {
     const existingMapping = await tx.benchmarkProviderMapping.findUnique({
       where: {
         organizationId_providerCode_providerSeriesId: {
@@ -205,5 +205,6 @@ export async function saveBenchmarkSelection(params: {
     })
 
     return toSavedBenchmark(refreshed)
-  })
+  }
+  return transaction ? persist(transaction) : prisma.$transaction(persist)
 }

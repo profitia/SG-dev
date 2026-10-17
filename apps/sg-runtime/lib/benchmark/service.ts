@@ -8,6 +8,7 @@ import type {
   BenchmarkSemanticContext,
   BenchmarkSearchRequest,
 } from '@/lib/benchmark/contracts'
+import type { Prisma } from '@prisma/client'
 import {
   getStoredBenchmarkMetadataDefinitions,
   getStoredBenchmarkMetadataValues,
@@ -179,7 +180,7 @@ export async function selectBenchmark(params: {
   organizationId: string
   userId: string
   candidate: BenchmarkCandidate
-}) {
+}, transaction?: Prisma.TransactionClient) {
   const metadata = await fetchMacrobondEntityMetadata(params.candidate.providerSeries.providerSeriesId)
 
   return saveBenchmarkSelection({
@@ -187,11 +188,11 @@ export async function selectBenchmark(params: {
     userId: params.userId,
     candidate: params.candidate,
     metadata,
-  })
+  }, transaction)
 }
 
-export async function getSavedBenchmarks(organizationId: string) {
-  return listSavedBenchmarksForOrganization(organizationId)
+export async function getSavedBenchmarks(organizationId: string, transaction?: Prisma.TransactionClient) {
+  return listSavedBenchmarksForOrganization(organizationId, transaction)
 }
 
 export async function getBenchmarkMetadataDefinitions(): Promise<BenchmarkMetadataDefinition[]> {
