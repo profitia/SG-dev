@@ -165,5 +165,18 @@
     "globalIngestOrHydrationAdopted": false,
     "sourcePreparationEvidence": "deployment/market-read-preparation.json",
     "runtimeSourceConfigured": false
+  },
+  "marketAnalytics": {
+    "scope": "STORED_SHARED_MARKET_HISTORY_READ_ONLY",
+    "nativeDispatcher": "lib/benchmark/analytics-handlers.ts",
+    "sourceReader": "lib/market-data/stored-read.ts",
+    "authorityHost": "createSg2PrivateMarketHost",
+    "representation": "analytics",
+    "operation": "knowledge.read",
+    "resourcePrefix": "market-analytics:",
+    "projectionVersion": "sg2-stored-market-analytics-v1",
+    "sourceSqlOrRoleChanged": false,
+    "runtimeSourceConfigured": false,
+    "productDeploymentPerformed": false
   }
 }

@@ -8,14 +8,21 @@ import targets from '@/deployment/private-runtime-targets.json'
 import { createSg2ClerkClient, IdentityConfigurationUnavailable, readSg2IdentityRuntime } from './identity-runtime'
 import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost } from './private-host'
 import { createStoredMarketHistoryReader,type StoredMarketBinding } from '@/lib/market-data/stored-read'
-import type { BenchmarkPreviewResult,BenchmarkRangePreset } from '@/lib/benchmark/contracts'
+import type { BenchmarkPreviewResult,BenchmarkAnalyticsSeriesResult,BenchmarkRangePreset } from '@/lib/benchmark/contracts'
 
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<Prisma.TransactionClient>; defaultOrganisationId: string
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
   category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
-  marketRead?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; preview:(selection:{seriesName:string;range:BenchmarkRangePreset})=>Promise<BenchmarkPreviewResult> }>
+  marketRead?: Readonly<{
+    executor: OperationExecutor<Prisma.TransactionClient>
+    preview:(selection:{seriesName:string;range:BenchmarkRangePreset})=>Promise<BenchmarkPreviewResult>
+    analytics?: Readonly<{
+      executor: OperationExecutor<Prisma.TransactionClient>
+      series:(selection:{seriesName:string;range:BenchmarkRangePreset})=>Promise<BenchmarkAnalyticsSeriesResult>
+    }>
+  }>
 }>
 type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
@@ -136,12 +143,18 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
   const marketRead=config.marketRead?(()=>{
     const source=new PrismaClient({datasources:{db:{url:poolUrl(config.marketRead.databaseUrl,1,'profitia_market_read')}}})
     const readHistory=createStoredMarketHistoryReader(source,config.marketRead.binding)
-    return Object.freeze({executor:createSg2PrivateMarketHost({prisma,auditPrisma,clerk,identity:config.identity,binding:config.binding,module:config.module,
-      application:{...config.application,configurationVersion:config.marketRead.configurationVersion,operations:['knowledge.read'],features:['market']}}),
+    const host:Parameters<typeof createSg2PrivateMarketHost>[0]={prisma,auditPrisma,clerk,identity:config.identity,binding:config.binding,module:config.module,
+      application:{...config.application,configurationVersion:config.marketRead.configurationVersion,operations:['knowledge.read'],features:['market']}}
+    return Object.freeze({executor:createSg2PrivateMarketHost(host),
       preview:async({seriesName,range}:{seriesName:string;range:BenchmarkRangePreset})=>{
         const{getBenchmarkPreview}=await import('@/lib/benchmark/service')
         return getBenchmarkPreview(seriesName,range,readHistory)
-      }})
+      },
+      analytics:Object.freeze({executor:createSg2PrivateMarketHost(host,'analytics'),
+        series:async({seriesName,range}:{seriesName:string;range:BenchmarkRangePreset})=>{
+          const{getBenchmarkAnalyticsSeries}=await import('@/lib/benchmark/service')
+          return getBenchmarkAnalyticsSeries(seriesName,range,readHistory)
+        }})})
   })():undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
     ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}) })

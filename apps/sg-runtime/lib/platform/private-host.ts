@@ -5,7 +5,8 @@ import type { AccessQuery, AccessStoreBinding } from '@profitia/platform-contrac
 import { OperationDenied, type Application } from '@profitia/platform-contracts/operation-context'
 import { projectSupplierSummaryResponse, readSupplierSummarySelection, SUPPLIER_SUMMARY_PROJECTION } from './supplier-summary'
 import { CATEGORY_PROJECTION, categoryOperation, categoryResourceId, projectCategoryResponse, readCategoryOperation } from '@/lib/category/operation-contract'
-import { MARKET_PREVIEW_PROJECTION, marketPreviewResourceId, readMarketPreviewSelection, projectMarketPreviewResponse } from './market-preview'
+import { MARKET_PREVIEW_PROJECTION, MARKET_ANALYTICS_PROJECTION, marketPreviewResourceId, marketAnalyticsResourceId,
+  readMarketPreviewSelection, projectMarketPreviewResponse, projectMarketAnalyticsResponse, type MarketReadRepresentation } from './market-preview'
 
 type QueryClient = Pick<Prisma.TransactionClient, '$queryRawUnsafe' | '$executeRawUnsafe'>
 
@@ -87,18 +88,21 @@ export function createSg2PrivateBenchmarkHost(options: Sg2PrivateHostOptions & {
 }
 
 /** Prepared global market data; a selection grant never supplies this right. */
-export function createSg2PrivateMarketHost(options:Sg2PrivateHostOptions & {module:{id:'benchmark';schemaDigest:string;auditSchemaDigest:string}}) {
+export function createSg2PrivateMarketHost(options:Sg2PrivateHostOptions & {module:{id:'benchmark';schemaDigest:string;auditSchemaDigest:string}}, representation:MarketReadRepresentation='preview') {
+  if (!['preview','analytics'].includes(representation)) throw new TypeError('Explicit stored market representation required')
   const environment=options.application.environment
+  const projection=representation==='preview'?MARKET_PREVIEW_PROJECTION:MARKET_ANALYTICS_PROJECTION
+  const resourceId=representation==='preview'?marketPreviewResourceId:marketAnalyticsResourceId
   return createPrivateOperationHost<Prisma.TransactionClient>({
     ...hostBase(options,'benchmark',['knowledge.read']),
     readResources:async({request})=>{
       const selected=readMarketPreviewSelection(request.payload)
-      if(request.resourceId!==marketPreviewResourceId(selected.seriesName))throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      if(request.resourceId!==resourceId(selected.seriesName))throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return{resource:{id:request.resourceId,type:'market_knowledge',dataClass:'SHARED_KNOWLEDGE',
         environment,ownerOrganisationId:null,ownerUserId:null,approvedSharedProjection:true,
-        version:MARKET_PREVIEW_PROJECTION,projectionVersion:MARKET_PREVIEW_PROJECTION}}
+        version:projection,projectionVersion:projection}}
     },
-    projectOutput:projectMarketPreviewResponse,
+    projectOutput:representation==='preview'?projectMarketPreviewResponse:projectMarketAnalyticsResponse,
   })
 }
 

@@ -629,20 +629,27 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       const sourcePrisma=new PrismaClient({datasources:{db:{url:sourceUrl.toString()}}})
       try{
         const{createStoredMarketHistoryReader}=await import('../lib/market-data/stored-read.ts')
-        const{getBenchmarkPreview}=await import('../lib/benchmark/service.ts')
+        const{getBenchmarkPreview,getBenchmarkAnalyticsSeries}=await import('../lib/benchmark/service.ts')
         const{createOperationBenchmarkPreviewHandler}=await import('../lib/benchmark/preview-handlers.ts')
+        const{createOperationBenchmarkAnalyticsHandler}=await import('../lib/benchmark/analytics-handlers.ts')
         const marketHost=createSg2PrivateMarketHost({...configuration,application:{...configuration.application,operations:['knowledge.read'],features:['market']}})
+        const analyticsHost=createSg2PrivateMarketHost({...configuration,application:{...configuration.application,operations:['knowledge.read'],features:['market']}},'analytics')
         const readHistory=createStoredMarketHistoryReader(sourcePrisma,{projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:sourceRole,schemaDigest:sourceDigest})
         let sourceReads=0
         const routes=createOperationBenchmarkPreviewHandler(marketHost,A,async selection=>{sourceReads++;return getBenchmarkPreview(selection.seriesName,selection.range,readHistory)})
         const input=(org=A,user=U,suffix='')=>new NextRequest(`${ORIGIN}/api/benchmark/preview?seriesName=stored_series&range=ALL&organisationId=${org}${suffix}`,{headers:{authorization:`Bearer external-${user}`}})
+        let analyticsReads=0
+        const analyticsRoutes=createOperationBenchmarkAnalyticsHandler(analyticsHost,A,async selection=>{analyticsReads++;return getBenchmarkAnalyticsSeries(selection.seriesName,selection.range,readHistory)})
+        const analyticsInput=(org=A,user=U)=>new NextRequest(`${ORIGIN}/api/benchmark/analytics-series?seriesId=stored_series&range=ALL&organisationId=${org}`,{headers:{authorization:`Bearer external-${user}`}})
         const providerBefore=providerCalls
         await t.test('benchmark selection permissions alone do not authorize market source reads',async()=>{
           assert.equal((await routes(input())).status,403);assert.equal(sourceReads,0)
+          assert.equal((await analyticsRoutes(analyticsInput())).status,403);assert.equal(analyticsReads,0)
         })
         for(const org of [A,B])await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'ALLOW','knowledge.read','market')",[randomUUID(),org,U])
         await t.test('current market permission still requires its product feature',async()=>{
           assert.equal((await routes(input())).status,403);assert.equal(sourceReads,0)
+          assert.equal((await analyticsRoutes(analyticsInput())).status,403);assert.equal(analyticsReads,0)
         })
         await owner.query("UPDATE profitia_access.product_grants SET features=ARRAY['benchmark','category','market'] WHERE product='SPENDGURU'")
         await t.test('two authorized organisations read the same shared facts with separate actor/audit scope',async()=>{
@@ -668,6 +675,56 @@ test('SG2 Prisma host composes the accepted access store with existing selection
           try{assert.equal((await routes(input())).status,503)}finally{await owner.query('DROP TRIGGER reject_market_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_market_outcome()')}
           const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='knowledge.read' ORDER BY event_id DESC LIMIT 2")).rows.map(x=>x.event)
           assert.deepEqual(events.map(x=>x.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+        })
+        await t.test('alternate analytics API reads the same shared source for two current organisations with separate audit scope',async()=>{
+          const values=[]
+          for(const org of [A,B]){
+            const response=await analyticsRoutes(analyticsInput(org));assert.equal(response.status,200)
+            assert.equal(response.headers.get('cache-control'),'private, no-store')
+            const data=await response.json();assert.equal(data.latestValue,0);assert.equal(data.unit,'UNSUPPORTED_UNIT')
+            assert.deepEqual(data.historical.map(point=>point.value),[10,0,null])
+            for(const field of ['organisationId','userId','changeMetrics'])assert.equal(field in data,false)
+            values.push(data)
+          }
+          assert.deepEqual(values[0],values[1]);assert.equal(analyticsReads,2)
+          const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='knowledge.read' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+          assert.deepEqual(events.map(event=>event.organisationId),[B,A])
+          assert(events.every(event=>event.actorId===U&&event.dataClass==='SHARED_KNOWLEDGE'&&event.ownerOrganisationId===null))
+        })
+        await t.test('alternate analytics refuses foreign membership, forged identity, current suspension, DENY and revoked product before reading',async()=>{
+          const before=analyticsReads
+          assert.equal((await analyticsRoutes(analyticsInput(A,V))).status,403)
+          assert.equal((await analyticsRoutes(analyticsInput('33333333-3333-4333-8333-333333333333'))).status,403)
+          assert.equal((await analyticsRoutes(new NextRequest(analyticsInput().url,{headers:{'x-clerk-user-id':U,'x-clerk-org-id':A}}))).status,401)
+          await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U])
+          try{assert.equal((await analyticsRoutes(analyticsInput())).status,403)}finally{await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U])}
+          const deny=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','knowledge.read','market')",[deny,A,U])
+          try{assert.equal((await analyticsRoutes(analyticsInput())).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[deny])}
+          await owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='spendguru' AND organisation_id=$1 AND product='SPENDGURU'",[A])
+          try{assert.equal((await analyticsRoutes(analyticsInput())).status,403)}finally{await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id='spendguru' AND organisation_id=$1 AND product='SPENDGURU'",[A])}
+          assert.equal(analyticsReads,before)
+        })
+        await t.test('a preview host cannot be borrowed for the alternate analytics representation',async()=>{
+          let calls=0
+          const wrong=createOperationBenchmarkAnalyticsHandler(marketHost,A,async()=>{calls++;return{}})
+          assert.equal((await wrong(analyticsInput())).status,403);assert.equal(calls,0)
+        })
+        await t.test('alternate analytics refuses a mismatched source receipt without fallback',async()=>{
+          await owner.query("UPDATE profitia_market_read.installation SET branch_id='foreign-branch'")
+          try{assert.equal((await analyticsRoutes(analyticsInput())).status,503)}finally{await owner.query("UPDATE profitia_market_read.installation SET branch_id='isolated-source-branch'")}
+        })
+        await t.test('alternate analytics withholds private fields added to otherwise valid shared output',async()=>{
+          const tainted=createOperationBenchmarkAnalyticsHandler(analyticsHost,A,async selection=>({
+            ...await getBenchmarkAnalyticsSeries(selection.seriesName,selection.range,readHistory),requesterNote:'synthetic_private_note',
+          }))
+          const response=await tainted(analyticsInput());assert.equal(response.status,403)
+          assert(!(await response.text()).includes('synthetic_private_note'))
+        })
+        await t.test('alternate analytics withholds valid data when durable OUTCOME fails and records independent FAILURE',async()=>{
+          await owner.query("CREATE FUNCTION profitia_access.reject_analytics_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='knowledge.read' THEN RAISE EXCEPTION 'synthetic analytics audit outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_analytics_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_analytics_outcome()")
+          try{assert.equal((await analyticsRoutes(analyticsInput())).status,503)}finally{await owner.query('DROP TRIGGER reject_analytics_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_analytics_outcome()')}
+          const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='knowledge.read' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+          assert.deepEqual(events.map(event=>event.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
         })
         assert.equal(providerCalls,providerBefore)
       }finally{await sourcePrisma.$disconnect()}

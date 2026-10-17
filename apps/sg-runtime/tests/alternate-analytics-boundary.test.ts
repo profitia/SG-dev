@@ -72,7 +72,9 @@ for (const provider of ['clerk', 'unknown', '']) {
     try {
       process.env.PROFITIA_AUTH_PROVIDER = provider
       const response = await GET(request(cookie()))
-      assert.equal(response.status, 401); assertPrivate(response); assert.equal(fetches, 0)
+      // The adopted route distinguishes unavailable server configuration from
+      // the 401 returned by its configured authenticator for an invalid user.
+      assert.equal(response.status, 503); assertPrivate(response); assert.equal(fetches, 0)
     } finally { process.env.PROFITIA_AUTH_PROVIDER = prior }
   })
 }
