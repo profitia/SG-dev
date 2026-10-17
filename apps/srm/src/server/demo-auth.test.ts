@@ -39,3 +39,37 @@ test("API session check rejects missing and invalid cookies", async () => {
   const token = await createDemoSession(sessionSecret);
   assert.equal(await hasDemoSession(new Request("https://example.test/api/xray/search", { headers: { cookie: `other=1; ${SRM_SESSION_COOKIE}=${token}` } }), env), true);
 });
+
+test("explicit individual or invalid provider rejects a valid old demo cookie and disables demo login", async () => {
+  const token = await createDemoSession(sessionSecret);
+  const request = new Request("https://example.test/api/xray/search", { headers: {
+    cookie: `${SRM_SESSION_COOKIE}=${token}`,
+    "x-clerk-user-id": "forged-user", "x-clerk-org-id": "forged-org", "x-clerk-org-role": "owner",
+  } });
+  const env = { SRM_DEMO_PASSWORD: password, SRM_DEMO_SESSION_SECRET: sessionSecret };
+  assert.equal(await hasDemoSession(request, { ...env, PROFITIA_AUTH_PROVIDER: "legacy_demo" }), true);
+  for (const provider of ["clerk", "clerkk", "", "false", "unknown"]) {
+    const configured = { ...env, PROFITIA_AUTH_PROVIDER: provider };
+    assert.equal(demoAuthReady(configured), false);
+    assert.equal(await hasDemoSession(request, configured), false);
+  }
+});
+
+test("default runtime environment preserves the provider discriminator for every demo consumer", async () => {
+  const before = { provider: process.env.PROFITIA_AUTH_PROVIDER, password: process.env.SRM_DEMO_PASSWORD, secret: process.env.SRM_DEMO_SESSION_SECRET };
+  try {
+    process.env.SRM_DEMO_PASSWORD = password;
+    process.env.SRM_DEMO_SESSION_SECRET = sessionSecret;
+    const token = await createDemoSession(sessionSecret);
+    const request = new Request("https://example.test/api/xray/kys/pdf", { headers: { cookie: `${SRM_SESSION_COOKIE}=${token}` } });
+    process.env.PROFITIA_AUTH_PROVIDER = "legacy_demo";
+    assert.equal(await hasDemoSession(request), true);
+    process.env.PROFITIA_AUTH_PROVIDER = "clerk";
+    assert.equal(demoAuthReady(), false);
+    assert.equal(await hasDemoSession(request), false);
+  } finally {
+    for (const [key, value] of Object.entries({ PROFITIA_AUTH_PROVIDER: before.provider, SRM_DEMO_PASSWORD: before.password, SRM_DEMO_SESSION_SECRET: before.secret })) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
+});

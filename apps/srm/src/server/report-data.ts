@@ -283,7 +283,7 @@ export function reportDataHandler(read = readReportData, env: Readonly<Record<st
     };
     if (operationBoundary) return operationBoundary(request, project);
     if (!productEnvironmentReady(env)) return respond({ error: "Środowisko niedostępne." }, 404);
-    if (!await hasDemoSession(request, { SRM_DEMO_PASSWORD: env.SRM_DEMO_PASSWORD, SRM_DEMO_SESSION_SECRET: env.SRM_DEMO_SESSION_SECRET })) return respond({ error: "Wymagane logowanie." }, 401);
+    if (!await hasDemoSession(request, env)) return respond({ error: "Wymagane logowanie." }, 401);
     if (!isSameOriginRequest(request)) return respond({ error: "Nieprawidłowe żądanie." }, 403);
     const organizationId = productOrganizationId(env);
     if (!organizationId) return respond({ error: "Środowisko SRM nie jest skonfigurowane." }, 503);
