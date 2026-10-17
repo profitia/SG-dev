@@ -11,6 +11,10 @@ export const REPOSITORY = 'profitia/SG-dev'
 export const WORKFLOW = '.github/workflows/platform-contracts-ci.yml'
 export const ARTIFACT = 'sg2-controlled-operation-proof'
 export const PRIVATE_PACKAGES = Object.freeze(['@profitia/advisory-widget', '@profitia/cic-core', '@profitia/cic-procurement'])
+export const LOCAL_PACKAGES = Object.freeze({
+  '@profitia/platform-contracts': '../../packages/platform-contracts',
+  '@profitia/srm-xray': '../../packages/srm-xray',
+})
 const npmrc = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const shaPattern = /^[a-f0-9]{40}$/
 const fail = code => {throw new Error(code)}
@@ -62,21 +66,25 @@ export function assertPackagePolicy(candidate, authority, configuration) {
     if (entry.name?.startsWith('@profitia/') && entry.name !== privateName) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
     for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
       for (const [name, spec] of Object.entries(entry[section] ?? {})) {
-        if ((name.startsWith('@profitia/') && ![...PRIVATE_PACKAGES, '@profitia/platform-contracts'].includes(name)) || String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
+        if ((name.startsWith('@profitia/') && !PRIVATE_PACKAGES.includes(name) && !Object.hasOwn(LOCAL_PACKAGES, name)) || String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
+        if (Object.hasOwn(LOCAL_PACKAGES, name) && spec !== `file:${LOCAL_PACKAGES[name]}`) fail('LOCAL_DEPENDENCY_REJECTED')
       }
     }
     if (privateName.startsWith('@profitia/')) {
-      if (!PRIVATE_PACKAGES.includes(privateName) && privateName !== '@profitia/platform-contracts') fail('PRIVATE_PACKAGE_REJECTED')
+      if (!PRIVATE_PACKAGES.includes(privateName) && !Object.hasOwn(LOCAL_PACKAGES, privateName)) fail('PRIVATE_PACKAGE_REJECTED')
       if (PRIVATE_PACKAGES.includes(privateName)) {
         if (key !== `node_modules/${privateName}`) fail('NESTED_PRIVATE_PACKAGE_REJECTED')
         const accepted = authority.packages?.[key]
         if (!accepted?.integrity?.startsWith('sha512-') || entry.version !== accepted.version || entry.integrity !== accepted.integrity || entry.resolved !== accepted.resolved || entry.link) fail('PRIVATE_PACKAGE_PIN_MISMATCH')
         found.add(privateName)
       }
+      if (Object.hasOwn(LOCAL_PACKAGES, privateName)) {
+        if (key !== `node_modules/${privateName}` || entry.link || ![LOCAL_PACKAGES[privateName], `file:${LOCAL_PACKAGES[privateName]}`].includes(entry.resolved)) fail('LOCAL_DEPENDENCY_REJECTED')
+      }
     }
     if (entry.resolved) {
       if (!entry.resolved.includes('://')) {
-        if (!/^(?:file:)?\.\.\/\.\.\/packages\/[a-z0-9-]+$/.test(entry.resolved)) fail('LOCAL_DEPENDENCY_REJECTED')
+        if (!Object.hasOwn(LOCAL_PACKAGES, privateName) || ![LOCAL_PACKAGES[privateName], `file:${LOCAL_PACKAGES[privateName]}`].includes(entry.resolved)) fail('LOCAL_DEPENDENCY_REJECTED')
       } else {
         const u = new URL(entry.resolved)
         if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash || !['registry.npmjs.org', 'npm.pkg.github.com'].includes(u.hostname)) fail('PACKAGE_REGISTRY_REJECTED')
@@ -92,9 +100,31 @@ export function assertManifestPolicy(candidate, authority) {
   for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
     for (const [name, spec] of Object.entries(candidate[section] ?? {})) {
       if (String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
-      if (name === '@profitia/platform-contracts' && spec === 'file:../../packages/platform-contracts') continue
+      if (Object.hasOwn(LOCAL_PACKAGES, name) && spec === `file:${LOCAL_PACKAGES[name]}`) continue
       if (name.startsWith('@profitia/') && (!PRIVATE_PACKAGES.includes(name) || spec !== authority[section]?.[name])) fail('PRIVATE_MANIFEST_PIN_MISMATCH')
+      if (/^(?:file:|link:|workspace:)/.test(String(spec))) fail('LOCAL_DEPENDENCY_REJECTED')
     }
+  }
+}
+
+export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot()) {
+  const canonicalRoot = fs.realpathSync(root)
+  const app = path.join(canonicalRoot, 'apps/sg-runtime')
+  if (fs.realpathSync(app) !== app) fail('LOCAL_DEPENDENCY_REJECTED')
+  for (const [key, entry] of Object.entries(candidateLock.packages ?? {})) {
+    if (!entry.resolved || entry.resolved.includes('://')) continue
+    const name = key.split('node_modules/').at(-1)
+    if (!Object.hasOwn(LOCAL_PACKAGES, name) || ![LOCAL_PACKAGES[name], `file:${LOCAL_PACKAGES[name]}`].includes(entry.resolved)) fail('LOCAL_DEPENDENCY_REJECTED')
+    const expected = path.resolve(app, LOCAL_PACKAGES[name])
+    if (!expected.startsWith(canonicalRoot + path.sep) || fs.realpathSync(expected) !== expected) fail('LOCAL_DEPENDENCY_REJECTED')
+    const manifestPath = path.join(expected, 'package.json')
+    if (fs.realpathSync(manifestPath) !== manifestPath) fail('LOCAL_DEPENDENCY_REJECTED')
+    const manifest = readJson(manifestPath)
+    if (manifest.name !== name) fail('LOCAL_PACKAGE_NAME_MISMATCH')
+    if (typeof manifest.version !== 'string' || manifest.version !== entry.version) fail('LOCAL_PACKAGE_VERSION_MISMATCH')
+    const authorityFile = path.resolve(authorityRoot, 'apps/sg-runtime', LOCAL_PACKAGES[name], 'package.json')
+    if (!fs.existsSync(authorityFile)) fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED')
+    assertManifestPolicy(manifest, readJson(authorityFile))
   }
 }
 
@@ -158,14 +188,7 @@ function checkCandidate() {
   const candidateLock = readJson(path.join(app, 'package-lock.json'))
   assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))
   assertManifestPolicy(readJson(path.join(app, 'package.json')), readJson(path.join(controlRoot(), 'apps/sg-runtime/package.json')))
-  for (const entry of Object.values(candidateLock.packages)) {
-    if (!entry.resolved?.match(/^(?:file:)?\.\.\/\.\.\/packages\/[a-z0-9-]+$/)) continue
-    const relative = entry.resolved.replace(/^file:/, '')
-    const local = fs.realpathSync(path.resolve(app, relative))
-    if (!local.startsWith(root + path.sep)) fail('LOCAL_DEPENDENCY_REJECTED')
-    const authorityFile = path.resolve(controlRoot(), 'apps/sg-runtime', relative, 'package.json')
-    assertManifestPolicy(readJson(path.join(local, 'package.json')), fs.existsSync(authorityFile) ? readJson(authorityFile) : {})
-  }
+  assertLocalPackageSources(root, candidateLock)
   const digest = createHash('sha256')
   for (const name of ['operation-context.mjs', 'operation-context.d.mts']) digest.update(fs.readFileSync(path.join(root, 'packages/platform-contracts/src', name)))
   if (digest.digest('hex') !== state.receipt.contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
