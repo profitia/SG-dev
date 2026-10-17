@@ -1,11 +1,11 @@
 {
-  "schemaVersion": "1.4",
+  "schemaVersion": "1.5",
   "registryId": "platform-private-resource-onboarding",
-  "status": "PRIVATE_SG2_BUSINESS_PREPARED_NOT_ACTIVATED",
-  "verifiedAt": "2026-10-17T12:18:41.832Z",
+  "status": "PRIVATE_SG2_SRM_BUSINESS_PREPARED_NOT_ACTIVATED",
+  "verifiedAt": "2026-10-17T13:25:47.122Z",
   "owner": "Architecture Platform",
   "sourceAuthority": "profitia/SG-dev/main",
-  "taskId": "SG2-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017",
+  "taskId": "SRM-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017",
   "resourceOnboardingTaskId": "ARCHITECTURE-E1-PRIVATE-RESOURCE-ONBOARDING-20261017",
   "targetEnvironment": "development",
   "purpose": [
@@ -45,9 +45,9 @@
       "suspendTimeoutSeconds": 300
     },
     "historyRetentionSeconds": 86400,
-    "userTableCount": 21,
+    "userTableCount": 43,
     "authSchemaCount": 0,
-    "schemaStatus": "SG2_BUSINESS_PREPARED_APPLICATIONS_DISABLED",
+    "schemaStatus": "SG2_SRM_BUSINESS_PREPARED_APPLICATIONS_DISABLED",
     "schemaName": "profitia_access",
     "schemaVersion": "1.0.0",
     "schemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
@@ -72,7 +72,8 @@
     ],
     "additionalSchemaNames": [
       "profitia_modules",
-      "sg_runtime_benchmarks"
+      "sg_runtime_benchmarks",
+      "srm"
     ]
   },
   "resourceOnboardingMutation": {
@@ -215,5 +216,38 @@
     "directoryDigestUnchanged": "3a88763edc6c949b61638b78e3463e3c55a0a7fc35edc435e3691fe404831edc",
     "metadata": "apps/sg-runtime/deployment/private-business-preparation.json",
     "evidence": "Canon/evidence/2026-10-17-sg2-private-business-initialization.md"
+  },
+  "previousSg2BusinessObservation": {
+    "status": "PRIVATE_SG2_BUSINESS_PREPARED_NOT_ACTIVATED",
+    "taskId": "SG2-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017",
+    "verifiedAt": "2026-10-17T12:18:41.832Z"
+  },
+  "srmBusinessStoreInitialization": {
+    "taskId": "SRM-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017",
+    "status": "PREPARED_NOT_ACTIVATED",
+    "verifiedAt": "2026-10-17T13:25:47.122Z",
+    "sourceSha": "7e9def92fd367137258696aae211ac4e6554e7fd",
+    "schemaName": "srm",
+    "schemaVersion": "1.0.0",
+    "schemaDigest": "3d8367474454eb15a8171c28bf99f80f51299b58746efa8dfb4f65289de57dcd",
+    "boundaryDigest": "19220c7bb31365ed058bc55a99bca2aa4a9f38b7f8ca2a2ddde52ec71ed16ed4",
+    "controlledForceRlsTablesTotal": 43,
+    "businessTables": 22,
+    "canonicalMigrationCount": 18,
+    "businessRows": 0,
+    "applicationStatus": "DISABLED",
+    "runtimeRole": "srm_private_development_runtime",
+    "legacyPolicyRole": "srm_app_runtime",
+    "legacyPolicyRoleNoLoginOrPrivateConnect": true,
+    "sg2BusinessPrivileges": false,
+    "kysAdopted": false,
+    "liveProductBindings": [],
+    "recoverySnapshotId": "snap-lingering-mouse-b9mbogk0",
+    "recoverySnapshotExpiresAt": "2026-10-24T13:18:42Z",
+    "restoredRehearsalBranchId": "br-fragrant-shadow-b9u4sf9l",
+    "directoryDigestAlgorithm": "SHA256_UTF8_JSONB_OBJECT_ORDERED_FULL_ROW_ARRAYS_V1",
+    "directoryDigestUnchanged": "b27ee6c26a1af9cda995d46f17b12a8f275101c113de41b4c2db0b08468031c9",
+    "metadata": "apps/srm/deployment/private-business-preparation.json",
+    "evidence": "Canon/evidence/2026-10-17-srm-private-business-initialization.md"
   }
 }
