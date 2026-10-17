@@ -7,6 +7,9 @@ DO $guard$ BEGIN
     AND schema_digest='356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2') THEN
     RAISE EXCEPTION 'Verified private access schema required';
   END IF;
+  IF NOT EXISTS(SELECT 1 FROM profitia_modules.installation WHERE singleton AND schema_version='1.0.0' AND schema_digest='c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed') OR NOT EXISTS(SELECT 1 FROM profitia_modules.audit_installation WHERE singleton AND envelope_version='1.0.0' AND schema_digest='af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac') THEN
+    RAISE EXCEPTION 'Verified module and audit schemas required';
+  END IF;
 END $guard$;
 
 -- Existing permissive policies can otherwise admit the old srm.organization_id
@@ -19,7 +22,7 @@ DO $private$ DECLARE table_name text; predicate text; BEGIN
     'msr_sources','msr_projections'] LOOP
     EXECUTE format('ALTER TABLE srm.%I ENABLE ROW LEVEL SECURITY',table_name);
     EXECUTE format('ALTER TABLE srm.%I FORCE ROW LEVEL SECURITY',table_name);
-    predicate := format('profitia_access.scope_allows(''srm'',%I)',
+    predicate := format('profitia_modules.scope_allows(''supplier_report'',%I)',
       CASE WHEN table_name='organizations' THEN 'id' ELSE 'organization_id' END);
     EXECUTE format('CREATE POLICY private_operation_admission ON srm.%I AS PERMISSIVE FOR ALL TO PUBLIC USING (%s) WITH CHECK (%s)',table_name,predicate,predicate);
     EXECUTE format('CREATE POLICY private_operation_fence ON srm.%I AS RESTRICTIVE FOR ALL TO PUBLIC USING (%s) WITH CHECK (%s)',table_name,predicate,predicate);
@@ -30,7 +33,7 @@ END $private$;
 -- not turn a human report projection into a global catalogue writer. Ingestion,
 -- source classification and its separate service grants require their own unit.
 DO $shared$ DECLARE table_name text; predicate text :=
-  'profitia_access.scope_allows(''srm'',nullif(current_setting(''profitia.organisation_id'',true),'''')::uuid)';
+  'profitia_modules.scope_allows(''supplier_report'',nullif(current_setting(''profitia.organisation_id'',true),'''')::uuid)';
 BEGIN
   FOREACH table_name IN ARRAY ARRAY['catalog_companies','catalog_financial_facts','catalog_financial_indicators'] LOOP
     EXECUTE format('ALTER TABLE srm.%I ENABLE ROW LEVEL SECURITY',table_name);
