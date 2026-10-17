@@ -31,11 +31,14 @@ test('access schema and real transaction boundaries with ordinary runtime logins
   const pools=[]
   try {
     if(!(await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount) await root.query(`CREATE DATABASE ${DATABASE}`)
+    // Shared only by disposable fixture setup; role names are cluster-wide.
+    await root.query("BEGIN;SET LOCAL lock_timeout='5s';SELECT pg_advisory_xact_lock(170001,20261017)")
     for(const [role,login] of [['profitia_access_owner',false],...Object.values(ROLES).map(r=>[r,true])]) {
       if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount) await root.query(`CREATE ROLE ${role} ${login?'LOGIN':'NOLOGIN'} NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS${login?" PASSWORD 'isolated_ci_only'":''}`)
       const r=(await root.query('SELECT rolcanlogin,rolinherit,rolsuper,rolcreatedb,rolcreaterole,rolbypassrls FROM pg_roles WHERE rolname=$1',[role])).rows[0]
       assert.deepEqual(r,{rolcanlogin:login,rolinherit:false,rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolbypassrls:false})
     }
+    await root.query('COMMIT')
     await root.query(`GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
     owner=new pg.Client({connectionString:dbUrl.toString()});await owner.connect()
     await owner.query('SET ROLE profitia_access_owner')

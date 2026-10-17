@@ -17,11 +17,13 @@ test('initial directory metadata preserves isolation and immutable bootstrap pro
   let owner,runtime
   try{
     if(!(await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount)await root.query(`CREATE DATABASE ${DATABASE}`)
+    await root.query("BEGIN;SET LOCAL lock_timeout='5s';SELECT pg_advisory_xact_lock(170001,20261017)")
     for(const [name,login]of [['profitia_access_owner',false],[ROLE,true]]){
       if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[name])).rowCount)await root.query(`CREATE ROLE ${name} ${login?"LOGIN PASSWORD 'isolated_ci_only'":'NOLOGIN'} NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`)
       const flags=(await root.query('SELECT rolcanlogin,rolinherit,rolsuper,rolbypassrls,rolcreatedb,rolcreaterole FROM pg_roles WHERE rolname=$1',[name])).rows[0]
       assert.deepEqual(flags,{rolcanlogin:login,rolinherit:false,rolsuper:false,rolbypassrls:false,rolcreatedb:false,rolcreaterole:false})
     }
+    await root.query('COMMIT')
     const url=new URL(rootUrl);url.pathname=`/${DATABASE}`
     owner=new pg.Client({connectionString:url.toString()});await owner.connect()
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db,DATABASE)
