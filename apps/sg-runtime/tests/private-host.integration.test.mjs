@@ -9,12 +9,13 @@ import { accessSchemaUrl, accessStoreSourceDigest, createAccessStore, moduleAudi
 import { moduleSchemaUrl, moduleSchemaDigest } from '@profitia/platform-contracts/module-scope'
 import { identitySourceDigest } from '@profitia/platform-contracts/identity-provider'
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
-import { OPERATION_CONTRACT } from '@profitia/platform-contracts/operation-context'
+import { OPERATION_CONTRACT, OperationDenied } from '@profitia/platform-contracts/operation-context'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
-import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost } from '../lib/platform/private-host.ts'
+import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost } from '../lib/platform/private-host.ts'
 import { createOperationSupplierSummaryHandler } from '../lib/platform/supplier-summary-runtime.ts'
 import { SUPPLIER_SUMMARY_HEADERS } from '../lib/platform/supplier-summary.ts'
 import { executiveSummary } from '@profitia/srm-xray/executive-summary-rules'
+import { CATEGORY_HEADERS } from '../lib/category/operation-contract.ts'
 const pg = createRequire(new URL('../../architecture-lab/package.json', import.meta.url))('pg')
 const DATABASE = 'sg2_private_host_test', ROLE = 'sg2_private_host_runtime'
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222'
@@ -56,7 +57,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     owner = new pg.Client({ connectionString: dbUrl.toString() }); await owner.connect()
     // Only this explicitly named, guarded LOOPBACK database may be reset.
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db, DATABASE)
-    await owner.query('DROP SCHEMA IF EXISTS profitia_modules CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE; DROP SCHEMA IF EXISTS sg_runtime_benchmarks CASCADE')
+    await owner.query('DROP SCHEMA IF EXISTS profitia_category CASCADE; DROP SCHEMA IF EXISTS profitia_modules CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE; DROP SCHEMA IF EXISTS sg_runtime_benchmarks CASCADE')
     await owner.query(`GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
     await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
     await owner.query(schema)
@@ -86,15 +87,34 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     const prismaOwnerUrl = new URL(dbUrl); prismaOwnerUrl.searchParams.set('schema', 'sg_runtime_benchmarks')
     const businessSql = fs.readFileSync(new URL('../prisma/private-store/001-business-schema.sql', import.meta.url), 'utf8')
     const boundarySql = fs.readFileSync(new URL('../prisma/security/benchmark-private-boundaries.sql', import.meta.url), 'utf8')
+    const categorySql = fs.readFileSync(new URL('../prisma/private-store/002-category-boundaries.sql', import.meta.url), 'utf8')
+    const categoryDigest = createHash('sha256').update(categorySql).digest('hex')
+    await t.test('the exact category migration rolls back all added DDL on forced failure before clean reapplication', async()=>{
+      let forced=false
+      await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
+      try{
+        await owner.query(businessSql);await owner.query(boundarySql);await owner.query(categorySql)
+        await owner.query("INSERT INTO profitia_category.installation(schema_version,boundary_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_ROLLBACK_REHEARSAL')",[categoryDigest])
+        forced=true
+        await owner.query("DO $$ BEGIN RAISE EXCEPTION 'synthetic_category_migration_failure'; END $$")
+        assert.fail('Forced migration failure must not commit')
+      }catch(error){assert.equal(forced,true);assert.match(error.message,/synthetic_category_migration_failure/)}
+      finally{await owner.query('ROLLBACK')}
+      assert.deepEqual((await owner.query("SELECT to_regnamespace('sg_runtime_benchmarks')::text AS business,to_regnamespace('profitia_category')::text AS category")).rows,[{business:null,category:null}])
+      assert.equal((await owner.query('SELECT count(*)::int AS n FROM profitia_access.accounts')).rows[0].n,2)
+    })
     // Test the exact deployable source, under the controlled owner, atomically.
     await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
     try {
       await owner.query(businessSql)
       await owner.query(boundarySql)
+      await owner.query(categorySql)
+      await owner.query("INSERT INTO profitia_category.installation(schema_version,boundary_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_NOT_A_RELEASE')", [categoryDigest])
       await owner.query("INSERT INTO sg_runtime_benchmarks.private_installation(schema_version,schema_digest,boundary_digest,source_ref) VALUES('1.0.0',$1,$2,'SYNTHETIC_NOT_A_RELEASE')", [createHash('sha256').update(businessSql).digest('hex'), createHash('sha256').update(boundarySql).digest('hex')])
       await owner.query('COMMIT')
     } catch (error) { await owner.query('ROLLBACK'); throw error }
     await owner.query(`GRANT USAGE ON SCHEMA sg_runtime_benchmarks TO ${ROLE}; GRANT SELECT,INSERT,UPDATE ON sg_runtime_benchmarks."BusinessBenchmark",sg_runtime_benchmarks."BenchmarkProviderMapping",sg_runtime_benchmarks."OrganizationBenchmarkSelection" TO ${ROLE}`)
+    await owner.query(`GRANT USAGE ON SCHEMA profitia_category TO ${ROLE}; GRANT SELECT ON profitia_category.installation TO ${ROLE}; GRANT SELECT,INSERT,UPDATE,DELETE ON sg_runtime_benchmarks."Category",sg_runtime_benchmarks."CategoryCostComponent" TO ${ROLE}`)
     const runtimeUrl = new URL(prismaOwnerUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'; runtimeUrl.searchParams.set('connection_limit', '3')
     const auditUrl = new URL(runtimeUrl); auditUrl.searchParams.set('connection_limit', '1')
     prisma = new PrismaClient({ datasources: { db: { url: runtimeUrl.toString() } } })
@@ -408,6 +428,186 @@ test('SG2 Prisma host composes the accepted access store with existing selection
         assert.deepEqual(await snapshot(), beforeBusiness)
       })
     })
+
+    await t.test('private category APIs preserve business behavior inside current ordinary Prisma transactions', async t => {
+      // Match the existing real-host fixture: initialise synthetic runtime env
+      // before importing legacy middleware, which snapshots server settings.
+      const { createOperationCategoryCollectionHandlers, createOperationCategoryDetailHandlers } = await import('../lib/category/operation-handlers.ts')
+      const { createRuntimeCategoryCollectionHandlers, createRuntimeCategoryDetailHandlers } = await import('../lib/category/runtime-handlers.ts')
+      const beforeProvider = providerCalls
+      let businessCalls = 0
+      prisma.$use(async (parameters, next) => { if (['Category','CategoryCostComponent','BusinessBenchmark','BenchmarkProviderMapping'].includes(parameters.model)) businessCalls++; return next(parameters) })
+      const categoryConfig = { ...configuration, application: { ...configuration.application,
+        configurationVersion: 'synthetic-private-category', operations: ['category.read','category.write'], features: ['category'] },
+        module: { ...configuration.module, id: 'category' }, categoryBoundaryDigest: categoryDigest }
+      const categoryHost = createSg2PrivateCategoryHost(categoryConfig)
+      const runtime = () => ({ provider: 'clerk', executor: host, defaultOrganisationId: A, category: { executor: categoryHost } })
+      const collection = createRuntimeCategoryCollectionHandlers(runtime), detail = createRuntimeCategoryDetailHandlers(runtime)
+      const input = (method = 'GET', org = A, user = U, body, extra = {}) => new NextRequest(`${ORIGIN}/api/category?organisationId=${org}`, {
+        method, headers: { authorization: `Bearer external-${user}`, 'content-type': 'application/json', Cookie: 'untrusted', 'x-clerk-org-id': B,
+          'x-clerk-user-id': V, 'x-clerk-org-role': 'owner', ...extra }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+      const value = (name, components = []) => ({ name, components })
+      const part = (businessBenchmarkId, weightPercent) => ({ name: 'Synthetic source component', businessBenchmarkId, weightPercent })
+      const reference = async (org, id, primary = true) => {
+        await owner.query('INSERT INTO sg_runtime_benchmarks."BusinessBenchmark"(id,"organizationId","displayName","createdByUserId","createdAt","updatedAt") VALUES($1,$2,$3,$4,now(),now())', [id,org,`Reference for ${org===A?'A':'B'}`,U])
+        if (primary) await owner.query('INSERT INTO sg_runtime_benchmarks."BenchmarkProviderMapping"(id,"businessBenchmarkId","organizationId","providerCode","providerDisplayName","providerSeriesId","isPrimary","createdAt","updatedAt") VALUES($1,$2,$3,\'MACROBOND\',\'Stored category reference\',$2,true,now(),now())',[randomUUID(),id,org])
+      }
+      for (const id of ['category-ref-a1','category-ref-a2','category-ref-unused']) await reference(A,id)
+      await reference(B,'category-ref-b1'); await reference(A,'category-ref-no-primary',false)
+      const snapshot = async () => {
+        const out = {}
+        for (const table of ['Category','CategoryCostComponent']) out[table] = (await owner.query(`SELECT to_jsonb(t) AS row FROM sg_runtime_benchmarks."${table}" t ORDER BY to_jsonb(t)::text`)).rows
+        return out
+      }
+      const scoped = (payload, operation = 'category.read', org = A, user = U) => ({ contractId: OPERATION_CONTRACT.id,
+        contractVersion: OPERATION_CONTRACT.version, operation, organisationId: org,
+        resourceId: payload.action==='list'?`categories:${org}`:`category:${payload.categoryId}`, payload, request: input('GET',org,user) })
+      const listing = { action: 'list', categoryId: null, body: null }
+      let first, second
+      await t.test('benchmark access does not lend a category product, module, read or write permission', async () => {
+        const before = await snapshot()
+        assert.equal((await collection.GET(input())).status,403)
+        await owner.query("INSERT INTO profitia_modules.application_bindings(application_id,module_id,binding_id,status,source_ref,expires_at) VALUES('spendguru','category',$1,'ACTIVE','SYNTHETIC_CATEGORY',$2)",[randomUUID(),expiry()])
+        assert.equal((await collection.GET(input())).status,403)
+        await owner.query("UPDATE profitia_access.product_grants SET features=ARRAY['benchmark','category'] WHERE application_id='spendguru' AND product='SPENDGURU'")
+        assert.equal((await collection.GET(input())).status,403)
+        for (const org of [A,B]) for (const verb of ['read','write']) await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'ALLOW',$4,'category')",[randomUUID(),org,U,`category.${verb}`])
+        await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'ALLOW','category.read','category')",[randomUUID(),A,V])
+        assert.equal((await collection.GET(input())).status,200)
+        assert.equal((await collection.POST(input('POST',A,V,value('No write grant')))).status,403)
+        assert.deepEqual(await snapshot(),before)
+      })
+      await t.test('real collection/create/detail/update retain DRAFT/READY, exact weights and stored references', async () => {
+        const created = await collection.POST(input('POST',A,U,value('  Private A  ',[part('category-ref-a1',40)])))
+        assert.equal(created.status,201);first=await created.json();assert.equal(first.name,'Private A');assert.equal(first.status,'DRAFT')
+        assert.equal(first.allocatedPercent,40);assert.equal(first.remainingPercent,60);assert.equal(first.organizationId,A)
+        assert.equal(first.components[0].benchmark.provider.displayName,'Stored category reference');assert.equal(first.components[0].benchmark.providerSeries.providerSeriesId,'category-ref-a1')
+        assert(!JSON.stringify(first).includes('createdByUserId'));assert(!JSON.stringify(first).includes(B))
+        const found=await detail.GET(input(),{params:{categoryId:first.id}});assert.equal(found.status,200);assert.equal((await found.json()).id,first.id)
+        const updated=await detail.PATCH(input('PATCH',A,U,value('Private A ready',[part('category-ref-a1',60),part('category-ref-a2',40)])),{params:{categoryId:first.id}})
+        assert.equal(updated.status,200);first=await updated.json();assert.equal(first.status,'READY');assert.equal(first.allocatedPercent,100);assert.equal(first.remainingPercent,0);assert.equal(first.componentCount,2)
+        assert.deepEqual(first.components.map(x=>x.position),[0,1]);assert.deepEqual(first.components.map(x=>x.weightPercent),[60,40])
+        const rows=(await owner.query('SELECT "organizationId" FROM sg_runtime_benchmarks."CategoryCostComponent" WHERE "categoryId"=$1',[first.id])).rows
+        assert.equal(rows.length,2);assert(rows.every(row=>row.organizationId===A))
+        const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='category.write' AND event->>'decision'='ALLOW' ORDER BY event_id DESC LIMIT 2")).rows.map(x=>x.event)
+        assert.deepEqual(events.map(x=>x.phase),['OUTCOME','INTENT']);assert(events.every(x=>x.organisationId===A&&x.actorId===U&&x.moduleEvidence.moduleId==='category'))
+        assert.equal(events[0].decisionId,events[1].decisionId);assert.equal(events[0].correlationId,events[1].correlationId)
+      })
+      await t.test('two organisations stay separate while an authorised second user in the same organisation sees shared categories', async () => {
+        const created=await collection.POST(input('POST',B,U,value('Private B',[part('category-ref-b1',100)])));assert.equal(created.status,201);second=await created.json()
+        for (const [org,user,expected] of [[A,U,'Private A ready'],[A,V,'Private A ready'],[B,U,'Private B']]) {
+          const response=await collection.GET(input('GET',org,user));assert.equal(response.status,200);const body=await response.json();assert.deepEqual(body.items.map(x=>x.name),[expected]);assert(!JSON.stringify(body).includes(org===A?'Private B':'Private A'))
+        }
+        assert.equal((await collection.GET(input('GET',B,V))).status,403)
+        assert.equal((await detail.GET(input(),{params:{categoryId:second.id}})).status,404)
+        const before=await snapshot()
+        assert.equal((await detail.PATCH(input('PATCH',A,U,value('Cross category')),{params:{categoryId:second.id}})).status,404)
+        assert.equal((await collection.POST(input('POST',A,U,value('Cross source',[part('category-ref-b1',100)])))).status,404)
+        assert.deepEqual(await snapshot(),before)
+      })
+      await t.test('late mapper failure rolls back both create and component replacement instead of committing an error response', async () => {
+        const before=await snapshot()
+        assert.equal((await collection.POST(input('POST',A,U,value('Must roll back',[part('category-ref-no-primary',100)])))).status,404)
+        assert.equal((await detail.PATCH(input('PATCH',A,U,value('Must restore original',[part('category-ref-no-primary',100)])),{params:{categoryId:first.id}})).status,404)
+        assert.deepEqual(await snapshot(),before)
+        const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='category.write' ORDER BY event_id DESC LIMIT 2")).rows.map(x=>x.event)
+        assert.deepEqual(events.map(x=>x.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+      })
+
+      await t.test('current identity, account, membership, explicit deny, product, module and receipt revocations stop before business queries', async () => {
+        const before=await snapshot(), calls=businessCalls
+        assert.equal((await collection.GET(input('GET',A,U,undefined,{authorization:''}))).status,401)
+        sdkRevoked=true;try{assert.equal((await collection.GET(input())).status,401)}finally{sdkRevoked=false}
+        sdkIssuer='https://foreign.fixture.test';try{assert.equal((await collection.GET(input())).status,401)}finally{sdkIssuer=ISSUER}
+        await owner.query("UPDATE profitia_access.accounts SET status='DISABLED' WHERE user_id=$1",[U])
+        try{assert.equal((await collection.GET(input())).status,401)}finally{await owner.query("UPDATE profitia_access.accounts SET status='ACTIVE' WHERE user_id=$1",[U])}
+        await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U])
+        try{assert.equal((await collection.GET(input())).status,403)}finally{await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U])}
+        const denied=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','category.read','category')",[denied,A,U])
+        try{assert.equal((await collection.GET(input())).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[denied])}
+        await owner.query("UPDATE profitia_access.product_grants SET features=ARRAY['benchmark'] WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1",[A])
+        try{assert.equal((await collection.GET(input())).status,403)}finally{await owner.query("UPDATE profitia_access.product_grants SET features=ARRAY['benchmark','category'] WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1",[A])}
+        await owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1",[A])
+        try{assert.equal((await collection.GET(input())).status,403)}finally{await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1",[A])}
+        await owner.query("UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='spendguru' AND module_id='category'")
+        try{assert.equal((await collection.GET(input())).status,403)}finally{await owner.query("UPDATE profitia_modules.application_bindings SET status='ACTIVE' WHERE application_id='spendguru' AND module_id='category'")}
+        await owner.query("UPDATE profitia_category.installation SET boundary_digest=$1",['0'.repeat(64)])
+        try{assert.equal((await collection.GET(input())).status,503)}finally{await owner.query('UPDATE profitia_category.installation SET boundary_digest=$1',[categoryDigest])}
+        assert.equal(businessCalls,calls);assert.deepEqual(await snapshot(),before)
+      })
+      await t.test('a dedicated profile and malformed or caller-supplied context never select a foreign organisation or business actor', async () => {
+        const before=await snapshot(),calls=businessCalls
+        const fixed=createSg2PrivateCategoryHost({...categoryConfig,application:{...categoryConfig.application,profileId:'PORR_SUITE',organisationId:A}})
+        const routes=createOperationCategoryCollectionHandlers(fixed,A)
+        assert.equal((await routes.GET(input('GET',B))).status,400)
+        for(const body of [{...value('Untrusted'),organizationId:B},{...value('Untrusted'),userId:V},{...value('Untrusted'),role:'owner'},value('Bad weights',[part('category-ref-a1',80),part('category-ref-a2',40)])])assert.equal((await collection.POST(input('POST',A,U,body))).status,400)
+        assert.equal((await collection.GET(new NextRequest(`${ORIGIN}/api/category?organisationId=${A}&organisationId=${B}`,{headers:{authorization:`Bearer external-${U}`}}))).status,400)
+        assert.equal((await detail.GET(input(),{params:{categoryId:'foreign/path'}})).status,400)
+        assert.equal(businessCalls,calls);assert.deepEqual(await snapshot(),before)
+      })
+      await t.test('valid category scope reads only own categories and explicit reference catalog, while other modules cannot read categories', async () => {
+        const result=await categoryHost.execute(scoped(listing),async (_context,transaction)=>{
+          const categories=await transaction.category.findMany();assert.equal(categories.length,1);assert(categories.every(row=>row.organizationId===A))
+          const components=await transaction.categoryCostComponent.findMany();assert.equal(components.length,2);assert(components.every(row=>row.categoryId===first.id))
+          const references=await transaction.businessBenchmark.findMany();assert(references.length>=3);assert(references.every(row=>row.organizationId===A))
+          assert.deepEqual(await transaction.organizationBenchmarkSelection.findMany(),[])
+          return Response.json({items:[]},{headers:CATEGORY_HEADERS})
+        });assert.equal(result.value.status,200)
+        const benchmarkInput={contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'benchmark.selection.read',organisationId:A,resourceId:`benchmark-selections:${A}`,payload:null,request:request()}
+        await host.execute(benchmarkInput,async (_context,transaction)=>{assert.deepEqual(await transaction.category.findMany(),[]);assert.deepEqual(await transaction.categoryCostComponent.findMany(),[]);return Response.json({items:[]})})
+        const supplierHost=createSg2SupplierSummaryHost({...configuration,application:{...configuration.application,operations:['supplier.report.read'],features:['supplier_report']},module:{...configuration.module,id:'supplier_report'}})
+        let supplierProof=false
+        await assert.rejects(supplierHost.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.report.read',organisationId:A,resourceId:'supplier-report:COMPANY:0000000000',payload:{nip:'0000000000',entityType:'COMPANY'},request:input()},async (_context,transaction)=>{
+          assert.deepEqual(await transaction.category.findMany(),[]);assert.deepEqual(await transaction.categoryCostComponent.findMany(),[]);supplierProof=true;throw new OperationDenied('CONTEXT_INVALID')
+        }));assert.equal(supplierProof,true)
+      })
+      await t.test('physical tenant FKs and command-specific restrictive fences survive false permissive policies with real DML privileges', async () => {
+        const before=await snapshot()
+        await owner.query(`CREATE POLICY category_test_false_allow ON sg_runtime_benchmarks."Category" TO ${ROLE} USING(true) WITH CHECK(true); CREATE POLICY component_test_false_allow ON sg_runtime_benchmarks."CategoryCostComponent" TO ${ROLE} USING(true) WITH CHECK(true); CREATE POLICY reference_test_false_allow ON sg_runtime_benchmarks."BusinessBenchmark" TO ${ROLE} USING(true) WITH CHECK(true); GRANT DELETE ON sg_runtime_benchmarks."BusinessBenchmark" TO ${ROLE}`)
+        try{
+          const acl=await prisma.$queryRawUnsafe('SELECT has_table_privilege(current_user,\'sg_runtime_benchmarks."Category"\',\'INSERT\') AS category_insert,has_table_privilege(current_user,\'sg_runtime_benchmarks."CategoryCostComponent"\',\'INSERT\') AS component_insert,has_table_privilege(current_user,\'sg_runtime_benchmarks."BusinessBenchmark"\',\'INSERT\') AS reference_insert,has_table_privilege(current_user,\'sg_runtime_benchmarks."BusinessBenchmark"\',\'UPDATE\') AS reference_update,has_table_privilege(current_user,\'sg_runtime_benchmarks."BusinessBenchmark"\',\'DELETE\') AS reference_delete')
+          assert.deepEqual(acl,[{category_insert:true,component_insert:true,reference_insert:true,reference_update:true,reference_delete:true}])
+          const writePayload={action:'update',categoryId:first.id,body:value('Bound own request')}
+          const rejectsSql=async(payload,sql,values,code)=>{
+            let actual
+            await assert.rejects(categoryHost.execute(scoped(payload,'category.write'),async (_context,transaction)=>{try{await transaction.$executeRawUnsafe(sql,...values)}catch(error){actual=error.meta?.code;throw error}throw Error('A denied SQL mutation unexpectedly succeeded')}))
+            assert.equal(actual,code)
+          }
+          await rejectsSql(writePayload,'INSERT INTO sg_runtime_benchmarks."CategoryCostComponent"(id,"categoryId",name,"businessBenchmarkId","weightPercent",position,"createdAt","updatedAt") VALUES($1,$2,\'Foreign source\',$3,100,0,now(),now())',[randomUUID(),first.id,'category-ref-b1'],'23503')
+          const createPayload={action:'create',categoryId:randomUUID(),body:value('Bound own create')}
+          await rejectsSql(createPayload,'INSERT INTO sg_runtime_benchmarks."Category"(id,"organizationId",name,status,"createdByUserId","createdAt","updatedAt") VALUES($1,$2,\'Foreign org\',\'DRAFT\',$3,now(),now())',[createPayload.categoryId,B,U],'42501')
+          await rejectsSql(createPayload,'INSERT INTO sg_runtime_benchmarks."BusinessBenchmark"(id,"organizationId","displayName","createdByUserId","createdAt","updatedAt") VALUES($1,$2,\'Forbidden reference write\',$3,now(),now())',[randomUUID(),A,U],'42501')
+          await categoryHost.execute(scoped(listing),async (_context,transaction)=>{
+            assert.equal(await transaction.$executeRawUnsafe('DELETE FROM sg_runtime_benchmarks."BusinessBenchmark" WHERE id=$1','category-ref-unused'),0)
+            assert.equal(await transaction.$executeRawUnsafe('UPDATE sg_runtime_benchmarks."BusinessBenchmark" SET "displayName"=\'Forbidden change\' WHERE id=$1','category-ref-unused'),0)
+            assert((await transaction.businessBenchmark.findMany()).every(row=>row.organizationId===A))
+            assert((await transaction.category.findMany()).every(row=>row.organizationId===A))
+            return Response.json({items:[]},{headers:CATEGORY_HEADERS})
+          })
+          assert.equal((await owner.query('SELECT count(*)::int AS n FROM sg_runtime_benchmarks."BusinessBenchmark" WHERE id=$1 AND "displayName"=$2',['category-ref-unused','Reference for A'])).rows[0].n,1)
+          assert.deepEqual(await snapshot(),before)
+        }finally{await owner.query(`DROP POLICY category_test_false_allow ON sg_runtime_benchmarks."Category"; DROP POLICY component_test_false_allow ON sg_runtime_benchmarks."CategoryCostComponent"; DROP POLICY reference_test_false_allow ON sg_runtime_benchmarks."BusinessBenchmark"; REVOKE DELETE ON sg_runtime_benchmarks."BusinessBenchmark" FROM ${ROLE}`)}
+      })
+      await t.test('OUTCOME failure restores a replaced category and components with a durable independent FAILURE', async () => {
+        const before=await snapshot()
+        await owner.query("CREATE FUNCTION profitia_access.reject_category_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='category.write' THEN RAISE EXCEPTION 'synthetic category outcome outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_category_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_category_outcome()")
+        try{assert.equal((await detail.PATCH(input('PATCH',A,U,value('Must roll back updated category',[part('category-ref-a1',100)])),{params:{categoryId:first.id}})).status,503)}
+        finally{await owner.query('DROP TRIGGER reject_category_outcome ON profitia_access.security_events; DROP FUNCTION profitia_access.reject_category_outcome()')}
+        assert.deepEqual(await snapshot(),before)
+        const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='category.write' ORDER BY event_id DESC LIMIT 2")).rows.map(x=>x.event)
+        assert.deepEqual(events.map(x=>x.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+      })
+      await t.test('concurrent category reads retain the shared four-connection budget and role cannot rewrite receipt or create SQL authority', async () => {
+        const responses=await Promise.all([A,B,A,B].map(org=>collection.GET(input('GET',org))))
+        assert(responses.every(response=>response.status===200));assert((await owner.query('SELECT count(*)::int AS n FROM pg_stat_activity WHERE usename=$1',[ROLE])).rows[0].n<=4)
+        assert.deepEqual(await prisma.category.findMany(),[]);assert.deepEqual(await prisma.categoryCostComponent.findMany(),[])
+        await assert.rejects(prisma.$executeRawUnsafe("UPDATE profitia_category.installation SET boundary_digest=repeat('0',64)"))
+        await assert.rejects(prisma.$executeRawUnsafe('CREATE TABLE profitia_category.unauthorised_table(id integer)'))
+      })
+
+      assert.equal(providerCalls,beforeProvider)
+    })
+
   } finally {
     globalThis.fetch = previousFetch
     await prisma?.$disconnect(); await auditPrisma?.$disconnect(); await owner?.end(); await root.end()

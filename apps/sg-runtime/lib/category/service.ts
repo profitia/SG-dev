@@ -1,5 +1,6 @@
 import type { CategoryRecord } from '@/lib/category/contracts'
 import { CategoryAppError } from '@/lib/category/errors'
+import type { CategoryRepositoryOptions } from '@/lib/category/repository'
 import {
   createCategory,
   getCategoryForOrganization,
@@ -45,12 +46,12 @@ function normalizeComponents(components: Array<{ name: string; businessBenchmark
   })
 }
 
-export async function listCategories(organizationId: string) {
-  return listCategoriesForOrganization(organizationId)
+export async function listCategories(organizationId: string, options: CategoryRepositoryOptions = {}) {
+  return listCategoriesForOrganization(organizationId, options)
 }
 
-export async function getCategory(organizationId: string, categoryId: string) {
-  return getCategoryForOrganization(organizationId, categoryId)
+export async function getCategory(organizationId: string, categoryId: string, options: CategoryRepositoryOptions = {}) {
+  return getCategoryForOrganization(organizationId, categoryId, options)
 }
 
 export async function createOrUpdateCategory(params: {
@@ -63,7 +64,7 @@ export async function createOrUpdateCategory(params: {
     businessBenchmarkId: string
     weightPercent: number
   }>
-}): Promise<CategoryRecord> {
+}, options: CategoryRepositoryOptions = {}): Promise<CategoryRecord> {
   const name = normalizeName(params.name)
   const components = normalizeComponents(params.components)
 
@@ -73,7 +74,7 @@ export async function createOrUpdateCategory(params: {
       categoryId: params.categoryId,
       name,
       components,
-    })
+    }, options)
   }
 
   return createCategory({
@@ -81,5 +82,5 @@ export async function createOrUpdateCategory(params: {
     userId: params.userId,
     name,
     components,
-  })
+  }, options)
 }

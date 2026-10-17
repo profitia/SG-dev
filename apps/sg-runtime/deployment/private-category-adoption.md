@@ -1,0 +1,35 @@
+# Private category source candidate and controlled adoption
+
+Status: SOURCE CANDIDATE / NOT INITIALIZED OR ACTIVATED. Task SG2-E1-PRIVATE-CATEGORY-ADOPTION-20261017. This document is an operator contract for a later accepted Development release; it does not apply SQL, grant permissions or deploy a service.
+
+## Preconditions and destination
+
+Read current governance, the active SG2 topology and private onboarding registry. Confirm real service/project/branch/database/login, actual ordinary role and retained release recovery evidence. The candidate only targets the new private store in private-runtime-targets.json. Staging/Production are not prepared by this candidate. Never apply it to the legacy SG database, shared market store or PMOS.
+
+Preserve the installed access001/module002/audit003/directory004 sources, business schema001, legacy Prisma model and original benchmark boundary SQL. Verify their exact receipts, source bytes, owners, FORCE RLS, role flags/ACLs and source/ref mapping. A receipt alone does not prove live policy state. Prepare a recoverable snapshot/branch and rehearse the complete transactional migration on the correct isolated clone before touching a live destination. Do not copy demo/customer history or reassign its author.
+
+## Transactional database addition
+
+The controlled operator must supply the independently checked source digest from deployment/private-runtime-targets.json and the exact reviewed source SHA. Use the existing controlled owner profitia_access_owner inside one transaction, with temporary CREATE capability only if needed; the runtime login remains NOINHERIT, non-owner, without superuser/BYPASSRLS/CREATEDB/CREATEROLE and within its four-connection budget. Check pending migration state before starting. An existing namespace/receipt with uncertain provenance is a stop for diagnosis, never permission to drop or overwrite it. A retry first checks whether the exact accepted installation is already complete.
+
+Apply the exact private-store/002-category-boundaries.sql bytes. It checks existing access/module/audit installations and creates only a private technical receipt namespace, category RLS and private relational guarantees. The component tenant column exists only in this new database and is absent from the unchanged global Prisma model; the SECURITY INVOKER trigger derives it from the visible category. Both parent links have composite tenant foreign keys. Existing inconsistent references fail the transaction without reassignment.
+
+Benchmark/provider metadata is an explicit category reference-catalog SELECT within the same organisation. It is needed to compose arbitrary owned components and display their stored source metadata. It grants no benchmark-selection API, private selection rows, source write, other organisation or supplier module. Separate restrictive SELECT, INSERT, UPDATE and DELETE fences prevent a category SELECT capability becoming a DELETE capability through a permissive legacy policy. Categories/components also have restrictive fences; runtime cannot create policies, functions or receipts.
+
+Within that same checked transaction, insert the singleton profitia_category.installation row: schema_version1.0.0, independently verified boundary_digest and reviewed source_ref. Do not derive authority from a caller value or put secrets in the receipt. The SQL file cannot embed its own complete-file digest. Grant the registered SG2 runtime only USAGE on profitia_category and SELECT on its receipt, plus SELECT/INSERT/UPDATE/DELETE on the two category tables. Existing source-catalog ACLs remain unchanged. No broad default grants, PUBLIC admission or owner membership. Inspect actual resulting ownership, policies, command kinds, foreign keys, trigger properties, ACLs and receipt before commit. Restore temporary owner CREATE capability to its prior state.
+
+Current per-request category module/product/permissions and the actual physical directory binding remain mandatory. SQL/ACL installation does not activate an application or create business grants. The host additionally checks the private category receipt digest for each admitted transaction. Missing/mismatched installation fails closed before category business queries. Source roles and fixture grants are not proof of live preparation.
+
+## Application and authority adoption
+
+The same native business3 plus independent audit1 Prisma pools are reused. PROFITIA_CATEGORY_ENABLED is an explicit server-owned opt-in and defaults off. Base configuration version and existing benchmark/supplier settings remain unchanged; the category configuration has its own sg2-private-category-e1-v1 identity. Do not enable it before schema/role/current module binding, category product feature, actual user grants and release tests all pass. Unknown flag values fail closed in private mode. Legacy mode does not initialize the private category capability.
+
+category.read and category.write are separate permissions. A benchmark grant, owner label, admin label or caller header grants neither. The category representation includes its authorised stored reference metadata, but its API does not expose the underlying benchmark-selection interface. Lists and records are organisation-private, not implicitly personal. Full individual account/admin/onboarding UI remains a separate program scope.
+
+Native create/update uses the existing business service in the already authorised transaction. Late mapping/refetch or audit errors throw through the common transaction so writes and component replacement roll back before a safe error response. A returned error is never recorded as successful OUTCOME. Empty authorised lists are NO_DATA. Representation versions are not row-level optimistic-lock or retry-idempotency promises. Four API methods are adopted; category UI, cost-scan and AI suggestions require their own integration and acceptance.
+
+## Validation and recovery
+
+Require real ordinary-role API/SQL tests for both organisations, current account/session/membership/grant/product/module revocation, malformed/forged context, physical foreign keys, false permissive policies, command-specific fences, cross-module denials, audit outage and concurrent four-connection operation. Test the exact DDL with a forced failure after all changes, verify rollback of all new namespaces/tables/receipt while preserving prior directory state, then reapply successfully. Execute complete clean controlled install/API/typecheck/build and source compatibility before merging/releasing. A local public dependency subset is not full product build evidence.
+
+A product deployment needs its own verified retained LKG artifact/config/schema contract and business acceptance. After any category writes, rollback must preserve those rows and all unrelated writes: disable the capability and restore compatible retained code if appropriate. Do not automatically drop the tenant column, tables, receipt, policies, namespace or restore an older whole database over subsequent business data. Code rollback is not data rollback. A separately proven snapshot/restore procedure is required for a real data recovery decision.

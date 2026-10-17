@@ -3,11 +3,17 @@ import type {
   BusinessBenchmark,
   Category,
   CategoryCostComponent,
+  Prisma,
 } from '@prisma/client'
 
 import { prisma } from '@/lib/db/prisma'
 import type { CategoryRecord, CategoryStatus, CategorySummary } from '@/lib/category/contracts'
 import { CategoryAppError } from '@/lib/category/errors'
+
+/** Native private calls reuse their already authorised transaction. The legacy
+ * default remains the existing client; no request selects this adapter. */
+export type CategoryRepositoryOptions = { transaction?: Prisma.TransactionClient; newCategoryId?: string }
+const database = (options: CategoryRepositoryOptions) => options.transaction ?? prisma
 
 type CategoryWithRelations = Category & {
   costComponents: Array<CategoryCostComponent & {
@@ -87,13 +93,13 @@ function toCategoryRecord(category: CategoryWithRelations): CategoryRecord {
   }
 }
 
-async function getOwnedBenchmarks(organizationId: string, businessBenchmarkIds: string[]) {
+async function getOwnedBenchmarks(organizationId: string, businessBenchmarkIds: string[], options: CategoryRepositoryOptions = {}) {
   const uniqueIds = [...new Set(businessBenchmarkIds)]
   if (uniqueIds.length === 0) {
     return []
   }
 
-  const benchmarks = await prisma.businessBenchmark.findMany({
+  const benchmarks = await database(options).businessBenchmark.findMany({
     where: {
       organizationId,
       id: { in: uniqueIds },
@@ -107,8 +113,8 @@ async function getOwnedBenchmarks(organizationId: string, businessBenchmarkIds: 
   return benchmarks
 }
 
-async function findCategoryOwnedByOrganization(organizationId: string, categoryId: string) {
-  return prisma.category.findFirst({
+async function findCategoryOwnedByOrganization(organizationId: string, categoryId: string, options: CategoryRepositoryOptions = {}) {
+  return database(options).category.findFirst({
     where: {
       id: categoryId,
       organizationId,
@@ -131,8 +137,8 @@ async function findCategoryOwnedByOrganization(organizationId: string, categoryI
   })
 }
 
-export async function listCategoriesForOrganization(organizationId: string): Promise<CategorySummary[]> {
-  const categories = await prisma.category.findMany({
+export async function listCategoriesForOrganization(organizationId: string, options: CategoryRepositoryOptions = {}): Promise<CategorySummary[]> {
+  const categories = await database(options).category.findMany({
     where: { organizationId },
     orderBy: { updatedAt: 'desc' },
     include: {
@@ -153,8 +159,8 @@ export async function listCategoriesForOrganization(organizationId: string): Pro
   }))
 }
 
-export async function getCategoryForOrganization(organizationId: string, categoryId: string) {
-  const category = await findCategoryOwnedByOrganization(organizationId, categoryId)
+export async function getCategoryForOrganization(organizationId: string, categoryId: string, options: CategoryRepositoryOptions = {}) {
+  const category = await findCategoryOwnedByOrganization(organizationId, categoryId, options)
   if (!category) {
     throw new CategoryAppError('CATEGORY_NOT_FOUND', 'Category not found.', 404)
   }
@@ -171,13 +177,14 @@ export async function createCategory(params: {
     businessBenchmarkId: string
     weightPercent: number
   }>
-}) {
+}, options: CategoryRepositoryOptions = {}) {
   const { organizationId, userId, name, components } = params
-  await getOwnedBenchmarks(organizationId, components.map((component) => component.businessBenchmarkId))
+  await getOwnedBenchmarks(organizationId, components.map((component) => component.businessBenchmarkId), options)
   const totalWeightPercent = assertValidComponentWeights(components)
 
-  const category = await prisma.category.create({
+  const category = await database(options).category.create({
     data: {
+      ...(options.newCategoryId !== undefined ? { id: options.newCategoryId } : {}),
       organizationId,
       name,
       status: deriveCategoryStatus(components.length, totalWeightPercent),
@@ -220,11 +227,11 @@ export async function updateCategory(params: {
     businessBenchmarkId: string
     weightPercent: number
   }>
-}) {
+}, options: CategoryRepositoryOptions = {}) {
   const { organizationId, categoryId, name, components } = params
   const totalWeightPercent = assertValidComponentWeights(components)
 
-  await prisma.$transaction(async (tx) => {
+  const update = async (tx: Prisma.TransactionClient) => {
     const category = await tx.category.findFirst({
       where: {
         id: categoryId,
@@ -273,9 +280,11 @@ export async function updateCategory(params: {
         })),
       })
     }
-  })
+  }
+  if (options.transaction) await update(options.transaction)
+  else await prisma.$transaction(update)
 
-  const refreshed = await findCategoryOwnedByOrganization(organizationId, categoryId)
+  const refreshed = await findCategoryOwnedByOrganization(organizationId, categoryId, options)
   if (!refreshed) {
     throw new CategoryAppError('CATEGORY_NOT_FOUND', 'Category not found.', 404)
   }

@@ -30,6 +30,17 @@
         "peerPath": "/api/xray/financial-summary",
         "scope": "STORED_SHARED_CORPORATE_SUMMARY_READ_ONLY",
         "observedState": "SOURCE_ONLY_NOT_ACTIVATED"
+      },
+      "category": {
+        "configurationVersion": "sg2-private-category-e1-v1",
+        "activationVariable": "PROFITIA_CATEGORY_ENABLED",
+        "defaultEnabled": false,
+        "boundarySource": "apps/sg-runtime/prisma/private-store/002-category-boundaries.sql",
+        "boundaryDigest": "2724e35ab3ef02641a5f92d6c69a881e1bc99cadac4240e4d5fc2cd1daa44df1",
+        "receiptSchema": "profitia_category",
+        "receiptVersion": "1.0.0",
+        "scope": "ORGANISATION_PRIVATE_CATEGORY_AND_EXPLICIT_REFERENCE_CATALOG_SELECT",
+        "observedState": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED"
       }
     },
     "staging": {
