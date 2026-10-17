@@ -5,6 +5,10 @@ import { routing, type Locale } from '@/i18n/routing'
 import { SpendGuruAdvisoryWidget } from '@/components/advisory/spendguru-advisory-widget'
 import { isPorrDemoProfile, serverEnv } from '@/lib/env'
 import { getEnvironmentBrowserTabTitle } from '@/lib/browser-tab-title'
+import { readSg2IdentityRuntime, type Sg2IdentityRuntime } from '@/lib/platform/identity-runtime'
+import { Sg2IdentityProvider } from '@/components/auth/session-boundary'
+
+export const dynamic = 'force-dynamic'
 
 interface LocaleLayoutProps {
   children: React.ReactNode
@@ -31,13 +35,18 @@ export default async function LocaleLayout({ children, params: { locale } }: Loc
 
   // Load messages on the server — passed to NextIntlClientProvider for client components.
   const messages = await getMessages()
+  let identity: Sg2IdentityRuntime | null = null
+  try { identity = readSg2IdentityRuntime() } catch { /* Explicit failure never renders demo. */ }
 
   return (
     <html lang={locale}>
       <body>
         <NextIntlClientProvider messages={messages}>
-          {children}
-          <SpendGuruAdvisoryWidget locale={locale as Locale} enabled={!isPorrDemoProfile} />
+          <Sg2IdentityProvider mode={identity?.provider ?? 'unavailable'} locale={locale as Locale}
+            publishableKey={identity?.provider === 'clerk' ? identity.publishableKey : undefined}>
+            {children}
+            <SpendGuruAdvisoryWidget locale={locale as Locale} enabled={identity?.provider === 'legacy_demo' && !isPorrDemoProfile} />
+          </Sg2IdentityProvider>
         </NextIntlClientProvider>
       </body>
     </html>

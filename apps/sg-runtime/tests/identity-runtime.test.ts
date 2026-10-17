@@ -6,6 +6,7 @@ import { createClerkIdentityAuthenticator } from '@profitia/platform-contracts/i
 import { clerkConfigurationSourceDigest } from '@profitia/platform-contracts/clerk-configuration'
 import { readSg2IdentityRuntime, createSg2ClerkClient, IdentityConfigurationUnavailable } from '../lib/platform/identity-runtime'
 import { ClerkSignIn } from '../components/auth/clerk-sign-in'
+import { Sg2IdentityProvider, Sg2SessionContent, Sg2AuthenticatedView } from '../components/auth/session-boundary'
 
 const host='identity-fixture.clerk.accounts.dev'
 const fixture=()=>({PROFITIA_AUTH_PROVIDER:'clerk',TARGET_ENVIRONMENT:'development',PROFITIA_CLERK_ISSUER:`https://${host}`,
@@ -34,9 +35,41 @@ test('actual Clerk backend SDK composes with SG2 identity without a framework up
 test('actual official UI renders with React18 and both application locales',()=>{
   assert.match(reactVersion,/^18\.3\./)
   for(const locale of ['pl','en'] as const){
-    const html=renderToStaticMarkup(createElement(ClerkSignIn,{publishableKey:fixture().PROFITIA_CLERK_PUBLISHABLE_KEY,locale,returnPath:`/${locale}/benchmark-finder`}))
+    const html=renderToStaticMarkup(createElement(Sg2IdentityProvider,{mode:'clerk',publishableKey:fixture().PROFITIA_CLERK_PUBLISHABLE_KEY,locale,
+      children:createElement(ClerkSignIn,{returnPath:`/${locale}/benchmark-finder`})}))
     assert(!html.includes('sk_test_fixture'));assert(!html.includes('/api/porr-demo-auth'));assert(!html.includes('name="password"'))
   }
+})
+test('the real sign-in uses the validated local return path without a second provider',()=>{
+  for(const locale of ['pl','en'] as const){
+    const element=ClerkSignIn({returnPath:`/${locale}/benchmark-finder`})
+    assert.equal(element.props.forceRedirectUrl,`/${locale}/benchmark-finder`)
+    assert.equal(element.props.withSignUp,false);assert.equal(element.props.routing,'hash')
+  }
+})
+test('individual presentation withholds Finder until ready and does not put principal IDs in HTML',()=>{
+  const children=createElement('div',null,'private-finder-marker')
+  for(const locale of ['pl','en'] as const){
+    for(const session of [{status:'loading'} as const,{status:'signed-out'} as const,{status:'signed-in',userId:'',sessionId:'synthetic-session'} as const]){
+      const html=renderToStaticMarkup(createElement(Sg2SessionContent,{session,locale,children}));assert(!html.includes('private-finder-marker'))
+    }
+    const html=renderToStaticMarkup(createElement(Sg2SessionContent,{session:{status:'signed-in',userId:'synthetic-user',sessionId:'synthetic-session'},locale,children}))
+    assert(html.includes('private-finder-marker'));assert(!html.includes('synthetic-user'));assert(!html.includes('synthetic-session'))
+  }
+})
+test('principal or session change replaces the complete Finder subtree identity',()=>{
+  const element=(userId:string,sessionId:string)=>Sg2SessionContent({session:{status:'signed-in',userId,sessionId},locale:'pl',children:createElement('div')})
+  assert.equal(element('user-a','session-a').key,element('user-a','session-a').key)
+  assert.notEqual(element('user-a','session-a').key,element('user-b','session-a').key)
+  assert.notEqual(element('user-a','session-a').key,element('user-a','session-b').key)
+})
+test('missing provider or invalid explicit configuration never renders the individual application',()=>{
+  const children=createElement(Sg2AuthenticatedView,{locale:'pl',children:createElement('div',null,'private-finder-marker')})
+  assert(!renderToStaticMarkup(children).includes('private-finder-marker'))
+  for(const mode of ['clerk','unavailable'] as const){
+    assert(!renderToStaticMarkup(createElement(Sg2IdentityProvider,{mode,locale:'pl',children})).includes('private-finder-marker'))
+  }
+  assert(renderToStaticMarkup(createElement(Sg2IdentityProvider,{mode:'legacy_demo',locale:'pl',children})).includes('private-finder-marker'))
 })
 test('the SG2 receiver cannot relabel Development identity as Staging',()=>{
   assert.throws(()=>readSg2IdentityRuntime({...fixture(),TARGET_ENVIRONMENT:'staging'}),IdentityConfigurationUnavailable)

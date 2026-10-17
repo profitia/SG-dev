@@ -57,3 +57,30 @@ test('does not reissue an invalid session and keeps the configured domain when p
   }))
   assert.equal(technical.cookies.get('sg_porr_demo_session_development')?.domain, '.spendguru.app')
 })
+test('explicit Clerk forwards only neutral locale/login/Finder pages and never upgrades a demo cookie',async()=>{
+  const previous=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
+  try{
+    const token=await createPorrDemoSessionToken('test-secret',{orgId:'test-org',userId:'test-user',orgRole:'viewer'})
+    for(const path of ['/','/pl','/en','/pl/benchmark-finder','/en/benchmark-finder']){
+      const response=await middleware(new NextRequest('https://dev-sg2.spendguru.app'+path,{headers:{cookie:`sg_porr_demo_session_development=${token}`}}))
+      assert([200,307].includes(response.status))
+      assert.equal(response.cookies.get('sg_porr_demo_session_development'),undefined)
+      assert.equal(response.headers.get('Cache-Control'),'private, no-store')
+      assert(response.headers.get('Vary')?.includes('Cookie'))
+    }
+    for(const path of ['/pl/category-builder','/en/unadopted-private-page','/de/benchmark-finder']){
+      assert.equal((await middleware(new NextRequest('https://dev-sg2.spendguru.app'+path))).status,403)
+    }
+  }finally{if(previous===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=previous}
+})
+test('unknown, empty and whitespace provider modes refuse pages without demo fallback',async()=>{
+  const previous=process.env.PROFITIA_AUTH_PROVIDER
+  try{
+    for(const mode of ['unknown','',' ','CLERK']){
+      process.env.PROFITIA_AUTH_PROVIDER=mode
+      const response=await middleware(new NextRequest('https://dev-sg2.spendguru.app/pl/benchmark-finder'))
+      assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'Operation unavailable'})
+      assert.equal(response.cookies.get('sg_porr_demo_session_development'),undefined)
+    }
+  }finally{if(previous===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=previous}
+})

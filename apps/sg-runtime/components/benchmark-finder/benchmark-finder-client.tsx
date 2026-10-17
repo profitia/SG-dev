@@ -3,6 +3,8 @@
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useSg2BrowserPersistencePolicy } from '@/components/auth/session-boundary'
+import { selectLegacySessionStorage, type BrowserPersistencePolicy } from '@/lib/platform/browser-session-storage'
 
 import {
   FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM,
@@ -350,13 +352,18 @@ function cloneRecentFilters(filters: Record<string, string[]>) {
   )
 }
 
-function loadRecentSearchesFromSession() {
-  if (typeof window === 'undefined') {
+function browserSessionStorage(policy: BrowserPersistencePolicy) {
+  return selectLegacySessionStorage(policy, () => typeof window === 'undefined' ? null : window.sessionStorage)
+}
+
+function loadRecentSearchesFromSession(policy: BrowserPersistencePolicy) {
+  const storage = browserSessionStorage(policy)
+  if (!storage) {
     return [] as RecentSearchEntry[]
   }
 
   try {
-    const raw = window.sessionStorage.getItem(RECENT_SEARCHES_SESSION_KEY)
+    const raw = storage.getItem(RECENT_SEARCHES_SESSION_KEY)
     if (!raw) {
       return []
     }
@@ -389,44 +396,44 @@ function loadRecentSearchesFromSession() {
   }
 }
 
-function saveRecentSearchesToSession(entries: RecentSearchEntry[]) {
-  if (typeof window === 'undefined') {
+function saveRecentSearchesToSession(entries: RecentSearchEntry[], policy: BrowserPersistencePolicy) {
+  const storage = browserSessionStorage(policy)
+  if (!storage) {
     return
   }
 
-  window.sessionStorage.setItem(RECENT_SEARCHES_SESSION_KEY, JSON.stringify(entries))
+  try { storage.setItem(RECENT_SEARCHES_SESSION_KEY, JSON.stringify(entries)) } catch { /* In-memory state remains usable. */ }
 }
 
-function readLocaleSwitchSnapshot(expectedLocale: 'pl' | 'en') {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  const raw = window.sessionStorage.getItem(FINDER_LOCALE_SWITCH_STATE_SESSION_KEY)
-  if (!raw) {
+function readLocaleSwitchSnapshot(expectedLocale: 'pl' | 'en', policy: BrowserPersistencePolicy) {
+  const storage = browserSessionStorage(policy)
+  if (!storage) {
     return null
   }
 
   try {
+    const raw = storage.getItem(FINDER_LOCALE_SWITCH_STATE_SESSION_KEY)
+    if (!raw) return null
     const snapshot = JSON.parse(raw) as LocaleSwitchSnapshot
     if (snapshot.targetLocale !== expectedLocale || snapshot.expiresAt < Date.now()) {
-      window.sessionStorage.removeItem(FINDER_LOCALE_SWITCH_STATE_SESSION_KEY)
+      storage.removeItem(FINDER_LOCALE_SWITCH_STATE_SESSION_KEY)
       return null
     }
 
     return snapshot
   } catch {
-    window.sessionStorage.removeItem(FINDER_LOCALE_SWITCH_STATE_SESSION_KEY)
+    try { storage.removeItem(FINDER_LOCALE_SWITCH_STATE_SESSION_KEY) } catch { /* Storage may be unavailable. */ }
     return null
   }
 }
 
-function saveLocaleSwitchSnapshot(snapshot: LocaleSwitchSnapshot) {
-  if (typeof window === 'undefined') {
+function saveLocaleSwitchSnapshot(snapshot: LocaleSwitchSnapshot, policy: BrowserPersistencePolicy) {
+  const storage = browserSessionStorage(policy)
+  if (!storage) {
     return
   }
 
-  window.sessionStorage.setItem(FINDER_LOCALE_SWITCH_STATE_SESSION_KEY, JSON.stringify(snapshot))
+  try { storage.setItem(FINDER_LOCALE_SWITCH_STATE_SESSION_KEY, JSON.stringify(snapshot)) } catch { /* No private fallback store. */ }
 }
 
 function formatPercent(locale: 'pl' | 'en', value: number) {
@@ -895,6 +902,7 @@ export function BenchmarkFinderClient({
   initialAiPrompt = '',
   showPorrDemoPortfolio = false,
 }: BenchmarkFinderClientProps) {
+  const persistence = useSg2BrowserPersistencePolicy()
   const t = useTranslations('BenchmarkFinder')
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -903,7 +911,7 @@ export function BenchmarkFinderClient({
     searchParams.get(FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM),
   )
   const isPickerMode = selectionMode === 'picker' && typeof onBenchmarkSelected === 'function'
-  const initialLocaleSwitchSnapshotRef = useRef<LocaleSwitchSnapshot | null>(typeof window === 'undefined' ? null : readLocaleSwitchSnapshot(locale))
+  const initialLocaleSwitchSnapshotRef = useRef<LocaleSwitchSnapshot | null>(readLocaleSwitchSnapshot(locale, persistence))
   const localeSnapshotHandledRef = useRef(!initialLocaleSwitchSnapshotRef.current)
   const initialLocaleSwitchSnapshot = initialLocaleSwitchSnapshotRef.current
   const [mode, setMode] = useState<DiscoveryMode>(initialLocaleSwitchSnapshot?.mode ?? initialMode ?? (initialAiPrompt.trim() ? 'ai' : 'search'))
@@ -968,14 +976,14 @@ export function BenchmarkFinderClient({
 
     setRecentSearches((current) => {
       const next = [recentEntry, ...current.filter((item) => item.id !== recentEntry.id)].slice(0, RECENT_SEARCH_LIMIT)
-      saveRecentSearchesToSession(next)
+      saveRecentSearchesToSession(next, persistence)
       return next
     })
   }
 
   function clearRecentSearches() {
     setRecentSearches([])
-    saveRecentSearchesToSession([])
+    saveRecentSearchesToSession([], persistence)
   }
 
   function handleMetadataSelectorOpenChange(metadataKey: string, nextOpen: boolean) {
@@ -1197,7 +1205,7 @@ export function BenchmarkFinderClient({
       metadataValuesByKey,
       metadataValueSearchByKey,
       enrichedCandidates,
-    })
+    }, persistence)
 
     const nextPath = forecastWarmupExperiment
       ? `/${nextLocale}/benchmark-finder?${FORECAST_WARMUP_EXPERIMENT_SEARCH_PARAM}=${encodeURIComponent(forecastWarmupExperiment)}`
@@ -1866,8 +1874,8 @@ export function BenchmarkFinderClient({
   }
 
   useEffect(() => {
-    setRecentSearches(loadRecentSearchesFromSession())
-  }, [])
+    setRecentSearches(loadRecentSearchesFromSession(persistence))
+  }, [persistence])
 
   useEffect(() => {
     void prepareMetadataInBackground()

@@ -94,7 +94,7 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
 
   const runtimeConfig = resolvePorrDemoRuntimeConfig()
   const runtimeReady = isPorrDemoRuntimeReady(runtimeConfig)
-  const token = cookies().get(resolvePorrDemoSessionCookieName(runtimeConfig.appEnv))?.value
+  const token = identity.provider === 'legacy_demo' ? cookies().get(resolvePorrDemoSessionCookieName(runtimeConfig.appEnv))?.value : undefined
   const session = identity.provider === 'legacy_demo' && runtimeReady && runtimeConfig.sessionSecret
     ? await verifyPorrDemoSessionToken(runtimeConfig.sessionSecret, token)
     : null
@@ -155,7 +155,7 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
               </p>
 
               <div className="mt-8 max-w-md space-y-4 xl:max-w-none">
-                {identity.provider === 'clerk' ? <ClerkSignIn publishableKey={identity.publishableKey} locale={locale} returnPath={nextPath} /> : runtimeReady ? (
+                {identity.provider === 'clerk' ? <ClerkSignIn returnPath={nextPath} /> : runtimeReady ? (
                   <form action="/api/porr-demo-auth" method="post" className="space-y-4">
                     <input type="hidden" name="locale" value={locale} />
                     <input type="hidden" name="next" value={nextPath} />
