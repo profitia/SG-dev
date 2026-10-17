@@ -62,6 +62,9 @@ as full user-settings delivery or used to justify live E1 acceptance.
   original demo cookie behavior, Clerk neutral-page allowlist, unknown-mode
   denial and browser policy. These include the nine policy tests above; counts
   must not be added as independent coverage.
+- Four additional existing bilingual UI/portfolio/login regressions PASS, zero
+  skipped. The current screen, canonical eleven-benchmark portfolio, version and
+  locale content remain intact. These tests are included in the ongoing CI suite.
 - That local frontend probe used a separate temporary fixture with only public
   direct versions taken from the app lockfile: React/DOM18.3.1, Next14.2.35,
   next-intl3.26.5, official Clerk pins, zod and tsx. Its dependency tree is not
@@ -74,7 +77,7 @@ as full user-settings delivery or used to justify live E1 acceptance.
 - Consequently no local full API/Prisma/SQL, typecheck or runtime build is claimed.
   Those require the approved controlled CI on the exact candidate after its
   credential phase ends. The operation test script now includes the real
-  middleware and browser-policy tests as well as its existing API/SQL tests.
+  middleware, browser-policy and bilingual UI tests as well as its existing API/SQL tests.
   Relevant public/common/dashboard checks and actual merge remain required.
 
 Own task closeout records actual source/PR/run, MEMOROS and remote PHR only after
