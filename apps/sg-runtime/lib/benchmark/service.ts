@@ -162,8 +162,10 @@ export { sliceHistoricalPoints }
 export async function getBenchmarkAnalyticsSeries(
   seriesName: string,
   range: BenchmarkRangePreset,
+  resolveHistory: (seriesName: string) => Promise<{ history: BenchmarkHistoricalSeriesResult }> =
+    async name => ({ history: await getBenchmarkHistory(name) }),
 ): Promise<BenchmarkAnalyticsSeriesResult> {
-  const history = await getBenchmarkHistory(seriesName)
+  const { history } = await resolveHistory(seriesName)
   const historical = sliceHistoricalPoints(history.historical, range)
 
   return {

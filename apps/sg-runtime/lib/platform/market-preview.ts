@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { OperationDenied, type OperationContext } from '@profitia/platform-contracts/operation-context';
 export const MARKET_PREVIEW_PROJECTION = 'sg2-stored-market-preview-v1';
+export const MARKET_ANALYTICS_PROJECTION = 'sg2-stored-market-analytics-v1';
+export type MarketReadRepresentation = 'preview' | 'analytics';
 export const MAX_STORED_MARKET_POINTS = 100000;
 export const MAX_MARKET_PREVIEW_BYTES = 4 * 1024 * 1024;
 export const MarketPreviewSelection = z.object({
@@ -19,13 +21,15 @@ const preview = z.object({
     historical: z.array(point).max(MAX_STORED_MARKET_POINTS),
 }).strict();
 export const marketPreviewResourceId = (seriesName: string) => `market-history:${seriesName}`;
+export const marketAnalyticsResourceId = (seriesName: string) => `market-analytics:${seriesName}`;
+const analytics = preview.omit({ changeMetrics: true });
 export function readMarketPreviewSelection(input: unknown) {
     const result = MarketPreviewSelection.safeParse(input);
     if (!result.success)
         throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
     return result.data;
 }
-export async function projectMarketPreviewResponse(value: unknown, context: Pick<OperationContext, 'payload' | 'resource'>) {
+async function projectMarketReadResponse(value: unknown, context: Pick<OperationContext, 'payload' | 'resource'>, representation: MarketReadRepresentation) {
     if (!(value instanceof Response) || !value.ok)
         throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
     const selection = readMarketPreviewSelection(context.payload);
@@ -39,9 +43,16 @@ export async function projectMarketPreviewResponse(value: unknown, context: Pick
     catch {
         throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
     }
-    const parsed = preview.safeParse(body);
+    const parsed = (representation === 'preview' ? preview : analytics).safeParse(body);
+    const resourceId = representation === 'preview' ? marketPreviewResourceId : marketAnalyticsResourceId;
     if (!parsed.success || parsed.data.providerSeries.providerSeriesId !== selection.seriesName
-        || parsed.data.range !== selection.range || context.resource.id !== marketPreviewResourceId(selection.seriesName))
+        || parsed.data.range !== selection.range || context.resource.id !== resourceId(selection.seriesName))
         throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
     return value;
+}
+export function projectMarketPreviewResponse(value: unknown, context: Pick<OperationContext, 'payload' | 'resource'>) {
+    return projectMarketReadResponse(value, context, 'preview');
+}
+export function projectMarketAnalyticsResponse(value: unknown, context: Pick<OperationContext, 'payload' | 'resource'>) {
+    return projectMarketReadResponse(value, context, 'analytics');
 }
