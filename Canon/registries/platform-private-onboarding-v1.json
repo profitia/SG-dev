@@ -1,16 +1,17 @@
 {
-  "schemaVersion": "1.2",
+  "schemaVersion": "1.3",
   "registryId": "platform-private-resource-onboarding",
-  "status": "PREPARED_NOT_ACTIVATED",
-  "verifiedAt": "2026-10-17T08:26:00Z",
+  "status": "PRIVATE_DIRECTORY_PREPARED_NOT_ACTIVATED",
+  "verifiedAt": "2026-10-17T11:22:20.696183+00:00",
   "owner": "Architecture Platform",
   "sourceAuthority": "profitia/SG-dev/main",
-  "taskId": "SG2-E1-PRIVATE-STORE-PREPARATION-20261017",
+  "taskId": "ARCHITECTURE-E1-INITIAL-DIRECTORY-PREPARATION-20261017",
   "resourceOnboardingTaskId": "ARCHITECTURE-E1-PRIVATE-RESOURCE-ONBOARDING-20261017",
   "targetEnvironment": "development",
   "purpose": [
     "INTERNAL_PLATFORM_IDENTITY_AND_ACCESS",
-    "PRIVATE_SG2_PRODUCT_DATA"
+    "PRIVATE_SG2_PRODUCT_DATA",
+    "PRIVATE_SRM_PRODUCT_DATA"
   ],
   "creationAuthority": "OWNER_CREATED_PROJECT",
   "neon": {
@@ -44,9 +45,9 @@
       "suspendTimeoutSeconds": 300
     },
     "historyRetentionSeconds": 86400,
-    "userTableCount": 10,
+    "userTableCount": 15,
     "authSchemaCount": 0,
-    "schemaStatus": "ACCESS_SCHEMA_PREPARED_APPLICATION_DISABLED",
+    "schemaStatus": "DIRECTORY_PREPARED_APPLICATIONS_DISABLED",
     "schemaName": "profitia_access",
     "schemaVersion": "1.0.0",
     "schemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
@@ -68,6 +69,9 @@
         "applicationId": "srm",
         "status": "DISABLED"
       }
+    ],
+    "additionalSchemaNames": [
+      "profitia_modules"
     ]
   },
   "resourceOnboardingMutation": {
@@ -95,11 +99,13 @@
     "hasProductionAuthorization": false,
     "hasStagingActivation": false,
     "hasConsumerAdoption": false,
-    "hasIdentityBootstrap": false,
+    "hasIdentityBootstrap": true,
     "hasDataIsolationAcceptance": false,
     "hasMigrationAcceptance": false,
     "existingProductTopologyChanged": false,
-    "existingProductCredentialsChanged": false
+    "existingProductCredentialsChanged": false,
+    "hasSourceConsumerAdoption": true,
+    "hasLiveConsumerAdoption": false
   },
   "preparation": {
     "profile": "SG2",
@@ -114,19 +120,21 @@
     "rehearsalExpiresAt": "2026-10-17T13:40:39Z",
     "syntheticSqlIsolationAcceptance": "PASS",
     "productionIsolationAcceptance": false,
-    "evidence": "Canon/evidence/2026-10-17-sg2-private-store-preparation.md"
+    "evidence": "Canon/evidence/2026-10-17-sg2-private-store-preparation.md",
+    "historicalObservation": true
   },
   "nextAcceptanceDependencies": [
-    "Separate SG2 and SRM business-schema, topology and application adoption tasks; prepared ordinary access-store logins are not runtime adoption",
-    "Controlled bootstrap linked to verified provider subject, never email-only",
-    "Separate environment-specific migration, recovery and release acceptance"
+    "Real authenticated browser session and current internal rights verification",
+    "Separate SG2 and SRM private business-schema, topology and all-entry adoption tasks",
+    "Controlled environment-specific migration, recovery and release acceptance"
   ],
   "consumerPreparations": [
     {
       "projectKey": "SG2",
       "taskId": "SG2-E1-PRIVATE-STORE-PREPARATION-20261017",
       "evidence": "Canon/evidence/2026-10-17-sg2-private-store-preparation.md",
-      "status": "PREPARED_NOT_ACTIVATED"
+      "status": "PREPARED_NOT_ACTIVATED",
+      "historicalObservation": true
     },
     {
       "projectKey": "SRM",
@@ -137,7 +145,33 @@
       "ordinaryActualRuntimeLoginVerified": true,
       "customerAuthorityAndAuditRows": 0,
       "evidence": "Canon/evidence/2026-10-17-srm-private-store-preparation.md",
-      "status": "PREPARED_NOT_ACTIVATED"
+      "status": "PREPARED_NOT_ACTIVATED",
+      "historicalObservation": true
     }
-  ]
+  ],
+  "previousPreparationObservation": {
+    "verifiedAt": "2026-10-17T08:26:00Z",
+    "taskId": "SG2-E1-PRIVATE-STORE-PREPARATION-20261017",
+    "status": "PREPARED_NOT_ACTIVATED",
+    "controlTableCount": 10
+  },
+  "initialDirectoryPreparation": {
+    "registry": "Canon/registries/platform-initial-directory-v1.json",
+    "status": "PREPARED_NOT_ACTIVATED",
+    "taskId": "ARCHITECTURE-E1-INITIAL-DIRECTORY-PREPARATION-20261017",
+    "counts": {
+      "accounts": 1,
+      "organisations": 1,
+      "identities": 1,
+      "memberships": 1,
+      "permissionGrants": 4,
+      "productGrants": 2,
+      "moduleBindings": 2,
+      "bootstrapReceipts": 1,
+      "controlTables": 15
+    },
+    "historicalPreparationObservationsPreserved": true,
+    "productBusinessMigrationAccepted": false,
+    "realSessionVerified": false
+  }
 }

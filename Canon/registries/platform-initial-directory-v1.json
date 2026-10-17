@@ -1,0 +1,170 @@
+{
+  "schemaVersion": "1.0",
+  "registryId": "platform-initial-directory",
+  "owner": "Architecture Platform",
+  "sourceAuthority": "profitia/SG-dev/main",
+  "taskId": "ARCHITECTURE-E1-INITIAL-DIRECTORY-PREPARATION-20261017",
+  "observedAt": "2026-10-17T11:22:20.696183+00:00",
+  "targetEnvironment": "development",
+  "status": "PREPARED_NOT_ACTIVATED",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "endpointId": "ep-late-heart-b9mxo8oi",
+  "databaseName": "platform_private",
+  "organisation": {
+    "label": "Profitia",
+    "choice": "EXPLICIT_OWNER_SELECTION",
+    "internalIdentifiersPublished": false
+  },
+  "account": {
+    "ownerDesignated": true,
+    "internalUuidCreated": true,
+    "exactVerifiedProviderBinding": true,
+    "linkedByEmailOnly": false,
+    "personalDetailsPublished": false,
+    "authenticatedSessionVerified": false,
+    "businessAdministrationUiImplemented": false
+  },
+  "counts": {
+    "accounts": 1,
+    "organisations": 1,
+    "identities": 1,
+    "memberships": 1,
+    "permissionGrants": 4,
+    "productGrants": 2,
+    "moduleBindings": 2,
+    "bootstrapReceipts": 1,
+    "controlTables": 15
+  },
+  "acceptedMigrations": [
+    {
+      "path": "packages/platform-contracts/migrations/access/001-internal-access.sql",
+      "digest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2"
+    },
+    {
+      "path": "packages/platform-contracts/migrations/access/002-module-scope.sql",
+      "digest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed"
+    },
+    {
+      "path": "packages/platform-contracts/migrations/access/003-module-audit.sql",
+      "digest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac"
+    },
+    {
+      "path": "packages/platform-contracts/migrations/access/004-initial-directory.sql",
+      "digest": "7004cc968183fdf1406b143066134138426eecfeaae823a3765321e72a9a4811"
+    }
+  ],
+  "sourceAcceptance": {
+    "producerPullRequest": 416,
+    "compatibilityPullRequest": 417,
+    "producerSourceSha": "521efc36f2861352b284835a4cc53fe92cd9e076",
+    "validatedSourceSha": "b28bb48286540f596849d0fcf26a00c04e4bd18b",
+    "mergeSha": "6d2518406dabdb9424c2b3435c19f6a8f1e8b6eb",
+    "controlledCiRun": 39027792185,
+    "platformCiRuns": [
+      39027754808,
+      39027757182
+    ]
+  },
+  "initialOperations": {
+    "spendguru": [
+      "benchmark.selection.read",
+      "benchmark.selection.write"
+    ],
+    "srm": [
+      "supplier.report.read",
+      "supplier.report.project"
+    ]
+  },
+  "grantsExpiresAt": "2027-01-15T11:11:30.585005+00:00",
+  "planDigest": "31db7c70132da25147d9f56122811381159068abe1cb1b6912caf361bb919a18",
+  "policyRevisionObserved": 19,
+  "sqlVerification": {
+    "forceRlsAndControlledOwnerForAll15Tables": true,
+    "threeActualOrdinaryLoginsVerified": true,
+    "directAccountDirectoryReceiptAcl": false,
+    "allApplicationsDisabled": true,
+    "productBusinessSchemasMigrated": false
+  },
+  "recovery": {
+    "backupBranchId": "br-bitter-term-b9r03hj2",
+    "backupParentLsn": "0/218AFD8",
+    "backupHasEndpoint": false,
+    "backupExpiresAt": null,
+    "retentionNote": "Neon forbids expiry on a branch with children; retain the endpoint-free pre-change backup. Set a reviewed retention after its rehearsal child expires. No manual branch deletion performed.",
+    "rehearsalBranchId": "br-calm-bar-b91d5vzr",
+    "rehearsalEndpointId": "ep-royal-silence-b9s25ph9",
+    "rehearsalExpiresAt": "2026-10-18T11:00:00Z",
+    "rehearsalCompute": {
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "suspendTimeoutSeconds": 300
+    },
+    "restoredPreChangeStateVerified": true,
+    "syntheticBootstrapAndRollbackVerified": true,
+    "existingCustomerRowsCopied": false
+  },
+  "boundaries": {
+    "newProviderOrganizationCreated": false,
+    "providerMutationPerformed": false,
+    "providerSecretPersistedOrDisplayed": false,
+    "liveProductConnectionChanged": false,
+    "productDeploymentPerformed": false,
+    "stagingOrProductionChanged": false,
+    "demoHistoryReassigned": false,
+    "fullE1Acceptance": false
+  },
+  "productObservations": [
+    {
+      "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+      "serviceName": "sg2-development-runtime",
+      "autoDeploy": "no",
+      "branch": "main",
+      "suspended": "not_suspended",
+      "deploymentId": "dep-daqd0uh42hec7398f5vg",
+      "deploymentStatus": "live",
+      "sourceSha": "c55c551091b3584673726bd0a78254eb091c7197"
+    },
+    {
+      "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+      "serviceName": "sg2-development-dashboard",
+      "autoDeploy": "no",
+      "branch": "main",
+      "suspended": "not_suspended",
+      "deploymentId": "dep-daqbksk9v7es73cjdtmg",
+      "deploymentStatus": "live",
+      "sourceSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119"
+    },
+    {
+      "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+      "serviceName": "srm-development-runtime",
+      "autoDeploy": "no",
+      "branch": "main",
+      "suspended": "not_suspended",
+      "deploymentId": "dep-db97cj6k1f9s738na1r0",
+      "deploymentStatus": "live",
+      "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a"
+    },
+    {
+      "serviceId": "srv-daclno3m8hqs73bb7rrg",
+      "serviceName": "spendguru-porr-demo",
+      "autoDeploy": "no",
+      "branch": "main",
+      "suspended": "not_suspended",
+      "deploymentId": "dep-db0dhbm1egvs73f70kr0",
+      "deploymentStatus": "live",
+      "sourceSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91"
+    },
+    {
+      "serviceId": "srv-db496b3tqb8s73eh5sfg",
+      "serviceName": "srm-staging-runtime",
+      "autoDeploy": "no",
+      "branch": "main",
+      "suspended": "not_suspended",
+      "deploymentId": "dep-db97qcjl550s73d2f170",
+      "deploymentStatus": "live",
+      "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a"
+    }
+  ],
+  "evidence": "Canon/evidence/2026-10-17-initial-profitia-directory-preparation.md"
+}
