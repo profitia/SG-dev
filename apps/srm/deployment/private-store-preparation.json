@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PREPARED_NOT_ACTIVATED",
+  "projectKey": "SRM",
+  "taskId": "SRM-E1-PRIVATE-STORE-PREPARATION-20261017",
+  "targetEnvironment": "development",
+  "verifiedAt": "2026-10-17T08:26:00Z",
+  "producer": {
+    "projectKey": "ARCHITECTURE",
+    "taskId": "ARCHITECTURE-E1-ACCESS-STORE-20261017",
+    "sourceSha": "5347523b97b44a7a41d69d03a45372ccfe26b8dc",
+    "pullRequest": "https://github.com/profitia/SG-dev/pull/398",
+    "accessStoreVersion": "1.0.0",
+    "schemaVersion": "1.0.0",
+    "schemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2"
+  },
+  "physicalBinding": {
+    "organizationId": "org-nameless-field-92563437",
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "endpointId": "ep-late-heart-b9mxo8oi",
+    "host": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+    "databaseName": "platform_private",
+    "databaseId": 43910,
+    "schema": "profitia_access",
+    "ownerRole": "profitia_access_owner",
+    "applicationId": "srm",
+    "applicationStatus": "DISABLED",
+    "runtimeRole": "srm_private_development_runtime"
+  },
+  "observedControls": {
+    "acceptedSchemaDigestUnchanged": true,
+    "forceRlsAccessTables": 10,
+    "ordinaryActualRuntimeLoginVerified": true,
+    "runtimeOwnerOrNeonAdminMembership": false,
+    "runtimeDirectAuthorityOrAuditTablePrivileges": false,
+    "publicDatabasePrivileges": false,
+    "runtimeDatabaseCreateOrTemp": false,
+    "runtimeConnectionLimit": 4,
+    "statementTimeoutMs": 15000,
+    "lockTimeoutMs": 3000,
+    "idleTransactionTimeoutMs": 15000,
+    "executableAccessFunctions": [
+      "append_audit",
+      "identity_binding",
+      "lock_access",
+      "runtime_descriptor",
+      "scope_allows"
+    ],
+    "disabledApplicationDenied": true,
+    "accountIdentityOrganisationMembershipGrantAndAuditRows": 0,
+    "bothApplicationsRemainDisabled": true
+  },
+  "boundaries": {
+    "activeRuntimeConfiguration": false,
+    "liveConsumerAdoption": false,
+    "customerIdentityOrMembershipBootstrap": false,
+    "privateBusinessSchemaPrepared": false,
+    "customerDataMigrated": false,
+    "existingSrmDatabaseChanged": false,
+    "productDeploymentPerformed": false,
+    "stagingPrepared": false,
+    "productionAuthorized": false
+  },
+  "recovery": {
+    "kind": "FIRST_ADDITIVE_INITIALIZATION",
+    "previousPrivateStoreArtifact": null,
+    "safeStop": "Leave the unused role and application disabled at the application boundary; existing SRM database, credentials and deployments remain authoritative. No destructive SQL or automatic schema/data rollback."
+  },
+  "evidence": "Canon/evidence/2026-10-17-srm-private-store-preparation.md"
+}
