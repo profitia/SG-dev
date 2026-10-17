@@ -29,13 +29,13 @@
     "cheerio": "1.1.2",
     "exceljs": "^4.4.0",
     "ipaddr.js": "2.2.0",
-    "next": "16.3.8",
+    "next": "16.4.1",
     "pdfkit": "0.20.2",
     "pg": "^8.23.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "saxes": "5.0.1",
-    "sharp": "0.34.5"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@types/node": "^20",
