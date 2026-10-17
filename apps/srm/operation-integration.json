@@ -62,10 +62,28 @@
     "moduleId": "supplier_report",
     "sql002Digest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
     "sql003Digest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
-    "accessStoreSourceDigest": "e0d3fb3c2201816755b76546976c964791adee21a8b528c05b0adbd1af09a8ca",
-    "privateHostSourceDigest": "b79ba004bfd4d8ca37209e71d81fd3619b95ef9665ebee9780c0413caccdc442",
+    "accessStoreSourceDigest": "a4bfb07619b384a4098d086f4f80da480c008446bafca7b23d8b56bad9c40a42",
+    "privateHostSourceDigest": "da65bca42c32094b28d3508c12c7ffb609ae66afc80f41ad76608f3c336d3433",
     "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246"
   },
   "exportScope": "STORED_CORPORATE_FINANCIAL_XLSX_ORGANISATION_ONLY",
-  "sharedReadScope": "STORED_CORPORATE_FINANCIAL_SUMMARY_NO_KYS_PRIVATE_DOCUMENTS_OR_REFRESH"
+  "sharedReadScope": "STORED_CORPORATE_FINANCIAL_SUMMARY_NO_KYS_PRIVATE_DOCUMENTS_OR_REFRESH",
+  "serviceReadSourceCompatibility": {
+    "packageVersion": "1.8.0",
+    "accessStoreVersion": "1.2.0",
+    "hostVersion": "1.3.0",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-SERVICE-READ-PRINCIPAL-20261017",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 451,
+      "sourceSha": "8fe396e63b32bcce5ee2ecff7983dfac142a3309"
+    },
+    "receiverTaskId": "SRM-E1-SERVICE-READ-COMPATIBILITY-20261017",
+    "scope": "HUMAN_PRIVATE_READ_PROJECTION_EXPORT_REGRESSION_ONLY",
+    "nativeServiceEndpointAdopted": false,
+    "sql005Installed": false,
+    "liveServiceRoleOrGrantProvisioned": false,
+    "productDeploymentPerformed": false
+  }
 }

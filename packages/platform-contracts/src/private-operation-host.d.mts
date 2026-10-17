@@ -1,8 +1,8 @@
-import type { AccessQuery, AccessStoreBinding, IdentityBinding } from './access-store.mjs'
+import type { AccessQuery, AccessStoreBinding, IdentityBinding, DatabaseServiceActor } from './access-store.mjs'
 import type { Actor, Application, BoundRequest, OperationContext, OperationExecutor, OperationOutcome, Resource } from './operation-context.mjs'
 import type { ModuleId } from './module-scope.mjs'
 
-export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.2.0' }>
+export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.3.0' }>
 export interface PrivateOperationScope {
   applicationId: string; environment: AccessStoreBinding['environment']; userId: string; organisationId: string | null
 }
@@ -32,3 +32,21 @@ export declare function createPrivateOperationHost<Transaction>(options: {
   describeOutcome?(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): OperationOutcome | Promise<OperationOutcome>
 }): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT }>
 export declare function privateOperationHostSourceDigest(): Promise<string>
+
+export interface ServiceReadScope {
+  applicationId: string; environment: AccessStoreBinding['environment']; userId: null; serviceId: string
+  organisationId: string; operation: 'knowledge.read' | 'forecast.read' | 'supplier.report.read'; resourceId: string
+}
+/** Internal prepared-data read composition. Actual SQL login is the actor;
+ * no caller/queue/user identity, delegated authority, writes or vendor calls. */
+export declare function createServiceReadHost<Transaction>(options: {
+  application: Application; binding: AccessStoreBinding & { service: NonNullable<AccessStoreBinding['service']> }
+  now?: () => number; transactionTimeoutMs?: number; independentQuery: AccessQuery
+  transact<T>(action: (session: { query: AccessQuery; transaction: Transaction }) => Promise<T>, limits: PrivateTransactionOptions): Promise<T>
+  readResources(input: {
+    actor: Readonly<DatabaseServiceActor>; request: Readonly<BoundRequest>; scope: Readonly<ServiceReadScope>
+    query: AccessQuery; transaction: Transaction
+  }): Promise<{ resource: Resource }>
+  projectOutput(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): unknown | Promise<unknown>
+  describeOutcome?(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): OperationOutcome | Promise<OperationOutcome>
+}): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT }>

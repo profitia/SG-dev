@@ -30,9 +30,9 @@ const auditDigest = await moduleAuditSchemaDigest()
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 
 test('SG2 explicitly accepts the published optional producer fingerprints', async () => {
-  assert.equal(await accessStoreSourceDigest(), 'e0d3fb3c2201816755b76546976c964791adee21a8b528c05b0adbd1af09a8ca')
+  assert.equal(await accessStoreSourceDigest(), 'a4bfb07619b384a4098d086f4f80da480c008446bafca7b23d8b56bad9c40a42')
   assert.equal(await identitySourceDigest(), '7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
-  assert.equal(await privateOperationHostSourceDigest(), 'b79ba004bfd4d8ca37209e71d81fd3619b95ef9665ebee9780c0413caccdc442')
+  assert.equal(await privateOperationHostSourceDigest(), 'da65bca42c32094b28d3508c12c7ffb609ae66afc80f41ad76608f3c336d3433')
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
   assert.equal(digest, '356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')

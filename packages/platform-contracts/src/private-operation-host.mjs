@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto'
-import { createAccessStore } from './access-store.mjs'
+import { createAccessStore, DATABASE_SERVICE_ISSUER } from './access-store.mjs'
 import { createOperationExecutor, OperationDenied } from './operation-context.mjs'
 import { createModuleScopeGuard } from './module-scope.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.2.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.3.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -13,10 +13,29 @@ const freeze = value => { if (value && typeof value === 'object') { Object.value
  * No request identity, lease or transaction is retained on the shared instance.
  */
 export function createPrivateOperationHost(options) {
+  if (options.binding?.service !== undefined) throw new TypeError('Human host cannot use a database service binding')
+  return createBoundOperationHost(options, false)
+}
+
+/** An internal server/CLI host authenticated by its actual ordinary SQL login.
+ * No HTTP token, claimed service ID, membership or user impersonation adapter.
+ * Only approved prepared-data reads; no provider acquisition, writes or jobs. */
+export function createServiceReadHost(options) {
+  const a = options.application, s = options.binding?.service
+  if (!a || !s || a.identityIssuer !== DATABASE_SERVICE_ISSUER
+    || s.profileId !== a.profileId || s.deploymentId !== a.deploymentId
+    || s.configurationVersion !== a.configurationVersion
+    || !Array.isArray(a.operations) || !a.operations.length
+    || a.operations.some(op => !['knowledge.read','forecast.read','supplier.report.read'].includes(op))
+    || ['module','prepareInputs','createAuthenticator'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
+  return createBoundOperationHost(options, true)
+}
+
+function createBoundOperationHost(options, serviceMode) {
   const { independentQuery, transact, createAuthenticator, readResources, projectOutput, prepareInputs, describeOutcome, now = Date.now, transactionTimeoutMs = 15000 } = options
   const application = freeze(copy(options.application))
   const binding = freeze(copy(options.binding))
-  if (!application || !binding || binding.applicationId !== application.appId || binding.environment !== application.environment || [independentQuery, transact, createAuthenticator, readResources, projectOutput, now].some(f => typeof f !== 'function') || !Number.isSafeInteger(transactionTimeoutMs) || transactionTimeoutMs < 100 || transactionTimeoutMs > 15000) throw new TypeError('Explicit application, private binding, identity factory and real transaction adapters required')
+  if (!application || !binding || binding.applicationId !== application.appId || binding.environment !== application.environment || [independentQuery, transact, ...(serviceMode ? [] : [createAuthenticator]), readResources, projectOutput, now].some(f => typeof f !== 'function') || !Number.isSafeInteger(transactionTimeoutMs) || transactionTimeoutMs < 100 || transactionTimeoutMs > 15000) throw new TypeError('Explicit application, private binding, identity factory and real transaction adapters required')
   const store = createAccessStore({ binding, now })
   const module = options.module === undefined ? undefined : freeze(copy(options.module))
   if (module !== undefined && (!module || Object.getPrototypeOf(module) !== Object.prototype || Object.keys(module).length !== 3 || !/^[a-f0-9]{64}$/.test(module.auditSchemaDigest ?? '') || Object.keys(module).some(key => !['id','schemaDigest','auditSchemaDigest'].includes(key)))) throw new TypeError('Explicit accepted module audit boundary required')
@@ -37,6 +56,7 @@ export function createPrivateOperationHost(options) {
       let bindingRead = false
       const executor = createOperationExecutor({ application, now,
         authenticate: async request => {
+          if (serviceMode) return store.resolveServiceActor(independentQuery)
           const authenticate = createAuthenticator({ resolveBinding: async key => {
             if (bindingRead) unavailable()
             bindingRead = true
@@ -50,7 +70,7 @@ export function createPrivateOperationHost(options) {
         },
         recordAudit: event => store.appendAudit(independentQuery, event),
         withTransaction: async ({ actor, request }, run) => {
-          if (!identityBinding) unavailable()
+          if (!serviceMode && !identityBinding) unavailable()
           let entered = false, completed = false, closed = false, callbackResult
           try {
             const result = await transact(async ({ query, transaction }) => {
@@ -62,8 +82,11 @@ export function createPrivateOperationHost(options) {
               await query(`SET LOCAL lock_timeout='${transactionOptions.maxWaitMs}ms'`)
               await query(`SET LOCAL idle_in_transaction_session_timeout='${transactionTimeoutMs}ms'`)
               if (closed) unavailable()
-              const lease = await store.lockAccess(query, { actor, identityBinding, organisationId: request.organisationId })
-              const scope = Object.freeze({ applicationId: binding.applicationId, environment: binding.environment, userId: lease.userId, organisationId: lease.organisationId })
+              const lease = serviceMode
+                ? await store.lockServiceRead(query, { actor, organisationId: request.organisationId, operation: request.operation, resourceId: request.resourceId })
+                : await store.lockAccess(query, { actor, identityBinding, organisationId: request.organisationId })
+              const scope = Object.freeze({ applicationId: binding.applicationId, environment: binding.environment, userId: lease.userId, organisationId: lease.organisationId,
+                ...(serviceMode ? { serviceId: lease.serviceId, operation: lease.operation, resourceId: lease.resourceId } : {}) })
               let moduleEvidence
               if (moduleGuard) {
                 const evidence = await moduleGuard.bind(query, scope)
@@ -72,6 +95,7 @@ export function createPrivateOperationHost(options) {
               }
               const resources = freeze(copy(await readResources({ actor, request, scope, query, transaction })))
               if (closed || !resources || Object.getPrototypeOf(resources) !== Object.prototype || Object.keys(resources).some(key => !['resource', 'inputs'].includes(key))) unavailable()
+              if (serviceMode && resources.inputs !== undefined) unavailable()
               await store.verifyScope(query, lease)
               callbackResult = await run({
                 state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }) },
