@@ -100,10 +100,6 @@ function nowIso() {
   return new Date().toISOString()
 }
 
-function toErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : 'unknown'
-}
-
 function clampString(value: string, maxLength: number) {
   return value.length <= maxLength ? value : value.slice(0, maxLength)
 }
@@ -266,7 +262,7 @@ export async function traceForecastRequestDiagnosticsSpan<T>(
       durationMs: performance.now() - startedAtMs,
       metrics,
       outcome: 'ERROR',
-      error: toErrorMessage(error),
+      error: 'Operation failed.',
     })
     throw error
   }

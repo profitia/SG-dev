@@ -254,7 +254,9 @@ export function cognitionError(
   requestId?: string
 ): NextResponse {
   return NextResponse.json(
-    { error: message, code, requestId, timestamp: new Date().toISOString() },
+    // Unexpected server failures may contain provider, SQL or customer details.
+    // Keep the public code and correlation, never the internal exception text.
+    { error: status >= 500 ? 'Operation unavailable.' : message, code, requestId, timestamp: new Date().toISOString() },
     { status, headers: { 'Content-Type': 'application/json' } }
   )
 }
