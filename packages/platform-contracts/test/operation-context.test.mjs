@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import test from 'node:test'
-import { createOperationExecutor, IMPLEMENTED_OPERATIONS, OperationDenied, isOperationDenied, OPERATION_CONTRACT, operationPayloadDigest, operationSourceDigest } from '../src/operation-context.mjs'
+import { createOperationExecutor, IMPLEMENTED_OPERATIONS, OperationDenied, isOperationDenied, OPERATION_CONTRACT, operationPayloadDigest, operationSourceDigest, normalizeModuleEvidence } from '../src/operation-context.mjs'
 import { createTestIdentityIssuer } from '../../../apps/architecture-lab/src/operation-test-authority.mjs'
 
 const time = Date.parse('2026-10-16T22:00:00Z')
@@ -10,13 +10,13 @@ const expiry = new Date(time + 3_600_000).toISOString()
 function fixture(operation = 'benchmark.selection.read') {
   const issuer = createTestIdentityIssuer({ applicationId: 'app-1', now: () => time })
   const r = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url))).rules.find(r => r.operation === operation)
-  const application = { appId: 'app-1', profileId: 'SPENDGURU_SAAS', deploymentId: 'isolated-test', configurationVersion: 'v1', environment: 'development', identityIssuer: issuer.issuer, organisationId: null, operations: [...IMPLEMENTED_OPERATIONS], features: ['account', 'benchmark', 'market', 'personal_workspace', 'supplier_report'] }
+  const application = { appId: 'app-1', profileId: 'SPENDGURU_SAAS', deploymentId: 'isolated-test', configurationVersion: 'v1', environment: 'development', identityIssuer: issuer.issuer, organisationId: null, operations: [...IMPLEMENTED_OPERATIONS], features: ['account', 'benchmark', 'market', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'] }
   const organisationId = r.contextMode === 'ACCOUNT' ? null : 'org-a'
   const shared = r.dataClasses[0] === 'SHARED_KNOWLEDGE'
   const state = { applicationId: application.appId, environment: 'development', policyVersion: 'p1', usagePolicy: 'NOT_APPLICABLE',
     access: { type: organisationId ? 'MEMBERSHIP' : 'ACCOUNT_SELF', actorId: 'user-a', organisationId, status: 'ACTIVE', version: 'a1', sourceRef: 'membership:1', expiresAt: expiry, permissions: [{ operation, feature: r.feature, resourceId: null }, { operation: 'supplier.report.read', feature: 'supplier_report', resourceId: null }], denies: [] },
     resource: { id: 'r1', type: r.resourceType, dataClass: r.dataClasses[0], ownerOrganisationId: shared ? null : organisationId, ownerUserId: r.dataClasses[0].includes('USER') || r.contextMode === 'ACCOUNT' ? 'user-a' : null, environment: 'development', version: 'r1', projectionVersion: 'v1', ...(shared ? { approvedSharedProjection: true } : {}), contentRequirements: [{ product: 'SPENDGURU', feature: 'benchmark' }] },
-    products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'].map(product => ({ product, features: ['benchmark', 'market', 'personal_workspace', 'supplier_report'], organisationId, environment: 'development', applicationId: application.appId, status: 'ACTIVE', version: 'g1', sourceRef: 'contract:1', source: 'CONTRACT', expiresAt: expiry })),
+    products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'].map(product => ({ product, features: ['benchmark', 'market', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'], organisationId, environment: 'development', applicationId: application.appId, status: 'ACTIVE', version: 'g1', sourceRef: 'contract:1', source: 'CONTRACT', expiresAt: expiry })),
     inputs: [{ id: 'shared-report', type: 'supplier_report', dataClass: 'SHARED_KNOWLEDGE', ownerOrganisationId: null, ownerUserId: null, environment: 'development', version: 's1', projectionVersion: 'v1', approvedSharedProjection: true }],
   }
   const events = [], writes = []
@@ -121,7 +121,7 @@ test('payload is canonically bound and snapshotted before asynchronous authentic
 })
 test('candidate rules match exact normative rows and never imply all 30 are implemented', async () => {
   const matrix = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url)))
-  assert.equal(IMPLEMENTED_OPERATIONS.length, 9); assert.equal(matrix.rules.length, 30)
+  assert.equal(IMPLEMENTED_OPERATIONS.length, 14); assert.equal(matrix.rules.length, 30)
   for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === 'NOT_APPLICABLE').length, 1)
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
@@ -142,6 +142,81 @@ test('the public export works for actual Node24 CommonJS/tsx consumers with the 
   const loaded = createRequire(import.meta.url)('@profitia/platform-contracts/operation-context')
   assert.equal(loaded.OPERATION_CONTRACT, OPERATION_CONTRACT)
   assert.equal(loaded.createOperationExecutor, createOperationExecutor)
+})
+
+test('new organisation rules retain private ownership and explicit DENY', async()=>{
+  for(const operation of ['category.read','category.write','supplier.assignment.read','supplier.assignment.write']){
+    const f=fixture(operation);f.state.resource.ownerOrganisationId='org-b'
+    await assert.rejects(f.execute(),error=>error.reasonCode==='RESOURCE_SCOPE_MISMATCH');assert.equal(f.invoked,0)
+    f.state.resource.ownerOrganisationId='org-a';f.state.access.denies=[...f.state.access.permissions]
+    await assert.rejects(f.execute(),error=>error.reasonCode==='PERMISSION_DENIED');assert.equal(f.invoked,0)
+  }
+})
+test('supplier assignment requires an explicit eligible offer for this feature',async()=>{
+  const f=fixture('supplier.assignment.write')
+  for(const grant of f.state.products)grant.features=['supplier_report','benchmark']
+  await assert.rejects(f.execute(),error=>error.reasonCode==='PRODUCT_UNAVAILABLE')
+  f.state.products[1].features.push('supplier_workspace')
+  await f.execute();assert.equal(f.events.find(event=>event.phase==='INTENT').productEvidence[0].product,'SUPPLIER_INTELLIGENCE')
+})
+test('standalone never borrows SpendGuru to satisfy supplier assignment',async()=>{
+  const f=fixture('supplier.assignment.read');f.application.profileId='SUPPLIER_INTELLIGENCE_STANDALONE';f.application.features=['supplier_workspace']
+  f.state.products=f.state.products.filter(grant=>grant.product==='SPENDGURU')
+  await assert.rejects(f.execute(),error=>error.reasonCode==='PRODUCT_UNAVAILABLE')
+  assert.equal(f.invoked,0)
+})
+test('the selected assignment entitlement cannot change after expiry during an effect',async()=>{
+  const f=fixture('supplier.assignment.write');let current=time;f.options.now=()=>current
+  f.state.products[0].expiresAt=new Date(time+100).toISOString()
+  await assert.rejects(createOperationExecutor(f.options).execute(f.input,(_context,tx)=>{tx.push('synthetic effect');current+=101;return null}),error=>error.reasonCode==='PRODUCT_UNAVAILABLE')
+  assert.deepEqual(f.writes,[]);assert.deepEqual(f.events.map(event=>event.phase),['INTENT','FAILURE'])
+})
+test('forecast read cannot publish private metadata or enable paid compute',async()=>{
+  const f=fixture('forecast.read');f.state.resource.approvedSharedProjection=false
+  await assert.rejects(f.execute(),error=>error.reasonCode==='RESOURCE_SCOPE_MISMATCH')
+  for(const operation of ['forecast.request','supplier.report.refresh','supplier.report.export','knowledge.ingest','job.execute','membership.manage']){
+    f.input.operation=operation;await assert.rejects(f.execute(),error=>error.reasonCode==='PERMISSION_DENIED')
+  }
+  assert.equal(f.invoked,0)
+})
+const moduleEvidence=()=>({moduleId:'benchmark',moduleBindingId:'11111111-1111-4111-8111-111111111111',version:'1',sourceRef:'synthetic-module-approval',expiresAt:expiry,transactionId:'123',moduleSchemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64)})
+function withModule(f,evidence){const transaction=f.options.withTransaction;f.options.withTransaction=(input,work)=>transaction(input,session=>work({...session,moduleEvidence:evidence}))}
+test('module provenance is immutable, shared by context and audit, and grants no permission',async()=>{
+  const f=fixture();const evidence=moduleEvidence();withModule(f,evidence)
+  await createOperationExecutor(f.options).execute(f.input,context=>{
+    evidence.sourceRef='changed after capture'
+    assert.equal(context.moduleEvidence.sourceRef,'synthetic-module-approval')
+    assert.throws(()=>context.moduleEvidence.version='changed',TypeError)
+    return null
+  })
+  assert.deepEqual(f.events.map(event=>event.moduleEvidence.sourceRef),['synthetic-module-approval','synthetic-module-approval'])
+  f.state.access.permissions=[];await assert.rejects(f.execute(),error=>error.reasonCode==='PERMISSION_DENIED')
+})
+test('malformed or sensitive module metadata never reaches an effect or audit',async()=>{
+  for(const patch of [{sourceRef:'Bearer synthetic-fixture'},{unexpected:'extra'},{version:'0'},{expiresAt:'infinity'},{moduleId:'unregistered'},{transactionId:'other'}]){
+    const f=fixture();withModule(f,{...moduleEvidence(),...patch})
+    await assert.rejects(f.execute(),error=>error.reasonCode==='POLICY_UNAVAILABLE')
+    assert.equal(f.invoked,0);assert(!JSON.stringify(f.events).includes('Bearer'))
+  }
+  assert.throws(()=>normalizeModuleEvidence({...moduleEvidence(),expiresAt:new Date(time-1).toISOString()},{now:()=>time}),error=>error.reasonCode==='ACCESS_BASIS_INVALID')
+})
+test('module expiry after an effect rolls back and preserves an access denial',async()=>{
+  const f=fixture('benchmark.selection.write');let current=time;f.options.now=()=>current
+  withModule(f,{...moduleEvidence(),expiresAt:new Date(time+100).toISOString()})
+  await assert.rejects(createOperationExecutor(f.options).execute(f.input,(_context,tx)=>{tx.push('not committed');current+=101;return null}),error=>error.reasonCode==='ACCESS_BASIS_INVALID')
+  assert.deepEqual(f.writes,[]);assert.equal(f.events.at(-1).reasonCode,'ACCESS_BASIS_INVALID')
+})
+test('an authoritative scope denial at OUTCOME remains a denial while writer outages remain technical',async()=>{
+  const f=fixture('benchmark.selection.write');const transaction=f.options.withTransaction
+  f.options.withTransaction=(binding,work)=>transaction(binding,session=>work({...session,recordOutcome:async()=>{throw new OperationDenied('ACCESS_BASIS_INVALID')}}))
+  await assert.rejects(f.execute(),error=>error.reasonCode==='ACCESS_BASIS_INVALID')
+  assert.deepEqual(f.writes,[]);assert.equal(f.events.at(-1).reasonCode,'ACCESS_BASIS_INVALID')
+})
+test('a deadline denial during INTENT prevents the effect and is not a writer outage',async()=>{
+  const f=fixture('benchmark.selection.write');const record=f.options.recordAudit
+  f.options.recordAudit=event=>{if(event.phase==='INTENT')throw new OperationDenied('ACCESS_BASIS_INVALID');return record(event)}
+  await assert.rejects(f.execute(),error=>error.reasonCode==='ACCESS_BASIS_INVALID')
+  assert.equal(f.invoked,0);assert.deepEqual(f.events.map(event=>event.phase),['DECISION'])
 })
 test('denials survive distinct module identities while plain client objects never become branded denials', async () => {
   const other = await import('../src/operation-context.mjs?independent-module-copy')

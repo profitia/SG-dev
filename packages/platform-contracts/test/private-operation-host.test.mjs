@@ -11,17 +11,23 @@ function options() {
   const unexpected = async () => assert.fail('Constructor must not perform an external operation')
   return { application,binding,independentQuery:unexpected,transact:unexpected,createAuthenticator:unexpected,readResources:unexpected,projectOutput:unexpected }
 }
-test('optional host is immutable and composes byte-identical accepted mechanisms',async()=>{
+test('the versioned host is immutable and preserves the base SQL and identity adapter',async()=>{
   const host=createPrivateOperationHost(options())
   assert.equal(Object.isFrozen(host),true)
   assert.equal(host.hostContract,PRIVATE_OPERATION_HOST_CONTRACT)
-  assert.equal(host.contract.implementation,'1.0.0-candidate.3')
+  assert.equal(host.contract.implementation,'1.0.0-candidate.4')
+  assert.equal(host.hostContract.version,'1.1.0')
   assert.match(await privateOperationHostSourceDigest(),/^[a-f0-9]{64}$/)
-  assert.equal(await operationSourceDigest(),'e37a11798ed41b1c0a30f2ac3b539c6d19db59246c8ceae94005afeb10a08455')
+  assert.equal(await operationSourceDigest(),'579b289b2437e2c04741a4b9b88ce96c94fe392a4d6cf305fb2f5792b1de8d1f')
   assert.equal(await identitySourceDigest(),'7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
-  assert.equal(await accessStoreSourceDigest(),'4e56e58220815661c3882c59ec897b0d740bf84bbf0485c84fb82007d6e00e50')
+  assert.equal(await accessStoreSourceDigest(),'e0d3fb3c2201816755b76546976c964791adee21a8b528c05b0adbd1af09a8ca')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
 })
+for(const module of [null,false,{},[],{id:'benchmark',schemaDigest:'a'.repeat(64)},{id:'unknown',schemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64)},{id:'benchmark',schemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64),extra:'untrusted'}]){
+  test(`an explicit incomplete module boundary cannot silently disable protection ${JSON.stringify(module)}`,()=>{
+    assert.throws(()=>createPrivateOperationHost({...options(),module}),TypeError)
+  })
+}
 for (const name of ['independentQuery','transact','createAuthenticator','readResources','projectOutput','now']) {
   test(`host requires server-owned ${name}`,()=>assert.throws(()=>createPrivateOperationHost({...options(),[name]:null}),TypeError))
 }

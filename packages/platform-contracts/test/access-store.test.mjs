@@ -10,7 +10,7 @@ const row = { database_name:binding.databaseName,role:binding.role,login:binding
 const deny = error => isOperationDenied(error) && error.reasonCode === 'POLICY_UNAVAILABLE'
 
 test('access store publishes an independent schema-bound fingerprint', async () => {
-  assert.equal(ACCESS_STORE_CONTRACT.version,'1.0.0')
+  assert.equal(ACCESS_STORE_CONTRACT.version,'1.1.0')
   assert.equal(Object.isFrozen(ACCESS_STORE_CONTRACT),true)
   assert.match(accessSchemaUrl,/001-internal-access\.sql$/)
   assert.match(await accessStoreSourceDigest(),/^[0-9a-f]{64}$/)
@@ -48,4 +48,32 @@ test('unregistered and serialized leases cannot authorize an outcome',async()=>{
   const store=createAccessStore({binding});let calls=0;const query=async()=>{calls++;return{rows:[row]}}
   await assert.rejects(store.verifyScope(query,{expiresAt:new Date(Date.now()+10000).toISOString()}),deny)
   assert.equal(calls,0)
+})
+test('a valid authority null is a denial, while missing or malformed rows remain technical',async()=>{
+  const user='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',until=new Date(Date.now()+10000).toISOString()
+  const actor={kind:'HUMAN',actorId:user,userId:user,environment:'development',audience:binding.applicationId,issuer:key.issuer,expiresAt:until}
+  const identityBinding={...key,userId:user,status:'ACTIVE',version:'binding:1:1',sourceRef:'synthetic',expiresAt:until}
+  for(const [result,reason]of [[{rows:[{state:null}]},'ACCESS_BASIS_INVALID'],[{rows:[]},'POLICY_UNAVAILABLE'],[{rows:[{}]},'POLICY_UNAVAILABLE'],[{rows:[{state:null},{state:null}]},'POLICY_UNAVAILABLE']]){
+    let calls=0;const query=async()=>++calls===1?{rows:[row]}:result
+    await assert.rejects(createAccessStore({binding}).lockAccess(query,{actor,identityBinding,organisationId:null}),error=>error.reasonCode===reason)
+  }
+  await assert.rejects(createAccessStore({binding}).lockAccess(async()=>assert.fail(),{actor,identityBinding:null,organisationId:null}),error=>error.reasonCode==='ACCESS_BASIS_INVALID')
+  await assert.rejects(createAccessStore({binding}).lockAccess(async()=>assert.fail(),{actor,identityBinding:undefined,organisationId:null}),deny)
+})
+test('module audit capability requires its exact independently installed digest',async()=>{
+  for(const capability of [null,{version:'0.0.0',schemaDigest:'c'.repeat(64)},{version:'1.0.0',schemaDigest:'d'.repeat(64)}]){
+    let calls=0;const query=async()=>({rows:[++calls===1?row:{descriptor:capability}]})
+    await assert.rejects(createAccessStore({binding}).verifyModuleAudit(query,'c'.repeat(64)),deny)
+  }
+  let calls=0;const query=async()=>({rows:[++calls===1?row:{descriptor:{version:'1.0.0',schemaDigest:'c'.repeat(64)}}]})
+  await createAccessStore({binding}).verifyModuleAudit(query,'c'.repeat(64))
+})
+test('only the dedicated SQL expiry state is transported as an access denial by pg and Prisma',async()=>{
+  const store=createAccessStore({binding})
+  const event={applicationId:binding.applicationId,environment:'development',decisionId:'11111111-1111-4111-8111-111111111111',phase:'DECISION',decision:'DENY',reasonCode:'PERMISSION_DENIED'}
+  for(const error of [{code:'PT403'},{code:'P2010',meta:{code:'PT403'}},{code:'42501'},{code:'P2010',meta:{code:'42501'}}]){
+    let calls=0;const query=async()=>{if(++calls===1)return{rows:[row]};throw Object.assign(Error('PRIVATE_DRIVER_DIAGNOSTIC'),error)}
+    const expected=error.code==='PT403'||error.meta?.code==='PT403'?'ACCESS_BASIS_INVALID':'POLICY_UNAVAILABLE'
+    await assert.rejects(store.appendAudit(query,event),e=>e.reasonCode===expected&&!e.message.includes('PRIVATE'))
+  }
 })
