@@ -30,7 +30,8 @@
     "market-data:generate": "prisma generate --schema prisma-market-data/schema.prisma",
     "market-data:migrate": "prisma migrate dev --schema prisma-market-data/schema.prisma",
     "market-data:migrate:deploy": "prisma migrate deploy --schema prisma-market-data/schema.prisma",
-    "test:platform-contract": "node --test tests/platform-contract.test.mjs"
+    "test:platform-contract": "node --test tests/platform-contract.test.mjs",
+    "test:operation-context": "node --import tsx --test tests/operation-context.test.mjs tests/operation-context.integration.test.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -43,7 +44,8 @@
     "prisma": "^5.22.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
