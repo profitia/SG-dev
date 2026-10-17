@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { BenchmarkAppError } from '@/lib/benchmark/errors';
 import type { BenchmarkHistoricalSeriesResult } from '@/lib/benchmark/contracts';
@@ -79,35 +79,46 @@ export function createStoredMarketHistoryReader(prisma: Pick<PrismaClient, '$tra
                 || /gh[pousr]_|sk_(?:live|test)_|postgres(?:ql)?:\/\/|Bearer\s/i.test(receipt.source_ref)
                 || !(receipt.expires_at instanceof Date) || receipt.expires_at.getTime() <= Date.now())
                 denied();
-            const series = await transaction.$queryRawUnsafe<unknown[]>('SELECT "providerCode","providerSeriesId","providerSeriesKey","displayName","frequency","currency","unit","sourceLabel" FROM profitia_market_read.series WHERE "providerSeriesId"=$1 LIMIT 2', selection.data.seriesName);
-            if (series.length === 0)
-                throw new BenchmarkAppError('STORED_HISTORY_NOT_AVAILABLE', 'Stored market history is not available.', 404);
-            const parsed = seriesSchema.safeParse(series[0]);
-            if (!parsed.success)
-                return denied();
-            if (series.length !== 1 || parsed.data.providerSeriesId !== selection.data.seriesName)
-                denied();
-            const observations = await transaction.$queryRawUnsafe<Array<{
-                observedAt: Date;
-                value: string | null;
-            }>>('SELECT "observedAt","value"::text FROM profitia_market_read.observations WHERE "providerSeriesId"=$1 ORDER BY "observedAt" ASC LIMIT $2', selection.data.seriesName, MAX_STORED_MARKET_POINTS + 1);
-            if (observations.length > MAX_STORED_MARKET_POINTS)
-                throw new BenchmarkAppError('STORED_HISTORY_TOO_LARGE', 'Stored history exceeds the supported preview size.', 413);
-            if (observations.length === 0)
-                throw new BenchmarkAppError('STORED_HISTORY_NOT_AVAILABLE', 'Stored market history is not available.', 404);
-            let previous = -Infinity;
-            const historical = observations.map(point => {
-                if (!(point.observedAt instanceof Date) || !Number.isFinite(point.observedAt.getTime()) || point.observedAt.getTime() <= previous
-                    || !(point.value === null || typeof point.value === 'string' && point.value.trim() !== '' && Number.isFinite(Number(point.value))))
-                    denied();
-                previous = point.observedAt.getTime();
-                return { date: point.observedAt.toISOString(), value: point.value === null ? null : Number(point.value) };
-            });
+            const result = await readStoredMarketHistory(transaction, selection.data.seriesName);
             if (receipt.expires_at.getTime() <= Date.now())
                 denied();
-            const source = parsed.data;
-            return { history: { providerSeries: { provider: { providerCode: 'MACROBOND', displayName: 'Macrobond' }, providerSeriesId: source.providerSeriesId, providerSeriesKey: source.providerSeriesKey },
-                    displayName: source.displayName, frequency: source.frequency, currency: source.currency, unit: source.unit, source: source.sourceLabel, historical } };
+            return result;
         }, { timeout: 5000, maxWait: 3000 });
     };
+}
+
+/** Shared data query/format only. The caller must first verify its ordinary
+ * source login, closed object ACLs and installation receipt in this transaction.
+ * No actor, authority, provider, hydration, cache or source write is created. */
+export async function readStoredMarketHistory(transaction: Pick<Prisma.TransactionClient, '$queryRawUnsafe'>, seriesName: string): Promise<{ history: BenchmarkHistoricalSeriesResult }> {
+    const selection = MarketPreviewSelection.safeParse({ seriesName, range: 'ALL' });
+    if (!selection.success)
+        throw new BenchmarkAppError('VALIDATION_ERROR', 'Invalid stored series selection.', 400);
+    const series = await transaction.$queryRawUnsafe<unknown[]>('SELECT "providerCode","providerSeriesId","providerSeriesKey","displayName","frequency","currency","unit","sourceLabel" FROM profitia_market_read.series WHERE "providerSeriesId"=$1 LIMIT 2', selection.data.seriesName);
+    if (series.length === 0)
+        throw new BenchmarkAppError('STORED_HISTORY_NOT_AVAILABLE', 'Stored market history is not available.', 404);
+    const parsed = seriesSchema.safeParse(series[0]);
+    if (!parsed.success)
+        return denied();
+    if (series.length !== 1 || parsed.data.providerSeriesId !== selection.data.seriesName)
+        denied();
+    const observations = await transaction.$queryRawUnsafe<Array<{
+        observedAt: Date;
+        value: string | null;
+    }>>('SELECT "observedAt","value"::text FROM profitia_market_read.observations WHERE "providerSeriesId"=$1 ORDER BY "observedAt" ASC LIMIT $2', selection.data.seriesName, MAX_STORED_MARKET_POINTS + 1);
+    if (observations.length > MAX_STORED_MARKET_POINTS)
+        throw new BenchmarkAppError('STORED_HISTORY_TOO_LARGE', 'Stored history exceeds the supported preview size.', 413);
+    if (observations.length === 0)
+        throw new BenchmarkAppError('STORED_HISTORY_NOT_AVAILABLE', 'Stored market history is not available.', 404);
+    let previous = -Infinity;
+    const historical = observations.map(point => {
+        if (!(point.observedAt instanceof Date) || !Number.isFinite(point.observedAt.getTime()) || point.observedAt.getTime() <= previous
+            || !(point.value === null || typeof point.value === 'string' && point.value.trim() !== '' && Number.isFinite(Number(point.value))))
+            denied();
+        previous = point.observedAt.getTime();
+        return { date: point.observedAt.toISOString(), value: point.value === null ? null : Number(point.value) };
+    });
+    const source = parsed.data;
+    return { history: { providerSeries: { provider: { providerCode: 'MACROBOND', displayName: 'Macrobond' }, providerSeriesId: source.providerSeriesId, providerSeriesKey: source.providerSeriesKey },
+            displayName: source.displayName, frequency: source.frequency, currency: source.currency, unit: source.unit, source: source.sourceLabel, historical } };
 }

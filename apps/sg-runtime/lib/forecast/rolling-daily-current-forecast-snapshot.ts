@@ -64,6 +64,9 @@ type RollingDailySnapshotPersistenceOptions = {
 type RollingDailySnapshotUpsertClient = Pick<MarketDataPrismaClient, 'rollingDailyCurrentForecastSnapshot'>
 
 type RollingDailySnapshotSqlClient = Pick<MarketDataPrismaClient, '$queryRaw'>
+/** A genuine generated Prisma transaction can serve the reader. Persistence
+ * methods and the default client remain outside this read-only dependency. */
+export type RollingDailySnapshotReadClient = Pick<MarketDataPrismaClient, 'rollingDailyCurrentForecastSnapshot' | '$queryRaw'>
 
 type LegacyRollingDailyCurrentForecastSnapshot = {
   payloadJson: Prisma.JsonValue
@@ -232,7 +235,7 @@ async function upsertLegacyRollingDailyCurrentForecastSnapshot(
 }
 
 async function readLegacyRollingDailyCurrentForecastSnapshot(
-  prisma: MarketDataPrismaClient,
+  prisma: RollingDailySnapshotReadClient,
   request: RollingDailyCurrentForecastSnapshotReadRequest,
 ) {
   if (typeof prisma.$queryRaw !== 'function') {
@@ -527,9 +530,9 @@ export async function persistRollingDailyCurrentForecastSnapshots(
 
 export async function readRollingDailyCurrentForecastSnapshot(
   request: RollingDailyCurrentForecastSnapshotReadRequest,
-  dependencies: { prisma?: MarketDataPrismaClient } = {},
+  dependencies: { prisma?: RollingDailySnapshotReadClient } = {},
 ): Promise<RollingDailyCurrentForecastSnapshotReadResult> {
-  const prisma = getSnapshotPrismaClient(dependencies)
+  const prisma = dependencies.prisma ?? getSnapshotPrismaClient({})
   const statisticalCompatibility = resolveRollingDailyCurrentSnapshotCompatibility()
 
   const readLegacySnapshot = async () => readLegacyRollingDailyCurrentForecastSnapshot(prisma, request)

@@ -11,7 +11,7 @@ import { identitySourceDigest } from '@profitia/platform-contracts/identity-prov
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
 import { OPERATION_CONTRACT, OperationDenied } from '@profitia/platform-contracts/operation-context'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
-import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost } from '../lib/platform/private-host.ts'
+import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost, createSg2PrivateForecastCurrentHost } from '../lib/platform/private-host.ts'
 import { createOperationSupplierSummaryHandler } from '../lib/platform/supplier-summary-runtime.ts'
 import { SUPPLIER_SUMMARY_HEADERS } from '../lib/platform/supplier-summary.ts'
 import { executiveSummary } from '@profitia/srm-xray/executive-summary-rules'
@@ -57,7 +57,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     owner = new pg.Client({ connectionString: dbUrl.toString() }); await owner.connect()
     // Only this explicitly named, guarded LOOPBACK database may be reset.
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db, DATABASE)
-    await owner.query('DROP SCHEMA IF EXISTS profitia_category CASCADE; DROP SCHEMA IF EXISTS profitia_modules CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE; DROP SCHEMA IF EXISTS sg_runtime_benchmarks CASCADE')
+    await owner.query('DROP SCHEMA IF EXISTS profitia_forecast_read CASCADE; DROP TABLE IF EXISTS public.rolling_daily_current_forecast_snapshots CASCADE; DROP TYPE IF EXISTS public.\"ForecastTargetBasis\"; DROP SCHEMA IF EXISTS profitia_category CASCADE; DROP SCHEMA IF EXISTS profitia_modules CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE; DROP SCHEMA IF EXISTS sg_runtime_benchmarks CASCADE')
     await owner.query(`GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
     await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
     await owner.query(schema)
@@ -728,6 +728,121 @@ test('SG2 Prisma host composes the accepted access store with existing selection
         })
         assert.equal(providerCalls,providerBefore)
       }finally{await sourcePrisma.$disconnect()}
+    })
+
+    await t.test('native current forecast API combines current private authority with an independently restricted genuine source ORM', async t => {
+      const sourceOwner='profitia_forecast_read_owner',sourceRole='sg2_private_host_forecast_reader'
+      for(const[role,login]of[[sourceOwner,false],[sourceRole,true]]) {
+        if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount)await root.query(`CREATE ROLE ${role} ${login?"LOGIN PASSWORD 'isolated_ci_only'":'NOLOGIN'} NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`)
+      }
+      await root.query(`ALTER ROLE ${sourceRole} CONNECTION LIMIT 1`)
+      await root.query(`ALTER ROLE ${sourceRole} SET default_transaction_read_only=on`)
+      await owner.query(`CREATE TYPE public."ForecastTargetBasis" AS ENUM('MONTHLY_AVERAGE','END_OF_PERIOD','POINT_IN_TIME');
+        CREATE TABLE public.rolling_daily_current_forecast_snapshots("id" text PRIMARY KEY,"seriesId" text,"inputSource" text,"inputRunId" text,"targetBasis" public."ForecastTargetBasis",
+          "methodId" text,"methodVersion" text,"modelId" text,"trainingWindowPolicyId" text,"effectiveTrainingPolicyId" text,"sourceHistoryFingerprint" text,
+          "contractVersion" text,"status" text,"reasonCode" text,"message" text,"forecastOriginAt" timestamp,"sourceLatestObservationAt" timestamp,"payloadJson" jsonb,
+          "createdAt" timestamp DEFAULT now(),"updatedAt" timestamp DEFAULT now());
+        GRANT CREATE ON DATABASE ${DATABASE} TO ${sourceOwner}; GRANT USAGE ON SCHEMA public,profitia_market_read TO ${sourceOwner};
+        GRANT SELECT ON profitia_market_read.series TO ${sourceOwner};
+        GRANT SELECT("id","seriesId","inputSource","targetBasis","methodId","methodVersion","modelId","trainingWindowPolicyId","effectiveTrainingPolicyId","sourceHistoryFingerprint",
+          "contractVersion","status","forecastOriginAt","sourceLatestObservationAt","payloadJson","createdAt","updatedAt") ON public.rolling_daily_current_forecast_snapshots TO ${sourceOwner}`)
+      const sql=fs.readFileSync(new URL('../prisma-market-data/private-read/002-stored-rolling-current.sql',import.meta.url),'utf8')
+      const sourceDigest=createHash('sha256').update(sql).digest('hex')
+      const marketDigest=createHash('sha256').update(fs.readFileSync(new URL('../prisma-market-data/private-read/001-stored-history-read.sql',import.meta.url))).digest('hex')
+      await owner.query('BEGIN');await owner.query(`SET LOCAL ROLE ${sourceOwner}`);await owner.query(sql)
+      await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'1.0.0',$1,$2,'isolated-source-project','isolated-source-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')",[sourceDigest,marketDigest,DATABASE,sourceRole]);await owner.query('COMMIT')
+      await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM ${sourceOwner}; GRANT USAGE ON SCHEMA profitia_forecast_read,profitia_market_read TO ${sourceRole};
+        GRANT SELECT ON profitia_market_read.series,profitia_market_read.observations TO ${sourceRole};
+        GRANT SELECT ON ALL TABLES IN SCHEMA profitia_forecast_read TO ${sourceRole};
+        GRANT USAGE ON TYPE profitia_forecast_read."ForecastTargetBasis" TO ${sourceRole};GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_forecast_read TO ${sourceRole}`)
+      const {PrismaClient:MarketClient}=await import('../generated/market-data-client/index.js')
+      const {createStoredCurrentForecastReader}=await import('../lib/forecast/stored-current-read.ts')
+      const {buildRollingDailyHistoryFingerprint,ROLLING_DAILY_INPUT_SOURCE}=await import('../lib/forecast/rolling-daily-maintenance.ts')
+      const {createCurrentForecastStatisticalCompatibility}=await import('../lib/forecast/identity.ts')
+      const {createOperationForecastCurrentHandler}=await import('../lib/forecast/current-operation-handlers.ts')
+      const points=Array.from({length:60},(_,index)=>({date:new Date(Date.UTC(2025,0,1+index)).toISOString(),value:0}))
+      const seriesId='stored_forecast_daily'
+      await owner.query("INSERT INTO public.market_series VALUES('daily-forecast','MACROBOND',$1,null,'Shared daily source','daily',null,'ORIGINAL_UNIT','Synthetic')",[seriesId])
+      for(const point of points)await owner.query('INSERT INTO public.market_observations VALUES($1,$2,$3)',['daily-forecast',point.date,point.value])
+      const hash=buildRollingDailyHistoryFingerprint({seriesId,displayName:'Shared daily source',description:'Shared daily source',frequency:'DAILY',source:'Synthetic',points})
+      const compatibility=createCurrentForecastStatisticalCompatibility({sourceFrequency:'DAILY',targetCadence:'DAILY',targetSemantics:'ROLLING_DAILY_POINT_IN_TIME'})
+      const band={status:'NOT_AVAILABLE',reasonCode:'CALIBRATION_NOT_AVAILABLE',source:null,lower:null,upper:null,sampleCount:null}
+      const anchors=[['1M',1,'2025-04-01'],['3M',3,'2025-06-01'],['6M',6,'2025-09-01'],['12M',12,'2026-03-01']].map(([horizon,horizonMonths,targetCalendarDate])=>({horizon,horizonMonths,targetCalendarDate,pointForecast:0,band:{...band,p10ResidualOffset:null,p90ResidualOffset:null}}))
+      const body={contractVersion:'1',status:'AVAILABLE',privateRequest:'SYNTHETIC_PRIVATE_FORECAST_MARKER',
+        benchmark:{benchmarkId:seriesId,displayName:'Shared daily source',frequency:'DAILY',unit:'ORIGINAL_UNIT',currency:null,provider:'macrobond',providerSeriesId:seriesId},
+        forecastMethod:{id:'ROLLING_DAILY_POINT_IN_TIME',version:'rolling-daily-point-in-time-v1'},
+        model:{id:'naive',selectedCandidate:null,selectionMetric:null,selectionScore:null,selectedParameters:null},origin:{date:'2025-03-01',value:0},maxHorizonMonths:12,anchors,
+        path:anchors.map(anchor=>({date:anchor.targetCalendarDate,pointForecast:0,band})),
+        calibration:{availabilityStatus:'NOT_AVAILABLE',freshnessStatus:null,quantileConvention:'HF7_LINEAR_INTERPOLATION',coverageLabel:'80% empirical prediction band',methodologicalMinimumStatus:'OPEN_REQUIRES_MORE_BENCHMARK_VALIDATION',updatedAt:null,processedThrough:null,lastResidualAvailabilityDate:null},
+        audit:{generatedAt:'2025-03-01T00:00:00.000Z',sourceLatestObservationDate:'2025-03-01',calendarProjectionMode:'OBSERVED_WEEKDAY_SET',projectionCalendarStrategy:'OBSERVED_WEEKDAY_SET_V1',technicalMinimumTrainingObservations:60,methodologicalTrainingEligibilityStatus:'OPEN_REQUIRES_CROSS_BENCHMARK_VALIDATION',calibrationUpdatedAt:null,calibrationLastResidualAvailabilityDate:null,inputSource:ROLLING_DAILY_INPUT_SOURCE,sourceHistoryFingerprint:hash},warnings:[]}
+      await owner.query(`INSERT INTO public.rolling_daily_current_forecast_snapshots("id","seriesId","inputSource","inputRunId","targetBasis","methodId","methodVersion","modelId","trainingWindowPolicyId","effectiveTrainingPolicyId","sourceHistoryFingerprint","contractVersion","status","forecastOriginAt","sourceLatestObservationAt","payloadJson")
+        VALUES('prepared',$1,$2,'SYNTHETIC_PRIVATE_FORECAST_MARKER','POINT_IN_TIME','ROLLING_DAILY_POINT_IN_TIME','rolling-daily-point-in-time-v1','naive',$3,$4,$5,'1','AVAILABLE','2025-03-01','2025-03-01',$6::jsonb)`,[seriesId,ROLLING_DAILY_INPUT_SOURCE,compatibility.trainingWindowPolicyId,compatibility.effectiveTrainingPolicyId,hash,JSON.stringify(body)])
+      const sourceUrl=new URL(runtimeUrl);sourceUrl.username=sourceRole;sourceUrl.searchParams.set('schema','profitia_forecast_read');sourceUrl.searchParams.set('connection_limit','1')
+      const source=new MarketClient({datasources:{db:{url:sourceUrl.toString()}}})
+      try{
+        const read=createStoredCurrentForecastReader(source,{projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:sourceRole,schemaDigest:sourceDigest,marketSchemaDigest:marketDigest})
+        const forecastConfig={...configuration,application:{...configuration.application,operations:['forecast.read'],features:['forecast']}}
+        const forecastHost=createSg2PrivateForecastCurrentHost(forecastConfig)
+        let sourceReads=0;const current=async selection=>{sourceReads++;return read(selection)}
+        const routes=createOperationForecastCurrentHandler(forecastHost,A,current)
+        const input=(org=A,user=U,model='naive')=>new NextRequest(`${ORIGIN}/api/benchmark/forecast/current?seriesId=${seriesId}&model=${model}&targetBasis=POINT_IN_TIME&organisationId=${org}`,{headers:{authorization:`Bearer external-${user}`}})
+        const providerBefore=providerCalls
+        await t.test('knowledge and benchmark permissions do not lend forecast.read',async()=>{assert.equal((await routes(input())).status,403);assert.equal(sourceReads,0)})
+        for(const org of[A,B])await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'ALLOW','forecast.read','forecast')",[randomUUID(),org,U])
+        await t.test('forecast permission alone cannot replace its product feature',async()=>{assert.equal((await routes(input())).status,403);assert.equal(sourceReads,0)})
+        await owner.query("UPDATE profitia_access.product_grants SET features=ARRAY['benchmark','category','market','forecast'] WHERE product='SPENDGURU'")
+        await t.test('two authorised organisations receive the same statistical result with independent current access audit',async()=>{
+          const values=[]
+          for(const org of[A,B]){const result=await routes(input(org));assert.equal(result.status,200);assert.equal(result.headers.get('cache-control'),'private, no-store');const value=await result.json();assert.equal(value.status,'AVAILABLE');assert.equal(value.origin.value,0);assert.equal(value.benchmark.unit,'ORIGINAL_UNIT');assert(value.path.every(p=>p.pointForecast===0));assert(!JSON.stringify(value).includes('SYNTHETIC_PRIVATE_FORECAST_MARKER'));values.push(value)}
+          assert.deepEqual(values[0],values[1]);assert.equal(sourceReads,2)
+          const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+          assert.deepEqual(events.map(e=>e.organisationId),[B,A]);assert(events.every(e=>e.actorId===U&&e.dataClass==='SHARED_KNOWLEDGE'&&e.ownerOrganisationId===null&&e.moduleEvidence.moduleId==='benchmark'))
+        })
+        await t.test('foreign membership, forged identity and current account/membership/session/permission/product/module revocations stop before source reads',async()=>{
+          const before=sourceReads
+          assert.equal((await routes(input(A,V))).status,403);assert.equal((await routes(input('33333333-3333-4333-8333-333333333333'))).status,403)
+          assert.equal((await routes(new NextRequest(input().url,{headers:{'x-clerk-user-id':U,'x-clerk-org-id':A}}))).status,401)
+          sdkRevoked=true;try{assert.equal((await routes(input())).status,401)}finally{sdkRevoked=false}
+          for(const[deny,restore,values,status=403]of[
+            ["UPDATE profitia_access.accounts SET status='DISABLED' WHERE user_id=$1","UPDATE profitia_access.accounts SET status='ACTIVE' WHERE user_id=$1",[U],401],
+            ["UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2","UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U]],
+            ["UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1","UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1",[A]],
+            ["UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='spendguru' AND module_id='benchmark'","UPDATE profitia_modules.application_bindings SET status='ACTIVE' WHERE application_id='spendguru' AND module_id='benchmark'",[]],
+          ]){await owner.query(deny,values);try{assert.equal((await routes(input())).status,status)}finally{await owner.query(restore,values)}}
+          const id=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','forecast.read','forecast')",[id,A,U])
+          try{assert.equal((await routes(input())).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[id])}
+          assert.equal(sourceReads,before)
+        })
+        await t.test('dedicated profile, caller context tricks and borrowed knowledge hosts cannot select a foreign organisation or forecast authority',async()=>{
+          const before=sourceReads
+          const fixed=createSg2PrivateForecastCurrentHost({...forecastConfig,application:{...forecastConfig.application,profileId:'PORR_SUITE',organisationId:A}})
+          assert.equal((await createOperationForecastCurrentHandler(fixed,A,current)(input(B))).status,400)
+          for(const suffix of['&organisationId='+A,'&actorId='+U,'&operation=knowledge.read','&model=ets'])assert.equal((await routes(new NextRequest(input().url+suffix,{headers:input().headers}))).status,400)
+          assert.equal((await routes(new NextRequest(input().url,{headers:{...Object.fromEntries(input().headers),'x-sg-prepared-history-fingerprint':'forged'}}))).status,400)
+          const market=createSg2PrivateMarketHost({...configuration,application:{...configuration.application,operations:['knowledge.read'],features:['market']}})
+          assert.equal((await createOperationForecastCurrentHandler(market,A,current)(input())).status,403);assert.equal(sourceReads,before)
+        })
+        await t.test('honest missing and stale outcomes never refit, write or invoke a provider',async()=>{
+          let response=await routes(input(A,U,'ets'));assert.equal(response.status,200);assert.equal((await response.json()).status,'NOT_AVAILABLE')
+          await owner.query("UPDATE public.market_observations SET value=1 WHERE \"seriesId\"='daily-forecast' AND \"observedAt\"='2025-01-01'")
+          try{response=await routes(input());assert.equal(response.status,200);assert.match((await response.json()).reason,/STALE/)}finally{await owner.query("UPDATE public.market_observations SET value=0 WHERE \"seriesId\"='daily-forecast'")}
+          const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 2")).rows.map(r=>r.event)
+          assert(events.every(e=>e.reasonCode==='NO_DATA'));assert.equal(providerCalls,providerBefore)
+        })
+        await t.test('receipt drift and tainted output are withheld with no raw diagnostic or metadata',async()=>{
+          await owner.query("UPDATE profitia_forecast_read.installation SET branch_id='foreign'")
+          try{assert.equal((await routes(input())).status,503)}finally{await owner.query("UPDATE profitia_forecast_read.installation SET branch_id='isolated-source-branch'")}
+          const bad=createOperationForecastCurrentHandler(forecastHost,A,async selection=>({...await read(selection),privateUser:'SYNTHETIC_PRIVATE_FORECAST_MARKER'}))
+          const response=await bad(input());assert.equal(response.status,403);assert(!(await response.text()).includes('SYNTHETIC_PRIVATE_FORECAST_MARKER'))
+        })
+        await t.test('OUTCOME audit outage withholds valid data and preserves independently durable FAILURE',async()=>{
+          await owner.query("CREATE FUNCTION profitia_access.reject_forecast_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='forecast.read' THEN RAISE EXCEPTION 'synthetic forecast audit outage'; END IF; RETURN NEW; END $$;CREATE TRIGGER reject_forecast_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_forecast_outcome()")
+          try{const response=await routes(input());assert.equal(response.status,503);assert(!(await response.text()).includes('synthetic forecast audit outage'))}finally{await owner.query('DROP TRIGGER reject_forecast_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_forecast_outcome()')}
+          const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 2")).rows.map(r=>r.event)
+          assert.deepEqual(events.map(e=>e.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+        })
+        assert.equal(providerCalls,providerBefore)
+      }finally{await source.$disconnect()}
     })
 
 

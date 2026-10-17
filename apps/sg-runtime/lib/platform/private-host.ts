@@ -4,6 +4,7 @@ import { createClerkIdentityAuthenticator, type ClerkIdentityClient, type Identi
 import type { AccessQuery, AccessStoreBinding } from '@profitia/platform-contracts/access-store'
 import { OperationDenied, type Application } from '@profitia/platform-contracts/operation-context'
 import { projectSupplierSummaryResponse, readSupplierSummarySelection, SUPPLIER_SUMMARY_PROJECTION } from './supplier-summary'
+import { FORECAST_CURRENT_PROJECTION, forecastCurrentResourceId, readForecastCurrentSelection, projectForecastCurrentResponse } from './forecast-current'
 import { CATEGORY_PROJECTION, categoryOperation, categoryResourceId, projectCategoryResponse, readCategoryOperation } from '@/lib/category/operation-contract'
 import { MARKET_PREVIEW_PROJECTION, MARKET_ANALYTICS_PROJECTION, marketPreviewResourceId, marketAnalyticsResourceId,
   readMarketPreviewSelection, projectMarketPreviewResponse, projectMarketAnalyticsResponse, type MarketReadRepresentation } from './market-preview'
@@ -150,6 +151,28 @@ export function createSg2PrivateCategoryHost(options: Sg2PrivateHostOptions & {
       if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const body = await value.clone().json()
       return Array.isArray(body.items) && body.items.length === 0 ? 'NO_DATA' : 'SUCCEEDED'
+    },
+  })
+}
+
+/** Stored global statistical artifact; benchmark/knowledge selection grants do
+ * not supply forecast.read. Resource identity is server-derived. */
+export function createSg2PrivateForecastCurrentHost(options: Sg2PrivateHostOptions & { module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string } }) {
+  const environment = options.application.environment
+  return createPrivateOperationHost<Prisma.TransactionClient>({
+    ...hostBase(options, 'benchmark', ['forecast.read']),
+    readResources: async ({ request }) => {
+      const selected = readForecastCurrentSelection(request.payload)
+      if (request.resourceId !== forecastCurrentResourceId(selected)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      return { resource: { id: request.resourceId, type: 'market_forecast', dataClass: 'SHARED_KNOWLEDGE',
+        environment, ownerOrganisationId: null, ownerUserId: null, approvedSharedProjection: true,
+        version: FORECAST_CURRENT_PROJECTION, projectionVersion: FORECAST_CURRENT_PROJECTION } }
+    },
+    projectOutput: projectForecastCurrentResponse,
+    describeOutcome: async value => {
+      if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      const body = await value.clone().json()
+      return body.status === 'NOT_AVAILABLE' ? 'NO_DATA' : 'SUCCEEDED'
     },
   })
 }

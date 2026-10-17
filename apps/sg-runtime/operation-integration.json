@@ -44,7 +44,8 @@
     "supplier.report.read",
     "category.read",
     "category.write",
-    "knowledge.read"
+    "knowledge.read",
+    "forecast.read"
   ],
   "requiredInputOperations": [],
   "identityAdapter": "OFFICIAL_CLERK_ADAPTER_WITH_SYNTHETIC_FIXTURE_RESPONSES",
@@ -178,5 +179,31 @@
     "sourceSqlOrRoleChanged": false,
     "runtimeSourceConfigured": false,
     "productDeploymentPerformed": false
+  },
+  "forecastCurrent": {
+    "taskId": "SG2-E1-STORED-ROLLING-CURRENT-FORECAST-20261018",
+    "operation": "forecast.read",
+    "moduleId": "benchmark",
+    "feature": "forecast",
+    "api": "GET /api/benchmark/forecast/current",
+    "scope": "POINT_IN_TIME_ROLLING_DAILY_CURRENT_ONLY",
+    "nativeDispatcher": "lib/forecast/current-operation-handlers.ts",
+    "sourceReader": "lib/forecast/stored-current-read.ts",
+    "projectionVersion": "sg2-stored-rolling-current-v1",
+    "sourceSql": "prisma-market-data/private-read/002-stored-rolling-current.sql",
+    "activationVariable": "PROFITIA_FORECAST_READ_ENABLED",
+    "canonicalIdentity": "buildRollingDailyHistoryFingerprint + readRollingDailyCurrentForecastSnapshot",
+    "statisticalAlgorithmChanged": false,
+    "sourceSqlInstalled": false,
+    "sourceRoleProvisioned": false,
+    "runtimeSourceConfigured": false,
+    "productDeploymentPerformed": false,
+    "remaining": [
+      "GENERIC_PERIOD_CURRENT",
+      "VERIFICATION",
+      "PREPARATION_AND_JOBS",
+      "DEVELOPMENT_AND_STAGING_RELEASE",
+      "LIVE_CLERK_AND_PRISMA_TLS"
+    ]
   }
 }
