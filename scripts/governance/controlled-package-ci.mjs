@@ -59,6 +59,12 @@ export function assertPackagePolicy(candidate, authority, configuration) {
   for (const [key, entry] of Object.entries(candidate.packages ?? {})) {
     if (key.includes('..') || key.startsWith('/') || key.includes('\\')) fail('LOCKFILE_PATH_REJECTED')
     const privateName = key.split('node_modules/').at(-1)
+    if (entry.name?.startsWith('@profitia/') && entry.name !== privateName) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
+    for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
+      for (const [name, spec] of Object.entries(entry[section] ?? {})) {
+        if ((name.startsWith('@profitia/') && ![...PRIVATE_PACKAGES, '@profitia/platform-contracts'].includes(name)) || String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
+      }
+    }
     if (privateName.startsWith('@profitia/')) {
       if (!PRIVATE_PACKAGES.includes(privateName) && privateName !== '@profitia/platform-contracts') fail('PRIVATE_PACKAGE_REJECTED')
       if (PRIVATE_PACKAGES.includes(privateName)) {
@@ -79,6 +85,17 @@ export function assertPackagePolicy(candidate, authority, configuration) {
     }
   }
   if (found.size !== PRIVATE_PACKAGES.length) fail('PRIVATE_PACKAGE_SET_MISMATCH')
+}
+
+export function assertManifestPolicy(candidate, authority) {
+  if (JSON.stringify(candidate.workspaces) !== JSON.stringify(authority.workspaces) || JSON.stringify(candidate.overrides) !== JSON.stringify(authority.overrides)) fail('DEPENDENCY_POLICY_CHANGE_REQUIRES_REVIEW')
+  for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
+    for (const [name, spec] of Object.entries(candidate[section] ?? {})) {
+      if (String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
+      if (name === '@profitia/platform-contracts' && spec === 'file:../../packages/platform-contracts') continue
+      if (name.startsWith('@profitia/') && (!PRIVATE_PACKAGES.includes(name) || spec !== authority[section]?.[name])) fail('PRIVATE_MANIFEST_PIN_MISMATCH')
+    }
+  }
 }
 
 export function assertProof(proof, run, candidateSha, workflowId, {currentRunId, currentRef, completedJobs = []} = {}) {
@@ -131,7 +148,17 @@ function checkCandidate() {
   const c = assertTrustedContext(context()), state = readJson(statePath()), root = candidateRoot()
   if (state.controlSha !== c.controlSha || state.runId !== process.env.GITHUB_RUN_ID || !shaPattern.test(state.sha) || execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim() !== state.sha) fail('CANDIDATE_CHECKOUT_MISMATCH')
   const app = path.join(root, 'apps/sg-runtime')
-  assertPackagePolicy(readJson(path.join(app, 'package-lock.json')), readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))
+  const candidateLock = readJson(path.join(app, 'package-lock.json'))
+  assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))
+  assertManifestPolicy(readJson(path.join(app, 'package.json')), readJson(path.join(controlRoot(), 'apps/sg-runtime/package.json')))
+  for (const entry of Object.values(candidateLock.packages)) {
+    if (!entry.resolved?.match(/^(?:file:)?\.\.\/\.\.\/packages\/[a-z0-9-]+$/)) continue
+    const relative = entry.resolved.replace(/^file:/, '')
+    const local = fs.realpathSync(path.resolve(app, relative))
+    if (!local.startsWith(root + path.sep)) fail('LOCAL_DEPENDENCY_REJECTED')
+    const authorityFile = path.resolve(controlRoot(), 'apps/sg-runtime', relative, 'package.json')
+    assertManifestPolicy(readJson(path.join(local, 'package.json')), fs.existsSync(authorityFile) ? readJson(authorityFile) : {})
+  }
   const digest = createHash('sha256')
   for (const name of ['operation-context.mjs', 'operation-context.d.mts']) digest.update(fs.readFileSync(path.join(root, 'packages/platform-contracts/src', name)))
   if (digest.digest('hex') !== state.receipt.contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
