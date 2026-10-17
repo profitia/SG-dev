@@ -1,0 +1,2866 @@
+{
+  "schemaVersion": "1.0.0",
+  "registryId": "e1-source-progress",
+  "status": "DATED_SOURCE_PROGRESS_NOT_RUNTIME_OR_RELEASE_ACCEPTANCE",
+  "taskId": "ARCHITECTURE-E1-SOURCE-PROGRESS-AND-BOUNDARIES-20261017",
+  "sourceAuthority": "profitia/SG-dev/main",
+  "sourceSha": "d52c6ac6eab719ab0d82dcd1707a3605b7c31457",
+  "observedAtUtc": "2026-10-17T19:17:32.838845+00:00",
+  "scopeApproval": "Accepted E0/E1 steps01-11; no Production or E2-E4 extension",
+  "sourceCoverage": {
+    "routeFiles": 83,
+    "httpMethods": 89,
+    "oldRouteFiles": 81,
+    "oldMethods": 87,
+    "addedMethods": [
+      "GET /api/supplier/financial-summary (SG2)",
+      "GET /api/xray/financial-summary (SRM)"
+    ],
+    "removedMethods": [],
+    "depth": "Complete tracked method/path census plus explicit guard/family call chains; not every line or arbitrary upstream endpoint audited",
+    "commonCurrentAccessMethodCount": 6,
+    "sourceBoundaryCounts": {
+      "EXPLICIT_CLERK_MODE_REFUSES_HOST": 15,
+      "PUBLIC_OR_LEGACY_ENTRY_SEPARATE_POLICY": 7,
+      "LEGACY_COGNITION_GUARD_REFUSES_CLERK": 38,
+      "COMMON_CURRENT_ACCESS_SOURCE_ADOPTED": 6,
+      "LEGACY_TECHNICAL_TOKEN_ADAPTER": 14,
+      "LEGACY_DEMO_GUARD_REFUSES_CLERK": 9
+    }
+  },
+  "historicalBaselinesPreserved": [
+    "Canon/evidence/2026-10-13-spendguru-srm-architecture-freeze-and-gap-audit.md",
+    "Canon/registries/e0-e1-protected-surface-inventory-v1.json",
+    "Canon/registries/e0-e1-operation-effects-v1.json"
+  ],
+  "apiRoutes": [
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/acceptance-matrix/route.ts",
+      "method": "GET",
+      "sourceSha256": "009ef5d9720492e74f1dc357be4d38e7b32d296c8faa5f7ff45d31a8402416ca",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/acceptance-matrix"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/acceptance-matrix/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/capabilities/route.ts",
+      "method": "GET",
+      "sourceSha256": "8d2a4dfcbbf15e7dc83a5198a0c9ab2e19cac2b87fc49d824cd1e3656943f863",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/capabilities/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/capability/route.ts",
+      "method": "GET",
+      "sourceSha256": "2200f76938a0e07c892e2cc36bb06feb92e100243a44d016dccf03b9e228ad4a",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/capability/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/prepare/route.ts",
+      "method": "POST",
+      "sourceSha256": "ffe7662c97e2dd049b064b8998bbe2acb8c01936ca6f090af4e38ef1c02bd667",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation",
+        "@/lib/benchmark-forecast/forecast-correlation"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/prepare/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "7e2690972dfb75a499aaefff838512ace44af4c3b4f95eb3d964c7e94dc3a68e",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/forecast-contract",
+        "@/lib/benchmark-forecast/runtime-query",
+        "@/lib/phase-2-2c/diagnostics"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/demo-certification/route.ts",
+      "method": "POST",
+      "sourceSha256": "2e35c4756ef04fcc96f318b614fee5ab05716659e2b559192bdf96da84b934b5",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/demo-certification"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/demo-certification/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/progressive/route.ts",
+      "method": "POST",
+      "sourceSha256": "f4f096699f6ece9ee8c53ed156d51fb3ed5ec3eb0b6a46080bfdae472a0893ee",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation",
+        "@/lib/benchmark-forecast/forecast-contract",
+        "@/lib/benchmark-forecast/forecast-correlation"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/progressive/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/stage12-shared-contention-diagnosis/route.ts",
+      "method": "POST",
+      "sourceSha256": "d48edd5d9250a0e273d1a72a242e16141365f3488094af241c4ae16e4ba71a0a",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/stage12-shared-contention-diagnosis"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/stage12-shared-contention-diagnosis/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/telemetry/route.ts",
+      "method": "POST",
+      "sourceSha256": "c2bfebd1e0085c85b9fb21246cfbfdd4c65bb3b82d05c1b0973d988e359231dd",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/forecast-action-telemetry"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/telemetry/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/verification/prepare/route.ts",
+      "method": "POST",
+      "sourceSha256": "7644a25bfd04e39a9e6d488c03c308dfbc67b6ae29e2708e944a0a747d3d668c",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation",
+        "@/lib/benchmark-forecast/forecast-correlation"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/verification/prepare/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "52d5db2f26db1c73825721f3d825e76ee79202feb797b25488723ab53d0480b3",
+      "imports": [
+        "next/server",
+        "@/lib/benchmark-forecast/forecast-contract",
+        "@/lib/benchmark-forecast/forecast-correlation",
+        "@/lib/benchmark-forecast/runtime-query"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/benchmark-forecast/verification/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/components/route.ts",
+      "method": "GET",
+      "sourceSha256": "7b82c4fbebe28422459d3c6765596417ea401826e92b57d6b17b9e292cc18c27",
+      "imports": [
+        "next/server",
+        "@/lib/phase-2-2c/diagnostics",
+        "@/lib/time-series/series-query"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/components/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/forecast-accuracy/route.ts",
+      "method": "GET",
+      "sourceSha256": "4d5a21f6e8e85fe1714f26d42a2c1bac126a71b0d7a503f6682616c16dcd5ef7",
+      "imports": [
+        "next/server",
+        "@/lib/forecast-accuracy/forecast-accuracy-contract",
+        "@/lib/forecast-accuracy/forecast-accuracy-query"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/forecast-accuracy/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/records/route.ts",
+      "method": "GET",
+      "sourceSha256": "0496af304651779e175f849fc51052dbebaf5f0ab07a72e470f93162ffc5a95f",
+      "imports": [
+        "next/server",
+        "@/lib/time-series/series-query"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/records/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/dashboard-preview/app/api/series/route.ts",
+      "method": "GET",
+      "sourceSha256": "3f1a02950f54a28ea839dd8df1ec43c173b25bf679c6738c5eaad312143268ae",
+      "imports": [
+        "next/server",
+        "@/lib/phase-2-2c/diagnostics",
+        "@/lib/time-series/series-query"
+      ],
+      "routing": {
+        "path": "apps/dashboard-preview/app/api/series/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_DASHBOARD",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "EXPLICIT_CLERK_MODE_REFUSES_HOST",
+      "acceptance": "REFUSAL_PROVEN_BY_REFERENCED_DASHBOARD_CI_NOT_BUSINESS_ADOPTION",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/advisory/route.ts",
+      "method": "POST",
+      "sourceSha256": "541bbb778af661ddc3e324b79f4d7a181854f2297403fe1c9aa5685f6a587c55",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/advisory/cic-adapter"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/advisory/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "PUBLIC_DETERMINISTIC_ADVISORY",
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "PUBLIC_OR_LEGACY_ENTRY_SEPARATE_POLICY",
+      "acceptance": "ENTRY_SPECIFIC_POLICY_NOT_IMPLICIT_ORG_MEMBERSHIP",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/ai-search/route.ts",
+      "method": "POST",
+      "sourceSha256": "7d10fafe701f84548540e78e1b304bb72c05145450b1cb2c3987726fd49a2683",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/errors",
+        "@/lib/benchmark/ai-search",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/ai-search/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "AI_SEARCH"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/analytics-eligibility/route.ts",
+      "method": "GET",
+      "sourceSha256": "f8f660c0eded23672b8ac38da10a655bd584487389c825f55d6b584fe8f3aebe",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/analytics",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/analytics-eligibility/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/analytics-series/route.ts",
+      "method": "GET",
+      "sourceSha256": "fd28202a564bf9e268606914adb88db8807a254c026a569a8ed4436330772a98",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/service",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/analytics-series/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "HISTORY_READ_THROUGH"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/context/route.ts",
+      "method": "POST",
+      "sourceSha256": "87fcb1cf804817e75ea154913b9a37fc8faf13c10d2f9a75f2a753b7f979b3f1",
+      "imports": [
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/benchmark/errors",
+        "@/lib/benchmark/service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/context/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/forecast/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "c2beaa4e27e5c45d4d893a023e76f6a5d3b83f24a87d61fa709bc83e81dea779",
+      "imports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/forecast/current/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_PUBLIC_API",
+      "effectFamilies": [
+        "PREPARED_FORECAST_READ"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "f0e4ea4e0907e927f63d81e3375c1ed17c28ff99bb094f23bd26c4738f2b5b06",
+      "imports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/forecast/verification/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_PUBLIC_API",
+      "effectFamilies": [
+        "PREPARED_FORECAST_READ"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/metadata/[metadataKey]/values/route.ts",
+      "method": "GET",
+      "sourceSha256": "72794e6ac84ab4ec3de90c91785d315b95b4c4222af78b8e944ba53e92adf253",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/metadata/[metadataKey]/values/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/metadata/route.ts",
+      "method": "GET",
+      "sourceSha256": "57307aa6dcfc57943bac2fff4dc1eb60c3e20e00bda47d95cae0b7808f5cf8aa",
+      "imports": [
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/metadata/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/preview/route.ts",
+      "method": "GET",
+      "sourceSha256": "4a48bc420681792cbe148e4ab541495afee1e3be1e8a1f4644aab0b2985c10da",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/preview/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "HISTORY_READ_THROUGH"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/search/route.ts",
+      "method": "GET",
+      "sourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/contracts",
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/search/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/search/route.ts",
+      "method": "POST",
+      "sourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/contracts",
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/search/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "MARKET_AND_BENCHMARK_DISCOVERY",
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/selection/route.ts",
+      "method": "GET",
+      "sourceSha256": "c6539722c19aa79a1f5efa63ce65384113f8c861349d2f27fb7003378c3c627a",
+      "imports": [
+        "@/lib/benchmark/runtime-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/selection/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "BENCHMARK_SELECTION",
+      "effectFamilies": [
+        "BENCHMARK_SELECTION"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "COMMON_CURRENT_ACCESS_SOURCE_ADOPTED",
+      "acceptance": "SELECTED_SOURCE_FLOW_TESTED_NOT_DEPLOYED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/selection/route.ts",
+      "method": "POST",
+      "sourceSha256": "c6539722c19aa79a1f5efa63ce65384113f8c861349d2f27fb7003378c3c627a",
+      "imports": [
+        "@/lib/benchmark/runtime-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/benchmark/selection/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "BENCHMARK_SELECTION",
+      "effectFamilies": [
+        "BENCHMARK_SELECTION"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "COMMON_CURRENT_ACCESS_SOURCE_ADOPTED",
+      "acceptance": "SELECTED_SOURCE_FLOW_TESTED_NOT_DEPLOYED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/category/[categoryId]/route.ts",
+      "method": "GET",
+      "sourceSha256": "01d5635c5e0e859fbfefccbd0f5460b118d20268971f70c72a1f11f35017c643",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/category/errors",
+        "@/lib/category/service",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/category/[categoryId]/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "CATEGORY_AND_COST_SCAN",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/category/[categoryId]/route.ts",
+      "method": "PATCH",
+      "sourceSha256": "01d5635c5e0e859fbfefccbd0f5460b118d20268971f70c72a1f11f35017c643",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/category/errors",
+        "@/lib/category/service",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/category/[categoryId]/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "CATEGORY_AND_COST_SCAN",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/category/ai-suggestions/route.ts",
+      "method": "POST",
+      "sourceSha256": "e47b7db068990d0d8c72bb5ded6b484baa37f2935198296eca141162f1d01bff",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/category/ai-suggestions",
+        "@/lib/category/errors",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/category/ai-suggestions/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "CATEGORY_AND_COST_SCAN",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/category/route.ts",
+      "method": "GET",
+      "sourceSha256": "baffdd308ce201fff2c57f489a78ccb96fd2c280d7a1184da3a9ed7e7ca2f4e1",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/category/contracts",
+        "@/lib/category/errors",
+        "@/lib/category/service",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/category/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "CATEGORY_AND_COST_SCAN",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/category/route.ts",
+      "method": "POST",
+      "sourceSha256": "baffdd308ce201fff2c57f489a78ccb96fd2c280d7a1184da3a9ed7e7ca2f4e1",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/category/contracts",
+        "@/lib/category/errors",
+        "@/lib/category/service",
+        "@/lib/api/middleware"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/category/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "CATEGORY_AND_COST_SCAN",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/cost-scan/category/[categoryId]/route.ts",
+      "method": "GET",
+      "sourceSha256": "49bb8ea2f362f356b8c18ed4be233c8319ff29c07e37eed74dedbe6530c236ba",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/category/errors",
+        "@/lib/cost-scan/errors",
+        "@/lib/cost-scan/service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/cost-scan/category/[categoryId]/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "CATEGORY_AND_COST_SCAN",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/health/route.ts",
+      "method": "GET",
+      "sourceSha256": "543cab74cfdf7190ed0ebc9ca12605056b28e5aadb6f37e59c24ffda58f4c295",
+      "imports": [
+        "next/server",
+        "@/lib/env"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/health/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "PUBLIC_ENTRY_OR_IDENTITY",
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "PUBLIC_OR_LEGACY_ENTRY_SEPARATE_POLICY",
+      "acceptance": "ENTRY_SPECIFIC_POLICY_NOT_IMPLICIT_ORG_MEMBERSHIP",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/hydrate/assistant/route.ts",
+      "method": "POST",
+      "sourceSha256": "110c44938c5ba2f1f368398835b97cb1e75943739b41f87bd1b47fcdf6b698e1",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/hydrate/assistant/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/hydrate/intelligence/route.ts",
+      "method": "POST",
+      "sourceSha256": "7731efc34a6dc17d7927f6b24ddab24af5404edb36650e395c53a68b06a828a4",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/hydrate/intelligence/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/hydrate/procurement/route.ts",
+      "method": "POST",
+      "sourceSha256": "1436bb1fe292e73b6c48631d39c80dd597624211a7b50d959d015b026a1a79d0",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/hydrate/procurement/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/hydrate/supplier/route.ts",
+      "method": "POST",
+      "sourceSha256": "21b95676c4957bc0d9d99ccdcc1bf651a3a8300e6572288a79c8cfb341b51b94",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/hydrate/supplier/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/action-trace/route.ts",
+      "method": "POST",
+      "sourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/internal-forecast-service-auth",
+        "@/lib/api/middleware",
+        "@/lib/forecast/forecast-action-trace"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/action-trace/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/action-trace/route.ts",
+      "method": "GET",
+      "sourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/internal-forecast-service-auth",
+        "@/lib/api/middleware",
+        "@/lib/forecast/forecast-action-trace"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/action-trace/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/capabilities/route.ts",
+      "method": "GET",
+      "sourceSha256": "2ae337a057e36b19e45e2e13942a96a3cfd5779a7ec9f5629d246efe960dd17b",
+      "imports": [
+        "@/lib/forecast/interactive-route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/capabilities/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/capability/route.ts",
+      "method": "GET",
+      "sourceSha256": "e259b1c1bda31026772810c961d2af03e82eb15f327c5bba7fa1bedcce0ccb58",
+      "imports": [
+        "@/lib/forecast/interactive-route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/capability/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/execution-ledger/route.ts",
+      "method": "POST",
+      "sourceSha256": "f3d4a9c6640abe4ef8de70d294ad3b7032dee871f62dd26073dd98f87f960916",
+      "imports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/execution-ledger/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/preparation/jobs/route.ts",
+      "method": "POST",
+      "sourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "imports": [
+        "@/lib/forecast/preparation-route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/preparation/jobs/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/preparation/jobs/route.ts",
+      "method": "GET",
+      "sourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "imports": [
+        "@/lib/forecast/preparation-route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/preparation/jobs/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepare/current/route.ts",
+      "method": "POST",
+      "sourceSha256": "9abad3a60bdefa588eb36932c4265ebd8382b93abecbd1f43ac971c4ed33d6b6",
+      "imports": [
+        "@/lib/forecast/interactive-route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/prepare/current/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepared/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "8f74a5faf4197d0d2a052e6d246b6a7822569fddc843c519d0390c5a38a44c3f",
+      "imports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/prepared/current/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepared/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "fdeb4f61fd2f4343bf8212f6ec4ce9c8bde1baeb32cdf01fd8546a15bb53082a",
+      "imports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/prepared/verification/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/production/route.ts",
+      "method": "GET",
+      "sourceSha256": "e8a2637de2e6dee2312ada893a22689419a8bedff9a6a25c1118c6dae0259f7f",
+      "imports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/production/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/progressive/route.ts",
+      "method": "POST",
+      "sourceSha256": "91c53480ab464b07d07ac70251de7e91df74909235a3bc99849197cb4e80ca02",
+      "imports": [
+        "@/lib/forecast/interactive-route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/progressive/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/readiness/route.ts",
+      "method": "GET",
+      "sourceSha256": "6f2146baba6411c3d350d95d32814b5426cff2985a901817400ccfb85e6ba7de",
+      "imports": [
+        "@/lib/forecast/interactive-route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/readiness/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/internal/forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "3cdd45b0f4f281a6cbd75170fcab382227fbad5f019450458ce85ee4ddeb1f3b",
+      "imports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/internal/forecast/verification/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "FORECAST_INTERNAL",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_TECHNICAL_TOKEN_ADAPTER",
+      "acceptance": "CURRENT_SERVICE_GRANT_DELEGATION_AND_PRIVATE_INITIATOR_BOUNDARY_NOT_ACCEPTED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/negotiation/context/route.ts",
+      "method": "POST",
+      "sourceSha256": "07cddab6f6f54f121590c3a531a9aebdd6c92fe12e3a686f37fa3bab39d73bcc",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/negotiation/context/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/negotiation/hydrate/route.ts",
+      "method": "POST",
+      "sourceSha256": "42d9ecffe1cd059317f3fe259bfb9ee836fe47addeeeccea0ff0f92da9290924",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/negotiation/hydrate/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/negotiation/intelligence/route.ts",
+      "method": "POST",
+      "sourceSha256": "c975646f970c5f7b11f8f3aece3284c99d115ee4994bead341546632d3d3b5cf",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/negotiation/intelligence/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/negotiation/retrieval/route.ts",
+      "method": "POST",
+      "sourceSha256": "aa2f4ee0dce99b6916119be3357186cf9672b8d6b818433ffe11df46281c7a9d",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/negotiation/retrieval/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/openapi/route.ts",
+      "method": "GET",
+      "sourceSha256": "65b922e2eec0e427cc4ed9e8bcb86fb3350ec6e9d59baf22b30ab4a5f7172db7",
+      "imports": [
+        "next/server",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/openapi/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "PUBLIC_ENTRY_OR_IDENTITY",
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "PUBLIC_OR_LEGACY_ENTRY_SEPARATE_POLICY",
+      "acceptance": "ENTRY_SPECIFIC_POLICY_NOT_IMPLICIT_ORG_MEMBERSHIP",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/porr-demo-auth/route.ts",
+      "method": "POST",
+      "sourceSha256": "561ba6b7e263ccc35a6c9e45eb6d469cbf998633e1b74612cd003ca8f7b9d2a1",
+      "imports": [
+        "next/server",
+        "@/lib/porr-demo-session",
+        "@/lib/porr-demo-profile"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/porr-demo-auth/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "PUBLIC_ENTRY_OR_IDENTITY",
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "PUBLIC_OR_LEGACY_ENTRY_SEPARATE_POLICY",
+      "acceptance": "ENTRY_SPECIFIC_POLICY_NOT_IMPLICIT_ORG_MEMBERSHIP",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/procurement/category/route.ts",
+      "method": "GET",
+      "sourceSha256": "a84f09993f834eee558bd77b8c9259b315dc60af7480e4a305b516a69cdbbe9b",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/procurement/category/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "CATEGORY_AND_COST_SCAN",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/procurement/context/route.ts",
+      "method": "GET",
+      "sourceSha256": "d80323c72cc69d5aa3f6e4f613947d43ea21e92cca17d99b40ff991892b13ac4",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/procurement/context/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/procurement/hydrate/route.ts",
+      "method": "POST",
+      "sourceSha256": "0e9078f9a8c50f3375817b0757d4e424f41cf397c05aeed705ec96e5d3ce2532",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/procurement/hydrate/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/procurement/intelligence/route.ts",
+      "method": "GET",
+      "sourceSha256": "79ab2674a7f11e930663a7dee9497b4cd99a81121995242a864184fecce8917e",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/procurement/intelligence/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/procurement/retrieval/route.ts",
+      "method": "POST",
+      "sourceSha256": "3d9c3980007e1662a0105120b2d31b876186cb55ec969b50ac00b6beee70ad22",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/procurement/retrieval/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/retrieval/contextual/route.ts",
+      "method": "POST",
+      "sourceSha256": "f2afbadb913d1d6d857666fa8b2c4671d37199ce67ed6c8ea2f84bae6c421c89",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/retrieval/contextual/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/retrieval/graph/route.ts",
+      "method": "POST",
+      "sourceSha256": "24b416742904917e048d92e38f692453c96e47fda471d74d571da0a40cf7f8ef",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/retrieval/graph/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/retrieval/rag/route.ts",
+      "method": "POST",
+      "sourceSha256": "3de75d8b5f67e260a7494582c13fad3ddd1a647de0adcc769a5ba964f508afa0",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/retrieval/rag/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/retrieval/semantic/route.ts",
+      "method": "POST",
+      "sourceSha256": "7bb0bce814944e402a46f9da86c4f5bb30c083bcc600e84085e3a123a398b80d",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/retrieval/semantic/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/supplier/financial-summary/route.ts",
+      "method": "GET",
+      "sourceSha256": "af1aeaf2d3ae6a87b3e7f6164e7623914dfbed7af40d2bd54b029a99544cd417",
+      "imports": [
+        "@/lib/platform/supplier-summary-runtime"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/supplier/financial-summary/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "NEW_SHARED_FINANCIAL_READ",
+      "effectFamilies": [
+        "SHARED_FINANCIAL_SUMMARY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "COMMON_CURRENT_ACCESS_SOURCE_ADOPTED",
+      "acceptance": "SELECTED_SOURCE_FLOW_TESTED_NOT_DEPLOYED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/supplier/graph/route.ts",
+      "method": "GET",
+      "sourceSha256": "6d98562398ea96798a7f360fa834ca8fde907ff211a6d7ab68ac4c89716b19cf",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/supplier/graph/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/supplier/intelligence/route.ts",
+      "method": "GET",
+      "sourceSha256": "be9dc3c96dc11a34bf5df4d8191833d286c17590c101fc73a78384a75c2972b3",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/supplier/intelligence/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/supplier/profile/route.ts",
+      "method": "GET",
+      "sourceSha256": "258d7dd71175c07a4e61b9a04ea6fd8b5c985870d3925b2a1e4e95dfc5127fa8",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/supplier/profile/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/sg-runtime/app/api/supplier/risk/route.ts",
+      "method": "GET",
+      "sourceSha256": "e7a3c67a118a8694f50701493e7c9a13412f451780f5f501b37f2c79553cb131",
+      "imports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "routing": {
+        "path": "apps/sg-runtime/app/api/supplier/risk/route.ts",
+        "profile": "SG2",
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "baselineGroup": "COGNITION_AGGREGATION_REQUIRES_DATA_REVIEW",
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_COGNITION_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/auth/login/route.ts",
+      "method": "POST",
+      "sourceSha256": "8fc9d38c58732c7b7e11f3aa1f37b32eb771cf249c58c0237e18ad0ca1797141",
+      "imports": [
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/auth/login/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "PUBLIC_ENTRY_OR_IDENTITY",
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "PUBLIC_OR_LEGACY_ENTRY_SEPARATE_POLICY",
+      "acceptance": "ENTRY_SPECIFIC_POLICY_NOT_IMPLICIT_ORG_MEMBERSHIP",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/auth/logout/route.ts",
+      "method": "POST",
+      "sourceSha256": "3106bdd1c74b0816f5be68075a5c6bc268e6bb4594c1ac8448ade11207d48ef2",
+      "imports": [
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/auth/logout/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "PUBLIC_ENTRY_OR_IDENTITY",
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "PUBLIC_OR_LEGACY_ENTRY_SEPARATE_POLICY",
+      "acceptance": "ENTRY_SPECIFIC_POLICY_NOT_IMPLICIT_ORG_MEMBERSHIP",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/health/route.ts",
+      "method": "GET",
+      "sourceSha256": "f34d31044bfb67a83aa3b32bdcd7d835458a36d1126a6f94dd6838dd1a961efc",
+      "imports": [],
+      "routing": {
+        "path": "apps/srm/app/api/health/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "PUBLIC_ENTRY_OR_IDENTITY",
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "PUBLIC_OR_LEGACY_ENTRY_SEPARATE_POLICY",
+      "acceptance": "ENTRY_SPECIFIC_POLICY_NOT_IMPLICIT_ORG_MEMBERSHIP",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/financial-excel/route.ts",
+      "method": "POST",
+      "sourceSha256": "701a9073b74f5ec60128ff561d1742b084534723be1571b5a5c388d4facc4f9f",
+      "imports": [
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/financial-excel",
+        "../../../../src/server/financial-documents",
+        "../../../../src/server/shared-catalog",
+        "../../../../src/server/xray-lookup",
+        "../../../../src/server/financial-excel-runtime",
+        "../../../../src/server/private-runtime"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/financial-excel/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "EXPORT_OR_UPSTREAM_FILE",
+      "effectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "COMMON_CURRENT_ACCESS_SOURCE_ADOPTED",
+      "acceptance": "SELECTED_SOURCE_FLOW_TESTED_NOT_DEPLOYED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/financial-summary/route.ts",
+      "method": "GET",
+      "sourceSha256": "0ce9d9e9ffb5e7eab94b6262b4a3fb05f47dd0e2d5ea7f452e5fc5d541286306",
+      "imports": [
+        "../../../../src/server/shared-financial-runtime"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/financial-summary/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "NEW_SHARED_FINANCIAL_READ",
+      "effectFamilies": [
+        "SHARED_FINANCIAL_SUMMARY"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "COMMON_CURRENT_ACCESS_SOURCE_ADOPTED",
+      "acceptance": "SELECTED_SOURCE_FLOW_TESTED_NOT_DEPLOYED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/jdg/kys/route.ts",
+      "method": "POST",
+      "sourceSha256": "394607a6613fc44409430553520cfa005e0336b5a102f0d43f7eca6af2c6c767",
+      "imports": [
+        "../../../../../src/server/lookup-diagnostics",
+        "../../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../../src/server/demo-auth",
+        "../../../../../src/server/request-origin",
+        "../../../../../src/server/xray-lookup",
+        "../../../../../src/server/pesel-reveal"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/jdg/kys/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "SUPPLIER_LOOKUP_OR_KYS",
+      "effectFamilies": [
+        "KYS_FETCH_CACHE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/jdg/route.ts",
+      "method": "POST",
+      "sourceSha256": "d4710be87d111f57a2105a29c61ccfdf0a95c61754fbd18a17442a748b08db99",
+      "imports": [
+        "../../../../src/server/lookup-diagnostics",
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/jdg-lookup",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/xray-lookup"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/jdg/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "SUPPLIER_LOOKUP_OR_KYS",
+      "effectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/kys/krs/route.ts",
+      "method": "POST",
+      "sourceSha256": "9fae01d0d51068be3949b8dccfbdaee79a0f3a6e1677b91edc6d636251fe6de4",
+      "imports": [
+        "../../../../../src/server/vercly-krs"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/kys/krs/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "EXPORT_OR_UPSTREAM_FILE",
+      "effectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/kys/pdf/route.ts",
+      "method": "POST",
+      "sourceSha256": "1cb2e964b511dbffeffe5752ef7505e962e6eccf08116c6f43085d97a482e372",
+      "imports": [
+        "../../../../../src/server/kys-pdf"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/kys/pdf/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "EXPORT_OR_UPSTREAM_FILE",
+      "effectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/kys/pesel/route.ts",
+      "method": "POST",
+      "sourceSha256": "2b09c41c3fed6735a1c4c559d5b5f1bf95791f5b5b112643ac67df92c0e10f7b",
+      "imports": [
+        "../../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../../src/server/demo-auth",
+        "../../../../../src/server/pesel-reveal",
+        "../../../../../src/server/request-origin",
+        "../../../../../src/server/xray-repository"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/kys/pesel/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "SUPPLIER_LOOKUP_OR_KYS",
+      "effectFamilies": [
+        "PII_REVEAL"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/kys/route.ts",
+      "method": "POST",
+      "sourceSha256": "74b6f1798320603037e19c7e6c9a4334f086b6945e2d6f4559a912d5ac568473",
+      "imports": [
+        "../../../../src/server/lookup-diagnostics",
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/xray-lookup",
+        "../../../../src/server/pesel-reveal"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/kys/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "SUPPLIER_LOOKUP_OR_KYS",
+      "effectFamilies": [
+        "KYS_FETCH_CACHE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/lookup/route.ts",
+      "method": "POST",
+      "sourceSha256": "edb28291a1980b5bc9a0eb5b848a44db930598ddec065679676ef6dca1495ecc",
+      "imports": [
+        "../../../../src/server/lookup-diagnostics",
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/xray-lookup"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/lookup/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "SUPPLIER_LOOKUP_OR_KYS",
+      "effectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/report-data/route.ts",
+      "method": "POST",
+      "sourceSha256": "d345f70a60485b358461859075e2f86597b9c1f1e5aa5398f85369d775c1515d",
+      "imports": [
+        "../../../../src/server/report-runtime"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/report-data/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "REPORT_PROJECTION",
+      "effectFamilies": [
+        "REPORT_PROJECTION",
+        "PREFERENCES_REUSE"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "COMMON_CURRENT_ACCESS_SOURCE_ADOPTED",
+      "acceptance": "SELECTED_SOURCE_FLOW_TESTED_NOT_DEPLOYED",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/search/route.ts",
+      "method": "POST",
+      "sourceSha256": "2eb6155b2d9a546774f70adf7d81711f889a6e08cdd4eae9890b542a72ffaa9a",
+      "imports": [
+        "../../../../src/server/lookup-diagnostics",
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/registry-search",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/xray-lookup"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/search/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "SUPPLIER_DISCOVERY",
+      "effectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    },
+    {
+      "path": "apps/srm/app/api/xray/web-identity/route.ts",
+      "method": "POST",
+      "sourceSha256": "22a113cbfdadfe3bcae865dd80dbbcdedeb776677bc6594f0b07841905194952",
+      "imports": [
+        "../../../../src/server/supplier-web-identity"
+      ],
+      "routing": {
+        "path": "apps/srm/app/api/xray/web-identity/route.ts",
+        "profile": "SRM",
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "codeState": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "baselineGroup": "SUPPLIER_WEB_IDENTITY",
+      "effectFamilies": [
+        "WEB_ENRICHMENT"
+      ],
+      "liveAdoption": "NOT_REVERIFIED_BY_SOURCE_PROGRESS",
+      "sourceBoundary": "LEGACY_DEMO_GUARD_REFUSES_CLERK",
+      "acceptance": "BUSINESS_FLOW_NOT_ADOPTED_BY_NAMED_PRIVATE_HOST",
+      "observationDepth": "ROUTE_CENSUS_AND_REFERENCED_GUARD_FAMILY",
+      "grantsPermission": false
+    }
+  ],
+  "sourceEvidence": [
+    {
+      "path": "apps/srm/middleware.ts",
+      "sourceSha256": "58f8d36eb63d2d1d8681c20fa1c788d05afaf76595ddae2f788ce905462074f6"
+    },
+    {
+      "path": "apps/srm/src/server/demo-auth.ts",
+      "sourceSha256": "d435cf875a568c4d52992572a497397069058668ce25f94e51167d73d59fbe73"
+    },
+    {
+      "path": "apps/sg-runtime/middleware.ts",
+      "sourceSha256": "e07881cd38dc0771ca046f8174f73e1c1ffb41fa1bb3b2e2f9740c781955c860"
+    },
+    {
+      "path": "apps/sg-runtime/lib/api/middleware.ts",
+      "sourceSha256": "2a25f8fffc9706908ec4723b5c61da36ce3b69ab5cf05b83dd546195b05d499c"
+    },
+    {
+      "path": "apps/sg-runtime/lib/api/internal-forecast-service-auth.ts",
+      "sourceSha256": "2bc8a2dce60f61a37e0a7bbf334882830ca894d2cd8faa4c3dc363c051bae127"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/route-handlers.ts",
+      "sourceSha256": "2c09cfb6cd915e2c5e8d502f2c5562c53f689b7d4b513da28ed4225ac773ff51"
+    },
+    {
+      "path": "apps/sg-runtime/lib/market-data/service.ts",
+      "sourceSha256": "70e7755d7f9fe42b44c39e99e92e53be52b60705b48fed9d8b1256dd78115c4b"
+    },
+    {
+      "path": "apps/sg-runtime/lib/benchmark/analytics.ts",
+      "sourceSha256": "0506a415c10bbccee3a73513c1ccb567d5409c5934d412e4c982e305c4d67180"
+    },
+    {
+      "path": "apps/dashboard-preview/middleware.ts",
+      "sourceSha256": "fcc6cfec91c1c015958fd2c2618baa3bf7425e5cab27a5049f5808509b9d8788"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+      "sourceSha256": "74c3d20875d0f19e8989e93e0e8b4d7ff49348bd41b33a1664adb7b4a2438d7f"
+    },
+    {
+      "path": "apps/srm/src/server/vercly-kys.ts",
+      "sourceSha256": "ea78105c7af4f01e55501d26a1f3669ca2dce4267d2a25be7c31dc8915e67f91"
+    },
+    {
+      "path": "apps/srm/src/server/kys-pdf.ts",
+      "sourceSha256": "26ffd6de8f4bcb032489b8e6d406e382a9c11ada6baa48b84b9c795ba36390cc"
+    },
+    {
+      "path": "packages/platform-contracts/src/operation-context.mjs",
+      "sourceSha256": "c5adf901c6d83e29a5872b64775f96371672eb2c2d067bd426bf8c03a8254940"
+    }
+  ],
+  "separateReceiverReferences": [
+    {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-SHARED-SUMMARY-CONTRACT-PORT-20261017",
+      "repository": "profitia/SG-dev",
+      "pullRequest": "https://github.com/profitia/SG-dev/pull/446",
+      "sourceSha": "702fc1d70ce4ed4797c5030ddae093694bc04e21"
+    },
+    {
+      "projectKey": "SG2",
+      "taskId": "SG2-E1-SUPPLIER-SUMMARY-ADOPTION-20261017",
+      "repository": "profitia/SG-dev",
+      "pullRequest": "https://github.com/profitia/SG-dev/pull/447",
+      "sourceSha": "1230fb52cc0dcca057b93981a56b0cf7cdeb4d50"
+    },
+    {
+      "projectKey": "SG2",
+      "taskId": "SG2-E1-SUPPLIER-COMPILER-COMPATIBILITY-20261017",
+      "repository": "profitia/SG-dev",
+      "pullRequest": "https://github.com/profitia/SG-dev/pull/447",
+      "sourceSha": "4ee46eb53c290f441a240670c7a36540c46e73cc"
+    },
+    {
+      "projectKey": "SG2",
+      "taskId": "SG2-E1-SUPPLIER-BUNDLE-COMPATIBILITY-20261017",
+      "repository": "profitia/SG-dev",
+      "pullRequest": "https://github.com/profitia/SG-dev/pull/447",
+      "sourceSha": "fe07eae73eb40022a33cf23172e487c050d27646"
+    }
+  ],
+  "verifiedCiEvidence": {
+    "aggregateSha": "fe07eae73eb40022a33cf23172e487c050d27646",
+    "mergeSha": "d52c6ac6eab719ab0d82dcd1707a3605b7c31457",
+    "controlledRun": 39060958945,
+    "actualSg2Tests": 129,
+    "skippedSg2Tests": 0,
+    "typecheck": "PASS",
+    "build": "PASS",
+    "publicRuns": [
+      39060962948,
+      39061004914
+    ],
+    "publicAttempts": 2,
+    "srmAndPublicReact18Runs": [
+      39060962943,
+      39061004916
+    ],
+    "mainRun": 39061248663,
+    "mainSrmRun": 39061248646,
+    "mainGovernanceRun": 39061248719,
+    "mainExactCandidateControl": "d52c6ac6eab719ab0d82dcd1707a3605b7c31457",
+    "policyDigest": "c08bc30b90ad0e289bff6c9306920fc258a01bcd2e8625a309116884548987b7",
+    "credentialRemovedBeforeCandidateExecution": true,
+    "noPrivatePackageArtifacts": true,
+    "noProductDeployment": true,
+    "auditReranProductTests": false,
+    "scope": "Downloaded sanitized proofs plus actual final run statuses and post-credential test counts; separate source test evidence is referenced, not copied PMOS records"
+  },
+  "remainingAcceptedBoundaries": [
+    {
+      "id": "CURRENT_BUSINESS_RECEIVERS",
+      "status": "IN_PROGRESS",
+      "detail": "Protected selection/report/shared-summary/export sources do not constitute full knowledge/discovery/lookup/KYS/category/dashboard adoption; refusal of unadopted paths is a safe boundary, not business delivery."
+    },
+    {
+      "id": "READ_THROUGH_EFFECTS",
+      "status": "IN_PROGRESS",
+      "detail": "Historical read miss can acquire provider data/upsert global SQL; public prepared daily current also obtains historical series before fingerprint. URL analytics eligibility only constructs a link here; later host preparation must be checked independently. A read grant is not a global-write or paid-use entitlement."
+    },
+    {
+      "id": "JOBS_AND_CACHE_FILES",
+      "status": "IN_PROGRESS",
+      "detail": "Legacy internal token is not current service grant or delegated-user authority; mutable initiator/ledger state, cache scope, KYS/file/PDF source and current revocation remain to integrate. Shared data payload does not make initiator metadata shared."
+    },
+    {
+      "id": "KYS_EXTERNAL",
+      "status": "AUTHORITY_ONBOARDING_REQUIRED_FOR_EXTERNAL_MUTATION",
+      "detail": "Separate profitia/KYS repository is absent from active project register. No existing profile grants mutation there; no one-time PHR exception extends to it."
+    },
+    {
+      "id": "LIVE_IDENTITY_AND_DATA",
+      "status": "NOT_VERIFIED_BY_THIS_SOURCE_REVIEW",
+      "detail": "No actual browser OTP, live cross-server request, activation/grant change or business-data move in these source units; last prepared private-store state is separately dated and was not re-read here."
+    },
+    {
+      "id": "DEVELOPMENT_RELEASE",
+      "status": "NOT_PERFORMED",
+      "detail": "Exact complete release delta, retained artifact/config/schema rollback and actual user business acceptance required before activation."
+    },
+    {
+      "id": "STAGING_RELEASE",
+      "status": "NOT_PERFORMED",
+      "detail": "Own environment/identity binding, release contract, retained LKG, actual provider evidence and owner review required; do not borrow Development keys or report as Development."
+    }
+  ],
+  "externalKysSourceObservation": {
+    "repository": "profitia/KYS",
+    "sourceSha": "ae09b8d045f13e35dcc429a994a91c678594c28a",
+    "inspection": "READ_ONLY_PUBLIC_SOURCE_NO_CUSTOMER_API_CALLS_OR_DATABASE_READ",
+    "files": [
+      {
+        "path": "src/app/api/verifications/route.ts",
+        "sourceSha256": "67655a6481a6055d20accc826a9331f6ff2053f69d203ace52db4bed6456902a"
+      },
+      {
+        "path": "src/app/api/verifications/[id]/report/route.ts",
+        "sourceSha256": "1a189e3d6296b4d2f882d5894d817123cc5c86e9b6fc9d4a11c12e03ca34b6fa"
+      },
+      {
+        "path": "src/app/api/verifications/[id]/pdf/route.ts",
+        "sourceSha256": "a0c598d8af8328f5463cc3b7e2c603a5cf0b10070c0bea78a7493ebdcecca4d0"
+      },
+      {
+        "path": "src/app/api/verifications/[id]/poll/route.ts",
+        "sourceSha256": "1a4327c9120aa9c6bbcaa460a1106a8329d78552b93b54caaf88b206357a2690"
+      },
+      {
+        "path": "src/app/api/verifications/[id]/route.ts",
+        "sourceSha256": "b7c3fddc2decc4239245e2f697c0e330cee4dd7261e74d487b8e35582bb447ce"
+      },
+      {
+        "path": "src/app/api/dev/persistence-smoke/route.ts",
+        "sourceSha256": "65c96d43384c798e9b7b5500ef28f78183365d93df7dfb03330102225614f0c6"
+      },
+      {
+        "path": "src/features/verifications/access/report-access.ts",
+        "sourceSha256": "936cf02a4b9e171717ef12ce0d032a39c38b239d94f4bf3c8751cebd29b021aa"
+      },
+      {
+        "path": "src/features/verifications/report/server/load-report.ts",
+        "sourceSha256": "3ead892b6a6b0b34cfb5ab7e7ca3e19e78c27818f61d169d3e56d7ce11a1b1d9"
+      },
+      {
+        "path": "src/features/verifications/server/orchestration.ts",
+        "sourceSha256": "ada48beb0b0d74439b1e9b67aa3892262580c70e32a7845b08904f9c2881aa92"
+      },
+      {
+        "path": "src/features/verifications/server/repository.ts",
+        "sourceSha256": "4bab6501ebf617cde84919434ce72bbdab7623a941ddf0e701106b46cc5c5ae7"
+      }
+    ],
+    "globalMiddlewareOrProxyInTrackedTree": false,
+    "findings": [
+      "POST verification accepts orgId/requestedByUserId from caller payload before orchestration.",
+      "Status and poll load by verification ID without verified caller context in reviewed call chain.",
+      "Report/PDF access uses server dev-local context and organisation comparison, rather than actual caller membership.",
+      "Development smoke POST creates local database records without caller verification in reviewed handler."
+    ],
+    "runtimeExposureOrLeakProved": false,
+    "providerConfigOrDeploymentReverified": false,
+    "relationshipToSrm": "SRM adapter posts provider-array payload to configurable VERCLY_API_BASE_URL with its provider credential; this source observation does not establish that its destination is the separate Profitia KYS service. Do not conflate product KYS functionality, vendor API and separate KYS application.",
+    "authorityDecision": "Controlled onboarding or explicit narrowly authorised external-repository exception is required before its code changes; no external mutation in this task."
+  },
+  "overallAcceptance": {
+    "e0E1": "IN_PROGRESS",
+    "secondHostSourceFlow": "ACTUAL_SHARED_MODULE_AND_OWN_AUTHORISED_API_TESTED",
+    "liveTwoHostEndToEnd": "NOT_PROVED",
+    "developmentRelease": "NOT_PERFORMED",
+    "stagingRelease": "NOT_PERFORMED",
+    "allGapsClosed": false,
+    "newScopeAuthorised": false
+  }
+}
