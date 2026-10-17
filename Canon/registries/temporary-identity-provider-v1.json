@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "1.0",
+  "registryId": "temporary-identity-provider-resource",
+  "owner": "Architecture Platform",
+  "status": "DEVELOPMENT_CONFIGURED_WITH_NOTED_VARIATION_NOT_INTEGRATED",
+  "verifiedAt": "2026-10-17T07:33:28Z",
+  "taskId": "ARCHITECTURE-E1-CLERK-DEVELOPMENT-CONFIG-20261017",
+  "targetEnvironment": "development",
+  "provider": "Clerk",
+  "providerRole": "TEMPORARY_IDENTITY_VERIFICATION_ONLY",
+  "applicationId": "app_3KoJk9FmKeTC4hhlQwTgX6PMZmD",
+  "instanceId": "ins_3KoJk8us60Ywqei67JBwUx6R5pi",
+  "applicationName": "profitia-platform-development",
+  "creationAuthority": "OWNER_CREATED_APPLICATION",
+  "workspacePlanObserved": "Hobby",
+  "dashboard": "https://dashboard.clerk.com/apps/app_3KoJk9FmKeTC4hhlQwTgX6PMZmD/instances/ins_3KoJk8us60Ywqei67JBwUx6R5pi/user-authentication/user-and-authentication",
+  "accessRestrictions": {
+    "mode": "OPEN",
+    "allowlistEnabled": true,
+    "identifierCount": 1,
+    "matchesOwnerProvidedAdministratorAddress": true,
+    "scope": "PROVIDER_SIGNUP_RESTRICTION_NOT_PRODUCT_AUTHORIZATION"
+  },
+  "email": {
+    "signup": true,
+    "required": true,
+    "verifyAtSignup": true,
+    "signupVerificationCode": true,
+    "signupVerificationLink": false,
+    "signin": true,
+    "signinVerificationCode": true,
+    "signinVerificationLink": false
+  },
+  "otherMethods": {
+    "phoneSignup": false,
+    "phoneSignin": false,
+    "googleConnectionEnabled": false,
+    "microsoftConnectionEnabled": false,
+    "passkeySignin": false,
+    "passkeyAddition": false,
+    "mobileBiometricSignin": false,
+    "usernameSignup": true,
+    "usernameRequired": false,
+    "usernameSignin": false,
+    "passwordSignup": true,
+    "passwordAddition": true,
+    "deviceTrustEnabledObserved": true,
+    "strictCodeOnlyConfiguration": false
+  },
+  "variation": {
+    "status": "PASSWORD_SETTINGS_PRESERVED_TO_RETAIN_DEVICE_TRUST",
+    "observedCoupling": "Turning off password addition changed the Device Trust indication to disabled in the unsaved form",
+    "resolution": "Reset the unsaved password form; both original password switches and enabled Device Trust were restored before saving",
+    "passwordChangeSaved": false,
+    "individualCredentialChanged": false
+  },
+  "providerOrganizationsEnabled": false,
+  "providerUserBillingEnabled": false,
+  "accountObservation": {
+    "ownerDesignatedAccountPresent": true,
+    "emailVerifiedFlagObserved": true,
+    "authenticatedSessionEvidence": "NOT_OBTAINED",
+    "internalBindingCreated": false,
+    "businessAdministratorGranted": false
+  },
+  "boundaries": {
+    "secretKeyRead": false,
+    "secretKeyStoredByAgent": false,
+    "individualCredentialReset": false,
+    "accountDeleted": false,
+    "connectionDeleted": false,
+    "newCostOrPlanChange": false,
+    "productionActivated": false,
+    "domainsChanged": false,
+    "productRuntimeChanged": false,
+    "productDeploymentPerformed": false,
+    "isArchitectureLabCredential": false
+  },
+  "intendedConsumers": [
+    {"projectKey": "SG2", "adoptionStatus": "PENDING_SEPARATE_TASK"},
+    {"projectKey": "SRM", "adoptionStatus": "PENDING_SEPARATE_TASK"}
+  ],
+  "clientCompatibilityObservation": {
+    "source": "PUBLIC_NPM_PACKAGE_METADATA",
+    "clerkReactVersion": "6.17.8",
+    "clerkJsVersion": "6.39.1",
+    "currentHostReactRangesSupported": true,
+    "installedInProduct": false,
+    "hostUiIntegrationVerified": false
+  }
+}
