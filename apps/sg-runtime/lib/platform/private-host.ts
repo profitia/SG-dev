@@ -172,7 +172,7 @@ export function createSg2PrivateForecastCurrentHost(options: Sg2PrivateHostOptio
     describeOutcome: async value => {
       if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const body = await value.clone().json()
-      return body.status === 'NOT_AVAILABLE' ? 'NO_DATA' : 'SUCCEEDED'
+      return body.status === 'AVAILABLE' ? 'SUCCEEDED' : 'NO_DATA'
     },
   })
 }

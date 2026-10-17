@@ -829,6 +829,14 @@ test('SG2 Prisma host composes the accepted access store with existing selection
           const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 2")).rows.map(r=>r.event)
           assert(events.every(e=>e.reasonCode==='NO_DATA'));assert.equal(providerCalls,providerBefore)
         })
+        await t.test('stored failed computations are returned without diagnostics and recorded as NO_DATA rather than a successful forecast',async()=>{
+          const failed={contractVersion:body.contractVersion,status:'FAILED',benchmark:body.benchmark,forecastMethod:body.forecastMethod,
+            model:body.model,audit:body.audit,warnings:[],reasonCode:'MODEL_FIT_FAILED',message:'SYNTHETIC_PRIVATE_FORECAST_MARKER'}
+          await owner.query('UPDATE public.rolling_daily_current_forecast_snapshots SET status=\'FAILED\',"payloadJson"=$1::jsonb WHERE id=\'prepared\'',[JSON.stringify(failed)])
+          try{const result=await routes(input());assert.equal(result.status,200);const value=await result.json();assert.equal(value.status,'FAILED');assert.equal(value.message,null);assert.equal('path' in value,false)
+            const event=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 1")).rows[0].event;assert.equal(event.reasonCode,'NO_DATA')}
+          finally{await owner.query('UPDATE public.rolling_daily_current_forecast_snapshots SET status=\'AVAILABLE\',"payloadJson"=$1::jsonb WHERE id=\'prepared\'',[JSON.stringify(body)])}
+        })
         await t.test('receipt drift and tainted output are withheld with no raw diagnostic or metadata',async()=>{
           await owner.query("UPDATE profitia_forecast_read.installation SET branch_id='foreign'")
           try{assert.equal((await routes(input())).status,503)}finally{await owner.query("UPDATE profitia_forecast_read.installation SET branch_id='isolated-source-branch'")}

@@ -136,6 +136,15 @@ test('actual generated forecast ORM reads a closed source view with canonical id
         'SELECT * FROM public.market_series', 'UPDATE profitia_forecast_read.installation SET source_ref=\'forged\'',
         'CREATE TABLE profitia_forecast_read.forged(id integer)']) await assert.rejects(prisma.$executeRawUnsafe(query))
     })
+    await t.test('stored unavailable and failed artifacts retain their reason code without raw messages or invented forecasts', async () => {
+      for(const status of ['NOT_AVAILABLE','FAILED']) {
+        const original=payload();const stored={contractVersion:original.contractVersion,status,benchmark:original.benchmark,forecastMethod:original.forecastMethod,
+          model:original.model,audit:original.audit,warnings:original.warnings,reasonCode:'MODEL_FIT_FAILED',message:marker}
+        await owner.query('UPDATE public.rolling_daily_current_forecast_snapshots SET status=$1,"payloadJson"=$2::jsonb WHERE id=\'stored\'',[status,JSON.stringify(stored)])
+        try{const result=await read(selection);assert.equal(result.status,status);assert.equal(result.reasonCode,'MODEL_FIT_FAILED');assert.equal(result.message,null);assert.equal('path' in result,false);assert(!JSON.stringify(result).includes(marker))}
+        finally{await owner.query('UPDATE public.rolling_daily_current_forecast_snapshots SET status=\'AVAILABLE\',"payloadJson"=$1::jsonb WHERE id=\'stored\'',[JSON.stringify(original)])}
+      }
+    })
     await t.test('actual history change and stale statistical identity never publish an obsolete snapshot or refit it', async () => {
       await owner.query("UPDATE public.market_observations SET value=1 WHERE \"seriesId\"='daily' AND \"observedAt\"='2025-01-01'")
       try { const result=await read(selection);assert.equal(result.status,'NOT_AVAILABLE');assert.match(result.reason,/STALE/) }
