@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto'
 
 import { type NextRequest, NextResponse } from 'next/server'
 
-import { cognitionError } from '@/lib/api/middleware'
+import { cognitionError, privateApiResponse } from '@/lib/api/middleware'
 import { resolveForecastCorrelationId } from '@/lib/forecast/forecast-correlation'
 
 export type InternalForecastServicePrincipal = {
@@ -49,42 +49,61 @@ export function withInternalForecastServiceAuth<TArgs extends unknown[]>(
   const scope = options.scope ?? 'FORECAST_READ'
 
   return async (request: NextRequest, ...args: TArgs): Promise<NextResponse> => {
-    const configuredToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN?.trim() ?? ''
     const requestId = resolveForecastCorrelationId(request.headers)
 
+    // This credential authenticates only the retained deployment integration.
+    // It is not a current SERVICE_GRANT, user delegation or ingest permission.
+    // Check the server mode before reading the credential or invoking a handler.
+    if ((process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo') !== 'legacy_demo') {
+      return privateApiResponse(cognitionError(
+        'INTERNAL_SERVICE_AUTH_UNAVAILABLE',
+        'Internal forecast service authentication is not configured for this mode.',
+        403,
+        requestId,
+      ))
+    }
+
+    const configuredToken = process.env.SG_RUNTIME_INTERNAL_FORECAST_SERVICE_TOKEN?.trim() ?? ''
+
     if (!configuredToken) {
-      return cognitionError(
+      return privateApiResponse(cognitionError(
         'INTERNAL_SERVICE_AUTH_UNAVAILABLE',
         'Internal forecast service authentication is not configured.',
         403,
         requestId,
-      )
+      ))
     }
 
     const providedToken = readBearerToken(request)
     if (!providedToken) {
-      return cognitionError(
+      return privateApiResponse(cognitionError(
         'INTERNAL_SERVICE_AUTH_REQUIRED',
         'Internal forecast service authentication is required.',
         401,
         requestId,
-      )
+      ))
     }
 
     if (!isValidInternalServiceToken(providedToken, configuredToken)) {
-      return cognitionError(
+      return privateApiResponse(cognitionError(
         'INTERNAL_SERVICE_AUTH_INVALID',
         'Internal forecast service authentication is invalid.',
         403,
         requestId,
-      )
+      ))
     }
 
-    return handler({
-      kind: 'INTERNAL_SERVICE',
-      service,
-      scope,
-      requestId,
-    }, request, ...args)
+    try {
+      return privateApiResponse(await handler({
+        kind: 'INTERNAL_SERVICE',
+        service,
+        scope,
+        requestId,
+      }, request, ...args))
+    } catch {
+      // Do not expose provider/SQL errors or log their private payloads.
+      console.error('[internal-forecast-api] Protected operation failed')
+      return privateApiResponse(cognitionError('INTERNAL_ERROR', 'Operation unavailable.', 500, requestId))
+    }
   }
 }
