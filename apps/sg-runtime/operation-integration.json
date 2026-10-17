@@ -41,7 +41,9 @@
   "operations": [
     "benchmark.selection.read",
     "benchmark.selection.write",
-    "supplier.report.read"
+    "supplier.report.read",
+    "category.read",
+    "category.write"
   ],
   "requiredInputOperations": [],
   "identityAdapter": "OFFICIAL_CLERK_ADAPTER_WITH_SYNTHETIC_FIXTURE_RESPONSES",
@@ -94,6 +96,41 @@
       "NO_PROVIDER_REFRESH_OR_BILLING",
       "NO_DISTRIBUTED_TRANSACTION_CLAIM",
       "LIVE_LOGIN_PEER_AND_RELEASE_NOT_VERIFIED"
+    ]
+  },
+  "category": {
+    "moduleId": "category",
+    "taskId": "SG2-E1-PRIVATE-CATEGORY-ADOPTION-20261017",
+    "contractRules": [
+      "AM-13",
+      "AM-14"
+    ],
+    "apiMethods": [
+      "GET /api/category",
+      "POST /api/category",
+      "GET /api/category/[categoryId]",
+      "PATCH /api/category/[categoryId]"
+    ],
+    "hostAdapter": "lib/category/runtime-handlers.ts",
+    "outputProjection": "sg2-category-response-v1",
+    "configurationVersion": "sg2-private-category-e1-v1",
+    "privateBoundarySource": "prisma/private-store/002-category-boundaries.sql",
+    "privateBoundaryDigest": "2724e35ab3ef02641a5f92d6c69a881e1bc99cadac4240e4d5fc2cd1daa44df1",
+    "activation": "EXPLICIT_SERVER_OPT_IN_DEFAULT_OFF",
+    "sourceMigrationState": "CANDIDATE_NOT_APPLIED_TO_CLOUD",
+    "legacyGlobalPrismaSchemaChanged": false,
+    "referenceCatalogPolicy": "EXPLICIT_ORGANISATION_REFERENCE_SELECT_NO_BENCHMARK_SELECTION_OR_CATALOG_WRITE",
+    "persistence": "SAME_NATIVE_PRISMA_TRANSACTION_POOL_AND_COMMON_AUTHORITY",
+    "audit": "OWN_CURRENT_MODULE_INTENT_OUTCOME_OR_FAILURE",
+    "versionSemantics": "REPRESENTATION_AND_COLLECTION_VERSION_NOT_ROW_CAS",
+    "deploymentAdoption": "NOT_PERFORMED",
+    "notAcceptedHere": [
+      "CATEGORY_UI",
+      "COST_SCAN",
+      "AI_SUGGESTIONS",
+      "LIVE_BROWSER_SESSION",
+      "LIVE_SCHEMA_ROLE_GRANT_CONFIGURATION",
+      "DEVELOPMENT_OR_STAGING_RELEASE"
     ]
   }
 }

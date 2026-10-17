@@ -4,6 +4,7 @@ import { createClerkIdentityAuthenticator, type ClerkIdentityClient, type Identi
 import type { AccessQuery, AccessStoreBinding } from '@profitia/platform-contracts/access-store'
 import { OperationDenied, type Application } from '@profitia/platform-contracts/operation-context'
 import { projectSupplierSummaryResponse, readSupplierSummarySelection, SUPPLIER_SUMMARY_PROJECTION } from './supplier-summary'
+import { CATEGORY_PROJECTION, categoryOperation, categoryResourceId, projectCategoryResponse, readCategoryOperation } from '@/lib/category/operation-contract'
 
 type QueryClient = Pick<Prisma.TransactionClient, '$queryRawUnsafe' | '$executeRawUnsafe'>
 
@@ -31,7 +32,7 @@ type Sg2PrivateHostOptions = {
   identity: IdentityApplication
   binding: AccessStoreBinding
   /** Required accepted module boundary; no base-only path to this private store. */
-  module: { id: 'benchmark' | 'supplier_report'; schemaDigest: string; auditSchemaDigest: string }
+  module: { id: 'benchmark' | 'supplier_report' | 'category'; schemaDigest: string; auditSchemaDigest: string }
   transactionTimeoutMs?: number
   now?: () => number
 }
@@ -98,5 +99,36 @@ export function createSg2SupplierSummaryHost(options: Sg2PrivateHostOptions & { 
         version: SUPPLIER_SUMMARY_PROJECTION, projectionVersion: SUPPLIER_SUMMARY_PROJECTION } }
     },
     projectOutput: projectSupplierSummaryResponse,
+  })
+}
+
+/** Existing category business service, same ordinary native pool and authority.
+ * Reference catalog SELECT is explicitly part of category composition; this
+ * grants no benchmark-selection API, catalog write or supplier operation. */
+export function createSg2PrivateCategoryHost(options: Sg2PrivateHostOptions & {
+  module: { id: 'category'; schemaDigest: string; auditSchemaDigest: string }; categoryBoundaryDigest: string
+}) {
+  const digest = options.categoryBoundaryDigest
+  if (!/^[a-f0-9]{64}$/.test(digest)) throw new TypeError('Accepted private category boundary required')
+  return createPrivateOperationHost<Prisma.TransactionClient>({
+    ...hostBase(options, 'category', ['category.read','category.write']),
+    readResources: async ({ request, scope, query }) => {
+      const selected = readCategoryOperation(request.payload)
+      if (!scope.organisationId || request.operation !== categoryOperation(selected)
+        || request.resourceId !== categoryResourceId(selected, scope.organisationId)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      const installed = await query("SELECT source_ref FROM profitia_category.installation WHERE singleton AND schema_version='1.0.0' AND boundary_digest=$1", [digest])
+      if (!installed || installed.rows.length !== 1 || typeof installed.rows[0].source_ref !== 'string'
+        || !installed.rows[0].source_ref.length || installed.rows[0].source_ref.length > 256) throw new OperationDenied('POLICY_UNAVAILABLE')
+      return { resource: { id: request.resourceId, type: 'category', dataClass: 'ORGANISATION_PRIVATE',
+        environment: scope.environment, ownerOrganisationId: scope.organisationId, ownerUserId: null,
+        // Representation/collection versions, not an optimistic-lock promise.
+        version: selected.action === 'list' ? 'category-collection-v1' : 'category-item-envelope-v1', projectionVersion: CATEGORY_PROJECTION } }
+    },
+    projectOutput: projectCategoryResponse,
+    describeOutcome: async value => {
+      if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      const body = await value.clone().json()
+      return Array.isArray(body.items) && body.items.length === 0 ? 'NO_DATA' : 'SUCCEEDED'
+    },
   })
 }

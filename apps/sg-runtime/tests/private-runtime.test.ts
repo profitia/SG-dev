@@ -165,3 +165,17 @@ test('actual deployed GET refuses incomplete Clerk configuration without private
     assert.equal(body.includes('forged'), false); assert.equal(body.includes('postgres'), false)
   } finally { if (previous === undefined) delete process.env.PROFITIA_AUTH_PROVIDER; else process.env.PROFITIA_AUTH_PROVIDER = previous }
 })
+
+
+test('private category capability is separately opt-in and pins its own unactivated SQL without changing benchmark or supplier configuration',()=>{
+  const env=fixture(),base=readSg2PrivateSelectionConfiguration(env),enabled=readSg2PrivateSelectionConfiguration({...env,PROFITIA_CATEGORY_ENABLED:'true'})
+  assert.equal(base.provider,'clerk');assert.equal(enabled.provider,'clerk')
+  if(base.provider!=='clerk'||enabled.provider!=='clerk')throw Error('Expected private intent')
+  assert.equal(base.category,undefined);assert.equal(enabled.category?.configurationVersion,'sg2-private-category-e1-v1')
+  assert.equal(enabled.category?.boundaryDigest,createHash('sha256').update(readFileSync(new URL('../prisma/private-store/002-category-boundaries.sql',import.meta.url))).digest('hex'))
+  assert.equal(target.category.defaultEnabled,false);assert.equal(target.category.observedState,'SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED')
+  assert.deepEqual(enabled.application,base.application);assert.equal(enabled.supplierSummary,undefined)
+  for(const flag of ['yes','TRUE','1','',null])assert.throws(()=>readSg2PrivateSelectionConfiguration({...env,PROFITIA_CATEGORY_ENABLED:flag} as unknown as Record<string,string>),IdentityConfigurationUnavailable)
+  assert.deepEqual(readSg2PrivateSelectionConfiguration({PROFITIA_AUTH_PROVIDER:'legacy_demo',PROFITIA_CATEGORY_ENABLED:'true'}),{provider:'legacy_demo'})
+  assert.throws(()=>readSg2PrivateSelectionConfiguration({...env,TARGET_ENVIRONMENT:'staging',APP_ENV:'staging',PROFITIA_CATEGORY_ENABLED:'true'}),IdentityConfigurationUnavailable)
+})

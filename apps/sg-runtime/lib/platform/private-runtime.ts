@@ -6,17 +6,19 @@ import type { AccessStoreBinding } from '@profitia/platform-contracts/access-sto
 import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
 import targets from '@/deployment/private-runtime-targets.json'
 import { createSg2ClerkClient, IdentityConfigurationUnavailable, readSg2IdentityRuntime } from './identity-runtime'
-import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost } from './private-host'
+import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost } from './private-host'
 
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<Prisma.TransactionClient>; defaultOrganisationId: string
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
+  category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
 }>
 type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
   binding: AccessStoreBinding; module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string }
   supplierSummary?: Readonly<{ origin: string; configurationVersion: string }>
+  category?: Readonly<{ configurationVersion: string; boundaryDigest: string }>
 }>
 function unavailable(): never { throw new IdentityConfigurationUnavailable() }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -30,7 +32,9 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   // The new private Staging/Production bindings are deliberately not invented.
   if (identity.application.environment !== 'development') unavailable()
   const target = targets.environments.development
-  if (env.PROFITIA_SUPPLIER_SUMMARY_ENABLED !== undefined && !['true','false'].includes(env.PROFITIA_SUPPLIER_SUMMARY_ENABLED)) unavailable()
+  for (const flag of ['PROFITIA_SUPPLIER_SUMMARY_ENABLED','PROFITIA_CATEGORY_ENABLED']) {
+    if (env[flag] !== undefined && !['true','false'].includes(env[flag]!)) unavailable()
+  }
   if (env.PROFITIA_OPERATION_CONFIGURATION_VERSION !== targets.configurationVersion
     || env.RENDER_SERVICE_ID !== target.serviceId || !/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT ?? '')
     || (env.APP_ENV !== undefined && env.APP_ENV !== identity.application.environment)
@@ -54,6 +58,9 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
     binding: { applicationId: 'spendguru', environment: 'development', projectId: target.projectId,
       branchId: target.branchId, databaseName: target.databaseName, role: target.runtimeRole, schemaDigest: target.accessSchemaDigest },
     module: { id: 'benchmark', schemaDigest: target.moduleSchemaDigest, auditSchemaDigest: target.auditSchemaDigest },
+    ...(env.PROFITIA_CATEGORY_ENABLED === 'true' ? { category: {
+      configurationVersion: target.category.configurationVersion, boundaryDigest: target.category.boundaryDigest,
+    } } : {}),
     ...(env.PROFITIA_SUPPLIER_SUMMARY_ENABLED === 'true' ? { supplierSummary: {
       origin: target.supplierSummary.origin, configurationVersion: target.supplierSummary.configurationVersion,
     } } : {}),
@@ -99,8 +106,14 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
         operations: ['supplier.report.read'], features: ['supplier_report'] },
       module: { ...config.module, id: 'supplier_report' } }),
   }) : undefined
+  const category = config.category ? Object.freeze({ executor: createSg2PrivateCategoryHost({
+    prisma, auditPrisma, clerk, identity: config.identity, binding: config.binding,
+    application: { ...config.application, configurationVersion: config.category.configurationVersion,
+      operations: ['category.read','category.write'], features: ['category'] },
+    module: { ...config.module, id: 'category' }, categoryBoundaryDigest: config.category.boundaryDigest,
+  }) }) : undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
-    ...(supplierSummary ? { supplierSummary } : {}) })
+    ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}) })
   globalThis.__sg2PrivateSelectionRuntime__ = { key, runtime }
   return runtime
 }
