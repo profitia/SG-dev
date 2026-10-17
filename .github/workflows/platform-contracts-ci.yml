@@ -26,6 +26,7 @@ on:
       - 'Canon/registries/development-workspaces-v1.json'
       - 'Canon/registries/profitia-projects-v1.json'
       - '.github/workflows/platform-contracts-ci.yml'
+      - 'scripts/governance/controlled-package-ci*'
   push:
     branches: [main]
     paths:
@@ -52,7 +53,19 @@ on:
       - 'Canon/registries/development-workspaces-v1.json'
       - 'Canon/registries/profitia-projects-v1.json'
       - '.github/workflows/platform-contracts-ci.yml'
+      - 'scripts/governance/controlled-package-ci*'
   workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [integration, validate-sg2, policy-probe]
+        default: integration
+      candidate_pr:
+        description: 'Internal SG2 PR number; empty validates exact main'
+        type: string
+      expected_sha:
+        description: 'Exact 40-character candidate HEAD; required for a PR'
+        type: string
 
 permissions:
   contents: read
@@ -88,7 +101,7 @@ jobs:
       - name: Test contract and laboratory guards without credentials or database access
         run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs
       - name: Validate registered routing and workspace isolation
-        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs
+        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/controlled-package-ci.test.mjs
 
   consumers:
     name: ${{ matrix.project }} contract adoption
@@ -128,13 +141,13 @@ jobs:
 
   operations:
     name: ${{ matrix.project }} operation integration
-    # Package read access is restricted to source branches in this repository.
-    # Fork pull requests still run the public producer and contract checks.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    needs: controlled-sg2
+    # This public job has no package credential; SG2 verifies a separately bound proof.
+    if: always() && (github.event_name != 'workflow_dispatch' || inputs.mode == 'integration') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -183,27 +196,38 @@ jobs:
             echo 'Operation-context integration is not adopted by this source; no runtime proof claimed.'
           fi
       - name: Install public test-fixture dependencies
-        if: steps.adoption.outputs.enabled == 'true'
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SRM'
         run: npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
-      - name: Clean application dependency installation
-        if: steps.adoption.outputs.enabled == 'true'
-        working-directory: ${{ matrix.directory }}
+      - name: Checkout authority controller for public SG2 proof verification
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: trusted-control
+          persist-credentials: false
+      - name: Verify controlled SG2 proof for the exact candidate without package access
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2'
         env:
-          NPM_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node trusted-control/scripts/governance/controlled-package-ci.mjs verify
+      - name: Clean application dependency installation
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SRM'
+        working-directory: ${{ matrix.directory }}
         run: npm ci --install-links --no-audit --no-fund
       - name: Actual API, ordinary-role persistence, revocation and audit rollback
-        if: steps.adoption.outputs.enabled == 'true'
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SRM'
         working-directory: ${{ matrix.directory }}
         env:
           SG2_OPERATION_TEST_OWNER_URL: postgresql://architecture_test_owner:isolated_ci_only@127.0.0.1:5432/sg2_operation_test
           SRM_OPERATION_TEST_OWNER_URL: postgresql://architecture_test_owner:isolated_ci_only@127.0.0.1:5432/srm_app
         run: npm run test:operation-context
       - name: Typecheck and application build without deployment
-        if: steps.adoption.outputs.enabled == 'true'
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SRM'
         working-directory: ${{ matrix.directory }}
         run: npm run typecheck && npm run build
       - name: Record exact isolated validation source
-        if: steps.adoption.outputs.enabled == 'true'
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SRM'
         working-directory: ${{ matrix.directory }}
         env:
           PROJECT_KEY: ${{ matrix.project }}
@@ -216,8 +240,102 @@ jobs:
           fs.writeFileSync('/tmp/operation-context-proof.json',JSON.stringify({projectKey:process.env.PROJECT_KEY,targetEnvironment:'development',scope:'ISOLATED_API_AND_PERSISTENCE',validationSha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),candidateHeadSha:process.env.CANDIDATE_HEAD_SHA,contract:receipt.contract,productDeploymentPerformed:false,customerIdentityAdapterVerified:false},null,2));
           JS
       - uses: actions/upload-artifact@v4
-        if: steps.adoption.outputs.enabled == 'true' && success()
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SRM' && success()
         with:
           name: operation-context-${{ matrix.project }}
           path: /tmp/operation-context-proof.json
           retention-days: 30
+
+  controlled-sg2:
+    name: SG2 controlled operation integration
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'validate-sg2'))
+    runs-on: ubuntu-latest
+    environment: architecture-development
+    permissions:
+      contents: read
+      actions: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: architecture_test_owner
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: sg2_operation_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CANDIDATE_ROOT: ${{ github.workspace }}/candidate
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Verify trusted control, provider policy and immutable internal candidate
+        id: resolution
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_PR: ${{ inputs.candidate_pr }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: node control/scripts/governance/controlled-package-ci.mjs resolve
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        if: steps.resolution.outputs.adopted == 'true'
+        with:
+          ref: ${{ steps.resolution.outputs.candidate_sha }}
+          fetch-depth: 0
+          path: candidate
+          persist-credentials: false
+      - name: Validate candidate files without executing candidate code
+        if: steps.resolution.outputs.adopted == 'true'
+        run: node control/scripts/governance/controlled-package-ci.mjs check-candidate
+      - name: Read-only credential phase; clean install with lifecycle scripts disabled
+        if: steps.resolution.outputs.adopted == 'true'
+        env:
+          NPM_TOKEN: ${{ secrets.SG2_PACKAGES_READ_TOKEN }}
+        run: node control/scripts/governance/controlled-package-ci.mjs install
+      - name: Run lifecycle, real API tests, typecheck and build after credential phase ended
+        if: steps.resolution.outputs.adopted == 'true'
+        working-directory: candidate/apps/sg-runtime
+        env:
+          NPM_TOKEN: ''
+          NODE_AUTH_TOKEN: ''
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
+          SG2_OPERATION_TEST_OWNER_URL: postgresql://architecture_test_owner:isolated_ci_only@127.0.0.1:5432/sg2_operation_test
+        run: |
+          npm rebuild --foreground-scripts
+          npm run postinstall --if-present
+          npm --prefix ../architecture-lab ci --ignore-scripts --no-audit --no-fund
+          npm run test:operation-context
+          npm run typecheck
+          npm run build
+      - name: Record sanitized exact-source proof after successful execution
+        if: steps.resolution.outputs.adopted == 'true'
+        run: node control/scripts/governance/controlled-package-ci.mjs proof
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: steps.resolution.outputs.adopted == 'true' && success()
+        with:
+          name: sg2-controlled-operation-proof
+          path: ${{ runner.temp }}/sg2-controlled-operation-proof/proof.json
+          retention-days: 30
+          if-no-files-found: error
+
+  environment-policy-probe:
+    name: Main-only environment policy probe
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'policy-probe'
+    runs-on: ubuntu-latest
+    environment: architecture-development
+    permissions: {}
+    steps:
+      # Deliberately no ref condition: the provider must reject a non-main run.
+      - name: Assert actual provider admission; no package or secret access
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          echo MAIN_ONLY_ENVIRONMENT_POLICY_PASS
