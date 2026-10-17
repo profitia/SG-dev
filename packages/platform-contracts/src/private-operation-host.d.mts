@@ -1,8 +1,8 @@
 import type { AccessQuery, AccessStoreBinding, IdentityBinding } from './access-store.mjs'
-import type { Actor, Application, BoundRequest, OperationContext, OperationExecutor, Resource } from './operation-context.mjs'
+import type { Actor, Application, BoundRequest, OperationContext, OperationExecutor, OperationOutcome, Resource } from './operation-context.mjs'
 import type { ModuleId } from './module-scope.mjs'
 
-export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.1.0' }>
+export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.2.0' }>
 export interface PrivateOperationScope {
   applicationId: string; environment: AccessStoreBinding['environment']; userId: string; organisationId: string | null
 }
@@ -26,5 +26,9 @@ export declare function createPrivateOperationHost<Transaction>(options: {
     query: AccessQuery; transaction: Transaction
   }): Promise<{ resource: Resource; inputs?: Resource[] }>
   projectOutput(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): unknown | Promise<unknown>
+  /** Export preparation only after all input/product/permission checks and durable
+   * correlated INTENT. Use this same bounded SQL transaction; no provider calls. */
+  prepareInputs?(input: { context: Readonly<OperationContext>; query: AccessQuery; transaction: Transaction }): void | Promise<void>
+  describeOutcome?(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): OperationOutcome | Promise<OperationOutcome>
 }): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT }>
 export declare function privateOperationHostSourceDigest(): Promise<string>

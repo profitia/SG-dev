@@ -5,7 +5,7 @@ import { COMPANY_IDENTITY_VERSION } from "./company-continuity";
 import { isCompanyReportRestricted } from "@profitia/srm-xray";
 import { createHash } from "node:crypto";
 import type { FinancialData, GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
-import { withOrganization } from "./db";
+import { withOrganization, type DatabasePool } from "./db";
 import type { Pool } from "pg";
 import type { FinancialSourceFact } from "./mgbi-financial";
 import { calculateFinancialIndicators, FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from "./financial-indicators";
@@ -69,8 +69,8 @@ export async function readFreshCompany(organizationId: string, nip: string, now 
 }
 
 /** Export reads the already stored projection and never initiates a provider request. */
-export async function readSavedFinancialData(organizationId: string, nip: string): Promise<FinancialData | null> {
-  if (isRestrictedRegistrationStatus(await readCompanyRegistrationStatus(organizationId, nip))) return null;
+export async function readSavedFinancialData(organizationId: string, nip: string, pool?: DatabasePool): Promise<FinancialData | null> {
+  if (isRestrictedRegistrationStatus(await readCompanyRegistrationStatus(organizationId, nip, pool))) return null;
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ financial_json: StoredFinancialSection | null }>(
       "SELECT financial_json FROM srm.catalog_companies WHERE nip = $1", [nip],
@@ -78,7 +78,7 @@ export async function readSavedFinancialData(organizationId: string, nip: string
     const section = result.rows[0]?.financial_json;
     return section?.data && (section.status === "SUCCESS" || section.status === "PARTIAL")
       ? section.data : null;
-  });
+  }, pool);
 }
 
 async function upsertSection(

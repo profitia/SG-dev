@@ -20,6 +20,13 @@ function fixture(operation = 'benchmark.selection.read') {
     inputs: [{ id: 'shared-report', type: 'supplier_report', dataClass: 'SHARED_KNOWLEDGE', ownerOrganisationId: null, ownerUserId: null, environment: 'development', version: 's1', projectionVersion: 'v1', approvedSharedProjection: true }],
   }
   const events = [], writes = []
+  if (operation === 'supplier.report.export') {
+    state.access.permissions.push({ operation: 'supplier.report.project', feature: 'supplier_report', resourceId: null })
+    state.inputs = [
+      { ...state.inputs[0], id: 'r1' },
+      { ...state.resource, type: 'supplier_projection' },
+    ]
+  }
   const controls = { failIntent: false, failOutcome: false, failProjection: false }
   const options = { application, now: () => time, authenticate: issuer.authenticate,
     recordAudit: async event => { if (controls.failIntent && event.phase === 'INTENT') throw Error('audit unavailable'); events.push(event) },
@@ -28,6 +35,7 @@ function fixture(operation = 'benchmark.selection.read') {
       const value = await action({ state, transaction: pending, transactionalEffects: true, outputBoundaryVersion: 'v1',
         recordOutcome: async e => { if (controls.failOutcome) throw Error('outcome unavailable'); pending.push(e) },
         projectOutput: value => { if (controls.failProjection) throw Error('unsafe output'); return value },
+        prepareInputs: async () => {},
       })
       writes.push(...pending.filter(v => v.phase !== 'OUTCOME')); events.push(...pending.filter(v => v.phase === 'OUTCOME')); return value
     },
@@ -40,7 +48,7 @@ function fixture(operation = 'benchmark.selection.read') {
 
 for (const operation of IMPLEMENTED_OPERATIONS) {
   test(`${operation}: explicit positive rule and durable intent/outcome`, async () => {
-    const f = fixture(operation); const result = await f.execute(); assert.equal(result.decision, 'ALLOW'); assert.equal(f.invoked, 1); assert.deepEqual(f.events.map(e => e.phase), ['INTENT', 'OUTCOME'])
+    const f = fixture(operation); const result = await f.execute(); assert.equal(result.decision, 'ALLOW'); assert.equal(f.invoked, 1); assert.deepEqual(f.events.map(e => e.phase), operation === 'supplier.report.export' ? ['INTENT', 'INTENT', 'OUTCOME', 'OUTCOME'] : ['INTENT', 'OUTCOME'])
   })
   test(`${operation}: permission is independently required`, async () => {
     const f = fixture(operation); f.state.access.permissions = []; await assert.rejects(f.execute(), e => e instanceof OperationDenied && e.reasonCode === 'PERMISSION_DENIED'); assert.equal(f.invoked, 0)
@@ -121,7 +129,7 @@ test('payload is canonically bound and snapshotted before asynchronous authentic
 })
 test('candidate rules match exact normative rows and never imply all 30 are implemented', async () => {
   const matrix = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url)))
-  assert.equal(IMPLEMENTED_OPERATIONS.length, 14); assert.equal(matrix.rules.length, 30)
+  assert.equal(IMPLEMENTED_OPERATIONS.length, 15); assert.equal(matrix.rules.length, 30)
   for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === 'NOT_APPLICABLE').length, 1)
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
@@ -174,7 +182,7 @@ test('the selected assignment entitlement cannot change after expiry during an e
 test('forecast read cannot publish private metadata or enable paid compute',async()=>{
   const f=fixture('forecast.read');f.state.resource.approvedSharedProjection=false
   await assert.rejects(f.execute(),error=>error.reasonCode==='RESOURCE_SCOPE_MISMATCH')
-  for(const operation of ['forecast.request','supplier.report.refresh','supplier.report.export','knowledge.ingest','job.execute','membership.manage']){
+  for(const operation of ['forecast.request','supplier.report.refresh','knowledge.ingest','job.execute','membership.manage']){
     f.input.operation=operation;await assert.rejects(f.execute(),error=>error.reasonCode==='PERMISSION_DENIED')
   }
   assert.equal(f.invoked,0)

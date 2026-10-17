@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.4' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.5' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -22,6 +22,9 @@ const rules = Object.freeze({
   'personal.list.write': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'WRITE'),
   'supplier.report.read': rule('supplier_report', 'supplier_report', 'SHARED_KNOWLEDGE', 'READ', 'SUPPLIER_INTELLIGENCE'),
   'supplier.report.project': rule('supplier_report', 'supplier_projection', 'ORGANISATION_PRIVATE', 'WRITE', 'SUPPLIER_INTELLIGENCE'),
+  // Bounded AM24: one organisation report and its explicit shared/private
+  // inputs. Personal exports and external acquisition remain unsupported.
+  'supplier.report.export': rule('supplier_report', 'supplier_export', 'ORGANISATION_PRIVATE', 'EXPORT', 'SUPPLIER_INTELLIGENCE'),
 })
 export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules))
 const profiles = Object.freeze({
@@ -117,6 +120,7 @@ export function createOperationExecutor(options) {
       const operationStartedAt = new Date(now()).toISOString()
       let audit = { decisionId, contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, implementationVersion: OPERATION_CONTRACT.implementation, applicationId: config.appId, applicationProfile: config.profileId, deploymentId: config.deploymentId, configurationVersion: config.configurationVersion, environment: config.environment, operationStartedAt, occurredAt: operationStartedAt, operation: typeof input?.operation === 'string' && input.operation.length < 128 ? input.operation : null, actorId: null, actorKind: null, subjectUserId: null, organisationId: null }
       let intentRecorded = false
+      const preparationAudits = []
       try {
         // Snapshot inputs before the first await; never execute a later, mutated payload.
         if (!input || input.contractId !== OPERATION_CONTRACT.id || input.contractVersion !== OPERATION_CONTRACT.version) deny('UNSUPPORTED_CONTRACT')
@@ -136,7 +140,7 @@ export function createOperationExecutor(options) {
         audit = { ...audit, actorId: identity.actorId, actorKind: identity.kind, subjectUserId: identity.kind === 'HUMAN' ? identity.userId : null, identityProofRef: identity.proofRef, identityIssuer: identity.issuer, identityAudience: identity.audience }
         return await withTransaction({ actor: identity, request }, async session => {
           const state = session.state
-          if (!state || !nonempty(state.policyVersion) || state.environment !== config.environment || state.applicationId !== config.appId || typeof session.recordOutcome !== 'function' || typeof session.projectOutput !== 'function') deny('POLICY_UNAVAILABLE')
+          if (!state || !nonempty(state.policyVersion) || state.environment !== config.environment || state.applicationId !== config.appId || typeof session.recordOutcome !== 'function' || typeof session.projectOutput !== 'function' || (session.describeOutcome !== undefined && typeof session.describeOutcome !== 'function')) deny('POLICY_UNAVAILABLE')
           const access = state.access
           if (!access || access.actorId !== identity.actorId || access.status !== 'ACTIVE' || !nonempty(access.version) || !nonempty(access.sourceRef) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
           if (access.type === 'DELEGATED_USER') deny('DELEGATION_INVALID') // Not implemented by this candidate; no implicit SERVICE impersonation.
@@ -176,8 +180,27 @@ export function createOperationExecutor(options) {
             if (!config.operations.includes('supplier.report.read') || !permission(access, 'supplier.report.read', 'supplier_report', request.resourceId) || !Array.isArray(state.inputs) || state.inputs.length === 0) deny('PERMISSION_DENIED')
             for (const resource of state.inputs) checkResource(resource, context, { resourceType: 'supplier_report', dataClass: 'SHARED_KNOWLEDGE' })
           }
-          // These fourteen operations explicitly have NOT_APPLICABLE usage policy. Paid
-          // refresh/export/forecast requests cannot be enabled with a missing limit.
+          let preparationResource
+          if (request.operation === 'supplier.report.export') {
+            // Export never grants preparation or source access. The current
+            // projection capability is required for the private source and for
+            // its separately audited SQL restoration. This bounded candidate
+            // does not infer personal, account or arbitrary input permissions.
+            for (const operation of ['supplier.report.read', 'supplier.report.project']) {
+              if (!config.operations.includes(operation) || !permission(access, operation, 'supplier_report', request.resourceId)) deny('PERMISSION_DENIED')
+            }
+            if (!Array.isArray(state.inputs) || state.inputs.length !== 2) deny('RESOURCE_SCOPE_MISMATCH')
+            const shared = state.inputs.filter(resource => resource?.type === 'supplier_report')
+            const privateInputs = state.inputs.filter(resource => resource?.type === 'supplier_projection')
+            if (shared.length !== 1 || privateInputs.length !== 1 || state.inputs.some(resource => resource?.id !== request.resourceId)) deny('RESOURCE_SCOPE_MISMATCH')
+            checkResource(shared[0], context, rules['supplier.report.read'])
+            checkResource(privateInputs[0], context, rules['supplier.report.project'])
+            if (typeof session.prepareInputs !== 'function') deny('POLICY_UNAVAILABLE')
+            preparationResource = privateInputs[0]
+          }
+          // These fifteen operations explicitly have NOT_APPLICABLE usage policy.
+          // Export preparation is scoped private SQL, not paid refresh, global
+          // ingestion or a forecast request with an omitted limit.
           if (state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
           const bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID() })
@@ -188,14 +211,38 @@ export function createOperationExecutor(options) {
             deny('AUDIT_UNAVAILABLE')
           }
           intentRecorded = true
+          if (preparationResource) {
+            const preparationContext = freeze({ ...bound, decisionId: randomUUID(), operation: 'supplier.report.project', effect: 'WRITE', resource: structuredClone(preparationResource) })
+            const preparationAudit = { ...audit, decisionId: preparationContext.decisionId, operation: preparationContext.operation,
+              effect: 'WRITE', resourceType: preparationResource.type, dataClass: preparationResource.dataClass,
+              ownerOrganisationId: preparationResource.ownerOrganisationId, ownerUserId: preparationResource.ownerUserId,
+              resourceVersion: preparationResource.version, projectionVersion: preparationResource.projectionVersion }
+            try { await recordAudit(stamp({ ...preparationAudit, phase: 'INTENT', decision: 'ALLOW', reasonCode: 'AUTHORIZED' })) }
+            catch (error) {
+              if (isOperationDenied(error) && error.reasonCode === 'ACCESS_BASIS_INVALID') throw error
+              deny('AUDIT_UNAVAILABLE')
+            }
+            preparationAudits.push(preparationAudit)
+            await session.prepareInputs(preparationContext)
+            if (!validUntil(identity.expiresAt, now()) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
+            productAvailable(state, selected.product, selected.feature, config, ceiling, now())
+            if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
+            try { await session.recordOutcome(stamp({ ...preparationAudit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: 'SUCCEEDED' })) }
+            catch (error) {
+              if (isOperationDenied(error) && ['ACCESS_BASIS_INVALID','PRODUCT_UNAVAILABLE','APPLICATION_FEATURE_UNAVAILABLE'].includes(error.reasonCode)) throw error
+              deny('AUDIT_UNAVAILABLE')
+            }
+          }
           const value = await action(bound, session.transaction)
           const output = await session.projectOutput(value, bound)
+          const outcome = session.describeOutcome === undefined ? 'SUCCEEDED' : await session.describeOutcome(output, bound)
+          if (!['SUCCEEDED', 'NO_DATA', 'SELECTION_UNAVAILABLE'].includes(outcome)) deny('POLICY_UNAVAILABLE')
           if (!validUntil(identity.expiresAt, now()) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
           if (selected.product) productAvailable(state, selected.product, selected.feature, config, ceiling, now())
           if (selected.feature === 'supplier_workspace') productAvailable(state, productEvidence[0].product, selected.feature, config, ceiling, now())
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
           if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
-          try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: 'SUCCEEDED' })) }
+          try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: outcome })) }
           catch (error) {
             // A current scope denial is different from an unavailable writer.
             // Both roll back the effect; only the latter is a technical failure.
@@ -207,8 +254,14 @@ export function createOperationExecutor(options) {
       } catch (error) {
         const rejected = isOperationDenied(error) ? error : new OperationDenied('POLICY_UNAVAILABLE', decisionId)
         rejected.decisionId = decisionId
+        let preparationAuditFailed = false
+        for (const preparation of preparationAudits) {
+          try { await recordAudit(stamp({ ...preparation, phase: 'FAILURE', decision: 'DENY', reasonCode: rejected.reasonCode })) }
+          catch { preparationAuditFailed = true }
+        }
         try { await recordAudit(stamp({ ...audit, phase: intentRecorded ? 'FAILURE' : 'DECISION', decision: 'DENY', reasonCode: rejected.reasonCode })) }
         catch { throw new OperationDenied('AUDIT_UNAVAILABLE', decisionId) }
+        if (preparationAuditFailed) throw new OperationDenied('AUDIT_UNAVAILABLE', decisionId)
         throw rejected
       }
     },
