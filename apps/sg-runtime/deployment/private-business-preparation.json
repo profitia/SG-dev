@@ -1,0 +1,219 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "SG2",
+  "taskId": "SG2-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017",
+  "targetEnvironment": "development",
+  "status": "PREPARED_NOT_ACTIVATED",
+  "verifiedAt": "2026-10-17T12:18:41.832Z",
+  "sourceSha": "341ec2297ecf733c460267bc34181281b58c1b5d",
+  "physicalBinding": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "endpointId": "ep-late-heart-b9mxo8oi",
+    "databaseName": "platform_private",
+    "schemaName": "sg_runtime_benchmarks",
+    "ownerRole": "profitia_access_owner"
+  },
+  "source": {
+    "businessSchemaDigest": "4116e1ec8f0b2a8821c7d6af6728dc55dc949b4cb73a6435f8c614410523afae",
+    "boundaryDigest": "d17f62ef9ddf3000ff264da53f44a8afb00fb2bd8e53e6fe5fe7be80c2ebec99",
+    "version": "1.0.0",
+    "sourceRef": "profitia/SG-dev@341ec2297ecf733c460267bc34181281b58c1b5d:SG2-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017",
+    "installedAt": "2026-10-17T12:15:11.043081+00:00"
+  },
+  "controls": {
+    "totalTables": 21,
+    "controlledForceRlsTables": 21,
+    "businessTables": [
+      {
+        "rls": true,
+        "name": "BenchmarkProviderMapping",
+        "owner": "profitia_access_owner",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "name": "BusinessBenchmark",
+        "owner": "profitia_access_owner",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "name": "Category",
+        "owner": "profitia_access_owner",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "name": "CategoryCostComponent",
+        "owner": "profitia_access_owner",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "name": "OrganizationBenchmarkSelection",
+        "owner": "profitia_access_owner",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "name": "private_installation",
+        "owner": "profitia_access_owner",
+        "forceRls": true
+      }
+    ],
+    "validatedBusinessForeignKeys": 4,
+    "categoryAdmissionPolicies": 0,
+    "publicBusinessGrants": false,
+    "ownerDatabaseCreate": false,
+    "businessRows": 0,
+    "applications": [
+      {
+        "id": "spendguru",
+        "status": "DISABLED"
+      },
+      {
+        "id": "srm",
+        "status": "DISABLED"
+      }
+    ],
+    "actualRuntimeRoleProofs": [
+      {
+        "current_user": "sg2_private_development_runtime",
+        "session_user": "sg2_private_development_runtime",
+        "rolsuper": false,
+        "rolbypassrls": false,
+        "rolcreatedb": false,
+        "rolcreaterole": false,
+        "rolinherit": false,
+        "rolconnlimit": 4,
+        "owner_member": false,
+        "business_usage": true,
+        "benchmark_select": true,
+        "benchmark_insert": true,
+        "benchmark_update": true,
+        "benchmark_delete": false,
+        "receipt_read": false,
+        "account_read": false
+      },
+      {
+        "current_user": "sg2_private_development_dashboard",
+        "session_user": "sg2_private_development_dashboard",
+        "rolsuper": false,
+        "rolbypassrls": false,
+        "rolcreatedb": false,
+        "rolcreaterole": false,
+        "rolinherit": false,
+        "rolconnlimit": 4,
+        "owner_member": false,
+        "business_usage": false,
+        "benchmark_select": false,
+        "benchmark_insert": false,
+        "benchmark_update": false,
+        "benchmark_delete": false,
+        "receipt_read": false,
+        "account_read": false
+      },
+      {
+        "current_user": "srm_private_development_runtime",
+        "session_user": "srm_private_development_runtime",
+        "rolsuper": false,
+        "rolbypassrls": false,
+        "rolcreatedb": false,
+        "rolcreaterole": false,
+        "rolinherit": false,
+        "rolconnlimit": 4,
+        "owner_member": false,
+        "business_usage": false,
+        "benchmark_select": false,
+        "benchmark_insert": false,
+        "benchmark_update": false,
+        "benchmark_delete": false,
+        "receipt_read": false,
+        "account_read": false
+      }
+    ],
+    "receiptReadByRuntime": false,
+    "zeroInheritedPrivilegeRoles": true
+  },
+  "directoryPreservation": {
+    "accounts": 1,
+    "organisations": 1,
+    "memberships": 1,
+    "bootstrapReceipts": 1,
+    "stateDigestBeforeAfterAndRestoredCopy": "3a88763edc6c949b61638b78e3463e3c55a0a7fc35edc435e3691fe404831edc",
+    "noHistoryReassigned": true
+  },
+  "recovery": {
+    "snapshot": {
+      "id": "snap-square-tree-b931qvch",
+      "name": "sg2-e1-pre-business-schema-20261017",
+      "sourceBranchId": "br-sparkling-term-b99l107x",
+      "createdAt": "2026-10-17T12:07:42Z",
+      "expiresAt": "2026-10-24T12:07:40Z"
+    },
+    "restoredBranch": {
+      "id": "br-orange-heart-b9f7nqoo",
+      "endpointId": "ep-frosty-paper-b9s952xu",
+      "name": "sg2-e1-business-recovery-rehearsal-20261017",
+      "expiresAt": "2026-10-18T12:08:34Z",
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "suspendSeconds": 300,
+      "restoredFrom": "snap-square-tree-b931qvch",
+      "containsPrivateInternalDirectoryCopy": true,
+      "containsCustomerHistory": false
+    },
+    "finalizeCalled": false,
+    "primaryNameDefaultAndEndpointPreserved": true,
+    "actualRestoreAndDigestVerified": true,
+    "forcedFailureRolledBackNamespaceOwnerPrivilegeAndBranchBinding": true,
+    "exactSuccessfulMigrationRehearsed": true,
+    "ordinaryRuntimeInsertDeniedBeforeWrite": true,
+    "ordinaryDisabledDescriptorDeniedAllThreeRoles": true,
+    "emptySelectIsNotIndependentDenialProof": true,
+    "noCloudDropResetDeleteOrDataRollback": true
+  },
+  "existingReleases": {
+    "unchanged": true,
+    "services": [
+      {
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "deployId": "dep-daqd0uh42hec7398f5vg",
+        "sourceSha": "c55c551091b3584673726bd0a78254eb091c7197",
+        "status": "live"
+      },
+      {
+        "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+        "deployId": "dep-daqbksk9v7es73cjdtmg",
+        "sourceSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119",
+        "status": "live"
+      },
+      {
+        "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+        "deployId": "dep-db97cj6k1f9s738na1r0",
+        "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+        "status": "live"
+      },
+      {
+        "serviceId": "srv-daclno3m8hqs73bb7rrg",
+        "deployId": "dep-db0dhbm1egvs73f70kr0",
+        "sourceSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+        "status": "live"
+      },
+      {
+        "serviceId": "srv-db496b3tqb8s73eh5sfg",
+        "deployId": "dep-db97qcjl550s73d2f170",
+        "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+        "status": "live"
+      }
+    ]
+  },
+  "limits": [
+    "No business data migration or live connection binding.",
+    "No application/provider activation or product deployment.",
+    "Categories remain unadopted and closed.",
+    "Actual browser session, all-entry adoption, business-module reuse and controlled Development/Staging releases remain pending.",
+    "Database context trusts the verified backend per OC-R15; RLS does not replace injection protection or secret control."
+  ]
+}
