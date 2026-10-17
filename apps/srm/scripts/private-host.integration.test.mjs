@@ -70,7 +70,14 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     }
     // Fixture-only grants reproduce existing report capabilities; this does not
     // provision a live private business schema or approve all its RLS policies.
+    await owner.query(fs.readFileSync(new URL('../db/security/private-operation-boundaries.sql', import.meta.url), 'utf8'))
     await owner.query(`GRANT USAGE ON SCHEMA srm TO ${ROLE}; GRANT SELECT ON ALL TABLES IN SCHEMA srm TO ${ROLE}; GRANT INSERT,UPDATE ON srm.financial_source_documents,srm.suppliers TO ${ROLE}`)
+    // PostgreSQL FOR SHARE requires an UPDATE privilege on at least one column.
+    // Reserve only harmless check metadata, not the raw archived source.
+    await owner.query(`GRANT UPDATE(last_checked_at) ON srm.mgbi_source_archives TO ${ROLE}`)
+    // Deliberately grant one shared metadata column in the fixture so the
+    // negative write test proves the RLS ceiling, not just a missing ACL.
+    await owner.query(`GRANT UPDATE(updated_at) ON srm.catalog_companies TO ${ROLE}`)
     for (const [index, org] of [A, B].entries()) {
       await owner.query('INSERT INTO srm.organizations(id,slug) VALUES($1,$2)', [org, `fixture-org-${index}`])
       const requestId = (await owner.query("INSERT INTO srm.lookup_requests(organization_id,identifier_type,identifier) VALUES($1,'NIP',$2) RETURNING id", [org, NIP])).rows[0].id
@@ -166,6 +173,38 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       const client = await pool.connect()
       try { await client.query('BEGIN'); await client.query("SELECT set_config('srm.organization_id',$1,true)", [A]); await assert.rejects(withOrganization(A, async () => null, bindOrganizationTransaction(A, client)), /private transaction scope/i) }
       finally { await client.query('ROLLBACK'); client.release() }
+    })
+    await t.test('legacy GUC alone cannot read private rows through old permissive policies', async () => {
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN'); await client.query("SELECT set_config('srm.organization_id',$1,true)", [A])
+        assert.equal((await client.query('SELECT * FROM srm.financial_source_documents')).rowCount, 0)
+      } finally { await client.query('ROLLBACK'); client.release() }
+    })
+    await t.test('a conflicting legacy organisation cannot widen an admitted scope', async () => {
+      await host.execute(input, async (_context, client) => {
+        await client.query("SELECT set_config('srm.organization_id',$1,true)", [B])
+        const rows = (await client.query('SELECT organization_id FROM srm.financial_source_documents')).rows
+        assert(rows.length > 0); assert(rows.every(row => row.organization_id === A))
+        return Response.json({ nip: NIP })
+      })
+      let denied = false
+      await assert.rejects(host.execute(input, async (_context, client) => {
+        await client.query("SELECT set_config('srm.organization_id',$1,true)", [B])
+        try { await client.query("INSERT INTO srm.suppliers(organization_id,nip,display_name) VALUES($1,$2,'Forbidden')", [B, NIP]) }
+        catch (error) { denied = error.code === '42501'; throw error }
+        return Response.json({ nip: NIP })
+      }))
+      assert.equal(denied, true)
+    })
+    await t.test('an accidental shared write ACL does not bypass the human write ceiling', async () => {
+      const before = (await owner.query('SELECT updated_at FROM srm.catalog_companies WHERE nip=$1', [NIP])).rows[0].updated_at.toISOString()
+      await host.execute(input, async (context, client) => {
+        await client.query("SELECT set_config('srm.organization_id',$1,true)", [context.organisationId])
+        assert.equal((await client.query('UPDATE srm.catalog_companies SET updated_at=now() WHERE nip=$1', [NIP])).rowCount, 0)
+        return Response.json({ nip: NIP })
+      })
+      assert.equal((await owner.query('SELECT updated_at FROM srm.catalog_companies WHERE nip=$1', [NIP])).rows[0].updated_at.toISOString(), before)
     })
     await t.test('independent audit pool supports concurrent report operations and leaves no scope', async () => {
       const responses = await Promise.all(Array.from({ length: 6 }, () => handler(request())))
