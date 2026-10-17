@@ -133,7 +133,13 @@ test('middleware forwards only the adopted report/export APIs; actual entries re
     assert.equal(response.headers.get('Cache-Control'),'private, no-store')
     assert.deepEqual(await response.json(),{error:'Operation unavailable'})
     assert.equal((await middleware(new NextRequest('https://app.fixture.test/api/xray/lookup'))).status,401)
-    assert.equal((await middleware(new NextRequest('https://app.fixture.test/'))).status,307)
+    for (const path of ['/', '/login']) {
+      const shell = await middleware(new NextRequest(`https://app.fixture.test${path}`))
+      assert.equal(shell.headers.get('x-middleware-next'),'1')
+      assert.equal(shell.headers.get('Cache-Control'),'private, no-store')
+      assert.equal(shell.headers.get('Vary'),'Cookie, Authorization')
+    }
+    assert.equal((await middleware(new NextRequest('https://app.fixture.test/unadopted-private-page'))).status,307)
     const exportRequest = new Request('https://app.fixture.test/api/xray/financial-excel', { method: 'POST', headers: { origin: 'https://app.fixture.test', 'content-type': 'application/json' }, body: JSON.stringify({ nip: '8650004194', scope: 'standalone', years: ['2025'] }) })
     assert.equal((await middleware(new NextRequest(exportRequest.clone()))).headers.get('x-middleware-next'),'1')
     assert.equal((await deployedExportPOST(exportRequest)).status,503)

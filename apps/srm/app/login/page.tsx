@@ -33,7 +33,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <h1><span>Supplier</span><span>Relationship</span><span>Management</span></h1>
           <p className="srm-login-subtitle">Wersja testowa dla PORR SA</p>
           <p className="srm-login-description">Celem aplikacji są testy wewnętrzne udostępnianych funkcjonalności.</p>
-          {identity?.provider === "clerk" ? <ClerkSignIn publishableKey={identity.publishableKey} /> : identity?.provider === "legacy_demo" ? <form action="/api/auth/login" method="post" className="srm-login-form">
+          {identity?.provider === "clerk" ? <ClerkSignIn /> : identity?.provider === "legacy_demo" ? <form action="/api/auth/login" method="post" className="srm-login-form">
             <label htmlFor="demo-password">Hasło</label>
             <CanonInput canonId="SRM-C06" usage="login:password" id="demo-password" type="password" name="password" autoComplete="current-password" placeholder="Wpisz hasło" required />
             {error === "invalid" && <p className="srm-login-error" role="alert">Nieprawidłowe hasło. Spróbuj ponownie.</p>}
