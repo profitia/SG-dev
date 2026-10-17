@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "registryId": "temporary-identity-provider-resource",
   "owner": "Architecture Platform",
-  "status": "DEVELOPMENT_CONFIGURED_WITH_NOTED_VARIATION_NOT_INTEGRATED",
+  "status": "DEVELOPMENT_PROVIDER_AND_INTERNAL_BINDING_PREPARED_NOT_ACTIVATED",
   "verifiedAt": "2026-10-17T07:33:28Z",
   "taskId": "ARCHITECTURE-E1-CLERK-DEVELOPMENT-CONFIG-20261017",
   "targetEnvironment": "development",
@@ -60,11 +60,13 @@
     "ownerDesignatedAccountPresent": true,
     "emailVerifiedFlagObserved": true,
     "authenticatedSessionEvidence": "NOT_OBTAINED",
-    "internalBindingCreated": false,
-    "businessAdministratorGranted": false
+    "internalBindingCreated": true,
+    "businessAdministratorGranted": false,
+    "observedAt": "2026-10-17T11:22:20.696183+00:00",
+    "method": "OFFICIAL_BACKEND_SDK_INSTANCE_AND_USER_READ"
   },
   "boundaries": {
-    "secretKeyRead": false,
+    "secretKeyRead": true,
     "secretKeyStoredByAgent": false,
     "individualCredentialReset": false,
     "accountDeleted": false,
@@ -74,16 +76,17 @@
     "domainsChanged": false,
     "productRuntimeChanged": false,
     "productDeploymentPerformed": false,
-    "isArchitectureLabCredential": false
+    "isArchitectureLabCredential": false,
+    "secretKeyReadScope": "ONE_NAMED_DEVELOPMENT_RENDER_KEY_TO_OFFICIAL_SDK_IN_PROCESS_ONLY"
   },
   "intendedConsumers": [
     {
       "projectKey": "SG2",
-      "adoptionStatus": "PENDING_SEPARATE_TASK"
+      "adoptionStatus": "SOURCE_ADOPTED_LIVE_ACTIVATION_PENDING"
     },
     {
       "projectKey": "SRM",
-      "adoptionStatus": "PENDING_SEPARATE_TASK"
+      "adoptionStatus": "SOURCE_ADOPTED_LIVE_ACTIVATION_PENDING"
     }
   ],
   "clientCompatibilityObservation": {
@@ -92,7 +95,9 @@
     "clerkJsVersion": "6.39.1",
     "currentHostReactRangesSupported": true,
     "installedInProduct": false,
-    "hostUiIntegrationVerified": false
+    "hostUiIntegrationVerified": false,
+    "historicalObservation": true,
+    "observedAt": "2026-10-17T07:33:28Z"
   },
   "credentialPreparation": {
     "taskId": "ARCHITECTURE-E1-IDENTITY-SECRET-PRESENCE-20261017",
@@ -173,5 +178,51 @@
     ],
     "productDeploymentPerformed": false,
     "historicalObservationPreserved": true
+  },
+  "previousAccountObservation": {
+    "observedAt": "2026-10-17T07:33:28Z",
+    "ownerDesignatedAccountPresent": true,
+    "emailVerifiedFlagObserved": true,
+    "authenticatedSessionEvidence": "NOT_OBTAINED",
+    "internalBindingCreated": false,
+    "businessAdministratorGranted": false
+  },
+  "initialDirectoryPreparation": {
+    "taskId": "ARCHITECTURE-E1-INITIAL-DIRECTORY-PREPARATION-20261017",
+    "registry": "Canon/registries/platform-initial-directory-v1.json",
+    "exactInstanceAndOwnerDesignatedSubjectVerified": true,
+    "primaryEmailVerified": true,
+    "providerReadAt": "2026-10-17T11:15:43.812013+00:00",
+    "secretReadFromNamedDevelopmentServiceOnly": true,
+    "secretUsedOnlyInProcessMemory": true,
+    "secretValuePersistedOrDisplayed": false,
+    "providerMutationPerformed": false,
+    "sessionCreated": false,
+    "productRuntimeActivated": false
+  },
+  "previousBoundaryObservation": {
+    "observedAt": "2026-10-17T07:33:28Z",
+    "secretKeyRead": false,
+    "secretKeyStoredByAgent": false,
+    "individualCredentialReset": false,
+    "accountDeleted": false,
+    "connectionDeleted": false,
+    "newCostOrPlanChange": false,
+    "productionActivated": false,
+    "domainsChanged": false,
+    "productRuntimeChanged": false,
+    "productDeploymentPerformed": false,
+    "isArchitectureLabCredential": false
+  },
+  "lastDirectoryVerificationAt": "2026-10-17T11:22:20.696183+00:00",
+  "sourceIntegration": {
+    "SG2": {
+      "pullRequest": 414,
+      "liveActivation": false
+    },
+    "SRM": {
+      "pullRequest": 415,
+      "liveActivation": false
+    }
   }
 }

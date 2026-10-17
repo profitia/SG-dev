@@ -1,12 +1,12 @@
 # Prywatny magazyn dostępu — przygotowanie i granice inicjalizacji
 
-Status: CANDIDATE_RUNBOOK / NOT_DEPLOYED. Wykonanie wymaga odrębnego zadania właściwego profilu i środowiska. Dokument ani dostępność SQL w pakiecie nie uruchamiają migracji.
+Status: RUNBOOK_WITH_DATED_DEVELOPMENT_PREPARATION / NO_PRODUCT_ACTIVATION. Wykonanie wymaga odrębnego zadania właściwego profilu i środowiska. Dokument ani dostępność SQL w pakiecie nie uruchamiają migracji. Potwierdzony przyrost z17.10 znajduje się na końcu; wcześniejszy opis inicjalnego kandydata nie jest bieżącym stanem pustej bazy.
 
 ## Wariant fizyczny
 
 Minimalny kandydat wykorzystuje jedną prywatną bazę `platform_private`: wspólny schemat `profitia_access` i oddzielne schematy oraz loginy aplikacji. Pozwala to połączyć kontrolę aktualnych praw, prywatny skutek i OUTCOME w jednej rzeczywistej transakcji. Wcześniej rozważane osobne bazy dla tożsamości i danych produktu nie zostały utworzone; nie przypisujemy im atomowości, której nie zapewniają.
 
-[Zasób utworzony przez właściciela](../registries/platform-private-onboarding-v1.json) istnieje w Development jako pusty projekt z bazą `neondb`. Ten kandydat nie utworzył `platform_private`, ról, schematów, rekordów kont ani połączeń produktów. Nie zmienił aktywnych topologii. SRM i SG2 wymagają osobnych odbiorów oraz bezpiecznej migracji; współdzielenie schematu dostępu nie przenosi ich historii PMOS. Wspólna wiedza rynkowa pozostaje oddzielną warstwą, z własnymi połączeniami i prawami. Prywatne źródła SRM nie stają się globalne przez przeniesienie do innej bazy.
+[Zasób utworzony przez właściciela](../registries/platform-private-onboarding-v1.json) został początkowo przekazany jako pusty projekt z bazą `neondb`. Osobne przygotowania utworzyły później `platform_private`, role i schematy; aktualne fakty określa rejestr i datowane dowody. Nie zmieniono aktywnych topologii produktów. SRM i SG2 wymagają osobnych odbiorów oraz bezpiecznej migracji; współdzielenie schematu dostępu nie przenosi ich historii PMOS. Wspólna wiedza rynkowa pozostaje oddzielną warstwą, z własnymi połączeniami i prawami. Prywatne źródła SRM nie stają się globalne przez przeniesienie do innej bazy.
 
 ## Wymagania przed inicjalizacją
 
@@ -43,3 +43,15 @@ INTENT jest trwały przed skutkiem. OUTCOME zapisuje się razem z prywatnym skut
 Jeżeli nie działa zapis OUTCOME i następnie FAILURE, prywatny skutek jest cofnięty, a trwały INTENT pozostaje nierozliczony. Zachowaj go do kontrolowanego recovery; nie dopisuj fikcyjnego sukcesu lub pary zdarzeń. Ten kandydat nie dostarcza jeszcze reconciliatora, zewnętrznego kotwiczenia logu lub retencji. Brak pełnego closeout nie oznacza braku śladu.
 
 Rekonstrukcja bazy lub cofnięcie migracji nie wynika z rollbacku aplikacji. Zachowaj dane zapisane przez nową wersję i potwierdź kompatybilność LKG przed wydaniem. Dopiero osobne integracje SG2/SRM, testy biznesowe i kontrolowane wydania mogą potwierdzić działanie tego modelu w rzeczywistym Development/Staging. Pełny onboarding, administrowanie rolami, delegacje, limity i billing pozostają własnymi zakresami.
+
+## Potwierdzone przygotowanie Development — 17.10.2026
+
+Zadanie `ARCHITECTURE-E1-INITIAL-DIRECTORY-PREPARATION-20261017` zastosowało przyjęte SQL002–004 i przeprowadziło jednorazowy kontrolowany bootstrap w nowym prywatnym magazynie. Aktualny [rejestr katalogu](../registries/platform-initial-directory-v1.json) i [dowód](../evidence/2026-10-17-initial-profitia-directory-preparation.md) rozróżniają przygotowanie od działania produktów. Źródło SQL004: PR #416, source `521efc36f2861352b284835a4cc53fe92cd9e076`; skoordynowane source `b28bb48286540f596849d0fcf26a00c04e4bd18b`; osobne QA SG2 w PR417. SQL001 i jego schemat1.0.0 zachowano; rozszerzenia mają osobne ledgery/checksumy.
+
+Clerk został odczytany oficjalnym SDK z kluczem wyłącznie w pamięci procesu. Potwierdzono dokładną instancję i wskazany przez właściciela subject, zweryfikowany adres oraz brak blokady konta. Sam e-mail nie nadawał praw i nie służył łączeniu kont. Właściciel wskazał organizację wewnętrzną **Profitia**. Utworzono nowe wewnętrzne identyfikatory, jedno powiązanie, członkostwo, cztery konkretne uprawnienia dla przetestowanych ścieżek benchmarku/raportu, dwa dostępy produktu i dwa wiązania modułów. Granty mają jawny termin, bez wildcardu wynikającego z nazwy administratora. Nie przeniesiono historii demo ani danych klienta.
+
+SQL004 dodaje prywatne nazwy oraz chroniony receipt inicjalizacji. Trigger sprawdza aktualne powiązania, zapisuje rzeczywisty czas i użytkownika sesji bazy; odrzuca późniejszy UPDATE/DELETE/TRUNCATE. Historyczne referencje nie blokują przyszłej kontrolowanej zmiany IdP. Receipt i dane kont pozostają poza bezpośrednimi prawami runtime. Wszystkie15 tabel kontrolnych mają FORCE RLS i kontrolowanego NOLOGIN ownera. DBA pozostaje uprzywilejowaną granicą; nie jest to zewnętrznie zakotwiczony log.
+
+Kopię sprzed zmian odtworzono na osobnej gałęzi; zweryfikowano zgodność stanu oraz syntetyczny bootstrap i rollback po błędzie receiptu. Gałąź kopii nie ma endpointu. Neon odrzuca termin wygaśnięcia rodzica mającego gałąź potomną; faktyczne kopie i retencja są opisane w rejestrze. Nie usuwano gałęzi ręcznie. Kopia sprzed inicjalizacji nie stanowi zgody na skasowanie nowego konta lub późniejszych danych; dalsze zmiany wymagają aktualnej kopii i zgodnego odtworzenia.
+
+Obie aplikacje są nadal `DISABLED` w nowym magazynie. Rzeczywiste ordinary loginy trzech usług potwierdziły odmowę descriptoru i brak bezpośrednich praw do kont, organizacji, ledgeru i receiptu. Istniejące połączenia i deploymenty Development/Staging pozostały bez zmian. Nie potwierdzono sesji przeglądarkowej, migracji schematów biznesowych, wszystkich wejść lub pełnego E1. Dalsze włączenie wymaga własnych odbiorów produktów i wydań.
