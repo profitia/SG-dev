@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "registryId": "temporary-identity-provider-resource",
   "owner": "Architecture Platform",
   "status": "DEVELOPMENT_CONFIGURED_WITH_NOTED_VARIATION_NOT_INTEGRATED",
@@ -77,8 +77,14 @@
     "isArchitectureLabCredential": false
   },
   "intendedConsumers": [
-    {"projectKey": "SG2", "adoptionStatus": "PENDING_SEPARATE_TASK"},
-    {"projectKey": "SRM", "adoptionStatus": "PENDING_SEPARATE_TASK"}
+    {
+      "projectKey": "SG2",
+      "adoptionStatus": "PENDING_SEPARATE_TASK"
+    },
+    {
+      "projectKey": "SRM",
+      "adoptionStatus": "PENDING_SEPARATE_TASK"
+    }
   ],
   "clientCompatibilityObservation": {
     "source": "PUBLIC_NPM_PACKAGE_METADATA",
@@ -87,5 +93,85 @@
     "currentHostReactRangesSupported": true,
     "installedInProduct": false,
     "hostUiIntegrationVerified": false
+  },
+  "credentialPreparation": {
+    "taskId": "ARCHITECTURE-E1-IDENTITY-SECRET-PRESENCE-20261017",
+    "verifiedAt": "2026-10-17T09:53:04.928776+00:00",
+    "status": "OWNER_STORED_DEVELOPMENT_SECRET_PRESENCE_VERIFIED_NOT_ACTIVATED",
+    "secretName": "PROFITIA_CLERK_SECRET_KEY",
+    "ownerReportedSaveOnly": true,
+    "method": "NAMED_ENV_VAR_GET_ONLY_VALUE_DISCARDED_IN_PROCESS",
+    "secretValuePersisted": false,
+    "secretValueDisplayed": false,
+    "providerCredentialUsed": false,
+    "credentialValidityVerified": false,
+    "authenticatedSessionVerified": false,
+    "services": [
+      {
+        "projectKey": "SG2",
+        "serviceName": "sg2-development-runtime",
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "secretName": "PROFITIA_CLERK_SECRET_KEY",
+        "observedAt": "2026-10-17T09:53:03.370303+00:00",
+        "actualServiceName": "sg2-development-runtime",
+        "branch": "main",
+        "autoDeploy": "no",
+        "suspended": "not_suspended",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "secretPresent": true,
+        "developmentKeyFormat": true,
+        "latestDeployment": {
+          "id": "dep-daqd0uh42hec7398f5vg",
+          "status": "live",
+          "createdAt": "2026-09-24T07:25:46.370826Z",
+          "finishedAt": "2026-09-24T07:27:56.186042Z",
+          "sourceSha": "c55c551091b3584673726bd0a78254eb091c7197"
+        }
+      },
+      {
+        "projectKey": "SG2",
+        "serviceName": "sg2-development-dashboard",
+        "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+        "secretName": "PROFITIA_CLERK_SECRET_KEY",
+        "observedAt": "2026-10-17T09:53:04.193352+00:00",
+        "actualServiceName": "sg2-development-dashboard",
+        "branch": "main",
+        "autoDeploy": "no",
+        "suspended": "not_suspended",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "secretPresent": true,
+        "developmentKeyFormat": true,
+        "latestDeployment": {
+          "id": "dep-daqbksk9v7es73cjdtmg",
+          "status": "live",
+          "createdAt": "2026-09-24T05:51:46.348911Z",
+          "finishedAt": "2026-09-24T05:53:06.536364Z",
+          "sourceSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119"
+        }
+      },
+      {
+        "projectKey": "SRM",
+        "serviceName": "srm-development-runtime",
+        "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+        "secretName": "PROFITIA_CLERK_SECRET_KEY",
+        "observedAt": "2026-10-17T09:53:04.928776+00:00",
+        "actualServiceName": "srm-development-runtime",
+        "branch": "main",
+        "autoDeploy": "no",
+        "suspended": "not_suspended",
+        "environmentId": "evm-dapbd70ae00c73cgrup0",
+        "secretPresent": true,
+        "developmentKeyFormat": true,
+        "latestDeployment": {
+          "id": "dep-db97cj6k1f9s738na1r0",
+          "status": "live",
+          "createdAt": "2026-10-16T19:09:00.090919Z",
+          "finishedAt": "2026-10-16T19:10:34.4481Z",
+          "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a"
+        }
+      }
+    ],
+    "productDeploymentPerformed": false,
+    "historicalObservationPreserved": true
   }
 }
