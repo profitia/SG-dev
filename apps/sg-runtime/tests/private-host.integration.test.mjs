@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
-import { execFileSync } from 'node:child_process'
 import test from 'node:test'
 import { PrismaClient } from '@prisma/client'
 import { NextRequest } from 'next/server.js'
@@ -82,8 +81,16 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     await owner.query(`GRANT USAGE ON SCHEMA profitia_modules TO ${ROLE}; GRANT EXECUTE ON FUNCTION profitia_modules.runtime_descriptor(),profitia_modules.bind_scope(text),profitia_modules.scope_allows(text,uuid,uuid),profitia_modules.audit_descriptor() TO ${ROLE}`)
     await owner.query('COMMIT')
     const prismaOwnerUrl = new URL(dbUrl); prismaOwnerUrl.searchParams.set('schema', 'sg_runtime_benchmarks')
-    execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'db', 'push', '--skip-generate', '--schema', 'prisma/schema.prisma'], { env: { ...process.env, SG_RUNTIME_DATABASE_URL: prismaOwnerUrl.toString(), SG_RUNTIME_DIRECT_URL: prismaOwnerUrl.toString() }, stdio: 'pipe' })
-    await owner.query(fs.readFileSync(new URL('../prisma/security/benchmark-private-boundaries.sql', import.meta.url), 'utf8'))
+    const businessSql = fs.readFileSync(new URL('../prisma/private-store/001-business-schema.sql', import.meta.url), 'utf8')
+    const boundarySql = fs.readFileSync(new URL('../prisma/security/benchmark-private-boundaries.sql', import.meta.url), 'utf8')
+    // Test the exact deployable source, under the controlled owner, atomically.
+    await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
+    try {
+      await owner.query(businessSql)
+      await owner.query(boundarySql)
+      await owner.query("INSERT INTO sg_runtime_benchmarks.private_installation(schema_version,schema_digest,boundary_digest,source_ref) VALUES('1.0.0',$1,$2,'SYNTHETIC_NOT_A_RELEASE')", [createHash('sha256').update(businessSql).digest('hex'), createHash('sha256').update(boundarySql).digest('hex')])
+      await owner.query('COMMIT')
+    } catch (error) { await owner.query('ROLLBACK'); throw error }
     await owner.query(`GRANT USAGE ON SCHEMA sg_runtime_benchmarks TO ${ROLE}; GRANT SELECT,INSERT,UPDATE ON sg_runtime_benchmarks."BusinessBenchmark",sg_runtime_benchmarks."BenchmarkProviderMapping",sg_runtime_benchmarks."OrganizationBenchmarkSelection" TO ${ROLE}`)
     const runtimeUrl = new URL(prismaOwnerUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'; runtimeUrl.searchParams.set('connection_limit', '2')
     prisma = new PrismaClient({ datasources: { db: { url: runtimeUrl.toString() } } })
