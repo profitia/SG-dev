@@ -5,6 +5,7 @@ on:
     paths:
       - 'packages/platform-contracts/**'
       - 'apps/architecture-lab/**'
+      - 'apps/dashboard-preview/**'
       - 'apps/sg-runtime/development-integration.json'
       - 'apps/sg-runtime/tests/platform-contract.test.mjs'
       - 'apps/sg-runtime/package.json'
@@ -32,6 +33,7 @@ on:
     paths:
       - 'packages/platform-contracts/**'
       - 'apps/architecture-lab/**'
+      - 'apps/dashboard-preview/**'
       - 'apps/sg-runtime/development-integration.json'
       - 'apps/sg-runtime/tests/platform-contract.test.mjs'
       - 'apps/sg-runtime/package.json'
@@ -102,6 +104,90 @@ jobs:
         run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs
       - name: Validate registered routing and workspace isolation
         run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/controlled-package-ci.test.mjs
+
+  dashboard-source-regression:
+    name: SG2 dashboard source regression
+    if: github.event_name != 'workflow_dispatch' || inputs.mode == 'integration'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/dashboard-preview
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install existing public dependencies without registry credentials
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Generate existing database clients without connecting to a database
+        run: npm run postinstall
+      - name: Exercise dashboard regressions, typecheck and build without deployment
+        run: npm test && npm run typecheck && npm run build
+      - name: Check real production HTTP refusal before protected routes
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {spawn} from 'node:child_process';
+          import {resolve} from 'node:path';
+          import {setTimeout as pause} from 'node:timers/promises';
+          const base = 'http://127.0.0.1:38002';
+          const server = spawn(process.execPath, [resolve('node_modules/next/dist/bin/next'), 'start', '--hostname', '127.0.0.1', '--port', '38002'], {
+            env: {...process.env, PROFITIA_AUTH_PROVIDER: 'clerk', TARGET_ENVIRONMENT: 'development', APP_ENV: 'development'},
+            stdio: 'ignore',
+          });
+          let startupError;
+          server.on('error', error => { startupError = error; });
+          const closed = new Promise(resolve => server.once('close', resolve));
+          try {
+            let ready = false;
+            for (let attempt = 0; attempt < 150; attempt++) {
+              if (startupError || server.exitCode !== null) throw new Error('Isolated dashboard failed to start');
+              try { await fetch(base + '/en', {signal: AbortSignal.timeout(1000)}); ready = true; break; }
+              catch { await pause(100); }
+            }
+            assert(ready, 'Isolated dashboard startup timeout');
+            for (const path of ['/en', '/pl', '/api/records?organizationId=forged&pipelineId=forged', '/api/series?seriesId=synthetic']) {
+              const response = await fetch(base + path, {redirect: 'manual', signal: AbortSignal.timeout(5000), headers: {
+                Cookie: 'sg_porr_demo_session_development=forged', Authorization: 'Bearer synthetic_unverified',
+                'x-clerk-user-id': 'forged', 'x-clerk-org-id': 'forged',
+                'x-middleware-subrequest': 'middleware:middleware:middleware:middleware:middleware',
+              }});
+              assert.equal(response.status, 503, path);
+              assert.equal(response.headers.get('cache-control'), 'private, no-store');
+              const vary = response.headers.get('vary').toLowerCase().split(',').map(v => v.trim());
+              assert(vary.includes('cookie') && vary.includes('authorization'));
+              assert.equal(response.headers.get('location'), null);
+            }
+            console.log('PASS: four real HTTP refusals; no named-user adoption or database access claimed');
+          } finally {
+            server.kill('SIGTERM');
+            await Promise.race([closed, pause(3000)]);
+            if (server.exitCode === null && server.signalCode === null) server.kill('SIGKILL');
+          }
+          JS
+      - name: Record dashboard source validation boundary
+        env:
+          CANDIDATE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          fs.writeFileSync('/tmp/dashboard-source-proof.json', JSON.stringify({
+            projectKey: 'SG2', targetEnvironment: 'development', scope: 'DASHBOARD_SOURCE_REGRESSION',
+            validationSha: execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(),
+            candidateHeadSha: process.env.CANDIDATE_HEAD_SHA, tests: 'PASS', typecheck: 'PASS', build: 'PASS',
+            productionHttpRefusal: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false,
+          }, null, 2));
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sg2-dashboard-source-proof
+          path: /tmp/dashboard-source-proof.json
+          retention-days: 30
+          if-no-files-found: error
 
   consumers:
     name: ${{ matrix.project }} contract adoption
