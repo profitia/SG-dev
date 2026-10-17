@@ -71,7 +71,18 @@ export async function withOrganization<T>(
       "FROM pg_roles r WHERE r.rolname = current_user",
     );
     const role = identity.rows[0];
-    if (role?.database_name !== "srm_app") throw new Error("SRM product database identity mismatch");
+    if (role?.database_name !== "srm_app") {
+      // Only a server-bound transaction admitted by the private host can use a
+      // new store. The ordinary runtime URL/getPool contract stays unchanged.
+      if (!bound) throw new Error("SRM product database identity mismatch");
+      const proof = await client.query<{ allowed: boolean; application_id: string; database_name: string }>(
+        "SELECT profitia_access.scope_allows('srm',$1::uuid) AS allowed, " +
+        "profitia_access.runtime_descriptor()->>'applicationId' AS application_id, " +
+        "profitia_access.runtime_descriptor()->>'databaseName' AS database_name", [organizationId],
+      );
+      if (proof.rows[0]?.allowed !== true || proof.rows[0]?.application_id !== "srm"
+        || proof.rows[0]?.database_name !== role?.database_name) throw new Error("SRM private transaction scope mismatch");
+    }
     if (role.bypass_rls || role.superuser || role.neon_superuser_member) {
       throw new Error("SRM application role must enforce row-level security");
     }
