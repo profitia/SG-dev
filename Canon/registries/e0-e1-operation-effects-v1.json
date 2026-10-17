@@ -1,0 +1,3112 @@
+{
+  "schemaVersion": "1.0.0",
+  "registryId": "e0-e1-operation-effects",
+  "status": "DATED_SOURCE_EFFECT_MAP_NOT_RUNTIME_ACCEPTANCE",
+  "taskId": "ARCHITECTURE-E1-EFFECTS-AND-SURFACE-MAP-20261017",
+  "sourceAuthority": "profitia/SG-dev/main",
+  "sourceSha": "cf2677e042d654dc223ef043401327fe064ab4fc",
+  "observedAtUtc": "2026-10-17T14:13:24.027064+00:00",
+  "baselineRef": "Canon/registries/e0-e1-protected-surface-inventory-v1.json",
+  "baselineSourceSha": "99d3a408bf7a91a50387ce8efd79ce68c7b2fa9e",
+  "purpose": "Descriptive support for accepted E0/E1 integration and regression. Not an executable policy, permission, approved provider budget or deployment authority.",
+  "coverage": {
+    "routeFiles": 81,
+    "httpMethods": 87,
+    "additionalSurfaces": 12,
+    "effectFamilies": 16,
+    "depth": "Complete method/path census and selected referenced family call chains; not every line, dynamic adapter or upstream endpoint audited.",
+    "liveResourcesReverified": false,
+    "providerRequestsExecuted": false,
+    "databaseOrProductSourceMutated": false
+  },
+  "effectFamilies": {
+    "HISTORY_READ_THROUGH": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "TECHNICAL_CONTROL"
+      ],
+      "observedEffects": [
+        "STORED_READ",
+        "CONDITIONAL_PROVIDER_FETCH",
+        "CONDITIONAL_GLOBAL_SQL_UPSERT",
+        "PROCESS_CACHE"
+      ],
+      "integrationRequirement": "Preserve the hit/miss business result through a separately authorized and bounded technical effect. A product read grant does not grant global writes; external provider use cannot be represented as rolled back with private SQL.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/sg-runtime/lib/market-data/service.ts",
+          "sourceSha256": "70e7755d7f9fe42b44c39e99e92e53be52b60705b48fed9d8b1256dd78115c4b"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/service.ts",
+          "sourceSha256": "7c8a171b268c8763addaa395c4b1867eeb1100d2d35d1c2c390f1150c09f661b"
+        },
+        {
+          "path": "apps/sg-runtime/app/api/benchmark/analytics-series/route.ts",
+          "sourceSha256": "8e5549cce64e7d71bec89ad84d46709387a7273aea9174fe8d81f033dbbf1f0c"
+        }
+      ]
+    },
+    "DISCOVERY_METADATA": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "TECHNICAL_CONTROL"
+      ],
+      "observedEffects": [
+        "MACROBOND_DISCOVERY_OR_METADATA_REQUEST",
+        "PROCESS_PROVIDER_OR_METADATA_CACHE"
+      ],
+      "integrationRequirement": "Current product/member permission precedes provider use. Verify provider budget/entitlement and source provenance without assuming every network call is a pure local read.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/sg-runtime/lib/benchmark/service.ts",
+          "sourceSha256": "7c8a171b268c8763addaa395c4b1867eeb1100d2d35d1c2c390f1150c09f661b"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/macrobond.ts",
+          "sourceSha256": "52b1a74735a191cc8d879bdd2d2f03c0150c7841b2fe132633828e413e40de5f"
+        }
+      ]
+    },
+    "AI_SEARCH": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "observedEffects": [
+        "OPENAI_REQUEST",
+        "VENDOR_SEARCH",
+        "OPTIONAL_AI_RERANK"
+      ],
+      "integrationRequirement": "Interpretation and reranking call external AI. Require explicit bounded provider use, durable intent and honest outcomes; this is not an unmetered knowledge-read grant.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/sg-runtime/app/api/benchmark/ai-search/route.ts",
+          "sourceSha256": "7d10fafe701f84548540e78e1b304bb72c05145450b1cb2c3987726fd49a2683"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/ai-search.ts",
+          "sourceSha256": "fa888fff68a44363bfe85891086df5160a2b304b3b5e058bd967ee758ecc4bec"
+        }
+      ]
+    },
+    "BENCHMARK_SELECTION": {
+      "dataClasses": [
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "observedEffects": [
+        "SCOPED_SQL_READ_OR_UPSERT",
+        "DURABLE_INTENT",
+        "ATOMIC_OUTCOME"
+      ],
+      "integrationRequirement": "Conditional source adoption and ordinary-role SQL/API evidence exist. Preserve server fixed organisation, current named identity and no private-to-demo fallback. It is not a live release.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/sg-runtime/lib/benchmark/runtime-handlers.ts",
+          "sourceSha256": "362a3944f7c05dd5dd341f87657b08cec06e884eba9c67f73a26895f363b16eb"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/operation-context.ts",
+          "sourceSha256": "2ed79ba13867973bd8898791eaef4991a16f1912ace81257a87f67887a43bea3"
+        },
+        {
+          "path": "apps/sg-runtime/lib/platform/private-runtime.ts",
+          "sourceSha256": "d90f65193143f2c2508164e77d191f9a85020f5662994193005b00b0a9215976"
+        }
+      ]
+    },
+    "PREPARED_FORECAST_READ": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "TECHNICAL_CONTROL"
+      ],
+      "observedEffects": [
+        "READ_PREPARED_ARTIFACT",
+        "DIAGNOSTICS_OR_TELEMETRY"
+      ],
+      "integrationRequirement": "Default public current/verification resolvers read prepared results. Preserve preparation separation. Diagnostic or prepared-source headers are selectors, never an identity or permission.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/sg-runtime/lib/forecast/route-handlers.ts",
+          "sourceSha256": "2c09cfb6cd915e2c5e8d502f2c5562c53f689b7d4b513da28ed4225ac773ff51"
+        },
+        {
+          "path": "apps/sg-runtime/lib/forecast/request-diagnostics.ts",
+          "sourceSha256": "3dbe25ce1c2e425a77779002517e70f366e4f3992260d7759a18afaf9a5a598d"
+        }
+      ]
+    },
+    "TECHNICAL_FORECAST": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "observedEffects": [
+        "QUEUE_OR_LEDGER_READ_WRITE",
+        "CONDITIONAL_COMPUTE_OR_ARTIFACT_WRITE",
+        "SERVICE_BEARER"
+      ],
+      "integrationRequirement": "Review each internal action separately. Real SERVICE identity is required; acting for a user requires current scoped delegation, revocation and idempotency. Shared content does not make private initiator, cost or job history global.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/sg-runtime/lib/forecast/route-handlers.ts",
+          "sourceSha256": "2c09cfb6cd915e2c5e8d502f2c5562c53f689b7d4b513da28ed4225ac773ff51"
+        },
+        {
+          "path": "apps/sg-runtime/lib/forecast/preparation-queue.ts",
+          "sourceSha256": "e3f390b20f3929d83c75e40aca407d9ca7a193310fd3f57c64c990f42b9ada82"
+        },
+        {
+          "path": "apps/sg-runtime/scripts/run-forecast-preparation-worker.ts",
+          "sourceSha256": "d02d97f8070f5b6a5377da5156827ec2aa9d5c6b2ad37297053625f1b245678f"
+        },
+        {
+          "path": "packages/platform-contracts/src/access-store.mjs",
+          "sourceSha256": "bc112208fb38735fe32550b21013dee2ffa35b798e1d5153257afcd529009b15"
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.mjs",
+          "sourceSha256": "01add5835ef9acb7a9daf5ef4b794c1566a0c6ac05b03d8c160f066aceeb228d"
+        }
+      ]
+    },
+    "DASHBOARD_RECORDS_AND_BRIDGE": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "TECHNICAL_CONTROL"
+      ],
+      "observedEffects": [
+        "DR_RECORD_QUERY",
+        "OPTIONAL_CALLER_ORGANIZATION_FILTER",
+        "PROCESS_RESULT_CACHE",
+        "UPSTREAM_RUNTIME_REQUEST"
+      ],
+      "integrationRequirement": "Separate approved shared series from legacy organisation-bearing DR rows. Query/filter/cache organizationId is not membership. Middleware uses configuration-dependent demo and does not consult the new provider discriminator; source adoption by SG Runtime is not dashboard adoption.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/dashboard-preview/middleware.ts",
+          "sourceSha256": "1841d5089170d4ea7ac3b18ca0cfc0113609dc6d36ec6c51207801210a2eb1a2"
+        },
+        {
+          "path": "apps/dashboard-preview/lib/time-series/series-query.ts",
+          "sourceSha256": "2cb75c87d631feeaf736e0f2f23155df1782f396554a25e6a39d53e8855bb932"
+        },
+        {
+          "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+          "sourceSha256": "74c3d20875d0f19e8989e93e0e8b4d7ff49348bd41b33a1664adb7b4a2438d7f"
+        },
+        {
+          "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-filters.ts",
+          "sourceSha256": "ca906e7e212ca7e4c4ad66f285e61abe9a7e05ecd3c4f7619ad9f26362e803e9"
+        }
+      ]
+    },
+    "COGNITION_ADAPTER": {
+      "dataClasses": [
+        "ORGANISATION_PRIVATE",
+        "TECHNICAL_CONTROL"
+      ],
+      "observedEffects": [
+        "LEGACY_AUTH_OR_SERVER_PROFILE",
+        "CONFIGURATION_DEPENDENT_CALL",
+        "ADAPTER_EFFECTS_REQUIRE_REVIEW"
+      ],
+      "integrationRequirement": "The singleton throws unless configured; no production setter call site was found in tracked application sources. Retain that pre-existing availability boundary and private fail-closed behavior; do not invent a new runtime or claim an unconfigured business feature delivered.",
+      "reviewDepth": "PARTIAL_REAL_ADAPTER_REVIEW_REQUIRED",
+      "evidence": [
+        {
+          "path": "apps/sg-runtime/lib/api/cognition-service.ts",
+          "sourceSha256": "60ba3ee9d412ae1b12ac5b15b67cf61b160304d426a2c2b4b1677f0ca4ac479c"
+        },
+        {
+          "path": "apps/sg-runtime/lib/api/middleware.ts",
+          "sourceSha256": "32c0f295209c13a625c9579471c0402eb43ff5f28369b74330bcb05ee94c8139"
+        }
+      ]
+    },
+    "SUPPLIER_LOOKUP": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "USER_IN_ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "observedEffects": [
+        "CONDITIONAL_CEIDG_OR_MGBI_REQUEST",
+        "PRIVATE_LOOKUP_ATTEMPT_SNAPSHOT",
+        "SHARED_CATALOG_READ_WRITE",
+        "ORG_USER_INTEREST"
+      ],
+      "integrationRequirement": "Map the actual named actor and private selection/provenance without assigning old demo history. Separate corporate knowledge ingestion from tenant requests and provider cost. New private role intentionally lacks unadopted lookup/global-write grants.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/srm/src/server/registry-search.ts",
+          "sourceSha256": "309a19c333e3f5b1a7c72447ee48d47d2a310b80b454b0ff1795917ebd95e4cc"
+        },
+        {
+          "path": "apps/srm/src/server/xray-lookup.ts",
+          "sourceSha256": "316846fb0f65d88ce48e26a44ed5eeb6da9adf0a3008985ad102dbc31776926d"
+        },
+        {
+          "path": "apps/srm/src/server/jdg-lookup.ts",
+          "sourceSha256": "3b74bcf7f6dcad60286f96f473ccb236a27d95df115343fc9ad285e83ac5ac11"
+        },
+        {
+          "path": "apps/srm/src/server/shared-catalog.ts",
+          "sourceSha256": "6e8c99939b5db5ec52688374f419672afa64733cd9cfb28024e8f457f70ced14"
+        },
+        {
+          "path": "apps/srm/src/server/xray-repository.ts",
+          "sourceSha256": "a5b09673ade3b3c8c8d8b6e147889eaaa35446eb6ced2fde849f8ba29c2962f2"
+        }
+      ]
+    },
+    "REPORT_PROJECTION": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "USER_IN_ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "observedEffects": [
+        "SHARED_FINANCIAL_READ",
+        "PRIVATE_DOCUMENT_RESTORE",
+        "SCANNER_FRAME_APPEND",
+        "NAMED_PREFERENCE_SCOPE",
+        "SECURITY_AUDIT"
+      ],
+      "integrationRequirement": "POST report-data is a projection, not pure read. Conditional source adoption uses the common host. Full KYS/lookup/exports/UI, real identity session and controlled release remain separate adoptions.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/srm/src/server/report-data.ts",
+          "sourceSha256": "75b9ebbd83a85763c4e242cef19bddc3ab1ca4bad05ca89469c833ef40c33b56"
+        },
+        {
+          "path": "apps/srm/src/server/report-runtime.ts",
+          "sourceSha256": "80baa38783273936c80ef50b094d24018529637ea1486c5b5597a8a47e79e38b"
+        },
+        {
+          "path": "apps/srm/src/server/private-runtime.ts",
+          "sourceSha256": "ad10d4138eb0b941299f15501c0b012d39b9ff45035d07772de4558bca1ed017"
+        },
+        {
+          "path": "apps/srm/src/server/operation-report-data.ts",
+          "sourceSha256": "17613744ca9f2d712d908a004fb49cfdfbbbe2fe8e28d18012e62add62b76b12"
+        }
+      ]
+    },
+    "KYS_FETCH_CACHE": {
+      "dataClasses": [
+        "ORGANISATION_PRIVATE",
+        "USER_IN_ORGANISATION_PRIVATE",
+        "TECHNICAL_CONTROL",
+        "OPERATION_AUDIT"
+      ],
+      "observedEffects": [
+        "KYS_UPSTREAM_REQUEST",
+        "RETENTION_OR_CACHE_LEASE",
+        "PERSON_DATA_AND_REDACTED_PROJECTION"
+      ],
+      "integrationRequirement": "Retain field-level PII and retention restrictions. The old shared KYS table is not accepted as universal knowledge; new private initialization row-closes it. A read must not silently authorize refresh or wider person-data access.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/srm/src/server/kys-cache.ts",
+          "sourceSha256": "df924401b3b21e34a1dd1e796760f1390b285e30637ad597b792abb5ffdf2925"
+        },
+        {
+          "path": "apps/srm/src/server/xray-lookup.ts",
+          "sourceSha256": "316846fb0f65d88ce48e26a44ed5eeb6da9adf0a3008985ad102dbc31776926d"
+        },
+        {
+          "path": "apps/srm/src/server/jdg-lookup.ts",
+          "sourceSha256": "3b74bcf7f6dcad60286f96f473ccb236a27d95df115343fc9ad285e83ac5ac11"
+        },
+        {
+          "path": "apps/srm/db/migrations/0010_kys_shared_cache.sql",
+          "sourceSha256": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44"
+        }
+      ]
+    },
+    "PII_REVEAL": {
+      "dataClasses": [
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "observedEffects": [
+        "VERIFY_HMAC_LOCATOR",
+        "SCOPED_SNAPSHOT_PERSON_READ",
+        "RETURN_FULL_IDENTIFIER"
+      ],
+      "integrationRequirement": "The token contains snapshot/list/index/expiry, not a current named-user grant. Retain org/RLS checks and require explicit current PII capability and privacy-safe audit before named-user adoption. No automatic OWNER wildcard.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/srm/app/api/xray/kys/pesel/route.ts",
+          "sourceSha256": "2b09c41c3fed6735a1c4c559d5b5f1bf95791f5b5b112643ac67df92c0e10f7b"
+        },
+        {
+          "path": "apps/srm/src/server/pesel-reveal.ts",
+          "sourceSha256": "84fa03520667b6d7cf8e9aa7daad74ca3142126383e55f8a2acc02ab3d867e40"
+        }
+      ]
+    },
+    "EXPORT_FILE": {
+      "dataClasses": [
+        "ORGANISATION_PRIVATE",
+        "TECHNICAL_CONTROL",
+        "OPERATION_AUDIT"
+      ],
+      "observedEffects": [
+        "SCOPED_REPORT_OR_SOURCE_READ",
+        "PDF_OR_XLSX_BUILD",
+        "POSSIBLE_UPSTREAM_FILE_REQUEST"
+      ],
+      "integrationRequirement": "Review each underlying restore/file branch. Check current context before source access and release, exact scoped resource, short-lived references and provider limits where applicable. Filename/token alone is not permission.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/srm/app/api/xray/financial-excel/route.ts",
+          "sourceSha256": "80c696106ad07e666108908623a9ec05a896841e958a73460254a841a25b94d4"
+        },
+        {
+          "path": "apps/srm/app/api/xray/kys/pdf/route.ts",
+          "sourceSha256": "1cb2e964b511dbffeffe5752ef7505e962e6eccf08116c6f43085d97a482e372"
+        },
+        {
+          "path": "apps/srm/app/api/xray/kys/krs/route.ts",
+          "sourceSha256": "9fae01d0d51068be3949b8dccfbdaee79a0f3a6e1677b91edc6d636251fe6de4"
+        },
+        {
+          "path": "apps/srm/src/server/financial-documents.ts",
+          "sourceSha256": "c0e9bcc529a0683d6d1e16210f9c44b363938865d6c69a5978a1ac65d17166f9"
+        },
+        {
+          "path": "apps/srm/src/server/msr-source.ts",
+          "sourceSha256": "96c6ff30795a43ad80e099affe5224cbaae7c55b911ac1918e02f5b588797fd7"
+        },
+        {
+          "path": "apps/srm/src/server/kys-pdf.ts",
+          "sourceSha256": "26ffd6de8f4bcb032489b8e6d406e382a9c11ada6baa48b84b9c795ba36390cc"
+        }
+      ]
+    },
+    "WEB_ENRICHMENT": {
+      "dataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "TECHNICAL_CONTROL",
+        "OPERATION_AUDIT"
+      ],
+      "observedEffects": [
+        "PRIVATE_SUBJECT_OR_CACHE_LEASE",
+        "EXTERNAL_DISCOVERY_OR_LOGO_FETCH",
+        "SAVE_DERIVED_IDENTITY"
+      ],
+      "integrationRequirement": "Cached, pending and new enrichment branches differ. Preserve claim/idempotency and private subject scope; provider use needs authority. Only a field-reviewed corporate projection may become shared.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/srm/src/server/supplier-web-identity.ts",
+          "sourceSha256": "9c4713c91c92f26b5bde0da6c374527e235d4434266a2fce92da1eb090118fad"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-web-store.ts",
+          "sourceSha256": "33b1d49a4f730ecfac5b26b413b32d2c2a050bb80737db51d7b9bd7f5383caa6"
+        },
+        {
+          "path": "apps/srm/src/server/website-discovery.ts",
+          "sourceSha256": "98ffb78fb3ed6b7646d1299d76cf3cc3698e8d308b55326a04db5d0b07d17852"
+        }
+      ]
+    },
+    "PUBLIC_POLICY": {
+      "dataClasses": [
+        "TECHNICAL_CONTROL"
+      ],
+      "observedEffects": [
+        "PUBLIC_HEALTH_LOGIN_LOGOUT_OR_DETERMINISTIC_ENTRY"
+      ],
+      "integrationRequirement": "A specific public entry policy is not a product grant. Health/login and deterministic advisory are distinct from business reads and do not need fictitious tenant membership.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "apps/sg-runtime/app/api/advisory/route.ts",
+          "sourceSha256": "541bbb778af661ddc3e324b79f4d7a181854f2297403fe1c9aa5685f6a587c55"
+        },
+        {
+          "path": "apps/sg-runtime/app/api/health/route.ts",
+          "sourceSha256": "543cab74cfdf7190ed0ebc9ca12605056b28e5aadb6f37e59c24ffda58f4c295"
+        },
+        {
+          "path": "apps/srm/app/api/health/route.ts",
+          "sourceSha256": "f34d31044bfb67a83aa3b32bdcd7d835458a36d1126a6f94dd6838dd1a961efc"
+        },
+        {
+          "path": "apps/srm/app/api/auth/login/route.ts",
+          "sourceSha256": "8fc9d38c58732c7b7e11f3aa1f37b32eb771cf249c58c0237e18ad0ca1797141"
+        }
+      ]
+    },
+    "PREFERENCES_REUSE": {
+      "dataClasses": [
+        "USER_IN_ORGANISATION_PRIVATE",
+        "SHARED_KNOWLEDGE"
+      ],
+      "observedEffects": [
+        "CLIENT_PREFERENCE_STORAGE_BY_OPAQUE_SCOPE",
+        "PURE_MODEL_WITH_REACT_UI_IMPORT_BOUNDARY"
+      ],
+      "integrationRequirement": "Preference storage follows actual app/org/user and stale UI state must be separated. Current scanner key uses preferenceScope/nip/scope. Summary rules import financial-history.tsx (use-client); a .ts filename alone is not React-neutral runtime. Prove actual business reuse with separate host compatibility.",
+      "reviewDepth": "REFERENCED_SOURCE_CALL_CHAIN",
+      "evidence": [
+        {
+          "path": "packages/srm-xray/src/financial-scanner.tsx",
+          "sourceSha256": "2e6b0e448e7012efbb964164234b19452cfd67b9b97f5e02af9a76d9ff5f12d9"
+        },
+        {
+          "path": "packages/srm-xray/src/executive-summary-rules.ts",
+          "sourceSha256": "5ef7d3590398b3d70536ff07699ed149c5d536f9dcbfd7ff28e0b4f655e86ecf"
+        },
+        {
+          "path": "packages/srm-xray/src/financial-history.tsx",
+          "sourceSha256": "78e48ab472a0123fc709f04d63b735af869b0172120467df00872d9c770651c5"
+        },
+        {
+          "path": "packages/srm-xray/package.json",
+          "sourceSha256": "261ca3c231874af1100c8b81cae7946def5a588dcab63558b6c01e5626e41ab0"
+        }
+      ]
+    }
+  },
+  "apiRoutes": [
+    {
+      "id": "sg-runtime:POST:/api/advisory",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/advisory/route.ts",
+      "method": "POST",
+      "sourceSha256": "541bbb778af661ddc3e324b79f4d7a181854f2297403fe1c9aa5685f6a587c55",
+      "baselineSourceSha256": "541bbb778af661ddc3e324b79f4d7a181854f2297403fe1c9aa5685f6a587c55",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "PUBLIC_SEPARATE_POLICY",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/ai-search",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/ai-search/route.ts",
+      "method": "POST",
+      "sourceSha256": "7d10fafe701f84548540e78e1b304bb72c05145450b1cb2c3987726fd49a2683",
+      "baselineSourceSha256": "7d10fafe701f84548540e78e1b304bb72c05145450b1cb2c3987726fd49a2683",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "AI_SEARCH"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/analytics-eligibility",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/analytics-eligibility/route.ts",
+      "method": "GET",
+      "sourceSha256": "f8f660c0eded23672b8ac38da10a655bd584487389c825f55d6b584fe8f3aebe",
+      "baselineSourceSha256": "f8f660c0eded23672b8ac38da10a655bd584487389c825f55d6b584fe8f3aebe",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/analytics-series",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/analytics-series/route.ts",
+      "method": "GET",
+      "sourceSha256": "8e5549cce64e7d71bec89ad84d46709387a7273aea9174fe8d81f033dbbf1f0c",
+      "baselineSourceSha256": "8e5549cce64e7d71bec89ad84d46709387a7273aea9174fe8d81f033dbbf1f0c",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "HISTORY_READ_THROUGH"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "NO_ROUTE_AUTH_WRAPPER",
+        "SG_RUNTIME_MIDDLEWARE_EXCLUDES_API",
+        "READ_THROUGH_MAY_FETCH_AND_WRITE"
+      ]
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/context",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/context/route.ts",
+      "method": "POST",
+      "sourceSha256": "87fcb1cf804817e75ea154913b9a37fc8faf13c10d2f9a75f2a753b7f979b3f1",
+      "baselineSourceSha256": "87fcb1cf804817e75ea154913b9a37fc8faf13c10d2f9a75f2a753b7f979b3f1",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/forecast/current",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/forecast/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "c2beaa4e27e5c45d4d893a023e76f6a5d3b83f24a87d61fa709bc83e81dea779",
+      "baselineSourceSha256": "c2beaa4e27e5c45d4d893a023e76f6a5d3b83f24a87d61fa709bc83e81dea779",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "PREPARED_FORECAST_READ"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/forecast/verification",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "f0e4ea4e0907e927f63d81e3375c1ed17c28ff99bb094f23bd26c4738f2b5b06",
+      "baselineSourceSha256": "f0e4ea4e0907e927f63d81e3375c1ed17c28ff99bb094f23bd26c4738f2b5b06",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "PREPARED_FORECAST_READ"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/metadata/[metadataKey]/values",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/metadata/[metadataKey]/values/route.ts",
+      "method": "GET",
+      "sourceSha256": "72794e6ac84ab4ec3de90c91785d315b95b4c4222af78b8e944ba53e92adf253",
+      "baselineSourceSha256": "72794e6ac84ab4ec3de90c91785d315b95b4c4222af78b8e944ba53e92adf253",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/metadata",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/metadata/route.ts",
+      "method": "GET",
+      "sourceSha256": "57307aa6dcfc57943bac2fff4dc1eb60c3e20e00bda47d95cae0b7808f5cf8aa",
+      "baselineSourceSha256": "57307aa6dcfc57943bac2fff4dc1eb60c3e20e00bda47d95cae0b7808f5cf8aa",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/preview",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/preview/route.ts",
+      "method": "GET",
+      "sourceSha256": "4a48bc420681792cbe148e4ab541495afee1e3be1e8a1f4644aab0b2985c10da",
+      "baselineSourceSha256": "4a48bc420681792cbe148e4ab541495afee1e3be1e8a1f4644aab0b2985c10da",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "HISTORY_READ_THROUGH"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/search",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/search/route.ts",
+      "method": "GET",
+      "sourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "baselineSourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/search",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/search/route.ts",
+      "method": "POST",
+      "sourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "baselineSourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/selection",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/selection/route.ts",
+      "method": "GET",
+      "sourceSha256": "c6539722c19aa79a1f5efa63ce65384113f8c861349d2f27fb7003378c3c627a",
+      "baselineSourceSha256": "3de792ca0105053d58ec7f6a750082257c0bb46b3ddd90402f43698d599ce92f",
+      "sourceChangedSinceBaseline": true,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "BENCHMARK_SELECTION"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONDITIONAL_SOURCE_CANDIDATE_NOT_LIVE_ACCEPTANCE",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "benchmark.selection.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/selection",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/selection/route.ts",
+      "method": "POST",
+      "sourceSha256": "c6539722c19aa79a1f5efa63ce65384113f8c861349d2f27fb7003378c3c627a",
+      "baselineSourceSha256": "3de792ca0105053d58ec7f6a750082257c0bb46b3ddd90402f43698d599ce92f",
+      "sourceChangedSinceBaseline": true,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "BENCHMARK_SELECTION"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONDITIONAL_SOURCE_CANDIDATE_NOT_LIVE_ACCEPTANCE",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "benchmark.selection.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/category/[categoryId]",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/[categoryId]/route.ts",
+      "method": "GET",
+      "sourceSha256": "01d5635c5e0e859fbfefccbd0f5460b118d20268971f70c72a1f11f35017c643",
+      "baselineSourceSha256": "01d5635c5e0e859fbfefccbd0f5460b118d20268971f70c72a1f11f35017c643",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "category.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:PATCH:/api/category/[categoryId]",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/[categoryId]/route.ts",
+      "method": "PATCH",
+      "sourceSha256": "01d5635c5e0e859fbfefccbd0f5460b118d20268971f70c72a1f11f35017c643",
+      "baselineSourceSha256": "01d5635c5e0e859fbfefccbd0f5460b118d20268971f70c72a1f11f35017c643",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "category.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/category/ai-suggestions",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/ai-suggestions/route.ts",
+      "method": "POST",
+      "sourceSha256": "e47b7db068990d0d8c72bb5ded6b484baa37f2935198296eca141162f1d01bff",
+      "baselineSourceSha256": "e47b7db068990d0d8c72bb5ded6b484baa37f2935198296eca141162f1d01bff",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "category.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/category",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/route.ts",
+      "method": "GET",
+      "sourceSha256": "baffdd308ce201fff2c57f489a78ccb96fd2c280d7a1184da3a9ed7e7ca2f4e1",
+      "baselineSourceSha256": "baffdd308ce201fff2c57f489a78ccb96fd2c280d7a1184da3a9ed7e7ca2f4e1",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "category.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/category",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/route.ts",
+      "method": "POST",
+      "sourceSha256": "baffdd308ce201fff2c57f489a78ccb96fd2c280d7a1184da3a9ed7e7ca2f4e1",
+      "baselineSourceSha256": "baffdd308ce201fff2c57f489a78ccb96fd2c280d7a1184da3a9ed7e7ca2f4e1",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "category.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/cost-scan/category/[categoryId]",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/cost-scan/category/[categoryId]/route.ts",
+      "method": "GET",
+      "sourceSha256": "49bb8ea2f362f356b8c18ed4be233c8319ff29c07e37eed74dedbe6530c236ba",
+      "baselineSourceSha256": "49bb8ea2f362f356b8c18ed4be233c8319ff29c07e37eed74dedbe6530c236ba",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "category.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/health",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/health/route.ts",
+      "method": "GET",
+      "sourceSha256": "543cab74cfdf7190ed0ebc9ca12605056b28e5aadb6f37e59c24ffda58f4c295",
+      "baselineSourceSha256": "543cab74cfdf7190ed0ebc9ca12605056b28e5aadb6f37e59c24ffda58f4c295",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "PUBLIC_SEPARATE_POLICY",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/hydrate/assistant",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/hydrate/assistant/route.ts",
+      "method": "POST",
+      "sourceSha256": "110c44938c5ba2f1f368398835b97cb1e75943739b41f87bd1b47fcdf6b698e1",
+      "baselineSourceSha256": "110c44938c5ba2f1f368398835b97cb1e75943739b41f87bd1b47fcdf6b698e1",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/hydrate/intelligence",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/hydrate/intelligence/route.ts",
+      "method": "POST",
+      "sourceSha256": "7731efc34a6dc17d7927f6b24ddab24af5404edb36650e395c53a68b06a828a4",
+      "baselineSourceSha256": "7731efc34a6dc17d7927f6b24ddab24af5404edb36650e395c53a68b06a828a4",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/hydrate/procurement",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/hydrate/procurement/route.ts",
+      "method": "POST",
+      "sourceSha256": "1436bb1fe292e73b6c48631d39c80dd597624211a7b50d959d015b026a1a79d0",
+      "baselineSourceSha256": "1436bb1fe292e73b6c48631d39c80dd597624211a7b50d959d015b026a1a79d0",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/hydrate/supplier",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/hydrate/supplier/route.ts",
+      "method": "POST",
+      "sourceSha256": "21b95676c4957bc0d9d99ccdcc1bf651a3a8300e6572288a79c8cfb341b51b94",
+      "baselineSourceSha256": "21b95676c4957bc0d9d99ccdcc1bf651a3a8300e6572288a79c8cfb341b51b94",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/action-trace",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/action-trace/route.ts",
+      "method": "POST",
+      "sourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "baselineSourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "job.execute"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/action-trace",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/action-trace/route.ts",
+      "method": "GET",
+      "sourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "baselineSourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/capabilities",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/capabilities/route.ts",
+      "method": "GET",
+      "sourceSha256": "2ae337a057e36b19e45e2e13942a96a3cfd5779a7ec9f5629d246efe960dd17b",
+      "baselineSourceSha256": "2ae337a057e36b19e45e2e13942a96a3cfd5779a7ec9f5629d246efe960dd17b",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/capability",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/capability/route.ts",
+      "method": "GET",
+      "sourceSha256": "e259b1c1bda31026772810c961d2af03e82eb15f327c5bba7fa1bedcce0ccb58",
+      "baselineSourceSha256": "e259b1c1bda31026772810c961d2af03e82eb15f327c5bba7fa1bedcce0ccb58",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/execution-ledger",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/execution-ledger/route.ts",
+      "method": "POST",
+      "sourceSha256": "f3d4a9c6640abe4ef8de70d294ad3b7032dee871f62dd26073dd98f87f960916",
+      "baselineSourceSha256": "f3d4a9c6640abe4ef8de70d294ad3b7032dee871f62dd26073dd98f87f960916",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "job.execute"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/preparation/jobs",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/preparation/jobs/route.ts",
+      "method": "POST",
+      "sourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "baselineSourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "job.execute"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/preparation/jobs",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/preparation/jobs/route.ts",
+      "method": "GET",
+      "sourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "baselineSourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/prepare/current",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepare/current/route.ts",
+      "method": "POST",
+      "sourceSha256": "9abad3a60bdefa588eb36932c4265ebd8382b93abecbd1f43ac971c4ed33d6b6",
+      "baselineSourceSha256": "9abad3a60bdefa588eb36932c4265ebd8382b93abecbd1f43ac971c4ed33d6b6",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "job.execute"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/prepared/current",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepared/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "8f74a5faf4197d0d2a052e6d246b6a7822569fddc843c519d0390c5a38a44c3f",
+      "baselineSourceSha256": "8f74a5faf4197d0d2a052e6d246b6a7822569fddc843c519d0390c5a38a44c3f",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/prepared/verification",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepared/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "fdeb4f61fd2f4343bf8212f6ec4ce9c8bde1baeb32cdf01fd8546a15bb53082a",
+      "baselineSourceSha256": "fdeb4f61fd2f4343bf8212f6ec4ce9c8bde1baeb32cdf01fd8546a15bb53082a",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/production",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/production/route.ts",
+      "method": "GET",
+      "sourceSha256": "e8a2637de2e6dee2312ada893a22689419a8bedff9a6a25c1118c6dae0259f7f",
+      "baselineSourceSha256": "e8a2637de2e6dee2312ada893a22689419a8bedff9a6a25c1118c6dae0259f7f",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/progressive",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/progressive/route.ts",
+      "method": "POST",
+      "sourceSha256": "91c53480ab464b07d07ac70251de7e91df74909235a3bc99849197cb4e80ca02",
+      "baselineSourceSha256": "91c53480ab464b07d07ac70251de7e91df74909235a3bc99849197cb4e80ca02",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "job.execute"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/readiness",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/readiness/route.ts",
+      "method": "GET",
+      "sourceSha256": "6f2146baba6411c3d350d95d32814b5426cff2985a901817400ccfb85e6ba7de",
+      "baselineSourceSha256": "6f2146baba6411c3d350d95d32814b5426cff2985a901817400ccfb85e6ba7de",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/verification",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "3cdd45b0f4f281a6cbd75170fcab382227fbad5f019450458ce85ee4ddeb1f3b",
+      "baselineSourceSha256": "3cdd45b0f4f281a6cbd75170fcab382227fbad5f019450458ce85ee4ddeb1f3b",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "LEGACY_SERVICE_BEARER_NO_CURRENT_INDIVIDUAL_DELEGATION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/negotiation/context",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/negotiation/context/route.ts",
+      "method": "POST",
+      "sourceSha256": "07cddab6f6f54f121590c3a531a9aebdd6c92fe12e3a686f37fa3bab39d73bcc",
+      "baselineSourceSha256": "07cddab6f6f54f121590c3a531a9aebdd6c92fe12e3a686f37fa3bab39d73bcc",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/negotiation/hydrate",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/negotiation/hydrate/route.ts",
+      "method": "POST",
+      "sourceSha256": "42d9ecffe1cd059317f3fe259bfb9ee836fe47addeeeccea0ff0f92da9290924",
+      "baselineSourceSha256": "42d9ecffe1cd059317f3fe259bfb9ee836fe47addeeeccea0ff0f92da9290924",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/negotiation/intelligence",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/negotiation/intelligence/route.ts",
+      "method": "POST",
+      "sourceSha256": "c975646f970c5f7b11f8f3aece3284c99d115ee4994bead341546632d3d3b5cf",
+      "baselineSourceSha256": "c975646f970c5f7b11f8f3aece3284c99d115ee4994bead341546632d3d3b5cf",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/negotiation/retrieval",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/negotiation/retrieval/route.ts",
+      "method": "POST",
+      "sourceSha256": "aa2f4ee0dce99b6916119be3357186cf9672b8d6b818433ffe11df46281c7a9d",
+      "baselineSourceSha256": "aa2f4ee0dce99b6916119be3357186cf9672b8d6b818433ffe11df46281c7a9d",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/openapi",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/openapi/route.ts",
+      "method": "GET",
+      "sourceSha256": "65b922e2eec0e427cc4ed9e8bcb86fb3350ec6e9d59baf22b30ab4a5f7172db7",
+      "baselineSourceSha256": "65b922e2eec0e427cc4ed9e8bcb86fb3350ec6e9d59baf22b30ab4a5f7172db7",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "PUBLIC_SEPARATE_POLICY",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/porr-demo-auth",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/porr-demo-auth/route.ts",
+      "method": "POST",
+      "sourceSha256": "561ba6b7e263ccc35a6c9e45eb6d469cbf998633e1b74612cd003ca8f7b9d2a1",
+      "baselineSourceSha256": "561ba6b7e263ccc35a6c9e45eb6d469cbf998633e1b74612cd003ca8f7b9d2a1",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "PUBLIC_SEPARATE_POLICY",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/procurement/category",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/category/route.ts",
+      "method": "GET",
+      "sourceSha256": "a84f09993f834eee558bd77b8c9259b315dc60af7480e4a305b516a69cdbbe9b",
+      "baselineSourceSha256": "a84f09993f834eee558bd77b8c9259b315dc60af7480e4a305b516a69cdbbe9b",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "category.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/procurement/context",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/context/route.ts",
+      "method": "GET",
+      "sourceSha256": "d80323c72cc69d5aa3f6e4f613947d43ea21e92cca17d99b40ff991892b13ac4",
+      "baselineSourceSha256": "d80323c72cc69d5aa3f6e4f613947d43ea21e92cca17d99b40ff991892b13ac4",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/procurement/hydrate",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/hydrate/route.ts",
+      "method": "POST",
+      "sourceSha256": "0e9078f9a8c50f3375817b0757d4e424f41cf397c05aeed705ec96e5d3ce2532",
+      "baselineSourceSha256": "0e9078f9a8c50f3375817b0757d4e424f41cf397c05aeed705ec96e5d3ce2532",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/procurement/intelligence",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/intelligence/route.ts",
+      "method": "GET",
+      "sourceSha256": "79ab2674a7f11e930663a7dee9497b4cd99a81121995242a864184fecce8917e",
+      "baselineSourceSha256": "79ab2674a7f11e930663a7dee9497b4cd99a81121995242a864184fecce8917e",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/procurement/retrieval",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/retrieval/route.ts",
+      "method": "POST",
+      "sourceSha256": "3d9c3980007e1662a0105120b2d31b876186cb55ec969b50ac00b6beee70ad22",
+      "baselineSourceSha256": "3d9c3980007e1662a0105120b2d31b876186cb55ec969b50ac00b6beee70ad22",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/retrieval/contextual",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/retrieval/contextual/route.ts",
+      "method": "POST",
+      "sourceSha256": "f2afbadb913d1d6d857666fa8b2c4671d37199ce67ed6c8ea2f84bae6c421c89",
+      "baselineSourceSha256": "f2afbadb913d1d6d857666fa8b2c4671d37199ce67ed6c8ea2f84bae6c421c89",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/retrieval/graph",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/retrieval/graph/route.ts",
+      "method": "POST",
+      "sourceSha256": "24b416742904917e048d92e38f692453c96e47fda471d74d571da0a40cf7f8ef",
+      "baselineSourceSha256": "24b416742904917e048d92e38f692453c96e47fda471d74d571da0a40cf7f8ef",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/retrieval/rag",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/retrieval/rag/route.ts",
+      "method": "POST",
+      "sourceSha256": "3de75d8b5f67e260a7494582c13fad3ddd1a647de0adcc769a5ba964f508afa0",
+      "baselineSourceSha256": "3de75d8b5f67e260a7494582c13fad3ddd1a647de0adcc769a5ba964f508afa0",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:POST:/api/retrieval/semantic",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/retrieval/semantic/route.ts",
+      "method": "POST",
+      "sourceSha256": "7bb0bce814944e402a46f9da86c4f5bb30c083bcc600e84085e3a123a398b80d",
+      "baselineSourceSha256": "7bb0bce814944e402a46f9da86c4f5bb30c083bcc600e84085e3a123a398b80d",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/graph",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/graph/route.ts",
+      "method": "GET",
+      "sourceSha256": "6d98562398ea96798a7f360fa834ca8fde907ff211a6d7ab68ac4c89716b19cf",
+      "baselineSourceSha256": "6d98562398ea96798a7f360fa834ca8fde907ff211a6d7ab68ac4c89716b19cf",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/intelligence",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/intelligence/route.ts",
+      "method": "GET",
+      "sourceSha256": "be9dc3c96dc11a34bf5df4d8191833d286c17590c101fc73a78384a75c2972b3",
+      "baselineSourceSha256": "be9dc3c96dc11a34bf5df4d8191833d286c17590c101fc73a78384a75c2972b3",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/profile",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/profile/route.ts",
+      "method": "GET",
+      "sourceSha256": "258d7dd71175c07a4e61b9a04ea6fd8b5c985870d3925b2a1e4e95dfc5127fa8",
+      "baselineSourceSha256": "258d7dd71175c07a4e61b9a04ea6fd8b5c985870d3925b2a1e4e95dfc5127fa8",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/risk",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/risk/route.ts",
+      "method": "GET",
+      "sourceSha256": "e7a3c67a118a8694f50701493e7c9a13412f451780f5f501b37f2c79553cb131",
+      "baselineSourceSha256": "e7a3c67a118a8694f50701493e7c9a13412f451780f5f501b37f2c79553cb131",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-001",
+        "owner": "SG Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/acceptance-matrix",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/acceptance-matrix/route.ts",
+      "method": "GET",
+      "sourceSha256": "009ef5d9720492e74f1dc357be4d38e7b32d296c8faa5f7ff45d31a8402416ca",
+      "baselineSourceSha256": "009ef5d9720492e74f1dc357be4d38e7b32d296c8faa5f7ff45d31a8402416ca",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/current/capabilities",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/capabilities/route.ts",
+      "method": "GET",
+      "sourceSha256": "8d2a4dfcbbf15e7dc83a5198a0c9ab2e19cac2b87fc49d824cd1e3656943f863",
+      "baselineSourceSha256": "8d2a4dfcbbf15e7dc83a5198a0c9ab2e19cac2b87fc49d824cd1e3656943f863",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/current/capability",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/capability/route.ts",
+      "method": "GET",
+      "sourceSha256": "2200f76938a0e07c892e2cc36bb06feb92e100243a44d016dccf03b9e228ad4a",
+      "baselineSourceSha256": "2200f76938a0e07c892e2cc36bb06feb92e100243a44d016dccf03b9e228ad4a",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/current/prepare",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/prepare/route.ts",
+      "method": "POST",
+      "sourceSha256": "ffe7662c97e2dd049b064b8998bbe2acb8c01936ca6f090af4e38ef1c02bd667",
+      "baselineSourceSha256": "ffe7662c97e2dd049b064b8998bbe2acb8c01936ca6f090af4e38ef1c02bd667",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.request"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/current",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "7e2690972dfb75a499aaefff838512ace44af4c3b4f95eb3d964c7e94dc3a68e",
+      "baselineSourceSha256": "7e2690972dfb75a499aaefff838512ace44af4c3b4f95eb3d964c7e94dc3a68e",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/demo-certification",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/demo-certification/route.ts",
+      "method": "POST",
+      "sourceSha256": "2e35c4756ef04fcc96f318b614fee5ab05716659e2b559192bdf96da84b934b5",
+      "baselineSourceSha256": "2e35c4756ef04fcc96f318b614fee5ab05716659e2b559192bdf96da84b934b5",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.request"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/progressive",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/progressive/route.ts",
+      "method": "POST",
+      "sourceSha256": "f4f096699f6ece9ee8c53ed156d51fb3ed5ec3eb0b6a46080bfdae472a0893ee",
+      "baselineSourceSha256": "f4f096699f6ece9ee8c53ed156d51fb3ed5ec3eb0b6a46080bfdae472a0893ee",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.request"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/stage12-shared-contention-diagnosis",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/stage12-shared-contention-diagnosis/route.ts",
+      "method": "POST",
+      "sourceSha256": "d48edd5d9250a0e273d1a72a242e16141365f3488094af241c4ae16e4ba71a0a",
+      "baselineSourceSha256": "d48edd5d9250a0e273d1a72a242e16141365f3488094af241c4ae16e4ba71a0a",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.request"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/telemetry",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/telemetry/route.ts",
+      "method": "POST",
+      "sourceSha256": "c2bfebd1e0085c85b9fb21246cfbfdd4c65bb3b82d05c1b0973d988e359231dd",
+      "baselineSourceSha256": "c2bfebd1e0085c85b9fb21246cfbfdd4c65bb3b82d05c1b0973d988e359231dd",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.request"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/verification/prepare",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/verification/prepare/route.ts",
+      "method": "POST",
+      "sourceSha256": "7644a25bfd04e39a9e6d488c03c308dfbc67b6ae29e2708e944a0a747d3d668c",
+      "baselineSourceSha256": "7644a25bfd04e39a9e6d488c03c308dfbc67b6ae29e2708e944a0a747d3d668c",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.request"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/verification",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "52d5db2f26db1c73825721f3d825e76ee79202feb797b25488723ab53d0480b3",
+      "baselineSourceSha256": "52d5db2f26db1c73825721f3d825e76ee79202feb797b25488723ab53d0480b3",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:GET:/api/components",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/components/route.ts",
+      "method": "GET",
+      "sourceSha256": "7b82c4fbebe28422459d3c6765596417ea401826e92b57d6b17b9e292cc18c27",
+      "baselineSourceSha256": "7b82c4fbebe28422459d3c6765596417ea401826e92b57d6b17b9e292cc18c27",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:GET:/api/forecast-accuracy",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/forecast-accuracy/route.ts",
+      "method": "GET",
+      "sourceSha256": "4d5a21f6e8e85fe1714f26d42a2c1bac126a71b0d7a503f6682616c16dcd5ef7",
+      "baselineSourceSha256": "4d5a21f6e8e85fe1714f26d42a2c1bac126a71b0d7a503f6682616c16dcd5ef7",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:GET:/api/records",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/records/route.ts",
+      "method": "GET",
+      "sourceSha256": "0496af304651779e175f849fc51052dbebaf5f0ab07a72e470f93162ffc5a95f",
+      "baselineSourceSha256": "0496af304651779e175f849fc51052dbebaf5f0ab07a72e470f93162ffc5a95f",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "dashboard-preview:GET:/api/series",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/series/route.ts",
+      "method": "GET",
+      "sourceSha256": "3f1a02950f54a28ea839dd8df1ec43c173b25bf679c6738c5eaad312143268ae",
+      "baselineSourceSha256": "3f1a02950f54a28ea839dd8df1ec43c173b25bf679c6738c5eaad312143268ae",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-003",
+        "owner": "Dashboard Preview",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONFIGURATION_DEPENDENT_DEMO_NOT_PRIVATE_ADOPTION",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "forecast.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": [
+        "DASHBOARD_MIDDLEWARE_IGNORES_NEW_PROVIDER_DISCRIMINATOR"
+      ]
+    },
+    {
+      "id": "srm:POST:/api/auth/login",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/auth/login/route.ts",
+      "method": "POST",
+      "sourceSha256": "8fc9d38c58732c7b7e11f3aa1f37b32eb771cf249c58c0237e18ad0ca1797141",
+      "baselineSourceSha256": "8fc9d38c58732c7b7e11f3aa1f37b32eb771cf249c58c0237e18ad0ca1797141",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "PUBLIC_SEPARATE_POLICY",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/auth/logout",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/auth/logout/route.ts",
+      "method": "POST",
+      "sourceSha256": "3106bdd1c74b0816f5be68075a5c6bc268e6bb4594c1ac8448ade11207d48ef2",
+      "baselineSourceSha256": "3106bdd1c74b0816f5be68075a5c6bc268e6bb4594c1ac8448ade11207d48ef2",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "PUBLIC_SEPARATE_POLICY",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:GET:/api/health",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/health/route.ts",
+      "method": "GET",
+      "sourceSha256": "f34d31044bfb67a83aa3b32bdcd7d835458a36d1126a6f94dd6838dd1a961efc",
+      "baselineSourceSha256": "f34d31044bfb67a83aa3b32bdcd7d835458a36d1126a6f94dd6838dd1a961efc",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "PUBLIC_SEPARATE_POLICY",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/financial-excel",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/financial-excel/route.ts",
+      "method": "POST",
+      "sourceSha256": "80c696106ad07e666108908623a9ec05a896841e958a73460254a841a25b94d4",
+      "baselineSourceSha256": "80c696106ad07e666108908623a9ec05a896841e958a73460254a841a25b94d4",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.export"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/jdg/kys",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/jdg/kys/route.ts",
+      "method": "POST",
+      "sourceSha256": "394607a6613fc44409430553520cfa005e0336b5a102f0d43f7eca6af2c6c767",
+      "baselineSourceSha256": "394607a6613fc44409430553520cfa005e0336b5a102f0d43f7eca6af2c6c767",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "KYS_FETCH_CACHE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.read",
+        "supplier.report.refresh",
+        "supplier.assignment.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/jdg",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/jdg/route.ts",
+      "method": "POST",
+      "sourceSha256": "d4710be87d111f57a2105a29c61ccfdf0a95c61754fbd18a17442a748b08db99",
+      "baselineSourceSha256": "d4710be87d111f57a2105a29c61ccfdf0a95c61754fbd18a17442a748b08db99",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.read",
+        "supplier.report.refresh",
+        "supplier.assignment.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/kys/krs",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/kys/krs/route.ts",
+      "method": "POST",
+      "sourceSha256": "9fae01d0d51068be3949b8dccfbdaee79a0f3a6e1677b91edc6d636251fe6de4",
+      "baselineSourceSha256": "9fae01d0d51068be3949b8dccfbdaee79a0f3a6e1677b91edc6d636251fe6de4",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.export"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/kys/pdf",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/kys/pdf/route.ts",
+      "method": "POST",
+      "sourceSha256": "1cb2e964b511dbffeffe5752ef7505e962e6eccf08116c6f43085d97a482e372",
+      "baselineSourceSha256": "1cb2e964b511dbffeffe5752ef7505e962e6eccf08116c6f43085d97a482e372",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.export"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/kys/pesel",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/kys/pesel/route.ts",
+      "method": "POST",
+      "sourceSha256": "2b09c41c3fed6735a1c4c559d5b5f1bf95791f5b5b112643ac67df92c0e10f7b",
+      "baselineSourceSha256": "2b09c41c3fed6735a1c4c559d5b5f1bf95791f5b5b112643ac67df92c0e10f7b",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "PII_REVEAL"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.read",
+        "supplier.report.refresh",
+        "supplier.assignment.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/kys",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/kys/route.ts",
+      "method": "POST",
+      "sourceSha256": "74b6f1798320603037e19c7e6c9a4334f086b6945e2d6f4559a912d5ac568473",
+      "baselineSourceSha256": "74b6f1798320603037e19c7e6c9a4334f086b6945e2d6f4559a912d5ac568473",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "KYS_FETCH_CACHE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.read",
+        "supplier.report.refresh",
+        "supplier.assignment.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/lookup",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/lookup/route.ts",
+      "method": "POST",
+      "sourceSha256": "edb28291a1980b5bc9a0eb5b848a44db930598ddec065679676ef6dca1495ecc",
+      "baselineSourceSha256": "edb28291a1980b5bc9a0eb5b848a44db930598ddec065679676ef6dca1495ecc",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.read",
+        "supplier.report.refresh",
+        "supplier.assignment.write"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/report-data",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/report-data/route.ts",
+      "method": "POST",
+      "sourceSha256": "d345f70a60485b358461859075e2f86597b9c1f1e5aa5398f85369d775c1515d",
+      "baselineSourceSha256": "d0670452db325b5083cc0803ee82b0cf95b34f18ca67e9d36aaec49ff8eda564",
+      "sourceChangedSinceBaseline": true,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "REPORT_PROJECTION",
+        "PREFERENCES_REUSE"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "CONDITIONAL_SOURCE_CANDIDATE_NOT_LIVE_ACCEPTANCE",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.read",
+        "supplier.report.project"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/search",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/search/route.ts",
+      "method": "POST",
+      "sourceSha256": "2eb6155b2d9a546774f70adf7d81711f889a6e08cdd4eae9890b542a72ffaa9a",
+      "baselineSourceSha256": "2eb6155b2d9a546774f70adf7d81711f889a6e08cdd4eae9890b542a72ffaa9a",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "knowledge.read"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    },
+    {
+      "id": "srm:POST:/api/xray/web-identity",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/web-identity/route.ts",
+      "method": "POST",
+      "sourceSha256": "22a113cbfdadfe3bcae865dd80dbbcdedeb776677bc6594f0b07841905194952",
+      "baselineSourceSha256": "22a113cbfdadfe3bcae865dd80dbbcdedeb776677bc6594f0b07841905194952",
+      "sourceChangedSinceBaseline": false,
+      "routing": {
+        "surfaceId": "SG2-BASE-016",
+        "owner": "SRM Runtime",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SRM"
+        ]
+      },
+      "effectFamilies": [
+        "WEB_ENRICHMENT"
+      ],
+      "associationDepth": "ROUTE_CENSUS_AND_REFERENCED_FAMILY_CALL_CHAIN",
+      "sourceAdoptionStatus": "NOT_ADOPTED_BY_SHARED_PRIVATE_HOST",
+      "liveAdoption": "NOT_VERIFIED_BY_THIS_SOURCE_AUDIT",
+      "candidateOperations": [
+        "supplier.report.read",
+        "supplier.report.refresh"
+      ],
+      "mappingGrantsPermission": false,
+      "sourceGaps": []
+    }
+  ],
+  "additionalSurfaces": [
+    {
+      "id": "FORECAST_QUEUE",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/lib/forecast/preparation-queue.ts",
+      "sourceSha256": "e3f390b20f3929d83c75e40aca407d9ca7a193310fd3f57c64c990f42b9ada82",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "FORECAST_WORKER",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/scripts/run-forecast-preparation-worker.ts",
+      "sourceSha256": "d02d97f8070f5b6a5377da5156827ec2aa9d5c6b2ad37297053625f1b245678f",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "FORECAST_OPERATIONS",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/scripts/run-forecast-production-operations.ts",
+      "sourceSha256": "213d5b2231587b019447993e1658a6d7b6c29767e15f6285137584c325e6c22b",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "MARKET_INGESTION",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/scripts/run-market-data-hydration.ts",
+      "sourceSha256": "caac41bae04d569a48711a6e1ddc83947fbec919a58acb0d24c446b8a27cb972",
+      "effectFamilies": [
+        "HISTORY_READ_THROUGH",
+        "TECHNICAL_FORECAST"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "MARKET_PROMOTION",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/scripts/promote-market-forecast-artifacts.ts",
+      "sourceSha256": "8686ac9942c4a4e4d95db94dd40d7383ae20aca10f79359658624050c7fbb6d0",
+      "effectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "DASHBOARD_CACHE",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/lib/forecast-accuracy/forecast-accuracy-cache.ts",
+      "sourceSha256": "050b211326d87080cdd9e05b5e4ec0b5982b93e671a757b06ea5b97997aac1cd",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "DASHBOARD_LEGACY_BRIDGE",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "sourceSha256": "c0bb59771ecd49b318bf3dde5a884917c24219328ab09471023caea5a31c19e6",
+      "effectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "SRM_PROJECTION",
+      "profile": "SRM",
+      "path": "apps/srm/src/server/report-data.ts",
+      "sourceSha256": "75b9ebbd83a85763c4e242cef19bddc3ab1ca4bad05ca89469c833ef40c33b56",
+      "effectFamilies": [
+        "REPORT_PROJECTION"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "SRM_KYS_CACHE",
+      "profile": "SRM",
+      "path": "apps/srm/src/server/kys-cache.ts",
+      "sourceSha256": "df924401b3b21e34a1dd1e796760f1390b285e30637ad597b792abb5ffdf2925",
+      "effectFamilies": [
+        "KYS_FETCH_CACHE"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "SRM_FILE_SOURCE",
+      "profile": "SRM",
+      "path": "apps/srm/src/server/msr-source.ts",
+      "sourceSha256": "96c6ff30795a43ad80e099affe5224cbaae7c55b911ac1918e02f5b588797fd7",
+      "effectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "SRM_PDF",
+      "profile": "SRM",
+      "path": "apps/srm/src/server/kys-pdf.ts",
+      "sourceSha256": "26ffd6de8f4bcb032489b8e6d406e382a9c11ada6baa48b84b9c795ba36390cc",
+      "effectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    },
+    {
+      "id": "SRM_REUSABLE_UI",
+      "profile": "SRM",
+      "path": "packages/srm-xray/src/contracts.ts",
+      "sourceSha256": "c8a815c94d4be142926f649dee1f6c811ca434ca1b3201db45d7c324ae450ee1",
+      "effectFamilies": [
+        "PREFERENCES_REUSE"
+      ],
+      "runtimeAcceptance": "NOT_CLAIMED_BY_SOURCE_MAP"
+    }
+  ],
+  "externalBoundaries": [
+    {
+      "id": "KYS",
+      "repository": "profitia/KYS",
+      "serviceId": "srv-d9ovb6ugekts73etfuvg",
+      "status": "DIRECT_UPSTREAM_BOUNDARY_REQUIRES_AUTHORITY_REVIEW",
+      "productProxyProtectionIsNotUpstreamAcceptance": true
+    },
+    {
+      "id": "VECTOR",
+      "path": "apps/vector",
+      "routing": {
+        "surfaceId": "SG2-BASE-005",
+        "owner": "Vector",
+        "baselineClassification": "ALIGNED",
+        "allowedProfiles": [
+          "SG2"
+        ]
+      },
+      "status": "HELPER_BOUNDARY_NO_REACTIVATION_OF_ARCHIVED_DATABASE"
+    },
+    {
+      "id": "PMOS",
+      "path": "apps/pmos",
+      "status": "CONTINUITY_CONTROL_PLANE_NOT_PRODUCT_IDENTITY_STORE"
+    },
+    {
+      "id": "MEMOROS",
+      "repository": "profitia/MEMOS_Profitia",
+      "status": "EXTERNAL_DEPENDENCY_NO_PRODUCT_DATA_MIGRATION_OR_HISTORICAL_REPUBLICATION"
+    }
+  ],
+  "acceptedReferences": [
+    {
+      "projectKey": "SG2",
+      "taskId": "SG2-E1-PRIVATE-SELECTION-ENTRY-20261017",
+      "pr": "https://github.com/profitia/SG-dev/pull/423",
+      "sourceSha": "e99b3b9d49ddeed4fb3474590300dc68fed24506"
+    },
+    {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-PRIVATE-REPORT-ENTRY-20261017",
+      "pr": "https://github.com/profitia/SG-dev/pull/427",
+      "sourceSha": "c626405c81821ba1e738f7a318d912132f4d43ea"
+    },
+    {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017",
+      "pr": "https://github.com/profitia/SG-dev/pull/426",
+      "sourceSha": "bdea22e4b89cc4c6e3c34025605f507eab3aba51"
+    }
+  ],
+  "acceptance": {
+    "overallE0E1": "IN_PROGRESS",
+    "commonPackageVersion": "1.6.0",
+    "implementedOperationCount": 14,
+    "jobsPaidRefreshExport": "NOT_IMPLEMENTED_BY_CURRENT_CANDIDATE",
+    "newPrivateStore": "43 controlled FORCE RLS tables, apps disabled at separately dated preparation; not re-read here",
+    "realBrowserSession": "NOT_PROVED",
+    "businessModuleReuseInSecondHost": "NOT_PROVED",
+    "controlledDevelopmentStagingReleases": "NOT_PERFORMED",
+    "furtherWorkWithinExistingAcceptedScope": true
+  }
+}
