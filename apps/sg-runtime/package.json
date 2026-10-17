@@ -31,7 +31,7 @@
     "market-data:migrate": "prisma migrate dev --schema prisma-market-data/schema.prisma",
     "market-data:migrate:deploy": "prisma migrate deploy --schema prisma-market-data/schema.prisma",
     "test:platform-contract": "node --test tests/platform-contract.test.mjs",
-    "test:operation-context": "node --import tsx --test tests/operation-context.test.mjs tests/operation-context.integration.test.mjs tests/private-host.integration.test.mjs tests/identity-runtime.test.ts tests/temporary-public-benchmark-component-auth.test.ts tests/private-business-schema.test.mjs"
+    "test:operation-context": "node --import tsx --test tests/operation-context.test.mjs tests/operation-context.integration.test.mjs tests/private-host.integration.test.mjs tests/identity-runtime.test.ts tests/temporary-public-benchmark-component-auth.test.ts tests/private-business-schema.test.mjs tests/private-runtime.test.ts"
   },
   "dependencies": {
     "@clerk/backend": "3.25.0",

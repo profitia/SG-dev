@@ -92,9 +92,10 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       await owner.query('COMMIT')
     } catch (error) { await owner.query('ROLLBACK'); throw error }
     await owner.query(`GRANT USAGE ON SCHEMA sg_runtime_benchmarks TO ${ROLE}; GRANT SELECT,INSERT,UPDATE ON sg_runtime_benchmarks."BusinessBenchmark",sg_runtime_benchmarks."BenchmarkProviderMapping",sg_runtime_benchmarks."OrganizationBenchmarkSelection" TO ${ROLE}`)
-    const runtimeUrl = new URL(prismaOwnerUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'; runtimeUrl.searchParams.set('connection_limit', '2')
+    const runtimeUrl = new URL(prismaOwnerUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'; runtimeUrl.searchParams.set('connection_limit', '3')
+    const auditUrl = new URL(runtimeUrl); auditUrl.searchParams.set('connection_limit', '1')
     prisma = new PrismaClient({ datasources: { db: { url: runtimeUrl.toString() } } })
-    auditPrisma = new PrismaClient({ datasources: { db: { url: runtimeUrl.toString() } } })
+    auditPrisma = new PrismaClient({ datasources: { db: { url: auditUrl.toString() } } })
     const login = (await prisma.$queryRawUnsafe('SELECT current_user,session_user FROM pg_roles WHERE rolname=current_user'))[0]
     assert.equal(login.current_user, ROLE); assert.equal(login.session_user, ROLE)
     process.env.SG_RUNTIME_DATABASE_URL = runtimeUrl.toString(); process.env.SG_RUNTIME_DIRECT_URL = runtimeUrl.toString()
@@ -122,7 +123,8 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       throw Error('No external provider access in this fixture')
     }
     const { createOperationBenchmarkSelectionHandlers } = await import('../lib/benchmark/operation-context.ts')
-    const handlers = createOperationBenchmarkSelectionHandlers(host)
+    const { createRuntimeBenchmarkSelectionHandlers } = await import('../lib/benchmark/runtime-handlers.ts')
+    const handlers = createRuntimeBenchmarkSelectionHandlers(() => ({ provider: 'clerk', executor: host, defaultOrganisationId: A }))
     const candidate = { candidateId: 'private-series', displayName: 'Synthetic private candidate', description: null, provider: { providerCode: 'MACROBOND', displayName: 'Synthetic fixture' }, providerSeries: { provider: { providerCode: 'MACROBOND', displayName: 'Synthetic fixture' }, providerSeriesId: 'private-series' }, frequency: 'daily', currency: null, unit: null, source: null, region: null }
     const request = (method = 'GET', org = A, user = U, headers = {}) => new NextRequest(`${ORIGIN}/api/benchmark/selection?organisationId=${org}`, { method, headers: { authorization: `Bearer external-${user}`, 'content-type': 'application/json', ...headers }, ...(method === 'POST' ? { body: JSON.stringify({ candidate, userId: V, organizationId: B, role: 'owner' }) } : {}) })
     const count = async () => Number((await owner.query('SELECT count(*) AS n FROM sg_runtime_benchmarks."OrganizationBenchmarkSelection"')).rows[0].n)
@@ -144,6 +146,27 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     await t.test('same organisation shares rows but a read-only member cannot write', async () => {
       const response = await handlers.GET(request('GET', A, V)); assert.equal(response.status, 200); assert.equal((await response.json()).items.length, 1)
       const calls = providerCalls; assert.equal((await handlers.POST(request('POST', A, V))).status, 403); assert.equal(providerCalls, calls)
+    })
+    await t.test('the actual dispatcher supplies only its server default and keeps private responses out of caches', async () => {
+      const original = request('GET')
+      const noSelection = new NextRequest(`${ORIGIN}/api/benchmark/selection`, { headers: original.headers })
+      const response = await handlers.GET(noSelection)
+      assert.equal(response.status, 200)
+      assert.equal(response.headers.get('Cache-Control'), 'private, no-store')
+      assert.equal(response.headers.get('Vary'), 'Cookie, Authorization')
+      const data = await response.json()
+      assert.equal(data.items.length, 1); assert.equal(data.items[0].organizationId, A)
+    })
+    await t.test('duplicate/empty caller context and a foreign dedicated-profile choice never invoke business writes', async () => {
+      const calls = providerCalls, before = await count()
+      const headers = request().headers
+      for (const suffix of [`?organisationId=${A}&organisationId=${B}`, '?organisationId=']) {
+        assert.equal((await handlers.GET(new NextRequest(`${ORIGIN}/api/benchmark/selection${suffix}`, { headers }))).status, 400)
+      }
+      const dedicated = createSg2PrivateBenchmarkHost({ ...configuration, application: { ...configuration.application, profileId: 'PORR_SUITE', organisationId: A } })
+      const routes = createRuntimeBenchmarkSelectionHandlers(() => ({ provider: 'clerk', executor: dedicated, defaultOrganisationId: A }))
+      assert.equal((await routes.POST(request('POST', B))).status, 400)
+      assert.equal(providerCalls, calls); assert.equal(await count(), before)
     })
     await t.test('two organisations remain separate and foreign membership is denied', async () => {
       assert.equal((await handlers.POST(request('POST', B))).status, 201); assert.equal(await count(), 2)
