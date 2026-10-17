@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PREPARED_NOT_ACTIVATED",
+  "projectKey": "SG2",
+  "taskId": "SG2-E1-PRIVATE-STORE-PREPARATION-20261017",
+  "targetEnvironment": "development",
+  "verifiedAt": "2026-10-17T07:55:58Z",
+  "producer": {
+    "projectKey": "ARCHITECTURE",
+    "taskId": "ARCHITECTURE-E1-ACCESS-STORE-20261017",
+    "sourceSha": "5347523b97b44a7a41d69d03a45372ccfe26b8dc",
+    "pullRequest": "https://github.com/profitia/SG-dev/pull/398",
+    "packageVersion": "1.3.0",
+    "accessStoreVersion": "1.0.0",
+    "schemaVersion": "1.0.0",
+    "schemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+    "sourceDigest": "4e56e58220815661c3882c59ec897b0d740bf84bbf0485c84fb82007d6e00e50"
+  },
+  "physicalBinding": {
+    "organizationId": "org-nameless-field-92563437",
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "endpointId": "ep-late-heart-b9mxo8oi",
+    "host": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+    "databaseName": "platform_private",
+    "databaseId": 43910,
+    "schema": "profitia_access",
+    "ownerRole": "profitia_access_owner",
+    "applicationId": "spendguru",
+    "applicationStatus": "DISABLED",
+    "runtimeRoles": ["sg2_private_development_runtime", "sg2_private_development_dashboard"]
+  },
+  "observedControls": {
+    "exactAcceptedSqlExecutedTransactionally": true,
+    "forceRlsAccessTables": 10,
+    "noLoginSchemaOwner": true,
+    "ordinaryActualRuntimeLoginsVerified": true,
+    "runtimeOwnerOrNeonAdminMembership": false,
+    "runtimeDirectAuthorityOrAuditTablePrivileges": false,
+    "publicConnectAndTemp": false,
+    "runtimeConnectionLimit": 4,
+    "statementTimeoutMs": 15000,
+    "lockTimeoutMs": 3000,
+    "idleTransactionTimeoutMs": 15000,
+    "disabledApplicationDeniedBothLogins": true,
+    "accountIdentityOrganisationMembershipGrantAndAuditRows": 0
+  },
+  "rehearsal": {
+    "branchId": "br-odd-unit-b9937sdw",
+    "endpointId": "ep-summer-voice-b95e670q",
+    "databaseName": "platform_private",
+    "databaseId": 43876,
+    "expiresAt": "2026-10-17T13:40:39Z",
+    "dataClass": "SYNTHETIC_ONLY",
+    "actualLoginRoles": ["sg2_private_sql_fixture", "srm_private_sql_fixture"],
+    "positiveAndNegativeSqlAcceptance": "PASS",
+    "unusedApiCreatedPrivilegedFixtureRoles": "REMOVED_AFTER_ZERO_OWNERSHIP_AND_SESSION_CHECK",
+    "branchDeletedByAgent": false
+  },
+  "boundaries": {
+    "activeRuntimeConfiguration": false,
+    "liveConsumerAdoption": false,
+    "customerIdentityOrMembershipBootstrap": false,
+    "privateBusinessSchemaPrepared": false,
+    "customerDataMigrated": false,
+    "productDeploymentPerformed": false,
+    "stagingPrepared": false,
+    "productionAuthorized": false
+  },
+  "recovery": {
+    "kind": "FIRST_ADDITIVE_INITIALIZATION",
+    "previousPrivateStoreArtifact": null,
+    "safeStop": "Leave the application disabled and this unused store intact; existing product databases and deployments remain authoritative. No automatic schema or data rollback."
+  },
+  "evidence": "Canon/evidence/2026-10-17-sg2-private-store-preparation.md"
+}
