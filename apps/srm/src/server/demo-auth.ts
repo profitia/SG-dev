@@ -2,8 +2,9 @@ export const SRM_SESSION_COOKIE = "srm_demo_session";
 export const SRM_SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
 
 type Session = { aud: "srm-demo"; iat: number; exp: number; nonce: string };
-type AuthEnvironment = { SRM_DEMO_PASSWORD?: string; SRM_DEMO_SESSION_SECRET?: string };
+type AuthEnvironment = { PROFITIA_AUTH_PROVIDER?: string; SRM_DEMO_PASSWORD?: string; SRM_DEMO_SESSION_SECRET?: string };
 const runtimeEnvironment = (): AuthEnvironment => ({
+  PROFITIA_AUTH_PROVIDER: process.env.PROFITIA_AUTH_PROVIDER,
   SRM_DEMO_PASSWORD: process.env.SRM_DEMO_PASSWORD,
   SRM_DEMO_SESSION_SECRET: process.env.SRM_DEMO_SESSION_SECRET,
 });
@@ -36,7 +37,10 @@ function constantTimeEqual(left: Uint8Array, right: Uint8Array): boolean {
 }
 
 export function demoAuthReady(env: AuthEnvironment = runtimeEnvironment()): boolean {
-  return Boolean(env.SRM_DEMO_PASSWORD && env.SRM_DEMO_PASSWORD.length >= 16 &&
+  // Demo cookies/passwords never authenticate an individual Clerk account.
+  // An explicit new or invalid provider cannot silently reuse this boundary.
+  return Boolean((env.PROFITIA_AUTH_PROVIDER === undefined || env.PROFITIA_AUTH_PROVIDER === "legacy_demo") &&
+    env.SRM_DEMO_PASSWORD && env.SRM_DEMO_PASSWORD.length >= 16 &&
     env.SRM_DEMO_SESSION_SECRET && env.SRM_DEMO_SESSION_SECRET.length >= 32);
 }
 
