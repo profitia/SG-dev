@@ -29,6 +29,8 @@ export function createSg2PrivateBenchmarkHost(options: {
   application: Application
   identity: IdentityApplication
   binding: AccessStoreBinding
+  /** Required accepted module boundary; no base-only path to this private store. */
+  module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string }
   transactionTimeoutMs?: number
   now?: () => number
 }) {
@@ -36,14 +38,14 @@ export function createSg2PrivateBenchmarkHost(options: {
   const application = structuredClone(options.application)
   const identity = structuredClone(options.identity)
   const binding = structuredClone(options.binding)
-  if (!auditPrisma || auditPrisma === prisma || application.appId !== 'spendguru' || binding.applicationId !== application.appId
+  if (!auditPrisma || auditPrisma === prisma || !options.module || options.module.id !== 'benchmark' || application.appId !== 'spendguru' || binding.applicationId !== application.appId
     || identity.appId !== application.appId || identity.environment !== application.environment
     || identity.issuer !== application.identityIssuer || binding.environment !== application.environment
     || application.operations.some(operation => !['benchmark.selection.read', 'benchmark.selection.write'].includes(operation))) {
     throw new TypeError('Explicit consistent SG2 benchmark host configuration required')
   }
   return createPrivateOperationHost<Prisma.TransactionClient>({
-    application, binding, now, transactionTimeoutMs: options.transactionTimeoutMs,
+    application, binding, module: options.module, now, transactionTimeoutMs: options.transactionTimeoutMs,
     independentQuery: queryFor(auditPrisma),
     transact: (work, limits) => prisma.$transaction(transaction => work({
       transaction, query: queryFor(transaction),

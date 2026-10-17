@@ -31,21 +31,24 @@
     "market-data:migrate": "prisma migrate dev --schema prisma-market-data/schema.prisma",
     "market-data:migrate:deploy": "prisma migrate deploy --schema prisma-market-data/schema.prisma",
     "test:platform-contract": "node --test tests/platform-contract.test.mjs",
-    "test:operation-context": "node --import tsx --test tests/operation-context.test.mjs tests/operation-context.integration.test.mjs tests/private-host.integration.test.mjs"
+    "test:operation-context": "node --import tsx --test tests/operation-context.test.mjs tests/operation-context.integration.test.mjs tests/private-host.integration.test.mjs tests/identity-runtime.test.ts"
   },
   "dependencies": {
+    "@clerk/backend": "3.25.0",
+    "@clerk/localizations": "4.23.0",
+    "@clerk/react": "6.17.8",
     "@prisma/client": "^5.22.0",
     "@profitia/advisory-widget": "1.0.0",
     "@profitia/cic-core": "1.1.1",
     "@profitia/cic-procurement": "1.1.1",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
     "next": "14.2.29",
     "next-intl": "^3.26.5",
     "openai": "^6.38.0",
     "prisma": "^5.22.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zod": "^3.23.8",
-    "@profitia/platform-contracts": "file:../../packages/platform-contracts"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",

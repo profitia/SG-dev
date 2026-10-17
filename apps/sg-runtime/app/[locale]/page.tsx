@@ -12,6 +12,10 @@ import {
   resolvePorrDemoSessionCookieName,
 } from '@/lib/porr-demo-profile'
 import { verifyPorrDemoSessionToken } from '@/lib/porr-demo-session'
+import { readSg2IdentityRuntime, type Sg2IdentityRuntime } from '@/lib/platform/identity-runtime'
+import { ClerkSignIn } from '@/components/auth/clerk-sign-in'
+
+export const dynamic = 'force-dynamic'
 
 type HomePageProps = {
   params: {
@@ -34,8 +38,11 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
       ? 'Production'
       : 'Development'
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3001'
+  let identity: Sg2IdentityRuntime
+  try { identity = readSg2IdentityRuntime() }
+  catch { return <main className="p-8"><p role="alert">{t('porrDemo.configurationError')}</p></main> }
 
-  if (!isPorrDemoProfile) {
+  if (!isPorrDemoProfile && identity.provider === 'legacy_demo') {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-8 text-center">
         <div className="max-w-lg space-y-6">
@@ -88,7 +95,7 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
   const runtimeConfig = resolvePorrDemoRuntimeConfig()
   const runtimeReady = isPorrDemoRuntimeReady(runtimeConfig)
   const token = cookies().get(resolvePorrDemoSessionCookieName(runtimeConfig.appEnv))?.value
-  const session = runtimeReady && runtimeConfig.sessionSecret
+  const session = identity.provider === 'legacy_demo' && runtimeReady && runtimeConfig.sessionSecret
     ? await verifyPorrDemoSessionToken(runtimeConfig.sessionSecret, token)
     : null
   const nextPath = resolvePorrDemoNextPath(searchParams?.next, locale)
@@ -148,7 +155,7 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
               </p>
 
               <div className="mt-8 max-w-md space-y-4 xl:max-w-none">
-                {runtimeReady ? (
+                {identity.provider === 'clerk' ? <ClerkSignIn publishableKey={identity.publishableKey} locale={locale} returnPath={nextPath} /> : runtimeReady ? (
                   <form action="/api/porr-demo-auth" method="post" className="space-y-4">
                     <input type="hidden" name="locale" value={locale} />
                     <input type="hidden" name="next" value={nextPath} />
