@@ -202,7 +202,7 @@ jobs:
         if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2'
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          ref: ${{ github.event_name == 'pull_request' && 'main' || github.sha }}
           path: trusted-control
           persist-credentials: false
       - name: Verify controlled SG2 proof for the exact candidate without package access
