@@ -21,6 +21,10 @@
     "test:operation-context": "node --import tsx --test --test-concurrency=1 scripts/operation-context.test.mjs scripts/operation-context.integration.test.mjs scripts/private-host.integration.test.mjs"
   },
   "dependencies": {
+    "@clerk/backend": "3.25.0",
+    "@clerk/localizations": "4.23.0",
+    "@clerk/react": "6.17.8",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
     "@profitia/srm-xray": "file:../../packages/srm-xray",
     "cheerio": "1.1.2",
     "exceljs": "^4.4.0",
@@ -31,8 +35,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "saxes": "5.0.1",
-    "sharp": "0.34.5",
-    "@profitia/platform-contracts": "file:../../packages/platform-contracts"
+    "sharp": "0.34.5"
   },
   "devDependencies": {
     "@types/node": "^20",
