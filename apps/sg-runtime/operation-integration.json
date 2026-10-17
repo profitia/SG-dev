@@ -159,9 +159,11 @@
     "nativeDispatcher": "lib/benchmark/preview-handlers.ts",
     "separateSourceReader": "lib/market-data/stored-read.ts",
     "sourceSql": "prisma-market-data/private-read/001-stored-history-read.sql",
-    "liveSourceInitialized": false,
-    "liveSourceRoleProvisioned": false,
+    "liveSourceInitialized": true,
+    "liveSourceRoleProvisioned": true,
     "productDeploymentPerformed": false,
-    "globalIngestOrHydrationAdopted": false
+    "globalIngestOrHydrationAdopted": false,
+    "sourcePreparationEvidence": "deployment/market-read-preparation.json",
+    "runtimeSourceConfigured": false
   }
 }

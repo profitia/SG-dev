@@ -1,0 +1,219 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "SG2",
+  "targetEnvironment": "development",
+  "status": "SOURCE_PREPARED_NOT_ACTIVATED",
+  "observedAt": "2026-10-17T22:07:16.133Z",
+  "taskId": "SG2-E1-MARKET-READ-SOURCE-PREPARATION-20261017",
+  "source": {
+    "repository": "profitia/SG-dev",
+    "sourceSha": "cc0274c2c3f124b1f357430d123e54c6931a7681",
+    "sqlPath": "apps/sg-runtime/prisma-market-data/private-read/001-stored-history-read.sql",
+    "sqlDigest": "596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304",
+    "atomicStatementCount": 31,
+    "primaryPlanDigest": "2d23520ab83064d3e39caa08bf1c0136b05df294b2104e510c4cdb89fe205e47"
+  },
+  "physicalBinding": {
+    "projectId": "autumn-waterfall-65938876",
+    "branchId": "br-dry-hall-b294222f",
+    "endpointId": "ep-muddy-pine-b22pdyqd",
+    "databaseName": "neondb",
+    "schemaName": "profitia_market_read",
+    "runtimeRole": "sg2_market_read_development_runtime",
+    "controlledOwner": "profitia_market_read_owner"
+  },
+  "controls": {
+    "originalPublicTableCount": 18,
+    "originalPublicCatalogDigest": "fdabf5c80e5b854870f896b057d926d8fea83bc31634475345489510000dce52",
+    "originalCatalogAndOwnersPreserved": true,
+    "existingOwnerFlagsPreserved": true,
+    "existingBusinessDataOrGrantsReassigned": false,
+    "newRoleCount": 2,
+    "newSchemaCount": 1,
+    "applicationDescriptorOnActualPostgreSql18": {
+      "role": "sg2_market_read_development_runtime",
+      "login": "sg2_market_read_development_runtime",
+      "database_name": "neondb",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "rolinherit": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolcanlogin": true,
+      "rolconnlimit": 1,
+      "member_of_role": false,
+      "database_create": false,
+      "public_create": false,
+      "schema_owner": "profitia_market_read_owner",
+      "controlled_objects": 3,
+      "other_table_access": false,
+      "source_write": false,
+      "definer_access": false
+    },
+    "runtimeRoleProof": {
+      "current_login": "sg2_market_read_development_runtime",
+      "session_login": "sg2_market_read_development_runtime",
+      "database_name": "neondb",
+      "default_read_only": "on",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "rolinherit": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolconnlimit": 1,
+      "member_of_any_role": false,
+      "own_receipt": 1,
+      "shared_series_probe_count": 1,
+      "shared_point_probe_count": 1,
+      "base_select": false,
+      "private_trace_select": false,
+      "private_job_select": false,
+      "receipt_update": false,
+      "public_create": false,
+      "database_create": false
+    },
+    "roleDefinitions": [
+      {
+        "name": "profitia_market_read_owner",
+        "login": false,
+        "super": false,
+        "bypass": false,
+        "inherit": false,
+        "createdb": false,
+        "settings": null,
+        "createrole": false,
+        "connectionLimit": 0,
+        "memberOfAnyRole": false
+      },
+      {
+        "name": "sg2_market_read_development_runtime",
+        "login": true,
+        "super": false,
+        "bypass": false,
+        "inherit": false,
+        "createdb": false,
+        "settings": [
+          "default_transaction_read_only=on"
+        ],
+        "createrole": false,
+        "connectionLimit": 1,
+        "memberOfAnyRole": false
+      }
+    ],
+    "objects": [
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "installation",
+        "owner": "profitia_market_read_owner",
+        "options": null,
+        "forceRls": true,
+        "writeAllowed": false,
+        "selectAllowed": true
+      },
+      {
+        "rls": false,
+        "kind": "v",
+        "name": "observations",
+        "owner": "profitia_market_read_owner",
+        "options": [
+          "security_barrier=true"
+        ],
+        "forceRls": false,
+        "writeAllowed": false,
+        "selectAllowed": true
+      },
+      {
+        "rls": false,
+        "kind": "v",
+        "name": "series",
+        "owner": "profitia_market_read_owner",
+        "options": [
+          "security_barrier=true"
+        ],
+        "forceRls": false,
+        "writeAllowed": false,
+        "selectAllowed": true
+      }
+    ],
+    "runtimePublicTableAccess": 0,
+    "installationReceipt": {
+      "singleton": true,
+      "schema_version": "1.0.0",
+      "schema_digest": "596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304",
+      "project_id": "autumn-waterfall-65938876",
+      "branch_id": "br-dry-hall-b294222f",
+      "database_name": "neondb",
+      "runtime_role": "sg2_market_read_development_runtime",
+      "source_ref": "profitia/SG-dev@cc0274c2c3f124b1f357430d123e54c6931a7681:stored-market-sql001",
+      "expires_at": "2027-10-17T21:52:16.977+00:00"
+    },
+    "primaryNegativeProofs": [
+      {
+        "sql": "SELECT 1 FROM public.market_series LIMIT 0",
+        "permissionDenied": true,
+        "message": "NeonDbError: permission denied for table market_series"
+      },
+      {
+        "sql": "SELECT 1 FROM public.forecast_action_trace LIMIT 0",
+        "permissionDenied": true,
+        "message": "NeonDbError: permission denied for table forecast_action_trace"
+      },
+      {
+        "readWriteTransaction": true,
+        "whereFalse": true,
+        "permissionDenied": true,
+        "message": "NeonDbError: permission denied for table installation"
+      }
+    ],
+    "oldPasswordsReadResetOrCopied": false,
+    "newCredentialHandling": "ONLY_NEW_UNUSED_ROLE_SERVER_MEMORY_SEED_THEN_PROVIDER_ROTATION_NO_PLAINTEXT_ARCHIVE"
+  },
+  "recovery": {
+    "kind": "RETAINED_NEON_COW_BRANCH_BACKUP",
+    "backupBranchId": "br-wandering-dawn-b2k755tg",
+    "parentBranchId": "br-dry-hall-b294222f",
+    "parentLsn": "1/925FA5C0",
+    "backupComputeCount": 0,
+    "backupExpiresAt": null,
+    "backupRetention": "Retained Last Known Good source backup. Neon disallows children under an expiring parent; no active expiry while rehearsal child exists. Retention review is required after child expiry or next accepted source recovery point.",
+    "snapshotAttempt": {
+      "created": false,
+      "reason": "Neon HTTP400: snapshots are allowed only for root branches; original Development is a child. No root Production snapshot or restore was substituted."
+    },
+    "rehearsal": {
+      "branchId": "br-dark-darkness-b2yukdxs",
+      "parentBranchId": "br-wandering-dawn-b2k755tg",
+      "parentLsn": "1/925FA5C0",
+      "endpointId": "ep-lingering-frost-b2j3petw",
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "suspendTimeoutSeconds": 300,
+      "finalComputeState": "idle",
+      "expiresAt": "2026-10-18T21:51:12Z",
+      "originalCatalogAndOwnerFlagsMatch": true,
+      "completePlanForcedFailureSentinelReached": true,
+      "rolesAndSchemaAbsentAfterRollback": true,
+      "cleanReapplicationSucceeded": true,
+      "actualOrdinaryLoginAndAclRefusalsVerified": true
+    },
+    "originalBranchRestoredResetOrRerouted": false
+  },
+  "adoption": {
+    "sourceSchemaPrepared": true,
+    "sourceRoleProvisioned": true,
+    "physicalSourceRoleLoginEnabled": true,
+    "runtimeSourceConnectionConfigured": false,
+    "applicationActivationPerformed": false,
+    "productDeploymentPerformed": false,
+    "prismaTlsHandshakeVerified": false,
+    "realClerkBrowserOrBusinessE2eVerified": false,
+    "stagingOrProductionChanged": false
+  },
+  "historicalSourceObservation": {
+    "state": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED",
+    "sourceSha": "f9daf7d2c51a70352b2c5054c4717bfb832521d6",
+    "pullRequest": 455,
+    "meaning": "Correct before this independently governed physical preparation, not the current physical state."
+  }
+}
