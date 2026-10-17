@@ -3,17 +3,22 @@ import { OPERATION_CONTRACT, OperationDenied, isOperationDenied, type OperationE
 import { bindOrganizationTransaction } from "./db";
 import { reportDataHandler, validateReportSelection } from "./report-data";
 
-/** Explicit integration factory; the deployed route still calls reportDataHandler(). */
-export function createOperationReportDataHandler(executor: OperationExecutor<PoolClient>, environment: Readonly<Record<string, string | undefined>> = {}) {
+/** Existing business projection inside the accepted operation host. */
+export function createOperationReportDataHandler(executor: OperationExecutor<PoolClient>, environment: Readonly<Record<string, string | undefined>> = {}, options: Readonly<{ defaultOrganisationId?: string }> = {}) {
   return reportDataHandler(undefined, environment, async (request, project) => {
-    const respond = (status: number) => Response.json({ error: "Operation unavailable" }, { status, headers: { "Cache-Control": "no-store" } });
+    const respond = (status: number) => Response.json({ error: "Operation unavailable" }, { status, headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization" } });
     if (request.method !== "POST") {
       const response = respond(405); response.headers.set("Allow", "POST"); return response;
     }
     let selection;
     try { selection = validateReportSelection(await request.clone().json()); }
     catch { return respond(400); }
-    const organisationId = new URL(request.url).searchParams.get("organisationId");
+    const organisations = new URL(request.url).searchParams.getAll("organisationId");
+    if (organisations.length > 1 || (organisations.length === 1 && !organisations[0])) return respond(400);
+    const organisationId = organisations[0] ?? options.defaultOrganisationId ?? null;
+    // This receiver's private database uses UUIDs. Reject malformed context
+    // before a database cast, instead of reporting its SQL error as an outage.
+    if (organisationId !== null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(organisationId)) return respond(400);
     try {
       const result = await executor.execute({ contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, operation: "supplier.report.project", organisationId,
         resourceId: `supplier-report:${selection.entityType}:${selection.nip}`, payload: { nip: selection.nip, entityType: selection.entityType }, request,

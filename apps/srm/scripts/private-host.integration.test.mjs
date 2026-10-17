@@ -11,6 +11,10 @@ import { OPERATION_CONTRACT } from '@profitia/platform-contracts/operation-conte
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
 import { migrationManifest } from './staging-migrate.mjs'
+import { createSrmReportOperationHost } from '../src/server/private-runtime.ts'
+import { createRuntimeSrmReportHandler } from '../src/server/report-runtime.ts'
+import { middleware } from '../middleware.ts'
+import { NextRequest } from 'next/server.js'
 import { createSrmPrivateOperationHost } from '../src/server/private-operation-host.ts'
 import { bindOrganizationTransaction, withOrganization } from '../src/server/db.ts'
 const DATABASE = 'srm_private_host_test', ROLE = 'srm_private_host_runtime'
@@ -36,6 +40,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
   const root = new pg.Client({ connectionString: rootUrl }); await root.connect()
   const dbUrl = new URL(rootUrl); dbUrl.pathname = `/${DATABASE}`
   let owner, pool, auditPool
+  const previousProvider = process.env.PROFITIA_AUTH_PROVIDER
   const previousFetch = globalThis.fetch
   globalThis.fetch = async () => { throw Error('No external providers in private host fixture') }
   try {
@@ -151,7 +156,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     await owner.query('INSERT INTO srm.catalog_companies(nip,financial_json,financial_sha256,financial_checked_at) VALUES($1,$2::jsonb,$3,now())', [NIP, JSON.stringify(financial), hash(JSON.stringify(financial))])
     await owner.query("INSERT INTO srm.catalog_kys_reports(nip,entity_type) VALUES($1,'COMPANY')", [NIP])
     const runtimeUrl = new URL(dbUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'
-    pool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 2 }); auditPool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 2 })
+    pool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 3 }); auditPool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 1 })
     assert.equal((await pool.query('SELECT current_user')).rows[0].current_user, ROLE)
     let revoked = false
     // SDK responses are synthetic; no live login or custom JWT verifier.
@@ -178,7 +183,17 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     options.module = { id: 'supplier_report', schemaDigest: moduleDigest, auditSchemaDigest: auditDigest }
     const host = createSrmPrivateOperationHost(options)
     const { createOperationReportDataHandler } = await import('../src/server/operation-report-data.ts')
-    const handler = createOperationReportDataHandler(host, { SRM_DEMO_SESSION_SECRET: 'isolated-preference-key-not-a-customer-secret' })
+    const { readResources: _readResources, projectOutput: _projectOutput, ...reportOptions } = options
+    const reportHost = createSrmReportOperationHost(reportOptions)
+    const reportEnvironment = { SRM_DEMO_SESSION_SECRET: 'isolated-preference-key-not-a-customer-secret' }
+    const dispatch = createRuntimeSrmReportHandler(() => ({ provider: 'clerk', executor: reportHost, defaultOrganisationId: A }),
+      async () => { throw Error('No demo fallback in private report fixture') }, reportEnvironment)
+    process.env.PROFITIA_AUTH_PROVIDER = 'clerk'
+    const handler = async request => {
+      const response = await middleware(new NextRequest(request.clone()))
+      assert.equal(response.headers.get('x-middleware-next'), '1')
+      return dispatch(request)
+    }
     const request = (org = A, user = U, headers = {}) => new Request(`${ORIGIN}/api/xray/report-data?organisationId=${org}`, { method: 'POST', headers: { authorization: `Bearer external-${user}`, 'content-type': 'application/json', ...headers }, body: JSON.stringify({ nip: NIP, entityType: 'COMPANY', organisationId: B, role: 'owner' }) })
     const documents = async () => (await owner.query('SELECT organization_id,document_json FROM srm.financial_source_documents ORDER BY organization_id')).rows
     const input = { contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, operation: 'supplier.report.project', organisationId: A, resourceId, payload: { nip: NIP, entityType: 'COMPANY' }, request: request() }
@@ -202,6 +217,38 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       assert.equal((await handler(request(B, V))).status, 403)
       const first = await (await handler(request(A, U))).json(), second = await (await handler(request(A, V))).json()
       assert.notEqual(first.preferenceScope, second.preferenceScope)
+    })
+    await t.test('server default and malformed duplicate contexts use the same deployed dispatcher', async () => {
+      const base = request(), url = new URL(base.url); url.searchParams.delete('organisationId')
+      const response = await handler(new Request(url, base)); assert.equal(response.status, 200)
+      assert.equal(response.headers.get('Cache-Control'), 'private, no-store')
+      assert.equal(response.headers.get('Vary'), 'Cookie, Authorization')
+      for (const query of [`?organisationId=${A}&organisationId=${B}`, '?organisationId=', '?organisationId=demo']) {
+        const r = request(); assert.equal((await handler(new Request(ORIGIN + '/api/xray/report-data' + query, r))).status, 400)
+      }
+    })
+    await t.test('the dedicated profile refuses a foreign organisation despite its valid membership', async () => {
+      const dedicated = createSrmReportOperationHost({ ...reportOptions, application: { ...reportOptions.application, profileId: 'PORR_SUITE', organisationId: A } })
+      const route = createRuntimeSrmReportHandler(() => ({ provider: 'clerk', executor: dedicated, defaultOrganisationId: A }), undefined, reportEnvironment)
+      const before = (await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE phase='OUTCOME'")).rows[0].n
+      // The accepted fixed-profile contract classifies this as CONTEXT_INVALID.
+      assert.equal((await route(request(B))).status, 400)
+      assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE phase='OUTCOME'")).rows[0].n, before)
+      assert.equal((await route(request(A))).status, 200)
+    })
+    await t.test('an admitted empty stored-knowledge view returns explicit absence without a provider call', async () => {
+      const base = request()
+      const response = await handler(new Request(base.url, { method: 'POST', headers: base.headers,
+        body: JSON.stringify({ nip: '0000000000', entityType: 'COMPANY' }) }))
+      assert.equal(response.status, 200)
+      const body = await response.json(); assert.equal(body.nip, '0000000000')
+      assert.equal(body.financial.status, 'NOT_REQUESTED'); assert.deepEqual(body.financial.periods, [])
+    })
+    await t.test('the actual report output fence refuses mismatched supplier or an unexpected raw root field', async () => {
+      const body = await (await handler(request())).json()
+      for (const wrong of [{ ...body, nip: '0123456789' }, { ...body, payload_json: { synthetic: 'must-not-leave' } }]) {
+        await assert.rejects(reportHost.execute(input, async () => Response.json(wrong)), error => error.reasonCode === 'RESOURCE_SCOPE_MISMATCH')
+      }
     })
     await t.test('current SDK revocation and product revocation deny', async () => {
       revoked = true; assert.equal((await handler(request())).status, 401); revoked = false
@@ -258,7 +305,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       assert.equal((await owner.query('SELECT count(*)::int AS n FROM srm.suppliers WHERE id=$1', [insertedId])).rows[0].n, 0)
     })
     await t.test('connection acquisition timeout destroys a late lease and pool recovers', async () => {
-      const held = await Promise.all([pool.connect(), pool.connect()])
+      const held = await Promise.all([pool.connect(), pool.connect(), pool.connect()])
       try { const short = createSrmPrivateOperationHost({ ...options, transactionTimeoutMs: 100 }); await assert.rejects(short.execute(input, async () => Response.json({ nip: NIP }))) }
       finally { for (const client of held) client.release() }
       await new Promise(resolve => setTimeout(resolve, 30))
@@ -335,5 +382,5 @@ test('SRM real report and pg driver use the accepted private host', async t => {
         assert.deepEqual(events[0].moduleEvidence, events[1].moduleEvidence)
       } finally { await owner.query("UPDATE profitia_modules.application_bindings SET expires_at=$1 WHERE application_id='srm'", [expiry()]) }
     })
-  } finally { globalThis.fetch = previousFetch; await pool?.end(); await auditPool?.end(); await owner?.end(); await root.end() }
+  } finally { if (previousProvider === undefined) delete process.env.PROFITIA_AUTH_PROVIDER; else process.env.PROFITIA_AUTH_PROVIDER = previousProvider; globalThis.fetch = previousFetch; await pool?.end(); await auditPool?.end(); await owner?.end(); await root.end() }
 })
