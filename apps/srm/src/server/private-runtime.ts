@@ -8,6 +8,9 @@ import targets from '../../deployment/private-runtime-targets.json'
 import { createSrmClerkClient, IdentityConfigurationUnavailable, readSrmIdentityRuntime } from './identity-runtime'
 import { createSrmPrivateOperationHost } from './private-operation-host'
 import { validateReportSelection } from './report-data'
+import { validateFinancialExcelSelection } from './financial-excel'
+import { restoreFinancialDocumentsFromArchive } from './financial-documents'
+import { projectPrivateFinancialExcel, describePrivateFinancialExcel } from './financial-excel-runtime'
 
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
@@ -48,7 +51,7 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
     application: { appId: 'srm', profileId: 'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
       identityIssuer: identity.application.issuer, organisationId: env.PROFITIA_FIXED_ORGANISATION_ID!,
-      operations: ['supplier.report.read', 'supplier.report.project'], features: ['supplier_report'] },
+      operations: ['supplier.report.read', 'supplier.report.project', 'supplier.report.export'], features: ['supplier_report'] },
     binding: { applicationId: 'srm', environment: 'development', projectId: target.projectId,
       branchId: target.branchId, databaseName: target.databaseName, role: target.runtimeRole, schemaDigest: target.accessSchemaDigest },
     module: { id: 'supplier_report', schemaDigest: target.moduleSchemaDigest, auditSchemaDigest: target.auditSchemaDigest },
@@ -76,23 +79,33 @@ type DriverOptions = Parameters<typeof createSrmPrivateOperationHost>[0]
  * Its private resource is the org-scoped projection; its shared input is the
  * approved stored corporate financial view, including an explicit absent state.
  * KYS is not reclassified as shared by this adapter. */
-export function createSrmReportOperationHost(options: Omit<DriverOptions, 'readResources' | 'projectOutput'>) {
+export function createSrmReportOperationHost(options: Omit<DriverOptions, 'readResources' | 'projectOutput' | 'prepareInputs' | 'describeOutcome'>) {
   return createSrmPrivateOperationHost({ ...options,
     readResources: async ({ request, scope, query }) => {
-      const selection = validateReportSelection(request.payload)
+      const exporting = request.operation === 'supplier.report.export'
+      const selection = exporting ? { ...validateFinancialExcelSelection(request.payload), entityType: 'COMPANY' as const } : validateReportSelection(request.payload)
       const id = `supplier-report:${selection.entityType}:${selection.nip}`
       if (!scope.organisationId || request.resourceId !== id) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const row = (await query('SELECT financial_sha256 FROM srm.catalog_companies WHERE nip=$1 AND $2=\'COMPANY\'', [selection.nip, selection.entityType])).rows[0]
       const version = row?.financial_sha256
       if (version != null && (typeof version !== 'string' || !/^[a-f0-9]{64}$/.test(version))) throw new OperationDenied('POLICY_UNAVAILABLE')
-      return { resource: { id, type: 'supplier_projection', dataClass: 'ORGANISATION_PRIVATE',
+      const projection = { id, type: 'supplier_projection', dataClass: 'ORGANISATION_PRIVATE',
         environment: scope.environment, ownerOrganisationId: scope.organisationId, ownerUserId: null,
-        version: 'srm-private-report-collection-v1', projectionVersion: 'srm-report-dto-v1' },
-        inputs: [{ id: `stored-financial-view:${selection.entityType}:${selection.nip}`, type: 'supplier_report',
+        version: 'srm-private-report-collection-v1', projectionVersion: 'srm-report-dto-v1' }
+      const shared = { id: exporting ? id : `stored-financial-view:${selection.entityType}:${selection.nip}`, type: 'supplier_report',
           dataClass: 'SHARED_KNOWLEDGE', environment: scope.environment, ownerOrganisationId: null, ownerUserId: null,
-          version: version ?? 'no-stored-financial-evidence-v1', projectionVersion: 'srm-stored-corporate-financial-v1', approvedSharedProjection: true }] }
+          version: version ?? 'no-stored-financial-evidence-v1', projectionVersion: 'srm-stored-corporate-financial-v1', approvedSharedProjection: true }
+      return exporting ? { resource: { ...projection, type: 'supplier_export', projectionVersion: 'srm-financial-xlsx-v1' }, inputs: [shared, projection] }
+        : { resource: projection, inputs: [shared] }
     },
+    prepareInputs: async ({ context, transaction: client }) => {
+      const selection = validateFinancialExcelSelection(context.payload)
+      await client.query("SELECT set_config('srm.organization_id',$1,true)", [context.organisationId])
+      await restoreFinancialDocumentsFromArchive(client, context.organisationId!, selection.nip)
+    },
+    describeOutcome: (value, context) => context.operation === 'supplier.report.export' ? describePrivateFinancialExcel(value) : 'SUCCEEDED',
     projectOutput: async (value, context) => {
+      if (context.operation === 'supplier.report.export') return projectPrivateFinancialExcel(value, context)
       if (!(value instanceof Response) || !value.ok) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const body: unknown = await value.clone().json()
       const selection = validateReportSelection(context.payload)

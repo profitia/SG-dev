@@ -6,11 +6,13 @@ import { buildFinancialExcel, validateFinancialExcelSelection } from "../../../.
 import { readFinancialDocuments } from "../../../../src/server/financial-documents";
 import { readSavedFinancialData } from "../../../../src/server/shared-catalog";
 import { validateXrayRequest } from "../../../../src/server/xray-lookup";
+import { createRuntimeSrmFinancialExcelHandler } from "../../../../src/server/financial-excel-runtime";
+import { getSrmReportRuntime } from "../../../../src/server/private-runtime";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function legacyPOST(request: Request) {
   if (!productEnvironmentReady()) return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404 });
   if (!await hasDemoSession(request)) return NextResponse.json({ error: "Wymagane logowanie." }, { status: 401 });
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 403 });
@@ -41,3 +43,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nie udało się przygotować pliku Excel." }, { status: 503 });
   }
 }
+
+export const POST = createRuntimeSrmFinancialExcelHandler(getSrmReportRuntime, legacyPOST);

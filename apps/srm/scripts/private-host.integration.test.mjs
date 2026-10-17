@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import test from 'node:test'
 import pg from 'pg'
+import ExcelJS from 'exceljs'
 import { accessSchemaUrl, accessStoreSourceDigest, createAccessStore, moduleAuditSchemaUrl, moduleAuditSchemaDigest } from '@profitia/platform-contracts/access-store'
 import { moduleSchemaUrl, moduleSchemaDigest } from '@profitia/platform-contracts/module-scope'
 import { identitySourceDigest } from '@profitia/platform-contracts/identity-provider'
@@ -13,6 +14,7 @@ import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
 import { migrationManifest } from './staging-migrate.mjs'
 import { createSrmReportOperationHost } from '../src/server/private-runtime.ts'
 import { createRuntimeSrmReportHandler } from '../src/server/report-runtime.ts'
+import { createRuntimeSrmFinancialExcelHandler } from '../src/server/financial-excel-runtime.ts'
 import { middleware } from '../middleware.ts'
 import { NextRequest } from 'next/server.js'
 import { createSrmPrivateOperationHost } from '../src/server/private-operation-host.ts'
@@ -30,7 +32,7 @@ const hash = text => createHash('sha256').update(text).digest('hex')
 test('SRM accepts the published optional producer fingerprints', async () => {
   assert.equal(await accessStoreSourceDigest(), 'e0d3fb3c2201816755b76546976c964791adee21a8b528c05b0adbd1af09a8ca')
   assert.equal(await identitySourceDigest(), '7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
-  assert.equal(await privateOperationHostSourceDigest(), 'd6911d606898d7df06c09755947bec2a81c777cc3549a71b4cb3074022bee18c')
+  assert.equal(await privateOperationHostSourceDigest(), 'b79ba004bfd4d8ca37209e71d81fd3619b95ef9665ebee9780c0413caccdc442')
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
 })
@@ -381,6 +383,86 @@ test('SRM real report and pg driver use the accepted private host', async t => {
         assert.equal(events[0].reasonCode, 'ACCESS_BASIS_INVALID')
         assert.deepEqual(events[0].moduleEvidence, events[1].moduleEvidence)
       } finally { await owner.query("UPDATE profitia_modules.application_bindings SET expires_at=$1 WHERE application_id='srm'", [expiry()]) }
+    })
+    const exportOptions = { ...reportOptions, application: { ...reportOptions.application, operations: ['supplier.report.read','supplier.report.project','supplier.report.export'] } }
+    const exportHost = createSrmReportOperationHost(exportOptions)
+    const exportDispatch = createRuntimeSrmFinancialExcelHandler(() => ({ provider:'clerk',executor:exportHost,defaultOrganisationId:A }), async () => { throw Error('No export demo fallback') })
+    const exportRequest = (org = A, user = U, selection = {}, headers = {}) => new Request(`${ORIGIN}/api/xray/financial-excel?organisationId=${org}`, { method:'POST',
+      headers:{ authorization:`Bearer external-${user}`,'content-type':'application/json',origin:ORIGIN,...headers },
+      body:JSON.stringify({nip:NIP,scope:'standalone',years:['2025'],...selection}) })
+    const exportHandler = async request => {
+      const next = await middleware(new NextRequest(request.clone()))
+      assert.equal(next.headers.get('x-middleware-next'),'1')
+      return exportDispatch(request)
+    }
+    const exportEvents = async after => (await owner.query("SELECT event FROM profitia_access.security_events WHERE event_id>$1 ORDER BY event_id",[after])).rows.map(row=>row.event)
+    const lastEvent = async () => (await owner.query('SELECT coalesce(max(event_id),0)::text id FROM profitia_access.security_events')).rows[0].id
+    await t.test('actual alternate export refuses missing export permission, forged identity and foreign origin before restoration',async()=>{
+      await owner.query('DELETE FROM srm.financial_source_documents WHERE organization_id=$1',[A])
+      assert.equal((await exportHandler(exportRequest())).status,403)
+      assert.equal((await exportHandler(exportRequest(A,U,{}, {authorization:'','x-clerk-user-id':U,'x-clerk-org-id':A}))).status,401)
+      assert.equal((await exportHandler(exportRequest(A,U,{}, {origin:'https://foreign.invalid'}))).status,403)
+      assert.equal((await documents()).filter(row=>row.organization_id===A).length,0)
+    })
+    for(const org of [A,B]) await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'ALLOW','supplier.report.export','supplier_report')",[randomUUID(),org,U])
+    await t.test('existing XLSX builder uses actual ordinary private SQL and emits distinct organisation data with four audit events',async()=>{
+      for(const [org,amount] of [[A,100],[B,999]]){
+        await owner.query('DELETE FROM srm.financial_source_documents WHERE organization_id=$1',[org])
+        const before=await lastEvent(),response=await exportHandler(exportRequest(org))
+        assert.equal(response.status,200);assert.equal(response.headers.get('Cache-Control'),'private, no-store')
+        assert.equal(response.headers.get('Vary'),'Cookie, Authorization')
+        assert.match(response.headers.get('X-Download-Filename'),new RegExp(`^Financials_${NIP}_[0-9]{8}\\.xlsx$`))
+        const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(Buffer.from(await response.arrayBuffer()))
+        const balance=workbook.worksheets.find(sheet=>sheet.name.startsWith(`Balance_${NIP}_`));assert(balance)
+        const values=[];balance.eachRow(row=>values.push(...row.values))
+        assert(values.includes(amount));assert(!values.includes(org===A?999:100))
+        assert.equal((await documents()).filter(row=>row.organization_id===org).length,1)
+        const events=await exportEvents(before)
+        assert.deepEqual(events.map(event=>[event.operation,event.phase]),[['supplier.report.export','INTENT'],['supplier.report.project','INTENT'],['supplier.report.project','OUTCOME'],['supplier.report.export','OUTCOME']])
+        assert.equal(new Set(events.map(event=>event.correlationId)).size,1)
+        assert.equal(new Set(events.map(event=>event.moduleEvidence.transactionId)).size,1)
+        assert(events.every(event=>event.actorId===U&&event.organisationId===org&&event.subjectUserId===U))
+        assert.notEqual(events[0].decisionId,events[1].decisionId)
+      }
+    })
+    await t.test('each source permission and explicit DENY remain required for actual export',async()=>{
+      for(const operation of ['supplier.report.read','supplier.report.project','supplier.report.export']){
+        const denial=randomUUID()
+        await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'DENY',$4,'supplier_report')",[denial,A,U,operation])
+        await owner.query('DELETE FROM srm.financial_source_documents WHERE organization_id=$1',[A])
+        try{assert.equal((await exportHandler(exportRequest())).status,403);assert.equal((await documents()).filter(row=>row.organization_id===A).length,0)}
+        finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[denial])}
+      }
+      assert.equal((await exportHandler(exportRequest(B,V))).status,403)
+    })
+    await t.test('actual export keeps malformed and duplicate contexts closed, and missing data/years have truthful outcomes',async()=>{
+      for(const query of [`?organisationId=${A}&organisationId=${B}`,'?organisationId=','?organisationId=demo']){
+        const r=exportRequest();assert.equal((await exportHandler(new Request(ORIGIN+'/api/xray/financial-excel'+query,r))).status,400)
+      }
+      for(const [selection,status,outcome] of [[{nip:'0000000000'},404,'NO_DATA'],[{years:['2024']},409,'SELECTION_UNAVAILABLE']]){
+        const before=await lastEvent(),response=await exportHandler(exportRequest(A,U,selection))
+        assert.equal(response.status,status);assert.equal(response.headers.get('X-Download-Filename'),null)
+        assert.equal((await exportEvents(before)).at(-1).reasonCode,outcome)
+      }
+    })
+    await t.test('final export OUTCOME outage rolls back actual preparation and records both failures without a file',async()=>{
+      await owner.query('DELETE FROM srm.financial_source_documents WHERE organization_id=$1',[A])
+      await owner.query("CREATE FUNCTION profitia_access.reject_export_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='supplier.report.export' THEN RAISE EXCEPTION 'synthetic export outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_export_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_export_outcome()")
+      const before=await lastEvent()
+      try{
+        const response=await exportHandler(exportRequest());assert.equal(response.status,503);assert.equal(response.headers.get('X-Download-Filename'),null)
+        assert.equal((await documents()).filter(row=>row.organization_id===A).length,0)
+      }finally{await owner.query('DROP TRIGGER reject_export_outcome ON profitia_access.security_events; DROP FUNCTION profitia_access.reject_export_outcome()')}
+      const events=await exportEvents(before)
+      assert.deepEqual(events.map(event=>[event.operation,event.phase]),[['supplier.report.export','INTENT'],['supplier.report.project','INTENT'],['supplier.report.project','FAILURE'],['supplier.report.export','FAILURE']])
+      assert.equal(new Set(events.map(event=>event.correlationId)).size,1)
+      assert.equal((await exportHandler(exportRequest())).status,200)
+    })
+    await t.test('current product or provider revocation cannot export despite prior success',async()=>{
+      revoked=true
+      try{assert.equal((await exportHandler(exportRequest())).status,401)}finally{revoked=false}
+      await owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE organisation_id=$1",[A])
+      try{assert.equal((await exportHandler(exportRequest())).status,403)}finally{await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE organisation_id=$1",[A])}
     })
   } finally { if (previousProvider === undefined) delete process.env.PROFITIA_AUTH_PROVIDER; else process.env.PROFITIA_AUTH_PROVIDER = previousProvider; globalThis.fetch = previousFetch; await pool?.end(); await auditPool?.end(); await owner?.end(); await root.end() }
 })
