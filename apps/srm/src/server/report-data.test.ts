@@ -269,3 +269,24 @@ test("Staging report read uses only its own configured tenant and rejects wrong 
   assert.equal((await reportDataHandler(read,{...env,SRM_STAGING_ORGANIZATION_ID:undefined})(request())).status,503);
   assert.equal(calls,1);
 });
+
+test("legacy report HTTP handler cannot read through an old cookie after Clerk or an invalid provider is selected", async () => {
+  const env = { TARGET_ENVIRONMENT: "development", SRM_DEMO_PASSWORD: "fixture-password-at-least-16",
+    SRM_DEMO_SESSION_SECRET: "fixture-session-secret-at-least-32-characters",
+    SRM_DEVELOPMENT_ORGANIZATION_ID: "00000000-0000-4000-8000-000000000001" };
+  const token = await createDemoSession(env.SRM_DEMO_SESSION_SECRET);
+  let reads = 0;
+  const read = async () => { reads++; return projectReportData(selection, fixture(), now, {}); };
+  const request = () => new Request("https://srm.test/api/xray/report-data", { method: "POST", headers: {
+    origin: "https://srm.test", cookie: `srm_demo_session=${token}`, "Content-Type": "application/json",
+    "x-clerk-user-id": "forged-user", "x-clerk-org-id": "forged-org", "x-clerk-org-role": "owner",
+  }, body: JSON.stringify(selection) });
+  for (const provider of ["clerk", "clerkk", "", "false", "unknown"]) {
+    const response = await reportDataHandler(read, { ...env, PROFITIA_AUTH_PROVIDER: provider })(request());
+    assert.equal(response.status, 401);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+  }
+  assert.equal(reads, 0);
+  assert.equal((await reportDataHandler(read, { ...env, PROFITIA_AUTH_PROVIDER: "legacy_demo" })(request())).status, 200);
+  assert.equal(reads, 1);
+});
