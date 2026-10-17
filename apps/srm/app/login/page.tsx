@@ -1,5 +1,7 @@
 import { CanonButton, CanonInput, CanonLink, CanonSummary, CanonElement } from "@profitia/srm-xray";
 import "@profitia/srm-xray/financial-scanner.css";
+import { ClerkSignIn } from "./clerk-sign-in";
+import { readSrmIdentityRuntime, type SrmIdentityRuntime } from "../../src/server/identity-runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,9 @@ const currentVersionFeatures = [
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   const environment = process.env.TARGET_ENVIRONMENT === "staging" ? "Staging" : "Development";
+  let identity: SrmIdentityRuntime | null = null;
+  try { identity = readSrmIdentityRuntime(); }
+  catch { /* A configuration error is public unavailability, never a demo fallback. */ }
 
   return <main className="srm-login srm-ui">
     <div className="srm-login-layout">
@@ -28,13 +33,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <h1><span>Supplier</span><span>Relationship</span><span>Management</span></h1>
           <p className="srm-login-subtitle">Wersja testowa dla PORR SA</p>
           <p className="srm-login-description">Celem aplikacji są testy wewnętrzne udostępnianych funkcjonalności.</p>
-          <form action="/api/auth/login" method="post" className="srm-login-form">
+          {identity?.provider === "clerk" ? <ClerkSignIn publishableKey={identity.publishableKey} /> : identity?.provider === "legacy_demo" ? <form action="/api/auth/login" method="post" className="srm-login-form">
             <label htmlFor="demo-password">Hasło</label>
             <CanonInput canonId="SRM-C06" usage="login:password" id="demo-password" type="password" name="password" autoComplete="current-password" placeholder="Wpisz hasło" required />
             {error === "invalid" && <p className="srm-login-error" role="alert">Nieprawidłowe hasło. Spróbuj ponownie.</p>}
             {error === "configuration" && <p className="srm-login-error" role="alert">Logowanie jest chwilowo niedostępne.</p>}
             <CanonButton canonId="SRM-C01" usage="login:submit" type="submit">Zaloguj się</CanonButton>
-          </form>
+          </form> : <p className="srm-login-error" role="alert">Logowanie jest chwilowo niedostępne.</p>}
         <p className="srm-login-disclaimer">Wersja testowa jest przeznaczona tylko dla pracowników PORR SA i nie powinna być udostępniana osobom nieuprawnionym.</p>
       </section>
 
