@@ -26,7 +26,12 @@ export default async function BenchmarkFinderPage({ params }: BenchmarkFinderPag
   catch { return <p role="alert">{locale === 'en' ? 'Sign-in is temporarily unavailable.' : 'Logowanie jest chwilowo niedostępne.'}</p> }
   if (identity.provider === 'clerk') {
     return <Sg2AuthenticatedView locale={locale}>
-      <PorrDemoShell locale={locale} activeRoute="benchmark-finder"><BenchmarkFinderClient locale={locale} showPorrDemoPortfolio={isPorrDemoProfile} /></PorrDemoShell>
+      <PorrDemoShell locale={locale} activeRoute="benchmark-finder">
+        {process.env.PROFITIA_SUPPLIER_SUMMARY_ENABLED === 'true' && <nav aria-label="Supplier Intelligence" className="mb-5">
+          <a href={`/${locale}/supplier-intelligence`} className="text-sm font-medium text-sky-700 underline">Supplier Intelligence</a>
+        </nav>}
+        <BenchmarkFinderClient locale={locale} showPorrDemoPortfolio={isPorrDemoProfile} />
+      </PorrDemoShell>
     </Sg2AuthenticatedView>
   }
 

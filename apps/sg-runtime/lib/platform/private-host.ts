@@ -3,6 +3,7 @@ import { createPrivateOperationHost } from '@profitia/platform-contracts/private
 import { createClerkIdentityAuthenticator, type ClerkIdentityClient, type IdentityApplication } from '@profitia/platform-contracts/identity-provider'
 import type { AccessQuery, AccessStoreBinding } from '@profitia/platform-contracts/access-store'
 import { OperationDenied, type Application } from '@profitia/platform-contracts/operation-context'
+import { projectSupplierSummaryResponse, readSupplierSummarySelection, SUPPLIER_SUMMARY_PROJECTION } from './supplier-summary'
 
 type QueryClient = Pick<Prisma.TransactionClient, '$queryRawUnsafe' | '$executeRawUnsafe'>
 
@@ -20,7 +21,7 @@ const queryFor = (client: QueryClient): AccessQuery => async (sql, values = []) 
 /** Explicit composition for the existing selection API. No demo fallback or
  * environment switch activates it. The host supplies its official Clerk client,
  * ordinary Prisma login and independently verified deployment configuration. */
-export function createSg2PrivateBenchmarkHost(options: {
+type Sg2PrivateHostOptions = {
   prisma: PrismaClient
   /** Separate native pool; reserve its connections within the role's total
    * budget so business transactions cannot exhaust audit capacity. */
@@ -30,21 +31,23 @@ export function createSg2PrivateBenchmarkHost(options: {
   identity: IdentityApplication
   binding: AccessStoreBinding
   /** Required accepted module boundary; no base-only path to this private store. */
-  module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string }
+  module: { id: 'benchmark' | 'supplier_report'; schemaDigest: string; auditSchemaDigest: string }
   transactionTimeoutMs?: number
   now?: () => number
-}) {
+}
+type NativeHostOptions = Parameters<typeof createPrivateOperationHost<Prisma.TransactionClient>>[0]
+function hostBase(options: Sg2PrivateHostOptions, moduleId: Sg2PrivateHostOptions['module']['id'], operations: readonly string[]): Omit<NativeHostOptions, 'readResources' | 'projectOutput'> {
   const { prisma, auditPrisma, clerk, now } = options
   const application = structuredClone(options.application)
   const identity = structuredClone(options.identity)
   const binding = structuredClone(options.binding)
-  if (!auditPrisma || auditPrisma === prisma || !options.module || options.module.id !== 'benchmark' || application.appId !== 'spendguru' || binding.applicationId !== application.appId
+  if (!auditPrisma || auditPrisma === prisma || !options.module || options.module.id !== moduleId || application.appId !== 'spendguru' || binding.applicationId !== application.appId
     || identity.appId !== application.appId || identity.environment !== application.environment
     || identity.issuer !== application.identityIssuer || binding.environment !== application.environment
-    || application.operations.some(operation => !['benchmark.selection.read', 'benchmark.selection.write'].includes(operation))) {
-    throw new TypeError('Explicit consistent SG2 benchmark host configuration required')
+    || application.operations.some(operation => !operations.includes(operation))) {
+    throw new TypeError('Explicit consistent SG2 module host configuration required')
   }
-  return createPrivateOperationHost<Prisma.TransactionClient>({
+  return {
     application, binding, module: options.module, now, transactionTimeoutMs: options.transactionTimeoutMs,
     independentQuery: queryFor(auditPrisma),
     transact: (work, limits) => prisma.$transaction(transaction => work({
@@ -53,6 +56,12 @@ export function createSg2PrivateBenchmarkHost(options: {
     createAuthenticator: ({ resolveBinding }) => createClerkIdentityAuthenticator({
       client: clerk, application: identity, resolveBinding, now,
     }),
+  }
+}
+
+export function createSg2PrivateBenchmarkHost(options: Sg2PrivateHostOptions & { module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string } }) {
+  return createPrivateOperationHost<Prisma.TransactionClient>({
+    ...hostBase(options, 'benchmark', ['benchmark.selection.read','benchmark.selection.write']),
     readResources: async ({ request, scope }) => {
       if (!scope.organisationId || request.resourceId !== `benchmark-selections:${scope.organisationId}`) {
         throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
@@ -72,5 +81,22 @@ export function createSg2PrivateBenchmarkHost(options: {
         || item.organizationId !== context.organisationId)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return value
     },
+  })
+}
+
+/** Same native driver, identity adapter and common executor; this module has
+ * its own current binding/grant/product and cannot access benchmark rows. */
+export function createSg2SupplierSummaryHost(options: Sg2PrivateHostOptions & { module: { id: 'supplier_report'; schemaDigest: string; auditSchemaDigest: string } }) {
+  if (options.application.operations.length !== 1) throw new TypeError('Explicit supplier read configuration required')
+  return createPrivateOperationHost<Prisma.TransactionClient>({
+    ...hostBase(options, 'supplier_report', ['supplier.report.read']),
+    readResources: async ({ request, scope }) => {
+      const selection = readSupplierSummarySelection(request.payload)
+      if (!scope.organisationId || request.resourceId !== `supplier-report:${selection.entityType}:${selection.nip}`) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      return { resource: { id: request.resourceId, type: 'supplier_report', dataClass: 'SHARED_KNOWLEDGE',
+        environment: scope.environment, ownerOrganisationId: null, ownerUserId: null, approvedSharedProjection: true,
+        version: SUPPLIER_SUMMARY_PROJECTION, projectionVersion: SUPPLIER_SUMMARY_PROJECTION } }
+    },
+    projectOutput: projectSupplierSummaryResponse,
   })
 }

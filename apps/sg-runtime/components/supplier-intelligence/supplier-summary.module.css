@@ -1,0 +1,23 @@
+.root { color: #0f172a; }
+.root button, .root a { cursor: pointer; }
+.root a { color: #0369a1; text-decoration: underline; }
+.root table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.root th, .root td { padding: .65rem; border-bottom: 1px solid #cbd5e1; text-align: left; }
+.root dt { color: #475569; font-size: .8rem; }
+.root dd { margin: .2rem 0 .8rem; }
+.root :global(.summary-columns) { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.root :global(.snapshot-main), .root :global(.snapshot-checks) { padding: 1.25rem; border: 1px solid #e2e8f0; border-radius: 1rem; }
+.root :global(.executive-summary h3) { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; }
+.root :global(.summary-facts), .root :global(.summary-limitations) { display: grid; gap: 1rem; }
+.root :global(.summary-facts li) { display: grid; gap: .4rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0; }
+.root :global(.snapshot-label) { display: flex; align-items: center; gap: .5rem; color: #475569; }
+.root :global(.snapshot-value) { font-size: 1.55rem; }
+.root :global(.snapshot-change), .root :global(.summary-kys), .root :global(.summary-note), .root :global(.summary-period) { font-size: .875rem; color: #475569; }
+.root :global(.snapshot-exact), .root :global(.summary-explanation) { font-size: .8rem; color: #475569; }
+.root :global(.snapshot-evidence button), .root :global(.summary-limitations button) { color: #0369a1; text-decoration: underline; font-size: .8rem; }
+.root :global(.summary-limitations li) { display: flex; align-items: flex-start; gap: .65rem; }
+.root :global(.summary-limit-icon) { color: #92400e; background: #fef3c7; padding: .1rem .45rem; border-radius: 50%; }
+.root :global(.summary-actions) { margin-top: 1.5rem; }
+.root :global(.summary-actions button) { border: 1px solid #cbd5e1; border-radius: .6rem; padding: .6rem 1rem; margin: 0 .6rem .5rem 0; }
+.root :global(.summary-kys), .root :global(.summary-period) { margin: .8rem 0; }
+@media (max-width: 760px) { .root :global(.summary-columns) { grid-template-columns: 1fr; } }

@@ -40,7 +40,8 @@
   "hostAdapter": "lib/benchmark/operation-context.ts",
   "operations": [
     "benchmark.selection.read",
-    "benchmark.selection.write"
+    "benchmark.selection.write",
+    "supplier.report.read"
   ],
   "requiredInputOperations": [],
   "identityAdapter": "OFFICIAL_CLERK_ADAPTER_WITH_SYNTHETIC_FIXTURE_RESPONSES",
@@ -62,5 +63,37 @@
     "accessStoreSourceDigest": "e0d3fb3c2201816755b76546976c964791adee21a8b528c05b0adbd1af09a8ca",
     "privateHostSourceDigest": "b79ba004bfd4d8ca37209e71d81fd3619b95ef9665ebee9780c0413caccdc442",
     "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246"
+  },
+  "supplierSummary": {
+    "moduleId": "supplier_report",
+    "package": "@profitia/srm-xray",
+    "version": "0.2.1",
+    "publicPorts": [
+      "contracts",
+      "executive-summary",
+      "executive-summary-rules",
+      "financial-value",
+      "shared-financial-summary"
+    ],
+    "producer": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-SHARED-SUMMARY-CONTRACT-PORT-20261017",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 446,
+      "sourceSha": "702fc1d70ce4ed4797c5030ddae093694bc04e21"
+    },
+    "hostAdapter": "lib/platform/supplier-summary-runtime.ts",
+    "api": "/api/supplier/financial-summary",
+    "page": "/[locale]/supplier-intelligence",
+    "transport": "SERVER_PINNED_BEARER_ONLY_SHARED_READ",
+    "resourceProjectionVersion": "shared-financial-summary-envelope-v1",
+    "audit": "INDEPENDENT_CURRENT_AUTHORITY_AT_EACH_READ_ONLY_HOST",
+    "deploymentAdoption": "NOT_PERFORMED",
+    "limitations": [
+      "NO_KYS_PRIVATE_DOCUMENTS_OR_EXPORTS",
+      "NO_PROVIDER_REFRESH_OR_BILLING",
+      "NO_DISTRIBUTED_TRANSACTION_CLAIM",
+      "LIVE_LOGIN_PEER_AND_RELEASE_NOT_VERIFIED"
+    ]
   }
 }
