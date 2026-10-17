@@ -5,6 +5,7 @@ import { randomUUID,createHash } from 'node:crypto'
 import pg from 'pg'
 import { createAccessStore,accessSchemaUrl } from '../../../packages/platform-contracts/src/access-store.mjs'
 import { createOperationExecutor,OPERATION_CONTRACT,isOperationDenied } from '../../../packages/platform-contracts/src/operation-context.mjs'
+import { createPrivateOperationHost } from '../../../packages/platform-contracts/src/private-operation-host.mjs'
 import { assertIsolatedTestConnection } from '../src/operation-postgres-fixture.mjs'
 
 const ORG_A='11111111-1111-4111-8111-111111111111',ORG_B='22222222-2222-4222-8222-222222222222'
@@ -101,6 +102,30 @@ test('access schema and real transaction boundaries with ordinary runtime logins
         try{const lease=await store.lockAccess(query,{actor:actor(),identityBinding,organisationId:ORG_A});const resource={id:'selection',type:'benchmark_selection',dataClass:'ORGANISATION_PRIVATE',environment:'development',ownerOrganisationId:ORG_A,ownerUserId:null,version:'1',projectionVersion:'operation-v1'};const value=await action({state:{...lease.state,resource},transaction:c,transactionalEffects:true,outputBoundaryVersion:'operation-v1',projectOutput:v=>v,recordOutcome:e=>store.appendAudit(query,e,lease)});await store.verifyScope(query,lease);await query('COMMIT');return value}catch(e){await query('ROLLBACK');throw e}finally{c.release()}
       }})
       return {executor,input:{contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'benchmark.selection.write',organisationId:ORG_A,resourceId:'selection',payload:null,request:new Request('https://fixture.test')}}
+    }
+    const privateHostFixture=(overrides={})=>{
+      const application={appId:'sg2-test',profileId:'SPENDGURU_SAAS',environment:'development',deploymentId:'isolated',configurationVersion:'1',identityIssuer:ISSUER,organisationId:null,features:['benchmark'],operations:['benchmark.selection.read','benchmark.selection.write']}
+      const resources=({request,scope})=>({resource:{id:request.resourceId,type:'benchmark_selection',dataClass:'ORGANISATION_PRIVATE',environment:'development',ownerOrganisationId:scope.organisationId,ownerUserId:null,version:'1',projectionVersion:'operation-v1'}})
+      const transact=async(work,limits)=>{
+        const c=await sgPool.connect(),query=c.query.bind(c)
+        let expired=false
+        const timer=setTimeout(()=>{expired=true;void c.end().catch(()=>{})},limits.timeoutMs)
+        await query('BEGIN')
+        try{const result=await work({query,transaction:c});await query('COMMIT');return result}
+        catch(e){await query('ROLLBACK').catch(()=>{});throw e}
+        finally{clearTimeout(timer);c.release(expired)}
+      }
+      const options={application,binding:binding(),independentQuery:sgPool.query.bind(sgPool),transact,
+        // Synthetic backend identity ONLY. Real official SDK/RSA verification is
+        // separately covered by clerk-identity.test.mjs; no HTTP header adapter.
+        createAuthenticator:({resolveBinding})=>async request=>{
+          const user=request.user??USER_A
+          const b=await resolveBinding({environment:'development',issuer:ISSUER,subject:`subject-${user}`})
+          request.afterResolve?.();if(request.waitFor)await request.waitFor
+          return b?actor(user):null
+        },
+        readResources:async input=>resources(input),projectOutput:value=>value,...overrides}
+      return{host:createPrivateOperationHost(options),options,resources,transact,input:{contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'benchmark.selection.write',organisationId:ORG_A,resourceId:'selection',payload:null,request:{}}}
     }
     await scenario('all access tables FORCE RLS and runtime is ordinary, unable to assume owner',async()=>{
       const tables=await owner.query("SELECT c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_access' AND c.relkind='r'")
@@ -250,6 +275,89 @@ test('access schema and real transaction boundaries with ordinary runtime logins
       }finally{await owner.query(`GRANT EXECUTE ON FUNCTION profitia_access.append_audit(jsonb) TO ${ROLES.sg2}`)}
       assert.equal((await owner.query("SELECT count(*)::int n FROM access_product_fixture.organisation_records WHERE id='audit-rollback'")).rows[0].n,0)
       assert.deepEqual((await owner.query('SELECT phase FROM profitia_access.security_events ORDER BY event_id')).rows.map(r=>r.phase),['INTENT'])
+    })
+    await scenario('private host composes current identity, RLS, effect and durable atomic audit',async()=>{
+      const {host,input}=privateHostFixture()
+      const value=await host.execute(input,async(context,c)=>{
+        assert.equal(context.actorId,USER_A)
+        assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE phase='INTENT'")).rows[0].n,1)
+        assert.deepEqual((await c.query('SELECT organisation_id,user_id FROM access_product_fixture.personal_records')).rows,[{organisation_id:ORG_A,user_id:USER_A}])
+        await c.query('INSERT INTO access_product_fixture.organisation_records VALUES($1,$2,$3)',[ORG_A,'host-committed','synthetic'])
+        return'accepted'
+      })
+      assert.equal(value.value,'accepted')
+      assert.equal((await owner.query("SELECT count(*)::int n FROM access_product_fixture.organisation_records WHERE id='host-committed'")).rows[0].n,1)
+      assert.deepEqual((await owner.query('SELECT phase FROM profitia_access.security_events ORDER BY event_id')).rows.map(x=>x.phase),['INTENT','OUTCOME'])
+      assert.equal((await sgPool.query('SELECT count(*)::int n FROM access_product_fixture.personal_records')).rows[0].n,0)
+    })
+    await scenario('one shared private host cannot mix overlapping identity bindings',async()=>{
+      let release,ready
+      const waitFor=new Promise(resolve=>{release=resolve}),resolved=new Promise(resolve=>{ready=resolve})
+      const {host,input}=privateHostFixture()
+      const read=async(context,c)=>{
+        const rows=(await c.query('SELECT user_id FROM access_product_fixture.personal_records')).rows
+        assert.deepEqual(rows,[{user_id:context.actorId}]);return context.actorId
+      }
+      const a=host.execute({...input,request:{user:USER_A,waitFor,afterResolve:ready}},read)
+      await resolved
+      try{assert.equal((await host.execute({...input,request:{user:USER_B}},read)).value,USER_B)}finally{release()}
+      assert.equal((await a).value,USER_A)
+      assert.deepEqual((await owner.query("SELECT DISTINCT event->>'actorId' AS actor FROM profitia_access.security_events WHERE phase='OUTCOME' ORDER BY actor")).rows.map(r=>r.actor),[USER_A,USER_B])
+    })
+    await scenario('private host rolls back business error and keeps independent failure evidence',async()=>{
+      const {host,input}=privateHostFixture()
+      await assert.rejects(host.execute(input,async(_context,c)=>{
+        await c.query('INSERT INTO access_product_fixture.organisation_records VALUES($1,$2,$3)',[ORG_A,'host-rollback','synthetic']);throw Error('private driver detail')
+      }),denied)
+      assert.equal((await owner.query("SELECT count(*)::int n FROM access_product_fixture.organisation_records WHERE id='host-rollback'")).rows[0].n,0)
+      assert.deepEqual((await owner.query('SELECT phase FROM profitia_access.security_events ORDER BY event_id')).rows.map(x=>x.phase),['INTENT','FAILURE'])
+    })
+    await scenario('private host rejects an actor without its request-owned binding',async()=>{
+      const {host,input}=privateHostFixture({createAuthenticator:()=>async()=>actor()})
+      await assert.rejects(host.execute(input,()=>assert.fail()),denied)
+    })
+    await scenario('private host rejects replacing the current binding with another user',async()=>{
+      const {host,input}=privateHostFixture({createAuthenticator:({resolveBinding})=>async()=>{
+        await resolveBinding({environment:'development',issuer:ISSUER,subject:`subject-${USER_B}`});return actor()
+      }})
+      await assert.rejects(host.execute(input,()=>assert.fail()),denied)
+    })
+    await scenario('private host denies a nonmember and never invokes business code',async()=>{
+      const {host,input}=privateHostFixture()
+      await assert.rejects(host.execute({...input,organisationId:ORG_B,request:{user:USER_B}},()=>assert.fail()),denied)
+    })
+    await scenario('resource reader cannot override authoritative rights or products',async()=>{
+      const {host,input}=privateHostFixture({readResources:async()=>({resource:{},products:[]})})
+      await assert.rejects(host.execute(input,()=>assert.fail()),denied)
+    })
+    await scenario('private host rejects a skipped transaction callback or a pool-level query',async()=>{
+      const f=privateHostFixture({transact:async()=>({decision:'ALLOW'})})
+      await assert.rejects(f.host.execute(f.input,()=>assert.fail()),denied)
+      const o=f.options
+      const host=createPrivateOperationHost({...o,transact:async work=>work({query:o.independentQuery,transaction:{}})})
+      await assert.rejects(host.execute(f.input,()=>assert.fail()),denied)
+    })
+    await scenario('replaying a transaction callback rolls back its first execution',async()=>{
+      const f=privateHostFixture()
+      const host=createPrivateOperationHost({...f.options,transact:async(work,limits)=>f.transact(async session=>{await work(session);return work(session)},limits)})
+      await assert.rejects(host.execute(f.input,async(_context,c)=>{
+        await c.query('INSERT INTO access_product_fixture.organisation_records VALUES($1,$2,$3)',[ORG_A,'host-replayed','synthetic']);return'no'
+      }),denied)
+      assert.equal((await owner.query("SELECT count(*)::int n FROM access_product_fixture.organisation_records WHERE id='host-replayed'")).rows[0].n,0)
+      assert.deepEqual((await owner.query('SELECT phase FROM profitia_access.security_events ORDER BY event_id')).rows.map(x=>x.phase),['INTENT','FAILURE'])
+    })
+    await scenario('early commit in a resource loader is rejected before any business effect',async()=>{
+      const f=privateHostFixture()
+      const host=createPrivateOperationHost({...f.options,readResources:async args=>{await args.query('COMMIT');return f.resources(args)}})
+      await assert.rejects(host.execute(f.input,()=>assert.fail()),denied)
+    })
+    await scenario('driver total timeout bounds multiple individually short statements',async()=>{
+      const {host,input}=privateHostFixture({transactionTimeoutMs:100})
+      await assert.rejects(host.execute(input,async(_context,c)=>{
+        await c.query('INSERT INTO access_product_fixture.organisation_records VALUES($1,$2,$3)',[ORG_A,'host-timeout','synthetic'])
+        await c.query('SELECT pg_sleep(0.08)');await c.query('SELECT pg_sleep(0.08)');return'no'
+      }),denied)
+      assert.equal((await owner.query("SELECT count(*)::int n FROM access_product_fixture.organisation_records WHERE id='host-timeout'")).rows[0].n,0)
     })
   } finally {for(const pool of pools)await pool.end();if(owner)await owner.end();await root.end()}
 })
