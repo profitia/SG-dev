@@ -3,7 +3,7 @@ import { createAccessStore } from './access-store.mjs'
 import { createOperationExecutor, OperationDenied } from './operation-context.mjs'
 import { createModuleScopeGuard } from './module-scope.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.1.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.2.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -13,7 +13,7 @@ const freeze = value => { if (value && typeof value === 'object') { Object.value
  * No request identity, lease or transaction is retained on the shared instance.
  */
 export function createPrivateOperationHost(options) {
-  const { independentQuery, transact, createAuthenticator, readResources, projectOutput, now = Date.now, transactionTimeoutMs = 15000 } = options
+  const { independentQuery, transact, createAuthenticator, readResources, projectOutput, prepareInputs, describeOutcome, now = Date.now, transactionTimeoutMs = 15000 } = options
   const application = freeze(copy(options.application))
   const binding = freeze(copy(options.binding))
   if (!application || !binding || binding.applicationId !== application.appId || binding.environment !== application.environment || [independentQuery, transact, createAuthenticator, readResources, projectOutput, now].some(f => typeof f !== 'function') || !Number.isSafeInteger(transactionTimeoutMs) || transactionTimeoutMs < 100 || transactionTimeoutMs > 15000) throw new TypeError('Explicit application, private binding, identity factory and real transaction adapters required')
@@ -25,6 +25,7 @@ export function createPrivateOperationHost(options) {
   // Validate the unchanged policy configuration now, without authenticating,
   // reading a database or constructing request-owned state.
   const validate = createOperationExecutor({ application, now, authenticate: async () => null, withTransaction: unavailable, recordAudit: unavailable })
+  if ((prepareInputs !== undefined && typeof prepareInputs !== 'function') || (describeOutcome !== undefined && typeof describeOutcome !== 'function') || (application.operations.includes('supplier.report.export') && typeof prepareInputs !== 'function')) throw new TypeError('Export requires server-owned transactional preparation; optional outcome adapter must be a function')
 
   return Object.freeze({
     contract: validate.contract,
@@ -78,6 +79,17 @@ export function createPrivateOperationHost(options) {
                 transaction, transactionalEffects: true, outputBoundaryVersion: resources.resource?.projectionVersion,
                 projectOutput: (value, context) => projectOutput(value, context, transaction),
                 recordOutcome: event => store.appendAudit(query, event, lease),
+                ...(prepareInputs === undefined ? {} : { prepareInputs: async context => {
+                  if (closed) unavailable()
+                  await prepareInputs({ context, query, transaction })
+                  if (closed) unavailable()
+                } }),
+                ...(describeOutcome === undefined ? {} : { describeOutcome: async (value, context) => {
+                  if (closed) unavailable()
+                  const outcome = await describeOutcome(value, context, transaction)
+                  if (closed) unavailable()
+                  return outcome
+                } }),
               })
               if (closed) unavailable()
               await store.verifyScope(query, lease)
