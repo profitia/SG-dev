@@ -484,6 +484,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     }
     await t.test('shared real API works with SELECT only on three corporate tables and leaves every business table unchanged',async()=>{
       const original=(await owner.query("SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='srm' AND c.relkind='r' AND has_table_privilege($1,c.oid,'SELECT')",[ROLE])).rows
+      assert(original.some(table=>table.relname==='mgbi_source_archives'))
       const before=await businessSnapshot(),eventBefore=await lastEvent()
       await owner.query(`REVOKE SELECT ON ALL TABLES IN SCHEMA srm FROM ${ROLE}`)
       await owner.query(`GRANT SELECT ON srm.catalog_companies,srm.catalog_financial_facts,srm.catalog_financial_indicators TO ${ROLE}`)
@@ -501,6 +502,10 @@ test('SRM real report and pg driver use the accepted private host', async t => {
         assert.deepEqual(events.map(event=>[event.operation,event.phase]),[['supplier.report.read','INTENT'],['supplier.report.read','OUTCOME'],['supplier.report.read','INTENT'],['supplier.report.read','OUTCOME']])
         assert(events.every(event=>event.dataClass==='SHARED_KNOWLEDGE' && event.moduleEvidence.moduleId==='supplier_report'))
         assert.deepEqual(events.map(event=>event.organisationId),[A,A,B,B])
+        assert.equal(events[0].correlationId,events[1].correlationId);assert.equal(events[2].correlationId,events[3].correlationId)
+        assert.notEqual(events[0].correlationId,events[2].correlationId)
+        assert.equal(events[0].moduleEvidence.transactionId,events[1].moduleEvidence.transactionId)
+        assert.equal(events[2].moduleEvidence.transactionId,events[3].moduleEvidence.transactionId)
       }finally{
         await owner.query(`REVOKE SELECT ON ALL TABLES IN SCHEMA srm FROM ${ROLE}`)
         for(const{relname}of original){assert(/^[a-z_]+$/.test(relname));await owner.query(`GRANT SELECT ON srm.${relname} TO ${ROLE}`)}

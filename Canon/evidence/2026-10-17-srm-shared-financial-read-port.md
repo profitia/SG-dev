@@ -64,8 +64,8 @@ is performed. INTENT/OUTCOME and failure records still use the accepted writer.
   disposable fixture. No cloud grant is touched.
 - All22 business-table contents are compared before/after shared reads. They
   remain identical. Each request has only its own correlated AM21 INTENT/OUTCOME,
-  SHARED_KNOWLEDGE and supplier module evidence. Private files and providers are
-  unavailable in the fixture. Missing/forged bearer, foreign membership, provider
+  SHARED_KNOWLEDGE and supplier module evidence. No private file read is performed;
+  external provider fetch is disabled in the fixture. Missing/forged bearer, foreign membership, provider
   revocation, explicit DENY, revoked product/module and fixed-profile foreign
   organisation are refused.
 - A wrong source version is tested inside the actual authorized module/SQL
