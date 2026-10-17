@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createClerkIdentityAuthenticator } from "@profitia/platform-contracts/identity-provider";
 import { clerkConfigurationSourceDigest } from "@profitia/platform-contracts/clerk-configuration";
 import { ClerkSignIn } from "../../app/login/clerk-sign-in";
+import { SrmIdentityProvider, SrmAuthenticatedView, SrmSessionContent, SrmLogout, SrmSessionActions } from "../../app/session-boundary";
 import { createSrmClerkClient, IdentityConfigurationUnavailable, readSrmIdentityRuntime } from "./identity-runtime";
 
 const hostname = "identity-fixture.clerk.accounts.dev";
@@ -82,8 +83,53 @@ test("the actual official backend SDK composes with the existing identity adapte
 });
 
 test("the actual React provider renders on React19 without a backend secret or a demo form", () => {
-  const html = renderToStaticMarkup(createElement(ClerkSignIn, { publishableKey: development().PROFITIA_CLERK_PUBLISHABLE_KEY }));
+  const html = renderToStaticMarkup(createElement(SrmIdentityProvider, { mode: 'clerk', publishableKey: development().PROFITIA_CLERK_PUBLISHABLE_KEY, children: createElement(ClerkSignIn) }));
   assert.equal(html.includes(secret), false);
   assert.equal(html.includes("/api/auth/login"), false);
   assert.equal(html.includes("name=\"password\""), false);
+});
+
+test("the actual sign-in component targets the existing root route without creating another provider", () => {
+  const element = ClerkSignIn();
+  assert.equal(element.props.forceRedirectUrl, "/");
+  assert.equal(element.props.withSignUp, false);
+  assert.equal(element.props.routing, "hash");
+});
+test("session presentation withholds report content until a loaded individual session exists", () => {
+  const children = createElement("div", null, "private-report-marker");
+  for (const session of [{ status: "loading" } as const, { status: "signed-out" } as const,
+    { status: "signed-in", userId: "", sessionId: "synthetic-session" } as const]) {
+    const html = renderToStaticMarkup(createElement(SrmSessionContent, { session, children }));
+    assert(!html.includes("private-report-marker"));
+  }
+  const html = renderToStaticMarkup(createElement(SrmSessionContent, { session: { status: "signed-in", userId: "synthetic-user", sessionId: "synthetic-session" }, children }));
+  assert(html.includes("private-report-marker"));
+  assert(!html.includes("synthetic-user")); assert(!html.includes("synthetic-session"));
+});
+test("changing the individual principal or session replaces the report tree identity", () => {
+  const element = (userId: string, sessionId: string) => SrmSessionContent({ session: { status: "signed-in", userId, sessionId }, children: createElement("div") });
+  assert.equal(element("user-a", "session-a").key, element("user-a", "session-a").key);
+  assert.notEqual(element("user-a", "session-a").key, element("user-b", "session-a").key);
+  assert.notEqual(element("user-a", "session-a").key, element("user-a", "session-b").key);
+});
+test("missing provider, invalid explicit mode and unavailable configuration never reveal a report", () => {
+  const report = createElement(SrmAuthenticatedView, { children: createElement("div", null, "private-report-marker") });
+  assert(!renderToStaticMarkup(report).includes("private-report-marker"));
+  for (const props of [{ mode: "unavailable" } as const, { mode: "clerk" } as const]) {
+    assert(!renderToStaticMarkup(createElement(SrmIdentityProvider, { ...props, children: report })).includes("private-report-marker"));
+  }
+});
+test("legacy presentation and logout keep their form while Clerk never uses the demo logout form", () => {
+  const children = createElement(SrmLogout, { children: createElement("button", null, "Wyloguj się") });
+  const legacy = renderToStaticMarkup(createElement(SrmIdentityProvider, { mode: "legacy_demo", children }));
+  assert(legacy.includes('action="/api/auth/logout"')); assert(legacy.includes('method="post"'));
+  const named = renderToStaticMarkup(createElement(SrmIdentityProvider, { mode: "clerk", publishableKey: development().PROFITIA_CLERK_PUBLISHABLE_KEY, children }));
+  assert(!named.includes('/api/auth/logout')); assert(!named.includes(secret));
+});
+test("named session controls are available before a report while legacy header visibility is preserved", () => {
+  const children = createElement(SrmSessionActions, { legacyVisible: false, children: createElement("span", null, "session-controls-marker") });
+  assert(!renderToStaticMarkup(createElement(SrmIdentityProvider, { mode: "legacy_demo", children })).includes("session-controls-marker"));
+  assert(renderToStaticMarkup(createElement(SrmIdentityProvider, { mode: "clerk", publishableKey: development().PROFITIA_CLERK_PUBLISHABLE_KEY, children })).includes("session-controls-marker"));
+  const hidden = createElement(SrmLogout, { legacyVisible: false, children: createElement("button", null, "logout-marker") });
+  assert(!renderToStaticMarkup(createElement(SrmIdentityProvider, { mode: "legacy_demo", children: hidden })).includes("logout-marker"));
 });

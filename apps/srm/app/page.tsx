@@ -8,6 +8,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { SupplierReport, reportMessage, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
 import { supplierNip, inactiveSupplier } from "../src/modules/xray/report-controller";
+import { SrmAuthenticatedView, SrmLogout, SrmSessionActions } from "./session-boundary";
 
 const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <ExecutiveSummary input={{
   nip: supplierNip(context.supplier) ?? "", entityType: context.supplier.entityType, metadata: context.metadata,
@@ -26,6 +27,10 @@ const scannerSlot: NonNullable<SupplierReportSlots["scanner"]> = context => cont
         avatars: { male: "/spendguru/assistant-male.png", anna: "/spendguru/assistant-female.png" } }} /> : null;
 
 export default function Home() {
+  return <SrmAuthenticatedView><SupplierReportHome /></SrmAuthenticatedView>;
+}
+
+function SupplierReportHome() {
   const { state, controller } = useSupplierReport();
   const [identifier, setIdentifier] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -120,12 +125,12 @@ export default function Home() {
   return <main className="appshield">
     {!inactive && <CanonLink canonId="SRM-C55" usage="page:01" className="report-skip-link" href={entry ? "#supplier-search" : "#new-report"}>Przejdź do wyszukiwania</CanonLink>}
     <SupplierHeader>
-      {!entry && <>
+      <SrmSessionActions legacyVisible={!entry}>
         <div className="appshield-actions">
-          <CanonButton canonId="SRM-C02" usage="page:04" id="new-report" type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</CanonButton>
-          {!inactive && <form action="/api/auth/logout" method="post"><CanonButton canonId="SRM-C02" usage="page:05" type="submit" className="appshield-new-report">Wyloguj się</CanonButton></form>}
+          {!entry && <CanonButton canonId="SRM-C02" usage="page:04" id="new-report" type="button" className="appshield-new-report" onClick={newReport}>Nowy raport</CanonButton>}
+          <SrmLogout legacyVisible={!inactive}><CanonButton canonId="SRM-C02" usage="page:05" type="submit" className="appshield-new-report">Wyloguj się</CanonButton></SrmLogout>
         </div>
-      </>}
+      </SrmSessionActions>
     </SupplierHeader>
     {entry && <section className="srm-ui srm-entry-main" aria-label="Wyszukiwanie dostawcy">{searchForm}</section>}
     <div className="appshield-content report-page">
