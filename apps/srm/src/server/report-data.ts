@@ -207,7 +207,7 @@ export function projectReportData(selection: ReportSelection, row: ReportReadRow
 }
 
 /** One PostgreSQL statement captures source evidence coherently. Scanner frames are appended separately; source caches never change on reads. */
-export const REPORT_DATA_SQL = `SELECT requested.nip, c.financial_json, c.financial_sha256, c.financial_checked_at,
+export const REPORT_SHARED_FINANCIAL_SELECT = `SELECT requested.nip, c.financial_json, c.financial_sha256, c.financial_checked_at,
   COALESCE((SELECT jsonb_agg(jsonb_build_object('metricCode', f.metric_code, 'periodStart', f.period_start::text,
     'periodEnd', f.period_end::text, 'statementScope', f.statement_scope, 'amount', f.amount::text,
     'sourceAmount', f.source_amount::text, 'currencyCode', f.currency_code, 'unitCode', f.unit_code,
@@ -218,7 +218,8 @@ export const REPORT_DATA_SQL = `SELECT requested.nip, c.financial_json, c.financ
     'formulaVersion', i.formula_version, 'status', i.status, 'value', i.value::text, 'unit', i.unit,
     'importance', i.importance, 'reasonCode', i.reason_code, 'inputFacts', i.input_facts,
     'sourceSnapshotIds', i.source_snapshot_ids, 'sourceDocumentIds', i.source_document_ids))
-    FROM srm.catalog_financial_indicators i WHERE i.nip = requested.nip AND i.formula_version = $4 AND $3 = 'COMPANY'), '[]'::jsonb) AS indicators,
+    FROM srm.catalog_financial_indicators i WHERE i.nip = requested.nip AND i.formula_version = $4 AND $3 = 'COMPANY'), '[]'::jsonb) AS indicators`;
+export const REPORT_DATA_SQL = `${REPORT_SHARED_FINANCIAL_SELECT},
   COALESCE((SELECT jsonb_agg(d.document_json ORDER BY d.record_id) FROM srm.financial_source_documents d WHERE d.organization_id=$2::uuid AND d.nip=requested.nip AND $3='COMPANY'), '[]'::jsonb) AS scanner_documents,
   k.metadata AS kys
 FROM (VALUES ($1::text)) requested(nip)

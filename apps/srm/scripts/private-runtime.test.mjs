@@ -12,6 +12,7 @@ import { createRuntimeSrmReportHandler } from '../src/server/report-runtime.ts'
 import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
 import { POST as deployedPOST } from '../app/api/xray/report-data/route.ts'
 import { POST as deployedExportPOST } from '../app/api/xray/financial-excel/route.ts'
+import { GET as deployedSharedGET } from '../app/api/xray/financial-summary/route.ts'
 import { createRuntimeSrmFinancialExcelHandler, projectPrivateFinancialExcel } from '../src/server/financial-excel-runtime.ts'
 import { middleware } from '../middleware.ts'
 const targets = JSON.parse(readFileSync(new URL('../deployment/private-runtime-targets.json', import.meta.url), 'utf8'))
@@ -143,6 +144,10 @@ test('middleware forwards only the adopted report/export APIs; actual entries re
     const exportRequest = new Request('https://app.fixture.test/api/xray/financial-excel', { method: 'POST', headers: { origin: 'https://app.fixture.test', 'content-type': 'application/json' }, body: JSON.stringify({ nip: '8650004194', scope: 'standalone', years: ['2025'] }) })
     assert.equal((await middleware(new NextRequest(exportRequest.clone()))).headers.get('x-middleware-next'),'1')
     assert.equal((await deployedExportPOST(exportRequest)).status,503)
+    const sharedRequest = new Request('https://app.fixture.test/api/xray/financial-summary?nip=8650004194', { headers: { authorization: 'Bearer fixture' } })
+    assert.equal((await middleware(new NextRequest(sharedRequest.clone()))).headers.get('x-middleware-next'),'1')
+    assert.equal((await deployedSharedGET(sharedRequest)).status,503)
+    assert.equal((await deployedSharedGET(new Request(sharedRequest.url))).status,401)
   }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old}
 })
 test('financial export dispatcher keeps legacy explicit and never falls back after a private failure', async () => {

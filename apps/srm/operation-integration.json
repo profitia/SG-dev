@@ -39,6 +39,7 @@
   },
   "hostAdapter": "src/server/operation-report-data.ts",
   "operations": [
+    "supplier.report.read",
     "supplier.report.project",
     "supplier.report.export"
   ],
@@ -65,5 +66,6 @@
     "privateHostSourceDigest": "b79ba004bfd4d8ca37209e71d81fd3619b95ef9665ebee9780c0413caccdc442",
     "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246"
   },
-  "exportScope": "STORED_CORPORATE_FINANCIAL_XLSX_ORGANISATION_ONLY"
+  "exportScope": "STORED_CORPORATE_FINANCIAL_XLSX_ORGANISATION_ONLY",
+  "sharedReadScope": "STORED_CORPORATE_FINANCIAL_SUMMARY_NO_KYS_PRIVATE_DOCUMENTS_OR_REFRESH"
 }
