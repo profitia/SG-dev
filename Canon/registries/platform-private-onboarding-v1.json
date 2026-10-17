@@ -1,14 +1,17 @@
 {
-  "schemaVersion": "1.1",
+  "schemaVersion": "1.2",
   "registryId": "platform-private-resource-onboarding",
   "status": "PREPARED_NOT_ACTIVATED",
-  "verifiedAt": "2026-10-17T07:55:58Z",
+  "verifiedAt": "2026-10-17T08:26:00Z",
   "owner": "Architecture Platform",
   "sourceAuthority": "profitia/SG-dev/main",
   "taskId": "SG2-E1-PRIVATE-STORE-PREPARATION-20261017",
   "resourceOnboardingTaskId": "ARCHITECTURE-E1-PRIVATE-RESOURCE-ONBOARDING-20261017",
   "targetEnvironment": "development",
-  "purpose": ["INTERNAL_PLATFORM_IDENTITY_AND_ACCESS", "PRIVATE_SG2_PRODUCT_DATA"],
+  "purpose": [
+    "INTERNAL_PLATFORM_IDENTITY_AND_ACCESS",
+    "PRIVATE_SG2_PRODUCT_DATA"
+  ],
   "creationAuthority": "OWNER_CREATED_PROJECT",
   "neon": {
     "organizationId": "org-nameless-field-92563437",
@@ -21,13 +24,25 @@
     "endpointId": "ep-late-heart-b9mxo8oi",
     "host": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
     "pooledHost": "ep-late-heart-b9mxo8oi-pooler.c-7.eu-central-1.aws.neon.tech",
-    "initialDatabase": {"name": "neondb", "id": 43720, "retained": true},
+    "initialDatabase": {
+      "name": "neondb",
+      "id": 43720,
+      "retained": true
+    },
     "databaseName": "platform_private",
     "databaseId": 43910,
     "initialOwnerRole": "neondb_owner",
     "initialOwnerMayBeRuntime": false,
-    "defaultCompute": {"minCu": 0.25, "maxCu": 0.25, "suspendTimeoutSeconds": 300},
-    "endpointCompute": {"minCu": 0.25, "maxCu": 0.25, "suspendTimeoutSeconds": 300},
+    "defaultCompute": {
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "suspendTimeoutSeconds": 300
+    },
+    "endpointCompute": {
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "suspendTimeoutSeconds": 300
+    },
     "historyRetentionSeconds": 86400,
     "userTableCount": 10,
     "authSchemaCount": 0,
@@ -36,17 +51,39 @@
     "schemaVersion": "1.0.0",
     "schemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
     "ownerRole": "profitia_access_owner",
-    "runtimeRoles": ["sg2_private_development_runtime", "sg2_private_development_dashboard"],
+    "runtimeRoles": [
+      "sg2_private_development_runtime",
+      "sg2_private_development_dashboard",
+      "srm_private_development_runtime"
+    ],
     "applicationId": "spendguru",
     "applicationStatus": "DISABLED",
-    "liveProductBindings": []
+    "liveProductBindings": [],
+    "applications": [
+      {
+        "applicationId": "spendguru",
+        "status": "DISABLED"
+      },
+      {
+        "applicationId": "srm",
+        "status": "DISABLED"
+      }
+    ]
   },
   "resourceOnboardingMutation": {
     "taskId": "ARCHITECTURE-E1-PRIVATE-RESOURCE-ONBOARDING-20261017",
     "projectDefaultSettingsChanged": true,
     "existingEndpointSettingsChanged": true,
-    "before": {"minCu": 0.25, "maxCu": 8, "suspendTimeoutSeconds": 0},
-    "after": {"minCu": 0.25, "maxCu": 0.25, "suspendTimeoutSeconds": 300},
+    "before": {
+      "minCu": 0.25,
+      "maxCu": 8,
+      "suspendTimeoutSeconds": 0
+    },
+    "after": {
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "suspendTimeoutSeconds": 300
+    },
     "independentReadBack": "PASS",
     "dataMutationPerformed": false,
     "productDeploymentPerformed": false,
@@ -80,8 +117,27 @@
     "evidence": "Canon/evidence/2026-10-17-sg2-private-store-preparation.md"
   },
   "nextAcceptanceDependencies": [
-    "Separate SG2 business-schema and SRM private-store tasks and topology adoption",
+    "Separate SG2 and SRM business-schema, topology and application adoption tasks; prepared ordinary access-store logins are not runtime adoption",
     "Controlled bootstrap linked to verified provider subject, never email-only",
     "Separate environment-specific migration, recovery and release acceptance"
+  ],
+  "consumerPreparations": [
+    {
+      "projectKey": "SG2",
+      "taskId": "SG2-E1-PRIVATE-STORE-PREPARATION-20261017",
+      "evidence": "Canon/evidence/2026-10-17-sg2-private-store-preparation.md",
+      "status": "PREPARED_NOT_ACTIVATED"
+    },
+    {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-PRIVATE-STORE-PREPARATION-20261017",
+      "runtimeRole": "srm_private_development_runtime",
+      "applicationId": "srm",
+      "applicationStatus": "DISABLED",
+      "ordinaryActualRuntimeLoginVerified": true,
+      "customerAuthorityAndAuditRows": 0,
+      "evidence": "Canon/evidence/2026-10-17-srm-private-store-preparation.md",
+      "status": "PREPARED_NOT_ACTIVATED"
+    }
   ]
 }
