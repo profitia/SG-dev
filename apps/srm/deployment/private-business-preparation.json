@@ -1,0 +1,324 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "SRM",
+  "taskId": "SRM-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017",
+  "targetEnvironment": "development",
+  "status": "PREPARED_NOT_ACTIVATED",
+  "verifiedAt": "2026-10-17T13:25:47.122Z",
+  "sourceSha": "7e9def92fd367137258696aae211ac4e6554e7fd",
+  "acceptedMergeSha": "7041da6b93287c4065c5d9fb302765804507533d",
+  "physicalBinding": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "endpointId": "ep-late-heart-b9mxo8oi",
+    "databaseName": "platform_private",
+    "schemaName": "srm",
+    "ownerRole": "profitia_access_owner",
+    "runtimeRole": "srm_private_development_runtime"
+  },
+  "source": {
+    "schema_version": "1.0.0",
+    "schema_digest": "3d8367474454eb15a8171c28bf99f80f51299b58746efa8dfb4f65289de57dcd",
+    "boundary_digest": "19220c7bb31365ed058bc55a99bca2aa4a9f38b7f8ca2a2ddde52ec71ed16ed4",
+    "source_ref": "7e9def92fd367137258696aae211ac4e6554e7fd",
+    "installed_at": "2026-10-17T13:22:35.564347+00:00"
+  },
+  "controls": {
+    "totalTables": 43,
+    "controlledForceRlsTables": 43,
+    "srmTables": 22,
+    "canonicalMigrations": 18,
+    "canonicalLedgerComparison": "PASS",
+    "businessRowCounts": {
+      "users": 0,
+      "suppliers": 0,
+      "msr_sources": 0,
+      "organizations": 0,
+      "financial_facts": 0,
+      "lookup_requests": 0,
+      "msr_projections": 0,
+      "source_snapshots": 0,
+      "catalog_companies": 0,
+      "provider_attempts": 0,
+      "catalog_kys_reports": 0,
+      "section_projections": 0,
+      "mgbi_source_archives": 0,
+      "supplier_web_identity": 0,
+      "user_supplier_interest": 0,
+      "catalog_financial_facts": 0,
+      "financial_scanner_frames": 0,
+      "financial_source_documents": 0,
+      "catalog_financial_indicators": 0,
+      "organization_supplier_interest": 0
+    },
+    "applicationStatuses": [
+      {
+        "app": "spendguru",
+        "status": "DISABLED"
+      },
+      {
+        "app": "srm",
+        "status": "DISABLED"
+      }
+    ],
+    "legacyPolicyRole": {
+      "rolcanlogin": false,
+      "rolsuper": false,
+      "rolinherit": false,
+      "rolbypassrls": false,
+      "rolcreatedb": false,
+      "rolcreaterole": false,
+      "rolconnlimit": 0,
+      "private_connect": false
+    },
+    "ownerDatabaseCreate": false,
+    "legacySchemaUsage": false,
+    "sg2SchemaSrmUsage": false,
+    "srmSchemaSg2Usage": false,
+    "publicAliasTableAclCount": 0,
+    "publicAliasFunctionGrantCount": 0,
+    "closedSurfaceFences": 5,
+    "invalidForeignKeys": 0,
+    "runtimeTableGrants": [
+      {
+        "table": "catalog_companies",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "catalog_financial_facts",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "catalog_financial_indicators",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "catalog_kys_reports",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "financial_facts",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "financial_scanner_frames",
+        "privilege": "INSERT"
+      },
+      {
+        "table": "financial_scanner_frames",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "financial_source_documents",
+        "privilege": "INSERT"
+      },
+      {
+        "table": "financial_source_documents",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "financial_source_documents",
+        "privilege": "UPDATE"
+      },
+      {
+        "table": "lookup_requests",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "mgbi_source_archives",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "msr_projections",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "msr_sources",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "organizations",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "provider_attempts",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "section_projections",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "source_snapshots",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "suppliers",
+        "privilege": "INSERT"
+      },
+      {
+        "table": "suppliers",
+        "privilege": "SELECT"
+      },
+      {
+        "table": "suppliers",
+        "privilege": "UPDATE"
+      }
+    ],
+    "archiveColumnUpdateGrant": "last_checked_at",
+    "actualRuntimeRoles": [
+      {
+        "current_user": "sg2_private_development_runtime",
+        "session_user": "sg2_private_development_runtime",
+        "rolcanlogin": true,
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreatedb": false,
+        "rolcreaterole": false,
+        "rolbypassrls": false,
+        "rolconnlimit": 4,
+        "database_create_temp": false,
+        "owner_member": false,
+        "neon_admin_member": false,
+        "srm_usage": false,
+        "accounts_read": false,
+        "srm_receipt_read": false
+      },
+      {
+        "current_user": "sg2_private_development_dashboard",
+        "session_user": "sg2_private_development_dashboard",
+        "rolcanlogin": true,
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreatedb": false,
+        "rolcreaterole": false,
+        "rolbypassrls": false,
+        "rolconnlimit": 4,
+        "database_create_temp": false,
+        "owner_member": false,
+        "neon_admin_member": false,
+        "srm_usage": false,
+        "accounts_read": false,
+        "srm_receipt_read": false
+      },
+      {
+        "current_user": "srm_private_development_runtime",
+        "session_user": "srm_private_development_runtime",
+        "rolcanlogin": true,
+        "rolsuper": false,
+        "rolinherit": false,
+        "rolcreatedb": false,
+        "rolcreaterole": false,
+        "rolbypassrls": false,
+        "rolconnlimit": 4,
+        "database_create_temp": false,
+        "owner_member": false,
+        "neon_admin_member": false,
+        "srm_usage": true,
+        "accounts_read": false,
+        "srm_receipt_read": false
+      }
+    ],
+    "disabledBindingDenial": "PASS_ALL_THREE_ACTUAL_LOGINS",
+    "rehearsalInsertDenied": "Runtime binding unavailable"
+  },
+  "directoryPreservation": {
+    "algorithm": "SHA256_UTF8_JSONB_OBJECT_ORDERED_FULL_ROW_ARRAYS_V1",
+    "tables": [
+      "profitia_access.accounts",
+      "profitia_access.external_identities",
+      "profitia_access.organisations",
+      "profitia_access.memberships",
+      "profitia_access.permission_grants",
+      "profitia_access.product_grants",
+      "profitia_access.bootstrap_receipts",
+      "profitia_modules.application_bindings"
+    ],
+    "beforeRestoredAndAfterDigest": "b27ee6c26a1af9cda995d46f17b12a8f275101c113de41b4c2db0b08468031c9",
+    "previousHistoricalDigestNotReinterpreted": true,
+    "sg2Receipt": {
+      "schema_version": "1.0.0",
+      "schema_digest": "4116e1ec8f0b2a8821c7d6af6728dc55dc949b4cb73a6435f8c614410523afae",
+      "boundary_digest": "d17f62ef9ddf3000ff264da53f44a8afb00fb2bd8e53e6fe5fe7be80c2ebec99",
+      "source_ref": "profitia/SG-dev@341ec2297ecf733c460267bc34181281b58c1b5d:SG2-E1-PRIVATE-BUSINESS-INITIALIZATION-20261017"
+    },
+    "sg2BusinessRows": {
+      "mappings": 0,
+      "benchmarks": 0,
+      "categories": 0,
+      "selections": 0,
+      "category_components": 0
+    },
+    "customerHistoryCopiedOrReassigned": false
+  },
+  "recovery": {
+    "snapshotId": "snap-lingering-mouse-b9mbogk0",
+    "snapshotName": "srm-e1-pre-business-schema-20261017",
+    "sourceBranchId": "br-sparkling-term-b99l107x",
+    "snapshotCreatedAt": "2026-10-17T13:18:43Z",
+    "snapshotExpiresAt": "2026-10-24T13:18:42Z",
+    "restoredBranchId": "br-fragrant-shadow-b9u4sf9l",
+    "restoredBranchName": "srm-e1-business-recovery-rehearsal-20261017",
+    "restoredBranchExpiresAt": "2026-10-18T13:19:09Z",
+    "restoredEndpointId": "ep-bitter-meadow-b99cvhlc",
+    "restoredComputeMinCu": 0.25,
+    "restoredComputeMaxCu": 0.25,
+    "suspendTimeoutSeconds": 300,
+    "containsPrivateDirectoryCopy": true,
+    "syntheticOnly": false,
+    "primaryEndpointSwapped": false,
+    "forcedFailureAfterWholePlan": "ROLLED_BACK_AND_READ_BACK",
+    "exactPlanSuccessfulRestore": "PASS",
+    "resetOrDropPerformed": false,
+    "automaticRestoreOntoPrimaryAuthorized": false
+  },
+  "existingReleases": [
+    {
+      "key": "sg2Development",
+      "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+      "deploymentId": "dep-daqd0uh42hec7398f5vg",
+      "sourceSha": "c55c551091b3584673726bd0a78254eb091c7197",
+      "status": "live"
+    },
+    {
+      "key": "sg2DashboardDevelopment",
+      "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+      "deploymentId": "dep-daqbksk9v7es73cjdtmg",
+      "sourceSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119",
+      "status": "live"
+    },
+    {
+      "key": "srmDevelopment",
+      "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+      "deploymentId": "dep-db97cj6k1f9s738na1r0",
+      "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+      "status": "live"
+    },
+    {
+      "key": "sg2Staging",
+      "serviceId": "srv-daclno3m8hqs73bb7rrg",
+      "deploymentId": "dep-db0dhbm1egvs73f70kr0",
+      "sourceSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+      "status": "live"
+    },
+    {
+      "key": "srmStaging",
+      "serviceId": "srv-db496b3tqb8s73eh5sfg",
+      "deploymentId": "dep-db97qcjl550s73d2f170",
+      "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+      "status": "live"
+    }
+  ],
+  "limits": {
+    "productActivated": false,
+    "renderOrGithubConfigurationChanged": false,
+    "secretChanged": false,
+    "productDeploymentPerformed": false,
+    "kysAdopted": false,
+    "allEntrancesAdopted": false,
+    "realBrowserSessionVerified": false,
+    "stagingPrepared": false,
+    "productionAuthorized": false,
+    "overallE1Complete": false
+  }
+}
