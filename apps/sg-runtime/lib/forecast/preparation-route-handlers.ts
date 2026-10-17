@@ -32,10 +32,10 @@ export function createForecastPreparationJobsPostHandler(
         jobKey: result.job?.jobKey ?? null,
       }))
       return cognitionOk(result)
-    } catch (error) {
+    } catch {
       return cognitionError(
         'FORECAST_PREPARATION_QUEUE_FAILED',
-        error instanceof Error ? error.message : 'Forecast preparation queue command failed.',
+        'Forecast preparation queue command failed.',
         500,
         principal.requestId,
       )
@@ -57,17 +57,16 @@ export function createForecastPreparationJobsGetHandler(
           currentReady: result.current.state === 'READY',
           verificationReady: result.verification.state === 'FAST_READY' || result.verification.state === 'READY',
         })
-      } catch (error) {
+      } catch {
         console.error('[forecast-preparation] Dashboard-ready telemetry failed', {
           correlationId: principal.requestId,
-          error: error instanceof Error ? error.message : String(error),
         })
       }
       return cognitionOk(result)
-    } catch (error) {
+    } catch {
       return cognitionError(
         'FORECAST_PREPARATION_QUEUE_FAILED',
-        error instanceof Error ? error.message : 'Forecast preparation queue status failed.',
+        'Forecast preparation queue status failed.',
         500,
         principal.requestId,
       )

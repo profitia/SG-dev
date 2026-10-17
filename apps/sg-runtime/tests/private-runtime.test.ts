@@ -147,7 +147,7 @@ test('unavailable/unknown private runtime never falls back to a legacy business 
     const response = await routes.GET(request())
     assert.equal(response.status, 503); assert.equal(response.headers.get('Cache-Control'), 'private, no-store')
     assert.equal(response.headers.get('Vary'), 'Cookie, Authorization')
-    assert.deepEqual(await response.json().then(({ error, code }) => ({ error, code })), { error: 'Operation unavailable', code: 'OPERATION_DENIED' })
+    assert.deepEqual(await response.json().then(({ error, code }) => ({ error, code })), { error: 'Operation unavailable.', code: 'OPERATION_DENIED' })
   }
   assert.equal(legacyCalls, 0)
   assert.equal((await createRuntimeBenchmarkSelectionHandlers(() => ({ provider: 'legacy_demo' }), legacy).GET(request())).status, 200)

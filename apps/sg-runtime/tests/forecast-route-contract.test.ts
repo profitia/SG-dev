@@ -1417,7 +1417,9 @@ test('internal capability route keeps traced diagnostics header bounded on error
 
     assert.equal(response.status, 500)
     assert.equal(payload.code, 'INTERNAL_FORECAST_OPERATION_FAILED')
-    assert.equal(payload.error, 'synthetic capability failure')
+    assert.equal(payload.error, 'Operation unavailable.')
+    assert.ok(!JSON.stringify(payload).includes('synthetic capability failure'))
+    assert.ok(!JSON.stringify(loggedSnapshot).includes('synthetic capability failure'))
     assert.ok(diagnosticsHeader)
     assert.equal(diagnosticsHeader?.schemaVersion, 'bounded-summary-v1')
     assert.equal(diagnosticsHeader?.requestId, 'req-header-error-proof')
