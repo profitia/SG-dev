@@ -68,6 +68,24 @@ test('complete explicit server intent binds its fixed organisation, exact ordina
   assert.equal(readSg2PrivateSelectionConfiguration({ ...env, NODE_ENV: 'production' }).provider, 'clerk')
 })
 
+test('supplier summary has a separate explicit server capability, pinned peer and unchanged base benchmark configuration', () => {
+  const env = fixture(), base = readSg2PrivateSelectionConfiguration(env)
+  const config = readSg2PrivateSelectionConfiguration({ ...env, PROFITIA_SUPPLIER_SUMMARY_ENABLED: 'true' })
+  assert.equal(config.provider, 'clerk'); assert.equal(base.provider, 'clerk')
+  if (config.provider !== 'clerk' || base.provider !== 'clerk') throw Error('Expected private intent')
+  assert.deepEqual(config.application, base.application)
+  assert.equal(base.supplierSummary, undefined)
+  assert.equal(config.supplierSummary?.origin, 'https://srm-development-runtime.onrender.com')
+  assert.equal(config.supplierSummary?.configurationVersion, target.supplierSummary.configurationVersion)
+  const srm = JSON.parse(readFileSync(new URL('../../../Canon/registries/srm-environment-topology-v1.json', import.meta.url), 'utf8'))
+  assert.equal(config.supplierSummary?.origin, srm.environments.development.render.services.runtime.url)
+  assert.equal(target.supplierSummary.defaultEnabled, false)
+  assert.equal(target.supplierSummary.observedState, 'SOURCE_ONLY_NOT_ACTIVATED')
+  for (const value of ['', 'yes','1','TRUE','unknown']) assert.throws(() => readSg2PrivateSelectionConfiguration({ ...env, PROFITIA_SUPPLIER_SUMMARY_ENABLED: value }), IdentityConfigurationUnavailable)
+  const disabled = readSg2PrivateSelectionConfiguration({ ...env, PROFITIA_SUPPLIER_SUMMARY_ENABLED: 'false' })
+  assert.equal(disabled.provider, 'clerk'); if (disabled.provider === 'clerk') assert.equal(disabled.supplierSummary, undefined)
+})
+
 test('explicit invalid provider or any missing private prerequisite fails closed', () => {
   const env = fixture()
   for (const value of ['', 'CLERK', 'clerkk', 'false', 'unknown']) assert.throws(() => readSg2PrivateSelectionConfiguration({ ...env, PROFITIA_AUTH_PROVIDER: value }), IdentityConfigurationUnavailable)

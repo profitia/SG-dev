@@ -33,7 +33,7 @@ export default async function middleware(request: NextRequest) {
     // Only neutral sign-in/Finder shells. The client SDK is presentation state;
     // each data API still owns its independent current backend authorisation.
     if (!/^\/(?:pl|en)?\/?$/.test(request.nextUrl.pathname)
-      && !/^\/(?:pl|en)\/benchmark-finder\/?$/.test(request.nextUrl.pathname)) {
+      && !/^\/(?:pl|en)\/(?:benchmark-finder|supplier-intelligence)\/?$/.test(request.nextUrl.pathname)) {
       return NextResponse.json({ error: 'Operation unavailable' }, { status: 403,
         headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' } })
     }

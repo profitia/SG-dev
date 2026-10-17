@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg'
+import { readSharedFinancialSummary } from '@profitia/srm-xray/shared-financial-summary'
 import { isRestrictedRegistrationStatus, type GeneralCompanyData } from '@profitia/srm-xray'
 import type { OperationContext } from '@profitia/platform-contracts/operation-context'
 import { OperationDenied } from '@profitia/platform-contracts/operation-context'
@@ -46,22 +47,7 @@ export async function projectSharedFinancialResponse(value: unknown, context: Op
   const response = value as Response
   let body: Record<string, unknown>
   try { body = await response.clone().json() } catch { return reject() }
-  const selection = validateReportSelection(context.payload)
-  if (!body || typeof body !== 'object' || Array.isArray(body)
-    || Object.keys(body).length !== 5 || Object.keys(body).some(key => !['schemaVersion','nip','entityType','financial','kys'].includes(key))
-    || body.schemaVersion !== '1.0' || body.nip !== selection.nip || body.entityType !== selection.entityType) reject()
-  const financial = body.financial as Record<string, unknown>, kys = body.kys as Record<string, unknown>
-  if (!financial || typeof financial !== 'object' || Array.isArray(financial) || financial.source !== 'MGBI'
-    || Object.keys(financial).some(key => !['status','source','freshness','completeness','limitations','mappingVersion','sourceVersion','representationVersion','periods','history'].includes(key))
-    || !Array.isArray(financial.periods) || !Array.isArray(financial.history)
-    || !kys || typeof kys !== 'object' || Array.isArray(kys) || kys.status !== 'NOT_REQUESTED' || kys.reportAvailable !== false
-    || kys.source !== 'VERCLY' || kys.completeness !== 'UNKNOWN' || kys.lastAttemptAt !== null || kys.lastAttemptStatus !== null
-    || !Array.isArray(kys.limitations) || kys.limitations.length !== 1 || kys.limitations[0] !== 'KYS_NOT_REQUESTED'
-    || Object.keys(kys).some(key => !['status','source','freshness','completeness','lastAttemptStatus','lastAttemptAt','limitations','reportAvailable'].includes(key))) reject()
-  const freshness = kys.freshness as Record<string, unknown>
-  if (!freshness || typeof freshness !== 'object' || Array.isArray(freshness)
-    || Object.keys(freshness).length !== 7 || Object.keys(freshness).some(key => !['retrievedAt','checkedAt','cacheExpiresAt','retentionUntil','readSource','lastRetrievalMethod','freshness'].includes(key))
-    || ['retrievedAt','checkedAt','cacheExpiresAt','retentionUntil'].some(key => freshness[key] !== null)
-    || freshness.readSource !== 'STORED' || freshness.lastRetrievalMethod !== 'UNKNOWN' || freshness.freshness !== 'ABSENT') reject()
+  try { readSharedFinancialSummary(body, validateReportSelection(context.payload)) }
+  catch { return reject() }
   return response
 }

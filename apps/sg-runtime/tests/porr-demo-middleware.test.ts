@@ -61,7 +61,7 @@ test('explicit Clerk forwards only neutral locale/login/Finder pages and never u
   const previous=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
   try{
     const token=await createPorrDemoSessionToken('test-secret',{orgId:'test-org',userId:'test-user',orgRole:'viewer'})
-    for(const path of ['/','/pl','/en','/pl/benchmark-finder','/en/benchmark-finder']){
+    for(const path of ['/','/pl','/en','/pl/benchmark-finder','/en/benchmark-finder','/pl/supplier-intelligence','/en/supplier-intelligence']){
       const response=await middleware(new NextRequest('https://dev-sg2.spendguru.app'+path,{headers:{cookie:`sg_porr_demo_session_development=${token}`}}))
       assert([200,307].includes(response.status))
       assert.equal(response.cookies.get('sg_porr_demo_session_development'),undefined)

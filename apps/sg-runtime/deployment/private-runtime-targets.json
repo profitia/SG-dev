@@ -21,7 +21,16 @@
       "businessSchemaDigest": "4116e1ec8f0b2a8821c7d6af6728dc55dc949b4cb73a6435f8c614410523afae",
       "businessSchemaVerification": "Exact receipt, owner, policies and source checked by the controlled initialization/release; not a per-request receipt read.",
       "observedAt": "2026-10-17T12:15:59.923Z",
-      "observedStateEvidence": "apps/sg-runtime/deployment/private-business-preparation.json"
+      "observedStateEvidence": "apps/sg-runtime/deployment/private-business-preparation.json",
+      "supplierSummary": {
+        "configurationVersion": "sg2-private-supplier-summary-e1-v1",
+        "activationVariable": "PROFITIA_SUPPLIER_SUMMARY_ENABLED",
+        "defaultEnabled": false,
+        "origin": "https://srm-development-runtime.onrender.com",
+        "peerPath": "/api/xray/financial-summary",
+        "scope": "STORED_SHARED_CORPORATE_SUMMARY_READ_ONLY",
+        "observedState": "SOURCE_ONLY_NOT_ACTIVATED"
+      }
     },
     "staging": {
       "privateBindingState": "NOT_PREPARED",

@@ -11,7 +11,10 @@ import { identitySourceDigest } from '@profitia/platform-contracts/identity-prov
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
 import { OPERATION_CONTRACT } from '@profitia/platform-contracts/operation-context'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
-import { createSg2PrivateBenchmarkHost } from '../lib/platform/private-host.ts'
+import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost } from '../lib/platform/private-host.ts'
+import { createOperationSupplierSummaryHandler } from '../lib/platform/supplier-summary-runtime.ts'
+import { SUPPLIER_SUMMARY_HEADERS } from '../lib/platform/supplier-summary.ts'
+import { executiveSummary } from '@profitia/srm-xray/executive-summary-rules'
 const pg = createRequire(new URL('../../architecture-lab/package.json', import.meta.url))('pg')
 const DATABASE = 'sg2_private_host_test', ROLE = 'sg2_private_host_runtime'
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222'
@@ -293,6 +296,117 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       await assert.rejects(prisma.$executeRawUnsafe('DELETE FROM profitia_access.security_events'), /permission denied/i)
       const settings = (await prisma.$queryRawUnsafe("SELECT current_setting('profitia.organisation_id',true) AS org,current_setting('profitia.user_id',true) AS usr"))[0]
       assert(!settings.org); assert(!settings.usr)
+    })
+    await t.test('the second host really consumes the shared supplier module through its own ordinary Prisma authority', async t => {
+      const nip = '0000000000', periodStart = '2025-01-01', periodEnd = '2025-12-31'
+      const freshness = { retrievedAt: null, checkedAt: null, cacheExpiresAt: null, retentionUntil: null,
+        freshness: 'UNKNOWN', readSource: 'STORED', lastRetrievalMethod: 'UNKNOWN' }
+      const shared = () => ({ schemaVersion: '1.0', nip, entityType: 'COMPANY', financial: { status: 'PARTIAL', source: 'MGBI', freshness,
+        completeness: 'PARTIAL', limitations: [], mappingVersion: 'synthetic', representationVersion: 'synthetic', sourceVersion: 'synthetic-source',
+        periods: [{ from: periodStart, to: periodEnd, year: '2025', scope: 'standalone', documentRef: 'synthetic-document', facts: [{ ref: 'synthetic-fact',
+          documentRef: 'synthetic-document', metricCode: 'PALA_NRFS', periodStart, periodEnd, scope: 'standalone', amount: '100', sourceAmount: '100',
+          currency: 'PLN', unit: 'PLN', validation: 'VERIFIED', normalization: 'SOURCE_VALUE', normalizationRule: null, reasonCode: null }] }], history: [] },
+        kys: { status: 'NOT_REQUESTED', source: 'VERCLY', freshness: { ...freshness, freshness: 'ABSENT' }, completeness: 'UNKNOWN',
+          lastAttemptStatus: null, lastAttemptAt: null, limitations: ['KYS_NOT_REQUESTED'], reportAvailable: false } })
+      const supplierConfiguration = { ...configuration, application: { ...configuration.application,
+        configurationVersion: 'synthetic-supplier-summary', operations: ['supplier.report.read'], features: ['supplier_report'] },
+        module: { ...configuration.module, id: 'supplier_report' } }
+      const supplierHost = createSg2SupplierSummaryHost(supplierConfiguration)
+      let peerCalls = 0, malformedPeer = false, emptyPeer = false
+      const fetcher = async (input, init) => {
+        peerCalls++; const url = new URL(String(input))
+        assert.equal(url.origin, 'https://srm-peer.fixture.test'); assert.equal(url.pathname, '/api/xray/financial-summary')
+        assert.equal(url.searchParams.get('nip'), nip); assert([A,B].includes(url.searchParams.get('organisationId')))
+        assert.deepEqual(Object.keys(init.headers), ['authorization']); assert.equal(init.credentials, 'omit'); assert.equal(init.redirect, 'error')
+        const body = shared()
+        if (malformedPeer) body.preferenceScope = 'private-foreign-projection'
+        if (emptyPeer) { body.financial.periods = []; body.financial.history = []; body.financial.sourceVersion = null; body.financial.status = 'EMPTY' }
+        return Response.json(body, { headers: SUPPLIER_SUMMARY_HEADERS })
+      }
+      const handler = createOperationSupplierSummaryHandler(supplierHost, A, { origin: 'https://srm-peer.fixture.test', fetcher })
+      const input = (organisationId = A, user = U, extra = {}) => new Request(`${ORIGIN}/api/supplier/financial-summary?nip=${nip}&organisationId=${organisationId}`, {
+        headers: { authorization: `Bearer external-${user}`, Cookie: 'unrelated', 'x-clerk-user-id': V, ...extra },
+      })
+      const snapshot = async () => {
+        const tables = (await owner.query("SELECT tablename FROM pg_tables WHERE schemaname='sg_runtime_benchmarks' ORDER BY tablename")).rows
+        const result = {}
+        for (const { tablename } of tables) result[tablename] = (await owner.query(`SELECT to_jsonb(t) AS row FROM sg_runtime_benchmarks."${tablename.replaceAll('"','""')}" t ORDER BY to_jsonb(t)::text`)).rows
+        return result
+      }
+      const beforeBusiness = await snapshot()
+      await t.test('an existing benchmark member has no implicit supplier grant, product or module', async () => {
+        assert.equal((await handler(input())).status, 403); assert.equal(peerCalls, 0)
+        for (const organisation of [A,B]) {
+          await owner.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES('spendguru',$1,'SUPPLIER_INTELLIGENCE',ARRAY['supplier_report'],'ACTIVE','EXPLICIT_OFFER','SYNTHETIC_MODULE_REUSE',$2)", [organisation, expiry()])
+          await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'ALLOW','supplier.report.read','supplier_report')", [randomUUID(), organisation, U])
+        }
+        assert.equal((await handler(input())).status, 403); assert.equal(peerCalls, 0)
+        await owner.query("INSERT INTO profitia_modules.application_bindings(application_id,module_id,binding_id,status,source_ref,expires_at) VALUES('spendguru','supplier_report',$1,'ACTIVE','SYNTHETIC_MODULE_REUSE',$2)", [randomUUID(), expiry()])
+      })
+      await t.test('two organisations render the same authorised shared business facts and keep current module audit', async () => {
+        for (const organisation of [A,B]) {
+          const response = await handler(input(organisation)); assert.equal(response.status, 200)
+          assert.equal(response.headers.get('cache-control'), 'private, no-store'); assert.equal(response.headers.get('vary'), 'Cookie, Authorization')
+          const metadata = await response.json()
+          const model = executiveSummary({ nip, entityType: 'COMPANY', metadata, scope: 'standalone', selectedPeriod: { from: periodStart, to: periodEnd }, kysStatus: 'NOT_REQUESTED', kysHasData: false })
+          assert.equal(model.facts[0].id, 'revenue'); assert(model.facts[0].text.includes('100'))
+          assert(!JSON.stringify(metadata).includes('organizationId')); assert(!JSON.stringify(metadata).includes('preferenceScope'))
+          const events = (await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='supplier.report.read' AND event->>'decision'='ALLOW' ORDER BY event_id DESC LIMIT 2")).rows.map(row => row.event)
+          assert.deepEqual(events.map(event => event.phase), ['OUTCOME','INTENT'])
+          assert(events.every(event => event.applicationId === 'spendguru' && event.organisationId === organisation && event.actorId === U && event.moduleEvidence.moduleId === 'supplier_report'))
+          assert.match(events[0].correlationId, /^[a-f0-9-]{36}$/); assert.match(events[0].decisionId, /^[a-f0-9-]{36}$/)
+          assert.equal(events[0].correlationId, events[1].correlationId); assert.equal(events[0].moduleEvidence.transactionId, events[1].moduleEvidence.transactionId)
+        }
+        assert.deepEqual(await snapshot(), beforeBusiness)
+      })
+      await t.test('current local revocation and forged identity stop before the peer, independently of peer availability', async () => {
+        const before = peerCalls
+        assert.equal((await handler(input(A, U, { authorization: '' }))).status, 401)
+        assert.equal((await handler(input(A, V))).status, 403)
+        assert.equal((await handler(input(B, V))).status, 403)
+        sdkRevoked = true; assert.equal((await handler(input())).status, 401); sdkRevoked = false
+        await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2", [A,U])
+        try { assert.equal((await handler(input())).status, 403) } finally { await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2", [A,U]) }
+        const deny = randomUUID()
+        await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','supplier.report.read','supplier_report')", [deny,A,U])
+        try { assert.equal((await handler(input())).status, 403) } finally { await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1', [deny]) }
+        await owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='spendguru' AND product='SUPPLIER_INTELLIGENCE' AND organisation_id=$1", [A])
+        try { assert.equal((await handler(input())).status, 403) } finally { await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id='spendguru' AND product='SUPPLIER_INTELLIGENCE' AND organisation_id=$1", [A]) }
+        await owner.query("UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='spendguru' AND module_id='supplier_report'")
+        try { assert.equal((await handler(input())).status, 403) } finally { await owner.query("UPDATE profitia_modules.application_bindings SET status='ACTIVE' WHERE application_id='spendguru' AND module_id='supplier_report'") }
+        const fixed = createSg2SupplierSummaryHost({ ...supplierConfiguration, application: { ...supplierConfiguration.application, profileId: 'PORR_SUITE', organisationId: A } })
+        assert.equal((await createOperationSupplierSummaryHandler(fixed, A, { origin: 'https://srm-peer.fixture.test', fetcher })(input(B))).status, 400)
+        assert.equal(peerCalls, before)
+      })
+      await t.test('the supplier module cannot read benchmark private rows even inside its otherwise valid lease', async () => {
+        const direct = { contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, operation: 'supplier.report.read',
+          organisationId: A, resourceId: `supplier-report:COMPANY:${nip}`, payload: { nip, entityType: 'COMPANY' }, request: input() }
+        const result = await supplierHost.execute(direct, async (_context, transaction) => {
+          assert.deepEqual(await transaction.businessBenchmark.findMany(), [])
+          return Response.json(shared(), { headers: SUPPLIER_SUMMARY_HEADERS })
+        })
+        assert.equal(result.value.status, 200)
+      })
+      await t.test('peer substitution is refused, empty results stay truthful and concurrent reads retain the four-connection budget', async () => {
+        malformedPeer = true
+        try { const response = await handler(input()); assert.notEqual(response.status, 200); assert(!(await response.text()).includes('private-foreign-projection')) } finally { malformedPeer = false }
+        emptyPeer = true
+        try { const response = await handler(input()); assert.equal(response.status, 200); assert.deepEqual((await response.json()).financial.periods, []) } finally { emptyPeer = false }
+        const responses = await Promise.all([A,B,A,B].map(organisation => handler(input(organisation))))
+        assert(responses.every(response => response.status === 200))
+        assert((await owner.query('SELECT count(*)::int AS n FROM pg_stat_activity WHERE usename=$1', [ROLE])).rows[0].n <= 4)
+        assert.deepEqual(await snapshot(), beforeBusiness)
+      })
+      await t.test('local OUTCOME outage withholds the result and records FAILURE without pretending to roll back the peer read', async () => {
+        const before = peerCalls
+        await owner.query("CREATE FUNCTION profitia_access.reject_supplier_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' THEN RAISE EXCEPTION 'synthetic supplier audit outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_supplier_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_supplier_outcome()")
+        try { assert.equal((await handler(input())).status, 503) }
+        finally { await owner.query('DROP TRIGGER reject_supplier_outcome ON profitia_access.security_events; DROP FUNCTION profitia_access.reject_supplier_outcome()') }
+        assert.equal(peerCalls, before + 1)
+        const events = (await owner.query('SELECT event FROM profitia_access.security_events ORDER BY event_id DESC LIMIT 2')).rows.map(row => row.event)
+        assert.deepEqual(events.map(event => event.phase), ['FAILURE','INTENT']); assert.equal(events[0].decisionId, events[1].decisionId)
+        assert.deepEqual(await snapshot(), beforeBusiness)
+      })
     })
   } finally {
     globalThis.fetch = previousFetch
