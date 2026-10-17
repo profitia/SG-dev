@@ -4,8 +4,13 @@ import { OPERATION_CONTRACT, OperationDenied, isOperationDenied, type OperationE
 import { cognitionError } from '@/lib/api/middleware'
 import { createBenchmarkSelectionHandlers } from './selection-handlers'
 
-/** Explicit host adapter. No environment flag enables this on the current demo route. */
-export function createOperationBenchmarkSelectionHandlers(executor: OperationExecutor<Prisma.TransactionClient>) {
+/** Host adapter. A dedicated deployment may provide its server-owned default;
+ * explicit caller selection is still checked by the common membership/profile. */
+export function createOperationBenchmarkSelectionHandlers(executor: OperationExecutor<Prisma.TransactionClient>, options: { defaultOrganisationId?: string } = {}) {
+  const defaultOrganisationId = options.defaultOrganisationId
+  if (defaultOrganisationId !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(defaultOrganisationId)) {
+    throw new TypeError('Valid server-owned default organisation required')
+  }
   return createBenchmarkSelectionHandlers((handler, operation) => async (request: NextRequest): Promise<NextResponse> => {
     const expectedMethod = operation === 'benchmark.selection.read' ? 'GET' : 'POST'
     if (request.method !== expectedMethod) {
@@ -13,7 +18,9 @@ export function createOperationBenchmarkSelectionHandlers(executor: OperationExe
       response.headers.set('Allow', expectedMethod)
       return response
     }
-    const organisationId = new URL(request.url).searchParams.get('organisationId')
+    const parameters = new URL(request.url).searchParams
+    if (parameters.getAll('organisationId').length > 1) return cognitionError('OPERATION_DENIED', 'Operation unavailable', 400)
+    const organisationId = parameters.get('organisationId') ?? defaultOrganisationId ?? null
     let payload: null | Record<string, never> = null
     try { if (request.method === 'POST') payload = await request.clone().json() }
     catch { return cognitionError('VALIDATION_ERROR', 'Invalid JSON body', 400) }
