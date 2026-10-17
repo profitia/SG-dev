@@ -57,7 +57,9 @@
         "databaseName": "neondb",
         "runtimeRole": "sg2_market_read_development_runtime",
         "scope": "STORED_SHARED_MARKET_HISTORY_READ_ONLY_NO_PROVIDER_OR_HYDRATION",
-        "observedState": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED"
+        "observedState": "PREPARED_NOT_ACTIVATED",
+        "observedAt": "2026-10-17T22:07:16.133Z",
+        "preparationEvidence": "apps/sg-runtime/deployment/market-read-preparation.json"
       }
     },
     "staging": {
