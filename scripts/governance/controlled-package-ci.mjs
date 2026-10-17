@@ -98,11 +98,12 @@ export function assertManifestPolicy(candidate, authority) {
   }
 }
 
-export function assertProof(proof, run, candidateSha, workflowId, {currentRunId, currentRef, completedJobs = []} = {}) {
+export function assertProof(proof, run, candidateSha, workflowId, {currentRunId, currentRef, completedJobs = [], expectedControlDigest = controlPolicyDigest()} = {}) {
   const sameRun = String(run.id) === String(currentRunId) && currentRef === 'refs/heads/main' && run.event === 'push' && completedJobs.some(j => j.name === 'SG2 controlled operation integration' && j.conclusion === 'success')
   if (run.workflow_id !== workflowId || run.repository?.full_name !== REPOSITORY || run.head_branch !== 'main' || !['push', 'workflow_dispatch'].includes(run.event) || run.actor?.login !== 'profitia' || (!sameRun && run.conclusion !== 'success')) fail('UNTRUSTED_VALIDATION_RUN')
   if (proof.schemaVersion !== '1.0' || proof.repository !== REPOSITORY || proof.projectKey !== 'SG2' || proof.targetEnvironment !== 'development' || proof.scope !== 'ISOLATED_API_AND_PERSISTENCE' || proof.candidateSha !== candidateSha || proof.controlSha !== run.head_sha || String(proof.runId) !== String(run.id) || proof.workflow !== WORKFLOW) fail('VALIDATION_PROVENANCE_MISMATCH')
   if (proof.credentialRemovedBeforeCandidateExecution !== true || proof.privatePackageArtifactsPublished !== false || proof.productDeploymentPerformed !== false || proof.customerIdentityAdapterVerified !== false || proof.install !== 'CLEAN_REGISTRY_IGNORE_SCRIPTS' || proof.tests !== 'PASS' || proof.typecheck !== 'PASS' || proof.build !== 'PASS') fail('VALIDATION_INCOMPLETE')
+  if (proof.controlPolicyDigest !== expectedControlDigest) fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
   if (proof.contract?.id !== 'profitia.operation-context' || !/^[a-f0-9]{64}$/.test(proof.contract?.sourceDigest ?? '')) fail('CONTRACT_PROVENANCE_MISMATCH')
   return proof
 }
@@ -111,6 +112,12 @@ function context(env = process.env) {
   return {repository: env.GITHUB_REPOSITORY, ref: env.GITHUB_REF, workflowRef: env.GITHUB_WORKFLOW_REF, event: env.GITHUB_EVENT_NAME, actor: env.GITHUB_ACTOR, triggeringActor: env.GITHUB_TRIGGERING_ACTOR, controlSha: env.GITHUB_SHA}
 }
 function controlRoot() {return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')}
+const policyFiles = [WORKFLOW, 'scripts/governance/controlled-package-ci.mjs', 'Canon/registries/architecture-environment-topology-v1.json']
+export function controlPolicyDigest(root = controlRoot()) {
+  const digest = createHash('sha256')
+  for (const name of policyFiles) digest.update(fs.readFileSync(path.join(root, name)))
+  return digest.digest('hex')
+}
 function candidateRoot() {return path.resolve(process.env.CANDIDATE_ROOT ?? fail('CANDIDATE_ROOT_REQUIRED'))}
 function statePath() {return path.join(process.env.RUNNER_TEMP ?? fail('RUNNER_TEMP_REQUIRED'), 'controlled-package-resolution.json')}
 function readJson(file) {return JSON.parse(fs.readFileSync(file, 'utf8'))}
@@ -182,12 +189,13 @@ function proof() {
   if (process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN || process.env.GH_TOKEN) fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')
   const {state} = checkCandidate(), directory = path.join(process.env.RUNNER_TEMP, ARTIFACT)
   fs.mkdirSync(directory, {recursive: true})
-  fs.writeFileSync(path.join(directory, 'proof.json'), JSON.stringify({schemaVersion: '1.0', repository: REPOSITORY, workflow: WORKFLOW, projectKey: 'SG2', targetEnvironment: 'development', scope: 'ISOLATED_API_AND_PERSISTENCE', candidateSha: state.sha, controlSha: state.controlSha, runId: state.runId, contract: state.receipt.contract, install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true, privatePackageArtifactsPublished: false, tests: 'PASS', typecheck: 'PASS', build: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false}, null, 2))
+  fs.writeFileSync(path.join(directory, 'proof.json'), JSON.stringify({schemaVersion: '1.0', repository: REPOSITORY, workflow: WORKFLOW, projectKey: 'SG2', targetEnvironment: 'development', scope: 'ISOLATED_API_AND_PERSISTENCE', candidateSha: state.sha, controlSha: state.controlSha, controlPolicyDigest: controlPolicyDigest(), runId: state.runId, contract: state.receipt.contract, install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true, privatePackageArtifactsPublished: false, tests: 'PASS', typecheck: 'PASS', build: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false}, null, 2))
   output('proof_sha', state.sha)
 }
 async function verify() {
   const sha = process.env.EXPECTED_SHA
   if (!shaPattern.test(sha ?? '')) fail('CANDIDATE_SHA_MISMATCH')
+  await checkEnvironment()
   const workflow = (await api(`repos/${REPOSITORY}/actions/workflows/platform-contracts-ci.yml`)).data
   const listed = (await api(`repos/${REPOSITORY}/actions/workflows/${workflow.id}/runs?branch=main&status=success&per_page=50`)).data.workflow_runs
   const current = (await api(`repos/${REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`)).data
@@ -203,6 +211,9 @@ async function verify() {
       if (p.candidateSha !== sha) continue
       const jobs = String(run.id) === process.env.GITHUB_RUN_ID ? (await api(`repos/${REPOSITORY}/actions/runs/${run.id}/jobs`)).data.jobs : []
       assertProof(p, run, sha, workflow.id, {currentRunId: process.env.GITHUB_RUN_ID, currentRef: process.env.GITHUB_REF, completedJobs: jobs})
+      const sourceFiles = await Promise.all(policyFiles.map(async name => Buffer.from((await api(`repos/${REPOSITORY}/contents/${name}?ref=${run.head_sha}`)).data.content, 'base64')))
+      const actualControl = createHash('sha256'); for (const bytes of sourceFiles) actualControl.update(bytes)
+      if (actualControl.digest('hex') !== p.controlPolicyDigest) fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
       const sourceReceipt = JSON.parse(Buffer.from((await api(`repos/${REPOSITORY}/contents/apps/sg-runtime/operation-integration.json?ref=${sha}`)).data.content, 'base64').toString('utf8'))
       assertReceipt(sourceReceipt)
       if (JSON.stringify(p.contract) !== JSON.stringify(sourceReceipt.contract)) fail('CONTRACT_PROVENANCE_MISMATCH')

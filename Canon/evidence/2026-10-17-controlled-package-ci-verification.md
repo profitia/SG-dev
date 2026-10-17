@@ -10,7 +10,21 @@ Kod przygotowuje zaufany kontroler main i dokładnego wewnętrznego kandydata, f
 
 Lokalne testy obejmują dopuszczony kontekst i odmowy forka, pull refs, tagu main, innego aktora/workflow, niezgodnego SHA, szerszego/wygasłego poświadczenia, niezatwierdzonych zależności i ponownego użycia dowodu innego kandydata. Rzeczywisty syntetyczny test npm potwierdza niewykonanie lifecycle w fazie ignore-scripts oraz późniejsze wykonanie bez tokenu. Dane i token testu są syntetyczne, instalacja testu działa offline.
 
-Przed publikacją końcowego wyniku należy dołączyć rzeczywiste CI/source SHA, wynik main-only policy-probe i odmowy niedozwolonej gałęzi oraz test braku poświadczenia. Nie traktować zielonych testów kontrolera lub policy-probe jako udanego pobrania prywatnych pakietów. Test rzeczywistego forka/repozytorium nie został wykonany i nie jest domniemany.
+## Wykonane dowody
+
+Kod opublikowano przez [PR #389](https://github.com/profitia/SG-dev/pull/389), source73a389d9b0d369145fccbc3b87f8948c9cd820b5, squash main8f6fd79b7eefac194e4fa5576c8f334a3fc8f021. [PR Platform CI](https://github.com/profitia/SG-dev/actions/runs/39005468996), governance39005468984 oraz [main Platform CI](https://github.com/profitia/SG-dev/actions/runs/39005602904): SUCCESS. Nowe kroki uprzywilejowane były pominięte w PR, a main bez przyjęcia SG2 miał NOT_ADOPTED; te zielone wyniki nie są dowodem instalacji prywatnych pakietów. SRM wykonało własne rzeczywiste testy integracji i build bez tego poświadczenia.
+
+Lokalnie:10 testów kontrolera oraz25 governance/workspace/bridge, razem35 PASS,0SKIP. Rzeczywisty npm z syntetyczną wartością bez uprawnień potwierdził brak lifecycle podczas ignore-scripts oraz wykonanie późniejszego lifecycle z pustym tokenem. Odczyt rzeczywistego zachowanego kandydata SG2/bcf4dbcbcfbaf2e2de0b7c50bf5824c6df57a48f potwierdził zgodność jego manifestu/lockfile/config z polityką. Znaleziony format file: lokalnej zależności uwzględniono z testem odmowy file:/tmp i obcych ścieżek. Aliasy prywatnych pakietów, nowe prywatne piny, dodatkowe workspaces/overrides i lokalne manifesty nie mogą obejść kontroli przed użyciem tokenu.
+
+| Próba GitHub | Faktyczny wynik |
+| --- | --- |
+| [policy-probe main](https://github.com/profitia/SG-dev/actions/runs/39005609857), control8f6fd79 | SUCCESS; rzeczywisty krok zwrócił MAIN_ONLY_ENVIRONMENT_POLICY_PASS. Bez instalacji i sekretu. |
+| [policy-probe gałęzi architecture/controlled-package-ci-20261017](https://github.com/profitia/SG-dev/actions/runs/39005608185), source73a389d | Oczekiwana odmowa dostawcy. Job117317340085 ma failure i0steps; niezależna adnotacja GitHub wskazuje niedopuszczoną gałąź wobec reguł environment protection. Nie doszło do pierwszego kroku. |
+| [validate-sg2 bez poświadczenia](https://github.com/profitia/SG-dev/actions/runs/39005611227), control8f6fd79, candidatebcf4dbcb | Rozpoznanie main, polityki dostawcy, dokładnego wewnętrznego PR, checkout i kontrola manifestów przeszły. Instalator zakończył się CONTROLLED_PACKAGE_CREDENTIAL_REQUIRED. Nie wykonał npm ci, testów aplikacji, buildu ani dowodu sukcesu. To potwierdzenie fail-closed, nie sukces instalacji. |
+
+Późniejszy przegląd związał proof także z digestem kontrolera, workflow i topologii. Publiczny weryfikator wymaga zgodności z bieżącym authority oraz plikami GitHub controlSha; nie przyjmuje starego dowodu po zmianie polityki i ponownie sprawdza bieżące reguły środowiska. Odrębne testy odrzucają niezgodny digest. Źródło/CI tej poprawki oraz finalny commit zapisu PMOS/PHR są potwierdzane po publikacji; nie są fabrykowane w samoodnoszącym się pliku.
+
+Test rzeczywistego forka/repozytorium nie został wykonany i nie jest domniemany. Rozróżnia się testy odmów kontekstu forka, rzeczywistą odmowę gałęzi u dostawcy oraz opublikowane reguły GitHub dopasowania GITHUB_REF. Nie tworzono nowego forka/repozytorium wbrew zasadzie osobistego tworzenia repozytoriów przez właściciela.
 
 Nie tworzono tokenu, nie pobierano Render NPM_TOKEN, nie nadawano Manage Actions access ani nie zmieniano widoczności pakietów. Token tworzy właściciel bezpośrednio w GitHub według instrukcji, bez przekazywania wartości agentowi. Do jego rzeczywistego dodania i pozytywnej walidacji pozostają niewykonane: czysta instalacja SG2, test/build tego kandydata w kontrolowanym CI, jego merge i końcowy odbiór czterech etapów. Poprzednie częściowe historie PMOS/PHR pozostają niezmienione.
 
