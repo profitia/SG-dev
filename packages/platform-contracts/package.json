@@ -1,15 +1,42 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",
   "exports": {
-    "./development-context": { "types": "./src/development-context.d.mts", "import": "./src/development-context.mjs" },
-    "./operation-context": { "types": "./src/operation-context.d.mts", "import": "./src/operation-context.mjs", "require": "./src/operation-context.mjs" },
-    "./identity-provider": { "types": "./src/identity-provider.d.mts", "import": "./src/identity-provider.mjs", "require": "./src/identity-provider.mjs" },
-    "./access-store": { "types": "./src/access-store.d.mts", "import": "./src/access-store.mjs", "require": "./src/access-store.mjs" },
-    "./private-operation-host": { "types": "./src/private-operation-host.d.mts", "import": "./src/private-operation-host.mjs", "require": "./src/private-operation-host.mjs" }
+    "./development-context": {
+      "types": "./src/development-context.d.mts",
+      "import": "./src/development-context.mjs"
+    },
+    "./operation-context": {
+      "types": "./src/operation-context.d.mts",
+      "import": "./src/operation-context.mjs",
+      "require": "./src/operation-context.mjs"
+    },
+    "./identity-provider": {
+      "types": "./src/identity-provider.d.mts",
+      "import": "./src/identity-provider.mjs",
+      "require": "./src/identity-provider.mjs"
+    },
+    "./access-store": {
+      "types": "./src/access-store.d.mts",
+      "import": "./src/access-store.mjs",
+      "require": "./src/access-store.mjs"
+    },
+    "./private-operation-host": {
+      "types": "./src/private-operation-host.d.mts",
+      "import": "./src/private-operation-host.mjs",
+      "require": "./src/private-operation-host.mjs"
+    },
+    "./module-scope": {
+      "types": "./src/module-scope.d.mts",
+      "import": "./src/module-scope.mjs",
+      "require": "./src/module-scope.mjs"
+    }
   },
-  "scripts": { "test": "node --test test/*.test.mjs", "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs" }
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs"
+  }
 }
