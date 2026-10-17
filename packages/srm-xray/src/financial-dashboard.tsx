@@ -4,7 +4,7 @@ import { CanonButton, CanonElement, CanonSummary, CanonInput } from './ui-canon'
 import React, { useRef, useState } from "react";
 import { FinancialHistoryDialog } from "./FinancialHistoryDialog";
 import { KysIcon } from "./kys-report";
-import type { FinancialData, FinancialPeriod } from "./contracts";
+import type { FinancialData, FinancialPeriod, FinancialPeriodSelection } from "./contracts";
 import { amountInThousands } from "./financial-labels";
 
 type Scope = FinancialPeriod["scope"];
@@ -14,7 +14,7 @@ import { StatementWorkspace, StatementHistory, StatementIcon } from './statement
 import { statementRows, statementPoints } from './statement-model';
 import { yearColor } from './financial-history-export';
 import { MsrFinancialTables } from './msr-financial-tables';
-export type FinancialPeriodSelection = { from: string; to: string };
+export type { FinancialPeriodSelection } from "./contracts";
 
 const incomeGroups: { title: string; rows: Row[] }[] = [
   { title: "Przychody", rows: [

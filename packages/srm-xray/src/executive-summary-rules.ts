@@ -1,7 +1,7 @@
 import type { FinancialFactEvidence, FinancialPeriod, SectionStatus, SupplierReportData } from "./contracts";
-import type { FinancialPeriodSelection } from "./financial-dashboard";
+import type { FinancialPeriodSelection } from "./contracts";
 import { financialReason, indicatorPresentation } from "./financial-indicator-content";
-import { financialValue } from "./financial-history";
+import { financialValue } from "./financial-value";
 
 export type SummaryEvidence = { kind: "source"; fact: FinancialFactEvidence } | { kind: "indicator"; code: string; history?: boolean };
 export type SummaryItem = { id: string; text: string; explanation: string; evidence?: SummaryEvidence };

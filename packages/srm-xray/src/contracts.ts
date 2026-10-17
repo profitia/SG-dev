@@ -1,3 +1,6 @@
+/** Selection is data shared by hosts; it does not depend on a React component. */
+export type FinancialPeriodSelection = { from: string; to: string };
+
 export type SectionStatus =
   | "SUCCESS"
   | "EMPTY"
