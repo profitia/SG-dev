@@ -56,6 +56,12 @@ dependency. Common operation/private-host source fingerprints are unchanged.
   installs a separate file consumer and publishes only a sanitized bounded proof.
   Existing React19 CI and separate SG2/common/dashboard compatibility remain
   required before merge; task closeout records their actual runs and source.
+  GitHub rejected the initial workflow before execution because runner context
+  is unavailable in job-level env. Directory selection now runs on the runner
+  and writes only its temporary path to GITHUB_ENV, following the
+  [official context availability table](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#context-availability).
+  This definition correction requires a new source and successful CI; the
+  rejected attempt is not counted as a passed test or deployment.
 
 Only the verified generated Next root-params import was removed after build.
 No private package credential was read, copied or requested. No package was

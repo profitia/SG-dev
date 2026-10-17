@@ -60,7 +60,6 @@ jobs:
     permissions:
       contents: read
     env:
-      SUMMARY_HOST_FIXTURE: ${{ runner.temp }}/supplier-summary-react18
       SUMMARY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       NPM_TOKEN: ''
       NODE_AUTH_TOKEN: ''
@@ -73,6 +72,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
+      - name: Select runner-local isolated consumer directory
+        run: printf 'SUMMARY_HOST_FIXTURE=%s/supplier-summary-react18\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Prepare isolated public consumer at the exact source
         run: |
           node --input-type=module <<'JS'
