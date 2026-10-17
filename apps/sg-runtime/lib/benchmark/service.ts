@@ -1,5 +1,6 @@
 import type {
   BenchmarkAnalyticsSeriesResult,
+  BenchmarkHistoricalSeriesResult,
   BenchmarkCandidate,
   BenchmarkPreviewPoint,
   BenchmarkMetadataDefinition,
@@ -68,8 +69,10 @@ export async function searchBenchmarks(request: BenchmarkSearchRequest) {
   })
 }
 
-export async function getBenchmarkPreview(seriesName: string, range: BenchmarkRangePreset) {
-  const { history } = await resolveBenchmarkHistoricalSeries(seriesName, range)
+export async function getBenchmarkPreview(seriesName: string, range: BenchmarkRangePreset,
+  resolveHistory: (seriesName: string, range: BenchmarkRangePreset) => Promise<{history: BenchmarkHistoricalSeriesResult}> = resolveBenchmarkHistoricalSeries,
+) {
+  const { history } = await resolveHistory(seriesName, range)
   const sliced = sliceHistoricalPoints(history.historical, range)
 
   return {

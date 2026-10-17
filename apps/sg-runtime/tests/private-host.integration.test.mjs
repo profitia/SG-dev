@@ -11,7 +11,7 @@ import { identitySourceDigest } from '@profitia/platform-contracts/identity-prov
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
 import { OPERATION_CONTRACT, OperationDenied } from '@profitia/platform-contracts/operation-context'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
-import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost } from '../lib/platform/private-host.ts'
+import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost } from '../lib/platform/private-host.ts'
 import { createOperationSupplierSummaryHandler } from '../lib/platform/supplier-summary-runtime.ts'
 import { SUPPLIER_SUMMARY_HEADERS } from '../lib/platform/supplier-summary.ts'
 import { executiveSummary } from '@profitia/srm-xray/executive-summary-rules'
@@ -607,6 +607,72 @@ test('SG2 Prisma host composes the accepted access store with existing selection
 
       assert.equal(providerCalls,beforeProvider)
     })
+
+    await t.test('native stored market preview uses current knowledge grant and the actual restricted SQL reader',async t=>{
+      const sourceOwner='profitia_market_read_owner',sourceRole='sg2_private_host_market_reader'
+      for(const[role,login]of[[sourceOwner,false],[sourceRole,true]]) {
+        if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount)await root.query(`CREATE ROLE ${role} ${login?"LOGIN PASSWORD 'isolated_ci_only'":'NOLOGIN'} NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`)
+      }
+      await root.query(`ALTER ROLE ${sourceRole} CONNECTION LIMIT 1`)
+      await owner.query(`DROP SCHEMA IF EXISTS profitia_market_read CASCADE;DROP TABLE IF EXISTS public.market_observations,public.market_series CASCADE;
+        CREATE TABLE public.market_series("id" text,"providerCode" text,"providerSeriesId" text,"providerSeriesKey" text,"displayName" text,"frequency" text,"currency" text,"unit" text,"sourceLabel" text);
+        CREATE TABLE public.market_observations("seriesId" text,"observedAt" timestamp,"value" numeric(24,8));
+        INSERT INTO public.market_series VALUES('market-one','MACROBOND','stored_series',null,'Shared source','monthly',null,'UNSUPPORTED_UNIT','Synthetic');
+        INSERT INTO public.market_observations VALUES('market-one','2025-01-01',10),('market-one','2025-02-01',0),('market-one','2025-03-01',null);
+        GRANT CREATE ON DATABASE ${DATABASE} TO ${sourceOwner};GRANT USAGE ON SCHEMA public TO ${sourceOwner};GRANT SELECT ON public.market_series,public.market_observations TO ${sourceOwner}`)
+      const sourceSql=fs.readFileSync(new URL('../prisma-market-data/private-read/001-stored-history-read.sql',import.meta.url),'utf8')
+      const sourceDigest=createHash('sha256').update(sourceSql).digest('hex')
+      await owner.query('BEGIN');await owner.query(`SET LOCAL ROLE ${sourceOwner}`);await owner.query(sourceSql)
+      await owner.query("INSERT INTO profitia_market_read.installation VALUES(true,'1.0.0',$1,'isolated-source-project','isolated-source-branch',$2,$3,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')",[sourceDigest,DATABASE,sourceRole]);await owner.query('COMMIT')
+      await owner.query(`GRANT USAGE ON SCHEMA profitia_market_read TO ${sourceRole};GRANT SELECT ON ALL TABLES IN SCHEMA profitia_market_read TO ${sourceRole}`)
+      const sourceUrl=new URL(runtimeUrl);sourceUrl.username=sourceRole;sourceUrl.searchParams.set('schema','profitia_market_read');sourceUrl.searchParams.set('connection_limit','1')
+      const sourcePrisma=new PrismaClient({datasources:{db:{url:sourceUrl.toString()}}})
+      try{
+        const{createStoredMarketHistoryReader}=await import('../lib/market-data/stored-read.ts')
+        const{getBenchmarkPreview}=await import('../lib/benchmark/service.ts')
+        const{createOperationBenchmarkPreviewHandler}=await import('../lib/benchmark/preview-handlers.ts')
+        const marketHost=createSg2PrivateMarketHost({...configuration,application:{...configuration.application,operations:['knowledge.read'],features:['market']}})
+        const readHistory=createStoredMarketHistoryReader(sourcePrisma,{projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:sourceRole,schemaDigest:sourceDigest})
+        let sourceReads=0
+        const routes=createOperationBenchmarkPreviewHandler(marketHost,A,async selection=>{sourceReads++;return getBenchmarkPreview(selection.seriesName,selection.range,readHistory)})
+        const input=(org=A,user=U,suffix='')=>new NextRequest(`${ORIGIN}/api/benchmark/preview?seriesName=stored_series&range=ALL&organisationId=${org}${suffix}`,{headers:{authorization:`Bearer external-${user}`}})
+        const providerBefore=providerCalls
+        await t.test('benchmark selection permissions alone do not authorize market source reads',async()=>{
+          assert.equal((await routes(input())).status,403);assert.equal(sourceReads,0)
+        })
+        for(const org of [A,B])await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'ALLOW','knowledge.read','market')",[randomUUID(),org,U])
+        await t.test('current market permission still requires its product feature',async()=>{
+          assert.equal((await routes(input())).status,403);assert.equal(sourceReads,0)
+        })
+        await owner.query("UPDATE profitia_access.product_grants SET features=ARRAY['benchmark','category','market'] WHERE product='SPENDGURU'")
+        await t.test('two authorized organisations read the same shared facts with separate actor/audit scope',async()=>{
+          const responses=[]
+          for(const org of [A,B]){const response=await routes(input(org));assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'private, no-store');const data=await response.json();assert.equal(data.latestValue,0);assert.equal(data.unit,'UNSUPPORTED_UNIT');assert.deepEqual(data.historical.map(p=>p.value),[10,0,null]);responses.push(data)}
+          assert.deepEqual(responses[0],responses[1]);assert.equal(sourceReads,2)
+          const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='knowledge.read' ORDER BY event_id")).rows.map(x=>x.event)
+          assert.deepEqual(events.map(x=>x.organisationId),[A,B]);assert(events.every(x=>x.actorId===U&&x.dataClass==='SHARED_KNOWLEDGE'&&x.ownerOrganisationId===null&&x.moduleEvidence.moduleId==='benchmark'))
+        })
+        await t.test('another member, forged headers and current DENY cannot invoke stored source',async()=>{
+          const before=sourceReads;assert.equal((await routes(input(A,V))).status,403)
+          assert.equal((await routes(new NextRequest(input().url,{headers:{'x-clerk-user-id':U,'x-clerk-org-id':A}}))).status,401)
+          const id=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','knowledge.read','market')",[id,A,U])
+          try{assert.equal((await routes(input())).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[id])}
+          assert.equal(sourceReads,before)
+        })
+        await t.test('source receipt mismatch fails closed after authority without a private or provider fallback',async()=>{
+          await owner.query("UPDATE profitia_market_read.installation SET branch_id='foreign-branch'")
+          try{assert.equal((await routes(input())).status,503)}finally{await owner.query("UPDATE profitia_market_read.installation SET branch_id='isolated-source-branch'")}
+        })
+        await t.test('failed durable OUTCOME withholds a valid shared result and preserves independent FAILURE',async()=>{
+          await owner.query("CREATE FUNCTION profitia_access.reject_market_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='knowledge.read' THEN RAISE EXCEPTION 'synthetic market audit outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_market_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_market_outcome()")
+          try{assert.equal((await routes(input())).status,503)}finally{await owner.query('DROP TRIGGER reject_market_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_market_outcome()')}
+          const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='knowledge.read' ORDER BY event_id DESC LIMIT 2")).rows.map(x=>x.event)
+          assert.deepEqual(events.map(x=>x.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+        })
+        assert.equal(providerCalls,providerBefore)
+      }finally{await sourcePrisma.$disconnect()}
+    })
+
 
   } finally {
     globalThis.fetch = previousFetch
