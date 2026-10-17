@@ -24,6 +24,23 @@ const handleI18nRouting = createMiddleware(routing)
 
 export default async function middleware(request: NextRequest) {
   const intlResponse = handleI18nRouting(request)
+  const provider = process.env.PROFITIA_AUTH_PROVIDER
+  if (provider !== undefined && provider !== 'legacy_demo' && provider !== 'clerk') {
+    return NextResponse.json({ error: 'Operation unavailable' }, { status: 503,
+      headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' } })
+  }
+  if (provider === 'clerk') {
+    // Only neutral sign-in/Finder shells. The client SDK is presentation state;
+    // each data API still owns its independent current backend authorisation.
+    if (!/^\/(?:pl|en)?\/?$/.test(request.nextUrl.pathname)
+      && !/^\/(?:pl|en)\/benchmark-finder\/?$/.test(request.nextUrl.pathname)) {
+      return NextResponse.json({ error: 'Operation unavailable' }, { status: 403,
+        headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' } })
+    }
+    intlResponse.headers.set('Cache-Control', 'private, no-store')
+    intlResponse.headers.append('Vary', 'Cookie, Authorization')
+    return intlResponse
+  }
   const runtimeConfig = resolvePorrDemoRuntimeConfig()
   if (!runtimeConfig.enabled) {
     return intlResponse
