@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationVersion": "srm-private-report-e1-v1",
+  "purpose": "Explicit receiver targets; this file does not activate a service or application.",
+  "environments": {
+    "development": {
+      "observedState": "SCHEMA_PREPARED_APPLICATION_DISABLED",
+      "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+      "projectId": "spring-bread-28217539",
+      "branchId": "br-sparkling-term-b99l107x",
+      "hosts": [
+        "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+        "ep-late-heart-b9mxo8oi-pooler.c-7.eu-central-1.aws.neon.tech"
+      ],
+      "databaseName": "platform_private",
+      "schemaName": "srm",
+      "runtimeRole": "srm_private_development_runtime",
+      "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "moduleSchemaDigest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
+      "auditSchemaDigest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
+      "businessSchemaDigest": "3d8367474454eb15a8171c28bf99f80f51299b58746efa8dfb4f65289de57dcd",
+      "businessSchemaVerification": "Exact receipt, owner, policies and source checked by the controlled initialization/release; not a per-request receipt read.",
+      "observedAt": "2026-10-17T13:25:47.122Z",
+      "observedStateEvidence": "apps/srm/deployment/private-business-preparation.json"
+    },
+    "staging": {
+      "privateBindingState": "NOT_PREPARED",
+      "note": "Existing business Staging is active; this new private binding has not been initialized."
+    },
+    "production": {
+      "privateBindingState": "NOT_AUTHORIZED"
+    }
+  }
+}

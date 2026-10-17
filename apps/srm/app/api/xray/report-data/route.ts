@@ -1,5 +1,5 @@
-import { reportDataHandler } from "../../../../src/server/report-data";
+import { createRuntimeSrmReportHandler } from "../../../../src/server/report-runtime";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const POST = reportDataHandler();
+export const POST = createRuntimeSrmReportHandler();
