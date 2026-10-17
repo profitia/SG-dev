@@ -3,6 +3,7 @@ import test from 'node:test'
 import type { PoolClient } from 'pg'
 import type { OperationContext, OperationExecutor } from '@profitia/platform-contracts/operation-context'
 import { executiveSummary } from '@profitia/srm-xray/executive-summary-rules'
+import { readSharedFinancialSummary } from '@profitia/srm-xray/shared-financial-summary'
 import { FINANCIAL_MAPPING_VERSION } from './shared-catalog'
 import type { ReportReadRow } from './report-data'
 import { readSharedFinancialReport, projectSharedFinancialResponse, NO_STORED_FINANCIAL_SOURCE } from './shared-financial-read'
@@ -34,6 +35,48 @@ test('shared stored values use the existing business projector and actual summar
   const text = JSON.stringify(report)
   for (const secret of ['private-source-path', 'private-snapshot', 'private-model', 'private-record', 'private-document', 'preferenceScope', 'exportRef', 'scanner']) assert(!text.includes(secret), secret)
   assert.equal(await projectSharedFinancialResponse(response(report), context) instanceof Response, true)
+  assert.deepEqual(readSharedFinancialSummary(report, selection), report)
+})
+test('public shared envelope preserves declared optional source evidence and stored comparison structures', async () => {
+  const report = await readSharedFinancialReport(client(fixture()), org, selection, version, now)
+  const period = report.financial.periods[0], evidence = period.facts[0]
+  const value = { ...report, financial: { ...report.financial,
+    periods: [{ ...period, accountingStandard: 'POLISH_UOR', qualityIssues: ['COMPARISON_UNCONFIRMED'],
+      sourceRegistration: { krs: '0000000001', legalName: 'Synthetic corporate fixture', relationship: 'CURRENT' },
+      comparativeData: { selected: 'UNRESOLVED', dateBasis: 'UNCONFIRMED', original: [{ metricCode: evidence.metricCode, amount: evidence.amount, currency: evidence.currency, unit: evidence.unit }], restated: [] } }],
+    history: [{ code: 'SYNTHETIC_INDICATOR', reasonCode: null, points: [{ code: 'SYNTHETIC_INDICATOR',
+      periodStart: period.from, periodEnd: period.to, scope: period.scope, status: 'UNAVAILABLE', value: null, unit: 'RATIO', importance: 1,
+      reasonCode: 'NOT_COMPARABLE', formulaVersion: 'synthetic-only', year: period.year, documentRef: period.documentRef,
+      definitionRef: { code: 'SYNTHETIC_INDICATOR', formulaVersion: 'synthetic-only' }, evidence: [evidence],
+      comparison: { status: 'NOT_COMPARABLE', reasonCode: 'SYNTHETIC_NOT_COMPARABLE', previousPeriod: { from: '2024-01-01', to: '2024-12-31' }, delta: null, unit: 'RATIO', direction: 'NO_COMPARISON' } }] }] } }
+  const before = JSON.stringify(value)
+  assert.deepEqual(readSharedFinancialSummary(value, selection), value)
+  assert.equal(JSON.stringify(value), before, 'validation must not reinterpret or mutate stored values')
+  assert.equal(await projectSharedFinancialResponse(response(value), context) instanceof Response, true)
+  for (const change of [
+    (v: typeof value) => Object.assign(v.financial.history[0].points[0], { ownerUserId: 'private' }),
+    (v: typeof value) => Object.assign(v.financial.history[0].points[0].definitionRef, { privateSource: 'private' }),
+    (v: typeof value) => Object.assign(v.financial.history[0].points[0].comparison, { privateSource: 'private' }),
+    (v: typeof value) => Object.assign(v.financial.history[0].points[0].evidence[0], { privateSource: 'private' }),
+    (v: typeof value) => Object.assign(v.financial.periods[0].sourceRegistration, { privateSource: 'private' }),
+    (v: typeof value) => Object.assign(v.financial.periods[0].comparativeData.original[0], { privateSource: 'private' }),
+  ]) { const changed = structuredClone(value); change(changed); assert.throws(() => readSharedFinancialSummary(changed, selection)); await assert.rejects(projectSharedFinancialResponse(response(changed), context)) }
+})
+test('public envelope rejects malformed and additional nested payloads rather than silently stripping private data', async () => {
+  const report = await readSharedFinancialReport(client(fixture()), org, selection, version, now)
+  for (const changed of [null, [], { ...report, schemaVersion: '2.0' }, { ...report, nip: '1111111111' },
+    { ...report, entityType: 'JDG' }, { ...report, preferenceScope: 'private' },
+    { ...report, financial: { ...report.financial, scanner: {} } },
+    { ...report, financial: { ...report.financial, freshness: { ...report.financial.freshness, ownerUserId: 'private' } } },
+    { ...report, financial: { ...report.financial, periods: [{ ...report.financial.periods[0], privateSource: 'private' }] } },
+    { ...report, financial: { ...report.financial, periods: [{ ...report.financial.periods[0], facts: [{ ...report.financial.periods[0].facts[0], ownerOrganisationId: org }] }] } },
+    { ...report, financial: { ...report.financial, periods: [{ ...report.financial.periods[0], facts: null }] } },
+    { ...report, financial: { ...report.financial, status: 'INVALID' } },
+    { ...report, kys: { ...report.kys, exportRef: 'private' } }]) {
+    const before = JSON.stringify(changed)
+    assert.throws(() => readSharedFinancialSummary(changed, selection))
+    assert.equal(JSON.stringify(changed), before)
+  }
 })
 test('wrong supplier, changed source and absent rows are refused; explicit no-data is truthful', async () => {
   for (const row of [null, { ...fixture(), nip: '1111111111' }, { ...fixture(), financial_sha256: 'b'.repeat(64) }]) {
@@ -43,6 +86,11 @@ test('wrong supplier, changed source and absent rows are refused; explicit no-da
   const empty = { nip: selection.nip, financial_json: null, financial_sha256: null, financial_checked_at: null, facts: [], indicators: [], kys: null }
   const report = await readSharedFinancialReport(client(empty), org, selection, NO_STORED_FINANCIAL_SOURCE, now)
   assert.deepEqual(report.financial.periods, []); assert.equal(report.financial.freshness.freshness, 'ABSENT')
+  assert.deepEqual(readSharedFinancialSummary(report, selection), report)
+  const jdg = await readSharedFinancialReport(client(empty), org, { ...selection, entityType: 'JDG' }, NO_STORED_FINANCIAL_SOURCE, now)
+  assert.deepEqual(readSharedFinancialSummary(jdg, { ...selection, entityType: 'JDG' }), jdg)
+  const corporate = await readSharedFinancialReport(client(fixture()), org, selection, version, now)
+  assert.throws(() => readSharedFinancialSummary({ ...corporate, entityType: 'JDG' }, { ...selection, entityType: 'JDG' }))
 })
 test('known catalog removal or liquidation suppresses financial results without consulting private archives', async () => {
   for (const registration_status of ['LIQUIDATION', 'DEREGISTERED'] as const) {
