@@ -75,6 +75,33 @@ test('stored market source uses actual ordinary read-only SQL, closed source pro
       try{await assert.rejects(read('stored_series'),error=>error.code==='STORED_SOURCE_UNAVAILABLE')}
       finally{await owner.query(`REVOKE UPDATE ON profitia_market_read.installation FROM ${ROLE}`)}
     })
+    await t.test('column-only private/base SELECT cannot hide behind a false table-level privilege result',async()=>{
+      for(const[target,column]of[['public.synthetic_private','secret'],['public.market_series','displayName']]){
+        await owner.query(`GRANT SELECT("${column}") ON ${target} TO ${ROLE}`)
+        try{
+          const actual=(await prisma.$queryRawUnsafe("SELECT has_table_privilege(current_user,$1,'SELECT') AS table_select,has_any_column_privilege(current_user,$1,'SELECT') AS column_select",target))[0]
+          assert.deepEqual(actual,{table_select:false,column_select:true})
+          await assert.rejects(read('stored_series'),error=>error.code==='STORED_SOURCE_UNAVAILABLE'&&error.status===503)
+        }finally{await owner.query(`REVOKE SELECT("${column}") ON ${target} FROM ${ROLE}`)}
+      }
+      assert.equal((await read('stored_series')).history.historical.length,3)
+    })
+    await t.test('column-only source writes, references and delegation privileges are refused before data reads',async()=>{
+      for(const[grant,revoke]of[
+        [`GRANT INSERT(source_ref) ON profitia_market_read.installation TO ${ROLE}`,`REVOKE INSERT(source_ref) ON profitia_market_read.installation FROM ${ROLE}`],
+        [`GRANT UPDATE(source_ref) ON profitia_market_read.installation TO ${ROLE}`,`REVOKE UPDATE(source_ref) ON profitia_market_read.installation FROM ${ROLE}`],
+        [`GRANT REFERENCES(source_ref) ON profitia_market_read.installation TO ${ROLE}`,`REVOKE REFERENCES(source_ref) ON profitia_market_read.installation FROM ${ROLE}`],
+        [`GRANT SELECT(source_ref) ON profitia_market_read.installation TO ${ROLE} WITH GRANT OPTION`,`REVOKE SELECT(source_ref) ON profitia_market_read.installation FROM ${ROLE}`],
+      ]){await owner.query(grant);try{await assert.rejects(read('stored_series'),error=>error.code==='STORED_SOURCE_UNAVAILABLE')}finally{await owner.query(revoke)}}
+      assert.equal((await read('stored_series')).history.historical.length,3)
+    })
+    await t.test('source schema CREATE and runtime replication drift cannot become source authority',async()=>{
+      for(const[change,restore]of[
+        [`GRANT CREATE ON SCHEMA profitia_market_read TO ${ROLE}`,`REVOKE CREATE ON SCHEMA profitia_market_read FROM ${ROLE}`],
+        [`ALTER ROLE ${ROLE} REPLICATION`,`ALTER ROLE ${ROLE} NOREPLICATION`],
+      ]){await owner.query(change);try{await assert.rejects(read('stored_series'),error=>error.code==='STORED_SOURCE_UNAVAILABLE')}finally{await owner.query(restore)}}
+      assert.equal((await read('stored_series')).history.historical.length,3)
+    })
     await t.test('actual source transaction is READ ONLY before every source SELECT',async()=>{
       const update='UPDATE public.market_observations SET value=999'
       await owner.query(`GRANT UPDATE ON public.market_observations TO ${ROLE}`)

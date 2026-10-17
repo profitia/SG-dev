@@ -38,10 +38,14 @@ export function createStoredMarketHistoryReader(prisma: Pick<PrismaClient, '$tra
             await transaction.$executeRawUnsafe("SET LOCAL lock_timeout='2000ms'");
             const rows = await transaction.$queryRawUnsafe<Array<Record<string, unknown>>>(`SELECT
         current_user::text AS role,session_user::text AS login,current_database() AS database_name,
-        r.rolsuper,r.rolbypassrls,r.rolinherit,r.rolcreatedb,r.rolcreaterole,r.rolcanlogin,r.rolconnlimit,
+        r.rolreplication,r.rolsuper,r.rolbypassrls,r.rolinherit,r.rolcreatedb,r.rolcreaterole,r.rolcanlogin,r.rolconnlimit,
         EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=r.oid) AS member_of_role,
         has_database_privilege(current_user,current_database(),'CREATE') AS database_create,
         has_schema_privilege(current_user,'public','CREATE') AS public_create,
+        has_schema_privilege(current_user,'profitia_market_read','CREATE') AS source_create,
+        (SELECT count(*)::int FROM pg_catalog.pg_roles o WHERE o.rolname='profitia_market_read_owner'
+          AND NOT(o.rolcanlogin OR o.rolinherit OR o.rolsuper OR o.rolbypassrls OR o.rolcreatedb OR o.rolcreaterole OR o.rolreplication)
+          AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=o.oid)) AS controlled_owner,
         (SELECT nspowner::pg_catalog.regrole::text FROM pg_catalog.pg_namespace WHERE nspname='profitia_market_read') AS schema_owner,
         (SELECT count(*)::int FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
           WHERE n.nspname='profitia_market_read' AND c.relowner::pg_catalog.regrole::text='profitia_market_read_owner'
@@ -49,18 +53,20 @@ export function createStoredMarketHistoryReader(prisma: Pick<PrismaClient, '$tra
           OR (c.relname IN('series','observations') AND c.relkind='v' AND 'security_barrier=true'=ANY(c.reloptions)))) AS controlled_objects,
         EXISTS(SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
           WHERE n.nspname NOT IN('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%'
-          AND c.relkind IN('r','p','v','m','f') AND has_table_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+          AND c.relkind IN('r','p','v','m','f') AND (has_table_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+            OR has_any_column_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))
           AND NOT(n.nspname='profitia_market_read' AND c.relname IN('installation','series','observations'))) AS other_table_access,
         EXISTS(SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
-          WHERE n.nspname='profitia_market_read' AND c.relkind IN('r','p','v','m','f') AND has_table_privilege(current_user,c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,SELECT WITH GRANT OPTION')) AS source_write,
+          WHERE n.nspname='profitia_market_read' AND c.relkind IN('r','p','v','m','f') AND (has_table_privilege(current_user,c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,SELECT WITH GRANT OPTION')
+            OR has_any_column_privilege(current_user,c.oid,'INSERT,UPDATE,REFERENCES,SELECT WITH GRANT OPTION'))) AS source_write,
         EXISTS(SELECT 1 FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
           WHERE p.prosecdef AND n.nspname NOT IN('pg_catalog','information_schema')
           AND has_schema_privilege(current_user,n.oid,'USAGE') AND has_function_privilege(current_user,p.oid,'EXECUTE')) AS definer_access
         FROM pg_catalog.pg_roles r WHERE r.rolname=current_user`);
             const actual = rows[0];
             if (rows.length !== 1 || !actual || actual.role !== binding.role || actual.login !== binding.role || actual.database_name !== binding.databaseName
-                || actual.rolcanlogin !== true || actual.rolconnlimit !== 1 || actual.schema_owner !== OWNER || actual.controlled_objects !== 3
-                || ['rolsuper', 'rolbypassrls', 'rolinherit', 'rolcreatedb', 'rolcreaterole', 'member_of_role', 'database_create', 'public_create', 'other_table_access', 'source_write', 'definer_access'].some(key => actual[key] !== false))
+                || actual.rolcanlogin !== true || actual.rolconnlimit !== 1 || actual.schema_owner !== OWNER || actual.controlled_objects !== 3 || actual.controlled_owner !== 1
+                || ['rolreplication', 'rolsuper', 'rolbypassrls', 'rolinherit', 'rolcreatedb', 'rolcreaterole', 'member_of_role', 'database_create', 'public_create', 'source_create', 'other_table_access', 'source_write', 'definer_access'].some(key => actual[key] !== false))
                 denied();
             const receipts = await transaction.$queryRawUnsafe<Array<{
                 schema_version: string;
