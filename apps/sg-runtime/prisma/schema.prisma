@@ -22,6 +22,7 @@ model BusinessBenchmark {
   selections      OrganizationBenchmarkSelection[]
   costComponents  CategoryCostComponent[]
 
+  @@unique([id, organizationId])
   @@index([organizationId, createdAt(sort: Desc)])
 }
 
@@ -43,7 +44,7 @@ model BenchmarkProviderMapping {
   isPrimary           Boolean           @default(true)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
-  businessBenchmark   BusinessBenchmark @relation(fields: [businessBenchmarkId], references: [id], onDelete: Cascade)
+  businessBenchmark   BusinessBenchmark @relation(fields: [businessBenchmarkId, organizationId], references: [id, organizationId], onDelete: Cascade)
 
   @@unique([organizationId, providerCode, providerSeriesId])
   @@index([businessBenchmarkId])
@@ -57,7 +58,7 @@ model OrganizationBenchmarkSelection {
   createdByUserId     String
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
-  businessBenchmark   BusinessBenchmark @relation(fields: [businessBenchmarkId], references: [id], onDelete: Cascade)
+  businessBenchmark   BusinessBenchmark @relation(fields: [businessBenchmarkId, organizationId], references: [id, organizationId], onDelete: Cascade)
 
   @@unique([organizationId, businessBenchmarkId])
   @@index([organizationId, createdAt(sort: Desc)])
