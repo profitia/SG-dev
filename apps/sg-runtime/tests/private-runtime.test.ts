@@ -179,3 +179,26 @@ test('private category capability is separately opt-in and pins its own unactiva
   assert.deepEqual(readSg2PrivateSelectionConfiguration({PROFITIA_AUTH_PROVIDER:'legacy_demo',PROFITIA_CATEGORY_ENABLED:'true'}),{provider:'legacy_demo'})
   assert.throws(()=>readSg2PrivateSelectionConfiguration({...env,TARGET_ENVIRONMENT:'staging',APP_ENV:'staging',PROFITIA_CATEGORY_ENABLED:'true'}),IdentityConfigurationUnavailable)
 })
+
+test('stored market preview has a separate opt-in, physical read role and unchanged benchmark base',()=>{
+  const env=fixture(),source=target.marketRead
+  const url=new URL('postgresql://synthetic.invalid');url.hostname=source.hosts[0];url.username=source.runtimeRole;url.password='synthetic_fixture_only';url.pathname=`/${source.databaseName}`;url.search='?sslmode=require&channel_binding=require'
+  const enabled={...env,PROFITIA_MARKET_READ_ENABLED:'true',PROFITIA_MARKET_READ_DATABASE_URL:url.toString()}
+  const base=readSg2PrivateSelectionConfiguration(env),config=readSg2PrivateSelectionConfiguration(enabled)
+  assert.equal(config.provider,'clerk');assert.equal(base.provider,'clerk')
+  if(config.provider!=='clerk'||base.provider!=='clerk')throw Error('Expected explicit private configuration')
+  assert.equal(base.marketRead,undefined);assert.deepEqual(config.application,base.application)
+  assert.equal(config.marketRead?.binding.role,source.runtimeRole);assert.equal(config.marketRead?.binding.projectId,source.projectId)
+  assert.equal(source.defaultEnabled,false);assert.equal(source.observedState,'SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED')
+  assert.equal(source.schemaDigest,createHash('sha256').update(readFileSync(new URL('../prisma-market-data/private-read/001-stored-history-read.sql',import.meta.url))).digest('hex'))
+  const topology=JSON.parse(readFileSync(new URL('../../../Canon/registries/sg2-environment-topology-v1.json',import.meta.url),'utf8'))
+  assert.equal(source.projectId,topology.environments.development.neon.projectId);assert.equal(source.branchId,topology.environments.development.neon.branchId)
+  for(const flag of ['','yes','TRUE','1'])assert.throws(()=>readSg2PrivateSelectionConfiguration({...enabled,PROFITIA_MARKET_READ_ENABLED:flag}),IdentityConfigurationUnavailable)
+  assert.throws(()=>readSg2PrivateSelectionConfiguration({...enabled,PROFITIA_MARKET_READ_DATABASE_URL:undefined}),IdentityConfigurationUnavailable)
+  for(const patch of [{username:'neondb_owner'},{username:target.runtimeRole},{hostname:target.hosts[0]},{pathname:'/platform_private'},{search:'?sslmode=disable'},{search:'?sslmode=require&schema=public'},{search:'?sslmode=require&options=-c%20role%3Dneondb_owner'}]){
+    const changed=new URL(url);Object.assign(changed,patch)
+    assert.throws(()=>readSg2PrivateSelectionConfiguration({...enabled,PROFITIA_MARKET_READ_DATABASE_URL:changed.toString()}),IdentityConfigurationUnavailable)
+  }
+  const disabled=readSg2PrivateSelectionConfiguration({...env,PROFITIA_MARKET_READ_ENABLED:'false',PROFITIA_MARKET_READ_DATABASE_URL:'invalid-unused'})
+  assert.equal(disabled.provider,'clerk');if(disabled.provider==='clerk')assert.equal(disabled.marketRead,undefined)
+})

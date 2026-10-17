@@ -5,6 +5,7 @@ import type { AccessQuery, AccessStoreBinding } from '@profitia/platform-contrac
 import { OperationDenied, type Application } from '@profitia/platform-contracts/operation-context'
 import { projectSupplierSummaryResponse, readSupplierSummarySelection, SUPPLIER_SUMMARY_PROJECTION } from './supplier-summary'
 import { CATEGORY_PROJECTION, categoryOperation, categoryResourceId, projectCategoryResponse, readCategoryOperation } from '@/lib/category/operation-contract'
+import { MARKET_PREVIEW_PROJECTION, marketPreviewResourceId, readMarketPreviewSelection, projectMarketPreviewResponse } from './market-preview'
 
 type QueryClient = Pick<Prisma.TransactionClient, '$queryRawUnsafe' | '$executeRawUnsafe'>
 
@@ -82,6 +83,22 @@ export function createSg2PrivateBenchmarkHost(options: Sg2PrivateHostOptions & {
         || item.organizationId !== context.organisationId)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return value
     },
+  })
+}
+
+/** Prepared global market data; a selection grant never supplies this right. */
+export function createSg2PrivateMarketHost(options:Sg2PrivateHostOptions & {module:{id:'benchmark';schemaDigest:string;auditSchemaDigest:string}}) {
+  const environment=options.application.environment
+  return createPrivateOperationHost<Prisma.TransactionClient>({
+    ...hostBase(options,'benchmark',['knowledge.read']),
+    readResources:async({request})=>{
+      const selected=readMarketPreviewSelection(request.payload)
+      if(request.resourceId!==marketPreviewResourceId(selected.seriesName))throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      return{resource:{id:request.resourceId,type:'market_knowledge',dataClass:'SHARED_KNOWLEDGE',
+        environment,ownerOrganisationId:null,ownerUserId:null,approvedSharedProjection:true,
+        version:MARKET_PREVIEW_PROJECTION,projectionVersion:MARKET_PREVIEW_PROJECTION}}
+    },
+    projectOutput:projectMarketPreviewResponse,
   })
 }
 

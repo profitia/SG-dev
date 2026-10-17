@@ -41,6 +41,23 @@
         "receiptVersion": "1.0.0",
         "scope": "ORGANISATION_PRIVATE_CATEGORY_AND_EXPLICIT_REFERENCE_CATALOG_SELECT",
         "observedState": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED"
+      },
+      "marketRead": {
+        "configurationVersion": "sg2-private-market-preview-e1-v1",
+        "activationVariable": "PROFITIA_MARKET_READ_ENABLED",
+        "defaultEnabled": false,
+        "source": "apps/sg-runtime/prisma-market-data/private-read/001-stored-history-read.sql",
+        "schemaDigest": "596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304",
+        "projectId": "autumn-waterfall-65938876",
+        "branchId": "br-dry-hall-b294222f",
+        "hosts": [
+          "ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech",
+          "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech"
+        ],
+        "databaseName": "neondb",
+        "runtimeRole": "sg2_market_read_development_runtime",
+        "scope": "STORED_SHARED_MARKET_HISTORY_READ_ONLY_NO_PROVIDER_OR_HYDRATION",
+        "observedState": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED"
       }
     },
     "staging": {

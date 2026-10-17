@@ -43,7 +43,8 @@
     "benchmark.selection.write",
     "supplier.report.read",
     "category.read",
-    "category.write"
+    "category.write",
+    "knowledge.read"
   ],
   "requiredInputOperations": [],
   "identityAdapter": "OFFICIAL_CLERK_ADAPTER_WITH_SYNTHETIC_FIXTURE_RESPONSES",
@@ -150,5 +151,17 @@
     "sql005Installed": false,
     "liveServiceRoleOrGrantProvisioned": false,
     "productDeploymentPerformed": false
+  },
+  "marketPreview": {
+    "scope": "STORED_SHARED_MARKET_HISTORY_READ_ONLY",
+    "configurationSource": "deployment/private-runtime-targets.json",
+    "activationVariable": "PROFITIA_MARKET_READ_ENABLED",
+    "nativeDispatcher": "lib/benchmark/preview-handlers.ts",
+    "separateSourceReader": "lib/market-data/stored-read.ts",
+    "sourceSql": "prisma-market-data/private-read/001-stored-history-read.sql",
+    "liveSourceInitialized": false,
+    "liveSourceRoleProvisioned": false,
+    "productDeploymentPerformed": false,
+    "globalIngestOrHydrationAdopted": false
   }
 }

@@ -6,19 +6,23 @@ import type { AccessStoreBinding } from '@profitia/platform-contracts/access-sto
 import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
 import targets from '@/deployment/private-runtime-targets.json'
 import { createSg2ClerkClient, IdentityConfigurationUnavailable, readSg2IdentityRuntime } from './identity-runtime'
-import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost } from './private-host'
+import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost } from './private-host'
+import { createStoredMarketHistoryReader,type StoredMarketBinding } from '@/lib/market-data/stored-read'
+import type { BenchmarkPreviewResult,BenchmarkRangePreset } from '@/lib/benchmark/contracts'
 
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<Prisma.TransactionClient>; defaultOrganisationId: string
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
   category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
+  marketRead?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; preview:(selection:{seriesName:string;range:BenchmarkRangePreset})=>Promise<BenchmarkPreviewResult> }>
 }>
 type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
   binding: AccessStoreBinding; module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string }
   supplierSummary?: Readonly<{ origin: string; configurationVersion: string }>
   category?: Readonly<{ configurationVersion: string; boundaryDigest: string }>
+  marketRead?: Readonly<{configurationVersion:string;databaseUrl:string;binding:StoredMarketBinding}>
 }>
 function unavailable(): never { throw new IdentityConfigurationUnavailable() }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -32,7 +36,7 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   // The new private Staging/Production bindings are deliberately not invented.
   if (identity.application.environment !== 'development') unavailable()
   const target = targets.environments.development
-  for (const flag of ['PROFITIA_SUPPLIER_SUMMARY_ENABLED','PROFITIA_CATEGORY_ENABLED']) {
+  for (const flag of ['PROFITIA_SUPPLIER_SUMMARY_ENABLED','PROFITIA_CATEGORY_ENABLED','PROFITIA_MARKET_READ_ENABLED']) {
     if (env[flag] !== undefined && !['true','false'].includes(env[flag]!)) unavailable()
   }
   if (env.PROFITIA_OPERATION_CONFIGURATION_VERSION !== targets.configurationVersion
@@ -50,6 +54,22 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
     || url.searchParams.getAll('sslmode').length !== 1 || url.searchParams.get('sslmode') !== 'require'
     || url.searchParams.getAll('channel_binding').length > 1
     || (url.searchParams.has('channel_binding') && url.searchParams.get('channel_binding') !== 'require')) unavailable()
+  let marketRead:PrivateConfiguration['marketRead']
+  if(env.PROFITIA_MARKET_READ_ENABLED==='true') {
+    const source=target.marketRead, input=env.PROFITIA_MARKET_READ_DATABASE_URL
+    if(!input||input!==input.trim())unavailable()
+    let marketUrl:URL
+    try{marketUrl=new URL(input)}catch{return unavailable()}
+    if(!['postgresql:','postgres:'].includes(marketUrl.protocol)||!source.hosts.includes(marketUrl.hostname)
+      ||marketUrl.username!==source.runtimeRole||!marketUrl.password||(marketUrl.port&&marketUrl.port!=='5432')
+      ||marketUrl.pathname!==`/${source.databaseName}`||marketUrl.hash
+      ||[...marketUrl.searchParams.keys()].some(key=>!['sslmode','channel_binding'].includes(key))
+      ||marketUrl.searchParams.getAll('sslmode').length!==1||marketUrl.searchParams.get('sslmode')!=='require'
+      ||marketUrl.searchParams.getAll('channel_binding').length>1
+      ||(marketUrl.searchParams.has('channel_binding')&&marketUrl.searchParams.get('channel_binding')!=='require'))unavailable()
+    marketRead={configurationVersion:source.configurationVersion,databaseUrl:marketUrl.toString(),
+      binding:{projectId:source.projectId,branchId:source.branchId,databaseName:source.databaseName,role:source.runtimeRole,schemaDigest:source.schemaDigest}}
+  }
   const configuration: PrivateConfiguration = { provider: 'clerk', databaseUrl: url.toString(), identity: identity.application,
     application: { appId: 'spendguru', profileId: 'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
@@ -58,6 +78,7 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
     binding: { applicationId: 'spendguru', environment: 'development', projectId: target.projectId,
       branchId: target.branchId, databaseName: target.databaseName, role: target.runtimeRole, schemaDigest: target.accessSchemaDigest },
     module: { id: 'benchmark', schemaDigest: target.moduleSchemaDigest, auditSchemaDigest: target.auditSchemaDigest },
+    ...(marketRead?{marketRead}:{}),
     ...(env.PROFITIA_CATEGORY_ENABLED === 'true' ? { category: {
       configurationVersion: target.category.configurationVersion, boundaryDigest: target.category.boundaryDigest,
     } } : {}),
@@ -68,9 +89,9 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   return Object.freeze(configuration)
 }
 
-function poolUrl(base: string, limit: number) {
+function poolUrl(base: string, limit: number, schemaName=targets.environments.development.schemaName) {
   const url = new URL(base)
-  url.searchParams.set('schema', targets.environments.development.schemaName)
+  url.searchParams.set('schema', schemaName)
   url.searchParams.set('sslaccept', 'strict')
   url.searchParams.set('connection_limit', String(limit))
   url.searchParams.set('pool_timeout', '3')
@@ -112,8 +133,18 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
       operations: ['category.read','category.write'], features: ['category'] },
     module: { ...config.module, id: 'category' }, categoryBoundaryDigest: config.category.boundaryDigest,
   }) }) : undefined
+  const marketRead=config.marketRead?(()=>{
+    const source=new PrismaClient({datasources:{db:{url:poolUrl(config.marketRead.databaseUrl,1,'profitia_market_read')}}})
+    const readHistory=createStoredMarketHistoryReader(source,config.marketRead.binding)
+    return Object.freeze({executor:createSg2PrivateMarketHost({prisma,auditPrisma,clerk,identity:config.identity,binding:config.binding,module:config.module,
+      application:{...config.application,configurationVersion:config.marketRead.configurationVersion,operations:['knowledge.read'],features:['market']}}),
+      preview:async({seriesName,range}:{seriesName:string;range:BenchmarkRangePreset})=>{
+        const{getBenchmarkPreview}=await import('@/lib/benchmark/service')
+        return getBenchmarkPreview(seriesName,range,readHistory)
+      }})
+  })():undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
-    ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}) })
+    ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}) })
   globalThis.__sg2PrivateSelectionRuntime__ = { key, runtime }
   return runtime
 }
