@@ -10,7 +10,7 @@ const row = { database_name:binding.databaseName,role:binding.role,login:binding
 const deny = error => isOperationDenied(error) && error.reasonCode === 'POLICY_UNAVAILABLE'
 
 test('access store publishes an independent schema-bound fingerprint', async () => {
-  assert.equal(ACCESS_STORE_CONTRACT.version,'1.1.0')
+  assert.equal(ACCESS_STORE_CONTRACT.version,'1.2.0')
   assert.equal(Object.isFrozen(ACCESS_STORE_CONTRACT),true)
   assert.match(accessSchemaUrl,/001-internal-access\.sql$/)
   assert.match(await accessStoreSourceDigest(),/^[0-9a-f]{64}$/)

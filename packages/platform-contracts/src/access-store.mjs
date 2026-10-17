@@ -1,9 +1,12 @@
 import { createHash } from 'node:crypto'
 import { OperationDenied, normalizeModuleEvidence } from './operation-context.mjs'
 
-export const ACCESS_STORE_CONTRACT = Object.freeze({ id: 'profitia.access-store', version: '1.1.0', schemaVersion: '1.0.0' })
+export const ACCESS_STORE_CONTRACT = Object.freeze({ id: 'profitia.access-store', version: '1.2.0', schemaVersion: '1.0.0' })
+export const DATABASE_SERVICE_ISSUER = 'urn:profitia:database-service-runtime:v1'
 export const accessSchemaUrl = new URL('../migrations/access/001-internal-access.sql', import.meta.url).href
 export const moduleAuditSchemaUrl = new URL('../migrations/access/003-module-audit.sql', import.meta.url).href
+export const serviceReadSchemaUrl = new URL('../migrations/access/005-service-read.sql', import.meta.url).href
+const serviceReads = new Set(['knowledge.read','forecast.read','supplier.report.read'])
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const text = (value, maximum = 256) => typeof value === 'string' && value.length > 0 && value.length <= maximum
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -26,6 +29,11 @@ function validAuditValue(key, value) {
 export function createAccessStore({ binding, now = Date.now }) {
   const config = structuredClone(binding)
   if (!config || !['development', 'staging', 'production'].includes(config.environment) || !['applicationId', 'projectId', 'branchId', 'databaseName', 'role'].every(key => text(config[key], 128)) || !/^[a-z][a-z0-9_]*$/.test(config.role) || !/^[a-f0-9]{64}$/.test(config.schemaDigest ?? '') || typeof now !== 'function') throw new TypeError('Explicit server-owned access-store binding required')
+  if (config.service !== undefined && (!config.service || Object.getPrototypeOf(config.service) !== Object.prototype
+    || Object.keys(config.service).sort().join(',') !== 'configurationVersion,deploymentId,profileId,schemaDigest'
+    || !/^[a-f0-9]{64}$/.test(config.service.schemaDigest ?? '')
+    || !['PORR_SUITE','SPENDGURU_SAAS','SUPPLIER_INTELLIGENCE_STANDALONE'].includes(config.service.profileId)
+    || !text(config.service.deploymentId) || !text(config.service.configurationVersion))) throw new TypeError('Explicit service-read binding required')
   freeze(config)
   const leases = new WeakSet()
   const invoke = async (query, sql, values = []) => {
@@ -58,6 +66,15 @@ export function createAccessStore({ binding, now = Date.now }) {
     if (!lease || !leases.has(lease)) fail()
     if (!(Date.parse(lease.expiresAt) > now())) throw new OperationDenied('ACCESS_BASIS_INVALID')
     await descriptor(query)
+    if (lease.serviceId !== undefined) {
+      if (!await serviceDescriptor(query)) throw new OperationDenied('ACCESS_BASIS_INVALID')
+      const row = await one(query, `SELECT txid_current()::text AS transaction_id,
+        profitia_services.scope_allows($1,$2::uuid,$3,$4) AS allowed`,
+      [config.applicationId, lease.organisationId, lease.operation, lease.resourceId])
+      if (row.transaction_id !== lease.transactionId) fail()
+      if (row.allowed !== true) throw new OperationDenied('ACCESS_BASIS_INVALID')
+      return
+    }
     const row = await one(query, `SELECT txid_current()::text AS transaction_id,
       profitia_access.scope_allows($1,$2::uuid,$3::uuid) AS allowed`,
     [config.applicationId, lease.organisationId, lease.userId])
@@ -65,9 +82,24 @@ export function createAccessStore({ binding, now = Date.now }) {
     if (row.allowed === false) throw new OperationDenied('ACCESS_BASIS_INVALID')
     if (row.allowed !== true) fail()
   }
+  const serviceDescriptor = async query => {
+    if (!config.service) fail()
+    await descriptor(query)
+    const row = await one(query, 'SELECT profitia_services.runtime_descriptor() AS descriptor')
+    const d = row.descriptor
+    if (d === null) return null
+    if (!d || d.schemaVersion !== '1.0.0' || d.schemaDigest !== config.service.schemaDigest
+      || d.profileId !== config.service.profileId || d.deploymentId !== config.service.deploymentId
+      || d.configurationVersion !== config.service.configurationVersion || !uuid.test(d.serviceId)
+      || !/^database-service:[a-f0-9-]{36}:[1-9][0-9]*$/i.test(d.proofRef ?? '')
+      || !text(d.sourceRef) || sensitive(d.sourceRef) || !(Date.parse(d.expiresAt)>now())
+      || Date.parse(d.expiresAt)>now()+30000) fail()
+    return d
+  }
   return Object.freeze({
     contract: ACCESS_STORE_CONTRACT,
     async resolveBinding(query, key) {
+      if (config.service !== undefined) fail()
       key = { environment: key?.environment, issuer: key?.issuer, subject: key?.subject }
       if (!key || key.environment !== config.environment || !text(key.issuer) || !text(key.subject)) fail()
       await descriptor(query)
@@ -78,6 +110,7 @@ export function createAccessStore({ binding, now = Date.now }) {
       return freeze(structuredClone(value))
     },
     async lockAccess(query, { actor, identityBinding, organisationId }) {
+      if (config.service !== undefined) fail()
       try { ({ actor, identityBinding } = structuredClone({ actor, identityBinding })) }
       catch { fail() }
       if (!actor || actor.kind !== 'HUMAN' || !uuid.test(actor.actorId) || actor.userId !== actor.actorId || actor.environment !== config.environment || actor.audience !== config.applicationId || !(Date.parse(actor.expiresAt) > now()) || !(organisationId === null || uuid.test(organisationId))) fail()
@@ -105,6 +138,50 @@ export function createAccessStore({ binding, now = Date.now }) {
       leases.add(lease)
       return lease
     },
+    async resolveServiceActor(query) {
+      const d = await serviceDescriptor(query)
+      if (d === null) return null
+      return freeze({ kind:'SERVICE', actorId:d.serviceId, serviceId:d.serviceId,
+        proofRef:d.proofRef, issuer:DATABASE_SERVICE_ISSUER, audience:config.applicationId,
+        environment:config.environment, expiresAt:d.expiresAt })
+    },
+    async lockServiceRead(query, input) {
+      let actor, organisationId, operation, resourceId
+      try { ({ actor, organisationId, operation, resourceId } = structuredClone(input)) } catch { fail() }
+      if (!config.service || !actor || actor.kind!=='SERVICE' || !uuid.test(actor.actorId)
+        || actor.serviceId!==actor.actorId || actor.userId!=null || actor.onBehalfOf!=null
+        || actor.issuer!==DATABASE_SERVICE_ISSUER || actor.audience!==config.applicationId
+        || actor.environment!==config.environment || !(Date.parse(actor.expiresAt)>now())
+        || !uuid.test(organisationId) || !serviceReads.has(operation) || !text(resourceId)) fail()
+      const d = await serviceDescriptor(query)
+      if (!d || d.serviceId!==actor.actorId || d.proofRef!==actor.proofRef) throw new OperationDenied('ACCESS_BASIS_INVALID')
+      const row = await one(query, 'SELECT profitia_services.lock_read($1::uuid,$2,$3,$4) AS state',
+        [organisationId,operation,resourceId,actor.proofRef])
+      const state = row.state
+      if (state===null) throw new OperationDenied('ACCESS_BASIS_INVALID')
+      if (!state || state.applicationId!==config.applicationId || state.environment!==config.environment
+        || state.serviceBindingVersion!==actor.proofRef || state.access?.actorId!==actor.actorId
+        || state.access.organisationId!==organisationId || state.access.type!=='SERVICE_GRANT'
+        || !/^access-v1:[1-9][0-9]*$/.test(state.policyVersion) || !/^[0-9]+$/.test(state.transactionId)) fail()
+      const expiry = Math.min(Date.parse(actor.expiresAt),Date.parse(d.expiresAt),Date.parse(state.access.expiresAt))
+      if (!Number.isFinite(expiry) || !(expiry>now())) fail()
+      const expiresAt = new Date(expiry).toISOString(); state.access.expiresAt=expiresAt
+      const bound = await one(query, `SELECT
+        set_config('profitia.service.environment',$1,true),set_config('profitia.service.application_id',$2,true),
+        set_config('profitia.service.service_id',$3,true),set_config('profitia.service.proof_ref',$4,true),
+        set_config('profitia.service.organisation_id',$5,true),set_config('profitia.service.operation',$6,true),
+        set_config('profitia.service.resource_id',$7,true),set_config('profitia.service.policy_version',$8,true),
+        set_config('profitia.service.transaction_id',$9,true),set_config('profitia.service.expires_at',$10,true),
+        set_config('profitia.service.schema_digest',$11,true),txid_current()::text AS transaction_id
+        WHERE txid_current()::text=$9`,
+      [config.environment,config.applicationId,actor.actorId,actor.proofRef,organisationId,operation,resourceId,
+        state.policyVersion,state.transactionId,expiresAt,config.service.schemaDigest])
+      if (bound.transaction_id!==state.transactionId) fail()
+      const lease = freeze({ state:structuredClone(state), userId:null, serviceId:actor.actorId,
+        organisationId, operation, resourceId, expiresAt, transactionId:state.transactionId })
+      leases.add(lease)
+      return lease
+    },
     verifyScope,
     async verifyModuleAudit(query, expectedDigest) {
       if (!/^[a-f0-9]{64}$/.test(expectedDigest ?? '')) fail()
@@ -118,10 +195,12 @@ export function createAccessStore({ binding, now = Date.now }) {
       if (Buffer.byteLength(encoded) > 16384) fail()
       if (event.moduleEvidence) normalizeModuleEvidence(event.moduleEvidence, { now, allowExpired: event.decision === 'DENY' })
       if (event.phase === 'OUTCOME') {
-        if (!lease || event.actorId !== lease.userId || event.organisationId !== lease.organisationId || event.policyVersion !== lease.state.policyVersion) fail()
+        if (!lease || event.actorId !== (lease.serviceId ?? lease.userId) || event.organisationId !== lease.organisationId || event.policyVersion !== lease.state.policyVersion) fail()
+        if (lease.serviceId !== undefined && (event.actorKind!=='SERVICE' || event.subjectUserId!==null
+          || event.operation!==lease.operation || event.resourceId!==lease.resourceId || event.moduleEvidence!==undefined)) fail()
         await verifyScope(query, lease)
       } else await descriptor(query)
-      await invoke(query, 'SELECT profitia_access.append_audit($1::jsonb)', [encoded])
+      await invoke(query, config.service ? 'SELECT profitia_services.append_audit($1::jsonb)' : 'SELECT profitia_access.append_audit($1::jsonb)', [encoded])
     },
   })
 }
@@ -131,11 +210,15 @@ export function accessStoreSourceDigest() {
     .update(fs.readFileSync(new URL('./access-store.mjs', import.meta.url)))
     .update(fs.readFileSync(new URL('./access-store.d.mts', import.meta.url)))
     .update(fs.readFileSync(new URL(accessSchemaUrl)))
-    .update(fs.readFileSync(new URL(moduleAuditSchemaUrl))).digest('hex'))
+    .update(fs.readFileSync(new URL(moduleAuditSchemaUrl)))
+    .update(fs.readFileSync(new URL(serviceReadSchemaUrl))).digest('hex'))
 }
 export function accessSchemaDigest() {
   return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL(accessSchemaUrl))).digest('hex'))
 }
 export function moduleAuditSchemaDigest() {
   return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL(moduleAuditSchemaUrl))).digest('hex'))
+}
+export function serviceReadSchemaDigest() {
+  return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL(serviceReadSchemaUrl))).digest('hex'))
 }
