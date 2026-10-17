@@ -3,7 +3,8 @@ import fs from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
 import test from 'node:test'
 import pg from 'pg'
-import { accessSchemaUrl, accessStoreSourceDigest } from '@profitia/platform-contracts/access-store'
+import { accessSchemaUrl, accessStoreSourceDigest, createAccessStore, moduleAuditSchemaUrl, moduleAuditSchemaDigest } from '@profitia/platform-contracts/access-store'
+import { moduleSchemaUrl, moduleSchemaDigest } from '@profitia/platform-contracts/module-scope'
 import { identitySourceDigest } from '@profitia/platform-contracts/identity-provider'
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
 import { OPERATION_CONTRACT } from '@profitia/platform-contracts/operation-context'
@@ -15,13 +16,17 @@ const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-2
 const U = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', V = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 const ISSUER = 'https://identity.fixture.test', ORIGIN = 'http://localhost:3400', NIP = '8650004194'
 const sql = fs.readFileSync(new URL(accessSchemaUrl), 'utf8'), digest = createHash('sha256').update(sql).digest('hex')
+const moduleSql = fs.readFileSync(new URL(moduleSchemaUrl), 'utf8'), moduleDigest = await moduleSchemaDigest()
+const moduleAuditSql = fs.readFileSync(new URL(moduleAuditSchemaUrl), 'utf8'), auditDigest = await moduleAuditSchemaDigest()
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 const hash = text => createHash('sha256').update(text).digest('hex')
 
 test('SRM accepts the published optional producer fingerprints', async () => {
-  assert.equal(await accessStoreSourceDigest(), '4e56e58220815661c3882c59ec897b0d740bf84bbf0485c84fb82007d6e00e50')
+  assert.equal(await accessStoreSourceDigest(), 'e0d3fb3c2201816755b76546976c964791adee21a8b528c05b0adbd1af09a8ca')
   assert.equal(await identitySourceDigest(), '7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
-  assert.equal(await privateOperationHostSourceDigest(), 'c9ebdef2de453f10346f7e3f8268b21391f1a32a0911ef8f5441163db7aa067b')
+  assert.equal(await privateOperationHostSourceDigest(), 'd6911d606898d7df06c09755947bec2a81c777cc3549a71b4cb3074022bee18c')
+  assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
+  assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
 })
 
 test('SRM real report and pg driver use the accepted private host', async t => {
@@ -42,7 +47,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     owner = new pg.Client({ connectionString: dbUrl.toString() }); await owner.connect()
     // This reset is allowed only in the named, guarded LOOPBACK fixture.
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db, DATABASE)
-    await owner.query('DROP SCHEMA IF EXISTS srm CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE')
+    await owner.query('DROP SCHEMA IF EXISTS srm CASCADE; DROP SCHEMA IF EXISTS profitia_modules CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE')
     await owner.query(`GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
     await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
     await owner.query(sql)
@@ -62,6 +67,12 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       }
     }
     await owner.query(`GRANT USAGE ON SCHEMA profitia_access TO ${ROLE}; GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_access.identity_binding(text,text),profitia_access.lock_access(uuid,uuid,text,text,text),profitia_access.scope_allows(text,uuid,uuid),profitia_access.append_audit(jsonb) TO ${ROLE}`)
+    await owner.query(moduleSql)
+    await owner.query("INSERT INTO profitia_modules.installation(schema_version,schema_digest) VALUES('1.0.0',$1)", [moduleDigest])
+    await owner.query("INSERT INTO profitia_modules.application_bindings(application_id,module_id,binding_id,status,source_ref,expires_at) VALUES('srm','supplier_report',$1,'ACTIVE','SYNTHETIC_MODULE_BINDING',$2)", [randomUUID(), expiry()])
+    await owner.query(moduleAuditSql)
+    await owner.query("INSERT INTO profitia_modules.audit_installation(envelope_version,schema_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_NOT_A_RELEASE')", [auditDigest])
+    await owner.query(`GRANT USAGE ON SCHEMA profitia_modules TO ${ROLE}; GRANT EXECUTE ON FUNCTION profitia_modules.runtime_descriptor(),profitia_modules.bind_scope(text),profitia_modules.scope_allows(text,uuid,uuid),profitia_modules.audit_descriptor() TO ${ROLE}`)
     await owner.query('COMMIT')
     const directory = new URL('../db/migrations/', import.meta.url)
     for (const file of fs.readdirSync(directory).filter(name => /^\d{4}_.+\.sql$/.test(name)).sort()) {
@@ -112,6 +123,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
         return response
       },
     }
+    options.module = { id: 'supplier_report', schemaDigest: moduleDigest, auditSchemaDigest: auditDigest }
     const host = createSrmPrivateOperationHost(options)
     const { createOperationReportDataHandler } = await import('../src/server/operation-report-data.ts')
     const handler = createOperationReportDataHandler(host, { SRM_DEMO_SESSION_SECRET: 'isolated-preference-key-not-a-customer-secret' })
@@ -127,11 +139,15 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       const rows = await documents(); assert.equal(rows.length, 1); assert.equal(rows[0].organization_id, A)
       assert.equal(rows[0].document_json.rows[0].amounts.KwotaA, '100')
       assert.deepEqual((await owner.query("SELECT phase FROM profitia_access.security_events WHERE event->>'decision'='ALLOW' ORDER BY event_id")).rows.map(row => row.phase), ['INTENT', 'OUTCOME'])
+      const events = (await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'decision'='ALLOW' ORDER BY event_id")).rows.map(row => row.event)
+      assert.equal(events[0].moduleEvidence.moduleId, 'supplier_report')
+      assert.equal(events[0].moduleEvidence.auditSchemaDigest, auditDigest)
+      assert.deepEqual(events[1].moduleEvidence, events[0].moduleEvidence)
     })
     await t.test('another organisation retains its distinct archive and personal scopes remain distinct', async () => {
       assert.equal((await handler(request(B))).status, 200)
       const rows = await documents(); assert.equal(rows.length, 2); assert.equal(rows[1].document_json.rows[0].amounts.KwotaA, '999')
-      assert.equal((await handler(request(B, V))).status, 503) // accepted generic missing-membership denial
+      assert.equal((await handler(request(B, V))).status, 403)
       const first = await (await handler(request(A, U))).json(), second = await (await handler(request(A, V))).json()
       assert.notEqual(first.preferenceScope, second.preferenceScope)
     })
@@ -139,6 +155,33 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       revoked = true; assert.equal((await handler(request())).status, 401); revoked = false
       await owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE organisation_id=$1", [A]); assert.equal((await handler(request())).status, 403)
       await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE organisation_id=$1", [A])
+    })
+    await t.test('missing or revoked module cannot use otherwise valid product access', async () => {
+      assert.throws(() => createSrmPrivateOperationHost({ ...options, module: undefined }), /explicit consistent/i)
+      const wrong = createSrmPrivateOperationHost({ ...options, module: { ...options.module, auditSchemaDigest: 'f'.repeat(64) } })
+      assert.equal((await createOperationReportDataHandler(wrong, { SRM_DEMO_SESSION_SECRET: 'isolated-preference-key-not-a-customer-secret' })(request())).status, 503)
+      await owner.query("UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='srm'")
+      try { assert.equal((await handler(request())).status, 403) }
+      finally { await owner.query("UPDATE profitia_modules.application_bindings SET status='ACTIVE' WHERE application_id='srm'") }
+    })
+    await t.test('base-only lease and the legacy organisation setting cannot bypass the module fence', async () => {
+      const client = await pool.connect()
+      try {
+        await client.query('BEGIN')
+        const query = async (sql, values = []) => ({ rows: (await client.query(sql, values)).rows })
+        const store = createAccessStore({ binding: options.binding })
+        const identityBinding = await store.resolveBinding(query, { environment: 'development', issuer: ISSUER, subject: `external-${U}` })
+        await store.lockAccess(query, { actor: { kind: 'HUMAN', actorId: U, userId: U, environment: 'development', audience: 'srm', issuer: ISSUER, expiresAt: expiry() }, identityBinding, organisationId: A })
+        await client.query("SELECT set_config('srm.organization_id',$1,true)", [A])
+        assert.equal((await client.query('SELECT * FROM srm.financial_source_documents')).rowCount, 0)
+        assert.equal((await client.query('SELECT * FROM srm.catalog_companies')).rowCount, 0)
+      } finally { await client.query('ROLLBACK'); client.release() }
+      assert.equal((await handler(request())).status, 200)
+    })
+    await t.test('native pg preserves the dedicated module expiry state and records no false ALLOW', async () => {
+      const event = (await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='INTENT' ORDER BY event_id LIMIT 1")).rows[0].event
+      const expired = { ...event, decisionId: randomUUID(), moduleEvidence: { ...event.moduleEvidence, expiresAt: new Date(Date.now() - 1000).toISOString() } }
+      await assert.rejects(pool.query('SELECT profitia_access.append_audit($1::jsonb)', [JSON.stringify(expired)]), error => error.code === 'PT403')
     })
     await t.test('OUTCOME failure rolls back actual archive restoration', async () => {
       await owner.query('DELETE FROM srm.financial_source_documents WHERE organization_id=$1', [A])
@@ -212,6 +255,23 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       const client = await pool.connect()
       try { assert.equal((await client.query('SELECT * FROM srm.financial_source_documents')).rowCount, 0); await assert.rejects(client.query('SELECT * FROM profitia_access.accounts'), /permission denied/) }
       finally { client.release() }
+    })
+    await t.test('expiry after an actual report-side write rolls back and keeps matching failure evidence', async () => {
+      await owner.query("UPDATE profitia_modules.application_bindings SET expires_at=clock_timestamp()+interval '1 second' WHERE application_id='srm'")
+      let id
+      try {
+        await assert.rejects(host.execute(input, async (context, client) => {
+          await client.query("SELECT set_config('srm.organization_id',$1,true)", [context.organisationId])
+          id = (await client.query("INSERT INTO srm.suppliers(organization_id,nip,display_name) VALUES($1,$2,'Must expire') RETURNING id", [A, NIP])).rows[0].id
+          await new Promise(resolve => setTimeout(resolve, 1200)); return Response.json({ nip: NIP })
+        }), error => error.reasonCode === 'ACCESS_BASIS_INVALID')
+        assert(id)
+        assert.equal((await owner.query('SELECT count(*)::int n FROM srm.suppliers WHERE id=$1', [id])).rows[0].n, 0)
+        const events = (await owner.query('SELECT event FROM profitia_access.security_events ORDER BY event_id DESC LIMIT 2')).rows.map(row => row.event)
+        assert.deepEqual(events.map(event => event.phase), ['FAILURE', 'INTENT'])
+        assert.equal(events[0].reasonCode, 'ACCESS_BASIS_INVALID')
+        assert.deepEqual(events[0].moduleEvidence, events[1].moduleEvidence)
+      } finally { await owner.query("UPDATE profitia_modules.application_bindings SET expires_at=$1 WHERE application_id='srm'", [expiry()]) }
     })
   } finally { globalThis.fetch = previousFetch; await pool?.end(); await auditPool?.end(); await owner?.end(); await root.end() }
 })

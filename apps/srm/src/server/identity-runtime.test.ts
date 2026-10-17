@@ -3,6 +3,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createClerkIdentityAuthenticator } from "@profitia/platform-contracts/identity-provider";
+import { clerkConfigurationSourceDigest } from "@profitia/platform-contracts/clerk-configuration";
 import { ClerkSignIn } from "../../app/login/clerk-sign-in";
 import { createSrmClerkClient, IdentityConfigurationUnavailable, readSrmIdentityRuntime } from "./identity-runtime";
 
@@ -10,7 +11,7 @@ const hostname = "identity-fixture.clerk.accounts.dev";
 // Deliberately short invalid credentials: sufficient for configuration-prefix
 // tests, never usable with an identity provider or mistaken for a real secret.
 const secret = "sk_test_fixture";
-const development = () => ({ SRM_AUTH_PROVIDER: "clerk", TARGET_ENVIRONMENT: "development",
+const development = () => ({ PROFITIA_AUTH_PROVIDER: "clerk", TARGET_ENVIRONMENT: "development",
   PROFITIA_CLERK_ISSUER: `https://${hostname}`,
   PROFITIA_CLERK_PUBLISHABLE_KEY: `pk_test_${Buffer.from(hostname + "$").toString("base64url")}`,
   PROFITIA_CLERK_SECRET_KEY: secret,
@@ -19,11 +20,16 @@ const development = () => ({ SRM_AUTH_PROVIDER: "clerk", TARGET_ENVIRONMENT: "de
 
 test("the current deployment remains legacy until explicitly configured; unknown mode fails closed", () => {
   assert.deepEqual(readSrmIdentityRuntime({}), { provider: "legacy_demo" });
-  assert.throws(() => readSrmIdentityRuntime({ SRM_AUTH_PROVIDER: "clerkk" }), IdentityConfigurationUnavailable);
+  assert.throws(() => readSrmIdentityRuntime({ PROFITIA_AUTH_PROVIDER: "clerkk" }), IdentityConfigurationUnavailable);
+});
+
+test("SRM explicitly accepts the one shared configuration implementation and requires the actual target environment", async () => {
+  assert.equal(await clerkConfigurationSourceDigest(), 'b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246');
+  assert.throws(() => readSrmIdentityRuntime({ ...development(), TARGET_ENVIRONMENT: undefined, APP_ENV: 'development' }), IdentityConfigurationUnavailable);
 });
 
 test("each missing explicit Clerk input fails closed with a redacted error", () => {
-  for (const key of Object.keys(development()).filter(key => key !== "SRM_AUTH_PROVIDER")) {
+  for (const key of Object.keys(development()).filter(key => key !== "PROFITIA_AUTH_PROVIDER")) {
     const env = { ...development(), [key]: undefined };
     assert.throws(() => readSrmIdentityRuntime(env), error => error instanceof IdentityConfigurationUnavailable &&
       error.message === "Identity configuration unavailable" && !error.stack?.includes(secret));

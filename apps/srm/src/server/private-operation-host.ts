@@ -22,20 +22,21 @@ function acquire(pool: pg.Pool, maxWaitMs: number): Promise<PoolClient> {
 
 /** Native pg driver only. Policies, identity resolution, decisions and audit
  * remain in the accepted common mechanism. No live route is activated here. */
-export function createSrmPrivateOperationHost(options: Omit<HostOptions, "independentQuery" | "transact" | "createAuthenticator"> & {
+export function createSrmPrivateOperationHost(options: Omit<HostOptions, "independentQuery" | "transact" | "createAuthenticator" | "module"> & {
   pool: pg.Pool;
   /** Separate native pool with capacity reserved within the login's budget. */
   auditPool: pg.Pool;
   clerk: ClerkIdentityClient;
   identity: IdentityApplication;
+  module: { id: 'supplier_report'; schemaDigest: string; auditSchemaDigest: string };
 }) {
   const { pool, auditPool, clerk, now } = options;
   const identity = structuredClone(options.identity);
-  if (!auditPool || pool === auditPool || options.application.appId !== "srm"
+  if (!auditPool || pool === auditPool || !options.module || options.module.id !== 'supplier_report' || options.application.appId !== "srm"
     || identity.appId !== options.application.appId || identity.environment !== options.application.environment
     || identity.issuer !== options.application.identityIssuer) throw new TypeError("Explicit consistent SRM host and independent audit pool required");
   return createPrivateOperationHost<PoolClient>({
-    application: options.application, binding: options.binding, now,
+    application: options.application, binding: options.binding, module: options.module, now,
     transactionTimeoutMs: options.transactionTimeoutMs,
     readResources: options.readResources, projectOutput: options.projectOutput,
     independentQuery: async (sql, values = []) => ({ rows: (await auditPool.query(sql, values)).rows }),
