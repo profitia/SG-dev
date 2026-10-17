@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 import {
   isTemporaryPublicBenchmarkComponentRequest,
   resolveCognitionAuth,
+  withCognitionAuth,
 } from '../lib/api/middleware'
 import { createPorrDemoSessionToken } from '../lib/porr-demo-session'
 import { resolvePorrDemoSessionCookieName } from '../lib/porr-demo-profile'
@@ -124,7 +125,7 @@ test('production runtime fails closed when temporary profile identity is incompl
   assert.equal(auth, null)
 })
 
-test('normal Clerk-authenticated behavior is unchanged', async () => {
+test('unsigned Clerk headers cannot replace the explicitly configured temporary profile', async () => {
   const request = buildRequest('http://localhost/api/benchmark/search?q=steel', {
     headers: {
       'x-clerk-org-id': 'org-1',
@@ -145,11 +146,69 @@ test('normal Clerk-authenticated behavior is unchanged', async () => {
   })
 
   assert.deepEqual(auth, {
-    orgId: 'org-1',
-    userId: 'user-1',
-    orgRole: 'admin',
+    orgId: 'temp-org',
+    userId: 'temp-user',
+    orgRole: 'viewer',
     requestId: 'req-123',
   })
+})
+
+test('forged identity cannot bypass an absent profile, the PORR session or an unrelated path', async () => {
+  const headers = { 'x-clerk-org-id': 'foreign-org', 'x-clerk-user-id': 'foreign-user', 'x-clerk-org-role': 'owner' }
+  for (const config of [
+    { isDevelopmentRuntime: false, isTemporaryPublicBenchmarkComponentProfile: false, isPorrDemoProfile: false },
+    { isDevelopmentRuntime: true, isTemporaryPublicBenchmarkComponentProfile: false, isPorrDemoProfile: true },
+    { isDevelopmentRuntime: false, isTemporaryPublicBenchmarkComponentProfile: true, isPorrDemoProfile: false, developmentOrgId: 'temp-org', developmentUserId: 'temp-user', developmentOrgRole: 'viewer' },
+  ]) {
+    const request = buildRequest('http://localhost/api/internal/forecast/production', { headers })
+    assert.equal(await resolveCognitionAuth(request, config), null)
+  }
+})
+
+test('forged headers cannot replace a valid signed PORR session or its role', async () => {
+  const token = await createPorrDemoSessionToken('secret', { orgId: 'porr-org', userId: 'porr-user', orgRole: 'viewer' })
+  const request = buildRequest('http://localhost/api/benchmark/metadata', { headers: {
+    cookie: `${resolvePorrDemoSessionCookieName('development')}=${token}`,
+    'x-clerk-org-id': 'foreign-org', 'x-clerk-user-id': 'foreign-user', 'x-clerk-org-role': 'owner',
+  } })
+  const auth = await resolveCognitionAuth(request, { isDevelopmentRuntime: true,
+    isTemporaryPublicBenchmarkComponentProfile: false, isPorrDemoProfile: true,
+    developmentOrgId: 'porr-org', developmentUserId: 'porr-user', developmentOrgRole: 'viewer',
+    porrDemoPassword: 'pw', porrDemoSessionSecret: 'secret', appEnv: 'development' })
+  assert.equal(auth?.orgId, 'porr-org'); assert.equal(auth?.userId, 'porr-user'); assert.equal(auth?.orgRole, 'viewer')
+})
+
+test('explicit Clerk or invalid provider cannot fall back to a legacy cookie or a development identity', async () => {
+  const token = await createPorrDemoSessionToken('secret', { orgId: 'porr-org', userId: 'porr-user', orgRole: 'viewer' })
+  const request = buildRequest('http://localhost/api/benchmark/metadata', { headers: {
+    cookie: `${resolvePorrDemoSessionCookieName('development')}=${token}`,
+    authorization: 'Bearer synthetic-not-a-provider-session',
+    'x-clerk-org-id': 'foreign-org', 'x-clerk-user-id': 'foreign-user', 'x-clerk-org-role': 'owner',
+  } })
+  for (const authProvider of ['clerk', 'clerkk', 'false', '', 'unknown']) {
+    for (const isPorrDemoProfile of [true, false]) {
+      assert.equal(await resolveCognitionAuth(request, { authProvider, isDevelopmentRuntime: true,
+        isTemporaryPublicBenchmarkComponentProfile: !isPorrDemoProfile, isPorrDemoProfile,
+        developmentOrgId: 'porr-org', developmentUserId: 'porr-user', developmentOrgRole: 'viewer',
+        porrDemoPassword: 'pw', porrDemoSessionSecret: 'secret', appEnv: 'development' }), null)
+    }
+  }
+})
+
+test('actual HTTP wrapper never invokes a legacy business handler when Clerk is selected', async () => {
+  const previous = process.env.PROFITIA_AUTH_PROVIDER
+  process.env.PROFITIA_AUTH_PROVIDER = 'clerk'
+  let calls = 0
+  try {
+    const handle = withCognitionAuth(async () => { calls++; return NextResponse.json({ shouldNotRun: true }) })
+    const response = await handle(buildRequest('http://localhost/api/benchmark/metadata', { headers: {
+      'x-clerk-org-id': 'foreign-org', 'x-clerk-user-id': 'foreign-user', 'x-clerk-org-role': 'owner',
+    } }))
+    assert.equal(response.status, 401); assert.equal((await response.json()).code, 'UNAUTHORIZED'); assert.equal(calls, 0)
+  } finally {
+    if (previous === undefined) delete process.env.PROFITIA_AUTH_PROVIDER
+    else process.env.PROFITIA_AUTH_PROVIDER = previous
+  }
 })
 
 test('existing local development fallback behavior is unchanged when PORR profile is disabled', async () => {

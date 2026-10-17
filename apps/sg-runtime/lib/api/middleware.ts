@@ -3,12 +3,13 @@
  * PCOS-8 — SG2 Operational API Runtime
  *
  * Next.js-specific middleware helpers for procurement cognition API routes.
- * Provides Clerk org context extraction, tenant isolation enforcement,
+ * Provides legacy deployment-profile context, request validation,
  * request parsing and structured response builders.
  *
  * ARCHITECTURAL CONSTRAINTS:
- * - orgId extracted from Clerk headers ONLY — never from body/query
- * - Every handler is wrapped with tenant isolation
+ * - Legacy identity comes only from its verified demo session or explicit server profile
+ * - Request headers never establish an individual user, organisation or role
+ * - Individual authentication/permissions belong to the accepted shared private host
  * - Validation errors return 400 with structured ApiError
  * - Auth errors return 401 with structured ApiError
  * - Runtime errors return 500 with structured ApiError
@@ -46,6 +47,8 @@ export interface CognitionAuthContext {
 type AuthRequestLike = Pick<NextRequest, 'headers' | 'method' | 'nextUrl'>
 
 type CognitionAuthRuntimeConfig = {
+  /** This resolver is exclusively for the retained legacy profile. */
+  readonly authProvider?: string
   readonly isDevelopmentRuntime: boolean
   readonly isTemporaryPublicBenchmarkComponentProfile: boolean
   readonly isPorrDemoProfile: boolean
@@ -187,17 +190,11 @@ export async function resolveCognitionAuth(
   request: AuthRequestLike,
   config: CognitionAuthRuntimeConfig,
 ): Promise<CognitionAuthContext | null> {
-  const orgId = request.headers.get('x-clerk-org-id')
-  const userId = request.headers.get('x-clerk-user-id')
-
-  if (orgId && userId) {
-    return {
-      orgId,
-      userId,
-      orgRole: request.headers.get('x-clerk-org-role') ?? undefined,
-      requestId: request.headers.get('x-request-id') ?? randomUUID(),
-    }
-  }
+  // A Clerk-prefixed header is ordinary caller input. The root middleware does
+  // not attest it. Real Clerk mode must use the accepted private operation host,
+  // never this legacy resolver or a demo/development fallback.
+  const provider = config.authProvider === undefined ? 'legacy_demo' : config.authProvider
+  if (provider !== 'legacy_demo') return null
 
   const porrDemoAuth = await resolvePorrDemoAuth(request, config)
   if (porrDemoAuth) {
@@ -217,11 +214,12 @@ export async function resolveCognitionAuth(
 }
 
 /**
- * Extract Clerk auth context from Next.js request headers.
- * Clerk middleware injects x-clerk-org-id and x-clerk-user-id before the route handler.
+ * Resolve retained deployment/demo context. This does not authenticate an
+ * individual Clerk account or establish its organisation membership.
  */
 export async function extractCognitionAuth(request: NextRequest): Promise<CognitionAuthContext | null> {
   return resolveCognitionAuth(request, {
+    authProvider: process.env.PROFITIA_AUTH_PROVIDER,
     isDevelopmentRuntime,
     isTemporaryPublicBenchmarkComponentProfile,
     isPorrDemoProfile,
