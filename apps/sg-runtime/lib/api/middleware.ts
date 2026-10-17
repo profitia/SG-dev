@@ -269,7 +269,7 @@ type CognitionHandler<TArgs extends unknown[] = []> = (
   ...args: TArgs
 ) => Promise<NextResponse>
 
-function privateApiResponse(response: NextResponse): NextResponse {
+export function privateApiResponse(response: NextResponse): NextResponse {
   response.headers.set('Cache-Control', 'private, no-store')
   const vary = response.headers.get('Vary')?.split(',').map(value => value.trim()).filter(Boolean) ?? []
   if (!vary.includes('*')) {
