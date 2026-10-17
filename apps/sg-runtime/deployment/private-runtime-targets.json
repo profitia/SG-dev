@@ -60,6 +60,29 @@
         "observedState": "PREPARED_NOT_ACTIVATED",
         "observedAt": "2026-10-17T22:07:16.133Z",
         "preparationEvidence": "apps/sg-runtime/deployment/market-read-preparation.json"
+      },
+      "forecastRead": {
+        "configurationVersion": "sg2-private-stored-rolling-current-e1-v1",
+        "activationVariable": "PROFITIA_FORECAST_READ_ENABLED",
+        "defaultEnabled": false,
+        "source": "apps/sg-runtime/prisma-market-data/private-read/002-stored-rolling-current.sql",
+        "schemaDigest": "07bddbe237f0573472b62421f19edeb8cacc4867f23c44fe74605ef1f579e533",
+        "marketSchemaDigest": "596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304",
+        "projectId": "autumn-waterfall-65938876",
+        "branchId": "br-dry-hall-b294222f",
+        "hosts": [
+          "ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech",
+          "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech"
+        ],
+        "databaseName": "neondb",
+        "schemaName": "profitia_forecast_read",
+        "runtimeRole": "sg2_forecast_read_development_runtime",
+        "scope": "STORED_SHARED_POINT_IN_TIME_ROLLING_DAILY_CURRENT_READ_ONLY",
+        "observedState": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED",
+        "catalogObservation": "2026-10-17T22:55:57.166Z",
+        "observedCandidateSchemaCount": 0,
+        "observedCandidateRoleCount": 0,
+        "catalogObserver": "neondb_owner; catalog metadata only, not a runtime-role proof"
       }
     },
     "staging": {

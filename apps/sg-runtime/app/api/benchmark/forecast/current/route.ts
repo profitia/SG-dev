@@ -1,6 +1,6 @@
-import { createCurrentForecastRouteHandler } from '@/lib/forecast/route-handlers'
+import { createRuntimeForecastCurrentHandler } from '@/lib/forecast/current-operation-handlers'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export const GET = createCurrentForecastRouteHandler()
+export const GET = createRuntimeForecastCurrentHandler()

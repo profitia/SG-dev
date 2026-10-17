@@ -6,15 +6,19 @@ import type { AccessStoreBinding } from '@profitia/platform-contracts/access-sto
 import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
 import targets from '@/deployment/private-runtime-targets.json'
 import { createSg2ClerkClient, IdentityConfigurationUnavailable, readSg2IdentityRuntime } from './identity-runtime'
-import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost } from './private-host'
+import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost, createSg2PrivateForecastCurrentHost } from './private-host'
 import { createStoredMarketHistoryReader,type StoredMarketBinding } from '@/lib/market-data/stored-read'
 import type { BenchmarkPreviewResult,BenchmarkAnalyticsSeriesResult,BenchmarkRangePreset } from '@/lib/benchmark/contracts'
+
+import type { StoredForecastBinding } from '@/lib/forecast/stored-current-read'
+import type { ForecastCurrentSelectionValue, StoredCurrentForecastResult } from './forecast-current'
 
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<Prisma.TransactionClient>; defaultOrganisationId: string
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
   category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
+  forecastRead?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; current: (selection: ForecastCurrentSelectionValue) => Promise<StoredCurrentForecastResult> }>
   marketRead?: Readonly<{
     executor: OperationExecutor<Prisma.TransactionClient>
     preview:(selection:{seriesName:string;range:BenchmarkRangePreset})=>Promise<BenchmarkPreviewResult>
@@ -30,6 +34,7 @@ type PrivateConfiguration = Readonly<{
   supplierSummary?: Readonly<{ origin: string; configurationVersion: string }>
   category?: Readonly<{ configurationVersion: string; boundaryDigest: string }>
   marketRead?: Readonly<{configurationVersion:string;databaseUrl:string;binding:StoredMarketBinding}>
+  forecastRead?: Readonly<{configurationVersion:string;databaseUrl:string;binding:StoredForecastBinding}>
 }>
 function unavailable(): never { throw new IdentityConfigurationUnavailable() }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -43,7 +48,7 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   // The new private Staging/Production bindings are deliberately not invented.
   if (identity.application.environment !== 'development') unavailable()
   const target = targets.environments.development
-  for (const flag of ['PROFITIA_SUPPLIER_SUMMARY_ENABLED','PROFITIA_CATEGORY_ENABLED','PROFITIA_MARKET_READ_ENABLED']) {
+  for (const flag of ['PROFITIA_SUPPLIER_SUMMARY_ENABLED','PROFITIA_CATEGORY_ENABLED','PROFITIA_MARKET_READ_ENABLED','PROFITIA_FORECAST_READ_ENABLED']) {
     if (env[flag] !== undefined && !['true','false'].includes(env[flag]!)) unavailable()
   }
   if (env.PROFITIA_OPERATION_CONFIGURATION_VERSION !== targets.configurationVersion
@@ -77,6 +82,23 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
     marketRead={configurationVersion:source.configurationVersion,databaseUrl:marketUrl.toString(),
       binding:{projectId:source.projectId,branchId:source.branchId,databaseName:source.databaseName,role:source.runtimeRole,schemaDigest:source.schemaDigest}}
   }
+  let forecastRead: PrivateConfiguration['forecastRead']
+  if (env.PROFITIA_FORECAST_READ_ENABLED === 'true') {
+    const source = target.forecastRead, input = env.PROFITIA_FORECAST_READ_DATABASE_URL
+    if (!input || input !== input.trim()) unavailable()
+    let forecastUrl: URL
+    try { forecastUrl = new URL(input) } catch { return unavailable() }
+    if (!['postgresql:','postgres:'].includes(forecastUrl.protocol) || !source.hosts.includes(forecastUrl.hostname)
+      || forecastUrl.username !== source.runtimeRole || !forecastUrl.password || forecastUrl.port && forecastUrl.port !== '5432'
+      || forecastUrl.pathname !== `/${source.databaseName}` || forecastUrl.hash
+      || [...forecastUrl.searchParams.keys()].some(key => !['sslmode','channel_binding'].includes(key))
+      || forecastUrl.searchParams.getAll('sslmode').length !== 1 || forecastUrl.searchParams.get('sslmode') !== 'require'
+      || forecastUrl.searchParams.getAll('channel_binding').length > 1
+      || forecastUrl.searchParams.has('channel_binding') && forecastUrl.searchParams.get('channel_binding') !== 'require') unavailable()
+    forecastRead = { configurationVersion: source.configurationVersion, databaseUrl: forecastUrl.toString(),
+      binding: { projectId: source.projectId, branchId: source.branchId, databaseName: source.databaseName, role: source.runtimeRole,
+        schemaDigest: source.schemaDigest, marketSchemaDigest: source.marketSchemaDigest } }
+  }
   const configuration: PrivateConfiguration = { provider: 'clerk', databaseUrl: url.toString(), identity: identity.application,
     application: { appId: 'spendguru', profileId: 'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
@@ -85,7 +107,7 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
     binding: { applicationId: 'spendguru', environment: 'development', projectId: target.projectId,
       branchId: target.branchId, databaseName: target.databaseName, role: target.runtimeRole, schemaDigest: target.accessSchemaDigest },
     module: { id: 'benchmark', schemaDigest: target.moduleSchemaDigest, auditSchemaDigest: target.auditSchemaDigest },
-    ...(marketRead?{marketRead}:{}),
+    ...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}),
     ...(env.PROFITIA_CATEGORY_ENABLED === 'true' ? { category: {
       configurationVersion: target.category.configurationVersion, boundaryDigest: target.category.boundaryDigest,
     } } : {}),
@@ -156,8 +178,23 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
           return getBenchmarkAnalyticsSeries(seriesName,range,readHistory)
         }})})
   })():undefined
+  const forecastRead = config.forecastRead ? (() => {
+    const source = config.forecastRead!
+    // Initialize the generated forecast client and business graph only inside
+    // an authorized callback. Cache a store/pool, never identity or authority.
+    let reader: Promise<ReturnType<typeof import('@/lib/forecast/stored-current-read')['createStoredCurrentForecastReader']>> | undefined
+    return Object.freeze({ executor: createSg2PrivateForecastCurrentHost({ prisma, auditPrisma, clerk,
+      identity: config.identity, binding: config.binding, module: config.module,
+      application: { ...config.application, configurationVersion: source.configurationVersion, operations: ['forecast.read'], features: ['forecast'] } }),
+      current: async (selection: ForecastCurrentSelectionValue) => {
+        reader ??= Promise.all([import('@/generated/market-data-client'), import('@/lib/forecast/stored-current-read')])
+          .then(([{ PrismaClient: MarketClient }, { createStoredCurrentForecastReader }]) => createStoredCurrentForecastReader(
+            new MarketClient({ datasources: { db: { url: poolUrl(source.databaseUrl, 1, 'profitia_forecast_read') } } }), source.binding))
+        return (await reader)(selection)
+      } })
+  })() : undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
-    ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}) })
+    ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}) })
   globalThis.__sg2PrivateSelectionRuntime__ = { key, runtime }
   return runtime
 }
