@@ -1,4 +1,4 @@
-export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project'
+export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export interface Actor {
@@ -29,6 +29,12 @@ export interface OperationState {
   policyVersion: string; applicationId: string; environment: Environment
   access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE'; inputs?: Resource[]
 }
+/** Trusted module binding provenance; carries no credential or permission. */
+export interface ModuleEvidence {
+  moduleId: 'benchmark' | 'category' | 'supplier_report'; moduleBindingId: string
+  version: string; sourceRef: string; expiresAt: string; transactionId: string
+  moduleSchemaDigest: string; auditSchemaDigest: string
+}
 export interface OperationContext {
   decisionId: string; contractId: string; contractVersion: string; implementationVersion: string; applicationId: string
   applicationProfile: string; occurredAt: string; operationStartedAt: string
@@ -37,12 +43,14 @@ export interface OperationContext {
   organisationId: string | null; mode: 'ORGANISATION' | 'ACCOUNT'; policyVersion: string; accessVersion: string
   accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE'; resourceId: string; resource: Readonly<Resource>
   productEvidence: ReadonlyArray<Pick<ProductGrant, 'product' | 'version' | 'sourceRef' | 'source' | 'expiresAt'> & { feature: string }>; usagePolicy: 'NOT_APPLICABLE'
+  moduleEvidence?: Readonly<ModuleEvidence>
   payload: Json; payloadDigest: string; correlationId: string
 }
 export interface AuditEvent {
   decisionId: string; occurredAt: string; operationStartedAt: string; applicationId: string; environment: Environment; operation: string | null
   actorId: string | null; actorKind: string | null; subjectUserId: string | null; organisationId: string | null
   phase: 'INTENT' | 'OUTCOME' | 'DECISION' | 'FAILURE'; decision: 'ALLOW' | 'DENY'; reasonCode: string
+  moduleEvidence?: Readonly<ModuleEvidence>
   [key: string]: unknown
 }
 export interface OperationInput {
@@ -55,18 +63,20 @@ export interface BoundRequest {
 export interface OperationSession<Transaction> {
   state: OperationState; transaction: Transaction; transactionalEffects: true; outputBoundaryVersion: string
   recordOutcome(event: AuditEvent): Promise<void>
+  moduleEvidence?: Readonly<ModuleEvidence>
   projectOutput(value: unknown, context: Readonly<OperationContext>): unknown | Promise<unknown>
 }
 export interface OperationExecutor<Transaction = unknown> {
   contract: Readonly<{ id: string; version: string; implementation: string }>
   execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractId: string; contractVersion: string; value: T }>>
 }
-export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.3' }>
+export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.4' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
 export declare function isOperationDenied(error: unknown): error is OperationDenied
 export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
+export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
   application: Application; now?: () => number
   authenticate(request: unknown): Promise<Actor | null>

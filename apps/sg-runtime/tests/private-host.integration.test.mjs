@@ -6,7 +6,8 @@ import { execFileSync } from 'node:child_process'
 import test from 'node:test'
 import { PrismaClient } from '@prisma/client'
 import { NextRequest } from 'next/server.js'
-import { accessSchemaUrl, accessStoreSourceDigest } from '@profitia/platform-contracts/access-store'
+import { accessSchemaUrl, accessStoreSourceDigest, createAccessStore, moduleAuditSchemaUrl, moduleAuditSchemaDigest } from '@profitia/platform-contracts/access-store'
+import { moduleSchemaUrl, moduleSchemaDigest } from '@profitia/platform-contracts/module-scope'
 import { identitySourceDigest } from '@profitia/platform-contracts/identity-provider'
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
 import { OPERATION_CONTRACT } from '@profitia/platform-contracts/operation-context'
@@ -19,12 +20,18 @@ const U = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', V = 'bbbbbbbb-bbbb-4bbb-8bbb-b
 const ISSUER = 'https://identity.fixture.test', ORIGIN = 'http://localhost:3001'
 const schema = fs.readFileSync(new URL(accessSchemaUrl), 'utf8')
 const digest = createHash('sha256').update(schema).digest('hex')
+const moduleSql = fs.readFileSync(new URL(moduleSchemaUrl), 'utf8')
+const moduleDigest = await moduleSchemaDigest()
+const moduleAuditSql = fs.readFileSync(new URL(moduleAuditSchemaUrl), 'utf8')
+const auditDigest = await moduleAuditSchemaDigest()
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 
 test('SG2 explicitly accepts the published optional producer fingerprints', async () => {
-  assert.equal(await accessStoreSourceDigest(), '4e56e58220815661c3882c59ec897b0d740bf84bbf0485c84fb82007d6e00e50')
+  assert.equal(await accessStoreSourceDigest(), 'e0d3fb3c2201816755b76546976c964791adee21a8b528c05b0adbd1af09a8ca')
   assert.equal(await identitySourceDigest(), '7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
-  assert.equal(await privateOperationHostSourceDigest(), 'c9ebdef2de453f10346f7e3f8268b21391f1a32a0911ef8f5441163db7aa067b')
+  assert.equal(await privateOperationHostSourceDigest(), 'd6911d606898d7df06c09755947bec2a81c777cc3549a71b4cb3074022bee18c')
+  assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
+  assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
   assert.equal(digest, '356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
 })
 
@@ -47,7 +54,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     owner = new pg.Client({ connectionString: dbUrl.toString() }); await owner.connect()
     // Only this explicitly named, guarded LOOPBACK database may be reset.
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db, DATABASE)
-    await owner.query('DROP SCHEMA IF EXISTS profitia_access CASCADE; DROP SCHEMA IF EXISTS sg_runtime_benchmarks CASCADE')
+    await owner.query('DROP SCHEMA IF EXISTS profitia_modules CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE; DROP SCHEMA IF EXISTS sg_runtime_benchmarks CASCADE')
     await owner.query(`GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
     await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
     await owner.query(schema)
@@ -67,6 +74,12 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       }
     }
     await owner.query(`GRANT USAGE ON SCHEMA profitia_access TO ${ROLE}; GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_access.identity_binding(text,text),profitia_access.lock_access(uuid,uuid,text,text,text),profitia_access.scope_allows(text,uuid,uuid),profitia_access.append_audit(jsonb) TO ${ROLE}`)
+    await owner.query(moduleSql)
+    await owner.query("INSERT INTO profitia_modules.installation(schema_version,schema_digest) VALUES('1.0.0',$1)", [moduleDigest])
+    await owner.query("INSERT INTO profitia_modules.application_bindings(application_id,module_id,binding_id,status,source_ref,expires_at) VALUES('spendguru','benchmark',$1,'ACTIVE','SYNTHETIC_MODULE_BINDING',$2)", [randomUUID(), expiry()])
+    await owner.query(moduleAuditSql)
+    await owner.query("INSERT INTO profitia_modules.audit_installation(envelope_version,schema_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_NOT_A_RELEASE')", [auditDigest])
+    await owner.query(`GRANT USAGE ON SCHEMA profitia_modules TO ${ROLE}; GRANT EXECUTE ON FUNCTION profitia_modules.runtime_descriptor(),profitia_modules.bind_scope(text),profitia_modules.scope_allows(text,uuid,uuid),profitia_modules.audit_descriptor() TO ${ROLE}`)
     await owner.query('COMMIT')
     const prismaOwnerUrl = new URL(dbUrl); prismaOwnerUrl.searchParams.set('schema', 'sg_runtime_benchmarks')
     execFileSync(process.execPath, ['node_modules/prisma/build/index.js', 'db', 'push', '--skip-generate', '--schema', 'prisma/schema.prisma'], { env: { ...process.env, SG_RUNTIME_DATABASE_URL: prismaOwnerUrl.toString(), SG_RUNTIME_DIRECT_URL: prismaOwnerUrl.toString() }, stdio: 'pipe' })
@@ -93,6 +106,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       users: { async getUser(id) { return { id, banned: false, locked: false, deprovisioned: false } } },
     }
     const configuration = { prisma, auditPrisma, clerk, application: { appId: 'spendguru', profileId: 'SPENDGURU_SAAS', environment: 'development', deploymentId: 'isolated-sg2', configurationVersion: '1', identityIssuer: ISSUER, organisationId: null, operations: ['benchmark.selection.read', 'benchmark.selection.write'], features: ['benchmark'] }, identity: { appId: 'spendguru', environment: 'development', issuer: ISSUER, authorizedParties: [ORIGIN] }, binding: { applicationId: 'spendguru', environment: 'development', projectId: 'isolated-private-project', branchId: 'isolated-private-branch', databaseName: DATABASE, role: ROLE, schemaDigest: digest } }
+    configuration.module = { id: 'benchmark', schemaDigest: moduleDigest, auditSchemaDigest: auditDigest }
     const host = createSg2PrivateBenchmarkHost(configuration)
     globalThis.fetch = async input => {
       const url = String(input)
@@ -115,6 +129,10 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       assert.deepEqual((await owner.query('SELECT "organizationId","createdByUserId" FROM sg_runtime_benchmarks."OrganizationBenchmarkSelection"')).rows, [{ organizationId: A, createdByUserId: U }])
       const phases = (await owner.query("SELECT phase FROM profitia_access.security_events WHERE event->>'decision'='ALLOW' ORDER BY event_id")).rows.map(r => r.phase)
       assert.deepEqual(phases, ['INTENT', 'OUTCOME'])
+      const events = (await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'decision'='ALLOW' ORDER BY event_id")).rows.map(row => row.event)
+      assert.equal(events[0].moduleEvidence.moduleId, 'benchmark')
+      assert.equal(events[0].moduleEvidence.auditSchemaDigest, auditDigest)
+      assert.deepEqual(events[1].moduleEvidence, events[0].moduleEvidence)
     })
     await t.test('same organisation shares rows but a read-only member cannot write', async () => {
       const response = await handlers.GET(request('GET', A, V)); assert.equal(response.status, 200); assert.equal((await response.json()).items.length, 1)
@@ -122,11 +140,8 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     })
     await t.test('two organisations remain separate and foreign membership is denied', async () => {
       assert.equal((await handlers.POST(request('POST', B))).status, 201); assert.equal(await count(), 2)
-      // Accepted access-store 1.0.0 fails closed with POLICY_UNAVAILABLE when
-      // lock_access returns no membership. HTTP classification is a known
-      // producer limitation, not evidence of membership or permission granted.
       const calls = providerCalls
-      assert.equal((await handlers.GET(request('GET', B, V))).status, 503)
+      assert.equal((await handlers.GET(request('GET', B, V))).status, 403)
       assert.equal(providerCalls, calls); assert.equal(await count(), 2)
       for (const org of [A, B]) { const response = await handlers.GET(request('GET', org)); assert.equal(response.status, 200); const data = await response.json(); assert.equal(data.items.length, 1); assert.equal(data.items[0].organizationId, org) }
     })
@@ -149,6 +164,37 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE organisation_id=$1", [A])
     })
     const directInput = { contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, operation: 'benchmark.selection.write', organisationId: A, resourceId: `benchmark-selections:${A}`, payload: null, request: request() }
+    await t.test('module configuration and current module access cannot silently fall back to base access', async () => {
+      assert.throws(() => createSg2PrivateBenchmarkHost({ ...configuration, module: undefined }), /configuration required/)
+      const calls = providerCalls
+      const wrong = createSg2PrivateBenchmarkHost({ ...configuration, module: { ...configuration.module, auditSchemaDigest: 'f'.repeat(64) } })
+      assert.equal((await createOperationBenchmarkSelectionHandlers(wrong).POST(request('POST'))).status, 503)
+      await owner.query("UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='spendguru'")
+      try { assert.equal((await handlers.POST(request('POST'))).status, 403) }
+      finally { await owner.query("UPDATE profitia_modules.application_bindings SET status='ACTIVE' WHERE application_id='spendguru'") }
+      assert.equal(providerCalls, calls); assert.equal(await count(), 2)
+    })
+    await t.test('restrictive module fence survives a legacy permissive policy and an otherwise valid base lease', async () => {
+      await owner.query('CREATE POLICY synthetic_legacy_or ON sg_runtime_benchmarks."OrganizationBenchmarkSelection" USING(true) WITH CHECK(true)')
+      try {
+        await prisma.$transaction(async tx => {
+          const query = async (sql, values = []) => ({ rows: await tx.$queryRawUnsafe(sql, ...values) })
+          const store = createAccessStore({ binding: configuration.binding })
+          const identityBinding = await store.resolveBinding(query, { environment: 'development', issuer: ISSUER, subject: `external-${U}` })
+          await store.lockAccess(query, { actor: { kind: 'HUMAN', actorId: U, userId: U, environment: 'development', audience: 'spendguru', issuer: ISSUER, expiresAt: expiry() }, identityBinding, organisationId: A })
+          assert.equal((await tx.$queryRawUnsafe('SELECT * FROM sg_runtime_benchmarks."OrganizationBenchmarkSelection"')).length, 0)
+          assert.equal(await tx.$executeRawUnsafe('UPDATE sg_runtime_benchmarks."OrganizationBenchmarkSelection" SET "updatedAt"=now()'), 0)
+        })
+      } finally { await owner.query('DROP POLICY synthetic_legacy_or ON sg_runtime_benchmarks."OrganizationBenchmarkSelection"') }
+      assert.equal((await handlers.GET(request())).status, 200)
+    })
+    await t.test('actual Prisma transports the dedicated expired-module SQL state without a false ALLOW', async () => {
+      const event = (await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='INTENT' ORDER BY event_id LIMIT 1")).rows[0].event
+      const expired = { ...event, decisionId: randomUUID(), moduleEvidence: { ...event.moduleEvidence, expiresAt: new Date(Date.now() - 1000).toISOString() } }
+      const before = Number((await owner.query('SELECT count(*) n FROM profitia_access.security_events')).rows[0].n)
+      await assert.rejects(prisma.$executeRawUnsafe('SELECT profitia_access.append_audit($1::jsonb)', JSON.stringify(expired)), error => error.code === 'P2010' && error.meta?.code === 'PT403')
+      assert.equal(Number((await owner.query('SELECT count(*) n FROM profitia_access.security_events')).rows[0].n), before)
+    })
     await t.test('wrong physical branch denies before a provider call or business write', async () => {
       const wrongHost = createSg2PrivateBenchmarkHost({ ...configuration, binding: { ...configuration.binding, branchId: 'foreign-branch' } })
       const calls = providerCalls
@@ -193,6 +239,23 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       assert.equal(writeCompleted, true)
       assert.equal((await owner.query('SELECT description FROM sg_runtime_benchmarks."BusinessBenchmark" WHERE id=$1', [id])).rows[0].description, null)
       assert.equal((await handlers.GET(request())).status, 200)
+    })
+    await t.test('expired module after a real Prisma write rolls back with a durable access denial', async () => {
+      await owner.query("UPDATE profitia_modules.application_bindings SET expires_at=clock_timestamp()+interval '1 second' WHERE application_id='spendguru'")
+      const id = (await owner.query('SELECT id FROM sg_runtime_benchmarks."BusinessBenchmark" WHERE "organizationId"=$1', [A])).rows[0].id
+      let written = false
+      try {
+        await assert.rejects(host.execute(directInput, async (_context, tx) => {
+          await tx.businessBenchmark.update({ where: { id }, data: { description: 'must expire' } }); written = true
+          await new Promise(resolve => setTimeout(resolve, 1200)); return Response.json({ organizationId: A })
+        }), error => error.reasonCode === 'ACCESS_BASIS_INVALID')
+        assert.equal(written, true)
+        assert.equal((await owner.query('SELECT description FROM sg_runtime_benchmarks."BusinessBenchmark" WHERE id=$1', [id])).rows[0].description, null)
+        const events = (await owner.query('SELECT event FROM profitia_access.security_events ORDER BY event_id DESC LIMIT 2')).rows.map(row => row.event)
+        assert.deepEqual(events.map(event => event.phase), ['FAILURE', 'INTENT'])
+        assert.equal(events[0].reasonCode, 'ACCESS_BASIS_INVALID')
+        assert.deepEqual(events[0].moduleEvidence, events[1].moduleEvidence)
+      } finally { await owner.query("UPDATE profitia_modules.application_bindings SET expires_at=$1 WHERE application_id='spendguru'", [expiry()]) }
     })
     await t.test('pool scope is cleared and runtime cannot read or rewrite authority/audit', async () => {
       assert.equal((await prisma.$queryRawUnsafe('SELECT * FROM sg_runtime_benchmarks."OrganizationBenchmarkSelection"')).length, 0)

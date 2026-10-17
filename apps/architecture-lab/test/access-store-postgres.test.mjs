@@ -3,7 +3,7 @@ import test from 'node:test'
 import fs from 'node:fs/promises'
 import { randomUUID,createHash } from 'node:crypto'
 import pg from 'pg'
-import { createAccessStore,accessSchemaUrl } from '../../../packages/platform-contracts/src/access-store.mjs'
+import { createAccessStore,accessSchemaUrl,moduleAuditSchemaUrl,moduleAuditSchemaDigest } from '../../../packages/platform-contracts/src/access-store.mjs'
 import { createOperationExecutor,OPERATION_CONTRACT,isOperationDenied } from '../../../packages/platform-contracts/src/operation-context.mjs'
 import { createPrivateOperationHost } from '../../../packages/platform-contracts/src/private-operation-host.mjs'
 import { createModuleScopeGuard,moduleSchemaUrl,moduleSchemaDigest } from '../../../packages/platform-contracts/src/module-scope.mjs'
@@ -17,6 +17,7 @@ const FN=['runtime_descriptor()','identity_binding(text,text)','lock_access(uuid
 const sql=await fs.readFile(new URL(accessSchemaUrl),'utf8')
 const schemaDigest=createHash('sha256').update(sql).digest('hex')
 const denied=e=>isOperationDenied(e)&&e.reasonCode==='POLICY_UNAVAILABLE'
+const accessDenied=e=>isOperationDenied(e)&&e.reasonCode==='ACCESS_BASIS_INVALID'
 const expires=()=>new Date(Date.now()+3600000).toISOString()
 function binding(app='sg2',overrides={}) { return {applicationId:`${app}-test`,environment:'development',projectId:'isolated-platform-private',branchId:'isolated-development-branch',databaseName:DATABASE,role:ROLES[app],schemaDigest,...overrides} }
 function actor(user=USER_A,app='sg2') { return {kind:'HUMAN',actorId:user,userId:user,proofRef:'synthetic-verified-proof',issuer:ISSUER,audience:`${app}-test`,environment:'development',expiresAt:expires()} }
@@ -147,7 +148,7 @@ test('access schema and real transaction boundaries with ordinary runtime logins
       for(const org of [ORG_A,ORG_B])await withRuntime(async({query})=>assert.deepEqual((await query('SELECT organisation_id FROM access_product_fixture.organisation_records')).rows,[{organisation_id:org}]),{org})
     })
     await scenario('nonmember and nonexistent user get the same generic denial',async()=>{
-      await assert.rejects(withRuntime(async()=>assert.fail(),{user:USER_B,org:ORG_B}),denied)
+      await assert.rejects(withRuntime(async()=>assert.fail(),{user:USER_B,org:ORG_B}),accessDenied)
       assert.equal(await createAccessStore({binding:binding()}).resolveBinding(sgPool.query.bind(sgPool),{environment:'development',issuer:ISSUER,subject:'unknown'}),null)
     })
     await scenario('account-only context needs no membership and reveals no organisation data',async()=>{
@@ -184,7 +185,7 @@ test('access schema and real transaction boundaries with ordinary runtime logins
     })
     await scenario('fixed deployment cannot select another otherwise valid membership',async()=>{
       await owner.query("UPDATE profitia_access.applications SET fixed_organisation_id=$1 WHERE application_id='sg2-test'",[ORG_A])
-      await assert.rejects(withRuntime(async()=>assert.fail(),{org:ORG_B}),denied)
+      await assert.rejects(withRuntime(async()=>assert.fail(),{org:ORG_B}),accessDenied)
     })
     for(const [name,sql,values] of [
       ['account disabled',"UPDATE profitia_access.accounts SET status='DISABLED' WHERE user_id=$1",[USER_A]],
@@ -193,11 +194,11 @@ test('access schema and real transaction boundaries with ordinary runtime logins
       ['membership suspended',"UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE user_id=$1",[USER_A]],
       ['membership expired',"UPDATE profitia_access.memberships SET expires_at=clock_timestamp()-interval '1 second' WHERE user_id=$1",[USER_A]],
       ['organisation suspended',"UPDATE profitia_access.organisations SET status='SUSPENDED' WHERE organisation_id=$1",[ORG_A]],
-    ]) await scenario(name,async()=>{await owner.query(sql,values);await assert.rejects(withRuntime(async()=>assert.fail()),denied)})
+    ]) await scenario(name,async()=>{await owner.query(sql,values);await assert.rejects(withRuntime(async()=>assert.fail()),accessDenied)})
     await scenario('identity revocation between SDK binding and transaction invalidates the old proof',async()=>{
       const store=createAccessStore({binding:binding()});const identityBinding=await store.resolveBinding(sgPool.query.bind(sgPool),{environment:'development',issuer:ISSUER,subject:`subject-${USER_A}`})
       await owner.query("UPDATE profitia_access.external_identities SET status='REVOKED' WHERE user_id=$1",[USER_A])
-      const c=await sgPool.connect();await c.query('BEGIN');try{await assert.rejects(store.lockAccess(c.query.bind(c),{actor:actor(),identityBinding,organisationId:ORG_A}),denied)}finally{await c.query('ROLLBACK');c.release()}
+      const c=await sgPool.connect();await c.query('BEGIN');try{await assert.rejects(store.lockAccess(c.query.bind(c),{actor:actor(),identityBinding,organisationId:ORG_A}),accessDenied)}finally{await c.query('ROLLBACK');c.release()}
     })
     await scenario('revoking and reactivating an identity does not revive its previous binding version',async()=>{
       const store=createAccessStore({binding:binding()});const key={environment:'development',issuer:ISSUER,subject:`subject-${USER_A}`}
@@ -206,7 +207,7 @@ test('access schema and real transaction boundaries with ordinary runtime logins
       await owner.query("UPDATE profitia_access.external_identities SET status='ACTIVE',version=1 WHERE user_id=$1",[USER_A])
       const newBinding=await store.resolveBinding(sgPool.query.bind(sgPool),key);assert.notEqual(oldBinding.version,newBinding.version)
       const c=await sgPool.connect();await c.query('BEGIN')
-      try{await assert.rejects(store.lockAccess(c.query.bind(c),{actor:actor(),identityBinding:oldBinding,organisationId:ORG_A}),denied)}finally{await c.query('ROLLBACK');c.release()}
+      try{await assert.rejects(store.lockAccess(c.query.bind(c),{actor:actor(),identityBinding:oldBinding,organisationId:ORG_A}),accessDenied)}finally{await c.query('ROLLBACK');c.release()}
       await withRuntime(async({store,query,lease})=>store.verifyScope(query,lease))
     })
     await scenario('autocommit query cannot pretend to hold a policy fence',async()=>{
@@ -234,7 +235,7 @@ test('access schema and real transaction boundaries with ordinary runtime logins
         try{await assert.rejects(owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[ORG_A,USER_A]),/lock timeout/)}finally{await owner.query('ROLLBACK')}
       })
       await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[ORG_A,USER_A])
-      await assert.rejects(withRuntime(async()=>assert.fail()),denied)
+      await assert.rejects(withRuntime(async()=>assert.fail()),accessDenied)
     })
     await scenario('append-only audit denies another application and secret-bearing envelopes in SQL',async()=>{
       const base={applicationId:'sg2-test',environment:'development',decisionId:randomUUID(),phase:'DECISION',decision:'DENY',reasonCode:'PERMISSION_DENIED'}
@@ -325,7 +326,7 @@ test('access schema and real transaction boundaries with ordinary runtime logins
     })
     await scenario('private host denies a nonmember and never invokes business code',async()=>{
       const {host,input}=privateHostFixture()
-      await assert.rejects(host.execute({...input,organisationId:ORG_B,request:{user:USER_B}},()=>assert.fail()),denied)
+      await assert.rejects(host.execute({...input,organisationId:ORG_B,request:{user:USER_B}},()=>assert.fail()),accessDenied)
     })
     await scenario('resource reader cannot override authoritative rights or products',async()=>{
       const {host,input}=privateHostFixture({readResources:async()=>({resource:{},products:[]})})
@@ -462,6 +463,113 @@ test('access schema and real transaction boundaries with ordinary runtime logins
       for(const statement of ['SELECT * FROM profitia_modules.application_bindings','UPDATE profitia_modules.application_bindings SET status=\'ACTIVE\''])await assert.rejects(sgPool.query(statement),/permission denied/)
       const marker=(await sgPool.query("SELECT current_setting('profitia.module.benchmark',true) AS marker")).rows[0].marker
       assert(!marker)
+    })
+    const moduleAuditSql=await fs.readFile(new URL(moduleAuditSchemaUrl),'utf8'),auditDigest=await moduleAuditSchemaDigest()
+    const auditedHost=(overrides={})=>{
+      const f=privateHostFixture()
+      return {...f,host:createPrivateOperationHost({...f.options,module:{id:'benchmark',schemaDigest:moduleDigest,auditSchemaDigest:auditDigest},...overrides})}
+    }
+    await moduleScenario('audited module activation refuses a missing SQL003 installation',async()=>{
+      const f=auditedHost();await assert.rejects(f.host.execute(f.input,()=>assert.fail()),denied)
+      assert.deepEqual((await owner.query('SELECT phase FROM profitia_access.security_events')).rows.map(row=>row.phase),['DECISION'])
+    })
+    const auditedScenario=async(name,work)=>t.test(name,async()=>{
+      await resetModule();await owner.query('BEGIN')
+      try{
+        await owner.query(moduleAuditSql)
+        await owner.query("INSERT INTO profitia_modules.audit_installation(envelope_version,schema_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_NOT_A_RELEASE')",[auditDigest])
+        await owner.query(`GRANT EXECUTE ON FUNCTION profitia_modules.audit_descriptor() TO ${ROLES.sg2},${ROLES.srm}`)
+        await owner.query('COMMIT')
+      }catch(error){await owner.query('ROLLBACK');throw error}
+      await work()
+    })
+    await auditedScenario('the common host binds module evidence to context and its single durable writer',async()=>{
+      const f=auditedHost();let accepted
+      const result=await f.host.execute(f.input,async(context,c)=>{
+        accepted=context.moduleEvidence
+        assert.equal(accepted.moduleId,'benchmark');assert.equal(accepted.auditSchemaDigest,auditDigest)
+        assert.equal((await c.query('SELECT * FROM module_product_fixture.records')).rowCount,1)
+        return'own organisation'
+      })
+      assert.equal(result.value,'own organisation')
+      const events=(await owner.query('SELECT event FROM profitia_access.security_events ORDER BY event_id')).rows.map(row=>row.event)
+      assert.deepEqual(events.map(event=>event.phase),['INTENT','OUTCOME'])
+      assert.deepEqual(events.map(event=>event.moduleEvidence),[accepted,accepted])
+    })
+    await auditedScenario('an unaccepted audit digest cannot enable an effect',async()=>{
+      const f=auditedHost({module:{id:'benchmark',schemaDigest:moduleDigest,auditSchemaDigest:'f'.repeat(64)}})
+      await assert.rejects(f.host.execute(f.input,()=>assert.fail()),denied)
+    })
+    await auditedScenario('a missing module descriptor ACL cannot be replaced by direct data privileges',async()=>{
+      await owner.query(`REVOKE EXECUTE ON FUNCTION profitia_modules.audit_descriptor() FROM ${ROLES.sg2}`)
+      const f=auditedHost();await assert.rejects(f.host.execute(f.input,()=>assert.fail()),denied)
+    })
+    await auditedScenario('revocation is checked on the next operation without reusing old module evidence',async()=>{
+      const f=auditedHost();await f.host.execute(f.input,()=>null)
+      await owner.query("UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='sg2-test'")
+      await assert.rejects(f.host.execute(f.input,()=>assert.fail()),error=>error.reasonCode==='APPLICATION_FEATURE_UNAVAILABLE')
+      const rows=(await owner.query('SELECT event FROM profitia_access.security_events ORDER BY event_id')).rows
+      assert.deepEqual(rows.map(row=>row.event.phase),['INTENT','OUTCOME','DECISION'])
+      assert.equal(rows.at(-1).event.moduleEvidence,undefined)
+    })
+    await auditedScenario('the SQL writer rejects forged, extra, malformed and sensitive module provenance',async()=>{
+      const f=auditedHost();await f.host.execute(f.input,()=>null)
+      const original=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='INTENT'")).rows[0].event
+      for(const patch of [{moduleBindingId:randomUUID()},{version:'999'},{moduleSchemaDigest:'e'.repeat(64)},{auditSchemaDigest:'e'.repeat(64)},{unexpected:'extra'},{expiresAt:'not-a-date'},{sourceRef:'Bearer synthetic-fixture'}]){
+        const event={...original,decisionId:randomUUID(),moduleEvidence:{...original.moduleEvidence,...patch}}
+        await assert.rejects(sgPool.query('SELECT profitia_access.append_audit($1::jsonb)',[JSON.stringify(event)]),error=>error.code==='42501')
+      }
+      assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_access.security_events')).rows[0].n,2)
+    })
+    await auditedScenario('a previously recorded module outcome cannot authorize an autocommit replay',async()=>{
+      const f=auditedHost();await f.host.execute(f.input,()=>null)
+      const original=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME'")).rows[0].event
+      await assert.rejects(sgPool.query('SELECT profitia_access.append_audit($1::jsonb)',[JSON.stringify({...original,decisionId:randomUUID()})]),error=>error.code==='42501')
+    })
+    await auditedScenario('SQL deadline expiry uses its dedicated denial state without recording a false ALLOW',async()=>{
+      const f=auditedHost();await f.host.execute(f.input,()=>null)
+      const original=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='INTENT'")).rows[0].event
+      const expired={...original,decisionId:randomUUID(),moduleEvidence:{...original.moduleEvidence,expiresAt:new Date(Date.now()-1000).toISOString()}}
+      await assert.rejects(sgPool.query('SELECT profitia_access.append_audit($1::jsonb)',[JSON.stringify(expired)]),error=>error.code==='PT403')
+      assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_access.security_events')).rows[0].n,2)
+    })
+    await auditedScenario('expiry after a real module write rolls back with a durable access denial',async()=>{
+      await owner.query("UPDATE profitia_modules.application_bindings SET expires_at=clock_timestamp()+interval '1 second' WHERE application_id='sg2-test'")
+      const f=auditedHost();let written=false
+      await assert.rejects(f.host.execute(f.input,async(_context,c)=>{
+        await c.query("INSERT INTO module_product_fixture.records VALUES($1,'audited-expired','synthetic')",[ORG_A]);written=true
+        await new Promise(resolve=>setTimeout(resolve,1200));return'not delivered'
+      }),error=>error.reasonCode==='ACCESS_BASIS_INVALID')
+      assert.equal(written,true)
+      assert.equal((await owner.query("SELECT count(*)::int n FROM module_product_fixture.records WHERE id='audited-expired'")).rows[0].n,0)
+      const rows=(await owner.query('SELECT event FROM profitia_access.security_events ORDER BY event_id')).rows
+      assert.deepEqual(rows.map(row=>row.event.phase),['INTENT','FAILURE'])
+      assert.equal(rows[1].event.reasonCode,'ACCESS_BASIS_INVALID');assert.deepEqual(rows[1].event.moduleEvidence,rows[0].event.moduleEvidence)
+    })
+    await auditedScenario('an actual outcome writer outage rolls back and stays distinct from access denial',async()=>{
+      await owner.query("CREATE FUNCTION module_product_fixture.reject_outcome() RETURNS trigger LANGUAGE plpgsql AS $fn$ BEGIN IF NEW.phase='OUTCOME' THEN RAISE EXCEPTION 'SYNTHETIC_OUTCOME_OUTAGE';END IF;RETURN NEW;END $fn$;CREATE TRIGGER synthetic_reject_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION module_product_fixture.reject_outcome()")
+      const f=auditedHost()
+      await assert.rejects(f.host.execute(f.input,async(_context,c)=>{await c.query("INSERT INTO module_product_fixture.records VALUES($1,'audit-outage','synthetic')",[ORG_A]);return'not delivered'}),error=>error.reasonCode==='AUDIT_UNAVAILABLE')
+      assert.equal((await owner.query("SELECT count(*)::int n FROM module_product_fixture.records WHERE id='audit-outage'")).rows[0].n,0)
+      assert.deepEqual((await owner.query('SELECT phase FROM profitia_access.security_events ORDER BY event_id')).rows.map(row=>row.phase),['INTENT','FAILURE'])
+    })
+    await auditedScenario('module audit metadata is not directly readable or writable by runtime',async()=>{
+      for(const statement of ['SELECT * FROM profitia_modules.audit_installation',"UPDATE profitia_modules.audit_installation SET source_ref='forged'"])
+        await assert.rejects(sgPool.query(statement),error=>error.code==='42501')
+      assert.deepEqual((await sgPool.query('SELECT profitia_modules.audit_descriptor() AS descriptor')).rows[0].descriptor,{version:'1.0.0',schemaDigest:auditDigest})
+      await assert.rejects(sgPool.query(moduleAuditSql),error=>error.code==='42501')
+    })
+    await auditedScenario('audit installation changes share the same admitted-operation fence',async()=>{
+      await withModule(async()=>{
+        await owner.query('BEGIN');await owner.query("SET LOCAL lock_timeout='100ms'")
+        try{await assert.rejects(owner.query("UPDATE profitia_modules.audit_installation SET source_ref='new-approved-installation'"),/lock timeout/)}finally{await owner.query('ROLLBACK')}
+      })
+    })
+    await auditedScenario('the additive envelope preserves a base host without a module option',async()=>{
+      const f=privateHostFixture();await f.host.execute(f.input,()=>null)
+      const rows=(await owner.query('SELECT event FROM profitia_access.security_events ORDER BY event_id')).rows
+      assert.deepEqual(rows.map(row=>row.event.phase),['INTENT','OUTCOME'])
+      assert(rows.every(row=>row.event.moduleEvidence===undefined))
     })
   } finally {for(const pool of pools)await pool.end();if(owner)await owner.end();await root.end()}
 })

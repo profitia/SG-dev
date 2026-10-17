@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto'
 import { createAccessStore } from './access-store.mjs'
 import { createOperationExecutor, OperationDenied } from './operation-context.mjs'
+import { createModuleScopeGuard } from './module-scope.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.0.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.1.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -17,6 +18,9 @@ export function createPrivateOperationHost(options) {
   const binding = freeze(copy(options.binding))
   if (!application || !binding || binding.applicationId !== application.appId || binding.environment !== application.environment || [independentQuery, transact, createAuthenticator, readResources, projectOutput, now].some(f => typeof f !== 'function') || !Number.isSafeInteger(transactionTimeoutMs) || transactionTimeoutMs < 100 || transactionTimeoutMs > 15000) throw new TypeError('Explicit application, private binding, identity factory and real transaction adapters required')
   const store = createAccessStore({ binding, now })
+  const module = options.module === undefined ? undefined : freeze(copy(options.module))
+  if (module !== undefined && (!module || Object.getPrototypeOf(module) !== Object.prototype || Object.keys(module).length !== 3 || !/^[a-f0-9]{64}$/.test(module.auditSchemaDigest ?? '') || Object.keys(module).some(key => !['id','schemaDigest','auditSchemaDigest'].includes(key)))) throw new TypeError('Explicit accepted module audit boundary required')
+  const moduleGuard = module ? createModuleScopeGuard({ applicationId: binding.applicationId, environment: binding.environment, moduleId: module.id, schemaDigest: module.schemaDigest, now }) : null
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
   // Validate the unchanged policy configuration now, without authenticating,
   // reading a database or constructing request-owned state.
@@ -59,11 +63,18 @@ export function createPrivateOperationHost(options) {
               if (closed) unavailable()
               const lease = await store.lockAccess(query, { actor, identityBinding, organisationId: request.organisationId })
               const scope = Object.freeze({ applicationId: binding.applicationId, environment: binding.environment, userId: lease.userId, organisationId: lease.organisationId })
+              let moduleEvidence
+              if (moduleGuard) {
+                const evidence = await moduleGuard.bind(query, scope)
+                await store.verifyModuleAudit(query, module.auditSchemaDigest)
+                moduleEvidence = freeze({ ...evidence, moduleSchemaDigest: module.schemaDigest, auditSchemaDigest: module.auditSchemaDigest })
+              }
               const resources = freeze(copy(await readResources({ actor, request, scope, query, transaction })))
               if (closed || !resources || Object.getPrototypeOf(resources) !== Object.prototype || Object.keys(resources).some(key => !['resource', 'inputs'].includes(key))) unavailable()
               await store.verifyScope(query, lease)
               callbackResult = await run({
                 state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }) },
+                ...(moduleEvidence ? { moduleEvidence } : {}),
                 transaction, transactionalEffects: true, outputBoundaryVersion: resources.resource?.projectionVersion,
                 projectOutput: (value, context) => projectOutput(value, context, transaction),
                 recordOutcome: event => store.appendAudit(query, event, lease),

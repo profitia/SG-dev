@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.3' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.4' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -13,6 +13,11 @@ const rules = Object.freeze({
   'knowledge.read': rule('market', 'market_knowledge', 'SHARED_KNOWLEDGE', 'READ', 'SPENDGURU'),
   'benchmark.selection.read': rule('benchmark', 'benchmark_selection', 'ORGANISATION_PRIVATE', 'READ', 'SPENDGURU'),
   'benchmark.selection.write': rule('benchmark', 'benchmark_selection', 'ORGANISATION_PRIVATE', 'WRITE', 'SPENDGURU'),
+  'category.read': rule('category', 'category', 'ORGANISATION_PRIVATE', 'READ', 'SPENDGURU'),
+  'category.write': rule('category', 'category', 'ORGANISATION_PRIVATE', 'WRITE', 'SPENDGURU'),
+  'supplier.assignment.read': rule('supplier_workspace', 'supplier_assignment', 'ORGANISATION_PRIVATE', 'READ'),
+  'supplier.assignment.write': rule('supplier_workspace', 'supplier_assignment', 'ORGANISATION_PRIVATE', 'WRITE'),
+  'forecast.read': rule('forecast', 'market_forecast', 'SHARED_KNOWLEDGE', 'READ', 'SPENDGURU'),
   'personal.list.read': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'READ'),
   'personal.list.write': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'WRITE'),
   'supplier.report.read': rule('supplier_report', 'supplier_report', 'SHARED_KNOWLEDGE', 'READ', 'SUPPLIER_INTELLIGENCE'),
@@ -20,9 +25,9 @@ const rules = Object.freeze({
 })
 export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules))
 const profiles = Object.freeze({
-  PORR_SUITE: { features: ['account', 'market', 'benchmark', 'personal_workspace', 'supplier_report'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
-  SPENDGURU_SAAS: { features: ['account', 'market', 'benchmark', 'personal_workspace', 'supplier_report'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'] },
-  SUPPLIER_INTELLIGENCE_STANDALONE: { features: ['account', 'personal_workspace', 'supplier_report'], products: ['SUPPLIER_INTELLIGENCE'] },
+  PORR_SUITE: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
+  SPENDGURU_SAAS: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'] },
+  SUPPLIER_INTELLIGENCE_STANDALONE: { features: ['account', 'supplier_workspace', 'personal_workspace', 'supplier_report'], products: ['SUPPLIER_INTELLIGENCE'] },
 })
 
 export class OperationDenied extends Error {
@@ -43,6 +48,21 @@ const deny = (reason) => { throw new OperationDenied(reason) }
 const nonempty = (v) => typeof v === 'string' && v.length > 0 && v.length <= 256
 const validUntil = (v, now) => typeof v === 'string' && Number.isFinite(Date.parse(v)) && Date.parse(v) > now
 const freeze = (value) => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
+
+/** Server-owned module provenance, never a permission or a token. Shared by the
+ * executor and its single audit adapter; SQL independently enforces the shape. */
+export function normalizeModuleEvidence(value, { now = Date.now, allowExpired = false } = {}) {
+  const keys = ['moduleId','moduleBindingId','version','sourceRef','expiresAt','transactionId','moduleSchemaDigest','auditSchemaDigest']
+  if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).length !== keys.length || keys.some(key => !nonempty(value[key])) || Object.keys(value).some(key => !keys.includes(key))
+    || !['benchmark','category','supplier_report'].includes(value.moduleId)
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.moduleBindingId)
+    || !/^[1-9][0-9]*$/.test(value.version) || !/^[0-9]+$/.test(value.transactionId)
+    || !['moduleSchemaDigest','auditSchemaDigest'].every(key => /^[a-f0-9]{64}$/.test(value[key]))
+    || keys.some(key => /gh[pousr]_|sk_(?:live|test)_|postgres(?:ql)?:\/\/|Bearer\s/i.test(value[key]))
+    || !Number.isFinite(Date.parse(value.expiresAt))) deny('POLICY_UNAVAILABLE')
+  if (!allowExpired && !validUntil(value.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
+  return freeze(structuredClone(value))
+}
 
 function canonical(value) {
   if (value === null || typeof value === 'boolean' || typeof value === 'string') return JSON.stringify(value)
@@ -127,13 +147,22 @@ export function createOperationExecutor(options) {
             if (!nonempty(organisationId) || organisationId !== access.organisationId || (ceiling.fixed && organisationId !== config.organisationId)) deny('CONTEXT_INVALID')
             if (access.type !== (identity.kind === 'HUMAN' ? 'MEMBERSHIP' : 'SERVICE_GRANT')) deny('ACCESS_BASIS_INVALID')
           }
-          const context = { ...audit, organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId }
+          const moduleEvidence = session.moduleEvidence === undefined ? undefined : normalizeModuleEvidence(session.moduleEvidence, { now })
+          if (moduleEvidence && selected.mode !== 'ORGANISATION') deny('CONTEXT_INVALID')
+          const context = { ...audit, organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId, ...(moduleEvidence ? { moduleEvidence } : {}) }
           audit = { ...context }
           if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
           if (state.resource.id !== request.resourceId) deny('RESOURCE_SCOPE_MISMATCH')
           const productEvidence = []
           if (selected.product) productEvidence.push(productAvailable(state, selected.product, selected.feature, config, ceiling, now()))
+          if (selected.feature === 'supplier_workspace') {
+            // An explicit offer must grant this feature in an eligible product;
+            // neither a role name nor merely owning another feature is enough.
+            const eligible = ['SPENDGURU','SUPPLIER_INTELLIGENCE'].find(product => ceiling.products.includes(product) && state.products?.some(grant => grant.product === product && grant.features?.includes(selected.feature) && grant.organisationId === organisationId && grant.applicationId === config.appId && grant.environment === config.environment && grant.status === 'ACTIVE' && ['CONTRACT','VERIFIED_BILLING','EXPLICIT_OFFER'].includes(grant.source) && validUntil(grant.expiresAt, now()) && nonempty(grant.version) && nonempty(grant.sourceRef)))
+            if (!eligible) deny('PRODUCT_UNAVAILABLE')
+            productEvidence.push(productAvailable(state, eligible, selected.feature, config, ceiling, now()))
+          }
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') {
             if (identity.kind !== 'HUMAN') deny('DELEGATION_INVALID')
             const requirements = state.resource.contentRequirements
@@ -147,22 +176,32 @@ export function createOperationExecutor(options) {
             if (!config.operations.includes('supplier.report.read') || !permission(access, 'supplier.report.read', 'supplier_report', request.resourceId) || !Array.isArray(state.inputs) || state.inputs.length === 0) deny('PERMISSION_DENIED')
             for (const resource of state.inputs) checkResource(resource, context, { resourceType: 'supplier_report', dataClass: 'SHARED_KNOWLEDGE' })
           }
-          // These nine operations explicitly have NOT_APPLICABLE usage policy. Paid
+          // These fourteen operations explicitly have NOT_APPLICABLE usage policy. Paid
           // refresh/export/forecast requests cannot be enabled with a missing limit.
           if (state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
           const bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID() })
           audit = { ...audit, correlationId: bound.correlationId, resourceType: bound.resource.type, dataClass: bound.resource.dataClass, ownerOrganisationId: bound.resource.ownerOrganisationId, ownerUserId: bound.resource.ownerUserId, resourceVersion: bound.resource.version, projectionVersion: bound.resource.projectionVersion, productEvidence, usagePolicy: state.usagePolicy }
           try { await recordAudit(stamp({ ...audit, phase: 'INTENT', decision: 'ALLOW', reasonCode: 'AUTHORIZED' })) }
-          catch { deny('AUDIT_UNAVAILABLE') }
+          catch (error) {
+            if (isOperationDenied(error) && error.reasonCode === 'ACCESS_BASIS_INVALID') throw error
+            deny('AUDIT_UNAVAILABLE')
+          }
           intentRecorded = true
           const value = await action(bound, session.transaction)
           const output = await session.projectOutput(value, bound)
           if (!validUntil(identity.expiresAt, now()) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
           if (selected.product) productAvailable(state, selected.product, selected.feature, config, ceiling, now())
+          if (selected.feature === 'supplier_workspace') productAvailable(state, productEvidence[0].product, selected.feature, config, ceiling, now())
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
+          if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
           try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: 'SUCCEEDED' })) }
-          catch { deny('AUDIT_UNAVAILABLE') }
+          catch (error) {
+            // A current scope denial is different from an unavailable writer.
+            // Both roll back the effect; only the latter is a technical failure.
+            if (isOperationDenied(error) && ['ACCESS_BASIS_INVALID','PRODUCT_UNAVAILABLE','APPLICATION_FEATURE_UNAVAILABLE'].includes(error.reasonCode)) throw error
+            deny('AUDIT_UNAVAILABLE')
+          }
           return Object.freeze({ decision: 'ALLOW', decisionId, contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, value: output })
         })
       } catch (error) {
