@@ -6,6 +6,7 @@ import pg from 'pg'
 import { createAccessStore,accessSchemaUrl } from '../../../packages/platform-contracts/src/access-store.mjs'
 import { createOperationExecutor,OPERATION_CONTRACT,isOperationDenied } from '../../../packages/platform-contracts/src/operation-context.mjs'
 import { createPrivateOperationHost } from '../../../packages/platform-contracts/src/private-operation-host.mjs'
+import { createModuleScopeGuard,moduleSchemaUrl,moduleSchemaDigest } from '../../../packages/platform-contracts/src/module-scope.mjs'
 import { assertIsolatedTestConnection } from '../src/operation-postgres-fixture.mjs'
 
 const ORG_A='11111111-1111-4111-8111-111111111111',ORG_B='22222222-2222-4222-8222-222222222222'
@@ -358,6 +359,109 @@ test('access schema and real transaction boundaries with ordinary runtime logins
         await c.query('SELECT pg_sleep(0.08)');await c.query('SELECT pg_sleep(0.08)');return'no'
       }),denied)
       assert.equal((await owner.query("SELECT count(*)::int n FROM access_product_fixture.organisation_records WHERE id='host-timeout'")).rows[0].n,0)
+    })
+    const moduleSql=await fs.readFile(new URL(moduleSchemaUrl),'utf8'),moduleDigest=await moduleSchemaDigest()
+    const moduleGuard=app=>createModuleScopeGuard({applicationId:`${app}-test`,environment:'development',moduleId:'benchmark',schemaDigest:moduleDigest})
+    const resetModule=async()=>{
+      await owner.query('DROP SCHEMA IF EXISTS module_product_fixture CASCADE; DROP SCHEMA IF EXISTS profitia_modules CASCADE')
+      await reset()
+      await owner.query('BEGIN')
+      try{
+        await owner.query(moduleSql)
+        await owner.query("INSERT INTO profitia_modules.installation(schema_version,schema_digest) VALUES('1.0.0',$1)",[moduleDigest])
+        for(const app of ['sg2','srm'])await owner.query("INSERT INTO profitia_modules.application_bindings(application_id,module_id,binding_id,status,source_ref,expires_at) VALUES($1,'benchmark',$2,'ACTIVE','SYNTHETIC_MODULE_BINDING',$3)",[`${app}-test`,randomUUID(),expires()])
+        for(const role of Object.values(ROLES))await owner.query(`GRANT USAGE ON SCHEMA profitia_modules TO ${role};GRANT EXECUTE ON FUNCTION profitia_modules.runtime_descriptor(),profitia_modules.bind_scope(text),profitia_modules.scope_allows(text,uuid,uuid) TO ${role}`)
+        await owner.query('CREATE SCHEMA module_product_fixture')
+        await owner.query('CREATE TABLE module_product_fixture.records(organisation_id uuid NOT NULL REFERENCES profitia_access.organisations(organisation_id),id text NOT NULL,body text,PRIMARY KEY(organisation_id,id));CREATE TABLE module_product_fixture.personal(organisation_id uuid NOT NULL,user_id uuid NOT NULL,id text NOT NULL,PRIMARY KEY(organisation_id,user_id,id),FOREIGN KEY(organisation_id,user_id) REFERENCES profitia_access.memberships(organisation_id,user_id))')
+        for(const table of ['records','personal'])await owner.query(`ALTER TABLE module_product_fixture.${table} ENABLE ROW LEVEL SECURITY;ALTER TABLE module_product_fixture.${table} FORCE ROW LEVEL SECURITY;CREATE POLICY controlled_owner ON module_product_fixture.${table} TO profitia_access_owner USING(true) WITH CHECK(true);CREATE POLICY module_scope ON module_product_fixture.${table} TO PUBLIC USING(profitia_modules.scope_allows('benchmark',organisation_id,${table==='personal'?'user_id':'NULL'})) WITH CHECK(profitia_modules.scope_allows('benchmark',organisation_id,${table==='personal'?'user_id':'NULL'}))`)
+        for(const org of [ORG_A,ORG_B])await owner.query('INSERT INTO module_product_fixture.records VALUES($1,$2,$3)',[org,'shared-by-approved-hosts','synthetic'])
+        for(const [org,user] of [[ORG_A,USER_A],[ORG_A,USER_B],[ORG_B,USER_A]])await owner.query("INSERT INTO module_product_fixture.personal VALUES($1,$2,'personal')",[org,user])
+        for(const role of [ROLES.sg2,ROLES.srm])await owner.query(`GRANT USAGE ON SCHEMA module_product_fixture TO ${role};GRANT SELECT,INSERT,UPDATE ON ALL TABLES IN SCHEMA module_product_fixture TO ${role}`)
+        await owner.query('COMMIT')
+      }catch(error){await owner.query('ROLLBACK');throw error}
+    }
+    const moduleScenario=async(name,work)=>t.test(name,async()=>{await resetModule();await work()})
+    const withModule=(work,{app='sg2',user=USER_A,org=ORG_A}={})=>withRuntime(async session=>{
+      const evidence=await moduleGuard(app).bind(session.query,{organisationId:org,userId:user})
+      return work({...session,evidence})
+    },{app,user,org})
+    await moduleScenario('one unchanged data module is usable in two explicitly approved applications',async()=>{
+      for(const app of ['sg2','srm'])await withModule(async({query})=>{
+        const rows=(await query('SELECT organisation_id FROM module_product_fixture.records')).rows
+        assert.deepEqual(rows,[{organisation_id:ORG_A}])
+      },{app})
+    })
+    await moduleScenario('module binding does not merge organisations or personal owners',async()=>{
+      for(const [app,org,user] of [['sg2',ORG_A,USER_A],['srm',ORG_A,USER_B],['srm',ORG_B,USER_A]])await withModule(async({query})=>{
+        const rows=(await query('SELECT organisation_id,user_id FROM module_product_fixture.personal')).rows
+        assert.deepEqual(rows,[{organisation_id:org,user_id:user}])
+      },{app,org,user})
+    })
+    await moduleScenario('an accepted base lease without a bound module cannot read module data',async()=>{
+      await withRuntime(async({query})=>assert.equal((await query('SELECT * FROM module_product_fixture.records')).rowCount,0))
+    })
+    await moduleScenario('module SQL rejects foreign organisation and personal-owner writes',async()=>{
+      await withModule(async({query})=>assert.rejects(query("INSERT INTO module_product_fixture.records VALUES($1,'foreign-org','synthetic')",[ORG_B]),error=>error.code==='42501'))
+      await withModule(async({query})=>assert.rejects(query("INSERT INTO module_product_fixture.personal VALUES($1,$2,'foreign-user')",[ORG_A,USER_B]),error=>error.code==='42501'))
+    })
+    await moduleScenario('a bound module cannot be rebound to another valid membership in the same transaction',async()=>{
+      await withModule(async({query})=>{
+        await query("SELECT set_config('profitia.organisation_id',$1,true)",[ORG_B])
+        assert.equal((await query('SELECT * FROM module_product_fixture.records')).rowCount,0)
+        assert.equal((await query("SELECT profitia_modules.bind_scope('benchmark') AS rebound")).rows[0].rebound,null)
+        await query("SELECT set_config('profitia.organisation_id',$1,true)",[ORG_A])
+        assert.equal((await query('SELECT * FROM module_product_fixture.records')).rowCount,1)
+      })
+    })
+    await moduleScenario('revoked or expired application bindings deny even with direct table ACL',async()=>{
+      for(const mutation of ["status='REVOKED'","status='ACTIVE',expires_at=clock_timestamp()-interval '1 second'"]){
+        await owner.query(`UPDATE profitia_modules.application_bindings SET ${mutation} WHERE application_id='srm-test'`)
+        await assert.rejects(withModule(()=>assert.fail(),{app:'srm'}),error=>isOperationDenied(error)&&error.reasonCode==='APPLICATION_FEATURE_UNAVAILABLE')
+      }
+    })
+    await moduleScenario('an application module binding cannot substitute for an active product feature',async()=>{
+      for(const mutation of ["status='REVOKED'","status='ACTIVE',features=ARRAY['personal_workspace']"]){
+        await owner.query(`UPDATE profitia_access.product_grants SET ${mutation} WHERE application_id='srm-test'`)
+        await assert.rejects(withModule(()=>assert.fail(),{app:'srm'}),error=>isOperationDenied(error)&&error.reasonCode==='APPLICATION_FEATURE_UNAVAILABLE')
+      }
+    })
+    await moduleScenario('one module cannot silently authorize a different module',async()=>{
+      await withRuntime(async({query})=>assert.equal((await query("SELECT profitia_modules.bind_scope('supplier_report') AS bound")).rows[0].bound,null))
+    })
+    await moduleScenario('module expiry can narrow but never extend the base transaction lease',async()=>{
+      await withModule(async({query,lease,evidence})=>{
+        assert(Date.parse(evidence.expiresAt)<=Date.parse(lease.expiresAt))
+        const row=(await query("SELECT current_setting('profitia.scope_expires_at')::timestamptz <= $1::timestamptz AS narrowed",[lease.expiresAt])).rows[0]
+        assert.equal(row.narrowed,true)
+      })
+    })
+    await moduleScenario('expiry after a real effect rolls it back through the unchanged host audit boundary',async()=>{
+      await owner.query("UPDATE profitia_modules.application_bindings SET expires_at=clock_timestamp()+interval '600 milliseconds' WHERE application_id='sg2-test'")
+      const f=privateHostFixture()
+      const host=createPrivateOperationHost({...f.options,readResources:async args=>{await moduleGuard('sg2').bind(args.query,{organisationId:args.scope.organisationId,userId:args.scope.userId});return f.resources(args)}})
+      let written=false
+      await assert.rejects(host.execute(f.input,async(_context,c)=>{
+        await c.query("INSERT INTO module_product_fixture.records VALUES($1,'module-expired','synthetic')",[ORG_A]);written=true
+        await new Promise(resolve=>setTimeout(resolve,800));return'not delivered'
+      }),isOperationDenied)
+      assert.equal(written,true)
+      assert.equal((await owner.query("SELECT count(*)::int n FROM module_product_fixture.records WHERE id='module-expired'")).rows[0].n,0)
+      assert.deepEqual((await owner.query('SELECT phase FROM profitia_access.security_events ORDER BY event_id')).rows.map(row=>row.phase),['INTENT','FAILURE'])
+    })
+    await moduleScenario('module revocation shares the existing authority fence',async()=>{
+      await withModule(async()=>{
+        await owner.query('BEGIN');await owner.query("SET LOCAL lock_timeout='100ms'")
+        try{await assert.rejects(owner.query("UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='sg2-test'"),/lock timeout/)}finally{await owner.query('ROLLBACK')}
+      })
+      await owner.query("UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='sg2-test'")
+      await assert.rejects(withModule(()=>assert.fail()),error=>isOperationDenied(error)&&error.reasonCode==='APPLICATION_FEATURE_UNAVAILABLE')
+    })
+    await moduleScenario('module markers do not survive transaction/pool reuse or grant table access',async()=>{
+      await withModule(async({query})=>assert.equal((await query('SELECT * FROM module_product_fixture.records')).rowCount,1))
+      assert.equal((await sgPool.query('SELECT * FROM module_product_fixture.records')).rowCount,0)
+      for(const statement of ['SELECT * FROM profitia_modules.application_bindings','UPDATE profitia_modules.application_bindings SET status=\'ACTIVE\''])await assert.rejects(sgPool.query(statement),/permission denied/)
+      const marker=(await sgPool.query("SELECT current_setting('profitia.module.benchmark',true) AS marker")).rows[0].marker
+      assert(!marker)
     })
   } finally {for(const pool of pools)await pool.end();if(owner)await owner.end();await root.end()}
 })
