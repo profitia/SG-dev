@@ -54,6 +54,79 @@ function withEnv(overrides: Record<string, string | undefined>, run: () => Promi
   })
 }
 
+function assertPrivate(response: Response) {
+  assert.equal(response.headers.get('cache-control'), 'private, no-store')
+  const vary = response.headers.get('vary')?.toLowerCase().split(',').map(value => value.trim())
+  assert(vary?.includes('cookie') && vary.includes('authorization'))
+}
+
+for (const provider of ['clerk', 'unknown', '', ' legacy_demo ']) {
+  for (const enabled of ['true', undefined]) {
+    test(`explicit ${provider || 'empty'} provider refuses demo and open preview (profile=${enabled})`, async () => {
+      await withEnv({
+        PROFITIA_AUTH_PROVIDER: provider, DASHBOARD_PREVIEW_PORR_DEMO: enabled,
+        PORR_DEMO_ENTRY_URL: 'https://app.fixture.test/en', PORR_DEMO_SESSION_SECRET: 'synthetic-secret',
+        APP_ENV: 'development',
+      }, async () => {
+        const token = await createSignedToken('synthetic-secret')
+        for (const path of ['/en?embed=1', '/api/series?organizationId=forged&pipelineId=forged']) {
+          const response = await middleware(new NextRequest(`https://dashboard.fixture.test${path}`, {
+            headers: { cookie: `sg_porr_demo_session_development=${token}`,
+              'x-clerk-user-id': 'forged', 'x-clerk-org-id': 'forged', 'x-clerk-org-role': 'owner' },
+          }))
+          assert.equal(response.status, 503); assertPrivate(response)
+          assert.equal(response.headers.get('x-middleware-next'), null)
+          assert.equal(response.headers.get('location'), null)
+        }
+      })
+    })
+  }
+}
+
+test('explicit legacy mode preserves signed private dashboard API and page behavior', async () => {
+  await withEnv({
+    PROFITIA_AUTH_PROVIDER: 'legacy_demo', APP_ENV: 'development',
+    DASHBOARD_PREVIEW_PORR_DEMO: 'true', PORR_DEMO_ENTRY_URL: 'https://app.fixture.test/en',
+    PORR_DEMO_SESSION_SECRET: 'synthetic-secret',
+  }, async () => {
+    const token = await createSignedToken('synthetic-secret')
+    for (const path of ['/en?embed=1', '/api/series?seriesId=synthetic']) {
+      const response = await middleware(new NextRequest(`https://dashboard.fixture.test${path}`, {
+        headers: { cookie: `sg_porr_demo_session_development=${token}` },
+      }))
+      assert.equal(response.status, 200); assertPrivate(response)
+    }
+    const refused = await middleware(new NextRequest('https://dashboard.fixture.test/api/series'))
+    assert.equal(refused.status, 401); assertPrivate(refused)
+    const redirected = await middleware(new NextRequest('https://dashboard.fixture.test/en'))
+    assert.equal(redirected.status, 307); assertPrivate(redirected)
+    assert.equal(redirected.headers.get('location'), 'https://app.fixture.test/en')
+  })
+})
+
+test('private dashboard configuration failures retain the same cache boundary', async () => {
+  await withEnv({
+    PROFITIA_AUTH_PROVIDER: 'legacy_demo', DASHBOARD_PREVIEW_PORR_DEMO: 'true',
+    PORR_DEMO_ENTRY_URL: undefined, PORR_DEMO_SESSION_SECRET: undefined,
+  }, async () => {
+    for (const path of ['/en', '/api/series']) {
+      const response = await middleware(new NextRequest(`https://dashboard.fixture.test${path}`))
+      assert.equal(response.status, 503); assertPrivate(response)
+    }
+  })
+})
+
+test('explicit legacy mode preserves the intentionally open library policy', async () => {
+  await withEnv({
+    PROFITIA_AUTH_PROVIDER: 'legacy_demo', DASHBOARD_PREVIEW_PORR_DEMO: undefined,
+    PORR_DEMO_ENTRY_URL: undefined, PORR_DEMO_SESSION_SECRET: undefined,
+  }, async () => {
+    const response = await middleware(new NextRequest('https://dashboard.fixture.test/api/series'))
+    assert.equal(response.headers.get('x-middleware-next'), '1')
+    assert.equal(response.headers.get('cache-control'), null)
+  })
+})
+
 test('PORR middleware redirects unauthenticated page requests to the SG Runtime entry URL', async () => {
   await withEnv({
     DASHBOARD_PREVIEW_PORR_DEMO: 'true',
