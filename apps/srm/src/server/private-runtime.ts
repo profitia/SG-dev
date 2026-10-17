@@ -11,6 +11,7 @@ import { validateReportSelection } from './report-data'
 import { validateFinancialExcelSelection } from './financial-excel'
 import { restoreFinancialDocumentsFromArchive } from './financial-documents'
 import { projectPrivateFinancialExcel, describePrivateFinancialExcel } from './financial-excel-runtime'
+import { NO_STORED_FINANCIAL_SOURCE, projectSharedFinancialResponse } from './shared-financial-read'
 
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
@@ -83,6 +84,7 @@ export function createSrmReportOperationHost(options: Omit<DriverOptions, 'readR
   return createSrmPrivateOperationHost({ ...options,
     readResources: async ({ request, scope, query }) => {
       const exporting = request.operation === 'supplier.report.export'
+      const readingShared = request.operation === 'supplier.report.read'
       const selection = exporting ? { ...validateFinancialExcelSelection(request.payload), entityType: 'COMPANY' as const } : validateReportSelection(request.payload)
       const id = `supplier-report:${selection.entityType}:${selection.nip}`
       if (!scope.organisationId || request.resourceId !== id) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
@@ -94,7 +96,8 @@ export function createSrmReportOperationHost(options: Omit<DriverOptions, 'readR
         version: 'srm-private-report-collection-v1', projectionVersion: 'srm-report-dto-v1' }
       const shared = { id: exporting ? id : `stored-financial-view:${selection.entityType}:${selection.nip}`, type: 'supplier_report',
           dataClass: 'SHARED_KNOWLEDGE', environment: scope.environment, ownerOrganisationId: null, ownerUserId: null,
-          version: version ?? 'no-stored-financial-evidence-v1', projectionVersion: 'srm-stored-corporate-financial-v1', approvedSharedProjection: true }
+          version: version ?? NO_STORED_FINANCIAL_SOURCE, projectionVersion: 'srm-stored-corporate-financial-v1', approvedSharedProjection: true }
+      if (readingShared) return { resource: { ...shared, id, projectionVersion: 'srm-shared-financial-dto-v1' } }
       return exporting ? { resource: { ...projection, type: 'supplier_export', projectionVersion: 'srm-financial-xlsx-v1' }, inputs: [shared, projection] }
         : { resource: projection, inputs: [shared] }
     },
@@ -105,6 +108,7 @@ export function createSrmReportOperationHost(options: Omit<DriverOptions, 'readR
     },
     describeOutcome: (value, context) => context.operation === 'supplier.report.export' ? describePrivateFinancialExcel(value) : 'SUCCEEDED',
     projectOutput: async (value, context) => {
+      if (context.operation === 'supplier.report.read') return projectSharedFinancialResponse(value, context)
       if (context.operation === 'supplier.report.export') return projectPrivateFinancialExcel(value, context)
       if (!(value instanceof Response) || !value.ok) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const body: unknown = await value.clone().json()

@@ -15,6 +15,8 @@ import { migrationManifest } from './staging-migrate.mjs'
 import { createSrmReportOperationHost } from '../src/server/private-runtime.ts'
 import { createRuntimeSrmReportHandler } from '../src/server/report-runtime.ts'
 import { createRuntimeSrmFinancialExcelHandler } from '../src/server/financial-excel-runtime.ts'
+import { createRuntimeSharedFinancialHandler } from '../src/server/shared-financial-runtime.ts'
+import { readSharedFinancialReport } from '../src/server/shared-financial-read.ts'
 import { middleware } from '../middleware.ts'
 import { NextRequest } from 'next/server.js'
 import { createSrmPrivateOperationHost } from '../src/server/private-operation-host.ts'
@@ -463,6 +465,80 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       try{assert.equal((await exportHandler(exportRequest())).status,401)}finally{revoked=false}
       await owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE organisation_id=$1",[A])
       try{assert.equal((await exportHandler(exportRequest())).status,403)}finally{await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE organisation_id=$1",[A])}
+    })
+    const sharedDispatch = createRuntimeSharedFinancialHandler(() => ({ provider: 'clerk', executor: reportHost, defaultOrganisationId: A }), {})
+    const sharedRequest = (org=A,user=U,query={}) => {
+      const url=new URL(ORIGIN+'/api/xray/financial-summary');url.searchParams.set('nip',NIP);url.searchParams.set('organisationId',org)
+      for(const[key,value]of Object.entries(query))url.searchParams.set(key,value)
+      return new Request(url,{headers:{authorization:`Bearer external-${user}`,cookie:'unrelated-cookie','x-clerk-org-id':B}})
+    }
+    const sharedHandler=async request=>{
+      assert.equal((await middleware(new NextRequest(request.clone()))).headers.get('x-middleware-next'),'1')
+      return sharedDispatch(request)
+    }
+    const businessSnapshot=async()=>{
+      const tables=(await owner.query("SELECT tablename FROM pg_tables WHERE schemaname='srm' ORDER BY tablename")).rows
+      const result={}
+      for(const{tablename}of tables){assert(/^[a-z_]+$/.test(tablename));result[tablename]=(await owner.query(`SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]'::jsonb) AS data FROM srm.${tablename} t`)).rows[0].data}
+      return result
+    }
+    await t.test('shared real API works with SELECT only on three corporate tables and leaves every business table unchanged',async()=>{
+      const original=(await owner.query("SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='srm' AND c.relkind='r' AND has_table_privilege($1,c.oid,'SELECT')",[ROLE])).rows
+      const before=await businessSnapshot(),eventBefore=await lastEvent()
+      await owner.query(`REVOKE SELECT ON ALL TABLES IN SCHEMA srm FROM ${ROLE}`)
+      await owner.query(`GRANT SELECT ON srm.catalog_companies,srm.catalog_financial_facts,srm.catalog_financial_indicators TO ${ROLE}`)
+      try{
+        assert.equal((await owner.query("SELECT has_table_privilege($1,'srm.mgbi_source_archives','SELECT') allowed",[ROLE])).rows[0].allowed,false)
+        for(const org of[A,B]){
+          const response=await sharedHandler(sharedRequest(org));assert.equal(response.status,200)
+          const body=await response.json();assert.equal(body.financial.periods[0].facts[0].amount,'100')
+          assert.equal(body.kys.status,'NOT_REQUESTED');assert.equal(body.kys.reportAvailable,false)
+          for(const key of['scanner','exportRef','preferenceScope','private-not-public','sourceSnapshotId'])assert(!JSON.stringify(body).includes(key),key)
+          assert.equal(response.headers.get('Cache-Control'),'private, no-store');assert.equal(response.headers.get('Vary'),'Cookie, Authorization')
+        }
+        assert.deepEqual(await businessSnapshot(),before)
+        const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event_id>$1 ORDER BY event_id",[eventBefore])).rows.map(row=>row.event)
+        assert.deepEqual(events.map(event=>[event.operation,event.phase]),[['supplier.report.read','INTENT'],['supplier.report.read','OUTCOME'],['supplier.report.read','INTENT'],['supplier.report.read','OUTCOME']])
+        assert(events.every(event=>event.dataClass==='SHARED_KNOWLEDGE' && event.moduleEvidence.moduleId==='supplier_report'))
+        assert.deepEqual(events.map(event=>event.organisationId),[A,A,B,B])
+      }finally{
+        await owner.query(`REVOKE SELECT ON ALL TABLES IN SCHEMA srm FROM ${ROLE}`)
+        for(const{relname}of original){assert(/^[a-z_]+$/.test(relname));await owner.query(`GRANT SELECT ON srm.${relname} TO ${ROLE}`)}
+      }
+    })
+    await t.test('shared read refuses forged identities, current revocations and dedicated-profile foreign context',async()=>{
+      assert.equal((await sharedHandler(new Request(sharedRequest().url,{headers:{cookie:'unrelated','x-clerk-user-id':U,'x-clerk-org-id':A}}))).status,401)
+      assert.equal((await sharedHandler(sharedRequest(B,V))).status,403)
+      revoked=true;try{assert.equal((await sharedHandler(sharedRequest())).status,401)}finally{revoked=false}
+      const denial=randomUUID()
+      await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'DENY','supplier.report.read','supplier_report')",[denial,A,U])
+      try{assert.equal((await sharedHandler(sharedRequest())).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[denial])}
+      for(const[table,where]of[['profitia_access.product_grants',`organisation_id='${A}'`],['profitia_modules.application_bindings',"application_id='srm'"]]){
+        await owner.query(`UPDATE ${table} SET status='REVOKED' WHERE ${where}`)
+        try{assert.equal((await sharedHandler(sharedRequest())).status,403)}finally{await owner.query(`UPDATE ${table} SET status='ACTIVE' WHERE ${where}`)}
+      }
+      const fixed=createSrmReportOperationHost({...reportOptions,application:{...reportOptions.application,profileId:'PORR_SUITE',organisationId:A}})
+      const handler=createRuntimeSharedFinancialHandler(()=>({provider:'clerk',executor:fixed,defaultOrganisationId:A}),{})
+      assert.equal((await handler(sharedRequest(B))).status,400)
+      const noBearer=new Request(sharedRequest().url,{headers:{authorization:'Bearer unknown',cookie:`external-${U}`}})
+      assert.equal((await handler(noBearer)).status,401)
+    })
+    await t.test('shared missing data remains empty and source substitution is rejected by the real ordinary role',async()=>{
+      const body=await(await sharedHandler(sharedRequest(A,U,{nip:'0000000000'}))).json()
+      assert.deepEqual(body.financial.periods,[]);assert.equal(body.financial.freshness.freshness,'ABSENT')
+      await assert.rejects(reportHost.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.report.read',organisationId:A,resourceId,payload:{nip:NIP,entityType:'COMPANY'},request:sharedRequest()},async(context,client)=>{
+        assert.equal(context.resource.version,hash(JSON.stringify(financial)))
+        return readSharedFinancialReport(client,A,{nip:NIP,entityType:'COMPANY'},'b'.repeat(64))
+      }),error=>error.reasonCode==='RESOURCE_SCOPE_MISMATCH')
+    })
+    await t.test('shared OUTCOME outage releases no DTO, records failure and changes no business data',async()=>{
+      const before=await businessSnapshot(),eventBefore=await lastEvent()
+      await owner.query("CREATE FUNCTION profitia_access.reject_shared_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='supplier.report.read' THEN RAISE EXCEPTION 'synthetic shared outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_shared_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_shared_outcome()")
+      try{const response=await sharedHandler(sharedRequest());assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'Operation unavailable'})}
+      finally{await owner.query('DROP TRIGGER reject_shared_outcome ON profitia_access.security_events; DROP FUNCTION profitia_access.reject_shared_outcome()')}
+      assert.deepEqual(await businessSnapshot(),before)
+      const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event_id>$1 ORDER BY event_id",[eventBefore])).rows.map(row=>row.event)
+      assert.deepEqual(events.map(event=>[event.operation,event.phase]),[['supplier.report.read','INTENT'],['supplier.report.read','FAILURE']])
     })
   } finally { if (previousProvider === undefined) delete process.env.PROFITIA_AUTH_PROVIDER; else process.env.PROFITIA_AUTH_PROVIDER = previousProvider; globalThis.fetch = previousFetch; await pool?.end(); await auditPool?.end(); await owner?.end(); await root.end() }
 })
