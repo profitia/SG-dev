@@ -53,6 +53,74 @@ permissions:
   deployments: read
 
 jobs:
+  supplier-summary-react18:
+    name: Supplier summary public React18 port
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      SUMMARY_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      NPM_TOKEN: ''
+      NODE_AUTH_TOKEN: ''
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Select runner-local isolated consumer directory
+        run: printf 'SUMMARY_HOST_FIXTURE=%s/supplier-summary-react18\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Prepare isolated public consumer at the exact source
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import {execFileSync} from 'node:child_process';
+          const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+          if(sha!==process.env.SUMMARY_SOURCE_SHA)throw Error('Exact supplier module source required');
+          const target=process.env.SUMMARY_HOST_FIXTURE;
+          fs.mkdirSync(target,{recursive:true});
+          fs.writeFileSync(path.join(target,'package.json'),JSON.stringify({
+            name:'isolated-supplier-summary-react18',private:true,type:'module',
+            dependencies:{'@profitia/srm-xray':`file:${path.join(process.env.GITHUB_WORKSPACE,'packages/srm-xray')}`,
+              react:'18.3.1','react-dom':'18.3.1',tsx:'4.23.12',typescript:'5.9.3',
+              '@types/react':'18.3.29','@types/react-dom':'18.3.7','@types/node':'20.19.43'}
+          },null,2));
+          fs.writeFileSync(path.join(target,'tsconfig.json'),JSON.stringify({compilerOptions:{
+            target:'ES2022',lib:['ES2022','DOM','DOM.Iterable'],module:'ESNext',moduleResolution:'Bundler',
+            jsx:'react-jsx',strict:true,noEmit:true,skipLibCheck:true,esModuleInterop:true
+          },include:['*.ts','*.tsx']},null,2));
+          fs.copyFileSync('apps/srm/src/server/supplier-module-ports.test.ts',path.join(target,'pure.test.ts'));
+          fs.copyFileSync('apps/srm/scripts/supplier-summary-react18.test.tsx',path.join(target,'ui.test.tsx'));
+          JS
+      - name: Install public packages without credentials or lifecycle execution
+        run: npm --prefix "$SUMMARY_HOST_FIXTURE" install --install-links --ignore-scripts --no-audit --no-fund --package-lock=false --registry=https://registry.npmjs.org --userconfig=/dev/null
+      - name: Verify pure ports, actual React18 module and type compatibility
+        run: |
+          cd "$SUMMARY_HOST_FIXTURE"
+          node --import tsx --test --test-concurrency=1 pure.test.ts ui.test.tsx
+          node_modules/.bin/tsc --noEmit
+      - name: Record bounded public-port proof
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          fs.writeFileSync(path.join(process.env.SUMMARY_HOST_FIXTURE,'proof.json'),JSON.stringify({
+            sourceSha:process.env.SUMMARY_SOURCE_SHA,scope:'ISOLATED_PUBLIC_SUPPLIER_SUMMARY_PORT',
+            reactVersion:'18.3.1',purePortReactResolution:'FORBIDDEN',tests:'PASS',typecheck:'PASS',
+            productDeploymentPerformed:false,realSecondApplicationIntegrationVerified:false
+          },null,2));
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: supplier-summary-react18-port-proof
+          path: ${{ runner.temp }}/supplier-summary-react18/proof.json
+          if-no-files-found: error
+
   srm-build:
     runs-on: ubuntu-latest
     services:

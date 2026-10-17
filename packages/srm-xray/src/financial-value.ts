@@ -1,4 +1,13 @@
-import { type financialUnits } from "./financial-history";
+export const financialUnits = { PERCENT: "%", RATIO: "×", PLN: "PLN", DAYS: "dni", PERCENTAGE_POINTS: "p.p." } as const;
+/** Decimal text formatting only: no rounding, financial arithmetic or sign normalization. */
+export function financialValue(value: string | null, unit: keyof typeof financialUnits): string {
+  if (value === null || !/^-?\d+(?:\.\d+)?$/.test(value)) return "Brak wartości";
+  const [integer, fraction] = value.split(".");
+  const grouped = new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(BigInt(integer));
+  const negativeZero = integer.startsWith("-") && BigInt(integer) === 0n ? "−" : "";
+  return `${negativeZero}${grouped}${fraction ? `,${fraction}` : ""} ${financialUnits[unit]}`;
+}
+
 /** Decimal-string rounding for display only. The stored result is never changed. */
 export function compactFinancialValue(value: string | null, unit: keyof typeof financialUnits): string {
   if (value === null || !/^-?\d+(?:\.\d+)?$/.test(value)) return "Brak danych";

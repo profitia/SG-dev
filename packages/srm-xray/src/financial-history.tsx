@@ -2,18 +2,11 @@
 
 import React, { useId, useState } from "react";
 import type { FinancialHistoryPoint } from "./contracts";
-import type { FinancialPeriodSelection } from "./financial-dashboard";
+import type { FinancialPeriodSelection } from "./contracts";
 import { financialReason } from "./financial-indicator-content";
 
-export const financialUnits = { PERCENT: "%", RATIO: "×", PLN: "PLN", DAYS: "dni", PERCENTAGE_POINTS: "p.p." } as const;
-/** Decimal text formatting only: no rounding, financial arithmetic or sign normalization. */
-export function financialValue(value: string | null, unit: keyof typeof financialUnits): string {
-  if (value === null || !/^-?\d+(?:\.\d+)?$/.test(value)) return "Brak wartości";
-  const [integer, fraction] = value.split(".");
-  const grouped = new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(BigInt(integer));
-  const negativeZero = integer.startsWith("-") && BigInt(integer) === 0n ? "−" : "";
-  return `${negativeZero}${grouped}${fraction ? `,${fraction}` : ""} ${financialUnits[unit]}`;
-}
+import { financialUnits, financialValue } from "./financial-value";
+export { financialUnits, financialValue } from "./financial-value";
 export function isSelected(point: FinancialHistoryPoint, selected: FinancialPeriodSelection | null | undefined) {
   return point.periodStart === selected?.from && point.periodEnd === selected?.to;
 }

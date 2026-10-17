@@ -1,6 +1,6 @@
 import type { ExecutiveSummaryInput, SummaryItem } from "./executive-summary-rules";
 import { compactFinancialValue } from "./financial-value";
-import { financialValue } from "./financial-history";
+import { financialValue } from "./financial-value";
 
 /** Format an already selected fact. Eligibility and priority remain in executiveSummary. */
 export function snapshotFact(item: SummaryItem, input: ExecutiveSummaryInput): { label: string; value: string; exact: string; change: string | null } | null {
