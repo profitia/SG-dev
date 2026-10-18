@@ -34,7 +34,7 @@ const hash = text => createHash('sha256').update(text).digest('hex')
 test('SRM accepts the published optional producer fingerprints', async () => {
   assert.equal(await accessStoreSourceDigest(), 'a4bfb07619b384a4098d086f4f80da480c008446bafca7b23d8b56bad9c40a42')
   assert.equal(await identitySourceDigest(), '7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
-  assert.equal(await privateOperationHostSourceDigest(), 'da65bca42c32094b28d3508c12c7ffb609ae66afc80f41ad76608f3c336d3433')
+  assert.equal(await privateOperationHostSourceDigest(), '31c6a0ec35e6ba59ec8f24939a9784b6587c5833e3ce353bbeb3c9a484cfd94d')
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
 })

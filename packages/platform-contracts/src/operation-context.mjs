@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.5' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.6' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -18,6 +18,8 @@ const rules = Object.freeze({
   'supplier.assignment.read': rule('supplier_workspace', 'supplier_assignment', 'ORGANISATION_PRIVATE', 'READ'),
   'supplier.assignment.write': rule('supplier_workspace', 'supplier_assignment', 'ORGANISATION_PRIVATE', 'WRITE'),
   'forecast.read': rule('forecast', 'market_forecast', 'SHARED_KNOWLEDGE', 'READ', 'SPENDGURU'),
+  // Bounded HUMAN AM20: private request acceptance, never external execution.
+  'forecast.request': rule('forecast', 'forecast_request', 'OPERATION_AUDIT', 'REQUEST_COMPUTE', 'SPENDGURU'),
   'personal.list.read': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'READ'),
   'personal.list.write': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'WRITE'),
   'supplier.report.read': rule('supplier_report', 'supplier_report', 'SHARED_KNOWLEDGE', 'READ', 'SUPPLIER_INTELLIGENCE'),
@@ -105,6 +107,35 @@ function productAvailable(state, product, feature, config, ceiling, now) {
   return { product, feature, version: grant.version, sourceRef: grant.sourceRef, source: grant.source, expiresAt: grant.expiresAt }
 }
 
+const computeUuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
+function computePolicy(value, context, now) {
+  let policy
+  try { policy = freeze(structuredClone(value)) } catch { deny('LIMIT_POLICY_UNAVAILABLE') }
+  if (!policy || policy.status !== 'AVAILABLE' || !computeUuid.test(policy.policyId ?? '')
+    || !/^[1-9][0-9]*$/.test(policy.version ?? '') || !nonempty(policy.sourceRef)
+    || policy.applicationId !== context.applicationId || policy.environment !== context.environment
+    || policy.organisationId !== context.organisationId || policy.operation !== 'forecast.request'
+    || policy.transactionId !== context.moduleEvidence?.transactionId
+    || !Number.isSafeInteger(policy.capacity) || policy.capacity < 1 || policy.capacity > 1000000
+    || !Number.isSafeInteger(policy.used) || policy.used < 0 || policy.used > policy.capacity
+    || !(Date.parse(policy.windowStart) <= now) || !validUntil(policy.windowEnd, now)
+    || !validUntil(policy.expiresAt, now) || Date.parse(policy.expiresAt) > Date.parse(policy.windowEnd)) deny('LIMIT_POLICY_UNAVAILABLE')
+  return policy
+}
+function computeReservation(value, policy) {
+  const keys = ['status','requestId','policyId','policyVersion','transactionId',...(value?.status === 'REPLAY' ? ['value'] : [])]
+  if (!value || Object.getPrototypeOf(value) !== Object.prototype
+    || Object.keys(value).sort().join(',') !== keys.sort().join(',')
+    || !['NEW','REPLAY'].includes(value.status) || !computeUuid.test(value.requestId ?? '')
+    || value.policyId !== policy.policyId || value.policyVersion !== policy.version || value.transactionId !== policy.transactionId
+    || value.status === 'REPLAY' && !computeReceipt(value.value, value.requestId)) deny('LIMIT_POLICY_UNAVAILABLE')
+  return freeze(structuredClone(value))
+}
+function computeReceipt(value, id) {
+  return value && Object.getPrototypeOf(value) === Object.prototype && Object.keys(value).sort().join(',') === 'requestId,status'
+    && value.requestId === id && value.status === 'ACCEPTED'
+}
+
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
@@ -129,13 +160,17 @@ export function createOperationExecutor(options) {
         if (!config.features.includes(selected.feature)) deny('APPLICATION_FEATURE_UNAVAILABLE')
         if (typeof action !== 'function' || !nonempty(input.resourceId) || !(input.organisationId === null || nonempty(input.organisationId))) deny('CONTEXT_INVALID')
         const payload = freeze(JSON.parse(canonical(input.payload)))
-        const request = freeze({ operation: input.operation, resourceId: input.resourceId, organisationId: input.organisationId, payload, payloadDigest: operationPayloadDigest(payload) })
+        const compute = selected.effect === 'REQUEST_COMPUTE'
+        if (compute ? typeof input.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{24,128}$/.test(input.idempotencyKey)
+          : input.idempotencyKey != null) deny('CONTEXT_INVALID')
+        const request = freeze({ operation: input.operation, resourceId: input.resourceId, organisationId: input.organisationId, payload,
+          payloadDigest: operationPayloadDigest(payload), ...(compute ? { idempotencyKey: input.idempotencyKey } : {}) })
         audit = { ...audit, resourceId: request.resourceId, payloadDigest: request.payloadDigest }
         const actor = await authenticate(input.request)
         const time = now()
         if (!actor || !['HUMAN', 'SERVICE'].includes(actor.kind) || !nonempty(actor.actorId) || !nonempty(actor.proofRef) || actor.issuer !== config.identityIssuer || actor.audience !== config.appId || !validUntil(actor.expiresAt, time) || (actor.kind === 'HUMAN' && actor.userId !== actor.actorId) || (actor.kind === 'SERVICE' && (actor.serviceId !== actor.actorId || actor.userId != null))) deny('UNVERIFIED_IDENTITY')
         if (actor.environment !== config.environment) deny('ENVIRONMENT_MISMATCH')
-        if (actor.onBehalfOf != null) deny('DELEGATION_INVALID')
+        if (actor.onBehalfOf != null || compute && actor.kind !== 'HUMAN') deny('DELEGATION_INVALID')
         const identity = freeze({ kind: actor.kind, actorId: actor.actorId, ...(actor.kind === 'HUMAN' ? { userId: actor.userId } : { serviceId: actor.serviceId }), proofRef: actor.proofRef, issuer: actor.issuer, audience: actor.audience, environment: actor.environment, expiresAt: actor.expiresAt })
         audit = { ...audit, actorId: identity.actorId, actorKind: identity.kind, subjectUserId: identity.kind === 'HUMAN' ? identity.userId : null, identityProofRef: identity.proofRef, identityIssuer: identity.issuer, identityAudience: identity.audience }
         return await withTransaction({ actor: identity, request }, async session => {
@@ -153,11 +188,12 @@ export function createOperationExecutor(options) {
           }
           const moduleEvidence = session.moduleEvidence === undefined ? undefined : normalizeModuleEvidence(session.moduleEvidence, { now })
           if (moduleEvidence && selected.mode !== 'ORGANISATION') deny('CONTEXT_INVALID')
+          if (compute && moduleEvidence?.moduleId !== 'benchmark') deny('APPLICATION_FEATURE_UNAVAILABLE')
           const context = { ...audit, organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId, ...(moduleEvidence ? { moduleEvidence } : {}) }
           audit = { ...context }
           if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
-          if (state.resource.id !== request.resourceId) deny('RESOURCE_SCOPE_MISMATCH')
+          if (state.resource.id !== request.resourceId || compute && state.resource.ownerUserId !== identity.userId) deny('RESOURCE_SCOPE_MISMATCH')
           const productEvidence = []
           if (selected.product) productEvidence.push(productAvailable(state, selected.product, selected.feature, config, ceiling, now()))
           if (selected.feature === 'supplier_workspace') {
@@ -201,9 +237,11 @@ export function createOperationExecutor(options) {
           // These fifteen operations explicitly have NOT_APPLICABLE usage policy.
           // Export preparation is scoped private SQL, not paid refresh, global
           // ingestion or a forecast request with an omitted limit.
-          if (state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
+          const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now()) : null
+          if (compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
+            : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
-          const bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID() })
+          let bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID() })
           audit = { ...audit, correlationId: bound.correlationId, resourceType: bound.resource.type, dataClass: bound.resource.dataClass, ownerOrganisationId: bound.resource.ownerOrganisationId, ownerUserId: bound.resource.ownerUserId, resourceVersion: bound.resource.version, projectionVersion: bound.resource.projectionVersion, productEvidence, usagePolicy: state.usagePolicy }
           try { await recordAudit(stamp({ ...audit, phase: 'INTENT', decision: 'ALLOW', reasonCode: 'AUTHORIZED' })) }
           catch (error) {
@@ -233,7 +271,18 @@ export function createOperationExecutor(options) {
               deny('AUDIT_UNAVAILABLE')
             }
           }
-          const value = await action(bound, session.transaction)
+          let reservation
+          if (compute) {
+            reservation = computeReservation(await session.reserveUsage(bound), requestPolicy)
+            bound = freeze({ ...bound, requestReservation: { requestId: reservation.requestId,
+              replay: reservation.status === 'REPLAY', policyId: requestPolicy.policyId, policyVersion: requestPolicy.version } })
+          }
+          const value = reservation?.status === 'REPLAY' ? reservation.value : await action(bound, session.transaction)
+          if (compute) {
+            if (!computeReceipt(value, reservation.requestId)) deny('POLICY_UNAVAILABLE')
+            if (reservation.status === 'NEW') await session.completeRequest(bound, value)
+            computePolicy(requestPolicy, context, now())
+          }
           const output = await session.projectOutput(value, bound)
           const outcome = session.describeOutcome === undefined ? 'SUCCEEDED' : await session.describeOutcome(output, bound)
           if (!['SUCCEEDED', 'NO_DATA', 'SELECTION_UNAVAILABLE'].includes(outcome)) deny('POLICY_UNAVAILABLE')
@@ -242,6 +291,7 @@ export function createOperationExecutor(options) {
           if (selected.feature === 'supplier_workspace') productAvailable(state, productEvidence[0].product, selected.feature, config, ceiling, now())
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
           if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
+          if (compute) computePolicy(requestPolicy, context, now())
           try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: outcome })) }
           catch (error) {
             // A current scope denial is different from an unavailable writer.

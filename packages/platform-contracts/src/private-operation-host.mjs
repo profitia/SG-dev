@@ -2,8 +2,9 @@ import { createHash } from 'node:crypto'
 import { createAccessStore, DATABASE_SERVICE_ISSUER } from './access-store.mjs'
 import { createOperationExecutor, OperationDenied } from './operation-context.mjs'
 import { createModuleScopeGuard } from './module-scope.mjs'
+import { createRequestLedger, requestLedgerSourceDigest } from './request-ledger.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.3.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.4.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -27,7 +28,7 @@ export function createServiceReadHost(options) {
     || s.configurationVersion !== a.configurationVersion
     || !Array.isArray(a.operations) || !a.operations.length
     || a.operations.some(op => !['knowledge.read','forecast.read','supplier.report.read'].includes(op))
-    || ['module','prepareInputs','createAuthenticator'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
+    || ['module','prepareInputs','createAuthenticator','requestLedger'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
   return createBoundOperationHost(options, true)
 }
 
@@ -40,6 +41,12 @@ function createBoundOperationHost(options, serviceMode) {
   const module = options.module === undefined ? undefined : freeze(copy(options.module))
   if (module !== undefined && (!module || Object.getPrototypeOf(module) !== Object.prototype || Object.keys(module).length !== 3 || !/^[a-f0-9]{64}$/.test(module.auditSchemaDigest ?? '') || Object.keys(module).some(key => !['id','schemaDigest','auditSchemaDigest'].includes(key)))) throw new TypeError('Explicit accepted module audit boundary required')
   const moduleGuard = module ? createModuleScopeGuard({ applicationId: binding.applicationId, environment: binding.environment, moduleId: module.id, schemaDigest: module.schemaDigest, now }) : null
+  const needsRequestLedger = application.operations.includes('forecast.request')
+  const requestBinding = options.requestLedger === undefined ? null : freeze(copy(options.requestLedger))
+  if (needsRequestLedger ? serviceMode || module?.id !== 'benchmark' || !requestBinding
+      || Object.keys(requestBinding).join(',') !== 'schemaDigest' || !/^[a-f0-9]{64}$/.test(requestBinding.schemaDigest ?? '')
+    : requestBinding !== null) throw new TypeError('Compute request requires the explicit same-store ledger and benchmark module')
+  const requestLedger = needsRequestLedger ? createRequestLedger({ binding, schemaDigest: requestBinding.schemaDigest, now }) : null
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
   // Validate the unchanged policy configuration now, without authenticating,
   // reading a database or constructing request-owned state.
@@ -97,8 +104,27 @@ function createBoundOperationHost(options, serviceMode) {
               if (closed || !resources || Object.getPrototypeOf(resources) !== Object.prototype || Object.keys(resources).some(key => !['resource', 'inputs'].includes(key))) unavailable()
               if (serviceMode && resources.inputs !== undefined) unavailable()
               await store.verifyScope(query, lease)
+              const requestPolicy = request.operation === 'forecast.request'
+                ? await requestLedger.loadPolicy(query, { actor, request }) : undefined
+              let reserveStarted = false, completeStarted = false, ownedReservation
               callbackResult = await run({
-                state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }) },
+                state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }),
+                  ...(requestPolicy ? { usagePolicy: 'PRODUCT_POLICY', requestPolicy } : {}) },
+                ...(requestPolicy ? {
+                  reserveUsage: async context => {
+                    if (closed || reserveStarted) unavailable()
+                    reserveStarted = true
+                    ownedReservation = await requestLedger.reserve(query, requestPolicy, context)
+                    if (closed) unavailable()
+                    return ownedReservation
+                  },
+                  completeRequest: async (context, value) => {
+                    if (closed || completeStarted || !ownedReservation) unavailable()
+                    completeStarted = true
+                    await requestLedger.complete(query, requestPolicy, ownedReservation, context, value)
+                    if (closed) unavailable()
+                  },
+                } : {}),
                 ...(moduleEvidence ? { moduleEvidence } : {}),
                 transaction, transactionalEffects: true, outputBoundaryVersion: resources.resource?.projectionVersion,
                 projectOutput: (value, context) => projectOutput(value, context, transaction),
@@ -131,8 +157,9 @@ function createBoundOperationHost(options, serviceMode) {
 }
 
 /** Accept this fingerprint alongside the independent identity/store/policy digests. */
-export function privateOperationHostSourceDigest() {
-  return import('node:fs').then(fs => createHash('sha256')
-    .update(fs.readFileSync(new URL('./private-operation-host.mjs', import.meta.url)))
-    .update(fs.readFileSync(new URL('./private-operation-host.d.mts', import.meta.url))).digest('hex'))
+export async function privateOperationHostSourceDigest() {
+  const fs = await import('node:fs')
+  return createHash('sha256').update(fs.readFileSync(new URL('./private-operation-host.mjs', import.meta.url)))
+    .update(fs.readFileSync(new URL('./private-operation-host.d.mts', import.meta.url)))
+    .update(await requestLedgerSourceDigest()).digest('hex')
 }

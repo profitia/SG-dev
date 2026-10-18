@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",
@@ -43,10 +43,15 @@
       "types": "./src/embedded-read-channel.d.mts",
       "import": "./src/embedded-read-channel.mjs",
       "require": "./src/embedded-read-channel.mjs"
+    },
+    "./request-ledger": {
+      "types": "./src/request-ledger.d.mts",
+      "import": "./src/request-ledger.mjs",
+      "require": "./src/request-ledger.mjs"
     }
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs && node --check src/clerk-configuration.mjs && node --check src/embedded-read-channel.mjs"
+    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs && node --check src/clerk-configuration.mjs && node --check src/embedded-read-channel.mjs && node --check src/request-ledger.mjs"
   }
 }
