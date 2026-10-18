@@ -13,6 +13,7 @@ import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
 import { POST as deployedPOST } from '../app/api/xray/report-data/route.ts'
 import { POST as deployedExportPOST } from '../app/api/xray/financial-excel/route.ts'
 import { GET as deployedSharedGET } from '../app/api/xray/financial-summary/route.ts'
+import { POST as deployedSupplierRequestPOST } from '../app/api/xray/requests/route.ts'
 import { createRuntimeSrmFinancialExcelHandler, projectPrivateFinancialExcel } from '../src/server/financial-excel-runtime.ts'
 import { middleware } from '../middleware.ts'
 const targets = JSON.parse(readFileSync(new URL('../deployment/private-runtime-targets.json', import.meta.url), 'utf8'))
@@ -33,6 +34,39 @@ function fixture() {
 const request = () => new Request('https://app.fixture.test/api/xray/report-data', { method: 'POST',
   headers: { 'content-type': 'application/json', 'x-clerk-user-id': 'forged-user', 'x-clerk-org-id': 'forged-org' },
   body: JSON.stringify({ nip: '8650004194', entityType: 'COMPANY' }) })
+
+test('supplier request configuration pins accepted base, extension and own exact command SQL without activating any resource',async()=>{
+  const sdk=await import('@profitia/platform-contracts/request-ledger')
+  const accepted=target.supplierRequest
+  assert.equal(accepted.baseSchemaDigest,await sdk.requestReservationSchemaDigest())
+  assert.equal(accepted.externalSchemaDigest,await sdk.externalRequestSchemaDigest())
+  assert.equal(accepted.commandBoundaryDigest,createHash('sha256').update(readFileSync(new URL('../db/private-store/001-supplier-requests.sql',import.meta.url))).digest('hex'))
+  const manifest=JSON.parse(readFileSync(new URL('../operation-integration.json',import.meta.url)))
+  assert.equal(manifest.supplierRequestAdoption.commandBoundaryDigest,accepted.commandBoundaryDigest)
+  assert.equal(manifest.supplierRequestAdoption.privateIntentApiAdopted,true)
+  for(const key of['defaultEnabled','liveSql006Or010InstalledByThisTask','runtimeRoleOrGrantChanged','providerExecutionAdopted','productDeploymentPerformed'])assert.equal(manifest.supplierRequestAdoption[key],false,key)
+})
+test('private supplier request is explicit opt-in with its own version, never an expansion of the report host',()=>{
+  const env=fixture()
+  assert.equal(readSrmPrivateReportConfiguration(env).supplierRequest,undefined)
+  const config=readSrmPrivateReportConfiguration({...env,PROFITIA_SUPPLIER_REQUEST_ENABLED:'true',PROFITIA_SUPPLIER_REQUEST_CONFIGURATION_VERSION:target.supplierRequest.configurationVersion})
+  assert.deepEqual(config.supplierRequest,target.supplierRequest)
+  assert.deepEqual(config.application.operations,['supplier.report.read','supplier.report.project','supplier.report.export'])
+  assert.equal(readSrmPrivateReportConfiguration({...env,PROFITIA_SUPPLIER_REQUEST_ENABLED:'false'}).supplierRequest,undefined)
+  for(const value of['','TRUE','yes','1','unknown'])assert.throws(()=>readSrmPrivateReportConfiguration({...env,PROFITIA_SUPPLIER_REQUEST_ENABLED:value}),IdentityConfigurationUnavailable)
+  for(const value of[undefined,'foreign',''])assert.throws(()=>readSrmPrivateReportConfiguration({...env,PROFITIA_SUPPLIER_REQUEST_ENABLED:'true',PROFITIA_SUPPLIER_REQUEST_CONFIGURATION_VERSION:value}),IdentityConfigurationUnavailable)
+})
+test('actual supplier request API is separately forwarded then refuses incomplete Clerk; legacy lookup remains closed',async()=>{
+  const old=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
+  try{
+    const url='https://app.fixture.test/api/xray/requests'
+    assert.equal((await middleware(new NextRequest(url))).headers.get('x-middleware-next'),'1')
+    const response=await deployedSupplierRequestPOST(new Request(url,{method:'POST',headers:{'content-type':'application/json','idempotency-key':'synthetic-request-key-0001','x-clerk-user-id':'forged'},body:JSON.stringify({kind:'SUPPLIER_REPORT',nip:'8650004194'})}))
+    assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'Operation unavailable'})
+    assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(response.headers.get('vary'),'Cookie, Authorization')
+    assert.equal((await middleware(new NextRequest('https://app.fixture.test/api/xray/lookup'))).status,401)
+  }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old}
+})
 
 test('SRM receiver pins match recorded private preparation, topology and actual accepted source bytes', async () => {
   const prepared = JSON.parse(readFileSync(new URL('../deployment/private-business-preparation.json', import.meta.url), 'utf8'))
