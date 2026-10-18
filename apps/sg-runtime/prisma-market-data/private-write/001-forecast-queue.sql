@@ -86,11 +86,18 @@ BEGIN
       AND NOT(n.nspname='profitia_forecast_read' AND c.relname IN('rolling_daily_current_forecast_snapshots','forecast_current_runs',
         'forecast_current_points','forecast_verification_runs','forecast_verification_metrics','forecast_verification_points',
         'rolling_daily_verification_records','rolling_daily_maintenance_state','forecast_current_states','forecast_verification_states')))
+    OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname IN('profitia_market_read','profitia_forecast_read') AND c.relkind IN('r','p','v','m','f')
+      AND (has_table_privilege(session_user,c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,SELECT WITH GRANT OPTION')
+        OR has_any_column_privilege(session_user,c.oid,'INSERT,UPDATE,REFERENCES,SELECT WITH GRANT OPTION')))
     OR EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE p.prosecdef
       AND n.nspname NOT IN('pg_catalog','information_schema') AND has_schema_privilege(session_user,n.oid,'USAGE')
       AND has_function_privilege(session_user,p.oid,'EXECUTE')
       AND NOT(n.nspname='profitia_ingestion' AND p.proname IN('runtime_descriptor','current_state','lock_ingestion','scope_allows','reserve','complete','receipt','append_audit'))
       AND NOT(n.nspname='profitia_forecast_admission' AND p.proname IN('runtime_descriptor','bind_effect','scope_allows','record_delivery')))
+    OR EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+      WHERE n.nspname IN('profitia_ingestion','profitia_forecast_admission','profitia_market_read','profitia_forecast_read')
+      AND has_function_privilege(session_user,p.oid,'EXECUTE WITH GRANT OPTION'))
     OR NOT EXISTS(SELECT 1 FROM profitia_market_read.installation WHERE singleton AND database_name=current_database()
       AND project_id=i.project_id AND branch_id=i.branch_id AND schema_digest=i.market_schema_digest)
     OR NOT EXISTS(SELECT 1 FROM profitia_forecast_read.installation WHERE singleton AND database_name=current_database()
@@ -103,7 +110,8 @@ BEGIN
       AND c.relowner=CASE WHEN c.relname='forecast_preparation_job' THEN i.queue_owner::regrole ELSE i.trace_owner::regrole END
       AND EXISTS(SELECT 1 FROM pg_policy p WHERE p.polrelid=c.oid AND p.polname='profitia_native_source_fence' AND NOT p.polpermissive
         AND (SELECT oid FROM pg_roles WHERE rolname=i.runtime_role)=ANY(p.polroles))
-      AND NOT has_table_privilege(session_user,c.oid,'DELETE,TRUNCATE,REFERENCES,TRIGGER,INSERT WITH GRANT OPTION,UPDATE WITH GRANT OPTION');
+      AND NOT has_table_privilege(session_user,c.oid,'DELETE,TRUNCATE,REFERENCES,TRIGGER,SELECT WITH GRANT OPTION,INSERT WITH GRANT OPTION,UPDATE WITH GRANT OPTION')
+      AND NOT has_any_column_privilege(session_user,c.oid,'REFERENCES,SELECT WITH GRANT OPTION,INSERT WITH GRANT OPTION,UPDATE WITH GRANT OPTION');
   RETURN jsonb_build_object('schemaVersion',i.schema_version,'boundaryDigest',i.boundary_digest,'sourceSchemaDigest',i.source_schema_digest,
     'projectId',i.project_id,'branchId',i.branch_id,'databaseName',i.database_name,'role',session_user,
     'sourceId','sg2.forecast.queue','payloadSchema','sg2-forecast-command-v1','qualityVersion','stored-forecast-authority-v1',

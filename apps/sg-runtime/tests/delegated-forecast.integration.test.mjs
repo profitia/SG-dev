@@ -157,6 +157,23 @@ test('genuine native Forecast queue is admitted by one funded source transaction
         assert.equal((await owner.query('SELECT count(*)::int AS n FROM public.forecast_preparation_job')).rows[0].n,1)
       }finally{await owner.query(`REVOKE DELETE,TRUNCATE ON public.forecast_preparation_job FROM ${ROLE}`)}
     })
+    await t.test('readonly projections and native helpers refuse accidental writes and grant options including column-only rights',async()=>{
+      for(const[role,grant,revoke]of[
+        [MARKET_OWNER,`GRANT UPDATE ON profitia_market_read.series TO ${ROLE}`,`REVOKE UPDATE ON profitia_market_read.series FROM ${ROLE}`],
+        [MARKET_OWNER,`GRANT UPDATE("displayName") ON profitia_market_read.series TO ${ROLE}`,`REVOKE UPDATE("displayName") ON profitia_market_read.series FROM ${ROLE}`],
+        [MARKET_OWNER,`GRANT SELECT("displayName") ON profitia_market_read.series TO ${ROLE} WITH GRANT OPTION`,`REVOKE SELECT("displayName") ON profitia_market_read.series FROM ${ROLE}`],
+        [SOURCE_OWNER,`GRANT EXECUTE ON FUNCTION profitia_forecast_admission.bind_effect(uuid,uuid,text) TO ${ROLE} WITH GRANT OPTION`,`REVOKE GRANT OPTION FOR EXECUTE ON FUNCTION profitia_forecast_admission.bind_effect(uuid,uuid,text) FROM ${ROLE}`],
+      ]){
+        await asOwner(role,()=>owner.query(grant))
+        try{assert.equal((await business.$queryRawUnsafe('SELECT profitia_forecast_admission.runtime_descriptor() AS d'))[0].d,null);await assert.rejects(port.deliver(input),isOperationDenied)}
+        finally{await asOwner(role,()=>owner.query(revoke))}
+      }
+      await owner.query(`GRANT SELECT("jobKey") ON public.forecast_preparation_job TO ${ROLE} WITH GRANT OPTION`)
+      try{await assert.rejects(port.deliver(input),isOperationDenied)}
+      finally{await owner.query(`REVOKE SELECT("jobKey") ON public.forecast_preparation_job FROM ${ROLE}`)}
+      assert.equal((await port.deliver(input)).effectId,receipt.effectId)
+      assert.equal((await owner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,1)
+    })
     await t.test('native human API and current SERVICE delegation deliver the original command across two real databases',async st=>{
       await provePrivateDispatch(st,{root,rootUrl,sourceOwner:owner,sourceDelivery:port,sourceDatabase:DATABASE,command})
     })
