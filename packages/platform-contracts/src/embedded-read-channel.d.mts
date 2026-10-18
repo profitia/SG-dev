@@ -19,7 +19,7 @@ export function openEmbeddedReadHost<T extends EmbeddedSelection>(options: Optio
   parseSelection: (untrusted: EmbeddedSelection) => T | null
   read: (selection: NoInfer<T>, options: Readonly<{ signal: AbortSignal }>) => Promise<EmbeddedReadResult>
 }>): Readonly<{ close(): void }>
-export function openEmbeddedReadClient(options: Options): Readonly<{
+export function openEmbeddedReadClient(options: Options & Readonly<{ onClose?: () => void }>): Readonly<{
   read(selection: EmbeddedSelection, options?: Readonly<{ signal?: AbortSignal }>): Promise<EmbeddedReadResult>
   close(): void
 }>

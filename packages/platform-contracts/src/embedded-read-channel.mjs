@@ -165,8 +165,9 @@ export function openEmbeddedReadHost({ port, instanceId, parseSelection, read, l
   return Object.freeze({ close })
 }
 
-export function openEmbeddedReadClient({ port, instanceId, limits: input }) {
+export function openEmbeddedReadClient({ port, instanceId, limits: input, onClose }) {
   const limits = configuration(port, instanceId, input), pending = new Map()
+  if (onClose !== undefined && typeof onClose !== 'function') throw new TypeError('Invalid read channel close observer')
   let closed = false, nextId = 0
   function detach(id) {
     const state = pending.get(id)
@@ -180,6 +181,7 @@ export function openEmbeddedReadClient({ port, instanceId, limits: input }) {
     port.removeEventListener('message', onMessage); port.removeEventListener('messageerror', close)
     for (const id of pending.keys()) detach(id)?.reject(new EmbeddedReadUnavailable())
     port.close()
+    try { onClose?.() } catch { /* A presentation observer cannot reopen the channel or leak its diagnostic. */ }
   }
   function onMessage(event) {
     if (closed) return

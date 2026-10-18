@@ -294,3 +294,26 @@ test('a publication body already locked by another reader produces only a safe f
   try { await assert.rejects(readPresentationJson(response, 1024), error => error instanceof EmbeddedReadUnavailable && error.status === 503) }
   finally { await reader.cancel(); reader.releaseLock() }
 })
+
+test('an idle client immediately observes actual host close without needing another read', async t => {
+  const { port1, port2 } = new MessageChannel(), observed = deferred(); let closed = 0
+  const host = openEmbeddedReadHost({ port: port1, instanceId, parseSelection, read: async () => ({ status: 200, body: null }) })
+  const client = openEmbeddedReadClient({ port: port2, instanceId, onClose() { closed++; observed.resolve() } })
+  t.after(() => { host.close(); client.close(); port1.close(); port2.close() })
+  host.close(); await observed.promise; client.close(); assert.equal(closed, 1)
+  await assert.rejects(client.read(selected), EmbeddedReadUnavailable)
+})
+
+test('a failing presentation close observer cannot retain or reopen client requests', async t => {
+  const { port1, port2 } = new MessageChannel(); let observed = 0
+  const client = openEmbeddedReadClient({ port: port2, instanceId, onClose() { observed++; throw Error('private presentation diagnostic') } })
+  t.after(() => { client.close(); port1.close(); port2.close() })
+  assert.doesNotThrow(() => client.close()); client.close(); assert.equal(observed, 1)
+  await assert.rejects(client.read(selected), EmbeddedReadUnavailable)
+})
+
+test('a close observer must be an explicit function if supplied', () => {
+  const { port1, port2 } = new MessageChannel()
+  try { assert.throws(() => openEmbeddedReadClient({ port: port2, instanceId, onClose: 'forged' }), TypeError) }
+  finally { port1.close(); port2.close() }
+})
