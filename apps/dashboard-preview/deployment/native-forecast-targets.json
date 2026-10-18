@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "status": "CANDIDATE_NOT_ACTIVATED",
+  "applicationId": "spendguru",
+  "operationContract": "profitia.operation-context@1.0.0",
+  "environments": {
+    "development": {
+      "configurationVersion": "sg2-native-forecast-relay-dev-v1",
+      "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+      "consumerServiceId": "srv-dapa3ujm8hqs73a9t2og",
+      "origin": "https://sg2-development-runtime.onrender.com"
+    }
+  },
+  "projections": {
+    "current": "sg2-stored-current-v2",
+    "verification": "sg2-stored-verification-v1",
+    "capability": "sg2-stored-readiness-v1",
+    "capabilities": "sg2-stored-readiness-v1"
+  }
+}

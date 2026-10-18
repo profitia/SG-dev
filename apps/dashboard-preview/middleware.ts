@@ -10,6 +10,7 @@ import {
 } from './lib/porr-demo-profile'
 import { verifyPorrDemoSessionToken } from './lib/porr-demo-session'
 import { routing } from './i18n/routing'
+import { nativeForecastApiKind, readNativeForecastConfiguration } from './lib/benchmark-forecast/native-read-relay'
 
 const handleI18nRouting = createMiddleware(routing)
 
@@ -40,10 +41,12 @@ function createPorrApiUnauthorizedResponse(status: number, message: string) {
 export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isApiRequest = isDashboardPreviewApiPath(pathname)
-  // An explicit individual identity mode cannot borrow the legacy session or
-  // the open library profile. This host has not yet adopted its private guard.
-  // Its later adoption must verify identity, current rights and resource scope.
+  // Only four explicitly configured read APIs have adopted the current private
+  // upstream guard. Their own handlers require a user session and verify native
+  // publication context; pages, writes and all other legacy APIs remain closed.
   const provider = process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo'
+  if (provider === 'clerk' && request.method === 'GET' && nativeForecastApiKind(pathname)
+    && readNativeForecastConfiguration()) return privateDashboardResponse(NextResponse.next())
   if (provider !== 'legacy_demo') {
     return isApiRequest
       ? createPorrApiUnauthorizedResponse(503, 'Dashboard access is not configured.')

@@ -995,6 +995,118 @@ test('SG2 Prisma host composes the accepted access store with existing selection
             assert.deepEqual(events.map(e=>e.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
           })
         })
+        await t.test('Dashboard native relay crosses real HTTP into the existing current private authority and restricted source',async t=>{
+          const {createServer}=await import('node:http')
+          const {createNativeForecastReadHandler,NATIVE_FORECAST_API_PATHS}=await import('../../dashboard-preview/lib/benchmark-forecast/native-read-relay.ts')
+          const {createStoredForecastVerificationReader}=await import('../lib/forecast/stored-verification-read.ts')
+          const {createStoredForecastReadinessReader}=await import('../lib/forecast/stored-readiness-read.ts')
+          const {createRuntimeForecastCurrentHandler}=await import('../lib/forecast/current-operation-handlers.ts')
+          const {createRuntimeForecastVerificationHandler}=await import('../lib/forecast/verification-operation-handlers.ts')
+          const {createRuntimeForecastReadinessHandler}=await import('../lib/forecast/readiness-operation-handlers.ts')
+          const {createSg2PrivateForecastReadinessHost}=await import('../lib/platform/private-host.ts')
+          // Explicit SDK fixture, not a real Clerk/signature claim. The bearer
+          // value crosses HTTP unchanged; current database rights remain real.
+          const token=user=>`synthetic_header.${Buffer.from(user).toString('base64url')}.synthetic_signature`
+          const tokens=new Map([U,V].map(user=>[`Bearer ${token(user)}`,user]))
+          const relayClerk={...clerk,authenticateRequest:async(request,...args)=>{
+            const headers=new Headers(request.headers),user=tokens.get(headers.get('authorization'))
+            headers.set('authorization',user?`Bearer external-${user}`:'Bearer invalid')
+            return clerk.authenticateRequest(new Request(request,{headers}),...args)
+          }}
+          const config={...forecastConfig,clerk:relayClerk}
+          const binding={projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:sourceRole,schemaDigest:sourceDigest,marketSchemaDigest:marketDigest}
+          let actualReads=0,ownerEscapes=0
+          const descriptor=Object.getOwnPropertyDescriptor(globalThis,'dashboardPreviewMarketDataPrisma')
+          Object.defineProperty(globalThis,'dashboardPreviewMarketDataPrisma',{configurable:true,get(){ownerEscapes++;throw Error('Forbidden legacy Dashboard datastore')}})
+          const verification=createStoredForecastVerificationReader(source,binding),readiness=createStoredForecastReadinessReader(source,binding)
+          const runtime={provider:'clerk',executor:forecastHost,defaultOrganisationId:A,forecastRead:{executor:createSg2PrivateForecastCurrentHost(config),
+            current:async selection=>{actualReads++;return read(selection)},
+            verification:{executor:createSg2PrivateForecastVerificationHost(config),read:async selection=>{actualReads++;return verification(selection)}},
+            readiness:{executor:createSg2PrivateForecastReadinessHost(config),read:async selection=>{actualReads++;return readiness(selection)}}}}
+          const handlers={
+            '/api/benchmark/forecast/current':createRuntimeForecastCurrentHandler(()=>runtime),
+            '/api/benchmark/forecast/verification':createRuntimeForecastVerificationHandler(()=>runtime),
+            '/api/internal/forecast/capability':createRuntimeForecastReadinessHandler('capability',()=>runtime),
+            '/api/internal/forecast/readiness':createRuntimeForecastReadinessHandler('readiness',()=>runtime),
+          }
+          const received=[],errors=[]
+          let omitMetadata=false
+          const server=createServer((incoming,outgoing)=>{void(async()=>{
+            try{
+              const url=new URL(incoming.url,ORIGIN),handler=handlers[url.pathname]
+              const headers=new Headers(Object.entries(incoming.headers).filter(([,value])=>value!==undefined).map(([key,value])=>[key,Array.isArray(value)?value.join(','):value]))
+              received.push({path:url.pathname,authorization:headers.get('authorization'),cookie:headers.get('cookie'),forgedUser:headers.get('x-clerk-user-id')})
+              const response=handler?await handler(new NextRequest(url,{method:incoming.method,headers})):new Response(null,{status:404})
+              outgoing.statusCode=response.status
+              for(const[key,value]of response.headers)if(!omitMetadata||!key.startsWith('x-profitia-'))outgoing.setHeader(key,value)
+              outgoing.end(Buffer.from(await response.arrayBuffer()))
+            }catch(error){errors.push(error);outgoing.statusCode=503;outgoing.end('Synthetic fixture failure')}
+          })()})
+          await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
+          const address=server.address();assert(address&&typeof address==='object')
+          const env={APP_ENV:'development',TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',PROFITIA_FORECAST_API_ORIGIN:'https://sg2-development-runtime.onrender.com',PROFITIA_FORECAST_API_CONFIGURATION_VERSION:'sg2-native-forecast-relay-dev-v1'}
+          const relayFetch=async(input,init)=>{
+            const url=new URL(String(input));assert.equal(url.origin,env.PROFITIA_FORECAST_API_ORIGIN)
+            assert.deepEqual([...new Headers(init.headers)].map(([key])=>key),['authorization']);assert.equal(init.redirect,'manual')
+            return previousFetch(`http://127.0.0.1:${address.port}${url.pathname}${url.search}`,init)
+          }
+          const relays=Object.fromEntries(Object.keys(NATIVE_FORECAST_API_PATHS).map(kind=>[kind,createNativeForecastReadHandler(kind,{env:()=>env,fetch:relayFetch})]))
+          const input=(kind,org=A,user=U)=>new Request(`https://dashboard.fixture.test${NATIVE_FORECAST_API_PATHS[kind]}?seriesId=${seriesId}&organisationId=${org}`
+            +(kind==='capabilities'?'':kind==='capability'?'&modelId=naive&targetBasis=POINT_IN_TIME':'&model=naive&targetBasis=POINT_IN_TIME'),
+            {headers:{authorization:`Bearer ${token(user)}`,cookie:'synthetic_legacy_cookie','x-clerk-user-id':V,'x-clerk-org-id':B}})
+          const normalize=value=>{const result=structuredClone(value);delete result.timingMs;if(result.variants)for(const item of result.variants)delete item.timingMs;return result}
+          try{
+            await t.test('all four consumers retain business DTOs and shared statistics for independently authorised organisations',async()=>{
+              for(const kind of Object.keys(relays)){
+                const values=[]
+                for(const org of[A,B]){
+                  const response=await relays[kind](input(kind,org));assert.equal(response.status,200,await response.clone().text())
+                  const value=await response.json();assert.equal(value.seriesId,seriesId);assert(!JSON.stringify(value).includes('SYNTHETIC_PRIVATE_FORECAST_MARKER'))
+                  assert.equal(response.headers.get('cache-control'),'private, no-store')
+                  if(kind==='current'){
+                    assert.equal(value.currentForecast['1M'].forecastValue,0);assert.equal(value.currentForecast['1M'].horizonSteps,1)
+                    assert.equal(value.freshness.status,'FRESH');assert.equal(value.lineage.historyFingerprint,hash)
+                    assert.equal(value.rollingDailySnapshot.benchmark.unit,'ORIGINAL_UNIT');assert.equal(value.history.start,null)
+                  }
+                  if(kind==='verification'){assert.equal(value.verification['1M'].records.length,24);assert.equal(value.verification['1M'].metrics.mae,0)}
+                  if(kind==='capabilities')assert.equal(value.variants.length,12)
+                  values.push(normalize(value))
+                }
+                assert.deepEqual(values[0],values[1])
+              }
+              assert(received.every(row=>row.authorization===`Bearer ${token(U)}`&&row.cookie===null&&row.forgedUser===null))
+              assert(received.some(row=>row.path==='/api/internal/forecast/readiness'))
+              assert.equal(ownerEscapes,0);assert.equal(providerCalls,providerBefore)
+            })
+            await t.test('no cached success or forwarded caller identity survives current session, membership or permission revocation',async()=>{
+              const before=actualReads
+              for(const kind of Object.keys(relays)){
+                assert.equal((await relays[kind](input(kind,A,V))).status,403)
+                sdkRevoked=true;try{assert.equal((await relays[kind](input(kind))).status,401)}finally{sdkRevoked=false}
+                await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U])
+                try{assert.equal((await relays[kind](input(kind))).status,403)}finally{await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U])}
+                const id=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','forecast.read','forecast')",[id,A,U])
+                try{assert.equal((await relays[kind](input(kind))).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[id])}
+              }
+              assert.equal(actualReads,before)
+            })
+            await t.test('a successful response without native context metadata is withheld rather than falling back',async()=>{
+              omitMetadata=true;try{assert.equal((await relays.current(input('current'))).status,503)}finally{omitMetadata=false}
+              assert.equal(ownerEscapes,0)
+            })
+            await t.test('actual upstream OUTCOME failure stays unavailable through the relay with independently durable FAILURE',async()=>{
+              await owner.query("CREATE FUNCTION profitia_access.reject_relay_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'resourceId' LIKE 'forecast-readiness:%' THEN RAISE EXCEPTION 'synthetic relay audit outage'; END IF; RETURN NEW; END $$;CREATE TRIGGER reject_relay_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_relay_outcome()")
+              try{const response=await relays.capabilities(input('capabilities'));assert.equal(response.status,503);assert(!(await response.text()).includes('synthetic relay audit outage'))}
+              finally{await owner.query('DROP TRIGGER reject_relay_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_relay_outcome()')}
+              const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'resourceId' LIKE 'forecast-readiness:%' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+              assert.deepEqual(events.map(e=>e.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+            })
+            assert.deepEqual(errors,[]);assert.equal(ownerEscapes,0);assert.equal(providerCalls,providerBefore)
+          }finally{
+            await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()))
+            if(descriptor)Object.defineProperty(globalThis,'dashboardPreviewMarketDataPrisma',descriptor);else delete globalThis.dashboardPreviewMarketDataPrisma
+          }
+        })
         await t.test('period API keeps default and END_OF_PERIOD inside the same current private authority and source gates',async t=>{
           const {buildLiveForecastBridgePayloadFromHistory,selectMinimalLawfulCurrentTrainingPayload}=await import('../lib/forecast/live-market-input.ts')
           const {resolveForecastTechnicalMinimumObservations}=await import('../lib/forecast/current-fast-policy.ts')
