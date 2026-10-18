@@ -67,7 +67,7 @@ SET search_path=pg_catalog,pg_temp AS $parameters$
   SELECT CASE WHEN jsonb_typeof(value)='null' THEN true WHEN jsonb_typeof(value)<>'object' THEN false ELSE
     (SELECT count(*)<=512 AND COALESCE(bool_and(CASE
       WHEN e.key=ANY(ARRAY['alpha','beta','phi','initial_level','initial_trend','smoothing_level','smoothing_trend',
-        'smoothing_seasonal','damping_trend','seasonal_periods','sigma2','const','intercept','drift','lamda','lambda','candidateCount'])
+        'smoothing_seasonal','damping_trend','seasonal_periods','sigma2','const','intercept','drift','lamda','lambda','candidateCount','x1'])
         OR e.key ~ '^(?:(?:ar|ma)(?:\.S)?\.L[1-9][0-9]{0,2}|initial_seasonal\.[0-9]{1,3}|param_[0-9]{1,3})$'
         THEN jsonb_typeof(e.value)='number'
       WHEN e.key='trend' THEN jsonb_typeof(e.value)='null' OR e.value #>> '{}' IN('n','c','t','ct')

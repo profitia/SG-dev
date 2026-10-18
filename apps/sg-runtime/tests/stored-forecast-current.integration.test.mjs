@@ -65,7 +65,7 @@ async function seedPeriodCurrent(owner, history, targetBasis, modelId) {
   [id,history.providerSeries.providerSeriesId,modelId,marker,buildForecastArtifactCadenceIdentity(createForecastCadence('DAILY','MONTHLY')),hash,targetBasis,
     method.methodId,method.methodVersion,statistical.trainingWindowPolicyId,statistical.effectiveTrainingPolicyId,prepared.history.start,prepared.history.end,prepared.history.observations])
   const variants = {naive:'NAIVE_LAST_VALUE',damped_holt:'DAMPED_HOLT_ADDITIVE',ets:'ETS(A,N,N)',arima:'ARIMA(1,0,1)'}
-  const parameters = {naive:{},damped_holt:{alpha:0,beta:0,phi:1,initial_level:0,initial_trend:0},ets:{smoothing_level:0},arima:{order:[1,0,1],seasonal_order:[0,0,0,0],trend:'n',policyIdentity:'ARIMA_NON_SEASONAL_BOUNDED_AICC_V1',
+  const parameters = {naive:{},damped_holt:{alpha:0,beta:0,phi:1,initial_level:0,initial_trend:0},ets:{smoothing_level:0},arima:{order:[1,0,1],seasonal_order:[0,0,0,0],trend:'t',x1:0,policyIdentity:'ARIMA_NON_SEASONAL_BOUNDED_AICC_V1',
     candidateCount:3,tieBreakPolicy:'LOWER_D_THEN_LOWER_P_PLUS_Q_THEN_P_THEN_Q',estimationPolicyIdentity:'ARIMA_SAMPLE_SIZE_ADAPTIVE_EXACT_MLE_V1',
     fitImplementation:'STATSMODELS_ARIMA_STATESPACE','ar.L1':0,sigma2:0}}
   const expected = {}
@@ -179,7 +179,7 @@ test('actual generated forecast ORM reads a closed source view with canonical id
     await t.test('all four existing models retain their reviewed stored parameters and the same canonical identity', async () => {
       for (const [model,parameters] of [['naive',null],['damped_holt',{alpha:0,beta:0.5,phi:1,initial_level:0,initial_trend:0}],
         ['ets',{smoothing_level:0,'initial_seasonal.0':0,seasonal_periods:7}],
-        ['arima',{order:[1,0,1],seasonal_order:[0,0,0,0],trend:'t',policyIdentity:'ARIMA_NON_SEASONAL_BOUNDED_AICC_V1',candidateCount:3,
+        ['arima',{order:[1,0,1],seasonal_order:[0,0,0,0],trend:'t',x1:0,policyIdentity:'ARIMA_NON_SEASONAL_BOUNDED_AICC_V1',candidateCount:3,
           tieBreakPolicy:'LOWER_D_THEN_LOWER_P_PLUS_Q_THEN_P_THEN_Q',estimationPolicyIdentity:'ARIMA_SAMPLE_SIZE_ADAPTIVE_EXACT_MLE_V1',
           fitImplementation:'STATSMODELS_ARIMA_STATESPACE','ar.L1':0,sigma2:0}]]) {
         const stored=payload();stored.model.id=model;stored.model.selectedParameters=parameters
