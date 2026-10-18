@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { FinancialData, SectionEnvelope } from "@profitia/srm-xray";
-import { withOrganization } from "./db";
+import { withOrganization, type DatabasePool } from "./db";
 import type { PoolClient } from "pg";
 import { verifiedXmlMultiplier } from "./financial-unit";
 import { financialRegistration, COMPANY_IDENTITY_VERSION, type RegistryHistory } from "./company-continuity";
@@ -131,9 +131,9 @@ export function projectArchivedFinancialDocuments(archive: FinancialArchive, org
   return documents;
 }
 
-export async function saveFinancialDocuments(organizationId: string, nip: string, pages: unknown[]): Promise<{ documents: number; positions: number }> {
+export async function saveFinancialDocuments(organizationId: string, nip: string, pages: unknown[], pool?: DatabasePool): Promise<{ documents: number; positions: number }> {
   const documents = projectFinancialDocuments(financialRecordsFromPages(pages));
-  return withOrganization(organizationId, client => persistFinancialDocuments(client, organizationId, nip, documents));
+  return withOrganization(organizationId, client => persistFinancialDocuments(client, organizationId, nip, documents), pool);
 }
 
 export async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,

@@ -1,3 +1,4 @@
+import type { DatabasePool } from "./db";
 import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import { isRestrictedRegistrationStatus } from "@profitia/srm-xray";
 import { enrichCompanyPkd } from "./company-pkd";
@@ -55,7 +56,7 @@ function attemptStatus(status: string, errorCode: string | null): "SUCCESS" | "N
   return status === "EMPTY" || status === "NOT_REQUESTED" ? "NO_DATA" : "SUCCESS";
 }
 
-async function persistSection(
+export async function persistSection(
   organizationId: string,
   lookup: { supplierId: string; requestId: string },
   sectionName: Section,
@@ -65,8 +66,9 @@ async function persistSection(
   correlationId?: string | null,
   sourcePayload?: unknown,
   retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER",
+  pool?: DatabasePool,
 ): Promise<string | null> {
-  const attemptId = await atLookupStage("attempt_persistence", () => startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod), sectionName);
+  const attemptId = await atLookupStage("attempt_persistence", () => startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod, pool), sectionName);
   if (sectionName === "kys") logProviderOutcome("VERCLY", "kys", section.status, errorCode, retrievalMethod);
   try {
     let storedSnapshotId: string | null = null;
@@ -81,18 +83,18 @@ async function persistSection(
         retrievedAt: new Date(section.retrievedAt!),
         effectiveAt: section.effectiveAt && !Number.isNaN(Date.parse(section.effectiveAt)) ? new Date(section.effectiveAt) : undefined,
         ...(sectionName === "kys" ? { retentionUntil: kysExpiry(section.retrievedAt!) } : {}),
-      }), sectionName);
+      }, pool), sectionName);
       storedSnapshotId = snapshotId;
       await atLookupStage("projection_persistence", () => appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: sectionName,
-        version: sectionName === "kys" ? 2 : 1, data: section.data }), sectionName);
-      if (sectionName === "financial" && facts.length) await atLookupStage("financial_persistence", () => appendFinancialFacts(organizationId, facts.map((fact) => ({ ...fact, supplierId: lookup.supplierId, snapshotId }))), "financial");
+        version: sectionName === "kys" ? 2 : 1, data: section.data }, pool), sectionName);
+      if (sectionName === "financial" && facts.length) await atLookupStage("financial_persistence", () => appendFinancialFacts(organizationId, facts.map((fact) => ({ ...fact, supplierId: lookup.supplierId, snapshotId })), pool), "financial");
     }
     await atLookupStage("attempt_persistence", () => finishAttempt(organizationId, attemptId, attemptStatus(section.status, errorCode), {
       correlationId: correlationId ?? undefined, providerRecordId: section.source.recordId ?? undefined, errorCode: errorCode ?? undefined,
-    }), sectionName);
+    }, pool), sectionName);
     return storedSnapshotId;
   } catch (error) {
-    await finishAttempt(organizationId, attemptId, "ERROR", { errorCode: "SRM_PERSISTENCE_ERROR" }).catch(() => {});
+    await finishAttempt(organizationId, attemptId, "ERROR", { errorCode: "SRM_PERSISTENCE_ERROR" }, pool).catch(() => {});
     throw error;
   }
 }
