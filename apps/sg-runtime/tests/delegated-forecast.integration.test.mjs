@@ -9,9 +9,11 @@ import {createRequire} from 'node:module'
 import {PrismaClient} from '../generated/market-data-client/index.js'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {createSg2ForecastSourceDelivery,FORECAST_QUEUE_SOURCE} from '../lib/forecast/source-delivery.ts'
-import {platformReceiptEvidence} from '@profitia/platform-contracts/platform-ingestion'
-import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 const require=createRequire(import.meta.url),{Client}=createRequire(new URL('../../architecture-lab/package.json',import.meta.url))('pg')
+// The native app is CommonJS under tsx. Use its actual SDK loader for opaque
+// in-process receipt evidence; a second ESM module instance owns another map.
+const {platformReceiptEvidence}=require('@profitia/platform-contracts/platform-ingestion')
+const {isOperationDenied}=require('@profitia/platform-contracts/operation-context')
 const DATABASE='sg2_native_source_'+randomUUID().replaceAll('-',''),ROLE='sg2_native_forecast_source_fixture',READ_ROLE='sg2_native_forecast_read_fixture'
 const SOURCE_OWNER='profitia_ingestion_owner',MARKET_OWNER='profitia_market_read_owner',FORECAST_OWNER='profitia_forecast_read_owner'
 const SERIES='native_delegated_forecast_daily',hash=v=>createHash('sha256').update(v).digest('hex')
@@ -91,11 +93,15 @@ test('genuine native Forecast queue is admitted by one funded source transaction
       await assert.rejects(business.forecastPreparationJob.create({data:{jobKey:'forged',jobKind:'CURRENT',status:'QUEUED',priority:10,seriesId:SERIES,targetBasis:'MONTHLY_AVERAGE',
         targetSemantics:'MONTHLY_AVERAGE',modelId:'naive',sourceFrequency:'DAILY',targetCadence:'MONTHLY',historyFingerprint:'unfunded'}}))
       await assert.rejects(business.$queryRawUnsafe('SELECT profitia_forecast_admission.install_runtime_fences()'))
+      assert.deepEqual(await business.forecastPreparationJob.findMany(),[])
+      await assert.rejects(business.forecastActionTrace.create({data:{correlationId:randomUUID(),actionType:'CURRENT_PREPARATION',seriesId:SERIES,
+        targetBasis:'MONTHLY_AVERAGE',targetSemantics:'MONTHLY_AVERAGE',modelId:'naive',actionRequestedAt:new Date(),eventsJson:[],eventCount:0}}),/row.level security/i)
       assert.equal((await owner.query('SELECT count(*)::int AS n FROM public.forecast_preparation_job')).rows[0].n,0)
     })
     let receipt
     await t.test('actual original queue enqueue, telemetry, source receipt and budget commit once through generated Prisma',async()=>{
       receipt=await port.deliver(input);assert.equal(receipt.status,'COMMITTED');assert(platformReceiptEvidence(receipt))
+      assert.equal(platformReceiptEvidence(structuredClone(receipt)),null,'Serialized receipts never carry source commit evidence')
       const job=(await owner.query('SELECT * FROM public.forecast_preparation_job')).rows[0]
       assert(job);assert.equal(job.seriesId,SERIES);assert.equal(job.modelId,'naive');assert.equal(job.status,'QUEUED');assert.equal(job.requestCount,1)
       assert.equal((await owner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,1)
@@ -111,6 +117,35 @@ test('genuine native Forecast queue is admitted by one funded source transaction
       await assert.rejects(port.deliver({...input,payload:{...command,organisationId:randomUUID()}}),isOperationDenied)
       assert.equal(networkCalls,0);assert.equal((await owner.query('SELECT count(*)::int AS n FROM public.forecast_preparation_job')).rows[0].n,1)
       assert.equal((await owner.query("SELECT count(*)::int AS n FROM pg_namespace WHERE nspname IN('profitia_access','profitia_jobs')")).rows[0].n,0)
+    })
+    await t.test('native receipt failure rolls back original queue changes, telemetry and finite source charge together',async()=>{
+      await asOwner(SOURCE_OWNER,()=>owner.query("CREATE FUNCTION profitia_forecast_admission.reject_delivery_fixture() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN RAISE EXCEPTION 'synthetic source receipt outage';END$$;CREATE TRIGGER reject_delivery_fixture BEFORE INSERT ON profitia_forecast_admission.deliveries FOR EACH ROW EXECUTE FUNCTION profitia_forecast_admission.reject_delivery_fixture()"))
+      try{
+        await assert.rejects(port.deliver({...input,deliveryKey:'native_source_rollback_delivery_000002'}),isOperationDenied)
+        assert.equal((await owner.query('SELECT "requestCount" FROM public.forecast_preparation_job')).rows[0].requestCount,1)
+        assert.equal((await owner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,1)
+        assert.equal((await owner.query('SELECT count(*)::int AS n FROM public.forecast_action_trace')).rows[0].n,1)
+        assert.equal((await owner.query('SELECT count(*)::int AS n FROM profitia_ingestion.effects')).rows[0].n,1)
+      }finally{await asOwner(SOURCE_OWNER,()=>owner.query('DROP TRIGGER reject_delivery_fixture ON profitia_forecast_admission.deliveries;DROP FUNCTION profitia_forecast_admission.reject_delivery_fixture()'))}
+    })
+    await t.test('current source revocation and missing projection metadata refuse a previously funded key',async()=>{
+      await asOwner(SOURCE_OWNER,()=>owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED'"))
+      await assert.rejects(port.deliver(input),isOperationDenied)
+      await asOwner(SOURCE_OWNER,()=>owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE'"))
+      await asOwner(MARKET_OWNER,()=>owner.query('DROP POLICY native_source_receipt_metadata ON profitia_market_read.installation'))
+      await assert.rejects(port.deliver(input),isOperationDenied)
+      await asOwner(MARKET_OWNER,()=>owner.query(`CREATE POLICY native_source_receipt_metadata ON profitia_market_read.installation FOR SELECT TO ${SOURCE_OWNER} USING(current_user='profitia_ingestion_owner')`))
+      assert.equal((await port.deliver(input)).effectId,receipt.effectId)
+      assert.equal((await owner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,1)
+    })
+    await t.test('accidental broad queue rights still cannot truncate or erase scientific state',async()=>{
+      await owner.query(`GRANT DELETE,TRUNCATE ON public.forecast_preparation_job TO ${ROLE}`)
+      try{
+        await assert.rejects(business.$executeRawUnsafe('TRUNCATE public.forecast_preparation_job CASCADE'))
+        assert.equal(await business.$executeRawUnsafe('DELETE FROM public.forecast_preparation_job'),0)
+        await assert.rejects(port.deliver(input),isOperationDenied)
+        assert.equal((await owner.query('SELECT count(*)::int AS n FROM public.forecast_preparation_job')).rows[0].n,1)
+      }finally{await owner.query(`REVOKE DELETE,TRUNCATE ON public.forecast_preparation_job FROM ${ROLE}`)}
     })
   }finally{globalThis.fetch=previousFetch;await business?.$disconnect();await audit?.$disconnect();await owner?.end();await root.end()}
 })
