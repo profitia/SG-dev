@@ -1,3 +1,4 @@
+import { readPresentationJson } from '@profitia/platform-contracts/embedded-read-channel'
 /** Shared server transport only. The caller supplies a verified deployment
  * binding and a closed selection; the native backend owns current access. */
 export const privateNativeReadHeaders = Object.freeze({ 'Content-Type': 'application/json',
@@ -12,24 +13,6 @@ type Publication = Readonly<{
 }>
 const approvedPaths = new Set(['/api/benchmark/forecast/current', '/api/benchmark/forecast/verification',
   '/api/internal/forecast/capability', '/api/internal/forecast/readiness', '/api/benchmark/analytics-series'])
-
-async function readBoundedJson(response: Response, maximum: number): Promise<unknown> {
-  if (response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() !== 'application/json' || !response.body)
-    { await response.body?.cancel(); throw new NativeReadFailure(503) }
-  const reader = response.body.getReader(), decoder = new TextDecoder()
-  let bytes = 0, text = ''
-  try {
-    while (true) {
-      const part = await reader.read()
-      if (part.done) break
-      bytes += part.value.byteLength
-      if (bytes > maximum) { await reader.cancel(); throw new NativeReadFailure(503) }
-      text += decoder.decode(part.value, { stream: true })
-    }
-    text += decoder.decode()
-  } finally { reader.releaseLock() }
-  return JSON.parse(text)
-}
 
 export async function readNativeStoredPublication(request: Request, publication: Publication,
   fetchUpstream: typeof fetch = fetch): Promise<unknown> {
@@ -56,5 +39,5 @@ export async function readNativeStoredPublication(request: Request, publication:
     || response.headers.get(`x-profitia-${publication.feature}-resource`) !== publication.resource) {
     await response.body?.cancel(); throw new NativeReadFailure(503)
   }
-  return readBoundedJson(response, maximumBytes)
+  try { return await readPresentationJson(response, maximumBytes) } catch { throw new NativeReadFailure(503) }
 }

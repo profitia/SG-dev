@@ -1,5 +1,7 @@
 'use client'
 
+import { useEmbeddedReadPresentation } from '../native-embedded-read-provider'
+
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { usePathname, useSearchParams } from 'next/navigation'
@@ -2813,6 +2815,7 @@ export function RawDataView({
   variant = 'finder-embedded-v2',
   forcedBenchmarkSubject = null,
 }: RawDataViewProps) {
+  const { fetch, readOnly: nativeReadOnly, parentOrigin: nativeParentOrigin } = useEmbeddedReadPresentation()
   const locale = useLocale() as Locale
   const t = useTranslations('RawDataView')
   const pathname = usePathname()
@@ -2824,10 +2827,10 @@ export function RawDataView({
   const benchmarkSeriesId = benchmarkSubject?.seriesId ?? null
   const benchmarkDisplayName = benchmarkSubject?.displayName ?? null
   const initialRange = readInitialRange(searchParams)
-  const backgroundCurrentForecastWarmupEnabled = shouldWarmCurrentForecastInBackground(searchParams, { embedded, variant })
-  const progressiveForecastPreparationEnabled = isForecastPortfolioVariant
-    || shouldRunProgressiveForecastPreparation(searchParams, { embedded, variant })
-  const preparedReadsOnly = isPreparedReadsOnlyForecastSession(searchParams)
+  const backgroundCurrentForecastWarmupEnabled = !nativeReadOnly && shouldWarmCurrentForecastInBackground(searchParams, { embedded, variant })
+  const progressiveForecastPreparationEnabled = !nativeReadOnly && (isForecastPortfolioVariant
+    || shouldRunProgressiveForecastPreparation(searchParams, { embedded, variant }))
+  const preparedReadsOnly = nativeReadOnly || isPreparedReadsOnlyForecastSession(searchParams)
   const defaultForecastTargetBasis = resolveDefaultForecastTargetBasis(variant)
   const initialForecastVisibility = resolveInitialForecastVisibility(variant, embedded)
   const initialForecastVerificationVisibility = resolveInitialForecastVerificationVisibility(variant, embedded)
@@ -2945,10 +2948,10 @@ export function RawDataView({
       )
     : null
   const selectedVerificationCacheEntry = selectedVerificationCacheKey
-    ? forecastLayerCacheRef.current.get(selectedVerificationCacheKey)
+    ? (!nativeReadOnly ? forecastLayerCacheRef.current.get(selectedVerificationCacheKey) : undefined)
     : null
   const selectedDurableReadyVerificationResult = selectedVerificationCacheKey
-    ? forecastReadyVerificationRef.current.get(selectedVerificationCacheKey) ?? null
+    ? (!nativeReadOnly ? forecastReadyVerificationRef.current.get(selectedVerificationCacheKey) : undefined) ?? null
     : null
   const selectedForecastVerificationResult = selectedForecastIdentity
     ? resolveSelectedForecastVerificationResult({
@@ -3211,7 +3214,7 @@ export function RawDataView({
       const nextHeight = Math.ceil(Math.max(...measuredHeights.filter((value) => Number.isFinite(value) && value > 0))) + 8
 
       if (nextHeight > 0 && benchmarkSeriesId) {
-        window.parent.postMessage({ type: 'sg-dashboard-preview:resize', seriesId: benchmarkSeriesId, height: nextHeight }, '*')
+        window.parent.postMessage({ type: 'sg-dashboard-preview:resize', seriesId: benchmarkSeriesId, height: nextHeight }, nativeParentOrigin ?? '*')
       }
     }
 
@@ -3261,7 +3264,7 @@ export function RawDataView({
       const nextHeight = Math.ceil(Math.max(...measuredHeights.filter((value) => Number.isFinite(value) && value > 0))) + 8
 
       if (nextHeight > 0) {
-        window.parent.postMessage({ type: 'sg-dashboard-preview:resize', seriesId: benchmarkSeriesId, height: nextHeight }, '*')
+        window.parent.postMessage({ type: 'sg-dashboard-preview:resize', seriesId: benchmarkSeriesId, height: nextHeight }, nativeParentOrigin ?? '*')
       }
     }
 
@@ -3370,7 +3373,7 @@ export function RawDataView({
 
     const initialPayload = toTimeSeriesViewerPayload(initialBenchmarkSeries, locale)
     const cacheKey = buildBenchmarkSeriesCacheKey(locale, benchmarkSeriesId, initialRange)
-    seriesCacheRef.current.set(cacheKey, {
+    if (!nativeReadOnly) seriesCacheRef.current.set(cacheKey, {
       response: initialBenchmarkSeries,
       payload: initialPayload,
       cachedAt: Date.now(),
@@ -3427,7 +3430,7 @@ export function RawDataView({
 
       async function loadBenchmarkSeries() {
         const cacheKey = buildBenchmarkSeriesCacheKey(locale, activeBenchmarkSeriesId, benchmarkRange)
-        const cached = seriesCacheRef.current.get(cacheKey)
+        const cached = (!nativeReadOnly ? seriesCacheRef.current.get(cacheKey) : undefined)
 
         if (cached && Date.now() - cached.cachedAt <= CLIENT_SERIES_CACHE_TTL_MS) {
           setErrorMessage(null)
@@ -3497,7 +3500,7 @@ export function RawDataView({
             return
           }
 
-          seriesCacheRef.current.set(cacheKey, {
+          if (!nativeReadOnly) seriesCacheRef.current.set(cacheKey, {
             response: nextSeries,
             payload: nextViewerPayload,
             cachedAt: Date.now(),
@@ -3600,7 +3603,7 @@ export function RawDataView({
     }
 
     async function loadData() {
-      const cached = seriesCacheRef.current.get(cacheKey)
+      const cached = (!nativeReadOnly ? seriesCacheRef.current.get(cacheKey) : undefined)
 
       if (cached && Date.now() - cached.cachedAt <= CLIENT_SERIES_CACHE_TTL_MS) {
         setErrorMessage(null)
@@ -3661,7 +3664,7 @@ export function RawDataView({
           return
         }
 
-        seriesCacheRef.current.set(cacheKey, {
+        if (!nativeReadOnly) seriesCacheRef.current.set(cacheKey, {
           response: nextSeries,
           payload: nextViewerPayload,
           cachedAt: Date.now(),
@@ -3761,7 +3764,7 @@ export function RawDataView({
 
     async function loadForecastCurrent() {
       const cacheKey = buildForecastLayerCacheKey(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'current')
-      const cached = forecastLayerCacheRef.current.get(cacheKey)
+      const cached = (!nativeReadOnly ? forecastLayerCacheRef.current.get(cacheKey) : undefined)
 
       if (cached) {
         const cachedResult = cached.payload as BenchmarkForecastCurrentResult
@@ -3792,7 +3795,7 @@ export function RawDataView({
           return
         }
 
-        forecastLayerCacheRef.current.set(cacheKey, {
+        if (!nativeReadOnly) forecastLayerCacheRef.current.set(cacheKey, {
           payload,
           cachedAt: Date.now(),
         })
@@ -4009,7 +4012,7 @@ export function RawDataView({
           return
         }
 
-        forecastLayerCacheRef.current.set(cacheKey, {
+        if (!nativeReadOnly) forecastLayerCacheRef.current.set(cacheKey, {
           payload: outcome.currentResult,
           cachedAt: Date.now(),
         })
@@ -4033,6 +4036,7 @@ export function RawDataView({
   }, [backgroundCurrentForecastWarmupEnabled, benchmarkSeriesId, forecastModel, locale, selectedForecastTargetBasis])
 
   async function handlePrepareForecastCurrent() {
+    if (nativeReadOnly) return
     if (!benchmarkSeriesId) {
       return
     }
@@ -4064,7 +4068,7 @@ export function RawDataView({
         }
 
         if (outcome.currentResult) {
-          forecastLayerCacheRef.current.set(cacheKey, {
+          if (!nativeReadOnly) forecastLayerCacheRef.current.set(cacheKey, {
             payload: outcome.currentResult,
             cachedAt: Date.now(),
           })
@@ -4100,7 +4104,7 @@ export function RawDataView({
       }
 
       if (outcome.currentResult) {
-        forecastLayerCacheRef.current.set(cacheKey, {
+        if (!nativeReadOnly) forecastLayerCacheRef.current.set(cacheKey, {
           payload: outcome.currentResult,
           cachedAt: Date.now(),
         })
@@ -4145,6 +4149,7 @@ export function RawDataView({
   }
 
   async function handlePrepareForecastVerification() {
+    if (nativeReadOnly) return
     if (!benchmarkSeriesId) return
 
     const correlationKey = buildForecastActionCorrelationKey('VERIFICATION', {
@@ -4232,8 +4237,8 @@ export function RawDataView({
 
     async function loadForecastVerification() {
       const cacheKey = buildForecastLayerCacheKey(locale, activeSeriesId, forecastModel, selectedForecastTargetBasis, 'verification')
-      const cached = forecastLayerCacheRef.current.get(cacheKey)
-      const durableReadyResult = forecastReadyVerificationRef.current.get(cacheKey) ?? null
+      const cached = (!nativeReadOnly ? forecastLayerCacheRef.current.get(cacheKey) : undefined)
+      const durableReadyResult = (!nativeReadOnly ? forecastReadyVerificationRef.current.get(cacheKey) : undefined) ?? null
 
       const schedulePreparedReread = (cachedAt: number) => {
         const remainingTtlMs = Math.max(1_000, CLIENT_SERIES_CACHE_TTL_MS - (Date.now() - cachedAt))
@@ -4331,11 +4336,11 @@ export function RawDataView({
 
         const cachedAt = Date.now()
         forecastPreparedResponseAtRef.current.set(`VERIFICATION|${activeSeriesId}|${forecastModel}|${selectedForecastTargetBasis}`, performance.now())
-        forecastLayerCacheRef.current.set(cacheKey, {
+        if (!nativeReadOnly) forecastLayerCacheRef.current.set(cacheKey, {
           payload: normalizedPayload,
           cachedAt,
         })
-        forecastReadyVerificationRef.current.set(cacheKey, normalizedPayload)
+        if (!nativeReadOnly) forecastReadyVerificationRef.current.set(cacheKey, normalizedPayload)
         forecastVerificationReadRetryRef.current.delete(cacheKey)
         setForecastVerificationResult(normalizedPayload)
         setForecastVerificationState('ready')
@@ -4411,7 +4416,7 @@ export function RawDataView({
       secondFrame = window.requestAnimationFrame(() => {
         forecastUiAckSentRef.current.add(ackKey)
         const responseAt = forecastPreparedResponseAtRef.current.get(`CURRENT|${identityKey}`)
-        void acknowledgeForecastVisibleThroughDashboard(fetch, {
+        if (!nativeReadOnly) void acknowledgeForecastVisibleThroughDashboard(fetch, {
           ...selectedForecastIdentity,
           correlationId,
           layer: 'CURRENT',
@@ -4445,7 +4450,7 @@ export function RawDataView({
       secondFrame = window.requestAnimationFrame(() => {
         forecastUiAckSentRef.current.add(ackKey)
         const responseAt = forecastPreparedResponseAtRef.current.get(`VERIFICATION|${identityKey}`)
-        void acknowledgeForecastVisibleThroughDashboard(fetch, {
+        if (!nativeReadOnly) void acknowledgeForecastVisibleThroughDashboard(fetch, {
           ...selectedForecastIdentity,
           correlationId,
           layer: 'VERIFICATION',
@@ -4964,7 +4969,7 @@ export function RawDataView({
             <strong>{t('forecastPreparationRequired')}</strong>
             <p>{t('forecastPreparationRequiredHint')}</p>
             <div className="callout-actions">
-              <button type="button" className="callout-button" onClick={handlePrepareForecastCurrent}>
+              <button type="button" className="callout-button" disabled={nativeReadOnly} onClick={handlePrepareForecastCurrent}>
                 {t('prepareForecast')}
               </button>
             </div>
@@ -4975,7 +4980,7 @@ export function RawDataView({
             <strong>{t('forecastPreparationRequired')}</strong>
             <p>{t('forecastPreparationRequiredHint')}</p>
             <div className="callout-actions">
-              <button type="button" className="callout-button" onClick={handlePrepareForecastCurrent}>
+              <button type="button" className="callout-button" disabled={nativeReadOnly} onClick={handlePrepareForecastCurrent}>
                 {t('prepareForecast')}
               </button>
             </div>
@@ -5026,7 +5031,7 @@ export function RawDataView({
             <strong>{t('verificationNotPrepared')}</strong>
             <p>{t('verificationNotPreparedHint')}</p>
             <div className="callout-actions">
-              <button type="button" className="callout-button" onClick={handlePrepareForecastVerification}>
+              <button type="button" className="callout-button" disabled={nativeReadOnly} onClick={handlePrepareForecastVerification}>
                 {t('prepareVerification')}
               </button>
             </div>

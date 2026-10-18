@@ -8,7 +8,20 @@
       "configurationVersion": "sg2-native-forecast-relay-dev-v1",
       "serviceId": "srv-dapa3tid0e5s73f8bc5g",
       "consumerServiceId": "srv-dapa3ujm8hqs73a9t2og",
-      "origin": "https://sg2-development-runtime.onrender.com"
+      "origin": "https://sg2-development-runtime.onrender.com",
+      "embedding": {
+        "configurationVersion": "sg2-native-dashboard-embed-dev-v1",
+        "childOrigin": "https://sg2-development-dashboard.onrender.com",
+        "parentOrigins": [
+          "https://sg2-development-runtime.onrender.com",
+          "https://dev-sg2.spendguru.app"
+        ],
+        "activationVariable": "PROFITIA_NATIVE_EMBED_ENABLED",
+        "defaultEnabled": false,
+        "observedState": "SOURCE_ONLY_NOT_ACTIVATED",
+        "scope": "SCOPED_PREPARED_READS_ONLY_NO_AUTOMATIC_WARMUP",
+        "historyProjection": "sg2-stored-market-analytics-v1"
+      }
     }
   },
   "projections": {

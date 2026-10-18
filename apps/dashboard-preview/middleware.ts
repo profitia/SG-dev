@@ -12,6 +12,8 @@ import {
 import { verifyPorrDemoSessionToken } from './lib/porr-demo-session'
 import { routing } from './i18n/routing'
 import { nativeForecastApiKind, readNativeForecastConfiguration } from './lib/benchmark-forecast/native-read-relay'
+import { readNativeEmbeddedConfiguration } from './lib/platform/native-embedded-read'
+import { selectNativeEmbedPage } from './lib/platform/native-chart-publication'
 
 const handleI18nRouting = createMiddleware(routing)
 
@@ -46,6 +48,12 @@ export default async function middleware(request: NextRequest) {
   // upstream guard. Their own handlers require a user session and verify native
   // publication context; pages, writes and all other legacy APIs remain closed.
   const provider = process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo'
+  const embed = provider === 'clerk' && request.method === 'GET' ? readNativeEmbeddedConfiguration() : null
+  if (embed && !isApiRequest && selectNativeEmbedPage(request.url)) {
+    const response = privateDashboardResponse(handleI18nRouting(request))
+    response.headers.set('Content-Security-Policy',`frame-ancestors ${embed.parentOrigins.join(' ')}`)
+    return response
+  }
   if (provider === 'clerk' && request.method === 'GET' && (nativeForecastApiKind(pathname) || pathname === NATIVE_MARKET_ANALYTICS_PATH && !!request.nextUrl.searchParams.get('seriesId')?.trim())
     && readNativeForecastConfiguration()) return privateDashboardResponse(NextResponse.next())
   if (provider !== 'legacy_demo') {
