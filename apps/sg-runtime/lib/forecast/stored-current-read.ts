@@ -1,3 +1,4 @@
+import { selectTrailingRollingDailyCurrentHistory } from './rolling-daily-current-ownership'
 import type { PrismaClient, Prisma } from '@/generated/market-data-client'
 import type { BenchmarkHistoricalSeriesResult } from '@/lib/benchmark/contracts'
 import { BenchmarkAppError } from '@/lib/benchmark/errors'
@@ -136,8 +137,11 @@ export function createStoredCurrentForecastReader(prisma: Pick<PrismaClient, '$t
         return result
       }
       if (normalizeForecastSourceFrequency(history.frequency) !== 'DAILY') return currentForecastUnavailable(selection, 'MISS')
-      const fingerprint = buildRollingDailyHistoryFingerprint({ seriesId: selection.seriesId, displayName: history.displayName,
-        description: history.displayName, frequency: 'DAILY', source: history.source, points: history.historical })
+      if (!history.historical.some(point=>point.value!==null&&Number.isFinite(point.value))) return currentForecastUnavailable(selection,'MISS')
+      // Match the ORIGINAL producer's minimal lawful Current window. Full
+      // history remains the Verification identity; do not relax snapshot checks.
+      const fingerprint = buildRollingDailyHistoryFingerprint(selectTrailingRollingDailyCurrentHistory({ seriesId: selection.seriesId, displayName: history.displayName,
+        description: history.displayName, frequency: 'DAILY', source: history.source, points: history.historical }))
       const snapshot = await readRollingDailyCurrentForecastSnapshot({ seriesId: selection.seriesId, modelId: selection.modelId,
         sourceHistoryFingerprint: fingerprint }, { prisma: transaction })
       const result = snapshot.status === 'HIT' ? snapshot.payload : currentForecastUnavailable(selection, snapshot.status)

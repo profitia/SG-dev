@@ -1,3 +1,5 @@
+import {createStoredForecastVerificationReader} from '../lib/forecast/stored-verification-read.ts'
+import {validatePublicPeriodCurrentForecast} from '../lib/platform/period-forecast-current.ts'
 import {createStoredCurrentForecastReader} from '../lib/forecast/stored-current-read.ts'
 import {createStoredForecastReadinessReader} from '../lib/forecast/stored-readiness-read.ts'
 import assert from 'node:assert/strict'
@@ -142,7 +144,7 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
     const readUrl=new URL(ownerUrl);readUrl.username=READ_ROLE;readUrl.password='isolated_ci_only';readUrl.searchParams.set('schema','profitia_forecast_read');readUrl.searchParams.set('connection_limit','1')
     readClient=new PrismaClient({datasources:{db:{url:readUrl.toString()}}})
     const readBinding={projectId:'isolated-native-source-project',branchId:'isolated-native-source-branch',databaseName:DATABASE,role:READ_ROLE,schemaDigest:hash(forecastSql),marketSchemaDigest:hash(marketSql)}
-    const publicCurrent=createStoredCurrentForecastReader(readClient,readBinding),publicReadiness=createStoredForecastReadinessReader(readClient,readBinding)
+    const publicCurrent=createStoredCurrentForecastReader(readClient,readBinding),publicReadiness=createStoredForecastReadinessReader(readClient,readBinding),publicVerification=createStoredForecastVerificationReader(readClient,readBinding)
     const assertPublicCurrent=async modelId=>{
       const result=await publicCurrent({seriesId:SERIES,modelId,targetBasis:'MONTHLY_AVERAGE'})
       assert.equal(result.status,'AVAILABLE',JSON.stringify(result))
@@ -229,6 +231,7 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
         const j=(await owner.query(`SELECT status,"failureReason" FROM public.forecast_preparation_job WHERE "jobKind"='VERIFICATION'`)).rows[0]
         assert.equal(j.status,'SUCCEEDED',j.failureReason??JSON.stringify(j))
         assert((await owner.query('SELECT count(*)::int AS n FROM public.forecast_verification_points')).rows[0].n>0)
+        assert.equal((await publicVerification({seriesId:SERIES,modelId:'naive',targetBasis:'MONTHLY_AVERAGE',verificationScope:'FULL'})).status,'AVAILABLE')
         assert.equal(networkCalls,0);assert.equal(globalResolutions,0)
       })
       await t.test('committed start with lost driver observation remains spent; original expired-lease recovery admits a new attempt',async()=>{
@@ -294,6 +297,9 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
         assert((await owner.query('SELECT count(*)::int AS n FROM profitia_forecast_worker.children')).rows[0].n>0)
         assert((await owner.query('SELECT count(*)::int AS n FROM public.rolling_daily_current_forecast_snapshots')).rows[0].n>0)
         assert((await owner.query('SELECT count(*)::int AS n FROM public.rolling_daily_verification_records')).rows[0].n>0)
+        const rollingCurrent=await publicCurrent({seriesId:SERIES,modelId:'naive',targetBasis:'POINT_IN_TIME'})
+        assert.equal(rollingCurrent.status,'AVAILABLE',JSON.stringify(rollingCurrent))
+        assert.equal((await publicVerification({seriesId:SERIES,modelId:'naive',targetBasis:'POINT_IN_TIME',verificationScope:'FAST'})).status,'AVAILABLE')
         assert.equal(networkCalls,0);assert.equal(globalResolutions,0)
       })
       await t.test('original ETS and ARIMA Current kernels retain their persisted artifact behaviour',async()=>{
@@ -305,6 +311,50 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
           assert.equal((await owner.query('SELECT count(*)::int AS n FROM public.forecast_current_runs WHERE "modelId"=$1',[modelId])).rows[0].n,1)
         }
         for(const modelId of ['naive','damped_holt','ets','arima'])await assertPublicCurrent(modelId)
+        assert.equal(networkCalls,0);assert.equal(globalResolutions,0)
+      })
+      await t.test('public actual scientific bands accept equivalent UTC dates and reject mismatched dates, identity and method family',async()=>{
+        for(const modelId of ['naive','damped_holt','ets','arima']){
+          const baseline=await assertPublicCurrent(modelId)
+          const source=(await owner.query(`SELECT p.id,p."metadataJson",to_char(p."forecastDate",'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS target,
+            to_char(r."forecastOriginAt",'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS cutoff FROM public.forecast_current_points p
+            JOIN public.forecast_current_runs r ON r.id=p."runId" WHERE r."modelId"=$1 ORDER BY p."horizonSteps" LIMIT 1`,[modelId])).rows[0]
+          assert(source);const original=source.metadataJson
+          const write=meta=>owner.query('UPDATE public.forecast_current_points SET "metadataJson"=$1::jsonb WHERE id=$2',[JSON.stringify(meta),source.id])
+          try{
+            const iso=structuredClone(original);iso.uncertaintyBand.identity.targetDate=source.target;iso.uncertaintyBand.identity.calibrationCutoff=source.cutoff
+            await write(iso);assert.deepEqual((await assertPublicCurrent(modelId)).currentForecast,baseline.currentForecast)
+            const marked=structuredClone(original),marker='synthetic_private_annotation_must_not_cross'
+            marked.requester=marker;marked.failureReason=marker;marked.uncertaintyBand.owner=marker;marked.uncertaintyBand.identity.userId=marker
+            marked.uncertaintyBand.identity.forecastIdentity.organisationId=marker
+            await write(marked);const projected=await assertPublicCurrent(modelId);assert(!JSON.stringify(projected).includes(marker))
+            for(const corrupt of [
+              m=>{m.uncertaintyBand.identity.targetDate='2000-01-01'},
+              m=>{m.uncertaintyBand.identity.calibrationCutoff='2000-01-01'},
+              m=>{m.uncertaintyBand.identity.targetDate=source.target.replace('T00:00:00','T01:00:00')},
+              m=>{m.uncertaintyBand.identity.sourceHistoryFingerprint='f'.repeat(64)},
+              m=>{m.uncertaintyBand.identity.forecastIdentity.modelId='other'},
+              m=>{m.uncertaintyBand.identity.effectiveTrainingPolicyId='wrong-policy'},
+            ]){
+              const bad=structuredClone(original);corrupt(bad);await write(bad)
+              assert.equal((await publicCurrent({seriesId:SERIES,modelId,targetBasis:'MONTHLY_AVERAGE'})).status,'NOT_AVAILABLE')
+              assert.notEqual((await publicReadiness({kind:'capability',seriesId:SERIES,modelId,targetSemantics:'MONTHLY_AVERAGE'})).currentReadiness,'READY')
+            }
+            await write(original)
+            await owner.query(`UPDATE public.forecast_current_points SET "forecastDate"="forecastDate"+interval '1 hour' WHERE id=$1`,[source.id])
+            try{assert.equal((await publicCurrent({seriesId:SERIES,modelId,targetBasis:'MONTHLY_AVERAGE'})).status,'NOT_AVAILABLE')}
+            finally{await owner.query(`UPDATE public.forecast_current_points SET "forecastDate"="forecastDate"-interval '1 hour' WHERE id=$1`,[source.id])}
+            if(modelId==='arima'){
+              const wrong=structuredClone(original);wrong.uncertaintyBand.calibrationVersion='statsmodels-ets-simulation-seed-1729-r1000-v1'
+              wrong.uncertaintyBand.identity.calibrationVersion=wrong.uncertaintyBand.calibrationVersion;await write(wrong)
+              assert.equal((await publicCurrent({seriesId:SERIES,modelId,targetBasis:'MONTHLY_AVERAGE'})).status,'NOT_AVAILABLE')
+              const payload=structuredClone(baseline),item=Object.values(payload.currentForecast)[0]
+              item.metadata.uncertaintyBand.calibrationVersion='statsmodels-ets-simulation-seed-1729-r1000-v1'
+              assert.throws(()=>validatePublicPeriodCurrentForecast(payload,{seriesId:SERIES,modelId,targetBasis:'MONTHLY_AVERAGE'}),isOperationDenied)
+            }
+          }finally{await write(original)}
+          await assertPublicCurrent(modelId)
+        }
         assert.equal(networkCalls,0);assert.equal(globalResolutions,0)
       })
       await t.test('both quota barriers remain enforced for actual queued work and a stale discovery result',async()=>{

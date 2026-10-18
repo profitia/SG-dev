@@ -259,6 +259,12 @@ test('actual generated forecast ORM reads a closed source view with canonical id
     })
     const marketRuntime = new URL(runtime); marketRuntime.username = MARKET_ROLE; marketRuntime.searchParams.set('schema', 'profitia_market_read')
     historyPrisma = new HistoryPrismaClient({ datasources: { db: { url: marketRuntime.toString() } } })
+    await t.test('an actual all-null stored source remains missing rather than becoming zero or a source failure',async()=>{
+      await owner.query('UPDATE public.market_observations SET value=NULL')
+      try{assert.equal((await read(selection)).status,'NOT_AVAILABLE')}
+      finally{await owner.query('UPDATE public.market_observations SET value=0')}
+      assert.equal((await read(selection)).status,'AVAILABLE')
+    })
     await t.test('adding the forecast boundary does not broaden or invalidate the original three-object market reader', async () => {
       const oldRead = createStoredMarketHistoryReader(historyPrisma, { ...binding, role: MARKET_ROLE, schemaDigest: marketDigest })
       assert.equal((await oldRead(selection.seriesId)).history.historical.length, 60)

@@ -2713,7 +2713,7 @@ export type ForecastCurrentReadDependencies =
 
 /** Explicit projection reads use the SAME genuine caller transaction. A
  * schema-qualified generated model cannot be redirected with search_path. */
-function storedCurrentProjectionTransaction(dependencies?: ForecastCurrentReadDependencies) {
+function storedForecastProjectionTransaction(dependencies?: ForecastCurrentReadDependencies | ForecastVerificationReadDependencies) {
   if (dependencies?.projection === undefined) return null
   const client = dependencies.prisma
   if (dependencies.projection !== 'STORED_SHARED' || !client || '$transaction' in client
@@ -2727,7 +2727,7 @@ export async function readCurrentRunFromPrisma(
   key: ForecastCacheLookupKey,
   dependencies?: ForecastCurrentReadDependencies,
 ): Promise<PersistedCurrentArtifact | null> {
-  const projection = storedCurrentProjectionTransaction(dependencies)
+  const projection = storedForecastProjectionTransaction(dependencies)
   const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
@@ -3067,14 +3067,15 @@ export type ForecastVerificationReadClient = {
   readonly forecastVerificationRun: Pick<PrismaClient['forecastVerificationRun'], 'findFirst'>
 }
 
-export type ForecastVerificationReadDependencies = {
-  prisma: ForecastVerificationReadClient
-}
+export type ForecastVerificationReadDependencies =
+  | { prisma: ForecastVerificationReadClient; projection?: never }
+  | { prisma: Prisma.TransactionClient; projection: 'STORED_SHARED' }
 
 export async function readVerificationRunFromPrisma(
   key: ForecastCacheLookupKey,
   dependencies?: ForecastVerificationReadDependencies,
 ): Promise<PersistedVerificationArtifact | null> {
+  const projection = storedForecastProjectionTransaction(dependencies)
   const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
@@ -3161,6 +3162,25 @@ export async function readVerificationRunFromPrisma(
   let run: PersistedVerificationRunRecord | null
 
   try {
+    if (projection) {
+      const rows=await projection.$queryRawUnsafe<Array<Omit<PersistedVerificationRunRecord,'points'|'metrics'> & {id:string}>>(`SELECT
+        r.id,r."seriesId",r."modelId",r."displayName",r.description,r."targetBasis"::text AS "targetBasis",r."methodVersion",
+        r."inputSource",r."inputRunId",r."historyFingerprint",r.frequency,r."trainingWindowPolicyId",r."effectiveTrainingPolicyId",
+        r."historyStartAt",r."historyEndAt",r."observationCount",r."forecastOriginAt",r."runtimeSeconds"
+        FROM profitia_forecast_read.forecast_verification_runs r WHERE r."seriesId"=$1 AND r."inputSource"=$2
+          AND r."historyFingerprint"=$3 AND r."targetBasis"::text=$4 AND r."methodId"=$5 AND r."modelId"=$6
+          AND r."methodVersion"=$7 AND r.frequency=$8 AND r."trainingWindowPolicyId"=$9 AND r."effectiveTrainingPolicyId"=$10 LIMIT 2`,
+        key.seriesId,key.inputSource,key.historyFingerprint,key.targetBasis,key.methodId,key.modelId,key.methodVersion,
+        key.frequencyIdentity,key.trainingWindowPolicyId,key.effectiveTrainingPolicyId)
+      if(rows.length>1)throw new Error('Stored Verification identity is not unique')
+      run=rows.length?{...rows[0],
+        metrics:await projection.$queryRawUnsafe<PersistedVerificationMetricRecord[]>(`SELECT "horizonLabel","horizonSteps",origins,"expectedOrigins",
+          "failedOrigins",coverage,mae,rmse,mase,smape,"directionalAccuracy",bias,"failureSummaryJson"
+          FROM profitia_forecast_read.forecast_verification_metrics WHERE "runId"=$1 ORDER BY "horizonSteps"`,rows[0].id),
+        points:await projection.$queryRawUnsafe<PersistedVerificationPointRecord[]>(`SELECT "horizonLabel","horizonSteps","forecastOriginAt","targetDate",
+          "actualObservedAt","originValue","forecastValue","actualValue","errorValue","absoluteErrorValue","deltaValue","deltaPct","maseScale","metadataJson"
+          FROM profitia_forecast_read.forecast_verification_points WHERE "runId"=$1 ORDER BY "horizonSteps","forecastOriginAt","targetDate"`,rows[0].id)}:null
+    } else {
     run = await prisma.forecastVerificationRun.findFirst({
       where: {
         ...where,
@@ -3169,8 +3189,9 @@ export async function readVerificationRunFromPrisma(
       },
       select,
     }) as PersistedVerificationRunRecord | null
+    }
   } catch (error) {
-    if (!isMissingVerificationTrainingPolicyColumnError(error)) {
+    if (projection || !isMissingVerificationTrainingPolicyColumnError(error)) {
       throw error
     }
 
@@ -3511,7 +3532,7 @@ export async function readLatestCurrentRunFromPrisma(
   key: ForecastPreparedLookupKey,
   dependencies?: ForecastCurrentReadDependencies,
 ): Promise<PersistedCurrentArtifact | null> {
-  const projection = storedCurrentProjectionTransaction(dependencies)
+  const projection = storedForecastProjectionTransaction(dependencies)
   const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
@@ -3578,6 +3599,7 @@ export async function readLatestVerificationRunFromPrisma(
   key: ForecastPreparedLookupKey,
   dependencies?: ForecastVerificationReadDependencies,
 ) {
+  const projection = storedForecastProjectionTransaction(dependencies)
   const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
@@ -3591,6 +3613,14 @@ export async function readLatestVerificationRunFromPrisma(
   let latest: { inputSource: string, historyFingerprint: string } | null
 
   try {
+    if(projection){
+      const rows=await projection.$queryRawUnsafe<Array<{inputSource:string;historyFingerprint:string}>>(`SELECT "inputSource","historyFingerprint"
+        FROM profitia_forecast_read.forecast_verification_runs WHERE "seriesId"=$1 AND "targetBasis"::text=$2 AND "methodId"=$3
+          AND "modelId"=$4 AND "methodVersion"=$5 AND frequency=$6 AND "trainingWindowPolicyId"=$7
+          AND "effectiveTrainingPolicyId"=$8 AND status='AVAILABLE' ORDER BY "updatedAt" DESC LIMIT 1`,
+        key.seriesId,key.targetBasis,key.methodId,key.modelId,key.methodVersion,key.frequencyIdentity,key.trainingWindowPolicyId,key.effectiveTrainingPolicyId)
+      latest=rows[0]??null
+    } else {
     latest = await prisma.forecastVerificationRun.findFirst({
       where: {
         seriesId: key.seriesId,
@@ -3606,8 +3636,9 @@ export async function readLatestVerificationRunFromPrisma(
       select,
       orderBy: { updatedAt: 'desc' },
     })
+    }
   } catch (error) {
-    if (!isMissingVerificationTrainingPolicyColumnError(error)) {
+    if (projection || !isMissingVerificationTrainingPolicyColumnError(error)) {
       throw error
     }
 
