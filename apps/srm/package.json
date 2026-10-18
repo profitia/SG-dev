@@ -18,7 +18,7 @@
     "migrate:staging:plan": "node scripts/staging-migrate.mjs --plan",
     "permissions:development": "node scripts/runtime-permissions.mjs",
     "test:platform-contract": "node --test scripts/platform-contract.test.mjs",
-    "test:operation-context": "node --import tsx --test --test-concurrency=1 scripts/operation-context.test.mjs scripts/operation-context.integration.test.mjs scripts/private-host.integration.test.mjs scripts/private-business-schema.test.mjs scripts/private-runtime.test.mjs"
+    "test:operation-context": "node --import tsx --test --test-concurrency=1 scripts/operation-context.test.mjs scripts/operation-context.integration.test.mjs scripts/private-host.integration.test.mjs scripts/private-business-schema.test.mjs scripts/private-runtime.test.mjs scripts/provider-source.integration.test.mjs"
   },
   "dependencies": {
     "@clerk/backend": "3.25.0",

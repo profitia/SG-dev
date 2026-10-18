@@ -447,5 +447,37 @@
     "httpEndpointActivated": false,
     "liveSchemaOrGrantsChanged": false,
     "productDeploymentPerformed": false
+  },
+  "nativeProviderSourceAdoption": {
+    "version": "srm-native-provider-source-v1",
+    "taskId": "SRM-E1-NATIVE-PROVIDER-ADMISSION-20261019",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "providers": [
+      "MGBI",
+      "VERCLY",
+      "CEIDG"
+    ],
+    "sourceControl": "profitia.platform-ingestion@1.0.0",
+    "transport": "profitia.external-native-http@1.0.0",
+    "previousNativeSourceRecordIsHistorical": true,
+    "sourceDigests": {
+      "src/server/native-pg-driver.ts": "f260c110010b5fbbf5e4c905faebb9b88f81845100097599a4c506c7c4ef0329",
+      "src/server/private-operation-host.ts": "c035ff99ef94903a163ff32652a7db207950bd29883f0e8a3260db60c10e9c09",
+      "src/server/provider-source-transport.ts": "788912213eac4b611001d5fdf6b6535bd153ea2e586438eb959c04267e380851",
+      "src/server/mgbi-general.ts": "ccab02e4491d1fd26ed10b21d3b29a93638156b008578899ae59e63b40f504b4",
+      "src/server/mgbi-financial.ts": "bdc3c7aa28595661e4925a489893aa84e311824c0d27bd72ff18fc0efed87d6e",
+      "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
+      "src/server/vercly-kys.ts": "ea78105c7af4f01e55501d26a1f3669ca2dce4267d2a25be7c31dc8915e67f91",
+      "src/server/integrations/ceidg.ts": "dee3e51d4ccd207bfb1d22f85e09519fbd278bd8003a4499e58e0672c6c66cd4"
+    },
+    "ordinaryNativePgDriverShared": true,
+    "originalProviderClientsReused": true,
+    "humanSupplierRefreshAdopted": false,
+    "sharedCatalogWriteAdopted": false,
+    "msrFilesAdopted": false,
+    "krsFilesAdopted": false,
+    "liveSqlInstalled": false,
+    "runtimeRoleOrGrantChanged": false,
+    "productDeploymentPerformed": false
   }
 }
