@@ -7,7 +7,7 @@ import { moduleSchemaDigest } from '@profitia/platform-contracts/module-scope'
 import { NextRequest, NextResponse } from 'next/server'
 import targets from '../deployment/private-runtime-targets.json'
 import { IdentityConfigurationUnavailable } from '../lib/platform/identity-runtime'
-import { getSg2SelectionRuntime, readSg2PrivateSelectionConfiguration, type Sg2SelectionRuntime } from '../lib/platform/private-runtime'
+import { getSg2SelectionRuntime, readSg2PrivateSelectionConfiguration, validateNativeDashboardBinding, type Sg2SelectionRuntime } from '../lib/platform/private-runtime'
 import { createRuntimeBenchmarkSelectionHandlers } from '../lib/benchmark/runtime-handlers'
 import { GET as deployedGET } from '../app/api/benchmark/selection/route'
 
@@ -27,6 +27,46 @@ function fixture() {
 const request = () => new NextRequest('https://app.fixture.test/api/benchmark/selection', { headers: {
   'x-clerk-user-id': 'forged-user', 'x-clerk-org-id': 'forged-org', 'x-clerk-org-role': 'owner',
 } })
+
+test('native chart routing needs its own explicit Development binding and the existing stored market capability', () => {
+  const source = target.marketRead, dashboard = target.dashboardEmbed
+  const url = new URL('postgresql://synthetic.invalid')
+  url.hostname = source.hosts[0]; url.username = source.runtimeRole; url.password = 'synthetic_fixture_only'
+  url.pathname = `/${source.databaseName}`; url.search = '?sslmode=require&channel_binding=require'
+  const env = { ...fixture(), PROFITIA_MARKET_READ_ENABLED: 'true', PROFITIA_MARKET_READ_DATABASE_URL: url.toString(),
+    PROFITIA_DASHBOARD_EMBED_ENABLED: 'true', PROFITIA_DASHBOARD_ORIGIN: dashboard.origin,
+    PROFITIA_DASHBOARD_CONFIGURATION_VERSION: dashboard.configurationVersion }
+  const config = readSg2PrivateSelectionConfiguration(env), base = readSg2PrivateSelectionConfiguration(fixture())
+  assert.equal(config.provider, 'clerk'); assert.equal(base.provider, 'clerk')
+  if (config.provider !== 'clerk' || base.provider !== 'clerk') throw Error('Expected private configuration')
+  assert.deepEqual(config.application, base.application); assert.equal(base.dashboardEmbed, undefined)
+  assert.deepEqual(config.dashboardEmbed, { origin: dashboard.origin, configurationVersion: dashboard.configurationVersion,
+    applicationId: 'spendguru', environment: 'development' })
+  assert.equal(Object.isFrozen(config.dashboardEmbed), true)
+  assert.equal(dashboard.defaultEnabled, false); assert.equal(dashboard.observedState, 'SOURCE_ONLY_NOT_ACTIVATED')
+  const topology = JSON.parse(readFileSync(new URL('../../../Canon/registries/sg2-environment-topology-v1.json', import.meta.url), 'utf8'))
+  assert.equal(dashboard.serviceId, topology.environments.development.render.services.dashboard.serviceId)
+  assert.equal(dashboard.origin, topology.environments.development.render.services.dashboard.url)
+  for (const patch of [
+    { PROFITIA_MARKET_READ_ENABLED: 'false' }, { PROFITIA_DASHBOARD_ORIGIN: undefined },
+    { PROFITIA_DASHBOARD_CONFIGURATION_VERSION: undefined }, { PROFITIA_DASHBOARD_CONFIGURATION_VERSION: 'unknown' },
+    { PROFITIA_DASHBOARD_ORIGIN: 'https://dashboards-library.onrender.com' },
+    { PROFITIA_DASHBOARD_ORIGIN: 'https://spendguru-porr-dashboard.onrender.com' },
+    { PROFITIA_DASHBOARD_ORIGIN: 'http://localhost:3002' }, { PROFITIA_DASHBOARD_ORIGIN: `${dashboard.origin}/` },
+    { PROFITIA_DASHBOARD_ORIGIN: `${dashboard.origin}?redirect=foreign` },
+  ]) assert.throws(() => readSg2PrivateSelectionConfiguration({ ...env, ...patch }), IdentityConfigurationUnavailable)
+  // The legacy public base cannot substitute for the explicit native binding.
+  assert.throws(() => readSg2PrivateSelectionConfiguration({ ...env, PROFITIA_DASHBOARD_ORIGIN: undefined,
+    DASHBOARD_PREVIEW_BASE_URL: dashboard.origin }), IdentityConfigurationUnavailable)
+  for (const flag of ['', '1', 'TRUE', 'yes']) assert.throws(() => readSg2PrivateSelectionConfiguration({ ...env,
+    PROFITIA_DASHBOARD_EMBED_ENABLED: flag }), IdentityConfigurationUnavailable)
+  const disabled = readSg2PrivateSelectionConfiguration({ ...env, PROFITIA_DASHBOARD_EMBED_ENABLED: 'false', PROFITIA_DASHBOARD_ORIGIN: 'ignored' })
+  assert.equal(disabled.provider, 'clerk'); if (disabled.provider === 'clerk') assert.equal(disabled.dashboardEmbed, undefined)
+  for (const patch of [{ applicationId: 'srm' }, { environment: 'staging' }, { origin: 'https://foreign.test' },
+    { credential: 'synthetic_fixture_only' }, { configurationVersion: 'unknown' }]) {
+    assert.throws(() => validateNativeDashboardBinding({ ...config.dashboardEmbed, ...patch }), IdentityConfigurationUnavailable)
+  }
+})
 
 test('receiver pins agree with the independently recorded resource and actual accepted schema bytes', async () => {
   const prepared = JSON.parse(readFileSync(new URL('../deployment/private-business-preparation.json', import.meta.url), 'utf8'))

@@ -55,10 +55,11 @@ export function buildDashboardPreviewAnalyticsUrl(
     forecastPortfolioEnabled?: boolean
     preparedReadsOnly?: boolean
   },
+  deploymentBaseUrl?: string,
 ) {
   const shouldWarmCurrentForecast = options?.warmCurrentForecast === true
   const forecastPortfolioEnabled = options?.forecastPortfolioEnabled !== false
-  const url = new URL(`/${locale}`, resolveDashboardPreviewBaseUrl())
+  const url = new URL(`/${locale}`, deploymentBaseUrl ?? resolveDashboardPreviewBaseUrl())
   url.searchParams.set('embed', '1')
   url.searchParams.set('variantId', forecastPortfolioEnabled ? 'forecast-portfolio-v3' : 'finder-embedded-v2')
   url.searchParams.set('showForecast', 'false')

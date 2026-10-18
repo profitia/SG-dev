@@ -811,6 +811,76 @@ test('SG2 Prisma host composes the accepted access store with existing selection
             for(const[index,name]of globalNames.entries()){const descriptor=descriptors[index];if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name]}
           }
         })
+        await t.test('native analytics eligibility uses the current private guard and ordinary market source before advertising a scoped chart',async t=>{
+          const {createRuntimeAnalyticsEligibilityHandler}=await import('../lib/benchmark/analytics-eligibility-handlers.ts')
+          const targets=(await import('../deployment/private-runtime-targets.json',{with:{type:'json'}})).default
+          const dashboard=targets.environments.development.dashboardEmbed
+          const binding={origin:dashboard.origin,configurationVersion:dashboard.configurationVersion,applicationId:'spendguru',environment:'development'}
+          let reads=0
+          const runtime={provider:'clerk',executor:analyticsHost,defaultOrganisationId:A,dashboardEmbed:binding,
+            marketRead:{executor:analyticsHost,preview:async()=>{throw Error('No preview fallback')},analytics:{executor:analyticsHost,
+              series:async selection=>{reads++;return getBenchmarkAnalyticsSeries(selection.seriesName,selection.range,readHistory)}}}}
+          const handler=createRuntimeAnalyticsEligibilityHandler(()=>runtime)
+          const input=(org=A,user=U,suffix='')=>new NextRequest(`${ORIGIN}/api/benchmark/analytics-eligibility?locale=en&seriesId=stored_series&displayName=Shared+facts${org?`&organisationId=${org}`:''}${suffix}`,
+            {headers:{authorization:`Bearer external-${user}`,'x-clerk-user-id':V,'x-clerk-org-id':B}})
+          await t.test('two independently authorised organisations and the explicit default retain chart identity without warmup',async()=>{
+            for(const org of[A,B,null]){
+              const response=await handler(input(org));assert.equal(response.status,200,await response.clone().text())
+              assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(response.headers.get('vary'),'Cookie, Authorization')
+              const value=await response.json();assert.equal(value.eligible,true);assert.equal(value.componentCode,null)
+              assert.equal(value.forecastPortfolioEnabled,true)
+              const url=new URL(value.analyticsUrl);assert.equal(url.origin,binding.origin);assert.equal(url.pathname,'/en')
+              assert.equal(url.searchParams.get('organisationId'),org??A);assert.equal(url.searchParams.get('seriesId'),'stored_series')
+              assert.equal(url.searchParams.get('range'),'1Y');assert.equal(url.searchParams.get('displayName'),'Shared facts')
+              assert.equal(url.searchParams.get('preparedReadsOnly'),'1');assert.equal(url.searchParams.has('warmCurrentForecast'),false)
+              assert.equal(url.username,'');assert.equal(url.password,'');assert.equal(url.hash,'')
+            }
+            assert.equal(reads,3)
+            const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'resourceId'='market-analytics:stored_series' ORDER BY event_id DESC LIMIT 3")).rows.map(row=>row.event)
+            assert.deepEqual(events.map(event=>event.organisationId),[A,B,A]);assert(events.every(event=>event.actorId===U&&event.dataClass==='SHARED_KNOWLEDGE'))
+          })
+          await t.test('current session, membership, permission and product revocation withhold routing before source',async()=>{
+            const before=reads
+            assert.equal((await handler(input(A,V))).status,403)
+            sdkRevoked=true;try{assert.equal((await handler(input())).status,401)}finally{sdkRevoked=false}
+            await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U])
+            try{assert.equal((await handler(input())).status,403)}finally{await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U])}
+            const id=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','knowledge.read','market')",[id,A,U])
+            try{assert.equal((await handler(input())).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[id])}
+            await owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='spendguru' AND organisation_id=$1 AND product='SPENDGURU'",[A])
+            try{assert.equal((await handler(input())).status,403)}finally{await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id='spendguru' AND organisation_id=$1 AND product='SPENDGURU'",[A])}
+            assert.equal(reads,before)
+          })
+          await t.test('wrong source or failed durable outcome cannot leak a usable chart URL',async()=>{
+            await owner.query("UPDATE profitia_market_read.installation SET branch_id='foreign-branch'")
+            try{const response=await handler(input());assert.equal(response.status,503);assert(!(await response.text()).includes('analyticsUrl'))}
+            finally{await owner.query("UPDATE profitia_market_read.installation SET branch_id='isolated-source-branch'")}
+            await owner.query("CREATE FUNCTION profitia_access.reject_eligibility_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='knowledge.read' THEN RAISE EXCEPTION 'synthetic audit outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_eligibility_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_eligibility_outcome()")
+            try{const response=await handler(input());assert.equal(response.status,503);assert(!(await response.text()).includes('analyticsUrl'))}
+            finally{await owner.query('DROP TRIGGER reject_eligibility_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_eligibility_outcome()')}
+            const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'resourceId'='market-analytics:stored_series' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+            assert.deepEqual(events.map(event=>event.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+          })
+          await t.test('unknown native warmup or a foreign child binding is refused before source',async()=>{
+            const before=reads
+            for(const suffix of['&forecastWarmupExperiment=single','&warmCurrentForecast=1','&userId=forged','&seriesId=stored_series']){
+              assert.equal((await handler(input(A,U,suffix))).status,400)
+            }
+            const wrong=createRuntimeAnalyticsEligibilityHandler(()=>({...runtime,dashboardEmbed:{...binding,origin:'https://foreign.test'}}))
+            assert.equal((await wrong(input())).status,503);assert.equal(reads,before)
+          })
+          await t.test('a successful actual audited read still needs its admitted native publication metadata',async()=>{
+            const executor={...analyticsHost,execute:async(...args)=>{
+              const result=await analyticsHost.execute(...args)
+              result.value.headers.delete('x-profitia-market-projection')
+              return result
+            }}
+            const handler=createRuntimeAnalyticsEligibilityHandler(()=>({...runtime,
+              marketRead:{...runtime.marketRead,analytics:{...runtime.marketRead.analytics,executor}}}))
+            const response=await handler(input());assert.equal(response.status,503)
+            assert(!(await response.text()).includes('analyticsUrl'))
+          })
+        })
         assert.equal(providerCalls,providerBefore)
       }finally{await sourcePrisma.$disconnect()}
     })
