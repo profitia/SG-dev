@@ -2,6 +2,10 @@ import { Prisma, type ForecastTargetBasis, type PrismaClient } from '@/generated
 
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 
+/** Both callers are genuine generated clients. Telemetry uses the caller's
+ * existing SQL transaction; it does not open or emulate a nested transaction. */
+type ForecastActionPrisma = PrismaClient | Prisma.TransactionClient
+
 export const FORECAST_ACTION_TRACE_SCHEMA_VERSION = 'forecast-action-trace-v1' as const
 
 export type ForecastActionType = 'CURRENT_PREPARATION' | 'VERIFICATION_PREPARATION'
@@ -38,7 +42,7 @@ export type ForecastUiVisibleAck = ForecastActionIdentity & {
   responseToVisibleMs: number | null
 }
 
-function requirePrisma(prisma?: PrismaClient | null) {
+function requirePrisma(prisma?: ForecastActionPrisma | null) {
   const resolved = prisma ?? getMarketDataPrisma()
   if (!resolved) throw new Error('MARKET_DATA_DATABASE_URL is required for Forecast action telemetry.')
   return resolved
@@ -60,7 +64,7 @@ export function buildForecastActionTraceEvent(
 }
 
 async function appendEventByCorrelation(
-  prisma: PrismaClient,
+  prisma: ForecastActionPrisma,
   correlationId: string,
   traceEvent: ForecastActionTraceEvent,
 ) {
@@ -76,7 +80,7 @@ async function appendEventByCorrelation(
 
 export async function recordForecastActionRequested(
   input: ForecastActionIdentity & { correlationId: string, actionType: ForecastActionType, requestedAt?: Date },
-  prisma?: PrismaClient | null,
+  prisma?: ForecastActionPrisma | null,
 ) {
   const db = requirePrisma(prisma)
   const requestedAt = input.requestedAt ?? new Date()
@@ -115,7 +119,7 @@ export async function recordForecastQueueAccepted(
   correlationId: string,
   jobKey: string,
   observedAt = new Date(),
-  prisma?: PrismaClient | null,
+  prisma?: ForecastActionPrisma | null,
 ) {
   const db = requirePrisma(prisma)
   const updated = await db.forecastActionTrace.updateMany({
@@ -135,7 +139,7 @@ export async function recordForecastAdmissionStage(
   stage: 'INTERACTIVE_CAPABILITY' | 'EXACT_CAPABILITY' | 'CURRENT_DEPENDENCY' | 'JOB_UPSERT',
   startedAt: Date,
   observedAt = new Date(),
-  prisma?: PrismaClient | null,
+  prisma?: ForecastActionPrisma | null,
 ) {
   const db = requirePrisma(prisma)
   await appendEventByCorrelation(db, correlationId, buildForecastActionTraceEvent(
@@ -153,7 +157,7 @@ export async function recordForecastArtifactReady(
   jobKey: string,
   layer: ForecastActionLayer,
   observedAt = new Date(),
-  prisma?: PrismaClient | null,
+  prisma?: ForecastActionPrisma | null,
 ) {
   const db = requirePrisma(prisma)
   const traces = await db.forecastActionTrace.findMany({
@@ -178,7 +182,7 @@ export async function recordDashboardFirstReadyObservation(
   correlationId: string,
   layer: ForecastActionLayer,
   observedAt = new Date(),
-  prisma?: PrismaClient | null,
+  prisma?: ForecastActionPrisma | null,
 ) {
   const db = requirePrisma(prisma)
   const updated = await db.forecastActionTrace.updateMany({
@@ -195,7 +199,7 @@ export async function recordDashboardReadyObservationForSnapshot(
   correlationId: string,
   readiness: { currentReady: boolean, verificationReady: boolean },
   observedAt = new Date(),
-  prisma?: PrismaClient | null,
+  prisma?: ForecastActionPrisma | null,
 ) {
   const db = requirePrisma(prisma)
   const trace = await db.forecastActionTrace.findUnique({
@@ -212,7 +216,7 @@ export async function recordDashboardReadyObservationForSnapshot(
 export async function recordForecastUiVisibleAck(
   input: ForecastUiVisibleAck,
   observedAt = new Date(),
-  prisma?: PrismaClient | null,
+  prisma?: ForecastActionPrisma | null,
 ) {
   const db = requirePrisma(prisma)
   const clientVisibleAt = new Date(input.clientVisibleAt)
@@ -250,7 +254,7 @@ export async function linkForecastActionExecution(
   correlationId: string,
   executionId: string,
   observedAt = new Date(),
-  prisma?: PrismaClient | null,
+  prisma?: ForecastActionPrisma | null,
 ) {
   const db = requirePrisma(prisma)
   const updated = await db.forecastActionTrace.updateMany({
@@ -262,7 +266,7 @@ export async function linkForecastActionExecution(
   }
 }
 
-export async function readForecastActionTimeline(correlationId: string, prisma?: PrismaClient | null) {
+export async function readForecastActionTimeline(correlationId: string, prisma?: ForecastActionPrisma | null) {
   const db = requirePrisma(prisma)
   const trace = await db.forecastActionTrace.findUnique({ where: { correlationId } })
   if (!trace) return null

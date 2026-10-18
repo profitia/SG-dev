@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { PrismaClient, Prisma } from '@/generated/market-data-client'
 import { BenchmarkAppError } from '@/lib/benchmark/errors'
+import type { BenchmarkHistoricalSeriesResult } from '@/lib/benchmark/contracts'
 import { createForecastCapabilityService } from './capability-resolver'
 import { createInteractiveForecastPreparationService } from './interactive-preparation'
 import { readForecastPreparedVariantsFromPort, type ForecastPreparedStateDataPort, type PreparedPeriodStateKey } from './prepared-state'
@@ -63,66 +64,75 @@ export function createStoredForecastReadinessReader(prisma: Pick<PrismaClient, '
     const selection = readForecastReadinessSelection(value)
     return readSource(selection.seriesId, async (transaction, history) => {
       if (!history) throw new BenchmarkAppError('STORED_HISTORY_NOT_AVAILABLE', 'Stored market history is not available.', 404)
-      const statePort = createStoredPreparedStatePort(transaction)
-      const capabilities = createForecastCapabilityService({
-        resolveHistoricalSeries: async (seriesId, range) => {
-          if (seriesId !== selection.seriesId || range !== 'ALL') throw new Error('Stored capability history scope mismatch')
-          return { history, marketDataSource: 'postgres', cacheStatus: 'hit' }
-        },
-        resolveProvenance: async () => [],
-        readPreparedVariants: (seriesId, source) => readForecastPreparedVariantsFromPort(seriesId, source, statePort),
-        now: () => new Date(),
-      })
-      const refuse = async (): Promise<never> => { throw new Error('Stored capability cannot execute preparation or persistence') }
-      const verification = (scope: 'FAST' | 'FULL' | 'RECENT') => async (input: ForecastRequestInput | ForecastServiceRequest) =>
-        ensureHistoricalVerificationContract(await readStoredVerificationFromSource(transaction, history, {
-          seriesId: input.seriesId, modelId: input.modelId as ForecastRequestInput['modelId'], targetBasis: input.targetBasis,
-          verificationScope: scope,
-          ...(input.sourceFrequency ? { sourceFrequency: input.sourceFrequency, targetCadence: input.targetCadence } : {}),
-        }))
-      const service = createInteractiveForecastPreparationService({
-        resolveExactCapability: capabilities.resolveExact, resolveCapabilitiesBySeriesId: capabilities.resolveBySeriesId,
-        prepareMonthlyCurrent: refuse, prepareRollingCurrent: refuse, prepareRollingDailyOwnership: refuse,
-        executionAdmission: { get leaseDurationMs(): never { throw new Error('Stored capability has no execution lease') }, acquireExecution: refuse, renewLease: refuse,
-          markExecutionCompleted: refuse, markExecutionFailed: refuse, readLatestExecutionForLogicalArtifact: refuse },
-        readPreparedCurrent: async input => {
-          if (input.targetBasis === 'POINT_IN_TIME') return refuse()
-          const selected = { seriesId: input.seriesId, modelId: input.modelId as ForecastRequestInput['modelId'], targetBasis: input.targetBasis }
-          const current = await readStoredPeriodCurrent(transaction, history, selected)
-          await validatePublicForecastCurrent(current, selected)
-          if (current.status !== 'AVAILABLE') return current
-          // The publication schema permits textual policy identifiers; the
-          // legacy domain type is a literal union. Narrow the validated value,
-          // preserving every field rather than casting a public DTO to it.
-          const currentForecast: Record<string, ForecastCurrentPoint> = {}
-          for (const [key, point] of Object.entries(current.currentForecast)) {
-            const metadata = point.metadata, band = metadata?.uncertaintyBand
-            if (!metadata || !band?.identity) {
-              currentForecast[key] = { ...point, metadata: metadata ? { ...metadata, uncertaintyBand: band ? { ...band, identity: undefined } : band } : metadata }
-              continue
-            }
-            const trainingWindowPolicyId = band.identity.trainingWindowPolicyId
-            if (trainingWindowPolicyId !== CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX_TRAINING_WINDOW_POLICY_ID) throw new Error('Stored Current band policy mismatch')
-            currentForecast[key] = { ...point, metadata: { ...metadata, uncertaintyBand: { ...band, identity: { ...band.identity, trainingWindowPolicyId } } } }
-          }
-          return { ...current, currentForecast }
-        },
-        readRollingCurrentSnapshot: async input => {
-          const snapshot = await readRollingDailyCurrentForecastSnapshot(input, { prisma: transaction })
-          if (snapshot.status === 'HIT') await validatePublicForecastCurrent(snapshot.payload,
-            { seriesId: input.seriesId, modelId: input.modelId, targetBasis: 'POINT_IN_TIME' })
-          return snapshot
-        },
-        readPreparedFullVerification: verification('FULL'), readPreparedFastVerification: verification('FAST'),
-        readPreparedRollingDailyFullVerification: verification('FULL'), readPreparedRollingDailyFastVerification: verification('FAST'),
-        // Current's minimal authority is deliberately not passed to Verification:
-        // its existing source reader derives the complete history independently.
-        readPreparedRecentVerification: verification('RECENT'), now: () => performance.now(),
-      })
+      const service = createStoredForecastReadinessPolicy(transaction,history,selection.seriesId)
       const result = selection.kind === 'capability' ? await service.capability(selection)
         : selection.kind === 'capabilities' ? await service.capabilitySnapshotBySeriesId(selection.seriesId)
           : await service.readinessSnapshotBySeriesId(selection.seriesId)
       return publishForecastReadiness(result, selection)
     })
   }
+}
+
+/** Original capability/readiness policy over already admitted stored-source
+ * facts. The caller owns the real ordinary transaction and source guard.
+ * No connection, hydration, provider access, preparation or execution is exposed. */
+export function createStoredForecastReadinessPolicy(transaction:Prisma.TransactionClient,history:BenchmarkHistoricalSeriesResult,boundSeriesId:string) {
+  const statePort = createStoredPreparedStatePort(transaction)
+  const capabilities = createForecastCapabilityService({
+    resolveHistoricalSeries: async (seriesId, range) => {
+      if (seriesId !== boundSeriesId || range !== 'ALL') throw new Error('Stored capability history scope mismatch')
+      return { history, marketDataSource: 'postgres', cacheStatus: 'hit' }
+    },
+    resolveProvenance: async () => [],
+    readPreparedVariants: (seriesId, source) => readForecastPreparedVariantsFromPort(seriesId, source, statePort),
+    now: () => new Date(),
+  })
+  const refuse = async (): Promise<never> => { throw new Error('Stored capability cannot execute preparation or persistence') }
+  const verification = (scope: 'FAST' | 'FULL' | 'RECENT') => async (input: ForecastRequestInput | ForecastServiceRequest) =>
+    ensureHistoricalVerificationContract(await readStoredVerificationFromSource(transaction, history, {
+      seriesId: input.seriesId, modelId: input.modelId as ForecastRequestInput['modelId'], targetBasis: input.targetBasis,
+      verificationScope: scope,
+      ...(input.sourceFrequency ? { sourceFrequency: input.sourceFrequency, targetCadence: input.targetCadence } : {}),
+    }))
+  const service = createInteractiveForecastPreparationService({
+    resolveExactCapability: capabilities.resolveExact, resolveCapabilitiesBySeriesId: capabilities.resolveBySeriesId,
+    prepareMonthlyCurrent: refuse, prepareRollingCurrent: refuse, prepareRollingDailyOwnership: refuse,
+    executionAdmission: { get leaseDurationMs(): never { throw new Error('Stored capability has no execution lease') }, acquireExecution: refuse, renewLease: refuse,
+      markExecutionCompleted: refuse, markExecutionFailed: refuse, readLatestExecutionForLogicalArtifact: refuse },
+    readPreparedCurrent: async input => {
+      if (input.targetBasis === 'POINT_IN_TIME') return refuse()
+      const selected = { seriesId: input.seriesId, modelId: input.modelId as ForecastRequestInput['modelId'], targetBasis: input.targetBasis }
+      const current = await readStoredPeriodCurrent(transaction, history, selected)
+      await validatePublicForecastCurrent(current, selected)
+      if (current.status !== 'AVAILABLE') return current
+      // The publication schema permits textual policy identifiers; the
+      // legacy domain type is a literal union. Narrow the validated value,
+      // preserving every field rather than casting a public DTO to it.
+      const currentForecast: Record<string, ForecastCurrentPoint> = {}
+      for (const [key, point] of Object.entries(current.currentForecast)) {
+        const metadata = point.metadata, band = metadata?.uncertaintyBand
+        if (!metadata || !band?.identity) {
+          currentForecast[key] = { ...point, metadata: metadata ? { ...metadata, uncertaintyBand: band ? { ...band, identity: undefined } : band } : metadata }
+          continue
+        }
+        const trainingWindowPolicyId = band.identity.trainingWindowPolicyId
+        if (trainingWindowPolicyId !== CURRENT_FAST_MINIMAL_LAWFUL_SUFFIX_TRAINING_WINDOW_POLICY_ID) throw new Error('Stored Current band policy mismatch')
+        currentForecast[key] = { ...point, metadata: { ...metadata, uncertaintyBand: { ...band, identity: { ...band.identity, trainingWindowPolicyId } } } }
+      }
+      return { ...current, currentForecast }
+    },
+    readRollingCurrentSnapshot: async input => {
+      const snapshot = await readRollingDailyCurrentForecastSnapshot(input, { prisma: transaction })
+      if (snapshot.status === 'HIT') await validatePublicForecastCurrent(snapshot.payload,
+        { seriesId: input.seriesId, modelId: input.modelId, targetBasis: 'POINT_IN_TIME' })
+      return snapshot
+    },
+    readPreparedFullVerification: verification('FULL'), readPreparedFastVerification: verification('FAST'),
+    readPreparedRollingDailyFullVerification: verification('FULL'), readPreparedRollingDailyFastVerification: verification('FAST'),
+    // Current's minimal authority is deliberately not passed to Verification:
+    // its existing source reader derives the complete history independently.
+    readPreparedRecentVerification: verification('RECENT'), now: () => performance.now(),
+  })
+  return Object.freeze({capability:service.capability,capabilitySnapshotBySeriesId:service.capabilitySnapshotBySeriesId,
+    readinessSnapshotBySeriesId:service.readinessSnapshotBySeriesId,resolveExact:capabilities.resolveExact})
 }
