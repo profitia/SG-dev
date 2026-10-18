@@ -7,7 +7,7 @@ import {selectNativeEmbedPage} from '../lib/platform/native-chart-publication'
 import {attachNativeDashboardEmbed} from '../../sg-runtime/lib/platform/native-dashboard-embed'
 import placement from '../deployment/native-forecast-targets.json'
 const binding=placement.environments.development.embedding,parentOrigin=binding.parentOrigins[0]
-const A='11111111-1111-4111-8111-111111111111',url=`${binding.childOrigin}/pl?embed=1&variantId=forecast-portfolio-v3&preparedReadsOnly=1&seriesId=shared_series&organisationId=${A}`
+const A='11111111-1111-4111-8111-111111111111',url=`${binding.childOrigin}/pl?embed=1&variantId=forecast-portfolio-v3&showForecast=false&preparedReadsOnly=1&seriesId=shared_series&range=1Y&organisationId=${A}`
 const context=selectNativeEmbedPage(url)!,command={kind:'CURRENT',modelId:'naive',targetSemantics:'MONTHLY_AVERAGE'} as const
 const env={APP_ENV:'development',TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',PROFITIA_FORECAST_API_ORIGIN:parentOrigin,
   PROFITIA_FORECAST_API_CONFIGURATION_VERSION:'sg2-native-forecast-relay-dev-v1',PROFITIA_NATIVE_EMBED_ENABLED:'true',PROFITIA_NATIVE_COMMAND_ENABLED:'true'}
