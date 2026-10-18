@@ -21,7 +21,13 @@
       "businessSchemaDigest": "3d8367474454eb15a8171c28bf99f80f51299b58746efa8dfb4f65289de57dcd",
       "businessSchemaVerification": "Exact receipt, owner, policies and source checked by the controlled initialization/release; not a per-request receipt read.",
       "observedAt": "2026-10-17T13:25:47.122Z",
-      "observedStateEvidence": "apps/srm/deployment/private-business-preparation.json"
+      "observedStateEvidence": "apps/srm/deployment/private-business-preparation.json",
+      "supplierRequest": {
+        "configurationVersion": "srm-private-supplier-request-e1-v1",
+        "baseSchemaDigest": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
+        "externalSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+        "commandBoundaryDigest": "c50daebea28aee2de2bc4fd2789c3158e67dd767e66c0f69320cf2cd13396eab"
+      }
     },
     "staging": {
       "privateBindingState": "NOT_PREPARED",

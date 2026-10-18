@@ -60,7 +60,8 @@
   "operations": [
     "supplier.report.read",
     "supplier.report.project",
-    "supplier.report.export"
+    "supplier.report.export",
+    "supplier.report.refresh"
   ],
   "requiredInputOperations": [
     "supplier.report.read"
@@ -247,6 +248,28 @@
     "runtimeRoleOrGrantChanged": false,
     "remoteExecutionAdopted": false,
     "kysOrPersonalDataAdopted": false,
+    "productDeploymentPerformed": false,
+    "adoptionStateIsHistorical": true
+  },
+  "supplierRequestAdoption": {
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "taskId": "SRM-E1-PRIVATE-SUPPLIER-REQUEST-20261018",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-EXTERNAL-REQUEST-ADMISSION-20261018",
+      "sourceSha": "70e6ebbd1bb931911fd3e3801f04e03d2d45b5df",
+      "pullRequest": "https://github.com/profitia/SG-dev/pull/488"
+    },
+    "operation": "supplier.report.refresh",
+    "endpoint": "POST /api/xray/requests",
+    "privateIntentApiAdopted": true,
+    "commandBoundaryDigest": "c50daebea28aee2de2bc4fd2789c3158e67dd767e66c0f69320cf2cd13396eab",
+    "usesExistingExecutorLedgerAndAudit": true,
+    "defaultEnabled": false,
+    "liveSql006Or010InstalledByThisTask": false,
+    "runtimeRoleOrGrantChanged": false,
+    "existingLookupSearchKysReplaced": false,
+    "providerExecutionAdopted": false,
     "productDeploymentPerformed": false
   }
 }
