@@ -5,7 +5,7 @@ import { createModuleScopeGuard } from './module-scope.mjs'
 import { createRequestLedger, requestLedgerSourceDigest } from './request-ledger.mjs'
 import { createDelegatedJobStore, delegatedJobSourceDigest } from './delegated-job.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.5.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.6.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -70,12 +70,15 @@ function createBoundOperationHost(options, serviceMode) {
   const module = options.module === undefined ? undefined : freeze(copy(options.module))
   if (module !== undefined && (!module || Object.getPrototypeOf(module) !== Object.prototype || Object.keys(module).length !== 3 || !/^[a-f0-9]{64}$/.test(module.auditSchemaDigest ?? '') || Object.keys(module).some(key => !['id','schemaDigest','auditSchemaDigest'].includes(key)))) throw new TypeError('Explicit accepted module audit boundary required')
   const moduleGuard = module ? createModuleScopeGuard({ applicationId: binding.applicationId, environment: binding.environment, moduleId: module.id, schemaDigest: module.schemaDigest, now }) : null
-  const needsRequestLedger = application.operations.includes('forecast.request')
+  const requestOperation = application.operations.includes('supplier.report.refresh') ? 'supplier.report.refresh' : 'forecast.request'
+  if (application.operations.includes('forecast.request') && application.operations.includes('supplier.report.refresh')) throw new TypeError('Separate accepted module request hosts required')
+  const needsRequestLedger = application.operations.includes(requestOperation)
   const requestBinding = options.requestLedger === undefined ? null : freeze(copy(options.requestLedger))
-  if (needsRequestLedger ? serviceMode || module?.id !== 'benchmark' || !requestBinding
-      || Object.keys(requestBinding).join(',') !== 'schemaDigest' || !/^[a-f0-9]{64}$/.test(requestBinding.schemaDigest ?? '')
-    : requestBinding !== null) throw new TypeError('Compute request requires the explicit same-store ledger and benchmark module')
-  const requestLedger = needsRequestLedger ? createRequestLedger({ binding, schemaDigest: requestBinding.schemaDigest, now }) : null
+  const requestKeys = requestOperation === 'supplier.report.refresh' ? ['schemaDigest','externalSchemaDigest'] : ['schemaDigest']
+  if (needsRequestLedger ? serviceMode || module?.id !== (requestOperation === 'supplier.report.refresh' ? 'supplier_report' : 'benchmark') || !requestBinding
+      || Object.keys(requestBinding).sort().join(',') !== requestKeys.sort().join(',') || requestKeys.some(key=>!/^[a-f0-9]{64}$/.test(requestBinding[key] ?? ''))
+    : requestBinding !== null) throw new TypeError('Private request requires its explicit same-store ledger and accepted module')
+  const requestLedger = needsRequestLedger ? createRequestLedger({ binding, schemaDigest: requestBinding.schemaDigest, operation: requestOperation, ...(requestOperation === 'supplier.report.refresh' ? {externalSchemaDigest:requestBinding.externalSchemaDigest} : {}), now }) : null
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
   // Validate the unchanged policy configuration now, without authenticating,
   // reading a database or constructing request-owned state.
@@ -135,7 +138,7 @@ function createBoundOperationHost(options, serviceMode) {
               await scopeStore.verifyScope(query, lease)
               const observation=delegated?await readExternalAccount(lease.state.delegation.identityKey):null
               if(closed)unavailable()
-              const requestPolicy = request.operation === 'forecast.request'
+              const requestPolicy = needsRequestLedger && request.operation === requestOperation
                 ? await requestLedger.loadPolicy(query, { actor, request }) : undefined
               let reserveStarted = false, completeStarted = false, ownedReservation
               callbackResult = await run({

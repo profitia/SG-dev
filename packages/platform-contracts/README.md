@@ -228,3 +228,23 @@ only `NOT_SENT`, `UNVERIFIED` or `RESULT_NOT_RETAINED`, with automatic retry dis
 The candidate has no automatic application adoption, package registry publication,
 cloud SQL installation, grants, provider request or product deployment. Explicit
 SG2/SRM lock and compatibility acceptance and controlled releases remain required.
+
+
+## Private supplier refresh request admission (1.14 source candidate)
+
+The existing operation executor/private host/request ledger additionally accept
+bounded HUMAN `supplier.report.refresh` (AM23). This accepts an organisation/user
+private intent under the current supplier_report module, membership, explicit
+product/permission and finite PRODUCT_POLICY. SQL010 extends the same SQL006
+ledger and canonical writer; old Forecast signatures are adapters to the same
+operation-bound logic. An operation-inclusive foreign key prevents funding a
+supplier intent with a Forecast policy. SQL006 source stays unchanged.
+
+The AM23 host requires both the base SQL006 digest and accepted SQL010 extension
+digest. The receipt means ACCEPTED private intent only. It performs no provider
+I/O, queue dispatch, data acquisition, KYS/person-data access, global write or
+customer billing. It cannot be used as a network delivery receipt or authorise
+an automatic retry/refund. Actual external delivery, caller adoption and product
+release remain independent requirements. Raw command bodies are not retained
+in the shared intent ledger. Positive/negative isolated tests do not install a
+cloud migration or activate a product flag.

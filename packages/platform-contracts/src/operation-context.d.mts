@@ -1,5 +1,5 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
-export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export'
+export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -63,7 +63,7 @@ export interface OperationContext {
   deploymentId: string; configurationVersion: string; environment: Environment; operation: OperationId
   actorId: string; actorKind: 'HUMAN' | 'SERVICE'; actor: Readonly<Actor>; subjectUserId: string | null
   organisationId: string | null; mode: 'ORGANISATION' | 'ACCOUNT' | 'PLATFORM'; policyVersion: string; accessVersion: string
-  accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE' | 'EXPORT' | 'REQUEST_COMPUTE' | 'EXECUTE_BOUND_OPERATION'; resourceId: string; resource: Readonly<Resource>
+  accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE' | 'EXPORT' | 'REQUEST_COMPUTE' | 'REQUEST_EXTERNAL' | 'EXECUTE_BOUND_OPERATION'; resourceId: string; resource: Readonly<Resource>
   productEvidence: ReadonlyArray<Pick<ProductGrant, 'product' | 'version' | 'sourceRef' | 'source' | 'expiresAt'> & { feature: string }>; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY' | 'PLATFORM_BUDGET'
   platformReservation?:Readonly<{effectId:string;replay:boolean;policyId:string;policyVersion:string}>
   sourceId?:string;sourceVersion?:string;qualityVersion?:string;classificationVersion?:string;payloadSchema?:string
@@ -91,7 +91,7 @@ export interface BoundRequest {
 export interface OperationSession<Transaction> {
   state: OperationState; transaction: Transaction; transactionalEffects: true; outputBoundaryVersion: string
   recordOutcome(event: AuditEvent): Promise<void>
-  /** Required for AM20; same current private transaction, no external compute. */
+  /** Required for bounded AM20/AM23; same private transaction, no external execution. */
   reserveUsage?(context: Readonly<OperationContext>): Promise<RequestReservation>
   completeRequest?(context: Readonly<OperationContext>, value: RequestReceipt): Promise<void>
   /** Private dispatch only; source delivery is a separate transaction/authority. */
@@ -109,7 +109,7 @@ export interface OperationExecutor<Transaction = unknown> {
   contract: Readonly<{ id: string; version: string; implementation: string }>
   execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractId: string; contractVersion: string; value: T }>>
 }
-export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.7' }>
+export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.8' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
 export declare function isOperationDenied(error: unknown): error is OperationDenied
