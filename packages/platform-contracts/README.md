@@ -280,3 +280,45 @@ own source authority; publication has its separate current read/field policy.
 The journal joins the existing canonical audit by decision and transaction;
 there is no second audit writer or general workflow runtime. A source receipt
 or a phase receipt alone is not proof of a delivered report or a product release.
+
+## Explicit native provider transport (1.16.0)
+
+`createExternalCallHost` retains the default exact-path JSON protocol. Its
+optional `nativeTransport` uses the same SERVICE host, committed PLAN / ATTEMPT /
+SETTLE controls, counters and canonical audit. Install optional SQL012 and pin
+its independent digest; SQL001–011 source stays unchanged. This adds no source
+writer, HTTP runtime, automatic retry, role grant or activation.
+
+A controlled native policy fixes origin, method, exact or bounded template path,
+JSON/form/no-body format, response byte limit, credential mode, redirect origins,
+expiry and completion semantics. Templates admit only HEX24, UUID, OPAQUE or
+STORAGE_PATH identifiers. No caller regex, destination, actor or tenant grants
+are accepted. The result contains copied, bounded **unclassified internal bytes**
+and minimal content-type, retry-after and validated location metadata; it is not
+a HUMAN/field-access grant or evidence of report delivery. Never publish it
+without the current host's separate human, product, purpose and field policy.
+`externalNativeResponse` accepts only the original successfully settled result,
+then reconstructs a copied Fetch Response for an existing native provider parser.
+Its diagnostic JSON excludes body, URL, query and header values.
+
+Redirects remain genuine 3xx responses. There is no automatic follow; every hop
+requires a separate fixed-origin admission. A credential-free `NONE` host refuses
+a header callback at construction and sends no original provider headers. OAuth
+token exchange is an explicit separately admitted FORM request, never hidden I/O
+inside `getHeaders`. Binary/ZIP/XML validation and provider business rules remain
+with the native client; successful transport is not accepted business content.
+
+`ADMITTED_ATTEMPT_CURRENT_SETTLEMENT` permits an already committed native attempt
+to finish within the installed timeout (at most 120 seconds) and finite native
+expiry. It checks current authority before send and before settlement; it does
+not cache/renew HUMAN leases, hold a private SQL transaction over I/O, or claim
+revocation can unsend a request. Failed/lost acknowledgement, cancelled work or
+revoked authority never mint a new automatic attempt or a refund. Default JSON
+retains its existing descriptor-bounded completion behavior. Changing the parent
+policy version invalidates its native definition; replacement requires a newly
+controlled policy rather than rewriting accepted history.
+
+Public TypeScript positive/expected-negative contracts run with the laboratory's
+pinned TypeScript 5.9.3 dev dependency. This does not change product frameworks,
+React versions or runtime dependencies. Producer tests are not consumer adoption
+or Development release evidence; those remain separate acceptance tasks.
