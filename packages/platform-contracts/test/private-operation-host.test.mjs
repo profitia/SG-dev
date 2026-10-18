@@ -15,10 +15,10 @@ test('the versioned host pins the additive candidate and preserves the base SQL'
   const host=createPrivateOperationHost(options())
   assert.equal(Object.isFrozen(host),true)
   assert.equal(host.hostContract,PRIVATE_OPERATION_HOST_CONTRACT)
-  assert.equal(host.contract.implementation,'1.0.0-candidate.8')
-  assert.equal(host.hostContract.version,'1.6.0')
+  assert.equal(host.contract.implementation,'1.0.0-candidate.9')
+  assert.equal(host.hostContract.version,'1.7.0')
   assert.match(await privateOperationHostSourceDigest(),/^[a-f0-9]{64}$/)
-  assert.equal(await operationSourceDigest(),'4a27eeb6f6aec17f91dd55e2d63d5cacb71a50a9e2b1eff29d4e91bf68a6b1ce')
+  assert.equal(await operationSourceDigest(),'2bafa92a797dfa09440771ac8c5f9740048436a01e4d6390f0d29b9126d846d9')
   assert.equal(await identitySourceDigest(),'9e1ced6498e8a127dd17fee81c5f4485a032c133bf85c08a72488e7909a0a299')
   assert.equal(await accessStoreSourceDigest(),'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
@@ -56,5 +56,7 @@ test('export cannot be enabled without a server-owned preparation adapter', () =
   o.application.features = ['supplier_report']
   o.application.operations = ['supplier.report.read', 'supplier.report.project', 'supplier.report.export']
   assert.throws(() => createPrivateOperationHost(o), TypeError)
-  assert.equal(createPrivateOperationHost({ ...o, prepareInputs: async () => {} }).hostContract.version, '1.6.0')
+  assert.equal(createPrivateOperationHost({ ...o, prepareInputs: async () => {} }).hostContract.version, '1.7.0')
 })
+
+for(const continuation of [null,{}, {requestId:'forged',phaseId:'REGISTER_LOOKUP',inputDigest:'a'.repeat(64),schemaDigest:'b'.repeat(64)}])test('non-request hosts cannot borrow private continuation authority '+JSON.stringify(continuation),()=>{assert.throws(()=>createPrivateOperationHost({...options(),requestContinuation:continuation}),TypeError)})
