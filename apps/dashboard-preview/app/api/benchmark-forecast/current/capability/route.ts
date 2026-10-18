@@ -1,3 +1,4 @@
+import { createNativeForecastReadHandler } from '@/lib/benchmark-forecast/native-read-relay'
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
@@ -40,4 +41,10 @@ export function createReadCurrentForecastCapabilityRouteHandler(
   }
 }
 
-export const GET = createReadCurrentForecastCapabilityRouteHandler()
+const legacyGET = createReadCurrentForecastCapabilityRouteHandler()
+const nativeGET = createNativeForecastReadHandler('capability')
+
+export async function GET(request: NextRequest) {
+  return (process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo') === 'legacy_demo'
+    ? legacyGET(request) : nativeGET(request)
+}
