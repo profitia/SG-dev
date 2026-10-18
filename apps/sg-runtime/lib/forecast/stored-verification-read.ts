@@ -68,17 +68,27 @@ async function readPrepared(
   })
 }
 
+/** Compose only inside a verified source transaction. This is the same closed
+ * read used by the standalone endpoint; it never starts a nested transaction. */
+export async function readStoredVerificationFromSource(transaction: Prisma.TransactionClient,
+  history: BenchmarkHistoricalSeriesResult | null, value: ForecastVerificationSelectionValue) {
+  const parsed=ForecastVerificationSelection.safeParse(value)
+  if(!parsed.success)throw new BenchmarkAppError('VALIDATION_ERROR','Invalid stored verification selection.',400)
+  const selection=parsed.data
+  if(!history)return forecastVerificationUnavailable(selection)
+  const result=await readPrepared(transaction,history,selection)
+  if(result.status!=='AVAILABLE')return forecastVerificationUnavailable(selection)
+  validatePublicForecastVerification(result,selection)
+  return result
+}
+
 export function createStoredForecastVerificationReader(prisma:Pick<PrismaClient,'$transaction'>,binding:StoredForecastBinding){
   const readSource=createStoredForecastSourceReader(prisma,binding)
   return async(value:ForecastVerificationSelectionValue):Promise<PublicForecastVerificationResult>=>{
     const parsed=ForecastVerificationSelection.safeParse(value)
     if(!parsed.success)throw new BenchmarkAppError('VALIDATION_ERROR','Invalid stored verification selection.',400)
     const selection=parsed.data
-    return readSource(selection.seriesId,async(transaction,history)=>{
-      if(!history)return forecastVerificationUnavailable(selection)
-      const result=await readPrepared(transaction,history,selection)
-      if(result.status!=='AVAILABLE')return forecastVerificationUnavailable(selection)
-      return validatePublicForecastVerification(result,selection)
-    })
+    return readSource(selection.seriesId,async(transaction,history)=>validatePublicForecastVerification(
+      await readStoredVerificationFromSource(transaction,history,selection),selection))
   }
 }

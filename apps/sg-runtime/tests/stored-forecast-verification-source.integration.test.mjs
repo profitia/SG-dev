@@ -9,6 +9,12 @@ import {PrismaClient} from '../generated/market-data-client/index.js'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {grantVerificationProjectionSourceColumns} from './fixtures/stored-forecast-verification-source.mjs'
 import {createStoredForecastVerificationReader} from '../lib/forecast/stored-verification-read.ts'
+import {createStoredForecastReadinessReader} from '../lib/forecast/stored-readiness-read.ts'
+import {createStoredCurrentForecastReader} from '../lib/forecast/stored-current-read.ts'
+import {createCurrentForecastStatisticalCompatibility} from '../lib/forecast/identity.ts'
+import {selectMinimalLawfulCurrentTrainingPayload} from '../lib/forecast/live-market-input.ts'
+import {resolveForecastTechnicalMinimumObservations} from '../lib/forecast/current-fast-policy.ts'
+import {attachExactUncertaintyBandIdentity} from '../lib/forecast/uncertainty-band-policy.ts'
 import {createFullVerificationStatisticalCompatibility,createRecentVerificationStatisticalCompatibility,buildForecastArtifactCadenceIdentity,resolveForecastMethodContract} from '../lib/forecast/identity.ts'
 import {createForecastCadence} from '../lib/forecast/cadence.ts'
 import {buildLiveForecastBridgePayloadFromHistory} from '../lib/forecast/live-market-input.ts'
@@ -104,6 +110,94 @@ test('native stored Verification uses the genuine generated source ORM and ordin
     process.env.MARKET_DATA_DATABASE_URL=runtime.toString();globalThis.__sgRuntimeMarketDataPrisma__={$on(){escapes++;throw Error('Forbidden global source')}};globalThis.fetch=async()=>{network++;throw Error('Forbidden provider')}
     const binding={projectId:'isolated-verification-project',branchId:'isolated-verification-branch',databaseName:DATABASE,role:ROLE,schemaDigest:digest,marketSchemaDigest:marketDigest}
     const read=createStoredForecastVerificationReader(reader,binding)
+    const readiness=createStoredForecastReadinessReader(reader,binding)
+    const exact={kind:'capability',seriesId,modelId:'naive',targetSemantics:'MONTHLY_AVERAGE'}
+    await t.test('genuine native state port returns all twelve variants without claiming Current from existing Verification',async()=>{
+      const snapshot=await readiness({kind:'readiness',seriesId})
+      assert.equal(snapshot.variants.length,12);assert.equal(snapshot.sourceAvailability,'AVAILABLE');assert.equal(snapshot.sourceFrequency,'DAILY')
+      const value=snapshot.variants.find(item=>item.modelId==='naive'&&item.targetSemantics==='MONTHLY_AVERAGE')
+      assert.equal(value.currentReadiness,'NOT_PREPARED');assert.equal(value.verificationReadiness,'READY');assert.equal(value.readiness.fastReady,false)
+      assert(!JSON.stringify(snapshot).includes(marker));assert(snapshot.variants.every(item=>!('trace'in item)))
+    })
+    let currentData
+    await t.test('detailed readiness uses the genuine minimal Current and full Verification identities independently',async()=>{
+      const method=resolveForecastMethodContract('MONTHLY_AVERAGE')
+      const full=buildLiveForecastBridgePayloadFromHistory(seriesId,history,{targetBasis:'MONTHLY_AVERAGE',targetCadence:'MONTHLY',continuityPolicy:'ALLOW_GAPS'})
+      const prepared=selectMinimalLawfulCurrentTrainingPayload(full,resolveForecastTechnicalMinimumObservations({targetSemantics:'MONTHLY_AVERAGE',modelId:'naive'}))
+      const hash=buildForecastHistoryFingerprint(prepared.history,createForecastCadence('DAILY','MONTHLY'))
+      const statistical=createCurrentForecastStatisticalCompatibility({sourceFrequency:'DAILY',targetCadence:'MONTHLY',targetSemantics:'MONTHLY_AVERAGE'})
+      currentData={id:'readiness_current',seriesId,modelId:'naive',displayName:marker,description:marker,
+        frequency:buildForecastArtifactCadenceIdentity(createForecastCadence('DAILY','MONTHLY')),inputSource:'DYNAMIC_MARKET_DATA_STORE',inputRunId:marker,
+        historyFingerprint:hash,targetBasis:'MONTHLY_AVERAGE',methodId:method.methodId,methodVersion:method.methodVersion,
+        trainingWindowPolicyId:statistical.trainingWindowPolicyId,effectiveTrainingPolicyId:statistical.effectiveTrainingPolicyId,
+        historyStartAt:new Date(prepared.history.start),historyEndAt:new Date(prepared.history.end),observationCount:prepared.history.observations,
+        forecastOriginAt:new Date(prepared.history.end),status:'AVAILABLE',runtimeSeconds:0,failureReason:marker}
+      await writer.forecastCurrentRun.create({data:{...currentData,points:{create:[{horizonLabel:'1M',horizonSteps:1,
+        forecastDate:new Date(prepared.execution.currentTargetDates['1M']),forecastValue:0,
+        metadataJson:{modelFamily:'naive',selectedVariant:'NAIVE_LAST_VALUE',selectedParameters:{},selectionScore:null,selectionMetric:null,fitStatus:'SUCCEEDED',failureReason:marker,privateInitiator:marker}}]}}})
+      const value=await readiness(exact)
+      assert.equal(value.currentReadiness,'READY');assert.equal(value.verificationReadiness,'READY')
+      assert.equal(value.preparedReadAuthority.expectedHistoryFingerprint,hash)
+      assert.notEqual(hash,seeded.find(item=>item.id==='MONTHLY_AVERAGE_naive_FULL').hash)
+      assert.equal(value.fastVerificationReadiness,'READY');assert.equal(value.recentVerificationReadiness,'READY')
+      assert.equal(value.readiness.fastReady,true);assert.equal(value.readiness.bandsReady,false)
+      assert(!JSON.stringify(value).includes(marker));assert(!('trace'in value))
+      const all=await readiness({kind:'capabilities',seriesId});assert.equal(all.variants.length,12)
+      const fromAll=all.variants.find(item=>item.modelId==='naive'&&item.targetSemantics==='MONTHLY_AVERAGE')
+      assert.deepEqual({...fromAll,timingMs:0},{...value,timingMs:0})
+    })
+    await t.test('detailed readiness preserves a genuine zero-valued native band and its exact Current policy identity',async()=>{
+      const point=await writer.forecastCurrentPoint.findFirst({where:{runId:currentData.id}})
+      const metadata={...point.metadataJson,uncertaintyBand:{status:'AVAILABLE',source:'MODEL_NATIVE_SHORT_HISTORY',policyVersion:'ADAPTIVE_UNCERTAINTY_BANDS_V1',
+        coverage:0.8,lower:0,upper:0,sampleCount:currentData.observationCount,calibrationStatus:'NOT_AVAILABLE',
+        calibrationMethod:'NAIVE_RANDOM_WALK_INNOVATION_RMS_NORMAL',calibrationVersion:'naive-random-walk-innovation-rms-normal-v1',reasonCode:null}}
+      const published=attachExactUncertaintyBandIdentity({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE',methodVersion:currentData.methodVersion,
+        inputSource:'DYNAMIC_MARKET_DATA_STORE',sourceFrequency:'DAILY',targetCadence:'MONTHLY',sourceHistoryFingerprint:currentData.historyFingerprint,
+        trainingWindowPolicyId:currentData.trainingWindowPolicyId,effectiveTrainingPolicyId:currentData.effectiveTrainingPolicyId,forecastOrigin:currentData.forecastOriginAt.toISOString()},
+      {horizon:'1M',horizonSteps:1,forecastDate:point.forecastDate.toISOString(),forecastValue:0,metadata,failureReason:null})
+      await writer.forecastCurrentPoint.update({where:{id:point.id},data:{metadataJson:published.metadata}})
+      try{
+        const value=await readiness(exact);assert.equal(value.readiness.bandsReady,true);assert.equal(value.readiness.calibratedReady,false)
+        assert.equal(value.currentReadiness,'READY');assert.equal(value.fastVerificationReadiness,'READY')
+      }finally{await writer.forecastCurrentPoint.update({where:{id:point.id},data:{metadataJson:point.metadataJson}})}
+    })
+    await t.test('latest failed Current is STALE even while its older available artifact remains reusable',async()=>{
+      const id='readiness_current_new_failed'
+      await writer.forecastCurrentRun.create({data:{...currentData,id,historyFingerprint:'b'.repeat(64),status:'FAILED',updatedAt:new Date(Date.now()+60000)}})
+      try{
+        const value=await readiness(exact);assert.equal(value.currentReadiness,'STALE');assert.equal(value.readiness.fastReady,false)
+        assert(value.readiness.blockers.includes('CURRENT_STALE'));assert(value.readiness.blockers.includes('SOURCE_REVISION_REBUILD_REQUIRED'))
+        assert.equal((await createStoredCurrentForecastReader(reader,binding)({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE'})).status,'AVAILABLE')
+      }finally{await writer.forecastCurrentRun.delete({where:{id}})}
+      assert.equal((await readiness(exact)).currentReadiness,'READY')
+    })
+    await t.test('latest failed historical attempt is retained by its separate state projection',async()=>{
+      const prior=await writer.forecastVerificationRun.findUnique({where:{id:'MONTHLY_AVERAGE_naive_FULL'}})
+      const id='readiness_historical_failed'
+      await writer.forecastVerificationRun.create({data:{...prior,id,historyFingerprint:'b'.repeat(64),status:'FAILED',updatedAt:new Date(Date.now()+60000)}})
+      try{
+        const value=await readiness(exact);assert.equal(value.verificationReadiness,'STALE');assert.equal(value.currentReadiness,'READY')
+        const all=await readiness({kind:'readiness',seriesId}),variant=all.variants.find(item=>item.modelId==='naive'&&item.targetSemantics==='MONTHLY_AVERAGE')
+        assert.equal(variant.verificationReadiness,'STALE');assert.equal(variant.readiness.fastReady,false)
+      }finally{await writer.forecastVerificationRun.delete({where:{id}})}
+    })
+    await t.test('malformed preparedness facts fail as source unavailability rather than successful empty data',async()=>{
+      const where={runId_horizonLabel:{runId:'MONTHLY_AVERAGE_naive_FULL',horizonLabel:'1M'}}
+      await writer.forecastVerificationMetric.update({where,data:{origins:-1}})
+      try{await assert.rejects(readiness({kind:'readiness',seriesId}),error=>error.code==='STORED_FORECAST_SOURCE_UNAVAILABLE')}
+      finally{await writer.forecastVerificationMetric.update({where,data:{origins:24}})}
+    })
+    await t.test('readiness never fabricates native-period provenance or reaches global/provider dependencies',async()=>{
+      await writer.marketSeries.create({data:{id:'monthly_readiness',providerCode:'MACROBOND',providerSeriesId:'monthly_readiness',displayName:'Shared monthly',frequency:'monthly',sourceLabel:'Synthetic',
+        observations:{create:Array.from({length:36},(_,i)=>({observedAt:new Date(Date.UTC(2021,i+1,0)),value:0}))}}})
+      const value=await readiness({...exact,seriesId:'monthly_readiness'})
+      assert.equal(value.sourceFrequency,'MONTHLY');assert.equal(value.status,'PROVENANCE_REQUIRED');assert.equal(value.readiness.fastReady,false)
+      await assert.rejects(readiness({...exact,seriesId:'not_stored'}),error=>error.code==='STORED_HISTORY_NOT_AVAILABLE')
+      await owner.query("UPDATE profitia_forecast_read.installation SET branch_id='foreign'")
+      try{for(const kind of['capability','capabilities','readiness'])await assert.rejects(readiness(kind==='capability'?exact:{kind,seriesId}),error=>error.code==='STORED_FORECAST_SOURCE_UNAVAILABLE')}
+      finally{await owner.query("UPDATE profitia_forecast_read.installation SET branch_id='isolated-verification-branch'")}
+      assert.equal(escapes,0);assert.equal(network,0)
+    })
     await t.test('all four period models, both bases and FULL/RECENT retain original stored statistics and legacy bands without invented identity',async()=>{
       for(const targetBasis of['MONTHLY_AVERAGE','END_OF_PERIOD'])for(const modelId of['naive','damped_holt','ets','arima'])for(const verificationScope of['FULL','RECENT']){
         const result=await read({seriesId,modelId,targetBasis,verificationScope})

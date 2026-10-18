@@ -1,6 +1,6 @@
-import { createInternalForecastReadinessSnapshotRouteHandler } from '@/lib/forecast/interactive-route-handlers'
+import { createRuntimeForecastReadinessHandler } from '@/lib/forecast/readiness-operation-handlers'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export const GET = createInternalForecastReadinessSnapshotRouteHandler()
+export const GET = createRuntimeForecastReadinessHandler('readiness')
