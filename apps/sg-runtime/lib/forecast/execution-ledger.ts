@@ -1079,13 +1079,24 @@ function mapStoredExecutionRecord(record: {
 }
 
 function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
-  const prisma = getMarketDataPrisma()
-  if (!prisma) {
+  // Preserve the legacy absent-configuration choice, but do not resolve a
+  // global client merely because a read-only module imports its default service.
+  if (!process.env.MARKET_DATA_DATABASE_URL?.trim()) {
     return createNoopStore()
+  }
+  let resolvedPrisma: NonNullable<ReturnType<typeof getMarketDataPrisma>> | undefined
+  function requirePrisma() {
+    if (!resolvedPrisma) {
+      const prisma = getMarketDataPrisma()
+      if (!prisma) throw new Error('Forecast library datastore is unavailable.')
+      resolvedPrisma = prisma
+    }
+    return resolvedPrisma
   }
 
   return {
     async readExecution(executionId) {
+      const prisma = requirePrisma()
       try {
         const record = await prisma.forecastPreparationExecutionLedger.findUnique({
           where: { executionId },
@@ -1101,6 +1112,7 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
     },
 
     async writeExecution(record) {
+      const prisma = requirePrisma()
       try {
         await prisma.forecastPreparationExecutionLedger.upsert({
           where: { executionId: record.executionId },
@@ -1207,6 +1219,7 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
       if (!event) {
         return
       }
+      const prisma = requirePrisma()
 
       const observedAt = event.observedAt
       const progressObservedAt = isProgressEvent(input.eventType) ? observedAt : null

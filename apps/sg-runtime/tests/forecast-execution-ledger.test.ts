@@ -692,3 +692,94 @@ test('default execution ledger recordEvent degrades to no-op when the ledger rel
     globalThis.__sgRuntimeMarketDataPrisma__ = previousPrisma
   }
 })
+
+test('configured default ledger resolves and caches its client only on actual use, preserving read/write refusal', async () => {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousGlobal = Object.getOwnPropertyDescriptor(globalThis, '__sgRuntimeMarketDataPrisma__')
+  let resolutions = 0, reads = 0, writes = 0, denied = false
+  const executionId = '0db191a1-7934-49d6-864f-590c7650d671'
+  const client = {
+    $on() {},
+    forecastPreparationExecutionLedger: {
+      async findUnique() {
+        reads++
+        if (denied) throw new Error('SYNTHETIC_LEDGER_READ_DENIED')
+        return null
+      },
+      async upsert(input: { create: Record<string, unknown> }) {
+        writes++
+        assert.equal(input.create.executionId, executionId)
+        assert.equal(input.create.eventCount, 1)
+      },
+    },
+  }
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://architecture_test_owner@127.0.0.1:1/sg2_operation_test'
+  Object.defineProperty(globalThis, '__sgRuntimeMarketDataPrisma__', {
+    configurable: true,
+    get() { resolutions++; return client },
+    set(value: unknown) { assert.equal(value, client) },
+  })
+  try {
+    const ledger = createForecastPreparationExecutionLedger()
+    assert.equal(resolutions, 0)
+    assert.equal(await ledger.readExecution(executionId), null)
+    assert.equal(resolutions, 1)
+    Object.defineProperty(globalThis, '__sgRuntimeMarketDataPrisma__', {
+      configurable: true,
+      get() { resolutions++; throw new Error('Cached ledger client must not be replaced') },
+    })
+    await ledger.recordEvent({ executionId, logicalArtifactKey: 'synthetic-lazy-ledger', operationFamily: 'CURRENT',
+      logicalArtifactIdentity: currentIdentity, requestId: 'synthetic-owner', ownerRequestId: 'synthetic-owner', role: 'OWNER',
+      eventType: 'single_flight_owner_acquired', observedAt: '2026-09-11T17:53:13.000Z', attemptKind: 'PRIMARY', executionMode: 'PRE_STAGE3_PREPARATION' })
+    assert.equal(writes, 1)
+    assert.equal(reads, 2)
+    denied = true
+    await assert.rejects(ledger.readExecution(executionId), /SYNTHETIC_LEDGER_READ_DENIED/)
+    assert.equal(resolutions, 1)
+  } finally {
+    if (previousUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
+    else process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    if (previousGlobal) Object.defineProperty(globalThis, '__sgRuntimeMarketDataPrisma__', previousGlobal)
+    else delete globalThis.__sgRuntimeMarketDataPrisma__
+  }
+})
+
+test('configured ledger cannot silently become an absent-config store before its first actual use', async () => {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousGlobal = Object.getOwnPropertyDescriptor(globalThis, '__sgRuntimeMarketDataPrisma__')
+  let resolutions = 0
+  process.env.MARKET_DATA_DATABASE_URL = 'postgresql://architecture_test_owner@127.0.0.1:1/sg2_operation_test'
+  Object.defineProperty(globalThis, '__sgRuntimeMarketDataPrisma__', { configurable:true,
+    get() { resolutions++; throw new Error('Unexpected global resource resolution') } })
+  try {
+    const ledger = createForecastPreparationExecutionLedger()
+    assert.equal(resolutions, 0)
+    delete process.env.MARKET_DATA_DATABASE_URL
+    await assert.rejects(ledger.readExecution('0db191a1-7934-49d6-864f-590c7650d672'), /datastore is unavailable/)
+    assert.equal(resolutions, 0)
+  } finally {
+    if (previousUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
+    else process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    if (previousGlobal) Object.defineProperty(globalThis, '__sgRuntimeMarketDataPrisma__', previousGlobal)
+    else delete globalThis.__sgRuntimeMarketDataPrisma__
+  }
+})
+
+test('legacy absent-config ledger retains its existing store choice without resolving a global client', async () => {
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousGlobal = Object.getOwnPropertyDescriptor(globalThis, '__sgRuntimeMarketDataPrisma__')
+  let resolutions = 0
+  process.env.MARKET_DATA_DATABASE_URL = '   '
+  Object.defineProperty(globalThis, '__sgRuntimeMarketDataPrisma__', { configurable:true,
+    get() { resolutions++; throw new Error('Absent-config ledger must not resolve a global client') } })
+  try {
+    const ledger = createForecastPreparationExecutionLedger()
+    assert.equal(await ledger.readExecution('0db191a1-7934-49d6-864f-590c7650d673'), null)
+    assert.equal(resolutions, 0)
+  } finally {
+    if (previousUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
+    else process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    if (previousGlobal) Object.defineProperty(globalThis, '__sgRuntimeMarketDataPrisma__', previousGlobal)
+    else delete globalThis.__sgRuntimeMarketDataPrisma__
+  }
+})
