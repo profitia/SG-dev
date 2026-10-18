@@ -1,3 +1,4 @@
+import { createNativeForecastReadHandler } from '@/lib/benchmark-forecast/native-read-relay'
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
@@ -7,7 +8,7 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+async function legacyGET(request: NextRequest) {
   const seriesId = request.nextUrl.searchParams.get('seriesId')?.trim() ?? ''
   if (!seriesId) {
     return NextResponse.json({ error: 'seriesId is required.' }, { status: 400 })
@@ -29,4 +30,11 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     )
   }
+}
+
+const nativeGET = createNativeForecastReadHandler('capabilities')
+
+export async function GET(request: NextRequest) {
+  return (process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo') === 'legacy_demo'
+    ? legacyGET(request) : nativeGET(request)
 }

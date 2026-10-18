@@ -1,3 +1,4 @@
+import { createNativeForecastReadHandler } from '@/lib/benchmark-forecast/native-read-relay'
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
@@ -24,7 +25,7 @@ function isForecastTargetBasis(value: string): value is ForecastTargetBasis {
   return FORECAST_TARGET_BASES.includes(value as ForecastTargetBasis)
 }
 
-export async function GET(request: NextRequest) {
+async function legacyGET(request: NextRequest) {
   const seriesId = request.nextUrl.searchParams.get('seriesId')?.trim() ?? ''
   const model = request.nextUrl.searchParams.get('model')?.trim() ?? ''
   const targetBasis = request.nextUrl.searchParams.get('targetBasis')?.trim() ?? ''
@@ -69,4 +70,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 })
   }
+}
+
+const nativeGET = createNativeForecastReadHandler('verification')
+
+export async function GET(request: NextRequest) {
+  return (process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo') === 'legacy_demo'
+    ? legacyGET(request) : nativeGET(request)
 }

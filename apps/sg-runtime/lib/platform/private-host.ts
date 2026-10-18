@@ -4,7 +4,7 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { createPrivateOperationHost } from '@profitia/platform-contracts/private-operation-host'
 import { createClerkIdentityAuthenticator, type ClerkIdentityClient, type IdentityApplication } from '@profitia/platform-contracts/identity-provider'
 import type { AccessQuery, AccessStoreBinding } from '@profitia/platform-contracts/access-store'
-import { OperationDenied, type Application } from '@profitia/platform-contracts/operation-context'
+import { OperationDenied, type Application, type OperationContext } from '@profitia/platform-contracts/operation-context'
 import { projectSupplierSummaryResponse, readSupplierSummarySelection, SUPPLIER_SUMMARY_PROJECTION } from './supplier-summary'
 import { FORECAST_CURRENT_PROJECTION, forecastCurrentResourceId, readForecastCurrentSelection, projectForecastCurrentResponse } from './forecast-current'
 import { CATEGORY_PROJECTION, categoryOperation, categoryResourceId, projectCategoryResponse, readCategoryOperation } from '@/lib/category/operation-contract'
@@ -12,6 +12,21 @@ import { MARKET_PREVIEW_PROJECTION, MARKET_ANALYTICS_PROJECTION, marketPreviewRe
   readMarketPreviewSelection, projectMarketPreviewResponse, projectMarketAnalyticsResponse, type MarketReadRepresentation } from './market-preview'
 
 type QueryClient = Pick<Prisma.TransactionClient, '$queryRawUnsafe' | '$executeRawUnsafe'>
+
+/** A consumer must distinguish the verified native publication from an old
+ * deployment at the same URL. These nonsecret facts come from the admitted
+ * server context, never caller headers; failed OUTCOME still withholds output. */
+function forecastPublication(project: (value: unknown, context: Readonly<OperationContext>) => Promise<Response>, projection: string) {
+  return async (value: unknown, context: Readonly<OperationContext>) => {
+    const result = await project(value, context)
+    result.headers.set('X-Profitia-Operation-Contract', `${context.contractId}@${context.contractVersion}`)
+    result.headers.set('X-Profitia-Application', context.applicationId)
+    result.headers.set('X-Profitia-Environment', context.environment)
+    result.headers.set('X-Profitia-Forecast-Projection', projection)
+    result.headers.set('X-Profitia-Forecast-Resource', context.resourceId)
+    return result
+  }
+}
 
 // SQL is supplied only by the accepted access-store, never by an HTTP caller.
 const queryFor = (client: QueryClient): AccessQuery => async (sql, values = []) => {
@@ -170,7 +185,7 @@ export function createSg2PrivateForecastCurrentHost(options: Sg2PrivateHostOptio
         environment, ownerOrganisationId: null, ownerUserId: null, approvedSharedProjection: true,
         version: FORECAST_CURRENT_PROJECTION, projectionVersion: FORECAST_CURRENT_PROJECTION } }
     },
-    projectOutput: projectForecastCurrentResponse,
+    projectOutput: forecastPublication(projectForecastCurrentResponse, FORECAST_CURRENT_PROJECTION),
     describeOutcome: async value => {
       if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const body = await value.clone().json()
@@ -191,7 +206,7 @@ export function createSg2PrivateForecastVerificationHost(options: Sg2PrivateHost
       return {resource:{id:request.resourceId,type:'market_forecast',dataClass:'SHARED_KNOWLEDGE',environment,ownerOrganisationId:null,ownerUserId:null,
         approvedSharedProjection:true,version:FORECAST_VERIFICATION_PROJECTION,projectionVersion:FORECAST_VERIFICATION_PROJECTION}}
     },
-    projectOutput:projectForecastVerificationResponse,
+    projectOutput:forecastPublication(projectForecastVerificationResponse, FORECAST_VERIFICATION_PROJECTION),
     describeOutcome:async value=>{
       if(!(value instanceof Response))throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return (await value.clone().json()).status==='AVAILABLE'?'SUCCEEDED':'NO_DATA'
@@ -211,7 +226,7 @@ export function createSg2PrivateForecastReadinessHost(options: Sg2PrivateHostOpt
         environment: options.application.environment, ownerOrganisationId: null, ownerUserId: null,
         approvedSharedProjection: true, version: FORECAST_READINESS_PROJECTION, projectionVersion: FORECAST_READINESS_PROJECTION } }
     },
-    projectOutput: projectForecastReadinessResponse,
+    projectOutput: forecastPublication(projectForecastReadinessResponse, FORECAST_READINESS_PROJECTION),
     describeOutcome: async value => {
       if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return (await value.clone().json()).sourceAvailability === 'AVAILABLE' ? 'SUCCEEDED' : 'NO_DATA'
