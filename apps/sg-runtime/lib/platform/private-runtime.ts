@@ -36,7 +36,7 @@ export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   dashboardEmbed?: NativeDashboardBinding
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
   category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
-  forecastRequest?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>;persist?:typeof persistForecastRequest }>
+  forecastRequest?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>;persist?:typeof persistForecastRequest;delivery?:'DELEGATED' }>
   forecastRead?: Readonly<{ readiness?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; read: (selection: ForecastReadinessSelectionValue) => Promise<PublicForecastReadinessResult> }>; executor: OperationExecutor<Prisma.TransactionClient>; current: (selection: ForecastCurrentSelectionValue) => Promise<StoredCurrentForecastResult>; verification?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; read: (selection: ForecastVerificationSelectionValue) => Promise<PublicForecastVerificationResult> }> }>
   marketRead?: Readonly<{
     executor: OperationExecutor<Prisma.TransactionClient>
@@ -137,7 +137,8 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
     module: { id: 'benchmark', schemaDigest: target.moduleSchemaDigest, auditSchemaDigest: target.auditSchemaDigest },
     ...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}), ...(dashboardEmbed ? { dashboardEmbed } : {}),
     ...(env.PROFITIA_FORECAST_REQUEST_ENABLED === 'true' ? { forecastRequest: {
-      configurationVersion: target.forecastRequest.configurationVersion, boundaryDigest: target.forecastRequest.boundaryDigest,
+      configurationVersion: env.PROFITIA_FORECAST_DISPATCH_ENABLED==='true'?target.forecastDispatch.foregroundConfigurationVersion:target.forecastRequest.configurationVersion,
+      boundaryDigest: target.forecastRequest.boundaryDigest,
       requestLedgerDigest: target.forecastRequest.requestLedgerDigest,
       ...(env.PROFITIA_FORECAST_DISPATCH_ENABLED==='true'?{jobSchemaDigest:target.forecastDispatch.jobSchemaDigest}:{}),
     } } : {}),
@@ -196,7 +197,7 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
     module: { ...config.module, id: 'category' }, categoryBoundaryDigest: config.category.boundaryDigest,
   }) }) : undefined
   const forecastRequest = config.forecastRequest ? Object.freeze({
-    ...(config.forecastRequest.jobSchemaDigest?{persist:createSg2ForecastDispatchPersister({binding:config.binding,jobSchemaDigest:config.forecastRequest.jobSchemaDigest})}:{}),
+    ...(config.forecastRequest.jobSchemaDigest?{persist:createSg2ForecastDispatchPersister({binding:config.binding,jobSchemaDigest:config.forecastRequest.jobSchemaDigest}),delivery:'DELEGATED' as const}:{}),
     executor: createSg2PrivateForecastRequestHost({
     prisma, auditPrisma, clerk, identity: config.identity, binding: config.binding, module: config.module,
     application: { ...config.application, configurationVersion: config.forecastRequest.configurationVersion,

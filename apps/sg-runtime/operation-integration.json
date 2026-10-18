@@ -507,6 +507,77 @@
       "MAXIMUM_ATTEMPTS_REQUIRE_EXPLICIT_RECONCILIATION",
       "PRIVATE_JOB_HISTORY_AND_BROWSER_SUBMISSION_PARITY_PENDING",
       "DEVELOPMENT_THEN_STAGING_RELEASE_PENDING"
+    ],
+    "nativeForegroundSupersession": {
+      "taskId": "SG2-E1-EMBEDDED-COMMAND-ADOPTION-20261018",
+      "adoptionRef": "embeddedCommandSourceAdoption",
+      "deployed": false
+    }
+  },
+  "embeddedCommandSourceAdoption": {
+    "taskId": "SG2-E1-EMBEDDED-COMMAND-ADOPTION-20261018",
+    "packageVersion": "1.12.0",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-EMBEDDED-COMMAND-CHANNEL-20261018",
+      "repository": "profitia/SG-dev",
+      "sourceSha": "a0e6bbee0ce44e2d3472183ef67749f3ef8f4e45",
+      "pullRequest": 481
+    },
+    "scope": "EXPLICIT_EXISTING_FORECAST_CONTROLS_TO_ATOMIC_NATIVE_PRIVATE_DISPATCH_SOURCE_ONLY",
+    "sourceDigests": {
+      "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a",
+      "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+      "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+      "src/embedded-command-channel.mjs": "ea67d7d0ed9bdcd5739e6d42493e0457688af2c9d87db153f6fefcbe5bb8dc78",
+      "src/embedded-command-channel.d.mts": "d137964bc0ca86ab3908313b0837a5f3ec3b4d461a674e1029c37b040a733389"
+    },
+    "consumerSourceDigests": {
+      "apps/sg-runtime/lib/platform/native-dashboard-embed.ts": "fbb98800c727e1858e1e9fbf340fc404791ac28d61ea1b6120a708d96af13b2b",
+      "apps/sg-runtime/lib/platform/native-dashboard-command.ts": "8cb4cc06a76a2443d7fca36284e96f7017bfcb337cafda500f2843c5fe89672a",
+      "apps/sg-runtime/lib/platform/private-runtime.ts": "55b7288dfd909e3fd879304eacb7259fab0d42577064764ff05667cd894e48bc",
+      "apps/sg-runtime/lib/forecast/request-operation.ts": "79977e3cbdfafe59d2e835fe184185bf73502302143e05759b2119fba11ef682",
+      "apps/sg-runtime/lib/forecast/request-operation-handlers.ts": "c9e380a5b935379cfe3349b8c827cdaa29a0476f638843564b59a4011fed34cd",
+      "apps/sg-runtime/deployment/private-runtime-targets.json": "ad4ae87835d62d3ef64c1f7395d910e2ca757ced016d715f69514e2a101777f9",
+      "apps/dashboard-preview/lib/platform/native-embedded-read.ts": "4e8819347dd58048ecc4033847247cf5106b05ef0cc2d00276960fddcaecc903",
+      "apps/dashboard-preview/lib/platform/native-embedded-command.ts": "4edee704e55bf0a7aeee1338b370fd99fbb3e9e1e4aa7a90812ad80cafdedb38",
+      "apps/dashboard-preview/lib/benchmark-forecast/native-command-presentation.ts": "b4c29974be9fe75340c58ccd14110190802c44ab7e6f53c167f327a6898d6e29",
+      "apps/dashboard-preview/components/native-embedded-read-provider.tsx": "5e3e84874b9e43cc1e10ee595a4a4baf5dff94276bac59e7250bc8031ad181c1",
+      "apps/dashboard-preview/components/raw-data-view/index.tsx": "a3ff58f609201ad429677c829a9284ecd05617ece6610efac9333e2f968194bd",
+      "apps/dashboard-preview/deployment/native-forecast-targets.json": "57cbbfbdba720ddf4ce7a78dd3e46ac46a4eaa5288bd855772dc07e933a10cb6"
+    },
+    "previousReadSourceRecord": "embeddedReadSourceAdoption",
+    "previousReadSourceRecordIsHistorical": true,
+    "readWireContractPreserved": "profitia.embedded-read@1.0.0",
+    "commandWireContract": "profitia.embedded-command@1.0.0",
+    "commandPublication": "sg2-forecast-dispatch-command-v1",
+    "foregroundConfigurationVersion": "sg2-private-forecast-request-dispatch-e1-v2",
+    "privateAcceptanceDoesNotClaimScientificReadiness": true,
+    "readFetchStillReadOnly": true,
+    "childReceivesCredentialOrActorAuthority": false,
+    "sameExplicitAmbiguousRetryKeepsIntent": true,
+    "newAutomaticPreparationOrPollingLoopAdded": false,
+    "activationVariable": "PROFITIA_NATIVE_COMMAND_ENABLED",
+    "activationDefault": false,
+    "productDeploymentPerformed": false,
+    "localValidation": {
+      "wholeSg2Tests": 576,
+      "dashboardTests": 332,
+      "focusedRuntimeTests": 30,
+      "originalBusinessTests": 61,
+      "originalQueueTests": 38,
+      "skips": 0,
+      "dashboardTypes": "PASS",
+      "affectedRuntimeStrictTypes": "PASS",
+      "exactCiAndWholeBuild": "PENDING_SEPARATE_PROOF"
+    },
+    "limitations": [
+      "SOURCE_ONLY_NO_LIVE_CLERK_OTP_TLS_OR_UI_BUSINESS_UAT",
+      "NO_PRIVATE_JOB_HISTORY_OR_STATUS_API",
+      "NO_IMMEDIATE_ROLLBACK_CLAIM_AFTER_TIMEOUT_OR_CANCEL",
+      "SOURCE_TRANSACTION_NOT_CPU_OR_VENDOR_COST",
+      "NON_DAILY_SOURCE_PROVENANCE_REMAINS_REQUIRED",
+      "CONTROLLED_DEVELOPMENT_THEN_STAGING_RELEASE_PENDING"
     ]
   }
 }

@@ -7,7 +7,8 @@ import { NATIVE_FORECAST_API_PATHS, selectNativeEmbedPage, selectNativeForecastR
 
 const binding = placement.environments.development.embedding
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-export type NativeEmbeddedConfiguration = Readonly<{ configurationVersion: string; childOrigin: string; parentOrigins: readonly string[] }>
+export type NativeEmbeddedConfiguration = Readonly<{ configurationVersion: string; childOrigin: string; parentOrigins: readonly string[];
+  commands?:Readonly<{contract:string;configurationVersion:string}> }>
 export type NativeEmbeddedSelection = NonNullable<ReturnType<typeof selectNativeEmbedPage>>
 const privateHeaders = { 'Content-Type':'application/json','Cache-Control':'private, no-store',Vary:'Cookie, Authorization' }
 const refuse = (status:number) => new Response(JSON.stringify({error:'Read unavailable.'}),{status,headers:privateHeaders})
@@ -17,12 +18,16 @@ const exact = (value:unknown, keys:string[]):value is Record<string,unknown> => 
 /** Neutral public presentation configuration, no identity or permission. */
 export function readNativeEmbeddedConfiguration(env:Readonly<Record<string,string|undefined>>=process.env):NativeEmbeddedConfiguration|null {
   if(env.PROFITIA_NATIVE_EMBED_ENABLED!=='true'||!readNativeForecastConfiguration(env))return null
-  return Object.freeze({configurationVersion:binding.configurationVersion,childOrigin:binding.childOrigin,parentOrigins:Object.freeze([...binding.parentOrigins])})
+  if(env.PROFITIA_NATIVE_COMMAND_ENABLED!==undefined&&!['true','false'].includes(env.PROFITIA_NATIVE_COMMAND_ENABLED))return null
+  return Object.freeze({configurationVersion:binding.configurationVersion,childOrigin:binding.childOrigin,parentOrigins:Object.freeze([...binding.parentOrigins]),
+    ...(env.PROFITIA_NATIVE_COMMAND_ENABLED==='true'?{commands:Object.freeze({contract:binding.commands.contract,configurationVersion:binding.commands.configurationVersion})}:{})})
 }
 function validateConfiguration(value:NativeEmbeddedConfiguration) {
-  if(!exact(value,['configurationVersion','childOrigin','parentOrigins'])||value.configurationVersion!==binding.configurationVersion
+  if(!exact(value,['configurationVersion','childOrigin','parentOrigins',...(value?.commands===undefined?[]:['commands'])])||value.configurationVersion!==binding.configurationVersion
     ||value.childOrigin!==binding.childOrigin||!Array.isArray(value.parentOrigins)
     ||JSON.stringify(value.parentOrigins)!==JSON.stringify(binding.parentOrigins))throw new EmbeddedReadUnavailable()
+  if(value.commands!==undefined&&(!exact(value.commands,['contract','configurationVersion'])||value.commands.contract!==binding.commands.contract
+    ||value.commands.configurationVersion!==binding.commands.configurationVersion))throw new EmbeddedReadUnavailable()
 }
 
 export function createEmbeddedChartFetch(client:Pick<ReturnType<typeof openEmbeddedReadClient>,'read'>,
@@ -72,6 +77,8 @@ export function connectNativeEmbeddedRead(options:{hostWindow:Window;configurati
     if(closed)return
     if(event.source!==view.parent||!configuration.parentOrigins.includes(event.origin))return
     const value=event.data
+    // The separately validated command controller owns this other fixed protocol.
+    if(exact(value,['type','version','instanceId','documentId'])&&value.type==='profitia.dashboard-command.init')return
     if(!exact(value,['type','version','instanceId','documentId'])||value.type!=='profitia.dashboard-read.init'
       ||value.version!==EMBEDDED_READ_CONTRACT.version||value.documentId!==documentId
       ||typeof value.instanceId!=='string'||!uuid.test(value.instanceId)||event.ports.length!==1||client){
@@ -96,5 +103,5 @@ export function connectNativeEmbeddedRead(options:{hostWindow:Window;configurati
   view.addEventListener('message',onMessage);view.addEventListener('pagehide',fail)
   const readyTimer=setInterval(ready,500),deadline=setTimeout(fail,15000)
   ready()
-  return Object.freeze({close})
+  return Object.freeze({close,documentId})
 }

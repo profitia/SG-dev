@@ -234,8 +234,13 @@ test('only explicit valid ports and lower bounded limits can be configured', () 
 
 test('the browser transport has no React, Clerk, Node, network, storage or authority implementation import', () => {
   const source = readFileSync(new URL('../src/embedded-read-channel.mjs', import.meta.url), 'utf8')
-  assert(!/^\s*import\s/m.test(source)); assert(!/\b(?:localStorage|sessionStorage|indexedDB)\s*(?:\.|\[)|\b(?:fetch|XMLHttpRequest)\s*\(/m.test(source))
-  assert(!/\b(?:createOperationExecutor|createPrivateOperationHost|verifyToken|signToken)\s*\(/m.test(source))
+  assert.deepEqual([...source.matchAll(/from\s+['"]([^'"]+)['"]/g)].map(v=>v[1]),['./embedded-channel-core.mjs'])
+  const core=readFileSync(new URL('../src/embedded-channel-core.mjs',import.meta.url),'utf8')
+  assert(!/^\s*import\s/m.test(core))
+  for(const value of[source,core]){
+    assert(!/\b(?:localStorage|sessionStorage|indexedDB)\s*(?:\.|\[)|\b(?:fetch|XMLHttpRequest)\s*\(/m.test(value))
+    assert(!/\b(?:createOperationExecutor|createPrivateOperationHost|verifyToken|signToken)\s*\(/m.test(value))
+  }
 })
 
 test('a bounded large chart is not refused by an additional small object or node-count limit', async t => {
