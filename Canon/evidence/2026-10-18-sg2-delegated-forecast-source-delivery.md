@@ -4,7 +4,7 @@ Status: SOURCE_CANDIDATE / LOCAL_VALIDATION_PASS / RELEASE_NOT_PERFORMED. To odb
 
 Zadanie `SG2-E1-DELEGATED-FORECAST-DELIVERY-20261018`, profil SG2, workspace SG-dev, TARGET_ENVIRONMENT=development. Authority profitia/SG-dev/main odczytane jako `22474ca52fa5bfe13ec7a46cd9dcb2b8a4cb23f2`. Własny PMOS SG2; zadanie producenta ARCHITECTURE i odbioru SRM mają osobne tożsamości i closeout. Rejestracja PMOS nie dowodzi zakończenia cyklu.
 
-Producent: `ARCHITECTURE-E1-DELEGATED-EXECUTION-INGESTION-20261018`, source `0948a10c99626a6096df4c2fd1e25586ef318b72`, platform-contracts1.11.0, operation candidate7 i private host1.5.0. Źródłowy checkpoint natywnej integracji SG2: `c2d7fc7379d9f43eb40129a6d9df3ecbcb4b7190`. Zachowano wcześniejsze przyjęcia i ich historyczne ograniczenia.
+Producent: `ARCHITECTURE-E1-DELEGATED-EXECUTION-INGESTION-20261018`, source `0948a10c99626a6096df4c2fd1e25586ef318b72`, platform-contracts1.11.0, operation candidate7 i private host1.5.0. Źródłowy checkpoint natywnej integracji SG2: `c2d7fc7379d9f43eb40129a6d9df3ecbcb4b7190`. Końcowa korekta ACL ma source `9dffe9904e0db7f1fd2a6c502afbe8cb3e8e0ea1`. Zachowano wcześniejsze przyjęcia i ich historyczne ograniczenia.
 
 ## Rzeczywiście sprawdzony przepływ
 
@@ -19,7 +19,7 @@ Producent: `ARCHITECTURE-E1-DELEGATED-EXECUTION-INGESTION-20261018`, source `094
 
 `prisma/private-store/004-forecast-dispatch.sql` dodaje wyłącznie kontrolowane metadane i wąską projekcję istniejącego polecenia. Nie tworzy drugiej tabeli jobów. `prisma-market-data/private-write/001-forecast-queue.sql` wymaga przyjętego SQL008 i dotychczasowych projekcji. Własne metadane mają FORCE RLS i kontrolowanego właściciela NOLOGIN. Źródłowe potwierdzenia są niezmienne.
 
-Instalator granicy oryginalnej kolejki wymaga jej rzeczywistego właściciela i odmawia przy nieoczekiwanym istniejącym RLS lub politykach. Zachowuje właścicieli oraz prawa i zachowanie starszych ról; nie przyznaje im nowych ACL. Ogranicza wyłącznie nową rolę źródła: zapis wymaga bieżącego, zarezerwowanego i sfinansowanego efektu dla tej samej serii w tej samej transakcji. DELETE jest zabroniony; TRUNCATE odmawia również po przypadkowym nadaniu prawa. Nieoczekiwane dodatkowe ACL, CREATE, rola uprzywilejowana lub uprawnienia do innych danych zamykają receiver.
+Instalator granicy oryginalnej kolejki wymaga jej rzeczywistego właściciela i odmawia przy nieoczekiwanym istniejącym RLS lub politykach. Zachowuje właścicieli oraz prawa i zachowanie starszych ról; nie przyznaje im nowych ACL. Ogranicza wyłącznie nową rolę źródła: zapis wymaga bieżącego, zarezerwowanego i sfinansowanego efektu dla tej samej serii w tej samej transakcji. DELETE jest zabroniony; TRUNCATE odmawia również po przypadkowym nadaniu prawa. Nieoczekiwane dodatkowe ACL, CREATE, rola uprzywilejowana lub uprawnienia do innych danych zamykają receiver. Przegląd po pierwszym CI wykrył też brak odmowy dla błędnie nadanego zapisu do widoków odczytowych. Dodano kontrolę DML i grant options na widokach, samych kolumnach kolejki i helperach; rzeczywiste GRANT/REVOKE w regresji potwierdzają odmowę i powrót po odtworzeniu poprawnych praw. Starego dowodu CI nie używa się do zatwierdzenia tej zmienionej wersji.
 
 Właściciel każdej wcześniejszej projekcji musi jawnie dopuścić odczyt jej metadanych instalacji przez kontrolowanego `profitia_ingestion_owner`: SELECT oraz polityka SELECT TO ta rola USING(current_user='profitia_ingestion_owner'). Runtime nie dostaje dostępu do tych tabel ani członkostwa w rolach; oddzielny login odczytowy pozostaje wskazany w dotychczasowym receipt. Brak wymaganej widoczności metadanych zamyka integrację.
 
@@ -31,8 +31,8 @@ Nieprzenośny wynik PostgreSQL void z obowiązkowego zapisu audytu zastępuje w 
 
 | Dowód | Wynik |
 | --- | --- |
-| Pełny zestaw SG2 API, SQL, roli, izolacji i integracji, z nową integracją |542/542 PASS,0 fail/skip/cancel |
-| Nowa natywna integracja w tym zestawie |13/13 PASS; oryginalne API i dwie rzeczywiste bazy z ograniczonymi rolami |
+| Pełny zestaw SG2 API, SQL, roli, izolacji i integracji, z nową integracją |543/543 PASS,0 fail/skip/cancel |
+| Nowa natywna integracja w tym zestawie |14/14 PASS; oryginalne API i dwie rzeczywiste bazy z ograniczonymi rolami |
 | Dodatkowe istniejące Forecast Library i kompatybilność snapshotu |61/61 PASS,0 skip |
 | Istniejąca kolejka, worker, progresywne przygotowanie i kontrakt trasy |38/38 PASS,0 skip |
 | Ścisłe typy rzeczywiście zmienionych modułów i zależności |PASS |

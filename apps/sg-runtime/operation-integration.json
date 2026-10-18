@@ -295,11 +295,11 @@
     "taskId": "SG2-E1-DELEGATED-FORECAST-DELIVERY-20261018",
     "scope": "ISOLATED_NATIVE_API_PRIVATE_DISPATCH_TO_SHARED_QUEUE",
     "platformVersion": "1.11.0",
-    "sourceSha": "c2d7fc7379d9f43eb40129a6d9df3ecbcb4b7190",
+    "sourceSha": "9dffe9904e0db7f1fd2a6c502afbe8cb3e8e0ea1",
     "privateBoundary": "prisma/private-store/004-forecast-dispatch.sql",
     "privateBoundaryDigest": "4d506720351bf0f2bf1b12ef5e634acde894a98c58b64b41881ff59e13a3ae5c",
     "sourceBoundary": "prisma-market-data/private-write/001-forecast-queue.sql",
-    "sourceBoundaryDigest": "61c33524110b3a218a6c68e07cab644eea81632725a22b59ac9d5851069b7e67",
+    "sourceBoundaryDigest": "c044c43cee8f7fafb9ef493cae62f0dde1dbed90114847254853028308193073",
     "sourceId": "sg2.forecast.queue",
     "originalQueueReused": true,
     "originalSnapshotCompatibilityPolicyReused": true,
@@ -320,6 +320,8 @@
       "READ_PORT_MISSING_SOURCE_PROVENANCE_STAYS_ABSENT",
       "PRIVATE_JOB_STATUS_AND_BROWSER_REQUEST_PARITY_PENDING",
       "CONTROLLED_DEVELOPMENT_THEN_STAGING_RELEASE_PENDING"
-    ]
+    ],
+    "initialSourceSha": "c2d7fc7379d9f43eb40129a6d9df3ecbcb4b7190",
+    "readonlyProjectionAndColumnGrantDriftTested": true
   }
 }
