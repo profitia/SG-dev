@@ -35,8 +35,8 @@ test('SRM imports the exact optional external control source without adopting a 
   const sdk=await import('@profitia/platform-contracts/external-call')
   const accepted=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))).externalCallSourceCompatibility
   assert.equal(accepted.platformVersion,'1.13.0')
-  assert.equal(accepted.producer.sourceSha,'a18845a8f30d2c2e367b1e7b657078507003e0ae')
-  assert.equal(accepted.sourceDigest,'39303e3afef8d7657c0a82cac13d43e5bf2c4df36b6e97a78a8cbb5008a7a98a')
+  assert.equal(accepted.producer.sourceSha,'1066119a1c1fde29c50b2c627e068f14378441f8')
+  assert.equal(accepted.sourceDigest,'cd49ee2c113202178870da20076a7c401e0aede44229dc2102d142c2f49cb431')
   assert.equal(await sdk.externalCallSourceDigest(),accepted.sourceDigest)
   assert.equal(await sdk.externalCallSchemaDigest(),accepted.schemaDigest)
   assert.deepEqual(sdk.EXTERNAL_CALL_CONTRACT,{id:'profitia.external-call',version:'1.0.0',unit:'UPSTREAM_ATTEMPT_ADMISSION'})
