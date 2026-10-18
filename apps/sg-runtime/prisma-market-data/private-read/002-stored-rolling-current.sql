@@ -182,9 +182,14 @@ SET search_path=pg_catalog,pg_temp AS $period_metadata$
       AND jsonb_typeof(value #> '{uncertaintyBand,sampleCount}')='number'
       AND value #>> '{uncertaintyBand,calibrationStatus}' IN('CALIBRATED','INSUFFICIENT_SAMPLE','NOT_AVAILABLE')
       AND value #>> '{uncertaintyBand,calibrationMethod}' IN('EMPIRICAL_RESIDUAL_QUANTILES_HF7','NAIVE_RANDOM_WALK_INNOVATION_RMS_NORMAL',
-        'STATSMODELS_ETS_SIMULATION','STATSMODELS_DAMPED_HOLT_SIMULATION')
+        'STATSMODELS_ETS_SIMULATION','STATSMODELS_DAMPED_HOLT_SIMULATION','STATSMODELS_ARIMA_FORECAST_DISTRIBUTION')
       AND value #>> '{uncertaintyBand,calibrationVersion}' IN('empirical-exact-residual-quantiles-v1','naive-random-walk-innovation-rms-normal-v1',
-        'statsmodels-ets-simulation-seed-1729-r1000-v1','statsmodels-damped-holt-simulation-seed-1729-r1000-v1')
+        'statsmodels-ets-simulation-seed-1729-r1000-v1','statsmodels-damped-holt-simulation-seed-1729-r1000-v1','statsmodels-arima-conf-int-alpha-0.2-v1')
+      AND (value #>> '{uncertaintyBand,calibrationMethod}'<>'STATSMODELS_ARIMA_FORECAST_DISTRIBUTION'
+        AND value #>> '{uncertaintyBand,calibrationVersion}'<>'statsmodels-arima-conf-int-alpha-0.2-v1'
+        OR model='arima' AND value #>> '{uncertaintyBand,source}'='MODEL_NATIVE_SHORT_HISTORY'
+          AND value #>> '{uncertaintyBand,calibrationMethod}'='STATSMODELS_ARIMA_FORECAST_DISTRIBUTION'
+          AND value #>> '{uncertaintyBand,calibrationVersion}'='statsmodels-arima-conf-int-alpha-0.2-v1')
       AND (value #> '{uncertaintyBand,reasonCode}'='null'::jsonb
         OR value #>> '{uncertaintyBand,reasonCode}' IN('INSUFFICIENT_EXACT_RESIDUALS','INSUFFICIENT_BAND_HISTORY','NON_FINITE_MODEL_NATIVE_SCALE')
         OR value #>> '{uncertaintyBand,reasonCode}' LIKE 'MODEL_NATIVE_INTERVAL_FAILED:%')
@@ -279,9 +284,9 @@ SET search_path=pg_catalog,pg_temp AS $verification_metadata$
         AND jsonb_typeof(value #> '{uncertaintyBand,sampleCount}')='number'
         AND value #>> '{uncertaintyBand,calibrationStatus}' IN('CALIBRATED','INSUFFICIENT_SAMPLE','NOT_AVAILABLE')
         AND value #>> '{uncertaintyBand,calibrationMethod}' IN('EMPIRICAL_RESIDUAL_QUANTILES_HF7','NAIVE_RANDOM_WALK_INNOVATION_RMS_NORMAL',
-          'STATSMODELS_ETS_SIMULATION','STATSMODELS_DAMPED_HOLT_SIMULATION')
+          'STATSMODELS_ETS_SIMULATION','STATSMODELS_DAMPED_HOLT_SIMULATION','STATSMODELS_ARIMA_FORECAST_DISTRIBUTION')
         AND value #>> '{uncertaintyBand,calibrationVersion}' IN('empirical-exact-residual-quantiles-v1','naive-random-walk-innovation-rms-normal-v1',
-          'statsmodels-ets-simulation-seed-1729-r1000-v1','statsmodels-damped-holt-simulation-seed-1729-r1000-v1')
+          'statsmodels-ets-simulation-seed-1729-r1000-v1','statsmodels-damped-holt-simulation-seed-1729-r1000-v1','statsmodels-arima-conf-int-alpha-0.2-v1')
         AND (value #> '{uncertaintyBand,reasonCode}'='null'::jsonb
           OR value #>> '{uncertaintyBand,reasonCode}' IN('INSUFFICIENT_EXACT_RESIDUALS','INSUFFICIENT_BAND_HISTORY','NON_FINITE_MODEL_NATIVE_SCALE')
           OR value #>> '{uncertaintyBand,reasonCode}' LIKE 'MODEL_NATIVE_INTERVAL_FAILED:%')

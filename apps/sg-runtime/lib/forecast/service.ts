@@ -2707,14 +2707,27 @@ export type ForecastCurrentReadClient = {
   readonly forecastCurrentRun: Pick<PrismaClient['forecastCurrentRun'], 'findFirst'>
 }
 
-export type ForecastCurrentReadDependencies = {
-  prisma: ForecastCurrentReadClient
+export type ForecastCurrentReadDependencies =
+  | { prisma: ForecastCurrentReadClient; projection?: never }
+  | { prisma: Prisma.TransactionClient; projection: 'STORED_SHARED' }
+
+/** Explicit projection reads use the SAME genuine caller transaction. A
+ * schema-qualified generated model cannot be redirected with search_path. */
+function storedCurrentProjectionTransaction(dependencies?: ForecastCurrentReadDependencies) {
+  if (dependencies?.projection === undefined) return null
+  const client = dependencies.prisma
+  if (dependencies.projection !== 'STORED_SHARED' || !client || '$transaction' in client
+    || typeof client.$queryRawUnsafe !== 'function' || typeof client.$executeRawUnsafe !== 'function') {
+    throw new TypeError('A live stored Current projection transaction is required')
+  }
+  return client
 }
 
 export async function readCurrentRunFromPrisma(
   key: ForecastCacheLookupKey,
   dependencies?: ForecastCurrentReadDependencies,
 ): Promise<PersistedCurrentArtifact | null> {
+  const projection = storedCurrentProjectionTransaction(dependencies)
   const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
@@ -2772,6 +2785,21 @@ export async function readCurrentRunFromPrisma(
   let run: PersistedCurrentRunRecord | null
 
   try {
+    if (projection) {
+      const records = await projection.$queryRawUnsafe<Array<Omit<PersistedCurrentRunRecord,'points'> & {id:string}>>(`SELECT
+        r.id,r."seriesId",r."modelId",r."displayName",r.description,r."targetBasis"::text AS "targetBasis",r."methodVersion",
+        r."inputSource",r."inputRunId",r."historyFingerprint",r.frequency,r."trainingWindowPolicyId",r."effectiveTrainingPolicyId",
+        r."historyStartAt",r."historyEndAt",r."observationCount",r."forecastOriginAt",r."runtimeSeconds"
+        FROM profitia_forecast_read.forecast_current_runs r WHERE r."seriesId"=$1 AND r."inputSource"=$2
+          AND r."historyFingerprint"=$3 AND r."targetBasis"::text=$4 AND r."methodId"=$5 AND r."modelId"=$6
+          AND r."methodVersion"=$7 AND r.frequency=$8 AND r."trainingWindowPolicyId"=$9 AND r."effectiveTrainingPolicyId"=$10 LIMIT 2`,
+        key.seriesId,key.inputSource,key.historyFingerprint,key.targetBasis,key.methodId,key.modelId,key.methodVersion,
+        key.frequencyIdentity,key.trainingWindowPolicyId,key.effectiveTrainingPolicyId)
+      if (records.length > 1) throw new Error('Stored Current identity is not unique')
+      run = records.length ? { ...records[0], points: await projection.$queryRawUnsafe<PersistedCurrentRunPointRecord[]>(
+        `SELECT "horizonLabel","horizonSteps","forecastDate","forecastValue","metadataJson","failureReason"
+          FROM profitia_forecast_read.forecast_current_points WHERE "runId"=$1 ORDER BY "horizonSteps","forecastDate"`, records[0].id) } : null
+    } else {
     run = await prisma.forecastCurrentRun.findFirst({
       where: {
         ...where,
@@ -2780,8 +2808,9 @@ export async function readCurrentRunFromPrisma(
       },
       select,
     }) as PersistedCurrentRunRecord | null
+    }
   } catch (error) {
-    if (!isMissingCurrentTrainingPolicyColumnError(error)) {
+    if (projection || !isMissingCurrentTrainingPolicyColumnError(error)) {
       throw error
     }
 
@@ -3482,6 +3511,7 @@ export async function readLatestCurrentRunFromPrisma(
   key: ForecastPreparedLookupKey,
   dependencies?: ForecastCurrentReadDependencies,
 ): Promise<PersistedCurrentArtifact | null> {
+  const projection = storedCurrentProjectionTransaction(dependencies)
   const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
@@ -3495,6 +3525,14 @@ export async function readLatestCurrentRunFromPrisma(
   let latest: { inputSource: string, historyFingerprint: string } | null
 
   try {
+    if (projection) {
+      const rows = await projection.$queryRawUnsafe<Array<{inputSource:string;historyFingerprint:string}>>(`SELECT "inputSource","historyFingerprint"
+        FROM profitia_forecast_read.forecast_current_runs WHERE "seriesId"=$1 AND "targetBasis"::text=$2 AND "methodId"=$3
+          AND "modelId"=$4 AND "methodVersion"=$5 AND frequency=$6 AND "trainingWindowPolicyId"=$7
+          AND "effectiveTrainingPolicyId"=$8 AND status='AVAILABLE' ORDER BY "updatedAt" DESC LIMIT 1`,
+        key.seriesId,key.targetBasis,key.methodId,key.modelId,key.methodVersion,key.frequencyIdentity,key.trainingWindowPolicyId,key.effectiveTrainingPolicyId)
+      latest = rows[0] ?? null
+    } else {
     latest = await prisma.forecastCurrentRun.findFirst({
       where: {
         seriesId: key.seriesId,
@@ -3510,8 +3548,9 @@ export async function readLatestCurrentRunFromPrisma(
       select,
       orderBy: { updatedAt: 'desc' },
     })
+    }
   } catch (error) {
-    if (!isMissingCurrentTrainingPolicyColumnError(error)) {
+    if (projection || !isMissingCurrentTrainingPolicyColumnError(error)) {
       throw error
     }
 

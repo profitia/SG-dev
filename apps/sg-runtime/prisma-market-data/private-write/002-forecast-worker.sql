@@ -77,7 +77,7 @@ BEGIN
      AND project_id=i.project_id AND branch_id=i.branch_id AND schema_digest='596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304')
    OR NOT EXISTS(SELECT 1 FROM profitia_forecast_read.installation WHERE singleton AND database_name=current_database()
      AND project_id=i.project_id AND branch_id=i.branch_id AND schema_version='3.0.2'
-     AND schema_digest='98d771788def50d39c305e466696ab5da6ab8a3c604bc0b27889a98fef4fae38')
+     AND schema_digest='b3e24b43254c6ec8ae25dc1d9ec7da5e946c472510f3bdd81355760665b881ee')
    OR EXISTS(SELECT 1 FROM pg_namespace n WHERE n.nspname NOT IN('pg_catalog','information_schema')
      AND n.nspname NOT LIKE 'pg_toast%' AND n.nspname NOT LIKE 'pg_temp%' AND has_schema_privilege(session_user,n.oid,'CREATE'))
    OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace

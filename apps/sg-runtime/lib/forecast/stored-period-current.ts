@@ -39,8 +39,8 @@ export async function readStoredPeriodCurrent(
   const expectedHistoryFingerprint = buildForecastHistoryFingerprint(payload.history, cadence)
   const refuse = async (): Promise<never> => { throw new Error('Stored Current reads cannot use this execution port') }
   const service = createForecastLibraryService({
-    repository: { readCurrentRun: key => readCurrentRunFromPrisma(key, { prisma: transaction }),
-      readLatestCurrentRun: key => readLatestCurrentRunFromPrisma(key, { prisma: transaction }),
+    repository: { readCurrentRun: key => readCurrentRunFromPrisma(key, { prisma: transaction, projection: 'STORED_SHARED' }),
+      readLatestCurrentRun: key => readLatestCurrentRunFromPrisma(key, { prisma: transaction, projection: 'STORED_SHARED' }),
       writeCurrentRun: refuse, readVerificationRun: refuse, writeVerificationRun: refuse },
     bridge: { exportHistory: refuse, exportCurrent: refuse, exportVerification: refuse },
     resolveExactPreparedCapability: refuse, executePreparedCurrent: refuse,
