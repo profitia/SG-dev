@@ -2,6 +2,12 @@
 -- Define once as the controlled source owner. Runtime fencing is a separate,
 -- explicit call by the EXISTING table owner; this never transfers ownership.
 -- No role, application, grant, installation receipt or live migration is seeded.
+-- Prerequisite, applied by EACH existing read projection owner: grant this
+-- NOLOGIN source owner SELECT on its installation metadata and an explicit
+-- SELECT RLS policy TO profitia_ingestion_owner USING
+-- (current_user='profitia_ingestion_owner'). This does not grant the source
+-- login access to receipts or replace the separate read login in those receipts.
+-- Missing metadata visibility fails closed in runtime_descriptor().
 DO $owner$ BEGIN
   IF current_user<>'profitia_ingestion_owner' OR NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=current_user
     AND NOT(rolcanlogin OR rolinherit OR rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication)
