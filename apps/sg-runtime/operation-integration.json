@@ -65,7 +65,7 @@
     "sql002Digest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
     "sql003Digest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
     "accessStoreSourceDigest": "a4bfb07619b384a4098d086f4f80da480c008446bafca7b23d8b56bad9c40a42",
-    "privateHostSourceDigest": "da65bca42c32094b28d3508c12c7ffb609ae66afc80f41ad76608f3c336d3433",
+    "privateHostSourceDigest": "4b54049ee49b3324d04095808fe0df5cbfeeb3d5fdaacd66ad2afe90f6562991",
     "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246"
   },
   "supplierSummary": {
@@ -200,10 +200,44 @@
     "productDeploymentPerformed": false,
     "remaining": [
       "NON_DAILY_STORED_SOURCE_PROVENANCE",
-      "VERIFICATION",
       "PREPARATION_AND_JOBS",
       "DEVELOPMENT_AND_STAGING_RELEASE",
       "LIVE_CLERK_AND_PRISMA_TLS"
     ]
+  },
+  "forecastVerification": {
+    "taskId": "SG2-E1-STORED-FORECAST-VERIFICATION-20261018",
+    "operation": "forecast.read",
+    "moduleId": "benchmark",
+    "feature": "forecast",
+    "api": "GET /api/benchmark/forecast/verification",
+    "nativeDispatcher": "lib/forecast/verification-operation-handlers.ts",
+    "sourceReader": "lib/forecast/stored-verification-read.ts",
+    "projectionVersion": "sg2-stored-verification-v1",
+    "sourceSchemaVersion": "3.0.0",
+    "sourceSql": "prisma-market-data/private-read/002-stored-rolling-current.sql",
+    "sourceSqlDigest": "470fab978fb6cccd1950a104749591b39fa272a63eb2b8a8605dd8b57c5a5069",
+    "scope": "ORIGINAL_PREPARED_FULL_FAST_RECENT_DAILY_ROLLING_AND_ADMITTED_PERIOD",
+    "defaultScope": "FAST",
+    "identity": "FULL_CANONICAL_HISTORY_AND_ORIGINAL_ROLLING_TRAINING_PREFIX_PROOF",
+    "statisticalAlgorithmChanged": false,
+    "sourceSqlInstalled": false,
+    "sourceRoleProvisioned": false,
+    "runtimeSourceConfigured": false,
+    "productDeploymentPerformed": false,
+    "remaining": [
+      "NATIVE_CAPABILITY_READINESS_ADOPTION",
+      "NON_DAILY_RETAINED_PROVENANCE",
+      "PREPARATION_AND_JOBS",
+      "DEVELOPMENT_AND_STAGING_RELEASE",
+      "LIVE_CLERK_AND_PRISMA_TLS"
+    ],
+    "sharedParameterCompatibility": {
+      "taskId": "SG2-E1-FORECAST-TREND-PARAMETER-20261018",
+      "pullRequest": 466,
+      "sourceSha": "39daae3096639d65934fdcd47e3ecdba665e4f35",
+      "mergeSha": "68c6afa017d6ae2b4c6ab9edc9e1fb01380733ae",
+      "oneSharedFiniteParameterValidator": true
+    }
   }
 }

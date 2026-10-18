@@ -1,4 +1,5 @@
-import type { PrismaClient } from '@/generated/market-data-client'
+import type { PrismaClient, Prisma } from '@/generated/market-data-client'
+import type { BenchmarkHistoricalSeriesResult } from '@/lib/benchmark/contracts'
 import { BenchmarkAppError } from '@/lib/benchmark/errors'
 import { readStoredMarketHistory } from '@/lib/market-data/stored-read'
 import { normalizeForecastSourceFrequency } from './cadence'
@@ -19,16 +20,16 @@ const unavailable = () => new BenchmarkAppError('STORED_FORECAST_SOURCE_UNAVAILA
 /** Genuine generated ORM against a closed read view. History and artifact share
  * one bounded, repeatable, read-only source transaction. No provider, compute,
  * Python, file, job, private-store or mutating fallback is invoked. */
-export function createStoredCurrentForecastReader(prisma: Pick<PrismaClient, '$transaction'>, input: StoredForecastBinding) {
+export function createStoredForecastSourceReader(prisma: Pick<PrismaClient, '$transaction'>, input: StoredForecastBinding) {
   const binding = Object.freeze({ ...input })
   if (!['schemaDigest', 'marketSchemaDigest'].every(key => /^[a-f0-9]{64}$/.test(binding[key as keyof StoredForecastBinding]))
     || !['projectId', 'branchId', 'databaseName', 'role'].every(key => typeof binding[key as keyof StoredForecastBinding] === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(binding[key as keyof StoredForecastBinding]))
     || [OWNER, 'profitia_market_read_owner'].includes(binding.role)) throw new TypeError('Explicit stored forecast binding required')
 
-  return async (value: ForecastCurrentSelectionValue): Promise<StoredCurrentForecastResult> => {
-    const parsed = ForecastCurrentSelection.safeParse(value)
-    if (!parsed.success) throw new BenchmarkAppError('VALIDATION_ERROR', 'Invalid stored forecast selection.', 400)
-    const selection = parsed.data
+  return async function readSource<T>(
+    seriesId: string,
+    work: (transaction: Prisma.TransactionClient, history: BenchmarkHistoricalSeriesResult | null) => Promise<T>,
+  ): Promise<T> {
     try {
       return await prisma.$transaction(async transaction => {
         await transaction.$executeRawUnsafe('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY')
@@ -51,23 +52,27 @@ export function createStoredCurrentForecastReader(prisma: Pick<PrismaClient, '$t
           (SELECT count(*)::int FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE
             (n.nspname='profitia_forecast_read' AND c.relowner::pg_catalog.regrole::text='profitia_forecast_read_owner' AND
               ((c.relname='installation' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity)
-              OR(c.relname IN('rolling_daily_current_forecast_snapshots','forecast_current_runs','forecast_current_points') AND c.relkind='v' AND 'security_barrier=true'=ANY(c.reloptions))))
+              OR(c.relname IN('rolling_daily_current_forecast_snapshots','forecast_current_runs','forecast_current_points','forecast_verification_runs','forecast_verification_metrics','forecast_verification_points','rolling_daily_verification_records','rolling_daily_maintenance_state','forecast_current_states','forecast_verification_states') AND c.relkind='v' AND 'security_barrier=true'=ANY(c.reloptions))))
             OR(n.nspname='profitia_market_read' AND c.relname IN('series','observations') AND c.relkind='v'
               AND c.relowner::pg_catalog.regrole::text='profitia_market_read_owner' AND 'security_barrier=true'=ANY(c.reloptions))) AS controlled_objects,
           (SELECT count(*)::int FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
             JOIN pg_catalog.pg_language l ON l.oid=p.prolang WHERE n.nspname='profitia_forecast_read'
-            AND p.proname IN('pick_fields','public_model_parameters','project_payload','project_period_metadata') AND NOT p.prosecdef AND p.provolatile='i'
+            AND p.proname IN('pick_fields','public_model_parameters','project_payload','project_period_metadata','project_verification_metadata','project_verification_failures') AND NOT p.prosecdef AND p.provolatile='i'
             AND p.proowner::pg_catalog.regrole::text='profitia_forecast_read_owner' AND l.lanname='sql'
             AND pg_catalog.has_function_privilege(current_user,p.oid,'EXECUTE')) AS controlled_helpers,
           (SELECT array_agg(e.enumlabel::text ORDER BY e.enumsortorder) FROM pg_catalog.pg_enum e
             JOIN pg_catalog.pg_type t ON t.oid=e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace
             WHERE n.nspname='profitia_forecast_read' AND t.typname='ForecastTargetBasis'
             AND t.typowner::pg_catalog.regrole::text='profitia_forecast_read_owner') AS target_basis_values,
+          (SELECT array_agg(e.enumlabel::text ORDER BY e.enumsortorder) FROM pg_catalog.pg_enum e
+            JOIN pg_catalog.pg_type t ON t.oid=e.enumtypid JOIN pg_catalog.pg_namespace n ON n.oid=t.typnamespace
+            WHERE n.nspname='profitia_forecast_read' AND t.typname='RollingDailyVerificationMaturityStatus'
+            AND t.typowner::pg_catalog.regrole::text='profitia_forecast_read_owner') AS maturity_values,
           EXISTS(SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
             WHERE n.nspname NOT IN('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%'
             AND c.relkind IN('r','p','v','m','f') AND (pg_catalog.has_table_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
               OR pg_catalog.has_any_column_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))
-            AND NOT((n.nspname='profitia_forecast_read' AND c.relname IN('installation','rolling_daily_current_forecast_snapshots','forecast_current_runs','forecast_current_points'))
+            AND NOT((n.nspname='profitia_forecast_read' AND c.relname IN('installation','rolling_daily_current_forecast_snapshots','forecast_current_runs','forecast_current_points','forecast_verification_runs','forecast_verification_metrics','forecast_verification_points','rolling_daily_verification_records','rolling_daily_maintenance_state','forecast_current_states','forecast_verification_states'))
               OR(n.nspname='profitia_market_read' AND c.relname IN('series','observations')))) AS other_table_access,
           EXISTS(SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
             WHERE n.nspname IN('profitia_forecast_read','profitia_market_read') AND c.relkind IN('r','p','v','m','f')
@@ -81,8 +86,9 @@ export function createStoredCurrentForecastReader(prisma: Pick<PrismaClient, '$t
         if (records.length !== 1 || !actual || actual.role !== binding.role || actual.login !== binding.role
           || actual.database_name !== binding.databaseName || actual.read_only !== 'on' || actual.isolation !== 'repeatable read'
           || actual.rolcanlogin !== true || actual.rolconnlimit !== 1 || actual.schema_owner !== OWNER
-          || actual.controlled_owners !== 2 || actual.controlled_objects !== 6 || actual.controlled_helpers !== 4
+          || actual.controlled_owners !== 2 || actual.controlled_objects !== 13 || actual.controlled_helpers !== 6
           || !Array.isArray(actual.target_basis_values) || actual.target_basis_values.join(',') !== 'MONTHLY_AVERAGE,END_OF_PERIOD,POINT_IN_TIME'
+          || !Array.isArray(actual.maturity_values) || actual.maturity_values.join(',') !== 'MATURED,NOT_YET_MATURED'
           || ['rolreplication', 'rolsuper', 'rolbypassrls', 'rolinherit', 'rolcreatedb', 'rolcreaterole', 'member_of_role',
             'database_create', 'public_create', 'market_create', 'forecast_create', 'other_table_access', 'source_write', 'definer_access'].some(key => actual[key] !== false)) throw unavailable()
 
@@ -91,35 +97,20 @@ export function createStoredCurrentForecastReader(prisma: Pick<PrismaClient, '$t
           database_name: string; runtime_role: string; source_ref: string; expires_at: Date
         }>>('SELECT schema_version,schema_digest,market_schema_digest,project_id,branch_id,database_name,runtime_role::text,source_ref,expires_at FROM profitia_forecast_read.installation WHERE singleton')
         const receipt = receipts[0]
-        if (receipts.length !== 1 || !receipt || receipt.schema_version !== '2.0.0' || receipt.schema_digest !== binding.schemaDigest
+        if (receipts.length !== 1 || !receipt || receipt.schema_version !== '3.0.0' || receipt.schema_digest !== binding.schemaDigest
           || receipt.market_schema_digest !== binding.marketSchemaDigest || receipt.project_id !== binding.projectId
           || receipt.branch_id !== binding.branchId || receipt.database_name !== binding.databaseName || receipt.runtime_role !== binding.role
           || typeof receipt.source_ref !== 'string' || !receipt.source_ref.length || receipt.source_ref.length > 256
           || /gh[pousr]_|sk_(?:live|test)_|postgres(?:ql)?:\/\/|Bearer\s/i.test(receipt.source_ref)
           || !(receipt.expires_at instanceof Date) || receipt.expires_at.getTime() <= Date.now()) throw unavailable()
 
-        let history
-        try { history = (await readStoredMarketHistory(transaction, selection.seriesId)).history }
+        let history: BenchmarkHistoricalSeriesResult | null
+        try { history = (await readStoredMarketHistory(transaction, seriesId)).history }
         catch (error) {
-          if (error instanceof BenchmarkAppError && error.code === 'STORED_HISTORY_NOT_AVAILABLE') return selection.targetBasis === 'POINT_IN_TIME'
-            ? currentForecastUnavailable(selection, 'MISS') : periodCurrentUnavailable(selection)
-          throw error
+          if (error instanceof BenchmarkAppError && error.code === 'STORED_HISTORY_NOT_AVAILABLE') history = null
+          else throw error
         }
-        if (selection.targetBasis !== 'POINT_IN_TIME') {
-          const result = await readStoredPeriodCurrent(transaction, history, selection)
-          await validatePublicForecastCurrent(result, selection)
-          if (receipt.expires_at.getTime() <= Date.now()) throw unavailable()
-          return result
-        }
-        if (normalizeForecastSourceFrequency(history.frequency) !== 'DAILY') return currentForecastUnavailable(selection, 'MISS')
-        const fingerprint = buildRollingDailyHistoryFingerprint({ seriesId: selection.seriesId, displayName: history.displayName,
-          description: history.displayName, frequency: 'DAILY', source: history.source, points: history.historical })
-        const snapshot = await readRollingDailyCurrentForecastSnapshot({ seriesId: selection.seriesId, modelId: selection.modelId,
-          sourceHistoryFingerprint: fingerprint }, { prisma: transaction })
-        const result = snapshot.status === 'HIT' ? snapshot.payload : currentForecastUnavailable(selection, snapshot.status)
-        if (snapshot.status === 'HIT' && (snapshot.payload.audit.sourceHistoryFingerprint !== fingerprint
-          || snapshot.payload.audit.inputSource !== ROLLING_DAILY_INPUT_SOURCE)) throw unavailable()
-        await validatePublicForecastCurrent(result, selection)
+        const result = await work(transaction, history)
         if (receipt.expires_at.getTime() <= Date.now()) throw unavailable()
         return result
       }, { timeout: 5000, maxWait: 3000 })
@@ -127,5 +118,33 @@ export function createStoredCurrentForecastReader(prisma: Pick<PrismaClient, '$t
       if (error instanceof BenchmarkAppError) throw error
       throw unavailable()
     }
+  }
+}
+
+export function createStoredCurrentForecastReader(prisma: Pick<PrismaClient, '$transaction'>, input: StoredForecastBinding) {
+  const readSource = createStoredForecastSourceReader(prisma, input)
+  return async (value: ForecastCurrentSelectionValue): Promise<StoredCurrentForecastResult> => {
+    const parsed = ForecastCurrentSelection.safeParse(value)
+    if (!parsed.success) throw new BenchmarkAppError('VALIDATION_ERROR', 'Invalid stored forecast selection.', 400)
+    const selection = parsed.data
+    return readSource(selection.seriesId, async (transaction, history) => {
+      if (!history) return selection.targetBasis === 'POINT_IN_TIME'
+        ? currentForecastUnavailable(selection, 'MISS') : periodCurrentUnavailable(selection)
+      if (selection.targetBasis !== 'POINT_IN_TIME') {
+        const result = await readStoredPeriodCurrent(transaction, history, selection)
+        await validatePublicForecastCurrent(result, selection)
+        return result
+      }
+      if (normalizeForecastSourceFrequency(history.frequency) !== 'DAILY') return currentForecastUnavailable(selection, 'MISS')
+      const fingerprint = buildRollingDailyHistoryFingerprint({ seriesId: selection.seriesId, displayName: history.displayName,
+        description: history.displayName, frequency: 'DAILY', source: history.source, points: history.historical })
+      const snapshot = await readRollingDailyCurrentForecastSnapshot({ seriesId: selection.seriesId, modelId: selection.modelId,
+        sourceHistoryFingerprint: fingerprint }, { prisma: transaction })
+      const result = snapshot.status === 'HIT' ? snapshot.payload : currentForecastUnavailable(selection, snapshot.status)
+      if (snapshot.status === 'HIT' && (snapshot.payload.audit.sourceHistoryFingerprint !== fingerprint
+        || snapshot.payload.audit.inputSource !== ROLLING_DAILY_INPUT_SOURCE)) throw unavailable()
+      await validatePublicForecastCurrent(result, selection)
+      return result
+    })
   }
 }

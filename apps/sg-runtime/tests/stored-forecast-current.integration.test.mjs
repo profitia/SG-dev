@@ -1,3 +1,4 @@
+import { createEmptyVerificationSourceFixture, grantVerificationProjectionSourceColumns } from './fixtures/stored-forecast-verification-source.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -111,7 +112,7 @@ test('actual generated forecast ORM reads a closed source view with canonical id
     const url = new URL(process.env.SG2_OPERATION_TEST_OWNER_URL); url.pathname = `/${DATABASE}`
     owner = new pg.Client({ connectionString: url.toString() }); await owner.connect()
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db, DATABASE)
-    await owner.query('DROP SCHEMA IF EXISTS profitia_forecast_read CASCADE; DROP SCHEMA IF EXISTS profitia_market_read CASCADE; DROP TABLE IF EXISTS public.forecast_current_points,public.forecast_current_runs,public.rolling_daily_current_forecast_snapshots,public.market_observations,public.market_series,public.synthetic_private CASCADE; DROP TYPE IF EXISTS public."ForecastTargetBasis"')
+    await owner.query('DROP SCHEMA IF EXISTS profitia_forecast_read CASCADE; DROP SCHEMA IF EXISTS profitia_market_read CASCADE; DROP TABLE IF EXISTS public.forecast_verification_points,public.forecast_verification_metrics,public.forecast_verification_runs,public.rolling_daily_verification_records,public.rolling_daily_maintenance_state,public.forecast_current_points,public.forecast_current_runs,public.rolling_daily_current_forecast_snapshots,public.market_observations,public.market_series,public.synthetic_private CASCADE; DROP TYPE IF EXISTS public."ForecastTargetBasis"')
     await owner.query(`CREATE TYPE public."ForecastTargetBasis" AS ENUM('MONTHLY_AVERAGE','END_OF_PERIOD','POINT_IN_TIME');
       CREATE TABLE public.market_series("id" text,"providerCode" text,"providerSeriesId" text,"providerSeriesKey" text,"displayName" text,"frequency" text,"currency" text,"unit" text,"sourceLabel" text);
       CREATE TABLE public.market_observations("seriesId" text,"observedAt" timestamp,"value" numeric(24,8)); CREATE TABLE public.synthetic_private(secret text);
@@ -142,6 +143,8 @@ test('actual generated forecast ORM reads a closed source view with canonical id
         ON public.forecast_current_runs TO ${OWNER};
       GRANT SELECT(id,"runId","horizonLabel","horizonSteps","forecastDate","forecastValue","metadataJson","createdAt","updatedAt")
         ON public.forecast_current_points TO ${OWNER};`)
+    await createEmptyVerificationSourceFixture(owner)
+    await grantVerificationProjectionSourceColumns(owner,OWNER)
     for (const point of points) await owner.query('INSERT INTO public.market_observations VALUES($1,$2,$3)', ['daily', point.date, point.value])
     await owner.query('BEGIN'); await owner.query(`SET LOCAL ROLE ${MARKET_OWNER}`); await owner.query(marketSql)
     await owner.query("INSERT INTO profitia_market_read.installation VALUES(true,'1.0.0',$1,'isolated-forecast-project','isolated-forecast-branch',$2,$3,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')", [marketDigest, DATABASE, MARKET_ROLE]); await owner.query('COMMIT')
@@ -155,10 +158,10 @@ test('actual generated forecast ORM reads a closed source view with canonical id
       assert.equal((await owner.query("SELECT to_regnamespace('profitia_forecast_read')::text AS schema")).rows[0].schema, null)
     })
     await owner.query('BEGIN'); await owner.query(`SET LOCAL ROLE ${OWNER}`); await owner.query(sql)
-    await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'2.0.0',$1,$2,'isolated-forecast-project','isolated-forecast-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')", [digest, marketDigest, DATABASE, ROLE]); await owner.query('COMMIT')
+    await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.0',$1,$2,'isolated-forecast-project','isolated-forecast-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')", [digest, marketDigest, DATABASE, ROLE]); await owner.query('COMMIT')
     await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM ${OWNER},${MARKET_OWNER}; GRANT USAGE ON SCHEMA profitia_forecast_read TO ${ROLE};
       GRANT SELECT ON ALL TABLES IN SCHEMA profitia_forecast_read TO ${ROLE}; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_forecast_read TO ${ROLE};
-      GRANT USAGE ON TYPE profitia_forecast_read."ForecastTargetBasis" TO ${ROLE}`)
+      GRANT USAGE ON TYPE profitia_forecast_read."ForecastTargetBasis",profitia_forecast_read."RollingDailyVerificationMaturityStatus" TO ${ROLE}`)
     await owner.query(`INSERT INTO public.rolling_daily_current_forecast_snapshots("id","seriesId","inputSource","inputRunId","targetBasis","methodId","methodVersion","modelId", "trainingWindowPolicyId","effectiveTrainingPolicyId","sourceHistoryFingerprint","contractVersion","status","reasonCode","message","forecastOriginAt","sourceLatestObservationAt","payloadJson")
       VALUES('stored', $1,$2,$3,'POINT_IN_TIME',$4,$5,'naive',$6,$7,$8,'1','AVAILABLE',$3,$3,'2025-03-01','2025-03-01',$9::jsonb)`,
     [selection.seriesId, ROLLING_DAILY_INPUT_SOURCE, marker, ROLLING_DAILY_METHOD_ID, ROLLING_DAILY_METHOD_VERSION,
