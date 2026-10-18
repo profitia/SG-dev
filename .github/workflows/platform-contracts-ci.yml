@@ -4,56 +4,28 @@ on:
   pull_request:
     paths:
       - 'packages/platform-contracts/**'
+      - 'packages/srm-xray/**'
       - 'apps/architecture-lab/**'
       - 'apps/dashboard-preview/**'
-      - 'apps/sg-runtime/development-integration.json'
-      - 'apps/sg-runtime/tests/platform-contract.test.mjs'
-      - 'apps/sg-runtime/package.json'
-      - 'apps/sg-runtime/package-lock.json'
-      - 'apps/sg-runtime/operation-integration.json'
-      - 'apps/sg-runtime/lib/benchmark/**'
-      - 'apps/sg-runtime/app/api/benchmark/selection/**'
-      - 'apps/sg-runtime/tests/operation-context*'
-      - 'apps/sg-runtime/tests/fixtures/operation-schema.sql'
-      - 'apps/srm/development-integration.json'
-      - 'apps/srm/scripts/platform-contract.test.mjs'
-      - 'apps/srm/package.json'
-      - 'apps/srm/package-lock.json'
-      - 'apps/srm/operation-integration.json'
-      - 'apps/srm/src/server/db.ts'
-      - 'apps/srm/src/server/report-data.ts'
-      - 'apps/srm/src/server/operation-report-data.ts'
-      - 'apps/srm/scripts/operation-context*'
+      - 'apps/sg-runtime/**'
+      - 'apps/srm/**'
       - 'Canon/registries/development-workspaces-v1.json'
       - 'Canon/registries/profitia-projects-v1.json'
+      - 'Canon/registries/architecture-environment-topology-v1.json'
       - '.github/workflows/platform-contracts-ci.yml'
       - 'scripts/governance/controlled-package-ci*'
   push:
     branches: [main]
     paths:
       - 'packages/platform-contracts/**'
+      - 'packages/srm-xray/**'
       - 'apps/architecture-lab/**'
       - 'apps/dashboard-preview/**'
-      - 'apps/sg-runtime/development-integration.json'
-      - 'apps/sg-runtime/tests/platform-contract.test.mjs'
-      - 'apps/sg-runtime/package.json'
-      - 'apps/sg-runtime/package-lock.json'
-      - 'apps/sg-runtime/operation-integration.json'
-      - 'apps/sg-runtime/lib/benchmark/**'
-      - 'apps/sg-runtime/app/api/benchmark/selection/**'
-      - 'apps/sg-runtime/tests/operation-context*'
-      - 'apps/sg-runtime/tests/fixtures/operation-schema.sql'
-      - 'apps/srm/development-integration.json'
-      - 'apps/srm/scripts/platform-contract.test.mjs'
-      - 'apps/srm/package.json'
-      - 'apps/srm/package-lock.json'
-      - 'apps/srm/operation-integration.json'
-      - 'apps/srm/src/server/db.ts'
-      - 'apps/srm/src/server/report-data.ts'
-      - 'apps/srm/src/server/operation-report-data.ts'
-      - 'apps/srm/scripts/operation-context*'
+      - 'apps/sg-runtime/**'
+      - 'apps/srm/**'
       - 'Canon/registries/development-workspaces-v1.json'
       - 'Canon/registries/profitia-projects-v1.json'
+      - 'Canon/registries/architecture-environment-topology-v1.json'
       - '.github/workflows/platform-contracts-ci.yml'
       - 'scripts/governance/controlled-package-ci*'
   workflow_dispatch:
@@ -103,7 +75,7 @@ jobs:
       - name: Test contract and laboratory guards without credentials or database access
         run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs
       - name: Validate registered routing and workspace isolation
-        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/controlled-package-ci.test.mjs
+        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/controlled-package-ci.test.mjs scripts/governance/controlled-package-ci-path-coverage.test.mjs
 
   dashboard-source-regression:
     name: SG2 dashboard source regression
