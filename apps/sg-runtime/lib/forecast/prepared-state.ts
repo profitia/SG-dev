@@ -44,17 +44,66 @@ export type ForecastPreparedStateReadClient = {
   readonly rollingDailyVerificationRecord: Pick<MarketDataPrismaClient['rollingDailyVerificationRecord'], 'count'>
 }
 
-type PreparedHistoricalRun = {
+export type PreparedHistoricalRun = {
   status: string
   historyFingerprint: string
   frequency: string | null
   metrics?: Array<{ origins: number, expectedOrigins: number, failedOrigins: number }>
 }
 
-type PreparedRollingDailySnapshot = {
+export type PreparedRollingDailySnapshot = {
   status: string
   payloadJson: unknown
 }
+
+export type PreparedCurrentRun = {
+  status: string
+  historyFingerprint: string
+  frequency: string | null
+  points?: Array<{ forecastValue: unknown }>
+}
+
+export type PreparedPeriodStateKey = {
+  seriesId: string
+  modelId: string
+  targetBasis: 'MONTHLY_AVERAGE' | 'END_OF_PERIOD'
+  methodId: string
+  methodVersion: string
+  frequencies: readonly string[]
+}
+export type PreparedHistoricalStateKey = PreparedPeriodStateKey & {
+  trainingWindowPolicyId: string
+  effectiveTrainingPolicyId: string
+}
+export type PreparedRollingStateKey = {
+  seriesId: string
+  modelId: string
+  targetBasis: 'POINT_IN_TIME'
+  inputSource: string
+  methodId: string
+  methodVersion: string
+}
+export type PreparedRollingSnapshotKey = PreparedRollingStateKey & {
+  sourceHistoryFingerprint: string
+  trainingWindowPolicyId: string
+  effectiveTrainingPolicyId: string
+}
+export type PreparedRollingMaintenance = {
+  latestSourceHistoryFingerprint: string | null
+  latestSourceObservationAt: Date | string | null
+  lastProcessedOriginAt: Date | string | null
+  lastMaintenanceStatus: string | null
+}
+
+/** Scientific preparedness facts, not a generated ORM facade. No writer,
+ * provider, authority cache or implicit global dependency belongs to this port. */
+export type ForecastPreparedStateDataPort = Readonly<{
+  readLatestCurrent: (key: PreparedPeriodStateKey) => Promise<PreparedCurrentRun | null>
+  readLatestHistorical: (key: PreparedHistoricalStateKey) => Promise<PreparedHistoricalRun | null>
+  readRollingSnapshot: (key: PreparedRollingSnapshotKey) => Promise<PreparedRollingDailySnapshot | null>
+  readRollingMaintenance: (key: PreparedRollingStateKey) => Promise<PreparedRollingMaintenance | null>
+  countRollingVerification: (key: PreparedRollingStateKey) => Promise<number>
+}>
 
 async function mapWithConcurrency<T, R>(
   values: readonly T[],
@@ -308,6 +357,55 @@ export async function readForecastPreparedVariants(
     return []
   }
 
+  return readForecastPreparedVariantsFromPort(seriesId, history, createLegacyPrismaPreparedStatePort(prisma), { now: options.now })
+}
+
+/** Legacy generated models only. Native state projections require their own
+ * genuine data adapter; do not imitate these models over different views. */
+export function createLegacyPrismaPreparedStatePort(prisma: ForecastPreparedStateReadClient): ForecastPreparedStateDataPort {
+  const periodWhere = (key: PreparedPeriodStateKey) => ({
+    seriesId: key.seriesId, frequency: { in: [...key.frequencies] }, targetBasis: key.targetBasis,
+    methodId: key.methodId, methodVersion: key.methodVersion, modelId: key.modelId,
+  })
+  const port: ForecastPreparedStateDataPort = {
+    readLatestCurrent: key => prisma.forecastCurrentRun.findFirst({
+      where: periodWhere(key),
+      select: { status: true, historyFingerprint: true, frequency: true, points: { select: { forecastValue: true } } },
+      orderBy: { updatedAt: 'desc' },
+    }),
+    readLatestHistorical: key => findPreparedHistoricalVerificationRun(prisma, periodWhere(key), {
+      trainingWindowPolicyId: key.trainingWindowPolicyId, effectiveTrainingPolicyId: key.effectiveTrainingPolicyId,
+    }),
+    readRollingSnapshot: key => {
+      const { trainingWindowPolicyId, effectiveTrainingPolicyId, ...where } = key
+      return findPreparedRollingDailySnapshot(prisma, where, {
+        seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
+          ...where, trainingWindowPolicyId, effectiveTrainingPolicyId,
+        },
+      })
+    },
+    readRollingMaintenance: key => prisma.rollingDailyMaintenanceState.findUnique({
+      where: { seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: key },
+      select: { latestSourceHistoryFingerprint: true, latestSourceObservationAt: true, lastProcessedOriginAt: true, lastMaintenanceStatus: true },
+    }),
+    countRollingVerification: key => prisma.rollingDailyVerificationRecord.count({ where: key }),
+  }
+  return Object.freeze(port)
+}
+
+/** One existing canonical calculation over explicit read-only facts. It never
+ * resolves the legacy client, fetches a provider or starts preparation work. */
+export async function readForecastPreparedVariantsFromPort(
+  seriesId: string,
+  history: BenchmarkHistoricalSeriesResult,
+  port: ForecastPreparedStateDataPort,
+  options: { now?: Date } = {},
+): Promise<ForecastPreparedVariant[]> {
+  if (!port || !['readLatestCurrent','readLatestHistorical','readRollingSnapshot','readRollingMaintenance','countRollingVerification']
+    .every(key => typeof port[key as keyof ForecastPreparedStateDataPort] === 'function')) {
+    throw new TypeError('Explicit forecast preparedness data port required.')
+  }
+
   const sourceFrequency = normalizeForecastSourceFrequency(history.frequency)
   if (
     sourceFrequency !== 'DAILY'
@@ -387,41 +485,14 @@ export async function readForecastPreparedVariants(
         targetCadence,
         targetSemantics: identity.targetSemantics,
       })
-      const verificationWhere = {
-        seriesId,
-        frequency: { in: acceptedArtifactFrequencies },
-        targetBasis: candidate.targetBasis,
-        methodId: identity.methodId,
-        methodVersion: identity.methodVersion,
-        modelId,
-      } satisfies Prisma.ForecastVerificationRunWhereInput
+      const key: PreparedPeriodStateKey = {
+        seriesId, frequencies: acceptedArtifactFrequencies, targetBasis: candidate.targetBasis,
+        methodId: identity.methodId, methodVersion: identity.methodVersion, modelId,
+      }
       const [current, historical] = await Promise.all([
-        prisma.forecastCurrentRun.findFirst({
-          where: {
-            seriesId,
-            frequency: { in: acceptedArtifactFrequencies },
-            targetBasis: candidate.targetBasis,
-            methodId: identity.methodId,
-            methodVersion: identity.methodVersion,
-            modelId,
-          },
-          select: {
-            status: true,
-            historyFingerprint: true,
-            frequency: true,
-            points: {
-              select: {
-                forecastValue: true,
-              },
-            },
-          },
-          orderBy: { updatedAt: 'desc' },
-        }),
-        findPreparedHistoricalVerificationRun(
-          prisma,
-          verificationWhere,
-          fullVerificationCompatibility,
-        ),
+        port.readLatestCurrent(key),
+        port.readLatestHistorical({ ...key, trainingWindowPolicyId: fullVerificationCompatibility.trainingWindowPolicyId,
+          effectiveTrainingPolicyId: fullVerificationCompatibility.effectiveTrainingPolicyId }),
       ])
 
       return {
@@ -450,52 +521,15 @@ export async function readForecastPreparedVariants(
         targetCadence: 'DAILY',
         targetSemantics: identity.targetSemantics,
       })
-      const rollingSnapshotWhere = {
-        seriesId,
-        inputSource: ROLLING_DAILY_INPUT_SOURCE,
-        targetBasis: 'POINT_IN_TIME',
-        methodId: identity.methodId,
-        methodVersion: identity.methodVersion,
-        modelId,
-        sourceHistoryFingerprint: rollingCurrentFingerprint,
-      } satisfies Prisma.RollingDailyCurrentForecastSnapshotWhereInput
-      const rollingSnapshotUniqueWhere = {
-        seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
-          ...rollingSnapshotWhere,
-          trainingWindowPolicyId: rollingDailyCompatibility.trainingWindowPolicyId,
-          effectiveTrainingPolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId,
-        },
-      } satisfies Prisma.RollingDailyCurrentForecastSnapshotWhereUniqueInput
+      const key: PreparedRollingStateKey = {
+        seriesId, inputSource: ROLLING_DAILY_INPUT_SOURCE, targetBasis: 'POINT_IN_TIME',
+        methodId: identity.methodId, methodVersion: identity.methodVersion, modelId,
+      }
       const [snapshot, maintenance, verificationCount] = await Promise.all([
-        findPreparedRollingDailySnapshot(prisma, rollingSnapshotWhere, rollingSnapshotUniqueWhere),
-        prisma.rollingDailyMaintenanceState.findUnique({
-          where: {
-            seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: {
-              seriesId,
-              inputSource: ROLLING_DAILY_INPUT_SOURCE,
-              targetBasis: 'POINT_IN_TIME',
-              methodId: identity.methodId,
-              methodVersion: identity.methodVersion,
-              modelId,
-            },
-          },
-          select: {
-            latestSourceHistoryFingerprint: true,
-            latestSourceObservationAt: true,
-            lastProcessedOriginAt: true,
-            lastMaintenanceStatus: true,
-          },
-        }),
-        prisma.rollingDailyVerificationRecord.count({
-          where: {
-            seriesId,
-            inputSource: ROLLING_DAILY_INPUT_SOURCE,
-            targetBasis: 'POINT_IN_TIME',
-            methodId: identity.methodId,
-            methodVersion: identity.methodVersion,
-            modelId,
-          },
-        }),
+        port.readRollingSnapshot({ ...key, trainingWindowPolicyId: rollingDailyCompatibility.trainingWindowPolicyId,
+          effectiveTrainingPolicyId: rollingDailyCompatibility.effectiveTrainingPolicyId, sourceHistoryFingerprint: rollingCurrentFingerprint }),
+        port.readRollingMaintenance(key),
+        port.countRollingVerification(key),
       ])
       const snapshotFingerprint = (
         snapshot?.payloadJson as { audit?: { sourceHistoryFingerprint?: string | null } } | null
