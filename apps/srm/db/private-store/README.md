@@ -45,3 +45,46 @@ An operator must separately prove snapshot/recovery, record installation hashes,
 verify effective role/table privileges and keep applications disabled until the
 controlled release is functionally ready. Source tests do not prove cloud
 installation, browser login, all-entry coverage or Development/Staging release.
+
+## Optional named supplier interest — SQL003
+
+After accepted SQL002, a controlled installer may apply
+`003-named-supplier-interest.sql` only to the verified NEW private store while
+SRM is disabled. Record the exact SQL digest and accepted source SHA in
+`named_interest_installation`; grant the ordinary SRM runtime only the required
+SELECT/INSERT/UPDATE on the three existing user/interest tables and EXECUTE on
+`named_interest_descriptor()` and `named_interest_actor(uuid)`. This document and
+SQL source do not perform cloud grants, activation or a migration. Keep the
+original initializer and its eighteen source migrations unchanged.
+
+The authenticated adapter is explicit opt-in through
+`namedInterestBoundaryDigest`. Its `interest(selection)` method uses the existing
+`RECORD_INTEREST` continuation, original accepted actor/organization/NIP/request,
+current rights, same native transaction and canonical OUTCOME. It creates no
+second logical request quota unit. Replay authenticates the current parent and
+returns its existing phase status without executing the business writer again;
+it is not a new data delivery or a new physical write.
+
+There is one internal Profitia account ID. Existing SRM `users.id` remains a
+local surrogate scoped by organization; its authenticated subject key is
+`profitia-account:<internal account UUID>`. The same account in two organizations
+has distinct SRM surrogates. No Clerk subject/email is an ownership key and no
+core account is created by this adapter. Demo mappings and personal history are
+neither converted nor reassigned.
+
+Only `users`, `organization_supplier_interest` and `user_supplier_interest`
+leave their former CLOSED state. Current module/identity scope fences all three;
+personal rows additionally require the current account's own local mapping.
+Writes require the exact currently RESERVED `RECORD_INTEREST` phase, owned parent
+and NIP in that transaction. Identity and first-selection fields are immutable,
+selection times are database-stamped, and deletion/truncation is refused. The
+shared corporate catalog must already contain the company. A named user's
+choice never creates a global catalog placeholder; only the unchanged legacy
+path retains its existing placeholder behavior.
+
+`recordSupplierInterest` contains the common domain persistence behind both
+paths, taking an explicit client and actor key. Authentication/admission remains
+with the host and SQL fences. There is no fallback pool for the named path, no
+new audit writer and no HTTP endpoint or user-list UI adoption in this source
+increment. KYS and web identity remain CLOSED. A source acceptance test does not
+prove live directory, role, data, session or recovery readiness.

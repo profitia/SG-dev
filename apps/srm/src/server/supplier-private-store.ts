@@ -7,10 +7,12 @@ import { saveMgbiArchive } from './mgbi-archive'
 import { saveFinancialDocuments } from './financial-documents'
 import type { MgbiGeneralResult } from './mgbi-general'
 import type { MgbiFinancialResult } from './mgbi-financial'
+import { recordSupplierInterest } from './shared-catalog'
 import { readSupplierRequest } from './supplier-request-operation'
 import type { createSrmSupplierRequestContinuation, SupplierPrivatePhaseInput } from './supplier-request-continuation'
 
 export const SUPPLIER_PRIVATE_STORE_VERSION = 'srm-supplier-private-store-v1'
+export const NAMED_SUPPLIER_INTEREST_VERSION = 'srm-named-supplier-interest-v1'
 export const MAX_PRIVATE_SUPPLIER_RESULT_BYTES = 32 * 1024 * 1024
 type Continuation = ReturnType<typeof createSrmSupplierRequestContinuation>
 type Selection = Omit<SupplierPrivatePhaseInput, 'phaseId' | 'data'>
@@ -38,12 +40,13 @@ function capture<T>(input: T, keys: string[]): { value: T; digest: string } {
 /** Existing domain writers, one existing native transaction, no new pool,
  * queue, provider client, catalogue writer or demo-user identity. Acquisition
  * happens outside this adapter; the common host rechecks rights at each write. */
-export function createSrmSupplierPrivateStore(options: { continuation: Continuation; boundaryDigest: string }) {
+export function createSrmSupplierPrivateStore(options: { continuation: Continuation; boundaryDigest: string; namedInterestBoundaryDigest?: string }) {
   if (typeof window !== 'undefined' || !/^[a-f0-9]{64}$/.test(options.boundaryDigest)
+    || Object.hasOwn(options,'namedInterestBoundaryDigest') && !/^[a-f0-9]{64}$/.test(options.namedInterestBoundaryDigest ?? '')
     || typeof options.continuation?.run !== 'function') throw new TypeError('Explicit private business continuation required')
-  const { boundaryDigest } = options
+  const { boundaryDigest, namedInterestBoundaryDigest } = options
   const runContinuation = options.continuation.run.bind(options.continuation)
-  async function run(selection: Selection, phaseId: 'REGISTER_LOOKUP' | 'STORE_GENERAL' | 'STORE_FINANCIAL',
+  async function run(selection: Selection, phaseId: 'REGISTER_LOOKUP' | 'STORE_GENERAL' | 'STORE_FINANCIAL' | 'RECORD_INTEREST',
     body: General | Financial | null) {
     if (!selection || Object.getPrototypeOf(selection) !== Object.prototype
       || Object.keys(selection).sort().join(',') !== 'command,idempotencyKey,organisationId,request,requestId') return refuse()
@@ -52,7 +55,7 @@ export function createSrmSupplierPrivateStore(options: { continuation: Continuat
       idempotencyKey: selection.idempotencyKey, request: selection.request, command }
     const captured = body === null ? { value: null, digest: operationPayloadDigest(null) }
       : capture(body, phaseId === 'STORE_GENERAL' ? ['section','errorCode','rawResponse'] : ['section','errorCode','facts','sourceData','rawResponse'])
-    const data: Json = { version: SUPPLIER_PRIVATE_STORE_VERSION, nip: command.nip, bodyDigest: captured.digest }
+    const data: Json = { version: phaseId === 'RECORD_INTEREST' ? NAMED_SUPPLIER_INTEREST_VERSION : SUPPLIER_PRIVATE_STORE_VERSION, nip: command.nip, bodyDigest: captured.digest }
     return runContinuation({ ...base, phaseId, data }, async (context, client, manifest) => {
       if (JSON.stringify(manifest) !== JSON.stringify(data) || context.requestContinuation?.phaseId !== phaseId) return refuse()
       const descriptor = (await client.query('SELECT srm.supplier_business_descriptor() AS descriptor')).rows[0]?.descriptor
@@ -68,24 +71,35 @@ export function createSrmSupplierPrivateStore(options: { continuation: Continuat
         "SELECT l.supplier_id FROM srm.lookup_requests l JOIN srm.suppliers s ON s.organization_id=l.organization_id AND s.id=l.supplier_id WHERE l.organization_id=$1::uuid AND l.id=$2::uuid AND l.identifier_type='NIP' AND l.identifier=$3 AND l.entity_type='COMPANY' AND s.nip=$3",
         [context.organisationId, base.requestId, command.nip],
       )).rows
-      if (rows.length !== 1 || !captured.value) return refuse()
-      const body = captured.value, section = body.section
+      if (rows.length !== 1) return refuse()
+      if (phaseId === 'RECORD_INTEREST') {
+        if (!namedInterestBoundaryDigest || body !== null || context.actorKind !== 'HUMAN'
+          || context.actorId !== context.subjectUserId || !context.subjectUserId) return refuse()
+        const named = (await client.query('SELECT srm.named_interest_descriptor() AS descriptor')).rows[0]?.descriptor
+        if (named?.namedSchemaVersion !== '1.0.0' || named.namedBoundaryDigest !== namedInterestBoundaryDigest
+          || named.applicationId !== 'srm' || !/^[a-f0-9]{40}$/.test(named.namedSourceRef ?? '')) return refuse()
+        await recordSupplierInterest(client, context.organisationId!, command.nip,
+          {subjectKey:'profitia-account:'+context.subjectUserId,identityKind:'AUTHENTICATED'})
+        return
+      }
+      if (!captured.value) return refuse()
+      const storedBody = captured.value, section = storedBody.section
       if (!section || section.source?.provider !== 'MGBI' || section.source.model !== (phaseId === 'STORE_GENERAL' ? 'pl-krs-wp-record' : 'pl-krs-rdf-record')
         || !Array.isArray(section.warnings) || !['SUCCESS','PARTIAL','EMPTY','ERROR','NOT_REQUESTED'].includes(section.status)
-        || !(body.errorCode === null || typeof body.errorCode === 'string')) return refuse()
-      if (body.rawResponse) {
+        || !(storedBody.errorCode === null || typeof storedBody.errorCode === 'string')) return refuse()
+      if (storedBody.rawResponse) {
         if (!section.retrievedAt) return refuse()
         await saveMgbiArchive(context.organisationId!, command.nip, section.source.model as 'pl-krs-wp-record' | 'pl-krs-rdf-record',
-          body.rawResponse.pages, body.rawResponse.recordCount, section.retrievedAt, base.requestId, pool)
-        if (phaseId === 'STORE_FINANCIAL') await saveFinancialDocuments(context.organisationId!, command.nip, body.rawResponse.pages, pool)
+          storedBody.rawResponse.pages, storedBody.rawResponse.recordCount, section.retrievedAt, base.requestId, pool)
+        if (phaseId === 'STORE_FINANCIAL') await saveFinancialDocuments(context.organisationId!, command.nip, storedBody.rawResponse.pages, pool)
       }
       const lookup = { supplierId: rows[0].supplier_id, requestId: base.requestId }
       if (phaseId === 'STORE_GENERAL') {
-        const general = body as General
+        const general = storedBody as General
         if (general.section.data?.nip && general.section.data.nip !== command.nip) return refuse()
         await persistSection(context.organisationId!, lookup, 'general', general.section, general.errorCode, [], undefined, undefined, 'PROVIDER', pool)
       } else {
-        const financial = body as Financial
+        const financial = storedBody as Financial
         if (!Array.isArray(financial.facts)) return refuse()
         await persistSection(context.organisationId!, lookup, 'financial', financial.section, financial.errorCode,
           financial.facts, undefined, financial.sourceData, 'PROVIDER', pool)
@@ -93,6 +107,7 @@ export function createSrmSupplierPrivateStore(options: { continuation: Continuat
     })
   }
   return Object.freeze({
+    ...(namedInterestBoundaryDigest ? { interest: (selection: Selection) => run(selection, 'RECORD_INTEREST', null) } : {}),
     register: (selection: Selection) => run(selection, 'REGISTER_LOOKUP', null),
     general: (selection: Selection, result: General) => run(selection, 'STORE_GENERAL', result),
     financial: (selection: Selection, result: Financial) => run(selection, 'STORE_FINANCIAL', result),
