@@ -32,7 +32,7 @@ export function createAccessStore({ binding, now = Date.now }) {
   if (config.service !== undefined && (!config.service || Object.getPrototypeOf(config.service) !== Object.prototype
     || Object.keys(config.service).sort().join(',') !== 'configurationVersion,deploymentId,profileId,schemaDigest'
     || !/^[a-f0-9]{64}$/.test(config.service.schemaDigest ?? '')
-    || !['PORR_SUITE','SPENDGURU_SAAS','SUPPLIER_INTELLIGENCE_STANDALONE'].includes(config.service.profileId)
+    || !['PORR_SUITE','SPENDGURU_SAAS','SUPPLIER_INTELLIGENCE_STANDALONE','PLATFORM_INTERNAL'].includes(config.service.profileId)
     || !text(config.service.deploymentId) || !text(config.service.configurationVersion))) throw new TypeError('Explicit service-read binding required')
   freeze(config)
   const leases = new WeakSet()

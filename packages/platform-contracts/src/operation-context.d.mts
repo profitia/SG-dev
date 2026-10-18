@@ -1,5 +1,5 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
-export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export'
+export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -8,7 +8,7 @@ export interface Actor {
   proofRef: string; issuer: string; audience: string; environment: Environment; expiresAt: string
 }
 export interface Application {
-  appId: string; profileId: 'PORR_SUITE' | 'SPENDGURU_SAAS' | 'SUPPLIER_INTELLIGENCE_STANDALONE'
+  appId: string; profileId: 'PORR_SUITE' | 'SPENDGURU_SAAS' | 'SUPPLIER_INTELLIGENCE_STANDALONE' | 'PLATFORM_INTERNAL'
   deploymentId: string; configurationVersion: string; environment: Environment; identityIssuer: string
   organisationId: string | null; operations: OperationId[]; features: string[]
 }
@@ -29,7 +29,27 @@ export interface ProductGrant {
 }
 export interface OperationState {
   policyVersion: string; applicationId: string; environment: Environment
-  access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY'; requestPolicy?: Readonly<RequestPolicy>; inputs?: Resource[]
+  access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY' | 'PLATFORM_BUDGET'; requestPolicy?: Readonly<RequestPolicy>; inputs?: Resource[]
+  ingestion?: Readonly<IngestionPolicy>
+  delegation?: Readonly<DelegatedJob>
+  dispatchAdmission?: import('./delegated-job.mjs').DispatchAdmission
+}
+export interface IngestionPolicy {
+  sourceId:string;effectKind:'STORED_SQL_TRANSACTION';sourceVersion:string;sourceRef:string;payloadSchema:string
+  qualityVersion:string;classificationVersion:string;expiresAt:string;policyId:string;policyVersion:string
+  unit:'SOURCE_TRANSACTION';capacity:number;used:number;windowStart:string;windowEnd:string;policySourceRef:string
+}
+export interface DelegatedJob {
+  delegationId: string; jobId: string; requestId: string; sourceId: string; deliveryKey: string
+  status: 'PENDING' | 'READY' | 'CONFIRMED' | 'UNCERTAIN'; payloadDigest: string
+  subjectUserId: string; organisationId: string; executorApplicationId: string
+  sourceBinding:Pick<import('./platform-ingestion.mjs').PlatformSourceBinding,'projectId'|'branchId'|'databaseName'|'applicationId'|'schemaDigest'|'payloadSchema'|'qualityVersion'|'classificationVersion'>
+  bindingId: string; bindingVersion: string; expiresAt: string
+  identityKey: Readonly<import('./identity-provider.mjs').ExternalIdentityKey>
+  externalAccountObservation: Readonly<import('./identity-provider.mjs').ExternalAccountObservation>
+  target: { application: Pick<Application,'appId'|'environment'|'profileId'|'configurationVersion'|'organisationId'|'features'|'operations'>
+    operation: 'forecast.request'; resourceId: string; policyVersion: string; access: AccessBasis; resource: Resource; products: ProductGrant[]
+    module: {id:'benchmark';bindingId:string;version:string;sourceRef:string;expiresAt:string} }
 }
 /** Trusted module binding provenance; carries no credential or permission. */
 export interface ModuleEvidence {
@@ -42,11 +62,16 @@ export interface OperationContext {
   applicationProfile: string; occurredAt: string; operationStartedAt: string
   deploymentId: string; configurationVersion: string; environment: Environment; operation: OperationId
   actorId: string; actorKind: 'HUMAN' | 'SERVICE'; actor: Readonly<Actor>; subjectUserId: string | null
-  organisationId: string | null; mode: 'ORGANISATION' | 'ACCOUNT'; policyVersion: string; accessVersion: string
-  accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE' | 'EXPORT' | 'REQUEST_COMPUTE'; resourceId: string; resource: Readonly<Resource>
-  productEvidence: ReadonlyArray<Pick<ProductGrant, 'product' | 'version' | 'sourceRef' | 'source' | 'expiresAt'> & { feature: string }>; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY'
+  organisationId: string | null; mode: 'ORGANISATION' | 'ACCOUNT' | 'PLATFORM'; policyVersion: string; accessVersion: string
+  accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE' | 'EXPORT' | 'REQUEST_COMPUTE' | 'EXECUTE_BOUND_OPERATION'; resourceId: string; resource: Readonly<Resource>
+  productEvidence: ReadonlyArray<Pick<ProductGrant, 'product' | 'version' | 'sourceRef' | 'source' | 'expiresAt'> & { feature: string }>; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY' | 'PLATFORM_BUDGET'
+  platformReservation?:Readonly<{effectId:string;replay:boolean;policyId:string;policyVersion:string}>
+  sourceId?:string;sourceVersion?:string;qualityVersion?:string;classificationVersion?:string;payloadSchema?:string
+  budgetPolicyId?:string;budgetPolicyVersion?:string;budgetUnit?:'SOURCE_TRANSACTION'
   requestReservation?: Readonly<{requestId:string;replay:boolean;policyId:string;policyVersion:string}>
   moduleEvidence?: Readonly<ModuleEvidence>
+  delegation?: Readonly<DelegatedJob>
+  dispatchAdmission?: import('./delegated-job.mjs').DispatchAdmission
   payload: Json; payloadDigest: string; correlationId: string
 }
 export interface AuditEvent {
@@ -69,6 +94,10 @@ export interface OperationSession<Transaction> {
   /** Required for AM20; same current private transaction, no external compute. */
   reserveUsage?(context: Readonly<OperationContext>): Promise<RequestReservation>
   completeRequest?(context: Readonly<OperationContext>, value: RequestReceipt): Promise<void>
+  /** Private dispatch only; source delivery is a separate transaction/authority. */
+  admitDispatch?(context: Readonly<OperationContext>): Promise<import('./delegated-job.mjs').DispatchAdmission>
+  reserveIngestion?(context:Readonly<OperationContext>):Promise<{status:'NEW'|'REPLAY';effectId:string;policyId:string;policyVersion:string;receipt?:{effectId:string;status:'COMMITTED'}}>
+  completeIngestion?(context:Readonly<OperationContext>,receipt:{effectId:string;status:'COMMITTED'}):Promise<void>
   moduleEvidence?: Readonly<ModuleEvidence>
   projectOutput(value: unknown, context: Readonly<OperationContext>): unknown | Promise<unknown>
   /** Export only: separately authorised/audited local SQL preparation in this transaction. No external effects. */
@@ -80,7 +109,7 @@ export interface OperationExecutor<Transaction = unknown> {
   contract: Readonly<{ id: string; version: string; implementation: string }>
   execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractId: string; contractVersion: string; value: T }>>
 }
-export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.6' }>
+export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.7' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
 export declare function isOperationDenied(error: unknown): error is OperationDenied

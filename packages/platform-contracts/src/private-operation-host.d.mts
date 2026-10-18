@@ -2,7 +2,7 @@ import type { AccessQuery, AccessStoreBinding, IdentityBinding, DatabaseServiceA
 import type { Actor, Application, BoundRequest, OperationContext, OperationExecutor, OperationOutcome, Resource } from './operation-context.mjs'
 import type { ModuleId } from './module-scope.mjs'
 
-export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.4.0' }>
+export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.5.0' }>
 export interface PrivateOperationScope {
   applicationId: string; environment: AccessStoreBinding['environment']; userId: string; organisationId: string | null
 }
@@ -34,6 +34,19 @@ export declare function createPrivateOperationHost<Transaction>(options: {
   describeOutcome?(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): OperationOutcome | Promise<OperationOutcome>
 }): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT }>
 export declare function privateOperationHostSourceDigest(): Promise<string>
+
+/** Private AM27 admission; does not execute a science/source effect. */
+export declare function createDelegatedJobHost<Transaction>(options:{
+  application:Application;binding:AccessStoreBinding & {service:NonNullable<AccessStoreBinding['service']>}
+  job:{schemaDigest:string};now?:()=>number;transactionTimeoutMs?:number;independentQuery:AccessQuery
+  transact<T>(action:(session:{query:AccessQuery;transaction:Transaction})=>Promise<T>,limits:PrivateTransactionOptions):Promise<T>
+  readExternalAccount(key:Readonly<import('./identity-provider.mjs').ExternalIdentityKey>):Promise<Readonly<import('./identity-provider.mjs').ExternalAccountObservation>|null>
+  /** Fixed source adapter. Receives universal payload/key only, never a private actor or transaction. */
+  sourceDelivery?:Readonly<import('./platform-ingestion.mjs').PlatformDeliveryPort>
+}):Readonly<{contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT
+  admit(input:import('./operation-context.mjs').OperationInput):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./delegated-job.mjs').DispatchAdmission}>>
+  deliver?(input:import('./operation-context.mjs').OperationInput,admission:Extract<import('./delegated-job.mjs').DispatchAdmission,{status:'READY'}>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./delegated-job.mjs').DispatchAdmission}>>
+}>
 
 export interface ServiceReadScope {
   applicationId: string; environment: AccessStoreBinding['environment']; userId: null; serviceId: string

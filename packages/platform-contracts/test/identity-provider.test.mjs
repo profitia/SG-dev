@@ -1,12 +1,44 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createClerkIdentityAuthenticator } from '../src/identity-provider.mjs'
+import { createClerkIdentityAuthenticator, createClerkAccountStatusReader } from '../src/identity-provider.mjs'
 import { isOperationDenied } from '../src/operation-context.mjs'
 
 const time = 2_000_000_000_000
 const issuer = 'https://synthetic.clerk.accounts.dev'
 const origin = 'http://localhost:3400'
 const internalUser = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+test('delegated external account reader is uncached, bounded, and never creates a human actor', async () => {
+  const f=fixture(), read=createClerkAccountStatusReader({client:f.client,environment:'development',issuer,now:()=>time})
+  const key={environment:'development',issuer,subject:'user_synthetic'}
+  const result=await read(key)
+  assert.deepEqual(result,{...key,status:'ACTIVE',observedAt:new Date(time).toISOString(),expiresAt:new Date(time+5000).toISOString()})
+  assert(Object.isFrozen(result)); assert.equal(result.actorId,undefined); assert.equal(result.userId,undefined)
+  f.user.locked=true; assert.equal(await read(key),null)
+  assert.deepEqual(f.calls,['user','user'])
+})
+for(const [label,mutate] of [
+  ['wrong environment',key=>key.environment='staging'],['wrong issuer',key=>key.issuer='https://foreign.example.test'],
+  ['credential instead of subject',key=>key.subject='Bearer synthetic'],['session field',key=>key.sessionId='sess_synthetic'],
+  ['on behalf of claim',key=>key.onBehalfOf=internalUser],['missing subject',key=>delete key.subject],
+])test('delegated account reader rejects '+label+' before contacting the provider',async()=>{
+  const f=fixture(),read=createClerkAccountStatusReader({client:f.client,environment:'development',issuer,now:()=>time})
+  const key={environment:'development',issuer,subject:'user_synthetic'};mutate(key)
+  assert.equal(await read(key),null);assert.deepEqual(f.calls,[])
+})
+for(const field of ['banned','locked','deprovisioned','id'])test('delegated account reader rejects changed '+field,async()=>{
+  const f=fixture();f.user[field]=field==='id'?'user_foreign':true
+  const read=createClerkAccountStatusReader({client:f.client,environment:'development',issuer,now:()=>time})
+  assert.equal(await read({environment:'development',issuer,subject:'user_synthetic'}),null)
+})
+test('delegated account observation expires from the start of the provider call, without stale fallback',async()=>{
+  let current=time
+  const client={users:{getUser:async()=>{current+=5000;return{id:'user_synthetic',banned:false,locked:false,deprovisioned:false}}}}
+  const read=createClerkAccountStatusReader({client,environment:'development',issuer,now:()=>current})
+  assert.equal(await read({environment:'development',issuer,subject:'user_synthetic'}),null)
+  client.users.getUser=async()=>{throw Error('upstream diagnostic must not escape')}
+  await assert.rejects(read({environment:'development',issuer,subject:'user_synthetic'}),error=>isOperationDenied(error)&&error.reasonCode==='POLICY_UNAVAILABLE'&&!error.message.includes('upstream'))
+  assert.throws(()=>createClerkAccountStatusReader({client,environment:'staging',issuer}),TypeError)
+})
 function fixture() {
   const f = { calls: [], app: { appId: 'srm-local', environment: 'development', issuer, authorizedParties: [origin] },
     claims: { iss: issuer, sub: 'user_synthetic', sid: 'sess_synthetic', azp: origin, exp: time / 1000 + 60 },

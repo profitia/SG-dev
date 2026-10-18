@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",
@@ -48,10 +48,20 @@
       "types": "./src/request-ledger.d.mts",
       "import": "./src/request-ledger.mjs",
       "require": "./src/request-ledger.mjs"
+    },
+    "./delegated-job": {
+      "types": "./src/delegated-job.d.mts",
+      "import": "./src/delegated-job.mjs",
+      "require": "./src/delegated-job.mjs"
+    },
+    "./platform-ingestion": {
+      "types": "./src/platform-ingestion.d.mts",
+      "import": "./src/platform-ingestion.mjs",
+      "require": "./src/platform-ingestion.mjs"
     }
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs && node --check src/clerk-configuration.mjs && node --check src/embedded-read-channel.mjs && node --check src/request-ledger.mjs"
+    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs && node --check src/clerk-configuration.mjs && node --check src/embedded-read-channel.mjs && node --check src/request-ledger.mjs && node --check src/delegated-job.mjs && node --check src/platform-ingestion.mjs"
   }
 }

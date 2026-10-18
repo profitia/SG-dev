@@ -6,6 +6,13 @@ export interface IdentityBinding extends ExternalIdentityKey {
 export interface IdentityApplication {
   appId: string; environment: Environment; issuer: string; authorizedParties: string[]
 }
+/** Observation only: never an authenticated Actor or an access grant. */
+export interface ExternalAccountObservation extends ExternalIdentityKey {
+  status: 'ACTIVE'; observedAt: string; expiresAt: string
+}
+export declare function createClerkAccountStatusReader(options: {
+  client: Pick<ClerkIdentityClient, 'users'>; environment: Environment; issuer: string; now?: () => number
+}): (key: Readonly<ExternalIdentityKey>) => Promise<Readonly<ExternalAccountObservation> | null>
 /** Structural projection of the official SDK. This is not an alternate verifier. */
 export interface ClerkIdentityClient {
   authenticateRequest(request: Request, options: { acceptsToken: 'session_token'; authorizedParties: string[]; clockSkewInMs: number }): Promise<{
