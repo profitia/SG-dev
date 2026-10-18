@@ -1,3 +1,4 @@
+import { createNativeMarketAnalyticsHandler } from '../../../lib/time-series/native-analytics-relay'
 import { NextRequest, NextResponse } from 'next/server'
 
 import {
@@ -14,7 +15,7 @@ function readLocale(request: NextRequest): 'pl' | 'en' {
   return locale === 'en' ? 'en' : 'pl'
 }
 
-export async function GET(request: NextRequest) {
+async function legacyGET(request: NextRequest) {
   return runPhase22cDiagnosticRequest(request, 'P09_SERIES', async () => {
     try {
       const payload = await phase22cDiagnosticSpan(
@@ -29,4 +30,11 @@ export async function GET(request: NextRequest) {
       )
     }
   })
+}
+
+const nativeGET = createNativeMarketAnalyticsHandler()
+export async function GET(request: NextRequest) {
+  const provider = process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo'
+  if (provider === 'legacy_demo') return legacyGET(request)
+  return nativeGET(request)
 }

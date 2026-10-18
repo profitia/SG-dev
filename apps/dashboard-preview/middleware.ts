@@ -1,3 +1,4 @@
+import { NATIVE_MARKET_ANALYTICS_PATH } from './lib/time-series/native-analytics-relay'
 import { NextRequest, NextResponse } from 'next/server'
 import createMiddleware from 'next-intl/middleware'
 
@@ -41,11 +42,11 @@ function createPorrApiUnauthorizedResponse(status: number, message: string) {
 export default async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isApiRequest = isDashboardPreviewApiPath(pathname)
-  // Only four explicitly configured read APIs have adopted the current private
+  // Explicit forecast and benchmark history reads have adopted the current private
   // upstream guard. Their own handlers require a user session and verify native
   // publication context; pages, writes and all other legacy APIs remain closed.
   const provider = process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo'
-  if (provider === 'clerk' && request.method === 'GET' && nativeForecastApiKind(pathname)
+  if (provider === 'clerk' && request.method === 'GET' && (nativeForecastApiKind(pathname) || pathname === NATIVE_MARKET_ANALYTICS_PATH && !!request.nextUrl.searchParams.get('seriesId')?.trim())
     && readNativeForecastConfiguration()) return privateDashboardResponse(NextResponse.next())
   if (provider !== 'legacy_demo') {
     return isApiRequest

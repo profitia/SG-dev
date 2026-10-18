@@ -727,6 +727,90 @@ test('SG2 Prisma host composes the accepted access store with existing selection
           const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='knowledge.read' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
           assert.deepEqual(events.map(event=>event.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
         })
+        await t.test('Dashboard historical chart reads cross actual HTTP, current private authority and the ordinary market source',async t=>{
+          const {createServer}=await import('node:http')
+          const {createNativeMarketAnalyticsHandler}=await import('../../dashboard-preview/lib/time-series/native-analytics-relay.ts')
+          const {createRuntimeBenchmarkAnalyticsHandler}=await import('../lib/benchmark/analytics-handlers.ts')
+          // An explicit SDK fixture maps the unchanged synthetic HTTP value.
+          // This proves current backend/SQL authority, not real Clerk signatures.
+          const token=user=>`synthetic_header.${Buffer.from(user).toString('base64url')}.synthetic_signature`
+          const tokens=new Map([U,V].map(user=>[`Bearer ${token(user)}`,user]))
+          const relayClerk={...clerk,authenticateRequest:async(request,...args)=>{
+            const headers=new Headers(request.headers),user=tokens.get(headers.get('authorization'))
+            headers.set('authorization',user?`Bearer external-${user}`:'Bearer invalid')
+            return clerk.authenticateRequest(new Request(request,{headers}),...args)
+          }}
+          let actualReads=0,ownerEscapes=0,omitMetadata=false
+          const host=createSg2PrivateMarketHost({...configuration,clerk:relayClerk,
+            application:{...configuration.application,operations:['knowledge.read'],features:['market']}},'analytics')
+          const runtime={provider:'clerk',defaultOrganisationId:A,marketRead:{analytics:{executor:host,
+            series:async selection=>{actualReads++;return getBenchmarkAnalyticsSeries(selection.seriesName,selection.range,readHistory)}}}}
+          const handler=createRuntimeBenchmarkAnalyticsHandler(()=>runtime)
+          const received=[],errors=[],globalNames=['dashboardPreviewPrisma','dashboardPreviewMarketDataPrisma']
+          const descriptors=globalNames.map(name=>Object.getOwnPropertyDescriptor(globalThis,name))
+          for(const name of globalNames)Object.defineProperty(globalThis,name,{configurable:true,get(){ownerEscapes++;throw Error('Forbidden legacy Dashboard owner')}})
+          const server=createServer((incoming,outgoing)=>{void(async()=>{
+            try{
+              const url=new URL(incoming.url,ORIGIN)
+              const headers=new Headers(Object.entries(incoming.headers).filter(([,value])=>value!==undefined).map(([key,value])=>[key,Array.isArray(value)?value.join(','):value]))
+              received.push({path:url.pathname,authorization:headers.get('authorization'),cookie:headers.get('cookie'),forgedUser:headers.get('x-clerk-user-id')})
+              const response=url.pathname==='/api/benchmark/analytics-series'?await handler(new NextRequest(url,{method:incoming.method,headers})):new Response(null,{status:404})
+              outgoing.statusCode=response.status
+              for(const[key,value]of response.headers)if(!omitMetadata||!key.startsWith('x-profitia-'))outgoing.setHeader(key,value)
+              outgoing.end(Buffer.from(await response.arrayBuffer()))
+            }catch(error){errors.push(error);outgoing.statusCode=503;outgoing.end('Synthetic fixture failure')}
+          })()})
+          await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
+          const address=server.address();assert(address&&typeof address==='object')
+          const env={APP_ENV:'development',TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',PROFITIA_FORECAST_API_ORIGIN:'https://sg2-development-runtime.onrender.com',PROFITIA_FORECAST_API_CONFIGURATION_VERSION:'sg2-native-forecast-relay-dev-v1'}
+          const relay=createNativeMarketAnalyticsHandler({env:()=>env,fetch:async(input,init)=>{
+            const url=new URL(String(input));assert.equal(url.origin,env.PROFITIA_FORECAST_API_ORIGIN)
+            assert.deepEqual([...new Headers(init.headers)].map(([key])=>key),['authorization']);assert.equal(init.redirect,'manual')
+            return previousFetch(`http://127.0.0.1:${address.port}${url.pathname}${url.search}`,init)
+          }})
+          const input=(org=A,user=U)=>new Request(`https://dashboard.fixture.test/api/series?seriesId=stored_series&range=ALL&locale=pl&organisationId=${org}`,
+            {headers:{authorization:`Bearer ${token(user)}`,cookie:'synthetic_legacy','x-clerk-user-id':V,'x-clerk-org-id':B}})
+          try{
+            await t.test('two authorised organisations receive the unchanged chart mapping and separate source audit',async()=>{
+              const values=[]
+              for(const org of[A,B]){
+                const response=await relay(input(org));assert.equal(response.status,200,await response.clone().text())
+                assert.equal(response.headers.get('cache-control'),'private, no-store')
+                const value=await response.json();assert.equal(value.selection.componentCode,'stored_series')
+                assert.deepEqual(value.historical.map(point=>point.value),[10,0,null]);assert.equal(value.sourceInfo.unit,'UNSUPPORTED_UNIT')
+                assert.equal(value.sourceInfo.currency,null);assert.equal(value.detailSummary.metricValue,0);assert.equal(value.forecastAnchor.value,null)
+                values.push(value)
+              }
+              assert.deepEqual(values[0],values[1]);assert.equal(actualReads,2)
+              const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'resourceId'='market-analytics:stored_series' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+              assert.deepEqual(events.map(event=>event.organisationId),[B,A]);assert(events.every(event=>event.actorId===U&&event.dataClass==='SHARED_KNOWLEDGE'))
+            })
+            await t.test('revoked session, membership and permission are refused before source across the actual relay',async()=>{
+              const before=actualReads
+              assert.equal((await relay(input(A,V))).status,403)
+              sdkRevoked=true;try{assert.equal((await relay(input())).status,401)}finally{sdkRevoked=false}
+              await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U])
+              try{assert.equal((await relay(input())).status,403)}finally{await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U])}
+              const id=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','knowledge.read','market')",[id,A,U])
+              try{assert.equal((await relay(input())).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[id])}
+              assert.equal(actualReads,before)
+            })
+            await t.test('source, durable audit and missing native metadata each independently withhold the chart',async()=>{
+              await owner.query("UPDATE profitia_market_read.installation SET branch_id='foreign-branch'")
+              try{assert.equal((await relay(input())).status,503)}finally{await owner.query("UPDATE profitia_market_read.installation SET branch_id='isolated-source-branch'")}
+              await owner.query("CREATE FUNCTION profitia_access.reject_dashboard_market_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='knowledge.read' THEN RAISE EXCEPTION 'synthetic audit outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_dashboard_market_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_dashboard_market_outcome()")
+              try{assert.equal((await relay(input())).status,503)}finally{await owner.query('DROP TRIGGER reject_dashboard_market_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_dashboard_market_outcome()')}
+              const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'resourceId'='market-analytics:stored_series' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+              assert.deepEqual(events.map(event=>event.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+              omitMetadata=true;try{assert.equal((await relay(input())).status,503)}finally{omitMetadata=false}
+            })
+            assert(received.every(value=>value.path==='/api/benchmark/analytics-series'&&tokens.has(value.authorization)&&value.cookie===null&&value.forgedUser===null))
+            assert.equal(ownerEscapes,0);assert.deepEqual(errors,[])
+          }finally{
+            server.closeAllConnections();await new Promise(resolve=>server.close(resolve))
+            for(const[index,name]of globalNames.entries()){const descriptor=descriptors[index];if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name]}
+          }
+        })
         assert.equal(providerCalls,providerBefore)
       }finally{await sourcePrisma.$disconnect()}
     })
