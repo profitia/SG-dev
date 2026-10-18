@@ -804,6 +804,41 @@ test('SG2 Prisma host composes the accepted access store with existing selection
               assert.deepEqual(events.map(event=>event.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
               omitMetadata=true;try{assert.equal((await relay(input())).status,503)}finally{omitMetadata=false}
             })
+            await t.test('real presentation ports read through this actual API and ordinary source without a child credential or cached authority',async t=>{
+              const{openEmbeddedReadClient}=await import('@profitia/platform-contracts/embedded-read-channel')
+              const{openNativeDashboardReadHost,nativeDashboardContext}=await import('../lib/platform/native-dashboard-embed.ts')
+              const{createEmbeddedChartFetch,readNativeEmbeddedConfiguration}=await import('../../dashboard-preview/lib/platform/native-embedded-read.ts')
+              const{selectNativeEmbedPage}=await import('../../dashboard-preview/lib/platform/native-chart-publication.ts')
+              const config=readNativeEmbeddedConfiguration({...env,PROFITIA_NATIVE_EMBED_ENABLED:'true'})
+              assert(config)
+              const connect=(org=A)=>{
+                const url=`${config.childOrigin}/pl?embed=1&variantId=forecast-portfolio-v3&showForecast=false&preparedReadsOnly=1&seriesId=stored_series&range=1Y&organisationId=${org}`
+                const pair=new MessageChannel(),instanceId=randomUUID()
+                const host=openNativeDashboardReadHost({port:pair.port1,instanceId,context:nativeDashboardContext(url,env.PROFITIA_FORECAST_API_ORIGIN),getToken:async()=>token(U),
+                  fetch:async(input,init)=>{const target=new URL(String(input));assert.equal(target.origin,env.PROFITIA_FORECAST_API_ORIGIN)
+                    return previousFetch(`http://127.0.0.1:${address.port}${target.pathname}${target.search}`,init)}})
+                const client=openEmbeddedReadClient({port:pair.port2,instanceId})
+                const chart=createEmbeddedChartFetch(client,config,selectNativeEmbedPage(url))
+                t.after(()=>{client.close();host.close()})
+                return chart
+              }
+              const a=connect(),b=connect(B),path='/api/series?seriesId=stored_series&range=ALL&locale=pl'
+              const values=[]
+              for(const chart of[a,b]){
+                const response=await chart(path);assert.equal(response.status,200,await response.clone().text())
+                const value=await response.json();assert.deepEqual(value.historical.map(point=>point.value),[10,0,null]);assert.equal(value.sourceInfo.currency,null)
+                assert(!JSON.stringify(value).includes(token(U)));values.push(value)
+              }
+              assert.deepEqual(values[0],values[1])
+              const before=actualReads
+              await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U])
+              try{assert.equal((await a(path)).status,403)}finally{await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U])}
+              assert.equal(actualReads,before)
+              // The same already-created port does not cache a previous grant.
+              assert.equal((await a(path)).status,200);assert.equal(actualReads,before+1)
+              omitMetadata=true;try{assert.equal((await a(path)).status,503)}finally{omitMetadata=false}
+              sdkRevoked=true;try{assert.equal((await a(path)).status,401)}finally{sdkRevoked=false}
+            })
             assert(received.every(value=>value.path==='/api/benchmark/analytics-series'&&tokens.has(value.authorization)&&value.cookie===null&&value.forgedUser===null))
             assert.equal(ownerEscapes,0);assert.deepEqual(errors,[])
           }finally{
@@ -1254,6 +1289,50 @@ test('SG2 Prisma host composes the accepted access store with existing selection
               finally{await owner.query('DROP TRIGGER reject_relay_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_relay_outcome()')}
               const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'resourceId' LIKE 'forecast-readiness:%' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
               assert.deepEqual(events.map(e=>e.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+            })
+            await t.test('all four embedded reads use real ports, this actual API and the same ordinary source',async t=>{
+              const{openEmbeddedReadClient}=await import('@profitia/platform-contracts/embedded-read-channel')
+              const{openNativeDashboardReadHost,nativeDashboardContext}=await import('../lib/platform/native-dashboard-embed.ts')
+              const{createEmbeddedChartFetch,readNativeEmbeddedConfiguration}=await import('../../dashboard-preview/lib/platform/native-embedded-read.ts')
+              const{selectNativeEmbedPage}=await import('../../dashboard-preview/lib/platform/native-chart-publication.ts')
+              const config=readNativeEmbeddedConfiguration({...env,PROFITIA_NATIVE_EMBED_ENABLED:'true'});assert(config)
+              const connect=(org=A)=>{
+                const url=`${config.childOrigin}/pl?embed=1&variantId=forecast-portfolio-v3&showForecast=false&preparedReadsOnly=1&seriesId=${seriesId}&range=1Y&organisationId=${org}`
+                const pair=new MessageChannel(),instanceId=randomUUID()
+                const host=openNativeDashboardReadHost({port:pair.port1,instanceId,context:nativeDashboardContext(url,env.PROFITIA_FORECAST_API_ORIGIN),
+                  getToken:async()=>token(U),fetch:relayFetch})
+                const client=openEmbeddedReadClient({port:pair.port2,instanceId})
+                t.after(()=>{client.close();host.close()})
+                return createEmbeddedChartFetch(client,config,selectNativeEmbedPage(url))
+              }
+              const a=connect(),b=connect(B)
+              const chartPath=kind=>`${NATIVE_FORECAST_API_PATHS[kind]}?seriesId=${seriesId}`
+                +(kind==='capabilities'?'':kind==='capability'?'&modelId=naive&targetBasis=POINT_IN_TIME':'&model=naive&targetBasis=POINT_IN_TIME')
+              for(const kind of Object.keys(relays)){
+                const values=[]
+                for(const chart of[a,b]){
+                  const response=await chart(chartPath(kind));assert.equal(response.status,200,await response.clone().text())
+                  const value=await response.json();assert.equal(value.seriesId,seriesId);assert(!JSON.stringify(value).includes('SYNTHETIC_PRIVATE_FORECAST_MARKER'))
+                  if(kind==='current'){assert.equal(value.currentForecast['1M'].forecastValue,0);assert.equal(value.rollingDailySnapshot.benchmark.unit,'ORIGINAL_UNIT')}
+                  if(kind==='verification'){assert.equal(value.verification['1M'].records.length,24);assert.equal(value.verification['1M'].metrics.mae,0)}
+                  if(kind==='capabilities')assert.equal(value.variants.length,12)
+                  values.push(normalize(value))
+                }
+                assert.deepEqual(values[0],values[1])
+              }
+              const before=actualReads
+              await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U])
+              try{for(const kind of Object.keys(relays))assert.equal((await a(chartPath(kind))).status,403)}
+              finally{await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U])}
+              assert.equal(actualReads,before)
+              sdkRevoked=true;try{assert.equal((await a(chartPath('current'))).status,401)}finally{sdkRevoked=false}
+              assert.equal(actualReads,before)
+              omitMetadata=true;try{assert.equal((await a(chartPath('current'))).status,503)}finally{omitMetadata=false}
+              await owner.query("CREATE FUNCTION profitia_access.reject_embed_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'resourceId' LIKE 'forecast-readiness:%' THEN RAISE EXCEPTION 'synthetic embed audit outage'; END IF; RETURN NEW; END $$;CREATE TRIGGER reject_embed_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_embed_outcome()")
+              try{assert.equal((await a(chartPath('capabilities'))).status,503)}
+              finally{await owner.query('DROP TRIGGER reject_embed_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_embed_outcome()')}
+              const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'resourceId' LIKE 'forecast-readiness:%' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+              assert.deepEqual(events.map(event=>event.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
             })
             assert.deepEqual(errors,[]);assert.equal(ownerEscapes,0);assert.equal(providerCalls,providerBefore)
           }finally{

@@ -3,6 +3,9 @@ import { getTranslations } from 'next-intl/server'
 import { DashboardShell } from '@/components/dashboard-shell'
 import { DashboardVariantState } from '@/components/dashboard-variant-state'
 import { RawDataView } from '@/components/raw-data-view'
+import { NativeEmbeddedReadProvider } from '@/components/native-embedded-read-provider'
+import { readNativeEmbeddedConfiguration } from '@/lib/platform/native-embedded-read'
+import { selectNativeEmbedPage } from '@/lib/platform/native-chart-publication'
 import {
   DEFAULT_DASHBOARD_VARIANT_ID,
   buildDashboardVariantHref,
@@ -16,6 +19,8 @@ const FORECAST_PORTFOLIO_DEFAULT_BENCHMARK = {
   seriesId: 'wocaes0074',
   displayName: 'Brent, Spot, FOB North Sea',
 } as const
+
+export const dynamic = 'force-dynamic'
 
 export function resolveForecastPortfolioBenchmarkSubject(
   searchParams: Record<string, string | string[] | undefined>,
@@ -45,6 +50,22 @@ export default async function LocaleHomePage({
   searchParams = {},
 }: LocaleHomePageProps) {
   const t = await getTranslations({ locale, namespace: 'DashboardVariants' })
+  const provider = process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo'
+  const nativeConfiguration = provider === 'clerk' ? readNativeEmbeddedConfiguration() : null
+  const nativeUrl = new URL(`/${locale}`, nativeConfiguration?.childOrigin ?? 'https://unavailable.invalid')
+  for (const [key,value] of Object.entries(searchParams)) {
+    if (Array.isArray(value)) for (const item of value) nativeUrl.searchParams.append(key,item)
+    else if (value !== undefined) nativeUrl.searchParams.append(key,value)
+  }
+  const nativeContext = nativeConfiguration ? selectNativeEmbedPage(nativeUrl.toString()) : null
+  if (provider !== 'legacy_demo') {
+    if (!nativeConfiguration || !nativeContext) return <p role="status">{locale === 'pl' ? 'Podgląd jest niedostępny.' : 'Preview is unavailable.'}</p>
+    return <NativeEmbeddedReadProvider configuration={nativeConfiguration} context={nativeContext}>
+      <DashboardShell embedded={true} notice={null} variantLibrary={null}>
+        <RawDataView embedded={true} variant="forecast-portfolio-v3" forcedBenchmarkSubject={resolveForecastPortfolioBenchmarkSubject(searchParams)} />
+      </DashboardShell>
+    </NativeEmbeddedReadProvider>
+  }
   const embedded = readFirstSearchParamValue(searchParams.embed) === '1'
   const requestedVariantId = readFirstSearchParamValue(searchParams.variantId) ?? null
   const resolution = resolveDashboardVariant({ requestedVariantId, embedded })

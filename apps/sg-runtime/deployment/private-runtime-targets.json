@@ -93,7 +93,8 @@
         "origin": "https://sg2-development-dashboard.onrender.com",
         "serviceId": "srv-dapa3ujm8hqs73a9t2og",
         "observedState": "SOURCE_ONLY_NOT_ACTIVATED",
-        "scope": "SCOPED_PREPARED_READS_ONLY_NO_AUTOMATIC_WARMUP"
+        "scope": "SCOPED_PREPARED_READS_ONLY_NO_AUTOMATIC_WARMUP",
+        "publicBindingRef": "apps/dashboard-preview/deployment/native-forecast-targets.json#environments.development.embedding"
       }
     },
     "staging": {

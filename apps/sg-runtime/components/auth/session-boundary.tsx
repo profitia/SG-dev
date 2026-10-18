@@ -8,6 +8,10 @@ import type { BrowserPersistencePolicy } from '@/lib/platform/browser-session-st
 const ProviderMode = createContext<'legacy_demo' | 'clerk' | null>(null)
 const unavailable = <p role="alert">Logowanie jest chwilowo niedostępne. / Sign-in is temporarily unavailable.</p>
 
+export function useSg2IdentityMode(): 'legacy_demo' | 'clerk' | 'unavailable' {
+  return useContext(ProviderMode) ?? 'unavailable'
+}
+
 /** Only public, server-selected presentation configuration. No browser state
  * is an internal tenant/user identity or a permission to a backend operation. */
 export function Sg2IdentityProvider({ mode, publishableKey, locale, children }: {

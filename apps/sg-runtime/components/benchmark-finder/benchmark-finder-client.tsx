@@ -1,9 +1,11 @@
 'use client'
 
+import { NativeAnalyticsEmbed } from './native-analytics-embed'
+
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useSg2BrowserPersistencePolicy } from '@/components/auth/session-boundary'
+import { useSg2BrowserPersistencePolicy, useSg2IdentityMode } from '@/components/auth/session-boundary'
 import { selectLegacySessionStorage, type BrowserPersistencePolicy } from '@/lib/platform/browser-session-storage'
 
 import {
@@ -903,6 +905,7 @@ export function BenchmarkFinderClient({
   showPorrDemoPortfolio = false,
 }: BenchmarkFinderClientProps) {
   const persistence = useSg2BrowserPersistencePolicy()
+  const identityMode = useSg2IdentityMode()
   const t = useTranslations('BenchmarkFinder')
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -1236,6 +1239,8 @@ export function BenchmarkFinderClient({
       return
     }
 
+    if (identityMode !== 'legacy_demo') return
+
     const handleAnalyticsResize = (event: MessageEvent) => {
       const payload = event.data
       if (
@@ -1259,7 +1264,7 @@ export function BenchmarkFinderClient({
     return () => {
       window.removeEventListener('message', handleAnalyticsResize)
     }
-  }, [])
+  }, [identityMode])
 
   function abortSearchRequest() {
     activeSearchRequestRef.current += 1
@@ -2471,7 +2476,8 @@ export function BenchmarkFinderClient({
                     <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
                       {previewState.analyticsEligibility.status === 'ready' && previewState.analyticsEligibility.eligible && previewState.analyticsEligibility.analyticsUrl ? (
                         <>
-                          <iframe
+                          <NativeAnalyticsEmbed
+                            locale={locale}
                             key={localizeDashboardPreviewAnalyticsUrl(previewState.analyticsEligibility.analyticsUrl, locale)}
                             title={`${previewState.preview?.displayName ?? candidate.displayName} analytics`}
                             src={localizeDashboardPreviewAnalyticsUrl(previewState.analyticsEligibility.analyticsUrl, locale)}

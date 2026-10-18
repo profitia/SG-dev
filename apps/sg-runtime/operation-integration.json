@@ -239,5 +239,36 @@
       "mergeSha": "68c6afa017d6ae2b4c6ab9edc9e1fb01380733ae",
       "oneSharedFiniteParameterValidator": true
     }
+  },
+  "embeddedReadSourceAdoption": {
+    "packageVersion": "1.9.0",
+    "contractId": "profitia.embedded-read",
+    "contractVersion": "1.0.0",
+    "sourceDigest": "d86912fe4723a8af6fb3e55bd3949f77e1617fe868ec9632d21ff996bd505c79",
+    "declarationDigest": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-EMBEDDED-READ-CHANNEL-20261018",
+      "repository": "profitia/SG-dev",
+      "sourceSha": "71b982509953f2bbdf5c0bd40c37ea4abc1f5982"
+    },
+    "receiverTaskId": "SG2-E1-NATIVE-EMBEDDED-CHART-20261018",
+    "scope": "EXISTING_FINDER_AND_DASHBOARD_PREPARED_READS_ONLY_UNRELEASED",
+    "publicPlacement": "apps/dashboard-preview/deployment/native-forecast-targets.json",
+    "parent": "components/benchmark-finder/native-analytics-embed.tsx",
+    "child": "apps/dashboard-preview/components/native-embedded-read-provider.tsx",
+    "activationVariable": "PROFITIA_NATIVE_EMBED_ENABLED",
+    "activationDefault": false,
+    "childReceivesCredentials": false,
+    "sourcePreparationOrJobsAdopted": false,
+    "liveClerkVerified": false,
+    "productDeploymentPerformed": false,
+    "limitations": [
+      "READ_ONLY_NO_AUTOMATIC_PREPARATION_OR_JOB_PARITY",
+      "BROWSER_HISTORY_AND_LIFECYCLE_WITH_SYNTHETIC_SDK_INTERFACE",
+      "FOUR_FORECAST_READS_API_SQL_PORT_TESTED_NOT_BROWSER_SCIENTIFIC_UAT",
+      "NO_PUSH_INVALIDATION_OF_IDLE_REMOTE_PERMISSION_REVOCATION",
+      "EXISTING_THEME_PREFERENCE_REMAINS_ORIGIN_LOCAL"
+    ]
   }
 }
