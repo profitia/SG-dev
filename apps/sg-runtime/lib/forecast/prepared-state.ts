@@ -36,6 +36,14 @@ const PREPARED_STATE_READ_CONCURRENCY = 4
 
 type MarketDataPrismaClient = NonNullable<ReturnType<typeof getMarketDataPrisma>>
 
+export type ForecastPreparedStateReadClient = {
+  readonly forecastVerificationRun: Pick<MarketDataPrismaClient['forecastVerificationRun'], 'findFirst'>
+  readonly forecastCurrentRun: Pick<MarketDataPrismaClient['forecastCurrentRun'], 'findFirst'>
+  readonly rollingDailyCurrentForecastSnapshot: Pick<MarketDataPrismaClient['rollingDailyCurrentForecastSnapshot'], 'findUnique' | 'findFirst'>
+  readonly rollingDailyMaintenanceState: Pick<MarketDataPrismaClient['rollingDailyMaintenanceState'], 'findUnique'>
+  readonly rollingDailyVerificationRecord: Pick<MarketDataPrismaClient['rollingDailyVerificationRecord'], 'count'>
+}
+
 type PreparedHistoricalRun = {
   status: string
   historyFingerprint: string
@@ -86,7 +94,7 @@ function isMissingRollingDailySnapshotTrainingPolicyColumnError(error: unknown) 
 }
 
 async function findPreparedHistoricalVerificationRun(
-  prisma: MarketDataPrismaClient,
+  prisma: ForecastPreparedStateReadClient,
   where: Prisma.ForecastVerificationRunWhereInput,
   compatibility: {
     trainingWindowPolicyId: string
@@ -127,7 +135,7 @@ async function findPreparedHistoricalVerificationRun(
 }
 
 async function findPreparedRollingDailySnapshot(
-  prisma: MarketDataPrismaClient,
+  prisma: ForecastPreparedStateReadClient,
   where: Prisma.RollingDailyCurrentForecastSnapshotWhereInput & { sourceHistoryFingerprint?: string },
   uniqueWhere: Prisma.RollingDailyCurrentForecastSnapshotWhereUniqueInput,
 ): Promise<PreparedRollingDailySnapshot | null> {
@@ -291,10 +299,14 @@ function resolvePreparedTargetCadence(
 export async function readForecastPreparedVariants(
   seriesId: string,
   history: BenchmarkHistoricalSeriesResult,
-  options: { prisma?: MarketDataPrismaClient, now?: Date } = {},
+  options: { prisma?: ForecastPreparedStateReadClient, now?: Date } = {},
 ): Promise<ForecastPreparedVariant[]> {
-  const prisma = options.prisma ?? getMarketDataPrisma()
-  if (!prisma) return []
+  const explicitPrisma = options == null || Object.prototype.hasOwnProperty.call(options, 'prisma')
+  const prisma = explicitPrisma ? options?.prisma : getMarketDataPrisma()
+  if (!prisma) {
+    if (explicitPrisma) throw new Error('Forecast library datastore is unavailable.')
+    return []
+  }
 
   const sourceFrequency = normalizeForecastSourceFrequency(history.frequency)
   if (

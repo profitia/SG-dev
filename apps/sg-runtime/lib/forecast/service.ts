@@ -3015,8 +3015,19 @@ export async function writeCurrentRunWithPrisma(
   })
 }
 
-export async function readVerificationRunFromPrisma(key: ForecastCacheLookupKey): Promise<PersistedVerificationArtifact | null> {
-  const prisma = getMarketDataPrisma()
+export type ForecastVerificationReadClient = {
+  readonly forecastVerificationRun: Pick<PrismaClient['forecastVerificationRun'], 'findFirst'>
+}
+
+export type ForecastVerificationReadDependencies = {
+  prisma: ForecastVerificationReadClient
+}
+
+export async function readVerificationRunFromPrisma(
+  key: ForecastCacheLookupKey,
+  dependencies?: ForecastVerificationReadDependencies,
+): Promise<PersistedVerificationArtifact | null> {
+  const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -3500,8 +3511,11 @@ export async function readLatestCurrentRunFromPrisma(
     : null
 }
 
-async function readLatestVerificationRunFromPrisma(key: ForecastPreparedLookupKey) {
-  const prisma = getMarketDataPrisma()
+export async function readLatestVerificationRunFromPrisma(
+  key: ForecastPreparedLookupKey,
+  dependencies?: ForecastVerificationReadDependencies,
+) {
+  const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -3550,7 +3564,7 @@ async function readLatestVerificationRunFromPrisma(key: ForecastPreparedLookupKe
   }
 
   return latest
-    ? readVerificationRunFromPrisma({ ...key, ...latest })
+    ? readVerificationRunFromPrisma({ ...key, ...latest }, dependencies)
     : null
 }
 

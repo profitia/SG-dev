@@ -31,9 +31,14 @@ const ROLLING_DAILY_METHOD_VERSION = 'rolling-daily-point-in-time-v1'
 type MarketDataPrismaClient = NonNullable<ReturnType<typeof getMarketDataPrisma>>
 
 export type PreparedRollingDailyForecastVerificationDependencies = {
-  prisma?: Pick<MarketDataPrismaClient, 'rollingDailyVerificationRecord' | 'rollingDailyMaintenanceState'>
+  prisma?: PreparedRollingDailyVerificationReadClient
   resolveHistory?: typeof resolveBenchmarkHistoricalSeries
   emitPreparedRead?: typeof forecastStressTelemetry.emit
+}
+
+export type PreparedRollingDailyVerificationReadClient = {
+  readonly rollingDailyVerificationRecord: Pick<MarketDataPrismaClient['rollingDailyVerificationRecord'], 'findMany'>
+  readonly rollingDailyMaintenanceState: Pick<MarketDataPrismaClient['rollingDailyMaintenanceState'], 'findUnique'>
 }
 
 function asNumber(value: { toString(): string } | number | null) {
@@ -69,8 +74,13 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
   return async function readPreparedRollingDailyForecastVerification(
     input: ForecastRequestInput,
   ): Promise<BenchmarkForecastVerificationResult> {
-    const prisma = dependencies.prisma ?? getMarketDataPrisma()
-    if (!prisma) throw new Error('Forecast library datastore is unavailable.')
+    const explicitPrisma = dependencies == null || Object.prototype.hasOwnProperty.call(dependencies, 'prisma')
+    const prisma = explicitPrisma ? dependencies?.prisma : getMarketDataPrisma()
+    if (!prisma
+      || typeof prisma.rollingDailyVerificationRecord?.findMany !== 'function'
+      || typeof prisma.rollingDailyMaintenanceState?.findUnique !== 'function') {
+      throw new Error('Forecast library datastore is unavailable.')
+    }
     const resolveHistory = dependencies.resolveHistory ?? resolveBenchmarkHistoricalSeries
     const emitPreparedRead = dependencies.emitPreparedRead ?? forecastStressTelemetry.emit.bind(forecastStressTelemetry)
 
