@@ -9,7 +9,8 @@ export type PersistedSection = Section | "jdg";
 export type TerminalStatus = "SUCCESS" | "NO_DATA" | "TIMEOUT" | "ERROR";
 
 
-export async function createLookup(organizationId: string, identifier: Identifier, entityType: "COMPANY" | "JDG" = "COMPANY", pool?: DatabasePool): Promise<{ supplierId: string; requestId: string }> {
+export async function createLookup(organizationId: string, identifier: Identifier, entityType: "COMPANY" | "JDG" = "COMPANY", pool?: DatabasePool, acceptedRequestId?: string): Promise<{ supplierId: string; requestId: string }> {
+  if (acceptedRequestId !== undefined && (!pool || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(acceptedRequestId))) throw new Error("A bound accepted request UUID is required");
   if (!/^[0-9]{10}$/.test(identifier.value)) throw new Error("NIP or KRS must have ten digits");
   return withOrganization(organizationId, async (client) => {
     const column = identifier.type === "NIP" ? "nip" : "krs";
@@ -21,15 +22,15 @@ export async function createLookup(organizationId: string, identifier: Identifie
     );
     // Each lookup has its own database identity; HTTP correlation remains request-local.
     const request = await client.query<{ id: string }>(
-      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier, entity_type) VALUES ($1, $2, $3, $4, $5) RETURNING id",
-      [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType],
+      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier, entity_type, id) VALUES ($1, $2, $3, $4, $5, coalesce($6::uuid,gen_random_uuid())) RETURNING id",
+      [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType, acceptedRequestId ?? null],
     );
     return { supplierId: supplier.rows[0].id, requestId: request.rows[0].id };
   }, pool);
 }
 
 export async function startAttempt(organizationId: string, requestId: string, section: PersistedSection, attemptNo = 1,
-  retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER"): Promise<string> {
+  retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER", pool?: DatabasePool): Promise<string> {
   const provider = section === "kys" ? "VERCLY" : section === "jdg" ? "CEIDG" : "MGBI";
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ id: string }>(
@@ -37,7 +38,7 @@ export async function startAttempt(organizationId: string, requestId: string, se
       [organizationId, requestId, section, provider, attemptNo, retrievalMethod],
     );
     return result.rows[0].id;
-  });
+  }, pool);
 }
 
 export async function finishAttempt(
@@ -45,6 +46,7 @@ export async function finishAttempt(
   attemptId: string,
   status: TerminalStatus,
   details: { correlationId?: string; providerRecordId?: string; errorCode?: string } = {},
+  pool?: DatabasePool,
 ): Promise<void> {
   await withOrganization(organizationId, async (client) => {
     const result = await client.query(
@@ -53,7 +55,7 @@ export async function finishAttempt(
       [organizationId, attemptId, status, details.correlationId ?? null, details.providerRecordId ?? null, details.errorCode ?? null],
     );
     if (result.rowCount !== 1) throw new Error("Attempt missing, foreign or already completed");
-  });
+  }, pool);
 }
 
 export interface SnapshotInput {
@@ -68,7 +70,7 @@ export interface SnapshotInput {
   retentionUntil?: Date;
 }
 
-export async function appendSnapshot(organizationId: string, input: SnapshotInput): Promise<string> {
+export async function appendSnapshot(organizationId: string, input: SnapshotInput, pool?: DatabasePool): Promise<string> {
   if (input.section === "kys" && !["KYS_REDACTED", "KYS_PERSONAL"].includes(input.dataClass)) throw new Error("KYS snapshots must use a classified projection");
   if (input.dataClass === "KYS_PERSONAL" && (!input.retentionUntil ||
     input.retentionUntil.getTime() > input.retrievedAt.getTime() + 7 * 24 * 60 * 60 * 1000)) {
@@ -87,7 +89,7 @@ export async function appendSnapshot(organizationId: string, input: SnapshotInpu
         serialized, digest, input.dataClass, input.retrievedAt, input.effectiveAt ?? null, input.retentionUntil ?? null],
     );
     return result.rows[0].id;
-  });
+  }, pool);
 }
 
 export async function purgeExpiredKysPersonal(organizationId: string): Promise<void> {
@@ -117,6 +119,7 @@ export async function readKysPersonPesel(
 export async function appendSectionProjection(
   organizationId: string,
   input: { supplierId: string; snapshotId: string; section: PersistedSection; data: unknown; version: number },
+  pool?: DatabasePool,
 ): Promise<string> {
   const serialized = JSON.stringify(input.data);
   if (!serialized || !Number.isSafeInteger(input.version) || input.version < 1) throw new Error("A valid projection is required");
@@ -127,7 +130,7 @@ export async function appendSectionProjection(
       [organizationId, input.supplierId, input.snapshotId, input.section, input.version, serialized],
     );
     return result.rows[0].id;
-  });
+  }, pool);
 }
 
 export interface FinancialFactInput {
@@ -147,7 +150,7 @@ export interface FinancialFactInput {
   validationStatus: "VALID" | "REVIEW" | "REJECTED";
 }
 
-export async function appendFinancialFacts(organizationId: string, facts: FinancialFactInput[]): Promise<void> {
+export async function appendFinancialFacts(organizationId: string, facts: FinancialFactInput[], pool?: DatabasePool): Promise<void> {
   if (!facts.length) return;
   const { supplierId, snapshotId } = facts[0];
   if (facts.some((fact) => fact.supplierId !== supplierId || fact.snapshotId !== snapshotId)) throw new Error("Financial facts must belong to one snapshot");
@@ -169,5 +172,5 @@ export async function appendFinancialFacts(organizationId: string, facts: Financ
       "source_path text, validation_status text)",
       [organizationId, supplierId, snapshotId, JSON.stringify(rows)],
     );
-  });
+  }, pool);
 }

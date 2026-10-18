@@ -13,6 +13,9 @@ import { assertIsolatedTestConnection } from '../../architecture-lab/src/operati
 import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
 import { migrationManifest } from './staging-migrate.mjs'
 import { createSrmReportOperationHost, createSrmSupplierRequestOperationHost } from '../src/server/private-runtime.ts'
+import { createSrmSupplierPrivateStore } from '../src/server/supplier-private-store.ts'
+import { emptyCard } from '../src/demo/fixture.ts'
+import { mapMgbiFinancialRecords } from '../src/server/mgbi-financial.ts'
 import { createSrmSupplierRequestContinuation, SUPPLIER_PRIVATE_PHASES, MAX_PRIVATE_PHASE_BYTES } from '../src/server/supplier-request-continuation.ts'
 import { createOperationSupplierRequestHandler } from '../src/server/supplier-request-handler.ts'
 import { readSupplierRequest, supplierRequestResourceId, persistSupplierRequest } from '../src/server/supplier-request-operation.ts'
@@ -23,6 +26,7 @@ import { readSharedFinancialReport } from '../src/server/shared-financial-read.t
 import { middleware } from '../middleware.ts'
 import { NextRequest } from 'next/server.js'
 import { createSrmPrivateOperationHost } from '../src/server/private-operation-host.ts'
+import { createLookup } from '../src/server/xray-repository.ts'
 import { bindOrganizationTransaction, withOrganization } from '../src/server/db.ts'
 const DATABASE = 'srm_private_host_test', ROLE = 'srm_private_host_runtime'
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222'
@@ -58,6 +62,17 @@ test('SRM imports the exact optional external control source without adopting a 
   for(const [path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
   for(const name of ['externalCallAdopted','sql009Installed','runtimeRoleOrGrantChanged','humanSupplierRefreshAdopted','finderAiAdopted','kysOrPersonalDataAdopted','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
   assert.equal(sdk.externalCallEvidence({status:200,body:{}}),null)
+})
+
+test('SRM business adoption pins its actual writer sources and preserves release boundaries',()=>{
+  const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),accepted=manifest.supplierPrivateBusinessStoreAdoption
+  assert.equal(accepted.taskId,'SRM-E1-SUPPLIER-PRIVATE-BUSINESS-20261018')
+  assert.equal(accepted.version,'srm-supplier-private-store-v1')
+  assert.equal(accepted.status,'SOURCE_CANDIDATE_NOT_RELEASED')
+  assert.equal(Object.keys(accepted.sourceDigests).length,6)
+  for(const[path,digest]of Object.entries(accepted.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+  assert.equal(accepted.businessBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/002-supplier-business-phases.sql',import.meta.url))))
+  for(const name of ['humanSharedCatalogWriteAdopted','namedUserInterestAdopted','kysOrPersonalDataAdopted','providerAcquisitionImplemented','newHttpEndpointAdopted','liveSchemaOrGrantsChanged','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
 })
 
 test('SRM accepts the published optional producer fingerprints', async () => {
@@ -671,7 +686,8 @@ test('real native supplier request admission keeps command, quota and audit in o
     const reset = async (capacity = 5) => {
       revoked = false
       assert.equal((await owner.query('SELECT current_database() db')).rows[0].db, database)
-      await owner.query('DROP SCHEMA IF EXISTS supplier_phase_fixture CASCADE;DROP SCHEMA IF EXISTS profitia_request_phases CASCADE;DROP SCHEMA IF EXISTS profitia_supplier_requests CASCADE;DROP SCHEMA IF EXISTS profitia_requests CASCADE;DROP SCHEMA IF EXISTS profitia_modules CASCADE;DROP SCHEMA IF EXISTS profitia_access CASCADE')
+      await owner.query('DROP SCHEMA IF EXISTS srm CASCADE;DROP SCHEMA IF EXISTS supplier_phase_fixture CASCADE;DROP SCHEMA IF EXISTS profitia_request_phases CASCADE;DROP SCHEMA IF EXISTS profitia_supplier_requests CASCADE;DROP SCHEMA IF EXISTS profitia_requests CASCADE;DROP SCHEMA IF EXISTS profitia_modules CASCADE;DROP SCHEMA IF EXISTS profitia_access CASCADE')
+      await owner.query(`GRANT CREATE ON DATABASE ${database} TO profitia_access_owner`)
       await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner')
       try {
         await owner.query(sql)
@@ -847,6 +863,106 @@ test('real native supplier request admission keeps command, quota and audit in o
       }finally{await client.query('ROLLBACK');client.release()}
     })
     const acceptedParent=async()=>{const response=await handler(request());assert.equal(response.status,202);return(await response.json()).requestId}
+    const businessSql=fs.readFileSync(new URL('../db/private-store/002-supplier-business-phases.sql',import.meta.url),'utf8'),businessDigest=hash(businessSql)
+    const business=createSrmSupplierPrivateStore({continuation,boundaryDigest:businessDigest})
+    const selection=(requestId,patch={})=>({requestId,organisationId:A,command,idempotencyKey:key,request:request(),...patch})
+    const installBusiness=async()=>{
+      await owner.query("UPDATE profitia_access.applications SET status='DISABLED'")
+      await owner.query(`REVOKE CREATE ON DATABASE ${database} FROM profitia_access_owner`)
+      const plan=privateBusinessPlan({binding:{environment:'development',projectId:binding.projectId,branchId:binding.branchId,databaseName:database,role},sourceSha:'a'.repeat(40)})
+      await owner.query('BEGIN')
+      try{for(const statement of plan.sql)await owner.query(statement);await owner.query('SET LOCAL ROLE profitia_access_owner');await owner.query(businessSql)
+        await owner.query("INSERT INTO srm.supplier_business_installation VALUES(true,'1.0.0',$1,$2)",[businessDigest,'b'.repeat(40)])
+        await owner.query(`GRANT EXECUTE ON FUNCTION srm.supplier_business_descriptor() TO ${role};GRANT INSERT,UPDATE ON srm.lookup_requests,srm.provider_attempts,srm.source_snapshots,srm.section_projections,srm.financial_facts,srm.mgbi_source_archives TO ${role}`)
+        await owner.query('RESET ROLE;COMMIT')
+      }catch(error){await owner.query('ROLLBACK');throw error}
+      for(const[index,org]of[A,B].entries())await owner.query('INSERT INTO srm.organizations(id,slug) VALUES($1,$2)',[org,'business-fixture-'+index])
+      await owner.query("UPDATE profitia_access.applications SET status='ACTIVE' WHERE application_id='srm'")
+    }
+    const general=()=>{const section=structuredClone(emptyCard.general);section.status='SUCCESS';section.source={provider:'MGBI',model:'pl-krs-wp-record',recordId:'synthetic-general'};section.retrievedAt=new Date().toISOString();section.data={...section.data,nip:NIP,legalName:'SYNTHETIC_PRIVATE_COMPANY'};return{section,errorCode:null,rawResponse:{pages:[{results:[{id:'synthetic-general',privateMarker:'SYNTHETIC_PRIVATE_MARKER'}]}],recordCount:1}}}
+    const financial=()=>{
+      const record={id:'synthetic-financial-2025',identifiers:{pl_nip:NIP,pl_krs:'0000000001'},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31',filing_date:'2026-01-15',is_ias_compliant:false},content:{schema:{name:'JednostkaInnaWZlotych',version:'1-3'},extracted_fields:{'Naglowek.OkresOd':'2025-01-01','Naglowek.OkresDo':'2025-12-31','Bilans.Aktywa.KwotaA':'100','RZiS.RZiSKalk.A.KwotaA':'200'},standardized_fields:{bs:{a_ta_cfy:100},pala:{nrfs_cfy:200}}}}
+      return{...mapMgbiFinancialRecords([record],{type:'NIP',value:NIP},new Date().toISOString()),rawResponse:{pages:[{results:[record]}],recordCount:1}}
+    }
+    const businessCounts=async()=>(await owner.query("SELECT (SELECT count(*)::int FROM srm.lookup_requests)lookups,(SELECT count(*)::int FROM srm.provider_attempts)attempts,(SELECT count(*)::int FROM srm.source_snapshots)snapshots,(SELECT count(*)::int FROM srm.section_projections)projections,(SELECT count(*)::int FROM srm.mgbi_source_archives)archives,(SELECT count(*)::int FROM srm.catalog_companies)shared")).rows[0]
+    await scenario('actual existing supplier writers commit native business rows once under one accepted parent',async()=>{
+      await installBusiness();const requestId=await acceptedParent(),input=selection(requestId),g=general(),f=financial()
+      for(const[method,value,phase]of[['register',undefined,'REGISTER_LOOKUP'],['general',g,'STORE_GENERAL'],['financial',f,'STORE_FINANCIAL']]){
+        assert.deepEqual(await business[method](input,value),{requestId,phaseId:phase,status:'COMMITTED'})
+        assert.equal((await business[method](input,value)).status,'REPLAY')
+      }
+      assert.deepEqual(await businessCounts(),{lookups:1,attempts:2,snapshots:2,projections:2,archives:2,shared:0})
+      assert.deepEqual(await counts(),{n:1,i:1,used:1})
+      assert.deepEqual((await owner.query('SELECT organization_id,id,identifier FROM srm.lookup_requests')).rows,[{organization_id:A,id:requestId,identifier:NIP}])
+      assert((await owner.query('SELECT count(*)::int n FROM srm.financial_source_documents')).rows[0].n>0)
+      assert((await owner.query('SELECT count(*)::int n FROM srm.financial_facts')).rows[0].n>0)
+      const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME'")).rows
+      assert.equal(events.length,7);assert(events.every(({event})=>event.actorId===U&&event.organisationId===A&&!JSON.stringify(event).includes('SYNTHETIC_PRIVATE_MARKER')))
+    },1)
+    await scenario('actual corporate writes refuse another actor, organization, parent, input change and phase order',async()=>{
+      await installBusiness();const requestId=await acceptedParent(),g=general()
+      await assert.rejects(business.general(selection(requestId),g))
+      for(const patch of[{organisationId:B},{request:request({user:V})},{requestId:randomUUID()},{command:{kind:'SUPPLIER_REPORT',nip:'5260250274'}}])await assert.rejects(business.register(selection(requestId,patch)))
+      await business.register(selection(requestId));await business.general(selection(requestId),g)
+      await assert.rejects(business.general(selection(requestId),{...g,errorCode:'ALTERED_INPUT'}),e=>e.reasonCode==='IDEMPOTENCY_CONFLICT')
+      assert.deepEqual(await businessCounts(),{lookups:1,attempts:1,snapshots:1,projections:1,archives:1,shared:0})
+      await owner.query("UPDATE profitia_access.permission_grants SET effect='DENY' WHERE application_id='srm' AND organisation_id=$1 AND user_id=$2",[A,U])
+      await assert.rejects(business.register(selection(requestId)));await assert.rejects(business.financial(selection(requestId),financial()))
+      assert.deepEqual(await counts(),{n:1,i:1,used:1})
+    })
+    await scenario('actual private business SQL is rolled back on canonical OUTCOME failure',async()=>{
+      await installBusiness();const requestId=await acceptedParent();await business.register(selection(requestId))
+      await owner.query("CREATE FUNCTION profitia_access.reject_business_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' THEN RAISE EXCEPTION 'synthetic business audit outage'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_business_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_business_outcome()")
+      try{await assert.rejects(business.general(selection(requestId),general()))}finally{await owner.query('DROP TRIGGER reject_business_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_business_outcome()')}
+      assert.deepEqual(await businessCounts(),{lookups:1,attempts:0,snapshots:0,projections:0,archives:0,shared:0})
+      assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_request_phases.effects WHERE phase_id='STORE_GENERAL'")).rows[0].n,0)
+      assert.equal((await business.general(selection(requestId),general())).status,'COMMITTED')
+    })
+    await scenario('ordinary SQL and genuine module context without a current phase cannot write business rows',async()=>{
+      await installBusiness();const requestId=await acceptedParent()
+      await assert.rejects(pool.query("INSERT INTO srm.suppliers(organization_id,nip) VALUES($1,$2)",[A,NIP]))
+      const other={...input(),idempotencyKey:key+'-ordinary'}
+      await assert.rejects(host.execute(other,async(context,client)=>{await client.query("SELECT set_config('srm.organization_id',$1,true)",[A]);await createLookup(A,{type:'NIP',value:NIP},'COMPANY',bindOrganizationTransaction(A,client),context.requestReservation.requestId)}))
+      assert.equal((await businessCounts()).lookups,0)
+      assert.equal((await business.register(selection(requestId))).status,'COMMITTED')
+    })
+    await scenario('real business phases keep the same supplier separate in two organizations and bind immutable input',async()=>{
+      await installBusiness();const a=await acceptedParent(),bKey=key+'-org-b'
+      const bResponse=await handler(request({org:B,key:bKey}));assert.equal(bResponse.status,202);const b=(await bResponse.json()).requestId
+      const aSelection=selection(a),bSelection=selection(b,{organisationId:B,idempotencyKey:bKey,request:request({org:B,key:bKey})})
+      await business.register(aSelection);await business.register(bSelection)
+      const g=general(),pending=business.general(aSelection,g);g.section.data.legalName='MUTATED_AFTER_CAPTURE';await pending
+      const other=general();other.section.data.legalName='SYNTHETIC_COMPANY_B';await business.general(bSelection,other)
+      const rows=(await owner.query("SELECT organization_id,payload_json->>'legalName' name FROM srm.source_snapshots ORDER BY organization_id")).rows
+      assert.deepEqual(rows,[{organization_id:A,name:'SYNTHETIC_PRIVATE_COMPANY'},{organization_id:B,name:'SYNTHETIC_COMPANY_B'}])
+      assert.deepEqual(await businessCounts(),{lookups:2,attempts:2,snapshots:2,projections:2,archives:2,shared:0})
+    })
+    await scenario('real business phase refuses foreign NIP, a KYS attempt and a falsely granted installation writer',async()=>{
+      await installBusiness();const requestId=await acceptedParent();await business.register(selection(requestId))
+      for(const action of[
+        async(context,client)=>{await client.query("SELECT set_config('srm.organization_id',$1,true)",[A]);await client.query("INSERT INTO srm.mgbi_source_archives(organization_id,nip,model,payload_json,payload_sha256,record_count,first_retrieved_at,last_checked_at,source_request_id) VALUES($1,'5260250274','pl-krs-wp-record','{}',$2,0,now(),now(),$3)",[A,'a'.repeat(64),requestId])},
+        async(context,client)=>{await client.query("SELECT set_config('srm.organization_id',$1,true)",[A]);await client.query("INSERT INTO srm.provider_attempts(organization_id,request_id,section,provider,attempt_no,status,retrieval_method) VALUES($1,$2,'kys','VERCLY',1,'PENDING','PROVIDER')",[A,requestId])},
+      ])await assert.rejects(continuation.run(phaseInput(requestId,{phaseId:'STORE_GENERAL'}),action))
+      assert.deepEqual(await businessCounts(),{lookups:1,attempts:0,snapshots:0,projections:0,archives:0,shared:0})
+      await owner.query(`GRANT UPDATE ON srm.supplier_business_installation TO ${role}`)
+      try{await assert.rejects(business.general(selection(requestId),general()))}finally{await owner.query(`REVOKE UPDATE ON srm.supplier_business_installation FROM ${role}`)}
+      assert.equal((await business.general(selection(requestId),general())).status,'COMMITTED')
+    })
+    await scenario('a later accepted refresh updates its own archive and keeps previous immutable snapshots',async()=>{
+      await installBusiness();const a=await acceptedParent(),aSelection=selection(a),g=general()
+      await business.register(aSelection);await business.general(aSelection,g)
+      const nextKey=key+'-next-refresh',reply=await handler(request({key:nextKey}));assert.equal(reply.status,202)
+      const b=(await reply.json()).requestId,bSelection=selection(b,{idempotencyKey:nextKey,request:request({key:nextKey})})
+      await business.register(bSelection)
+      const next=general();next.section.data.legalName='SYNTHETIC_LATER_COMPANY';next.rawResponse.pages[0].results[0].privateMarker='SYNTHETIC_LATER_MARKER'
+      await business.general(bSelection,next)
+      assert.deepEqual(await businessCounts(),{lookups:2,attempts:2,snapshots:2,projections:2,archives:1,shared:0})
+      const archive=(await owner.query('SELECT source_request_id,payload_json,payload_jsonb_sha256 FROM srm.mgbi_source_archives')).rows[0]
+      assert.equal(archive.source_request_id,b);assert.equal(archive.payload_json.pages[0].results[0].privateMarker,'SYNTHETIC_LATER_MARKER')
+      assert.equal((await owner.query("SELECT encode(sha256(convert_to(payload_json::text,'UTF8')),'hex') actual FROM srm.mgbi_source_archives")).rows[0].actual,archive.payload_jsonb_sha256)
+      const names=(await owner.query("SELECT payload_json->>'legalName' name FROM srm.source_snapshots ORDER BY created_at")).rows.map(r=>r.name)
+      assert.deepEqual(names,['SYNTHETIC_PRIVATE_COMPANY','SYNTHETIC_LATER_COMPANY'])
+    })
     await scenario('native domain phase verifies the stored command and current actor before committing private SQL',async()=>{
       const requestId=await acceptedParent(),result=await continuation.run(phaseInput(requestId),phaseAction)
       assert.deepEqual(result,{requestId,phaseId:'REGISTER_LOOKUP',status:'COMMITTED'})
