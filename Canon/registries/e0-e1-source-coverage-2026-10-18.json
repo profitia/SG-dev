@@ -1,0 +1,3299 @@
+{
+  "schemaVersion": "1.0.0",
+  "registryId": "e0-e1-source-coverage-2026-10-18",
+  "status": "DATED_DESCRIPTIVE_SOURCE_SNAPSHOT_NOT_POLICY_OR_RELEASE_ACCEPTANCE",
+  "taskId": "ARCHITECTURE-E1-COVERAGE-RECONCILIATION-20261018",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "executionEnvironment": "local",
+  "sourceAuthority": "profitia/SG-dev/main",
+  "sourceSha": "ff49783ce72c547158c54aaf7c0f86191fc0e61d",
+  "observedAtUtc": "2026-10-18T16:59:27.452926Z",
+  "baselineRef": "Canon/registries/e0-e1-protected-surface-inventory-v1.json",
+  "baselineSourceSha": "99d3a408bf7a91a50387ce8efd79ce68c7b2fa9e",
+  "effectMapRef": "Canon/registries/e0-e1-operation-effects-v1.json",
+  "scope": {
+    "routeFiles": 84,
+    "httpMethods": 90,
+    "originalRouteFiles": 81,
+    "originalHttpMethods": 87,
+    "nativeSourceBranchCount": 24,
+    "publicPolicyBranchCount": 7,
+    "unadoptedBranchCount": 59,
+    "stateCounts": {
+      "SEPARATE_PUBLIC_OR_LOGIN_POLICY": 7,
+      "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK": 15,
+      "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED": 24,
+      "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED": 23,
+      "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED": 11,
+      "LEGACY_DASHBOARD_BRANCH_CLOSED": 10
+    },
+    "depth": "Complete route/method census, exact file fingerprints, historical effect-family fingerprint reconciliation and selected actual factory/UI/worker call chains. Not every line, external endpoint or live request context audited.",
+    "countsAreNotACompletionPercentage": true,
+    "confersPermission": false
+  },
+  "apiRoutes": [
+    {
+      "id": "sg-runtime:POST:/api/advisory",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/advisory/route.ts",
+      "method": "POST",
+      "sourceSha256": "541bbb778af661ddc3e324b79f4d7a181854f2297403fe1c9aa5685f6a587c55",
+      "baselineSourceSha256": "541bbb778af661ddc3e324b79f4d7a181854f2297403fe1c9aa5685f6a587c55",
+      "newSinceBaseline": false,
+      "state": "SEPARATE_PUBLIC_OR_LOGIN_POLICY",
+      "businessStatus": "NO_PRODUCT_PERMISSION_INFERRED",
+      "historicalEffectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "descriptiveDataClasses": [
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/advisory/cic-adapter"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/ai-search",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/ai-search/route.ts",
+      "method": "POST",
+      "sourceSha256": "7d10fafe701f84548540e78e1b304bb72c05145450b1cb2c3987726fd49a2683",
+      "baselineSourceSha256": "7d10fafe701f84548540e78e1b304bb72c05145450b1cb2c3987726fd49a2683",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "AI_SEARCH"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/errors",
+        "@/lib/benchmark/ai-search",
+        "@/lib/api/middleware"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/analytics-eligibility",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/analytics-eligibility/route.ts",
+      "method": "GET",
+      "sourceSha256": "681b0f26634f8b2a2a98e4fb52c54783b4dac8c0e28d29b0e39c10e809dc2968",
+      "baselineSourceSha256": "f8f660c0eded23672b8ac38da10a655bd584487389c825f55d6b584fe8f3aebe",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark/analytics-eligibility-handlers",
+        "next/server",
+        "zod",
+        "@/lib/benchmark/analytics",
+        "@/lib/api/middleware"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/analytics-series",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/analytics-series/route.ts",
+      "method": "GET",
+      "sourceSha256": "b30a69e1a4c17afd4d41089649fbaef11ff2d59cea1a5f30948eedb4802df5f1",
+      "baselineSourceSha256": "8e5549cce64e7d71bec89ad84d46709387a7273aea9174fe8d81f033dbbf1f0c",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "HISTORY_READ_THROUGH"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark/analytics-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/context",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/context/route.ts",
+      "method": "POST",
+      "sourceSha256": "87fcb1cf804817e75ea154913b9a37fc8faf13c10d2f9a75f2a753b7f979b3f1",
+      "baselineSourceSha256": "87fcb1cf804817e75ea154913b9a37fc8faf13c10d2f9a75f2a753b7f979b3f1",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/benchmark/errors",
+        "@/lib/benchmark/service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/forecast/current",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/forecast/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "e35851ab2aff9c992e1605d8ece4d0a913dd5fefec03233d6b6977ba44a3619b",
+      "baselineSourceSha256": "c2beaa4e27e5c45d4d893a023e76f6a5d3b83f24a87d61fa709bc83e81dea779",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "PREPARED_FORECAST_READ"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/current-operation-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/forecast/requests",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/forecast/requests/route.ts",
+      "method": "POST",
+      "sourceSha256": "f2d669a32e88aeed2d654c46a89491aaac753a1176ccbadf41904c54a4305b58",
+      "baselineSourceSha256": null,
+      "newSinceBaseline": true,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [],
+      "descriptiveDataClasses": [
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/request-operation-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/forecast/verification",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "d28e333c5eaec7972c87f55761fdebacae6f58e4ab22bfcc34247aca11418c4a",
+      "baselineSourceSha256": "f0e4ea4e0907e927f63d81e3375c1ed17c28ff99bb094f23bd26c4738f2b5b06",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "PREPARED_FORECAST_READ"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/verification-operation-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/metadata/[metadataKey]/values",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/metadata/[metadataKey]/values/route.ts",
+      "method": "GET",
+      "sourceSha256": "72794e6ac84ab4ec3de90c91785d315b95b4c4222af78b8e944ba53e92adf253",
+      "baselineSourceSha256": "72794e6ac84ab4ec3de90c91785d315b95b4c4222af78b8e944ba53e92adf253",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/metadata",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/metadata/route.ts",
+      "method": "GET",
+      "sourceSha256": "57307aa6dcfc57943bac2fff4dc1eb60c3e20e00bda47d95cae0b7808f5cf8aa",
+      "baselineSourceSha256": "57307aa6dcfc57943bac2fff4dc1eb60c3e20e00bda47d95cae0b7808f5cf8aa",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/preview",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/preview/route.ts",
+      "method": "GET",
+      "sourceSha256": "5fcd5b0647a65b2c71015c1cf65043e85aab8fbba1bc185c82c53d8f8287ed1d",
+      "baselineSourceSha256": "4a48bc420681792cbe148e4ab541495afee1e3be1e8a1f4644aab0b2985c10da",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "HISTORY_READ_THROUGH"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark/preview-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/search",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/search/route.ts",
+      "method": "GET",
+      "sourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "baselineSourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/contracts",
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/search",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/search/route.ts",
+      "method": "POST",
+      "sourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "baselineSourceSha256": "ca870ad5c424e4158a165d76bd1b890c9ee196ee7a5917b209332c5df0198b8c",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "DISCOVERY_METADATA"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/benchmark/contracts",
+        "@/lib/benchmark/service",
+        "@/lib/benchmark/errors",
+        "@/lib/api/middleware"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/benchmark/selection",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/selection/route.ts",
+      "method": "GET",
+      "sourceSha256": "c6539722c19aa79a1f5efa63ce65384113f8c861349d2f27fb7003378c3c627a",
+      "baselineSourceSha256": "3de792ca0105053d58ec7f6a750082257c0bb46b3ddd90402f43698d599ce92f",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "BENCHMARK_SELECTION"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark/runtime-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:POST:/api/benchmark/selection",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/benchmark/selection/route.ts",
+      "method": "POST",
+      "sourceSha256": "c6539722c19aa79a1f5efa63ce65384113f8c861349d2f27fb7003378c3c627a",
+      "baselineSourceSha256": "3de792ca0105053d58ec7f6a750082257c0bb46b3ddd90402f43698d599ce92f",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "BENCHMARK_SELECTION"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark/runtime-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/category/[categoryId]",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/[categoryId]/route.ts",
+      "method": "GET",
+      "sourceSha256": "73291ae37db1d07d21cce1ef5e200c787af4223aeb9bdae212693635102e3eb5",
+      "baselineSourceSha256": "01d5635c5e0e859fbfefccbd0f5460b118d20268971f70c72a1f11f35017c643",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "@/lib/category/runtime-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:PATCH:/api/category/[categoryId]",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/[categoryId]/route.ts",
+      "method": "PATCH",
+      "sourceSha256": "73291ae37db1d07d21cce1ef5e200c787af4223aeb9bdae212693635102e3eb5",
+      "baselineSourceSha256": "01d5635c5e0e859fbfefccbd0f5460b118d20268971f70c72a1f11f35017c643",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "@/lib/category/runtime-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:POST:/api/category/ai-suggestions",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/ai-suggestions/route.ts",
+      "method": "POST",
+      "sourceSha256": "e47b7db068990d0d8c72bb5ded6b484baa37f2935198296eca141162f1d01bff",
+      "baselineSourceSha256": "e47b7db068990d0d8c72bb5ded6b484baa37f2935198296eca141162f1d01bff",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/category/ai-suggestions",
+        "@/lib/category/errors",
+        "@/lib/api/middleware"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/category",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/route.ts",
+      "method": "GET",
+      "sourceSha256": "041dca6634cc18e14d0b5048fad21ee0cb6dce138163b89be4c2c054f8b2e549",
+      "baselineSourceSha256": "baffdd308ce201fff2c57f489a78ccb96fd2c280d7a1184da3a9ed7e7ca2f4e1",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "@/lib/category/runtime-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:POST:/api/category",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/category/route.ts",
+      "method": "POST",
+      "sourceSha256": "041dca6634cc18e14d0b5048fad21ee0cb6dce138163b89be4c2c054f8b2e549",
+      "baselineSourceSha256": "baffdd308ce201fff2c57f489a78ccb96fd2c280d7a1184da3a9ed7e7ca2f4e1",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "@/lib/category/runtime-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/cost-scan/category/[categoryId]",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/cost-scan/category/[categoryId]/route.ts",
+      "method": "GET",
+      "sourceSha256": "49bb8ea2f362f356b8c18ed4be233c8319ff29c07e37eed74dedbe6530c236ba",
+      "baselineSourceSha256": "49bb8ea2f362f356b8c18ed4be233c8319ff29c07e37eed74dedbe6530c236ba",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/category/errors",
+        "@/lib/cost-scan/errors",
+        "@/lib/cost-scan/service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/health",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/health/route.ts",
+      "method": "GET",
+      "sourceSha256": "543cab74cfdf7190ed0ebc9ca12605056b28e5aadb6f37e59c24ffda58f4c295",
+      "baselineSourceSha256": "543cab74cfdf7190ed0ebc9ca12605056b28e5aadb6f37e59c24ffda58f4c295",
+      "newSinceBaseline": false,
+      "state": "SEPARATE_PUBLIC_OR_LOGIN_POLICY",
+      "businessStatus": "NO_PRODUCT_PERMISSION_INFERRED",
+      "historicalEffectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "descriptiveDataClasses": [
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/env"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/hydrate/assistant",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/hydrate/assistant/route.ts",
+      "method": "POST",
+      "sourceSha256": "110c44938c5ba2f1f368398835b97cb1e75943739b41f87bd1b47fcdf6b698e1",
+      "baselineSourceSha256": "110c44938c5ba2f1f368398835b97cb1e75943739b41f87bd1b47fcdf6b698e1",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/hydrate/intelligence",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/hydrate/intelligence/route.ts",
+      "method": "POST",
+      "sourceSha256": "7731efc34a6dc17d7927f6b24ddab24af5404edb36650e395c53a68b06a828a4",
+      "baselineSourceSha256": "7731efc34a6dc17d7927f6b24ddab24af5404edb36650e395c53a68b06a828a4",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/hydrate/procurement",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/hydrate/procurement/route.ts",
+      "method": "POST",
+      "sourceSha256": "1436bb1fe292e73b6c48631d39c80dd597624211a7b50d959d015b026a1a79d0",
+      "baselineSourceSha256": "1436bb1fe292e73b6c48631d39c80dd597624211a7b50d959d015b026a1a79d0",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/hydrate/supplier",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/hydrate/supplier/route.ts",
+      "method": "POST",
+      "sourceSha256": "21b95676c4957bc0d9d99ccdcc1bf651a3a8300e6572288a79c8cfb341b51b94",
+      "baselineSourceSha256": "21b95676c4957bc0d9d99ccdcc1bf651a3a8300e6572288a79c8cfb341b51b94",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/action-trace",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/action-trace/route.ts",
+      "method": "POST",
+      "sourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "baselineSourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/internal-forecast-service-auth",
+        "@/lib/api/middleware",
+        "@/lib/forecast/forecast-action-trace"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/action-trace",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/action-trace/route.ts",
+      "method": "GET",
+      "sourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "baselineSourceSha256": "7744d248adb9194c433a5ba113a37c8c1370137157552d76205e10c7a294f507",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/internal-forecast-service-auth",
+        "@/lib/api/middleware",
+        "@/lib/forecast/forecast-action-trace"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/capabilities",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/capabilities/route.ts",
+      "method": "GET",
+      "sourceSha256": "a4a9928d189fbd7249fa1c724bfb67339254f10ea8fbea7ee737416aa3b449a7",
+      "baselineSourceSha256": "2ae337a057e36b19e45e2e13942a96a3cfd5779a7ec9f5629d246efe960dd17b",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/readiness-operation-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/capability",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/capability/route.ts",
+      "method": "GET",
+      "sourceSha256": "2461da88ae9c650c81c8cd07ce4bae87cb791636b81331ae078db2a010c3d244",
+      "baselineSourceSha256": "e259b1c1bda31026772810c961d2af03e82eb15f327c5bba7fa1bedcce0ccb58",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/readiness-operation-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/execution-ledger",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/execution-ledger/route.ts",
+      "method": "POST",
+      "sourceSha256": "f3d4a9c6640abe4ef8de70d294ad3b7032dee871f62dd26073dd98f87f960916",
+      "baselineSourceSha256": "f3d4a9c6640abe4ef8de70d294ad3b7032dee871f62dd26073dd98f87f960916",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/preparation/jobs",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/preparation/jobs/route.ts",
+      "method": "POST",
+      "sourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "baselineSourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/preparation-route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/preparation/jobs",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/preparation/jobs/route.ts",
+      "method": "GET",
+      "sourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "baselineSourceSha256": "6386b11d08fe421049364fd568731063e440d794c147aa5d6b1abaf077334f16",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/preparation-route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/prepare/current",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepare/current/route.ts",
+      "method": "POST",
+      "sourceSha256": "9abad3a60bdefa588eb36932c4265ebd8382b93abecbd1f43ac971c4ed33d6b6",
+      "baselineSourceSha256": "9abad3a60bdefa588eb36932c4265ebd8382b93abecbd1f43ac971c4ed33d6b6",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/interactive-route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/prepared/current",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepared/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "8f74a5faf4197d0d2a052e6d246b6a7822569fddc843c519d0390c5a38a44c3f",
+      "baselineSourceSha256": "8f74a5faf4197d0d2a052e6d246b6a7822569fddc843c519d0390c5a38a44c3f",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/prepared/verification",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/prepared/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "fdeb4f61fd2f4343bf8212f6ec4ce9c8bde1baeb32cdf01fd8546a15bb53082a",
+      "baselineSourceSha256": "fdeb4f61fd2f4343bf8212f6ec4ce9c8bde1baeb32cdf01fd8546a15bb53082a",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/production",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/production/route.ts",
+      "method": "GET",
+      "sourceSha256": "e8a2637de2e6dee2312ada893a22689419a8bedff9a6a25c1118c6dae0259f7f",
+      "baselineSourceSha256": "e8a2637de2e6dee2312ada893a22689419a8bedff9a6a25c1118c6dae0259f7f",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/internal/forecast/progressive",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/progressive/route.ts",
+      "method": "POST",
+      "sourceSha256": "91c53480ab464b07d07ac70251de7e91df74909235a3bc99849197cb4e80ca02",
+      "baselineSourceSha256": "91c53480ab464b07d07ac70251de7e91df74909235a3bc99849197cb4e80ca02",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/interactive-route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/readiness",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/readiness/route.ts",
+      "method": "GET",
+      "sourceSha256": "ada476964958bd726737dc9b4d64d439323ab1e8ef96967ba98bb36ef3dbf55b",
+      "baselineSourceSha256": "6f2146baba6411c3d350d95d32814b5426cff2985a901817400ccfb85e6ba7de",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/readiness-operation-handlers"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/internal/forecast/verification",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/internal/forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "3cdd45b0f4f281a6cbd75170fcab382227fbad5f019450458ce85ee4ddeb1f3b",
+      "baselineSourceSha256": "3cdd45b0f4f281a6cbd75170fcab382227fbad5f019450458ce85ee4ddeb1f3b",
+      "newSinceBaseline": false,
+      "state": "LEGACY_TECHNICAL_ALTERNATIVE_CLOSED",
+      "businessStatus": "RECONCILE_CALLERS_WITH_ADOPTED_SOURCE_FLOW_NOT_REOPEN_OLD_TOKEN",
+      "historicalEffectFamilies": [
+        "TECHNICAL_FORECAST"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT",
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "@/lib/forecast/route-handlers"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/negotiation/context",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/negotiation/context/route.ts",
+      "method": "POST",
+      "sourceSha256": "07cddab6f6f54f121590c3a531a9aebdd6c92fe12e3a686f37fa3bab39d73bcc",
+      "baselineSourceSha256": "07cddab6f6f54f121590c3a531a9aebdd6c92fe12e3a686f37fa3bab39d73bcc",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/negotiation/hydrate",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/negotiation/hydrate/route.ts",
+      "method": "POST",
+      "sourceSha256": "42d9ecffe1cd059317f3fe259bfb9ee836fe47addeeeccea0ff0f92da9290924",
+      "baselineSourceSha256": "42d9ecffe1cd059317f3fe259bfb9ee836fe47addeeeccea0ff0f92da9290924",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/negotiation/intelligence",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/negotiation/intelligence/route.ts",
+      "method": "POST",
+      "sourceSha256": "c975646f970c5f7b11f8f3aece3284c99d115ee4994bead341546632d3d3b5cf",
+      "baselineSourceSha256": "c975646f970c5f7b11f8f3aece3284c99d115ee4994bead341546632d3d3b5cf",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/negotiation/retrieval",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/negotiation/retrieval/route.ts",
+      "method": "POST",
+      "sourceSha256": "aa2f4ee0dce99b6916119be3357186cf9672b8d6b818433ffe11df46281c7a9d",
+      "baselineSourceSha256": "aa2f4ee0dce99b6916119be3357186cf9672b8d6b818433ffe11df46281c7a9d",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/openapi",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/openapi/route.ts",
+      "method": "GET",
+      "sourceSha256": "65b922e2eec0e427cc4ed9e8bcb86fb3350ec6e9d59baf22b30ab4a5f7172db7",
+      "baselineSourceSha256": "65b922e2eec0e427cc4ed9e8bcb86fb3350ec6e9d59baf22b30ab4a5f7172db7",
+      "newSinceBaseline": false,
+      "state": "SEPARATE_PUBLIC_OR_LOGIN_POLICY",
+      "businessStatus": "NO_PRODUCT_PERMISSION_INFERRED",
+      "historicalEffectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "descriptiveDataClasses": [
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "availabilityLimit": "Public classification does not mean available: getCognitionService has no tracked application initialization call site."
+    },
+    {
+      "id": "sg-runtime:POST:/api/porr-demo-auth",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/porr-demo-auth/route.ts",
+      "method": "POST",
+      "sourceSha256": "561ba6b7e263ccc35a6c9e45eb6d469cbf998633e1b74612cd003ca8f7b9d2a1",
+      "baselineSourceSha256": "561ba6b7e263ccc35a6c9e45eb6d469cbf998633e1b74612cd003ca8f7b9d2a1",
+      "newSinceBaseline": false,
+      "state": "SEPARATE_PUBLIC_OR_LOGIN_POLICY",
+      "businessStatus": "NO_PRODUCT_PERMISSION_INFERRED",
+      "historicalEffectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "descriptiveDataClasses": [
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/porr-demo-session",
+        "@/lib/porr-demo-profile"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/procurement/category",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/category/route.ts",
+      "method": "GET",
+      "sourceSha256": "a84f09993f834eee558bd77b8c9259b315dc60af7480e4a305b516a69cdbbe9b",
+      "baselineSourceSha256": "a84f09993f834eee558bd77b8c9259b315dc60af7480e4a305b516a69cdbbe9b",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/procurement/context",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/context/route.ts",
+      "method": "GET",
+      "sourceSha256": "d80323c72cc69d5aa3f6e4f613947d43ea21e92cca17d99b40ff991892b13ac4",
+      "baselineSourceSha256": "d80323c72cc69d5aa3f6e4f613947d43ea21e92cca17d99b40ff991892b13ac4",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/procurement/hydrate",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/hydrate/route.ts",
+      "method": "POST",
+      "sourceSha256": "0e9078f9a8c50f3375817b0757d4e424f41cf397c05aeed705ec96e5d3ce2532",
+      "baselineSourceSha256": "0e9078f9a8c50f3375817b0757d4e424f41cf397c05aeed705ec96e5d3ce2532",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/procurement/intelligence",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/intelligence/route.ts",
+      "method": "GET",
+      "sourceSha256": "79ab2674a7f11e930663a7dee9497b4cd99a81121995242a864184fecce8917e",
+      "baselineSourceSha256": "79ab2674a7f11e930663a7dee9497b4cd99a81121995242a864184fecce8917e",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/procurement/retrieval",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/procurement/retrieval/route.ts",
+      "method": "POST",
+      "sourceSha256": "3d9c3980007e1662a0105120b2d31b876186cb55ec969b50ac00b6beee70ad22",
+      "baselineSourceSha256": "3d9c3980007e1662a0105120b2d31b876186cb55ec969b50ac00b6beee70ad22",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/retrieval/contextual",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/retrieval/contextual/route.ts",
+      "method": "POST",
+      "sourceSha256": "f2afbadb913d1d6d857666fa8b2c4671d37199ce67ed6c8ea2f84bae6c421c89",
+      "baselineSourceSha256": "f2afbadb913d1d6d857666fa8b2c4671d37199ce67ed6c8ea2f84bae6c421c89",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/retrieval/graph",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/retrieval/graph/route.ts",
+      "method": "POST",
+      "sourceSha256": "24b416742904917e048d92e38f692453c96e47fda471d74d571da0a40cf7f8ef",
+      "baselineSourceSha256": "24b416742904917e048d92e38f692453c96e47fda471d74d571da0a40cf7f8ef",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/retrieval/rag",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/retrieval/rag/route.ts",
+      "method": "POST",
+      "sourceSha256": "3de75d8b5f67e260a7494582c13fad3ddd1a647de0adcc769a5ba964f508afa0",
+      "baselineSourceSha256": "3de75d8b5f67e260a7494582c13fad3ddd1a647de0adcc769a5ba964f508afa0",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:POST:/api/retrieval/semantic",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/retrieval/semantic/route.ts",
+      "method": "POST",
+      "sourceSha256": "7bb0bce814944e402a46f9da86c4f5bb30c083bcc600e84085e3a123a398b80d",
+      "baselineSourceSha256": "7bb0bce814944e402a46f9da86c4f5bb30c083bcc600e84085e3a123a398b80d",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/financial-summary",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/financial-summary/route.ts",
+      "method": "GET",
+      "sourceSha256": "af1aeaf2d3ae6a87b3e7f6164e7623914dfbed7af40d2bd54b029a99544cd417",
+      "baselineSourceSha256": null,
+      "newSinceBaseline": true,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "handlerImports": [
+        "@/lib/platform/supplier-summary-runtime"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/graph",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/graph/route.ts",
+      "method": "GET",
+      "sourceSha256": "6d98562398ea96798a7f360fa834ca8fde907ff211a6d7ab68ac4c89716b19cf",
+      "baselineSourceSha256": "6d98562398ea96798a7f360fa834ca8fde907ff211a6d7ab68ac4c89716b19cf",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/intelligence",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/intelligence/route.ts",
+      "method": "GET",
+      "sourceSha256": "be9dc3c96dc11a34bf5df4d8191833d286c17590c101fc73a78384a75c2972b3",
+      "baselineSourceSha256": "be9dc3c96dc11a34bf5df4d8191833d286c17590c101fc73a78384a75c2972b3",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/profile",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/profile/route.ts",
+      "method": "GET",
+      "sourceSha256": "258d7dd71175c07a4e61b9a04ea6fd8b5c985870d3925b2a1e4e95dfc5127fa8",
+      "baselineSourceSha256": "258d7dd71175c07a4e61b9a04ea6fd8b5c985870d3925b2a1e4e95dfc5127fa8",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "sg-runtime:GET:/api/supplier/risk",
+      "profile": "SG2",
+      "path": "apps/sg-runtime/app/api/supplier/risk/route.ts",
+      "method": "GET",
+      "sourceSha256": "e7a3c67a118a8694f50701493e7c9a13412f451780f5f501b37f2c79553cb131",
+      "baselineSourceSha256": "e7a3c67a118a8694f50701493e7c9a13412f451780f5f501b37f2c79553cb131",
+      "newSinceBaseline": false,
+      "state": "PREEXISTING_UNCONFIGURED_COGNITION_CLOSED",
+      "businessStatus": "NO_SOURCE_INITIALIZATION_CALL_SITE_FOUND_NOT_A_NEW_E1_FEATURE_REQUEST",
+      "historicalEffectFamilies": [
+        "COGNITION_ADAPTER"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "zod",
+        "@/lib/api/middleware",
+        "@/lib/api/cognition-service"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/acceptance-matrix",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/acceptance-matrix/route.ts",
+      "method": "GET",
+      "sourceSha256": "009ef5d9720492e74f1dc357be4d38e7b32d296c8faa5f7ff45d31a8402416ca",
+      "baselineSourceSha256": "009ef5d9720492e74f1dc357be4d38e7b32d296c8faa5f7ff45d31a8402416ca",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/benchmark-forecast/acceptance-matrix"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/current/capabilities",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/capabilities/route.ts",
+      "method": "GET",
+      "sourceSha256": "d52b80536ea541665b0534d7597bce6edd189f803e4bf308ba6640686366de0b",
+      "baselineSourceSha256": "8d2a4dfcbbf15e7dc83a5198a0c9ab2e19cac2b87fc49d824cd1e3656943f863",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark-forecast/native-read-relay",
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/current/capability",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/capability/route.ts",
+      "method": "GET",
+      "sourceSha256": "38025dcb200373e030b0aa6a62eb0244212b63ae06240d74fe53928dfd561783",
+      "baselineSourceSha256": "2200f76938a0e07c892e2cc36bb06feb92e100243a44d016dccf03b9e228ad4a",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark-forecast/native-read-relay",
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/current/prepare",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/prepare/route.ts",
+      "method": "POST",
+      "sourceSha256": "ffe7662c97e2dd049b064b8998bbe2acb8c01936ca6f090af4e38ef1c02bd667",
+      "baselineSourceSha256": "ffe7662c97e2dd049b064b8998bbe2acb8c01936ca6f090af4e38ef1c02bd667",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation",
+        "@/lib/benchmark-forecast/forecast-correlation"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/current",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/current/route.ts",
+      "method": "GET",
+      "sourceSha256": "185f5f2f1c53699f84963be24ecd7276c2a681f4cb1ffb23abd0c70088318351",
+      "baselineSourceSha256": "7e2690972dfb75a499aaefff838512ace44af4c3b4f95eb3d964c7e94dc3a68e",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark-forecast/native-read-relay",
+        "next/server",
+        "@/lib/benchmark-forecast/forecast-contract",
+        "@/lib/benchmark-forecast/runtime-query",
+        "@/lib/phase-2-2c/diagnostics"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/demo-certification",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/demo-certification/route.ts",
+      "method": "POST",
+      "sourceSha256": "2e35c4756ef04fcc96f318b614fee5ab05716659e2b559192bdf96da84b934b5",
+      "baselineSourceSha256": "2e35c4756ef04fcc96f318b614fee5ab05716659e2b559192bdf96da84b934b5",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/benchmark-forecast/demo-certification"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/progressive",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/progressive/route.ts",
+      "method": "POST",
+      "sourceSha256": "f4f096699f6ece9ee8c53ed156d51fb3ed5ec3eb0b6a46080bfdae472a0893ee",
+      "baselineSourceSha256": "f4f096699f6ece9ee8c53ed156d51fb3ed5ec3eb0b6a46080bfdae472a0893ee",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation",
+        "@/lib/benchmark-forecast/forecast-contract",
+        "@/lib/benchmark-forecast/forecast-correlation"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/stage12-shared-contention-diagnosis",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/stage12-shared-contention-diagnosis/route.ts",
+      "method": "POST",
+      "sourceSha256": "d48edd5d9250a0e273d1a72a242e16141365f3488094af241c4ae16e4ba71a0a",
+      "baselineSourceSha256": "d48edd5d9250a0e273d1a72a242e16141365f3488094af241c4ae16e4ba71a0a",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/benchmark-forecast/stage12-shared-contention-diagnosis"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/telemetry",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/telemetry/route.ts",
+      "method": "POST",
+      "sourceSha256": "c2bfebd1e0085c85b9fb21246cfbfdd4c65bb3b82d05c1b0973d988e359231dd",
+      "baselineSourceSha256": "c2bfebd1e0085c85b9fb21246cfbfdd4c65bb3b82d05c1b0973d988e359231dd",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/benchmark-forecast/forecast-action-telemetry"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:POST:/api/benchmark-forecast/verification/prepare",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/verification/prepare/route.ts",
+      "method": "POST",
+      "sourceSha256": "7644a25bfd04e39a9e6d488c03c308dfbc67b6ae29e2708e944a0a747d3d668c",
+      "baselineSourceSha256": "7644a25bfd04e39a9e6d488c03c308dfbc67b6ae29e2708e944a0a747d3d668c",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/benchmark-forecast/interactive-current-preparation",
+        "@/lib/benchmark-forecast/forecast-correlation"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:GET:/api/benchmark-forecast/verification",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/benchmark-forecast/verification/route.ts",
+      "method": "GET",
+      "sourceSha256": "a47848bd6eae71780cf27d748d282b0f4e7db2f8086818f3ff80ab4b0aeb44b4",
+      "baselineSourceSha256": "52d5db2f26db1c73825721f3d825e76ee79202feb797b25488723ab53d0480b3",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "@/lib/benchmark-forecast/native-read-relay",
+        "next/server",
+        "@/lib/benchmark-forecast/forecast-contract",
+        "@/lib/benchmark-forecast/forecast-correlation",
+        "@/lib/benchmark-forecast/runtime-query"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "dashboard-preview:GET:/api/components",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/components/route.ts",
+      "method": "GET",
+      "sourceSha256": "7b82c4fbebe28422459d3c6765596417ea401826e92b57d6b17b9e292cc18c27",
+      "baselineSourceSha256": "7b82c4fbebe28422459d3c6765596417ea401826e92b57d6b17b9e292cc18c27",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/phase-2-2c/diagnostics",
+        "@/lib/time-series/series-query"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:GET:/api/forecast-accuracy",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/forecast-accuracy/route.ts",
+      "method": "GET",
+      "sourceSha256": "4d5a21f6e8e85fe1714f26d42a2c1bac126a71b0d7a503f6682616c16dcd5ef7",
+      "baselineSourceSha256": "4d5a21f6e8e85fe1714f26d42a2c1bac126a71b0d7a503f6682616c16dcd5ef7",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/forecast-accuracy/forecast-accuracy-contract",
+        "@/lib/forecast-accuracy/forecast-accuracy-query"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:GET:/api/records",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/records/route.ts",
+      "method": "GET",
+      "sourceSha256": "0496af304651779e175f849fc51052dbebaf5f0ab07a72e470f93162ffc5a95f",
+      "baselineSourceSha256": "0496af304651779e175f849fc51052dbebaf5f0ab07a72e470f93162ffc5a95f",
+      "newSinceBaseline": false,
+      "state": "LEGACY_DASHBOARD_BRANCH_CLOSED",
+      "businessStatus": "CHECK_CONSUMER_AND_DIAGNOSTIC_SCOPE_BEFORE_IDENTITY_SWITCH",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "next/server",
+        "@/lib/time-series/series-query"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "dashboard-preview:GET:/api/series",
+      "profile": "SG2",
+      "path": "apps/dashboard-preview/app/api/series/route.ts",
+      "method": "GET",
+      "sourceSha256": "612b90f1d61afab4ea3c04f2e81d12350d5c0a7aba1547fef913e6b57b63ebe6",
+      "baselineSourceSha256": "3f1a02950f54a28ea839dd8df1ec43c173b25bf679c6738c5eaad312143268ae",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../lib/time-series/native-analytics-relay",
+        "next/server",
+        "@/lib/phase-2-2c/diagnostics",
+        "@/lib/time-series/series-query"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "branchLimit": "Only admitted native seriesId/organisation selector plus exact parent publication; legacy DR selector path is not adopted.",
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "srm:POST:/api/auth/login",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/auth/login/route.ts",
+      "method": "POST",
+      "sourceSha256": "8fc9d38c58732c7b7e11f3aa1f37b32eb771cf249c58c0237e18ad0ca1797141",
+      "baselineSourceSha256": "8fc9d38c58732c7b7e11f3aa1f37b32eb771cf249c58c0237e18ad0ca1797141",
+      "newSinceBaseline": false,
+      "state": "SEPARATE_PUBLIC_OR_LOGIN_POLICY",
+      "businessStatus": "NO_PRODUCT_PERMISSION_INFERRED",
+      "historicalEffectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "descriptiveDataClasses": [
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/auth/logout",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/auth/logout/route.ts",
+      "method": "POST",
+      "sourceSha256": "3106bdd1c74b0816f5be68075a5c6bc268e6bb4594c1ac8448ade11207d48ef2",
+      "baselineSourceSha256": "3106bdd1c74b0816f5be68075a5c6bc268e6bb4594c1ac8448ade11207d48ef2",
+      "newSinceBaseline": false,
+      "state": "SEPARATE_PUBLIC_OR_LOGIN_POLICY",
+      "businessStatus": "NO_PRODUCT_PERMISSION_INFERRED",
+      "historicalEffectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "descriptiveDataClasses": [
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:GET:/api/health",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/health/route.ts",
+      "method": "GET",
+      "sourceSha256": "f34d31044bfb67a83aa3b32bdcd7d835458a36d1126a6f94dd6838dd1a961efc",
+      "baselineSourceSha256": "f34d31044bfb67a83aa3b32bdcd7d835458a36d1126a6f94dd6838dd1a961efc",
+      "newSinceBaseline": false,
+      "state": "SEPARATE_PUBLIC_OR_LOGIN_POLICY",
+      "businessStatus": "NO_PRODUCT_PERMISSION_INFERRED",
+      "historicalEffectFamilies": [
+        "PUBLIC_POLICY"
+      ],
+      "descriptiveDataClasses": [
+        "TECHNICAL_CONTROL"
+      ],
+      "handlerImports": [],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/financial-excel",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/financial-excel/route.ts",
+      "method": "POST",
+      "sourceSha256": "701a9073b74f5ec60128ff561d1742b084534723be1571b5a5c388d4facc4f9f",
+      "baselineSourceSha256": "80c696106ad07e666108908623a9ec05a896841e958a73460254a841a25b94d4",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/financial-excel",
+        "../../../../src/server/financial-documents",
+        "../../../../src/server/shared-catalog",
+        "../../../../src/server/xray-lookup",
+        "../../../../src/server/financial-excel-runtime",
+        "../../../../src/server/private-runtime"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "srm:GET:/api/xray/financial-summary",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/financial-summary/route.ts",
+      "method": "GET",
+      "sourceSha256": "0ce9d9e9ffb5e7eab94b6262b4a3fb05f47dd0e2d5ea7f452e5fc5d541286306",
+      "baselineSourceSha256": null,
+      "newSinceBaseline": true,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "handlerImports": [
+        "../../../../src/server/shared-financial-runtime"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "srm:POST:/api/xray/jdg/kys",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/jdg/kys/route.ts",
+      "method": "POST",
+      "sourceSha256": "394607a6613fc44409430553520cfa005e0336b5a102f0d43f7eca6af2c6c767",
+      "baselineSourceSha256": "394607a6613fc44409430553520cfa005e0336b5a102f0d43f7eca6af2c6c767",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "KYS_FETCH_CACHE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../../src/server/lookup-diagnostics",
+        "../../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../../src/server/demo-auth",
+        "../../../../../src/server/request-origin",
+        "../../../../../src/server/xray-lookup",
+        "../../../../../src/server/pesel-reveal"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/jdg",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/jdg/route.ts",
+      "method": "POST",
+      "sourceSha256": "d4710be87d111f57a2105a29c61ccfdf0a95c61754fbd18a17442a748b08db99",
+      "baselineSourceSha256": "d4710be87d111f57a2105a29c61ccfdf0a95c61754fbd18a17442a748b08db99",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../src/server/lookup-diagnostics",
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/jdg-lookup",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/xray-lookup"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/kys/krs",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/kys/krs/route.ts",
+      "method": "POST",
+      "sourceSha256": "9fae01d0d51068be3949b8dccfbdaee79a0f3a6e1677b91edc6d636251fe6de4",
+      "baselineSourceSha256": "9fae01d0d51068be3949b8dccfbdaee79a0f3a6e1677b91edc6d636251fe6de4",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../../src/server/vercly-krs"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/kys/pdf",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/kys/pdf/route.ts",
+      "method": "POST",
+      "sourceSha256": "1cb2e964b511dbffeffe5752ef7505e962e6eccf08116c6f43085d97a482e372",
+      "baselineSourceSha256": "1cb2e964b511dbffeffe5752ef7505e962e6eccf08116c6f43085d97a482e372",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "EXPORT_FILE"
+      ],
+      "descriptiveDataClasses": [
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../../src/server/kys-pdf"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/kys/pesel",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/kys/pesel/route.ts",
+      "method": "POST",
+      "sourceSha256": "2b09c41c3fed6735a1c4c559d5b5f1bf95791f5b5b112643ac67df92c0e10f7b",
+      "baselineSourceSha256": "2b09c41c3fed6735a1c4c559d5b5f1bf95791f5b5b112643ac67df92c0e10f7b",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "PII_REVEAL"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../../src/server/demo-auth",
+        "../../../../../src/server/pesel-reveal",
+        "../../../../../src/server/request-origin",
+        "../../../../../src/server/xray-repository"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/kys",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/kys/route.ts",
+      "method": "POST",
+      "sourceSha256": "74b6f1798320603037e19c7e6c9a4334f086b6945e2d6f4559a912d5ac568473",
+      "baselineSourceSha256": "74b6f1798320603037e19c7e6c9a4334f086b6945e2d6f4559a912d5ac568473",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "KYS_FETCH_CACHE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../src/server/lookup-diagnostics",
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/xray-lookup",
+        "../../../../src/server/pesel-reveal"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/lookup",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/lookup/route.ts",
+      "method": "POST",
+      "sourceSha256": "edb28291a1980b5bc9a0eb5b848a44db930598ddec065679676ef6dca1495ecc",
+      "baselineSourceSha256": "edb28291a1980b5bc9a0eb5b848a44db930598ddec065679676ef6dca1495ecc",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../src/server/lookup-diagnostics",
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/xray-lookup"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/report-data",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/report-data/route.ts",
+      "method": "POST",
+      "sourceSha256": "d345f70a60485b358461859075e2f86597b9c1f1e5aa5398f85369d775c1515d",
+      "baselineSourceSha256": "d0670452db325b5083cc0803ee82b0cf95b34f18ca67e9d36aaec49ff8eda564",
+      "newSinceBaseline": false,
+      "state": "NATIVE_SOURCE_BRANCH_ADOPTED_NOT_RELEASED",
+      "businessStatus": "ISOLATED_SOURCE_TESTS_WITH_LIVE_IDENTITY_AND_UAT_PENDING",
+      "historicalEffectFamilies": [
+        "REPORT_PROJECTION",
+        "PREFERENCES_REUSE"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "USER_IN_ORGANISATION_PRIVATE"
+      ],
+      "handlerImports": [
+        "../../../../src/server/report-runtime"
+      ],
+      "sourceProofRef": "MAIN_PLATFORM_39145645366",
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false,
+      "scopeLimit": "Server opt-in, current actor/product/grant, precise supported resource/projection and installation required; source tests do not prove every parameter or a live release."
+    },
+    {
+      "id": "srm:POST:/api/xray/search",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/search/route.ts",
+      "method": "POST",
+      "sourceSha256": "2eb6155b2d9a546774f70adf7d81711f889a6e08cdd4eae9890b542a72ffaa9a",
+      "baselineSourceSha256": "2eb6155b2d9a546774f70adf7d81711f889a6e08cdd4eae9890b542a72ffaa9a",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../src/server/lookup-diagnostics",
+        "../../../../src/server/runtime-environment",
+        "next/server",
+        "../../../../src/server/demo-auth",
+        "../../../../src/server/registry-search",
+        "../../../../src/server/request-origin",
+        "../../../../src/server/xray-lookup"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    },
+    {
+      "id": "srm:POST:/api/xray/web-identity",
+      "profile": "SRM",
+      "path": "apps/srm/app/api/xray/web-identity/route.ts",
+      "method": "POST",
+      "sourceSha256": "22a113cbfdadfe3bcae865dd80dbbcdedeb776677bc6594f0b07841905194952",
+      "baselineSourceSha256": "22a113cbfdadfe3bcae865dd80dbbcdedeb776677bc6594f0b07841905194952",
+      "newSinceBaseline": false,
+      "state": "BUSINESS_PARITY_PENDING_CLOSED_IN_CLERK",
+      "businessStatus": "EXISTING_BUSINESS_CALLERS_REQUIRE_GOVERNED_ADOPTION_BEFORE_SWITCH",
+      "historicalEffectFamilies": [
+        "WEB_ENRICHMENT"
+      ],
+      "descriptiveDataClasses": [
+        "SHARED_KNOWLEDGE",
+        "ORGANISATION_PRIVATE",
+        "OPERATION_AUDIT"
+      ],
+      "handlerImports": [
+        "../../../../src/server/supplier-web-identity"
+      ],
+      "sourceProofRef": null,
+      "liveAdoption": "NOT_CLAIMED_BY_THIS_SOURCE_CENSUS",
+      "mappingConfersPermission": false
+    }
+  ],
+  "familyEvidence": [
+    {
+      "path": "apps/sg-runtime/lib/market-data/service.ts",
+      "baselineSourceSha256": "70e7755d7f9fe42b44c39e99e92e53be52b60705b48fed9d8b1256dd78115c4b",
+      "currentSourceSha256": "70e7755d7f9fe42b44c39e99e92e53be52b60705b48fed9d8b1256dd78115c4b",
+      "families": [
+        "HISTORY_READ_THROUGH"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/benchmark/service.ts",
+      "baselineSourceSha256": "7c8a171b268c8763addaa395c4b1867eeb1100d2d35d1c2c390f1150c09f661b",
+      "currentSourceSha256": "0a2417881ca32ecea995600114f494aecdfbd574822dea83d0ce27898446a162",
+      "families": [
+        "HISTORY_READ_THROUGH",
+        "DISCOVERY_METADATA"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/analytics-series/route.ts",
+      "baselineSourceSha256": "8e5549cce64e7d71bec89ad84d46709387a7273aea9174fe8d81f033dbbf1f0c",
+      "currentSourceSha256": "b30a69e1a4c17afd4d41089649fbaef11ff2d59cea1a5f30948eedb4802df5f1",
+      "families": [
+        "HISTORY_READ_THROUGH"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/benchmark/macrobond.ts",
+      "baselineSourceSha256": "52b1a74735a191cc8d879bdd2d2f03c0150c7841b2fe132633828e413e40de5f",
+      "currentSourceSha256": "52b1a74735a191cc8d879bdd2d2f03c0150c7841b2fe132633828e413e40de5f",
+      "families": [
+        "DISCOVERY_METADATA"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/app/api/benchmark/ai-search/route.ts",
+      "baselineSourceSha256": "7d10fafe701f84548540e78e1b304bb72c05145450b1cb2c3987726fd49a2683",
+      "currentSourceSha256": "7d10fafe701f84548540e78e1b304bb72c05145450b1cb2c3987726fd49a2683",
+      "families": [
+        "AI_SEARCH"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/benchmark/ai-search.ts",
+      "baselineSourceSha256": "fa888fff68a44363bfe85891086df5160a2b304b3b5e058bd967ee758ecc4bec",
+      "currentSourceSha256": "fa888fff68a44363bfe85891086df5160a2b304b3b5e058bd967ee758ecc4bec",
+      "families": [
+        "AI_SEARCH"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/benchmark/runtime-handlers.ts",
+      "baselineSourceSha256": "362a3944f7c05dd5dd341f87657b08cec06e884eba9c67f73a26895f363b16eb",
+      "currentSourceSha256": "362a3944f7c05dd5dd341f87657b08cec06e884eba9c67f73a26895f363b16eb",
+      "families": [
+        "BENCHMARK_SELECTION"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/benchmark/operation-context.ts",
+      "baselineSourceSha256": "2ed79ba13867973bd8898791eaef4991a16f1912ace81257a87f67887a43bea3",
+      "currentSourceSha256": "2ed79ba13867973bd8898791eaef4991a16f1912ace81257a87f67887a43bea3",
+      "families": [
+        "BENCHMARK_SELECTION"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/platform/private-runtime.ts",
+      "baselineSourceSha256": "d90f65193143f2c2508164e77d191f9a85020f5662994193005b00b0a9215976",
+      "currentSourceSha256": "55b7288dfd909e3fd879304eacb7259fab0d42577064764ff05667cd894e48bc",
+      "families": [
+        "BENCHMARK_SELECTION"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/route-handlers.ts",
+      "baselineSourceSha256": "2c09cfb6cd915e2c5e8d502f2c5562c53f689b7d4b513da28ed4225ac773ff51",
+      "currentSourceSha256": "2c09cfb6cd915e2c5e8d502f2c5562c53f689b7d4b513da28ed4225ac773ff51",
+      "families": [
+        "PREPARED_FORECAST_READ",
+        "TECHNICAL_FORECAST"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/request-diagnostics.ts",
+      "baselineSourceSha256": "3dbe25ce1c2e425a77779002517e70f366e4f3992260d7759a18afaf9a5a598d",
+      "currentSourceSha256": "dd1ac4a3e86698e6210d33e6e1081badcd00bf44ac89b821478ed2327786973e",
+      "families": [
+        "PREPARED_FORECAST_READ"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/forecast/preparation-queue.ts",
+      "baselineSourceSha256": "e3f390b20f3929d83c75e40aca407d9ca7a193310fd3f57c64c990f42b9ada82",
+      "currentSourceSha256": "2ed68883f6058cfef3fab705ff929f018e31404ad6a7a097a6405b205fe5c77e",
+      "families": [
+        "TECHNICAL_FORECAST"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/scripts/run-forecast-preparation-worker.ts",
+      "baselineSourceSha256": "d02d97f8070f5b6a5377da5156827ec2aa9d5c6b2ad37297053625f1b245678f",
+      "currentSourceSha256": "8d5d224b697ab9d9b6a28dde85039287f357dea6a2a41010dfd802fe17069ecf",
+      "families": [
+        "TECHNICAL_FORECAST"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "packages/platform-contracts/src/access-store.mjs",
+      "baselineSourceSha256": "bc112208fb38735fe32550b21013dee2ffa35b798e1d5153257afcd529009b15",
+      "currentSourceSha256": "4bfe9279be227d78966850df44e662c542d9e2fc7a499d97cf8467eb42e36422",
+      "families": [
+        "TECHNICAL_FORECAST"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "packages/platform-contracts/src/operation-context.mjs",
+      "baselineSourceSha256": "01add5835ef9acb7a9daf5ef4b794c1566a0c6ac05b03d8c160f066aceeb228d",
+      "currentSourceSha256": "7d695efb61166f16fae49631a5e3aeec0c7ae2906eb418630a22b9d20f319d8b",
+      "families": [
+        "TECHNICAL_FORECAST"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/dashboard-preview/middleware.ts",
+      "baselineSourceSha256": "1841d5089170d4ea7ac3b18ca0cfc0113609dc6d36ec6c51207801210a2eb1a2",
+      "currentSourceSha256": "32afd680d310d37f3eb0e107d6b85704adc045c2febc62876e37c6bfcb1f47a8",
+      "families": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/time-series/series-query.ts",
+      "baselineSourceSha256": "2cb75c87d631feeaf736e0f2f23155df1782f396554a25e6a39d53e8855bb932",
+      "currentSourceSha256": "c546872c646d3fb5981d7470ec1768620919c07eb68b7fef3197af93ccc307d9",
+      "families": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-query.ts",
+      "baselineSourceSha256": "74c3d20875d0f19e8989e93e0e8b4d7ff49348bd41b33a1664adb7b4a2438d7f",
+      "currentSourceSha256": "74c3d20875d0f19e8989e93e0e8b4d7ff49348bd41b33a1664adb7b4a2438d7f",
+      "families": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/dashboard-preview/lib/raw-data/dashboard-record-filters.ts",
+      "baselineSourceSha256": "ca906e7e212ca7e4c4ad66f285e61abe9a7e05ecd3c4f7619ad9f26362e803e9",
+      "currentSourceSha256": "ca906e7e212ca7e4c4ad66f285e61abe9a7e05ecd3c4f7619ad9f26362e803e9",
+      "families": [
+        "DASHBOARD_RECORDS_AND_BRIDGE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/api/cognition-service.ts",
+      "baselineSourceSha256": "60ba3ee9d412ae1b12ac5b15b67cf61b160304d426a2c2b4b1677f0ca4ac479c",
+      "currentSourceSha256": "60ba3ee9d412ae1b12ac5b15b67cf61b160304d426a2c2b4b1677f0ca4ac479c",
+      "families": [
+        "COGNITION_ADAPTER"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/lib/api/middleware.ts",
+      "baselineSourceSha256": "32c0f295209c13a625c9579471c0402eb43ff5f28369b74330bcb05ee94c8139",
+      "currentSourceSha256": "d51d9c0ccfa46a9898526e21493887b770064355759c06899ade7c3a4c189dd0",
+      "families": [
+        "COGNITION_ADAPTER"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/registry-search.ts",
+      "baselineSourceSha256": "309a19c333e3f5b1a7c72447ee48d47d2a310b80b454b0ff1795917ebd95e4cc",
+      "currentSourceSha256": "309a19c333e3f5b1a7c72447ee48d47d2a310b80b454b0ff1795917ebd95e4cc",
+      "families": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/xray-lookup.ts",
+      "baselineSourceSha256": "316846fb0f65d88ce48e26a44ed5eeb6da9adf0a3008985ad102dbc31776926d",
+      "currentSourceSha256": "316846fb0f65d88ce48e26a44ed5eeb6da9adf0a3008985ad102dbc31776926d",
+      "families": [
+        "SUPPLIER_LOOKUP",
+        "KYS_FETCH_CACHE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/jdg-lookup.ts",
+      "baselineSourceSha256": "3b74bcf7f6dcad60286f96f473ccb236a27d95df115343fc9ad285e83ac5ac11",
+      "currentSourceSha256": "3b74bcf7f6dcad60286f96f473ccb236a27d95df115343fc9ad285e83ac5ac11",
+      "families": [
+        "SUPPLIER_LOOKUP",
+        "KYS_FETCH_CACHE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/shared-catalog.ts",
+      "baselineSourceSha256": "6e8c99939b5db5ec52688374f419672afa64733cd9cfb28024e8f457f70ced14",
+      "currentSourceSha256": "da349561183000f467589048770f133f6b265d731eb4c8a988f1270181334092",
+      "families": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/xray-repository.ts",
+      "baselineSourceSha256": "a5b09673ade3b3c8c8d8b6e147889eaaa35446eb6ced2fde849f8ba29c2962f2",
+      "currentSourceSha256": "a5b09673ade3b3c8c8d8b6e147889eaaa35446eb6ced2fde849f8ba29c2962f2",
+      "families": [
+        "SUPPLIER_LOOKUP"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/report-data.ts",
+      "baselineSourceSha256": "75b9ebbd83a85763c4e242cef19bddc3ab1ca4bad05ca89469c833ef40c33b56",
+      "currentSourceSha256": "26733da9422c6b8656cc3c19b2c0896704a12ddc72d488e604cab737fc474f41",
+      "families": [
+        "REPORT_PROJECTION"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/report-runtime.ts",
+      "baselineSourceSha256": "80baa38783273936c80ef50b094d24018529637ea1486c5b5597a8a47e79e38b",
+      "currentSourceSha256": "80baa38783273936c80ef50b094d24018529637ea1486c5b5597a8a47e79e38b",
+      "families": [
+        "REPORT_PROJECTION"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/private-runtime.ts",
+      "baselineSourceSha256": "ad10d4138eb0b941299f15501c0b012d39b9ff45035d07772de4558bca1ed017",
+      "currentSourceSha256": "65a074f7087176b4c936beccf32709916345a7fc020fe110c0238ebd45911c6c",
+      "families": [
+        "REPORT_PROJECTION"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/operation-report-data.ts",
+      "baselineSourceSha256": "17613744ca9f2d712d908a004fb49cfdfbbbe2fe8e28d18012e62add62b76b12",
+      "currentSourceSha256": "17613744ca9f2d712d908a004fb49cfdfbbbe2fe8e28d18012e62add62b76b12",
+      "families": [
+        "REPORT_PROJECTION"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/kys-cache.ts",
+      "baselineSourceSha256": "df924401b3b21e34a1dd1e796760f1390b285e30637ad597b792abb5ffdf2925",
+      "currentSourceSha256": "df924401b3b21e34a1dd1e796760f1390b285e30637ad597b792abb5ffdf2925",
+      "families": [
+        "KYS_FETCH_CACHE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/db/migrations/0010_kys_shared_cache.sql",
+      "baselineSourceSha256": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44",
+      "currentSourceSha256": "1130979f8573048d060a919dc811dd63ee737688ff4533665d9ee16b32189c44",
+      "families": [
+        "KYS_FETCH_CACHE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/app/api/xray/kys/pesel/route.ts",
+      "baselineSourceSha256": "2b09c41c3fed6735a1c4c559d5b5f1bf95791f5b5b112643ac67df92c0e10f7b",
+      "currentSourceSha256": "2b09c41c3fed6735a1c4c559d5b5f1bf95791f5b5b112643ac67df92c0e10f7b",
+      "families": [
+        "PII_REVEAL"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/pesel-reveal.ts",
+      "baselineSourceSha256": "84fa03520667b6d7cf8e9aa7daad74ca3142126383e55f8a2acc02ab3d867e40",
+      "currentSourceSha256": "84fa03520667b6d7cf8e9aa7daad74ca3142126383e55f8a2acc02ab3d867e40",
+      "families": [
+        "PII_REVEAL"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/app/api/xray/financial-excel/route.ts",
+      "baselineSourceSha256": "80c696106ad07e666108908623a9ec05a896841e958a73460254a841a25b94d4",
+      "currentSourceSha256": "701a9073b74f5ec60128ff561d1742b084534723be1571b5a5c388d4facc4f9f",
+      "families": [
+        "EXPORT_FILE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/app/api/xray/kys/pdf/route.ts",
+      "baselineSourceSha256": "1cb2e964b511dbffeffe5752ef7505e962e6eccf08116c6f43085d97a482e372",
+      "currentSourceSha256": "1cb2e964b511dbffeffe5752ef7505e962e6eccf08116c6f43085d97a482e372",
+      "families": [
+        "EXPORT_FILE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/app/api/xray/kys/krs/route.ts",
+      "baselineSourceSha256": "9fae01d0d51068be3949b8dccfbdaee79a0f3a6e1677b91edc6d636251fe6de4",
+      "currentSourceSha256": "9fae01d0d51068be3949b8dccfbdaee79a0f3a6e1677b91edc6d636251fe6de4",
+      "families": [
+        "EXPORT_FILE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/financial-documents.ts",
+      "baselineSourceSha256": "c0e9bcc529a0683d6d1e16210f9c44b363938865d6c69a5978a1ac65d17166f9",
+      "currentSourceSha256": "a115413829937a339de2c3aaf926e266285de92d66274d42884e8e6dfa8b8edc",
+      "families": [
+        "EXPORT_FILE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/msr-source.ts",
+      "baselineSourceSha256": "96c6ff30795a43ad80e099affe5224cbaae7c55b911ac1918e02f5b588797fd7",
+      "currentSourceSha256": "96c6ff30795a43ad80e099affe5224cbaae7c55b911ac1918e02f5b588797fd7",
+      "families": [
+        "EXPORT_FILE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/kys-pdf.ts",
+      "baselineSourceSha256": "26ffd6de8f4bcb032489b8e6d406e382a9c11ada6baa48b84b9c795ba36390cc",
+      "currentSourceSha256": "26ffd6de8f4bcb032489b8e6d406e382a9c11ada6baa48b84b9c795ba36390cc",
+      "families": [
+        "EXPORT_FILE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/supplier-web-identity.ts",
+      "baselineSourceSha256": "9c4713c91c92f26b5bde0da6c374527e235d4434266a2fce92da1eb090118fad",
+      "currentSourceSha256": "9c4713c91c92f26b5bde0da6c374527e235d4434266a2fce92da1eb090118fad",
+      "families": [
+        "WEB_ENRICHMENT"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/supplier-web-store.ts",
+      "baselineSourceSha256": "33b1d49a4f730ecfac5b26b413b32d2c2a050bb80737db51d7b9bd7f5383caa6",
+      "currentSourceSha256": "33b1d49a4f730ecfac5b26b413b32d2c2a050bb80737db51d7b9bd7f5383caa6",
+      "families": [
+        "WEB_ENRICHMENT"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/src/server/website-discovery.ts",
+      "baselineSourceSha256": "98ffb78fb3ed6b7646d1299d76cf3cc3698e8d308b55326a04db5d0b07d17852",
+      "currentSourceSha256": "98ffb78fb3ed6b7646d1299d76cf3cc3698e8d308b55326a04db5d0b07d17852",
+      "families": [
+        "WEB_ENRICHMENT"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/app/api/advisory/route.ts",
+      "baselineSourceSha256": "541bbb778af661ddc3e324b79f4d7a181854f2297403fe1c9aa5685f6a587c55",
+      "currentSourceSha256": "541bbb778af661ddc3e324b79f4d7a181854f2297403fe1c9aa5685f6a587c55",
+      "families": [
+        "PUBLIC_POLICY"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/sg-runtime/app/api/health/route.ts",
+      "baselineSourceSha256": "543cab74cfdf7190ed0ebc9ca12605056b28e5aadb6f37e59c24ffda58f4c295",
+      "currentSourceSha256": "543cab74cfdf7190ed0ebc9ca12605056b28e5aadb6f37e59c24ffda58f4c295",
+      "families": [
+        "PUBLIC_POLICY"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/app/api/health/route.ts",
+      "baselineSourceSha256": "f34d31044bfb67a83aa3b32bdcd7d835458a36d1126a6f94dd6838dd1a961efc",
+      "currentSourceSha256": "f34d31044bfb67a83aa3b32bdcd7d835458a36d1126a6f94dd6838dd1a961efc",
+      "families": [
+        "PUBLIC_POLICY"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "apps/srm/app/api/auth/login/route.ts",
+      "baselineSourceSha256": "8fc9d38c58732c7b7e11f3aa1f37b32eb771cf249c58c0237e18ad0ca1797141",
+      "currentSourceSha256": "8fc9d38c58732c7b7e11f3aa1f37b32eb771cf249c58c0237e18ad0ca1797141",
+      "families": [
+        "PUBLIC_POLICY"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "packages/srm-xray/src/financial-scanner.tsx",
+      "baselineSourceSha256": "2e6b0e448e7012efbb964164234b19452cfd67b9b97f5e02af9a76d9ff5f12d9",
+      "currentSourceSha256": "2e6b0e448e7012efbb964164234b19452cfd67b9b97f5e02af9a76d9ff5f12d9",
+      "families": [
+        "PREFERENCES_REUSE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "packages/srm-xray/src/executive-summary-rules.ts",
+      "baselineSourceSha256": "5ef7d3590398b3d70536ff07699ed149c5d536f9dcbfd7ff28e0b4f655e86ecf",
+      "currentSourceSha256": "85ca15412c6804076c2890d2e22afa2fb047a5fe4f646ee6e88c0a39b0340c93",
+      "families": [
+        "PREFERENCES_REUSE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "packages/srm-xray/src/financial-history.tsx",
+      "baselineSourceSha256": "78e48ab472a0123fc709f04d63b735af869b0172120467df00872d9c770651c5",
+      "currentSourceSha256": "37191ce4511acb2c4572da5ceea6e3e96588fda24a0f681500b09e76c53d3f8d",
+      "families": [
+        "PREFERENCES_REUSE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    },
+    {
+      "path": "packages/srm-xray/package.json",
+      "baselineSourceSha256": "261ca3c231874af1100c8b81cae7946def5a588dcab63558b6c01e5626e41ab0",
+      "currentSourceSha256": "9adab2b8f5aed858097ab80f8494dfac951ae41cbced863770d26a091ffe1448",
+      "families": [
+        "PREFERENCES_REUSE"
+      ],
+      "reviewDepth": "FINGERPRINT_AND_SELECTED_REFERENCED_CALL_CHAINS_NOT_EVERY_LINE"
+    }
+  ],
+  "additionalSurfaces": [
+    {
+      "id": "FORECAST_QUEUE",
+      "path": "apps/sg-runtime/lib/forecast/preparation-queue.ts",
+      "sourceSha256": "2ed68883f6058cfef3fab705ff929f018e31404ad6a7a097a6405b205fe5c77e",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "FORECAST_WORKER",
+      "path": "apps/sg-runtime/scripts/run-forecast-preparation-worker.ts",
+      "sourceSha256": "8d5d224b697ab9d9b6a28dde85039287f357dea6a2a41010dfd802fe17069ecf",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "FORECAST_OPERATIONS",
+      "path": "apps/sg-runtime/scripts/run-forecast-production-operations.ts",
+      "sourceSha256": "213d5b2231587b019447993e1658a6d7b6c29767e15f6285137584c325e6c22b",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "MARKET_INGESTION",
+      "path": "apps/sg-runtime/scripts/run-market-data-hydration.ts",
+      "sourceSha256": "caac41bae04d569a48711a6e1ddc83947fbec919a58acb0d24c446b8a27cb972",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "MARKET_PROMOTION",
+      "path": "apps/sg-runtime/scripts/promote-market-forecast-artifacts.ts",
+      "sourceSha256": "8686ac9942c4a4e4d95db94dd40d7383ae20aca10f79359658624050c7fbb6d0",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "DASHBOARD_CACHE",
+      "path": "apps/dashboard-preview/lib/forecast-accuracy/forecast-accuracy-cache.ts",
+      "sourceSha256": "050b211326d87080cdd9e05b5e4ec0b5982b93e671a757b06ea5b97997aac1cd",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "DASHBOARD_LEGACY_BRIDGE",
+      "path": "apps/dashboard-preview/lib/benchmark-forecast/runtime-query.ts",
+      "sourceSha256": "3cf33ed685cbdb3ca4e4fe4a7657ba2cdf5a6810414a0faec1b466664f51df2c",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "SRM_PROJECTION",
+      "path": "apps/srm/src/server/report-data.ts",
+      "sourceSha256": "26733da9422c6b8656cc3c19b2c0896704a12ddc72d488e604cab737fc474f41",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "SRM_KYS_CACHE",
+      "path": "apps/srm/src/server/kys-cache.ts",
+      "sourceSha256": "df924401b3b21e34a1dd1e796760f1390b285e30637ad597b792abb5ffdf2925",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "SRM_FILE_SOURCE",
+      "path": "apps/srm/src/server/msr-source.ts",
+      "sourceSha256": "96c6ff30795a43ad80e099affe5224cbaae7c55b911ac1918e02f5b588797fd7",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "SRM_PDF",
+      "path": "apps/srm/src/server/kys-pdf.ts",
+      "sourceSha256": "26ffd6de8f4bcb032489b8e6d406e382a9c11ada6baa48b84b9c795ba36390cc",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "SRM_REUSABLE_UI",
+      "path": "packages/srm-xray/src/contracts.ts",
+      "sourceSha256": "df1d6d2fc3b1985cd9b481b948d2614030e8e07febc0a6b8fc20f3750f9382f1",
+      "state": "REFERENCED_SOURCE_BOUNDARY_NO_BLANKET_LIVE_ACCEPTANCE"
+    },
+    {
+      "id": "NATIVE_SOURCE_WORKER_RUNTIME",
+      "path": "apps/sg-runtime/lib/forecast/source-worker-runtime.ts",
+      "sourceSha256": "9b855c944052fdcbc5771c81ff81b4be276ced567373f5fbe039d77ff5439f73",
+      "state": "SOURCE_CANDIDATE_ACCEPTED_SEPARATE_TASKS_NO_PRODUCT_RELEASE"
+    },
+    {
+      "id": "PRIVATE_DISPATCH_RUNTIME",
+      "path": "apps/sg-runtime/lib/forecast/dispatch-runtime.ts",
+      "sourceSha256": "c71a8963b32d95e2a78e12b6f89d21616aaad4646b270ae3f38eead1e65126ae",
+      "state": "SOURCE_CANDIDATE_ACCEPTED_SEPARATE_TASKS_NO_PRODUCT_RELEASE"
+    },
+    {
+      "id": "FRAME_COMMAND_HOST",
+      "path": "apps/sg-runtime/lib/platform/native-dashboard-command.ts",
+      "sourceSha256": "8cb4cc06a76a2443d7fca36284e96f7017bfcb337cafda500f2843c5fe89672a",
+      "state": "SOURCE_CANDIDATE_ACCEPTED_SEPARATE_TASKS_NO_PRODUCT_RELEASE"
+    },
+    {
+      "id": "SHARED_FINANCIAL_SUMMARY_PORT",
+      "path": "packages/srm-xray/src/shared-financial-summary.ts",
+      "sourceSha256": "083f7541a24486b7ac1918fdf2f6b8c8c9154360f6916c46941dbcad83c7b962",
+      "state": "SOURCE_CANDIDATE_ACCEPTED_SEPARATE_TASKS_NO_PRODUCT_RELEASE"
+    }
+  ],
+  "regressionFamilies": [
+    {
+      "id": "REG-01",
+      "area": "Identity boundary",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Official SDK and API synthetic identity/session tests, not real OTP/TLS."
+    },
+    {
+      "id": "REG-02",
+      "area": "Current authorization",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Current revocation in native reads/exports and delegated delivery; no instant removal of already rendered data claim."
+    },
+    {
+      "id": "REG-03",
+      "area": "Environment boundary",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Negative application/origin/physical-role/environment tests; live Stage bindings not accepted."
+    },
+    {
+      "id": "REG-04",
+      "area": "Public routes",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Selected production HTTP refusal and source policy review; no claim every public endpoint works."
+    },
+    {
+      "id": "REG-05",
+      "area": "Organization isolation",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Ordinary-role native module API/SQL isolation; not all legacy databases or DBA-credential resistance."
+    },
+    {
+      "id": "REG-06",
+      "area": "Personal isolation",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Scoped personal SQL and volatile session UI reset; persisted named-user account settings are not delivered by this increment."
+    },
+    {
+      "id": "REG-07",
+      "area": "Bypass entry points",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Native paths and old-route refusals; remaining business APIs, maintenance CLIs and direct KYS boundary not fully adopted."
+    },
+    {
+      "id": "REG-08",
+      "area": "Protected audit",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Canonical intent/outcome/failure rollback and restricted runtime audit tests; retention/operator provenance/live recovery remain explicit requirements."
+    },
+    {
+      "id": "REG-09",
+      "area": "Benchmarks/categories",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Private selection/category source tests; Finder search/metadata/context/AI and full UI parity pending."
+    },
+    {
+      "id": "REG-10",
+      "area": "Forecast regression",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Original four-model/Verification worker and real ordinary read projections plus separate UI builds; non-daily provenance and live business UAT pending."
+    },
+    {
+      "id": "REG-11",
+      "area": "Job delegation",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Real private/source delivery, current revocation, leases and bounded SQL admission; no paid provider or CPU billing guarantee."
+    },
+    {
+      "id": "REG-12",
+      "area": "Caches/files",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Volatile browser/session scopes, closed old DR/KYS entries and native financial export; no universal file/cache lifetime proof."
+    },
+    {
+      "id": "REG-13",
+      "area": "Supplier Intelligence",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Field-reviewed shared corporate summary and private report/project/export; nine legacy SRM entrances remain closed in Clerk mode."
+    },
+    {
+      "id": "REG-14",
+      "area": "Financial quality",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "SRM490 local product/migration and current independent CI build; no new live vendor fetch or complete KYS/PII acceptance."
+    },
+    {
+      "id": "REG-15",
+      "area": "Two hosts",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Actual reused srm-xray summary rules/port, two protected hosts, React18/Next14 and React19/Next16 build evidence; no deployed two-host UAT."
+    },
+    {
+      "id": "REG-16",
+      "area": "Migration/recovery",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Disposable SQL rollback/reapply, ordinary-role/fence tests and separately dated preparations; a branch name or source SHA is not retained-artifact recovery."
+    },
+    {
+      "id": "REG-17",
+      "area": "Controlled package CI",
+      "status": "SOURCE_PROOF_ONLY_NOT_FULL_ACCEPTANCE",
+      "evidenceAndLimit": "Official exact candidate/main proof and unchanged trusted package policy; credential removed before candidate execution."
+    },
+    {
+      "id": "REG-18",
+      "area": "Release acceptance",
+      "status": "RELEASE_NOT_VERIFIED",
+      "evidenceAndLimit": "NOT_VERIFIED: no E1 product release, real named-user business UAT, exact release LKG or mandatory Stage owner review."
+    }
+  ],
+  "sourceAcceptanceProofs": {
+    "MAIN_PLATFORM_39145645366": {
+      "officialMainProof": "PASS",
+      "wholeRun": "success",
+      "main": "ff49783ce72c547158c54aaf7c0f86191fc0e61d",
+      "policy": "f3b015a4d10117f0a8ebfee475dc4a17b6207f29b313feee16b631e5411b840c",
+      "dashboard": "PASS",
+      "srmIdentity": "PASS",
+      "srmActualTestTypecheckBuildSteps": "PASS",
+      "productDeployment": false,
+      "runId": 39145645366,
+      "governanceRunId": 39145645356,
+      "actualCanonicalWorkflowId": 383640662,
+      "actualSrmJob": 117729666156
+    },
+    "combinedPr": 483,
+    "producerPr": 481,
+    "srmCompatibilityPr": 482,
+    "candidateSourceSha": "f10a2412530d31ceef1200d58d7a067df838af91",
+    "controlledCandidateRunId": 39145215282,
+    "publicCandidateRunId": 39145183340,
+    "independentSrmCandidateRunId": 39145183426,
+    "independentSrmMainRunId": 39145645377,
+    "productDeploymentPerformed": false
+  },
+  "providerObservations": {
+    "metadataCapturedAt": "2026-10-18T16:53:58.244Z",
+    "sg2WorkerMetadataCapturedAt": "2026-10-18T16:38:36.699Z",
+    "purpose": "Read-only source-delivery dependency observations; not Stage audit completion or product mutation.",
+    "renderDeployments": [
+      {
+        "kind": "render-deployment",
+        "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+        "status": "live",
+        "deployId": "dep-db97cj6k1f9s738na1r0",
+        "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+        "finishedAt": "2026-10-16T19:10:34.4481Z"
+      },
+      {
+        "kind": "render-deployment",
+        "serviceId": "srv-db496b3tqb8s73eh5sfg",
+        "status": "live",
+        "deployId": "dep-db97qcjl550s73d2f170",
+        "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+        "finishedAt": "2026-10-16T19:39:58.869471Z"
+      },
+      {
+        "kind": "render-deployment",
+        "serviceId": "srv-daclno3m8hqs73bb7rrg",
+        "status": "live",
+        "deployId": "dep-db0dhbm1egvs73f70kr0",
+        "sourceSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+        "finishedAt": "2026-10-03T10:28:48.226997Z"
+      },
+      {
+        "kind": "render-deployment",
+        "serviceId": "srv-dacln50jo6nc738lbag0",
+        "status": "live",
+        "deployId": "dep-dapam17f3r2c73c11th0",
+        "sourceSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+        "finishedAt": "2026-09-22T16:22:45.793122Z"
+      },
+      {
+        "kind": "render-deployment",
+        "serviceId": "srv-dapa40ad0e5s73f8bjm0",
+        "deployId": "dep-dapu7g1srm7s73as83bg",
+        "sourceSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b",
+        "status": "live",
+        "capturedAt": "2026-10-18T16:38:36.699Z"
+      },
+      {
+        "kind": "render-deployment",
+        "serviceId": "srv-dapa3vlg1s2s739vp7dg",
+        "deployId": "dep-dapu7es9v7es739uoql0",
+        "sourceSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b",
+        "status": "live",
+        "capturedAt": "2026-10-18T16:38:36.699Z"
+      },
+      {
+        "kind": "render-deployment",
+        "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+        "deployId": "dep-daqbksk9v7es73cjdtmg",
+        "sourceSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119",
+        "status": "live",
+        "capturedAt": "2026-10-18T16:38:36.699Z"
+      },
+      {
+        "kind": "render-deployment",
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "deployId": "dep-daqd0uh42hec7398f5vg",
+        "sourceSha": "c55c551091b3584673726bd0a78254eb091c7197",
+        "status": "live",
+        "capturedAt": "2026-10-18T16:38:36.699Z"
+      }
+    ],
+    "autoDeploySource": "17 SG-dev service flags from read-only Render inventory; product services are off, three unrelated services have their existing narrow build filters.",
+    "neonProjects": [
+      {
+        "projectId": "snowy-breeze-40315151",
+        "observedBranchCount": 20,
+        "selectedBranches": [
+          {
+            "id": "br-nameless-bar-b1wlhjhx",
+            "name": "Production",
+            "state": "ready",
+            "expiresAt": null
+          },
+          {
+            "id": "br-broad-butterfly-b11t4v01",
+            "name": "Staging",
+            "state": "ready",
+            "expiresAt": null
+          },
+          {
+            "id": "br-dark-surf-b1vrhda9",
+            "name": "Development",
+            "state": "ready",
+            "expiresAt": null
+          }
+        ],
+        "sqlAndRolesReverified": false
+      },
+      {
+        "projectId": "spring-bread-28217539",
+        "observedBranchCount": 2,
+        "selectedBranches": [
+          {
+            "id": "br-sparkling-term-b99l107x",
+            "name": "development",
+            "state": "ready",
+            "expiresAt": null
+          },
+          {
+            "id": "br-bitter-term-b9r03hj2",
+            "name": "e1-pre-initial-directory-20261017",
+            "state": "ready",
+            "expiresAt": null
+          }
+        ],
+        "sqlAndRolesReverified": false
+      }
+    ],
+    "privateStageBranchObserved": false,
+    "privateSchemaAccountsRolesOrRuntimeFlagsReverified": false,
+    "expiredRehearsalsNotReused": true,
+    "metadataReadyDoesNotProveSqlOrRollback": true
+  },
+  "remainingBoundaries": [
+    {
+      "id": "FINDER_DISCOVERY",
+      "status": "BUSINESS_PARITY_PENDING",
+      "detail": "Six search/metadata/context/AI methods used by the current Finder remain legacy-only; current identity must precede provider use and any independently bounded effect."
+    },
+    {
+      "id": "SRM_LEGACY_OPERATIONS",
+      "status": "BUSINESS_PARITY_PENDING",
+      "detail": "Nine lookup/search/JDG/KYS/PESEL/KRS/PDF/web methods reached by real UI remain legacy-only; corporate knowledge, private selection/projection, PII and refresh/export are distinct."
+    },
+    {
+      "id": "SOURCE_PROVENANCE_AND_EFFECTS",
+      "status": "PARTIAL_SOURCE_ACCEPTANCE",
+      "detail": "Native stored read, explicit Forecast request/dispatch/original worker accepted in isolation. Non-daily retained provenance and other maintenance/hydration/promotion CLIs have no blanket adoption."
+    },
+    {
+      "id": "IDENTITY_AND_OWNERSHIP",
+      "status": "LIVE_BOOTSTRAP_NOT_PROVED",
+      "detail": "Approved first organisation display name is not evidence of a verified provider account or permission to transfer legacy PORR records/history. Named account, membership and each finite explicit grant require controlled evidence."
+    },
+    {
+      "id": "KYS_EXTERNAL_BOUNDARY",
+      "status": "INDEPENDENT_AUTHORITY_AND_FIELD_SCOPE_NOT_ACCEPTED",
+      "detail": "SG-dev proxy controls do not prove protection of the separate KYS upstream. No current unauthenticated probe, private person-data read or authority expansion performed."
+    },
+    {
+      "id": "DATA_POLICY",
+      "status": "EXPLICIT_OPERATION_DEPENDENT_POLICY_REQUIRED",
+      "detail": "Retention, provider entitlement/usage limits, personal-field scope and data-ownership mapping are not inferred from an OWNER name, missing limit or fixture policy."
+    },
+    {
+      "id": "RECOVERY_AND_RELEASE",
+      "status": "DEVELOPMENT_AND_STAGING_NOT_RELEASED",
+      "detail": "Current live service artifacts predate E1 source. Native source migrations/roles, real identity/TLS, compatible retained-artifact LKG, exact config/data verification, business UAT and Stage owner review remain required."
+    }
+  ],
+  "acceptance": {
+    "historicalBaselinePreserved": true,
+    "sourceIncrementPr483Accepted": true,
+    "fullE0Completed": false,
+    "fullE1Completed": false,
+    "realBrowserIdentityVerified": false,
+    "developmentReleaseVerified": false,
+    "stagingReleaseVerified": false,
+    "productionAuthorized": false,
+    "appCodeMutatedByThisTask": false,
+    "cloudMutatedByThisTask": false,
+    "pmosCloseoutVerified": false
+  }
+}

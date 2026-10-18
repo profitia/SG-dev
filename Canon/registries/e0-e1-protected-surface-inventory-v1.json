@@ -8150,5 +8150,16 @@
     "status": "DATED_SOURCE_EFFECT_MAP_NOT_RUNTIME_ACCEPTANCE",
     "historicalBaselineFieldsUnchanged": true,
     "codeSourceAdoptionIsNotLiveDeployment": true
+  },
+  "currentCoverageObservation": {
+    "sourceSha": "ff49783ce72c547158c54aaf7c0f86191fc0e61d",
+    "observedAtUtc": "2026-10-18T16:59:27.452926Z",
+    "taskId": "ARCHITECTURE-E1-COVERAGE-RECONCILIATION-20261018",
+    "registry": "Canon/registries/e0-e1-source-coverage-2026-10-18.json",
+    "status": "DATED_DESCRIPTIVE_SOURCE_SNAPSHOT_NOT_POLICY_OR_RELEASE_ACCEPTANCE",
+    "routeFiles": 84,
+    "httpMethods": 90,
+    "historicalBaselineFieldsUnchanged": true,
+    "sourceAdoptionIsNotLiveDeployment": true
   }
 }
