@@ -1,4 +1,5 @@
-export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export'
+import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
+export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -28,7 +29,7 @@ export interface ProductGrant {
 }
 export interface OperationState {
   policyVersion: string; applicationId: string; environment: Environment
-  access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE'; inputs?: Resource[]
+  access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY'; requestPolicy?: Readonly<RequestPolicy>; inputs?: Resource[]
 }
 /** Trusted module binding provenance; carries no credential or permission. */
 export interface ModuleEvidence {
@@ -42,8 +43,9 @@ export interface OperationContext {
   deploymentId: string; configurationVersion: string; environment: Environment; operation: OperationId
   actorId: string; actorKind: 'HUMAN' | 'SERVICE'; actor: Readonly<Actor>; subjectUserId: string | null
   organisationId: string | null; mode: 'ORGANISATION' | 'ACCOUNT'; policyVersion: string; accessVersion: string
-  accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE' | 'EXPORT'; resourceId: string; resource: Readonly<Resource>
-  productEvidence: ReadonlyArray<Pick<ProductGrant, 'product' | 'version' | 'sourceRef' | 'source' | 'expiresAt'> & { feature: string }>; usagePolicy: 'NOT_APPLICABLE'
+  accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE' | 'EXPORT' | 'REQUEST_COMPUTE'; resourceId: string; resource: Readonly<Resource>
+  productEvidence: ReadonlyArray<Pick<ProductGrant, 'product' | 'version' | 'sourceRef' | 'source' | 'expiresAt'> & { feature: string }>; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY'
+  requestReservation?: Readonly<{requestId:string;replay:boolean;policyId:string;policyVersion:string}>
   moduleEvidence?: Readonly<ModuleEvidence>
   payload: Json; payloadDigest: string; correlationId: string
 }
@@ -56,14 +58,17 @@ export interface AuditEvent {
 }
 export interface OperationInput {
   contractId: string; contractVersion: string; operation: string; organisationId: string | null
-  resourceId: string; payload: Json; request: unknown
+  resourceId: string; payload: Json; request: unknown; idempotencyKey?: string
 }
 export interface BoundRequest {
-  operation: OperationId; resourceId: string; organisationId: string | null; payload: Json; payloadDigest: string
+  operation: OperationId; resourceId: string; organisationId: string | null; payload: Json; payloadDigest: string; idempotencyKey?: string
 }
 export interface OperationSession<Transaction> {
   state: OperationState; transaction: Transaction; transactionalEffects: true; outputBoundaryVersion: string
   recordOutcome(event: AuditEvent): Promise<void>
+  /** Required for AM20; same current private transaction, no external compute. */
+  reserveUsage?(context: Readonly<OperationContext>): Promise<RequestReservation>
+  completeRequest?(context: Readonly<OperationContext>, value: RequestReceipt): Promise<void>
   moduleEvidence?: Readonly<ModuleEvidence>
   projectOutput(value: unknown, context: Readonly<OperationContext>): unknown | Promise<unknown>
   /** Export only: separately authorised/audited local SQL preparation in this transaction. No external effects. */
@@ -75,7 +80,7 @@ export interface OperationExecutor<Transaction = unknown> {
   contract: Readonly<{ id: string; version: string; implementation: string }>
   execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractId: string; contractVersion: string; value: T }>>
 }
-export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.5' }>
+export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.6' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
 export declare function isOperationDenied(error: unknown): error is OperationDenied

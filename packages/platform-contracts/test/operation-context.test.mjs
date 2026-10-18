@@ -46,7 +46,7 @@ function fixture(operation = 'benchmark.selection.read') {
   return { input, state, application, options, events, writes, controls, issuer, action, get invoked() { return invoked }, execute: () => createOperationExecutor(options).execute(input, action) }
 }
 
-for (const operation of IMPLEMENTED_OPERATIONS) {
+for (const operation of IMPLEMENTED_OPERATIONS.filter(value => value !== 'forecast.request')) {
   test(`${operation}: explicit positive rule and durable intent/outcome`, async () => {
     const f = fixture(operation); const result = await f.execute(); assert.equal(result.decision, 'ALLOW'); assert.equal(f.invoked, 1); assert.deepEqual(f.events.map(e => e.phase), operation === 'supplier.report.export' ? ['INTENT', 'INTENT', 'OUTCOME', 'OUTCOME'] : ['INTENT', 'OUTCOME'])
   })
@@ -129,8 +129,8 @@ test('payload is canonically bound and snapshotted before asynchronous authentic
 })
 test('candidate rules match exact normative rows and never imply all 30 are implemented', async () => {
   const matrix = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url)))
-  assert.equal(IMPLEMENTED_OPERATIONS.length, 15); assert.equal(matrix.rules.length, 30)
-  for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === 'NOT_APPLICABLE').length, 1)
+  assert.equal(IMPLEMENTED_OPERATIONS.length, 16); assert.equal(matrix.rules.length, 30)
+  for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === (operation === 'forecast.request' ? 'PRODUCT_POLICY' : 'NOT_APPLICABLE')).length, 1)
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
 
@@ -180,7 +180,7 @@ test('the selected assignment entitlement cannot change after expiry during an e
   assert.deepEqual(f.writes,[]);assert.deepEqual(f.events.map(event=>event.phase),['INTENT','FAILURE'])
 })
 test('forecast read cannot publish private metadata or enable paid compute',async()=>{
-  const f=fixture('forecast.read');f.state.resource.approvedSharedProjection=false
+  const f=fixture('forecast.read');f.application.operations=['forecast.read'];f.state.resource.approvedSharedProjection=false
   await assert.rejects(f.execute(),error=>error.reasonCode==='RESOURCE_SCOPE_MISMATCH')
   for(const operation of ['forecast.request','supplier.report.refresh','knowledge.ingest','job.execute','membership.manage']){
     f.input.operation=operation;await assert.rejects(f.execute(),error=>error.reasonCode==='PERMISSION_DENIED')

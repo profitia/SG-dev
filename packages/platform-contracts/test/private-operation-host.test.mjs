@@ -15,10 +15,10 @@ test('the versioned host is immutable and preserves the base SQL and identity ad
   const host=createPrivateOperationHost(options())
   assert.equal(Object.isFrozen(host),true)
   assert.equal(host.hostContract,PRIVATE_OPERATION_HOST_CONTRACT)
-  assert.equal(host.contract.implementation,'1.0.0-candidate.5')
-  assert.equal(host.hostContract.version,'1.3.0')
+  assert.equal(host.contract.implementation,'1.0.0-candidate.6')
+  assert.equal(host.hostContract.version,'1.4.0')
   assert.match(await privateOperationHostSourceDigest(),/^[a-f0-9]{64}$/)
-  assert.equal(await operationSourceDigest(),'0b19f9ab0aba5623b5557cad37fd38d6548fbdef127dfb2b436db5609bbcc563')
+  assert.equal(await operationSourceDigest(),'f642b1c7bdaff44a1ff649d8a3d415253e39885f5e2a50d31d57d8b7641f3ec2')
   assert.equal(await identitySourceDigest(),'7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
   assert.equal(await accessStoreSourceDigest(),'a4bfb07619b384a4098d086f4f80da480c008446bafca7b23d8b56bad9c40a42')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
@@ -56,5 +56,5 @@ test('export cannot be enabled without a server-owned preparation adapter', () =
   o.application.features = ['supplier_report']
   o.application.operations = ['supplier.report.read', 'supplier.report.project', 'supplier.report.export']
   assert.throws(() => createPrivateOperationHost(o), TypeError)
-  assert.equal(createPrivateOperationHost({ ...o, prepareInputs: async () => {} }).hostContract.version, '1.3.0')
+  assert.equal(createPrivateOperationHost({ ...o, prepareInputs: async () => {} }).hostContract.version, '1.4.0')
 })
