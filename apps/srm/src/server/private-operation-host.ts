@@ -36,7 +36,7 @@ export function createSrmPrivateOperationHost(options: Omit<HostOptions, "indepe
     || identity.appId !== options.application.appId || identity.environment !== options.application.environment
     || identity.issuer !== options.application.identityIssuer) throw new TypeError("Explicit consistent SRM host and independent audit pool required");
   return createPrivateOperationHost<PoolClient>({
-    application: options.application, binding: options.binding, module: options.module, now,
+    application: options.application, binding: options.binding, module: options.module, requestLedger: options.requestLedger, now,
     transactionTimeoutMs: options.transactionTimeoutMs,
     readResources: options.readResources, projectOutput: options.projectOutput,
     prepareInputs: options.prepareInputs, describeOutcome: options.describeOutcome,

@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
   }
   // These accepted entries own their complete backend identity/permission/audit
   // boundary. Other legacy entrances are still closed in explicit Clerk mode.
-  if (["/api/xray/report-data", "/api/xray/financial-excel", "/api/xray/financial-summary"].includes(path) && process.env.PROFITIA_AUTH_PROVIDER === "clerk") {
+  if (["/api/xray/report-data", "/api/xray/financial-excel", "/api/xray/financial-summary", "/api/xray/requests"].includes(path) && process.env.PROFITIA_AUTH_PROVIDER === "clerk") {
     return NextResponse.next({ headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization" } });
   }
   const authenticated = await hasDemoSession(request);
