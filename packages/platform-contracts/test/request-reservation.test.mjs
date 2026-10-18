@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {createOperationExecutor,OPERATION_CONTRACT,OperationDenied,operationPayloadDigest} from '../src/operation-context.mjs'
-import {createRequestLedger,validRequestIdempotencyKey,requestLedgerSourceDigest} from '../src/request-ledger.mjs'
+import {createRequestLedger,validRequestIdempotencyKey,requestLedgerSourceDigest,requestReservationSchemaDigest,externalRequestSchemaDigest} from '../src/request-ledger.mjs'
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 const U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',V='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 const P='cccccccc-cccc-4ccc-8ccc-cccccccccccc',R='dddddddd-dddd-4ddd-8ddd-dddddddddddd'
@@ -130,4 +130,10 @@ test('AM23 rejects unimplemented SERVICE impersonation and missing accepted SQL 
  await assert.rejects(f.execute(),rejected('DELEGATION_INVALID'));assert.equal(f.actions,0)
  assert.throws(()=>createRequestLedger({binding:{},schemaDigest:'a'.repeat(64),operation:'supplier.report.refresh'}),TypeError)
  assert.throws(()=>createRequestLedger({binding:{},schemaDigest:'a'.repeat(64),operation:'unapproved',externalSchemaDigest:'b'.repeat(64)}),TypeError)
+})
+
+
+test('optional SQL010 cannot change the accepted immutable SQL006 base digest',async()=>{
+ assert.equal(await requestReservationSchemaDigest(),'0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127')
+ assert.notEqual(await requestReservationSchemaDigest(),await externalRequestSchemaDigest())
 })

@@ -117,8 +117,7 @@ export async function requestLedgerSourceDigest(){
     .update(fs.readFileSync(new URL(externalRequestSchemaUrl))).digest('hex')
 }
 export async function requestReservationSchemaDigest(){
-  const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(requestReservationSchemaUrl)))
-    .update(fs.readFileSync(new URL(externalRequestSchemaUrl))).digest('hex')
+  const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(requestReservationSchemaUrl))).digest('hex')
 }
 
 export async function externalRequestSchemaDigest(){
