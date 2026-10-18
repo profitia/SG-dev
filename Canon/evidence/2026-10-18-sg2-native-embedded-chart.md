@@ -2,7 +2,7 @@
 
 Status: locally verified source candidate. Exact source and main CI, separate producer/receiver acceptance and canonical closeout remain distinct evidence. No product deployment, live authentication activation or business configuration changes.
 
-Task `SG2-E1-NATIVE-EMBEDDED-CHART-20261018`; profile SG2; workspace SG-dev; target Development; execution local. Own PMOS registration `cmvdhocwp000013ru8oc2i6xy`; full manifest/before/begin/require-begin and exact routing gates. Twenty-four initial aligned paths; the naturally required cross-host test launcher was added as path25 only after a preserved source checkpoint and repeated full clean require-begin preflight. Original registered prompt was preserved. Source checkpoints are not release LKG.
+Task `SG2-E1-NATIVE-EMBEDDED-CHART-20261018`; profile SG2; workspace SG-dev; target Development; execution local. Own PMOS registration `cmvdhocwp000013ru8oc2i6xy`; full manifest/before/begin/require-begin and exact routing gates. Twenty-four initial aligned paths; the naturally required cross-host test launcher was added as path25 only after a preserved source checkpoint and repeated full clean require-begin preflight. The dashboard install mode was added as path26 after the clean candidate and another full scope/routing/require-begin preflight. Original registered prompt was preserved. Source checkpoints are not release LKG.
 
 ## Independent producer and existing hosts
 
@@ -28,6 +28,8 @@ Native UI is deliberately prepared/read-only: no warmup, progressive job polling
 | Test dependency isolation | Each host validates genuine local package manifest/lock/exports/source bytes. A missing cross-host SDK is linked only during the test/typecheck subprocess and only the exact owned link is removed. Existing packages are preserved; no private registry, credential retrieval or business runtime is introduced. |
 
 The browser harness digest is `00ebfbe5058f49ed1ba51ef69e90c2efe6eddc126adb8b31a072b2eba3d72094`. Earlier unsuccessful local harness runs (inconsistent localhost rewrite and an overbroad assertion that also rejected the existing theme preference) are retained as diagnostics. They did not require changing application behavior or weakening access checks.
+
+The first public CI attempt diagnosed an actual Dashboard clean-install mismatch: npm expected a linked file dependency while its new lock entry declared the packed local SDK. The app now explicitly sets install-links=true, matching its lock and the existing SG2/SRM packed-source workflow. No authentication or registry setting changed. The earlier controlled source448b4afe run39111384174 passed, but its proof is historical and cannot accept the corrected SHA. Public run39111364694 also refused SG2 until exact-source controlled proof; the Dashboard install failure is separately retained, not dismissed as that expected gate.
 
 ## Release and programme boundaries
 
