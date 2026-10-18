@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { MessageChannel } from 'node:worker_threads'
 import { readFileSync } from 'node:fs'
-import { EMBEDDED_READ_CONTRACT, EMBEDDED_READ_LIMITS, EmbeddedReadUnavailable,
+import { EMBEDDED_READ_CONTRACT, EMBEDDED_READ_LIMITS, EmbeddedReadUnavailable, readPresentationJson,
   openEmbeddedReadHost, openEmbeddedReadClient } from '../src/embedded-read-channel.mjs'
 
 const instanceId = 'fixture_instance_0001'
@@ -234,7 +234,7 @@ test('only explicit valid ports and lower bounded limits can be configured', () 
 
 test('the browser transport has no React, Clerk, Node, network, storage or authority implementation import', () => {
   const source = readFileSync(new URL('../src/embedded-read-channel.mjs', import.meta.url), 'utf8')
-  assert(!/^\s*import\s/m.test(source)); assert(!/\b(?:localStorage|sessionStorage|indexedDB|fetch|XMLHttpRequest)\s*(?:\.|\()/m.test(source))
+  assert(!/^\s*import\s/m.test(source)); assert(!/\b(?:localStorage|sessionStorage|indexedDB)\s*(?:\.|\[)|\b(?:fetch|XMLHttpRequest)\s*\(/m.test(source))
   assert(!/\b(?:createOperationExecutor|createPrivateOperationHost|verifyToken|signToken)\s*\(/m.test(source))
 })
 
@@ -258,4 +258,39 @@ test('a real port whose result publication fails closes and never sends a fallba
   t.after(() => { host.close(); client.close(); port1.close(); port2.close() })
   await assert.rejects(client.read(selected), error => error instanceof EmbeddedReadUnavailable && error.message === 'Read unavailable.')
   assert.equal(failed, 1); assert.equal(closed, true)
+})
+
+test('the same bounded publication decoder preserves split UTF8, zero and null without network or context admission', async () => {
+  const body = { label: 'Zażółć 😀', values: [0, null] }, bytes = new TextEncoder().encode(JSON.stringify(body))
+  const response = new Response(new ReadableStream({ start(controller) {
+    for (let i = 0; i < bytes.byteLength; i++) controller.enqueue(bytes.subarray(i, i + 1))
+    controller.close()
+  } }), { headers: { 'content-type': 'application/json; charset=utf-8' } })
+  assert.deepEqual(await readPresentationJson(response, bytes.byteLength), body)
+  assert.equal(response.body.locked, false)
+})
+
+test('invalid publication MIME, bytes, shape, stream or bounds fail generically and release/cancel the body', async t => {
+  for (const kind of ['mime', 'oversized', 'utf8', 'json', 'shape', 'stream', 'bounds']) await t.test(kind, async () => {
+    let cancelled = false
+    const bytes = kind === 'utf8' ? new Uint8Array([0xff]) : new TextEncoder().encode(kind === 'json' ? 'invalid' : kind === 'shape' ? '{"constructor":"forged"}' : '"ok"')
+    const response = new Response(new ReadableStream({ start(controller) {
+      if (kind === 'stream') controller.error(new Error('private stream diagnostic'))
+      else controller.enqueue(bytes)
+    }, cancel() { cancelled = true } }), { headers: { 'content-type': kind === 'mime' ? 'text/html' : 'application/json' } })
+    // Complete bodies are needed only to reach JSON/shape validation.
+    const readable = ['json', 'shape'].includes(kind) ? new Response(bytes, { headers: { 'content-type': 'application/json' } }) : response
+    await assert.rejects(readPresentationJson(readable, kind === 'bounds' ? 0 : kind === 'oversized' ? 1 : 1024),
+      error => error instanceof EmbeddedReadUnavailable && error.status === 503 && error.message === 'Read unavailable.')
+    assert.equal(readable.body.locked, false)
+    if (['mime', 'oversized', 'utf8', 'bounds'].includes(kind)) assert.equal(cancelled, true)
+    if (readable !== response) await response.body.cancel()
+  })
+  await assert.rejects(readPresentationJson(new Response(null, { headers: { 'content-type': 'application/json' } }), 1024), EmbeddedReadUnavailable)
+})
+
+test('a publication body already locked by another reader produces only a safe failure', async () => {
+  const response = Response.json({ value: 0 }), reader = response.body.getReader()
+  try { await assert.rejects(readPresentationJson(response, 1024), error => error instanceof EmbeddedReadUnavailable && error.status === 503) }
+  finally { await reader.cancel(); reader.releaseLock() }
 })

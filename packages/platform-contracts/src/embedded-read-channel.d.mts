@@ -5,6 +5,8 @@ export type EmbeddedReadLimits = Readonly<{ maxRequestBytes: number; maxResponse
 export const EMBEDDED_READ_CONTRACT: Readonly<{ id: 'profitia.embedded-read'; version: '1.0.0' }>
 export const EMBEDDED_READ_LIMITS: EmbeddedReadLimits
 export class EmbeddedReadUnavailable extends Error { readonly status: number; constructor(status?: number) }
+/** No destination, status or context admission is performed by a JSON decoder. */
+export function readPresentationJson(response: Response, maximumBytes: number): Promise<EmbeddedJson>
 /** Web MessagePort, also compatible with a genuine Node MessageChannel.
  * Transfer only after the application checks the exact source/window/origin. */
 export type EmbeddedReadPort = Pick<MessagePort, 'addEventListener' | 'removeEventListener' | 'start' | 'close'> & {

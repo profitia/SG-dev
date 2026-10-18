@@ -14,6 +14,8 @@ The application must check the exact child window/source/origin **before** trans
 
 Cancellation crosses the port through AbortSignal. Closing either side aborts outstanding host work and rejects client requests. Host deadlines withhold late data. A reader must cooperate with cancellation: JavaScript cannot stop arbitrary noncooperative work. Such a reader continues occupying its concurrency slot until it settles; a timeout does not create unbounded replacement work. The application must close ports and unmount/clear the consumer on session/organisation/subject change and verify its window handshake, actual UI/business behavior and backend revocation separately. Library tests do not prove that those application responsibilities have been adopted.
 
+`readPresentationJson` provides the same bounded JSON decoding for already admitted HTTP responses before presentation. It checks JSON MIME, actual UTF8 bytes and shape, releases reader locks and cancels malformed/oversized bodies. It makes no request and checks no credential, destination, status, publisher or operation context: those remain mandatory caller checks. Consumers must not use a JSON decoder as an admission policy. This helper allows parent and server adapters to share one response decoder rather than copying a second one.
+
 SG2 and SRM require separately registered version/compatibility acceptance. An embedded consumer also needs its own actual integration, browser origin/session tests and controlled release. Source package1.9.0 is not proof of live UI readiness, authentication or complete E1.
 
 ## Bounded operation candidate

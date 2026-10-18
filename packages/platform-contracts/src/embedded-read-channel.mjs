@@ -65,6 +65,34 @@ function parseJson(text, maximumBytes) {
   } catch { throw new EmbeddedReadUnavailable(400) }
 }
 
+/** Decode an already admitted HTTP publication. The caller still owns the
+ * destination, credentials, status and publication-context checks. No fetch. */
+export async function readPresentationJson(response, maximumBytes) {
+  if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1 || maximumBytes > EMBEDDED_READ_LIMITS.maxResponseBytes
+    || response?.headers?.get('content-type')?.split(';')[0]?.trim().toLowerCase() !== 'application/json' || !response.body) {
+    try { await response?.body?.cancel() } catch { /* No diagnostic or fallback. */ }
+    throw new EmbeddedReadUnavailable()
+  }
+  let reader
+  try { reader = response.body.getReader() } catch { throw new EmbeddedReadUnavailable() }
+  const decoder = new TextDecoder('utf-8', { fatal: true })
+  let bytes = 0, text = ''
+  try {
+    while (true) {
+      const part = await reader.read()
+      if (part.done) break
+      bytes += part.value.byteLength
+      if (bytes > maximumBytes) throw new EmbeddedReadUnavailable()
+      text += decoder.decode(part.value, { stream: true })
+    }
+    text += decoder.decode()
+    return parseJson(text, maximumBytes)
+  } catch {
+    try { await reader.cancel() } catch { /* Keep source details out of the consumer. */ }
+    throw new EmbeddedReadUnavailable()
+  } finally { reader.releaseLock() }
+}
+
 function envelope(instanceId, kind, fields = {}) {
   return { contract: EMBEDDED_READ_CONTRACT.id, version: EMBEDDED_READ_CONTRACT.version, instanceId, kind, ...fields }
 }
