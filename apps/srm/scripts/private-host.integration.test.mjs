@@ -43,8 +43,17 @@ test('SRM imports the exact additive presentation channel while keeping current 
   const { EMBEDDED_READ_CONTRACT, openEmbeddedReadHost, openEmbeddedReadClient } = await import('@profitia/platform-contracts/embedded-read-channel')
   assert.deepEqual({id:EMBEDDED_READ_CONTRACT.id,version:EMBEDDED_READ_CONTRACT.version},{id:'profitia.embedded-read',version:'1.0.0'})
   const entry = new URL(import.meta.resolve('@profitia/platform-contracts/embedded-read-channel'))
-  assert.equal(hash(fs.readFileSync(entry)), 'd86912fe4723a8af6fb3e55bd3949f77e1617fe868ec9632d21ff996bd505c79')
-  assert.equal(hash(fs.readFileSync(new URL('./embedded-read-channel.d.mts',entry))), '79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa')
+  const adoption=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))).embeddedChannelSourceCompatibility
+  assert.equal(adoption.platformVersion,'1.12.0')
+  assert.equal(adoption.producer.sourceSha,'a0e6bbee0ce44e2d3472183ef67749f3ef8f4e45')
+  assert.deepEqual(Object.keys(adoption.sourceDigests).sort(),['src/embedded-channel-core.mjs','src/embedded-command-channel.d.mts','src/embedded-command-channel.mjs','src/embedded-read-channel.d.mts','src/embedded-read-channel.mjs'])
+  for(const [path,digest]of Object.entries(adoption.sourceDigests)){
+    assert.match(digest,/^[a-f0-9]{64}$/)
+    assert.equal(hash(fs.readFileSync(new URL(path.slice(4),entry))),digest,path)
+  }
+  assert.equal(adoption.nativeEmbeddedUiAdopted,false)
+  assert.equal(adoption.embeddedCommandAdopted,false)
+  assert.equal(adoption.forecastRequestAdopted,false)
   const {port1,port2}=new MessageChannel(),instanceId=randomUUID()
   let calls=0,currentAllowed=true,closed
   const observedClose=new Promise(resolve=>{closed=resolve})

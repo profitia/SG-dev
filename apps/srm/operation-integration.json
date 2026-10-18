@@ -132,5 +132,32 @@
     "platformIngestionAdoption": false,
     "forecastRequestAdoption": false,
     "productDeploymentPerformed": false
+  },
+  "embeddedChannelSourceCompatibility": {
+    "taskId": "SRM-E1-EMBEDDED-COMMAND-SOURCE-COMPATIBILITY-20261018",
+    "platformVersion": "1.12.0",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-EMBEDDED-COMMAND-CHANNEL-20261018",
+      "repository": "profitia/SG-dev",
+      "sourceSha": "a0e6bbee0ce44e2d3472183ef67749f3ef8f4e45",
+      "pullRequest": 481
+    },
+    "scope": "EXACT_TRANSITIVE_CHANNEL_SOURCE_AND_EXISTING_SRM_NATIVE_COMPATIBILITY_ONLY",
+    "sourceDigests": {
+      "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a",
+      "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+      "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+      "src/embedded-command-channel.mjs": "ea67d7d0ed9bdcd5739e6d42493e0457688af2c9d87db153f6fefcbe5bb8dc78",
+      "src/embedded-command-channel.d.mts": "d137964bc0ca86ab3908313b0837a5f3ec3b4d461a674e1029c37b040a733389"
+    },
+    "previousReadSourceRecord": "embeddedReadSourceCompatibility",
+    "previousReadSourceRecordIsHistorical": true,
+    "readWireContractPreserved": "profitia.embedded-read@1.0.0",
+    "nativeEmbeddedUiAdopted": false,
+    "embeddedCommandAdopted": false,
+    "forecastRequestAdopted": false,
+    "existingProductOperationOrGrantChanged": false,
+    "productDeploymentPerformed": false
   }
 }
