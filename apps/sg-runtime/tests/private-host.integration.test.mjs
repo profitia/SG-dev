@@ -57,7 +57,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     owner = new pg.Client({ connectionString: dbUrl.toString() }); await owner.connect()
     // Only this explicitly named, guarded LOOPBACK database may be reset.
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db, DATABASE)
-    await owner.query('DROP SCHEMA IF EXISTS profitia_forecast_read CASCADE; DROP TABLE IF EXISTS public.rolling_daily_current_forecast_snapshots CASCADE; DROP TYPE IF EXISTS public.\"ForecastTargetBasis\"; DROP SCHEMA IF EXISTS profitia_category CASCADE; DROP SCHEMA IF EXISTS profitia_modules CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE; DROP SCHEMA IF EXISTS sg_runtime_benchmarks CASCADE')
+    await owner.query('DROP SCHEMA IF EXISTS profitia_forecast_read CASCADE; DROP TABLE IF EXISTS public.forecast_current_points,public.forecast_current_runs,public.rolling_daily_current_forecast_snapshots CASCADE; DROP TYPE IF EXISTS public.\"ForecastTargetBasis\"; DROP SCHEMA IF EXISTS profitia_category CASCADE; DROP SCHEMA IF EXISTS profitia_modules CASCADE; DROP SCHEMA IF EXISTS profitia_access CASCADE; DROP SCHEMA IF EXISTS sg_runtime_benchmarks CASCADE')
     await owner.query(`GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
     await owner.query('BEGIN; SET LOCAL ROLE profitia_access_owner')
     await owner.query(schema)
@@ -746,11 +746,28 @@ test('SG2 Prisma host composes the accepted access store with existing selection
         GRANT SELECT ON profitia_market_read.series TO ${sourceOwner};
         GRANT SELECT("id","seriesId","inputSource","targetBasis","methodId","methodVersion","modelId","trainingWindowPolicyId","effectiveTrainingPolicyId","sourceHistoryFingerprint",
           "contractVersion","status","forecastOriginAt","sourceLatestObservationAt","payloadJson","createdAt","updatedAt") ON public.rolling_daily_current_forecast_snapshots TO ${sourceOwner}`)
+      await owner.query(`
+      DROP TABLE IF EXISTS public.forecast_current_points,public.forecast_current_runs CASCADE;
+      CREATE TABLE public.forecast_current_runs (
+        id text PRIMARY KEY,"seriesId" text,"displayName" text,description text,frequency text,currency text,unit text,"sourceLabel" text,
+        "inputSource" text,"inputRunId" text,"historyFingerprint" text,"targetBasis" public."ForecastTargetBasis","methodId" text,
+        "historyStartAt" timestamp,"historyEndAt" timestamp,"observationCount" integer,"forecastOriginAt" timestamp,
+        "modelId" text,"methodVersion" text,"trainingWindowPolicyId" text,"effectiveTrainingPolicyId" text,
+        status text,"failureReason" text,"runtimeSeconds" double precision,"createdAt" timestamp DEFAULT now(),"updatedAt" timestamp DEFAULT now());
+      CREATE TABLE public.forecast_current_points (
+        id text PRIMARY KEY,"runId" text REFERENCES public.forecast_current_runs(id),"horizonLabel" text,"horizonSteps" integer,
+        "forecastDate" timestamp,"forecastValue" numeric(24,8),"fitStatus" text,"failureReason" text,"selectedVariant" text,
+        "selectionMetric" text,"selectionScore" double precision,"metadataJson" jsonb,"createdAt" timestamp DEFAULT now(),"updatedAt" timestamp DEFAULT now());
+      GRANT SELECT(id,"seriesId",frequency,"inputSource","historyFingerprint","targetBasis","methodId","historyStartAt","historyEndAt",
+        "observationCount","forecastOriginAt","modelId","methodVersion","trainingWindowPolicyId","effectiveTrainingPolicyId",status,"runtimeSeconds","createdAt","updatedAt")
+        ON public.forecast_current_runs TO ${sourceOwner};
+      GRANT SELECT(id,"runId","horizonLabel","horizonSteps","forecastDate","forecastValue","metadataJson","createdAt","updatedAt")
+        ON public.forecast_current_points TO ${sourceOwner};`)
       const sql=fs.readFileSync(new URL('../prisma-market-data/private-read/002-stored-rolling-current.sql',import.meta.url),'utf8')
       const sourceDigest=createHash('sha256').update(sql).digest('hex')
       const marketDigest=createHash('sha256').update(fs.readFileSync(new URL('../prisma-market-data/private-read/001-stored-history-read.sql',import.meta.url))).digest('hex')
       await owner.query('BEGIN');await owner.query(`SET LOCAL ROLE ${sourceOwner}`);await owner.query(sql)
-      await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'1.0.0',$1,$2,'isolated-source-project','isolated-source-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')",[sourceDigest,marketDigest,DATABASE,sourceRole]);await owner.query('COMMIT')
+      await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'2.0.0',$1,$2,'isolated-source-project','isolated-source-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')",[sourceDigest,marketDigest,DATABASE,sourceRole]);await owner.query('COMMIT')
       await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM ${sourceOwner}; GRANT USAGE ON SCHEMA profitia_forecast_read,profitia_market_read TO ${sourceRole};
         GRANT SELECT ON profitia_market_read.series,profitia_market_read.observations TO ${sourceRole};
         GRANT SELECT ON ALL TABLES IN SCHEMA profitia_forecast_read TO ${sourceRole};
@@ -848,6 +865,78 @@ test('SG2 Prisma host composes the accepted access store with existing selection
           try{const response=await routes(input());assert.equal(response.status,503);assert(!(await response.text()).includes('synthetic forecast audit outage'))}finally{await owner.query('DROP TRIGGER reject_forecast_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_forecast_outcome()')}
           const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 2")).rows.map(r=>r.event)
           assert.deepEqual(events.map(e=>e.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+        })
+        await t.test('period API keeps default and END_OF_PERIOD inside the same current private authority and source gates',async t=>{
+          const {buildLiveForecastBridgePayloadFromHistory,selectMinimalLawfulCurrentTrainingPayload}=await import('../lib/forecast/live-market-input.ts')
+          const {resolveForecastTechnicalMinimumObservations}=await import('../lib/forecast/current-fast-policy.ts')
+          const {buildForecastHistoryFingerprint}=await import('../lib/forecast/service.ts')
+          const {createForecastCadence}=await import('../lib/forecast/cadence.ts')
+          const {resolveForecastMethodContract,buildForecastArtifactCadenceIdentity}=await import('../lib/forecast/identity.ts')
+          const periodSeries='private_host_period_source',marker='SYNTHETIC_PRIVATE_PERIOD_MARKER'
+          const history={providerSeries:{provider:{providerCode:'MACROBOND',displayName:'Macrobond'},providerSeriesId:periodSeries,providerSeriesKey:null},
+            displayName:'Shared period source',frequency:'DAILY',currency:null,unit:'ORIGINAL_UNIT',source:'Synthetic',historical:[]}
+          await owner.query('INSERT INTO public.market_series VALUES(\'period-host\',\'MACROBOND\',$1,null,$2,\'daily\',null,\'ORIGINAL_UNIT\',\'Synthetic\')',[periodSeries,history.displayName])
+          for(let month=0;month<36;month++){
+            const date=new Date(Date.UTC(2022,month,15)).toISOString();history.historical.push({date,value:0})
+            await owner.query('INSERT INTO public.market_observations VALUES(\'period-host\',$1,0)',[date])
+          }
+          for(const basis of ['MONTHLY_AVERAGE','END_OF_PERIOD']){
+            const method=resolveForecastMethodContract(basis),statistical=createCurrentForecastStatisticalCompatibility({sourceFrequency:'DAILY',targetCadence:'MONTHLY',targetSemantics:basis})
+            const prepared=selectMinimalLawfulCurrentTrainingPayload(buildLiveForecastBridgePayloadFromHistory(periodSeries,history,{targetBasis:basis,targetCadence:'MONTHLY',continuityPolicy:'ALLOW_GAPS'}),
+              resolveForecastTechnicalMinimumObservations({targetSemantics:basis,modelId:'naive'}))
+            const hash=buildForecastHistoryFingerprint(prepared.history,createForecastCadence('DAILY','MONTHLY')),id=`period_host_${basis}`
+            await owner.query(`INSERT INTO public.forecast_current_runs(id,"seriesId","modelId","displayName",description,frequency,"inputSource","inputRunId","historyFingerprint",
+              "targetBasis","methodId","methodVersion","trainingWindowPolicyId","effectiveTrainingPolicyId","historyStartAt","historyEndAt","observationCount","forecastOriginAt",status,"failureReason","runtimeSeconds")
+              VALUES($1,$2,'naive',$3,$3,$4,'DYNAMIC_MARKET_DATA_STORE',$3,$5,$6::text::public."ForecastTargetBasis",$6::text,$7,$8,$9,$10,$11,$12,$11,'AVAILABLE',$3,0)`,
+            [id,periodSeries,marker,buildForecastArtifactCadenceIdentity(createForecastCadence('DAILY','MONTHLY')),hash,basis,method.methodVersion,
+              statistical.trainingWindowPolicyId,statistical.effectiveTrainingPolicyId,prepared.history.start,prepared.history.end,prepared.history.observations])
+            for(const[horizon,steps]of Object.entries(prepared.execution.horizons))await owner.query(`INSERT INTO public.forecast_current_points(id,"runId","horizonLabel","horizonSteps","forecastDate","forecastValue","failureReason")
+              VALUES($1,$2,$3,$4,$5,0,$6)`,[`${id}_${horizon}`,id,horizon,steps,prepared.execution.currentTargetDates[horizon],marker])
+          }
+          const periodInput=(org=A,user=U,basis='MONTHLY_AVERAGE',extra='')=>new NextRequest(`${ORIGIN}/api/benchmark/forecast/current?seriesId=${periodSeries}&model=naive&organisationId=${org}`
+            +(basis==='MONTHLY_AVERAGE'?'':`&targetBasis=${basis}`)+extra,{headers:{authorization:`Bearer external-${user}`}})
+          await t.test('both organisations share scientific values with separate owner decisions and the original monthly default',async()=>{
+            for(const basis of ['MONTHLY_AVERAGE','END_OF_PERIOD']){
+              const values=[]
+              for(const org of[A,B]){const response=await routes(periodInput(org,U,basis));assert.equal(response.status,200)
+                assert.equal(response.headers.get('cache-control'),'private, no-store');const value=await response.json();assert.equal(value.status,'AVAILABLE')
+                assert.equal(value.targetBasis,basis);assert.equal(value.currentForecast['1M'].forecastValue,0);assert.equal(value.source.runId,null)
+                assert(!JSON.stringify(value).includes(marker));values.push(value)}
+              assert.deepEqual(values[0],values[1])
+              const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 2")).rows.map(r=>r.event)
+              assert.deepEqual(events.map(e=>e.organisationId),[B,A]);assert(events.every(e=>e.actorId===U&&e.dataClass==='SHARED_KNOWLEDGE'&&e.resourceId.endsWith(basis)))
+            }
+          })
+          await t.test('period identity forgery and live session/membership/permission/product revocations stop before source reads',async()=>{
+            const before=sourceReads
+            assert.equal((await routes(periodInput(A,V))).status,403)
+            assert.equal((await routes(new NextRequest(periodInput().url,{headers:{'x-clerk-user-id':U,'x-clerk-org-id':A}}))).status,401)
+            assert.equal((await routes(new NextRequest(periodInput().url,{headers:{...Object.fromEntries(periodInput().headers),'x-sg-prepared-history-fingerprint':'forged'}}))).status,400)
+            sdkRevoked=true;try{assert.equal((await routes(periodInput())).status,401)}finally{sdkRevoked=false}
+            for(const[deny,restore,values]of[
+              ["UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2","UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U]],
+              ["UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1","UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1",[A]],
+              ["UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='spendguru' AND module_id='benchmark'","UPDATE profitia_modules.application_bindings SET status='ACTIVE' WHERE application_id='spendguru' AND module_id='benchmark'",[]]]){
+              await owner.query(deny,values);try{for(const basis of ['MONTHLY_AVERAGE','END_OF_PERIOD'])assert.equal((await routes(periodInput(A,U,basis))).status,403)}finally{await owner.query(restore,values)}
+            }
+            const id=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','forecast.read','forecast')",[id,A,U])
+            try{assert.equal((await routes(periodInput())).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[id])}
+            assert.equal(sourceReads,before)
+          })
+          await t.test('missing evidence and tainted DTOs do not escape through the period API',async()=>{
+            const response=await routes(periodInput(A,U,'MONTHLY_AVERAGE','&sourceFrequency=MONTHLY&targetCadence=MONTHLY'))
+            assert.equal(response.status,200);assert.equal((await response.json()).status,'NOT_AVAILABLE')
+            const event=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 1")).rows[0].event
+            assert.equal(event.reasonCode,'NO_DATA')
+            const tainted=createOperationForecastCurrentHandler(forecastHost,A,async selected=>({...await read(selected),privateUser:marker}))
+            const denied=await tainted(periodInput());assert.equal(denied.status,403);assert(!(await denied.text()).includes(marker))
+          })
+          await t.test('period data is withheld when OUTCOME persistence fails and FAILURE remains durable',async()=>{
+            await owner.query("CREATE FUNCTION profitia_access.reject_period_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'operation'='forecast.read' THEN RAISE EXCEPTION 'synthetic period audit outage'; END IF; RETURN NEW; END $$;CREATE TRIGGER reject_period_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_period_outcome()")
+            try{assert.equal((await routes(periodInput())).status,503)}finally{await owner.query('DROP TRIGGER reject_period_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_period_outcome()')}
+            const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'operation'='forecast.read' ORDER BY event_id DESC LIMIT 2")).rows.map(r=>r.event)
+            assert.deepEqual(events.map(e=>e.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+          })
         })
         assert.equal(providerCalls,providerBefore)
       }finally{await source.$disconnect()}

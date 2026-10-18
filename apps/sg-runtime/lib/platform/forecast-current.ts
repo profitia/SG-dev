@@ -2,20 +2,28 @@ import { z } from 'zod'
 import { OperationDenied, operationPayloadDigest, type OperationContext } from '@profitia/platform-contracts/operation-context'
 import type { RollingDailyProductionForecastResult } from '@/lib/forecast/rolling-daily-production-forecast'
 import { ROLLING_DAILY_METHOD_VERSION } from '@/lib/forecast/rolling-daily-policy'
+import { FORECAST_NATIVE_FREQUENCIES } from '@/lib/forecast/cadence'
+import type { PublicPeriodCurrentForecast } from './period-forecast-current'
 
-export const FORECAST_CURRENT_PROJECTION = 'sg2-stored-rolling-current-v1'
+export const FORECAST_CURRENT_PROJECTION = 'sg2-stored-current-v2'
 export const MAX_FORECAST_CURRENT_BYTES = 4 * 1024 * 1024
 export const MAX_FORECAST_CURRENT_PATH_POINTS = 366
 export const MAX_FORECAST_MODEL_PARAMETERS = 512
 
+const model = z.enum(['naive', 'damped_holt', 'ets', 'arima'])
 export const ForecastCurrentSelection = z.object({
   seriesId: z.string().trim().min(1).max(256).regex(/^[a-z0-9_./-]+$/i),
-  modelId: z.enum(['naive', 'damped_holt', 'ets', 'arima']),
-  targetBasis: z.literal('POINT_IN_TIME'),
-}).strict()
+  modelId: model,
+  targetBasis: z.enum(['POINT_IN_TIME', 'MONTHLY_AVERAGE', 'END_OF_PERIOD']),
+  sourceFrequency: z.enum(FORECAST_NATIVE_FREQUENCIES).optional(),
+  targetCadence: z.enum(FORECAST_NATIVE_FREQUENCIES).optional(),
+}).strict().refine(value => (value.sourceFrequency === undefined) === (value.targetCadence === undefined)
+  && (value.targetBasis !== 'POINT_IN_TIME' || value.sourceFrequency === undefined
+    || value.sourceFrequency === 'DAILY' && value.targetCadence === 'DAILY'))
 export type ForecastCurrentSelectionValue = z.infer<typeof ForecastCurrentSelection>
 export const forecastCurrentResourceId = (selection: ForecastCurrentSelectionValue) =>
-  `forecast-current:${selection.seriesId}:${selection.modelId}:POINT_IN_TIME`
+  `forecast-current:${selection.seriesId}:${selection.modelId}:${selection.targetBasis}`
+  + (selection.sourceFrequency ? `:${selection.sourceFrequency}:${selection.targetCadence}` : '')
 
 const unavailableReasons = [
   'PREPARATION_REQUIRED: Rolling Daily prepared Current snapshot is MISS.',
@@ -23,13 +31,13 @@ const unavailableReasons = [
 ] as const
 const unavailable = z.object({
   status: z.literal('NOT_AVAILABLE'), seriesId: z.string(),
-  modelId: ForecastCurrentSelection.shape.modelId,
+  modelId: model,
   targetBasis: z.literal('POINT_IN_TIME'), targetSemantics: z.literal('ROLLING_DAILY_POINT_IN_TIME'),
   methodId: z.literal('ROLLING_DAILY_POINT_IN_TIME'), reason: z.enum(unavailableReasons),
 }).strict()
-export type StoredCurrentForecastResult = RollingDailyProductionForecastResult | z.infer<typeof unavailable>
+export type StoredCurrentForecastResult = RollingDailyProductionForecastResult | z.infer<typeof unavailable> | PublicPeriodCurrentForecast
 export function currentForecastUnavailable(selection: ForecastCurrentSelectionValue, state: 'MISS' | 'STALE'): z.infer<typeof unavailable> {
-  if (state !== 'MISS' && state !== 'STALE') throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+  if (selection.targetBasis !== 'POINT_IN_TIME' || state !== 'MISS' && state !== 'STALE') throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
   return { status: 'NOT_AVAILABLE', seriesId: selection.seriesId, modelId: selection.modelId,
     targetBasis: 'POINT_IN_TIME', targetSemantics: 'ROLLING_DAILY_POINT_IN_TIME', methodId: 'ROLLING_DAILY_POINT_IN_TIME',
     reason: state === 'MISS' ? unavailableReasons[0] : unavailableReasons[1] }
@@ -72,6 +80,10 @@ export function hasPublicForecastModelParameters(value: unknown): boolean {
 /** Business schema stays lazy: other native modules and legacy defaults do not
  * initialize the forecasting/Python module graph merely to compose a host. */
 export async function validatePublicForecastCurrent(value: unknown, selection: ForecastCurrentSelectionValue): Promise<StoredCurrentForecastResult> {
+  if (selection.targetBasis !== 'POINT_IN_TIME') {
+    const { validatePublicPeriodCurrentForecast } = await import('./period-forecast-current')
+    return validatePublicPeriodCurrentForecast(value, selection)
+  }
   const missing = unavailable.safeParse(value)
   if (missing.success) {
     if (missing.data.seriesId !== selection.seriesId || missing.data.modelId !== selection.modelId) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')

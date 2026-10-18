@@ -35,12 +35,10 @@ export function createOperationForecastCurrentHandler(
     const organisationId = parameters.get('organisationId') ?? defaultOrganisationId
     if (!parsed.success || !uuid.test(organisationId)) return respond('VALIDATION_ERROR', 'Invalid current forecast selection.', 400)
     const input = toForecastRequestInput(parsed.data)
-    // Retain the original MONTHLY_AVERAGE default: it is explicitly outside
-    // this bounded adoption, rather than silently substituting POINT_IN_TIME.
-    if (input.targetBasis !== 'POINT_IN_TIME' || input.sourceFrequency && (input.sourceFrequency !== 'DAILY' || input.targetCadence !== 'DAILY')) {
-      return respond('FORECAST_CURRENT_SCOPE_UNAVAILABLE', 'Stored current forecast scope unavailable.', 503)
-    }
-    const selected = ForecastCurrentSelection.safeParse({ seriesId: input.seriesId, modelId: input.modelId, targetBasis: input.targetBasis })
+    // Original parser/defaults remain authoritative; the source resolves and
+    // verifies cadence and prepared evidence, never client prepared headers.
+    const selected = ForecastCurrentSelection.safeParse({ seriesId: input.seriesId, modelId: input.modelId, targetBasis: input.targetBasis,
+      ...(input.sourceFrequency ? { sourceFrequency: input.sourceFrequency, targetCadence: input.targetCadence } : {}) })
     if (!selected.success) return respond('VALIDATION_ERROR', 'Invalid current forecast selection.', 400)
     try {
       const result = await executor.execute({ contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version,

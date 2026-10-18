@@ -9,6 +9,9 @@ import { FORECAST_CURRENT_PROJECTION, forecastCurrentResourceId, readForecastCur
   currentForecastUnavailable, hasPublicForecastModelParameters, projectForecastCurrentResponse, MAX_FORECAST_CURRENT_BYTES } from '../lib/platform/forecast-current'
 import { buildRollingDailyHistoryFingerprint } from '../lib/forecast/rolling-daily-maintenance'
 import { GET as mountedGET } from '../app/api/benchmark/forecast/current/route'
+import { createCurrentForecastStatisticalCompatibility, resolveForecastMethodContract } from '../lib/forecast/identity'
+import { attachExactUncertaintyBandIdentity } from '../lib/forecast/uncertainty-band-policy'
+import { periodCurrentUnavailable } from '../lib/platform/period-forecast-current'
 
 const A = '11111111-1111-4111-8111-111111111111'
 const selection = { seriesId: 'stored_series', modelId: 'naive', targetBasis: 'POINT_IN_TIME' } as const
@@ -61,10 +64,56 @@ test('native current pins forecast.read and server-derived identity before enter
     'seriesId=x&model=naive&targetBasis=POINT_IN_TIME&actorId=forged','seriesId=x&model=naive&targetBasis=POINT_IN_TIME&verificationScope=FULL',
     'seriesId=x&model=naive&targetBasis=POINT_IN_TIME&sourceFrequency=DAILY',`seriesId=${'a'.repeat(257)}&model=naive&targetBasis=POINT_IN_TIME`]) assert.equal((await handler(request(query))).status,400)
   assert.equal((await handler(request(undefined,'GET',{'x-sg-prepared-history-fingerprint':'forged'}))).status,400)
-  for(const query of ['seriesId=x&model=naive','seriesId=x&model=naive&targetBasis=END_OF_PERIOD',
-    'seriesId=x&model=naive&targetBasis=POINT_IN_TIME&sourceFrequency=MONTHLY&targetCadence=MONTHLY']) assert.equal((await handler(request(query))).status,503)
+  for(const query of ['seriesId=x&model=naive','seriesId=x&model=naive&targetBasis=END_OF_PERIOD']) assert.equal((await handler(request(query))).status,403)
+  assert.deepEqual(calls[1]?.payload,{seriesId:'x',modelId:'naive',targetBasis:'MONTHLY_AVERAGE'})
+  assert.deepEqual(calls[2]?.payload,{seriesId:'x',modelId:'naive',targetBasis:'END_OF_PERIOD'})
+  assert.equal((await handler(request('seriesId=x&model=naive&targetBasis=POINT_IN_TIME&sourceFrequency=MONTHLY&targetCadence=MONTHLY'))).status,400)
   const method=await handler(request(undefined,'POST'));assert.equal(method.status,405);assert.equal(method.headers.get('allow'),'GET')
-  assert.equal(calls.length,1);assert.equal(reads,0)
+  assert.equal(calls.length,3);assert.equal(reads,0)
+})
+
+function periodFixture(targetBasis: 'MONTHLY_AVERAGE'|'END_OF_PERIOD') {
+  const selected={seriesId:'period_source',modelId:'naive' as const,targetBasis}
+  const method=resolveForecastMethodContract(targetBasis),hash='a'.repeat(64)
+  const statistical=createCurrentForecastStatisticalCompatibility({sourceFrequency:'DAILY',targetCadence:'MONTHLY',targetSemantics:targetBasis})
+  const point=attachExactUncertaintyBandIdentity({seriesId:selected.seriesId,modelId:'naive',targetBasis,methodVersion:method.methodVersion,
+    inputSource:'DYNAMIC_MARKET_DATA_STORE',sourceFrequency:'DAILY',targetCadence:'MONTHLY',sourceHistoryFingerprint:hash,
+    trainingWindowPolicyId:statistical.trainingWindowPolicyId,effectiveTrainingPolicyId:statistical.effectiveTrainingPolicyId,forecastOrigin:'2024-12-01T00:00:00.000Z'},
+  {horizon:'1M',horizonSteps:1,forecastDate:'2025-01-01T00:00:00.000Z',forecastValue:0,failureReason:null,
+    metadata:{modelFamily:'naive',selectedVariant:'NAIVE_LAST_VALUE',selectedParameters:{},selectionScore:0,selectionMetric:null,fitStatus:'SUCCEEDED',failureReason:null,
+      uncertaintyBand:{status:'AVAILABLE',source:'MODEL_NATIVE_SHORT_HISTORY',policyVersion:'ADAPTIVE_UNCERTAINTY_BANDS_V1',coverage:0.8,
+        lower:0,upper:0,sampleCount:12,calibrationStatus:'NOT_AVAILABLE',calibrationMethod:'NAIVE_RANDOM_WALK_INNOVATION_RMS_NORMAL',
+        calibrationVersion:'naive-random-walk-innovation-rms-normal-v1',reasonCode:null}}})
+  const result={status:'AVAILABLE',...selected,targetSemantics:targetBasis,methodId:method.methodId,methodVersion:method.methodVersion,userFacingModel:true,
+    displayName:'Shared period source',description:'Shared period source',source:{kind:'DYNAMIC_MARKET_DATA_STORE',runId:null},
+    lineage:{inputSource:'DYNAMIC_MARKET_DATA_STORE',inputRunId:null,sourceSeriesId:selected.seriesId,sourceFrequency:'DAILY',historyFingerprint:hash,
+      preparation:null,statisticalCompatibility:statistical},historyFingerprint:hash,
+    history:{frequency:'MONTHLY',start:'2024-01-01T00:00:00.000Z',end:'2024-12-01T00:00:00.000Z',observations:12},
+    forecastOrigin:'2024-12-01T00:00:00.000Z',runtimeSeconds:0,cacheStatus:'hit',alignment:{status:'ALIGNED',trainingFrequency:'MONTHLY',
+      lastHistoricalPeriod:'2024-12-01T00:00:00.000Z',forecastOrigin:'2024-12-01T00:00:00.000Z',firstForecastTarget:'2025-01-01T00:00:00.000Z'},
+    currentForecast:{'1M':point}}
+  const selectedContext={payload:selected,resource:{...resource,id:forecastCurrentResourceId(selected)}}
+  return{selected,result,selectedContext}
+}
+
+test('closed period projection preserves zero, business meaning and the existing exact band identity for both bases',async()=>{
+  for(const basis of ['MONTHLY_AVERAGE','END_OF_PERIOD'] as const){
+    const{selected,result,selectedContext}=periodFixture(basis)
+    const response=Response.json(result);assert.equal(await projectForecastCurrentResponse(response,selectedContext),response)
+    const missing=Response.json(periodCurrentUnavailable(selected));assert.equal(await projectForecastCurrentResponse(missing,selectedContext),missing)
+    const changes:Array<(value:typeof result)=>void>=[v=>{v.source.runId='private' as never},v=>{v.lineage.inputRunId='private' as never},
+      v=>{v.historyFingerprint='b'.repeat(64)},v=>{v.currentForecast['1M'].forecastValue=null},v=>{v.methodVersion='foreign'},
+      v=>{v.currentForecast['1M'].metadata!.selectedParameters={userId:A}},v=>{v.currentForecast['1M'].metadata!.selectedVariant='PRIVATE_NOTE'},
+      v=>{v.currentForecast['1M'].metadata!.uncertaintyBand!.identity!.sourceHistoryFingerprint='b'.repeat(64)}]
+    for(const change of changes){
+      const bad=structuredClone(result);change(bad);await assert.rejects(projectForecastCurrentResponse(Response.json(bad),selectedContext),OperationDenied)
+    }
+    for(const bad of [{...result,userId:A},{...result,source:{...result.source,requester:A}},
+      {...result,currentForecast:{'1M':{...result.currentForecast['1M'],metadata:{...result.currentForecast['1M'].metadata,organisationId:A}}}}]){
+      await assert.rejects(projectForecastCurrentResponse(Response.json(bad),selectedContext),OperationDenied)
+    }
+    await assert.rejects(projectForecastCurrentResponse(Response.json(result),{...selectedContext,payload:{...selected,sourceFrequency:'MONTHLY',targetCadence:'MONTHLY'}}),OperationDenied)
+  }
 })
 
 test('native failures retain authentication/permission/configuration distinctions and private cache headers',async()=>{

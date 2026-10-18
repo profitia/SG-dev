@@ -1,4 +1,5 @@
--- Additive SOURCE CANDIDATE, not an initialization or deployment.
+-- Revised, still uninstalled SOURCE CANDIDATE v2: Rolling Daily and period
+-- Current reads. This file is not an initialization or deployment.
 -- Execute atomically as the controlled NOLOGIN owner after granting only the
 -- public snapshot columns used below and SELECT on the approved market view.
 -- No existing table/type/data/role, runtime grant or receipt is changed here.
@@ -31,7 +32,7 @@ REVOKE ALL ON TYPE profitia_forecast_read."ForecastTargetBasis" FROM PUBLIC;
 
 CREATE TABLE profitia_forecast_read.installation (
   singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
-  schema_version text NOT NULL CHECK(schema_version='1.0.0'),
+  schema_version text NOT NULL CHECK(schema_version='2.0.0'),
   schema_digest text NOT NULL CHECK(schema_digest ~ '^[a-f0-9]{64}$'),
   market_schema_digest text NOT NULL CHECK(market_schema_digest ~ '^[a-f0-9]{64}$'),
   project_id text NOT NULL CHECK(length(project_id) BETWEEN 1 AND 128),
@@ -149,6 +150,95 @@ WHERE p."inputSource"='DYNAMIC_MARKET_DATA_STORE' AND p."targetBasis"::text='POI
   AND p."seriesId"=p."payloadJson" #>> '{benchmark,benchmarkId}'
   AND p."seriesId"=p."payloadJson" #>> '{benchmark,providerSeriesId}'
   AND profitia_forecast_read.project_payload(p."payloadJson") IS NOT NULL;
+
+-- Existing generic Current metadata is open JSON. Only reviewed scientific
+-- fields cross this source boundary. Raw error text and caller fields do not.
+-- An uncertainty-band identity must already equal its actual run/point
+-- identity before a closed copy is published; no stale band is relabelled.
+CREATE FUNCTION profitia_forecast_read.project_period_metadata(value jsonb, model text, expected_identity jsonb) RETURNS jsonb
+LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE SECURITY INVOKER
+SET search_path=pg_catalog,pg_temp AS $period_metadata$
+  SELECT CASE WHEN jsonb_typeof(value)='object' AND octet_length(value::text)<=65536
+    AND value->>'modelFamily'=model AND value->>'fitStatus' IN('SUCCEEDED','FAILED')
+    AND (CASE model WHEN 'naive' THEN value->>'selectedVariant'='NAIVE_LAST_VALUE'
+      WHEN 'damped_holt' THEN value->>'selectedVariant'='DAMPED_HOLT_ADDITIVE'
+      WHEN 'ets' THEN value->>'selectedVariant' ~ '^ETS[(]A,(N|A|Ad),(N|A)[)]$'
+      WHEN 'arima' THEN value->>'selectedVariant' ~ '^ARIMA[(][0-9],[0-9],[0-9][)]$' ELSE false END)
+    AND jsonb_typeof(value->'selectedParameters')='object'
+    AND profitia_forecast_read.public_model_parameters(value->'selectedParameters')
+    AND jsonb_typeof(value->'selectionScore') IN('null','number')
+    AND (value->'selectionMetric'='null'::jsonb OR value->>'selectionMetric'='AICc')
+    AND (NOT(value ? 'uncertaintyBand') OR value->'uncertaintyBand'='null'::jsonb OR (
+      jsonb_typeof(value->'uncertaintyBand')='object'
+      AND value #>> '{uncertaintyBand,status}' IN('AVAILABLE','NOT_AVAILABLE')
+      AND value #>> '{uncertaintyBand,policyVersion}'='ADAPTIVE_UNCERTAINTY_BANDS_V1'
+      AND value #> '{uncertaintyBand,coverage}'='0.8'::jsonb
+      AND (value #> '{uncertaintyBand,source}'='null'::jsonb
+        OR value #>> '{uncertaintyBand,source}' IN('EMPIRICAL_EXACT_RESIDUALS','MODEL_NATIVE_SHORT_HISTORY'))
+      AND jsonb_typeof(value #> '{uncertaintyBand,lower}') IN('null','number')
+      AND jsonb_typeof(value #> '{uncertaintyBand,upper}') IN('null','number')
+      AND jsonb_typeof(value #> '{uncertaintyBand,sampleCount}')='number'
+      AND value #>> '{uncertaintyBand,calibrationStatus}' IN('CALIBRATED','INSUFFICIENT_SAMPLE','NOT_AVAILABLE')
+      AND value #>> '{uncertaintyBand,calibrationMethod}' IN('EMPIRICAL_RESIDUAL_QUANTILES_HF7','NAIVE_RANDOM_WALK_INNOVATION_RMS_NORMAL',
+        'STATSMODELS_ETS_SIMULATION','STATSMODELS_DAMPED_HOLT_SIMULATION')
+      AND value #>> '{uncertaintyBand,calibrationVersion}' IN('empirical-exact-residual-quantiles-v1','naive-random-walk-innovation-rms-normal-v1',
+        'statsmodels-ets-simulation-seed-1729-r1000-v1','statsmodels-damped-holt-simulation-seed-1729-r1000-v1')
+      AND (value #> '{uncertaintyBand,reasonCode}'='null'::jsonb
+        OR value #>> '{uncertaintyBand,reasonCode}' IN('INSUFFICIENT_EXACT_RESIDUALS','INSUFFICIENT_BAND_HISTORY','NON_FINITE_MODEL_NATIVE_SCALE')
+        OR value #>> '{uncertaintyBand,reasonCode}' LIKE 'MODEL_NATIVE_INTERVAL_FAILED:%')
+      AND (profitia_forecast_read.pick_fields(value #> '{uncertaintyBand,identity}',ARRAY['inputSource','sourceFrequency','targetCadence',
+        'horizonLabel','horizonSteps','targetDate','sourceHistoryFingerprint','trainingWindowPolicyId','effectiveTrainingPolicyId',
+        'bandPolicyVersion','bandSource','calibrationMethod','calibrationVersion','calibrationCutoff'])
+        || jsonb_build_object('forecastIdentity',profitia_forecast_read.pick_fields(value #> '{uncertaintyBand,identity,forecastIdentity}',
+          ARRAY['seriesId','modelId','targetSemantics','methodId','methodVersion'])))=expected_identity
+    )) THEN profitia_forecast_read.pick_fields(value,ARRAY['modelFamily','selectedVariant','selectedParameters','selectionScore','selectionMetric','fitStatus'])
+      || jsonb_build_object('failureReason',NULL)
+      || CASE WHEN NOT(value ? 'uncertaintyBand') THEN '{}'::jsonb WHEN value->'uncertaintyBand'='null'::jsonb THEN jsonb_build_object('uncertaintyBand',NULL)
+        ELSE jsonb_build_object('uncertaintyBand',profitia_forecast_read.pick_fields(value->'uncertaintyBand',ARRAY['status','source','policyVersion',
+          'coverage','lower','upper','sampleCount','calibrationStatus','calibrationMethod','calibrationVersion'])
+          || jsonb_build_object('identity',expected_identity,'reasonCode',CASE WHEN value #>> '{uncertaintyBand,reasonCode}' LIKE 'MODEL_NATIVE_INTERVAL_FAILED:%'
+            THEN 'MODEL_NATIVE_INTERVAL_FAILED' ELSE value #>> '{uncertaintyBand,reasonCode}' END)) END
+    ELSE NULL END
+$period_metadata$;
+
+CREATE VIEW profitia_forecast_read.forecast_current_points WITH(security_barrier=true) AS
+SELECT p."id",p."runId",p."horizonLabel",p."horizonSteps",p."forecastDate",p."forecastValue",
+  projected.metadata->>'fitStatus' AS "fitStatus",NULL::text AS "failureReason",
+  projected.metadata->>'selectedVariant' AS "selectedVariant",projected.metadata->>'selectionMetric' AS "selectionMetric",
+  (projected.metadata->>'selectionScore')::double precision AS "selectionScore",projected.metadata AS "metadataJson",p."createdAt",p."updatedAt"
+FROM public.forecast_current_points p JOIN public.forecast_current_runs r ON r."id"=p."runId"
+JOIN profitia_market_read.series s ON s."providerSeriesId"=r."seriesId"
+CROSS JOIN LATERAL (SELECT profitia_forecast_read.project_period_metadata(p."metadataJson",r."modelId",jsonb_build_object(
+  'forecastIdentity',jsonb_build_object('seriesId',r."seriesId",'modelId',r."modelId",'targetSemantics',r."targetBasis"::text,
+    'methodId',r."methodId",'methodVersion',r."methodVersion"),
+  'inputSource',r."inputSource",'sourceFrequency',split_part(split_part(r.frequency,'|',2),'=',2),
+  'targetCadence',split_part(split_part(r.frequency,'|',3),'=',2),'horizonLabel',p."horizonLabel",'horizonSteps',p."horizonSteps",
+  'targetDate',to_char(p."forecastDate",'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'sourceHistoryFingerprint',r."historyFingerprint",
+  'trainingWindowPolicyId',r."trainingWindowPolicyId",'effectiveTrainingPolicyId',r."effectiveTrainingPolicyId",
+  'bandPolicyVersion','ADAPTIVE_UNCERTAINTY_BANDS_V1','bandSource',p."metadataJson" #>> '{uncertaintyBand,source}',
+  'calibrationMethod',p."metadataJson" #>> '{uncertaintyBand,calibrationMethod}',
+  'calibrationVersion',p."metadataJson" #>> '{uncertaintyBand,calibrationVersion}',
+  'calibrationCutoff',to_char(r."forecastOriginAt",'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))) AS metadata) projected
+WHERE r."inputSource"='DYNAMIC_MARKET_DATA_STORE' AND r.status='AVAILABLE' AND r."targetBasis"::text IN('MONTHLY_AVERAGE','END_OF_PERIOD')
+  AND r."methodId"=r."targetBasis"::text AND r."methodVersion"='benchmark-forecasting-mvp-phase2-v1'
+  AND r."modelId" IN('naive','damped_holt','ets','arima') AND r."historyFingerprint" ~ '^[a-f0-9]{64}$'
+  AND r.frequency ~ '^FORECAST_CADENCE_V1[|]source=(DAILY|WEEKLY|MONTHLY|BIMONTHLY|QUARTERLY|QUADMONTHLY|SEMIANNUAL|ANNUAL)[|]target=(DAILY|WEEKLY|MONTHLY|BIMONTHLY|QUARTERLY|QUADMONTHLY|SEMIANNUAL|ANNUAL)$'
+  AND p."horizonLabel" ~ '^[1-9][0-9]{0,2}[MDQWY]$' AND p."horizonSteps" BETWEEN 1 AND 10000
+  AND p."forecastDate" IS NOT NULL AND (p."metadataJson" IS NULL OR p."metadataJson"='null'::jsonb OR projected.metadata IS NOT NULL);
+
+CREATE VIEW profitia_forecast_read.forecast_current_runs WITH(security_barrier=true) AS
+SELECT r."id",r."seriesId",s."displayName",s."displayName" AS description,r.frequency,s.currency,s.unit,s."sourceLabel",
+  r."inputSource",NULL::text AS "inputRunId",r."historyFingerprint",r."targetBasis"::text::profitia_forecast_read."ForecastTargetBasis" AS "targetBasis",
+  r."methodId",r."historyStartAt",r."historyEndAt",r."observationCount",r."forecastOriginAt",r."modelId",r."methodVersion",
+  r."trainingWindowPolicyId",r."effectiveTrainingPolicyId",r.status,NULL::text AS "failureReason",r."runtimeSeconds",r."createdAt",r."updatedAt"
+FROM public.forecast_current_runs r JOIN profitia_market_read.series s ON s."providerSeriesId"=r."seriesId"
+WHERE r."inputSource"='DYNAMIC_MARKET_DATA_STORE' AND r.status='AVAILABLE' AND r."targetBasis"::text IN('MONTHLY_AVERAGE','END_OF_PERIOD')
+  AND r."methodId"=r."targetBasis"::text AND r."methodVersion"='benchmark-forecasting-mvp-phase2-v1'
+  AND r."modelId" IN('naive','damped_holt','ets','arima') AND r."historyFingerprint" ~ '^[a-f0-9]{64}$'
+  AND r."forecastOriginAt" IS NOT NULL AND r."observationCount">0
+  AND (SELECT count(*) BETWEEN 1 AND 366 FROM public.forecast_current_points p WHERE p."runId"=r.id)
+  AND NOT EXISTS(SELECT 1 FROM public.forecast_current_points p WHERE p."runId"=r.id
+    AND NOT EXISTS(SELECT 1 FROM profitia_forecast_read.forecast_current_points approved WHERE approved.id=p.id AND approved."runId"=r.id));
 
 REVOKE ALL ON ALL TABLES IN SCHEMA profitia_forecast_read FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA profitia_forecast_read FROM PUBLIC;
