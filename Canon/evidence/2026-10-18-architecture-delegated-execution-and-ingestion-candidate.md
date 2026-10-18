@@ -32,7 +32,7 @@ Real ordinary-role tests exercise the actual shared executor, access/module/requ
 
 The coupled test uses two physically separate new databases. Private admission commits first; source delivery commits one stored universal effect. An injected subsequent private OUTCOME failure leaves that source effect and its single unit intact while the private row remains READY and has no committed observation. Retry confirms the same effect once; confirmed replay does not call the source again. Nine wrong-source binding dimensions are refused before any source query. Current provider account revocation is checked again after admission and before the first source effect. These effects are synthetic source rows, not proof of the original Forecast business queue/worker adoption.
 
-Initial diagnostics caught a source SQL alias and fixture connection cleanup issue; both were corrected. A post-hoc SQL refusal returns null rather than throwing; its assertion now checks the actual closed refusal and unchanged ownership. The final complete suite is green. Earlier diagnostic logs remain available; no immutable PMOS history was edited.
+Initial diagnostics caught a source SQL alias and fixture connection cleanup issue; both were corrected. A post-hoc SQL refusal returns null rather than throwing; its assertion now checks the actual closed refusal and unchanged ownership. Native receiver inspection also identified that Prisma cannot decode a PostgreSQL void column. The two new SDK audit calls now project a genuine boolean row FROM the unchanged mandatory VOLATILE writer, preserving strict single-row confirmation and all writer errors; no query adapter fabricates a result or bypasses the audit. Real PostgreSQL regression asserts recorded:true and no void OID crosses the port. The complete584-test suite was repeated and is green. One attempted fresh cluster did not start because its Unix socket path exceeded the local platform limit; a new shorter-path cluster completed validation, without adopting an existing database. Earlier diagnostic logs remain available; no immutable PMOS history was edited.
 
 ## Fingerprints
 
@@ -41,10 +41,10 @@ Initial diagnostics caught a source SQL alias and fixture connection cleanup iss
 | Operation candidate.7 | 093ea95317a2d0d1c55439b98996b042fd864a8ed53f611ece886ea1338a5d36 |
 | Identity adapter plus current account reader | 9e1ced6498e8a127dd17fee81c5f4485a032c133bf85c08a72488e7909a0a299 |
 | Access store | fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10 |
-| Private host1.5 including delegated/source provenance | a3fc96a735f9d92ba1c97a17d4de0197d4cd79c5defdb650e137f60e87af804c |
-| Delegated source/types/SQL | c315d1ca976799af233c903731529884634fb6f73882946abbf83cdd2e026093 |
+| Private host1.5 including delegated/source provenance | 662f354b2b98d3ddffd7cb6e83d200a184f44f29c2464d3fb72716078c8c61d0 |
+| Delegated source/types/SQL | 58bf841575950dcb4237e596fa629b7d3e25b6528f8ba2b7229ba30bf17bb814 |
 | SQL007 | 6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb |
-| Platform ingestion source/types/SQL | a26d64648f91c5d8fd5634eed701f52a972e506346d40253872792b2c56c8e58 |
+| Platform ingestion source/types/SQL | e850b36f644d1f15097fdf8ea622b50e6df0a7e85615103499acd27136784ebb |
 | SQL008 | 14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b |
 
 ## Remaining adoption and limits

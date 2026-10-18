@@ -149,7 +149,13 @@ test('additive private dispatch DDL preserves authority and enforces immutable o
         binding:{applicationId:'forecast-jobs',environment:'development',projectId:'isolated-delegated-project',branchId:'isolated-delegated-branch',databaseName:DATABASE,
           role:EXECUTOR,schemaDigest:hash(source('001-internal-access.sql')),service:{schemaDigest:hash(source('005-service-read.sql')),
             profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-worker',configurationVersion:'worker-fixture-v1'}},
-        job:{schemaDigest:hash(migration)},independentQuery:runtime.query.bind(runtime),readExternalAccount,sourceDelivery,
+        job:{schemaDigest:hash(migration)},independentQuery:async(sql,values)=>{
+          const result=await runtime.query(sql,values)
+          if(sql.includes('profitia_jobs.append_audit')){
+            assert.deepEqual(result.rows,[{recorded:true}]);assert(result.fields.every(field=>field.dataTypeID!==2278),'Audit result must not expose PostgreSQL void to a native Prisma driver')
+          }
+          return result
+        },readExternalAccount,sourceDelivery,
         transact:async work=>{
           const client=new Client({connectionString:runtimeUrl.toString()});await client.connect();await client.query('BEGIN')
           try{const result=await work({transaction:client,query:async(sql,values)=>{
