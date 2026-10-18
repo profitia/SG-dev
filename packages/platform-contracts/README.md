@@ -248,3 +248,35 @@ an automatic retry/refund. Actual external delivery, caller adoption and product
 release remain independent requirements. Raw command bodies are not retained
 in the shared intent ledger. Positive/negative isolated tests do not install a
 cloud migration or activate a product flag.
+
+## Explicit private request continuations (1.15.0)
+
+Candidate9 / private host1.7 optionally resumes an accepted HUMAN
+`supplier.report.refresh` parent through SQL011 `PRIVATE_SQL_PHASE`. The host
+requires the same explicit ledger, physical private store, current identity,
+membership, permission, product, module and finite request policy. An installed
+phase policy fixes its sequence/predecessor and expiry. Each parent/phase/input
+has one immutable receipt; a different input conflicts. A phase never commits
+a second parent or another logical request quota unit.
+
+Configure `requestContinuation` only in a server-owned phase host. `readResources`
+still validates the actual domain command; the action checks its actual input
+against `context.requestContinuation.inputDigest` and performs private SQL only.
+Return the unchanged `{requestId,status:'ACCEPTED'}` shape. Phase completion and
+its private effects commit with the sole canonical OUTCOME in the same bounded
+transaction. Deferred SQL constraints reject premature commits, including an
+accepted phase lacking its own same-transaction OUTCOME. Receipts and the active
+phase policy are not customer-supplied authority. No actor/lease is cached.
+
+The existing request ledger verifies the original actor/key/command binding.
+A mismatched key cannot commit a new parent: NEW is rejected before any phase
+action and its tentative transaction is rolled back. No request-key hashing or
+quota rules are reimplemented. Ordinary request acceptance and Forecast remain
+unchanged. SQL001-010 are unchanged; SQL011 grants no login, ACL or activation.
+
+This contract grants neither network execution, shared-source writes nor access
+to personal fields. Provider work occurs outside private transactions under its
+own source authority; publication has its separate current read/field policy.
+The journal joins the existing canonical audit by decision and transaction;
+there is no second audit writer or general workflow runtime. A source receipt
+or a phase receipt alone is not proof of a delivered report or a product release.

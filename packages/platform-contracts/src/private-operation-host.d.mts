@@ -2,7 +2,7 @@ import type { AccessQuery, AccessStoreBinding, IdentityBinding, DatabaseServiceA
 import type { Actor, Application, BoundRequest, OperationContext, OperationExecutor, OperationOutcome, Resource } from './operation-context.mjs'
 import type { ModuleId } from './module-scope.mjs'
 
-export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.6.0' }>
+export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.7.0' }>
 export interface PrivateOperationScope {
   applicationId: string; environment: AccessStoreBinding['environment']; userId: string; organisationId: string | null
 }
@@ -13,6 +13,8 @@ export declare function createPrivateOperationHost<Transaction>(options: {
   module?: { id: ModuleId; schemaDigest: string; auditSchemaDigest: string }
   /** AM20 uses SQL006; bounded HUMAN AM23 additionally requires accepted SQL010. No remote dispatch. */
   requestLedger?: { schemaDigest: string; externalSchemaDigest?: string }
+  /** Optional explicit current-authorised PRIVATE_SQL_PHASE of an accepted AM23 parent; never remote execution. */
+  requestContinuation?: import('./request-continuation.mjs').RequestContinuationBinding
   /** Fresh authoritative reads and independently committed INTENT/DENY/FAILURE. */
   independentQuery: AccessQuery
   /** Real driver transaction: await callback once, commit its return, rollback on

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.8' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.9' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -20,7 +20,8 @@ const rules = Object.freeze({
   'forecast.read': rule('forecast', 'market_forecast', 'SHARED_KNOWLEDGE', 'READ', 'SPENDGURU'),
   // Bounded HUMAN AM20: private request acceptance, never external execution.
   'forecast.request': rule('forecast', 'forecast_request', 'OPERATION_AUDIT', 'REQUEST_COMPUTE', 'SPENDGURU'),
-  // AM23 accepts one private intent only; no remote acquisition is executed.
+  // AM23 accepts a private intent and explicitly installed PRIVATE_SQL_PHASE
+  // continuations of that accepted parent; no remote acquisition is executed.
   'supplier.report.refresh': rule('supplier_report', 'supplier_report_request', 'OPERATION_AUDIT', 'REQUEST_EXTERNAL', 'SUPPLIER_INTELLIGENCE'),
   // AM27 authorises the private dispatch boundary. Publication of shared
   // effects requires its own AM26 source authority and durable receipt.
@@ -322,6 +323,14 @@ export function createOperationExecutor(options) {
           if (platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
+          const continuation=state.requestContinuation
+          if(continuation!==undefined && (!compute || request.operation!=='supplier.report.refresh'
+            ||!continuation||Object.getPrototypeOf(continuation)!==Object.prototype
+            ||Object.keys(continuation).sort().join(',')!=='inputDigest,phaseId,policyVersion,requestId,schemaDigest,transactionId'
+            ||!computeUuid.test(continuation.requestId??'')||!/^[A-Z][A-Z0-9_]{0,63}$/.test(continuation.phaseId??'')
+            ||!['inputDigest','schemaDigest'].every(k=>/^[a-f0-9]{64}$/.test(continuation[k]??''))
+            ||!/^[1-9][0-9]*$/.test(continuation.policyVersion??'')
+            ||continuation.transactionId!==moduleEvidence?.transactionId))deny('POLICY_UNAVAILABLE')
           let bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID(), ...(delegated ? {delegation:delegated.delegation} : {}) })
           audit = { ...audit, correlationId: bound.correlationId, resourceType: bound.resource.type, dataClass: bound.resource.dataClass, ownerOrganisationId: bound.resource.ownerOrganisationId, ownerUserId: bound.resource.ownerUserId, resourceVersion: bound.resource.version, projectionVersion: bound.resource.projectionVersion, productEvidence, usagePolicy: state.usagePolicy }
           try { await recordAudit(stamp({ ...audit, phase: 'INTENT', decision: 'ALLOW', reasonCode: 'AUTHORIZED' })) }
@@ -362,7 +371,8 @@ export function createOperationExecutor(options) {
           }
           if (compute) {
             reservation = computeReservation(await session.reserveUsage(bound), requestPolicy)
-            bound = freeze({ ...bound, requestReservation: { requestId: reservation.requestId,
+            if(continuation!==undefined&&continuation.requestId!==reservation.requestId)deny('RESOURCE_SCOPE_MISMATCH')
+            bound = freeze({ ...bound, ...(continuation===undefined?{}:{requestContinuation:structuredClone(continuation)}), requestReservation: { requestId: reservation.requestId,
               replay: reservation.status === 'REPLAY', policyId: requestPolicy.policyId, policyVersion: requestPolicy.version } })
           }
           if(platform){
