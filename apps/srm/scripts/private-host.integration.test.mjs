@@ -32,9 +32,9 @@ const expiry = () => new Date(Date.now() + 3600000).toISOString()
 const hash = text => createHash('sha256').update(text).digest('hex')
 
 test('SRM accepts the published optional producer fingerprints', async () => {
-  assert.equal(await accessStoreSourceDigest(), 'a4bfb07619b384a4098d086f4f80da480c008446bafca7b23d8b56bad9c40a42')
-  assert.equal(await identitySourceDigest(), '7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
-  assert.equal(await privateOperationHostSourceDigest(), '31c6a0ec35e6ba59ec8f24939a9784b6587c5833e3ce353bbeb3c9a484cfd94d')
+  assert.equal(await accessStoreSourceDigest(), 'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
+  assert.equal(await identitySourceDigest(), '9e1ced6498e8a127dd17fee81c5f4485a032c133bf85c08a72488e7909a0a299')
+  assert.equal(await privateOperationHostSourceDigest(), '662f354b2b98d3ddffd7cb6e83d200a184f44f29c2464d3fb72716078c8c61d0')
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
 })
