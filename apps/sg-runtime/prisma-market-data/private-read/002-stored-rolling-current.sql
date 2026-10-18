@@ -34,7 +34,7 @@ REVOKE ALL ON TYPE profitia_forecast_read."RollingDailyVerificationMaturityStatu
 
 CREATE TABLE profitia_forecast_read.installation (
   singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
-  schema_version text NOT NULL CHECK(schema_version='3.0.1'),
+  schema_version text NOT NULL CHECK(schema_version='3.0.2'),
   schema_digest text NOT NULL CHECK(schema_digest ~ '^[a-f0-9]{64}$'),
   market_schema_digest text NOT NULL CHECK(market_schema_digest ~ '^[a-f0-9]{64}$'),
   project_id text NOT NULL CHECK(length(project_id) BETWEEN 1 AND 128),
@@ -188,11 +188,21 @@ SET search_path=pg_catalog,pg_temp AS $period_metadata$
       AND (value #> '{uncertaintyBand,reasonCode}'='null'::jsonb
         OR value #>> '{uncertaintyBand,reasonCode}' IN('INSUFFICIENT_EXACT_RESIDUALS','INSUFFICIENT_BAND_HISTORY','NON_FINITE_MODEL_NATIVE_SCALE')
         OR value #>> '{uncertaintyBand,reasonCode}' LIKE 'MODEL_NATIVE_INTERVAL_FAILED:%')
-      AND (profitia_forecast_read.pick_fields(value #> '{uncertaintyBand,identity}',ARRAY['inputSource','sourceFrequency','targetCadence',
+      AND ((profitia_forecast_read.pick_fields(value #> '{uncertaintyBand,identity}',ARRAY['inputSource','sourceFrequency','targetCadence',
         'horizonLabel','horizonSteps','targetDate','sourceHistoryFingerprint','trainingWindowPolicyId','effectiveTrainingPolicyId',
         'bandPolicyVersion','bandSource','calibrationMethod','calibrationVersion','calibrationCutoff'])
         || jsonb_build_object('forecastIdentity',profitia_forecast_read.pick_fields(value #> '{uncertaintyBand,identity,forecastIdentity}',
-          ARRAY['seriesId','modelId','targetSemantics','methodId','methodVersion'])))=expected_identity
+          ARRAY['seriesId','modelId','targetSemantics','methodId','methodVersion']))) - 'targetDate' - 'calibrationCutoff')
+          =(expected_identity - 'targetDate' - 'calibrationCutoff')
+      -- The original kernel uses date-only identities. This is the SAME
+      -- instant only at UTC midnight. Do not accept another day/time, strip
+      -- the identity or replace mismatching scientific dimensions.
+      AND (value #> '{uncertaintyBand,identity,targetDate}'=expected_identity->'targetDate'
+        OR expected_identity->>'targetDate' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T00:00:00[.]000Z$'
+          AND value #>> '{uncertaintyBand,identity,targetDate}'=left(expected_identity->>'targetDate',10))
+      AND (value #> '{uncertaintyBand,identity,calibrationCutoff}'=expected_identity->'calibrationCutoff'
+        OR expected_identity->>'calibrationCutoff' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T00:00:00[.]000Z$'
+          AND value #>> '{uncertaintyBand,identity,calibrationCutoff}'=left(expected_identity->>'calibrationCutoff',10))
     )) THEN profitia_forecast_read.pick_fields(value,ARRAY['modelFamily','selectedVariant','selectedParameters','selectionScore','selectionMetric','fitStatus'])
       || jsonb_build_object('failureReason',NULL)
       || CASE WHEN NOT(value ? 'uncertaintyBand') THEN '{}'::jsonb WHEN value->'uncertaintyBand'='null'::jsonb THEN jsonb_build_object('uncertaintyBand',NULL)

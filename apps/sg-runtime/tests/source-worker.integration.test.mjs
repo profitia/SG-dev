@@ -1,3 +1,5 @@
+import {createStoredCurrentForecastReader} from '../lib/forecast/stored-current-read.ts'
+import {createStoredForecastReadinessReader} from '../lib/forecast/stored-readiness-read.ts'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
@@ -29,7 +31,7 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
   const rootUrl=assertIsolatedTestConnection(process.env.SG2_OPERATION_TEST_OWNER_URL,'sg2_operation_test','architecture_test_owner')
   const root=new Client({connectionString:rootUrl});await root.connect()
   const ownerUrl=new URL(rootUrl);ownerUrl.pathname='/'+DATABASE
-  let owner,business,audit,workerBusiness,workerAudit,verificationBusiness,verificationAudit
+  let owner,business,audit,workerBusiness,workerAudit,verificationBusiness,verificationAudit,readClient
   const previousFetch=globalThis.fetch;let networkCalls=0
   globalThis.fetch=async()=>{networkCalls++;throw Error('Native stored queue cannot contact a provider')}
   try{
@@ -57,7 +59,7 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
     await owner.query(`GRANT SELECT,REFERENCES ON public.forecast_preparation_job TO ${SOURCE_OWNER}`)
     await asOwner(MARKET_OWNER,async()=>{await owner.query(marketSql);await owner.query("INSERT INTO profitia_market_read.installation VALUES(true,'1.0.0',$1,'isolated-native-source-project','isolated-native-source-branch',$2,$3,'SYNTHETIC_ONLY',now()+interval '1 hour')",[hash(marketSql),DATABASE,READ_ROLE])})
     await asOwner(MARKET_OWNER,()=>owner.query(`GRANT USAGE ON SCHEMA profitia_market_read TO ${FORECAST_OWNER},${SOURCE_OWNER},${ROLE};GRANT SELECT ON profitia_market_read.series TO ${FORECAST_OWNER};GRANT SELECT ON profitia_market_read.installation TO ${SOURCE_OWNER};GRANT SELECT ON profitia_market_read.series,profitia_market_read.observations TO ${ROLE}`))
-    await asOwner(FORECAST_OWNER,async()=>{await owner.query(forecastSql);await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.1',$1,$2,'isolated-native-source-project','isolated-native-source-branch',$3,$4,'SYNTHETIC_ONLY',now()+interval '1 hour')",[hash(forecastSql),hash(marketSql),DATABASE,READ_ROLE])})
+    await asOwner(FORECAST_OWNER,async()=>{await owner.query(forecastSql);await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.2',$1,$2,'isolated-native-source-project','isolated-native-source-branch',$3,$4,'SYNTHETIC_ONLY',now()+interval '1 hour')",[hash(forecastSql),hash(marketSql),DATABASE,READ_ROLE])})
     await asOwner(FORECAST_OWNER,()=>owner.query(`GRANT USAGE ON SCHEMA profitia_forecast_read TO ${SOURCE_OWNER},${ROLE};GRANT SELECT ON profitia_forecast_read.installation TO ${SOURCE_OWNER};GRANT SELECT ON profitia_forecast_read.rolling_daily_current_forecast_snapshots,profitia_forecast_read.forecast_current_runs,profitia_forecast_read.forecast_current_points,profitia_forecast_read.forecast_verification_runs,profitia_forecast_read.forecast_verification_metrics,profitia_forecast_read.forecast_verification_points,profitia_forecast_read.rolling_daily_verification_records,profitia_forecast_read.rolling_daily_maintenance_state,profitia_forecast_read.forecast_current_states,profitia_forecast_read.forecast_verification_states TO ${ROLE};GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_forecast_read TO ${ROLE}`))
     // A separate ordinary read login owns its own receipt. The controlled
     // source owner needs explicit metadata visibility; the native login does
@@ -130,6 +132,24 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
     assert.equal((await owner.query("SELECT count(*)::int AS n FROM pg_policy WHERE polname='profitia_worker_fence'")).rows[0].n,0)
     await owner.query('SELECT profitia_forecast_worker.install_runtime_fences()')
     await owner.query('COMMIT')
+    // A separate real ordinary read login receives only the existing closed
+    // projections and its own receipt. It never borrows the worker's writer.
+    await asOwner(MARKET_OWNER,()=>owner.query(`GRANT USAGE ON SCHEMA profitia_market_read TO ${READ_ROLE};GRANT SELECT ON profitia_market_read.series,profitia_market_read.observations TO ${READ_ROLE}`))
+    await asOwner(FORECAST_OWNER,async()=>{
+      await owner.query(`GRANT USAGE ON SCHEMA profitia_forecast_read TO ${READ_ROLE};GRANT USAGE ON TYPE profitia_forecast_read."ForecastTargetBasis",profitia_forecast_read."RollingDailyVerificationMaturityStatus" TO ${READ_ROLE}`)
+      await owner.query(`GRANT SELECT ON ALL TABLES IN SCHEMA profitia_forecast_read TO ${READ_ROLE};GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_forecast_read TO ${READ_ROLE}`)
+    })
+    const readUrl=new URL(ownerUrl);readUrl.username=READ_ROLE;readUrl.password='isolated_ci_only';readUrl.searchParams.set('schema','profitia_forecast_read');readUrl.searchParams.set('connection_limit','1')
+    readClient=new PrismaClient({datasources:{db:{url:readUrl.toString()}}})
+    const readBinding={projectId:'isolated-native-source-project',branchId:'isolated-native-source-branch',databaseName:DATABASE,role:READ_ROLE,schemaDigest:hash(forecastSql),marketSchemaDigest:hash(marketSql)}
+    const publicCurrent=createStoredCurrentForecastReader(readClient,readBinding),publicReadiness=createStoredForecastReadinessReader(readClient,readBinding)
+    const assertPublicCurrent=async modelId=>{
+      const result=await publicCurrent({seriesId:SERIES,modelId,targetBasis:'MONTHLY_AVERAGE'})
+      assert.equal(result.status,'AVAILABLE',JSON.stringify(result))
+      const state=await publicReadiness({kind:'capability',seriesId:SERIES,modelId,targetSemantics:'MONTHLY_AVERAGE'})
+      assert.equal(state.currentReadiness,'READY',JSON.stringify(state))
+      return result
+    }
     const workerUrl=new URL(ownerUrl);workerUrl.username=WORKER_ROLE;workerUrl.password='isolated_ci_only';workerUrl.searchParams.set('connection_limit','1')
     workerBusiness=new PrismaClient({datasources:{db:{url:workerUrl.toString()}}});workerAudit=new PrismaClient({datasources:{db:{url:workerUrl.toString()}}})
     const workerOptions={prisma:workerBusiness,auditPrisma:workerAudit,boundaryDigest:hash(workerSql),workerId:'native-real-current-worker',mode:'CURRENT_ONLY',
@@ -179,6 +199,7 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
         assert((await owner.query('SELECT count(*)::int AS n FROM public.forecast_current_points')).rows[0].n>0)
         assert.equal((await owner.query(`SELECT count(*)::int AS n FROM public.forecast_preparation_execution_ledger WHERE "executionStatus"='COMPLETED'`)).rows[0].n,1)
         assert.equal((await owner.query('SELECT count(*)::int AS n FROM public.forecast_action_trace WHERE \"artifactReadyAt\" IS NOT NULL')).rows[0].n,1)
+        await assertPublicCurrent('naive')
         assert.equal(networkCalls,0);assert.equal(globalResolutions,0)
       })
       assert.equal((await owner.query('SELECT status FROM public.forecast_preparation_job')).rows[0].status,'SUCCEEDED')
@@ -283,6 +304,7 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
           assert.equal(job.status,'SUCCEEDED',job.failureReason??JSON.stringify(job))
           assert.equal((await owner.query('SELECT count(*)::int AS n FROM public.forecast_current_runs WHERE "modelId"=$1',[modelId])).rows[0].n,1)
         }
+        for(const modelId of ['naive','damped_holt','ets','arima'])await assertPublicCurrent(modelId)
         assert.equal(networkCalls,0);assert.equal(globalResolutions,0)
       })
       await t.test('both quota barriers remain enforced for actual queued work and a stale discovery result',async()=>{
@@ -322,5 +344,5 @@ test('original scientific worker uses genuine funded SQL, ordinary source role a
         assert.equal((await workerBusiness.$queryRawUnsafe('SELECT profitia_forecast_worker.runtime_descriptor() AS d'))[0].d,null)
       })
     }finally{delete globalThis.__sgRuntimeMarketDataPrisma__;if(originalMarketUrl===undefined)delete process.env.MARKET_DATA_DATABASE_URL;else process.env.MARKET_DATA_DATABASE_URL=originalMarketUrl}
-  }finally{globalThis.fetch=previousFetch;await workerBusiness?.$disconnect();await workerAudit?.$disconnect();await verificationBusiness?.$disconnect();await verificationAudit?.$disconnect();await business?.$disconnect();await audit?.$disconnect();await owner?.end();await root.end()}
+  }finally{globalThis.fetch=previousFetch;await workerBusiness?.$disconnect();await workerAudit?.$disconnect();await verificationBusiness?.$disconnect();await verificationAudit?.$disconnect();await readClient?.$disconnect();await business?.$disconnect();await audit?.$disconnect();await owner?.end();await root.end()}
 })

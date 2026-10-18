@@ -959,7 +959,7 @@ test('SG2 Prisma host composes the accepted access store with existing selection
       const sourceDigest=createHash('sha256').update(sql).digest('hex')
       const marketDigest=createHash('sha256').update(fs.readFileSync(new URL('../prisma-market-data/private-read/001-stored-history-read.sql',import.meta.url))).digest('hex')
       await owner.query('BEGIN');await owner.query(`SET LOCAL ROLE ${sourceOwner}`);await owner.query(sql)
-      await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.1',$1,$2,'isolated-source-project','isolated-source-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')",[sourceDigest,marketDigest,DATABASE,sourceRole]);await owner.query('COMMIT')
+      await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.2',$1,$2,'isolated-source-project','isolated-source-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')",[sourceDigest,marketDigest,DATABASE,sourceRole]);await owner.query('COMMIT')
       await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM ${sourceOwner}; GRANT USAGE ON SCHEMA profitia_forecast_read,profitia_market_read TO ${sourceRole};
         GRANT SELECT ON profitia_market_read.series,profitia_market_read.observations TO ${sourceRole};
         GRANT SELECT ON ALL TABLES IN SCHEMA profitia_forecast_read TO ${sourceRole};
