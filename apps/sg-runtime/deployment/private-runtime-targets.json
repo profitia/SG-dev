@@ -62,11 +62,11 @@
         "preparationEvidence": "apps/sg-runtime/deployment/market-read-preparation.json"
       },
       "forecastRead": {
-        "configurationVersion": "sg2-private-stored-forecast-e1-v3",
+        "configurationVersion": "sg2-private-stored-forecast-e1-v3-0-1",
         "activationVariable": "PROFITIA_FORECAST_READ_ENABLED",
         "defaultEnabled": false,
         "source": "apps/sg-runtime/prisma-market-data/private-read/002-stored-rolling-current.sql",
-        "schemaDigest": "470fab978fb6cccd1950a104749591b39fa272a63eb2b8a8605dd8b57c5a5069",
+        "schemaDigest": "c5d3122371a7f038acf02f7f9f41fce0d34a2cb770e273e6cc78b2c73af31e90",
         "marketSchemaDigest": "596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304",
         "projectId": "autumn-waterfall-65938876",
         "branchId": "br-dry-hall-b294222f",
@@ -79,11 +79,11 @@
         "runtimeRole": "sg2_forecast_read_development_runtime",
         "scope": "STORED_SHARED_PREPARED_FORECAST_AND_PREPARATION_STATES_READ_ONLY",
         "observedState": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED",
-        "catalogObservation": "2026-10-18T02:53:10Z",
+        "catalogObservation": "2026-10-18T05:40:05.944Z",
         "observedCandidateSchemaCount": 0,
         "observedCandidateRoleCount": 0,
         "catalogObserver": "neondb_owner; catalog metadata only, not a runtime-role proof",
-        "schemaVersion": "3.0.0",
+        "schemaVersion": "3.0.1",
         "remainingProvenance": "Non-daily period admission remains unavailable until actual stored source provenance exists; no provenance inferred from a prepared row."
       }
     },

@@ -34,7 +34,7 @@ REVOKE ALL ON TYPE profitia_forecast_read."RollingDailyVerificationMaturityStatu
 
 CREATE TABLE profitia_forecast_read.installation (
   singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
-  schema_version text NOT NULL CHECK(schema_version='3.0.0'),
+  schema_version text NOT NULL CHECK(schema_version='3.0.1'),
   schema_digest text NOT NULL CHECK(schema_digest ~ '^[a-f0-9]{64}$'),
   market_schema_digest text NOT NULL CHECK(market_schema_digest ~ '^[a-f0-9]{64}$'),
   project_id text NOT NULL CHECK(length(project_id) BETWEEN 1 AND 128),
@@ -352,6 +352,9 @@ WHERE r.status='AVAILABLE' AND r."inputSource"='DYNAMIC_MARKET_DATA_STORE' AND r
   AND r."modelId" IN('naive','damped_holt','ets','arima')
   AND r.frequency ~ '^FORECAST_CADENCE_V1[|]source=(DAILY|WEEKLY|MONTHLY|BIMONTHLY|QUARTERLY|QUADMONTHLY|SEMIANNUAL|ANNUAL)[|]target=(DAILY|WEEKLY|MONTHLY|BIMONTHLY|QUARTERLY|QUADMONTHLY|SEMIANNUAL|ANNUAL)$' ;
 
+-- Schema 3.0.1: materialize only this run before checking projected payloads.
+-- The security-barrier child views and refusal predicates remain unchanged.
+-- Without this boundary, an anti-join may project unrelated runs first.
 CREATE VIEW profitia_forecast_read.forecast_verification_runs WITH(security_barrier=true) AS
 SELECT r.id,r."seriesId",s."displayName",s."displayName" AS description,r.frequency,s.currency,s.unit,s."sourceLabel",
   r."inputSource",NULL::text AS "inputRunId",r."historyFingerprint",r."targetBasis"::text::profitia_forecast_read."ForecastTargetBasis" AS "targetBasis",
@@ -362,13 +365,21 @@ WHERE r.status='AVAILABLE' AND r."historyFingerprint" ~ '^[a-f0-9]{64}$' AND r."
   AND r."methodId"=r."targetBasis"::text AND r."methodVersion"='benchmark-forecasting-mvp-phase2-v1'
   AND r."modelId" IN('naive','damped_holt','ets','arima')
   AND r.frequency ~ '^FORECAST_CADENCE_V1[|]source=(DAILY|WEEKLY|MONTHLY|BIMONTHLY|QUARTERLY|QUADMONTHLY|SEMIANNUAL|ANNUAL)[|]target=(DAILY|WEEKLY|MONTHLY|BIMONTHLY|QUARTERLY|QUADMONTHLY|SEMIANNUAL|ANNUAL)$'
-  AND NOT EXISTS(SELECT 1 FROM profitia_forecast_read.forecast_verification_points q WHERE q."runId"=r.id
-    AND (q."horizonLabel"='INVALID' OR q."horizonSteps" IS NULL OR q."horizonSteps" NOT BETWEEN 1 AND 10000
+  AND NOT EXISTS(
+    WITH selected_points AS MATERIALIZED (
+      SELECT q."horizonLabel",q."horizonSteps",q."forecastOriginAt",q."targetDate",q."originValue",q."forecastValue",q."actualValue",q."errorValue",q."absoluteErrorValue",q."deltaValue",q."maseScale",q."metadataJson"
+      FROM profitia_forecast_read.forecast_verification_points q WHERE q."runId"=r.id
+    )
+    SELECT 1 FROM selected_points q WHERE (q."horizonLabel"='INVALID' OR q."horizonSteps" IS NULL OR q."horizonSteps" NOT BETWEEN 1 AND 10000
       OR q."forecastOriginAt" IS NULL OR q."targetDate" IS NULL OR q."originValue" IS NULL OR q."forecastValue" IS NULL
       OR q."actualValue" IS NULL OR q."errorValue" IS NULL OR q."absoluteErrorValue" IS NULL OR q."deltaValue" IS NULL OR q."maseScale" IS NULL
       OR q."metadataJson" ? 'projectionRefused'))
-  AND NOT EXISTS(SELECT 1 FROM profitia_forecast_read.forecast_verification_metrics q WHERE q."runId"=r.id
-    AND (q."horizonLabel"='INVALID' OR q."horizonSteps" IS NULL OR q."horizonSteps" NOT BETWEEN 1 AND 10000
+  AND NOT EXISTS(
+    WITH selected_metrics AS MATERIALIZED (
+      SELECT q."horizonLabel",q."horizonSteps",q."failureSummaryJson"
+      FROM profitia_forecast_read.forecast_verification_metrics q WHERE q."runId"=r.id
+    )
+    SELECT 1 FROM selected_metrics q WHERE (q."horizonLabel"='INVALID' OR q."horizonSteps" IS NULL OR q."horizonSteps" NOT BETWEEN 1 AND 10000
       OR q."failureSummaryJson" @> '[{"projectionRefused":true}]'::jsonb));
 
 -- A refusal marker retains only already validated prefix proof. The original
