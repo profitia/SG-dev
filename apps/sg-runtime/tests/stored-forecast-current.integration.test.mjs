@@ -11,7 +11,11 @@ import { createStoredMarketHistoryReader } from '../lib/market-data/stored-read.
 import { buildRollingDailyHistoryFingerprint, ROLLING_DAILY_INPUT_SOURCE } from '../lib/forecast/rolling-daily-maintenance.ts'
 import { ROLLING_DAILY_METHOD_ID, ROLLING_DAILY_METHOD_VERSION } from '../lib/forecast/rolling-daily-policy.ts'
 import { buildForecastArtifactCadenceIdentity, createCurrentForecastStatisticalCompatibility, resolveForecastMethodContract, resolveLegacyForecastStatisticalCompatibility } from '../lib/forecast/identity.ts'
-import { readCurrentRunFromPrisma, readLatestCurrentRunFromPrisma } from '../lib/forecast/service.ts'
+import { readCurrentRunFromPrisma, readLatestCurrentRunFromPrisma, buildForecastHistoryFingerprint } from '../lib/forecast/service.ts'
+import { buildLiveForecastBridgePayloadFromHistory, selectMinimalLawfulCurrentTrainingPayload } from '../lib/forecast/live-market-input.ts'
+import { resolveForecastTechnicalMinimumObservations } from '../lib/forecast/current-fast-policy.ts'
+import { createForecastCadence } from '../lib/forecast/cadence.ts'
+import { attachExactUncertaintyBandIdentity } from '../lib/forecast/uncertainty-band-policy.ts'
 
 const pg = createRequire(new URL('../../architecture-lab/package.json', import.meta.url))('pg')
 const DATABASE = 'sg2_forecast_read_test', OWNER = 'profitia_forecast_read_owner', MARKET_OWNER = 'profitia_market_read_owner'
@@ -47,6 +51,50 @@ function payload() {
     warnings: [{ code: 'CALIBRATION_STALE', message: marker, userId: marker }] }
 }
 
+async function seedPeriodCurrent(owner, history, targetBasis, modelId) {
+  const method = resolveForecastMethodContract(targetBasis)
+  const full = buildLiveForecastBridgePayloadFromHistory(history.providerSeries.providerSeriesId,history,{ targetBasis,targetCadence:'MONTHLY',continuityPolicy:'ALLOW_GAPS' })
+  const prepared = selectMinimalLawfulCurrentTrainingPayload(full,resolveForecastTechnicalMinimumObservations({targetSemantics:method.targetSemantics,modelId}))
+  const hash = buildForecastHistoryFingerprint(prepared.history,createForecastCadence('DAILY','MONTHLY'))
+  const statistical = createCurrentForecastStatisticalCompatibility({sourceFrequency:'DAILY',targetCadence:'MONTHLY',targetSemantics:method.targetSemantics})
+  const id = `period_${targetBasis}_${modelId}`
+  await owner.query(`INSERT INTO public.forecast_current_runs(id,"seriesId","modelId","displayName",description,frequency,"inputSource","inputRunId",
+    "historyFingerprint","targetBasis","methodId","methodVersion","trainingWindowPolicyId","effectiveTrainingPolicyId","historyStartAt","historyEndAt",
+    "observationCount","forecastOriginAt",status,"failureReason","runtimeSeconds")
+    VALUES($1,$2,$3,$4,$4,$5,'DYNAMIC_MARKET_DATA_STORE',$4,$6,$7,$8,$9,$10,$11,$12,$13,$14,$13,'AVAILABLE',$4,0)`,
+  [id,history.providerSeries.providerSeriesId,modelId,marker,buildForecastArtifactCadenceIdentity(createForecastCadence('DAILY','MONTHLY')),hash,targetBasis,
+    method.methodId,method.methodVersion,statistical.trainingWindowPolicyId,statistical.effectiveTrainingPolicyId,prepared.history.start,prepared.history.end,prepared.history.observations])
+  const variants = {naive:'NAIVE_LAST_VALUE',damped_holt:'DAMPED_HOLT_ADDITIVE',ets:'ETS(A,N,N)',arima:'ARIMA(1,0,1)'}
+  const parameters = {naive:{},damped_holt:{alpha:0,beta:0,phi:1,initial_level:0,initial_trend:0},ets:{smoothing_level:0},arima:{order:[1,0,1],seasonal_order:[0,0,0,0],trend:'n',policyIdentity:'ARIMA_NON_SEASONAL_BOUNDED_AICC_V1',
+    candidateCount:3,tieBreakPolicy:'LOWER_D_THEN_LOWER_P_PLUS_Q_THEN_P_THEN_Q',estimationPolicyIdentity:'ARIMA_SAMPLE_SIZE_ADAPTIVE_EXACT_MLE_V1',
+    fitImplementation:'STATSMODELS_ARIMA_STATESPACE','ar.L1':0,sigma2:0}}
+  const expected = {}
+  for (const [horizon,steps] of Object.entries(prepared.execution.horizons)) {
+    const metadata = {modelFamily:modelId,selectedVariant:variants[modelId],selectedParameters:parameters[modelId],selectionScore:0,
+      selectionMetric:['ets','arima'].includes(modelId)?'AICc':null,fitStatus:'SUCCEEDED',failureReason:null}
+    if (modelId==='naive') metadata.uncertaintyBand={status:'AVAILABLE',source:'MODEL_NATIVE_SHORT_HISTORY',policyVersion:'ADAPTIVE_UNCERTAINTY_BANDS_V1',
+      coverage:0.8,lower:0,upper:0,sampleCount:prepared.history.observations,calibrationStatus:'NOT_AVAILABLE',
+      calibrationMethod:'NAIVE_RANDOM_WALK_INNOVATION_RMS_NORMAL',calibrationVersion:'naive-random-walk-innovation-rms-normal-v1',reasonCode:null}
+    if (modelId==='damped_holt'||modelId==='ets') metadata.uncertaintyBand={status:'AVAILABLE',source:'MODEL_NATIVE_SHORT_HISTORY',policyVersion:'ADAPTIVE_UNCERTAINTY_BANDS_V1',
+      coverage:0.8,lower:0,upper:0,sampleCount:prepared.history.observations,calibrationStatus:'NOT_AVAILABLE',
+      calibrationMethod:modelId==='ets'?'STATSMODELS_ETS_SIMULATION':'STATSMODELS_DAMPED_HOLT_SIMULATION',
+      calibrationVersion:modelId==='ets'?'statsmodels-ets-simulation-seed-1729-r1000-v1':'statsmodels-damped-holt-simulation-seed-1729-r1000-v1',reasonCode:null}
+    if (modelId==='arima') metadata.uncertaintyBand={status:'AVAILABLE',source:'EMPIRICAL_EXACT_RESIDUALS',policyVersion:'ADAPTIVE_UNCERTAINTY_BANDS_V1',
+      coverage:0.8,lower:0,upper:0,sampleCount:30,calibrationStatus:'CALIBRATED',calibrationMethod:'EMPIRICAL_RESIDUAL_QUANTILES_HF7',
+      calibrationVersion:'empirical-exact-residual-quantiles-v1',reasonCode:null}
+    const point = attachExactUncertaintyBandIdentity({seriesId:history.providerSeries.providerSeriesId,modelId,targetBasis,methodVersion:method.methodVersion,
+      inputSource:'DYNAMIC_MARKET_DATA_STORE',sourceFrequency:'DAILY',targetCadence:'MONTHLY',sourceHistoryFingerprint:hash,
+      trainingWindowPolicyId:statistical.trainingWindowPolicyId,effectiveTrainingPolicyId:statistical.effectiveTrainingPolicyId,forecastOrigin:prepared.history.end},
+    {horizon,horizonSteps:steps,forecastDate:prepared.execution.currentTargetDates[horizon],forecastValue:0,metadata,failureReason:null})
+    expected[horizon]=point
+    const tainted=structuredClone(point.metadata);tainted.privateInitiator=marker;tainted.failureReason=marker
+    if(tainted.uncertaintyBand){tainted.uncertaintyBand.userId=marker;tainted.uncertaintyBand.identity.requester=marker;tainted.uncertaintyBand.identity.forecastIdentity.organisationId=marker}
+    await owner.query(`INSERT INTO public.forecast_current_points(id,"runId","horizonLabel","horizonSteps","forecastDate","forecastValue","failureReason","metadataJson")
+      VALUES($1,$2,$3,$4,$5,0,$6,$7::jsonb)`,[`${id}_${horizon}`,id,horizon,steps,point.forecastDate,marker,JSON.stringify(tainted)])
+  }
+  return {id,hash,statistical,expected,prepared}
+}
+
 test('actual generated forecast ORM reads a closed source view with canonical identity and no private/base access', async t => {
   const root = new pg.Client({ connectionString: assertIsolatedTestConnection(process.env.SG2_OPERATION_TEST_OWNER_URL, 'sg2_operation_test', 'architecture_test_owner') })
   await root.connect()
@@ -63,7 +111,7 @@ test('actual generated forecast ORM reads a closed source view with canonical id
     const url = new URL(process.env.SG2_OPERATION_TEST_OWNER_URL); url.pathname = `/${DATABASE}`
     owner = new pg.Client({ connectionString: url.toString() }); await owner.connect()
     assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db, DATABASE)
-    await owner.query('DROP SCHEMA IF EXISTS profitia_forecast_read CASCADE; DROP SCHEMA IF EXISTS profitia_market_read CASCADE; DROP TABLE IF EXISTS public.rolling_daily_current_forecast_snapshots,public.market_observations,public.market_series,public.synthetic_private CASCADE; DROP TYPE IF EXISTS public."ForecastTargetBasis"')
+    await owner.query('DROP SCHEMA IF EXISTS profitia_forecast_read CASCADE; DROP SCHEMA IF EXISTS profitia_market_read CASCADE; DROP TABLE IF EXISTS public.forecast_current_points,public.forecast_current_runs,public.rolling_daily_current_forecast_snapshots,public.market_observations,public.market_series,public.synthetic_private CASCADE; DROP TYPE IF EXISTS public."ForecastTargetBasis"')
     await owner.query(`CREATE TYPE public."ForecastTargetBasis" AS ENUM('MONTHLY_AVERAGE','END_OF_PERIOD','POINT_IN_TIME');
       CREATE TABLE public.market_series("id" text,"providerCode" text,"providerSeriesId" text,"providerSeriesKey" text,"displayName" text,"frequency" text,"currency" text,"unit" text,"sourceLabel" text);
       CREATE TABLE public.market_observations("seriesId" text,"observedAt" timestamp,"value" numeric(24,8)); CREATE TABLE public.synthetic_private(secret text);
@@ -77,6 +125,23 @@ test('actual generated forecast ORM reads a closed source view with canonical id
       GRANT SELECT ON public.market_series,public.market_observations TO ${MARKET_OWNER};
       GRANT SELECT("id","seriesId","inputSource","targetBasis","methodId","methodVersion","modelId","trainingWindowPolicyId","effectiveTrainingPolicyId","sourceHistoryFingerprint",
         "contractVersion","status","forecastOriginAt","sourceLatestObservationAt","payloadJson","createdAt","updatedAt") ON public.rolling_daily_current_forecast_snapshots TO ${OWNER}`)
+    await owner.query(`
+      DROP TABLE IF EXISTS public.forecast_current_points,public.forecast_current_runs CASCADE;
+      CREATE TABLE public.forecast_current_runs (
+        id text PRIMARY KEY,"seriesId" text,"displayName" text,description text,frequency text,currency text,unit text,"sourceLabel" text,
+        "inputSource" text,"inputRunId" text,"historyFingerprint" text,"targetBasis" public."ForecastTargetBasis","methodId" text,
+        "historyStartAt" timestamp,"historyEndAt" timestamp,"observationCount" integer,"forecastOriginAt" timestamp,
+        "modelId" text,"methodVersion" text,"trainingWindowPolicyId" text,"effectiveTrainingPolicyId" text,
+        status text,"failureReason" text,"runtimeSeconds" double precision,"createdAt" timestamp DEFAULT now(),"updatedAt" timestamp DEFAULT now());
+      CREATE TABLE public.forecast_current_points (
+        id text PRIMARY KEY,"runId" text REFERENCES public.forecast_current_runs(id),"horizonLabel" text,"horizonSteps" integer,
+        "forecastDate" timestamp,"forecastValue" numeric(24,8),"fitStatus" text,"failureReason" text,"selectedVariant" text,
+        "selectionMetric" text,"selectionScore" double precision,"metadataJson" jsonb,"createdAt" timestamp DEFAULT now(),"updatedAt" timestamp DEFAULT now());
+      GRANT SELECT(id,"seriesId",frequency,"inputSource","historyFingerprint","targetBasis","methodId","historyStartAt","historyEndAt",
+        "observationCount","forecastOriginAt","modelId","methodVersion","trainingWindowPolicyId","effectiveTrainingPolicyId",status,"runtimeSeconds","createdAt","updatedAt")
+        ON public.forecast_current_runs TO ${OWNER};
+      GRANT SELECT(id,"runId","horizonLabel","horizonSteps","forecastDate","forecastValue","metadataJson","createdAt","updatedAt")
+        ON public.forecast_current_points TO ${OWNER};`)
     for (const point of points) await owner.query('INSERT INTO public.market_observations VALUES($1,$2,$3)', ['daily', point.date, point.value])
     await owner.query('BEGIN'); await owner.query(`SET LOCAL ROLE ${MARKET_OWNER}`); await owner.query(marketSql)
     await owner.query("INSERT INTO profitia_market_read.installation VALUES(true,'1.0.0',$1,'isolated-forecast-project','isolated-forecast-branch',$2,$3,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')", [marketDigest, DATABASE, MARKET_ROLE]); await owner.query('COMMIT')
@@ -90,7 +155,7 @@ test('actual generated forecast ORM reads a closed source view with canonical id
       assert.equal((await owner.query("SELECT to_regnamespace('profitia_forecast_read')::text AS schema")).rows[0].schema, null)
     })
     await owner.query('BEGIN'); await owner.query(`SET LOCAL ROLE ${OWNER}`); await owner.query(sql)
-    await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'1.0.0',$1,$2,'isolated-forecast-project','isolated-forecast-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')", [digest, marketDigest, DATABASE, ROLE]); await owner.query('COMMIT')
+    await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'2.0.0',$1,$2,'isolated-forecast-project','isolated-forecast-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')", [digest, marketDigest, DATABASE, ROLE]); await owner.query('COMMIT')
     await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM ${OWNER},${MARKET_OWNER}; GRANT USAGE ON SCHEMA profitia_forecast_read TO ${ROLE};
       GRANT SELECT ON ALL TABLES IN SCHEMA profitia_forecast_read TO ${ROLE}; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_forecast_read TO ${ROLE};
       GRANT USAGE ON TYPE profitia_forecast_read."ForecastTargetBasis" TO ${ROLE}`)
@@ -195,6 +260,57 @@ test('actual generated forecast ORM reads a closed source view with canonical id
       const oldRead = createStoredMarketHistoryReader(historyPrisma, { ...binding, role: MARKET_ROLE, schemaDigest: marketDigest })
       assert.equal((await oldRead(selection.seriesId)).history.historical.length, 60)
       await assert.rejects(historyPrisma.$queryRawUnsafe('SELECT * FROM profitia_forecast_read.rolling_daily_current_forecast_snapshots'))
+    })
+    await t.test('prepared period Current reads reuse canonicalization, per-model identity and the original business service',async t=>{
+      const seriesId='stored_period_daily_series'
+      const history={providerSeries:{provider:{providerCode:'MACROBOND',displayName:'Macrobond'},providerSeriesId:seriesId,providerSeriesKey:null},
+        displayName:'Shared daily period source',frequency:'DAILY',currency:null,unit:'ORIGINAL_UNIT',source:'Synthetic',historical:[]}
+      await owner.query('INSERT INTO public.market_series VALUES($1,\'MACROBOND\',$2,null,$3,\'daily\',null,\'ORIGINAL_UNIT\',\'Synthetic\')',['period-series',seriesId,history.displayName])
+      for(let month=0;month<36;month++)for(const day of [15,16]){
+        const date=new Date(Date.UTC(2022,month,day)).toISOString();history.historical.push({date,value:0})
+        await owner.query('INSERT INTO public.market_observations VALUES($1,$2,0)',['period-series',date])
+      }
+      const artifacts=new Map()
+      for(const basis of ['MONTHLY_AVERAGE','END_OF_PERIOD'])for(const model of ['naive','damped_holt','ets','arima']){
+        artifacts.set(`${basis}:${model}`,await seedPeriodCurrent(owner,history,basis,model))
+      }
+      await t.test('both period meanings and all four models retain genuine stored values, canonical fingerprints and band identities',async()=>{
+        for(const[basis,model]of[...artifacts.keys()].map(key=>key.split(':'))){
+          const expected=artifacts.get(`${basis}:${model}`),result=await read({seriesId,modelId:model,targetBasis:basis})
+          assert.equal(result.status,'AVAILABLE');assert.equal(result.targetBasis,basis);assert.equal(result.modelId,model)
+          assert.equal(result.historyFingerprint,expected.hash);assert.deepEqual(result.lineage.statisticalCompatibility,expected.statistical)
+          assert.equal(result.history.observations,expected.prepared.history.observations)
+          assert.equal(result.source.runId,null);assert.equal(result.lineage.inputRunId,null);assert.equal(result.runtimeSeconds,0)
+          assert.deepEqual(result.currentForecast,expected.expected);assert(!JSON.stringify(result).includes(marker))
+        }
+        const raw=await prisma.forecastCurrentRun.findMany({include:{points:true}})
+        assert.equal(raw.length,8);assert(!JSON.stringify(raw).includes(marker));assert(raw.every(run=>run.inputRunId===null&&run.failureReason===null))
+      })
+      await t.test('stale canonical history is withheld without refitting; restoring exact history restores availability',async()=>{
+        await owner.query('UPDATE public.market_observations SET value=1 WHERE "seriesId"=\'period-series\' AND "observedAt"=\'2024-12-15\'')
+        try{assert.equal((await read({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE'})).status,'NOT_AVAILABLE')
+          assert.equal((await read({seriesId,modelId:'naive',targetBasis:'END_OF_PERIOD'})).status,'AVAILABLE')}
+        finally{await owner.query('UPDATE public.market_observations SET value=0 WHERE "seriesId"=\'period-series\'')}
+        assert.equal((await read({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE'})).status,'AVAILABLE')
+      })
+      await t.test('an invalid point or mismatched band identity hides the whole artifact rather than publishing a partial forecast',async()=>{
+        const id=artifacts.get('MONTHLY_AVERAGE:naive').id,pointId=`${id}_1M`
+        const original=(await owner.query('SELECT "metadataJson" FROM public.forecast_current_points WHERE id=$1',[pointId])).rows[0].metadataJson
+        for(const corrupt of [meta=>{meta.selectedParameters.requester=marker},meta=>{meta.uncertaintyBand.identity.sourceHistoryFingerprint='f'.repeat(64)}]){
+          const tainted=structuredClone(original);corrupt(tainted)
+          await owner.query('UPDATE public.forecast_current_points SET "metadataJson"=$1::jsonb WHERE id=$2',[JSON.stringify(tainted),pointId])
+          try{assert.equal(await prisma.forecastCurrentRun.findFirst({where:{id}}),null)
+            const result=await read({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE'});assert.equal(result.status,'NOT_AVAILABLE');assert(!JSON.stringify(result).includes(marker))}
+          finally{await owner.query('UPDATE public.forecast_current_points SET "metadataJson"=$1::jsonb WHERE id=$2',[JSON.stringify(original),pointId])}
+        }
+      })
+      await t.test('cadence mismatches and absent non-daily provenance never gain authority from a prepared row',async()=>{
+        assert.equal((await read({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE',sourceFrequency:'MONTHLY',targetCadence:'MONTHLY'})).status,'NOT_AVAILABLE')
+        await owner.query('UPDATE public.market_series SET frequency=\'monthly\' WHERE id=\'period-series\'')
+        try{assert.equal((await read({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE'})).status,'NOT_AVAILABLE')}
+        finally{await owner.query('UPDATE public.market_series SET frequency=\'daily\' WHERE id=\'period-series\'')}
+        assert.equal((await read({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE',sourceFrequency:'DAILY',targetCadence:'MONTHLY'})).status,'AVAILABLE')
+      })
     })
     assert.equal(external, 0)
   } finally { globalThis.fetch = fetch; await historyPrisma?.$disconnect(); await prisma?.$disconnect(); await owner?.end(); await root.end() }
