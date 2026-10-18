@@ -85,6 +85,15 @@
         "catalogObserver": "neondb_owner; catalog metadata only, not a runtime-role proof",
         "schemaVersion": "3.0.1",
         "remainingProvenance": "Non-daily period admission remains unavailable until actual stored source provenance exists; no provenance inferred from a prepared row."
+      },
+      "dashboardEmbed": {
+        "configurationVersion": "sg2-native-dashboard-embed-dev-v1",
+        "activationVariable": "PROFITIA_DASHBOARD_EMBED_ENABLED",
+        "defaultEnabled": false,
+        "origin": "https://sg2-development-dashboard.onrender.com",
+        "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+        "observedState": "SOURCE_ONLY_NOT_ACTIVATED",
+        "scope": "SCOPED_PREPARED_READS_ONLY_NO_AUTOMATIC_WARMUP"
       }
     },
     "staging": {

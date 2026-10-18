@@ -1,3 +1,4 @@
+import { createRuntimeAnalyticsEligibilityHandler } from '@/lib/benchmark/analytics-eligibility-handlers'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 
@@ -39,4 +40,6 @@ function createAnalyticsEligibilityRouteHandler(
   }
 }
 
-export const GET = withCognitionAuth(async (_auth, request: NextRequest) => createAnalyticsEligibilityRouteHandler()(request))
+const legacyGET = withCognitionAuth(async (_auth, request: NextRequest) => createAnalyticsEligibilityRouteHandler()(request))
+const nativeGET = createRuntimeAnalyticsEligibilityHandler()
+export const GET = (request: NextRequest) => (process.env.PROFITIA_AUTH_PROVIDER ?? 'legacy_demo') === 'legacy_demo' ? legacyGET(request) : nativeGET(request)
