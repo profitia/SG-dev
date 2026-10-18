@@ -55,7 +55,13 @@ test('real ordinary source transactions retain one funded receipt and never adop
         identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
       binding:{applicationId:'stored-source',environment:'development',projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,
         role:RUNTIME,deploymentId:'synthetic-source',configurationVersion:'source-v1',schemaDigest:digest},
-      source:{id:SOURCE,payloadSchema:'forecast-command-v1',qualityVersion:'quality-v1',classificationVersion:'shared-v1'},independentQuery:runtime.query.bind(runtime),
+      source:{id:SOURCE,payloadSchema:'forecast-command-v1',qualityVersion:'quality-v1',classificationVersion:'shared-v1'},independentQuery:async(sql,values)=>{
+        const result=await runtime.query(sql,values)
+        if(sql.includes('profitia_ingestion.append_audit')){
+          assert.deepEqual(result.rows,[{recorded:true}]);assert(result.fields.every(field=>field.dataTypeID!==2278),'No unsupported void result may cross the native query port')
+        }
+        return result
+      },
       validateSharedPayload:value=>value&&Object.keys(value).sort().join(',')==='kind,modelId,seriesId,targetSemantics'&&value.seriesId===RESOURCE,
       transact:async(work,limits)=>{
         assert.equal(limits.timeoutMs,15000)

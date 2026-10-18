@@ -58,7 +58,9 @@ export function createPlatformIngestionHost(options){
     return d
   }
   const append=async(query,event)=>{const encoded=JSON.stringify(event);if(Buffer.byteLength(encoded)>16384)fail()
-    await one(query,'SELECT profitia_ingestion.append_audit($1::jsonb)',[encoded])}
+    // A genuine scalar result is portable to pg and Prisma; do not decode void.
+    const result=await one(query,'SELECT true AS recorded FROM profitia_ingestion.append_audit($1::jsonb)',[encoded])
+    if(result.recorded!==true)fail()}
   // Validate static policy configuration before touching a database.
   createOperationExecutor({application:a,authenticate:async()=>null,withTransaction:fail,recordAudit:fail,now})
   const host=Object.freeze({contract:PLATFORM_INGESTION_CONTRACT,

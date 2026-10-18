@@ -115,7 +115,11 @@ export function createDelegatedJobStore({binding,schemaDigest,now=Date.now}){
         await verifyScope(query,lease)
       }else await descriptor(query)
       const encoded=JSON.stringify(event);if(Buffer.byteLength(encoded)>16384)fail()
-      await one(query,'SELECT profitia_jobs.append_audit($1::jsonb)',[encoded])
+      // Project a real scalar column: native Prisma cannot deserialize PostgreSQL
+      // void. The VOLATILE writer still runs once and must succeed before a row
+      // is returned; no adapter fabricates an audit result or skips the writer.
+      const result=await one(query,'SELECT true AS recorded FROM profitia_jobs.append_audit($1::jsonb)',[encoded])
+      if(result.recorded!==true)fail()
     },
   })
 }
