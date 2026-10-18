@@ -46,8 +46,8 @@ retention and customer scope need their separately accepted caller contracts.
 ## Verification recorded so far
 
 - Real disposable PostgreSQL 16, actual ordinary login and native driver commits,
-  local HTTP fixture: 29 checks passed, none skipped.
-- Full existing contract/laboratory suite including this addition: 664 passed,
+  local HTTP fixture: 30 checks passed, none skipped.
+- Full existing contract/laboratory suite including this addition: 665 passed,
   none skipped, including the authority deadline and actor/configuration-rotation
   intent regression; full validation repeated after a workstation restart.
 - Public strict TypeScript positive and expected-negative API checks: passed
@@ -66,12 +66,21 @@ retention and customer scope need their separately accepted caller contracts.
 - The workstation restart preserved all nine source paths and the existing PMOS
   registration. Temporary fixtures/logs were lost and recreated; the final full
   suite above is a fresh observed run, not a claim that an interrupted run passed.
+  Public CI exposed a timing-dependent cancellation test: a fixed delay could
+  cancel before any send. The test now cancels from the actual local server
+  request-observation event; the after-send assertion is retained. No production
+  source or access check was relaxed. Final exact-SHA CI remains required.
   Recovery reused the original registration and verified architecture_pmos with
   its actual ordinary architecture_pmos_runtime role; no replacement begin.
 - Governance 40/41: the existing exact SG2 local dependency version guard
   correctly refuses producer 1.13.0 against receiver 1.12.0. It remains enabled;
   separate SG2 and SRM adoption, exact candidate/main CI and own closeouts are
   pending. No failed check is presented as a pass.
+
+Input DTO and cancellation-signal references are captured at invocation. The
+private intent remains the same through PLAN/ATTEMPT/SETTLE even if a server
+caller mutates its original object after admission. A real HTTP/SQL regression
+confirms settlement and duplicate refusal against the original immutable intent.
 
 ## Non-delivery and remaining boundaries
 

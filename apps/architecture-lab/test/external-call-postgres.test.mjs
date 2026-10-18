@@ -18,13 +18,13 @@ const unavailable=e=>e instanceof ExternalCallUnavailable&&e.message==='External
 test('ordinary real source control commits before bounded local HTTP; ambiguous effects never resend automatically',async t=>{
  const rootUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
  const root=new Client({connectionString:rootUrl});await root.connect()
- let owner,runtime,server,hits=0,credentials=0,ackLoss=null,auditFailure=null,failAuditPhase=null
+ let owner,runtime,server,hits=0,credentials=0,ackLoss=null,auditFailure=null,failAuditPhase=null,onSlowRequest=null
  const dbUrl=new URL(rootUrl);dbUrl.pathname='/'+DATABASE
  try{
   server=http.createServer((req,res)=>{hits++;req.resume();res.setHeader('content-type','application/json')
    const path=new URL(req.url,'http://127.0.0.1').pathname
    if(path==='/redirect'){res.statusCode=302;res.setHeader('location','/data');res.end('{}')}
-   else if(path==='/slow'){setTimeout(()=>{if(!res.destroyed)res.end('{"value":3}')},350)}
+   else if(path==='/slow'){const observed=onSlowRequest;onSlowRequest=null;observed?.();setTimeout(()=>{if(!res.destroyed)res.end('{"value":3}')},350)}
    else if(path==='/large')res.end(JSON.stringify({private:'x'.repeat(20000)}))
    else if(path==='/invalid')res.end('{"__proto__":{"private":true}}')
    else{if(path==='/missing')res.statusCode=404;res.end(JSON.stringify({value:3,private:'provider-internal-field'}))}
@@ -96,6 +96,13 @@ test('ordinary real source control commits before bounded local HTTP; ambiguous 
    const n=hits;await assert.rejects(host.execute(i),e=>unavailable(e)&&e.certainty==='RESULT_NOT_RETAINED');assert.equal(hits,n)
    await assert.rejects(host.execute({...i,command:{query:'different'}}),unavailable);assert.equal(hits,n)
   })
+  await t.test('caller mutation after invocation cannot replace the admitted private intent or command',async()=>{
+   const i=input({query:'immutable-private-input'}),original=i.intentKey,n=hits
+   const h=createExternalCallHost({...settings,getHeaders:async()=>{i.intentKey=key();i.command.query='changed-after-admission';return {}}})
+   assert.deepEqual(await h.execute(i),{status:200,body:{value:3}})
+   await assert.rejects(host.execute({intentKey:original,command:{query:'immutable-private-input'}}),e=>unavailable(e)&&e.certainty==='RESULT_NOT_RETAINED')
+   assert.equal(hits,n+1)
+  })
   await t.test('same private intent concurrently admits at most one HTTP invocation',async()=>{
    const i=input(),n=hits,before=await counts(),results=await Promise.allSettled([host.execute(i),host.execute(i)])
    assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(hits,n+1);assert.equal((await counts()).admissions,before.admissions+1)
@@ -144,8 +151,9 @@ test('ordinary real source control commits before bounded local HTTP; ambiguous 
    await assert.rejects(host.execute(i),unavailable);assert.equal(hits,n+1)
   })
   await t.test('caller cancellation after send remains uncertain and does not refund the admission',async()=>{
-   const ac=new AbortController(),i=input({path:'/slow'}),b=await counts(),n=hits,p=host.execute(i,{signal:ac.signal});setTimeout(()=>ac.abort(),60)
-   await assert.rejects(p,unavailable);assert.equal(hits,n+1);assert.equal((await counts()).admissions,b.admissions+1)
+   const ac=new AbortController(),i=input({path:'/slow'}),b=await counts(),n=hits
+   onSlowRequest=()=>ac.abort()
+   await assert.rejects(host.execute(i,{signal:ac.signal}),unavailable);assert.equal(hits,n+1);assert.equal((await counts()).admissions,b.admissions+1)
    await assert.rejects(host.execute(i),unavailable);assert.equal(hits,n+1)
    const before=await counts();await assert.rejects(host.execute(input(),{signal:ac.signal}),unavailable);assert.deepEqual(await counts(),before)
   })
@@ -202,7 +210,7 @@ test('ordinary real source control commits before bounded local HTTP; ambiguous 
   await t.test('control and canonical audit contain no private queries, response, headers or raw intent secret',async()=>{
    const data=JSON.stringify((await owner.query('SELECT to_jsonb(c) AS row FROM profitia_external_call.calls c')).rows)
     +JSON.stringify((await owner.query('SELECT event FROM profitia_ingestion.security_events')).rows)
-   for(const v of ['private company query','same-private-query','private-post-query','private upstream credential detail','private-cookie','different','provider-internal-field','not-persisted-fixture-credential',...issuedKeys])assert(!data.includes(v))
+   for(const v of ['private company query','immutable-private-input','changed-after-admission','same-private-query','private-post-query','private upstream credential detail','private-cookie','different','provider-internal-field','not-persisted-fixture-credential',...issuedKeys])assert(!data.includes(v))
    const events=(await owner.query('SELECT event FROM profitia_ingestion.security_events')).rows.map(r=>r.event)
    assert(events.every(e=>e.organisationId===null&&e.subjectUserId===null&&e.actorKind!=='HUMAN'))
    assert(events.filter(e=>e.phase==='OUTCOME').every(e=>e.sourceId===SOURCE&&e.budgetUnit==='SOURCE_TRANSACTION'))
