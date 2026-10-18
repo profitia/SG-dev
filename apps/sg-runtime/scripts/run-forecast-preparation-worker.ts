@@ -2,12 +2,14 @@ import {
   createForecastPreparationWorker,
   resolveForecastPreparationWorkerMode,
 } from '@/lib/forecast/preparation-queue'
+import { createSg2ConfiguredForecastWorker } from '@/lib/forecast/source-worker-runtime'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 
 const IDLE_POLL_MS = 2_000
 const ERROR_BACKOFF_MS = 10_000
 
 let stopping = false
+let nativeDisconnect:(()=>Promise<void>)|undefined
 
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.on(signal, () => {
@@ -22,7 +24,9 @@ function wait(ms: number) {
 
 async function main() {
   const mode = resolveForecastPreparationWorkerMode(process.env.FORECAST_PREPARATION_WORKER_MODE)
-  const worker = createForecastPreparationWorker({
+  const configured=createSg2ConfiguredForecastWorker()
+  if(configured.provider==='native')nativeDisconnect=configured.disconnect
+  const worker = configured.provider==='native'?configured.worker:createForecastPreparationWorker({
     workerId: process.env.RENDER_INSTANCE_ID?.trim() || undefined,
     mode,
   })
@@ -38,12 +42,14 @@ async function main() {
     }
   }
 
-  await getMarketDataPrisma()?.$disconnect()
+  if(nativeDisconnect)await nativeDisconnect()
+  else await getMarketDataPrisma()?.$disconnect()
   console.info('[forecast-preparation-worker] stopped cleanly')
 }
 
 main().catch(async (error) => {
   console.error('[forecast-preparation-worker] fatal failure', error)
-  await getMarketDataPrisma()?.$disconnect().catch(() => undefined)
+  if(nativeDisconnect)await nativeDisconnect()
+  else await getMarketDataPrisma()?.$disconnect().catch(() => undefined)
   process.exitCode = 1
 })

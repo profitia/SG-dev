@@ -323,5 +323,71 @@
     ],
     "initialSourceSha": "c2d7fc7379d9f43eb40129a6d9df3ecbcb4b7190",
     "readonlyProjectionAndColumnGrantDriftTested": true
+  },
+  "nativeForecastWorkerCandidate": {
+    "taskId": "SG2-E1-PLATFORM-FORECAST-WORKER-20261018",
+    "platformVersion": "1.11.0",
+    "producerSourceSha": "0948a10c99626a6096df4c2fd1e25586ef318b72",
+    "scope": "ORIGINAL_STORED_SCIENTIFIC_WORKER_WITH_FINITE_SQL_START_ADMISSION",
+    "sourceId": "sg2.forecast.worker",
+    "sourceDigests": {
+      "lib/forecast/source-worker.ts": "fa51cdd8606ad4f031e123340fc30506d7f136dd6a02414ac1c1cebaab282195",
+      "lib/forecast/source-worker-runtime.ts": "9b855c944052fdcbc5771c81ff81b4be276ced567373f5fbe039d77ff5439f73",
+      "lib/forecast/source-worker-science.ts": "57a137a417b405f55dae22aaa8762d3e76c5d28eb79d9899087421051da5000a",
+      "lib/forecast/preparation-queue.ts": "2ed68883f6058cfef3fab705ff929f018e31404ad6a7a097a6405b205fe5c77e",
+      "lib/forecast/execution-ledger.ts": "81ad94b813e3b5686da8fd8cd1c6e0de3d9e1f12d003c16cbca0ac35f1c15cfd",
+      "lib/forecast/service.ts": "b65e5e7b91882901d1b973f1e7f5fbeb44126058c1d5f157dcd6a0127afa76f1",
+      "lib/forecast/rolling-daily-maintenance.ts": "81c3b063512ab8dabe461f65f1485e4bf21d31d6191435e6d8e2662f63ca86a7",
+      "lib/forecast/rolling-daily-production-forecast.ts": "c1d82eb5bc8bedc8e04ad72019b2394a566da1e8912c667af3ae6f1bab3297eb",
+      "lib/forecast/rolling-daily-current-forecast-snapshot.ts": "f1bd8f083e565d03d0c9f5a37c41103db305a26ef23970710e84bf689fc8618e",
+      "lib/forecast/stored-readiness-read.ts": "8c186bd717c4a07ef354dc1a2f87bf47914bdfdfa2913240ecce5a86e51cbb61",
+      "scripts/run-forecast-preparation-worker.ts": "d5ffc4ad1effc41bbbccf6276bf465a7fce0b7248f3045e164f9747a1a24033d",
+      "prisma-market-data/private-write/002-forecast-worker.sql": "c2b177ab437b20ac2664a936cadd3b692cf5079668d287da9025ebd75ffda3ec",
+      "tests/source-worker.integration.test.mjs": "4c764c9c224c588f3705ae7231ca419ebe9714e6d7d2b71c886545b1a093ef00",
+      "tests/source-worker-runtime.test.ts": "f0be2b913479ecc0cd8866a0c8074db377f08ac7019ff2a7626e32dd6d275b6d",
+      "tests/forecast-import-boundary.test.mjs": "cd758c5b0cee99e6f44bb9c63962433e99e38d07db8f36a7f051f9d268e6ea0d"
+    },
+    "originalQueueWorkerAndScientificAlgorithmsReused": true,
+    "currentAndVerificationPhysicalLanes": true,
+    "ordinaryRoleScientificRlsProof": true,
+    "realPythonCurrentModels": [
+      "naive",
+      "damped_holt",
+      "ets",
+      "arima"
+    ],
+    "realPythonHistoricalVerification": [
+      "DAILY_TO_MONTHLY_NAIVE_FULL",
+      "DAILY_NAIVE_CALIBRATION"
+    ],
+    "committedStartObservationLossRecoveryTested": true,
+    "sourceMigrationAndFencesRollbackTested": true,
+    "originalCliOptInAvailable": true,
+    "activationDefault": false,
+    "sourceSqlInstalled": false,
+    "runtimeRolesProvisioned": false,
+    "runtimeSourceConfigured": false,
+    "productDeploymentPerformed": false,
+    "limits": {
+      "unit": "SOURCE_TRANSACTION",
+      "cpuOrVendorBillingMeter": false,
+      "pythonInvocationTimeoutMs": 120000,
+      "databaseTransactionMaximumMs": 15000
+    },
+    "localValidation": {
+      "completeSg2Tests": 562,
+      "originalBusinessTests": 61,
+      "originalQueueTests": 38,
+      "affectedStrictTypes": "PASS",
+      "ciAndWholeBuild": "PENDING_EXACT_SOURCE_PROOF"
+    },
+    "limitations": [
+      "PUBLIC_CURRENT_PRESENTATION_COMPATIBILITY_PENDING",
+      "NON_DAILY_SOURCE_PROVENANCE_NOT_INVENTED",
+      "PRIVATE_JOB_STATUS_AND_BROWSER_REQUEST_PARITY_PENDING",
+      "DISPATCH_RUNTIME_WIRING_PENDING",
+      "LIVE_IDENTITY_TLS_AND_CONTROLLED_DEV_THEN_STAGE_RELEASE_PENDING",
+      "NO_IMMEDIATE_REVOCATION_OF_ALREADY_RUNNING_CPU_OR_CPU_BILLING_GUARANTEE"
+    ]
   }
 }

@@ -724,6 +724,7 @@ export function createForecastPreparationQueueService(options: {
   async function claimNext(
     workerId: string,
     allowedJobKinds: readonly ForecastPreparationJobKind[] = FORECAST_PREPARATION_JOB_KINDS,
+    exact?: { jobId: string; expectedLeaseVersion: number },
   ): Promise<ClaimedForecastPreparationJob | null> {
     if (allowedJobKinds.length === 0) {
       throw new Error('At least one Forecast preparation job kind must be allowed for a worker claim.')
@@ -743,6 +744,7 @@ export function createForecastPreparationQueueService(options: {
             "failureCode" = 'LEASE_EXPIRED',
             "failureReason" = 'The previous worker lease expired; the job was safely re-queued.'
         WHERE "status" = 'RUNNING' AND "leaseExpiresAt" < NOW()
+          ${exact ? Prisma.sql`AND "id" = ${exact.jobId} AND "leaseVersion" = ${exact.expectedLeaseVersion}` : Prisma.empty}
       ), fail_blocked AS (
         UPDATE "forecast_preparation_job" job
         SET "status" = 'FAILED',
@@ -752,6 +754,7 @@ export function createForecastPreparationQueueService(options: {
             "updatedAt" = NOW()
         FROM "forecast_preparation_job" dependency
         WHERE job."status" IN ('QUEUED', 'RETRY_WAIT')
+          ${exact ? Prisma.sql`AND job."id" = ${exact.jobId} AND job."leaseVersion" = ${exact.expectedLeaseVersion}` : Prisma.empty}
           AND job."dependencyJobKey" = dependency."jobKey"
           AND dependency."status" = 'FAILED'
       ), candidate AS (
@@ -759,6 +762,7 @@ export function createForecastPreparationQueueService(options: {
         FROM "forecast_preparation_job" job
         WHERE job."status" IN ('QUEUED', 'RETRY_WAIT')
           AND job."jobKind" IN (${jobKindFilter})
+          ${exact ? Prisma.sql`AND job."id" = ${exact.jobId} AND job."leaseVersion" = ${exact.expectedLeaseVersion}` : Prisma.empty}
           AND job."availableAt" <= NOW()
           AND (
             job."dependencyJobKey" IS NULL
@@ -912,6 +916,7 @@ export function createForecastPreparationQueueService(options: {
 export type ForecastPreparationQueueService = ReturnType<typeof createForecastPreparationQueueService>
 
 export function createForecastPreparationWorker(options: {
+  dependencyMode?: 'LEGACY' | 'CLOSED_SOURCE'
   queue?: ForecastPreparationQueueService
   workerId?: string
   mode?: ForecastPreparationWorkerMode
@@ -929,19 +934,24 @@ export function createForecastPreparationWorker(options: {
     results: Array<{ error: string | null }>
   }>
 } = {}) {
+  if (options.dependencyMode === 'CLOSED_SOURCE' && (!options.queue || !options.workerId
+    || ['prepareCurrent','prepareVerificationSlice','resolveReadiness','recordArtifactReady','persistResourceSummary','refreshCurrentAfterCalibration']
+      .some(key => typeof options[key as keyof typeof options] !== 'function'))) {
+    throw new TypeError('Closed source worker requires every native dependency')
+  }
   const queue = options.queue ?? createForecastPreparationQueueService()
   const workerId = options.workerId ?? `forecast-worker-${randomUUID()}`
   const mode = options.mode ?? 'ALL'
   const allowedJobKinds = resolveForecastPreparationWorkerJobKinds(mode)
   const heartbeatMs = options.heartbeatMs ?? 60_000
-  const operations = createForecastProductionOperationsService()
-  const rollingDailyCurrentOperations = createRollingDailyProductionOperationsService()
+  const operations = options.prepareVerificationSlice ? null : createForecastProductionOperationsService()
+  const rollingDailyCurrentOperations = options.refreshCurrentAfterCalibration ? null : createRollingDailyProductionOperationsService()
   const prepareCurrent = options.prepareCurrent ?? prepareInteractiveCurrentForecast
   const prepareVerificationSlice = options.prepareVerificationSlice ?? (async (
     job: ClaimedForecastPreparationJob,
     slice: { maxOriginsPerRun: number },
   ) => {
-    const result = await operations.run({
+    const result = await operations!.run({
       seriesId: job.seriesId,
       targetSemantics: [job.targetSemantics as 'END_OF_PERIOD' | 'MONTHLY_AVERAGE' | 'ROLLING_DAILY_POINT_IN_TIME'],
       modelIds: [job.modelId as InteractiveForecastIdentity['modelId']],
@@ -958,7 +968,7 @@ export function createForecastPreparationWorker(options: {
   const resolveReadiness = options.resolveReadiness ?? resolveInteractiveForecastCapability
   const recordArtifactReady = options.recordArtifactReady ?? recordForecastArtifactReady
   const persistResourceSummary = options.persistResourceSummary ?? persistForecastExecutionResourceSummary
-  const refreshCurrentAfterCalibration = options.refreshCurrentAfterCalibration ?? (async (job) => rollingDailyCurrentOperations.runCurrentOnly({
+  const refreshCurrentAfterCalibration = options.refreshCurrentAfterCalibration ?? (async (job) => rollingDailyCurrentOperations!.runCurrentOnly({
     seriesId: job.seriesId,
     modelIds: [job.modelId as InteractiveForecastIdentity['modelId']],
     forceSnapshotRefresh: true,

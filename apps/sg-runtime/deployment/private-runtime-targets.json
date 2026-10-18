@@ -105,6 +105,39 @@
         "requestLedgerDigest": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
         "scope": "PRIVATE_TYPED_ACCEPTANCE_ONLY_NO_DISPATCH_OR_COMPUTATION",
         "observedState": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED"
+      },
+      "forecastWorker": {
+        "configurationVersion": "sg2-native-forecast-worker-dev-v1",
+        "activationVariable": "PROFITIA_FORECAST_WORKER_ENABLED",
+        "defaultEnabled": false,
+        "source": "apps/sg-runtime/prisma-market-data/private-write/002-forecast-worker.sql",
+        "boundaryDigest": "c2b177ab437b20ac2664a936cadd3b692cf5079668d287da9025ebd75ffda3ec",
+        "sourceSchemaDigest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+        "projectId": "autumn-waterfall-65938876",
+        "branchId": "br-dry-hall-b294222f",
+        "hosts": [
+          "ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech",
+          "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech"
+        ],
+        "databaseName": "neondb",
+        "lanes": [
+          {
+            "serviceId": "srv-dapa3vlg1s2s739vp7dg",
+            "mode": "CURRENT_ONLY",
+            "runtimeRole": "sg2_forecast_current_development_runtime",
+            "instances": 1,
+            "maximumDatabaseConnections": 2
+          },
+          {
+            "serviceId": "srv-dapa40ad0e5s73f8bjm0",
+            "mode": "VERIFICATION_ONLY",
+            "runtimeRole": "sg2_forecast_verification_development_runtime",
+            "instances": 2,
+            "maximumDatabaseConnections": 4
+          }
+        ],
+        "scope": "ORIGINAL_WORKER_STORED_SCIENCE_FINITE_SQL_ADMISSION_NOT_CPU_OR_VENDOR_BUDGET",
+        "observedState": "SOURCE_CANDIDATE_NOT_INITIALIZED_OR_ACTIVATED"
       }
     },
     "staging": {

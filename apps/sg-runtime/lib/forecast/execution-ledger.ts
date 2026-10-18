@@ -275,7 +275,7 @@ export function isMissingExecutionLedgerRelationError(error: unknown) {
 }
 
 export async function hasForecastPreparationExecutionLedgerRelation(
-  prisma = getMarketDataPrisma(),
+  prisma: Prisma.TransactionClient | null = getMarketDataPrisma(),
 ) {
   if (!prisma) {
     throw new Error('Forecast execution control datastore is unavailable.')
@@ -1078,13 +1078,14 @@ function mapStoredExecutionRecord(record: {
   }
 }
 
-function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
+export function createForecastPreparationPrismaLedgerStore(transaction?: Prisma.TransactionClient): ForecastPreparationExecutionLedgerStore {
   // Preserve the legacy absent-configuration choice, but do not resolve a
   // global client merely because a read-only module imports its default service.
-  if (!process.env.MARKET_DATA_DATABASE_URL?.trim()) {
+  if (transaction === undefined && !process.env.MARKET_DATA_DATABASE_URL?.trim()) {
     return createNoopStore()
   }
-  let resolvedPrisma: NonNullable<ReturnType<typeof getMarketDataPrisma>> | undefined
+  if (transaction && '$transaction' in transaction) throw new TypeError('Forecast ledger requires a live transaction')
+  let resolvedPrisma: Prisma.TransactionClient | undefined = transaction
   function requirePrisma() {
     if (!resolvedPrisma) {
       const prisma = getMarketDataPrisma()
@@ -1104,7 +1105,7 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
 
         return record ? mapStoredExecutionRecord(record) : null
       } catch (error) {
-        if (isMissingExecutionLedgerRelationError(error)) {
+        if (transaction === undefined && isMissingExecutionLedgerRelationError(error)) {
           return null
         }
         throw error
@@ -1207,7 +1208,7 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
           },
         })
       } catch (error) {
-        if (isMissingExecutionLedgerRelationError(error)) {
+        if (transaction === undefined && isMissingExecutionLedgerRelationError(error)) {
           return
         }
         throw error
@@ -1261,7 +1262,7 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
           throw new Error(`Execution telemetry update expected exactly one row for ${current.executionId}, updated ${updatedRows}.`)
         }
       } catch (error) {
-        if (isMissingExecutionLedgerRelationError(error)) {
+        if (transaction === undefined && isMissingExecutionLedgerRelationError(error)) {
           return
         }
         throw error
@@ -1273,7 +1274,7 @@ function createPrismaStore(): ForecastPreparationExecutionLedgerStore {
 export function createForecastPreparationExecutionLedger(
   dependencies: { store?: ForecastPreparationExecutionLedgerStore } = {},
 ): ForecastPreparationExecutionLedger {
-  const store = dependencies.store ?? createPrismaStore()
+  const store = dependencies.store ?? createForecastPreparationPrismaLedgerStore()
   const pendingByExecutionId = new Map<string, Promise<void>>()
 
   async function runSerial(executionId: string, work: () => Promise<void>) {
@@ -1327,11 +1328,12 @@ function isUniqueViolation(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
 }
 
-export function createDefaultForecastPreparationExecutionAdmission(): ForecastPreparationExecutionAdmission {
+export function createDefaultForecastPreparationExecutionAdmission(transaction?: Prisma.TransactionClient): ForecastPreparationExecutionAdmission {
+  if (transaction && '$transaction' in transaction) throw new TypeError('Forecast admission requires a live transaction')
   const leaseDurationMs = resolveStage3LeaseDurationMs()
 
   function requirePrisma() {
-    const prisma = getMarketDataPrisma()
+    const prisma = transaction ?? getMarketDataPrisma()
     if (!prisma) {
       throw new ForecastExecutionControlError(
         'CONTROL_DB_UNAVAILABLE',
@@ -1485,7 +1487,7 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
       }
 
       try {
-        return await prisma.$transaction(async (tx) => {
+        const acquire = async (tx: Prisma.TransactionClient) => {
           const active = await lockActiveExecutionForUpdate(tx, input.logicalArtifactKey)
 
           if (!active) {
@@ -1546,7 +1548,11 @@ export function createDefaultForecastPreparationExecutionAdmission(): ForecastPr
           }
 
           return createOwnedExecution(tx, active)
-        })
+        }
+        if (transaction) return await acquire(transaction)
+        const root = getMarketDataPrisma()
+        if (!root) throw new ForecastExecutionControlError('CONTROL_DB_UNAVAILABLE', 'Forecast authority unavailable')
+        return await root.$transaction(acquire)
       } catch (error) {
         if (isUniqueViolation(error)) {
           const latest = await readLatestExecutionForLogicalArtifact(input.logicalArtifactKey)
@@ -1740,7 +1746,7 @@ export function buildForecastResourceSummaryExecutionFilter(
 export async function persistForecastExecutionResourceSummary(
   correlationId: string,
   summary: ForecastWorkerResourceSummary,
-  prisma = getMarketDataPrisma(),
+  prisma: Prisma.TransactionClient | null = getMarketDataPrisma(),
 ) {
   if (!prisma) return []
 

@@ -95,20 +95,28 @@ export function createStoredForecastReadinessReader(prisma: Pick<PrismaClient, '
   }
 }
 
+/** Same capability engine with explicit stored-history facts and a genuine
+ * domain data port. Public reads default to closed projections. A technical
+ * scientific worker can supply the ORIGINAL scoped Prisma data port; that
+ * never changes the public read projection or authenticates a person. */
+export function createStoredForecastCapabilityPolicy(transaction:Prisma.TransactionClient,history:BenchmarkHistoricalSeriesResult,boundSeriesId:string,
+  statePort:ForecastPreparedStateDataPort=createStoredPreparedStatePort(transaction)) {
+  return createForecastCapabilityService({
+    resolveHistoricalSeries:async(seriesId,range)=>{
+      if(seriesId!==boundSeriesId||range!=='ALL')throw Error('Stored capability history scope mismatch')
+      return{history,marketDataSource:'postgres',cacheStatus:'hit'}
+    },
+    resolveProvenance:async()=>[],
+    readPreparedVariants:(seriesId,source)=>readForecastPreparedVariantsFromPort(seriesId,source,statePort),
+    now:()=>new Date(),
+  })
+}
+
 /** Original capability/readiness policy over already admitted stored-source
  * facts. The caller owns the real ordinary transaction and source guard.
  * No connection, hydration, provider access, preparation or execution is exposed. */
 export function createStoredForecastReadinessPolicy(transaction:Prisma.TransactionClient,history:BenchmarkHistoricalSeriesResult,boundSeriesId:string) {
-  const statePort = createStoredPreparedStatePort(transaction)
-  const capabilities = createForecastCapabilityService({
-    resolveHistoricalSeries: async (seriesId, range) => {
-      if (seriesId !== boundSeriesId || range !== 'ALL') throw new Error('Stored capability history scope mismatch')
-      return { history, marketDataSource: 'postgres', cacheStatus: 'hit' }
-    },
-    resolveProvenance: async () => [],
-    readPreparedVariants: (seriesId, source) => readForecastPreparedVariantsFromPort(seriesId, source, statePort),
-    now: () => new Date(),
-  })
+  const capabilities=createStoredForecastCapabilityPolicy(transaction,history,boundSeriesId)
   const refuse = async (): Promise<never> => { throw new Error('Stored capability cannot execute preparation or persistence') }
   const verification = (scope: 'FAST' | 'FULL' | 'RECENT') => async (input: ForecastRequestInput | ForecastServiceRequest) =>
     ensureHistoricalVerificationContract(await readStoredVerificationFromSource(transaction, history, {

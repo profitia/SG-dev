@@ -42,6 +42,7 @@ import {
 } from '@/lib/forecast/request-diagnostics'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
 import { getMarketDataPrisma } from '@/lib/market-data/client'
+import type { ForecastPreparedProcessOptions } from './service'
 
 const execFileAsync = promisify(execFile)
 const DEFAULT_FORECASTING_LAB_ROOT = path.resolve(process.cwd(), '..', '..', 'tooling', 'Benchmark-Forecasting')
@@ -541,6 +542,7 @@ async function runBridgeWithStreamingTrace(params: {
   outputPath: string
   cwd: string
   onTraceLine: (line: string) => void
+  processOptions?:ForecastPreparedProcessOptions
 }): Promise<{ stderr: string }> {
   const invocation = buildForecastPythonInvocation(params.scriptPath, [
     '--input-json',
@@ -553,7 +555,8 @@ async function runBridgeWithStreamingTrace(params: {
     invocation.args,
     {
       cwd: params.cwd,
-      env: process.env,
+      env: params.processOptions?.env ?? process.env,
+      ...(params.processOptions?{timeout:params.processOptions.timeoutMs,killSignal:'SIGKILL' as const}:{}),
       stdio: ['ignore', 'ignore', 'pipe'],
     },
   )
@@ -808,7 +811,7 @@ function toPrismaNullableJson(value: Prisma.InputJsonValue | null) {
   return value === null ? Prisma.JsonNull : value
 }
 
-function createDefaultRunner(): RollingDailyMaintenanceRunner {
+function createDefaultRunner(processOptions?:ForecastPreparedProcessOptions): RollingDailyMaintenanceRunner {
   const labRoot = normalizeOptionalString(serverEnv.FORECASTING_LAB_ROOT) ?? DEFAULT_FORECASTING_LAB_ROOT
   const pythonBin = normalizeOptionalString(serverEnv.FORECASTING_PYTHON_BIN) ?? DEFAULT_FORECASTING_PYTHON
   const scriptPath = path.join(labRoot, ...ROLLING_DAILY_MAINTENANCE_SCRIPT)
@@ -905,6 +908,7 @@ function createDefaultRunner(): RollingDailyMaintenanceRunner {
               inputPath,
               outputPath,
               cwd: labRoot,
+              processOptions,
               onTraceLine: (line) => {
                 console.info(line)
               },
@@ -915,6 +919,7 @@ function createDefaultRunner(): RollingDailyMaintenanceRunner {
               {
                 cwd: labRoot,
                 maxBuffer: BRIDGE_BUFFER_BYTES,
+                ...(processOptions?{env:processOptions.env,timeout:processOptions.timeoutMs,killSignal:'SIGKILL' as const}:{}),
               },
             )
 
@@ -987,8 +992,9 @@ function mapStoredVerificationRecord(
   }
 }
 
-async function readStateWithPrisma(identity: RollingDailyMaintenanceIdentity): Promise<RollingDailyMaintenanceStateArtifact | null> {
-  const prisma = getMarketDataPrisma()
+async function readStateWithPrisma(identity: RollingDailyMaintenanceIdentity, transaction?: Prisma.TransactionClient): Promise<RollingDailyMaintenanceStateArtifact | null> {
+  const prisma = transaction ?? getMarketDataPrisma()
+  if (transaction && '$transaction' in transaction) throw new TypeError('Forecast maintenance requires a live transaction')
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -1026,8 +1032,9 @@ async function readStateWithPrisma(identity: RollingDailyMaintenanceIdentity): P
   }
 }
 
-async function listVerificationRecordsWithPrisma(identity: RollingDailyMaintenanceIdentity) {
-  const prisma = getMarketDataPrisma()
+async function listVerificationRecordsWithPrisma(identity: RollingDailyMaintenanceIdentity, transaction?: Prisma.TransactionClient) {
+  const prisma = transaction ?? getMarketDataPrisma()
+  if (transaction && '$transaction' in transaction) throw new TypeError('Forecast maintenance requires a live transaction')
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -1043,8 +1050,9 @@ async function listVerificationRecordsWithPrisma(identity: RollingDailyMaintenan
   return records.map(mapStoredVerificationRecord)
 }
 
-async function applyMaintenanceUpdateWithPrisma(input: RollingDailyPersistedUpdate) {
-  const prisma = getMarketDataPrisma()
+async function applyMaintenanceUpdateWithPrisma(input: RollingDailyPersistedUpdate, transaction?: Prisma.TransactionClient) {
+  const prisma = transaction ?? getMarketDataPrisma()
+  if (transaction && '$transaction' in transaction) throw new TypeError('Forecast maintenance requires a live transaction')
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -1212,11 +1220,19 @@ async function applyMaintenanceUpdateWithPrisma(input: RollingDailyPersistedUpda
     },
   }))
 
-  await prisma.$transaction(persistenceOperations)
+  if (transaction) {
+    // Prisma promises execute sequentially inside the caller's existing transaction.
+    for (const operation of persistenceOperations) await operation
+  } else {
+    const root = getMarketDataPrisma()
+    if (!root) throw new Error('Forecast datastore unavailable')
+    await root.$transaction(persistenceOperations)
+  }
 }
 
-async function recordMaintenanceFailureWithPrisma(input: RollingDailyFailureUpdate) {
-  const prisma = getMarketDataPrisma()
+async function recordMaintenanceFailureWithPrisma(input: RollingDailyFailureUpdate, transaction?: Prisma.TransactionClient) {
+  const prisma = transaction ?? getMarketDataPrisma()
+  if (transaction && '$transaction' in transaction) throw new TypeError('Forecast maintenance requires a live transaction')
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -1322,12 +1338,19 @@ function mergeRollingDailyRecords(
   return [...records.values()]
 }
 
-export function createRollingDailyMaintenanceRunner(): RollingDailyMaintenanceRunner {
-  return createDefaultRunner()
+export function createRollingDailyMaintenanceRunner(processOptions?:ForecastPreparedProcessOptions): RollingDailyMaintenanceRunner {
+  return createDefaultRunner(processOptions)
 }
 
-export function createRollingDailyMaintenanceRepository(): RollingDailyMaintenanceRepository {
-  return createDefaultRepository()
+export function createRollingDailyMaintenanceRepository(transaction?: Prisma.TransactionClient): RollingDailyMaintenanceRepository {
+  if (transaction === undefined) return createDefaultRepository()
+  if (!transaction || '$transaction' in transaction) throw new TypeError('Explicit Forecast maintenance transaction required')
+  return {
+    readState: identity => readStateWithPrisma(identity, transaction),
+    listVerificationRecords: identity => listVerificationRecordsWithPrisma(identity, transaction),
+    applyMaintenanceUpdate: input => applyMaintenanceUpdateWithPrisma(input, transaction),
+    recordMaintenanceFailure: input => recordMaintenanceFailureWithPrisma(input, transaction),
+  }
 }
 
 export async function loadRollingDailyHistory(seriesId: string): Promise<RollingDailyHistoryPayload> {
