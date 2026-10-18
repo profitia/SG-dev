@@ -95,6 +95,16 @@
         "observedState": "SOURCE_ONLY_NOT_ACTIVATED",
         "scope": "SCOPED_PREPARED_READS_ONLY_NO_AUTOMATIC_WARMUP",
         "publicBindingRef": "apps/dashboard-preview/deployment/native-forecast-targets.json#environments.development.embedding"
+      },
+      "forecastRequest": {
+        "configurationVersion": "sg2-private-forecast-request-e1-v1",
+        "activationVariable": "PROFITIA_FORECAST_REQUEST_ENABLED",
+        "defaultEnabled": false,
+        "source": "apps/sg-runtime/prisma/private-store/003-forecast-requests.sql",
+        "boundaryDigest": "90f72b87071fb81a7ac594cbf48836511ef935aaf9f09ab8a7a1402b25d337d8",
+        "requestLedgerDigest": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
+        "scope": "PRIVATE_TYPED_ACCEPTANCE_ONLY_NO_DISPATCH_OR_COMPUTATION",
+        "observedState": "SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED"
       }
     },
     "staging": {

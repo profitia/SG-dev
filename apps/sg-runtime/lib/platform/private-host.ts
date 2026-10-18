@@ -1,3 +1,4 @@
+import { FORECAST_REQUEST_PROJECTION, forecastRequestResourceId, projectForecastRequest, readForecastRequest } from '@/lib/forecast/request-operation'
 import { FORECAST_VERIFICATION_PROJECTION, readForecastVerificationSelection, forecastVerificationResourceId, projectForecastVerificationResponse } from './forecast-verification'
 import { FORECAST_READINESS_PROJECTION, readForecastReadinessSelection, forecastReadinessResourceId, projectForecastReadinessResponse } from './forecast-readiness'
 import type { Prisma, PrismaClient } from '@prisma/client'
@@ -231,5 +232,31 @@ export function createSg2PrivateForecastReadinessHost(options: Sg2PrivateHostOpt
       if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return (await value.clone().json()).sourceAvailability === 'AVAILABLE' ? 'SUCCEEDED' : 'NO_DATA'
     },
+  })
+}
+
+/** Acceptance only. The shared host owns quota and current permission; this
+ * product adapter binds the unchanged typed command and private SQL receipt. */
+export function createSg2PrivateForecastRequestHost(options: Sg2PrivateHostOptions & {
+  module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string }
+  requestLedgerDigest: string; commandBoundaryDigest: string
+}) {
+  if (!/^[a-f0-9]{64}$/.test(options.requestLedgerDigest) || !/^[a-f0-9]{64}$/.test(options.commandBoundaryDigest)
+    || options.application.operations.length !== 1) throw new TypeError('Accepted private request/command boundary required')
+  const commandBoundaryDigest = options.commandBoundaryDigest
+  return createPrivateOperationHost<Prisma.TransactionClient>({
+    ...hostBase(options, 'benchmark', ['forecast.request']), requestLedger: { schemaDigest: options.requestLedgerDigest },
+    readResources: async ({ actor, request, scope, query }) => {
+      const command = await readForecastRequest(request.payload)
+      if (actor.kind !== 'HUMAN' || !scope.organisationId || !scope.userId
+        || request.resourceId !== forecastRequestResourceId(command)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      const receipt = await query("SELECT source_ref FROM profitia_forecast_requests.installation WHERE singleton AND schema_version='1.0.0' AND boundary_digest=$1", [commandBoundaryDigest])
+      if (receipt.rows.length !== 1 || typeof receipt.rows[0].source_ref !== 'string'
+        || !receipt.rows[0].source_ref.length || receipt.rows[0].source_ref.length > 256) throw new OperationDenied('POLICY_UNAVAILABLE')
+      return { resource: { id: request.resourceId, type: 'forecast_request', dataClass: 'OPERATION_AUDIT',
+        environment: scope.environment, ownerOrganisationId: scope.organisationId, ownerUserId: scope.userId,
+        version: 'sg2-private-command-v1', projectionVersion: FORECAST_REQUEST_PROJECTION } }
+    },
+    projectOutput: projectForecastRequest,
   })
 }

@@ -8,7 +8,7 @@ import type { AccessStoreBinding } from '@profitia/platform-contracts/access-sto
 import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
 import targets from '@/deployment/private-runtime-targets.json'
 import { createSg2ClerkClient, IdentityConfigurationUnavailable, readSg2IdentityRuntime } from './identity-runtime'
-import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost, createSg2PrivateForecastCurrentHost, createSg2PrivateForecastVerificationHost, createSg2PrivateForecastReadinessHost } from './private-host'
+import { createSg2PrivateForecastRequestHost, createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost, createSg2PrivateForecastCurrentHost, createSg2PrivateForecastVerificationHost, createSg2PrivateForecastReadinessHost } from './private-host'
 import { createStoredMarketHistoryReader,type StoredMarketBinding } from '@/lib/market-data/stored-read'
 import type { BenchmarkPreviewResult,BenchmarkAnalyticsSeriesResult,BenchmarkRangePreset } from '@/lib/benchmark/contracts'
 
@@ -34,6 +34,7 @@ export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   dashboardEmbed?: NativeDashboardBinding
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
   category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
+  forecastRequest?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
   forecastRead?: Readonly<{ readiness?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; read: (selection: ForecastReadinessSelectionValue) => Promise<PublicForecastReadinessResult> }>; executor: OperationExecutor<Prisma.TransactionClient>; current: (selection: ForecastCurrentSelectionValue) => Promise<StoredCurrentForecastResult>; verification?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; read: (selection: ForecastVerificationSelectionValue) => Promise<PublicForecastVerificationResult> }> }>
   marketRead?: Readonly<{
     executor: OperationExecutor<Prisma.TransactionClient>
@@ -50,6 +51,7 @@ type PrivateConfiguration = Readonly<{
   dashboardEmbed?: NativeDashboardBinding
   supplierSummary?: Readonly<{ origin: string; configurationVersion: string }>
   category?: Readonly<{ configurationVersion: string; boundaryDigest: string }>
+  forecastRequest?: Readonly<{ configurationVersion: string; boundaryDigest: string; requestLedgerDigest: string }>
   marketRead?: Readonly<{configurationVersion:string;databaseUrl:string;binding:StoredMarketBinding}>
   forecastRead?: Readonly<{configurationVersion:string;databaseUrl:string;binding:StoredForecastBinding}>
 }>
@@ -65,7 +67,7 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   // The new private Staging/Production bindings are deliberately not invented.
   if (identity.application.environment !== 'development') unavailable()
   const target = targets.environments.development
-  for (const flag of ['PROFITIA_SUPPLIER_SUMMARY_ENABLED','PROFITIA_CATEGORY_ENABLED','PROFITIA_MARKET_READ_ENABLED','PROFITIA_FORECAST_READ_ENABLED','PROFITIA_DASHBOARD_EMBED_ENABLED']) {
+  for (const flag of ['PROFITIA_SUPPLIER_SUMMARY_ENABLED','PROFITIA_CATEGORY_ENABLED','PROFITIA_MARKET_READ_ENABLED','PROFITIA_FORECAST_READ_ENABLED','PROFITIA_DASHBOARD_EMBED_ENABLED','PROFITIA_FORECAST_REQUEST_ENABLED']) {
     if (env[flag] !== undefined && !['true','false'].includes(env[flag]!)) unavailable()
   }
   if (env.PROFITIA_OPERATION_CONFIGURATION_VERSION !== targets.configurationVersion
@@ -131,6 +133,10 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
       branchId: target.branchId, databaseName: target.databaseName, role: target.runtimeRole, schemaDigest: target.accessSchemaDigest },
     module: { id: 'benchmark', schemaDigest: target.moduleSchemaDigest, auditSchemaDigest: target.auditSchemaDigest },
     ...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}), ...(dashboardEmbed ? { dashboardEmbed } : {}),
+    ...(env.PROFITIA_FORECAST_REQUEST_ENABLED === 'true' ? { forecastRequest: {
+      configurationVersion: target.forecastRequest.configurationVersion, boundaryDigest: target.forecastRequest.boundaryDigest,
+      requestLedgerDigest: target.forecastRequest.requestLedgerDigest,
+    } } : {}),
     ...(env.PROFITIA_CATEGORY_ENABLED === 'true' ? { category: {
       configurationVersion: target.category.configurationVersion, boundaryDigest: target.category.boundaryDigest,
     } } : {}),
@@ -185,6 +191,12 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
       operations: ['category.read','category.write'], features: ['category'] },
     module: { ...config.module, id: 'category' }, categoryBoundaryDigest: config.category.boundaryDigest,
   }) }) : undefined
+  const forecastRequest = config.forecastRequest ? Object.freeze({ executor: createSg2PrivateForecastRequestHost({
+    prisma, auditPrisma, clerk, identity: config.identity, binding: config.binding, module: config.module,
+    application: { ...config.application, configurationVersion: config.forecastRequest.configurationVersion,
+      operations: ['forecast.request'], features: ['forecast'] },
+    requestLedgerDigest: config.forecastRequest.requestLedgerDigest, commandBoundaryDigest: config.forecastRequest.boundaryDigest,
+  }) }) : undefined
   const marketRead=config.marketRead?(()=>{
     const source=new PrismaClient({datasources:{db:{url:poolUrl(config.marketRead.databaseUrl,1,'profitia_market_read')}}})
     const readHistory=createStoredMarketHistoryReader(source,config.marketRead.binding)
@@ -225,7 +237,7 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
     })
   })() : undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
-    ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}), ...(config.dashboardEmbed ? { dashboardEmbed: config.dashboardEmbed } : {}) })
+    ...(forecastRequest ? { forecastRequest } : {}), ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}), ...(config.dashboardEmbed ? { dashboardEmbed: config.dashboardEmbed } : {}) })
   globalThis.__sg2PrivateSelectionRuntime__ = { key, runtime }
   return runtime
 }
