@@ -44,6 +44,10 @@ export async function readStoredPeriodCurrent(
       writeCurrentRun: refuse, readVerificationRun: refuse, writeVerificationRun: refuse },
     bridge: { exportHistory: refuse, exportCurrent: refuse, exportVerification: refuse },
     resolveExactPreparedCapability: refuse, executePreparedCurrent: refuse,
+    // A pure prepared read has no compute-execution ledger. Refuse its ports
+    // explicitly: the legacy default constructs a global datastore client.
+    // Durable access INTENT/OUTCOME/FAILURE remains owned by the outer executor.
+    executionLedger: { recordEvent: refuse, readExecution: refuse },
   })
   const result = await service.readPreparedCurrentForecastRequest({ ...selection,
     sourceFrequency, targetCadence: capability.targetCadence,

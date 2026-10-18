@@ -286,6 +286,14 @@ test('actual generated forecast ORM reads a closed source view with canonical id
         const raw=await prisma.forecastCurrentRun.findMany({include:{points:true}})
         assert.equal(raw.length,8);assert(!JSON.stringify(raw).includes(marker));assert(raw.every(run=>run.inputRunId===null&&run.failureReason===null))
       })
+      await t.test('pure prepared period read never initializes a global owner client through unused execution bookkeeping',async()=>{
+        const previousUrl=process.env.MARKET_DATA_DATABASE_URL,previousClient=globalThis.__sgRuntimeMarketDataPrisma__
+        let globalLookups=0
+        process.env.MARKET_DATA_DATABASE_URL='synthetic-global-client-must-not-be-used'
+        globalThis.__sgRuntimeMarketDataPrisma__={$on(){globalLookups++;throw Error('Global execution ledger client must not be resolved')}}
+        try{assert.equal((await read({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE'})).status,'AVAILABLE');assert.equal(globalLookups,0)}
+        finally{globalThis.__sgRuntimeMarketDataPrisma__=previousClient;if(previousUrl===undefined)delete process.env.MARKET_DATA_DATABASE_URL;else process.env.MARKET_DATA_DATABASE_URL=previousUrl}
+      })
       await t.test('stale canonical history is withheld without refitting; restoring exact history restores availability',async()=>{
         await owner.query('UPDATE public.market_observations SET value=1 WHERE "seriesId"=\'period-series\' AND "observedAt"=\'2024-12-15\'')
         try{assert.equal((await read({seriesId,modelId:'naive',targetBasis:'MONTHLY_AVERAGE'})).status,'NOT_AVAILABLE')

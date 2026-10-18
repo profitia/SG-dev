@@ -20,7 +20,7 @@ Run/point views suppress raw input-run/initiator identifiers and free failure te
 
 ## Verification
 
-- **376 SG2 operation tests pass, zero failures/cancellations/skips.** Real generated ORM and ordinary PostgreSQL roles exercise both source views, the protected native dispatcher and independent private authority/audit database transaction.
+- **377 SG2 operation tests pass, zero failures/cancellations/skips.** Real generated ORM and ordinary PostgreSQL roles exercise both source views, the protected native dispatcher and independent private authority/audit database transaction.
 - **61 original forecast-library/snapshot tests and 86 original capability/canonical-history/live-input/identity/fingerprint tests pass**, all with zero skips. Strict changed-source and typed-test checking passes.
 - Source fixtures cover both period meanings and all four models, including model-native and empirical exact-residual bands. Period values, per-model history identities and statistical/band identities are preserved; the existing Rolling Daily unit checks also remain green. Even direct generated ORM reads contain none of the seeded private marker.
 - A changed observation invalidates an average forecast when its original canonical history changes. The end-of-period forecast remains valid when that observation was not its lawful last observation. This distinction uses the original algorithms; it is not a generic raw-history hash.
@@ -28,5 +28,7 @@ Run/point views suppress raw input-run/initiator identifiers and free failure te
 - Full candidate and merged-main controlled/public/dashboard/build verification remains required. Actual runs, exact SHA and canonical PMOS/MEMOROS/PHR closeout references belong to the final task record. The source-only changes are covered by the automatic consumer CI filters under active policy `f3b015a4d10117f0a8ebfee475dc4a17b6207f29b313feee16b631e5411b840c`.
 
 The first new API fixture run exposed an ambiguous PostgreSQL parameter reused as enum and text; explicit casts corrected the **synthetic fixture**, not a product algorithm. Tests were not relaxed.
+
+Before merge, source review found that the existing service constructor initialized the legacy global client through its default compute-execution ledger. A new actual-source regression first reproduced the failure with a deliberately poisonous global client. This pure-read adapter now explicitly refuses those unused execution-ledger ports; it does not supply a successful no-op writer. The outer executor's durable security INTENT/OUTCOME/FAILURE remains active and tested. The regression then passes with zero global-client resolutions, and the complete operation suite passes again. No live data access or deployment is inferred from the original constructor initialization.
 
 No cloud DDL/roles/grants/credentials, configuration, data migration, activation or product deployment changes. Flags remain default OFF and existing Development/Staging deployments remain in place. Non-daily stored provenance, Verification, preparation/delegated jobs and remaining effects, live Clerk/Prisma TLS, business UAT, retained-artifact rollback and controlled Development then Staging releases remain E1 work. This receipt is not full E1 or release acceptance. Production and E2–E4 remain outside this task.
