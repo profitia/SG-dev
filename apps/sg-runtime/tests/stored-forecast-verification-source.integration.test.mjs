@@ -119,6 +119,32 @@ test('native stored Verification uses the genuine generated source ORM and ordin
       assert.equal(value.currentReadiness,'NOT_PREPARED');assert.equal(value.verificationReadiness,'READY');assert.equal(value.readiness.fastReady,false)
       assert(!JSON.stringify(snapshot).includes(marker));assert(snapshot.variants.every(item=>!('trace'in item)))
     })
+    await t.test('one selected run does not project unrelated point and metric payloads to prove refusal',async()=>{
+      const id='MONTHLY_AVERAGE_naive_FULL'
+      const expectedPoints=await writer.forecastVerificationPoint.count({where:{runId:id}})
+      const expectedMetrics=await writer.forecastVerificationMetric.count({where:{runId:id}})
+      assert((await writer.forecastVerificationPoint.count())>expectedPoints)
+      const selected=seeded.find(item=>item.id===id)
+      // Match the repository's scientific-key lookup, where the row id is not
+      // known until after selection. An id-literal probe lets the planner push
+      // that literal through the child barrier and misses the real regression.
+      const rows=await reader.$queryRawUnsafe(`EXPLAIN (ANALYZE, FORMAT JSON)
+        SELECT id FROM profitia_forecast_read.forecast_verification_runs
+        WHERE "seriesId"=$1 AND "modelId"=$2 AND "historyFingerprint"=$3
+          AND "trainingWindowPolicyId"=$4 AND "effectiveTrainingPolicyId"=$5
+        ORDER BY "updatedAt" DESC LIMIT 1`,seriesId,'naive',selected.hash,
+      selected.compatibility.trainingWindowPolicyId,selected.compatibility.effectiveTrainingPolicyId)
+      const plan=rows[0]['QUERY PLAN'][0].Plan
+      assert.equal(plan['Actual Rows'],1)
+      const inputs={forecast_verification_points:0,forecast_verification_metrics:0}
+      const visit=node=>{
+        if(Object.hasOwn(inputs,node['Relation Name']))inputs[node['Relation Name']]+=node['Actual Rows']*node['Actual Loops']
+        for(const child of node.Plans??[])visit(child)
+      }
+      visit(plan)
+      assert.equal(inputs.forecast_verification_points,expectedPoints,'Refusal proof must project only selected-run points')
+      assert.equal(inputs.forecast_verification_metrics,expectedMetrics,'Refusal proof must project only selected-run metrics')
+    })
     let currentData
     await t.test('detailed readiness uses the genuine minimal Current and full Verification identities independently',async()=>{
       const method=resolveForecastMethodContract('MONTHLY_AVERAGE')
