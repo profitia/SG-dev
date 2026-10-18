@@ -1,3 +1,4 @@
+import { FORECAST_VERIFICATION_PROJECTION, readForecastVerificationSelection, forecastVerificationResourceId, projectForecastVerificationResponse } from './forecast-verification'
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { createPrivateOperationHost } from '@profitia/platform-contracts/private-operation-host'
 import { createClerkIdentityAuthenticator, type ClerkIdentityClient, type IdentityApplication } from '@profitia/platform-contracts/identity-provider'
@@ -173,6 +174,26 @@ export function createSg2PrivateForecastCurrentHost(options: Sg2PrivateHostOptio
       if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const body = await value.clone().json()
       return body.status === 'AVAILABLE' ? 'SUCCEEDED' : 'NO_DATA'
+    },
+  })
+}
+
+/** Same current authority and forecast grant; a separate result contract and
+ * scope identity prevent Current/FAST/FULL/RECENT output substitution. */
+export function createSg2PrivateForecastVerificationHost(options: Sg2PrivateHostOptions & { module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string } }) {
+  const environment=options.application.environment
+  return createPrivateOperationHost<Prisma.TransactionClient>({
+    ...hostBase(options,'benchmark',['forecast.read']),
+    readResources:async({request})=>{
+      const selection=readForecastVerificationSelection(request.payload)
+      if(request.resourceId!==forecastVerificationResourceId(selection))throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      return {resource:{id:request.resourceId,type:'market_forecast',dataClass:'SHARED_KNOWLEDGE',environment,ownerOrganisationId:null,ownerUserId:null,
+        approvedSharedProjection:true,version:FORECAST_VERIFICATION_PROJECTION,projectionVersion:FORECAST_VERIFICATION_PROJECTION}}
+    },
+    projectOutput:projectForecastVerificationResponse,
+    describeOutcome:async value=>{
+      if(!(value instanceof Response))throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      return (await value.clone().json()).status==='AVAILABLE'?'SUCCEEDED':'NO_DATA'
     },
   })
 }

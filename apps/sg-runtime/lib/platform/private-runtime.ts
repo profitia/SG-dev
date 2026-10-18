@@ -1,3 +1,4 @@
+import type { ForecastVerificationSelectionValue, PublicForecastVerificationResult } from './forecast-verification'
 import { createHash } from 'node:crypto'
 import { PrismaClient } from '@prisma/client'
 import type { Prisma } from '@prisma/client'
@@ -6,7 +7,7 @@ import type { AccessStoreBinding } from '@profitia/platform-contracts/access-sto
 import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
 import targets from '@/deployment/private-runtime-targets.json'
 import { createSg2ClerkClient, IdentityConfigurationUnavailable, readSg2IdentityRuntime } from './identity-runtime'
-import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost, createSg2PrivateForecastCurrentHost } from './private-host'
+import { createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost, createSg2PrivateForecastCurrentHost, createSg2PrivateForecastVerificationHost } from './private-host'
 import { createStoredMarketHistoryReader,type StoredMarketBinding } from '@/lib/market-data/stored-read'
 import type { BenchmarkPreviewResult,BenchmarkAnalyticsSeriesResult,BenchmarkRangePreset } from '@/lib/benchmark/contracts'
 
@@ -18,7 +19,7 @@ export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<Prisma.TransactionClient>; defaultOrganisationId: string
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
   category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
-  forecastRead?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; current: (selection: ForecastCurrentSelectionValue) => Promise<StoredCurrentForecastResult> }>
+  forecastRead?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; current: (selection: ForecastCurrentSelectionValue) => Promise<StoredCurrentForecastResult>; verification?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; read: (selection: ForecastVerificationSelectionValue) => Promise<PublicForecastVerificationResult> }> }>
   marketRead?: Readonly<{
     executor: OperationExecutor<Prisma.TransactionClient>
     preview:(selection:{seriesName:string;range:BenchmarkRangePreset})=>Promise<BenchmarkPreviewResult>
@@ -182,16 +183,21 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
     const source = config.forecastRead!
     // Initialize the generated forecast client and business graph only inside
     // an authorized callback. Cache a store/pool, never identity or authority.
-    let reader: Promise<ReturnType<typeof import('@/lib/forecast/stored-current-read')['createStoredCurrentForecastReader']>> | undefined
-    return Object.freeze({ executor: createSg2PrivateForecastCurrentHost({ prisma, auditPrisma, clerk,
-      identity: config.identity, binding: config.binding, module: config.module,
-      application: { ...config.application, configurationVersion: source.configurationVersion, operations: ['forecast.read'], features: ['forecast'] } }),
-      current: async (selection: ForecastCurrentSelectionValue) => {
-        reader ??= Promise.all([import('@/generated/market-data-client'), import('@/lib/forecast/stored-current-read')])
-          .then(([{ PrismaClient: MarketClient }, { createStoredCurrentForecastReader }]) => createStoredCurrentForecastReader(
-            new MarketClient({ datasources: { db: { url: poolUrl(source.databaseUrl, 1, 'profitia_forecast_read') } } }), source.binding))
-        return (await reader)(selection)
-      } })
+    type Readers={current:ReturnType<typeof import('@/lib/forecast/stored-current-read')['createStoredCurrentForecastReader']>;
+      verification:ReturnType<typeof import('@/lib/forecast/stored-verification-read')['createStoredForecastVerificationReader']>}
+    let readers:Promise<Readers>|undefined
+    const loadReaders=()=>readers??=Promise.all([import('@/generated/market-data-client'),import('@/lib/forecast/stored-current-read'),import('@/lib/forecast/stored-verification-read')])
+      .then(([{PrismaClient:MarketClient},{createStoredCurrentForecastReader},{createStoredForecastVerificationReader}])=>{
+        const client=new MarketClient({datasources:{db:{url:poolUrl(source.databaseUrl,1,'profitia_forecast_read')}}})
+        return {current:createStoredCurrentForecastReader(client,source.binding),verification:createStoredForecastVerificationReader(client,source.binding)}
+      })
+    const host:Parameters<typeof createSg2PrivateForecastCurrentHost>[0]={prisma,auditPrisma,clerk,identity:config.identity,binding:config.binding,module:config.module,
+      application:{...config.application,configurationVersion:source.configurationVersion,operations:['forecast.read'],features:['forecast']}}
+    return Object.freeze({executor:createSg2PrivateForecastCurrentHost(host),
+      current:async(selection:ForecastCurrentSelectionValue)=>(await loadReaders()).current(selection),
+      verification:Object.freeze({executor:createSg2PrivateForecastVerificationHost(host),
+        read:async(selection:ForecastVerificationSelectionValue)=>(await loadReaders()).verification(selection)}),
+    })
   })() : undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
     ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}) })

@@ -8,6 +8,8 @@ import test from 'node:test'
 const imports = [
   'lib/forecast/service.ts',
   'lib/forecast/stored-current-read.ts',
+  'lib/forecast/stored-verification-read.ts',
+  'lib/forecast/verification-operation-handlers.ts',
   'lib/forecast/rolling-daily-verification.ts',
   'lib/platform/private-runtime.ts',
   'app/api/benchmark/forecast/current/route.ts',
