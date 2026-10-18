@@ -290,5 +290,36 @@
     "commandBoundaryDigest": "90f72b87071fb81a7ac594cbf48836511ef935aaf9f09ab8a7a1402b25d337d8",
     "domainCommand": "Existing ForecastPreparationCommandSchema; unchanged original queue and worker",
     "deploymentAdoption": "NOT_PERFORMED"
+  },
+  "delegatedForecastSourceCandidate": {
+    "taskId": "SG2-E1-DELEGATED-FORECAST-DELIVERY-20261018",
+    "scope": "ISOLATED_NATIVE_API_PRIVATE_DISPATCH_TO_SHARED_QUEUE",
+    "platformVersion": "1.11.0",
+    "sourceSha": "c2d7fc7379d9f43eb40129a6d9df3ecbcb4b7190",
+    "privateBoundary": "prisma/private-store/004-forecast-dispatch.sql",
+    "privateBoundaryDigest": "4d506720351bf0f2bf1b12ef5e634acde894a98c58b64b41881ff59e13a3ae5c",
+    "sourceBoundary": "prisma-market-data/private-write/001-forecast-queue.sql",
+    "sourceBoundaryDigest": "61c33524110b3a218a6c68e07cab644eea81632725a22b59ac9d5851069b7e67",
+    "sourceId": "sg2.forecast.queue",
+    "originalQueueReused": true,
+    "originalSnapshotCompatibilityPolicyReused": true,
+    "nativeApiPrismaTwoDatabaseTests": true,
+    "currentInternalAndExternalRevocationTested": true,
+    "sourceCommitPrivateFailureRecoveryTested": true,
+    "productionRuntimeWiring": false,
+    "workerPollingAdopted": false,
+    "longRunningComputeBudgetAdopted": false,
+    "privateJobStatusApiAdopted": false,
+    "sourceSqlInstalled": false,
+    "privateSqlInstalled": false,
+    "runtimeRolesProvisioned": false,
+    "productDeploymentPerformed": false,
+    "limitations": [
+      "SYNTHETIC_IDENTITY_SDK_RESPONSES_NOT_LIVE_OTP",
+      "FINITE_STORED_SQL_SOURCE_TRANSACTION_NOT_PAID_CPU_OR_VENDOR_BUDGET",
+      "READ_PORT_MISSING_SOURCE_PROVENANCE_STAYS_ABSENT",
+      "PRIVATE_JOB_STATUS_AND_BROWSER_REQUEST_PARITY_PENDING",
+      "CONTROLLED_DEVELOPMENT_THEN_STAGING_RELEASE_PENDING"
+    ]
   }
 }
