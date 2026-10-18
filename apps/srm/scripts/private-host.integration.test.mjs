@@ -8,11 +8,12 @@ import { accessSchemaUrl, accessStoreSourceDigest, createAccessStore, moduleAudi
 import { moduleSchemaUrl, moduleSchemaDigest } from '@profitia/platform-contracts/module-scope'
 import { identitySourceDigest } from '@profitia/platform-contracts/identity-provider'
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
-import { OPERATION_CONTRACT } from '@profitia/platform-contracts/operation-context'
+import { OPERATION_CONTRACT, operationPayloadDigest } from '@profitia/platform-contracts/operation-context'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
 import { migrationManifest } from './staging-migrate.mjs'
 import { createSrmReportOperationHost, createSrmSupplierRequestOperationHost } from '../src/server/private-runtime.ts'
+import { createSrmSupplierRequestContinuation, SUPPLIER_PRIVATE_PHASES, MAX_PRIVATE_PHASE_BYTES } from '../src/server/supplier-request-continuation.ts'
 import { createOperationSupplierRequestHandler } from '../src/server/supplier-request-handler.ts'
 import { readSupplierRequest, supplierRequestResourceId, persistSupplierRequest } from '../src/server/supplier-request-operation.ts'
 import { createRuntimeSrmReportHandler } from '../src/server/report-runtime.ts'
@@ -37,17 +38,23 @@ test('SRM imports the exact optional external control source without adopting a 
   const sdk=await import('@profitia/platform-contracts/external-call')
   const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
   const accepted=manifest.externalCallSourceCompatibility
-  const current=manifest.externalRequestSourceCompatibility
+  const historicalRequest=manifest.externalRequestSourceCompatibility
+  assert.equal(historicalRequest.sourceRecordIsHistorical,true)
+  const current=manifest.privateRequestContinuationSourceCompatibility
   assert.equal(accepted.sourceRecordIsHistorical,true)
-  assert.equal(current.previousExternalSourceRecordIsHistorical,true)
+  assert.equal(current.previousExternalRequestSourceRecordIsHistorical,true)
   assert.equal(accepted.platformVersion,'1.13.0')
   assert.equal(accepted.producer.sourceSha,'1066119a1c1fde29c50b2c627e068f14378441f8')
   assert.equal(accepted.sourceDigest,'cd49ee2c113202178870da20076a7c401e0aede44229dc2102d142c2f49cb431')
   assert.equal(await sdk.externalCallSourceDigest(),accepted.sourceDigest)
   assert.equal(await sdk.externalCallSchemaDigest(),accepted.schemaDigest)
   assert.deepEqual(sdk.EXTERNAL_CALL_CONTRACT,{id:'profitia.external-call',version:'1.0.0',unit:'UPSTREAM_ATTEMPT_ADMISSION'})
+  const phaseSdk=await import('@profitia/platform-contracts/request-continuation')
+  assert.equal(await phaseSdk.requestContinuationSchemaDigest(),current.schemaDigest)
+  assert.equal(await phaseSdk.requestContinuationSourceDigest(),current.sourceDigest)
+  assert.equal(phaseSdk.REQUEST_CONTINUATION_CONTRACT.effect,'PRIVATE_SQL_PHASE')
   const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
-  assert.equal(Object.keys(current.sourceDigests).length,17)
+  assert.equal(Object.keys(current.sourceDigests).length,20)
   for(const [path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
   for(const name of ['externalCallAdopted','sql009Installed','runtimeRoleOrGrantChanged','humanSupplierRefreshAdopted','finderAiAdopted','kysOrPersonalDataAdopted','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
   assert.equal(sdk.externalCallEvidence({status:200,body:{}}),null)
@@ -56,7 +63,7 @@ test('SRM imports the exact optional external control source without adopting a 
 test('SRM accepts the published optional producer fingerprints', async () => {
   assert.equal(await accessStoreSourceDigest(), 'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
   assert.equal(await identitySourceDigest(), '9e1ced6498e8a127dd17fee81c5f4485a032c133bf85c08a72488e7909a0a299')
-  assert.equal(await privateOperationHostSourceDigest(), 'dfe2bab9b550fc4c7e8afbb2b4795070469086e1d984e16d149dd0cf8ef8875f')
+  assert.equal(await privateOperationHostSourceDigest(), 'e8255b441c1f4ebd3860a6a7327e7abae646deda828723511aa7dde3e18681ee')
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
 })
@@ -609,7 +616,9 @@ test('SRM preserves historical AM23 source acceptance separately from current pr
  const sdk=await import('@profitia/platform-contracts/request-ledger')
  assert.equal(accepted.platformVersion,'1.14.0')
  assert.equal(accepted.producer.sourceSha,'70e6ebbd1bb931911fd3e3801f04e03d2d45b5df')
- assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.8')
+ assert.equal(accepted.sourceRecordIsHistorical,true)
+ assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.9')
+ assert.equal(manifest.privateRequestContinuationSourceCompatibility.rootImplementation,OPERATION_CONTRACT.implementation)
  assert.equal(await sdk.requestLedgerSourceDigest(),'f87c7d482dfa3bb75a86f85c9e0df20e22c2a5f6ca973400fb2fd21713cbb78e')
  assert.equal(await sdk.requestLedgerSourceDigest(),accepted.requestLedgerSourceDigest)
  assert.equal(await sdk.requestReservationSchemaDigest(),accepted.baseSchemaDigest)
@@ -635,6 +644,8 @@ test('real native supplier request admission keeps command, quota and audit in o
   const baseSql = fs.readFileSync(new URL(requestSdk.requestReservationSchemaUrl), 'utf8')
   const externalSql = fs.readFileSync(new URL(requestSdk.externalRequestSchemaUrl), 'utf8')
   const commandSql = fs.readFileSync(new URL('../db/private-store/001-supplier-requests.sql', import.meta.url), 'utf8')
+  const phaseSdk = await import('@profitia/platform-contracts/request-continuation')
+  const phaseSql = fs.readFileSync(new URL(phaseSdk.requestContinuationSchemaUrl),'utf8'), phaseDigest=hash(phaseSql)
   const commandDigest = hash(commandSql), command = readSupplierRequest({ kind: 'SUPPLIER_REPORT', nip: NIP })
   const id = supplierRequestResourceId(command), key = 'synthetic-supplier-request-key-0001'
   try {
@@ -660,7 +671,7 @@ test('real native supplier request admission keeps command, quota and audit in o
     const reset = async (capacity = 5) => {
       revoked = false
       assert.equal((await owner.query('SELECT current_database() db')).rows[0].db, database)
-      await owner.query('DROP SCHEMA IF EXISTS profitia_supplier_requests CASCADE;DROP SCHEMA IF EXISTS profitia_requests CASCADE;DROP SCHEMA IF EXISTS profitia_modules CASCADE;DROP SCHEMA IF EXISTS profitia_access CASCADE')
+      await owner.query('DROP SCHEMA IF EXISTS supplier_phase_fixture CASCADE;DROP SCHEMA IF EXISTS profitia_request_phases CASCADE;DROP SCHEMA IF EXISTS profitia_supplier_requests CASCADE;DROP SCHEMA IF EXISTS profitia_requests CASCADE;DROP SCHEMA IF EXISTS profitia_modules CASCADE;DROP SCHEMA IF EXISTS profitia_access CASCADE')
       await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner')
       try {
         await owner.query(sql)
@@ -670,6 +681,7 @@ test('real native supplier request admission keeps command, quota and audit in o
         await owner.query(baseSql); await owner.query("INSERT INTO profitia_requests.installation(schema_version,schema_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_ONLY')", [hash(baseSql)])
         await owner.query(externalSql); await owner.query("INSERT INTO profitia_requests.external_installation(schema_version,schema_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_ONLY')", [hash(externalSql)])
         await owner.query(commandSql); await owner.query("INSERT INTO profitia_supplier_requests.installation(schema_version,boundary_digest,source_ref) VALUES('1.0.0',$1,'SYNTHETIC_NOT_RELEASE')", [commandDigest])
+        await owner.query(phaseSql);await owner.query("INSERT INTO profitia_request_phases.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_NATIVE_SRM_ONLY')",[phaseDigest])
         for (const user of [U,V]) {
           await owner.query("INSERT INTO profitia_access.accounts(user_id,status) VALUES($1,'ACTIVE')", [user])
           await owner.query("INSERT INTO profitia_access.external_identities(binding_id,issuer,subject,user_id,status,source_ref,expires_at) VALUES($1,$2,$3,$4,'ACTIVE','SYNTHETIC_ONLY',$5)", [randomUUID(),ISSUER,'external-'+user,user,expiry()])
@@ -691,6 +703,11 @@ test('real native supplier request admission keeps command, quota and audit in o
             GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_access.identity_binding(text,text),profitia_access.lock_access(uuid,uuid,text,text,text),profitia_access.scope_allows(text,uuid,uuid),profitia_access.append_audit(jsonb),profitia_modules.runtime_descriptor(),profitia_modules.bind_scope(text),profitia_modules.scope_allows(text,uuid,uuid),profitia_modules.audit_descriptor(),profitia_requests.runtime_descriptor(),profitia_requests.external_runtime_descriptor(),profitia_requests.scope_allows(text,uuid,uuid,text),profitia_requests.policy(text,uuid,uuid,text),profitia_requests.reserve(text,uuid,uuid,text,text,text,text,uuid,uuid,bigint),profitia_requests.accept(text,uuid,uuid) TO ${login};
             GRANT SELECT ON profitia_supplier_requests.installation,profitia_requests.intents TO ${login};GRANT SELECT,INSERT ON profitia_supplier_requests.commands TO ${login}`)
         }
+        for(const[index,phaseId]of SUPPLIER_PRIVATE_PHASES.entries())await owner.query("INSERT INTO profitia_request_phases.policies(application_id,phase_id,sequence,predecessor,operation,effect,status,source_ref,expires_at) VALUES('srm',$1,$2,$3,'supplier.report.refresh','PRIVATE_SQL_PHASE','ACTIVE','SYNTHETIC_ONLY',$4)",[phaseId,index+1,SUPPLIER_PRIVATE_PHASES[index-1]??null,expiry()])
+        await owner.query(`GRANT USAGE ON SCHEMA profitia_request_phases TO ${role};GRANT EXECUTE ON FUNCTION profitia_request_phases.descriptor(text),profitia_request_phases.parent_available(uuid,uuid,uuid,text,text),profitia_request_phases.reserve(uuid,text,text,uuid,bigint),profitia_request_phases.accept(uuid,text,text,uuid,bigint) TO ${role}`)
+        await owner.query(`CREATE SCHEMA supplier_phase_fixture;CREATE TABLE supplier_phase_fixture.effects(request_id uuid REFERENCES profitia_supplier_requests.commands(request_id),phase_id text,data_json jsonb,organisation_id uuid,user_id uuid,resource_id text,PRIMARY KEY(request_id,phase_id));ALTER TABLE supplier_phase_fixture.effects ENABLE ROW LEVEL SECURITY;ALTER TABLE supplier_phase_fixture.effects FORCE ROW LEVEL SECURITY;CREATE POLICY controlled_owner ON supplier_phase_fixture.effects TO profitia_access_owner USING(true) WITH CHECK(true)`)
+        const phaseFence="(profitia_access.runtime_descriptor()->>'applicationId')='srm' AND profitia_requests.scope_allows('supplier.report.refresh',organisation_id,user_id,resource_id)"
+        await owner.query(`CREATE POLICY runtime_scope ON supplier_phase_fixture.effects TO ${role} USING(${phaseFence}) WITH CHECK(${phaseFence});CREATE POLICY runtime_fence ON supplier_phase_fixture.effects AS RESTRICTIVE TO ${role} USING(${phaseFence}) WITH CHECK(${phaseFence});GRANT USAGE ON SCHEMA supplier_phase_fixture TO ${role};GRANT SELECT,INSERT ON supplier_phase_fixture.effects TO ${role}`)
         await owner.query('COMMIT')
       } catch (error) { await owner.query('ROLLBACK'); throw error }
     }
@@ -710,6 +727,14 @@ test('real native supplier request admission keeps command, quota and audit in o
     const request = ({org=A,user=U,key:requestKey=key,body=command,headers={}}={}) => new Request(`${ORIGIN}/api/xray/requests?organisationId=${org}`, {
       method:'POST',headers:{authorization:`Bearer external-${user}`,'content-type':'application/json','idempotency-key':requestKey,...headers},body:JSON.stringify(body)})
     const input = () => ({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.report.refresh',organisationId:A,resourceId:id,payload:command,idempotencyKey:key,request:request()})
+    const continuation = createSrmSupplierRequestContinuation({...options,continuationSchemaDigest:phaseDigest})
+    const data={schemaVersion:'SYNTHETIC_PHASE_ONLY',values:[1,0,null]}
+    const phaseInput=(requestId,patch={})=>({requestId,phaseId:'REGISTER_LOOKUP',organisationId:A,command,idempotencyKey:key,request:request(),data,...patch})
+    const phaseAction=async(context,client,body)=>{
+      assert(Object.isFrozen(body));assert.equal(context.requestContinuation.inputDigest,operationPayloadDigest(body))
+      await client.query('INSERT INTO supplier_phase_fixture.effects VALUES($1,$2,$3::jsonb,$4,$5,$6)',[context.requestReservation.requestId,context.requestContinuation.phaseId,JSON.stringify(body),context.organisationId,context.actorId,context.resourceId])
+    }
+    const phaseCounts=async()=>(await owner.query("SELECT (SELECT count(*)::int FROM profitia_request_phases.effects)n,(SELECT count(*)::int FROM supplier_phase_fixture.effects)b")).rows[0]
     const counts = async () => (await owner.query("SELECT (SELECT count(*)::int FROM profitia_supplier_requests.commands)n,(SELECT count(*)::int FROM profitia_requests.intents)i,(SELECT coalesce(sum(accepted_count),0)::int FROM profitia_requests.policies WHERE application_id='srm')used")).rows[0]
     const scenario = async (name, work, capacity=5) => t.test(name,async()=>{await reset(capacity);await work()})
     await scenario('actual pg intent persists one closed command with current org/user/application and correlated audit', async()=>{
@@ -820,6 +845,83 @@ test('real native supplier request admission keeps command, quota and audit in o
         assert.equal((await client.query('SELECT * FROM profitia_supplier_requests.commands')).rowCount,0)
         assert.equal((await client.query('SELECT * FROM profitia_supplier_requests.installation')).rowCount,0)
       }finally{await client.query('ROLLBACK');client.release()}
+    })
+    const acceptedParent=async()=>{const response=await handler(request());assert.equal(response.status,202);return(await response.json()).requestId}
+    await scenario('native domain phase verifies the stored command and current actor before committing private SQL',async()=>{
+      const requestId=await acceptedParent(),result=await continuation.run(phaseInput(requestId),phaseAction)
+      assert.deepEqual(result,{requestId,phaseId:'REGISTER_LOOKUP',status:'COMMITTED'})
+      const row=(await owner.query('SELECT * FROM supplier_phase_fixture.effects')).rows[0];assert.equal(row.organisation_id,A);assert.equal(row.user_id,U);assert.deepEqual(row.data_json,data)
+      assert.deepEqual(await phaseCounts(),{n:1,b:1});assert.deepEqual(await counts(),{n:1,i:1,used:1})
+    },1)
+    await scenario('native concurrent continuation is once-only and a replay never executes its callback',async()=>{
+      const requestId=await acceptedParent(),results=await Promise.all([continuation.run(phaseInput(requestId),phaseAction),continuation.run(phaseInput(requestId),phaseAction)])
+      assert.deepEqual(new Set(results.map(r=>r.status)),new Set(['COMMITTED','REPLAY']))
+      assert.deepEqual(await phaseCounts(),{n:1,b:1});assert.deepEqual(await counts(),{n:1,i:1,used:1})
+    },1)
+    await scenario('native phase rejects changed content, order and uninstalled phase without borrowing another intent',async()=>{
+      const requestId=await acceptedParent()
+      await assert.rejects(continuation.run(phaseInput(requestId,{phaseId:'STORE_FINANCIAL'}),phaseAction))
+      await continuation.run(phaseInput(requestId),phaseAction)
+      await assert.rejects(continuation.run(phaseInput(requestId,{data:{values:[999]}}),phaseAction),e=>e.reasonCode==='IDEMPOTENCY_CONFLICT')
+      await assert.rejects(continuation.run(phaseInput(requestId,{phaseId:'REMOTE_PROVIDER'}),phaseAction),e=>e.reasonCode==='CONTEXT_INVALID')
+      assert.deepEqual(await phaseCounts(),{n:1,b:1})
+    })
+    await scenario('all four native private phases reuse one accepted actor command and one quota unit',async()=>{
+      const requestId=await acceptedParent()
+      for(const phaseId of SUPPLIER_PRIVATE_PHASES)assert.equal((await continuation.run(phaseInput(requestId,{phaseId}),phaseAction)).status,'COMMITTED')
+      assert.deepEqual(await phaseCounts(),{n:4,b:4});assert.deepEqual(await counts(),{n:1,i:1,used:1})
+    },1)
+    await scenario('native continuation refuses a random parent, foreign actor, organisation, command and idempotency binding',async()=>{
+      const requestId=await acceptedParent()
+      for(const patch of[{requestId:randomUUID()},{organisationId:B},{request:request({user:V})},{command:readSupplierRequest({kind:'SUPPLIER_REPORT',nip:'5260250274'})},{idempotencyKey:key+'-wrong'}])await assert.rejects(continuation.run(phaseInput(requestId,patch),phaseAction))
+      assert.deepEqual(await phaseCounts(),{n:0,b:0});assert.deepEqual(await counts(),{n:1,i:1,used:1})
+    })
+    await scenario('native source scope cannot be assigned from an extra input field or caller-supplied continuation authority',async()=>{
+      const requestId=await acceptedParent()
+      await assert.rejects(continuation.run({...phaseInput(requestId),userId:V},phaseAction),e=>e.reasonCode==='CONTEXT_INVALID')
+      assert.throws(()=>createSrmSupplierRequestContinuation({...options,continuationSchemaDigest:phaseDigest,requestContinuation:{requestId}}),TypeError)
+      await continuation.run(phaseInput(requestId,{data:{userId:V,organisationId:B}}),phaseAction)
+      const row=(await owner.query('SELECT organisation_id,user_id FROM supplier_phase_fixture.effects')).rows[0];assert.deepEqual(row,{organisation_id:A,user_id:U})
+    })
+    await scenario('current real-adapter session, membership and product revocation refuse both fresh and replayed native phases',async()=>{
+      const requestId=await acceptedParent();await continuation.run(phaseInput(requestId),phaseAction)
+      revoked=true;await assert.rejects(continuation.run(phaseInput(requestId),phaseAction),e=>e.reasonCode==='UNVERIFIED_IDENTITY');revoked=false
+      for(const[table,where,field,bad,good]of[
+        ['profitia_access.memberships',`organisation_id='${A}' AND user_id='${U}'`,'status','SUSPENDED','ACTIVE'],
+        ['profitia_access.permission_grants',`application_id='srm' AND organisation_id='${A}' AND user_id='${U}'`,'effect','DENY','ALLOW'],
+        ['profitia_modules.application_bindings',"application_id='srm'",'status','REVOKED','ACTIVE'],
+        ['profitia_access.product_grants',`application_id='srm' AND organisation_id='${A}'`,'status','REVOKED','ACTIVE']]){
+        await owner.query(`UPDATE ${table} SET ${field}='${bad}' WHERE ${where}`)
+        try{for(const phaseId of ['REGISTER_LOOKUP','STORE_GENERAL'])await assert.rejects(continuation.run(phaseInput(requestId,{phaseId}),phaseAction))}finally{await owner.query(`UPDATE ${table} SET ${field}='${good}' WHERE ${where}`)}
+      }
+      assert.deepEqual(await phaseCounts(),{n:1,b:1})
+    })
+    await scenario('native phase action and OUTCOME errors roll back private rows while retaining its accepted parent',async()=>{
+      const requestId=await acceptedParent()
+      await assert.rejects(continuation.run(phaseInput(requestId),async(...args)=>{await phaseAction(...args);throw Error('SYNTHETIC_PHASE_CALLBACK_FAILURE')}))
+      assert.deepEqual(await phaseCounts(),{n:0,b:0})
+      await owner.query("CREATE FUNCTION profitia_access.fail_supplier_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' THEN RAISE EXCEPTION 'synthetic phase outcome outage';END IF;RETURN NEW;END $$;CREATE TRIGGER fail_supplier_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.fail_supplier_outcome()")
+      try{await assert.rejects(continuation.run(phaseInput(requestId),phaseAction),e=>e.reasonCode==='AUDIT_UNAVAILABLE')}finally{await owner.query('DROP TRIGGER fail_supplier_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.fail_supplier_outcome()')}
+      assert.deepEqual(await phaseCounts(),{n:0,b:0});assert.deepEqual(await counts(),{n:1,i:1,used:1})
+    })
+    await scenario('native callback cannot publish a private return value or continue after request cancellation',async()=>{
+      const requestId=await acceptedParent()
+      await assert.rejects(continuation.run(phaseInput(requestId),async(...args)=>{await phaseAction(...args);return {private:'SYNTHETIC_NOT_PUBLIC'}}))
+      const abort=new AbortController(),cancelledRequest=new Request(request(),{signal:abort.signal})
+      await assert.rejects(continuation.run(phaseInput(requestId,{request:cancelledRequest}),async(...args)=>{await phaseAction(...args);abort.abort()}))
+      assert.deepEqual(await phaseCounts(),{n:0,b:0})
+    })
+    await scenario('native phase data is bounded finite JSON and cannot smuggle a body or configuration',async()=>{
+      const requestId=await acceptedParent()
+      for(const data of [{value:Infinity},{value:undefined},{value:'a'.repeat(MAX_PRIVATE_PHASE_BYTES)},{constructor:'foreign'},{value:new Date()}])await assert.rejects(continuation.run(phaseInput(requestId,{data}),phaseAction),e=>e.reasonCode==='CONTEXT_INVALID')
+      await assert.rejects(continuation.run(phaseInput(requestId,{command:{...command,destination:'https://foreign.test'}}),phaseAction))
+      assert.deepEqual(await phaseCounts(),{n:0,b:0})
+    })
+    await scenario('a bare accepted common receipt cannot replace the required SRM private command',async()=>{
+      const result=await host.execute(input(),context=>({requestId:context.requestReservation.requestId,status:'ACCEPTED'}))
+      const requestId=(await result.value.json()).requestId
+      await assert.rejects(continuation.run(phaseInput(requestId),phaseAction),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH')
+      assert.deepEqual(await phaseCounts(),{n:0,b:0});assert.deepEqual(await counts(),{n:0,i:1,used:1})
     })
     assert.equal(calls,0)
   } finally {
