@@ -668,5 +668,22 @@
     "remoteExecutionAdopted": false,
     "kysOrPersonalDataAdopted": false,
     "productDeploymentPerformed": false
+  },
+  "supplierRequestSourceRegression": {
+    "taskId": "SG2-E1-SUPPLIER-REQUEST-SOURCE-REGRESSION-20261018",
+    "scope": "UNCHANGED_SG2_RUNTIME_AND_DASHBOARD_REGRESSION_ONLY",
+    "relatedReceiver": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-PRIVATE-SUPPLIER-REQUEST-20261018",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 492,
+      "sourceSha": "09942fbce309f3b3c85f00bdf3173af6db6c5c70"
+    },
+    "nativeSg2BusinessSourceChanged": false,
+    "sg2SupplierRequestAdopted": false,
+    "runtimeRoleOrGrantChanged": false,
+    "controllerPolicyOrAccessChanged": false,
+    "productDeploymentPerformed": false,
+    "exactCandidateAndMainCiRequired": true
   }
 }
