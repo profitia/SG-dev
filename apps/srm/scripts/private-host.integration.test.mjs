@@ -31,6 +31,22 @@ const moduleAuditSql = fs.readFileSync(new URL(moduleAuditSchemaUrl), 'utf8'), a
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 const hash = text => createHash('sha256').update(text).digest('hex')
 
+test('SRM imports the exact optional external control source without adopting a product operation', async () => {
+  const sdk=await import('@profitia/platform-contracts/external-call')
+  const accepted=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))).externalCallSourceCompatibility
+  assert.equal(accepted.platformVersion,'1.13.0')
+  assert.equal(accepted.producer.sourceSha,'1066119a1c1fde29c50b2c627e068f14378441f8')
+  assert.equal(accepted.sourceDigest,'cd49ee2c113202178870da20076a7c401e0aede44229dc2102d142c2f49cb431')
+  assert.equal(await sdk.externalCallSourceDigest(),accepted.sourceDigest)
+  assert.equal(await sdk.externalCallSchemaDigest(),accepted.schemaDigest)
+  assert.deepEqual(sdk.EXTERNAL_CALL_CONTRACT,{id:'profitia.external-call',version:'1.0.0',unit:'UPSTREAM_ATTEMPT_ADMISSION'})
+  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
+  assert.equal(Object.keys(accepted.sourceDigests).length,13)
+  for(const [path,digest]of Object.entries(accepted.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+  for(const name of ['externalCallAdopted','sql009Installed','runtimeRoleOrGrantChanged','humanSupplierRefreshAdopted','finderAiAdopted','kysOrPersonalDataAdopted','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
+  assert.equal(sdk.externalCallEvidence({status:200,body:{}}),null)
+})
+
 test('SRM accepts the published optional producer fingerprints', async () => {
   assert.equal(await accessStoreSourceDigest(), 'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
   assert.equal(await identitySourceDigest(), '9e1ced6498e8a127dd17fee81c5f4485a032c133bf85c08a72488e7909a0a299')
