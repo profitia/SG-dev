@@ -26,6 +26,7 @@ import { readSharedFinancialReport } from '../src/server/shared-financial-read.t
 import { middleware } from '../middleware.ts'
 import { NextRequest } from 'next/server.js'
 import { createSrmPrivateOperationHost } from '../src/server/private-operation-host.ts'
+import { recordSupplierInterest } from '../src/server/shared-catalog.ts'
 import { createLookup } from '../src/server/xray-repository.ts'
 import { bindOrganizationTransaction, withOrganization } from '../src/server/db.ts'
 const DATABASE = 'srm_private_host_test', ROLE = 'srm_private_host_runtime'
@@ -81,7 +82,16 @@ test('SRM business adoption pins its actual writer sources and preserves release
   assert.equal(accepted.version,'srm-supplier-private-store-v1')
   assert.equal(accepted.status,'SOURCE_CANDIDATE_NOT_RELEASED')
   assert.equal(Object.keys(accepted.sourceDigests).length,6)
-  for(const[path,digest]of Object.entries(accepted.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+  assert.equal(accepted.sourceRecordIsHistorical,true)
+  const current=manifest.namedSupplierInterestAdoption
+  assert.equal(current.taskId,'SRM-E1-NAMED-SUPPLIER-INTEREST-20261019')
+  assert.equal(current.version,'srm-named-supplier-interest-v1')
+  assert.equal(current.internalAccountBasedAdapter,true)
+  assert.equal(current.distinctSurrogatePerOrganization,true)
+  assert.equal(Object.keys(current.sourceDigests).length,8)
+  assert.equal(current.namedBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/003-named-supplier-interest.sql',import.meta.url))))
+  for(const name of ['legacyDemoHistoryReassigned','humanSharedCatalogWriteAdopted','httpEndpointActivated','liveSchemaOrGrantsChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)
+  for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
   assert.equal(accepted.businessBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/002-supplier-business-phases.sql',import.meta.url))))
   for(const name of ['humanSharedCatalogWriteAdopted','namedUserInterestAdopted','kysOrPersonalDataAdopted','providerAcquisitionImplemented','newHttpEndpointAdopted','liveSchemaOrGrantsChanged','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
 })
@@ -973,6 +983,126 @@ test('real native supplier request admission keeps command, quota and audit in o
       assert.equal((await owner.query("SELECT encode(sha256(convert_to(payload_json::text,'UTF8')),'hex') actual FROM srm.mgbi_source_archives")).rows[0].actual,archive.payload_jsonb_sha256)
       const names=(await owner.query("SELECT payload_json->>'legalName' name FROM srm.source_snapshots ORDER BY created_at")).rows.map(r=>r.name)
       assert.deepEqual(names,['SYNTHETIC_PRIVATE_COMPANY','SYNTHETIC_LATER_COMPANY'])
+    })
+    const namedSql=fs.readFileSync(new URL('../db/private-store/003-named-supplier-interest.sql',import.meta.url),'utf8'),namedDigest=hash(namedSql)
+    const named=createSrmSupplierPrivateStore({continuation,boundaryDigest:businessDigest,namedInterestBoundaryDigest:namedDigest})
+    const installNamed=async({catalog=true,demo=false}={})=>{
+      await installBusiness();await owner.query("UPDATE profitia_access.applications SET status='DISABLED' WHERE application_id='srm'")
+      if(catalog)await owner.query('INSERT INTO srm.catalog_companies(nip) VALUES($1)',[NIP])
+      if(demo){
+        await owner.query("INSERT INTO srm.users(organization_id,id,subject_key,identity_kind) VALUES($1,$2,'demo-shared','SHARED_DEMO')",[A,'dddddddd-dddd-4ddd-8ddd-dddddddddddd'])
+        await owner.query('INSERT INTO srm.organization_supplier_interest(organization_id,nip) VALUES($1,$2)',[A,NIP])
+        await owner.query('INSERT INTO srm.user_supplier_interest(organization_id,user_id,nip) VALUES($1,$2,$3)',[A,'dddddddd-dddd-4ddd-8ddd-dddddddddddd',NIP])
+      }
+      await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner')
+      try{
+        await owner.query(namedSql);await owner.query("INSERT INTO srm.named_interest_installation VALUES(true,'1.0.0',$1,$2)",[namedDigest,'c'.repeat(40)])
+        await owner.query(`GRANT SELECT,INSERT,UPDATE ON srm.users,srm.organization_supplier_interest,srm.user_supplier_interest TO ${role};GRANT EXECUTE ON FUNCTION srm.named_interest_descriptor(),srm.named_interest_actor(uuid) TO ${role}`)
+        await owner.query('COMMIT')
+      }catch(e){await owner.query('ROLLBACK');throw e}
+      await owner.query("UPDATE profitia_access.applications SET status='ACTIVE' WHERE application_id='srm'")
+    }
+    const prepareNamed=async(selector={})=>{
+      const reply=await handler(request(selector));assert.equal(reply.status,202);const requestId=(await reply.json()).requestId
+      const selected=selection(requestId,{organisationId:selector.org??A,idempotencyKey:selector.key??key,request:request(selector)})
+      await named.register(selected);await named.general(selected,general());await named.financial(selected,financial())
+      return selected
+    }
+    const interestCounts=async()=>(await owner.query('SELECT (SELECT count(*)::int FROM srm.users)users,(SELECT count(*)::int FROM srm.organization_supplier_interest)organizations,(SELECT count(*)::int FROM srm.user_supplier_interest)personal')).rows[0]
+    const readNamedScope=async(org,user,work)=>{
+      const client=await pool.connect(),q=async(sql,values=[])=>({rows:(await client.query(sql,values)).rows})
+      try{
+        await client.query('BEGIN');const store=createAccessStore({binding})
+        const identityBinding=await store.resolveBinding(q,{environment:'development',issuer:ISSUER,subject:'external-'+user})
+        await store.lockAccess(q,{actor:{kind:'HUMAN',actorId:user,userId:user,issuer:ISSUER,audience:'srm',environment:'development',proofRef:'synthetic-verified-only',expiresAt:expiry()},identityBinding,organisationId:org})
+        await client.query("SELECT profitia_modules.bind_scope('supplier_report')")
+        return await work(client)
+      }finally{await client.query('ROLLBACK');client.release()}
+    }
+    await scenario('named interest commits existing business rows once under one accepted current-user parent',async()=>{
+      await installNamed();const selected=await prepareNamed()
+      assert.equal((await named.interest(selected)).status,'COMMITTED');assert.equal((await named.interest(selected)).status,'REPLAY')
+      assert.deepEqual(await interestCounts(),{users:1,organizations:1,personal:1});assert.deepEqual(await counts(),{n:1,i:1,used:1})
+      const u=(await owner.query('SELECT organization_id,id,subject_key,identity_kind FROM srm.users')).rows[0]
+      assert.equal(u.organization_id,A);assert.notEqual(u.id,U);assert.equal(u.subject_key,'profitia-account:'+U);assert.equal(u.identity_kind,'AUTHENTICATED')
+      assert.equal((await owner.query('SELECT user_id FROM srm.user_supplier_interest')).rows[0].user_id,u.id)
+      assert.equal((await businessCounts()).shared,1)
+    },1)
+    await scenario('two named users in one organization have separate choices and one shared organization choice',async()=>{
+      await installNamed();for(const user of [U,V])await named.interest(await prepareNamed({user}))
+      assert.deepEqual(await interestCounts(),{users:2,organizations:1,personal:2});assert.deepEqual(await counts(),{n:2,i:2,used:2})
+      for(const user of[U,V])await readNamedScope(A,user,async client=>{
+        const users=(await client.query('SELECT id,subject_key FROM srm.users')).rows;assert.equal(users.length,1);assert.equal(users[0].subject_key,'profitia-account:'+user)
+        assert.deepEqual((await client.query('SELECT user_id FROM srm.user_supplier_interest')).rows,[{user_id:users[0].id}])
+        assert.equal((await client.query('SELECT * FROM srm.organization_supplier_interest')).rowCount,1)
+      })
+      assert.equal((await pool.query('SELECT * FROM srm.user_supplier_interest')).rowCount,0)
+    })
+    await scenario('one internal account in two organizations receives distinct SRM surrogates and isolated choices',async()=>{
+      await installNamed();for(const [org,requestKey]of[[A,key],[B,key+'-other-org']])await named.interest(await prepareNamed({org,key:requestKey}))
+      const rows=(await owner.query('SELECT organization_id,id,subject_key FROM srm.users ORDER BY organization_id')).rows
+      assert.equal(rows.length,2);assert.notEqual(rows[0].id,rows[1].id);assert(rows.every(r=>r.subject_key==='profitia-account:'+U))
+      for(const org of[A,B])await readNamedScope(org,U,async client=>{
+        assert.deepEqual((await client.query('SELECT organization_id FROM srm.users')).rows,[{organization_id:org}])
+        assert.deepEqual((await client.query('SELECT organization_id FROM srm.user_supplier_interest')).rows,[{organization_id:org}])
+      })
+    })
+    await scenario('missing shared company refuses private interest without creating a HUMAN global placeholder',async()=>{
+      await installNamed({catalog:false});const selected=await prepareNamed();await assert.rejects(named.interest(selected))
+      assert.deepEqual(await interestCounts(),{users:0,organizations:0,personal:0});assert.equal((await businessCounts()).shared,0)
+      assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_request_phases.effects WHERE phase_id='RECORD_INTEREST'")).rows[0].n,0)
+      await owner.query('INSERT INTO srm.catalog_companies(nip) VALUES($1)',[NIP]);assert.equal((await named.interest(selected)).status,'COMMITTED')
+    })
+    await scenario('named selection preserves demo history without reassignment or visibility as personal history',async()=>{
+      await installNamed({demo:true});const before=(await owner.query("SELECT to_jsonb(u) data FROM srm.users u WHERE identity_kind='SHARED_DEMO'")).rows[0].data
+      await named.interest(await prepareNamed())
+      assert.deepEqual((await owner.query("SELECT to_jsonb(u) data FROM srm.users u WHERE identity_kind='SHARED_DEMO'")).rows[0].data,before)
+      assert.deepEqual(await interestCounts(),{users:2,organizations:1,personal:2})
+      await readNamedScope(A,U,async client=>{assert.equal((await client.query('SELECT * FROM srm.users')).rowCount,1);assert.equal((await client.query('SELECT * FROM srm.user_supplier_interest')).rowCount,1)})
+    })
+    await scenario('wrong parent owner, organization, NIP, missing adapter and changed boundary fail closed',async()=>{
+      await installNamed();const selected=await prepareNamed()
+      assert.equal(business.interest,undefined)
+      for(const patch of[{request:request({user:V})},{organisationId:B},{requestId:randomUUID()},{command:{kind:'SUPPLIER_REPORT',nip:'5260250274'}}])await assert.rejects(named.interest({...selected,...patch}))
+      const wrong=createSrmSupplierPrivateStore({continuation,boundaryDigest:businessDigest,namedInterestBoundaryDigest:'0'.repeat(64)})
+      await assert.rejects(wrong.interest(selected));assert.deepEqual(await interestCounts(),{users:0,organizations:0,personal:0})
+      await owner.query("UPDATE profitia_access.permission_grants SET effect='DENY' WHERE application_id='srm' AND organisation_id=$1 AND user_id=$2",[A,U]);await assert.rejects(named.interest(selected))
+    })
+    await scenario('named OUTCOME failure rolls back mappings and both choices and never spends another parent quota',async()=>{
+      await installNamed();const selected=await prepareNamed()
+      await owner.query("CREATE FUNCTION profitia_access.reject_named_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' THEN RAISE EXCEPTION 'synthetic named audit outage';END IF;RETURN NEW;END $$;CREATE TRIGGER reject_named_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_named_outcome()")
+      try{await assert.rejects(named.interest(selected))}finally{await owner.query('DROP TRIGGER reject_named_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_named_outcome()')}
+      assert.deepEqual(await interestCounts(),{users:0,organizations:0,personal:0});assert.deepEqual(await counts(),{n:1,i:1,used:1})
+      assert.equal((await named.interest(selected)).status,'COMMITTED')
+    })
+    await scenario('ordinary SQL, forged scope and a real module lease without the reserved named phase cannot mutate choices',async()=>{
+      await installNamed();const selected=await prepareNamed()
+      await assert.rejects(pool.query("INSERT INTO srm.users(organization_id,subject_key,identity_kind) VALUES($1,$2,'AUTHENTICATED')",[A,'profitia-account:'+U]))
+      await readNamedScope(A,U,async client=>{await assert.rejects(recordSupplierInterest(client,A,NIP,{subjectKey:'profitia-account:'+U,identityKind:'AUTHENTICATED'}))})
+      await assert.rejects(continuation.run({...selected,phaseId:'RECORD_INTEREST',data:{version:'FORGED'}},async(context,client)=>{
+        await recordSupplierInterest(client,A,NIP,{subjectKey:'profitia-account:'+V,identityKind:'AUTHENTICATED'})
+      }))
+      assert.deepEqual(await interestCounts(),{users:0,organizations:0,personal:0});assert.equal((await named.interest(selected)).status,'COMMITTED')
+    })
+    await scenario('current expiry and accidental metadata ACL refuse; identity/first-selection and history cannot be rewritten',async()=>{
+      await installNamed();const selected=await prepareNamed()
+      await owner.query(`GRANT SELECT ON srm.named_interest_installation TO ${role}`)
+      try{await assert.rejects(named.interest(selected))}finally{await owner.query(`REVOKE SELECT ON srm.named_interest_installation FROM ${role}`)}
+      await named.interest(selected)
+      const first=(await owner.query('SELECT first_selected_at,last_selected_at FROM srm.user_supplier_interest')).rows[0]
+      assert.equal((await named.interest(selected)).status,'REPLAY');assert.deepEqual((await owner.query('SELECT first_selected_at,last_selected_at FROM srm.user_supplier_interest')).rows[0],first)
+      await readNamedScope(A,U,async client=>{await assert.rejects(client.query('UPDATE srm.users SET subject_key=$1',["profitia-account:"+V]),e=>e.code==='42501')})
+      await owner.query("UPDATE profitia_access.memberships SET expires_at=now()-interval '1 second' WHERE organisation_id=$1 AND user_id=$2",[A,U]);await assert.rejects(named.interest(selected))
+      await assert.rejects(owner.query('TRUNCATE srm.users CASCADE'),e=>e.code==='42501')
+    })
+    await scenario('a later named selection reuses its own surrogate and retains immutable first-selection times',async()=>{
+      await installNamed();await named.interest(await prepareNamed())
+      const original=(await owner.query('SELECT user_id,first_selected_at,last_selected_at FROM srm.user_supplier_interest')).rows[0]
+      await named.interest(await prepareNamed({key:key+'-later-selection'}))
+      const later=(await owner.query('SELECT user_id,first_selected_at,last_selected_at FROM srm.user_supplier_interest')).rows[0]
+      assert.equal(later.user_id,original.user_id);assert.deepEqual(later.first_selected_at,original.first_selected_at)
+      assert(later.last_selected_at>=original.last_selected_at);assert.deepEqual(await interestCounts(),{users:1,organizations:1,personal:1})
+      assert.deepEqual(await counts(),{n:2,i:2,used:2})
     })
     await scenario('native domain phase verifies the stored command and current actor before committing private SQL',async()=>{
       const requestId=await acceptedParent(),result=await continuation.run(phaseInput(requestId),phaseAction)

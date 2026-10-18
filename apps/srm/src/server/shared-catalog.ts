@@ -6,7 +6,7 @@ import { isCompanyReportRestricted } from "@profitia/srm-xray";
 import { createHash } from "node:crypto";
 import type { FinancialData, GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization, type DatabasePool } from "./db";
-import type { Pool } from "pg";
+import type { Pool, PoolClient } from "pg";
 import type { FinancialSourceFact } from "./mgbi-financial";
 import { calculateFinancialIndicators, FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from "./financial-indicators";
 
@@ -105,25 +105,37 @@ async function upsertSection(
   );
 }
 
-/** Shared password represents one technical actor, not an identified human user. */
+/** Existing interest persistence with an explicit transaction and actor key.
+ * This helper does not create shared catalog rows or resolve authentication. */
+export async function recordSupplierInterest(client: Pick<PoolClient, "query">, organizationId: string, nip: string,
+  actor: Readonly<{ subjectKey: string; identityKind: "SHARED_DEMO" | "AUTHENTICATED" }>): Promise<void> {
+  const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+  if (!uuid.test(organizationId) || !/^[0-9]{10}$/.test(nip)
+    || !(actor.identityKind === "SHARED_DEMO" && actor.subjectKey === "demo-shared"
+      || actor.identityKind === "AUTHENTICATED" && actor.subjectKey.startsWith("profitia-account:") && uuid.test(actor.subjectKey.slice("profitia-account:".length)))) {
+    throw new Error("Explicit supplier interest actor required");
+  }
+  const inserted = await client.query<{ id: string }>(
+    "INSERT INTO srm.users(organization_id, subject_key, identity_kind) VALUES ($1,$2,$3) " +
+    "ON CONFLICT (organization_id, subject_key) DO NOTHING RETURNING id", [organizationId, actor.subjectKey, actor.identityKind]);
+  const users = inserted.rows.length ? inserted.rows : (await client.query<{ id: string }>(
+    "SELECT id FROM srm.users WHERE organization_id=$1 AND subject_key=$2 AND identity_kind=$3",
+    [organizationId, actor.subjectKey, actor.identityKind])).rows;
+  if (users.length !== 1 || !uuid.test(users[0].id)) throw new Error("Bound supplier interest user unavailable");
+  await client.query(
+    "INSERT INTO srm.organization_supplier_interest(organization_id, nip) VALUES ($1, $2) " +
+    "ON CONFLICT (organization_id, nip) DO UPDATE SET last_selected_at = now()", [organizationId, nip]);
+  await client.query(
+    "INSERT INTO srm.user_supplier_interest(organization_id, user_id, nip) VALUES ($1, $2, $3) " +
+    "ON CONFLICT (organization_id, user_id, nip) DO UPDATE SET last_selected_at = now()", [organizationId, users[0].id, nip]);
+}
+
+/** The existing demo path retains its technical actor and catalog placeholder.
+ * Named users enter only through their current private operation/SQL fences. */
 export async function recordDemoInterest(organizationId: string, nip: string): Promise<void> {
   await withOrganization(organizationId, async (client) => {
     await client.query("INSERT INTO srm.catalog_companies(nip) VALUES ($1) ON CONFLICT DO NOTHING", [nip]);
-    const user = await client.query<{ id: string }>(
-      "INSERT INTO srm.users(organization_id, subject_key, identity_kind) VALUES ($1, 'demo-shared', 'SHARED_DEMO') " +
-      "ON CONFLICT (organization_id, subject_key) DO UPDATE SET subject_key = EXCLUDED.subject_key RETURNING id",
-      [organizationId],
-    );
-    await client.query(
-      "INSERT INTO srm.organization_supplier_interest(organization_id, nip) VALUES ($1, $2) " +
-      "ON CONFLICT (organization_id, nip) DO UPDATE SET last_selected_at = now()",
-      [organizationId, nip],
-    );
-    await client.query(
-      "INSERT INTO srm.user_supplier_interest(organization_id, user_id, nip) VALUES ($1, $2, $3) " +
-      "ON CONFLICT (organization_id, user_id, nip) DO UPDATE SET last_selected_at = now()",
-      [organizationId, user.rows[0].id, nip],
-    );
+    await recordSupplierInterest(client, organizationId, nip, {subjectKey:"demo-shared",identityKind:"SHARED_DEMO"});
   });
 }
 

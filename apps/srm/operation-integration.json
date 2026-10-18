@@ -374,7 +374,8 @@
     "providerAcquisitionImplemented": false,
     "newHttpEndpointAdopted": false,
     "liveSchemaOrGrantsChanged": false,
-    "productDeploymentPerformed": false
+    "productDeploymentPerformed": false,
+    "sourceRecordIsHistorical": true
   },
   "nativeExternalSourceCompatibility": {
     "platformVersion": "1.16.0",
@@ -421,6 +422,30 @@
     "humanSupplierRefreshAdopted": false,
     "finderAiAdopted": false,
     "kysOrPersonalDataAdopted": false,
+    "productDeploymentPerformed": false
+  },
+  "namedSupplierInterestAdoption": {
+    "taskId": "SRM-E1-NAMED-SUPPLIER-INTEREST-20261019",
+    "version": "srm-named-supplier-interest-v1",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "sourceDigests": {
+      "db/private-store/002-supplier-business-phases.sql": "1d234a4b271e7647415efea4ea9013d8cab074ed89f2920589f08fe0e6730dcb",
+      "db/private-store/003-named-supplier-interest.sql": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
+      "src/server/financial-documents.ts": "81a8610e3dd1b46e424e9573baf9d97455f4a10c17fd8d005ab06cb6862e2198",
+      "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
+      "src/server/shared-catalog.ts": "e3310cef42743975f76c0826f1e15754fe2a90482647cb04639c94e1d87129c9",
+      "src/server/supplier-private-store.ts": "b4b4f98f5549a26b0835ef6300193844b90780c74ec176fd98d7a297c63eda94",
+      "src/server/xray-lookup.ts": "0c8a922565ccdcf4c4ab062a66cde29736afd2077579914a5a5656dad730790b",
+      "src/server/xray-repository.ts": "bfbfda141fb46799df92fddeca5be3a2e09685dd658a3e3dfd2c23b64b22da92"
+    },
+    "namedBoundaryDigest": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
+    "previousBusinessSourceRecordIsHistorical": true,
+    "internalAccountBasedAdapter": true,
+    "distinctSurrogatePerOrganization": true,
+    "legacyDemoHistoryReassigned": false,
+    "humanSharedCatalogWriteAdopted": false,
+    "httpEndpointActivated": false,
+    "liveSchemaOrGrantsChanged": false,
     "productDeploymentPerformed": false
   }
 }
