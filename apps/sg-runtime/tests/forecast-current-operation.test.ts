@@ -44,10 +44,10 @@ test('honest MISS and STALE envelopes are bounded, selected and contain no fabri
 })
 
 test('only reviewed finite model parameters and bounded statistical policy metadata are publishable', () => {
-  for(const value of [null,{}, { alpha:0, beta:0.5, phi:1, 'ar.L1':0, sigma2:0 },
+  for(const value of [null,{}, { alpha:0, beta:0.5, phi:1, 'ar.L1':0, sigma2:0, x1:0 },
     { order:[1,0,1], seasonal_order:[0,0,0,0], trend:null, policyIdentity:'ARIMA_NON_SEASONAL_BOUNDED_AICC_V1',
       fitImplementation:'STATSMODELS_ARIMA_STATESPACE', candidateCount:3 }]) assert.equal(hasPublicForecastModelParameters(value),true)
-  for(const value of [[],undefined,{alpha:Infinity},{alpha:NaN},{userId:A},{alpha:'0'}, {order:[1,2]},
+  for(const value of [[],undefined,{alpha:Infinity},{alpha:NaN},{x1:Infinity},{x1:NaN},{x1:'0'},{x2:0},{userId:A},{alpha:'0'}, {order:[1,2]},
     {order:[1,-1,0]},{seasonal_order:[0,0,0,367]},{trend:'private'}, {policyIdentity:'unknown'}, {toString:'private'},
     Object.create({alpha:0}),JSON.parse('{"__proto__":"private"}'),Object.fromEntries(Array.from({length:513},(_,i)=>[`param_${i}`,0]))]) assert.equal(hasPublicForecastModelParameters(value),false)
 })

@@ -66,7 +66,7 @@
         "activationVariable": "PROFITIA_FORECAST_READ_ENABLED",
         "defaultEnabled": false,
         "source": "apps/sg-runtime/prisma-market-data/private-read/002-stored-rolling-current.sql",
-        "schemaDigest": "ef085444519c4f2128f22d9c049f54e0f337de1c10da0576ef286c5fdf990d41",
+        "schemaDigest": "796da3e5d0af5862991579c19911aa703394740327b04e17d28f0299e99ff3d7",
         "marketSchemaDigest": "596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304",
         "projectId": "autumn-waterfall-65938876",
         "branchId": "br-dry-hall-b294222f",

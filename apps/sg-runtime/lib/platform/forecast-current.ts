@@ -54,7 +54,7 @@ export function readForecastCurrentSelection(value: unknown): ForecastCurrentSel
 const numericParameters = new Set([
   'alpha', 'beta', 'phi', 'initial_level', 'initial_trend', 'smoothing_level', 'smoothing_trend',
   'smoothing_seasonal', 'damping_trend', 'seasonal_periods', 'sigma2', 'const', 'intercept', 'drift',
-  'lamda', 'lambda', 'candidateCount',
+  'lamda', 'lambda', 'candidateCount', 'x1',
 ])
 const coefficient = /^(?:(?:ar|ma)(?:\.S)?\.L[1-9][0-9]{0,2}|initial_seasonal\.[0-9]{1,3}|param_[0-9]{1,3})$/
 const publicPolicies: Readonly<Record<string, readonly string[]>> = {
