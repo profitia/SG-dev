@@ -18,13 +18,13 @@ const unavailable=e=>e instanceof ExternalCallUnavailable&&e.message==='External
 test('ordinary real source control commits before bounded local HTTP; ambiguous effects never resend automatically',async t=>{
  const rootUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
  const root=new Client({connectionString:rootUrl});await root.connect()
- let owner,runtime,server,hits=0,credentials=0,ackLoss=null,auditFailure=null,failAuditPhase=null
+ let owner,runtime,server,hits=0,credentials=0,ackLoss=null,auditFailure=null,failAuditPhase=null,onSlowRequest=null
  const dbUrl=new URL(rootUrl);dbUrl.pathname='/'+DATABASE
  try{
   server=http.createServer((req,res)=>{hits++;req.resume();res.setHeader('content-type','application/json')
    const path=new URL(req.url,'http://127.0.0.1').pathname
    if(path==='/redirect'){res.statusCode=302;res.setHeader('location','/data');res.end('{}')}
-   else if(path==='/slow'){setTimeout(()=>{if(!res.destroyed)res.end('{"value":3}')},350)}
+   else if(path==='/slow'){const observed=onSlowRequest;onSlowRequest=null;observed?.();setTimeout(()=>{if(!res.destroyed)res.end('{"value":3}')},350)}
    else if(path==='/large')res.end(JSON.stringify({private:'x'.repeat(20000)}))
    else if(path==='/invalid')res.end('{"__proto__":{"private":true}}')
    else{if(path==='/missing')res.statusCode=404;res.end(JSON.stringify({value:3,private:'provider-internal-field'}))}
@@ -144,8 +144,9 @@ test('ordinary real source control commits before bounded local HTTP; ambiguous 
    await assert.rejects(host.execute(i),unavailable);assert.equal(hits,n+1)
   })
   await t.test('caller cancellation after send remains uncertain and does not refund the admission',async()=>{
-   const ac=new AbortController(),i=input({path:'/slow'}),b=await counts(),n=hits,p=host.execute(i,{signal:ac.signal});setTimeout(()=>ac.abort(),60)
-   await assert.rejects(p,unavailable);assert.equal(hits,n+1);assert.equal((await counts()).admissions,b.admissions+1)
+   const ac=new AbortController(),i=input({path:'/slow'}),b=await counts(),n=hits
+   onSlowRequest=()=>ac.abort()
+   await assert.rejects(host.execute(i,{signal:ac.signal}),unavailable);assert.equal(hits,n+1);assert.equal((await counts()).admissions,b.admissions+1)
    await assert.rejects(host.execute(i),unavailable);assert.equal(hits,n+1)
    const before=await counts();await assert.rejects(host.execute(input(),{signal:ac.signal}),unavailable);assert.deepEqual(await counts(),before)
   })
