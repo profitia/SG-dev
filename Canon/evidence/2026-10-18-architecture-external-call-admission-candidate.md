@@ -66,6 +66,10 @@ retention and customer scope need their separately accepted caller contracts.
 - The workstation restart preserved all nine source paths and the existing PMOS
   registration. Temporary fixtures/logs were lost and recreated; the final full
   suite above is a fresh observed run, not a claim that an interrupted run passed.
+  Public CI exposed a timing-dependent cancellation test: a fixed delay could
+  cancel before any send. The test now cancels from the actual local server
+  request-observation event; the after-send assertion is retained. No production
+  source or access check was relaxed. Final exact-SHA CI remains required.
   Recovery reused the original registration and verified architecture_pmos with
   its actual ordinary architecture_pmos_runtime role; no replacement begin.
 - Governance 40/41: the existing exact SG2 local dependency version guard
