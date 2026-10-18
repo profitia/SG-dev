@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { Prisma } from '@prisma/client'
 import { OperationDenied, operationPayloadDigest, type OperationContext } from '@profitia/platform-contracts/operation-context'
-import { cognitionOk, privateApiResponse } from '@/lib/api/middleware'
 import type { ForecastPreparationCommand } from './preparation-queue'
 
 export const FORECAST_REQUEST_PROJECTION = 'sg2-private-forecast-request-v1'
@@ -50,6 +49,9 @@ export async function projectForecastRequest(value: unknown, context: Readonly<O
     || !('requestId' in value) || typeof value.requestId !== 'string' || !uuid.test(value.requestId)
     || !('status' in value) || value.status !== 'ACCEPTED' || value.requestId !== context.requestReservation?.requestId
     || context.operation !== 'forecast.request' || context.resourceId !== forecastRequestResourceId(await readForecastRequest(context.payload))) return refuse()
+  // Existing API helpers capture legacy environment configuration on import.
+  // Load them only for this new publication, never during another host's setup.
+  const { cognitionOk, privateApiResponse } = await import('@/lib/api/middleware')
   const response = privateApiResponse(cognitionOk({ requestId: value.requestId, status: 'ACCEPTED' }, 202))
   response.headers.set('X-Profitia-Forecast-Projection', FORECAST_REQUEST_PROJECTION)
   return response
