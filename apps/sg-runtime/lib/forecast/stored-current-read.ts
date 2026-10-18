@@ -97,7 +97,7 @@ export function createStoredForecastSourceReader(prisma: Pick<PrismaClient, '$tr
           database_name: string; runtime_role: string; source_ref: string; expires_at: Date
         }>>('SELECT schema_version,schema_digest,market_schema_digest,project_id,branch_id,database_name,runtime_role::text,source_ref,expires_at FROM profitia_forecast_read.installation WHERE singleton')
         const receipt = receipts[0]
-        if (receipts.length !== 1 || !receipt || receipt.schema_version !== '3.0.0' || receipt.schema_digest !== binding.schemaDigest
+        if (receipts.length !== 1 || !receipt || receipt.schema_version !== '3.0.1' || receipt.schema_digest !== binding.schemaDigest
           || receipt.market_schema_digest !== binding.marketSchemaDigest || receipt.project_id !== binding.projectId
           || receipt.branch_id !== binding.branchId || receipt.database_name !== binding.databaseName || receipt.runtime_role !== binding.role
           || typeof receipt.source_ref !== 'string' || !receipt.source_ref.length || receipt.source_ref.length > 256

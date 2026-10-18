@@ -158,7 +158,7 @@ test('actual generated forecast ORM reads a closed source view with canonical id
       assert.equal((await owner.query("SELECT to_regnamespace('profitia_forecast_read')::text AS schema")).rows[0].schema, null)
     })
     await owner.query('BEGIN'); await owner.query(`SET LOCAL ROLE ${OWNER}`); await owner.query(sql)
-    await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.0',$1,$2,'isolated-forecast-project','isolated-forecast-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')", [digest, marketDigest, DATABASE, ROLE]); await owner.query('COMMIT')
+    await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.1',$1,$2,'isolated-forecast-project','isolated-forecast-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')", [digest, marketDigest, DATABASE, ROLE]); await owner.query('COMMIT')
     await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM ${OWNER},${MARKET_OWNER}; GRANT USAGE ON SCHEMA profitia_forecast_read TO ${ROLE};
       GRANT SELECT ON ALL TABLES IN SCHEMA profitia_forecast_read TO ${ROLE}; GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_forecast_read TO ${ROLE};
       GRANT USAGE ON TYPE profitia_forecast_read."ForecastTargetBasis",profitia_forecast_read."RollingDailyVerificationMaturityStatus" TO ${ROLE}`)
