@@ -86,12 +86,17 @@ export function createExternalCallHost(options){
     return r.rows[0].control.status
   }
   return Object.freeze({contract:EXTERNAL_CALL_CONTRACT,async execute(input,options={}){
-    if(!exact(input,'command,intentKey')||!hex.test(input.intentKey??'')||!record(options)||Object.keys(options).some(k=>k!=='signal')
-      ||options.signal!=null&&!(options.signal instanceof AbortSignal))throw new ExternalCallUnavailable('NOT_SENT')
-    if(options.signal?.aborted)throw new ExternalCallUnavailable('NOT_SENT')
+    let supplied,signal
+    try{
+      if(!exact(input,'command,intentKey')||!record(options)||Object.keys(options).some(k=>k!=='signal'))throw Error()
+      supplied=structuredClone(input);signal=options.signal
+      if(!exact(supplied,'command,intentKey')||!hex.test(supplied.intentKey??'')||signal!=null&&!(signal instanceof AbortSignal))throw Error()
+    }catch{throw new ExternalCallUnavailable('NOT_SENT')}
+    const {intentKey}=supplied
+    if(signal?.aborted)throw new ExternalCallUnavailable('NOT_SENT')
     let command,request,d
     try{
-      command=freeze(structuredClone(parseCommand(input.command)));d=await descriptor();request=buildRequest(command)
+      command=freeze(structuredClone(parseCommand(supplied.command)));d=await descriptor();request=buildRequest(command)
       if(!exact(request,'body,method,url')||!['GET','POST'].includes(request.method)||typeof request.url!=='string'||request.url.length>8192
         ||!(request.body===null||typeof request.body==='string')||request.method==='GET'&&request.body!==null)throw Error()
       const url=new URL(request.url)
@@ -101,14 +106,14 @@ export function createExternalCallHost(options){
       if(request.body!==null)await readPresentationJson(new Response(request.body,{headers:{'content-type':'application/json'}}),d.maximumRequestBytes)
       request=Object.freeze({...request})
     }catch{throw new ExternalCallUnavailable('NOT_SENT')}
-    const requestDigest=hmac(input.intentKey,JSON.stringify({body:request.body,method:request.method,url:request.url}))
+    const requestDigest=hmac(intentKey,JSON.stringify({body:request.body,method:request.method,url:request.url}))
     let plan,attempt
     try{
-      plan=await control('PLAN',null,null,null,null,requestDigest,input.intentKey)
+      plan=await control('PLAN',null,null,null,null,requestDigest,intentKey)
       if(await status(plan.receipt.effectId)!=='PLANNED')throw new ExternalCallUnavailable('RESULT_NOT_RETAINED')
       if(!same(d,await descriptor()))throw new ExternalCallUnavailable('NOT_SENT')
-      if(options.signal?.aborted)throw new ExternalCallUnavailable('NOT_SENT')
-      attempt=await control('ATTEMPT',plan.receipt.effectId,null,null,null,requestDigest,input.intentKey)
+      if(signal?.aborted)throw new ExternalCallUnavailable('NOT_SENT')
+      attempt=await control('ATTEMPT',plan.receipt.effectId,null,null,null,requestDigest,intentKey)
       if(!attempt.fresh||attempt.fresh.status!=='ATTEMPT_RESERVED'||attempt.fresh.callId!==plan.receipt.effectId)throw new ExternalCallUnavailable('UNVERIFIED')
     }catch(error){if(error instanceof ExternalCallUnavailable)throw error;throw new ExternalCallUnavailable('UNVERIFIED')}
     const abort=new AbortController(),deadline=Math.min(now()+d.timeoutMs,Date.parse(d.expiresAt));let timer,listener,sent=false,result,settledStatus='NOT_SENT'
@@ -142,14 +147,14 @@ export function createExternalCallHost(options){
         })(),
         new Promise((_,reject)=>{
           listener=()=>{abort.abort();reject(new ExternalCallUnavailable(sent?'UNVERIFIED':'NOT_SENT'))}
-          timer=setTimeout(listener,Math.max(0,deadline-now()));options.signal?.addEventListener('abort',listener,{once:true});if(options.signal?.aborted)listener()
+          timer=setTimeout(listener,Math.max(0,deadline-now()));signal?.addEventListener('abort',listener,{once:true});if(signal?.aborted)listener()
         }),
       ])
       settledStatus='RESPONSE'
-    }catch{settledStatus=sent?'UNVERIFIED':'NOT_SENT'}finally{clearTimeout(timer);options.signal?.removeEventListener('abort',listener);abort.abort()}
+    }catch{settledStatus=sent?'UNVERIFIED':'NOT_SENT'}finally{clearTimeout(timer);signal?.removeEventListener('abort',listener);abort.abort()}
     try{
       if(!same(d,await descriptor()))throw new ExternalCallUnavailable()
-      const settlement=await control('SETTLE',plan.receipt.effectId,settledStatus,result?.status??null,result?hmac(input.intentKey,JSON.stringify(result)):null,requestDigest,input.intentKey)
+      const settlement=await control('SETTLE',plan.receipt.effectId,settledStatus,result?.status??null,result?hmac(intentKey,JSON.stringify(result)):null,requestDigest,intentKey)
       if(!settlement.fresh||settlement.fresh.status!==settledStatus||await status(plan.receipt.effectId)!==settledStatus)throw new ExternalCallUnavailable()
       if(settledStatus!=='RESPONSE')throw new ExternalCallUnavailable(settledStatus==='NOT_SENT'?'NOT_SENT':'UNVERIFIED')
       evidence.set(result,freeze({sourceId,resourceId,applicationId:source.applicationId,environment:source.environment,callId:plan.receipt.effectId,

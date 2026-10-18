@@ -46,8 +46,8 @@ retention and customer scope need their separately accepted caller contracts.
 ## Verification recorded so far
 
 - Real disposable PostgreSQL 16, actual ordinary login and native driver commits,
-  local HTTP fixture: 29 checks passed, none skipped.
-- Full existing contract/laboratory suite including this addition: 664 passed,
+  local HTTP fixture: 30 checks passed, none skipped.
+- Full existing contract/laboratory suite including this addition: 665 passed,
   none skipped, including the authority deadline and actor/configuration-rotation
   intent regression; full validation repeated after a workstation restart.
 - Public strict TypeScript positive and expected-negative API checks: passed
@@ -76,6 +76,11 @@ retention and customer scope need their separately accepted caller contracts.
   correctly refuses producer 1.13.0 against receiver 1.12.0. It remains enabled;
   separate SG2 and SRM adoption, exact candidate/main CI and own closeouts are
   pending. No failed check is presented as a pass.
+
+Input DTO and cancellation-signal references are captured at invocation. The
+private intent remains the same through PLAN/ATTEMPT/SETTLE even if a server
+caller mutates its original object after admission. A real HTTP/SQL regression
+confirms settlement and duplicate refusal against the original immutable intent.
 
 ## Non-delivery and remaining boundaries
 
