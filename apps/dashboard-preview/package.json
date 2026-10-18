@@ -8,8 +8,8 @@
     "dev": "NEXT_DIST_DIR=.next-dev next dev --port 3002",
     "build": "prisma generate --schema prisma/schema.prisma && prisma generate --schema prisma-market-data/schema.prisma && NEXT_DIST_DIR=.next next build",
     "start": "sh -c 'if [ ! -d .next ]; then npm run build; fi && next start --hostname 0.0.0.0 --port ${PORT:-3002}'",
-    "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "node ../sg-runtime/scripts/with-cross-host-local-packages.mjs node_modules/typescript/bin/tsc --noEmit",
+    "test": "node ../sg-runtime/scripts/with-cross-host-local-packages.mjs --import tsx --test tests/*.test.ts",
     "test:mapper": "tsx --test tests/dashboard-record-mapper.test.ts"
   },
   "dependencies": {

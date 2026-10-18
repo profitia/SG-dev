@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from 'react'
+import React, { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from 'react'
 import { connectNativeEmbeddedRead, type NativeEmbeddedConfiguration, type NativeEmbeddedSelection } from '../lib/platform/native-embedded-read'
 
 const legacyFetch:typeof fetch=(input,init)=>globalThis.fetch(input,init)

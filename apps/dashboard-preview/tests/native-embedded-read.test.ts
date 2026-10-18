@@ -124,7 +124,7 @@ test('a forecast permission refusal does not become a grant or remove independen
 })
 
 test('a neutral SSR shell does not expose or render its data view before the channel is ready',()=>{
-  const html=renderToStaticMarkup(React.createElement(NativeEmbeddedReadProvider,{configuration,context},React.createElement('div',null,'protected_child_fixture')))
+  const html=renderToStaticMarkup(React.createElement(NativeEmbeddedReadProvider,{configuration,context,children:React.createElement('div',null,'protected_child_fixture')}))
   assert(!html.includes('protected_child_fixture'));assert(html.includes('role="status"'))
 })
 
