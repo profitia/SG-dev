@@ -550,7 +550,7 @@ function isMissingVerificationTrainingPolicyColumnError(error: unknown) {
 }
 
 async function hasForecastRunTrainingPolicyColumns(
-  prisma: ReturnType<typeof getMarketDataPrisma>,
+  prisma: Prisma.TransactionClient | null,
   tableName: 'forecast_current_runs' | 'forecast_verification_runs',
 ) {
   if (!prisma) {
@@ -2342,12 +2342,15 @@ function resolveForecastBridgeConfiguration() {
   }
 }
 
+export type ForecastPreparedProcessOptions = Readonly<{env:NodeJS.ProcessEnv;timeoutMs:number}>
+
 async function executeForecastBridge(
   configuration: ForecastBridgeReadyConfiguration,
   mode: ForecastBridgeMode,
   seriesId: string,
   modelId?: string,
   extraArgs: string[] = [],
+  processOptions?: ForecastPreparedProcessOptions,
 ): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
   const args = ['--mode', mode, '--series-id', seriesId, ...extraArgs]
   if (modelId) {
@@ -2359,6 +2362,7 @@ async function executeForecastBridge(
     const { stdout, stderr } = await execFileAsync(configuration.pythonBin, invocation.args, {
       cwd: configuration.labRoot,
       maxBuffer: BRIDGE_BUFFER_BYTES,
+      ...(processOptions ? {env:processOptions.env,timeout:processOptions.timeoutMs,killSignal:'SIGKILL' as const} : {}),
     })
     const applicationStderr = consumeForecastPythonResourceTelemetry(stderr)
 
@@ -2469,9 +2473,10 @@ export async function executePreparedLiveForecastBridge(
   seriesId: string,
   modelId?: string,
   options?: ForecastVerificationExecutionOptions,
+  processOptions?: ForecastPreparedProcessOptions,
 ): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'sg-runtime-forecast-'))
-  const historyPath = path.join(tempDir, `${seriesId}.json`)
+  const historyPath = path.join(tempDir, 'history.json')
 
   try {
     await writeFile(historyPath, JSON.stringify(payload), 'utf8')
@@ -2485,6 +2490,7 @@ export async function executePreparedLiveForecastBridge(
         historyPath,
         ...(mode === 'verification' ? buildVerificationBridgeArgs(options) : []),
       ],
+      processOptions,
     )
   } finally {
     await rm(tempDir, { recursive: true, force: true })
@@ -2497,6 +2503,7 @@ export async function executePreparedForecastBridge(
   seriesId: string,
   modelId?: string,
   options?: ForecastVerificationExecutionOptions,
+  processOptions?: ForecastPreparedProcessOptions,
 ): Promise<ForecastHistoryBridgeResponse | ForecastCurrentBridgeResponse | ForecastVerificationBridgeResponse> {
   const configuration = resolveForecastBridgeConfiguration()
   if (!configuration.ok) {
@@ -2506,18 +2513,21 @@ export async function executePreparedForecastBridge(
     }
   }
 
-  return executePreparedLiveForecastBridge(configuration, payload, mode, seriesId, modelId, options)
+  return executePreparedLiveForecastBridge(configuration, payload, mode, seriesId, modelId, options, processOptions)
 }
 
-async function prepareExecutionContext(
+export async function prepareForecastExecutionContext(
   input: Pick<ForecastServiceRequest, 'seriesId' | 'targetBasis' | 'sourceFrequency' | 'targetCadence'>,
+  dependencies?: { loadPayload: typeof loadLiveForecastBridgePayload; processOptions?: ForecastPreparedProcessOptions },
 ): Promise<ForecastPreparedExecutionContext | null> {
+  if (dependencies && typeof dependencies.loadPayload !== 'function') throw new TypeError('Explicit prepared history loader required')
+  const loadPayload = dependencies?.loadPayload ?? loadLiveForecastBridgePayload
   const configuration = resolveForecastBridgeConfiguration()
   if (!configuration.ok) {
     return null
   }
 
-  const currentBasePayload = await loadLiveForecastBridgePayload(input.seriesId, {
+  const currentBasePayload = await loadPayload(input.seriesId, {
     targetBasis: input.targetBasis,
     targetCadence: input.targetCadence,
     continuityPolicy: input.targetCadence === 'MONTHLY' || input.targetCadence === undefined ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
@@ -2527,7 +2537,7 @@ async function prepareExecutionContext(
   }
 
   const loadVerificationPayload = async () => {
-    const payload = await loadLiveForecastBridgePayload(input.seriesId, {
+    const payload = await loadPayload(input.seriesId, {
       targetBasis: input.targetBasis,
       targetCadence: input.targetCadence,
       continuityPolicy: input.targetCadence === 'MONTHLY' || input.targetCadence === undefined ? 'ALLOW_GAPS' : 'REQUIRE_FULL',
@@ -2558,6 +2568,7 @@ async function prepareExecutionContext(
           currentPayload,
           'history',
           input.seriesId,
+          undefined,undefined,dependencies?.processOptions,
         ) as Promise<ForecastHistoryBridgeResponse>
       }
 
@@ -2578,6 +2589,7 @@ async function prepareExecutionContext(
           verificationPayload,
           'history',
           input.seriesId,
+          undefined,undefined,dependencies?.processOptions,
         ) as Promise<ForecastHistoryBridgeResponse>
       })()
     },
@@ -2600,6 +2612,7 @@ async function prepareExecutionContext(
         'current',
         input.seriesId,
         userFacingModelId,
+        undefined,dependencies?.processOptions,
       ) as Promise<ForecastCurrentBridgeResponse>
     },
     exportVerification(modelId, options) {
@@ -2622,6 +2635,7 @@ async function prepareExecutionContext(
           input.seriesId,
           modelId,
           options,
+          dependencies?.processOptions,
         ) as Promise<ForecastVerificationBridgeResponse>
       })()
     },
@@ -2664,7 +2678,7 @@ async function runForecastBridge(
 function createDefaultBridge(): ForecastBridge {
   return {
     prepareExecutionContext(input) {
-      return prepareExecutionContext(input)
+      return prepareForecastExecutionContext(input)
     },
     exportHistory(input) {
       return runForecastBridge('history', input.seriesId, input.targetBasis) as Promise<ForecastHistoryBridgeResponse>
@@ -2858,8 +2872,11 @@ export async function readCurrentRunFromPrisma(
 export async function writeCurrentRunWithPrisma(
   artifact: PersistedCurrentArtifact,
   options?: ForecastRepositoryWriteOptions,
+  dependencies?: { transaction: Prisma.TransactionClient },
 ) {
-  const prisma = getMarketDataPrisma()
+  const rootPrisma = dependencies === undefined ? getMarketDataPrisma() : null
+  const prisma = dependencies?.transaction ?? rootPrisma
+  if (dependencies && (!prisma || '$transaction' in prisma)) throw new TypeError('Explicit live Forecast transaction required')
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -2870,7 +2887,7 @@ export async function writeCurrentRunWithPrisma(
     : false
   const supportsTrainingPolicyColumns = await hasForecastRunTrainingPolicyColumns(prisma, 'forecast_current_runs')
 
-  await prisma.$transaction(async (tx) => {
+  const persist = async (tx: Prisma.TransactionClient) => {
     if (shouldFenceOwnership) {
       await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
     }
@@ -3012,7 +3029,9 @@ export async function writeCurrentRunWithPrisma(
         })),
       })
     }
-  })
+  }
+  if (dependencies) await persist(dependencies.transaction)
+  else if (rootPrisma) await rootPrisma.$transaction(persist)
 }
 
 export type ForecastVerificationReadClient = {
@@ -3255,8 +3274,11 @@ export async function readVerificationRunFromPrisma(
 export async function writeVerificationRunWithPrisma(
   artifact: PersistedVerificationArtifact,
   options?: ForecastRepositoryWriteOptions,
+  dependencies?: { transaction: Prisma.TransactionClient },
 ) {
-  const prisma = getMarketDataPrisma()
+  const rootPrisma = dependencies === undefined ? getMarketDataPrisma() : null
+  const prisma = dependencies?.transaction ?? rootPrisma
+  if (dependencies && (!prisma || '$transaction' in prisma)) throw new TypeError('Explicit live Forecast transaction required')
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -3267,7 +3289,7 @@ export async function writeVerificationRunWithPrisma(
     : false
   const supportsTrainingPolicyColumns = await hasForecastRunTrainingPolicyColumns(prisma, 'forecast_verification_runs')
 
-  await prisma.$transaction(async (tx) => {
+  const persist = async (tx: Prisma.TransactionClient) => {
     if (shouldFenceOwnership) {
       await assertForecastPersistenceOwnership(tx, options?.ownership, observedAt)
     }
@@ -3451,7 +3473,9 @@ export async function writeVerificationRunWithPrisma(
         })
       }
     }
-  })
+  }
+  if (dependencies) await persist(dependencies.transaction)
+  else if (rootPrisma) await rootPrisma.$transaction(persist)
 }
 
 export async function readLatestCurrentRunFromPrisma(

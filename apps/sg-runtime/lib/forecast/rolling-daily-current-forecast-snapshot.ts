@@ -25,7 +25,7 @@ import {
   type RollingDailyProductionForecastResult,
 } from '@/lib/forecast/rolling-daily-production-forecast'
 
-type MarketDataPrismaClient = NonNullable<ReturnType<typeof getMarketDataPrisma>>
+type MarketDataPrismaClient = Prisma.TransactionClient
 
 export type RollingDailyCurrentForecastSnapshotModelId = 'naive' | 'damped_holt' | 'ets' | 'arima'
 
@@ -459,8 +459,8 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
     sourceLatestObservationAt,
   }
 
-  const persisted = shouldFenceOwnership && '$transaction' in prisma && typeof prisma.$transaction === 'function'
-    ? await prisma.$transaction(async (tx) => {
+  const persist = async (tx: Prisma.TransactionClient) => {
+    if (shouldFenceOwnership) {
       const ownership = options.ownership as ForecastPersistenceOwnership
       try {
         const fencedOwner = await tx.$queryRaw<Array<{ executionId: string }>>(Prisma.sql`
@@ -487,13 +487,14 @@ export async function persistResolvedRollingDailyCurrentForecastSnapshot(
         }
       }
 
-      return hasExactIdentityColumns
-        ? upsertRollingDailyCurrentForecastSnapshot(tx as MarketDataPrismaClient, upsertInput)
-        : upsertLegacyRollingDailyCurrentForecastSnapshot(tx as MarketDataPrismaClient, upsertInput)
-    })
-    : hasExactIdentityColumns
-      ? await upsertRollingDailyCurrentForecastSnapshot(prisma, upsertInput)
-      : await upsertLegacyRollingDailyCurrentForecastSnapshot(prisma, upsertInput)
+    }
+    return hasExactIdentityColumns
+      ? upsertRollingDailyCurrentForecastSnapshot(tx, upsertInput)
+      : upsertLegacyRollingDailyCurrentForecastSnapshot(tx, upsertInput)
+  }
+  const persisted = shouldFenceOwnership && '$transaction' in prisma && typeof prisma.$transaction === 'function'
+    ? await prisma.$transaction(persist)
+    : await persist(prisma)
 
   const persistedPayload = RollingDailyProductionForecastResultSchema.parse(persisted.payloadJson as unknown)
   if (!areSnapshotPayloadsEquivalent(persistedPayload, payload)) {

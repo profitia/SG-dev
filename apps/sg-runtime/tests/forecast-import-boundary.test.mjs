@@ -7,6 +7,9 @@ import test from 'node:test'
 // cannot hide constructors which resolve a global client during module loading.
 const imports = [
   'lib/forecast/service.ts',
+  'lib/forecast/source-worker.ts',
+  'lib/forecast/source-worker-runtime.ts',
+  'lib/forecast/source-worker-science.ts',
   'lib/forecast/stored-current-read.ts',
   'lib/forecast/stored-verification-read.ts',
   'lib/forecast/verification-operation-handlers.ts',

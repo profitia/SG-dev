@@ -6,6 +6,8 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 
 import { z } from 'zod'
+import type { Prisma } from '@/generated/market-data-client'
+import type { ForecastPreparedProcessOptions } from './service'
 
 import { getMarketDataPrisma } from '@/lib/market-data/client'
 import { resolveBenchmarkHistoricalSeries } from '@/lib/market-data/service'
@@ -948,8 +950,9 @@ function mapMaintenanceState(record: any): RollingDailyMaintenanceStateArtifact 
   }
 }
 
-async function readCalibrationAuthorityWithPrisma(identity: RollingDailyProductionIdentity): Promise<RollingDailyProductionCalibrationAuthority> {
-  const prisma = getMarketDataPrisma()
+export async function readCalibrationAuthorityWithPrisma(identity: RollingDailyProductionIdentity, transaction?: Prisma.TransactionClient): Promise<RollingDailyProductionCalibrationAuthority> {
+  const prisma = transaction ?? getMarketDataPrisma()
+  if (transaction && '$transaction' in transaction) throw new TypeError('Explicit calibration transaction required')
   if (!prisma) {
     return {
       groups: [],
@@ -1017,7 +1020,7 @@ function createDefaultRepository(): RollingDailyProductionForecastRepository {
   }
 }
 
-function createDefaultRunner(): RollingDailyCurrentForecastRunner {
+export function createRollingDailyCurrentForecastRunner(processOptions?:ForecastPreparedProcessOptions): RollingDailyCurrentForecastRunner {
   return {
     async run(request) {
       const configuration = resolveRollingDailyBridgeConfiguration()
@@ -1067,6 +1070,7 @@ function createDefaultRunner(): RollingDailyCurrentForecastRunner {
           {
             cwd: configuration.labRoot,
             maxBuffer: BRIDGE_BUFFER_BYTES,
+            ...(processOptions?{env:processOptions.env,timeout:processOptions.timeoutMs,killSignal:'SIGKILL' as const}:{}),
           },
         )
 
@@ -1398,7 +1402,7 @@ export function createRollingDailyProductionForecastService(
 ) {
   const resolvedDependencies: RollingDailyProductionForecastDependencies = {
     repository: dependencies.repository ?? createDefaultRepository(),
-    runner: dependencies.runner ?? createDefaultRunner(),
+    runner: dependencies.runner ?? createRollingDailyCurrentForecastRunner(),
     loadBenchmarkContext: dependencies.loadBenchmarkContext ?? loadBenchmarkContextFromMarketData,
     now: dependencies.now ?? (() => new Date()),
   }
