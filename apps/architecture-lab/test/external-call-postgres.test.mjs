@@ -96,6 +96,13 @@ test('ordinary real source control commits before bounded local HTTP; ambiguous 
    const n=hits;await assert.rejects(host.execute(i),e=>unavailable(e)&&e.certainty==='RESULT_NOT_RETAINED');assert.equal(hits,n)
    await assert.rejects(host.execute({...i,command:{query:'different'}}),unavailable);assert.equal(hits,n)
   })
+  await t.test('caller mutation after invocation cannot replace the admitted private intent or command',async()=>{
+   const i=input({query:'immutable-private-input'}),original=i.intentKey,n=hits
+   const h=createExternalCallHost({...settings,getHeaders:async()=>{i.intentKey=key();i.command.query='changed-after-admission';return {}}})
+   assert.deepEqual(await h.execute(i),{status:200,body:{value:3}})
+   await assert.rejects(host.execute({intentKey:original,command:{query:'immutable-private-input'}}),e=>unavailable(e)&&e.certainty==='RESULT_NOT_RETAINED')
+   assert.equal(hits,n+1)
+  })
   await t.test('same private intent concurrently admits at most one HTTP invocation',async()=>{
    const i=input(),n=hits,before=await counts(),results=await Promise.allSettled([host.execute(i),host.execute(i)])
    assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(hits,n+1);assert.equal((await counts()).admissions,before.admissions+1)
@@ -203,7 +210,7 @@ test('ordinary real source control commits before bounded local HTTP; ambiguous 
   await t.test('control and canonical audit contain no private queries, response, headers or raw intent secret',async()=>{
    const data=JSON.stringify((await owner.query('SELECT to_jsonb(c) AS row FROM profitia_external_call.calls c')).rows)
     +JSON.stringify((await owner.query('SELECT event FROM profitia_ingestion.security_events')).rows)
-   for(const v of ['private company query','same-private-query','private-post-query','private upstream credential detail','private-cookie','different','provider-internal-field','not-persisted-fixture-credential',...issuedKeys])assert(!data.includes(v))
+   for(const v of ['private company query','immutable-private-input','changed-after-admission','same-private-query','private-post-query','private upstream credential detail','private-cookie','different','provider-internal-field','not-persisted-fixture-credential',...issuedKeys])assert(!data.includes(v))
    const events=(await owner.query('SELECT event FROM profitia_ingestion.security_events')).rows.map(r=>r.event)
    assert(events.every(e=>e.organisationId===null&&e.subjectUserId===null&&e.actorKind!=='HUMAN'))
    assert(events.filter(e=>e.phase==='OUTCOME').every(e=>e.sourceId===SOURCE&&e.budgetUnit==='SOURCE_TRANSACTION'))

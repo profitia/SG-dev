@@ -186,7 +186,8 @@ otherwise. No TLS verification bypass is supported.
 
 A server caller supplies a private random 256-bit intent key, kept outside logs
 and never derived from a public button/selection key. Reuse it for recovery of
-that exact intent. Different input with the same key conflicts. A unique opaque
+that exact intent. Input values and the signal reference are captured for the
+entire invocation. Different input with the same key conflicts. A unique opaque
 intent binding survives technical actor, role, policy and configuration changes;
 a new source proof does not reopen a previously admitted intent. Request and
 projected-response bindings use HMAC with that key; the shared control store
