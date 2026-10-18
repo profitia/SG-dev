@@ -16,14 +16,14 @@ type QueryClient = Pick<Prisma.TransactionClient, '$queryRawUnsafe' | '$executeR
 /** A consumer must distinguish the verified native publication from an old
  * deployment at the same URL. These nonsecret facts come from the admitted
  * server context, never caller headers; failed OUTCOME still withholds output. */
-function forecastPublication(project: (value: unknown, context: Readonly<OperationContext>) => Promise<Response>, projection: string) {
+function nativeReadPublication(project: (value: unknown, context: Readonly<OperationContext>) => Promise<Response>, projection: string, feature: 'forecast' | 'market' = 'forecast') {
   return async (value: unknown, context: Readonly<OperationContext>) => {
     const result = await project(value, context)
     result.headers.set('X-Profitia-Operation-Contract', `${context.contractId}@${context.contractVersion}`)
     result.headers.set('X-Profitia-Application', context.applicationId)
     result.headers.set('X-Profitia-Environment', context.environment)
-    result.headers.set('X-Profitia-Forecast-Projection', projection)
-    result.headers.set('X-Profitia-Forecast-Resource', context.resourceId)
+    result.headers.set(`X-Profitia-${feature}-Projection`, projection)
+    result.headers.set(`X-Profitia-${feature}-Resource`, context.resourceId)
     return result
   }
 }
@@ -120,7 +120,7 @@ export function createSg2PrivateMarketHost(options:Sg2PrivateHostOptions & {modu
         environment,ownerOrganisationId:null,ownerUserId:null,approvedSharedProjection:true,
         version:projection,projectionVersion:projection}}
     },
-    projectOutput:representation==='preview'?projectMarketPreviewResponse:projectMarketAnalyticsResponse,
+    projectOutput:nativeReadPublication(representation==='preview'?projectMarketPreviewResponse:projectMarketAnalyticsResponse, projection, 'market'),
   })
 }
 
@@ -185,7 +185,7 @@ export function createSg2PrivateForecastCurrentHost(options: Sg2PrivateHostOptio
         environment, ownerOrganisationId: null, ownerUserId: null, approvedSharedProjection: true,
         version: FORECAST_CURRENT_PROJECTION, projectionVersion: FORECAST_CURRENT_PROJECTION } }
     },
-    projectOutput: forecastPublication(projectForecastCurrentResponse, FORECAST_CURRENT_PROJECTION),
+    projectOutput: nativeReadPublication(projectForecastCurrentResponse, FORECAST_CURRENT_PROJECTION),
     describeOutcome: async value => {
       if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const body = await value.clone().json()
@@ -206,7 +206,7 @@ export function createSg2PrivateForecastVerificationHost(options: Sg2PrivateHost
       return {resource:{id:request.resourceId,type:'market_forecast',dataClass:'SHARED_KNOWLEDGE',environment,ownerOrganisationId:null,ownerUserId:null,
         approvedSharedProjection:true,version:FORECAST_VERIFICATION_PROJECTION,projectionVersion:FORECAST_VERIFICATION_PROJECTION}}
     },
-    projectOutput:forecastPublication(projectForecastVerificationResponse, FORECAST_VERIFICATION_PROJECTION),
+    projectOutput:nativeReadPublication(projectForecastVerificationResponse, FORECAST_VERIFICATION_PROJECTION),
     describeOutcome:async value=>{
       if(!(value instanceof Response))throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return (await value.clone().json()).status==='AVAILABLE'?'SUCCEEDED':'NO_DATA'
@@ -226,7 +226,7 @@ export function createSg2PrivateForecastReadinessHost(options: Sg2PrivateHostOpt
         environment: options.application.environment, ownerOrganisationId: null, ownerUserId: null,
         approvedSharedProjection: true, version: FORECAST_READINESS_PROJECTION, projectionVersion: FORECAST_READINESS_PROJECTION } }
     },
-    projectOutput: forecastPublication(projectForecastReadinessResponse, FORECAST_READINESS_PROJECTION),
+    projectOutput: nativeReadPublication(projectForecastReadinessResponse, FORECAST_READINESS_PROJECTION),
     describeOutcome: async value => {
       if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return (await value.clone().json()).sourceAvailability === 'AVAILABLE' ? 'SUCCEEDED' : 'NO_DATA'

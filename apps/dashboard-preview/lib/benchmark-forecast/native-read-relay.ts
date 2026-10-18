@@ -1,3 +1,4 @@
+import { NativeReadFailure, privateNativeReadHeaders, readNativeStoredPublication } from '../platform/native-read-transport'
 import targets from '../../deployment/native-forecast-targets.json'
 import { DEFAULT_FORECAST_TARGET_BASIS, FORECAST_PORTFOLIO_MODELS, FORECAST_TARGET_BASES, isRenderableCurrentResult,
   type RollingDailyProductionForecastResult } from './forecast-contract'
@@ -27,7 +28,7 @@ export function readNativeForecastConfiguration(env: Environment = process.env) 
 }
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const privateHeaders = { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store', Vary: 'Cookie, Authorization' }
+const privateHeaders = privateNativeReadHeaders
 const errorResponse = (status: number) => new Response(JSON.stringify({ error: 'Forecast data is unavailable.' }), { status, headers: privateHeaders })
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value)
 export const MAX_NATIVE_FORECAST_BYTES = 8 * 1024 * 1024
@@ -61,23 +62,6 @@ function select(kind: NativeForecastReadKind, request: Request) {
   return { parameters, seriesId, modelId, targetBasis,
     resource: `forecast-${kind}:${seriesId}:${modelId}:${targetBasis}` + (kind === 'verification' ? ':FAST' : '')
       + (sourceFrequency ? `:${sourceFrequency}:${targetCadence}` : '') }
-}
-
-async function readBoundedJson(response: Response, maximum: number): Promise<unknown> {
-  if (response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() !== 'application/json' || !response.body) throw Error('Invalid upstream representation')
-  const reader = response.body.getReader(), decoder = new TextDecoder()
-  let bytes = 0, text = ''
-  try {
-    while (true) {
-      const part = await reader.read()
-      if (part.done) break
-      bytes += part.value.byteLength
-      if (bytes > maximum) { await reader.cancel(); throw Error('Upstream representation too large') }
-      text += decoder.decode(part.value, { stream: true })
-    }
-    text += decoder.decode()
-  } finally { reader.releaseLock() }
-  return JSON.parse(text)
 }
 
 /** The pinned HTTPS native host owns full scientific/publication validation.
@@ -116,28 +100,13 @@ export function createNativeForecastReadHandler(kind: NativeForecastReadKind,
     if (!configuration) return errorResponse(503)
     const selected = select(kind, request)
     if (!selected) return errorResponse(400)
-    const authorization = request.headers.get('authorization')?.trim()
-    if (!authorization || authorization.length > 32768 || !/^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/i.test(authorization)) return errorResponse(401)
     const path = kind === 'current' || kind === 'verification' ? `/api/benchmark/forecast/${kind}`
       : `/api/internal/forecast/${kind === 'capabilities' ? 'readiness' : 'capability'}`
     try {
-      const response = await fetchUpstream(`${configuration.origin}${path}?${selected.parameters}`, {
-        method: 'GET', headers: { Authorization: authorization }, cache: 'no-store', credentials: 'omit', redirect: 'manual',
-        referrerPolicy: 'no-referrer', signal: AbortSignal.any([request.signal, AbortSignal.timeout(15000)]),
-      })
-      if (response.status !== 200) {
-        await response.body?.cancel()
-        return errorResponse([400, 401, 403, 404, 409, 413, 429, 503].includes(response.status) ? response.status : 503)
-      }
-      if (response.headers.get('x-profitia-operation-contract') !== targets.operationContract
-        || response.headers.get('x-profitia-application') !== configuration.applicationId
-        || response.headers.get('x-profitia-environment') !== configuration.environment
-        || response.headers.get('x-profitia-forecast-projection') !== targets.projections[kind]
-        || response.headers.get('x-profitia-forecast-resource') !== selected.resource) {
-        await response.body?.cancel(); return errorResponse(503)
-      }
-      const body = await readBoundedJson(response, kind === 'capability' || kind === 'capabilities' ? 65536
-        : kind === 'current' ? 4 * 1024 * 1024 : MAX_NATIVE_FORECAST_BYTES)
+      const body = await readNativeStoredPublication(request, { configuration, operationContract: targets.operationContract,
+        feature: 'forecast', projection: targets.projections[kind], resource: selected.resource, path, parameters: selected.parameters,
+        maximumBytes: kind === 'capability' || kind === 'capabilities' ? 65536
+          : kind === 'current' ? 4 * 1024 * 1024 : MAX_NATIVE_FORECAST_BYTES }, fetchUpstream)
       if (!isRecord(body)) return errorResponse(503)
       const value: Record<string, unknown> = kind === 'current' ? { ...mapCurrent(body, selected) } : body
       if (value.seriesId !== selected.seriesId || selected.modelId && value.modelId !== selected.modelId
@@ -153,6 +122,6 @@ export function createNativeForecastReadHandler(kind: NativeForecastReadKind,
       const text = JSON.stringify(value)
       if (new TextEncoder().encode(text).byteLength > MAX_NATIVE_FORECAST_BYTES) return errorResponse(503)
       return new Response(text, { status: 200, headers: privateHeaders })
-    } catch { return errorResponse(503) }
+    } catch (error) { return errorResponse(error instanceof NativeReadFailure ? error.status : 503) }
   }
 }
