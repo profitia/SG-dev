@@ -302,3 +302,13 @@ test('private Forecast request acceptance is separately default-off and pins the
   assert.equal(target.forecastRequest.observedState, 'SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED')
   for (const flag of ['', 'TRUE', '1', 'yes']) assert.throws(() => readSg2PrivateSelectionConfiguration({ ...base, PROFITIA_FORECAST_REQUEST_ENABLED: flag }), IdentityConfigurationUnavailable)
 })
+
+test('private dispatch is an explicit addition to atomic request acceptance, never an implicit foreground source effect',()=>{
+  const base=fixture(),enabled=readSg2PrivateSelectionConfiguration({...base,PROFITIA_FORECAST_REQUEST_ENABLED:'true',PROFITIA_FORECAST_DISPATCH_ENABLED:'true'})
+  assert.equal(enabled.provider,'clerk');if(enabled.provider!=='clerk')throw Error('Expected private configuration')
+  assert.equal(enabled.forecastRequest?.jobSchemaDigest,target.forecastDispatch.jobSchemaDigest)
+  assert.equal(target.forecastDispatch.jobSchemaDigest,createHash('sha256').update(readFileSync(new URL('../../../packages/platform-contracts/migrations/access/007-delegated-jobs.sql',import.meta.url))).digest('hex'))
+  assert.throws(()=>readSg2PrivateSelectionConfiguration({...base,PROFITIA_FORECAST_DISPATCH_ENABLED:'true'}),IdentityConfigurationUnavailable)
+  for(const flag of['','1','TRUE','yes'])assert.throws(()=>readSg2PrivateSelectionConfiguration({...base,PROFITIA_FORECAST_REQUEST_ENABLED:'true',PROFITIA_FORECAST_DISPATCH_ENABLED:flag}),IdentityConfigurationUnavailable)
+  assert.deepEqual(readSg2PrivateSelectionConfiguration({PROFITIA_AUTH_PROVIDER:'legacy_demo',PROFITIA_FORECAST_DISPATCH_ENABLED:'true'}),{provider:'legacy_demo'})
+})

@@ -9,9 +9,9 @@ import {createRequire} from 'node:module'
 import {PrismaClient} from '../generated/market-data-client/index.js'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {createSg2ForecastSourceDelivery,FORECAST_QUEUE_SOURCE} from '../lib/forecast/source-delivery.ts'
-import {createSg2ForecastDispatchPersister,createSg2ForecastDelegatedDelivery} from '../lib/forecast/delegated-delivery.ts'
+import {createSg2ForecastDispatchPersister,createSg2ForecastDelegatedDelivery,createSg2ForecastDispatchPoller} from '../lib/forecast/delegated-delivery.ts'
 import {createSg2PrivateForecastRequestHost} from '../lib/platform/private-host.ts'
-import {createOperationForecastRequestHandler} from '../lib/forecast/request-operation-handlers.ts'
+import {createRuntimeForecastRequestHandler} from '../lib/forecast/request-operation-handlers.ts'
 import {NextRequest} from 'next/server.js'
 import {PrismaClient as PrivatePrismaClient} from '@prisma/client'
 const require=createRequire(import.meta.url),{Client}=createRequire(new URL('../../architecture-lab/package.json',import.meta.url))('pg')
@@ -187,6 +187,7 @@ async function provePrivateDispatch(t,{root,rootUrl,sourceOwner,sourceDelivery,s
   const names=['001-internal-access.sql','002-module-scope.sql','003-module-audit.sql','005-service-read.sql','006-request-reservation.sql','007-delegated-jobs.sql']
   const sql=names.map(n=>read('../../../packages/platform-contracts/migrations/access/'+n)),digests=sql.map(hash)
   const commands=read('../prisma/private-store/003-forecast-requests.sql'),dispatch=read('../prisma/private-store/004-forecast-dispatch.sql')
+  const discovery=read('../prisma/private-store/005-forecast-dispatch-discovery.sql')
   let owner,foreground,foregroundAudit,executor,executorAudit,banned=false
   const url=new URL(rootUrl);url.pathname='/'+database
   try{
@@ -221,6 +222,11 @@ async function provePrivateDispatch(t,{root,rootUrl,sourceOwner,sourceDelivery,s
       await owner.query('ROLLBACK TO SAVEPOINT native_private_boundary_candidate;RELEASE SAVEPOINT native_private_boundary_candidate')
       assert.equal((await owner.query("SELECT to_regnamespace('profitia_forecast_dispatch') AS schema")).rows[0].schema,null)
       await owner.query(dispatch);await owner.query("INSERT INTO profitia_forecast_dispatch.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(dispatch)])
+      await owner.query('SAVEPOINT native_discovery_candidate');await owner.query(discovery)
+      await assert.rejects(owner.query("DO $$BEGIN RAISE EXCEPTION 'synthetic discovery migration outage';END$$"))
+      await owner.query('ROLLBACK TO SAVEPOINT native_discovery_candidate;RELEASE SAVEPOINT native_discovery_candidate')
+      assert.equal((await owner.query("SELECT to_regclass('profitia_forecast_dispatch.discovery_installation') AS relation")).rows[0].relation,null)
+      await owner.query(discovery);await owner.query("INSERT INTO profitia_forecast_dispatch.discovery_installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY',$2)",[hash(discovery),future()])
       await owner.query("INSERT INTO profitia_access.applications(application_id,status) VALUES('spendguru','ACTIVE'),('spendguru-forecast-dispatch','ACTIVE')")
       await owner.query("INSERT INTO profitia_access.runtime_bindings(login_role,application_id,status) VALUES($1,'spendguru','ACTIVE'),($2,'spendguru-forecast-dispatch','ACTIVE')",[FOREGROUND,EXECUTOR])
       await owner.query("INSERT INTO profitia_services.runtime_bindings(login_role,binding_id,service_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'PLATFORM_INTERNAL','native-dispatch-fixture','dispatch-v1','ACTIVE','SYNTHETIC_ONLY',$4)",[EXECUTOR,randomUUID(),serviceId,future()])
@@ -231,11 +237,12 @@ async function provePrivateDispatch(t,{root,rootUrl,sourceOwner,sourceDelivery,s
       await owner.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES('spendguru',$1,'SPENDGURU',ARRAY['benchmark','forecast'],'ACTIVE','EXPLICIT_OFFER','SYNTHETIC_ONLY',$2)",[A,future()])
       await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'ALLOW','forecast.request','forecast')",[randomUUID(),A,U])
       await owner.query("INSERT INTO profitia_modules.application_bindings(binding_id,application_id,module_id,status,source_ref,expires_at) VALUES($1,'spendguru','benchmark','ACTIVE','SYNTHETIC_ONLY',$2)",[randomUUID(),future()])
-      await owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity) VALUES($1,'spendguru',$2,'forecast.request','ACTIVE','SYNTHETIC_ONLY',now()-interval '1 hour',now()+interval '2 hours',$3,10)",[randomUUID(),A,future()])
+      await owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity) VALUES($1,'spendguru',$2,'forecast.request','ACTIVE','SYNTHETIC_ONLY',now()-interval '1 hour',now()+interval '2 hours',$3,20)",[randomUUID(),A,future()])
       await owner.query("INSERT INTO profitia_jobs.operation_bindings(binding_id,application_id,operation,foreground_role,profile_id,configuration_version,executor_application_id,source_id,source_project_id,source_branch_id,source_database_name,source_application_id,source_schema_digest,source_payload_schema,source_quality_version,source_classification_version,delegation_ttl_seconds,max_attempts,status,source_ref,expires_at) VALUES($1,'spendguru','forecast.request',$2,'SPENDGURU_SAAS','native-request-v1','spendguru-forecast-dispatch',$3,'isolated-native-source-project','isolated-native-source-branch',$4,'spendguru-forecast-source',$5,$6,$7,$8,300,3,'ACTIVE','SYNTHETIC_ONLY',$9)",[bindingId,FOREGROUND,FORECAST_QUEUE_SOURCE.id,sourceDatabase,hash(sourceSql),FORECAST_QUEUE_SOURCE.payloadSchema,FORECAST_QUEUE_SOURCE.qualityVersion,FORECAST_QUEUE_SOURCE.classificationVersion,future()])
       await owner.query("INSERT INTO profitia_jobs.execution_grants(grant_id,login_role,binding_id,organisation_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,$4,'ALLOW','ACTIVE','SYNTHETIC_ONLY',$5)",[randomUUID(),EXECUTOR,bindingId,A,future()])
       await owner.query(`GRANT USAGE ON SCHEMA profitia_access,profitia_modules,profitia_requests,profitia_jobs,profitia_forecast_requests TO ${FOREGROUND};GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_access.identity_binding(text,text),profitia_access.lock_access(uuid,uuid,text,text,text),profitia_access.scope_allows(text,uuid,uuid),profitia_access.append_audit(jsonb),profitia_modules.runtime_descriptor(),profitia_modules.bind_scope(text),profitia_modules.scope_allows(text,uuid,uuid),profitia_modules.audit_descriptor(),profitia_requests.runtime_descriptor(),profitia_requests.scope_allows(uuid,uuid,text),profitia_requests.policy(uuid,uuid,text),profitia_requests.reserve(uuid,uuid,text,text,text,text,uuid,uuid,bigint),profitia_requests.accept(uuid,uuid),profitia_jobs.runtime_descriptor(),profitia_jobs.create_dispatch(uuid,uuid,text) TO ${FOREGROUND};GRANT SELECT ON profitia_requests.intents,profitia_forecast_requests.installation,profitia_forecast_requests.commands TO ${FOREGROUND};GRANT INSERT ON profitia_forecast_requests.commands TO ${FOREGROUND}`)
       await owner.query(`GRANT USAGE ON SCHEMA profitia_access,profitia_services,profitia_jobs,profitia_forecast_dispatch TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_services.runtime_descriptor(),profitia_jobs.runtime_descriptor(),profitia_jobs.current_job(uuid),profitia_jobs.lock_job(uuid,text),profitia_jobs.scope_allows(uuid),profitia_jobs.claim_dispatch(uuid),profitia_jobs.delivery_state(uuid,uuid),profitia_jobs.observe_delivery(uuid,uuid,text,uuid,text,text),profitia_jobs.append_audit(jsonb),profitia_forecast_dispatch.command(uuid) TO ${EXECUTOR}`)
+      await owner.query(`GRANT EXECUTE ON FUNCTION profitia_forecast_dispatch.pending(uuid) TO ${EXECUTOR}`)
     })
     await owner.query(`REVOKE CREATE ON DATABASE ${database} FROM profitia_access_owner`)
     const client=role=>{const u=new URL(url);u.username=role;u.password='isolated_ci_only';u.searchParams.set('connection_limit','1');return new PrivatePrismaClient({datasources:{db:{url:u.toString()}}})}
@@ -246,10 +253,14 @@ async function provePrivateDispatch(t,{root,rootUrl,sourceOwner,sourceDelivery,s
       application:{appId:'spendguru',environment:'development',profileId:'SPENDGURU_SAAS',deploymentId:'native-human-api',configurationVersion:'native-request-v1',identityIssuer:issuer,organisationId:null,operations:['forecast.request'],features:['forecast']},
       identity:{appId:'spendguru',environment:'development',issuer,authorizedParties:[origin]},module:{id:'benchmark',schemaDigest:digests[1],auditSchemaDigest:digests[2]},requestLedgerDigest:digests[4],commandBoundaryDigest:hash(commands)})
     const persist=createSg2ForecastDispatchPersister({binding:foregroundBinding,jobSchemaDigest:digests[5]})
-    const handler=createOperationForecastRequestHandler(foregroundHost,A,persist)
+    const handler=createRuntimeForecastRequestHandler(()=>({provider:'clerk',executor:foregroundHost,defaultOrganisationId:A,
+      forecastRequest:{executor:foregroundHost,persist}}))
+    const executorBinding={...foregroundBinding,applicationId:'spendguru-forecast-dispatch',role:EXECUTOR,
+      service:{profileId:'PLATFORM_INTERNAL',deploymentId:'native-dispatch-fixture',configurationVersion:'dispatch-v1',schemaDigest:digests[3]}}
     const delivery=createSg2ForecastDelegatedDelivery({application:{appId:'spendguru-forecast-dispatch',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'native-dispatch-fixture',configurationVersion:'dispatch-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,operations:['job.execute'],features:['job_execution']},
-      binding:{...foregroundBinding,applicationId:'spendguru-forecast-dispatch',role:EXECUTOR,service:{profileId:'PLATFORM_INTERNAL',deploymentId:'native-dispatch-fixture',configurationVersion:'dispatch-v1',schemaDigest:digests[3]}},
+      binding:executorBinding,
       jobSchemaDigest:digests[5],commandProjectionDigest:hash(dispatch),identityIssuer:issuer,prisma:executor,auditPrisma:executorAudit,clerk,sourceDelivery})
+    const poller=createSg2ForecastDispatchPoller({prisma:executor,binding:executorBinding,jobSchemaDigest:digests[5],discoveryDigest:hash(discovery),delivery})
     const request=(key,org=A)=>new NextRequest(origin+'/api/benchmark/forecast/requests?organisationId='+org,{method:'POST',headers:{authorization:'Bearer synthetic-native-session','content-type':'application/json','idempotency-key':key},body:JSON.stringify(command)})
     const submit=async()=>{const key='native_private_request_'+randomUUID();const r=await handler(request(key));assert.equal(r.status,202,JSON.stringify(await r.clone().json()));return{...(await r.json()),key}}
     let accepted
@@ -308,6 +319,59 @@ async function provePrivateDispatch(t,{root,rootUrl,sourceOwner,sourceDelivery,s
       assert.equal((await sourceOwner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,3)
       const shared=JSON.stringify((await sourceOwner.query('SELECT to_jsonb(e) AS row FROM profitia_ingestion.effects e UNION ALL SELECT to_jsonb(s) FROM profitia_ingestion.security_events s')).rows)
       for(const privateValue of[A,U,accepted.requestId,pending.requestId,'native-external-user','native-session'])assert(!shared.includes(privateValue))
+    })
+    await t.test('bounded ordinary discovery and runtime handler deliver an accepted pending command without selecting its private ID',async()=>{
+      await assert.rejects(foreground.$queryRawUnsafe('SELECT profitia_forecast_dispatch.pending(NULL)'),/permission denied/i)
+      await assert.rejects(executor.$queryRawUnsafe('SELECT * FROM profitia_jobs.dispatches'),/permission denied/i)
+      await assert.rejects(executor.$queryRawUnsafe('SELECT * FROM profitia_forecast_dispatch.discovery_installation'),/permission denied/i)
+      await assert.rejects(owner.query('SELECT profitia_forecast_dispatch.pending(NULL)'),/ordinary isolated runtime/i)
+      const before=(await sourceOwner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count
+      assert.equal(await poller.runOne(),true)
+      assert.equal(await poller.runOne(),false)
+      assert.equal((await sourceOwner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,before+1)
+      assert.equal((await owner.query("SELECT count(*)::int AS n FROM profitia_jobs.dispatches WHERE status<>'CONFIRMED'")).rows[0].n,0)
+    })
+    await t.test('current membership filters discovery and repeated external denials cannot starve a later page',async()=>{
+      const queued=[];for(let i=0;i<9;i++)queued.push((await submit()).requestId)
+      await controlled(()=>owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U]))
+      assert.equal(await poller.runOne(),false)
+      await controlled(()=>owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U]))
+      banned=true
+      try{
+        for(let i=0;i<3;i++)assert.equal(await poller.runOne(),false)
+        const denied=new Set((await owner.query("SELECT event->>'resourceId' AS id FROM profitia_access.security_events WHERE event->>'operation'='job.execute' AND phase='DECISION' AND event->>'decision'='DENY' AND event->>'reasonCode'='DELEGATION_INVALID'")).rows.map(r=>r.id))
+        for(const id of queued)assert(denied.has(id),'Round-robin discovery must reach every queued row despite external denials')
+      }finally{banned=false}
+      assert.equal((await sourceOwner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,4)
+      assert.equal((await owner.query("SELECT count(*)::int AS n FROM profitia_jobs.dispatches WHERE status='PENDING'")).rows[0].n,9)
+    })
+    await t.test('wrong physical discovery binding, expired metadata, receipt drift and missing ACL refuse without a source effect',async()=>{
+      for(const patch of[{projectId:'another-project'},{branchId:'another-branch'},{role:FOREGROUND}]){
+        const invalid=createSg2ForecastDispatchPoller({prisma:executor,binding:{...executorBinding,...patch},jobSchemaDigest:digests[5],discoveryDigest:hash(discovery),delivery})
+        await assert.rejects(invalid.runOne(),isOperationDenied)
+      }
+      for(const change of["expires_at=now()-interval '1 second'","boundary_digest=repeat('0',64)"]){
+        await controlled(()=>owner.query('UPDATE profitia_forecast_dispatch.discovery_installation SET '+change))
+        try{await assert.rejects(poller.runOne(),isOperationDenied)}finally{
+          await controlled(()=>owner.query('UPDATE profitia_forecast_dispatch.discovery_installation SET expires_at=$1,boundary_digest=$2',[future(),hash(discovery)]))
+        }
+      }
+      await owner.query('ALTER TABLE profitia_forecast_dispatch.discovery_installation NO FORCE ROW LEVEL SECURITY')
+      try{await assert.rejects(poller.runOne(),isOperationDenied)}finally{
+        await owner.query('ALTER TABLE profitia_forecast_dispatch.discovery_installation FORCE ROW LEVEL SECURITY')
+      }
+      await controlled(()=>owner.query(`REVOKE EXECUTE ON FUNCTION profitia_forecast_dispatch.pending(uuid) FROM ${EXECUTOR}`))
+      try{await assert.rejects(poller.runOne(),/permission denied/i)}finally{
+        await controlled(()=>owner.query(`GRANT EXECUTE ON FUNCTION profitia_forecast_dispatch.pending(uuid) TO ${EXECUTOR}`))
+      }
+      assert.equal((await sourceOwner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,4)
+    })
+    await t.test('discovery cannot bypass the spent source budget or mark an uncertain source admission confirmed',async()=>{
+      const observations=(await owner.query('SELECT count(*)::int AS n FROM profitia_jobs.delivery_observations')).rows[0].n
+      await assert.rejects(poller.runOne(),e=>isOperationDenied(e)&&e.reasonCode==='DELIVERY_UNCERTAIN')
+      assert.equal((await sourceOwner.query('SELECT consumed_count FROM profitia_ingestion.budgets')).rows[0].consumed_count,4)
+      assert.equal((await owner.query("SELECT count(*)::int AS n FROM profitia_jobs.dispatches WHERE status='READY'")).rows[0].n,1)
+      assert.equal((await owner.query('SELECT count(*)::int AS n FROM profitia_jobs.delivery_observations')).rows[0].n,observations)
     })
   }finally{for(const c of[foreground,foregroundAudit,executor,executorAudit])await c?.$disconnect();await owner?.end()}
 }
