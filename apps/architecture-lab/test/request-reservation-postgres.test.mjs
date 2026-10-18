@@ -155,6 +155,16 @@ test('fresh private request database proves ordinary SQL authority, quota, idemp
    await assert.rejects(owner.query("INSERT INTO profitia_requests.intents(request_id,key_digest,binding_fingerprint,application_id,environment,organisation_id,user_id,operation,resource_id,payload_digest,policy_id,policy_version,decision_id,status) VALUES($1,$2,$3,$4,'development',$5,$6,'forecast.request','synthetic-creation',$7,$8,1,$9,'RESERVED')",[randomUUID(),'1'.repeat(64),'2'.repeat(64),APP,A,U,'3'.repeat(64),foreign,randomUUID()]),e=>e.code==='23503')
    assert.deepEqual(await count(),{intents:0,commands:0,used:0})
   })
+  await scenario('domain command foreign key binds request, application, environment, owner and payload',async()=>{
+   const accepted=await fixture().execute()
+   await owner.query(`CREATE TABLE request_fixture.command_binding_probe(request_id uuid NOT NULL,application_id text NOT NULL,environment text NOT NULL,organisation_id uuid NOT NULL,user_id uuid NOT NULL,payload_digest text NOT NULL,
+    FOREIGN KEY(request_id,application_id,environment,organisation_id,user_id,payload_digest) REFERENCES profitia_requests.intents(request_id,application_id,environment,organisation_id,user_id,payload_digest))`)
+   const row=(await owner.query('SELECT request_id,application_id,environment,organisation_id,user_id,payload_digest FROM profitia_requests.intents WHERE request_id=$1',[accepted.value.requestId])).rows[0]
+   const keys=['request_id','application_id','environment','organisation_id','user_id','payload_digest']
+   const insert=patch=>owner.query('INSERT INTO request_fixture.command_binding_probe VALUES($1,$2,$3,$4,$5,$6)',keys.map(k=>patch[k]??row[k]))
+   for(const patch of[{request_id:randomUUID()},{application_id:'foreign_app'},{environment:'staging'},{organisation_id:B},{user_id:V},{payload_digest:'a'.repeat(64)}])await assert.rejects(insert(patch),e=>e.code==='23503')
+   await insert({});assert.equal((await owner.query('SELECT count(*) FROM request_fixture.command_binding_probe')).rows[0].count,'1')
+  })
   await scenario('FORCE RLS refuses direct tampering even after accidental broad table grants',async()=>{
    const f=fixture();await f.execute();await owner.query(`GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA profitia_requests TO ${ROLE}`)
    assert.equal((await pool.query('SELECT * FROM profitia_requests.intents')).rows.length,0);assert.equal((await pool.query('SELECT * FROM profitia_requests.policies')).rows.length,0)

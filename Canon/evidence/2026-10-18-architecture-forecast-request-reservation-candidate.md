@@ -20,11 +20,11 @@ After durable INTENT, the same private transaction locks policy, reserves a unit
 
 Additive SQL006 creates only profitia_requests installation/policies/intents under the existing controlled NOLOGIN/NOINHERIT/NOBYPASSRLS profitia_access_owner. No additional owner role, parallel authority or client is introduced. FORCE RLS applies to all three tables. Current scoped ordinary SELECT admits only the actual user/organisation and applicable operation/product/module. Restrictive policies prevent runtime table INSERT/UPDATE/DELETE even after an accidental broad grant. Closed functions alone perform reservation and acceptance.
 
-Composite policy/application/organisation and membership keys enforce owner consistency. Policy definitions and accepted intents cannot be rewritten; counters are monotonic. Quota is checked before inserting a new reserved row, so a denied request cannot be accepted later without funding. A deferred database constraint rejects committing RESERVED metadata before acceptance. Descriptor/schema digest, actual ordinary role, controlled owner, source/physical binding and transaction/module fences are independently checked. As with the existing authority model, this is not a guarantee against a database administrator or stolen fully privileged backend credentials.
+Composite policy/application/organisation and membership keys enforce owner consistency. A unique request/application/environment/organisation/user/payload key permits a product command to bind all of these values with a composite foreign key; genuine SQL rejects each substituted dimension. Policy definitions and accepted intents cannot be rewritten; counters are monotonic. Quota is checked before inserting a new reserved row, so a denied request cannot be accepted later without funding. A deferred database constraint rejects committing RESERVED metadata before acceptance. Descriptor/schema digest, actual ordinary role, controlled owner, source/physical binding and transaction/module fences are independently checked. As with the existing authority model, this is not a guarantee against a database administrator or stolen fully privileged backend credentials.
 
 ## Local evidence
 
-499 whole-package/laboratory tests pass, zero failed/cancelled/skipped:332 original package tests,35 new pure contract tests,118 existing laboratory tests and14 new genuine PostgreSQL cases. Package syntax build and strict public declarations pass; prior real Node/browser MessagePort declarations also remain valid. Negative declarations reject an omitted request schema binding, a replacement physical role and unimplemented job.execute.
+500 whole-package/laboratory tests pass, zero failed/cancelled/skipped:332 original package tests,35 new pure contract tests,118 existing laboratory tests and15 new genuine PostgreSQL cases. Package syntax build and strict public declarations pass; prior real Node/browser MessagePort declarations also remain valid. Negative declarations reject an omitted request schema binding, a replacement physical role and unimplemented job.execute.
 
 Actual ordinary-role SQL cases prove concurrent same-key single effect/quota, concurrent distinct-key capacity, current replay at capacity, changed payload/resource/org conflicts, account membership/product/permission denial, separate users/orgs, source mismatch, expired/revoked policy, scoped SELECT, fenced direct DML, current foreign-scope refusal, rejected premature COMMIT, immutable accepted/policy rows and owner foreign keys. OUTCOME outage leaves zero private command/intent/quota and independently durable correlated INTENT/FAILURE. Network/provider calls are trapped.
 
@@ -35,9 +35,9 @@ An initial local invocation was automatically rejected before execution due conc
 | Source | SHA256 |
 | --- | --- |
 | Operation candidate.6 | f642b1c7bdaff44a1ff649d8a3d415253e39885f5e2a50d31d57d8b7641f3ec2 |
-| Private host1.4, including ledger provenance | fad21055156587109ee1a24856b3471ea54211cb76eb4708d08bcc0e376f446b |
-| Request ledger source/types/SQL | 9f132054b196580e2ac59c6d2adb7306cbb75f76cb66c430fbb5d249cd5cb916 |
-| SQL006 | 8eb2b2d12f16e68bed1c2e0498df002b36d21efe42ecb84ba2dd65eef826a1d1 |
+| Private host1.4, including ledger provenance | 31c6a0ec35e6ba59ec8f24939a9784b6587c5833e3ce353bbeb3c9a484cfd94d |
+| Request ledger source/types/SQL | 2e4b7abb9236fe67ff21714229ed227f628f2647a57f1bee5ed8dd32f39a970b |
+| SQL006 | 0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127 |
 
 No package registry publication, automatic migration/bootstrap/policy/grant, cloud data/schema/role/secret/configuration/flag/resource change or deployment. Existing Development and Staging products continue using their current artifacts. No Production or E2–E4 expansion.
 

@@ -51,6 +51,7 @@ CREATE TABLE profitia_requests.intents (
   status text NOT NULL CHECK(status IN ('RESERVED','ACCEPTED')),
   receipt jsonb,
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  UNIQUE(request_id,application_id,environment,organisation_id,user_id,payload_digest),
   FOREIGN KEY(organisation_id,user_id) REFERENCES profitia_access.memberships(organisation_id,user_id),
   FOREIGN KEY(policy_id,application_id,organisation_id) REFERENCES profitia_requests.policies(policy_id,application_id,organisation_id),
   CHECK((status='RESERVED' AND receipt IS NULL) OR (status='ACCEPTED'
