@@ -3,7 +3,7 @@
 Date: 2026-10-18. Profile ARCHITECTURE, TARGET_ENVIRONMENT=development.
 Task: ARCHITECTURE-E1-EXTERNAL-REQUEST-ADMISSION-20261018.
 Base: profitia/SG-dev main34f7e6f0c038711fd709d79c1bb74c89be9ebea0.
-Status: SOURCE CANDIDATE / VALIDATION IN_PROGRESS. Whole E0/E1 remains IN_PROGRESS.
+Status: SOURCE CANDIDATE / LOCAL VALIDATION PASS / RECEIVER AND CI PENDING. Whole E0/E1 remains IN_PROGRESS.
 
 The owner resumed the accepted E1 programme and re-authorised Development
 release after completed implementation, tests and all release criteria. This
@@ -34,12 +34,14 @@ integration and remote delivery need their own tested and authorised scope.
  concurrency, finite quota, idempotency/content binding, revocation, ordinary
  role/FORCE RLS, audit rollback, exact operation policy FK, cross-operation
  acceptance denial and old Forecast signatures after extension installation.
--Full package/laboratory run:702of703 passed, zero skipped. The remaining test
- in service-read.test.mjs still expects root implementation candidate7 instead
- of additive candidate8. Its separate governed compatibility update is pending;
- no failed test is reported as a pass and no version guard is removed.
--Strict public types, full final source tests, receiver adoption and exact
- candidate/main CI are still pending. No product acceptance is claimed.
+-Full package/laboratory rerun:703of703 passed, zero skipped. The first run
+ exposed one old literal in service-read.test.mjs. Separate governed task
+ ARCHITECTURE-E1-SERVICE-READ-COMPATIBILITY-20261018, source d97a8ba, explicitly
+ accepted candidate8/host1.6 while retaining every SERVICE read denial. It did
+ not change the engine, remove the assertion or rewrite the producer begin.
+-Strict public positive and expected-negative TypeScript checks and package
+ build passed. Receiver adoption and exact candidate/main CI remain pending.
+ No full product or E0/E1 acceptance is claimed.
 
 No cloud schema/role/grant/data/secret/config/flag, provider call, new resource/
 cost or deployment was performed. Production/E2-E4 are outside this task.

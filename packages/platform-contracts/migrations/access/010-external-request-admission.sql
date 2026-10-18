@@ -1,5 +1,5 @@
--- Additive private AM20 request intent. No command payload, queue dispatch,
--- provider call, global write or computation is implemented by this ledger.
+-- Add bounded HUMAN AM23 to the existing private AM20 ledger and writer.
+-- No provider call, command-body retention, queue dispatch or global write.
 DO $guard$
 BEGIN
   IF current_user <> 'profitia_access_owner' OR NOT EXISTS (
