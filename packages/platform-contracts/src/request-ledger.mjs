@@ -3,6 +3,7 @@ import { OperationDenied } from './operation-context.mjs'
 
 export const REQUEST_LEDGER_CONTRACT = Object.freeze({ id:'profitia.request-ledger', version:'1.0.0', schemaVersion:'1.0.0' })
 export const requestReservationSchemaUrl = new URL('../migrations/access/006-request-reservation.sql',import.meta.url).href
+export const externalRequestSchemaUrl = new URL('../migrations/access/010-external-request-admission.sql',import.meta.url).href
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 const digest=/^[a-f0-9]{64}$/,integer=/^[1-9][0-9]*$/
 const text=value=>typeof value==='string'&&value.length>0&&value.length<=256
@@ -23,7 +24,9 @@ function receipt(value,id){return exact(value,['requestId','status'])&&value.req
 
 /** No connection, new access policy, command payload, compute or queue. This
  * adapter uses the existing host's current scoped SQL transaction only. */
-export function createRequestLedger({binding,schemaDigest,now=Date.now}){
+export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,now=Date.now}){
+  const external=operation==='supplier.report.refresh'
+  if(!['forecast.request','supplier.report.refresh'].includes(operation)||(external?!digest.test(externalSchemaDigest??''):externalSchemaDigest!==undefined))throw new TypeError('Explicit accepted request operation/schema extension required')
   const config=freeze(structuredClone(binding))
   if(!config||config.service!==undefined||!digest.test(schemaDigest??'')||typeof now!=='function'
     ||!['applicationId','projectId','branchId','databaseName','role'].every(k=>text(config[k]))
@@ -36,14 +39,15 @@ export function createRequestLedger({binding,schemaDigest,now=Date.now}){
     return result.rows[0]
   }
   async function descriptor(query){
-    const d=(await one(query,'SELECT profitia_requests.runtime_descriptor() AS descriptor')).descriptor
+    const d=(await one(query,external?'SELECT profitia_requests.external_runtime_descriptor() AS descriptor':'SELECT profitia_requests.runtime_descriptor() AS descriptor')).descriptor
     if(!d||d.schemaVersion!==REQUEST_LEDGER_CONTRACT.schemaVersion||d.schemaDigest!==schemaDigest||!text(d.sourceRef)
+      ||external&&(d.externalSchemaVersion!=='1.0.0'||d.externalSchemaDigest!==externalSchemaDigest)
       ||d.owner!=='profitia_access_owner'||['applicationId','environment','projectId','branchId','databaseName','role'].some(k=>d[k]!==config[k]))deny()
   }
   function scope(actor,request){
     if(!actor||actor.kind!=='HUMAN'||!uuid.test(actor.actorId??'')||actor.userId!==actor.actorId
       ||actor.environment!==config.environment||actor.audience!==config.applicationId
-      ||!(Date.parse(actor.expiresAt)>now())||!request||request.operation!=='forecast.request'
+      ||!(Date.parse(actor.expiresAt)>now())||!request||request.operation!==operation
       ||!uuid.test(request.organisationId??'')||!text(request.resourceId)||!digest.test(request.payloadDigest??'')
       ||!validRequestIdempotencyKey(request.idempotencyKey))deny('CONTEXT_INVALID')
     const keyDigest=hash(['profitia.request-key@1',config.applicationId,config.environment,actor.actorId,request.operation,request.idempotencyKey])
@@ -54,12 +58,12 @@ export function createRequestLedger({binding,schemaDigest,now=Date.now}){
   }
   function current(policy,query,context){
     const owned=policies.get(policy)
-    if(!owned||owned.query!==query||!context||context.operation!=='forecast.request'||context.actorKind!=='HUMAN'
+    if(!owned||owned.query!==query||!context||context.operation!==operation||context.actorKind!=='HUMAN'
       ||context.applicationId!==config.applicationId||context.environment!==config.environment
       ||context.actorId!==owned.scope.actorId||context.subjectUserId!==owned.scope.actorId
       ||context.organisationId!==owned.scope.organisationId||context.resourceId!==owned.scope.resourceId
       ||context.payloadDigest!==owned.scope.payloadDigest||!uuid.test(context.decisionId??'')
-      ||context.moduleEvidence?.moduleId!=='benchmark'||context.moduleEvidence.transactionId!==policy.transactionId
+      ||context.moduleEvidence?.moduleId!==(external?'supplier_report':'benchmark')||context.moduleEvidence.transactionId!==policy.transactionId
       ||!(Date.parse(policy.expiresAt)>now())||!(Date.parse(policy.windowEnd)>now()))deny('LIMIT_POLICY_UNAVAILABLE')
     return owned.scope
   }
@@ -67,14 +71,14 @@ export function createRequestLedger({binding,schemaDigest,now=Date.now}){
     contract:REQUEST_LEDGER_CONTRACT,
     async loadPolicy(query,{actor,request}){
       const selected=scope(actor,request);await descriptor(query)
-      const value=(await one(query,'SELECT profitia_requests.policy($1::uuid,$2::uuid,$3) AS policy',
-        [selected.organisationId,selected.actorId,selected.resourceId])).policy
+      const value=(await one(query,external?'SELECT profitia_requests.policy($1,$2::uuid,$3::uuid,$4) AS policy':'SELECT profitia_requests.policy($1::uuid,$2::uuid,$3) AS policy',
+        [...(external?[operation]:[]),selected.organisationId,selected.actorId,selected.resourceId])).policy
       denied(value)
       if(!exact(value,['status','policyId','version','sourceRef','expiresAt','windowStart','windowEnd','capacity','used',
         'applicationId','environment','organisationId','operation','transactionId'])||value.status!=='AVAILABLE'
         ||!uuid.test(value.policyId??'')||!integer.test(value.version??'')||!text(value.sourceRef)
         ||!integer.test(value.transactionId??'')||value.applicationId!==config.applicationId||value.environment!==config.environment
-        ||value.organisationId!==selected.organisationId||value.operation!=='forecast.request'
+        ||value.organisationId!==selected.organisationId||value.operation!==operation
         ||!Number.isSafeInteger(value.capacity)||value.capacity<1||value.capacity>1000000
         ||!Number.isSafeInteger(value.used)||value.used<0||value.used>value.capacity
         ||!(Date.parse(value.windowStart)<=now())||!(Date.parse(value.windowEnd)>now())
@@ -83,8 +87,8 @@ export function createRequestLedger({binding,schemaDigest,now=Date.now}){
     },
     async reserve(query,policy,context){
       const selected=current(policy,query,context);await descriptor(query)
-      const value=(await one(query,'SELECT profitia_requests.reserve($1::uuid,$2::uuid,$3,$4,$5,$6,$7::uuid,$8::uuid,$9::bigint) AS reservation',
-        [selected.organisationId,selected.actorId,selected.resourceId,selected.payloadDigest,selected.keyDigest,
+      const value=(await one(query,external?'SELECT profitia_requests.reserve($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8::uuid,$9::uuid,$10::bigint) AS reservation':'SELECT profitia_requests.reserve($1::uuid,$2::uuid,$3,$4,$5,$6,$7::uuid,$8::uuid,$9::bigint) AS reservation',
+        [...(external?[operation]:[]),selected.organisationId,selected.actorId,selected.resourceId,selected.payloadDigest,selected.keyDigest,
           selected.bindingFingerprint,context.decisionId,policy.policyId,policy.version])).reservation
       denied(value)
       const keys=['status','requestId','policyId','policyVersion','transactionId',...(value?.status==='REPLAY'?['value']:[])]
@@ -99,8 +103,8 @@ export function createRequestLedger({binding,schemaDigest,now=Date.now}){
       if(!owned||owned.used||owned.query!==query||owned.policy!==policy||owned.decisionId!==context.decisionId
         ||reservation.status!=='NEW'||!receipt(value,reservation.requestId))deny()
       owned.used=true;await descriptor(query)
-      const accepted=(await one(query,'SELECT profitia_requests.accept($1::uuid,$2::uuid) AS receipt',
-        [reservation.requestId,context.decisionId])).receipt
+      const accepted=(await one(query,external?'SELECT profitia_requests.accept($1,$2::uuid,$3::uuid) AS receipt':'SELECT profitia_requests.accept($1::uuid,$2::uuid) AS receipt',
+        [...(external?[operation]:[]),reservation.requestId,context.decisionId])).receipt
       if(!receipt(accepted,reservation.requestId))deny()
     },
   })
@@ -109,8 +113,13 @@ export async function requestLedgerSourceDigest(){
   const fs=await import('node:fs')
   return createHash('sha256').update(fs.readFileSync(new URL('./request-ledger.mjs',import.meta.url)))
     .update(fs.readFileSync(new URL('./request-ledger.d.mts',import.meta.url)))
-    .update(fs.readFileSync(new URL(requestReservationSchemaUrl))).digest('hex')
+    .update(fs.readFileSync(new URL(requestReservationSchemaUrl)))
+    .update(fs.readFileSync(new URL(externalRequestSchemaUrl))).digest('hex')
 }
 export async function requestReservationSchemaDigest(){
   const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(requestReservationSchemaUrl))).digest('hex')
+}
+
+export async function externalRequestSchemaDigest(){
+  const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(externalRequestSchemaUrl))).digest('hex')
 }

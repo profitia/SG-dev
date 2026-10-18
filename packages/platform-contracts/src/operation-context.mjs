@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.7' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.8' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -20,6 +20,8 @@ const rules = Object.freeze({
   'forecast.read': rule('forecast', 'market_forecast', 'SHARED_KNOWLEDGE', 'READ', 'SPENDGURU'),
   // Bounded HUMAN AM20: private request acceptance, never external execution.
   'forecast.request': rule('forecast', 'forecast_request', 'OPERATION_AUDIT', 'REQUEST_COMPUTE', 'SPENDGURU'),
+  // AM23 accepts one private intent only; no remote acquisition is executed.
+  'supplier.report.refresh': rule('supplier_report', 'supplier_report_request', 'OPERATION_AUDIT', 'REQUEST_EXTERNAL', 'SUPPLIER_INTELLIGENCE'),
   // AM27 authorises the private dispatch boundary. Publication of shared
   // effects requires its own AM26 source authority and durable receipt.
   'job.execute': rule('job_execution', 'job', 'ORGANISATION_PRIVATE', 'EXECUTE_BOUND_OPERATION'),
@@ -119,7 +121,7 @@ function computePolicy(value, context, now) {
   if (!policy || policy.status !== 'AVAILABLE' || !computeUuid.test(policy.policyId ?? '')
     || !/^[1-9][0-9]*$/.test(policy.version ?? '') || !nonempty(policy.sourceRef)
     || policy.applicationId !== context.applicationId || policy.environment !== context.environment
-    || policy.organisationId !== context.organisationId || policy.operation !== 'forecast.request'
+    || policy.organisationId !== context.organisationId || policy.operation !== context.operation
     || policy.transactionId !== context.moduleEvidence?.transactionId
     || !Number.isSafeInteger(policy.capacity) || policy.capacity < 1 || policy.capacity > 1000000
     || !Number.isSafeInteger(policy.used) || policy.used < 0 || policy.used > policy.capacity
@@ -229,7 +231,7 @@ export function createOperationExecutor(options) {
         if (!config.features.includes(selected.feature)) deny('APPLICATION_FEATURE_UNAVAILABLE')
         if (typeof action !== 'function' || !nonempty(input.resourceId) || !(input.organisationId === null || nonempty(input.organisationId))) deny('CONTEXT_INVALID')
         const payload = freeze(JSON.parse(canonical(input.payload)))
-        const compute = selected.effect === 'REQUEST_COMPUTE'
+        const compute = ['REQUEST_COMPUTE','REQUEST_EXTERNAL'].includes(selected.effect)
         const platform=selected.mode==='PLATFORM'
         if (compute||platform ? typeof input.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{24,128}$/.test(input.idempotencyKey)
           : input.idempotencyKey != null) deny('CONTEXT_INVALID')
@@ -262,7 +264,7 @@ export function createOperationExecutor(options) {
           }
           const moduleEvidence = session.moduleEvidence === undefined ? undefined : normalizeModuleEvidence(session.moduleEvidence, { now })
           if (moduleEvidence && selected.mode !== 'ORGANISATION') deny('CONTEXT_INVALID')
-          if (compute && moduleEvidence?.moduleId !== 'benchmark') deny('APPLICATION_FEATURE_UNAVAILABLE')
+          if (compute && moduleEvidence?.moduleId !== (request.operation === 'supplier.report.refresh' ? 'supplier_report' : 'benchmark')) deny('APPLICATION_FEATURE_UNAVAILABLE')
           let context = { ...audit, ...(delegated ? {subjectUserId:delegated.subjectUserId} : {}), organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId, ...(moduleEvidence ? { moduleEvidence } : {}) }
           const platformPolicy=platform?ingestionPolicy(state.ingestion,context,request,now()):null
           if(platformPolicy)context={...context,sourceId:platformPolicy.sourceId,sourceVersion:platformPolicy.sourceVersion,
@@ -313,9 +315,9 @@ export function createOperationExecutor(options) {
             if (typeof session.prepareInputs !== 'function') deny('POLICY_UNAVAILABLE')
             preparationResource = privateInputs[0]
           }
-          // These fifteen operations explicitly have NOT_APPLICABLE usage policy.
+          // Ordinary reads/writes explicitly have NOT_APPLICABLE usage policy.
           // Export preparation is scoped private SQL, not paid refresh, global
-          // ingestion or a forecast request with an omitted limit.
+          // ingestion or private request admission with an omitted limit.
           const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now()) : null
           if (platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')

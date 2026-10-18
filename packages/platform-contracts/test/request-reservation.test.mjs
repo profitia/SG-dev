@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {createOperationExecutor,OPERATION_CONTRACT,OperationDenied,operationPayloadDigest} from '../src/operation-context.mjs'
-import {createRequestLedger,validRequestIdempotencyKey,requestLedgerSourceDigest} from '../src/request-ledger.mjs'
+import {createRequestLedger,validRequestIdempotencyKey,requestLedgerSourceDigest,requestReservationSchemaDigest,externalRequestSchemaDigest} from '../src/request-ledger.mjs'
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 const U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',V='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 const P='cccccccc-cccc-4ccc-8ccc-cccccccccccc',R='dddddddd-dddd-4ddd-8ddd-dddddddddddd'
@@ -84,4 +84,56 @@ test('an HTTP idempotency string is bounded data and never a grant',async()=>{
  assert(validRequestIdempotencyKey('opaque_client_request_key_00001'));for(const value of[null,{},'', 'a'.repeat(129),'invalid value with whitespace'])assert.equal(validRequestIdempotencyKey(value),false)
  assert.match(await requestLedgerSourceDigest(),/^[a-f0-9]{64}$/)
  assert.throws(()=>createRequestLedger({binding:{},schemaDigest:'a'.repeat(64)}))
+})
+
+function externalFixture(){
+ const f=fixture()
+ Object.assign(f.application,{appId:'srm',profileId:'SUPPLIER_INTELLIGENCE_STANDALONE',operations:['supplier.report.refresh'],features:['supplier_report']})
+ f.actor.audience='srm';f.module.moduleId='supplier_report'
+ Object.assign(f.policy,{applicationId:'srm',operation:'supplier.report.refresh'})
+ f.state.applicationId='srm';f.state.access.permissions=[{operation:'supplier.report.refresh',feature:'supplier_report',resourceId:null}]
+ Object.assign(f.state.resource,{id:'supplier-report-request:'+R,type:'supplier_report_request'})
+ f.state.products=[{...f.state.products[0],applicationId:'srm',product:'SUPPLIER_INTELLIGENCE',features:['supplier_report']}]
+ Object.assign(f.input,{operation:'supplier.report.refresh',resourceId:f.state.resource.id,payload:{nip:'SYNTHETIC_PRIVATE_NIP_MARKER'}})
+ return f
+}
+test('bounded HUMAN AM23 accepts a private intent in standalone Supplier Intelligence without performing provider work',async()=>{
+ const f=externalFixture(),r=await f.execute()
+ assert.deepEqual(r.value,{requestId:R,status:'ACCEPTED'});assert.equal(f.actions,1);assert.equal(f.committed,1)
+ assert(f.events.every(e=>e.effect==='REQUEST_EXTERNAL'&&e.operation==='supplier.report.refresh'&&e.usagePolicy==='PRODUCT_POLICY'))
+ assert(!JSON.stringify(f.events).includes('SYNTHETIC_PRIVATE_NIP_MARKER'));assert(!JSON.stringify(f.events).includes(f.input.idempotencyKey))
+})
+for(const[name,mutate,reason]of[
+ ['read grant cannot refresh',f=>f.state.access.permissions=[{operation:'supplier.report.read',feature:'supplier_report',resourceId:null}],'PERMISSION_DENIED'],
+ ['forecast module cannot grant supplier request',f=>f.module.moduleId='benchmark','APPLICATION_FEATURE_UNAVAILABLE'],
+ ['forecast policy cannot fund refresh',f=>f.policy.operation='forecast.request','LIMIT_POLICY_UNAVAILABLE'],
+ ['another organisation',f=>f.input.organisationId=B,'CONTEXT_INVALID'],
+ ['another user owns intent',f=>f.state.resource.ownerUserId=V,'RESOURCE_SCOPE_MISMATCH'],
+ ['shared source cannot be private request',f=>Object.assign(f.state.resource,{dataClass:'SHARED_KNOWLEDGE',ownerOrganisationId:null,ownerUserId:null,approvedSharedProjection:true}),'RESOURCE_SCOPE_MISMATCH'],
+ ['missing product',f=>f.state.products=[],'PRODUCT_UNAVAILABLE'],
+ ['revoked membership',f=>f.state.access.status='REVOKED','ACCESS_BASIS_INVALID'],
+ ['missing key',f=>delete f.input.idempotencyKey,'CONTEXT_INVALID'],
+ ['unlimited request policy',f=>f.policy.capacity=Infinity,'LIMIT_POLICY_UNAVAILABLE'],
+ ['unknown policy',f=>delete f.state.requestPolicy,'LIMIT_POLICY_UNAVAILABLE'],
+ ['unmetered read policy',f=>f.state.usagePolicy='NOT_APPLICABLE','LIMIT_POLICY_UNAVAILABLE'],
+])test('AM23 refusal before private effect: '+name,async()=>{const f=externalFixture();mutate(f);await assert.rejects(f.execute(),rejected(reason));assert.equal(f.actions,0);assert.equal(f.reserves,0);assert.equal(f.committed,0)})
+test('AM23 same accepted request replay never runs the action again and current revocation still denies',async()=>{
+ const f=externalFixture();f.controls.replay=true;f.policy.used=f.policy.capacity
+ assert.deepEqual((await f.execute()).value,{requestId:R,status:'ACCEPTED'});assert.equal(f.actions,0);assert.equal(f.completes,0)
+ f.state.access.denies=[...f.state.access.permissions];await assert.rejects(f.execute(),rejected('PERMISSION_DENIED'))
+})
+for(const[name,change,reason]of[['outcome audit',{failOutcome:true},'AUDIT_UNAVAILABLE'],['private action',{actionThrows:true},'POLICY_UNAVAILABLE'],['report body is not receipt',{receipt:{report:'SYNTHETIC_PRIVATE_FIELD'}},'POLICY_UNAVAILABLE']])test('AM23 atomic private admission rolls back on '+name,async()=>{
+ const f=externalFixture();Object.assign(f.controls,change);await assert.rejects(f.execute(),rejected(reason));assert.equal(f.committed,0);assert.deepEqual(f.writes,[])
+})
+test('AM23 rejects unimplemented SERVICE impersonation and missing accepted SQL extension',async()=>{
+ const f=externalFixture();Object.assign(f.actor,{kind:'SERVICE',serviceId:U});delete f.actor.userId
+ await assert.rejects(f.execute(),rejected('DELEGATION_INVALID'));assert.equal(f.actions,0)
+ assert.throws(()=>createRequestLedger({binding:{},schemaDigest:'a'.repeat(64),operation:'supplier.report.refresh'}),TypeError)
+ assert.throws(()=>createRequestLedger({binding:{},schemaDigest:'a'.repeat(64),operation:'unapproved',externalSchemaDigest:'b'.repeat(64)}),TypeError)
+})
+
+
+test('optional SQL010 cannot change the accepted immutable SQL006 base digest',async()=>{
+ assert.equal(await requestReservationSchemaDigest(),'0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127')
+ assert.notEqual(await requestReservationSchemaDigest(),await externalRequestSchemaDigest())
 })

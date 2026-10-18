@@ -32,7 +32,11 @@ const expiry = () => new Date(Date.now() + 3600000).toISOString()
 
 test('SG2 imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
-  const accepted=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))).externalCallSourceCompatibility
+  const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
+  const accepted=manifest.externalCallSourceCompatibility
+  const current=manifest.externalRequestSourceCompatibility
+  assert.equal(accepted.sourceRecordIsHistorical,true)
+  assert.equal(current.previousExternalSourceRecordIsHistorical,true)
   assert.equal(accepted.platformVersion,'1.13.0')
   assert.equal(accepted.producer.sourceSha,'1066119a1c1fde29c50b2c627e068f14378441f8')
   assert.equal(accepted.sourceDigest,'cd49ee2c113202178870da20076a7c401e0aede44229dc2102d142c2f49cb431')
@@ -40,8 +44,8 @@ test('SG2 imports the exact optional external control source without adopting a 
   assert.equal(await sdk.externalCallSchemaDigest(),accepted.schemaDigest)
   assert.deepEqual(sdk.EXTERNAL_CALL_CONTRACT,{id:'profitia.external-call',version:'1.0.0',unit:'UPSTREAM_ATTEMPT_ADMISSION'})
   const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
-  assert.equal(Object.keys(accepted.sourceDigests).length,13)
-  for(const [path,digest]of Object.entries(accepted.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+  assert.equal(Object.keys(current.sourceDigests).length,17)
+  for(const [path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
   for(const name of ['externalCallAdopted','sql009Installed','runtimeRoleOrGrantChanged','humanSupplierRefreshAdopted','finderAiAdopted','kysOrPersonalDataAdopted','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
   assert.equal(sdk.externalCallEvidence({status:200,body:{}}),null)
 })
@@ -49,7 +53,7 @@ test('SG2 imports the exact optional external control source without adopting a 
 test('SG2 explicitly accepts the published optional producer fingerprints', async () => {
   assert.equal(await accessStoreSourceDigest(), 'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
   assert.equal(await identitySourceDigest(), '9e1ced6498e8a127dd17fee81c5f4485a032c133bf85c08a72488e7909a0a299')
-  assert.equal(await privateOperationHostSourceDigest(), '662f354b2b98d3ddffd7cb6e83d200a184f44f29c2464d3fb72716078c8c61d0')
+  assert.equal(await privateOperationHostSourceDigest(), 'dfe2bab9b550fc4c7e8afbb2b4795070469086e1d984e16d149dd0cf8ef8875f')
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
   assert.equal(digest, '356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
@@ -1437,4 +1441,20 @@ test('SG2 Prisma host composes the accepted access store with existing selection
     globalThis.fetch = previousFetch
     await prisma?.$disconnect(); await auditPrisma?.$disconnect(); await owner?.end(); await root.end()
   }
+})
+
+
+test('SG2 explicitly accepts bounded AM23 source without granting or activating a product refresh',async()=>{
+ const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),accepted=manifest.externalRequestSourceCompatibility
+ const sdk=await import('@profitia/platform-contracts/request-ledger')
+ assert.equal(accepted.platformVersion,'1.14.0')
+ assert.equal(accepted.producer.sourceSha,'70e6ebbd1bb931911fd3e3801f04e03d2d45b5df')
+ assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.8')
+ assert.equal(await sdk.requestLedgerSourceDigest(),'f87c7d482dfa3bb75a86f85c9e0df20e22c2a5f6ca973400fb2fd21713cbb78e')
+ assert.equal(await sdk.requestLedgerSourceDigest(),accepted.requestLedgerSourceDigest)
+ assert.equal(await sdk.requestReservationSchemaDigest(),accepted.baseSchemaDigest)
+ assert.equal(await sdk.externalRequestSchemaDigest(),'8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79')
+ assert.equal(await sdk.externalRequestSchemaDigest(),accepted.externalSchemaDigest)
+ assert.equal(manifest.operations.includes('supplier.report.refresh'),false)
+ for(const name of ['humanSupplierRefreshAdopted','sql010Installed','runtimeRoleOrGrantChanged','remoteExecutionAdopted','kysOrPersonalDataAdopted','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
 })
