@@ -1,6 +1,7 @@
 'use client'
 
 import { useEmbeddedReadPresentation } from '../native-embedded-read-provider'
+import {nativeForecastCommandFromUi,type NativeForecastCommandOutcome,type NativeForecastCommandSelection} from '@/lib/benchmark-forecast/native-command-presentation'
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
@@ -2815,7 +2816,7 @@ export function RawDataView({
   variant = 'finder-embedded-v2',
   forcedBenchmarkSubject = null,
 }: RawDataViewProps) {
-  const { fetch, readOnly: nativeReadOnly, parentOrigin: nativeParentOrigin } = useEmbeddedReadPresentation()
+  const { fetch, readOnly: nativeReadOnly, parentOrigin: nativeParentOrigin,commands:nativeCommands } = useEmbeddedReadPresentation()
   const locale = useLocale() as Locale
   const t = useTranslations('RawDataView')
   const pathname = usePathname()
@@ -2862,6 +2863,13 @@ export function RawDataView({
   const [forecastCurrentReloadNonce, setForecastCurrentReloadNonce] = useState(0)
   const [forecastVerificationReloadNonce, setForecastVerificationReloadNonce] = useState(0)
   const [forecastPreparationPollNonce, setForecastPreparationPollNonce] = useState(0)
+  const nativeCommandScopeKey=JSON.stringify([benchmarkSeriesId,forecastModel,selectedForecastTargetBasis])
+  const [storedNativeCommandState,setNativeCommandState]=useState<{scopeKey:string;kind:NativeForecastCommandSelection['kind'];state:NativeForecastCommandOutcome|'SENDING'}|null>(null)
+  const nativeCommandState=storedNativeCommandState?.scopeKey===nativeCommandScopeKey?storedNativeCommandState:null
+  const nativeCommandGeneration=useRef(0),nativeCommandAbort=useRef<AbortController|null>(null)
+  useEffect(()=>{nativeCommandGeneration.current++;nativeCommandAbort.current?.abort();setNativeCommandState(null)
+    return()=>{nativeCommandGeneration.current++;nativeCommandAbort.current?.abort()}
+  },[benchmarkSeriesId,forecastModel,selectedForecastTargetBasis,nativeCommands])
   const [forecastVerificationState, setForecastVerificationState] = useState<LoadState>(initialForecastVerificationVisibility ? 'loading' : 'idle')
   const [forecastVerificationResult, setForecastVerificationResult] = useState<BenchmarkForecastVerificationResult | null>(null)
   const [forecastErrorState, setForecastErrorState] = useState<UiLoadErrorState | null>(null)
@@ -2926,6 +2934,17 @@ export function RawDataView({
     selectedForecastTargetBasis,
   )
   const selectedCurrentPrepared = !preparedReadsOnly || selectedCapabilityVariant?.currentReadiness === 'READY'
+  const pendingFullNativeCommand=nativeCommandState?.kind==='VERIFICATION'&&['ACCEPTED','UNKNOWN'].includes(nativeCommandState.state)
+  useEffect(()=>{
+    if(!nativeCommands)return
+    for(const kind of ['CURRENT','VERIFICATION'] as const){
+      const ready=kind==='CURRENT'?selectedCapabilityVariant?.currentReadiness==='READY':selectedCapabilityVariant?.fullVerificationReadiness==='READY'
+      if(!ready)continue
+      const command=nativeForecastCommandFromUi(forecastModel,selectedForecastTargetBasis,kind)
+      if(command)nativeCommands.observeCompletion(command)
+      if(nativeCommandState?.kind===kind&&nativeCommandState.state!=='SENDING')setNativeCommandState(null)
+    }
+  },[nativeCommands,forecastModel,selectedForecastTargetBasis,selectedCapabilityVariant?.currentReadiness,selectedCapabilityVariant?.fullVerificationReadiness,nativeCommandState?.kind,nativeCommandState?.state])
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
   const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
     forecastCurrentState,
@@ -3103,6 +3122,7 @@ export function RawDataView({
     if (
       selectedCapabilityVariant?.currentReadiness === 'READY'
       && isSelectedVerificationPrepared(selectedCapabilityVariant, selectedProgressiveVariant)
+      && !pendingFullNativeCommand
     ) {
       return
     }
@@ -3130,7 +3150,8 @@ export function RawDataView({
         setForecastCapabilitySnapshot((snapshot) => mergeExactCapabilitySnapshot(snapshot, capability))
         setForecastCapabilityState('ready')
 
-        if (capability.currentReadiness === 'READY' && isSelectedVerificationPrepared(capability, null)) {
+        if (capability.currentReadiness === 'READY' && isSelectedVerificationPrepared(capability, null)
+          && (!pendingFullNativeCommand||capability.fullVerificationReadiness==='READY')) {
           return
         }
       } catch (error) {
@@ -3167,6 +3188,8 @@ export function RawDataView({
     selectedProgressiveVariant?.currentState,
     selectedProgressiveVariant?.verificationState,
     showForecast,
+    pendingFullNativeCommand,
+    forecastPreparationPollNonce,
   ])
 
   useEffect(() => {
@@ -4035,8 +4058,26 @@ export function RawDataView({
     }
   }, [backgroundCurrentForecastWarmupEnabled, benchmarkSeriesId, forecastModel, locale, selectedForecastTargetBasis])
 
+  async function handleNativeForecastCommand(kind:NativeForecastCommandSelection['kind']){
+    if(!nativeCommands||!benchmarkSeriesId||nativeCommandState?.state==='SENDING')return
+    const command=nativeForecastCommandFromUi(forecastModel,selectedForecastTargetBasis,kind)
+    if(!command)return
+    const generation=nativeCommandGeneration.current,scopeKey=nativeCommandScopeKey
+    nativeCommandAbort.current?.abort();const controller=new AbortController();nativeCommandAbort.current=controller
+    setNativeCommandState({scopeKey,kind,state:'SENDING'})
+    try{
+      const state=await nativeCommands.submit(command,{signal:controller.signal})
+      if(controller.signal.aborted||generation!==nativeCommandGeneration.current)return
+      setNativeCommandState({scopeKey,kind,state})
+      if(state==='ACCEPTED'||state==='UNKNOWN')setForecastPreparationPollNonce(value=>value+1)
+    }catch(error){
+      if(controller.signal.aborted||generation!==nativeCommandGeneration.current||(error instanceof Error&&error.name==='AbortError'))return
+      setNativeCommandState({scopeKey,kind,state:'UNKNOWN'})
+    }
+  }
+
   async function handlePrepareForecastCurrent() {
-    if (nativeReadOnly) return
+    if (nativeReadOnly) {await handleNativeForecastCommand('CURRENT');return}
     if (!benchmarkSeriesId) {
       return
     }
@@ -4149,7 +4190,7 @@ export function RawDataView({
   }
 
   async function handlePrepareForecastVerification() {
-    if (nativeReadOnly) return
+    if (nativeReadOnly) {await handleNativeForecastCommand('VERIFICATION');return}
     if (!benchmarkSeriesId) return
 
     const correlationKey = buildForecastActionCorrelationKey('VERIFICATION', {
@@ -4969,7 +5010,7 @@ export function RawDataView({
             <strong>{t('forecastPreparationRequired')}</strong>
             <p>{t('forecastPreparationRequiredHint')}</p>
             <div className="callout-actions">
-              <button type="button" className="callout-button" disabled={nativeReadOnly} onClick={handlePrepareForecastCurrent}>
+              <button type="button" className="callout-button" disabled={nativeReadOnly&&(!nativeCommands||nativeCommandState?.state==='SENDING'||nativeCommandState?.kind==='CURRENT'&&nativeCommandState.state==='ACCEPTED')} onClick={handlePrepareForecastCurrent}>
                 {t('prepareForecast')}
               </button>
             </div>
@@ -4980,7 +5021,7 @@ export function RawDataView({
             <strong>{t('forecastPreparationRequired')}</strong>
             <p>{t('forecastPreparationRequiredHint')}</p>
             <div className="callout-actions">
-              <button type="button" className="callout-button" disabled={nativeReadOnly} onClick={handlePrepareForecastCurrent}>
+              <button type="button" className="callout-button" disabled={nativeReadOnly&&(!nativeCommands||nativeCommandState?.state==='SENDING'||nativeCommandState?.kind==='CURRENT'&&nativeCommandState.state==='ACCEPTED')} onClick={handlePrepareForecastCurrent}>
                 {t('prepareForecast')}
               </button>
             </div>
@@ -4992,6 +5033,20 @@ export function RawDataView({
             <p>{t('forecastPreparingHint')}</p>
           </div>
         ) : null}
+        {isForecastPortfolioVariant&&nativeReadOnly&&nativeCommandState?(
+          <div className="callout" role="status" aria-live="polite">
+            <p>{nativeCommandState.state==='ACCEPTED'
+              ?locale==='pl'?'Zlecenie zostało przyjęte. Stan przygotowania zostanie odświeżony.':'The request was accepted. Preparation status will be refreshed.'
+              :nativeCommandState.state==='SENDING'
+                ?locale==='pl'?'Wysyłanie zlecenia…':'Submitting the request…'
+                :nativeCommandState.state==='DENIED'
+                  ?locale==='pl'?'Brak dostępu do przygotowania prognozy.':'Forecast preparation access is unavailable.'
+                  :nativeCommandState.state==='LIMIT_REACHED'
+                    ?locale==='pl'?'Osiągnięto limit zleceń.':'The request limit has been reached.'
+                    :locale==='pl'?'Nie udało się potwierdzić przyjęcia zlecenia. Możesz ponowić próbę.':'Request acceptance could not be confirmed. You can try again.'}</p>
+            {nativeCommands&&nativeCommandState.state==='UNKNOWN'?<button type="button" className="callout-button" onClick={()=>handleNativeForecastCommand(nativeCommandState.kind)}>{t('retry')}</button>:null}
+          </div>
+        ):null}
         {isForecastPortfolioVariant && forecastCurrentObservedProgressState === 'QUEUED' ? (
           <div className="callout" role="status" aria-live="polite">
             <strong>{t('forecastQueued')}</strong>
@@ -5031,7 +5086,7 @@ export function RawDataView({
             <strong>{t('verificationNotPrepared')}</strong>
             <p>{t('verificationNotPreparedHint')}</p>
             <div className="callout-actions">
-              <button type="button" className="callout-button" disabled={nativeReadOnly} onClick={handlePrepareForecastVerification}>
+              <button type="button" className="callout-button" disabled={nativeReadOnly&&(!nativeCommands||nativeCommandState?.state==='SENDING'||nativeCommandState?.kind==='VERIFICATION'&&nativeCommandState.state==='ACCEPTED')} onClick={handlePrepareForecastVerification}>
                 {t('prepareVerification')}
               </button>
             </div>

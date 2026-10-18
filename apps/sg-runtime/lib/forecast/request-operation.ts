@@ -2,8 +2,10 @@ import { createHash } from 'node:crypto'
 import type { Prisma } from '@prisma/client'
 import { OperationDenied, operationPayloadDigest, type OperationContext } from '@profitia/platform-contracts/operation-context'
 import type { ForecastPreparationCommand } from './preparation-queue'
+import placement from '../../../dashboard-preview/deployment/native-forecast-targets.json'
 
 export const FORECAST_REQUEST_PROJECTION = 'sg2-private-forecast-request-v1'
+export const FORECAST_REQUEST_COMMAND_CONTRACT=placement.environments.development.embedding.commands.contract
 export const MAX_FORECAST_REQUEST_BYTES = 16384
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const refuse = (): never => { throw new OperationDenied('RESOURCE_SCOPE_MISMATCH') }
@@ -54,5 +56,10 @@ export async function projectForecastRequest(value: unknown, context: Readonly<O
   const { cognitionOk, privateApiResponse } = await import('@/lib/api/middleware')
   const response = privateApiResponse(cognitionOk({ requestId: value.requestId, status: 'ACCEPTED' }, 202))
   response.headers.set('X-Profitia-Forecast-Projection', FORECAST_REQUEST_PROJECTION)
+  response.headers.set('X-Profitia-Operation-Contract',`${context.contractId}@${context.contractVersion}`)
+  response.headers.set('X-Profitia-Application',context.applicationId)
+  response.headers.set('X-Profitia-Environment',context.environment)
+  response.headers.set('X-Profitia-Forecast-Resource',context.resourceId)
+  response.headers.set('X-Profitia-Forecast-Configuration',context.configurationVersion)
   return response
 }

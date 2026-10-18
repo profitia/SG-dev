@@ -4,7 +4,7 @@ import { OPERATION_CONTRACT, isOperationDenied, type OperationExecutor } from '@
 import { readPresentationJson } from '@profitia/platform-contracts/embedded-read-channel'
 import { cognitionError, privateApiResponse } from '@/lib/api/middleware'
 import { getSg2SelectionRuntime, type Sg2SelectionRuntime } from '@/lib/platform/private-runtime'
-import { forecastRequestResourceId, MAX_FORECAST_REQUEST_BYTES, persistForecastRequest, readForecastRequest } from './request-operation'
+import { forecastRequestResourceId, MAX_FORECAST_REQUEST_BYTES, persistForecastRequest, readForecastRequest,FORECAST_REQUEST_COMMAND_CONTRACT } from './request-operation'
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const respond = (status: number, code = 'OPERATION_DENIED') => privateApiResponse(cognitionError(code, 'Operation unavailable.', status))
@@ -45,7 +45,12 @@ export function createRuntimeForecastRequestHandler(resolveRuntime: () => Sg2Sel
     try {
       const runtime = resolveRuntime()
       if (runtime.provider !== 'clerk' || !runtime.forecastRequest) return respond(503)
-      return await createOperationForecastRequestHandler(runtime.forecastRequest.executor, runtime.defaultOrganisationId, runtime.forecastRequest.persist)(request)
+      const expected=request.headers.get('x-profitia-forecast-command')
+      if(expected!==null&&expected!==FORECAST_REQUEST_COMMAND_CONTRACT)return respond(400,'VALIDATION_ERROR')
+      if(expected!==null&&(runtime.forecastRequest.delivery!=='DELEGATED'||typeof runtime.forecastRequest.persist!=='function'))return respond(503)
+      const response=await createOperationForecastRequestHandler(runtime.forecastRequest.executor, runtime.defaultOrganisationId, runtime.forecastRequest.persist)(request)
+      if(response.status===202&&runtime.forecastRequest.delivery==='DELEGATED')response.headers.set('X-Profitia-Forecast-Delivery','DELEGATED')
+      return response
     } catch { return respond(503) }
   }
 }

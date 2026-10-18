@@ -176,7 +176,8 @@
           "maximumDatabaseConnections": 2
         },
         "scope": "EXISTING_CURRENT_WORKER_PRIVATE_DISPATCH_DISCOVERY_AND_NATIVE_SOURCE_DELIVERY",
-        "observedState": "SOURCE_CANDIDATE_NOT_INITIALIZED_OR_ACTIVATED"
+        "observedState": "SOURCE_CANDIDATE_NOT_INITIALIZED_OR_ACTIVATED",
+        "foregroundConfigurationVersion": "sg2-private-forecast-request-dispatch-e1-v2"
       }
     },
     "staging": {

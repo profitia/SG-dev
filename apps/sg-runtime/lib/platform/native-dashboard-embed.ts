@@ -2,6 +2,8 @@ import { EMBEDDED_READ_CONTRACT, EmbeddedReadUnavailable, openEmbeddedReadHost, 
   type EmbeddedSelection, type EmbeddedReadPort } from '@profitia/platform-contracts/embedded-read-channel'
 import placement from '../../../dashboard-preview/deployment/native-forecast-targets.json'
 import { selectNativeEmbedPage } from '../../../dashboard-preview/lib/platform/native-chart-publication'
+import {EMBEDDED_COMMAND_CONTRACT} from '@profitia/platform-contracts/embedded-command-channel'
+import {openNativeDashboardCommandHost} from './native-dashboard-command'
 
 // One public placement descriptor shared by the two SG2 hosts. The browser
 // never imports the private database/role deployment descriptor.
@@ -92,9 +94,21 @@ export function attachNativeDashboardEmbed(options: { iframe: Pick<HTMLIFrameEle
   fetch?: typeof fetch; onResize?: (height: number) => void; channelFactory?: () => MessageChannel }) {
   const context = nativeDashboardContext(options.analyticsUrl, options.hostWindow.location.origin)
   let currentDocument: string | null = null, host: ReturnType<typeof openNativeDashboardReadHost> | null = null, closed = false
+  let commandDocument:string|null=null,commandHost:ReturnType<typeof openNativeDashboardCommandHost>|null=null
   const listener = (event: MessageEvent) => {
     if (closed || !options.iframe.contentWindow || event.source !== options.iframe.contentWindow || event.origin !== context.childOrigin) return
     const data = event.data
+    if(exact(data,['type','version','documentId'])&&data.type==='profitia.dashboard-command.ready'){
+      if(data.version!==EMBEDDED_COMMAND_CONTRACT.version||typeof data.documentId!=='string'||data.documentId!==currentDocument
+        ||!uuid.test(data.documentId)||data.documentId===commandDocument)return
+      const channel=options.channelFactory?.()??new MessageChannel(),instanceId=crypto.randomUUID()
+      try{
+        commandHost=openNativeDashboardCommandHost({port:channel.port1,instanceId,context,getToken:options.getToken,fetch:options.fetch})
+        commandDocument=data.documentId
+        options.iframe.contentWindow.postMessage({type:'profitia.dashboard-command.init',version:EMBEDDED_COMMAND_CONTRACT.version,instanceId,documentId:commandDocument},context.childOrigin,[channel.port2])
+      }catch{commandHost?.close();commandHost=null;commandDocument=null;channel.port1.close();channel.port2.close()}
+      return
+    }
     if (exact(data, ['type','seriesId','height']) && data.type === 'sg-dashboard-preview:resize' && data.seriesId === context.seriesId
       && typeof data.height === 'number' && Number.isFinite(data.height)) {
       options.onResize?.(Math.min(12000,Math.max(320,Math.ceil(data.height)))); return
@@ -102,7 +116,7 @@ export function attachNativeDashboardEmbed(options: { iframe: Pick<HTMLIFrameEle
     if (!exact(data,['type','version','documentId']) || data.type !== 'profitia.dashboard-read.ready'
       || data.version !== EMBEDDED_READ_CONTRACT.version || typeof data.documentId !== 'string' || !uuid.test(data.documentId)
       || data.documentId === currentDocument) return
-    host?.close(); host = null
+    host?.close(); host = null;commandHost?.close();commandHost=null;commandDocument=null
     const channel = options.channelFactory?.() ?? new MessageChannel(), instanceId = crypto.randomUUID()
     try {
       host = openNativeDashboardReadHost({ port: channel.port1, instanceId, context, getToken: options.getToken, fetch: options.fetch })
@@ -114,7 +128,7 @@ export function attachNativeDashboardEmbed(options: { iframe: Pick<HTMLIFrameEle
   options.hostWindow.addEventListener('message',listener as EventListener)
   return Object.freeze({ close() {
     if (closed) return
-    closed = true; host?.close(); host = null
+    closed = true; host?.close(); host = null;commandHost?.close();commandHost=null;commandDocument=null
     options.hostWindow.removeEventListener('message',listener as EventListener)
   } })
 }

@@ -20,7 +20,15 @@
         "defaultEnabled": false,
         "observedState": "SOURCE_ONLY_NOT_ACTIVATED",
         "scope": "SCOPED_PREPARED_READS_ONLY_NO_AUTOMATIC_WARMUP",
-        "historyProjection": "sg2-stored-market-analytics-v1"
+        "historyProjection": "sg2-stored-market-analytics-v1",
+        "commands": {
+          "contract": "sg2-forecast-dispatch-command-v1",
+          "configurationVersion": "sg2-private-forecast-request-dispatch-e1-v2",
+          "projection": "sg2-private-forecast-request-v1",
+          "activationVariable": "PROFITIA_NATIVE_COMMAND_ENABLED",
+          "defaultEnabled": false,
+          "observedState": "SOURCE_CANDIDATE_NOT_ACTIVATED"
+        }
       }
     }
   },
