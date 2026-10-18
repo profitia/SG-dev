@@ -528,33 +528,44 @@ export async function persistRollingDailyCurrentForecastSnapshots(
   return results
 }
 
+export type RollingDailySnapshotIdentity = Readonly<{
+  seriesId:string;inputSource:string;targetBasis:'POINT_IN_TIME';methodId:string;methodVersion:string
+  modelId:RollingDailyCurrentForecastSnapshotModelId;trainingWindowPolicyId:string;effectiveTrainingPolicyId:string;sourceHistoryFingerprint:string
+}>
+export type RollingDailySnapshotReadPort = Readonly<{
+  readExact:(key:RollingDailySnapshotIdentity)=>Promise<{payloadJson:unknown}|null>
+  readLatest:(request:RollingDailyCurrentForecastSnapshotReadRequest)=>Promise<{payloadJson:unknown}|null>
+}>
+
 export async function readRollingDailyCurrentForecastSnapshot(
   request: RollingDailyCurrentForecastSnapshotReadRequest,
   dependencies: { prisma?: RollingDailySnapshotReadClient } = {},
 ): Promise<RollingDailyCurrentForecastSnapshotReadResult> {
   const prisma = dependencies.prisma ?? getSnapshotPrismaClient({})
-  const statisticalCompatibility = resolveRollingDailyCurrentSnapshotCompatibility()
+  return readRollingDailyCurrentForecastSnapshotFromPort(request,{
+    readExact:key=>prisma.rollingDailyCurrentForecastSnapshot.findUnique({where:{
+      seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint:key,
+    }}),
+    readLatest:selected=>readLegacyRollingDailyCurrentForecastSnapshot(prisma,selected),
+  })
+}
 
-  const readLegacySnapshot = async () => readLegacyRollingDailyCurrentForecastSnapshot(prisma, request)
-
-  let snapshot: Awaited<ReturnType<typeof prisma.rollingDailyCurrentForecastSnapshot.findUnique>> | null
+/** One snapshot validation/compatibility policy; each caller supplies genuine
+ * native queries through a scientific read port, never a generated ORM facade. */
+export async function readRollingDailyCurrentForecastSnapshotFromPort(
+  request:RollingDailyCurrentForecastSnapshotReadRequest,port:RollingDailySnapshotReadPort,
+):Promise<RollingDailyCurrentForecastSnapshotReadResult>{
+  const statisticalCompatibility=resolveRollingDailyCurrentSnapshotCompatibility()
+  const readLegacySnapshot=()=>port.readLatest(request)
+  let snapshot: {payloadJson:unknown}|null
   let exactIdentityColumnsUnavailable = false
 
   try {
-    snapshot = await prisma.rollingDailyCurrentForecastSnapshot.findUnique({
-      where: {
-        seriesId_inputSource_targetBasis_methodId_methodVersion_modelId_trainingWindowPolicyId_effectiveTrainingPolicyId_sourceHistoryFingerprint: {
-          seriesId: request.seriesId,
-          inputSource: ROLLING_DAILY_INPUT_SOURCE,
-          targetBasis: ROLLING_DAILY_TARGET_BASIS,
-          methodId: ROLLING_DAILY_METHOD_ID,
-          methodVersion: ROLLING_DAILY_METHOD_VERSION,
-          modelId: request.modelId,
-          trainingWindowPolicyId: statisticalCompatibility.trainingWindowPolicyId,
-          effectiveTrainingPolicyId: statisticalCompatibility.effectiveTrainingPolicyId,
-          sourceHistoryFingerprint: request.sourceHistoryFingerprint,
-        },
-      },
+    snapshot = await port.readExact({
+      seriesId:request.seriesId,inputSource:ROLLING_DAILY_INPUT_SOURCE,targetBasis:ROLLING_DAILY_TARGET_BASIS,
+      methodId:ROLLING_DAILY_METHOD_ID,methodVersion:ROLLING_DAILY_METHOD_VERSION,modelId:request.modelId,
+      trainingWindowPolicyId:statisticalCompatibility.trainingWindowPolicyId,effectiveTrainingPolicyId:statisticalCompatibility.effectiveTrainingPolicyId,
+      sourceHistoryFingerprint:request.sourceHistoryFingerprint,
     })
   } catch (error) {
     if (!isMissingRollingDailySnapshotTrainingPolicyColumnError(error)) {

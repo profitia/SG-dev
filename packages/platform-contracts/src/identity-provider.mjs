@@ -9,6 +9,33 @@ function exactOrigin(value) {
   try { const url = new URL(value); return url.origin === value && !url.hostname.includes('*') && !url.username && !url.password && (url.protocol === 'https:' || (url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) }
   catch { return false }
 }
+const activeClerkUser = (user, subject) => user?.id === subject && user.banned === false && user.locked === false && user.deprovisioned === false
+
+/** Current external ACCOUNT status for an already authorised delegation. This
+ * does not authenticate a person, return an Actor, or grant membership. The
+ * authoritative private store must supply the exact issuer/subject binding.
+ * No session credential is accepted or retained, and no ALLOW is cached. */
+export function createClerkAccountStatusReader({ client, environment, issuer, now = Date.now }) {
+  if (typeof client?.users?.getUser !== 'function' || typeof now !== 'function'
+    || !['development','staging','production'].includes(environment) || !exactOrigin(issuer) || !issuer.startsWith('https://')
+    || environment !== 'development' && new URL(issuer).hostname.endsWith('.accounts.dev')) throw new TypeError('Explicit official account reader and environment issuer required')
+  return async key => {
+    if (!key || Object.getPrototypeOf(key) !== Object.prototype
+      || Object.keys(key).sort().join(',') !== 'environment,issuer,subject'
+      || key.environment !== environment || key.issuer !== issuer || !text(key.subject)
+      || /\s|gh[pousr]_|sk_(?:live|test)_|postgres(?:ql)?:\/\//i.test(key.subject)) return null
+    // Snapshot before the provider await. Mutating the caller's object cannot
+    // change which identity the returned observation describes.
+    const subject = key.subject, observedAt = now()
+    let user
+    try { user = await client.users.getUser(subject) }
+    catch { throw new OperationDenied('POLICY_UNAVAILABLE') }
+    const expiresAt = observedAt + 5000
+    if (!activeClerkUser(user, subject) || now() >= expiresAt) return null
+    return Object.freeze({ environment, issuer, subject, status:'ACTIVE',
+      observedAt:new Date(observedAt).toISOString(), expiresAt:new Date(expiresAt).toISOString() })
+  }
+}
 
 /** Server-owned official SDK and binding reader only. This adapter never provisions users or grants access. */
 export function createClerkIdentityAuthenticator({ client, application, resolveBinding, now = Date.now }) {
@@ -37,7 +64,7 @@ export function createClerkIdentityAuthenticator({ client, application, resolveB
       session = await client.sessions.getSession(auth.sessionId)
       if (session?.id !== auth.sessionId || session.userId !== auth.userId || session.status !== 'active' || session.actor != null || !Number.isFinite(session.expireAt) || session.expireAt <= now() || !Number.isFinite(session.abandonAt) || session.abandonAt <= now()) return null
       user = await client.users.getUser(auth.userId)
-      if (user?.id !== auth.userId || user.banned !== false || user.locked !== false || user.deprovisioned !== false) return null
+      if (!activeClerkUser(user, auth.userId)) return null
     } catch { throw new OperationDenied('POLICY_UNAVAILABLE') }
 
     const key = Object.freeze({ environment: config.environment, issuer: config.issuer, subject: auth.userId })

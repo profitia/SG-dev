@@ -9,7 +9,8 @@ import { forecastRequestResourceId, MAX_FORECAST_REQUEST_BYTES, persistForecastR
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const respond = (status: number, code = 'OPERATION_DENIED') => privateApiResponse(cognitionError(code, 'Operation unavailable.', status))
 
-export function createOperationForecastRequestHandler(executor: OperationExecutor<Prisma.TransactionClient>, defaultOrganisationId: string) {
+export function createOperationForecastRequestHandler(executor: OperationExecutor<Prisma.TransactionClient>, defaultOrganisationId: string,
+  persist:typeof persistForecastRequest=persistForecastRequest) {
   if (!uuid.test(defaultOrganisationId)) throw new TypeError('Explicit private request organisation required')
   return async (request: NextRequest): Promise<NextResponse> => {
     if (request.method !== 'POST') { const response = respond(405, 'METHOD_NOT_ALLOWED'); response.headers.set('Allow', 'POST'); return response }
@@ -27,7 +28,7 @@ export function createOperationForecastRequestHandler(executor: OperationExecuto
     catch { return respond(400, 'VALIDATION_ERROR') }
     try {
       const result = await executor.execute({ contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version,
-        operation: 'forecast.request', organisationId, resourceId: forecastRequestResourceId(payload), payload, idempotencyKey, request }, persistForecastRequest)
+        operation: 'forecast.request', organisationId, resourceId: forecastRequestResourceId(payload), payload, idempotencyKey, request }, persist)
       const projected: unknown = result.value
       if (!(projected instanceof NextResponse)) return respond(503)
       return privateApiResponse(projected)

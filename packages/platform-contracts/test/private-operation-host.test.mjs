@@ -11,16 +11,16 @@ function options() {
   const unexpected = async () => assert.fail('Constructor must not perform an external operation')
   return { application,binding,independentQuery:unexpected,transact:unexpected,createAuthenticator:unexpected,readResources:unexpected,projectOutput:unexpected }
 }
-test('the versioned host is immutable and preserves the base SQL and identity adapter',async()=>{
+test('the versioned host pins the additive candidate and preserves the base SQL',async()=>{
   const host=createPrivateOperationHost(options())
   assert.equal(Object.isFrozen(host),true)
   assert.equal(host.hostContract,PRIVATE_OPERATION_HOST_CONTRACT)
-  assert.equal(host.contract.implementation,'1.0.0-candidate.6')
-  assert.equal(host.hostContract.version,'1.4.0')
+  assert.equal(host.contract.implementation,'1.0.0-candidate.7')
+  assert.equal(host.hostContract.version,'1.5.0')
   assert.match(await privateOperationHostSourceDigest(),/^[a-f0-9]{64}$/)
-  assert.equal(await operationSourceDigest(),'f642b1c7bdaff44a1ff649d8a3d415253e39885f5e2a50d31d57d8b7641f3ec2')
-  assert.equal(await identitySourceDigest(),'7db7627d36a5b0296c3620c1888a118da665682815aa19c8881d01c7cae2a0e6')
-  assert.equal(await accessStoreSourceDigest(),'a4bfb07619b384a4098d086f4f80da480c008446bafca7b23d8b56bad9c40a42')
+  assert.equal(await operationSourceDigest(),'093ea95317a2d0d1c55439b98996b042fd864a8ed53f611ece886ea1338a5d36')
+  assert.equal(await identitySourceDigest(),'9e1ced6498e8a127dd17fee81c5f4485a032c133bf85c08a72488e7909a0a299')
+  assert.equal(await accessStoreSourceDigest(),'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
 })
 for(const module of [null,false,{},[],{id:'benchmark',schemaDigest:'a'.repeat(64)},{id:'unknown',schemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64)},{id:'benchmark',schemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64),extra:'untrusted'}]){
@@ -56,5 +56,5 @@ test('export cannot be enabled without a server-owned preparation adapter', () =
   o.application.features = ['supplier_report']
   o.application.operations = ['supplier.report.read', 'supplier.report.project', 'supplier.report.export']
   assert.throws(() => createPrivateOperationHost(o), TypeError)
-  assert.equal(createPrivateOperationHost({ ...o, prepareInputs: async () => {} }).hostContract.version, '1.4.0')
+  assert.equal(createPrivateOperationHost({ ...o, prepareInputs: async () => {} }).hostContract.version, '1.5.0')
 })

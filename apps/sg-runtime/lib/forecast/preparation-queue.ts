@@ -301,13 +301,14 @@ function isEligible(capability: ForecastVariantCapability | null) {
 async function resolveJobAuthority(
   input: ForecastPreparationCommand,
   capability: ForecastVariantCapability,
+  authority: Pick<ForecastQueueSourceAuthority, 'resolveHistoricalSeries' | 'loadRollingHistory'>,
 ): Promise<ForecastPreparedReadAuthority> {
   if (input.kind === 'CURRENT' && capability.preparedReadAuthority) {
     return capability.preparedReadAuthority
   }
 
   if (input.targetSemantics === 'ROLLING_DAILY_POINT_IN_TIME') {
-    const history = await loadRollingDailyHistory(input.seriesId)
+    const history = await authority.loadRollingHistory(input.seriesId)
     const fingerprintHistory = input.kind === 'CURRENT'
       ? selectTrailingRollingDailyCurrentHistory(history)
       : history
@@ -321,7 +322,7 @@ async function resolveJobAuthority(
   if (!capability.sourceFrequency || !capability.targetCadence) {
     throw new Error('Exact Forecast cadence authority is unavailable.')
   }
-  const resolved = await resolveBenchmarkHistoricalSeries(input.seriesId, 'ALL')
+  const resolved = await authority.resolveHistoricalSeries(input.seriesId, 'ALL')
   const targetBasis = TARGET_BASIS_BY_SEMANTICS[input.targetSemantics]
   const payload = buildLiveForecastBridgePayloadFromHistory(input.seriesId, resolved.history, {
     targetBasis,
@@ -419,16 +420,17 @@ export function buildSucceededPreparationJobRequeueData(now: Date) {
 }
 
 async function requeueSucceededJobIfArtifactIsMissing(
-  prisma: PrismaClient,
+  prisma: PrismaClient | Prisma.TransactionClient,
   job: ForecastPreparationJob,
   input: InteractiveForecastIdentity,
+  resolveReadiness: typeof resolveInteractiveForecastCapability,
 ) {
   if (job.status !== 'SUCCEEDED') return job
 
   // The artifact can become ready between the initial capability read and the
   // idempotent job upsert. Re-read before reopening a terminal job so a race
   // with worker completion never creates duplicate compute.
-  const capability = await resolveInteractiveForecastCapability(input)
+  const capability = await resolveReadiness(input)
   const artifactReadiness = job.jobKind === 'CURRENT'
     ? capability.currentReadiness
     : capability.fullVerificationReadiness
@@ -456,6 +458,19 @@ async function upsertJob(
   correlationId: string,
   options: { calibrationOnly?: boolean } = {},
 ) {
+  return prisma.$transaction(tx => persistPreparationJob(tx,input,authority,dependencyJobKey,correlationId,options))
+}
+
+/** The original single persistence implementation. Source admission calls it
+ * with the real outer Prisma transaction; legacy callers retain $transaction. */
+async function persistPreparationJob(
+  tx: Prisma.TransactionClient,
+  input: ForecastPreparationCommand,
+  authority: ForecastPreparedReadAuthority,
+  dependencyJobKey: string | null,
+  correlationId: string,
+  options: { calibrationOnly?: boolean } = {},
+) {
   const key = buildForecastPreparationJobKey({
     kind: input.kind,
     seriesId: input.seriesId,
@@ -465,86 +480,108 @@ async function upsertJob(
   })
   const now = new Date()
 
-  return prisma.$transaction(async (tx) => {
-    await tx.forecastPreparationJob.updateMany({
-      where: {
-        seriesId: input.seriesId,
-        targetSemantics: input.targetSemantics,
-        modelId: input.modelId,
-        jobKind: input.kind === 'CURRENT' ? { in: ['CURRENT', 'VERIFICATION'] } : input.kind,
-        historyFingerprint: { not: authority.expectedHistoryFingerprint },
-        status: { in: ['QUEUED', 'RUNNING', 'RETRY_WAIT'] },
-      },
-      data: {
-        status: 'SUPERSEDED',
-        completedAt: now,
-        leaseOwnerToken: null,
-        leaseExpiresAt: null,
-        failureCode: 'SOURCE_IDENTITY_SUPERSEDED',
-        failureReason: 'A newer exact source-history identity was requested.',
-      },
-    })
-
-    const persisted = await tx.forecastPreparationJob.upsert({
-      where: { jobKey: key },
-      create: {
-        jobKey: key,
-        jobKind: input.kind,
-        status: 'QUEUED',
-        priority: input.kind === 'CURRENT' ? CURRENT_PRIORITY : VERIFICATION_PRIORITY,
-        seriesId: input.seriesId,
-        targetBasis: TARGET_BASIS_BY_SEMANTICS[input.targetSemantics],
-        targetSemantics: input.targetSemantics,
-        modelId: input.modelId,
-        sourceFrequency: authority.sourceFrequency,
-        targetCadence: authority.targetCadence,
-        historyFingerprint: authority.expectedHistoryFingerprint,
-        dependencyJobKey,
-        originCorrelationId: correlationId,
-        latestCorrelationId: correlationId,
-        checkpointJson: options.calibrationOnly
-          ? { calibrationOnly: true }
-          : Prisma.DbNull,
-      },
-      update: {
-        requestCount: { increment: 1 },
-        requestedAt: now,
-        dependencyJobKey,
-        priority: input.kind === 'CURRENT' ? CURRENT_PRIORITY : VERIFICATION_PRIORITY,
-        latestCorrelationId: correlationId,
-      },
-    })
-
-    // A succeeded exact-identity job is already authoritative. Re-queuing it here
-    // would create duplicate compute when an enqueue races with worker completion.
-    if (!['FAILED', 'SUPERSEDED'].includes(persisted.status)) {
-      return persisted
-    }
-
-    await tx.forecastPreparationJob.updateMany({
-      where: { id: persisted.id, status: { in: ['FAILED', 'SUPERSEDED'] } },
-      data: {
-        status: 'QUEUED',
-        availableAt: now,
-        completedAt: null,
-        failureCount: 0,
-        failureCode: null,
-        failureReason: null,
-      },
-    })
-    return tx.forecastPreparationJob.findUniqueOrThrow({ where: { id: persisted.id } })
+  await tx.forecastPreparationJob.updateMany({
+    where: {
+      seriesId: input.seriesId,
+      targetSemantics: input.targetSemantics,
+      modelId: input.modelId,
+      jobKind: input.kind === 'CURRENT' ? { in: ['CURRENT', 'VERIFICATION'] } : input.kind,
+      historyFingerprint: { not: authority.expectedHistoryFingerprint },
+      status: { in: ['QUEUED', 'RUNNING', 'RETRY_WAIT'] },
+    },
+    data: {
+      status: 'SUPERSEDED',
+      completedAt: now,
+      leaseOwnerToken: null,
+      leaseExpiresAt: null,
+      failureCode: 'SOURCE_IDENTITY_SUPERSEDED',
+      failureReason: 'A newer exact source-history identity was requested.',
+    },
   })
+
+  const persisted = await tx.forecastPreparationJob.upsert({
+    where: { jobKey: key },
+    create: {
+      jobKey: key,
+      jobKind: input.kind,
+      status: 'QUEUED',
+      priority: input.kind === 'CURRENT' ? CURRENT_PRIORITY : VERIFICATION_PRIORITY,
+      seriesId: input.seriesId,
+      targetBasis: TARGET_BASIS_BY_SEMANTICS[input.targetSemantics],
+      targetSemantics: input.targetSemantics,
+      modelId: input.modelId,
+      sourceFrequency: authority.sourceFrequency,
+      targetCadence: authority.targetCadence,
+      historyFingerprint: authority.expectedHistoryFingerprint,
+      dependencyJobKey,
+      originCorrelationId: correlationId,
+      latestCorrelationId: correlationId,
+      checkpointJson: options.calibrationOnly
+        ? { calibrationOnly: true }
+        : Prisma.DbNull,
+    },
+    update: {
+      requestCount: { increment: 1 },
+      requestedAt: now,
+      dependencyJobKey,
+      priority: input.kind === 'CURRENT' ? CURRENT_PRIORITY : VERIFICATION_PRIORITY,
+      latestCorrelationId: correlationId,
+    },
+  })
+
+  // A succeeded exact-identity job is already authoritative. Re-queuing it here
+  // would create duplicate compute when an enqueue races with worker completion.
+  if (!['FAILED', 'SUPERSEDED'].includes(persisted.status)) {
+    return persisted
+  }
+
+  await tx.forecastPreparationJob.updateMany({
+    where: { id: persisted.id, status: { in: ['FAILED', 'SUPERSEDED'] } },
+    data: {
+      status: 'QUEUED',
+      availableAt: now,
+      completedAt: null,
+      failureCount: 0,
+      failureCode: null,
+      failureReason: null,
+    },
+  })
+  return tx.forecastPreparationJob.findUniqueOrThrow({ where: { id: persisted.id } })
+}
+
+export type ForecastQueueSourceAuthority = {
+  resolveInteractiveCapability: typeof resolveInteractiveForecastCapability
+  resolveExactCapability: typeof resolveExactForecastCapability
+  resolveHistoricalSeries: typeof resolveBenchmarkHistoricalSeries
+  loadRollingHistory: typeof loadRollingDailyHistory
 }
 
 export function createForecastPreparationQueueService(options: {
   prisma?: PrismaClient | null
   leaseMs?: number
+  /** Closed opt-in: actual source transaction plus ALL source-bound authority
+   * ports. No global source/client fallback or nested commit in this mode. */
+  source?: { transaction: Prisma.TransactionClient; authority: ForecastQueueSourceAuthority }
 } = {}) {
-  const prisma = requirePrisma(options.prisma)
+  const source=options.source
+  if(source!==undefined&&(options.prisma!==undefined||!source?.transaction||!source.authority
+    ||typeof source.transaction.$queryRawUnsafe!=='function'||typeof source.transaction.$executeRawUnsafe!=='function'
+    ||'$transaction' in source.transaction
+    ||Object.keys(source.authority).sort().join(',')!=='loadRollingHistory,resolveExactCapability,resolveHistoricalSeries,resolveInteractiveCapability'
+    ||Object.values(source.authority).some(port=>typeof port!=='function')))throw new TypeError('A real source transaction and complete source authority are required')
+  const legacyPrisma=source?null:requirePrisma(options.prisma)
+  const prisma = source?.transaction ?? legacyPrisma!
+  const authority:ForecastQueueSourceAuthority=Object.freeze(source?{...source.authority}:{
+    resolveInteractiveCapability:resolveInteractiveForecastCapability,resolveExactCapability:resolveExactForecastCapability,
+    resolveHistoricalSeries:resolveBenchmarkHistoricalSeries,loadRollingHistory:loadRollingDailyHistory,
+  })
+  const persist=(input:ForecastPreparationCommand,readAuthority:ForecastPreparedReadAuthority,dependency:string|null,correlationId:string,config:{calibrationOnly?:boolean}={})=>
+    source?persistPreparationJob(source.transaction,input,readAuthority,dependency,correlationId,config)
+      :upsertJob(legacyPrisma!,input,readAuthority,dependency,correlationId,config)
   const leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS
 
   async function resolveCapability(input: InteractiveForecastIdentity) {
-    const exact = await resolveExactForecastCapability(input)
+    const exact = await authority.resolveExactCapability(input)
     return exact.capability
   }
 
@@ -606,7 +643,7 @@ export function createForecastPreparationQueueService(options: {
     })
 
     let admissionStageStartedAt = new Date()
-    const interactiveCapability = await resolveInteractiveForecastCapability(parsed.data)
+    const interactiveCapability = await authority.resolveInteractiveCapability(parsed.data)
     await safelyRecordAdmissionStage(options.correlationId, 'INTERACTIVE_CAPABILITY', admissionStageStartedAt)
     if (input.kind === 'CURRENT' && interactiveCapability.currentReadiness === 'READY') {
       return preparedResult('The exact Current Forecast artifact is already prepared.')
@@ -626,29 +663,27 @@ export function createForecastPreparationQueueService(options: {
     if (input.kind === 'VERIFICATION' && interactiveCapability.currentReadiness !== 'READY') {
       admissionStageStartedAt = new Date()
       const currentInput = { ...parsed.data, kind: 'CURRENT' as const }
-      const persistedCurrent = await upsertJob(
-        prisma,
+      const persistedCurrent = await persist(
         currentInput,
-        await resolveJobAuthority(currentInput, capability!),
+        await resolveJobAuthority(currentInput, capability!,authority),
         null,
         options.correlationId,
       )
-      const current = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedCurrent, currentInput)
+      const current = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedCurrent, currentInput,authority.resolveInteractiveCapability)
       dependencyJobKey = current.jobKey
       await safelyRecordAdmissionStage(options.correlationId, 'CURRENT_DEPENDENCY', admissionStageStartedAt)
     }
 
     const command = parsed.data
     admissionStageStartedAt = new Date()
-    const persistedJob = await upsertJob(
-      prisma,
+    const persistedJob = await persist(
       command,
-      await resolveJobAuthority(command, capability!),
+      await resolveJobAuthority(command, capability!,authority),
       dependencyJobKey,
       options.correlationId,
       { calibrationOnly: options.calibrationOnly },
     )
-    const job = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedJob, command)
+    const job = await requeueSucceededJobIfArtifactIsMissing(prisma, persistedJob, command,authority.resolveInteractiveCapability)
     await safelyRecordAdmissionStage(options.correlationId, 'JOB_UPSERT', admissionStageStartedAt)
     await safelyRecordQueueAccepted(options.correlationId, job.jobKey)
     return stateForJob(job)
@@ -656,7 +691,7 @@ export function createForecastPreparationQueueService(options: {
 
   async function snapshot(input: InteractiveForecastIdentity): Promise<ForecastPreparationIdentitySnapshot> {
     const parsed = InteractiveForecastIdentitySchema.parse(input)
-    const capability = await resolveInteractiveForecastCapability(parsed)
+    const capability = await authority.resolveInteractiveCapability(parsed)
     const jobs = await prisma.forecastPreparationJob.findMany({
       where: {
         seriesId: parsed.seriesId,

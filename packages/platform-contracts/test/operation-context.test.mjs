@@ -10,7 +10,7 @@ const expiry = new Date(time + 3_600_000).toISOString()
 function fixture(operation = 'benchmark.selection.read') {
   const issuer = createTestIdentityIssuer({ applicationId: 'app-1', now: () => time })
   const r = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url))).rules.find(r => r.operation === operation)
-  const application = { appId: 'app-1', profileId: 'SPENDGURU_SAAS', deploymentId: 'isolated-test', configurationVersion: 'v1', environment: 'development', identityIssuer: issuer.issuer, organisationId: null, operations: [...IMPLEMENTED_OPERATIONS], features: ['account', 'benchmark', 'market', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'] }
+  const application = { appId: 'app-1', profileId: 'SPENDGURU_SAAS', deploymentId: 'isolated-test', configurationVersion: 'v1', environment: 'development', identityIssuer: issuer.issuer, organisationId: null, operations: IMPLEMENTED_OPERATIONS.filter(op=>!['job.execute','knowledge.ingest'].includes(op)), features: ['account', 'benchmark', 'market', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'] }
   const organisationId = r.contextMode === 'ACCOUNT' ? null : 'org-a'
   const shared = r.dataClasses[0] === 'SHARED_KNOWLEDGE'
   const state = { applicationId: application.appId, environment: 'development', policyVersion: 'p1', usagePolicy: 'NOT_APPLICABLE',
@@ -46,7 +46,7 @@ function fixture(operation = 'benchmark.selection.read') {
   return { input, state, application, options, events, writes, controls, issuer, action, get invoked() { return invoked }, execute: () => createOperationExecutor(options).execute(input, action) }
 }
 
-for (const operation of IMPLEMENTED_OPERATIONS.filter(value => value !== 'forecast.request')) {
+for (const operation of IMPLEMENTED_OPERATIONS.filter(value => !['forecast.request','job.execute','knowledge.ingest'].includes(value))) {
   test(`${operation}: explicit positive rule and durable intent/outcome`, async () => {
     const f = fixture(operation); const result = await f.execute(); assert.equal(result.decision, 'ALLOW'); assert.equal(f.invoked, 1); assert.deepEqual(f.events.map(e => e.phase), operation === 'supplier.report.export' ? ['INTENT', 'INTENT', 'OUTCOME', 'OUTCOME'] : ['INTENT', 'OUTCOME'])
   })
@@ -129,8 +129,8 @@ test('payload is canonically bound and snapshotted before asynchronous authentic
 })
 test('candidate rules match exact normative rows and never imply all 30 are implemented', async () => {
   const matrix = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url)))
-  assert.equal(IMPLEMENTED_OPERATIONS.length, 16); assert.equal(matrix.rules.length, 30)
-  for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === (operation === 'forecast.request' ? 'PRODUCT_POLICY' : 'NOT_APPLICABLE')).length, 1)
+  assert.equal(IMPLEMENTED_OPERATIONS.length, 18); assert.equal(matrix.rules.length, 30)
+  for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === (operation === 'forecast.request' ? 'PRODUCT_POLICY' : operation==='knowledge.ingest'?'PLATFORM_BUDGET':'NOT_APPLICABLE')).length, 1)
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
 

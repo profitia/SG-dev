@@ -8,36 +8,42 @@
   "contract": {
     "id": "profitia.operation-context",
     "version": "1.0.0",
-    "implementation": "1.0.0-candidate.6",
-    "sourceDigest": "f642b1c7bdaff44a1ff649d8a3d415253e39885f5e2a50d31d57d8b7641f3ec2"
+    "implementation": "1.0.0-candidate.7",
+    "sourceDigest": "093ea95317a2d0d1c55439b98996b042fd864a8ed53f611ece886ea1338a5d36"
   },
   "producer": {
     "projectKey": "ARCHITECTURE",
-    "taskId": "ARCHITECTURE-E1-FORECAST-REQUEST-RESERVATION-20261018",
+    "taskId": "ARCHITECTURE-E1-DELEGATED-EXECUTION-INGESTION-20261018",
     "repository": "profitia/SG-dev",
-    "sourceSha": "cd3c5567a705cf575b708af315dd8e598c6f8259",
+    "sourceSha": "0948a10c99626a6096df4c2fd1e25586ef318b72",
     "previousAcceptance": {
       "projectKey": "ARCHITECTURE",
-      "taskId": "ARCHITECTURE-E1-SUPPLIER-EXPORT-CONTRACT-20261017",
+      "taskId": "ARCHITECTURE-E1-FORECAST-REQUEST-RESERVATION-20261018",
       "repository": "profitia/SG-dev",
-      "pullRequest": 434,
-      "sourceSha": "dc1935698647e21570646f3d6a0c62492c86a004",
+      "sourceSha": "cd3c5567a705cf575b708af315dd8e598c6f8259",
       "previousAcceptance": {
         "projectKey": "ARCHITECTURE",
-        "taskId": "ARCHITECTURE-E1-ACCESS-COMPLETION-20261017",
+        "taskId": "ARCHITECTURE-E1-SUPPLIER-EXPORT-CONTRACT-20261017",
         "repository": "profitia/SG-dev",
-        "pullRequest": 413,
-        "sourceSha": "3cf75e99389fc7b888e85dce8bf28f8c85723314",
+        "pullRequest": 434,
+        "sourceSha": "dc1935698647e21570646f3d6a0c62492c86a004",
         "previousAcceptance": {
           "projectKey": "ARCHITECTURE",
-          "taskId": "ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017",
+          "taskId": "ARCHITECTURE-E1-ACCESS-COMPLETION-20261017",
           "repository": "profitia/SG-dev",
-          "pullRequest": 383,
-          "sourceSha": "ea06cd05df9168c01b7621baf6724bc04b74b760",
-          "initialCandidate": {
-            "taskId": "ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016",
-            "pullRequest": 380,
-            "sourceSha": "dde7d08262c693df7c86e0a8f16c6bcb95512f92"
+          "pullRequest": 413,
+          "sourceSha": "3cf75e99389fc7b888e85dce8bf28f8c85723314",
+          "previousAcceptance": {
+            "projectKey": "ARCHITECTURE",
+            "taskId": "ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017",
+            "repository": "profitia/SG-dev",
+            "pullRequest": 383,
+            "sourceSha": "ea06cd05df9168c01b7621baf6724bc04b74b760",
+            "initialCandidate": {
+              "taskId": "ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016",
+              "pullRequest": 380,
+              "sourceSha": "dde7d08262c693df7c86e0a8f16c6bcb95512f92"
+            }
           }
         }
       }
@@ -68,8 +74,8 @@
     "moduleId": "supplier_report",
     "sql002Digest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
     "sql003Digest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
-    "accessStoreSourceDigest": "a4bfb07619b384a4098d086f4f80da480c008446bafca7b23d8b56bad9c40a42",
-    "privateHostSourceDigest": "31c6a0ec35e6ba59ec8f24939a9784b6587c5833e3ce353bbeb3c9a484cfd94d",
+    "accessStoreSourceDigest": "fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10",
+    "privateHostSourceDigest": "662f354b2b98d3ddffd7cb6e83d200a184f44f29c2464d3fb72716078c8c61d0",
     "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246"
   },
   "exportScope": "STORED_CORPORATE_FINANCIAL_XLSX_ORGANISATION_ONLY",
@@ -117,5 +123,14 @@
     "ledgerSchemaDigest": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
     "scope": "SOURCE_COMPATIBILITY_ONLY_NO_FORECAST_REQUEST_ADOPTION",
     "deploymentAdoption": "NOT_PERFORMED"
+  },
+  "delegatedSourceCompatibility": {
+    "taskId": "SRM-E1-DELEGATED-SOURCE-COMPATIBILITY-20261018",
+    "platformVersion": "1.11.0",
+    "scope": "EXISTING_SRM_NATIVE_FLOW_COMPATIBILITY_ONLY",
+    "delegatedJobAdoption": false,
+    "platformIngestionAdoption": false,
+    "forecastRequestAdoption": false,
+    "productDeploymentPerformed": false
   }
 }
