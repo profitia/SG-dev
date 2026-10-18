@@ -286,3 +286,19 @@ test('stored current forecast is independently opt-in, pins its own source role 
   assert.throws(()=>readSg2PrivateSelectionConfiguration({...enabled,TARGET_ENVIRONMENT:'staging',APP_ENV:'staging'}),IdentityConfigurationUnavailable)
   assert.deepEqual(readSg2PrivateSelectionConfiguration({PROFITIA_AUTH_PROVIDER:'legacy_demo',PROFITIA_FORECAST_READ_ENABLED:'true'}),{provider:'legacy_demo'})
 })
+
+
+test('private Forecast request acceptance is separately default-off and pins the actual additive SQL source', () => {
+  const base = fixture(), disabled = readSg2PrivateSelectionConfiguration(base)
+  assert.equal(disabled.provider, 'clerk'); if (disabled.provider !== 'clerk') throw Error('Expected private intent')
+  assert.equal(disabled.forecastRequest, undefined)
+  const enabled = readSg2PrivateSelectionConfiguration({ ...base, PROFITIA_FORECAST_REQUEST_ENABLED: 'true' })
+  assert.equal(enabled.provider, 'clerk'); if (enabled.provider !== 'clerk') throw Error('Expected private intent')
+  assert.deepEqual(enabled.application, disabled.application)
+  assert.deepEqual(enabled.forecastRequest, { configurationVersion: target.forecastRequest.configurationVersion,
+    requestLedgerDigest: target.forecastRequest.requestLedgerDigest, boundaryDigest: target.forecastRequest.boundaryDigest })
+  assert.equal(target.forecastRequest.boundaryDigest, createHash('sha256').update(readFileSync(new URL('../prisma/private-store/003-forecast-requests.sql', import.meta.url))).digest('hex'))
+  assert.equal(target.forecastRequest.defaultEnabled, false)
+  assert.equal(target.forecastRequest.observedState, 'SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED')
+  for (const flag of ['', 'TRUE', '1', 'yes']) assert.throws(() => readSg2PrivateSelectionConfiguration({ ...base, PROFITIA_FORECAST_REQUEST_ENABLED: flag }), IdentityConfigurationUnavailable)
+})
