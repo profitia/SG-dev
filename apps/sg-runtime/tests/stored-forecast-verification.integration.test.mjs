@@ -6,7 +6,7 @@ import test from 'node:test'
 import { PrismaClient } from '../generated/market-data-client/index.js'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import { readVerificationRunFromPrisma, readLatestVerificationRunFromPrisma } from '../lib/forecast/service.ts'
-import { readForecastPreparedVariants } from '../lib/forecast/prepared-state.ts'
+import { readForecastPreparedVariants, readForecastPreparedVariantsFromPort, createLegacyPrismaPreparedStatePort } from '../lib/forecast/prepared-state.ts'
 import { createPreparedRollingDailyForecastVerificationReader, createPreparedRollingDailyFastForecastVerificationReader, createPreparedRollingDailyRecentForecastVerificationReader } from '../lib/forecast/rolling-daily-verification.ts'
 import { buildForecastHistoryFingerprint } from '../lib/forecast/history-fingerprint.ts'
 import { buildLiveForecastBridgePayloadFromHistory } from '../lib/forecast/live-market-input.ts'
@@ -122,6 +122,22 @@ test('existing Verification and readiness use explicit real generated readers wi
         assert.equal((await readForecastPreparedVariants(daily.providerSeries.providerSeriesId,daily,{prisma:tx,now})).length,12)
       },{isolationLevel:'RepeatableRead',timeout:20000})
       assert.equal(globalReads,0)
+    })
+    await t.test('neutral readiness port preserves actual generated read-only transaction results and latest failed-attempt truth', async () => {
+      await prisma.$transaction(async tx => {
+        await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY')
+        const port=createLegacyPrismaPreparedStatePort(tx)
+        assert(Object.isFrozen(port))
+        for (const source of [monthly,daily]) {
+          const id=source.providerSeries.providerSeriesId
+          const direct=await readForecastPreparedVariants(id,source,{prisma:tx,now})
+          const throughPort=await readForecastPreparedVariantsFromPort(id,source,port,{now})
+          assert.deepEqual(throughPort,direct)
+          if (source===monthly) assert.equal(throughPort.find(v=>v.identity.targetSemantics==='MONTHLY_AVERAGE'&&v.identity.modelId==='naive').historical,'STALE')
+          else assert.equal(throughPort.find(v=>v.identity.targetSemantics==='ROLLING_DAILY_POINT_IN_TIME'&&v.identity.modelId==='naive').historical,'READY')
+        }
+        assert.equal(globalReads,0); assert.equal(externalReads,0)
+      },{isolationLevel:'RepeatableRead',timeout:20000})
     })
     await t.test('all persisted Verification identity dimensions still select exact prepared artifacts', async () => {
       for (const field of ['seriesId','modelId','methodId','methodVersion','frequencyIdentity','trainingWindowPolicyId','effectiveTrainingPolicyId']) {
