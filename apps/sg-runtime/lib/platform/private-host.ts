@@ -1,4 +1,5 @@
 import { FORECAST_VERIFICATION_PROJECTION, readForecastVerificationSelection, forecastVerificationResourceId, projectForecastVerificationResponse } from './forecast-verification'
+import { FORECAST_READINESS_PROJECTION, readForecastReadinessSelection, forecastReadinessResourceId, projectForecastReadinessResponse } from './forecast-readiness'
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { createPrivateOperationHost } from '@profitia/platform-contracts/private-operation-host'
 import { createClerkIdentityAuthenticator, type ClerkIdentityClient, type IdentityApplication } from '@profitia/platform-contracts/identity-provider'
@@ -194,6 +195,26 @@ export function createSg2PrivateForecastVerificationHost(options: Sg2PrivateHost
     describeOutcome:async value=>{
       if(!(value instanceof Response))throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       return (await value.clone().json()).status==='AVAILABLE'?'SUCCEEDED':'NO_DATA'
+    },
+  })
+}
+
+/** Shared preparedness facts require their own exact representation identity;
+ * Current or Verification resource/projection authority cannot be substituted. */
+export function createSg2PrivateForecastReadinessHost(options: Sg2PrivateHostOptions & { module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string } }) {
+  return createPrivateOperationHost<Prisma.TransactionClient>({
+    ...hostBase(options, 'benchmark', ['forecast.read']),
+    readResources: async ({ request }) => {
+      const selection = readForecastReadinessSelection(request.payload)
+      if (request.resourceId !== forecastReadinessResourceId(selection)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      return { resource: { id: request.resourceId, type: 'market_forecast', dataClass: 'SHARED_KNOWLEDGE',
+        environment: options.application.environment, ownerOrganisationId: null, ownerUserId: null,
+        approvedSharedProjection: true, version: FORECAST_READINESS_PROJECTION, projectionVersion: FORECAST_READINESS_PROJECTION } }
+    },
+    projectOutput: projectForecastReadinessResponse,
+    describeOutcome: async value => {
+      if (!(value instanceof Response)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+      return (await value.clone().json()).sourceAvailability === 'AVAILABLE' ? 'SUCCEEDED' : 'NO_DATA'
     },
   })
 }

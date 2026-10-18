@@ -929,6 +929,72 @@ test('SG2 Prisma host composes the accepted access store with existing selection
           })
           assert.equal(providerCalls,providerBefore)
         })
+        await t.test('native capability/readiness APIs enforce independent current authority on the ordinary stored source',async t=>{
+          const {createStoredForecastReadinessReader}=await import('../lib/forecast/stored-readiness-read.ts')
+          const {createSg2PrivateForecastReadinessHost}=await import('../lib/platform/private-host.ts')
+          const {createOperationForecastReadinessHandler}=await import('../lib/forecast/readiness-operation-handlers.ts')
+          const sourceRead=createStoredForecastReadinessReader(source,{projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:sourceRole,schemaDigest:sourceDigest,marketSchemaDigest:marketDigest})
+          const host=createSg2PrivateForecastReadinessHost(forecastConfig)
+          let reads=0
+          const read=async selected=>{reads++;return sourceRead(selected)}
+          const routes=Object.fromEntries(['capability','capabilities','readiness'].map(kind=>[kind,createOperationForecastReadinessHandler(kind,host,A,read)]))
+          const input=(kind,org=A,user=U)=>new NextRequest(`${ORIGIN}/api/internal/forecast/${kind}?seriesId=${seriesId}&organisationId=${org}`
+            +(kind==='capability'?'&modelId=naive&targetSemantics=ROLLING_DAILY_POINT_IN_TIME':''),{headers:{authorization:`Bearer external-${user}`}})
+          const normalize=value=>{const result=structuredClone(value);delete result.timingMs;if(result.variants)for(const item of result.variants)delete item.timingMs;return result}
+          await t.test('each representation is independently shared between authorised organisations and separately audited',async()=>{
+            for(const kind of['capability','capabilities','readiness']){
+              const values=[]
+              for(const org of[A,B]){
+                const response=await routes[kind](input(kind,org));assert.equal(response.status,200,await response.clone().text())
+                const value=await response.json();assert.equal(value.sourceAvailability,'AVAILABLE');assert.equal(value.seriesId,seriesId)
+                assert.equal(response.headers.get('cache-control'),'private, no-store');assert(!JSON.stringify(value).includes('SYNTHETIC_PRIVATE_FORECAST_MARKER'))
+                assert(!('trace'in value));if(kind!=='capability')assert.equal(value.variants.length,12)
+                values.push(normalize(value))
+              }
+              assert.deepEqual(values[0],values[1])
+              const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'resourceId' LIKE $1 ORDER BY event_id DESC LIMIT 2",[`forecast-${kind}:%`])).rows.map(row=>row.event)
+              assert.deepEqual(events.map(e=>e.organisationId),[B,A]);assert(events.every(e=>e.reasonCode==='SUCCEEDED'&&e.moduleEvidence.moduleId==='benchmark'))
+            }
+          })
+          await t.test('every representation refuses current membership, session, product, module and permission revocation before source access',async()=>{
+            const before=reads
+            for(const kind of['capability','capabilities','readiness']){
+              assert.equal((await routes[kind](input(kind,A,V))).status,403)
+              sdkRevoked=true;try{assert.equal((await routes[kind](input(kind))).status,401)}finally{sdkRevoked=false}
+              for(const[deny,restore,values,status=403]of[
+                ["UPDATE profitia_access.accounts SET status='DISABLED' WHERE user_id=$1","UPDATE profitia_access.accounts SET status='ACTIVE' WHERE user_id=$1",[U],401],
+                ["UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2","UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U]],
+                ["UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1","UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id='spendguru' AND product='SPENDGURU' AND organisation_id=$1",[A]],
+                ["UPDATE profitia_modules.application_bindings SET status='REVOKED' WHERE application_id='spendguru' AND module_id='benchmark'","UPDATE profitia_modules.application_bindings SET status='ACTIVE' WHERE application_id='spendguru' AND module_id='benchmark'",[]],
+              ]){await owner.query(deny,values);try{assert.equal((await routes[kind](input(kind))).status,status)}finally{await owner.query(restore,values)}}
+              const deny=randomUUID();await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'spendguru',$2,$3,'DENY','forecast.read','forecast')",[deny,A,U])
+              try{assert.equal((await routes[kind](input(kind))).status,403)}finally{await owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[deny])}
+            }
+            assert.equal(reads,before)
+          })
+          await t.test('Current authority, dedicated organisation and tainted projection cannot substitute native readiness authority',async()=>{
+            const before=reads
+            assert.equal((await createOperationForecastReadinessHandler('capability',forecastHost,A,read)(input('capability'))).status,403);assert.equal(reads,before)
+            const fixed=createSg2PrivateForecastReadinessHost({...forecastConfig,application:{...forecastConfig.application,profileId:'PORR_SUITE',organisationId:A}})
+            assert.equal((await createOperationForecastReadinessHandler('readiness',fixed,A,read)(input('readiness',B))).status,400);assert.equal(reads,before)
+            const bad=createOperationForecastReadinessHandler('readiness',host,A,async selected=>({...await sourceRead(selected),privateUser:'SYNTHETIC_PRIVATE_FORECAST_MARKER'}))
+            const response=await bad(input('readiness'));assert.equal(response.status,403);assert(!(await response.text()).includes('SYNTHETIC_PRIVATE_FORECAST_MARKER'))
+            const failed=createOperationForecastReadinessHandler('readiness',host,A,async selected=>{
+              const value=await sourceRead(selected)
+              return {...value,status:'FAILED',sourceAvailability:'FAILED',variants:value.variants.map(item=>({...item,sourceAvailability:'FAILED'}))}
+            })
+            assert.equal((await failed(input('readiness'))).status,503)
+            const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'resourceId' LIKE 'forecast-readiness:%' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+            assert.deepEqual(events.map(e=>e.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+          })
+          await t.test('readiness OUTCOME audit outage withholds data and independently retains correlated FAILURE',async()=>{
+            await owner.query("CREATE FUNCTION profitia_access.reject_readiness_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' AND NEW.event->>'resourceId' LIKE 'forecast-readiness:%' THEN RAISE EXCEPTION 'synthetic readiness audit outage'; END IF; RETURN NEW; END $$;CREATE TRIGGER reject_readiness_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.reject_readiness_outcome()")
+            try{const response=await routes.readiness(input('readiness'));assert.equal(response.status,503);assert(!(await response.text()).includes('synthetic readiness audit outage'))}
+            finally{await owner.query('DROP TRIGGER reject_readiness_outcome ON profitia_access.security_events;DROP FUNCTION profitia_access.reject_readiness_outcome()')}
+            const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->>'resourceId' LIKE 'forecast-readiness:%' ORDER BY event_id DESC LIMIT 2")).rows.map(row=>row.event)
+            assert.deepEqual(events.map(e=>e.phase),['FAILURE','INTENT']);assert.equal(events[0].decisionId,events[1].decisionId)
+          })
+        })
         await t.test('period API keeps default and END_OF_PERIOD inside the same current private authority and source gates',async t=>{
           const {buildLiveForecastBridgePayloadFromHistory,selectMinimalLawfulCurrentTrainingPayload}=await import('../lib/forecast/live-market-input.ts')
           const {resolveForecastTechnicalMinimumObservations}=await import('../lib/forecast/current-fast-policy.ts')
