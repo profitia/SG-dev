@@ -31,6 +31,6 @@ for(const [name,patch]of [
 ])test(name+' is refused before database lookup',()=>assert.throws(()=>createExternalCallHost({...base,binding:{...base.binding,...patch}}),TypeError))
 test('extension schema, declarations and source have explicit exact digests',async()=>{
  const sql=fs.readFileSync(new URL(externalCallSchemaUrl));assert.equal(await externalCallSchemaDigest(),hash(sql))
- const expected=createHash('sha256').update(fs.readFileSync(new URL('../src/external-call.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/external-call.d.mts',import.meta.url))).update(hash(sql)).digest('hex')
+ const expected=createHash('sha256').update(fs.readFileSync(new URL('../src/external-call.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/external-call.d.mts',import.meta.url))).update(hash(sql)).update(fs.readFileSync(new URL('../src/native-external-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/native-external-transport.d.mts',import.meta.url))).update(hash(fs.readFileSync(new URL('../migrations/access/012-native-external-transport.sql',import.meta.url)))).digest('hex')
  assert.equal(await externalCallSourceDigest(),expected)
 })
