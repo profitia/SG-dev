@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
 
-import { Prisma } from '@/generated/market-data-client'
+import { Prisma, type PrismaClient } from '@/generated/market-data-client'
 import { serverEnv } from '@/lib/env'
 import { resolveExactForecastCapability } from '@/lib/forecast/capability-resolver'
 import { buildForecastHistoryFingerprint as buildCanonicalForecastHistoryFingerprint } from '@/lib/forecast/history-fingerprint'
@@ -2689,8 +2689,19 @@ function createDefaultBridge(): ForecastBridge {
   }
 }
 
-export async function readCurrentRunFromPrisma(key: ForecastCacheLookupKey): Promise<PersistedCurrentArtifact | null> {
-  const prisma = getMarketDataPrisma()
+export type ForecastCurrentReadClient = {
+  readonly forecastCurrentRun: Pick<PrismaClient['forecastCurrentRun'], 'findFirst'>
+}
+
+export type ForecastCurrentReadDependencies = {
+  prisma: ForecastCurrentReadClient
+}
+
+export async function readCurrentRunFromPrisma(
+  key: ForecastCacheLookupKey,
+  dependencies?: ForecastCurrentReadDependencies,
+): Promise<PersistedCurrentArtifact | null> {
+  const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -3432,8 +3443,11 @@ export async function writeVerificationRunWithPrisma(
   })
 }
 
-async function readLatestCurrentRunFromPrisma(key: ForecastPreparedLookupKey) {
-  const prisma = getMarketDataPrisma()
+export async function readLatestCurrentRunFromPrisma(
+  key: ForecastPreparedLookupKey,
+  dependencies?: ForecastCurrentReadDependencies,
+): Promise<PersistedCurrentArtifact | null> {
+  const prisma = dependencies === undefined ? getMarketDataPrisma() : dependencies?.prisma
   if (!prisma) {
     throw new Error('Forecast library datastore is unavailable.')
   }
@@ -3482,7 +3496,7 @@ async function readLatestCurrentRunFromPrisma(key: ForecastPreparedLookupKey) {
   }
 
   return latest
-    ? readCurrentRunFromPrisma({ ...key, ...latest })
+    ? readCurrentRunFromPrisma({ ...key, ...latest }, dependencies)
     : null
 }
 

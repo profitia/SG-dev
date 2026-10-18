@@ -10,7 +10,8 @@ import { createStoredCurrentForecastReader } from '../lib/forecast/stored-curren
 import { createStoredMarketHistoryReader } from '../lib/market-data/stored-read.ts'
 import { buildRollingDailyHistoryFingerprint, ROLLING_DAILY_INPUT_SOURCE } from '../lib/forecast/rolling-daily-maintenance.ts'
 import { ROLLING_DAILY_METHOD_ID, ROLLING_DAILY_METHOD_VERSION } from '../lib/forecast/rolling-daily-policy.ts'
-import { createCurrentForecastStatisticalCompatibility } from '../lib/forecast/identity.ts'
+import { buildForecastArtifactCadenceIdentity, createCurrentForecastStatisticalCompatibility, resolveForecastMethodContract, resolveLegacyForecastStatisticalCompatibility } from '../lib/forecast/identity.ts'
+import { readCurrentRunFromPrisma, readLatestCurrentRunFromPrisma } from '../lib/forecast/service.ts'
 
 const pg = createRequire(new URL('../../architecture-lab/package.json', import.meta.url))('pg')
 const DATABASE = 'sg2_forecast_read_test', OWNER = 'profitia_forecast_read_owner', MARKET_OWNER = 'profitia_market_read_owner'
@@ -197,4 +198,131 @@ test('actual generated forecast ORM reads a closed source view with canonical id
     })
     assert.equal(external, 0)
   } finally { globalThis.fetch = fetch; await historyPrisma?.$disconnect(); await prisma?.$disconnect(); await owner?.end(); await root.end() }
+})
+
+test('existing Current DAO keeps exact and latest reads on the supplied real ordinary Prisma transaction', async t => {
+  const root = new pg.Client({ connectionString: assertIsolatedTestConnection(process.env.SG2_OPERATION_TEST_OWNER_URL, 'sg2_operation_test', 'architecture_test_owner') })
+  const role = 'sg2_current_dao_test_reader', schema = 'forecast_current_dao_test'
+  const previousUrl = process.env.MARKET_DATA_DATABASE_URL
+  const previousGlobal = globalThis.__sgRuntimeMarketDataPrisma__
+  const previousFetch = globalThis.fetch
+  let owner, prisma, globalReads = 0, externalReads = 0
+  await root.connect()
+  try {
+    if (!(await root.query('SELECT 1 FROM pg_database WHERE datname=$1', [DATABASE])).rowCount) await root.query(`CREATE DATABASE ${DATABASE}`)
+    if (!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1', [role])).rowCount) {
+      await root.query(`CREATE ROLE ${role} LOGIN PASSWORD 'isolated_ci_only' NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS CONNECTION LIMIT 1`)
+    }
+    const url = new URL(process.env.SG2_OPERATION_TEST_OWNER_URL); url.pathname = `/${DATABASE}`
+    owner = new pg.Client({ connectionString: url.toString() }); await owner.connect()
+    await owner.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE; CREATE SCHEMA ${schema};
+      CREATE TYPE ${schema}."ForecastTargetBasis" AS ENUM('MONTHLY_AVERAGE','END_OF_PERIOD','POINT_IN_TIME');
+      CREATE TABLE ${schema}.forecast_current_runs (
+        id text PRIMARY KEY,"seriesId" text,"displayName" text,description text,frequency text,currency text,unit text,"sourceLabel" text,
+        "inputSource" text,"inputRunId" text,"historyFingerprint" text,"targetBasis" ${schema}."ForecastTargetBasis","methodId" text,
+        "historyStartAt" timestamp,"historyEndAt" timestamp,"observationCount" integer,"forecastOriginAt" timestamp,
+        "modelId" text,"methodVersion" text,"trainingWindowPolicyId" text,"effectiveTrainingPolicyId" text,
+        status text,"failureReason" text,"runtimeSeconds" double precision,"createdAt" timestamp DEFAULT now(),"updatedAt" timestamp DEFAULT now());
+      CREATE TABLE ${schema}.forecast_current_points (
+        id text PRIMARY KEY,"runId" text REFERENCES ${schema}.forecast_current_runs(id),"horizonLabel" text,"horizonSteps" integer,
+        "forecastDate" timestamp,"forecastValue" numeric(24,8),"fitStatus" text,"failureReason" text,"selectedVariant" text,
+        "selectionMetric" text,"selectionScore" double precision,"metadataJson" jsonb,"createdAt" timestamp DEFAULT now(),"updatedAt" timestamp DEFAULT now());
+      CREATE TABLE ${schema}.synthetic_private(secret text);
+      INSERT INTO ${schema}.synthetic_private VALUES('SYNTHETIC_PRIVATE_DAO_MARKER');
+      REVOKE ALL ON SCHEMA ${schema} FROM PUBLIC; GRANT USAGE ON SCHEMA ${schema} TO ${role};
+      GRANT SELECT ON ${schema}.forecast_current_runs,${schema}.forecast_current_points TO ${role};
+      GRANT USAGE ON TYPE ${schema}."ForecastTargetBasis" TO ${role}`)
+    const method = resolveForecastMethodContract('MONTHLY_AVERAGE')
+    const statistical = createCurrentForecastStatisticalCompatibility({ sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY', targetSemantics: method.targetSemantics })
+    const key = { seriesId: 'synthetic_monthly_dao', modelId: 'naive', targetSemantics: method.targetSemantics,
+      methodId: method.methodId, methodVersion: method.methodVersion, inputSource: 'SYNTHETIC_STORED_HISTORY', historyFingerprint: 'older-history',
+      targetBasis: 'MONTHLY_AVERAGE', frequencyIdentity: buildForecastArtifactCadenceIdentity({ sourceFrequency: 'MONTHLY', targetCadence: 'MONTHLY' }),
+      trainingWindowPolicyId: statistical.trainingWindowPolicyId, effectiveTrainingPolicyId: statistical.effectiveTrainingPolicyId }
+    for (const [id, hash, status, updated] of [['older','older-history','AVAILABLE','2025-01-01'],['latest','new-history','AVAILABLE','2025-02-01'],['failed','failed-history','FAILED','2025-03-01']]) {
+      await owner.query(`INSERT INTO ${schema}.forecast_current_runs
+        (id,"seriesId","modelId","displayName",description,frequency,"inputSource","inputRunId","historyFingerprint","targetBasis","methodId","methodVersion",
+        "trainingWindowPolicyId","effectiveTrainingPolicyId","historyStartAt","historyEndAt","observationCount","forecastOriginAt",status,"runtimeSeconds","updatedAt")
+        VALUES($1,$2,$3,'Synthetic monthly forecast',null,$4,$5,'synthetic-technical-run',$6,$7,$8,$9,$10,$11,'2024-01-01','2024-12-01',12,'2024-12-01',$12,0,$13)`,
+      [id,key.seriesId,key.modelId,key.frequencyIdentity,key.inputSource,hash,key.targetBasis,key.methodId,key.methodVersion,key.trainingWindowPolicyId,key.effectiveTrainingPolicyId,status,updated])
+      for (const [horizon,steps,value] of [['3M',3,null],['1M',1,0]]) {
+        await owner.query(`INSERT INTO ${schema}.forecast_current_points(id,"runId","horizonLabel","horizonSteps","forecastDate","forecastValue")
+          VALUES($1,$2,$3,$4,'2025-01-01',$5)`,[`${id}-${horizon}`,id,horizon,steps,value])
+      }
+    }
+    const runtime = new URL(url); runtime.username = role; runtime.password = 'isolated_ci_only'
+    runtime.searchParams.set('schema',schema); runtime.searchParams.set('connection_limit','1')
+    prisma = new PrismaClient({ datasources: { db: { url: runtime.toString() } } })
+    process.env.MARKET_DATA_DATABASE_URL = runtime.toString()
+    globalThis.__sgRuntimeMarketDataPrisma__ = { $on() { globalReads++; throw Error('Explicit DAO must not resolve the global client') } }
+    globalThis.fetch = async () => { externalReads++; throw Error('Prepared DAO must not call a provider') }
+    await t.test('real ordinary role, exact nested point mapping, zero and null are preserved', async () => {
+      const [identity] = await prisma.$queryRawUnsafe('SELECT current_user,session_user,current_database() AS db')
+      assert.equal(identity.current_user,role); assert.equal(identity.session_user,role); assert.equal(identity.db,DATABASE)
+      const result = await readCurrentRunFromPrisma(key,{prisma})
+      assert.equal(result.historyFingerprint,key.historyFingerprint); assert.equal(result.modelId,'naive')
+      assert.equal(result.targetBasis,'MONTHLY_AVERAGE'); assert.equal(result.frequencyIdentity,key.frequencyIdentity)
+      assert.deepEqual(result.statisticalCompatibility,statistical)
+      assert.deepEqual(Object.keys(result.currentForecast),['1M','3M'])
+      assert.equal(result.currentForecast['1M'].forecastValue,0); assert.equal(result.currentForecast['3M'].forecastValue,null)
+      assert.equal(result.runtimeSeconds,0); assert.equal(result.description,null)
+    })
+    await t.test('latest AVAILABLE and its full artifact use the same real read-only repeatable transaction', async () => {
+      const result = await prisma.$transaction(async tx => {
+        await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY')
+        assert.equal((await tx.$queryRawUnsafe('SHOW transaction_read_only'))[0].transaction_read_only,'on')
+        return readLatestCurrentRunFromPrisma(key,{prisma:tx})
+      },{isolationLevel:'RepeatableRead'})
+      assert.equal(result.historyFingerprint,'new-history'); assert.equal(result.currentForecast['1M'].forecastValue,0)
+      assert.equal(globalReads,0)
+    })
+    await t.test('all persisted request identity dimensions remain exact and do not refit missing artifacts', async () => {
+      for (const field of ['seriesId','modelId','methodId','methodVersion','frequencyIdentity','trainingWindowPolicyId','effectiveTrainingPolicyId']) {
+        assert.equal(await readCurrentRunFromPrisma({...key,[field]:'synthetic-mismatch'},{prisma}),null)
+        assert.equal(await readLatestCurrentRunFromPrisma({...key,[field]:'synthetic-mismatch'},{prisma}),null)
+      }
+      assert.equal(await readCurrentRunFromPrisma({...key,targetBasis:'END_OF_PERIOD'},{prisma}),null)
+      assert.equal(await readLatestCurrentRunFromPrisma({...key,targetBasis:'END_OF_PERIOD'},{prisma}),null)
+      for (const field of ['inputSource','historyFingerprint']) assert.equal(await readCurrentRunFromPrisma({...key,[field]:'synthetic-mismatch'},{prisma}),null)
+    })
+    await t.test('malformed explicit dependencies fail closed before any global fallback', async () => {
+      for (const dependencies of [null,{}, {prisma:null},{prisma:undefined}]) {
+        await assert.rejects(readCurrentRunFromPrisma(key,dependencies),/datastore is unavailable/)
+        await assert.rejects(readLatestCurrentRunFromPrisma(key,dependencies),/datastore is unavailable/)
+      }
+      assert.equal(globalReads,0)
+    })
+    await t.test('SQL refuses private reads and writes; DAO cannot silently retry with the global owner after a permission error', async () => {
+      await assert.rejects(prisma.$queryRawUnsafe(`SELECT * FROM ${schema}.synthetic_private`))
+      await assert.rejects(prisma.$executeRawUnsafe(`DELETE FROM ${schema}.forecast_current_runs`))
+      await assert.rejects(prisma.$executeRawUnsafe(`CREATE TABLE ${schema}.forged(id integer)`))
+      await owner.query(`REVOKE SELECT ON ${schema}.forecast_current_points FROM ${role}`)
+      try { await assert.rejects(readLatestCurrentRunFromPrisma(key,{prisma})); assert.equal(globalReads,0) }
+      finally { await owner.query(`GRANT SELECT ON ${schema}.forecast_current_points TO ${role}`) }
+      assert.equal((await readLatestCurrentRunFromPrisma(key,{prisma})).historyFingerprint,'new-history')
+    })
+    await t.test('existing missing-policy-column fallback stays on the explicit client and retains its legacy compatibility', async () => {
+      await owner.query(`ALTER TABLE ${schema}.forecast_current_runs DROP COLUMN "trainingWindowPolicyId", DROP COLUMN "effectiveTrainingPolicyId"`)
+      try {
+        const legacy = resolveLegacyForecastStatisticalCompatibility('CURRENT',{ sourceFrequency:'MONTHLY',targetCadence:'MONTHLY',targetSemantics:method.targetSemantics })
+        assert.deepEqual((await readCurrentRunFromPrisma(key,{prisma})).statisticalCompatibility,legacy)
+        const latest = await readLatestCurrentRunFromPrisma(key,{prisma})
+        assert.equal(latest.historyFingerprint,'new-history'); assert.deepEqual(latest.statisticalCompatibility,legacy)
+        assert.equal(globalReads,0)
+      } finally {
+        await owner.query(`ALTER TABLE ${schema}.forecast_current_runs ADD COLUMN "trainingWindowPolicyId" text, ADD COLUMN "effectiveTrainingPolicyId" text`)
+        await owner.query(`UPDATE ${schema}.forecast_current_runs SET "trainingWindowPolicyId"=$1,"effectiveTrainingPolicyId"=$2`,[key.trainingWindowPolicyId,key.effectiveTrainingPolicyId])
+      }
+    })
+    await t.test('omitting the dependency retains the existing global client behavior and result', async () => {
+      globalThis.__sgRuntimeMarketDataPrisma__ = prisma
+      assert.deepEqual(await readCurrentRunFromPrisma(key),await readCurrentRunFromPrisma(key,{prisma}))
+      assert.deepEqual(await readLatestCurrentRunFromPrisma(key),await readLatestCurrentRunFromPrisma(key,{prisma}))
+    })
+    assert.equal(globalReads,0); assert.equal(externalReads,0)
+  } finally {
+    globalThis.fetch = previousFetch; globalThis.__sgRuntimeMarketDataPrisma__ = previousGlobal
+    if (previousUrl === undefined) delete process.env.MARKET_DATA_DATABASE_URL
+    else process.env.MARKET_DATA_DATABASE_URL = previousUrl
+    await prisma?.$disconnect(); await owner?.end(); await root.end()
+  }
 })
