@@ -165,3 +165,65 @@ The application must admit the exact parent/child window and origin before trans
 Timeout, cancellation, page/session change or port close stop observation; the backend may already have committed. They never prove absent delivery, rollback, refund, queue state or scientific readiness. A transport failure exposes only a generic unavailable observation; preserve the intent on an explicit retry. A202 acceptance remains separate from actual shared queue/prepared states. Application integration and live release require their own evidence.
 
 Consumer source acceptance must cover the transitive `embedded-channel-core.mjs` bytes as well as the selected wrapper and types, rather than treat the read wrapper hash alone as the complete implementation. SG2 embedding adoption and SRM compatibility use separate governed tasks and their own continuity. No source package version activates a product or changes live resources.
+
+
+## Optional external-call admission candidate (1.13.0)
+
+`@profitia/platform-contracts/external-call` composes the existing authentic
+`platform-ingestion` host and its single source audit writer. Optional SQL009
+is installed by the same controlled NOLOGIN owner. Old SQL008, operation
+catalogue, private request/delegation and browser READ/COMMAND APIs stay unchanged.
+No React version or new worker/runtime/queue is involved.
+
+This source primitive is **not** a HUMAN supplier refresh, Finder AI entitlement,
+KYS/PII approval, tenant authorization, vendor billing counter or customer charge.
+The receiving application must admit those separately. Source/installation,
+physical ordinary role, application/environment, source actor/binding revision,
+source policy revision, fixed origin/path/method and finite external policy are
+checked against the real database. Missing policy denies. HTTP is allowed only
+for actual Development loopback tests with `SYNTHETIC_ONLY`; HTTPS is required
+otherwise. No TLS verification bypass is supported.
+
+A server caller supplies a private random 256-bit intent key, kept outside logs
+and never derived from a public button/selection key. Reuse it for recovery of
+that exact intent. Different input with the same key conflicts. A unique opaque
+intent binding survives technical actor, role, policy and configuration changes;
+a new source proof does not reopen a previously admitted intent. Request and
+projected-response bindings use HMAC with that key; the shared control store
+contains only opaque identifiers/digests and states. No query, body, response,
+credential, user or organisation is stored there. Do not mint a new intent key
+as an automatic retry of an uncertain prior attempt.
+
+PLAN atomically consumes one `UPSTREAM_ATTEMPT_ADMISSION`. ATTEMPT must be freshly
+written and its actual commit observed by this adapter before the one fetch
+invocation. PLAN/ATTEMPT/SETTLE each separately consume the existing truthful
+`SOURCE_TRANSACTION` unit. Admissions are conservative, finite and never refunded
+automatically. They are not evidence of vendor requests received or vendor cost.
+An acknowledgement lost after PLAN may recover the still PLANNED intent. Lost
+ATTEMPT acknowledgement, transport failure, timeout or caller cancellation cannot
+mint another fetch. Lost response or SETTLE acknowledgement cannot report success
+or recreate an unretained body. Replays expose no body: result availability is
+intentionally distinct from a durable source receipt. No exactly-once network or
+billing guarantee is made; a process crash can leave an admitted attempt unused
+or unresolved. Operator reconciliation is a separately governed future task.
+
+Request bytes (URL plus optional JSON body), response JSON, depth, duration and
+cancellation are bounded. Destination and projection are server-owned, redirects
+are refused, credentials are deferred until after the observed attempt commit,
+and policy is rechecked after credential lookup and before result publication.
+The deadline cannot exceed the observed current authority expiry. Projection is
+a pure, bounded server callback and cannot hide another side effect.
+Credential callbacks may only return already available header values; token
+exchange or other network work needs its own admission. Revocation observed after
+a response denies publication; a database check and a remote effect are not one
+atomic transaction. Retaining an admission is not permission to retain vendor
+content; licensing, retention and customer privacy rules remain caller duties.
+
+Only the actual returned result has in-process `externalCallEvidence`. Copying a
+receipt/result does not grant authority. HTTP 4xx/5xx with an admitted projection
+are observed responses, not business success. Generic unavailability discloses
+only `NOT_SENT`, `UNVERIFIED` or `RESULT_NOT_RETAINED`, with automatic retry disabled.
+
+The candidate has no automatic application adoption, package registry publication,
+cloud SQL installation, grants, provider request or product deployment. Explicit
+SG2/SRM lock and compatibility acceptance and controlled releases remain required.

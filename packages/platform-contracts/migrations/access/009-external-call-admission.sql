@@ -49,7 +49,7 @@ CREATE TABLE profitia_external_call.calls(
  policy_id uuid NOT NULL REFERENCES profitia_external_call.policies(policy_id),policy_version bigint NOT NULL,
  login_role name NOT NULL,service_id uuid NOT NULL,service_binding_version text NOT NULL,source_policy_version text NOT NULL,
  application_id text NOT NULL,environment text NOT NULL,source_id text NOT NULL,resource_id text NOT NULL,
- configuration_version text NOT NULL,request_digest text NOT NULL CHECK(request_digest~'^[a-f0-9]{64}$'),
+ configuration_version text NOT NULL,intent_digest text NOT NULL CHECK(intent_digest~'^[a-f0-9]{64}$'),request_digest text NOT NULL CHECK(request_digest~'^[a-f0-9]{64}$'),
  status text NOT NULL CHECK(status IN('PLANNED','ATTEMPT_RESERVED','RESPONSE','UNVERIFIED','NOT_SENT')),
  attempt_effect_id uuid UNIQUE REFERENCES profitia_ingestion.effects(effect_id),
  settlement_effect_id uuid UNIQUE REFERENCES profitia_ingestion.effects(effect_id),
@@ -61,6 +61,7 @@ CREATE TABLE profitia_external_call.calls(
   OR status IN('RESPONSE','UNVERIFIED','NOT_SENT') AND attempt_effect_id IS NOT NULL AND settlement_effect_id IS NOT NULL AND attempt_reserved_at IS NOT NULL AND settled_at IS NOT NULL
     AND (status='RESPONSE' AND http_status IS NOT NULL AND response_digest IS NOT NULL OR status<>'RESPONSE' AND http_status IS NULL AND response_digest IS NULL))
 );
+CREATE UNIQUE INDEX one_external_intent ON profitia_external_call.calls(application_id,environment,source_id,resource_id,intent_digest);
 DO $rls$ DECLARE t text;BEGIN
  FOREACH t IN ARRAY ARRAY['installation','policies','calls'] LOOP
   EXECUTE format('ALTER TABLE profitia_external_call.%I ENABLE ROW LEVEL SECURITY',t);
@@ -111,10 +112,11 @@ BEGIN
  IF p_envelope IS NULL OR octet_length(p_envelope)>4096 THEN RAISE EXCEPTION 'External control unavailable' USING ERRCODE='42501';END IF;
  v:=p_envelope::jsonb;c:=v->'content';
  IF jsonb_typeof(v) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(v))<>2 OR NOT(v ?& ARRAY['content','sourceId'])
-  OR jsonb_typeof(c) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(c))<>7
-  OR NOT(c ?& ARRAY['action','callId','configurationVersion','httpStatus','requestDigest','responseDigest','status'])
+  OR jsonb_typeof(c) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(c))<>8
+  OR NOT(c ?& ARRAY['action','callId','configurationVersion','httpStatus','intentDigest','requestDigest','responseDigest','status'])
   OR jsonb_typeof(v->'sourceId') IS DISTINCT FROM 'string' OR jsonb_typeof(c->'action') IS DISTINCT FROM 'string'
   OR jsonb_typeof(c->'configurationVersion') IS DISTINCT FROM 'string' OR jsonb_typeof(c->'requestDigest') IS DISTINCT FROM 'string'
+  OR jsonb_typeof(c->'intentDigest') IS DISTINCT FROM 'string' OR c->>'intentDigest' !~ '^[a-f0-9]{64}$'
   OR c->>'action' NOT IN('PLAN','ATTEMPT','SETTLE') OR c->>'configurationVersion' !~ '^[A-Za-z0-9._:-]{1,128}$'
   OR c->>'requestDigest' !~ '^[a-f0-9]{64}$' THEN RAISE EXCEPTION 'External control unavailable' USING ERRCODE='42501';END IF;
  SELECT * INTO e FROM profitia_ingestion.effects WHERE effect_id=p_effect AND status='RESERVED' AND decision_id=p_decision
@@ -139,15 +141,15 @@ BEGIN
   IF c->>'callId' IS NOT NULL OR c->>'status' IS NOT NULL OR c->>'httpStatus' IS NOT NULL OR c->>'responseDigest' IS NOT NULL
     OR p.admitted_count>=p.capacity THEN RAISE EXCEPTION 'External admission unavailable' USING ERRCODE='42501';END IF;
   UPDATE profitia_external_call.policies SET admitted_count=admitted_count+1 WHERE policy_id=p.policy_id;
-  INSERT INTO profitia_external_call.calls(call_id,policy_id,policy_version,login_role,service_id,service_binding_version,source_policy_version,application_id,environment,source_id,resource_id,configuration_version,request_digest,status)
-   VALUES(p_effect,p.policy_id,p.version,session_user,(d->>'serviceId')::uuid,d->>'serviceBindingVersion',d->>'sourcePolicyVersion',d->>'applicationId',d->>'environment',p.source_id,p.resource_id,p.configuration_version,c->>'requestDigest','PLANNED');
+  INSERT INTO profitia_external_call.calls(call_id,policy_id,policy_version,login_role,service_id,service_binding_version,source_policy_version,application_id,environment,source_id,resource_id,configuration_version,intent_digest,request_digest,status)
+   VALUES(p_effect,p.policy_id,p.version,session_user,(d->>'serviceId')::uuid,d->>'serviceBindingVersion',d->>'sourcePolicyVersion',d->>'applicationId',d->>'environment',p.source_id,p.resource_id,p.configuration_version,c->>'intentDigest',c->>'requestDigest','PLANNED');
   RETURN jsonb_build_object('callId',p_effect,'status','PLANNED','fresh',true);
  END IF;
  id:=(c->>'callId')::uuid;
  SELECT * INTO r FROM profitia_external_call.calls WHERE call_id=id AND login_role=session_user AND policy_id=p.policy_id AND policy_version=p.version
   AND source_id=p.source_id AND resource_id=p.resource_id AND service_id::text=d->>'serviceId'
   AND service_binding_version=d->>'serviceBindingVersion' AND source_policy_version=d->>'sourcePolicyVersion' AND application_id=d->>'applicationId' AND environment=d->>'environment'
-  AND configuration_version=p.configuration_version AND request_digest=c->>'requestDigest' FOR UPDATE;
+  AND configuration_version=p.configuration_version AND intent_digest=c->>'intentDigest' AND request_digest=c->>'requestDigest' FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Current external intent required' USING ERRCODE='42501';END IF;
  IF c->>'action'='ATTEMPT' THEN
   IF r.status<>'PLANNED' OR c->>'status' IS NOT NULL OR c->>'httpStatus' IS NOT NULL OR c->>'responseDigest' IS NOT NULL THEN
@@ -220,4 +222,11 @@ BEGIN
 END $fn$;
 CREATE TRIGGER external_call_history BEFORE INSERT OR UPDATE OR DELETE ON profitia_external_call.calls FOR EACH ROW EXECUTE FUNCTION profitia_external_call.protect_calls();
 CREATE TRIGGER external_call_no_truncate BEFORE TRUNCATE ON profitia_external_call.calls FOR EACH STATEMENT EXECUTE FUNCTION profitia_external_call.protect_calls();
+CREATE FUNCTION profitia_external_call.control_truncate() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,pg_temp AS $fn$
+BEGIN
+ IF current_user<>'profitia_ingestion_owner' THEN RAISE EXCEPTION 'Controlled external policy owner required' USING ERRCODE='42501';END IF;RETURN NULL;
+END $fn$;
+CREATE TRIGGER external_policy_no_direct_truncate BEFORE TRUNCATE ON profitia_external_call.policies FOR EACH STATEMENT EXECUTE FUNCTION profitia_external_call.control_truncate();
+CREATE TRIGGER external_installation_no_direct_truncate BEFORE TRUNCATE ON profitia_external_call.installation FOR EACH STATEMENT EXECUTE FUNCTION profitia_external_call.control_truncate();
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA profitia_external_call FROM PUBLIC;
