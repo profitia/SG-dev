@@ -3,7 +3,7 @@
 Date: 2026-10-18. Profile SRM, TARGET_ENVIRONMENT=development.
 Task: SRM-E1-EXTERNAL-CALL-SOURCE-COMPATIBILITY-20261018.
 Producer ARCHITECTURE-E1-EXTERNAL-CALL-ADMISSION-20261018, PR485,
-source a18845a8f30d2c2e367b1e7b657078507003e0ae.
+source 1066119a1c1fde29c50b2c627e068f14378441f8.
 
 Status: SOURCE COMPATIBILITY IN PROGRESS; not a product release.
 
@@ -26,3 +26,7 @@ pending. No
 cloud schema, role/grant, data, secret, configuration, flag, resource, provider
 request, cost or deployment was changed. Development source acceptance does not
 authorize Staging reporting or imply Development/Stage runtime acceptance.
+
+The final candidate explicitly accepts the producer immutable-input correction.
+The optional module fingerprint changed; SQL/API/old engine fingerprints did not.
+Exact source guards remain enabled and require the new digest.
