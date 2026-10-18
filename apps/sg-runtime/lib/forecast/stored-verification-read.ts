@@ -31,7 +31,7 @@ async function readPrepared(
     if(seriesId!==selection.seriesId||range!=='ALL')throw new Error('Stored history scope mismatch')
     return {history,marketDataSource:'postgres',cacheStatus:'hit'}
   }
-  const rollingDependencies={prisma:transaction,resolveHistory}
+  const rollingDependencies={prisma:transaction,resolveHistory,projection:'STORED_SHARED' as const}
   const rollingFull=createPreparedRollingDailyForecastVerificationReader(rollingDependencies)
   const rollingFast=createPreparedRollingDailyFastForecastVerificationReader(rollingDependencies)
   const rollingRecent=createPreparedRollingDailyRecentForecastVerificationReader(rollingDependencies)
@@ -55,8 +55,8 @@ async function readPrepared(
     targetCadence:capability.targetCadence,expectedHistoryFingerprint}
   const refuse=async():Promise<never>=>{throw new Error('Stored Verification cannot use an execution or source-mutation port')}
   const service=createForecastLibraryService({repository:{readCurrentRun:refuse,writeCurrentRun:refuse,writeVerificationRun:refuse,
-    readVerificationRun:key=>readVerificationRunFromPrisma(key,{prisma:transaction}),
-    readLatestVerificationRun:key=>readLatestVerificationRunFromPrisma(key,{prisma:transaction})},
+    readVerificationRun:key=>readVerificationRunFromPrisma(key,{prisma:transaction,projection:'STORED_SHARED'}),
+    readLatestVerificationRun:key=>readLatestVerificationRunFromPrisma(key,{prisma:transaction,projection:'STORED_SHARED'})},
     bridge:{exportHistory:refuse,exportCurrent:refuse,exportVerification:refuse},resolveExactPreparedCapability:refuse,executePreparedCurrent:refuse,
     executionLedger:{recordEvent:refuse,readExecution:refuse},
   })

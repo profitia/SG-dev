@@ -1,3 +1,5 @@
+import {readCurrentRunFromPrisma,readLatestCurrentRunFromPrisma,readVerificationRunFromPrisma,readLatestVerificationRunFromPrisma} from '../lib/forecast/service'
+import {createPreparedRollingDailyForecastVerificationReader} from '../lib/forecast/rolling-daily-verification'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type {BenchmarkHistoricalSeriesResult} from '../lib/benchmark/contracts'
@@ -62,4 +64,22 @@ test('unsupported source frequency produces no fabricated readiness and does not
   let calls=0;const refuse=async():Promise<never>=>{calls++;throw Error('Unsupported frequency must not read data')}
   const port:ForecastPreparedStateDataPort={readLatestCurrent:refuse,readLatestHistorical:refuse,readRollingSnapshot:refuse,readRollingMaintenance:refuse,countRollingVerification:refuse}
   assert.deepEqual(await readForecastPreparedVariantsFromPort(id,{...history,frequency:'UNKNOWN'},port,{now}),[]);assert.equal(calls,0)
+}))
+
+test('explicit native projection rejects missing, malformed, root or unknown clients before a global or ORM fallback',async()=>withoutGlobal(async()=>{
+  const never=()=>{assert.fail('Invalid projection cannot invoke a data port')}
+  for(const fn of [readCurrentRunFromPrisma,readLatestCurrentRunFromPrisma,readVerificationRunFromPrisma,readLatestVerificationRunFromPrisma]){
+    const call=fn as unknown as (key:unknown,input:unknown)=>Promise<unknown>
+    for(const input of [
+      {prisma:null,projection:'STORED_SHARED'},
+      {prisma:{forecastCurrentRun:{findFirst:never}},projection:'STORED_SHARED'},
+      {prisma:{$queryRawUnsafe:never,$executeRawUnsafe:never,$transaction:never},projection:'STORED_SHARED'},
+      {prisma:{$queryRawUnsafe:never,$executeRawUnsafe:never},projection:'UNREVIEWED'},
+    ])await assert.rejects(call({},input),/live stored .* projection transaction/)
+  }
+  for(const input of [
+    {prisma:null,projection:'STORED_SHARED'},
+    {prisma:{$queryRawUnsafe:never,$executeRawUnsafe:never,$transaction:never},projection:'STORED_SHARED'},
+    {prisma:{$queryRawUnsafe:never,$executeRawUnsafe:never},projection:'UNREVIEWED'},
+  ])await assert.rejects(createPreparedRollingDailyForecastVerificationReader(input as never)({seriesId:id,modelId:'naive',targetBasis:'POINT_IN_TIME'}),/live Rolling projection transaction/)
 }))

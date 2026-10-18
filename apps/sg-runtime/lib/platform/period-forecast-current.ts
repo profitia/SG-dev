@@ -13,9 +13,9 @@ const finite = z.number().finite()
 const date = z.string().datetime({ offset: true })
 const fingerprint = z.string().regex(/^[a-f0-9]{64}$/)
 const method = z.enum(['EMPIRICAL_RESIDUAL_QUANTILES_HF7', 'NAIVE_RANDOM_WALK_INNOVATION_RMS_NORMAL',
-  'STATSMODELS_ETS_SIMULATION', 'STATSMODELS_DAMPED_HOLT_SIMULATION'])
+  'STATSMODELS_ETS_SIMULATION', 'STATSMODELS_DAMPED_HOLT_SIMULATION', 'STATSMODELS_ARIMA_FORECAST_DISTRIBUTION'])
 const calibrationVersion = z.enum(['empirical-exact-residual-quantiles-v1', 'naive-random-walk-innovation-rms-normal-v1',
-  'statsmodels-ets-simulation-seed-1729-r1000-v1', 'statsmodels-damped-holt-simulation-seed-1729-r1000-v1'])
+  'statsmodels-ets-simulation-seed-1729-r1000-v1', 'statsmodels-damped-holt-simulation-seed-1729-r1000-v1', 'statsmodels-arima-conf-int-alpha-0.2-v1'])
 const bandSource = z.enum(['EMPIRICAL_EXACT_RESIDUALS', 'MODEL_NATIVE_SHORT_HISTORY'])
 const bandIdentity = z.object({
   forecastIdentity: z.object({ seriesId: z.string(), modelId: model, targetSemantics: basis, methodId: basis, methodVersion: z.string() }).strict(),
@@ -106,6 +106,10 @@ export function validatePublicPeriodCurrentForecast(value: unknown, selection: F
       throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
     }
     if (metadata?.uncertaintyBand) {
+      const b=metadata.uncertaintyBand
+      if ((b.calibrationMethod==='STATSMODELS_ARIMA_FORECAST_DISTRIBUTION'||b.calibrationVersion==='statsmodels-arima-conf-int-alpha-0.2-v1')
+        && (data.modelId!=='arima'||b.source!=='MODEL_NATIVE_SHORT_HISTORY'||b.calibrationMethod!=='STATSMODELS_ARIMA_FORECAST_DISTRIBUTION'
+          ||b.calibrationVersion!=='statsmodels-arima-conf-int-alpha-0.2-v1')) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       try {
         const derived = attachExactUncertaintyBandIdentity({ seriesId: data.seriesId, modelId: data.modelId,
           targetBasis: data.targetBasis, methodVersion: data.methodVersion, inputSource: data.source.kind,

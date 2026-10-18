@@ -1,3 +1,4 @@
+import { selectTrailingRollingDailyCurrentHistory } from './rolling-daily-current-ownership'
 import type { PrismaClient, Prisma } from '@/generated/market-data-client'
 import type { BenchmarkHistoricalSeriesResult } from '@/lib/benchmark/contracts'
 import { BenchmarkAppError } from '@/lib/benchmark/errors'
@@ -97,7 +98,7 @@ export function createStoredForecastSourceReader(prisma: Pick<PrismaClient, '$tr
           database_name: string; runtime_role: string; source_ref: string; expires_at: Date
         }>>('SELECT schema_version,schema_digest,market_schema_digest,project_id,branch_id,database_name,runtime_role::text,source_ref,expires_at FROM profitia_forecast_read.installation WHERE singleton')
         const receipt = receipts[0]
-        if (receipts.length !== 1 || !receipt || receipt.schema_version !== '3.0.1' || receipt.schema_digest !== binding.schemaDigest
+        if (receipts.length !== 1 || !receipt || receipt.schema_version !== '3.0.2' || receipt.schema_digest !== binding.schemaDigest
           || receipt.market_schema_digest !== binding.marketSchemaDigest || receipt.project_id !== binding.projectId
           || receipt.branch_id !== binding.branchId || receipt.database_name !== binding.databaseName || receipt.runtime_role !== binding.role
           || typeof receipt.source_ref !== 'string' || !receipt.source_ref.length || receipt.source_ref.length > 256
@@ -136,8 +137,11 @@ export function createStoredCurrentForecastReader(prisma: Pick<PrismaClient, '$t
         return result
       }
       if (normalizeForecastSourceFrequency(history.frequency) !== 'DAILY') return currentForecastUnavailable(selection, 'MISS')
-      const fingerprint = buildRollingDailyHistoryFingerprint({ seriesId: selection.seriesId, displayName: history.displayName,
-        description: history.displayName, frequency: 'DAILY', source: history.source, points: history.historical })
+      if (!history.historical.some(point=>point.value!==null&&Number.isFinite(point.value))) return currentForecastUnavailable(selection,'MISS')
+      // Match the ORIGINAL producer's minimal lawful Current window. Full
+      // history remains the Verification identity; do not relax snapshot checks.
+      const fingerprint = buildRollingDailyHistoryFingerprint(selectTrailingRollingDailyCurrentHistory({ seriesId: selection.seriesId, displayName: history.displayName,
+        description: history.displayName, frequency: 'DAILY', source: history.source, points: history.historical }))
       const snapshot = await readRollingDailyCurrentForecastSnapshot({ seriesId: selection.seriesId, modelId: selection.modelId,
         sourceHistoryFingerprint: fingerprint }, { prisma: transaction })
       const result = snapshot.status === 'HIT' ? snapshot.payload : currentForecastUnavailable(selection, snapshot.status)

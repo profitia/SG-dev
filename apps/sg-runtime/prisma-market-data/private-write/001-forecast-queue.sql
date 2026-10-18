@@ -24,7 +24,7 @@ CREATE TABLE profitia_forecast_admission.installation(
   boundary_digest text NOT NULL CHECK(boundary_digest~'^[a-f0-9]{64}$'),
   source_schema_digest text NOT NULL CHECK(source_schema_digest='14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b'),
   market_schema_digest text NOT NULL CHECK(market_schema_digest='596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304'),
-  forecast_schema_digest text NOT NULL CHECK(forecast_schema_digest='c5d3122371a7f038acf02f7f9f41fce0d34a2cb770e273e6cc78b2c73af31e90'),
+  forecast_schema_digest text NOT NULL CHECK(forecast_schema_digest='b3e24b43254c6ec8ae25dc1d9ec7da5e946c472510f3bdd81355760665b881ee'),
   project_id text NOT NULL,branch_id text NOT NULL,database_name name NOT NULL,runtime_role name NOT NULL,
   queue_owner name NOT NULL,trace_owner name NOT NULL,source_ref text NOT NULL CHECK(length(source_ref) BETWEEN 1 AND 256),
   expires_at timestamptz NOT NULL CHECK(isfinite(expires_at))
@@ -101,7 +101,7 @@ BEGIN
     OR NOT EXISTS(SELECT 1 FROM profitia_market_read.installation WHERE singleton AND database_name=current_database()
       AND project_id=i.project_id AND branch_id=i.branch_id AND schema_digest=i.market_schema_digest)
     OR NOT EXISTS(SELECT 1 FROM profitia_forecast_read.installation WHERE singleton AND database_name=current_database()
-      AND project_id=i.project_id AND branch_id=i.branch_id AND schema_version='3.0.1' AND schema_digest=i.forecast_schema_digest
+      AND project_id=i.project_id AND branch_id=i.branch_id AND schema_version='3.0.2' AND schema_digest=i.forecast_schema_digest
       AND market_schema_digest=i.market_schema_digest)
     OR (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_forecast_admission'
       AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity AND c.relowner='profitia_ingestion_owner'::regrole)<>2 THEN RETURN NULL;END IF;

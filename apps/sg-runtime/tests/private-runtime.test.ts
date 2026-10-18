@@ -270,7 +270,7 @@ test('stored current forecast is independently opt-in, pins its own source role 
   assert.equal(config.forecastRead?.binding.marketSchemaDigest,target.marketRead.schemaDigest)
   assert.equal(source.schemaDigest,createHash('sha256').update(readFileSync(new URL('../prisma-market-data/private-read/002-stored-rolling-current.sql',import.meta.url))).digest('hex'))
   assert.equal(source.defaultEnabled,false);assert.equal(source.observedState,'SOURCE_ONLY_NOT_INITIALIZED_OR_ACTIVATED')
-  assert.equal(source.schemaVersion,'3.0.1');assert.equal(source.configurationVersion,'sg2-private-stored-forecast-e1-v3-0-1')
+  assert.equal(source.schemaVersion,'3.0.2');assert.equal(source.configurationVersion,'sg2-private-stored-forecast-e1-v3-0-2')
   assert.match(source.remainingProvenance,/Non-daily/)
   assert.equal(source.observedCandidateSchemaCount,0);assert.equal(source.observedCandidateRoleCount,0)
   for(const flag of ['','yes','TRUE','1'])assert.throws(()=>readSg2PrivateSelectionConfiguration({...enabled,PROFITIA_FORECAST_READ_ENABLED:flag}),IdentityConfigurationUnavailable)

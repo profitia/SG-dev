@@ -86,7 +86,7 @@ test('native stored Verification uses the genuine generated source ORM and ordin
     await owner.query('BEGIN');await owner.query(`SET LOCAL ROLE ${MARKET_OWNER}`);await owner.query(marketSql);await owner.query('COMMIT')
     await owner.query(`GRANT USAGE ON SCHEMA profitia_market_read TO ${OWNER},${ROLE};GRANT SELECT ON profitia_market_read.series TO ${OWNER};GRANT SELECT ON profitia_market_read.series,profitia_market_read.observations TO ${ROLE}`)
     await owner.query('BEGIN');await owner.query(`SET LOCAL ROLE ${OWNER}`);await owner.query(sql)
-    await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.1',$1,$2,'isolated-verification-project','isolated-verification-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')",[digest,marketDigest,DATABASE,ROLE]);await owner.query('COMMIT')
+    await owner.query("INSERT INTO profitia_forecast_read.installation VALUES(true,'3.0.2',$1,$2,'isolated-verification-project','isolated-verification-branch',$3,$4,'SYNTHETIC_NOT_A_RELEASE',now()+interval '1 hour')",[digest,marketDigest,DATABASE,ROLE]);await owner.query('COMMIT')
     await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM ${OWNER},${MARKET_OWNER};GRANT USAGE ON SCHEMA profitia_forecast_read TO ${ROLE};GRANT SELECT ON ALL TABLES IN SCHEMA profitia_forecast_read TO ${ROLE};GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_forecast_read TO ${ROLE};GRANT USAGE ON TYPE profitia_forecast_read."ForecastTargetBasis",profitia_forecast_read."RollingDailyVerificationMaturityStatus" TO ${ROLE}`)
     const seeded=[]
     for(const basis of['MONTHLY_AVERAGE','END_OF_PERIOD'])for(const model of['naive','damped_holt','ets','arima'])for(const scope of['FULL','RECENT'])seeded.push(await seedPeriod(writer,basis,model,scope))
@@ -155,8 +155,8 @@ test('native stored Verification uses the genuine generated source ORM and ordin
         await owner.query("UPDATE profitia_forecast_read.installation SET schema_version='3.0.0'")
         await assert.rejects(read(selection),error=>error.code==='STORED_FORECAST_SOURCE_UNAVAILABLE'&&error.status===503)
       }finally{
-        await owner.query("UPDATE profitia_forecast_read.installation SET schema_version='3.0.1'")
-        await owner.query("ALTER TABLE profitia_forecast_read.installation ADD CONSTRAINT installation_schema_version_check CHECK(schema_version='3.0.1')")
+        await owner.query("UPDATE profitia_forecast_read.installation SET schema_version='3.0.2'")
+        await owner.query("ALTER TABLE profitia_forecast_read.installation ADD CONSTRAINT installation_schema_version_check CHECK(schema_version='3.0.2')")
       }
       assert.equal((await read(selection)).status,'AVAILABLE')
     })
