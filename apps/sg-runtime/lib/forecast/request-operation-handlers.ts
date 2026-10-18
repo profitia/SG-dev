@@ -45,7 +45,7 @@ export function createRuntimeForecastRequestHandler(resolveRuntime: () => Sg2Sel
     try {
       const runtime = resolveRuntime()
       if (runtime.provider !== 'clerk' || !runtime.forecastRequest) return respond(503)
-      return await createOperationForecastRequestHandler(runtime.forecastRequest.executor, runtime.defaultOrganisationId)(request)
+      return await createOperationForecastRequestHandler(runtime.forecastRequest.executor, runtime.defaultOrganisationId, runtime.forecastRequest.persist)(request)
     } catch { return respond(503) }
   }
 }

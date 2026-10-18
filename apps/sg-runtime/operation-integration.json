@@ -468,5 +468,45 @@
       "CONTROLLED_DEVELOPMENT_THEN_STAGING_RELEASE_PENDING",
       "DAILY_FAST_CALIBRATION_IS_NOT_FULL_HISTORY_VERIFICATION_FOR_ALL_MODELS"
     ]
+  },
+  "privateForecastDispatchRuntimeCandidate": {
+    "taskId": "SG2-E1-PRIVATE-FORECAST-DISPATCH-RUNTIME-20261018",
+    "platformVersion": "1.11.0",
+    "sourceMainBeforeThisUnit": "5e9c601393e8fcccc2bbec2e6f6892106b275f59",
+    "sourceDigests": {
+      "lib/forecast/delegated-delivery.ts": "de7899881287063924db7f4e068e98a9bdc62a1a5de162f6d473f28b6db6afcf",
+      "lib/forecast/dispatch-runtime.ts": "c71a8963b32d95e2a78e12b6f89d21616aaad4646b270ae3f38eead1e65126ae",
+      "lib/forecast/request-operation-handlers.ts": "912b4e7cd6d7c9daa7b1289724a2698f410ce241f84aa003eba6927f7260df8d",
+      "lib/platform/private-runtime.ts": "db3ade0e01d8c980b96fc188d6121f345159724934b82b3d525e29fa5bbc2e68",
+      "prisma/private-store/005-forecast-dispatch-discovery.sql": "8933b25779442733c8a3ac1375e3dbd514c597783f94992cc52d17d4f5612a87",
+      "scripts/run-forecast-preparation-worker.ts": "8d5d224b697ab9d9b6a28dde85039287f357dea6a2a41010dfd802fe17069ecf",
+      "deployment/private-runtime-targets.json": "60eda7ac85988f774461d378c9e8b736b8e98df47f17123f04b97ed188001d05"
+    },
+    "scope": "ATOMIC_NATIVE_REQUEST_DISPATCH_AND_EXISTING_CURRENT_WORKER_COMPOSITION",
+    "canonicalDispatchStoreReused": true,
+    "newQueueOrServiceCreated": false,
+    "boundedDiscoveryIdsOnly": 8,
+    "currentInternalAndExternalAuthorityRechecked": true,
+    "roundRobinDenialStarvationTested": true,
+    "sourceBudgetExhaustionRemainsUncertain": true,
+    "sourceSqlInstalled": false,
+    "privateSqlInstalled": false,
+    "runtimeRolesConfigured": false,
+    "productDeploymentPerformed": false,
+    "localValidation": {
+      "wholeTests": 572,
+      "originalBusinessTests": 61,
+      "originalQueueTests": 38,
+      "strict": "PASS",
+      "exactWholeCandidateAndMainCi": "PENDING_SEPARATE_PROOF"
+    },
+    "limitations": [
+      "SYNTHETIC_CLERK_SDK_RESPONSES_NOT_LIVE_OTP",
+      "DISCOVERY_HINT_NEVER_AN_EXECUTION_GRANT",
+      "SOURCE_TRANSACTION_UNITS_NOT_CPU_OR_PAID_VENDOR_COST",
+      "MAXIMUM_ATTEMPTS_REQUIRE_EXPLICIT_RECONCILIATION",
+      "PRIVATE_JOB_HISTORY_AND_BROWSER_SUBMISSION_PARITY_PENDING",
+      "DEVELOPMENT_THEN_STAGING_RELEASE_PENDING"
+    ]
   }
 }
