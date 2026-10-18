@@ -85,5 +85,23 @@
     "sql005Installed": false,
     "liveServiceRoleOrGrantProvisioned": false,
     "productDeploymentPerformed": false
+  },
+  "embeddedReadSourceCompatibility": {
+    "packageVersion": "1.9.0",
+    "contractId": "profitia.embedded-read",
+    "contractVersion": "1.0.0",
+    "sourceDigest": "d86912fe4723a8af6fb3e55bd3949f77e1617fe868ec9632d21ff996bd505c79",
+    "declarationDigest": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-EMBEDDED-READ-CHANNEL-20261018",
+      "repository": "profitia/SG-dev",
+      "sourceSha": "71b982509953f2bbdf5c0bd40c37ea4abc1f5982"
+    },
+    "receiverTaskId": "SRM-E1-EMBEDDED-READ-SOURCE-COMPATIBILITY-20261018",
+    "scope": "ADDITIVE_NODE_PUBLIC_PORT_AND_EXISTING_SRM_BUSINESS_REGRESSION_ONLY",
+    "nativeEmbeddedUiAdopted": false,
+    "existingOperationIdentityStoreAndModuleSourcesChanged": false,
+    "productDeploymentPerformed": false
   }
 }

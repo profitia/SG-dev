@@ -39,6 +39,30 @@ test('SRM accepts the published optional producer fingerprints', async () => {
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
 })
 
+test('SRM imports the exact additive presentation channel while keeping current authority in the host callback', async t => {
+  const { EMBEDDED_READ_CONTRACT, openEmbeddedReadHost, openEmbeddedReadClient } = await import('@profitia/platform-contracts/embedded-read-channel')
+  assert.deepEqual({id:EMBEDDED_READ_CONTRACT.id,version:EMBEDDED_READ_CONTRACT.version},{id:'profitia.embedded-read',version:'1.0.0'})
+  const entry = new URL(import.meta.resolve('@profitia/platform-contracts/embedded-read-channel'))
+  assert.equal(hash(fs.readFileSync(entry)), 'd86912fe4723a8af6fb3e55bd3949f77e1617fe868ec9632d21ff996bd505c79')
+  assert.equal(hash(fs.readFileSync(new URL('./embedded-read-channel.d.mts',entry))), '79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa')
+  const {port1,port2}=new MessageChannel(),instanceId=randomUUID()
+  let calls=0,currentAllowed=true,closed
+  const observedClose=new Promise(resolve=>{closed=resolve})
+  const host=openEmbeddedReadHost({port:port1,instanceId,
+    parseSelection:value=>value && Object.keys(value).join(',')==='kind' && value.kind==='shared-summary'?value:null,
+    read:async()=>{calls++;return currentAllowed?{status:200,body:{values:[10,0,null]}}:{status:403,body:{diagnostic:'SYNTHETIC_PRIVATE_MARKER'}}}})
+  const client=openEmbeddedReadClient({port:port2,instanceId,onClose:closed})
+  t.after(()=>{client.close();host.close()})
+  assert.deepEqual(await client.read({kind:'shared-summary'}),{status:200,body:{values:[10,0,null]}})
+  for(const patch of[{organisationId:A},{userId:U},{destination:'https://foreign.test'},{operation:'supplier.refresh'}])
+    assert.equal((await client.read({kind:'shared-summary',...patch})).status,400)
+  assert.equal(calls,1)
+  currentAllowed=false
+  assert.deepEqual(await client.read({kind:'shared-summary'}),{status:403,body:{error:'Read unavailable.'}})
+  assert.equal(calls,2);host.close();await observedClose
+  // Transport compatibility is not an SRM endpoint, UI embedding or live grant.
+})
+
 test('SRM real report and pg driver use the accepted private host', async t => {
   const rootUrl = assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL, 'srm_app', 'architecture_test_owner')
   const root = new pg.Client({ connectionString: rootUrl }); await root.connect()
