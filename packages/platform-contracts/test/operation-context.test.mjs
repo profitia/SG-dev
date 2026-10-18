@@ -248,3 +248,5 @@ test('audit proves when, whose authority, exact product source and classified re
   assert.deepEqual(intent.productEvidence, [{ product: 'SPENDGURU', feature: 'benchmark', version: 'g1', sourceRef: 'contract:1', source: 'CONTRACT', expiresAt: expiry }])
   assert.equal(intent.usagePolicy, 'NOT_APPLICABLE'); assert.equal(Object.hasOwn(intent, 'payload'), false)
 })
+
+test('ordinary read cannot smuggle a private continuation through session state',async()=>{const f=fixture();f.state.requestContinuation={requestId:'11111111-1111-4111-8111-111111111111',phaseId:'REGISTER_LOOKUP',inputDigest:'a'.repeat(64),schemaDigest:'b'.repeat(64),policyVersion:'1',transactionId:'1'};await assert.rejects(f.execute(),e=>isOperationDenied(e)&&e.reasonCode==='POLICY_UNAVAILABLE');assert.equal(f.invoked,0)})

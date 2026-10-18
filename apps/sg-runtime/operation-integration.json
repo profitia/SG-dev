@@ -8,47 +8,54 @@
   "contract": {
     "id": "profitia.operation-context",
     "version": "1.0.0",
-    "implementation": "1.0.0-candidate.8",
-    "sourceDigest": "4a27eeb6f6aec17f91dd55e2d63d5cacb71a50a9e2b1eff29d4e91bf68a6b1ce"
+    "implementation": "1.0.0-candidate.9",
+    "sourceDigest": "2bafa92a797dfa09440771ac8c5f9740048436a01e4d6390f0d29b9126d846d9"
   },
   "producer": {
     "projectKey": "ARCHITECTURE",
-    "taskId": "ARCHITECTURE-E1-EXTERNAL-REQUEST-ADMISSION-20261018",
+    "taskId": "ARCHITECTURE-E1-PRIVATE-REQUEST-CONTINUATION-20261018",
     "repository": "profitia/SG-dev",
-    "pullRequest": 488,
-    "sourceSha": "70e6ebbd1bb931911fd3e3801f04e03d2d45b5df",
+    "pullRequest": 494,
+    "sourceSha": "08e2c187c78f6a582cf9b7aa715458824cae71ba",
     "previousAcceptance": {
       "projectKey": "ARCHITECTURE",
-      "taskId": "ARCHITECTURE-E1-DELEGATED-EXECUTION-INGESTION-20261018",
+      "taskId": "ARCHITECTURE-E1-EXTERNAL-REQUEST-ADMISSION-20261018",
       "repository": "profitia/SG-dev",
-      "sourceSha": "0948a10c99626a6096df4c2fd1e25586ef318b72",
+      "pullRequest": 488,
+      "sourceSha": "70e6ebbd1bb931911fd3e3801f04e03d2d45b5df",
       "previousAcceptance": {
         "projectKey": "ARCHITECTURE",
-        "taskId": "ARCHITECTURE-E1-FORECAST-REQUEST-RESERVATION-20261018",
+        "taskId": "ARCHITECTURE-E1-DELEGATED-EXECUTION-INGESTION-20261018",
         "repository": "profitia/SG-dev",
-        "sourceSha": "cd3c5567a705cf575b708af315dd8e598c6f8259",
+        "sourceSha": "0948a10c99626a6096df4c2fd1e25586ef318b72",
         "previousAcceptance": {
           "projectKey": "ARCHITECTURE",
-          "taskId": "ARCHITECTURE-E1-SUPPLIER-EXPORT-CONTRACT-20261017",
+          "taskId": "ARCHITECTURE-E1-FORECAST-REQUEST-RESERVATION-20261018",
           "repository": "profitia/SG-dev",
-          "pullRequest": 434,
-          "sourceSha": "dc1935698647e21570646f3d6a0c62492c86a004",
+          "sourceSha": "cd3c5567a705cf575b708af315dd8e598c6f8259",
           "previousAcceptance": {
             "projectKey": "ARCHITECTURE",
-            "taskId": "ARCHITECTURE-E1-ACCESS-COMPLETION-20261017",
+            "taskId": "ARCHITECTURE-E1-SUPPLIER-EXPORT-CONTRACT-20261017",
             "repository": "profitia/SG-dev",
-            "pullRequest": 413,
-            "sourceSha": "3cf75e99389fc7b888e85dce8bf28f8c85723314",
+            "pullRequest": 434,
+            "sourceSha": "dc1935698647e21570646f3d6a0c62492c86a004",
             "previousAcceptance": {
               "projectKey": "ARCHITECTURE",
-              "taskId": "ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017",
+              "taskId": "ARCHITECTURE-E1-ACCESS-COMPLETION-20261017",
               "repository": "profitia/SG-dev",
-              "pullRequest": 383,
-              "sourceSha": "ea06cd05df9168c01b7621baf6724bc04b74b760",
-              "initialCandidate": {
-                "taskId": "ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016",
-                "pullRequest": 380,
-                "sourceSha": "dde7d08262c693df7c86e0a8f16c6bcb95512f92"
+              "pullRequest": 413,
+              "sourceSha": "3cf75e99389fc7b888e85dce8bf28f8c85723314",
+              "previousAcceptance": {
+                "projectKey": "ARCHITECTURE",
+                "taskId": "ARCHITECTURE-OPERATION-INTEGRATION-ACCEPTANCE-20261017",
+                "repository": "profitia/SG-dev",
+                "pullRequest": 383,
+                "sourceSha": "ea06cd05df9168c01b7621baf6724bc04b74b760",
+                "initialCandidate": {
+                  "taskId": "ARCHITECTURE-OPERATION-CONTEXT-ENGINE-20261016",
+                  "pullRequest": 380,
+                  "sourceSha": "dde7d08262c693df7c86e0a8f16c6bcb95512f92"
+                }
               }
             }
           }
@@ -85,7 +92,7 @@
     "sql002Digest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
     "sql003Digest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
     "accessStoreSourceDigest": "fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10",
-    "privateHostSourceDigest": "dfe2bab9b550fc4c7e8afbb2b4795070469086e1d984e16d149dd0cf8ef8875f",
+    "privateHostSourceDigest": "e8255b441c1f4ebd3860a6a7327e7abae646deda828723511aa7dde3e18681ee",
     "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246"
   },
   "supplierSummary": {
@@ -667,7 +674,8 @@
     "runtimeRoleOrGrantChanged": false,
     "remoteExecutionAdopted": false,
     "kysOrPersonalDataAdopted": false,
-    "productDeploymentPerformed": false
+    "productDeploymentPerformed": false,
+    "sourceRecordIsHistorical": true
   },
   "supplierRequestSourceRegression": {
     "taskId": "SG2-E1-SUPPLIER-REQUEST-SOURCE-REGRESSION-20261018",
@@ -685,5 +693,49 @@
     "controllerPolicyOrAccessChanged": false,
     "productDeploymentPerformed": false,
     "exactCandidateAndMainCiRequired": true
+  },
+  "privateRequestContinuationSourceCompatibility": {
+    "platformVersion": "1.15.0",
+    "rootImplementation": "1.0.0-candidate.9",
+    "hostVersion": "1.7.0",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-PRIVATE-REQUEST-CONTINUATION-20261018",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 494,
+      "sourceSha": "08e2c187c78f6a582cf9b7aa715458824cae71ba"
+    },
+    "sourceDigest": "898d103cea001cf17bdc02bdae4f9ff605be22f8628ed4fd7f9ba0c334736725",
+    "schemaDigest": "d12b2e404cd6a9174f954c233982633076501f7ea493facd0cabf34c709604c1",
+    "privateHostSourceDigest": "e8255b441c1f4ebd3860a6a7327e7abae646deda828723511aa7dde3e18681ee",
+    "sourceDigests": {
+      "src/external-call.mjs": "3f508b24f07c8edaef463fdc933c8c5d6ceaf39eb6ba9c5fbe350b55e687b6bc",
+      "src/external-call.d.mts": "552ed543a1be600dd6751eb2682a75dbbfb9abdf490ef136e2b2c11a6b07af9b",
+      "migrations/access/009-external-call-admission.sql": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+      "src/platform-ingestion.mjs": "b446817f6e4611da7e467f74b1111fa750bb937a1deb6bdfbd82f08a75fb2797",
+      "src/platform-ingestion.d.mts": "ee7012cdbcb6c918826392a1978193005f3182e0f00c5571de5704d777509889",
+      "migrations/access/008-platform-ingestion.sql": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+      "src/operation-context.mjs": "a512f9008ddea601c7510a7ff36c25edc0d749f029efc0c0252abb9fd82ac0e6",
+      "src/operation-context.d.mts": "714f5f002498dd0a51c5256dd6c092203d6b7546246112b18195a9a03720c011",
+      "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+      "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+      "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a",
+      "src/access-store.d.mts": "323e0c31b001c30bb3f45c3ea420ebc3f88806a7c6b3d15f358bd4660c96e302",
+      "src/private-operation-host.d.mts": "edc2fbfce78952e2d29c0a878fe5a0008be6905a34960fecb650dd6df1ab70a2",
+      "src/private-operation-host.mjs": "f9bfa605ab4f5cc5a5fc7b3afe90726340fb9b98ac9737eea438c2cbf188ca1c",
+      "src/request-ledger.mjs": "9cbb59f4208c78a8abb810784aace0ffe3e4aebc572c8dcb7716c651e47da058",
+      "src/request-ledger.d.mts": "e9bccf0fff5076c7c422224cfe107af1df4c63a3b327ab5ec75391857fb3c163",
+      "migrations/access/010-external-request-admission.sql": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "src/request-continuation.mjs": "28018f8d1ceaa651d96ba93feb60f227070d6f99f34f6075c92f7da6215d7e68",
+      "src/request-continuation.d.mts": "a9f913db8b251c7033e3d6a11ddf1ce827c4a793d7df8dd7d24a1ec164e2caa9",
+      "migrations/access/011-request-continuation.sql": "d12b2e404cd6a9174f954c233982633076501f7ea493facd0cabf34c709604c1"
+    },
+    "previousExternalRequestSourceRecordIsHistorical": true,
+    "nativePrivatePhaseAdapterAdopted": false,
+    "sql011InstalledByThisTask": false,
+    "runtimeRoleOrGrantChanged": false,
+    "remoteExecutionAdopted": false,
+    "newHttpEndpointAdopted": false,
+    "productDeploymentPerformed": false
   }
 }

@@ -16,8 +16,8 @@ function options() {
 }
 test('service host composes the same operation contract and requires no HTTP identity adapter',async()=>{
   const host=createServiceReadHost(options())
-  assert.equal(host.contract.implementation,'1.0.0-candidate.8')
-  assert.equal(host.hostContract.version,'1.6.0');assert(Object.isFrozen(host))
+  assert.equal(host.contract.implementation,'1.0.0-candidate.9')
+  assert.equal(host.hostContract.version,'1.7.0');assert(Object.isFrozen(host))
   assert.match(await serviceReadSchemaDigest(),/^[a-f0-9]{64}$/)
 })
 for(const operation of ['benchmark.selection.read','category.write','knowledge.ingest','job.execute','supplier.report.refresh','account.settings.read','personal.list.read']){
@@ -45,3 +45,5 @@ test('even an explicit service binding cannot invoke the human identity/store pa
   await assert.rejects(store.resolveBinding(o.independentQuery,{environment:'development',issuer:'https://fixture.invalid',subject:'forged'}),e=>e.reasonCode==='POLICY_UNAVAILABLE')
   await assert.rejects(store.lockAccess(o.independentQuery,{actor:{},identityBinding:null,organisationId:null}),e=>e.reasonCode==='POLICY_UNAVAILABLE')
 })
+
+test('service reads cannot accept private request continuation authority',()=>{const o=options();assert.throws(()=>createServiceReadHost({...o,requestContinuation:{requestId:'11111111-1111-4111-8111-111111111111',phaseId:'REGISTER_LOOKUP',inputDigest:'a'.repeat(64),schemaDigest:'b'.repeat(64)}}),TypeError)})
