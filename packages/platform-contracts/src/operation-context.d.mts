@@ -30,6 +30,7 @@ export interface ProductGrant {
 export interface OperationState {
   policyVersion: string; applicationId: string; environment: Environment
   access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY' | 'PLATFORM_BUDGET'; requestPolicy?: Readonly<RequestPolicy>; inputs?: Resource[]
+  requestContinuation?: Readonly<import('./request-continuation.mjs').RequestContinuationEvidence>
   ingestion?: Readonly<IngestionPolicy>
   delegation?: Readonly<DelegatedJob>
   dispatchAdmission?: import('./delegated-job.mjs').DispatchAdmission
@@ -69,6 +70,7 @@ export interface OperationContext {
   sourceId?:string;sourceVersion?:string;qualityVersion?:string;classificationVersion?:string;payloadSchema?:string
   budgetPolicyId?:string;budgetPolicyVersion?:string;budgetUnit?:'SOURCE_TRANSACTION'
   requestReservation?: Readonly<{requestId:string;replay:boolean;policyId:string;policyVersion:string}>
+  requestContinuation?: Readonly<import('./request-continuation.mjs').RequestContinuationEvidence>
   moduleEvidence?: Readonly<ModuleEvidence>
   delegation?: Readonly<DelegatedJob>
   dispatchAdmission?: import('./delegated-job.mjs').DispatchAdmission
@@ -109,7 +111,7 @@ export interface OperationExecutor<Transaction = unknown> {
   contract: Readonly<{ id: string; version: string; implementation: string }>
   execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractId: string; contractVersion: string; value: T }>>
 }
-export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.8' }>
+export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.9' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
 export declare function isOperationDenied(error: unknown): error is OperationDenied

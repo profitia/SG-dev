@@ -3,9 +3,10 @@ import { createAccessStore, DATABASE_SERVICE_ISSUER } from './access-store.mjs'
 import { createOperationExecutor, OperationDenied } from './operation-context.mjs'
 import { createModuleScopeGuard } from './module-scope.mjs'
 import { createRequestLedger, requestLedgerSourceDigest } from './request-ledger.mjs'
+import { createRequestContinuationLedger, requestContinuationSourceDigest } from './request-continuation.mjs'
 import { createDelegatedJobStore, delegatedJobSourceDigest } from './delegated-job.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.6.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.7.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -29,7 +30,7 @@ export function createServiceReadHost(options) {
     || s.configurationVersion !== a.configurationVersion
     || !Array.isArray(a.operations) || !a.operations.length
     || a.operations.some(op => !['knowledge.read','forecast.read','supplier.report.read'].includes(op))
-    || ['module','prepareInputs','createAuthenticator','requestLedger'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
+    || ['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
   return createBoundOperationHost(options, true)
 }
 
@@ -47,7 +48,7 @@ export function createDelegatedJobHost(options){
     ||typeof options.readExternalAccount!=='function'||!options.job||Object.keys(options.job).join(',')!=='schemaDigest'
     ||!/^[a-f0-9]{64}$/.test(options.job.schemaDigest??'')
     ||options.sourceDelivery!==undefined&&typeof options.sourceDelivery?.deliver!=='function'
-    ||['module','prepareInputs','createAuthenticator','requestLedger','readResources','projectOutput','describeOutcome','jobDelivery','deliverSource'].some(k=>Object.hasOwn(options,k)))throw TypeError('Explicit delegated private dispatch host required')
+    ||['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','readResources','projectOutput','describeOutcome','jobDelivery','deliverSource'].some(k=>Object.hasOwn(options,k)))throw TypeError('Explicit delegated private dispatch host required')
   const base={...options,application:freeze(copy(a)),binding:freeze(copy(options.binding)),job:freeze(copy(options.job)),projectOutput:value=>value}
   const host=createBoundOperationHost(base,'delegated')
   return Object.freeze({contract:host.contract,hostContract:host.hostContract,
@@ -78,7 +79,13 @@ function createBoundOperationHost(options, serviceMode) {
   if (needsRequestLedger ? serviceMode || module?.id !== (requestOperation === 'supplier.report.refresh' ? 'supplier_report' : 'benchmark') || !requestBinding
       || Object.keys(requestBinding).sort().join(',') !== requestKeys.sort().join(',') || requestKeys.some(key=>!/^[a-f0-9]{64}$/.test(requestBinding[key] ?? ''))
     : requestBinding !== null) throw new TypeError('Private request requires its explicit same-store ledger and accepted module')
-  const requestLedger = needsRequestLedger ? createRequestLedger({ binding, schemaDigest: requestBinding.schemaDigest, operation: requestOperation, ...(requestOperation === 'supplier.report.refresh' ? {externalSchemaDigest:requestBinding.externalSchemaDigest} : {}), now }) : null
+  const baseRequestLedger = needsRequestLedger ? createRequestLedger({ binding, schemaDigest: requestBinding.schemaDigest, operation: requestOperation, ...(requestOperation === 'supplier.report.refresh' ? {externalSchemaDigest:requestBinding.externalSchemaDigest} : {}), now }) : null
+  if(options.requestContinuation===null)throw new TypeError('Explicit continuation cannot be null')
+  const continuation=options.requestContinuation===undefined?null:freeze(copy(options.requestContinuation))
+  if (continuation !== null && (!baseRequestLedger || serviceMode || delegated
+    || requestOperation !== 'supplier.report.refresh' || application.operations.length !== 1)) throw new TypeError('Explicit HUMAN supplier-only private continuation required')
+  const requestLedger = continuation === null ? baseRequestLedger
+    : createRequestContinuationLedger({ ledger: baseRequestLedger, binding, continuation, now })
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
   // Validate the unchanged policy configuration now, without authenticating,
   // reading a database or constructing request-owned state.
@@ -144,7 +151,7 @@ function createBoundOperationHost(options, serviceMode) {
               callbackResult = await run({
                 state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }),
                   ...(delegated?{delegation:{...lease.state.delegation,externalAccountObservation:observation}}:{}),
-                  ...(requestPolicy ? { usagePolicy: 'PRODUCT_POLICY', requestPolicy } : {}) },
+                  ...(requestPolicy ? { usagePolicy: 'PRODUCT_POLICY', requestPolicy, ...(continuation === null ? {} : {requestContinuation:requestLedger.evidence(requestPolicy)}) } : {}) },
                 ...(requestPolicy ? {
                   reserveUsage: async context => {
                     if (closed || reserveStarted) unavailable()
@@ -212,5 +219,5 @@ export async function privateOperationHostSourceDigest() {
   const fs = await import('node:fs')
   return createHash('sha256').update(fs.readFileSync(new URL('./private-operation-host.mjs', import.meta.url)))
     .update(fs.readFileSync(new URL('./private-operation-host.d.mts', import.meta.url)))
-    .update(await requestLedgerSourceDigest()).update(await delegatedJobSourceDigest()).digest('hex')
+    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).digest('hex')
 }
