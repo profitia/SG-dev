@@ -46,11 +46,12 @@ retention and customer scope need their separately accepted caller contracts.
 ## Verification recorded so far
 
 - Real disposable PostgreSQL 16, actual ordinary login and native driver commits,
-  local HTTP fixture: 24 checks passed, none skipped.
-- Full existing contract/laboratory suite including this addition: 659 passed,
-  none skipped, before the final authority-deadline refinement; rerun required.
+  local HTTP fixture: 29 checks passed, none skipped.
+- Full existing contract/laboratory suite including this addition: 664 passed,
+  none skipped, including the authority deadline and actor/configuration-rotation
+  intent regression; full validation repeated after a workstation restart.
 - Public strict TypeScript positive and expected-negative API checks: passed
-  before the final declaration comment; final check retained separately.
+  repeated on the final current declarations.
 - Package syntax build passed. Optional schema installation under the wrong
   owner refused; transaction rollback left no partial extension.
 - Finite admission/concurrency, repeated intent/conflicting content, PLAN/ATTEMPT/
@@ -58,6 +59,15 @@ retention and customer scope need their separately accepted caller contracts.
   failure, fixed destinations/methods/size, real timeout/cancellation, redirects,
   malformed/oversize JSON, current revocation, wrong role/schema/configuration,
   direct table and column ACL drift, history and FORCE RLS covered by real tests.
+- An actual service-actor rotation test exposed a duplicate-intent risk in the
+  first local candidate. A unique opaque intent index now survives actor, role,
+  policy and configuration changes; changed technical authority cannot reopen
+  that intent. The failing regression and configuration-rotation case both pass.
+- The workstation restart preserved all nine source paths and the existing PMOS
+  registration. Temporary fixtures/logs were lost and recreated; the final full
+  suite above is a fresh observed run, not a claim that an interrupted run passed.
+  Recovery reused the original registration and verified architecture_pmos with
+  its actual ordinary architecture_pmos_runtime role; no replacement begin.
 - Governance 40/41: the existing exact SG2 local dependency version guard
   correctly refuses producer 1.13.0 against receiver 1.12.0. It remains enabled;
   separate SG2 and SRM adoption, exact candidate/main CI and own closeouts are
