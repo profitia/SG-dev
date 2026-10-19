@@ -107,7 +107,9 @@
     "WEBHOOK_BINDING": "Zweryfikowany podpis/odbiorca i środowisko zdarzenia, mapowanie klient/subskrypcja do organizacji po stronie serwera, znany katalog produktów, idempotencja i rozstrzygnięcie kolejności/aktualnego stanu dostawcy.",
     "CONTRACT_BINDING": "Ograniczona usługa wystawcy ma potwierdzony, obowiązujący rekord umowy, jej wersję, organizację i zakres funkcji. Zmiana prawa produktu odzwierciedla bieżący stan umowy z ochroną przed replay/starszą wersją; dokument lub status przesłany przez klienta nie wystarcza.",
     "PRIVATE_SUPPLIER_RETENTION": "Wyłącznie HUMAN z aktualnym modułem supplier_report. Serwer wybiera organizację, NIP, typ podmiotu, snapshot i termin retencji; resource.version jest ID snapshotu. Własność organizacji bez osobistego właściciela. Retencja jest sprawdzana przed operacją i po projekcji; dane osobowe nie stają się SHARED_KNOWLEDGE.",
-    "PRIVATE_SUPPLIER_READ_COMPOSITE": "Reveal i eksport wymagają odrębnego jawnego prawa danej operacji oraz supplier.private.read do dokładnego prywatnego raportu wejściowego, tej samej organizacji, NIP, typu podmiotu, snapshotu i retencji. supplier.report.read/project/export ani nazwa roli nie nadają tych praw. Odczyt i eksport nie ujawniają pełnego identyfikatora osobistego; ujawnienie ma własny kontrolowany projektor i audyt."
+    "PRIVATE_SUPPLIER_READ_COMPOSITE": "Reveal i eksport wymagają odrębnego jawnego prawa danej operacji oraz supplier.private.read do dokładnego prywatnego raportu wejściowego, tej samej organizacji, NIP, typu podmiotu, snapshotu i retencji. supplier.report.read/project/export ani nazwa roli nie nadają tych praw. Odczyt i eksport nie ujawniają pełnego identyfikatora osobistego; ujawnienie ma własny kontrolowany projektor i audyt.",
+    "PRIVATE_ACQUISITION_REQUEST": "Wyłącznie HUMAN; jawny grant dokładnej operacji, bieżący moduł i produkt oraz liczona, idempotentna rezerwacja. Zlecenie ma prywatnego inicjatora i organizację; nie nadaje prawa źródła, odczytu ani ujawnienia danych. Delegacja zachowuje operację i ponownie sprawdza aktualne prawa. Dodatkowe operacje wymagają jawnie przyjętego rozszerzenia tego samego rejestru.",
+    "PERSONAL_DISCOVERY_RESULT": "Wynik Findera i intencja są osobiste w organizacji; oba identyfikatory muszą zgadzać się z aktualnym HUMAN. Wymagane jawne benchmark.discovery.read, moduł benchmark i produkt SPENDGURU. Samo knowledge.read lub supplier.report.read nie wystarcza. Wspólne dane rynkowe nie przejmują prywatnej intencji klienta."
   },
   "dataClasses": [
     {
@@ -1197,6 +1199,75 @@
       "effect": "EXPORT",
       "audit": "SECURITY_REQUIRED",
       "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-34",
+      "operation": "supplier.private.refresh",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.private.refresh",
+      "resourceType": "supplier_private_request",
+      "dataClasses": [
+        "OPERATION_AUDIT"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PRIVATE_ACQUISITION_REQUEST"
+      ],
+      "usagePolicy": "PRODUCT_POLICY",
+      "effect": "REQUEST_EXTERNAL",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-35",
+      "operation": "benchmark.discovery.request",
+      "feature": "benchmark",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "benchmark.discovery.request",
+      "resourceType": "benchmark_discovery_request",
+      "dataClasses": [
+        "OPERATION_AUDIT"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PRIVATE_ACQUISITION_REQUEST"
+      ],
+      "usagePolicy": "PRODUCT_POLICY",
+      "effect": "REQUEST_EXTERNAL",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-36",
+      "operation": "benchmark.discovery.read",
+      "feature": "benchmark",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "benchmark.discovery.read",
+      "resourceType": "benchmark_discovery_result",
+      "dataClasses": [
+        "USER_IN_ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PERSONAL_DISCOVERY_RESULT"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
     }
   ],
   "acceptanceCases": [
@@ -1863,6 +1934,54 @@
       "expectedDecision": "DENY",
       "expectedReason": "PERMISSION_DENIED",
       "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-84",
+      "ruleId": "AM-34",
+      "scenario": "Aktualne konto, członkostwo, moduł, produkt, jawna operacja i właściciel są potwierdzone; dla zlecenia limit, idempotencja i audyt poprzedzają skutek.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-85",
+      "ruleId": "AM-34",
+      "scenario": "Uprawnienia wspólnego raportu lub ogólnego odczytu wiedzy nie zastępują jawnej operacji ani osobistego właścicielstwa.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-86",
+      "ruleId": "AM-35",
+      "scenario": "Aktualne konto, członkostwo, moduł, produkt, jawna operacja i właściciel są potwierdzone; dla zlecenia limit, idempotencja i audyt poprzedzają skutek.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-87",
+      "ruleId": "AM-35",
+      "scenario": "Uprawnienia wspólnego raportu lub ogólnego odczytu wiedzy nie zastępują jawnej operacji ani osobistego właścicielstwa.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-88",
+      "ruleId": "AM-36",
+      "scenario": "Aktualne konto, członkostwo, moduł, produkt, jawna operacja i właściciel są potwierdzone; dla zlecenia limit, idempotencja i audyt poprzedzają skutek.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-89",
+      "ruleId": "AM-36",
+      "scenario": "Uprawnienia wspólnego raportu lub ogólnego odczytu wiedzy nie zastępują jawnej operacji ani osobistego właścicielstwa.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
     }
   ],
   "openCommercialParameters": {
@@ -1872,5 +1991,5 @@
     "unknownPolicyDecision": "DENY"
   },
   "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń.",
-  "catalogueRevision": "1.1.0"
+  "catalogueRevision": "1.2.0"
 }

@@ -1,5 +1,7 @@
+import {requestOperationsSourceDigest} from './request-operations.mjs'
 import { createHash } from 'node:crypto'
 import { OperationDenied } from './operation-context.mjs'
+import {requestOperationPolicy} from './request-operations.mjs'
 
 export const REQUEST_LEDGER_CONTRACT = Object.freeze({ id:'profitia.request-ledger', version:'1.0.0', schemaVersion:'1.0.0' })
 export const requestReservationSchemaUrl = new URL('../migrations/access/006-request-reservation.sql',import.meta.url).href
@@ -24,9 +26,9 @@ function receipt(value,id){return exact(value,['requestId','status'])&&value.req
 
 /** No connection, new access policy, command payload, compute or queue. This
  * adapter uses the existing host's current scoped SQL transaction only. */
-export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,now=Date.now}){
-  const external=operation==='supplier.report.refresh'
-  if(!['forecast.request','supplier.report.refresh'].includes(operation)||(external?!digest.test(externalSchemaDigest??''):externalSchemaDigest!==undefined))throw new TypeError('Explicit accepted request operation/schema extension required')
+export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,operationSchemaDigest,now=Date.now}){
+  const target=requestOperationPolicy(operation),external=target?.external
+  if(!target||(target.additional?!digest.test(operationSchemaDigest??''):operationSchemaDigest!==undefined)||(external?!digest.test(externalSchemaDigest??''):externalSchemaDigest!==undefined))throw new TypeError('Explicit accepted request operation/schema extension required')
   const config=freeze(structuredClone(binding))
   if(!config||config.service!==undefined||!digest.test(schemaDigest??'')||typeof now!=='function'
     ||!['applicationId','projectId','branchId','databaseName','role'].every(k=>text(config[k]))
@@ -39,9 +41,10 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
     return result.rows[0]
   }
   async function descriptor(query){
-    const d=(await one(query,external?'SELECT profitia_requests.external_runtime_descriptor() AS descriptor':'SELECT profitia_requests.runtime_descriptor() AS descriptor')).descriptor
+    const d=(await one(query,target.additional?'SELECT profitia_requests.operation_runtime_descriptor() AS descriptor':external?'SELECT profitia_requests.external_runtime_descriptor() AS descriptor':'SELECT profitia_requests.runtime_descriptor() AS descriptor')).descriptor
     if(!d||d.schemaVersion!==REQUEST_LEDGER_CONTRACT.schemaVersion||d.schemaDigest!==schemaDigest||!text(d.sourceRef)
       ||external&&(d.externalSchemaVersion!=='1.0.0'||d.externalSchemaDigest!==externalSchemaDigest)
+      ||target.additional&&(d.operationSchemaVersion!=='1.0.0'||d.operationSchemaDigest!==operationSchemaDigest)
       ||d.owner!=='profitia_access_owner'||['applicationId','environment','projectId','branchId','databaseName','role'].some(k=>d[k]!==config[k]))deny()
   }
   function scope(actor,request){
@@ -63,7 +66,7 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
       ||context.actorId!==owned.scope.actorId||context.subjectUserId!==owned.scope.actorId
       ||context.organisationId!==owned.scope.organisationId||context.resourceId!==owned.scope.resourceId
       ||context.payloadDigest!==owned.scope.payloadDigest||!uuid.test(context.decisionId??'')
-      ||context.moduleEvidence?.moduleId!==(external?'supplier_report':'benchmark')||context.moduleEvidence.transactionId!==policy.transactionId
+      ||context.moduleEvidence?.moduleId!==target.module||context.moduleEvidence.transactionId!==policy.transactionId
       ||!(Date.parse(policy.expiresAt)>now())||!(Date.parse(policy.windowEnd)>now()))deny('LIMIT_POLICY_UNAVAILABLE')
     return owned.scope
   }
@@ -114,7 +117,7 @@ export async function requestLedgerSourceDigest(){
   return createHash('sha256').update(fs.readFileSync(new URL('./request-ledger.mjs',import.meta.url)))
     .update(fs.readFileSync(new URL('./request-ledger.d.mts',import.meta.url)))
     .update(fs.readFileSync(new URL(requestReservationSchemaUrl)))
-    .update(fs.readFileSync(new URL(externalRequestSchemaUrl))).digest('hex')
+    .update(fs.readFileSync(new URL(externalRequestSchemaUrl))).update(await requestOperationsSourceDigest()).digest('hex')
 }
 export async function requestReservationSchemaDigest(){
   const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(requestReservationSchemaUrl))).digest('hex')

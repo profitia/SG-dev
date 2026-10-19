@@ -1,4 +1,6 @@
+import {requestOperationsSourceDigest} from './request-operations.mjs'
 import {createHash} from 'node:crypto'
+import {requestOperationPolicy} from './request-operations.mjs'
 import {OperationDenied} from './operation-context.mjs'
 
 export const REQUEST_WORK_CONTRACT=Object.freeze({id:'profitia.request-work',version:'1.0.0',effect:'PRIVATE_SQL_WORK',replayOwner:'EXISTING_DOMAIN_STATE'})
@@ -10,13 +12,16 @@ const exact=(v,keys)=>!!v&&Object.getPrototypeOf(v)===Object.prototype&&Reflect.
  &&Object.keys(v).sort().join(',')===[...keys].sort().join(',')&&Object.values(Object.getOwnPropertyDescriptors(v)).every(d=>'value'in d&&d.enumerable)
 const deny=(reason='POLICY_UNAVAILABLE')=>{throw new OperationDenied(reason)}
 export async function requestWorkSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(requestWorkSchemaUrl))).digest('hex')}
-export async function requestWorkSourceDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL('./request-work.mjs',import.meta.url))).update(fs.readFileSync(new URL('./request-work.d.mts',import.meta.url))).update(await requestWorkSchemaDigest()).digest('hex')}
+export async function requestWorkSourceDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL('./request-work.mjs',import.meta.url))).update(fs.readFileSync(new URL('./request-work.d.mts',import.meta.url))).update(await requestWorkSchemaDigest()).update(await requestOperationsSourceDigest()).digest('hex')}
 
 /** One short native SQL unit, under the current original job authority. The
  * existing domain lifecycle owns replay and external uncertainty. This store
  * creates neither a second effect ledger nor a permission to call a provider. */
 export function createRequestWorkScope({binding,work,now=Date.now}){
- if(!binding?.service||typeof now!=='function'||!exact(work,['requestId','unitId','accessMode','inputDigest','schemaDigest'])
+ const targetOperation=work?.targetOperation??'supplier.report.refresh',target=requestOperationPolicy(targetOperation)
+ const extra=target?.additional?['targetOperation','operationSchemaDigest']:[]
+ if(!target?.nativeWork||!binding?.service||typeof now!=='function'||!exact(work,['requestId','unitId','accessMode','inputDigest','schemaDigest',...extra])
+  ||target.additional&&!digest.test(work.operationSchemaDigest??'')
   ||!uuid.test(work.requestId??'')||!unit.test(work.unitId??'')||!['READ','WRITE'].includes(work.accessMode)
   ||!digest.test(work.inputDigest??'')||!digest.test(work.schemaDigest??''))throw TypeError('Explicit current native SQL work unit required')
  const b=freeze(structuredClone(binding)),c=freeze(structuredClone(work)),handles=new WeakMap()
@@ -26,7 +31,7 @@ export function createRequestWorkScope({binding,work,now=Date.now}){
   if(!d||d.schemaVersion!=='1.0.0'||d.schemaDigest!==c.schemaDigest||d.owner!=='profitia_access_owner'
    ||!['applicationId','environment','projectId','branchId','databaseName','role'].every(k=>d[k]===b[k])
    ||d.requestId!==c.requestId||d.unitId!==c.unitId||d.accessMode!==c.accessMode||d.effect!=='PRIVATE_SQL_WORK'
-   ||d.operation!=='supplier.report.refresh'||!digest.test(d.payloadDigest??'')||!integer.test(d.policyVersion??'')
+   ||d.operation!==targetOperation||target.additional&&(d.operationSchemaVersion!=='1.0.0'||d.operationSchemaDigest!==c.operationSchemaDigest)||!digest.test(d.payloadDigest??'')||!integer.test(d.policyVersion??'')
    ||!integer.test(d.transactionId??'')||!['executorServiceId','subjectUserId','organisationId','delegationId'].every(k=>uuid.test(d[k]??''))
    ||typeof d.parentApplicationId!=='string'||!d.parentApplicationId.length||typeof d.resourceId!=='string'||!d.resourceId.length
    ||typeof d.sourceRef!=='string'||d.sourceRef.length<1||d.sourceRef.length>256
@@ -40,13 +45,13 @@ export function createRequestWorkScope({binding,work,now=Date.now}){
    ||context.environment!==b.environment||context.actorId!==h.executorServiceId||context.subjectUserId!==h.subjectUserId
    ||context.organisationId!==h.organisationId||context.resourceId!==c.requestId||context.payloadDigest!==h.payloadDigest
    ||context.delegation?.requestId!==c.requestId||context.delegation.delegationId!==h.delegationId
-   ||context.delegation.target.application.appId!==h.parentApplicationId||context.delegation.target.operation!=='supplier.report.refresh'
+   ||context.delegation.target.application.appId!==h.parentApplicationId||context.delegation.target.operation!==targetOperation
    ||context.delegation.target.resourceId!==h.resourceId||JSON.stringify(context.requestWork)!==JSON.stringify(evidence(h))
    ||context.requestContinuation!==undefined||context.requestInspection!==undefined||!(Date.parse(h.expiresAt)>now()))deny('RESOURCE_SCOPE_MISMATCH')
  }
  return Object.freeze({
   async load(query,{request,lease}){
-   if(request.operation!=='job.execute'||request.resourceId!==c.requestId||lease.state?.delegation?.target?.operation!=='supplier.report.refresh')deny('RESOURCE_SCOPE_MISMATCH')
+   if(request.operation!=='job.execute'||request.resourceId!==c.requestId||lease.state?.delegation?.target?.operation!==targetOperation)deny('RESOURCE_SCOPE_MISMATCH')
    const h=await read(query);handles.set(h,{query});return h
   },evidence,
   async bind(query,h,context){

@@ -1,5 +1,5 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
-export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export'
+export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -53,7 +53,7 @@ export interface DelegatedJob {
   identityKey: Readonly<import('./identity-provider.mjs').ExternalIdentityKey>
   externalAccountObservation: Readonly<import('./identity-provider.mjs').ExternalAccountObservation>
   target: { application: Pick<Application,'appId'|'environment'|'profileId'|'configurationVersion'|'organisationId'|'features'|'operations'>
-    operation: 'forecast.request'|'supplier.report.refresh'; resourceId: string; policyVersion: string; access: AccessBasis; resource: Resource; products: ProductGrant[]
+    operation: import('./request-operations.mjs').RequestOperation; resourceId: string; policyVersion: string; access: AccessBasis; resource: Resource; products: ProductGrant[]
     module: {id:'benchmark'|'supplier_report';bindingId:string;version:string;sourceRef:string;expiresAt:string} }
 }
 /** Trusted module binding provenance; carries no credential or permission. */
