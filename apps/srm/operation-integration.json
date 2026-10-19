@@ -540,7 +540,8 @@
       "previousSourceRecordIsHistorical": true
     },
     "sourceRevalidationTaskId": "SRM-E1-CORPORATE-SOURCE-PUBLICATION-20261019",
-    "previousSourceRecordIsHistorical": true
+    "previousSourceRecordIsHistorical": true,
+    "sourceRecordIsHistorical": true
   },
   "nativeProviderSourceAdoption": {
     "version": "srm-native-provider-source-v1",
@@ -793,5 +794,55 @@
     "runtimeRoleOrGrantChanged": false,
     "providerExecutionAdopted": false,
     "productDeploymentPerformed": false
+  },
+  "delegatedSupplierBusinessAdoption": {
+    "projectKey": "SRM",
+    "taskId": "SRM-E1-DELEGATED-SUPPLIER-BUSINESS-20261019",
+    "databaseScopeTask": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-DELEGATED-DATABASE-SCOPE-20261019",
+      "sourceSha": "33b76832b388c4829a9eafe778e567efad02f631"
+    },
+    "version": "srm-delegated-supplier-business-v1",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "executionMode": "EXPLICIT_DELEGATED_SERVICE_WITH_UNCHANGED_HUMAN_DEFAULT",
+    "sourceDigests": {
+      "db/private-store/002-supplier-business-phases.sql": "1d234a4b271e7647415efea4ea9013d8cab074ed89f2920589f08fe0e6730dcb",
+      "db/private-store/003-named-supplier-interest.sql": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
+      "src/server/financial-documents.ts": "81a8610e3dd1b46e424e9573baf9d97455f4a10c17fd8d005ab06cb6862e2198",
+      "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
+      "src/server/shared-catalog.ts": "e090cdd0db7c29616fc29c1d9d05aac7b658a553dce36deaa7ce92b76e9956f4",
+      "src/server/supplier-private-store.ts": "5ce378bbdcee840184cd7c93f2e78d87df109800364dbb53bb4e726ac4ff5b82",
+      "src/server/xray-lookup.ts": "f1e47b375dfdd858a38cadea33528750a6d5c5c3a5fd48331501a56ae92be6a0",
+      "src/server/xray-repository.ts": "bfbfda141fb46799df92fddeca5be3a2e09685dd658a3e3dfd2c23b64b22da92",
+      "src/server/db.ts": "4b32854ce8e6aa74dbefe5a074edc4c73b9d904298400ec12f24a45950f2f2f3",
+      "src/server/supplier-request-continuation.ts": "69811cc11c96bd4845adf5ed174a7209fd6a1aceb6b4366c5cf27f97343c570d",
+      "src/server/supplier-request-operation.ts": "7ddf344aaf13656cb7487728d49261e186d8a24b36ac6153137dce60f12df7cb",
+      "src/server/native-pg-driver.ts": "f260c110010b5fbbf5e4c905faebb9b88f81845100097599a4c506c7c4ef0329",
+      "db/private-store/006-delegated-supplier-business.sql": "803aa871051c1454c5bf64cef414a2908c1d6042bbc46391b97516f015037a36"
+    },
+    "platformProducer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-DELEGATED-PRIVATE-PHASES-20261019",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 516,
+      "sourceSha": "3e0788aa5309a668ba8c08a4b9ea53a04bbd8478"
+    },
+    "delegatedPrivatePhasesSchemaDigest": "13f4bb374cbfb31604823083261bbc8f5142e88be7443b704c792a232defb6e3",
+    "businessBoundaryDigest": "1d234a4b271e7647415efea4ea9013d8cab074ed89f2920589f08fe0e6730dcb",
+    "namedBoundaryDigest": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
+    "delegatedBusinessBoundaryDigest": "803aa871051c1454c5bf64cef414a2908c1d6042bbc46391b97516f015037a36",
+    "historicalNamedSourcePreserved": true,
+    "actualIsolatedServiceBusinessVerified": true,
+    "ordinaryExecutorDatabaseTested": true,
+    "sameNativeDriverAndDomainWriters": true,
+    "browserProofBorrowed": false,
+    "legacyDemoHistoryReassigned": false,
+    "sharedCatalogPrivateWriteAdopted": false,
+    "liveServiceBusinessActivated": false,
+    "liveSchemaOrGrantsChanged": false,
+    "httpEndpointActivated": false,
+    "productDeploymentPerformed": false,
+    "requiresIndependentSharedCatalogSource": true
   }
 }
