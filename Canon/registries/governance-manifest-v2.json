@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.25.0",
+  "manifestVersion": "3.26.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,7 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {"id": "srm-maps-runtime-amendment", "version": "1.2", "path": "Canon/v1.2-srm-maps-runtime-amendment.md", "status": "ACTIVE", "loadOrder": 136, "owner": "SRM Architecture Governance", "appliesTo": ["SRM", "SG2"], "dependsOn": ["srm-architecture-component-placement", "repository-routing", "architecture-baseline"]},
     {"id": "agent-execution-canon", "version": "3.0", "path": "Canon/v3.0-profitia-agent-execution-canon.md", "status": "ACTIVE", "loadOrder": 10, "owner": "Profitia Governance", "appliesTo": ["CORE"], "dependsOn": []},
     {"id": "project-profile-registry", "version": "1.0", "path": "Canon/registries/profitia-projects-v1.json", "status": "ACTIVE", "loadOrder": 20, "owner": "Profitia Governance", "appliesTo": ["CORE"], "dependsOn": ["agent-execution-canon"]},
     {"id": "current-architecture-development", "version": "1.0", "path": "Canon/v1.0-current-architecture-development-canon.md", "status": "ACTIVE", "loadOrder": 30, "owner": "SG2 Architecture Governance", "appliesTo": ["SG2", "SRM", "ARCHITECTURE"], "dependsOn": ["agent-execution-canon"]},
