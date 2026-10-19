@@ -1133,5 +1133,35 @@
     "productDeploymentPerformed": false,
     "previousProviderSourceReceiptPreserved": true,
     "previousCorporateSourceReceiptPreserved": true
+  },
+  "nativeMsrProviderSourceAdoption": {
+    "projectKey": "SRM",
+    "taskId": "SRM-E1-MSR-NATIVE-SOURCE-TRANSPORT-20261019",
+    "version": "srm-native-msr-source-v1",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "sourceDigests": {
+      "src/server/native-pg-driver.ts": "f260c110010b5fbbf5e4c905faebb9b88f81845100097599a4c506c7c4ef0329",
+      "src/server/private-operation-host.ts": "c035ff99ef94903a163ff32652a7db207950bd29883f0e8a3260db60c10e9c09",
+      "src/server/provider-source-transport.ts": "570685938f98d6949ee18586c4b0582e835d4d360a8185f19a618386c96b10b2",
+      "src/server/mgbi-general.ts": "ccab02e4491d1fd26ed10b21d3b29a93638156b008578899ae59e63b40f504b4",
+      "src/server/mgbi-financial.ts": "3f6fa494cc937a7f3a1224bd625009e25ddaa2244cc8e0acef0eece5a814aa52",
+      "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
+      "src/server/vercly-kys.ts": "ea78105c7af4f01e55501d26a1f3669ca2dce4267d2a25be7c31dc8915e67f91",
+      "src/server/integrations/ceidg.ts": "dee3e51d4ccd207bfb1d22f85e09519fbd278bd8003a4499e58e0672c6c66cd4",
+      "src/server/msr-source.ts": "96c6ff30795a43ad80e099affe5224cbaae7c55b911ac1918e02f5b588797fd7"
+    },
+    "previousProviderSourceReceiptPreserved": true,
+    "sameNativeHttpSendAndSourceWriter": true,
+    "originalDownloaderAndBinaryLimitsUnchanged": true,
+    "exactAdmittedStorageRedirectRequired": true,
+    "storageCredentialMode": "NONE",
+    "maximumOriginalBytes": 20971520,
+    "secondProviderClientIntroduced": false,
+    "secondMsrLedgerIntroduced": false,
+    "completePrivateParentWorkflowComposed": false,
+    "liveProviderLicenceVerified": false,
+    "liveSqlOrGrantsChanged": false,
+    "productDeploymentPerformed": false,
+    "mapsChanged": false
   }
 }
