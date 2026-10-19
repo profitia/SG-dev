@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import {execFileSync} from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import test from 'node:test'
 import pg from 'pg'
@@ -39,6 +40,12 @@ const moduleAuditSql = fs.readFileSync(new URL(moduleAuditSchemaUrl), 'utf8'), a
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 const hash = text => createHash('sha256').update(text).digest('hex')
 
+// The previous application receipt is immutable; this exact accepted main
+// supplies its historical bytes. The new receipt checks the complete current
+// application closure separately, including every changed file.
+function beforePrivateAcquisitionApplicationSource(path){
+ return execFileSync('git',['show','8c5e14b0fc4815021231f6752c1073f1c191465b:apps/srm/'+path])
+}
 const currentSdkDigests=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))).privateAcquisitionSourceCompatibility.sdkDigests
 
 test('SRM imports the exact optional external control source without adopting a product operation', async () => {
@@ -134,7 +141,7 @@ test('current native Supplier work receipt binds the original domain helpers wit
   assert.equal(Object.keys(link.sourceDigests).length,24)
   assert.equal(link.sourceRecordIsHistorical,true)
   const composition=manifest.nativeSensitiveSupplierCompositionAdoption
-  for(const[path,digest]of Object.entries(link.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),composition.sourceDigests[path]??digest,path)
+  for(const[path,digest]of Object.entries(link.sourceDigests))assert.equal(hash(beforePrivateAcquisitionApplicationSource(path)),composition.sourceDigests[path]??digest,path)
   assert.equal(link.requestBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/009-supplier-source-request.sql',import.meta.url))))
   for(const flag of ['previousNativeWorkReceiptPreserved','sameRootDispatchAndSourceHost','actualOrdinaryPrivateAndSourceTransactionsTested','sourceOutcomeRequiredAtCommit','fundedRetryAfterIndependentSourceCommitVerified','currentAccountMembershipAndSourceGrantChecked','originalAcceptedLookupIdentityReused'])assert.equal(link[flag],true,flag)
   for(const flag of ['secondRequestOrDispatchLedgerIntroduced','networkInsideSqlTransaction','customerIdentityStoredInSource','serializedSourceReadMintsReceiptAuthority','completeNativeEngineComposition','liveProviderAcquisitionVerified','liveCustomerSessionVerified','liveSchemaOrGrantsChanged','httpEndpointActivated','mapsChanged','productDeploymentPerformed'])assert.equal(link[flag],false,flag)
@@ -161,7 +168,7 @@ test('full native company receipt pins its complete current closure and explicit
  assert.deepEqual(Object.keys(revision.sourceDigests),Object.keys(current.sourceDigests))
  assert.equal(revision.sourceRecordIsHistorical,true)
  const latest=manifest.nativeSensitiveSupplierCompositionAdoption
- for(const[path,digest]of Object.entries(revision.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),latest.sourceDigests[path]??digest,path)
+ for(const[path,digest]of Object.entries(revision.sourceDigests))assert.equal(hash(beforePrivateAcquisitionApplicationSource(path)),latest.sourceDigests[path]??digest,path)
  for(const flag of ['previousFullCompositionReceiptPreserved','typedOriginalFinancialFactsReplayed','changedUnknownAndDuplicatedFactsRefused','providerPurchaseAndCustomerQuotaSeparateFromSourceProjection','originalCacheFinancialOnlyPublicationPreserved'])assert.equal(revision[flag],true,flag)
  for(const flag of ['sqlOrRolesChanged','httpEndpointActivated','productDeploymentPerformed'])assert.equal(revision[flag],false,flag)
  const company=fs.readFileSync(new URL('../src/server/supplier-native-company.ts',import.meta.url),'utf8')
@@ -181,7 +188,7 @@ test('complete JDG and KYS orchestration ports retain original engines without c
  const expected=new Set([...Object.keys(manifest.fullNativeCompanyReplayRevision.sourceDigests),
   'src/server/jdg-lookup.ts','src/server/jdg-orchestration.test.ts','src/server/kys-orchestration.test.ts'])
  assert.equal(expected.size,34);assert.deepEqual(new Set(Object.keys(current.sourceDigests)),expected)
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),manifest.nativeSensitiveSupplierCompositionAdoption.sourceDigests[path]??digest,path)
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(beforePrivateAcquisitionApplicationSource(path)),manifest.nativeSensitiveSupplierCompositionAdoption.sourceDigests[path]??digest,path)
  for(const key of ['previousSourceFingerprintsPreserved','sameOriginalEngines','legacyDefaultRetained','originalEngineBodyEquivalenceVerified'])assert.equal(current[key],true,key)
  for(const key of ['privateSensitiveSqlInstalled','nativeSensitivePathsAdopted','httpEndpointActivated','liveProviderAcquisitionVerified','productDeploymentPerformed'])assert.equal(current[key],false,key)
 })
@@ -1422,7 +1429,7 @@ test('native sensitive receipt preserves historical fingerprints and pins curren
  assert.equal(current.status,'SOURCE_CANDIDATE_NOT_RELEASED');assert.equal(current.authorityBeforeChange,'8819da4f96c1c9e3d20a9ace10a41b44c405fe8d')
  assert.equal(current.sensitiveWorkUnits,14);assert.equal(current.originalWorkUnits,18)
  assert.equal(current.sensitiveBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/010-supplier-sensitive-work.sql',import.meta.url))))
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(beforePrivateAcquisitionApplicationSource(path)),digest,path)
  for(const name of['previousBusinessFingerprintsPreserved','previousOptionalSqlBytesPreserved','sameOriginalKysAndJdgEngines','legacyDefaultRetained','organizationOwnedPrivateCache','sameCanonicalRequestDispatchAndSource','nativeHumanReadRevealExport','actorAndOrganizationScopedReferences','privateSourceBodiesStayPrivate'])assert.equal(current[name],true,name)
  for(const name of['cloudSqlInstalled','httpEndpointActivated','liveProviderAcquisitionVerified','liveCustomerSessionVerified','runtimeRoleOrGrantChanged','legacyDemoHistoryReassigned','mapsFunctionalityChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)
 })
@@ -1438,4 +1445,25 @@ test('SRM explicitly accepts additional request source while preserving old rece
  for(const flag of['previousFingerprintsPreserved','ordinaryFlowsPreserved'])assert.equal(current[flag],true)
  for(const flag of['privateAcquisitionHttpAdopted','cloudExtensionInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[flag],false)
  for(const operation of[...current.newRequestTargets,current.newReadTarget])assert(!receipt.operations.includes(operation))
+})
+
+
+test('private acquisition receipt preserves every previous field and binds the complete current native application closure',()=>{
+ const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),current=receipt.privateSupplierAcquisitionAdoption
+ const before=JSON.parse(execFileSync('git',['show','8c5e14b0fc4815021231f6752c1073f1c191465b:apps/srm/operation-integration.json'],{encoding:'utf8'}))
+ for(const[key,value]of Object.entries(before))assert.deepEqual(receipt[key],value,key)
+ assert.equal(current.taskId,'SRM-E1-PRIVATE-ACQUISITION-ADOPTION-20261020');assert.equal(current.operation,'supplier.private.refresh')
+ assert.equal(current.platformVersion,'1.22.0');assert.equal(current.authorityBeforeChange,'8c5e14b0fc4815021231f6752c1073f1c191465b')
+ assert.equal(current.previousApplicationSourceAuthority,current.authorityBeforeChange)
+ assert.equal(current.transactionCompanion.taskId,'SRM-E1-PRIVATE-WORK-TRANSACTION-20261020')
+ assert.equal(current.transactionCompanion.sourceSha,'b72110112f0ffad7c7a5473f8b88b8faeeaa9848')
+ assert.deepEqual(new Set(Object.keys(current.sourceDigests)),new Set([...Object.keys(before.nativeSensitiveSupplierCompositionAdoption.sourceDigests),'src/server/private-runtime.ts','db/private-store/011-supplier-private-acquisition.sql']))
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+ assert.equal(current.operationSchemaDigest,receipt.privateAcquisitionSourceCompatibility.operationSchemaDigest)
+ assert.equal(current.privateAcquisitionBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/011-supplier-private-acquisition.sql',import.meta.url))))
+ assert.deepEqual(current.privateTargets,[{entityType:'COMPANY',section:'kys'},{entityType:'JDG',section:'kys'},{entityType:'JDG',section:'jdg'}])
+ for(const flag of['sameOriginalKysAndJdgEngines','sameCanonicalRequestDispatchWorkAndAudit','samePrivateCommandTable','publicNipOnlyCommandPreserved','privateEntityAndSectionBoundToResource','publicParentRefusedForPrivateWork','previousReceiptsPreserved','previousOptionalSqlBytesPreserved','nativePrivateAcquisitionAdopted','legacyDefaultRetained'])assert.equal(current[flag],true,flag)
+ for(const flag of['privateGrantInferred','cloudSqlInstalled','httpEndpointActivated','runtimeRoleOrGrantChanged','liveProviderAcquisitionVerified','liveCustomerSessionVerified','legacyDemoHistoryReassigned','mapsFunctionalityChanged','productDeploymentPerformed'])assert.equal(current[flag],false,flag)
+ for(const name of['001-supplier-requests.sql','002-supplier-business-phases.sql','003-named-supplier-interest.sql','004-corporate-source.sql','005-corporate-source-access.sql','006-delegated-supplier-business.sql','007-supplier-private-inspection.sql','008-supplier-native-work.sql','009-supplier-source-request.sql','010-supplier-sensitive-work.sql'])
+  assert.deepEqual(fs.readFileSync(new URL('../db/private-store/'+name,import.meta.url)),beforePrivateAcquisitionApplicationSource('db/private-store/'+name),name)
 })
