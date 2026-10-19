@@ -151,7 +151,31 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
         if(previous.length){
           // A conflicting payload, unfinished/failed attempt or replacement
           // financial provenance requires a new operation or reconciliation.
-          if(previous.length!==1||previous[0].matches!==true||body.facts.length)return refuse()
+          if(previous.length!==1||previous[0].matches!==true)return refuse()
+          if(body.facts.length){
+            const keys='amount,currencyCode,metricCode,normalizationRule,periodEnd,periodStart,periodType,sourceAmount,sourcePath,statementScope,unitCode,validationStatus'
+            if(section!=='financial'||!previous[0].snapshot_id||body.facts.some(f=>!f||Object.keys(f).sort().join(',')!==keys
+              ||Object.values(f).some(v=>typeof v!=='string'||v.length>4096)))return refuse()
+            // Compare the original durable facts as typed values. Numeric
+            // database scale and JSON property order are not new provenance;
+            // missing, extra, duplicated or changed facts still conflict.
+            const proof=await client.query<{matches:boolean}>(
+              `WITH supplied AS(
+                SELECT "metricCode","periodStart","periodEnd","periodType","statementScope",amount,"sourceAmount",
+                  "normalizationRule","currencyCode","unitCode","sourcePath","validationStatus"
+                FROM jsonb_to_recordset($1::jsonb) f("metricCode" text,"periodStart" date,"periodEnd" date,"periodType" text,
+                  "statementScope" text,amount numeric,"sourceAmount" numeric,"normalizationRule" text,"currencyCode" text,
+                  "unitCode" text,"sourcePath" text,"validationStatus" text)
+              ), stored AS(
+                SELECT metric_code,period_start,period_end,period_type,statement_scope,amount,source_amount,
+                  normalization_rule,currency_code,unit_code,source_path,validation_status
+                FROM srm.financial_facts WHERE organization_id=$2::uuid AND supplier_id=$3::uuid AND snapshot_id=$4::uuid
+              ) SELECT NOT EXISTS(
+                (SELECT * FROM supplied EXCEPT ALL SELECT * FROM stored)
+                UNION ALL (SELECT * FROM stored EXCEPT ALL SELECT * FROM supplied)
+              ) matches`,[JSON.stringify(body.facts),s.organisationId,rows[0].supplier_id,previous[0].snapshot_id])
+            if(proof.rows[0]?.matches!==true)return refuse()
+          }
           return previous[0].snapshot_id
         }
         return persistSection(s.organisationId,{supplierId:rows[0].supplier_id,requestId:s.requestId},section,body.envelope,body.errorCode,body.facts,body.correlationId,body.sourceData,body.cacheStatus,pool)
