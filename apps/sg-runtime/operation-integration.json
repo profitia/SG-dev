@@ -1253,7 +1253,9 @@
       "projectKey": "SRM",
       "taskId": "SRM-E1-FULL-NATIVE-COMPANY-20261019",
       "sourceSha": "ca17a2a8ad6bd4d1872bef52c772bbe5b720b48f",
-      "classificationCorrectionTaskId": "SRM-E1-MSR-CORPORATE-PROVENANCE-20261019"
+      "classificationCorrectionTaskId": "SRM-E1-MSR-CORPORATE-PROVENANCE-20261019",
+      "followupReplaySourceSha": "1e71fe15c5b6290a2e7fc3ebfcf83345aed385d1",
+      "followupReplayVersion": "srm-native-company-replay-v1"
     },
     "authorityBase": "4c5e8286036307ed15a1ccedd49d1d5b2b582949",
     "sharedPackageVersionChanged": false,

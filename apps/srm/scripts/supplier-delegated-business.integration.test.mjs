@@ -741,7 +741,7 @@ async function supplierBusinessFixture(t,full=false){
     mgbi:{apiKey:'synthetic-native-company-key',authScheme:'raw',source:{application:sourceOptions.application,binding:sourceOptions.binding,pool:sourcePool,auditPool:sourceAudit,external,syntheticOrigin},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}}
    const company=createSrmNativeCompanyLookup(fullOptions),FULL_NIP='5260250274'
    const history=async s=>(await owner.query("SELECT snapshot.section,count(*)::int n FROM srm.source_snapshots snapshot JOIN srm.provider_attempts a ON a.organization_id=snapshot.organization_id AND a.id=snapshot.attempt_id WHERE snapshot.organization_id=$1 AND a.request_id=$2 GROUP BY snapshot.section ORDER BY snapshot.section",[s.organisationId,s.requestId])).rows
-   let cold
+   let cold,msrSelected
    await t.test('complete original company engine really acquires, privately stores, publishes and calculates under ordinary native roles',async()=>{
     cold=selection(await parent(A,FULL_NIP));const before=networkHits,report=await company.run(cold)
     assert.equal(report.identity.nip,FULL_NIP);assert.equal(report.general.data.legalName,'Synthetic Native Company')
@@ -814,6 +814,7 @@ async function supplierBusinessFixture(t,full=false){
     fileMode=true
     try{
      const selected=selection(await parent(A,'1234567802')),before=fileHits,limits=limitsHits
+     msrSelected=selected
      let report
      try{report=await company.run(selected)}catch(error){
       const receipts=(await owner.query('SELECT state,original_format,error_code FROM srm.msr_sources WHERE organization_id=$1 AND nip=$2',[A,selected.command.nip])).rows
@@ -825,6 +826,40 @@ async function supplierBusinessFixture(t,full=false){
      assert(report.financial.data.periods.some(p=>p.facts.some(f=>f.metricCode==='MSR_REVENUE'&&f.amount==='123')))
      assert.deepEqual(await history(selected),[{section:'financial',n:1},{section:'general',n:1}])
     }finally{fileMode=false}
+   })
+   await t.test('the same completed MSR parent reuses its identical original financial provenance without another acquisition',async()=>{
+    const files=fileHits,limits=limitsHits,hits=networkHits,before=await history(msrSelected),effects=await sourceCounts(),privateState=await counts()
+    const external=(await owner.query('SELECT count(*)::int n FROM profitia_external_call.calls')).rows[0].n
+    const report=await company.run(msrSelected)
+    assert(report.financial.data.periods.some(p=>p.facts.some(f=>f.metricCode==='MSR_REVENUE'&&f.amount==='123')))
+    assert.equal(fileHits,files);assert.equal(limitsHits,limits);assert.equal(networkHits,hits)
+    assert.deepEqual(await history(msrSelected),before)
+    const publications=(await owner.query('SELECT packet,body_digest FROM profitia_srm_catalog.publications WHERE nip=$1 ORDER BY recorded_at',[msrSelected.command.nip])).rows
+    assert.equal(publications.length,2);assert.equal(publications[0].packet.preserveGeneral,false);assert.equal(publications[1].packet.preserveGeneral,true)
+    assert.deepEqual({...publications[1].packet,preserveGeneral:false},publications[0].packet)
+    // The original cache engine submits a distinct financial-only Source
+    // projection. Its one SQL admission is not another provider purchase or
+    // customer quota charge; replaying that exact packet is idempotent.
+    const projected={e:effects.e+1,b:effects.b+1,w:effects.w}
+    assert.deepEqual(await sourceCounts(),projected)
+    await company.run(msrSelected)
+    assert.deepEqual(await sourceCounts(),projected);assert.deepEqual(await counts(),privateState)
+    assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_external_call.calls')).rows[0].n,external)
+    assert.equal(fileHits,files);assert.equal(limitsHits,limits);assert.equal(networkHits,hits);assert.deepEqual(await history(msrSelected),before)
+   })
+   await t.test('identical typed MSR facts replay but altered provenance, unknown fields and duplicates do not',async()=>{
+    const record=(await owner.query("SELECT s.id,s.payload_json,s.source_record_id,s.retrieved_at,s.effective_at,p.data_json FROM srm.provider_attempts a JOIN srm.source_snapshots s ON s.organization_id=a.organization_id AND s.attempt_id=a.id JOIN srm.section_projections p ON p.organization_id=s.organization_id AND p.snapshot_id=s.id WHERE a.organization_id=$1 AND a.request_id=$2 AND a.section='financial'",[A,msrSelected.requestId])).rows[0]
+    const facts=(await owner.query(`SELECT metric_code "metricCode",period_start::text "periodStart",period_end::text "periodEnd",period_type "periodType",statement_scope "statementScope",amount::text amount,source_amount::text "sourceAmount",normalization_rule "normalizationRule",currency_code "currencyCode",unit_code "unitCode",source_path "sourcePath",validation_status "validationStatus" FROM srm.financial_facts WHERE organization_id=$1 AND snapshot_id=$2`,[A,record.id])).rows
+    assert.equal(facts.length,1);assert.equal(facts[0].amount,'123.0000')
+    const envelope={status:'SUCCESS',source:{provider:'MGBI',model:'pl-krs-rdf-record',recordId:record.source_record_id},data:record.data_json,retrievedAt:record.retrieved_at.toISOString(),effectiveAt:record.effective_at?.toISOString()??null,warnings:[]}
+    const before=await counts(),hits=networkHits
+    assert.equal(await nativeStore.section(msrSelected,'financial',envelope,null,facts,undefined,record.payload_json,'CACHE'),record.id)
+    const denied=error=>isOperationDenied(error)||isOperationDenied(error.cause)
+    for(const change of[f=>{f[0].sourcePath='c'.repeat(24)+'.iXBRL.foreign-fact'},f=>{f[0].sourceAmount='124'},f=>{f.push(structuredClone(f[0]))},f=>{f[0].ownerOrganisationId=A}]){
+     const altered=structuredClone(facts);change(altered)
+     await assert.rejects(nativeStore.section(msrSelected,'financial',envelope,null,altered,undefined,record.payload_json,'CACHE'),denied)
+    }
+    assert.deepEqual(await counts(),before);assert.equal(networkHits,hits)
    })
    await t.test('an actually interrupted MSR HTTP acquisition stays BLOCKED and a fresh parent never purchases it again',async()=>{
     fileMode=true;failFile=true
