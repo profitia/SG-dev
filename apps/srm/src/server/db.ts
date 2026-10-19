@@ -16,6 +16,7 @@ interface DelegatedNativeWorkScope {
   readonly requestId:string;readonly unitId:string;readonly accessMode:'READ'|'WRITE';readonly inputDigest:string
   readonly schemaDigest:string;readonly transactionId:string;readonly policyVersion:string
   readonly policySourceRef:string;readonly policyExpiresAt:string
+  readonly targetOperation:'supplier.report.refresh'|'supplier.private.refresh';readonly targetResourceId:string
 }
 type DelegatedPrivateScope=DelegatedPhaseScope|DelegatedNativeWorkScope
 const boundTransactions = new WeakMap<DatabasePool, { organizationId: string; client: PoolClient; delegated?: Readonly<DelegatedPrivateScope> }>();
@@ -31,14 +32,21 @@ export function bindOrganizationTransaction(organizationId: string, client: Pool
         ||c.operation!=='job.execute'||c.organisationId!==organizationId||!uuid.test(c.actorId)||!uuid.test(c.subjectUserId??'')
         ||!uuid.test(w.requestId)||c.resourceId!==w.requestId||c.delegation?.requestId!==w.requestId
         ||c.delegation.subjectUserId!==c.subjectUserId||c.delegation.organisationId!==organizationId
-        ||c.delegation.target.operation!=='supplier.report.refresh'||c.delegation.target.application.appId!=='srm'
+        ||!['supplier.report.refresh','supplier.private.refresh'].includes(c.delegation.target.operation)||c.delegation.target.application.appId!=='srm'
+        ||c.actorId===c.subjectUserId||!/^[a-f0-9]{64}$/.test(c.payloadDigest)
+        ||c.delegation.payloadDigest!==c.payloadDigest
+        ||!(c.delegation.target.operation==='supplier.private.refresh'
+          ?/^supplier-private-request:(COMPANY:kys|JDG:kys|JDG:jdg):[a-f0-9]{64}$/.test(c.delegation.target.resourceId)
+          :/^supplier-request:[a-f0-9]{64}$/.test(c.delegation.target.resourceId))
+        ||c.delegation.target.resourceId.split(':').at(-1)!==c.payloadDigest
         ||c.requestContinuation!==undefined||c.requestInspection!==undefined||!/^[A-Z][A-Z0-9_]{1,63}$/.test(w.unitId)
         ||!['READ','WRITE'].includes(w.accessMode)||![w.inputDigest,w.schemaDigest].every(v=>/^[a-f0-9]{64}$/.test(v))
         ||!/^[1-9][0-9]*$/.test(w.transactionId)||!/^[1-9][0-9]*$/.test(w.policyVersion)
         ||!w.policySourceRef||!Number.isFinite(Date.parse(w.policyExpiresAt))||!c.applicationId)throw Error('Explicit current native Supplier work required')
       delegated=Object.freeze({kind:'NATIVE_WORK',actorId:c.actorId,applicationId:c.applicationId,subjectUserId:c.subjectUserId!,
         requestId:w.requestId,unitId:w.unitId,accessMode:w.accessMode,inputDigest:w.inputDigest,schemaDigest:w.schemaDigest,
-        transactionId:w.transactionId,policyVersion:w.policyVersion,policySourceRef:w.policySourceRef,policyExpiresAt:w.policyExpiresAt})
+        transactionId:w.transactionId,policyVersion:w.policyVersion,policySourceRef:w.policySourceRef,policyExpiresAt:w.policyExpiresAt,
+        targetOperation:c.delegation.target.operation as 'supplier.report.refresh'|'supplier.private.refresh',targetResourceId:c.delegation.target.resourceId})
     }else{
     const c = serviceContext, inspection = c?.requestInspection, phase = c?.requestContinuation ?? inspection;
     const schemaDigest = inspection?.continuationSchemaDigest ?? phase?.schemaDigest;
@@ -142,6 +150,7 @@ export async function withOrganization<T>(
           ||actual.executorServiceId!==d.actorId||actual.subjectUserId!==d.subjectUserId
           ||actual.organisationId!==organizationId||actual.requestId!==d.requestId||actual.unitId!==d.unitId
           ||actual.accessMode!==d.accessMode||actual.effect!=='PRIVATE_SQL_WORK'||actual.schemaDigest!==d.schemaDigest
+          ||actual.operation!==d.targetOperation||actual.resourceId!==d.targetResourceId
           ||actual.policyVersion!==d.policyVersion||actual.sourceRef!==d.policySourceRef||actual.policyExpiresAt!==d.policyExpiresAt
           ||row.input_digest!==d.inputDigest||actual.transactionId!==d.transactionId||row.transaction_id!==d.transactionId)throw Error('SRM native work transaction scope mismatch')
       }else{
