@@ -40,9 +40,10 @@ test('native provider source adoption pins original clients and keeps live relea
   assert.equal(adoption.taskId,'SRM-E1-MSR-NATIVE-SOURCE-TRANSPORT-20261019')
   assert.equal(adoption.previousProviderSourceReceiptPreserved,true)
   assert.equal(Object.keys(adoption.sourceDigests).length,9)
-  for(const[path,digest]of Object.entries(adoption.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+  const latest=manifest.nativeSensitiveSupplierCompositionAdoption
+  for(const[path,digest]of Object.entries(adoption.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),latest.sourceDigests[path]??digest,path)
   for (const [path, digest] of Object.entries(current.sourceDigests)) {
-    const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
+    const expected=latest.sourceDigests[path]??adoption.sourceDigests[path]??digest
     assert.equal(hash(fs.readFileSync(new URL('../' + path, import.meta.url))),expected,path)
   }
   for (const key of ['humanSupplierRefreshAdopted', 'sharedCatalogWriteAdopted', 'msrFilesAdopted', 'krsFilesAdopted', 'liveSqlInstalled', 'runtimeRoleOrGrantChanged', 'productDeploymentPerformed']) assert.equal(current[key], false, key)
