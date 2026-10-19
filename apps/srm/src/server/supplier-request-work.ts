@@ -15,7 +15,16 @@ export const SUPPLIER_NATIVE_WORK_UNITS = Object.freeze({
   SRM_MSR_CLAIM:'WRITE', SRM_MSR_RECEIVE:'WRITE', SRM_MSR_SAVE:'WRITE',
   SRM_MSR_PROJECT:'WRITE', SRM_MSR_BLOCK:'WRITE', SRM_RECORD_INTEREST:'WRITE',
 } as const)
-export type SupplierNativeWorkUnit = keyof typeof SUPPLIER_NATIVE_WORK_UNITS
+/** Sensitive purposes are registered separately; adding code grants no policy. */
+export const SUPPLIER_SENSITIVE_WORK_UNITS = Object.freeze({
+  SRM_SENSITIVE_REGISTER:'WRITE', SRM_SENSITIVE_STATUS:'READ', SRM_SENSITIVE_REPLAY:'READ', SRM_SENSITIVE_PURGE:'WRITE',
+  SRM_JDG_START:'WRITE', SRM_JDG_STORE:'WRITE', SRM_JDG_FINISH:'WRITE', SRM_KYS_STORE:'WRITE',
+  SRM_KYS_CACHE_READ:'READ', SRM_KYS_CACHE_CLAIM:'WRITE', SRM_KYS_CACHE_SAVE:'WRITE',
+  SRM_KYS_CACHE_HOLD:'WRITE', SRM_KYS_CACHE_RENEW:'WRITE', SRM_KYS_CACHE_RELEASE:'WRITE',
+} as const)
+const allNativeUnits = Object.freeze({...SUPPLIER_NATIVE_WORK_UNITS,...SUPPLIER_SENSITIVE_WORK_UNITS})
+export type SupplierSensitiveWorkUnit = keyof typeof SUPPLIER_SENSITIVE_WORK_UNITS
+export type SupplierNativeWorkUnit = keyof typeof allNativeUnits
 export type SupplierNativeWorkSelection = Readonly<{requestId:string;organisationId:string;command:SupplierRequestCommand}>
 export type SupplierNativeWorkOptions = Omit<SupplierServiceContinuationOptions,
   'executionMode'|'continuationSchemaDigest'|'delegatedSchemaDigest'|'delegatedBusinessBoundaryDigest'> & {
@@ -53,11 +62,11 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
         ||Object.keys(selection).sort().join(',')!=='command,organisationId,requestId'
         ||Reflect.ownKeys(selection).length!==3||Object.values(Object.getOwnPropertyDescriptors(selection)).some(d=>!('value'in d)||!d.enumerable)
         ||!uuid.test(selection.requestId)||!uuid.test(selection.organisationId)
-        ||!Object.hasOwn(SUPPLIER_NATIVE_WORK_UNITS,unitId)||typeof action!=='function')return refuse()
+        ||!Object.hasOwn(allNativeUnits,unitId)||typeof action!=='function')return refuse()
       const selected=freeze({...selection,command:readSupplierRequest(selection.command)})
       // Binding is a digest of server-selected parameters; those parameters are
       // captured by the domain adapter, not replayed as a second common body.
-      const inputDigest=operationPayloadDigest(input as Json),accessMode=SUPPLIER_NATIVE_WORK_UNITS[unitId]
+      const inputDigest=operationPayloadDigest(input as Json),accessMode=allNativeUnits[unitId]
       let performed=false
       const receipt=await host.runSqlWork({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
         operation:'job.execute',organisationId:selected.organisationId,resourceId:selected.requestId,payload:selected.command,request:null},

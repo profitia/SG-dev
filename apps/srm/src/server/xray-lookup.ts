@@ -69,7 +69,9 @@ export async function persistSection(
   sourcePayload?: unknown,
   retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER",
   pool?: DatabasePool,
+  privateEnvelope = false,
 ): Promise<string | null> {
+  if (privateEnvelope && sectionName !== "kys") throw new TypeError("Private KYS projection required");
   const attemptId = await atLookupStage("attempt_persistence", () => startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod, pool), sectionName);
   if (sectionName === "kys") logProviderOutcome("VERCLY", "kys", section.status, errorCode, retrievalMethod);
   try {
@@ -88,7 +90,8 @@ export async function persistSection(
       }, pool), sectionName);
       storedSnapshotId = snapshotId;
       await atLookupStage("projection_persistence", () => appendSectionProjection(organizationId, { supplierId: lookup.supplierId, snapshotId, section: sectionName,
-        version: sectionName === "kys" ? 2 : 1, data: section.data }, pool), sectionName);
+        version: sectionName === "kys" ? 2 : 1, data: section.data,
+        ...(privateEnvelope ? { privateEnvelope: section } : {}) }, pool), sectionName);
       if (sectionName === "financial" && facts.length) await atLookupStage("financial_persistence", () => appendFinancialFacts(organizationId, facts.map((fact) => ({ ...fact, supplierId: lookup.supplierId, snapshotId })), pool), "financial");
     }
     await atLookupStage("attempt_persistence", () => finishAttempt(organizationId, attemptId, attemptStatus(section.status, errorCode), {

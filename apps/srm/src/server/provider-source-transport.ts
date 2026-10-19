@@ -229,3 +229,14 @@ export function createSrmMsrSourceTransport(options: Omit<ProviderSourceOptions,
   }
   return Object.freeze({fetcher})
 }
+
+/** Preserve a genuine native control/uncertainty failure across the original
+ * clients' network-error handling. This never retries or replaces a client. */
+export async function guardOriginalProviderCall<T>(fetcher:typeof fetch,action:(guarded:typeof fetch)=>Promise<T>):Promise<T>{
+  let failed=false,failure:unknown
+  const guarded:typeof fetch=async(...args)=>{
+    try{return await fetcher(...args)}catch(error){failed=true;failure=error;throw error}
+  }
+  try{const value=await action(guarded);if(failed)throw failure;return value}
+  catch(error){throw failed?failure:error}
+}

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { operationPayloadDigest, type Json } from "@profitia/platform-contracts/operation-context";
 import type { PoolClient } from "pg";
 import { withOrganization, type DatabasePool } from "./db";
 import { kysCacheTtlMs } from "./kys-cache";
@@ -99,16 +100,16 @@ export async function appendSnapshot(organizationId: string, input: SnapshotInpu
   }, pool);
 }
 
-export async function purgeExpiredKysPersonal(organizationId: string): Promise<void> {
+export async function purgeExpiredKysPersonal(organizationId: string, pool?: DatabasePool): Promise<void> {
   await withOrganization(organizationId, async (client) => {
     const expired = "SELECT id FROM srm.source_snapshots WHERE organization_id = $1 AND data_class = 'KYS_PERSONAL' AND retention_until < now()";
     await client.query(`DELETE FROM srm.section_projections WHERE organization_id = $1 AND snapshot_id IN (${expired})`, [organizationId]);
     await client.query(`DELETE FROM srm.source_snapshots WHERE organization_id = $1 AND data_class = 'KYS_PERSONAL' AND retention_until < now()`, [organizationId]);
-  });
+  }, pool);
 }
 
 export async function readKysPersonPesel(
-  organizationId: string, snapshotId: string, list: "relatedPersons" | "beneficialOwners", index: number,
+  organizationId: string, snapshotId: string, list: "relatedPersons" | "beneficialOwners", index: number, pool?: DatabasePool,
 ): Promise<string | null> {
   if (!/^[0-9a-f-]{36}$/i.test(snapshotId) || !Number.isSafeInteger(index) || index < 0 || index > 10000) return null;
   return withOrganization(organizationId, async (client) => {
@@ -120,21 +121,37 @@ export async function readKysPersonPesel(
     );
     const pesel = result.rows[0]?.payload_json?.[list]?.[index]?.pesel;
     return typeof pesel === "string" && /^\d{11}$/.test(pesel) ? pesel : null;
-  });
+  }, pool);
 }
 
 export async function appendSectionProjection(
   organizationId: string,
-  input: { supplierId: string; snapshotId: string; section: PersistedSection; data: unknown; version: number },
+  input: { supplierId: string; snapshotId: string; section: PersistedSection; data: unknown; version: number; privateEnvelope?: unknown },
   pool?: DatabasePool,
 ): Promise<string> {
   const serialized = JSON.stringify(input.data);
   if (!serialized || !Number.isSafeInteger(input.version) || input.version < 1) throw new Error("A valid projection is required");
+  let privateEnvelope: string | undefined;
+  if (input.privateEnvelope !== undefined) {
+    if (!pool || !["kys", "jdg"].includes(input.section)) throw new Error("Explicit sensitive projection transaction required");
+    privateEnvelope = JSON.stringify(input.privateEnvelope);
+    if (!privateEnvelope || Buffer.byteLength(privateEnvelope) > 32 * 1024 * 1024) throw new Error("Bounded sensitive envelope required");
+    const envelope = JSON.parse(privateEnvelope);
+    if (!envelope || typeof envelope !== "object" || Array.isArray(envelope)
+      || Object.keys(envelope).some(k => !["status", "source", "retrievedAt", "effectiveAt", "warnings", "data"].includes(k))
+      || !["SUCCESS", "PARTIAL", "ERROR", "EMPTY", "PENDING"].includes(envelope.status)
+      || !Array.isArray(envelope.warnings) || envelope.warnings.some((v: unknown) => typeof v !== "string")
+      || envelope.source?.provider !== (input.section === "kys" ? "VERCLY" : "CEIDG")
+      || typeof envelope.retrievedAt !== "string" || !Number.isFinite(Date.parse(envelope.retrievedAt))
+      || operationPayloadDigest(envelope.data as Json) !== operationPayloadDigest(input.data as Json))
+      throw new Error("Sensitive projection envelope mismatch");
+  }
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ id: string }>(
-      "INSERT INTO srm.section_projections(organization_id, supplier_id, snapshot_id, section, projection_version, data_json) " +
-      "VALUES ($1,$2,$3,$4,$5,$6::jsonb) RETURNING id",
-      [organizationId, input.supplierId, input.snapshotId, input.section, input.version, serialized],
+      `INSERT INTO srm.section_projections(organization_id, supplier_id, snapshot_id, section, projection_version, data_json${privateEnvelope === undefined ? "" : ", private_envelope"}) ` +
+      `VALUES ($1,$2,$3,$4,$5,$6::jsonb${privateEnvelope === undefined ? "" : ",$7::jsonb"}) RETURNING id`,
+      [organizationId, input.supplierId, input.snapshotId, input.section, input.version, serialized,
+        ...(privateEnvelope === undefined ? [] : [privateEnvelope])],
     );
     return result.rows[0].id;
   }, pool);
