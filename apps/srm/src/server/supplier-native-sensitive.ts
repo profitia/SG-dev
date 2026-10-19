@@ -27,6 +27,8 @@ export function createSrmNativeSensitiveLookup(options:Options){
  if(typeof window!=='undefined'||!options||Object.keys(options).sort().join(',')!=='entityType,namedInterestBoundaryDigest,provider,section,source,work'
   ||!['kys','jdg'].includes(options.section)||!['COMPANY','JDG'].includes(options.entityType)
   ||options.section==='jdg'&&options.entityType!=='JDG'||!options.provider?.apiKey?.trim())return refuse()
+ if(options.work.privateAcquisition&&(options.work.privateAcquisition.entityType!==options.entityType
+  ||options.work.privateAcquisition.section!==options.section||options.work.job.targetOperation!=='supplier.private.refresh'))return refuse()
  const evidence=platformDeliveryEvidence(options.source?.port)
  if(!evidence||['applicationId','environment','projectId','branchId','databaseName','schemaDigest'].some(k=>
   options.provider.source.binding[k as keyof ProviderOptions['binding']]!==evidence[k as keyof typeof evidence]))return refuse()

@@ -3,7 +3,7 @@ import { createDelegatedNativeWorkHost } from '@profitia/platform-contracts/priv
 import { createClerkAccountStatusReader } from '@profitia/platform-contracts/identity-provider'
 import { OPERATION_CONTRACT, OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
 import { createSrmNativePgDriver } from './native-pg-driver'
-import { readSupplierRequest, supplierRequestResourceId, type SupplierRequestCommand } from './supplier-request-operation'
+import { readSupplierRequest, supplierRequestResourceId, privateSupplierRequestResourceId, readSupplierPrivateAcquisition, type SupplierPrivateAcquisition, type SupplierRequestCommand } from './supplier-request-operation'
 import type { SupplierServiceContinuationOptions } from './supplier-request-continuation'
 
 /** Reviewed SQL purposes, not an effect ledger or provider dispatch contract. */
@@ -27,8 +27,9 @@ export type SupplierSensitiveWorkUnit = keyof typeof SUPPLIER_SENSITIVE_WORK_UNI
 export type SupplierNativeWorkUnit = keyof typeof allNativeUnits
 export type SupplierNativeWorkSelection = Readonly<{requestId:string;organisationId:string;command:SupplierRequestCommand}>
 export type SupplierNativeWorkOptions = Omit<SupplierServiceContinuationOptions,
-  'executionMode'|'continuationSchemaDigest'|'delegatedSchemaDigest'|'delegatedBusinessBoundaryDigest'> & {
-  workSchemaDigest:string;workBusinessBoundaryDigest:string
+  'executionMode'|'continuationSchemaDigest'|'delegatedSchemaDigest'|'delegatedBusinessBoundaryDigest'|'job'> & {
+  workSchemaDigest:string;workBusinessBoundaryDigest:string;privateAcquisition?:SupplierPrivateAcquisition
+  job:SupplierServiceContinuationOptions['job']|{schemaDigest:string;targetOperation:'supplier.private.refresh';supplierSchemaDigest:string;operationSchemaDigest:string}
 }
 export interface SupplierNativeWork {
   run(selection:SupplierNativeWorkSelection,unitId:SupplierNativeWorkUnit,input:Readonly<Json>,
@@ -42,12 +43,15 @@ const freeze=<T>(v:T):T=>{if(v&&typeof v==='object'){Object.values(v).forEach(fr
  * browser proof, provider client or long-running transaction lives here. */
 export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):Readonly<SupplierNativeWork>{
   const allowed=['pool','auditPool','clerk','now','transactionTimeoutMs','application','binding','job',
-    'commandBoundaryDigest','accountIdentity','workSchemaDigest','workBusinessBoundaryDigest']
+    'commandBoundaryDigest','accountIdentity','workSchemaDigest','workBusinessBoundaryDigest','privateAcquisition']
   if(typeof window!=='undefined'||!options||Object.getPrototypeOf(options)!==Object.prototype
     ||Object.keys(options).some(k=>!allowed.includes(k))||Reflect.ownKeys(options).length!==Object.keys(options).length
     ||Object.values(Object.getOwnPropertyDescriptors(options)).some(d=>!('value'in d)||!d.enumerable)
     ||!['commandBoundaryDigest','workSchemaDigest','workBusinessBoundaryDigest'].every(k=>/^[a-f0-9]{64}$/.test(options[k as keyof SupplierNativeWorkOptions] as string))
     ||options.accountIdentity?.environment!==options.application.environment)throw TypeError('Explicit native Supplier work binding required')
+  const acquisition=options.privateAcquisition===undefined?undefined:readSupplierPrivateAcquisition(options.privateAcquisition)
+  if(options.job.targetOperation!==(acquisition?'supplier.private.refresh':'supplier.report.refresh'))throw TypeError('Explicit native request target required')
+  const targetId=(command:SupplierRequestCommand)=>acquisition?privateSupplierRequestResourceId(command,{entityType:acquisition.entityType,section:acquisition.section}):supplierRequestResourceId(command)
   const fixed=freeze(structuredClone({application:options.application,binding:options.binding,job:options.job,
     commandBoundaryDigest:options.commandBoundaryDigest,workSchemaDigest:options.workSchemaDigest,
     workBusinessBoundaryDigest:options.workBusinessBoundaryDigest}))
@@ -75,7 +79,7 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
         if(performed||context.actorKind!=='SERVICE'||context.applicationId!==fixed.application.appId
           ||context.actorId===context.subjectUserId||context.organisationId!==selected.organisationId
           ||context.delegation?.subjectUserId!==context.subjectUserId||context.delegation.target.application.appId!=='srm'
-          ||context.delegation.target.operation!=='supplier.report.refresh'||context.delegation.target.resourceId!==supplierRequestResourceId(selected.command)
+          ||context.delegation.target.operation!==fixed.job.targetOperation||context.delegation.target.resourceId!==targetId(selected.command)
           ||context.payloadDigest!==operationPayloadDigest(selected.command)||context.requestContinuation!==undefined||context.requestInspection!==undefined
           ||work?.requestId!==selected.requestId||work.unitId!==unitId||work.accessMode!==accessMode
           ||work.inputDigest!==inputDigest||work.schemaDigest!==fixed.workSchemaDigest)return refuse()
@@ -84,7 +88,11 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
         if(!d||d.workBusinessSchemaVersion!=='1.0.0'||d.workBusinessBoundaryDigest!==fixed.workBusinessBoundaryDigest
           ||d.commandBoundaryDigest!==fixed.commandBoundaryDigest||d.applicationId!==context.applicationId
           ||d.parentApplicationId!=='srm'||d.subjectUserId!==context.subjectUserId
-          ||d.nip!==selected.command.nip||d.unitId!==unitId||d.accessMode!==accessMode)return refuse()
+          ||d.nip!==selected.command.nip||d.unitId!==unitId||d.accessMode!==accessMode
+          ||acquisition&&(d.privateAcquisitionSchemaVersion!=='1.0.0'||d.privateAcquisitionBoundaryDigest!==acquisition.boundaryDigest
+            ||d.entityType!==acquisition.entityType||d.section!==acquisition.section
+            ||d.operation!=='supplier.private.refresh')
+          ||!acquisition&&d.operation!=='supplier.report.refresh')return refuse()
         const commands=await client.query('SELECT command_json FROM profitia_supplier_requests.commands WHERE request_id=$1::uuid',[selected.requestId])
         if(commands.rows.length!==1||operationPayloadDigest(readSupplierRequest(commands.rows[0].command_json))!==context.payloadDigest)return refuse()
         await client.query("SELECT set_config('srm.organization_id',$1,true)",[selected.organisationId])

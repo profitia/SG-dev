@@ -119,12 +119,14 @@ import {createSrmSupplierSourceLink} from '../src/server/supplier-source-link.ts
 import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion'
 import {createSrmNativePgDriver} from '../src/server/native-pg-driver.ts'
 import {createSrmNativeSensitiveLookup} from '../src/server/supplier-native-sensitive.ts'
+import {privateSupplierRequestResourceId} from '../src/server/supplier-request-operation.ts'
 import {createSrmSensitiveNativeStore} from '../src/server/supplier-native-sensitive-store.ts'
 import {createSrmSensitiveOperationHost,privateSupplierReportId,privateSupplierExportId,readPrivateSupplier,revealPrivateSupplier,exportPrivateKys} from '../src/server/supplier-sensitive-operation.ts'
 import {renderKysPdf} from '../src/server/kys-pdf.ts'
 const FOREGROUND=HUMAN,SOURCE='srm_supplier_source_runtime',ORIGIN='http://localhost:3400',OTHER_NIP='5272443955'
 
-async function sensitiveNativeFixture(t,full=true){
+async function sensitiveNativeFixture(t,full=true,privateMode=false){
+ const requestOperation=privateMode?'supplier.private.refresh':'supplier.report.refresh'
  const DATABASE='srm_sensitive_native_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
@@ -148,6 +150,7 @@ async function sensitiveNativeFixture(t,full=true){
   await owner.query(`REVOKE ALL ON DATABASE ${DATABASE} FROM PUBLIC;GRANT CONNECT ON DATABASE ${DATABASE} TO ${FOREGROUND},${EXECUTOR};GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
   const controlled=async work=>{await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner');try{const v=await work();await owner.query('COMMIT');return v}catch(e){await owner.query('ROLLBACK');throw e}}
   const sources=[['001-internal-access.sql','profitia_access.installation'],['002-module-scope.sql','profitia_modules.installation'],['003-module-audit.sql','profitia_modules.audit_installation'],['005-service-read.sql','profitia_services.installation'],['006-request-reservation.sql','profitia_requests.installation'],['007-delegated-jobs.sql','profitia_jobs.installation'],['010-external-request-admission.sql','profitia_requests.external_installation'],['011-request-continuation.sql','profitia_request_phases.installation'],['013-supplier-delegation.sql','profitia_supplier_jobs.installation'],['014-delegated-private-phases.sql','profitia_delegated_phases.installation'],['015-delegated-private-inspection.sql','profitia_request_inspection.installation'],['016-delegated-native-work.sql','profitia_request_work.installation']]
+  if(privateMode)sources.push(['017-additional-request-operations.sql','profitia_requests.operation_installation'])
   const identity=randomUUID(),bindingId=randomUUID(),serviceId=randomUUID()
   await controlled(async()=>{
    for(const[name,table]of sources){const sql=core(name);await owner.query(sql)
@@ -163,13 +166,20 @@ async function sensitiveNativeFixture(t,full=true){
    for(const org of[A,B]){
     await owner.query("INSERT INTO profitia_access.organisations(organisation_id,status) VALUES($1,'ACTIVE')",[org])
     await owner.query("INSERT INTO profitia_access.memberships(organisation_id,user_id,status,source_ref,expires_at) VALUES($1,$2,'ACTIVE','SYNTHETIC_ONLY',$3)",[org,U,future()])
-    await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'ALLOW','supplier.report.refresh','supplier_report')",[randomUUID(),org,U])
+    await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'ALLOW','supplier.report.refresh','supplier_report')".replaceAll('supplier.report.refresh',requestOperation),[randomUUID(),org,U])
     await owner.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES('srm',$1,'SUPPLIER_INTELLIGENCE',ARRAY['supplier_report'],'ACTIVE','CONTRACT','SYNTHETIC_ONLY',$2)",[org,future()])
-    await owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity) VALUES($1,'srm',$2,'supplier.report.refresh','ACTIVE','SYNTHETIC_ONLY',now()-interval '1 hour',now()+interval '2 hours',$3,50)",[randomUUID(),org,future()])
+    await owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity) VALUES($1,'srm',$2,'supplier.report.refresh','ACTIVE','SYNTHETIC_ONLY',now()-interval '1 hour',now()+interval '2 hours',$3,50)".replaceAll('supplier.report.refresh',requestOperation),[randomUUID(),org,future()])
    }
    await owner.query("INSERT INTO profitia_services.runtime_bindings(login_role,binding_id,service_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'PLATFORM_INTERNAL','synthetic-srm-jobs','jobs-v1','ACTIVE','SYNTHETIC_ONLY',$4)",[EXECUTOR,randomUUID(),serviceId,future()])
-   await owner.query("INSERT INTO profitia_jobs.operation_bindings(binding_id,application_id,operation,foreground_role,profile_id,configuration_version,executor_application_id,source_id,source_project_id,source_branch_id,source_database_name,source_application_id,source_schema_digest,source_payload_schema,source_quality_version,source_classification_version,delegation_ttl_seconds,max_attempts,status,source_ref,expires_at) VALUES($1,'srm','supplier.report.refresh',$2,'SUPPLIER_INTELLIGENCE_STANDALONE','request-v1','srm-jobs','srm.supplier.source-request','isolated-source-project','isolated-source-branch',$5,'srm-provider-source',$3,'supplier-command-v1','srm-supplier-source-request-v1','srm-supplier-source-request-control-v1',3600,3,'ACTIVE','SYNTHETIC_ONLY',$4)",[bindingId,FOREGROUND,hash(core('008-platform-ingestion.sql')),future(),DATABASE])
+   await owner.query("INSERT INTO profitia_jobs.operation_bindings(binding_id,application_id,operation,foreground_role,profile_id,configuration_version,executor_application_id,source_id,source_project_id,source_branch_id,source_database_name,source_application_id,source_schema_digest,source_payload_schema,source_quality_version,source_classification_version,delegation_ttl_seconds,max_attempts,status,source_ref,expires_at) VALUES($1,'srm','supplier.report.refresh',$2,'SUPPLIER_INTELLIGENCE_STANDALONE','request-v1','srm-jobs','srm.supplier.source-request','isolated-source-project','isolated-source-branch',$5,'srm-provider-source',$3,'supplier-command-v1','srm-supplier-source-request-v1','srm-supplier-source-request-control-v1',3600,3,'ACTIVE','SYNTHETIC_ONLY',$4)".replaceAll('supplier.report.refresh',requestOperation),[bindingId,FOREGROUND,hash(core('008-platform-ingestion.sql')),future(),DATABASE])
    for(const org of[A,B])await owner.query("INSERT INTO profitia_jobs.execution_grants(grant_id,login_role,binding_id,organisation_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,$4,'ALLOW','ACTIVE','SYNTHETIC_ONLY',$5)",[randomUUID(),EXECUTOR,bindingId,org,future()])
+   if(privateMode){
+    for(const[table,key]of[['profitia_access.permission_grants','grant_id'],['profitia_requests.policies','policy_id']])
+     await owner.query(`INSERT INTO ${table} SELECT (jsonb_populate_record(NULL::${table},to_jsonb(x)||jsonb_build_object('${key}',gen_random_uuid(),'operation','supplier.report.refresh'))).* FROM ${table} x WHERE application_id='srm' AND operation='supplier.private.refresh'`)
+    const publicBinding=randomUUID()
+    await owner.query("INSERT INTO profitia_jobs.operation_bindings SELECT (jsonb_populate_record(NULL::profitia_jobs.operation_bindings,to_jsonb(x)||jsonb_build_object('binding_id',$2::text,'operation','supplier.report.refresh'))).* FROM profitia_jobs.operation_bindings x WHERE binding_id=$1::uuid",[bindingId,publicBinding])
+    await owner.query("INSERT INTO profitia_jobs.execution_grants SELECT (jsonb_populate_record(NULL::profitia_jobs.execution_grants,to_jsonb(x)||jsonb_build_object('grant_id',gen_random_uuid(),'binding_id',$2::text))).* FROM profitia_jobs.execution_grants x WHERE binding_id=$1::uuid",[bindingId,publicBinding])
+   }
    for(const[i,id]of['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL','RECORD_INTEREST'].entries())await owner.query("INSERT INTO profitia_request_phases.policies(application_id,phase_id,sequence,predecessor,operation,effect,status,source_ref,expires_at) VALUES('srm',$1,$2,$3,'supplier.report.refresh','PRIVATE_SQL_PHASE','ACTIVE','SYNTHETIC_ONLY',$4)",[id,i+1,['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL'][i-1]??null,future()])
    await owner.query(own('001-supplier-requests.sql'));await owner.query("INSERT INTO profitia_supplier_requests.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(own('001-supplier-requests.sql'))])
   })
@@ -280,6 +290,22 @@ async function sensitiveNativeFixture(t,full=true){
    })
    await owner.query(own('008-supplier-native-work.sql'));await owner.query("INSERT INTO srm.supplier_work_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('008-supplier-native-work.sql')),'e'.repeat(40)])
    await owner.query(own('010-supplier-sensitive-work.sql'));await owner.query("INSERT INTO srm.supplier_sensitive_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('010-supplier-sensitive-work.sql')),'f'.repeat(40)])
+   if(privateMode){
+    await t.test('private acquisition installation is atomic and rollback preserves the exact original work function and command foreign keys',async()=>{
+     const before=(await owner.query("SELECT pg_get_functiondef('srm.current_supplier_work(uuid,uuid,text)'::regprocedure) value")).rows[0].value
+     const keys=(await owner.query("SELECT count(*)::int n FROM pg_constraint WHERE conrelid='profitia_supplier_requests.commands'::regclass AND contype='f'")).rows[0].n
+     await owner.query('SAVEPOINT private_acquisition')
+     await owner.query(own('011-supplier-private-acquisition.sql'))
+     await owner.query('ROLLBACK TO SAVEPOINT private_acquisition;RELEASE SAVEPOINT private_acquisition')
+     assert.equal((await owner.query("SELECT to_regclass('srm.supplier_private_acquisition_installation') x")).rows[0].x,null)
+     assert.equal((await owner.query("SELECT count(*)::int n FROM pg_attribute WHERE attrelid='profitia_supplier_requests.commands'::regclass AND attname='request_operation' AND NOT attisdropped")).rows[0].n,0)
+     assert.equal((await owner.query("SELECT pg_get_functiondef('srm.current_supplier_work(uuid,uuid,text)'::regprocedure) value")).rows[0].value,before)
+     assert.equal((await owner.query("SELECT count(*)::int n FROM pg_constraint WHERE conrelid='profitia_supplier_requests.commands'::regclass AND contype='f'")).rows[0].n,keys)
+    })
+    await owner.query(own('011-supplier-private-acquisition.sql'));await owner.query("INSERT INTO srm.supplier_private_acquisition_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('011-supplier-private-acquisition.sql')),'1'.repeat(40)])
+    for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION profitia_requests.operation_runtime_descriptor() TO ${role}`)
+    await owner.query(`GRANT EXECUTE ON FUNCTION srm.private_acquisition_descriptor() TO ${FOREGROUND}`)
+   }
    for(const[unit,mode]of Object.entries({...SUPPLIER_NATIVE_WORK_UNITS,...SUPPLIER_SENSITIVE_WORK_UNITS}))await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_NATIVE_UNIT',$3)",[unit,mode,future()])
    await owner.query(`GRANT USAGE ON SCHEMA profitia_request_work TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_request_work.descriptor(uuid,text),profitia_request_work.bind_scope(uuid,text,text,uuid,uuid),profitia_request_work.scope_allows(uuid,text,uuid,uuid,text),srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${EXECUTOR};GRANT SELECT,INSERT,UPDATE ON srm.msr_sources,srm.msr_projections TO ${EXECUTOR};GRANT SELECT ON srm.catalog_companies,srm.catalog_financial_facts,srm.catalog_financial_indicators TO ${EXECUTOR}`)
    for(const role of[FOREGROUND,EXECUTOR,...(full?[CORPORATE]:[])])await owner.query(`GRANT EXECUTE ON FUNCTION srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${role}`)
@@ -324,17 +350,20 @@ async function sensitiveNativeFixture(t,full=true){
   }})
   const clerk={authenticateRequest:async()=>({status:'signed-in',isAuthenticated:true,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'external-'+currentUser,sessionId:'session-'+currentUser,actor:null,sessionClaims:{iss:ISSUER,sub:'external-'+currentUser,sid:'session-'+currentUser,azp:ORIGIN,exp:Math.floor(Date.now()/1000)+3600}})}),sessions:{getSession:async id=>({id,userId:'external-'+currentUser,status:'active',actor:null,expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000})},users:{getUser:async id=>({id,banned:!accountActive,locked:false,deprovisioned:false})}}
   const baseBinding={applicationId:'srm',environment:'development',projectId:'isolated-srm-service-project',branchId:'isolated-srm-service-branch',databaseName:DATABASE,role:FOREGROUND,schemaDigest:hash(core('001-internal-access.sql'))}
-  const humanOptions={pool,auditPool,clerk,binding:baseBinding,module:{id:'supplier_report',schemaDigest:hash(core('002-module-scope.sql')),auditSchemaDigest:hash(core('003-module-audit.sql'))},identity:{appId:'srm',environment:'development',issuer:ISSUER,authorizedParties:[ORIGIN]},application:{appId:'srm',profileId:'SUPPLIER_INTELLIGENCE_STANDALONE',environment:'development',deploymentId:'synthetic-srm-request',configurationVersion:'request-v1',identityIssuer:ISSUER,organisationId:null,features:['supplier_report'],operations:['supplier.report.refresh']},requestLedger:{schemaDigest:hash(core('006-request-reservation.sql')),externalSchemaDigest:hash(core('010-external-request-admission.sql'))},commandBoundaryDigest:hash(own('001-supplier-requests.sql'))}
-  const job={schemaDigest:hash(core('007-delegated-jobs.sql')),targetOperation:'supplier.report.refresh',supplierSchemaDigest:hash(core('013-supplier-delegation.sql'))}
-  const foreground=createSrmSupplierRequestOperationHost(humanOptions),jobs=createDelegatedJobStore({binding:baseBinding,...job})
-  const parent=async(org=A,nip=NIP)=>{const command={kind:'SUPPLIER_REPORT',nip},key='synthetic-supplier-'+randomUUID()
-   const result=await foreground.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.report.refresh',organisationId:org,resourceId:supplierRequestResourceId(command),payload:command,idempotencyKey:key,request:new Request(ORIGIN+'/api/xray/requests',{method:'POST',headers:{origin:ORIGIN}})},async(context,c)=>{const receipt=await persistSupplierRequest(context,c);const dispatch=await jobs.createDispatch(c.query.bind(c),context);assert.equal(dispatch.requestId,receipt.requestId);return receipt})
+  const humanOptions={pool,auditPool,clerk,binding:baseBinding,module:{id:'supplier_report',schemaDigest:hash(core('002-module-scope.sql')),auditSchemaDigest:hash(core('003-module-audit.sql'))},identity:{appId:'srm',environment:'development',issuer:ISSUER,authorizedParties:[ORIGIN]},application:{appId:'srm',profileId:'SUPPLIER_INTELLIGENCE_STANDALONE',environment:'development',deploymentId:'synthetic-srm-request',configurationVersion:'request-v1',identityIssuer:ISSUER,organisationId:null,features:['supplier_report'],operations:[requestOperation]},requestLedger:{...(privateMode?{operationSchemaDigest:hash(core('017-additional-request-operations.sql'))}:{}),schemaDigest:hash(core('006-request-reservation.sql')),externalSchemaDigest:hash(core('010-external-request-admission.sql'))},commandBoundaryDigest:hash(own('001-supplier-requests.sql'))}
+  const job={schemaDigest:hash(core('007-delegated-jobs.sql')),targetOperation:requestOperation,...(privateMode?{operationSchemaDigest:hash(core('017-additional-request-operations.sql'))}:{}),supplierSchemaDigest:hash(core('013-supplier-delegation.sql'))}
+  const privateTarget=(entityType='COMPANY',section='kys')=>({entityType,section,boundaryDigest:hash(own('011-supplier-private-acquisition.sql'))})
+  const requestHost=(entityType='COMPANY',section='kys')=>createSrmSupplierRequestOperationHost({...humanOptions,...(privateMode?{privateAcquisition:privateTarget(entityType,section)}:{})})
+  const foreground=requestHost(),jobs=createDelegatedJobStore({binding:baseBinding,...job})
+  const parent=async(org=A,nip=NIP,entityType='COMPANY',section='kys')=>{const command={kind:'SUPPLIER_REPORT',nip},key='synthetic-supplier-'+randomUUID()
+   const host=privateMode?requestHost(entityType,section):foreground,resourceId=privateMode?privateSupplierRequestResourceId(command,{entityType,section}):supplierRequestResourceId(command)
+   const result=await host.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:requestOperation,organisationId:org,resourceId,payload:command,idempotencyKey:key,request:new Request(ORIGIN+'/api/xray/requests',{method:'POST',headers:{origin:ORIGIN}})},async(context,c)=>{const receipt=await persistSupplierRequest(context,c);const dispatch=await jobs.createDispatch(c.query.bind(c),context);assert.equal(dispatch.requestId,receipt.requestId);return receipt})
    assert.equal(result.value.status,202);const receipt=await result.value.json();return{requestId:receipt.requestId,organisationId:org,command,key}
   }
   const serviceOptions={executionMode:'DELEGATED_SERVICE',pool:servicePool,auditPool:serviceAudit,clerk,application:{appId:'srm-jobs',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-srm-jobs',configurationVersion:'jobs-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['job_execution'],operations:['job.execute']},binding:{...baseBinding,applicationId:'srm-jobs',role:EXECUTOR,service:{schemaDigest:hash(core('005-service-read.sql')),profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-srm-jobs',configurationVersion:'jobs-v1'}},job,continuationSchemaDigest:hash(core('011-request-continuation.sql')),delegatedSchemaDigest:hash(core('014-delegated-private-phases.sql')),commandBoundaryDigest:hash(own('001-supplier-requests.sql')),delegatedBusinessBoundaryDigest:hash(own('006-delegated-supplier-business.sql')),accountIdentity:{environment:'development',issuer:ISSUER}}
   const {executionMode:_unused,...inspectionOptions}=serviceOptions
   const {continuationSchemaDigest:_continuation,delegatedSchemaDigest:_delegated,delegatedBusinessBoundaryDigest:_business,...workOptions}=inspectionOptions
-  const nativeWork=createSrmSupplierNativeWork({...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))})
+  const nativeWork=createSrmSupplierNativeWork({...workOptions,...(privateMode?{privateAcquisition:privateTarget()}:{}),workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))})
   const sourceOptions={pool:sourcePool,auditPool:sourceAudit,
    application:{appId:'srm-provider-source',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
    binding:{applicationId:'srm-provider-source',environment:'development',projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:SOURCE,deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',schemaDigest:hash(core('008-platform-ingestion.sql'))},requestSchemaDigest:hash(own('009-supplier-source-request.sql'))}
@@ -344,7 +373,7 @@ async function sensitiveNativeFixture(t,full=true){
   const {requestLedger:_requestLedger,commandBoundaryDigest:_commandBoundary,...privateHumanOptions}=humanOptions
   const human=createSrmSensitiveOperationHost({...privateHumanOptions,application:{...humanOptions.application,operations:['supplier.private.read','supplier.private.reveal','supplier.private.export']},sensitiveBoundaryDigest:hash(own('010-supplier-sensitive-work.sql')),secret:privateSecret})
   const sourceProvider={...sourceOptions,external:{configurationVersion:'company-provider-v1',schemaDigest:hash(core('009-external-call-admission.sql')),nativeSchemaDigest:hash(core('012-native-external-transport.sql')),maximumResponseBytes:1024*1024},syntheticOrigin}
-  const native=(entityType='COMPANY',section='kys')=>createSrmNativeSensitiveLookup({work:{...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,entityType,section,provider:{apiKey:'synthetic-native-sensitive-key',origin:section==='jdg'?'https://dane.biznes.gov.pl':'https://vercly.fixture.test',source:sourceProvider}})
+  const native=(entityType='COMPANY',section='kys')=>createSrmNativeSensitiveLookup({work:{...workOptions,...(privateMode?{privateAcquisition:privateTarget(entityType,section)}:{}),workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,entityType,section,provider:{apiKey:'synthetic-native-sensitive-key',origin:section==='jdg'?'https://dane.biznes.gov.pl':'https://vercly.fixture.test',source:sourceProvider}})
   const privateInput=(org=A,nip=NIP,entityType='COMPANY',section='kys')=>({nip,entityType,section})
   async function humanRun(operation,payload,org=A,action){
    const resourceId=operation==='supplier.private.read'?privateSupplierReportId(payload):operation==='supplier.private.reveal'?'supplier-private-identifier':privateSupplierExportId(payload.nip,payload.entityType)
@@ -352,6 +381,30 @@ async function sensitiveNativeFixture(t,full=true){
    return result.value
   }
   let selectedA,kysA,viewA
+  if(privateMode){
+   await t.test('public corporate admission cannot authorize private native Work, and the private grant is never inferred',async()=>{
+    const {operationSchemaDigest:_optional,...ledger}=humanOptions.requestLedger
+    const publicHuman=createSrmSupplierRequestOperationHost({...humanOptions,application:{...humanOptions.application,operations:['supplier.report.refresh']},requestLedger:ledger})
+    const publicJob={schemaDigest:job.schemaDigest,targetOperation:'supplier.report.refresh',supplierSchemaDigest:job.supplierSchemaDigest}
+    const publicJobs=createDelegatedJobStore({binding:baseBinding,...publicJob}),command={kind:'SUPPLIER_REPORT',nip:NIP}
+    const admitted=await publicHuman.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.report.refresh',organisationId:A,resourceId:supplierRequestResourceId(command),payload:command,idempotencyKey:'synthetic-public-only-'+randomUUID(),request:new Request(ORIGIN+'/api/xray/requests',{method:'POST',headers:{origin:ORIGIN}})},async(context,client)=>{
+     const value=await persistSupplierRequest(context,client);await publicJobs.createDispatch(client.query.bind(client),context);return value
+    })
+    const accepted=await admitted.value.json(),before=networkHits
+    const publicNative=createSrmNativeSensitiveLookup({work:{...workOptions,job:publicJob,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,entityType:'COMPANY',section:'kys',provider:{apiKey:'synthetic-native-sensitive-key',origin:'https://vercly.fixture.test',source:sourceProvider}})
+    await assert.rejects(publicNative.run({requestId:accepted.requestId,organisationId:A,command}),isOperationDenied)
+    await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY' WHERE application_id='srm' AND organisation_id=$1 AND operation='supplier.private.refresh'",[A]))
+    try{await assert.rejects(parent(),e=>isOperationDenied(e)&&e.reasonCode==='PERMISSION_DENIED')}
+    finally{await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='ALLOW' WHERE application_id='srm' AND organisation_id=$1 AND operation='supplier.private.refresh'",[A]))}
+    assert.equal(networkHits,before)
+   })
+   await t.test('a JDG section parent cannot be substituted for a COMPANY or KYS acquisition',async()=>{
+    const selected=selection(await parent(A,OTHER_NIP,'JDG','jdg')),before=networkHits
+    await assert.rejects(native('COMPANY','kys').run(selected),isOperationDenied)
+    await assert.rejects(native('JDG','kys').run(selected),isOperationDenied)
+    assert.equal(networkHits,before)
+   })
+  }
   await t.test('ordinary native KYS executes original POST/poll and commits an organization-owned cache and private snapshot',async()=>{
    selectedA=selection(await parent());const before=networkHits;kysA=await native().run(selectedA)
    assert.equal(kysA.status,'SUCCESS');assert(kysA.snapshotId);assert.equal(networkHits,before+2);assert.equal(kysA.replayed,false)
@@ -413,7 +466,7 @@ async function sensitiveNativeFixture(t,full=true){
    accountActive=false;try{await assert.rejects(humanRun('supplier.private.read',privateInput()),isOperationDenied)}finally{accountActive=true}
   })
   await t.test('JDG runs the original CEIDG client and native writers, and human output masks identity fields',async()=>{
-   const selected=selection(await parent(A,OTHER_NIP)),before=networkHits,result=await native('JDG','jdg').run(selected)
+   const selected=selection(await parent(A,OTHER_NIP,'JDG','jdg')),before=networkHits,result=await native('JDG','jdg').run(selected)
    assert.equal(result.status,'SUCCESS');assert(result.snapshotId);assert.equal(networkHits,before+1)
    const response=await humanRun('supplier.private.read',privateInput(A,OTHER_NIP,'JDG','jdg')),view=await response.json()
    assert.equal(view.privateReport.snapshotId,result.snapshotId);assert(!JSON.stringify(view).includes('12345678901'));assert(JSON.stringify(view).includes('TEST_CITY'))
@@ -514,3 +567,5 @@ async function sensitiveNativeFixture(t,full=true){
  }finally{if(server)await new Promise(resolve=>server.close(resolve));await corporatePool?.end();await corporateAudit?.end();await pool?.end();await auditPool?.end();await servicePool?.end();await serviceAudit?.end();await rawService?.end();await sourcePool?.end();await sourceAudit?.end();await rawSource?.end();await owner?.end();await root.query(`DROP DATABASE IF EXISTS ${DATABASE} WITH(FORCE)`);await root.end()}
 }
 test('real ordinary-role native KYS/JDG, private human output and refusal across access boundaries',t=>sensitiveNativeFixture(t))
+
+test('explicit private acquisition reuses original ordinary-role KYS JDG and current HUMAN output end to end',t=>sensitiveNativeFixture(t,true,true))
