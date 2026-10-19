@@ -1223,5 +1223,25 @@
     "privatePackageCredentialCopied": false,
     "liveSchemaOrGrantsChanged": false,
     "productDeploymentPerformed": false
+  },
+  "supplierSourceLinkRegression": {
+    "taskId": "SG2-E1-SUPPLIER-SOURCE-LINK-REGRESSION-20261019",
+    "version": "srm-protected-supplier-source-link-v1",
+    "status": "RECEIVING_REGRESSION_CANDIDATE_NOT_RELEASED",
+    "producer": {
+      "repository": "profitia/SG-dev",
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-PROTECTED-SUPPLIER-SOURCE-LINK-20261019",
+      "sourceSha": "38bf01cbfffa83dc49cbc73d8cd778f4058fdc34",
+      "acceptedLookupCorrectionTaskId": "SRM-E1-ACCEPTED-LOOKUP-IDEMPOTENCE-20261019"
+    },
+    "authorityBase": "df8540244868b62ce757895e637504876c5c226f",
+    "sharedPackageVersionChanged": false,
+    "sg2SourceLinkAdopted": false,
+    "sg2BusinessBehaviorChanged": false,
+    "sg2RuntimeOrDashboardChanged": false,
+    "mapsChanged": false,
+    "productDeploymentPerformed": false,
+    "evidence": "Canon/evidence/2026-10-19-sg2-supplier-source-link-regression.md"
   }
 }

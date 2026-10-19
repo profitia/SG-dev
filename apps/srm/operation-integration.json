@@ -1132,7 +1132,8 @@
     "mapsChanged": false,
     "productDeploymentPerformed": false,
     "previousProviderSourceReceiptPreserved": true,
-    "previousCorporateSourceReceiptPreserved": true
+    "previousCorporateSourceReceiptPreserved": true,
+    "sourceRecordIsHistorical": true
   },
   "nativeMsrProviderSourceAdoption": {
     "projectKey": "SRM",
@@ -1163,5 +1164,61 @@
     "liveSqlOrGrantsChanged": false,
     "productDeploymentPerformed": false,
     "mapsChanged": false
+  },
+  "protectedSupplierSourceLinkAdoption": {
+    "version": "srm-protected-supplier-source-link-v1",
+    "taskId": "SRM-E1-PROTECTED-SUPPLIER-SOURCE-LINK-20261019",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "sourceDigests": {
+      "db/private-store/002-supplier-business-phases.sql": "1d234a4b271e7647415efea4ea9013d8cab074ed89f2920589f08fe0e6730dcb",
+      "db/private-store/003-named-supplier-interest.sql": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
+      "src/server/financial-documents.ts": "73ed353bc5127556f7e5e7fea126f962f23ff5d11c9cfefde13790d9543ed973",
+      "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
+      "src/server/shared-catalog.ts": "6c07c9bb1881b5c4b345e0900b6d4f8109249ce4ae66302f487d4d1d3eb9fb28",
+      "src/server/supplier-private-store.ts": "5ce378bbdcee840184cd7c93f2e78d87df109800364dbb53bb4e726ac4ff5b82",
+      "src/server/xray-lookup.ts": "f1e47b375dfdd858a38cadea33528750a6d5c5c3a5fd48331501a56ae92be6a0",
+      "src/server/xray-repository.ts": "cd5ebf19bcb48b54c0554a1f8b48290364640d49c5694c0e300fa824e0262780",
+      "src/server/db.ts": "39c19da8bf3a9448d8089c13cca1f0444eeb903c993eaf810d5a2e7d0eb9823f",
+      "src/server/supplier-request-continuation.ts": "69811cc11c96bd4845adf5ed174a7209fd6a1aceb6b4366c5cf27f97343c570d",
+      "src/server/supplier-request-operation.ts": "7ddf344aaf13656cb7487728d49261e186d8a24b36ac6153137dce60f12df7cb",
+      "src/server/native-pg-driver.ts": "f260c110010b5fbbf5e4c905faebb9b88f81845100097599a4c506c7c4ef0329",
+      "db/private-store/006-delegated-supplier-business.sql": "803aa871051c1454c5bf64cef414a2908c1d6042bbc46391b97516f015037a36",
+      "src/server/supplier-request-inspection.ts": "95d6bff5145b7140cb66d386e40c71b9ee13a878f8cbb94e8bf90ac53585d560",
+      "src/server/supplier-private-reader.ts": "017b8afd812baa36824c81e1de18345b05b61ed0ba3664d4edfb67b6d0683082",
+      "db/private-store/007-supplier-private-inspection.sql": "5da7c345e8137ff45e4c14faecbe0a81e9f798b8ec2ed77af821828696c4eb07",
+      "src/server/msr-repository.ts": "621d368172a533339164b855f491508e4aff1257ad38854e1ff27508d918702f",
+      "src/server/mgbi-financial.ts": "3f6fa494cc937a7f3a1224bd625009e25ddaa2244cc8e0acef0eece5a814aa52",
+      "src/server/supplier-request-work.ts": "c135c3d73764d15dedaccedb1e48402f33aac6fd8357d29e460ed8f6ef742aac",
+      "src/server/supplier-native-work-store.ts": "f3169d34218acd13c465edc4b97ceac7dd851a4f41c5633b4d377c50d443632c",
+      "db/private-store/008-supplier-native-work.sql": "faf4322f620c609dc0c30965f289f4ebece0f0652dc19a73a96a5cbd63ad86f8",
+      "db/private-store/009-supplier-source-request.sql": "2ab955fa5890132f3363e5d340971ce1c1a7d490f1bd89f04cd58b7ddfa9b077",
+      "src/server/supplier-source-request.ts": "c636e207a0a56f7c7437a62063e459224d03ebb7e2ed49a6b7deb6e66add7aff",
+      "src/server/supplier-source-link.ts": "12b53ec607001a5f3cea10756b046ab9a84c81533810371ca1b06cc39dc88e81"
+    },
+    "requestBoundaryDigest": "2ab955fa5890132f3363e5d340971ce1c1a7d490f1bd89f04cd58b7ddfa9b077",
+    "acceptedLookupReplayTask": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-ACCEPTED-LOOKUP-IDEMPOTENCE-20261019",
+      "evidence": "Canon/evidence/2026-10-19-srm-accepted-lookup-registration-replay.md"
+    },
+    "previousNativeWorkReceiptPreserved": true,
+    "sameRootDispatchAndSourceHost": true,
+    "actualOrdinaryPrivateAndSourceTransactionsTested": true,
+    "sourceOutcomeRequiredAtCommit": true,
+    "fundedRetryAfterIndependentSourceCommitVerified": true,
+    "currentAccountMembershipAndSourceGrantChecked": true,
+    "originalAcceptedLookupIdentityReused": true,
+    "secondRequestOrDispatchLedgerIntroduced": false,
+    "networkInsideSqlTransaction": false,
+    "customerIdentityStoredInSource": false,
+    "serializedSourceReadMintsReceiptAuthority": false,
+    "completeNativeEngineComposition": false,
+    "liveProviderAcquisitionVerified": false,
+    "liveCustomerSessionVerified": false,
+    "liveSchemaOrGrantsChanged": false,
+    "httpEndpointActivated": false,
+    "mapsChanged": false,
+    "productDeploymentPerformed": false,
+    "evidence": "Canon/evidence/2026-10-19-srm-protected-supplier-source-link.md"
   }
 }

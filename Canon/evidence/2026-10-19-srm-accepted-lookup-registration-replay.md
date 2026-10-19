@@ -1,0 +1,11 @@
+# Exact accepted Supplier lookup registration replay
+
+Date: 2026-10-19. Project: SRM. TARGET_ENVIRONMENT=development. Authority: `profitia/SG-dev/main`; starting source `df8540244868b62ce757895e637504876c5c226f`.
+
+Task: `SRM-E1-ACCEPTED-LOOKUP-IDEMPOTENCE-20261019`. Separate technical correction discovered by the protected Source-link task `SRM-E1-PROTECTED-SUPPLIER-SOURCE-LINK-20261019`; no borrowed task history or altered immutable registration.
+
+The original `createLookup` repository function previously attempted another INSERT when retrying a bound already accepted request ID. The real ordinary-role database rejected its composite primary key. The smallest fix remains in that original writer: a bound accepted lookup uses the existing `(organization_id,id)` conflict identity and reads back only an exact matching organisation, supplier, identifier type/value and entity type under current RLS. A mismatched or unavailable row fails closed. Ordinary unbound lookups still obtain a fresh UUID. The original return shape and supplier writer remain unchanged; no second registration helper, duplicate effect ledger or special retry runtime is added.
+
+The protected link task owns the actual ordinary-role integration fixture and its separate evidence. Final focused fixture: 49/49 PASS, zero skips, including confirmed replay, two organisations, foreign organisation refusal, current account/membership revocation, actual COMMIT failure and independent Source commit/private rollback recovery without another Source charge. These are referenced test results, not copied records or a separate claim of fixture ownership. The first correction draft incorrectly targeted a single-column conflict; the actual composite schema refused it, and the final fix uses the real tenant-aware key.
+
+This task changes only the original repository helper and this evidence. The original Source-link draft was stashed with exact file hashes for this task's clean full preflight and registration, then restored byte-for-byte; its recovery stash is retained. No existing work or lock was deleted. Own SRM PMOS/PHR remains separate; MEMOROS is disabled. No cloud resource, live data/role/configuration/secret, provider call, Maps behavior or product deployment is changed. Full E1 is not complete by this finite correction.
