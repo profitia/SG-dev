@@ -66,6 +66,17 @@
             "autoDeploy": false,
             "currentDeployId": "dep-db20160m7kps73d0jg8g",
             "deployedSha": "35da4d2f18319040a97df88f4547d0cde8e00d3e"
+          },
+          "mapsRuntime": {
+            "serviceId": "srv-dbat5ulg1s2s73defcp0",
+            "name": "profitia-maps-development-runtime",
+            "url": "https://profitia-maps-development-runtime.onrender.com",
+            "autoDeploy": false,
+            "logicalOwner": "Maps Capability",
+            "sourcePath": "apps/maps-runtime",
+            "topologyReference": "Canon/registries/maps-environment-topology-v1.json",
+            "privateOperations": "NOT_ADOPTED",
+            "srmFeatureMounted": false
           }
         }
       },
