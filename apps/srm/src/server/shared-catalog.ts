@@ -45,7 +45,7 @@ export function isCurrentFinancialMapping(section: StoredFinancialSection | null
   return section?.catalogMappingVersion === FINANCIAL_MAPPING_VERSION;
 }
 
-export async function readFreshCompany(organizationId: string, nip: string, now = new Date(), pool?: Pool): Promise<SharedCompany | null> {
+export async function readFreshCompany(organizationId: string, nip: string, now = new Date(), pool?: DatabasePool): Promise<SharedCompany | null> {
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{
       general_json: GeneralSection | null; financial_json: StoredFinancialSection | null;

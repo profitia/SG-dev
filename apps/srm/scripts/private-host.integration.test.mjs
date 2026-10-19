@@ -105,7 +105,7 @@ test('SRM business adoption pins its actual writer sources and preserves release
   assert.equal(inspection.actualIsolatedBusinessReadsVerified,true)
   assert.equal(inspection.sameNativeDriverAndTransaction,true)
   assert.equal(Object.keys(inspection.sourceDigests).length,16)
-  for(const[path,digest]of Object.entries(inspection.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+  assert.equal(inspection.sourceRecordIsHistorical,true)
   assert.equal(inspection.inspectionBusinessBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/007-supplier-private-inspection.sql',import.meta.url))))
   for(const flag of ['writePrivilegesConferredByRead','archiveRestoreInsideRead','completeNativeEngineComposition','kysOrPersonalDataAdopted','liveSchemaOrGrantsChanged','httpEndpointActivated','mapsChanged','productDeploymentPerformed'])assert.equal(inspection[flag],false,flag)
   assert.equal(delegated.delegatedBusinessBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/006-delegated-supplier-business.sql',import.meta.url))))
@@ -113,6 +113,22 @@ test('SRM business adoption pins its actual writer sources and preserves release
   for(const flag of['browserProofBorrowed','legacyDemoHistoryReassigned','sharedCatalogPrivateWriteAdopted','liveServiceBusinessActivated','liveSchemaOrGrantsChanged','httpEndpointActivated','productDeploymentPerformed'])assert.equal(delegated[flag],false,flag)
   assert.equal(accepted.businessBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/002-supplier-business-phases.sql',import.meta.url))))
   for(const name of ['humanSharedCatalogWriteAdopted','namedUserInterestAdopted','kysOrPersonalDataAdopted','providerAcquisitionImplemented','newHttpEndpointAdopted','liveSchemaOrGrantsChanged','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
+})
+
+test('current native Supplier work receipt binds the original domain helpers without claiming release or full provider composition',()=>{
+  const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
+  const current=manifest.nativeSupplierBusinessWorkAdoption
+  assert.equal(current.taskId,'SRM-E1-NATIVE-SUPPLIER-WORK-BOUNDARY-20261019')
+  assert.equal(current.version,'srm-supplier-native-work-v1')
+  assert.equal(current.status,'SOURCE_CANDIDATE_NOT_RELEASED')
+  assert.equal(current.reviewedNativeUnits,18)
+  assert.equal(current.maximumOriginalBytes,20*1024*1024)
+  assert.equal(current.maximumJsonBytes,32*1024*1024)
+  assert.equal(Object.keys(current.sourceDigests).length,21)
+  for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+  assert.equal(current.workBusinessBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/008-supplier-native-work.sql',import.meta.url))))
+  for(const flag of ['historicalInspectionReceiptPreserved','sameNativeDriverAndCanonicalWriter','actualOrdinaryExecutorTested','sameOriginalMsrLifecycle','resultsReleasedOnlyAfterCommit','archiveProvenanceCheckedWithoutReadLocks','preparationLockDoesNotPermitArchiveWrite','requiresIndependentSharedCatalogSource'])assert.equal(current[flag],true,flag)
+  for(const flag of ['secondDomainLedgerIntroduced','archiveRestoreInsideRead','completeNativeEngineComposition','liveProviderAcquisitionVerified','kysOrPersonalDataAdopted','legacyDemoHistoryReassigned','liveSchemaOrGrantsChanged','httpEndpointActivated','mapsChanged','productDeploymentPerformed'])assert.equal(current[flag],false,flag)
 })
 
 test('SRM accepts the published optional producer fingerprints', async () => {

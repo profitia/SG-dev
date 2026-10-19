@@ -30,11 +30,18 @@ const packet = () => {
 }
 
 test('corporate source candidate pins its exact native sources without claiming provider acquisition or live activation',()=>{
- const current=JSON.parse(read('../operation-integration.json')).corporateSourcePublicationAdoption
+ const manifest=JSON.parse(read('../operation-integration.json')),current=manifest.corporateSourcePublicationAdoption
  assert.equal(current.version,CORPORATE_PUBLICATION_VERSION)
  assert.equal(current.taskId,'SRM-E1-CORPORATE-SOURCE-PUBLICATION-20261019')
  assert.equal(Object.keys(current.sourceDigests).length,5)
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(read('../'+path)),digest,path)
+ assert.equal(current.sourceRecordIsHistorical,true)
+ const adoption=manifest.nativeSupplierBusinessWorkAdoption
+ assert.equal(adoption.taskId,'SRM-E1-NATIVE-SUPPLIER-WORK-BOUNDARY-20261019')
+ assert.equal(adoption.previousCorporateSourceReceiptPreserved,true)
+ for(const[path,digest]of Object.entries(current.sourceDigests)){
+  const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
+  assert.equal(hash(read('../'+path)),expected,path)
+ }
  for(const name of ['singleExistingCatalogWriter','singleExistingIndicatorCalculator','storedSourceOnly','sameTransactionOutcomeWitness','noTenantOwnerInNewSharedFacts','humanWriteCeilingRetained'])assert.equal(current[name],true,name)
  for(const name of ['providerAcquisitionProvedByThisUnit','fullNativeWorkflowAdopted','liveSqlInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)
 })

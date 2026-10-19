@@ -1,6 +1,6 @@
 import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import { verifiedXmlMultiplier, equalAmounts, multiplySourceAmount } from "./financial-unit";
-import { withOrganization } from "./db";
+import { withOrganization, type DatabasePool } from "./db";
 import { projectArchivedFinancialDocuments, financialRecordsFromPages, type FinancialArchive } from "./financial-documents";
 import { resolveDocumentFamily, FINANCIAL_REVISION_RULE } from "./financial-revisions";
 import type { FinancialData, FinancialPeriod, SectionEnvelope } from "@profitia/srm-xray";
@@ -373,12 +373,12 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
 
 /** Offline reconstruction from the tenant's verified archive. No provider call,
  * no source receipt deletion, and no implicit cross-version gap filling. */
-export async function reprojectFinancialArchive(organizationId:string,nip:string,history?:RegistryHistory):Promise<MgbiFinancialResult|null> {
+export async function reprojectFinancialArchive(organizationId:string,nip:string,history?:RegistryHistory,pool?:DatabasePool):Promise<MgbiFinancialResult|null> {
   return withOrganization(organizationId,async client=>{
     const row=(await client.query<FinancialArchive & {retrieved_at:Date|string}>(
-      "SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,last_checked_at AS retrieved_at FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE",[organizationId,nip])).rows[0];
+      "SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,last_checked_at AS retrieved_at FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'",[organizationId,nip])).rows[0];
     if(!row)return null;
     projectArchivedFinancialDocuments(row,organizationId,nip);
     return mapMgbiFinancialRecords(financialRecordsFromPages(JSON.parse(row.payload_text).pages),{type:"NIP",value:nip},new Date(row.retrieved_at).toISOString(),row.record_count,history);
-  });
+  },pool);
 }
