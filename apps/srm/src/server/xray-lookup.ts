@@ -1,4 +1,5 @@
 import type { DatabasePool } from "./db";
+import { projectPublicFinancialData } from "./corporate-knowledge";
 import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import { isRestrictedRegistrationStatus } from "@profitia/srm-xray";
 import { enrichCompanyPkd } from "./company-pkd";
@@ -35,7 +36,8 @@ export function toPublicSection<T>(section: SectionEnvelope<T>): Omit<SectionEnv
     status: section.status,
     retrievedAt: section.retrievedAt,
     effectiveAt: section.effectiveAt,
-    data: section.data,
+    data: section.source.provider === "MGBI" && ["pl-krs-rdf-record", "KRS-RDF"].includes(section.source.model)
+      ? projectPublicFinancialData(section.data) as T | null : section.data,
     warnings: [...new Set(warningCodes)],
   };
 }
