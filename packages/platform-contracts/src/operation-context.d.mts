@@ -1,5 +1,5 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
-export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export'
+export type OperationId = 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -22,6 +22,8 @@ export interface Resource {
   id: string; type: string; dataClass: string; environment: Environment
   ownerOrganisationId: string | null; ownerUserId: string | null; version: string; projectionVersion: string
   approvedSharedProjection?: boolean; contentRequirements?: Array<{ product: string; feature: string }>
+  /** Native server-selected private snapshot; version equals snapshotId. */
+  privateSupplier?: Readonly<{ nip: string; entityType: 'COMPANY' | 'JDG'; snapshotId: string; retentionUntil: string }>
 }
 export interface ProductGrant {
   product: string; features: string[]; organisationId: string; environment: Environment; applicationId: string

@@ -105,7 +105,9 @@
     "JOB_REAUTHORIZE": "Zweryfikowany job i podpisane lub równoważnie chronione powiązanie do aktora, aplikacji, organizacji, operacji, zasobu, deadline i idempotencyKey; przed skutkiem osobna aktualna autoryzacja dokładnej operacji docelowej.",
     "SUPPORT_SCOPED": "Oddzielna tożsamość supportu oraz ograniczony czasowo, odwoływalny grant na konkretną organizację, zasób i projekcję pól, z udokumentowaną zgodą organizacji; brak dostępu do osobistych danych i sekretów.",
     "WEBHOOK_BINDING": "Zweryfikowany podpis/odbiorca i środowisko zdarzenia, mapowanie klient/subskrypcja do organizacji po stronie serwera, znany katalog produktów, idempotencja i rozstrzygnięcie kolejności/aktualnego stanu dostawcy.",
-    "CONTRACT_BINDING": "Ograniczona usługa wystawcy ma potwierdzony, obowiązujący rekord umowy, jej wersję, organizację i zakres funkcji. Zmiana prawa produktu odzwierciedla bieżący stan umowy z ochroną przed replay/starszą wersją; dokument lub status przesłany przez klienta nie wystarcza."
+    "CONTRACT_BINDING": "Ograniczona usługa wystawcy ma potwierdzony, obowiązujący rekord umowy, jej wersję, organizację i zakres funkcji. Zmiana prawa produktu odzwierciedla bieżący stan umowy z ochroną przed replay/starszą wersją; dokument lub status przesłany przez klienta nie wystarcza.",
+    "PRIVATE_SUPPLIER_RETENTION": "Wyłącznie HUMAN z aktualnym modułem supplier_report. Serwer wybiera organizację, NIP, typ podmiotu, snapshot i termin retencji; resource.version jest ID snapshotu. Własność organizacji bez osobistego właściciela. Retencja jest sprawdzana przed operacją i po projekcji; dane osobowe nie stają się SHARED_KNOWLEDGE.",
+    "PRIVATE_SUPPLIER_READ_COMPOSITE": "Reveal i eksport wymagają odrębnego jawnego prawa danej operacji oraz supplier.private.read do dokładnego prywatnego raportu wejściowego, tej samej organizacji, NIP, typu podmiotu, snapshotu i retencji. supplier.report.read/project/export ani nazwa roli nie nadają tych praw. Odczyt i eksport nie ujawniają pełnego identyfikatora osobistego; ujawnienie ma własny kontrolowany projektor i audyt."
   },
   "dataClasses": [
     {
@@ -1124,6 +1126,77 @@
       "effect": "CONTROL_WRITE",
       "audit": "SECURITY_REQUIRED",
       "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-31",
+      "operation": "supplier.private.read",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.private.read",
+      "resourceType": "supplier_private_report",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PRIVATE_SUPPLIER_RETENTION"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-32",
+      "operation": "supplier.private.reveal",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.private.reveal",
+      "resourceType": "supplier_private_identifier",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PRIVATE_SUPPLIER_RETENTION",
+        "PRIVATE_SUPPLIER_READ_COMPOSITE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-33",
+      "operation": "supplier.private.export",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.private.export",
+      "resourceType": "supplier_private_export",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "PRIVATE_SUPPLIER_RETENTION",
+        "PRIVATE_SUPPLIER_READ_COMPOSITE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "EXPORT",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
     }
   ],
   "acceptanceCases": [
@@ -1742,6 +1815,54 @@
       "expectedDecision": "DENY",
       "expectedReason": "EXPLICIT_DENY",
       "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-78",
+      "ruleId": "AM-31",
+      "scenario": "Wszystkie granice HUMAN, modułu, produktu, jawnych uprawnień, organizacji, wybranego snapshotu i retencji są potwierdzone; projekcja i kanoniczny audyt dopuszczone.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-79",
+      "ruleId": "AM-31",
+      "scenario": "Brak jawnego uprawnienia prywatnej operacji; samo uprawnienie wspólnego raportu nie wystarcza.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-80",
+      "ruleId": "AM-32",
+      "scenario": "Wszystkie granice HUMAN, modułu, produktu, jawnych uprawnień, organizacji, wybranego snapshotu i retencji są potwierdzone; projekcja i kanoniczny audyt dopuszczone.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-81",
+      "ruleId": "AM-32",
+      "scenario": "Brak jawnego uprawnienia prywatnej operacji; samo uprawnienie wspólnego raportu nie wystarcza.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-82",
+      "ruleId": "AM-33",
+      "scenario": "Wszystkie granice HUMAN, modułu, produktu, jawnych uprawnień, organizacji, wybranego snapshotu i retencji są potwierdzone; projekcja i kanoniczny audyt dopuszczone.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-83",
+      "ruleId": "AM-33",
+      "scenario": "Brak jawnego uprawnienia prywatnej operacji; samo uprawnienie wspólnego raportu nie wystarcza.",
+      "expectedDecision": "DENY",
+      "expectedReason": "PERMISSION_DENIED",
+      "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
     }
   ],
   "openCommercialParameters": {
@@ -1750,5 +1871,6 @@
     "identityProvider": "NOT_SELECTED_HERE",
     "unknownPolicyDecision": "DENY"
   },
-  "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń."
+  "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń.",
+  "catalogueRevision": "1.1.0"
 }

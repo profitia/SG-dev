@@ -28,11 +28,20 @@ function fixture(operation = 'benchmark.selection.read') {
     ]
   }
   const controls = { failIntent: false, failOutcome: false, failProjection: false }
+  const privateSupplier = operation.startsWith('supplier.private.')
+  if (privateSupplier) {
+    const snapshotId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    state.resource.version=snapshotId
+    state.resource.privateSupplier={nip:'5213390341',entityType:'COMPANY',snapshotId,retentionUntil:expiry}
+    state.inputs=[{...structuredClone(state.resource),type:'supplier_private_report'}]
+    if(operation!=='supplier.private.read')state.access.permissions.push({operation:'supplier.private.read',feature:'supplier_report',resourceId:null})
+  }
   const options = { application, now: () => time, authenticate: issuer.authenticate,
     recordAudit: async event => { if (controls.failIntent && event.phase === 'INTENT') throw Error('audit unavailable'); events.push(event) },
     withTransaction: async (_binding, action) => {
       const pending = []
       const value = await action({ state, transaction: pending, transactionalEffects: true, outputBoundaryVersion: 'v1',
+        ...(privateSupplier?{moduleEvidence:{moduleId:'supplier_report',moduleBindingId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',version:'1',sourceRef:'synthetic-private-module',expiresAt:expiry,transactionId:'1',moduleSchemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64)}}:{}),
         recordOutcome: async e => { if (controls.failOutcome) throw Error('outcome unavailable'); pending.push(e) },
         projectOutput: value => { if (controls.failProjection) throw Error('unsafe output'); return value },
         prepareInputs: async () => {},
@@ -127,12 +136,74 @@ test('replay always rechecks current access rather than trusting previous ALLOW'
 test('payload is canonically bound and snapshotted before asynchronous authentication', async () => {
   const f = fixture(); const before = operationPayloadDigest(f.input.payload); const promise = f.execute(); f.input.payload.selected = 'changed'; await promise; assert.equal(f.events[0].payloadDigest, before); assert.equal(operationPayloadDigest({ b: 2, a: 1 }), operationPayloadDigest({ a: 1, b: 2 }))
 })
-test('candidate rules match exact normative rows and never imply all 30 are implemented', async () => {
+test('candidate rules match exact normative rows and never imply the whole catalogue is implemented', async () => {
   const matrix = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url)))
-  assert.equal(IMPLEMENTED_OPERATIONS.length, 19); assert.equal(matrix.rules.length, 30)
+  assert.equal(IMPLEMENTED_OPERATIONS.length, 22); assert.equal(matrix.rules.length, 33)
   for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === (['forecast.request','supplier.report.refresh'].includes(operation) ? 'PRODUCT_POLICY' : operation==='knowledge.ingest'?'PLATFORM_BUDGET':'NOT_APPLICABLE')).length, 1)
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
+
+for (const operation of ['supplier.private.read','supplier.private.reveal','supplier.private.export']) {
+  const reject = [
+    ['shared report rights cannot replace private rights', f => { f.state.access.permissions=f.state.access.permissions.filter(p=>!p.operation.startsWith('supplier.private.')) }, 'PERMISSION_DENIED'],
+    ['another organization cannot read the private snapshot', f => { f.state.resource.ownerOrganisationId='other-org' }, 'RESOURCE_SCOPE_MISMATCH'],
+    ['author is not a private organization owner', f => { f.state.resource.ownerUserId='user-a' }, 'RESOURCE_SCOPE_MISMATCH'],
+    ['a private report cannot be relabelled shared', f => { f.state.resource.dataClass='SHARED_KNOWLEDGE' }, 'RESOURCE_SCOPE_MISMATCH'],
+    ['snapshot metadata is required', f => { delete f.state.resource.privateSupplier }, 'RESOURCE_SCOPE_MISMATCH'],
+    ['snapshot version must be the same snapshot', f => { f.state.resource.version='different-version' }, 'RESOURCE_SCOPE_MISMATCH'],
+    ['expired retention blocks the effect', f => { f.state.resource.privateSupplier.retentionUntil=new Date(time-1).toISOString() }, 'RESOURCE_SCOPE_MISMATCH'],
+    ['personal payload fields cannot enter scope metadata', f => { f.state.resource.privateSupplier.pesel='synthetic-not-an-identifier' }, 'RESOURCE_SCOPE_MISMATCH'],
+    ['current product remains independently required', f => { f.state.products=[] }, 'PRODUCT_UNAVAILABLE'],
+    ['explicit private DENY beats an ALLOW grant', f => { f.state.access.denies.push({operation,feature:'supplier_report',resourceId:null}) }, 'PERMISSION_DENIED'],
+  ]
+  for (const [label,mutate,reason] of reject) test(`${operation}: ${label}`, async()=>{
+    const f=fixture(operation);mutate(f)
+    await assert.rejects(f.execute(),e=>isOperationDenied(e)&&e.reasonCode===reason)
+    assert.equal(f.invoked,0);assert.deepEqual(f.writes,[])
+  })
+  test(`${operation}: a service cannot borrow human personal-data authority`,async()=>{
+    const f=fixture(operation)
+    f.input.request=new Request('https://isolated.test',{headers:{authorization:`Bearer ${f.issuer.issue('user-a',{kind:'SERVICE',userId:undefined,serviceId:'user-a'})}`}})
+    f.state.access.type='SERVICE_GRANT'
+    await assert.rejects(f.execute(),e=>e.reasonCode==='DELEGATION_INVALID');assert.equal(f.invoked,0)
+  })
+  test(`${operation}: the current supplier module boundary is mandatory`,async()=>{
+    const f=fixture(operation),transact=f.options.withTransaction
+    f.options.withTransaction=(binding,action)=>transact(binding,session=>action({...session,moduleEvidence:undefined}))
+    await assert.rejects(f.execute(),e=>e.reasonCode==='APPLICATION_FEATURE_UNAVAILABLE');assert.equal(f.invoked,0)
+  })
+  test(`${operation}: retention expiring during projection withholds output and rolls back`,async()=>{
+    const f=fixture(operation);let at=time;f.options.now=()=>at
+    f.state.resource.privateSupplier.retentionUntil=new Date(time+500).toISOString()
+    f.state.inputs[0].privateSupplier.retentionUntil=f.state.resource.privateSupplier.retentionUntil
+    const transact=f.options.withTransaction
+    f.options.withTransaction=(binding,action)=>transact(binding,session=>action({...session,projectOutput:value=>{at+=501;return value}}))
+    await assert.rejects(f.execute(),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH');assert.equal(f.invoked,1);assert.deepEqual(f.writes,[])
+  })
+  test(`${operation}: canonical OUTCOME failure prevents private publication`,async()=>{
+    const f=fixture(operation);f.controls.failOutcome=true
+    await assert.rejects(f.execute(),e=>e.reasonCode==='AUDIT_UNAVAILABLE');assert.deepEqual(f.writes,[])
+  })
+}
+for(const operation of ['supplier.private.reveal','supplier.private.export']){
+ test(`${operation}: private read is independently required for the exact input resource`,async()=>{
+  const f=fixture(operation)
+  f.state.access.permissions=f.state.access.permissions.filter(p=>p.operation!=='supplier.private.read')
+  f.state.access.permissions.push({operation:'supplier.private.read',feature:'supplier_report',resourceId:'another-report'})
+  await assert.rejects(f.execute(),e=>e.reasonCode==='PERMISSION_DENIED');assert.equal(f.invoked,0)
+ })
+ test(`${operation}: current private read DENY cannot be bypassed with reveal or export`,async()=>{
+  const f=fixture(operation);f.state.access.denies.push({operation:'supplier.private.read',feature:'supplier_report',resourceId:'r1'})
+  await assert.rejects(f.execute(),e=>e.reasonCode==='PERMISSION_DENIED');assert.equal(f.invoked,0)
+ })
+ for(const [key,value]of [['snapshotId','cccccccc-cccc-4ccc-8ccc-cccccccccccc'],['nip','8650004194'],['entityType','JDG'],['retentionUntil',new Date(time+60000).toISOString()]]){
+  test(`${operation}: cannot combine a different private input ${key}`,async()=>{
+   const f=fixture(operation);f.state.inputs[0].privateSupplier[key]=value
+   if(key==='snapshotId')f.state.inputs[0].version=value
+   await assert.rejects(f.execute(),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH');assert.equal(f.invoked,0)
+  })
+ }
+}
 
 test('application changes cannot silently enable composite read', async () => {
   const f = fixture('supplier.report.project'); f.application.operations = ['supplier.report.project']; await assert.rejects(f.execute(), e => e.reasonCode === 'PERMISSION_DENIED')
