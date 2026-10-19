@@ -11,11 +11,11 @@ Onboarding PR519 merged e9eabd4bbab398185f6e42fc876e167e0a814ecd; governance19/1
 
 ## Verification status
 
-Local connector tests/build and independent-origin browser/provider verification are recorded after execution. A configured health response is not live Google proof. Synthetic channel tests are not private E1/RLS or customer UAT. Live server Geocoding, supplier records, CRUD, organization persistence and SRM feature integration are not claimed by this slice.
+Executed test and provider results are recorded below. A configured health response is not live Google proof. Synthetic channel tests are not private E1/RLS or customer UAT. Live server Geocoding, supplier records, CRUD, organization persistence and SRM feature integration are not claimed by this slice.
 
 ## Deployment and rollback
 
-New Maps runtime only; no existing product deployment replacement. Before initial bootstrap record the absent-service baseline, source/build manifest, environment configuration fingerprint, zero database/migrations and executable containment/removal procedure. Preserve exact resulting provider deployment/artifact evidence for later releases. Staging/Production remain untouched. Deployment remains pending until these checks complete.
+New Maps runtime only; no existing product deployment replacement. Before initial bootstrap record the absent-service baseline, source/build manifest, environment configuration fingerprint, zero database/migrations and executable containment/removal procedure. Preserve exact resulting provider deployment/artifact evidence for later releases. Staging/Production remain untouched. The executed deployment and rollback evidence is recorded below.
 
 ## Executed checks and first activation
 
@@ -40,3 +40,38 @@ Actual rollback POST to retained dep-dbat5v5g1s2s73defdtg produced dep-dbataebnc
 After exact PR521 CI39223045014/39223045061 and exact merged-main CI39223336406/39223336420 SUCCESS, pinned b161db4fa165b6c609e7a56533b9dbc0426f70e2 was deployed as dep-dbatc0e7bikc73atc1lg, LIVE. Health reports Node v22.23.3. Its real browser map rendered without warnings/errors; selecting Warsaw in the location list updated selection and panned/zoomed the Google map. Application digest67718120c894263458e6253e8921f0e37d54d3b3d2796fdbf0a12bc3fdc993bb.
 
 The final startup follow-up separates the default90s runtime boot deadline from the unchanged maximum15s E1 read deadline. Official Render Free guidance documents wake-up of about a minute; the old shared15s timer could abort an otherwise valid cold start. Regression test delays the runtime ready handshake beyond its read deadline and still completes the real E1 channel exchange. Actual15-minute idle/sleep/wake was not waited out. Free is a technical Development choice; do not infer production availability or unlimited artifact retention (only two prior deploys on Free).
+
+## Final standalone acceptance — 19 October 2026
+
+Final runtime0.1.1 source **db2df0a6cccb994ea4654ae0eb5b3af4b46867ff**, deployment **dep-dbati9rrjlhs73akpsj0**, actual **LIVE**, Node **v22.23.3**. Exact deployed application-content digest **357464b3948e1141e73f8877f4bc42047d2fc7fcc1299e913d8ad98c6fabb984** matches the tested local manifest. Public HTTP health/configured/source/runtime checks passed; a malformed request returned400 and the next health request returned200. No server Geocoding or location-write endpoint is exposed.
+
+Final browser check used the actual deployed runtime inside a separate host at http://127.0.0.1:3411: the host and map reported ready, Google tiles and its own Gdansk point rendered, with zero current error/warning logs. Unmount removed the iframe cleanly. A separate final standalone check rendered Warsaw/Krakow plus the unresolved list entry with no current errors/warnings. The earlier corrected-rendering check also verified list selection/panning/zoom. Native automation could not click inside Google's closed marker shadow root; direct marker-click UI verification is not claimed. Selection event binding and unknown-ID denial were exercised through the real MessageChannel test. Provider error logs after final release were empty.
+
+| Check | Result |
+|---|---|
+| Connector tests |11/11 PASS; zero failures/skips, including actual local HTTP, delayed handshake, channel denial, malformed target and provider doubles|
+| Public declarations |Strict TypeScript check PASS|
+| Build / secret scan / diff |PASS; runtime has3 local packages and no external runtime npm packages|
+| Onboarding routing |19/19 PASS|
+| Exact final PR CI |Maps39224582631 / Governance39224582618 SUCCESS|
+| Exact final main CI |Maps39224962205 / Governance39224962195 SUCCESS|
+| Actual Google Maps JavaScript |LIVE browser rendering verified|
+| Separate-origin host |Actual deployed runtime embedded and unmounted successfully|
+| Retained-artifact rollback |Actual rollback + reverse restore LIVE and HTTP/digest verified before subsequent source releases|
+| Supplier/MGBI/private persistence |Not implemented by this task|
+| Live server Geocoding |Not verified; adapter only, tested with controlled responses|
+| Private business E1/RLS |Not adopted/exercised; existing public presentation channel only|
+| SRM user feature / business UAT |Not mounted / not performed|
+| Existing product deployments |SRM Development health200; Development/Staging service configuration timestamps unchanged from16October; no product deployment or DB mutation|
+
+Source PRs: [519](https://github.com/profitia/SG-dev/pull/519) onboarding, [520](https://github.com/profitia/SG-dev/pull/520) connector, [521](https://github.com/profitia/SG-dev/pull/521) vector CSP, [522](https://github.com/profitia/SG-dev/pull/522) startup and malformed HTTP. The final evidence update is documentation-only and does not redeploy the application. Task branch: srm/maps-connector-runtime-20261019. Actual application source above remains distinct from the later evidence commit.
+
+Screenshots are retained in the task's requested local output folder: Google Maps/maps-connector-development-2026-10-19.png and maps-independent-host-2026-10-19.png. No credentials are included. Google attributions remain visible.
+
+## Operational handoff and SRM readiness
+
+**The standalone Google Maps connection is ready for Development integration. An SRM user will not yet see a Maps feature.** The next separately coordinated slice needs the supplier-card mount, MGBI headquarters/available branches, real server geocoding admission/credentials, organization-owned manual locations, E1 operation rights and product persistence/isolation tests. Existing interface capabilities or supplied IDs do not grant those rights.
+
+This initial Free runtime can sleep and wake slowly. Startup waiting is bounded separately from E1 reads; actual15-minute idle wake-up was not exercised. Free rollback retention is limited to two previous deploys, so preserve/reverify the exact eligible LKG before every subsequent release. The recorded digest identifies application content and does not claim provider OCI-image parity.
+
+Development continuity uses only SRM/srm_pmos. Onboarding task SRM-MAPS-RUNTIME-ONBOARDING-20261019 is independently read back as completed/CLOSEOUT_COMPLETE. Final implementation task SRM-MAPS-CONNECTOR-DEVELOPMENT-20261019 closes through the canonical writer after this evidence is merged; its PMOS/PHR result must be read back rather than inferred from source publication. MEMOROS is disabled by the registered SRM profile. No Staging/Production mutation, customer data migration or external chat message occurred.
