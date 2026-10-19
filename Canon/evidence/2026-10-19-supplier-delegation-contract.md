@@ -21,15 +21,18 @@ Source versions: platform-contracts 1.17.0, operation implementation candidate.1
 private host 1.8.0 and delegated job 1.1.0. Public operation contract remains 1.0.
 Shared contracts are independent of React; consumer compatibility is separate.
 
-Validation is IN_PROGRESS. The new real ordinary-role PostgreSQL Supplier fixture
-passes, including default-host refusal, installation/ACL checks and an actual
-Forecast dispatch using the default host after SQL013 in the same database.
-The first full producer run reported 818 tests, 816 passing and two failing
-counts for one cause: an existing continuation fixture pins candidate.9. Its
-strict version assertion needs a separately registered ARCHITECTURE correction;
-it is outside this task's immutable target list. Governance also detects old
-consumer lock versions pending separately governed SG2/SRM compatibility tasks.
-These are unresolved validation results, not an accepted release.
+Local producer/laboratory validation passes: 818 tests, zero failures and zero
+skips on a fresh own ordinary-role PostgreSQL fixture, stopped after verification.
+This includes Supplier dispatch/source delivery and default Forecast execution
+after SQL013 in the same database. Public positive/expected-negative TypeScript
+consumers pass. Original SQL001–012 byte preservation is independently checked.
+
+The first full run's 816/818 passing result and exact old version-pin failure
+remain recorded. Separately registered
+ARCHITECTURE-E1-CANDIDATE10-REGRESSION-20261019 preserves the strict audit assertion
+and updates its exact expected implementation to candidate.10. Consumer lock and
+source fingerprints require separate SG2/SRM tasks and controlled candidate/main
+checks before acceptance. No local source result substitutes for those checks.
 
 No vendor acquisition, private Supplier SERVICE phase adoption, application
 activation, cloud SQL/data/role/grant/secret/configuration/resource mutation or
