@@ -21,7 +21,17 @@
       "googleBrowserKeyName": "maps-browser-development",
       "googleMapId": "237c53e16123ae7c62b3b1c6",
       "plan": "free",
-      "region": "frankfurt"
+      "region": "frankfurt",
+      "verificationStatus": "VERIFIED_STANDALONE_CONNECTOR",
+      "currentDeployId": "dep-dbati9rrjlhs73akpsj0",
+      "deployedSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+      "applicationArtifactDigest": "sha256:357464b3948e1141e73f8877f4bc42047d2fc7fcc1299e913d8ad98c6fabb984",
+      "artifactDigestKind": "APPLICATION_CONTENT_NOT_PROVIDER_OCI_IMAGE",
+      "runtimeVersion": "v22.23.3",
+      "runtimePackageVersion": "0.1.1",
+      "lastVerifiedAt": "2026-10-19T08:52:22.541021+00:00",
+      "serverGeocodingLive": "NOT_VERIFIED",
+      "businessUat": "NOT_PERFORMED"
     },
     "staging": {
       "status": "NOT_DEPLOYED",
