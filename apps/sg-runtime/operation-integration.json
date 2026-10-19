@@ -1265,5 +1265,17 @@
     "mapsChanged": false,
     "productDeploymentPerformed": false,
     "evidence": "Canon/evidence/2026-10-19-sg2-full-native-company-regression.md"
+  },
+  "srmSensitiveOrchestrationRegression": {
+    "taskId": "SG2-E1-SENSITIVE-ORCHESTRATION-REGRESSION-20261019",
+    "producerTaskId": "SRM-E1-SENSITIVE-ORCHESTRATION-20261019",
+    "producerSourceSha": "aca804fcb66fe9049f2ff96908bbbd6ffa9b95aa",
+    "producerSourceClosureSha256": "6d3e068295dbfb1ce5768efdfaaf4e3b5092e9941f8626d609d551f3e5e722ae",
+    "producerSourceCount": 34,
+    "commonContractUnchanged": true,
+    "runtimeAndDashboardSourceUnchanged": true,
+    "packagesLocksCiAndMapsUnchanged": true,
+    "nativeSensitiveAdoptionBySG2": false,
+    "productDeploymentPerformed": false
   }
 }

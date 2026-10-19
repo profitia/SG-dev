@@ -131,7 +131,7 @@ test('current native Supplier work receipt binds the original domain helpers wit
   assert.equal(link.acceptedLookupReplayTask.taskId,'SRM-E1-ACCEPTED-LOOKUP-IDEMPOTENCE-20261019')
   assert.equal(Object.keys(link.sourceDigests).length,24)
   assert.equal(link.sourceRecordIsHistorical,true)
-  const composition=manifest.fullNativeCompanyReplayRevision
+  const composition=manifest.sensitiveOrchestrationPrerequisite
   for(const[path,digest]of Object.entries(link.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),composition.sourceDigests[path]??digest,path)
   assert.equal(link.requestBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/009-supplier-source-request.sql',import.meta.url))))
   for(const flag of ['previousNativeWorkReceiptPreserved','sameRootDispatchAndSourceHost','actualOrdinaryPrivateAndSourceTransactionsTested','sourceOutcomeRequiredAtCommit','fundedRetryAfterIndependentSourceCommitVerified','currentAccountMembershipAndSourceGrantChecked','originalAcceptedLookupIdentityReused'])assert.equal(link[flag],true,flag)
@@ -157,13 +157,31 @@ test('full native company receipt pins its complete current closure and explicit
  assert.equal(revision.taskId,current.taskId);assert.equal(revision.version,'srm-native-company-replay-v1')
  assert.equal(revision.authorityBeforeReplay,'505a23800fbd8a74f40a5a1e1947f3b2a62093bc')
  assert.deepEqual(Object.keys(revision.sourceDigests),Object.keys(current.sourceDigests))
- for(const[path,digest]of Object.entries(revision.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+ assert.equal(revision.sourceRecordIsHistorical,true)
+ const latest=manifest.sensitiveOrchestrationPrerequisite
+ for(const[path,digest]of Object.entries(revision.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),latest.sourceDigests[path]??digest,path)
  for(const flag of ['previousFullCompositionReceiptPreserved','typedOriginalFinancialFactsReplayed','changedUnknownAndDuplicatedFactsRefused','providerPurchaseAndCustomerQuotaSeparateFromSourceProjection','originalCacheFinancialOnlyPublicationPreserved'])assert.equal(revision[flag],true,flag)
  for(const flag of ['sqlOrRolesChanged','httpEndpointActivated','productDeploymentPerformed'])assert.equal(revision[flag],false,flag)
  const company=fs.readFileSync(new URL('../src/server/supplier-native-company.ts',import.meta.url),'utf8')
  assert(!/from\s+['"](?:react|next)/.test(company))
  for(const name of ['previousSourceLinkReceiptPreserved','sameOriginalCompanyEngine','actualColdAndWarmOrdinaryRolesTested','actualOriginalMsrPathTested','newParentHasOwnPrivateHistory','indicatorsReadDoesNotWrite','independentProviderAndCorporateSources','networkOutsideSqlTransaction','currentAccountAndParentRechecked','sameCompletedParentHistoryReused','conflictingPrivateReplayRefused'])assert.equal(current[name],true,name)
  for(const name of ['secondDomainLedgerIntroduced','customerIdentityStoredInSource','httpEndpointActivated','liveProviderAcquisitionVerified','liveCustomerSessionVerified','liveSchemaOrGrantsChanged','mapsChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)
+})
+
+test('complete JDG and KYS orchestration ports retain original engines without claiming native sensitive adoption',()=>{
+ const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
+ const current=manifest.sensitiveOrchestrationPrerequisite
+ assert.equal(current.taskId,'SRM-E1-SENSITIVE-ORCHESTRATION-20261019')
+ assert.equal(current.version,'srm-sensitive-orchestration-v1')
+ assert.equal(current.status,'SOURCE_CANDIDATE_NOT_RELEASED')
+ assert.equal(current.authorityBeforeChange,'cb7a2bad1570801d643a19db618fc4edb59fab61')
+ assert.equal(current.jdgPorts,6);assert.equal(current.kysPorts,7)
+ const expected=new Set([...Object.keys(manifest.fullNativeCompanyReplayRevision.sourceDigests),
+  'src/server/jdg-lookup.ts','src/server/jdg-orchestration.test.ts','src/server/kys-orchestration.test.ts'])
+ assert.equal(expected.size,34);assert.deepEqual(new Set(Object.keys(current.sourceDigests)),expected)
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+ for(const key of ['previousSourceFingerprintsPreserved','sameOriginalEngines','legacyDefaultRetained','originalEngineBodyEquivalenceVerified'])assert.equal(current[key],true,key)
+ for(const key of ['privateSensitiveSqlInstalled','nativeSensitivePathsAdopted','httpEndpointActivated','liveProviderAcquisitionVerified','productDeploymentPerformed'])assert.equal(current[key],false,key)
 })
 
 test('SRM accepts the published optional producer fingerprints', async () => {

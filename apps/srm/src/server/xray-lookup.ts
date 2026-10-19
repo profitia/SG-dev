@@ -271,15 +271,61 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
   };
 }
 
+export type XrayKysPorts = {
+  readSupplierRegistrationStatus: typeof readSupplierRegistrationStatus;
+  purgeExpiredKysPersonal: typeof purgeExpiredKysPersonal;
+  purgeExpiredSharedKys: typeof purgeExpiredSharedKys;
+  createLookup: typeof createLookup;
+  getOrFetchKys: typeof getOrFetchKys;
+  fetchVerclyKys: typeof fetchVerclyKys;
+  persistSection: typeof persistSection;
+};
+const legacyKysPorts: Readonly<XrayKysPorts> = Object.freeze({
+  readSupplierRegistrationStatus, purgeExpiredKysPersonal, purgeExpiredSharedKys,
+  createLookup, getOrFetchKys, fetchVerclyKys, persistSection,
+});
+const kysPortNames = Object.freeze(Object.keys(legacyKysPorts).sort());
+
+/** Same original KYS orchestration and single-flight cache. The complete
+ * composition supplies private persistence and a separately admitted client. */
+export function createXrayKysLookup(input: XrayKysPorts) {
+  if (typeof window !== "undefined" || !input || Object.getPrototypeOf(input) !== Object.prototype
+    || Object.keys(input).sort().join(",") !== kysPortNames.join(",")
+    || Reflect.ownKeys(input).length !== kysPortNames.length
+    || Object.values(Object.getOwnPropertyDescriptors(input)).some(d => !("value" in d) || !d.enumerable || typeof d.value !== "function")) {
+    throw new TypeError("Complete explicit KYS ports required");
+  }
+  const ports: Readonly<XrayKysPorts> = Object.freeze({ ...input });
+  return async (organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY", signal?: AbortSignal) => {
+    if (typeof organizationId !== "string"
+      || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(organizationId)
+      || !["COMPANY", "JDG"].includes(entityType)
+      || !request || Object.getPrototypeOf(request) !== Object.prototype || Object.keys(request).join(",") !== "identifier"
+      || Reflect.ownKeys(request).length !== 1
+      || Object.values(Object.getOwnPropertyDescriptors(request)).some(d => !("value" in d) || !d.enumerable)
+      || !request.identifier || Object.getPrototypeOf(request.identifier) !== Object.prototype
+      || Object.keys(request.identifier).sort().join(",") !== "type,value" || Reflect.ownKeys(request.identifier).length !== 2
+      || Object.values(Object.getOwnPropertyDescriptors(request.identifier)).some(d => !("value" in d) || !d.enumerable)
+      || request.identifier.type !== "NIP" || typeof request.identifier.value !== "string") throw new TypeError("Explicit KYS selection required");
+    const captured = validateXrayRequest({ identifier: request.identifier.value });
+    Object.freeze(captured.identifier); Object.freeze(captured);
+    return runKysLookup(ports, organizationId, captured, entityType, signal);
+  };
+}
+
 export async function runXrayKysLookup(organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG" = "COMPANY", signal?: AbortSignal): Promise<{ section: SupplierXRayCard["kys"]; snapshotId: string | null }> {
-  if (isRestrictedRegistrationStatus(await readSupplierRegistrationStatus(organizationId, request.identifier.value, entityType)))
+  return runKysLookup(legacyKysPorts, organizationId, request, entityType, signal);
+}
+
+async function runKysLookup(ports: Readonly<XrayKysPorts>, organizationId: string, request: XrayLookupRequest, entityType: "COMPANY" | "JDG", signal?: AbortSignal): Promise<{ section: SupplierXRayCard["kys"]; snapshotId: string | null }> {
+  if (isRestrictedRegistrationStatus(await ports.readSupplierRegistrationStatus(organizationId, request.identifier.value, entityType)))
     return { section: emptyCard.kys, snapshotId: null };
-  await atLookupStage("retention_cleanup", () => Promise.all([purgeExpiredKysPersonal(organizationId), purgeExpiredSharedKys(organizationId)]), "kys");
-  const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier, entityType));
-  const result = await getOrFetchKys(organizationId, request.identifier.value, entityType,
-    () => atLookupStage("provider_retrieval", () => fetchVerclyKys({ identifier: request.identifier }, { signal }), "kys"),
+  await atLookupStage("retention_cleanup", () => Promise.all([ports.purgeExpiredKysPersonal(organizationId), ports.purgeExpiredSharedKys(organizationId)]), "kys");
+  const lookup = await atLookupStage("lookup_registration", () => ports.createLookup(organizationId, request.identifier, entityType));
+  const result = await ports.getOrFetchKys(organizationId, request.identifier.value, entityType,
+    () => atLookupStage("provider_retrieval", () => ports.fetchVerclyKys({ identifier: request.identifier }, { signal }), "kys"),
     (section, errorCode, correlationId, method) =>
-      persistSection(organizationId, lookup, "kys", section, errorCode, [], correlationId, undefined, method),
+      ports.persistSection(organizationId, lookup, "kys", section, errorCode, [], correlationId, undefined, method),
     { signal },
   );
   return { section: result.section, snapshotId: result.snapshotId };
