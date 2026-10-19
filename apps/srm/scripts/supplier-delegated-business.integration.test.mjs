@@ -22,21 +22,26 @@ import {mapMgbiGeneralRecords} from '../src/server/mgbi-general.ts'
 import {writeSharedCompany} from '../src/server/shared-catalog.ts'
 import {enrichMsrFinancial,verifyMsrReceipt} from '../src/server/msr-repository.ts'
 import {decodeMsrOriginal,MsrSourceError} from '../src/server/msr-source.ts'
+import {createSrmSupplierSourceRequest,SUPPLIER_SOURCE_REQUEST} from '../src/server/supplier-source-request.ts'
+import {createSrmSupplierSourceLink} from '../src/server/supplier-source-link.ts'
+import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion'
+import {createSrmNativePgDriver} from '../src/server/native-pg-driver.ts'
 const DATABASE='srm_service_business_'+randomUUID().replaceAll('-',''),FOREGROUND='srm_service_business_human',EXECUTOR='srm_service_business_executor'
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const ISSUER='https://identity.fixture.test',ORIGIN='http://localhost:3400',NIP='8650004194',OTHER_NIP='5272443955'
+const SOURCE='srm_supplier_source_runtime'
 const hash=v=>createHash('sha256').update(v).digest('hex'),future=()=>new Date(Date.now()+3600000).toISOString()
 const core=name=>fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/'+name,import.meta.url),'utf8')
 const own=name=>fs.readFileSync(new URL('../db/private-store/'+name,import.meta.url),'utf8')
 
 test('actual SRM business writers use current ordinary Service phases without changing the human owner or business engine',async t=>{
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
- const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService
+ const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
   await root.query(`CREATE DATABASE ${DATABASE}`)
   await root.query("BEGIN;SELECT pg_advisory_xact_lock(170001,20261017)")
-  for(const[role,login]of[['profitia_access_owner',false],['srm_app_runtime',true],['neon_superuser',false],[FOREGROUND,true],[EXECUTOR,true]]){
+  for(const[role,login]of[['profitia_access_owner',false],['profitia_ingestion_owner',false],['srm_app_runtime',true],['neon_superuser',false],[FOREGROUND,true],[EXECUTOR,true],[SOURCE,true]]){
    if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount)await root.query(`CREATE ROLE ${role} ${login?"LOGIN PASSWORD 'isolated_ci_only'":'NOLOGIN'} NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`)
    const flags=(await root.query('SELECT rolsuper,rolbypassrls,rolinherit,rolcanlogin FROM pg_roles WHERE rolname=$1',[role])).rows[0]
    // neon_superuser is only the existing provider-name stub used by other
@@ -70,7 +75,7 @@ test('actual SRM business writers use current ordinary Service phases without ch
     await owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity) VALUES($1,'srm',$2,'supplier.report.refresh','ACTIVE','SYNTHETIC_ONLY',now()-interval '1 hour',now()+interval '2 hours',$3,50)",[randomUUID(),org,future()])
    }
    await owner.query("INSERT INTO profitia_services.runtime_bindings(login_role,binding_id,service_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'PLATFORM_INTERNAL','synthetic-srm-jobs','jobs-v1','ACTIVE','SYNTHETIC_ONLY',$4)",[EXECUTOR,randomUUID(),serviceId,future()])
-   await owner.query("INSERT INTO profitia_jobs.operation_bindings(binding_id,application_id,operation,foreground_role,profile_id,configuration_version,executor_application_id,source_id,source_project_id,source_branch_id,source_database_name,source_application_id,source_schema_digest,source_payload_schema,source_quality_version,source_classification_version,delegation_ttl_seconds,max_attempts,status,source_ref,expires_at) VALUES($1,'srm','supplier.report.refresh',$2,'SUPPLIER_INTELLIGENCE_STANDALONE','request-v1','srm-jobs','stored.synthetic-supplier','isolated-source-project','isolated-source-branch','synthetic_source','synthetic-source',$3,'supplier-command-v1','quality-v1','shared-v1',3600,3,'ACTIVE','SYNTHETIC_ONLY',$4)",[bindingId,FOREGROUND,hash(core('008-platform-ingestion.sql')),future()])
+   await owner.query("INSERT INTO profitia_jobs.operation_bindings(binding_id,application_id,operation,foreground_role,profile_id,configuration_version,executor_application_id,source_id,source_project_id,source_branch_id,source_database_name,source_application_id,source_schema_digest,source_payload_schema,source_quality_version,source_classification_version,delegation_ttl_seconds,max_attempts,status,source_ref,expires_at) VALUES($1,'srm','supplier.report.refresh',$2,'SUPPLIER_INTELLIGENCE_STANDALONE','request-v1','srm-jobs','srm.supplier.source-request','isolated-source-project','isolated-source-branch',$5,'srm-provider-source',$3,'supplier-command-v1','srm-supplier-source-request-v1','srm-supplier-source-request-control-v1',3600,3,'ACTIVE','SYNTHETIC_ONLY',$4)",[bindingId,FOREGROUND,hash(core('008-platform-ingestion.sql')),future(),DATABASE])
    for(const org of[A,B])await owner.query("INSERT INTO profitia_jobs.execution_grants(grant_id,login_role,binding_id,organisation_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,$4,'ALLOW','ACTIVE','SYNTHETIC_ONLY',$5)",[randomUUID(),EXECUTOR,bindingId,org,future()])
    for(const[i,id]of['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL','RECORD_INTEREST'].entries())await owner.query("INSERT INTO profitia_request_phases.policies(application_id,phase_id,sequence,predecessor,operation,effect,status,source_ref,expires_at) VALUES('srm',$1,$2,$3,'supplier.report.refresh','PRIVATE_SQL_PHASE','ACTIVE','SYNTHETIC_ONLY',$4)",[id,i+1,['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL'][i-1]??null,future()])
    await owner.query(own('001-supplier-requests.sql'));await owner.query("INSERT INTO profitia_supplier_requests.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(own('001-supplier-requests.sql'))])
@@ -127,17 +132,40 @@ test('actual SRM business writers use current ordinary Service phases without ch
   await assert.rejects(owner.query(own('007-supplier-private-inspection.sql')),e=>e.code==='42501')
   await owner.query('INSERT INTO srm.organizations(id,slug) VALUES($1,$2)',[B,'synthetic-service-org-1'])
   await owner.query("UPDATE profitia_access.applications SET status='ACTIVE'")
+  await owner.query(`GRANT CREATE ON DATABASE ${DATABASE} TO profitia_ingestion_owner;GRANT CONNECT ON DATABASE ${DATABASE} TO ${SOURCE}`)
+  await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
+  try{
+   await owner.query(core('008-platform-ingestion.sql'))
+   await owner.query("INSERT INTO profitia_ingestion.installation(schema_version,schema_digest,environment,project_id,branch_id,database_name) VALUES('1.0.0',$1,'development','isolated-source-project','isolated-source-branch',$2)",[hash(core('008-platform-ingestion.sql')),DATABASE])
+   await owner.query("INSERT INTO profitia_ingestion.runtime_bindings(login_role,binding_id,service_id,application_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'srm-provider-source','PLATFORM_INTERNAL','synthetic-supplier-source','source-v1','ACTIVE','SYNTHETIC_ONLY',$4)",[SOURCE,randomUUID(),randomUUID(),future()])
+   await owner.query("INSERT INTO profitia_ingestion.sources(source_id,effect_kind,data_class,payload_schema,quality_version,classification_version,projection_version,status,source_ref,expires_at) VALUES($1,'STORED_SQL_TRANSACTION','SHARED_KNOWLEDGE',$2,$3,$4,'source-request-v1','ACTIVE','SYNTHETIC_ONLY',$5)",[...Object.values(SUPPLIER_SOURCE_REQUEST),future()])
+   await owner.query("INSERT INTO profitia_ingestion.grants(grant_id,login_role,source_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,'ALLOW','ACTIVE','SYNTHETIC_ONLY',$4)",[randomUUID(),SOURCE,SUPPLIER_SOURCE_REQUEST.id,future()])
+   await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,'srm-provider-source',$2,'SOURCE_TRANSACTION',100,now()-interval '1 hour',now()+interval '2 hours',$3,'ACTIVE','SYNTHETIC_ONLY')",[randomUUID(),SUPPLIER_SOURCE_REQUEST.id,future()])
+   await owner.query(own('009-supplier-source-request.sql'))
+   await owner.query("INSERT INTO profitia_srm_acquisition.installation VALUES(true,'srm-supplier-source-request-v1',$1,$2,$3)",[hash(own('009-supplier-source-request.sql')),hash(core('008-platform-ingestion.sql')),'f'.repeat(40)])
+   await owner.query(`GRANT USAGE ON SCHEMA profitia_ingestion,profitia_srm_acquisition TO ${SOURCE};GRANT EXECUTE ON FUNCTION profitia_ingestion.runtime_descriptor(),profitia_ingestion.current_state(text,text),profitia_ingestion.lock_ingestion(text,text,text),profitia_ingestion.scope_allows(text,text),profitia_ingestion.reserve(text,text,text,text,uuid),profitia_ingestion.complete(uuid,uuid),profitia_ingestion.append_audit(jsonb),profitia_srm_acquisition.runtime_descriptor(),profitia_srm_acquisition.admit(text,uuid,uuid),profitia_srm_acquisition.receipt(text,text) TO ${SOURCE}`)
+   await owner.query('COMMIT')
+  }catch(error){await owner.query('ROLLBACK');throw error}
+  await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM profitia_ingestion_owner`)
+  await owner.query(`GRANT EXECUTE ON FUNCTION profitia_jobs.claim_dispatch(uuid),profitia_jobs.delivery_state(uuid,uuid),profitia_jobs.observe_delivery(uuid,uuid,text,uuid,text,text) TO ${EXECUTOR}`)
+  const sourceUrl=new URL(db);sourceUrl.username=SOURCE;sourceUrl.password='isolated_ci_only'
+  sourcePool=new pg.Pool({connectionString:sourceUrl.toString(),max:2});sourceAudit=new pg.Pool({connectionString:sourceUrl.toString(),max:1});rawSource=new pg.Client({connectionString:sourceUrl.toString()});await rawSource.connect()
   // Prepared universal catalogue knowledge, not a HUMAN or private-service publication.
   for(const nip of[NIP,OTHER_NIP])await owner.query('INSERT INTO srm.catalog_companies(nip) VALUES($1)',[nip])
   const humanUrl=new URL(db);humanUrl.username=FOREGROUND;humanUrl.password='isolated_ci_only';const serviceUrl=new URL(db);serviceUrl.username=EXECUTOR;serviceUrl.password='isolated_ci_only'
   pool=new pg.Pool({connectionString:humanUrl.toString(),max:2});auditPool=new pg.Pool({connectionString:humanUrl.toString(),max:1});servicePool=new pg.Pool({connectionString:serviceUrl.toString(),max:2});serviceAudit=new pg.Pool({connectionString:serviceUrl.toString(),max:1});rawService=new pg.Client({connectionString:serviceUrl.toString()});await rawService.connect()
   assert.deepEqual((await rawService.query('SELECT current_user::text role,session_user::text login')).rows[0],{role:EXECUTOR,login:EXECUTOR})
-  let accountActive=true,failOutcome=false,omitOutcome=false,omitIntent=false,failInspectionCommit=false
+  let accountActive=true,failOutcome=false,omitOutcome=false,omitIntent=false,failInspectionCommit=false,omitSourceOutcome=false,sourceCommitted=false,failDeliveryCommit=false
+  sourcePool.on('connect',client=>{const original=client.query.bind(client);client.query=async(sql,args,...rest)=>{
+   if(omitSourceOutcome&&typeof sql==='string'&&sql.includes('profitia_ingestion.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME')return {rows:[{recorded:true}]}
+   const result=await original(sql,args,...rest);if(sql==='COMMIT')sourceCommitted=true;return result
+  }})
   const traceFailure=(error,sql)=>{console.error('ISOLATED_SQL_FAILURE',JSON.stringify({code:error.code,message:error.message,query:typeof sql==='string'?sql.slice(0,180):'native-query'}));throw error}
   pool.on('connect',client=>{const original=client.query.bind(client);client.query=(sql,args,...rest)=>original(sql,args,...rest).catch(error=>traceFailure(error,sql))})
   servicePool.on('connect',client=>{const original=client.query.bind(client);client.query=(sql,args,...rest)=>{
    if(omitIntent&&typeof sql==='string'&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='INTENT'&&(JSON.parse(args[0]).requestInspection||JSON.parse(args[0]).requestWork))return Promise.resolve({rows:[{recorded:true}]})
    if(failInspectionCommit&&sql==='COMMIT')throw Error('Synthetic actual inspection commit refusal')
+   if(failDeliveryCommit&&sourceCommitted&&sql==='COMMIT')throw Error('Synthetic private COMMIT refusal after independent Source commit')
    if(typeof sql==='string'&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME'){
     if(failOutcome)throw Error('Synthetic actual business audit failure')
     if(omitOutcome)return Promise.resolve({rows:[{recorded:true}]})
@@ -159,6 +187,11 @@ test('actual SRM business writers use current ordinary Service phases without ch
   const {continuationSchemaDigest:_continuation,delegatedSchemaDigest:_delegated,delegatedBusinessBoundaryDigest:_business,...workOptions}=inspectionOptions
   const nativeWork=createSrmSupplierNativeWork({...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))})
   const nativeStore=createSrmSupplierNativeWorkStore({work:nativeWork,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql'))})
+  const sourceOptions={pool:sourcePool,auditPool:sourceAudit,
+   application:{appId:'srm-provider-source',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
+   binding:{applicationId:'srm-provider-source',environment:'development',projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:SOURCE,deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',schemaDigest:hash(core('008-platform-ingestion.sql'))},requestSchemaDigest:hash(own('009-supplier-source-request.sql'))}
+  const sourceStore=createSrmSupplierSourceRequest(sourceOptions)
+  const sourceLink=createSrmSupplierSourceLink({work:{...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore})
   const selection=p=>({requestId:p.requestId,organisationId:p.organisationId,command:p.command})
   const general=(nip=NIP)=>{const section=structuredClone(emptyCard.general);section.status='SUCCESS';section.source={provider:'MGBI',model:'pl-krs-wp-record',recordId:'synthetic-general-'+nip};section.retrievedAt=new Date().toISOString();section.data={...section.data,nip,legalName:'SYNTHETIC_SERVICE_COMPANY'};return{section,errorCode:null,rawResponse:{pages:[{results:[{id:'synthetic-general-'+nip,privateMarker:'SYNTHETIC_PRIVATE_ONLY'}]}],recordCount:1}}}
   const financial=(nip=NIP)=>{const record={id:'synthetic-financial-'+nip,identifiers:{pl_nip:nip,pl_krs:'0000000001'},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31',filing_date:'2026-01-15',is_ias_compliant:false},content:{schema:{name:'JednostkaInnaWZlotych',version:'1-3'},extracted_fields:{'Naglowek.OkresOd':'2025-01-01','Naglowek.OkresDo':'2025-12-31','Bilans.Aktywa.KwotaA':'100','RZiS.RZiSKalk.A.KwotaA':'200'},standardized_fields:{bs:{a_ta_cfy:100},pala:{nrfs_cfy:200}}}};return{...mapMgbiFinancialRecords([record],{type:'NIP',value:nip},new Date().toISOString()),rawResponse:{pages:[{results:[record]}],recordCount:1}}}
@@ -532,5 +565,100 @@ test('actual SRM business writers use current ordinary Service phases without ch
    }
    assert.deepEqual(await counts(),before)
   })
- }finally{await pool?.end();await auditPool?.end();await servicePool?.end();await serviceAudit?.end();await rawService?.end();await owner?.end();await root.end()}
+  const sourceCounts=async()=>(await owner.query(`SELECT (SELECT count(*)::int FROM profitia_ingestion.effects)e,(SELECT coalesce(sum(consumed_count),0)::int FROM profitia_ingestion.budgets)b,(SELECT count(*)::int FROM profitia_srm_acquisition.outcome_witnesses)w`)).rows[0]
+  let linked,linkedResult
+  await t.test('real register and independently committed Source admission retain the original human and organisation',async()=>{
+   linked=selection(await parent());const before=await sourceCounts()
+   linkedResult=await sourceLink.registerAndAdmit(linked)
+   assert.equal(linkedResult.lookup.requestId,linked.requestId)
+   assert.equal(linkedResult.sourceStatus,'CONFIRMED');assert.equal(linkedResult.sourceRequest.status,'COMMITTED')
+   assert.deepEqual(await sourceCounts(),{e:before.e+1,b:before.b+1,w:before.w+1})
+   const row=(await owner.query('SELECT g.user_id,g.organisation_id,j.status,o.source_effect_id FROM profitia_jobs.delegations g JOIN profitia_jobs.dispatches j USING(delegation_id) JOIN profitia_jobs.delivery_observations o USING(job_id) WHERE j.request_id=$1',[linked.requestId])).rows[0]
+   assert.equal(row.user_id,U);assert.equal(row.organisation_id,A);assert.equal(row.status,'CONFIRMED');assert.equal(row.source_effect_id,linkedResult.sourceRequest.effectId)
+   assert.equal((await owner.query('SELECT 1 FROM srm.lookup_requests WHERE organization_id=$1 AND id=$2 AND identifier=$3',[A,linked.requestId,NIP])).rowCount,1)
+  })
+  await t.test('confirmed dispatch replay rechecks current authority and reuses the same Source effect without another charge',async()=>{
+   const before=await sourceCounts(),result=await sourceLink.registerAndAdmit(linked)
+   assert.deepEqual(result,linkedResult);assert.deepEqual(await sourceCounts(),before)
+   const second=selection(await parent(B)),other=await sourceLink.registerAndAdmit(second)
+   assert.equal(other.sourceStatus,'CONFIRMED');assert.notEqual(other.sourceRequest.effectId,result.sourceRequest.effectId)
+   await assert.rejects(sourceLink.registerAndAdmit({...linked,organisationId:B}),isOperationDenied)
+   const events=(await owner.query('SELECT event FROM profitia_ingestion.security_events')).rows
+   const encoded=JSON.stringify(events)
+   for(const privateValue of[A,B,U,linked.requestId])assert(!encoded.includes(privateValue))
+   assert(!encoded.includes('deliveryKey'));assert(!encoded.includes('SHARED_DEMO'))
+  })
+  await t.test('Source read observes an existing exact command and key and never creates a request',async()=>{
+   const key=(await owner.query('SELECT delivery_key FROM profitia_jobs.dispatches WHERE request_id=$1',[linked.requestId])).rows[0].delivery_key
+   const before=await sourceCounts()
+   assert.deepEqual(await sourceStore.read(linked.command,key),linkedResult.sourceRequest)
+   for(const command of[{kind:'SUPPLIER_REPORT',nip:OTHER_NIP},{...linked.command,organisationId:A},{...linked.command,userId:U}])await assert.rejects(sourceStore.read(command,key))
+   await assert.rejects(sourceStore.read(linked.command,'a'.repeat(64)),isOperationDenied)
+   assert.deepEqual(await sourceCounts(),before)
+   const encoded=JSON.stringify((await owner.query('SELECT to_jsonb(e) e FROM profitia_ingestion.effects e')).rows)
+   assert(!encoded.includes(key));for(const v of[A,B,U,linked.requestId])assert(!encoded.includes(v))
+  })
+  await t.test('ordinary Source and customer/executor roles cannot borrow one another data authority',async()=>{
+   assert.deepEqual((await rawSource.query('SELECT current_user::text role,session_user::text login')).rows[0],{role:SOURCE,login:SOURCE})
+   for(const table of['srm.lookup_requests','srm.source_snapshots','profitia_supplier_requests.commands','profitia_srm_acquisition.outcome_witnesses'])await assert.rejects(rawSource.query('SELECT * FROM '+table),e=>e.code==='42501')
+   const human=await pool.connect()
+   try{for(const client of[human,rawService])await assert.rejects(client.query('SELECT profitia_srm_acquisition.receipt($1,$2)',[NIP,'a'.repeat(64)]),e=>e.code==='42501')}finally{human.release()}
+   await assert.rejects(rawSource.query(own('009-supplier-source-request.sql')),e=>e.code==='42501')
+   await assert.rejects(owner.query(own('009-supplier-source-request.sql')),e=>e.code==='42501')
+  })
+  await t.test('current account and original membership revocation prevent any further Source admission including replay',async()=>{
+   const before=await sourceCounts();accountActive=false
+   try{await assert.rejects(sourceLink.registerAndAdmit(linked),isOperationDenied)}finally{accountActive=true}
+   await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U])
+   try{await assert.rejects(sourceLink.registerAndAdmit(linked),isOperationDenied)}finally{await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U])}
+   assert.deepEqual(await sourceCounts(),before)
+  })
+  await t.test('current Source revocation also refuses an already confirmed Source record',async()=>{
+   const key=(await owner.query('SELECT delivery_key FROM profitia_jobs.dispatches WHERE request_id=$1',[linked.requestId])).rows[0].delivery_key,before=await sourceCounts()
+   await owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED' WHERE login_role=$1",[SOURCE])
+   try{await assert.rejects(sourceStore.read(linked.command,key),isOperationDenied)}finally{await owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE' WHERE login_role=$1",[SOURCE])}
+   assert.deepEqual(await sourceCounts(),before)
+  })
+  await t.test('Source schema CREATE or table ACL drift refuses existing record observation',async()=>{
+   const key=(await owner.query('SELECT delivery_key FROM profitia_jobs.dispatches WHERE request_id=$1',[linked.requestId])).rows[0].delivery_key
+   for(const[grant,revoke]of[[`GRANT CREATE ON SCHEMA profitia_srm_acquisition TO ${SOURCE}`,`REVOKE CREATE ON SCHEMA profitia_srm_acquisition FROM ${SOURCE}`],[`GRANT SELECT ON profitia_srm_acquisition.installation TO ${SOURCE}`,`REVOKE SELECT ON profitia_srm_acquisition.installation FROM ${SOURCE}`]]){
+    await owner.query(grant);try{await assert.rejects(sourceStore.read(linked.command,key),isOperationDenied)}finally{await owner.query(revoke)}
+   }
+  })
+  await t.test('current Source classification and exact installation digest are checked for existing records',async()=>{
+   const key=(await owner.query('SELECT delivery_key FROM profitia_jobs.dispatches WHERE request_id=$1',[linked.requestId])).rows[0].delivery_key,before=await sourceCounts()
+   await owner.query("UPDATE profitia_ingestion.sources SET quality_version='unaccepted-version' WHERE source_id=$1",[SUPPLIER_SOURCE_REQUEST.id])
+   try{await assert.rejects(sourceStore.read(linked.command,key),isOperationDenied)}finally{await owner.query("UPDATE profitia_ingestion.sources SET quality_version=$2 WHERE source_id=$1",[SUPPLIER_SOURCE_REQUEST.id,SUPPLIER_SOURCE_REQUEST.qualityVersion])}
+   await assert.rejects(createSrmSupplierSourceRequest({...sourceOptions,requestSchemaDigest:'0'.repeat(64)}).read(linked.command,key),isOperationDenied)
+   assert.deepEqual(await sourceCounts(),before)
+  })
+  await t.test('real database guard rejects private fields or a mismatched supplier even if a Source callback incorrectly accepts them',async()=>{
+   const incorrectHost=createPlatformIngestionHost({application:sourceOptions.application,binding:sourceOptions.binding,
+    source:SUPPLIER_SOURCE_REQUEST,...createSrmNativePgDriver(sourcePool,sourceAudit),validateSharedPayload:()=>true})
+   const before=await sourceCounts()
+   for(const payload of[{...linked.command,organisationId:A},{...linked.command,userId:U},{...linked.command,nip:OTHER_NIP},{kind:'SUPPLIER_REPORT',nip:'0000000000'}])
+    await assert.rejects(incorrectHost.ingest({resourceId:NIP,payload,idempotencyKey:randomUUID()},async()=>{}),isOperationDenied)
+   assert.deepEqual(await sourceCounts(),before)
+  })
+  await t.test('real private register COMMIT refusal releases neither lookup metadata nor Source request',async()=>{
+   const s=selection(await parent()),before=await sourceCounts();failInspectionCommit=true
+   try{await assert.rejects(sourceLink.registerAndAdmit(s),isOperationDenied)}finally{failInspectionCommit=false}
+   assert.deepEqual(await sourceCounts(),before);assert.equal((await owner.query('SELECT 1 FROM srm.lookup_requests WHERE id=$1',[s.requestId])).rowCount,0)
+  })
+  await t.test('omitting canonical Source OUTCOME rejects actual COMMIT and rolls back Source effect and budget',async()=>{
+   const s=selection(await parent()),before=await sourceCounts();omitSourceOutcome=true
+   try{await assert.rejects(sourceLink.registerAndAdmit(s),isOperationDenied)}finally{omitSourceOutcome=false}
+   assert.deepEqual(await sourceCounts(),before)
+   assert.equal((await owner.query('SELECT 1 FROM srm.lookup_requests WHERE id=$1',[s.requestId])).rowCount,1,'Independent valid private registration remains')
+  })
+  await t.test('Source commit survives failed private observation; original funded retry observes it without a second Source charge',async()=>{
+   const s=selection(await parent()),before=await sourceCounts();sourceCommitted=false;failDeliveryCommit=true
+   try{await assert.rejects(sourceLink.registerAndAdmit(s),isOperationDenied)}finally{failDeliveryCommit=false}
+   assert.deepEqual(await sourceCounts(),{e:before.e+1,b:before.b+1,w:before.w+1})
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_jobs.delivery_observations o JOIN profitia_jobs.dispatches j USING(job_id) WHERE j.request_id=$1',[s.requestId])).rows[0].n,0)
+   await owner.query("UPDATE profitia_jobs.dispatches SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE request_id=$1",[s.requestId])
+   const result=await sourceLink.registerAndAdmit(s);assert.equal(result.sourceStatus,'CONFIRMED')
+   assert.deepEqual(await sourceCounts(),{e:before.e+1,b:before.b+1,w:before.w+1})
+  })
+ }finally{await pool?.end();await auditPool?.end();await servicePool?.end();await serviceAudit?.end();await rawService?.end();await sourcePool?.end();await sourceAudit?.end();await rawSource?.end();await owner?.end();await root.end()}
 })

@@ -20,12 +20,19 @@ export async function createLookup(organizationId: string, identifier: Identifie
       "DO UPDATE SET updated_at = now() RETURNING id",
       [organizationId, identifier.value],
     );
-    // Each lookup has its own database identity; HTTP correlation remains request-local.
+    // Ordinary lookups retain their new identity. A bound accepted request may
+    // retry only the identical existing lookup under the same current RLS.
     const request = await client.query<{ id: string }>(
-      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier, entity_type, id) VALUES ($1, $2, $3, $4, $5, coalesce($6::uuid,gen_random_uuid())) RETURNING id",
+      "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier, entity_type, id) VALUES ($1, $2, $3, $4, $5, coalesce($6::uuid,gen_random_uuid())) " +
+      (acceptedRequestId === undefined ? "" : "ON CONFLICT (organization_id, id) DO NOTHING ") + "RETURNING id",
       [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType, acceptedRequestId ?? null],
     );
-    return { supplierId: supplier.rows[0].id, requestId: request.rows[0].id };
+    const existing = request.rows[0] ?? (acceptedRequestId === undefined ? undefined : (await client.query<{id:string}>(
+      "SELECT id FROM srm.lookup_requests WHERE id=$1::uuid AND organization_id=$2::uuid AND supplier_id=$3::uuid AND identifier_type=$4 AND identifier=$5 AND entity_type=$6",
+      [acceptedRequestId,organizationId,supplier.rows[0].id,identifier.type,identifier.value,entityType],
+    )).rows[0]);
+    if (!existing) throw new Error("Accepted lookup identity conflicts with its current owner or command");
+    return { supplierId: supplier.rows[0].id, requestId: existing.id };
   }, pool);
 }
 
