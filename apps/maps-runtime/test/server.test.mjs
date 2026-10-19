@@ -20,6 +20,8 @@ test('actual HTTP surface has bounded static routes, no business writers or publ
   assert.equal(health.status, 200)
   assert.deepEqual((await health.json()).persistence, false)
   assert.match(health.headers.get('content-security-policy'), /frame-ancestors 'self' https:\/\/host.example;/)
+  assert.match(health.headers.get('content-security-policy'), /script-src [^;]*'wasm-unsafe-eval'/)
+  assert.doesNotMatch(health.headers.get('content-security-policy'), /(?:^|\s)'unsafe-eval'(?:\s|;)/)
   assert.equal(health.headers.get('cache-control'), 'no-store')
   assert.equal((await fetch(base + '/api/geocode', {method: 'POST', body: '{}'})).status, 405)
   assert.equal((await fetch(base + '/api/locations')).status, 404)

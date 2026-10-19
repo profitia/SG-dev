@@ -7,19 +7,29 @@
   "authorityBranch": "main",
   "environments": {
     "development": {
-      "status": "IMPLEMENTING",
+      "status": "ACTIVE",
       "googleProjectId": "profitia-maps-development",
       "renderWorkspaceId": "tea-d7lps8rbc2fs73cn80dg",
       "renderProjectId": "prj-dapbd3hsrm7s73es53fg",
       "renderEnvironmentId": "evm-dapbd70ae00c73cgrup0",
-      "serviceId": null,
-      "url": null,
+      "serviceId": "srv-dbat5ulg1s2s73defcp0",
+      "url": "https://profitia-maps-development-runtime.onrender.com",
       "autoDeploy": false,
       "database": null,
       "privateOperations": "NOT_ADOPTED",
-      "srmFeatureMounted": false
+      "srmFeatureMounted": false,
+      "googleBrowserKeyName": "maps-browser-development",
+      "googleMapId": "237c53e16123ae7c62b3b1c6",
+      "plan": "free",
+      "region": "frankfurt"
     },
-    "staging": {"status": "NOT_DEPLOYED", "googleProjectId": "profitia-maps-staging"},
-    "production": {"status": "NOT_DEPLOYED", "googleProjectId": "profitia-maps-production"}
+    "staging": {
+      "status": "NOT_DEPLOYED",
+      "googleProjectId": "profitia-maps-staging"
+    },
+    "production": {
+      "status": "NOT_DEPLOYED",
+      "googleProjectId": "profitia-maps-production"
+    }
   }
 }
