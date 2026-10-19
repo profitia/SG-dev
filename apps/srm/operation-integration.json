@@ -433,7 +433,7 @@
       "db/private-store/003-named-supplier-interest.sql": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
       "src/server/financial-documents.ts": "81a8610e3dd1b46e424e9573baf9d97455f4a10c17fd8d005ab06cb6862e2198",
       "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
-      "src/server/shared-catalog.ts": "e3310cef42743975f76c0826f1e15754fe2a90482647cb04639c94e1d87129c9",
+      "src/server/shared-catalog.ts": "e090cdd0db7c29616fc29c1d9d05aac7b658a553dce36deaa7ce92b76e9956f4",
       "src/server/supplier-private-store.ts": "b4b4f98f5549a26b0835ef6300193844b90780c74ec176fd98d7a297c63eda94",
       "src/server/xray-lookup.ts": "f1e47b375dfdd858a38cadea33528750a6d5c5c3a5fd48331501a56ae92be6a0",
       "src/server/xray-repository.ts": "bfbfda141fb46799df92fddeca5be3a2e09685dd658a3e3dfd2c23b64b22da92"
@@ -458,7 +458,7 @@
         "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
         "src/server/shared-catalog.ts": "e3310cef42743975f76c0826f1e15754fe2a90482647cb04639c94e1d87129c9",
         "src/server/supplier-private-store.ts": "b4b4f98f5549a26b0835ef6300193844b90780c74ec176fd98d7a297c63eda94",
-        "src/server/xray-lookup.ts": "4d3551906aa86b9fdd29fe2888f89c3bba9df8b280dbc1dc8894ead9925b6d27",
+        "src/server/xray-lookup.ts": "f1e47b375dfdd858a38cadea33528750a6d5c5c3a5fd48331501a56ae92be6a0",
         "src/server/xray-repository.ts": "bfbfda141fb46799df92fddeca5be3a2e09685dd658a3e3dfd2c23b64b22da92"
       },
       "namedBoundaryDigest": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
@@ -481,7 +481,7 @@
           "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
           "src/server/shared-catalog.ts": "e3310cef42743975f76c0826f1e15754fe2a90482647cb04639c94e1d87129c9",
           "src/server/supplier-private-store.ts": "b4b4f98f5549a26b0835ef6300193844b90780c74ec176fd98d7a297c63eda94",
-          "src/server/xray-lookup.ts": "0c8a922565ccdcf4c4ab062a66cde29736afd2077579914a5a5656dad730790b",
+          "src/server/xray-lookup.ts": "4d3551906aa86b9fdd29fe2888f89c3bba9df8b280dbc1dc8894ead9925b6d27",
           "src/server/xray-repository.ts": "bfbfda141fb46799df92fddeca5be3a2e09685dd658a3e3dfd2c23b64b22da92"
         },
         "namedBoundaryDigest": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
@@ -492,12 +492,38 @@
         "humanSharedCatalogWriteAdopted": false,
         "httpEndpointActivated": false,
         "liveSchemaOrGrantsChanged": false,
-        "productDeploymentPerformed": false
+        "productDeploymentPerformed": false,
+        "previousSourceRecord": {
+          "taskId": "SRM-E1-NAMED-SUPPLIER-INTEREST-20261019",
+          "version": "srm-named-supplier-interest-v1",
+          "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+          "sourceDigests": {
+            "db/private-store/002-supplier-business-phases.sql": "1d234a4b271e7647415efea4ea9013d8cab074ed89f2920589f08fe0e6730dcb",
+            "db/private-store/003-named-supplier-interest.sql": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
+            "src/server/financial-documents.ts": "81a8610e3dd1b46e424e9573baf9d97455f4a10c17fd8d005ab06cb6862e2198",
+            "src/server/mgbi-archive.ts": "99b8ed2ff22b76103b56dbbbae7be40237aa325434164c657b5fe63a850ba092",
+            "src/server/shared-catalog.ts": "e3310cef42743975f76c0826f1e15754fe2a90482647cb04639c94e1d87129c9",
+            "src/server/supplier-private-store.ts": "b4b4f98f5549a26b0835ef6300193844b90780c74ec176fd98d7a297c63eda94",
+            "src/server/xray-lookup.ts": "0c8a922565ccdcf4c4ab062a66cde29736afd2077579914a5a5656dad730790b",
+            "src/server/xray-repository.ts": "bfbfda141fb46799df92fddeca5be3a2e09685dd658a3e3dfd2c23b64b22da92"
+          },
+          "namedBoundaryDigest": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
+          "previousBusinessSourceRecordIsHistorical": true,
+          "internalAccountBasedAdapter": true,
+          "distinctSurrogatePerOrganization": true,
+          "legacyDemoHistoryReassigned": false,
+          "humanSharedCatalogWriteAdopted": false,
+          "httpEndpointActivated": false,
+          "liveSchemaOrGrantsChanged": false,
+          "productDeploymentPerformed": false
+        },
+        "sourceRevalidationTaskId": "SRM-E1-COMPANY-ORCHESTRATION-20261019",
+        "previousSourceRecordIsHistorical": true
       },
-      "sourceRevalidationTaskId": "SRM-E1-COMPANY-ORCHESTRATION-20261019",
+      "sourceRevalidationTaskId": "SRM-E1-CORPORATE-KNOWLEDGE-BOUNDARY-20261019",
       "previousSourceRecordIsHistorical": true
     },
-    "sourceRevalidationTaskId": "SRM-E1-CORPORATE-KNOWLEDGE-BOUNDARY-20261019",
+    "sourceRevalidationTaskId": "SRM-E1-CORPORATE-SOURCE-PUBLICATION-20261019",
     "previousSourceRecordIsHistorical": true
   },
   "nativeProviderSourceAdoption": {
@@ -580,6 +606,29 @@
     "sharedCatalogSourcePublicationAdopted": false,
     "nativeHumanWorkflowActivated": false,
     "liveDataSqlRolesGrantsChanged": false,
+    "productDeploymentPerformed": false
+  },
+  "corporateSourcePublicationAdoption": {
+    "taskId": "SRM-E1-CORPORATE-SOURCE-PUBLICATION-20261019",
+    "version": "srm-corporate-publication-v1",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "sourceDigests": {
+      "src/server/shared-catalog.ts": "e090cdd0db7c29616fc29c1d9d05aac7b658a553dce36deaa7ce92b76e9956f4",
+      "src/server/corporate-source-store.ts": "c15c5148d97c24fcfd0d6411980ccf690936da5a76af20d3234b1a493335f7ba",
+      "src/server/corporate-source-shape.json": "d9277fd858837e5e19d3fa4e1a46d41f9eeda0e8eaebb5a1957442013dbc8be8",
+      "db/private-store/004-corporate-source.sql": "be27d13d9884651ecbdd6221459e1623cf7c6db57415e40c8431a853c22052ab",
+      "db/private-store/005-corporate-source-access.sql": "93dc7b8f1be76dae5afbf49308d57a41fab00509ca083c6ea18abb68953025e7"
+    },
+    "singleExistingCatalogWriter": true,
+    "singleExistingIndicatorCalculator": true,
+    "storedSourceOnly": true,
+    "sameTransactionOutcomeWitness": true,
+    "noTenantOwnerInNewSharedFacts": true,
+    "humanWriteCeilingRetained": true,
+    "providerAcquisitionProvedByThisUnit": false,
+    "fullNativeWorkflowAdopted": false,
+    "liveSqlInstalled": false,
+    "runtimeRoleOrGrantChanged": false,
     "productDeploymentPerformed": false
   }
 }

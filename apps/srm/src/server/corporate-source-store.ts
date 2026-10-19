@@ -1,0 +1,132 @@
+import type pg from 'pg'
+import type { PoolClient } from 'pg'
+import { createHash } from 'node:crypto'
+import type { FinancialData, GeneralCompanyData, SectionEnvelope } from '@profitia/srm-xray'
+import { createPlatformIngestionHost, platformReceiptEvidence } from '@profitia/platform-contracts/platform-ingestion'
+import { operationPayloadDigest, type Json } from '@profitia/platform-contracts/operation-context'
+import { createSrmNativePgDriver } from './native-pg-driver'
+import { readCorporateCompanyData, readCorporateFinancialData, MAX_CORPORATE_KNOWLEDGE_BYTES } from './corporate-knowledge'
+import { writeSharedCompany, writeFinancialIndicators } from './shared-catalog'
+import type { FinancialSourceFact } from './mgbi-financial'
+import shape from './corporate-source-shape.json'
+
+export const CORPORATE_PUBLICATION_VERSION = 'srm-corporate-publication-v1'
+export const CORPORATE_SOURCE = Object.freeze({ id: 'srm.catalog.corporate', payloadSchema: CORPORATE_PUBLICATION_VERSION,
+  qualityVersion: 'srm-corporate-quality-v1', classificationVersion: 'srm-corporate-fields-v1' })
+export type CorporatePacket = { version: typeof CORPORATE_PUBLICATION_VERSION; nip: string
+  general: SectionEnvelope<GeneralCompanyData>; financial: SectionEnvelope<FinancialData>
+  facts: FinancialSourceFact[]; preserveGeneral: boolean }
+type Spec = string | Spec[] | { [key: string]: Spec }
+const unavailable = (): never => { throw new TypeError('Classified corporate publication required') }
+const hash = (value: string) => createHash('sha256').update(value).digest('hex')
+
+/** Same closed packet shape is installed under controlled SQL ownership. This
+ * does not detect personal information hidden inside arbitrary text. */
+export function readCorporatePacket(input: unknown): CorporatePacket {
+  let nodes = 0
+  const seen = new Set<object>()
+  const read = (value: unknown, spec: Spec, depth: number): void => {
+    if (++nodes > 500_000 || depth > 32) return unavailable()
+    if (typeof spec === 'string') {
+      if (spec.startsWith('@')) return read(value, (shape as Record<string, Spec>)[spec.slice(1)], depth)
+      if (spec.startsWith('=')) { if (value !== spec.slice(1)) return unavailable(); return }
+      if (spec === '$bool') { if (typeof value !== 'boolean') return unavailable(); return }
+      if (spec === '$number') { if (typeof value !== 'number' || !Number.isFinite(value)) return unavailable(); return }
+      if (typeof value !== 'string' || value.length > 4096 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) return unavailable()
+      if (spec === '$nip' && !/^\d{10}$/.test(value) || spec === '$record' && !/^[a-f0-9]{24}$/.test(value)
+        || spec === '$amount' && (value.length > 128 || !/^-?\d+(?:\.\d+)?$/.test(value))
+        || spec === '$date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0, 10) !== value)
+        || spec === '$dateTime' && (!/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z)?$/.test(value) || !Number.isFinite(Date.parse(value)))
+        || spec === '$timestamp' && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(value) || !Number.isFinite(Date.parse(value)))) return unavailable()
+      if (['$timestamp', '$dateTime'].includes(spec) && new Date(value).toISOString().slice(0, 10) !== value.slice(0, 10)) return unavailable()
+      return
+    }
+    if (spec && !Array.isArray(spec) && Object.hasOwn(spec, '$nullable')) { if (value !== null) read(value, spec.$nullable, depth); return }
+    if (!value || typeof value !== 'object' || seen.has(value)) return unavailable()
+    seen.add(value)
+    try {
+      if (Array.isArray(spec)) {
+        if (!Array.isArray(value) || value.length > 16384 || Reflect.ownKeys(value).length !== value.length + 1) return unavailable()
+        for (let i = 0; i < value.length; i++) { const d = Object.getOwnPropertyDescriptor(value, String(i)); if (!d || !('value' in d)) return unavailable(); read(d.value, spec[0], depth + 1) }
+      } else {
+        if (Object.getPrototypeOf(value) !== Object.prototype) return unavailable()
+        const descriptors = Object.getOwnPropertyDescriptors(value)
+        if (Reflect.ownKeys(value).length !== Object.keys(descriptors).length) return unavailable()
+        for (const [key, d] of Object.entries(descriptors)) {
+          const rule = spec[key] ?? spec[key + '?']
+          if (!d.enumerable || !('value' in d) || rule === undefined) return unavailable()
+          // Declared optional undefined has the same omission as JSON output.
+          if (d.value === undefined && !Object.hasOwn(spec, key)) continue
+          read(d.value, rule, depth + 1)
+        }
+        if (Object.keys(spec).some(key => !key.endsWith('?') && !Object.hasOwn(value, key))) return unavailable()
+      }
+    } finally { seen.delete(value) }
+  }
+  read(input, shape.packet, 0)
+  const encoded = JSON.stringify(input)
+  if (Buffer.byteLength(encoded) > MAX_CORPORATE_KNOWLEDGE_BYTES) return unavailable()
+  const packet = JSON.parse(encoded) as CorporatePacket
+  readCorporateCompanyData(packet.general.data, packet.nip)
+  readCorporateFinancialData(packet.financial.data)
+  for (const section of [packet.general, packet.financial]) {
+    if (!['SUCCESS', 'PARTIAL', 'EMPTY', 'NOT_REQUESTED', 'ERROR'].includes(section.status)) return unavailable()
+    if (section.data !== null && !['SUCCESS', 'PARTIAL'].includes(section.status)
+      || ['SUCCESS', 'PARTIAL', 'EMPTY'].includes(section.status) && section.retrievedAt === null) return unavailable()
+  }
+  if (packet.facts.length && (!packet.financial.data || !['SUCCESS', 'PARTIAL'].includes(packet.financial.status))) return unavailable()
+  for (const f of packet.facts) {
+    if (!['YEAR', 'QUARTER', 'MONTH', 'OTHER'].includes(f.periodType) || !['UNIT', 'CONSOLIDATED'].includes(f.statementScope)
+      || !['SOURCE_VALUE', 'VERIFIED_COST_MAGNITUDE_V1', 'UNVERIFIED_COST_SIGN'].includes(f.normalizationRule)
+      || !['VALID', 'REVIEW'].includes(f.validationStatus) || !f.sourcePath.startsWith('content.')
+      || f.periodStart > f.periodEnd || !/^[A-Z][A-Z0-9_]{1,79}$/.test(f.metricCode)
+      || !packet.financial.data?.periods.some(p => p.from === f.periodStart && p.to === f.periodEnd
+        && p.scope === (f.statementScope === 'UNIT' ? 'standalone' : 'consolidated')
+        && p.facts.some(v => v.metricCode === f.metricCode && v.amount === f.amount && v.currency === f.currencyCode && v.unit === f.unitCode))) return unavailable()
+  }
+  return packet
+}
+
+export function createSrmCorporateSourceStore(options: {
+  application: Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]['application']
+  binding: Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]['binding']
+  publicationSchemaDigest: string; pool: pg.Pool; auditPool: pg.Pool; now?: () => number
+}) {
+  if (typeof window !== 'undefined' || options.application.appId !== 'srm-corporate-source'
+    || !/^[a-f0-9]{64}$/.test(options.publicationSchemaDigest)) return unavailable()
+  const publicationSchemaDigest = options.publicationSchemaDigest
+  const driver = createSrmNativePgDriver(options.pool, options.auditPool)
+  const verify = async (client: PoolClient): Promise<void> => {
+    const d = (await client.query('SELECT profitia_srm_catalog.runtime_descriptor() AS descriptor')).rows[0]?.descriptor
+    if (!d || d.schemaDigest !== publicationSchemaDigest || d.version !== CORPORATE_PUBLICATION_VERSION
+      || operationPayloadDigest(d.fieldSchema) !== operationPayloadDigest(shape as Json)) return unavailable()
+  }
+  const host = createPlatformIngestionHost<PoolClient>({ application: options.application, binding: options.binding,
+    source: CORPORATE_SOURCE, ...driver, now: options.now,
+    validateSharedPayload: async (value, session) => {
+      await verify(session.transaction)
+      return !!value && typeof value === 'object' && !Array.isArray(value)
+        && Object.keys(value).sort().join(',') === 'bodyDigest,nip,version'
+        && value.version === CORPORATE_PUBLICATION_VERSION && /^[a-f0-9]{64}$/.test(String(value.bodyDigest)) && /^\d{10}$/.test(String(value.nip))
+    },
+  })
+  return Object.freeze({
+    async publish(input: unknown, idempotencyKey: string) {
+      // Capture once before awaiting. HTTP callers never supply owner IDs,
+      // evidence IDs, write callbacks or a mutable body after admission.
+      const packet = readCorporatePacket(input), body = JSON.stringify(packet)
+      const manifest = { bodyDigest: hash(body), nip: packet.nip, version: CORPORATE_PUBLICATION_VERSION }
+      const result = await host.ingest({ resourceId: 'srm-corporate:' + packet.nip, payload: manifest, idempotencyKey }, async (_manifest, client, context) => {
+        await verify(client)
+        const effectId = context.platformReservation?.effectId
+        if (!effectId) return unavailable()
+        const admitted = await client.query('SELECT profitia_srm_catalog.open_publication($1::uuid,$2::uuid,$3) AS admitted', [effectId, context.decisionId, body])
+        if (admitted.rows[0]?.admitted !== true) return unavailable()
+        await writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId })
+        if (packet.financial.data) await writeFinancialIndicators(client, packet.nip, packet.financial.data)
+      })
+      if (!platformReceiptEvidence(result.value)) return unavailable()
+      return result.value
+    },
+  })
+}

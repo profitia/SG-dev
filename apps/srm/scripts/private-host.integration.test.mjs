@@ -147,7 +147,7 @@ test('SRM real report and pg driver use the accepted private host', async t => {
   globalThis.fetch = async () => { throw Error('No external providers in private host fixture') }
   try {
     if (!(await root.query('SELECT 1 FROM pg_database WHERE datname=$1', [DATABASE])).rowCount) await root.query(`CREATE DATABASE ${DATABASE}`)
-    for (const [role, login] of [['profitia_access_owner', false], [ROLE, true], ['neon_superuser', false], ['srm_app_runtime', true]]) {
+    for (const [role, login] of [['profitia_access_owner', false], ['profitia_ingestion_owner', false], [ROLE, true], ['neon_superuser', false], ['srm_app_runtime', true]]) {
       if (!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1', [role])).rowCount) await root.query(`CREATE ROLE ${role} ${login ? "LOGIN PASSWORD 'isolated_ci_only'" : 'NOLOGIN'} NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`)
     }
     const flags = (await root.query('SELECT rolsuper,rolcreatedb,rolcreaterole,rolbypassrls,rolinherit FROM pg_roles WHERE rolname=$1', [ROLE])).rows[0]
@@ -257,6 +257,23 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     const financial = { status: 'SUCCESS', source: { provider: 'MGBI', model: 'synthetic-fixture', recordId: 'private-not-public' }, retrievedAt: new Date().toISOString(), effectiveAt: '2025-12-31', warnings: [], catalogMappingVersion: '2026-10-07-ccc-v2', data: { qualityRule: 'FINANCIAL_QUALITY_V1', periods: [{ from: '2025-01-01', to: '2025-12-31', scope: 'standalone', documentId: 'synthetic-financial-2025:cfy', facts: [{ metricCode: 'BS_A_TA', amount: '100', currency: 'PLN', unit: 'PLN' }] }] } }
     await owner.query('INSERT INTO srm.catalog_companies(nip,financial_json,financial_sha256,financial_checked_at) VALUES($1,$2::jsonb,$3,now())', [NIP, JSON.stringify(financial), hash(JSON.stringify(financial))])
     await owner.query("INSERT INTO srm.catalog_kys_reports(nip,entity_type) VALUES($1,'COMPANY')", [NIP])
+    // Install the optional real SOURCE bridge with no SOURCE binding or grant.
+    // All following HUMAN API and accidental-ACL cases must retain their result.
+    await owner.query(`GRANT CREATE ON DATABASE ${DATABASE} TO profitia_ingestion_owner`)
+    await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
+    try {
+      await owner.query(fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/008-platform-ingestion.sql',import.meta.url),'utf8'))
+      await owner.query(fs.readFileSync(new URL('../db/private-store/004-corporate-source.sql',import.meta.url),'utf8'))
+      await owner.query('GRANT USAGE ON SCHEMA profitia_srm_catalog TO profitia_access_owner;GRANT EXECUTE ON FUNCTION profitia_srm_catalog.scope_allows(text,boolean),profitia_srm_catalog.current_packet(text,boolean),profitia_srm_catalog.known_proof(text,uuid),profitia_srm_catalog.valid_stored_section(text,text,jsonb) TO profitia_access_owner')
+      await owner.query('COMMIT')
+    } catch(error) {await owner.query('ROLLBACK');throw error}
+    await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM profitia_ingestion_owner`)
+    await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner')
+    try {
+      await owner.query(fs.readFileSync(new URL('../db/private-store/005-corporate-source-access.sql',import.meta.url),'utf8'))
+      await owner.query(`GRANT EXECUTE ON FUNCTION srm.corporate_catalog_scope(text,boolean) TO ${ROLE}`)
+      await owner.query('COMMIT')
+    } catch(error) {await owner.query('ROLLBACK');throw error}
     const runtimeUrl = new URL(dbUrl); runtimeUrl.username = ROLE; runtimeUrl.password = 'isolated_ci_only'
     pool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 3 }); auditPool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 1 })
     assert.equal((await pool.query('SELECT current_user')).rows[0].current_user, ROLE)

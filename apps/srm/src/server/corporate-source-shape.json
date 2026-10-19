@@ -1,0 +1,222 @@
+{
+  "packet": {
+    "version": "=srm-corporate-publication-v1",
+    "nip": "$nip",
+    "general": {
+      "status": "$text",
+      "source": {
+        "provider": "=MGBI",
+        "model": "=pl-krs-wp-record",
+        "recordId": {
+          "$nullable": "$record"
+        }
+      },
+      "data": "@general",
+      "retrievedAt": {
+        "$nullable": "$timestamp"
+      },
+      "effectiveAt": {
+        "$nullable": "$dateTime"
+      },
+      "warnings": [
+        "$text"
+      ]
+    },
+    "financial": {
+      "status": "$text",
+      "source": {
+        "provider": "=MGBI",
+        "model": "=pl-krs-rdf-record",
+        "recordId": {
+          "$nullable": "$record"
+        }
+      },
+      "data": {
+        "$nullable": "@financial"
+      },
+      "retrievedAt": {
+        "$nullable": "$timestamp"
+      },
+      "effectiveAt": {
+        "$nullable": "$dateTime"
+      },
+      "warnings": [
+        "$text"
+      ]
+    },
+    "facts": [
+      "@sourceFact"
+    ],
+    "preserveGeneral": "$bool"
+  },
+  "general": {
+    "legalName": {
+      "$nullable": "$text"
+    },
+    "legalForm": {
+      "$nullable": "$text"
+    },
+    "registeredAddress": {
+      "$nullable": "$text"
+    },
+    "mainPkd": {
+      "$nullable": "$text"
+    },
+    "krs": "$nip",
+    "nip": "$nip",
+    "regon": {
+      "$nullable": "$text"
+    },
+    "registeredAt": {
+      "$nullable": "$date"
+    },
+    "registrationStatus?": "$text",
+    "deregisteredAt?": {
+      "$nullable": "$date"
+    },
+    "mainPkdDescription?": {
+      "$nullable": "$text"
+    },
+    "website?": {
+      "$nullable": "$text"
+    },
+    "registryHistory?": {
+      "version": "=KRS_CONTINUITY_V1",
+      "currentKrs": "$nip",
+      "members": [
+        {
+          "krs": "$nip",
+          "legalName": {
+            "$nullable": "$text"
+          },
+          "legalForm": {
+            "$nullable": "$text"
+          },
+          "registeredAt": {
+            "$nullable": "$date"
+          },
+          "deregisteredAt": {
+            "$nullable": "$date"
+          },
+          "status": "$text"
+        }
+      ],
+      "links": [
+        {
+          "predecessorKrs": "$nip",
+          "successorKrs": "$nip",
+          "basis": "=KRS_FORMATION_TRANSFORMATION"
+        }
+      ],
+      "unlinkedKrs": [
+        "$nip"
+      ]
+    }
+  },
+  "financial": {
+    "periods": [
+      "@period"
+    ],
+    "qualityRule?": "$text",
+    "registryHistoryVersion?": "=KRS_CONTINUITY_V1",
+    "revisionRule?": "$text",
+    "indicators?": [
+      "@indicator"
+    ]
+  },
+  "period": {
+    "from": "$date",
+    "to": "$date",
+    "scope": "$text",
+    "documentId": "$text",
+    "facts": [
+      "@fact"
+    ],
+    "comparativeData?": {
+      "selected": "$text",
+      "dateBasis": "$text",
+      "original": [
+        "@fact"
+      ],
+      "restated": [
+        "@fact"
+      ]
+    },
+    "sourceRegistration?": {
+      "krs": "$nip",
+      "legalName": {
+        "$nullable": "$text"
+      },
+      "relationship": "$text"
+    },
+    "effectiveRevisionId?": "$text",
+    "revisionStatus?": "$text",
+    "accountingStandard?": "$text",
+    "accountingStandardBasis?": "$text",
+    "isIasCompliant?": {
+      "$nullable": "$bool"
+    },
+    "xmlSchema?": {
+      "name": {
+        "$nullable": "$text"
+      },
+      "version": {
+        "$nullable": "$text"
+      }
+    },
+    "msrRows?": [
+      {
+        "key": "$text",
+        "label": "$text",
+        "section": "$text",
+        "amount": {
+          "$nullable": "$amount"
+        },
+        "currency": {
+          "$nullable": "$text"
+        },
+        "unit": "$text",
+        "validation": "$text",
+        "dimensions": [
+          "$text"
+        ]
+      }
+    ]
+  },
+  "fact": {
+    "metricCode": "$text",
+    "amount": "$amount",
+    "currency": "$text",
+    "unit": "$text"
+  },
+  "indicator": {
+    "code": "$text",
+    "periodStart": "$date",
+    "periodEnd": "$date",
+    "scope": "$text",
+    "status": "$text",
+    "value": {
+      "$nullable": "$amount"
+    },
+    "unit": "$text",
+    "importance": "$number",
+    "reasonCode": {
+      "$nullable": "$text"
+    },
+    "formulaVersion": "$text"
+  },
+  "sourceFact": {
+    "metricCode": "$text",
+    "periodType": "$text",
+    "statementScope": "$text",
+    "normalizationRule": "$text",
+    "currencyCode": "$text",
+    "unitCode": "$text",
+    "sourcePath": "$text",
+    "validationStatus": "$text",
+    "periodStart": "$date",
+    "periodEnd": "$date",
+    "amount": "$amount",
+    "sourceAmount": "$amount"
+  }
+}
