@@ -1,0 +1,751 @@
+{
+  "schemaVersion": "1.0",
+  "recordType": "DATED_READ_ONLY_PREPARATION_BASELINE",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCHITECTURE-E1-DEVELOPMENT-PREPARATION-READBACK-20261019",
+  "targetEnvironment": "development",
+  "executionEnvironment": "local",
+  "sourceAuthority": "profitia/SG-dev/main",
+  "sourceSha": "505a23800fbd8a74f40a5a1e1947f3b2a62093bc",
+  "provider": "Neon authenticated MCP",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "ownerCatalog": {
+    "role": "neondb_owner",
+    "roles": [
+      {
+        "name": "profitia_access_owner",
+        "login": false,
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false,
+        "replication": false
+      },
+      {
+        "name": "sg2_private_development_runtime",
+        "login": true,
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false,
+        "replication": false
+      },
+      {
+        "name": "sg2_private_development_dashboard",
+        "login": true,
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false,
+        "replication": false
+      },
+      {
+        "name": "srm_private_development_runtime",
+        "login": true,
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false,
+        "replication": false
+      }
+    ],
+    "database": "platform_private",
+    "relations": [
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "accounts",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "organisations",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "installation",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "external_identities",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "applications",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "runtime_bindings",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "memberships",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "permission_grants",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "product_grants",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "security_events",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "audit_installation",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_modules",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "directory_installation",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "installation",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_modules",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "application_bindings",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_modules",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "bootstrap_receipts",
+        "owner": "profitia_access_owner",
+        "schema": "profitia_access",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "Category",
+        "owner": "profitia_access_owner",
+        "schema": "sg_runtime_benchmarks",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "CategoryCostComponent",
+        "owner": "profitia_access_owner",
+        "schema": "sg_runtime_benchmarks",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "private_installation",
+        "owner": "profitia_access_owner",
+        "schema": "sg_runtime_benchmarks",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "BusinessBenchmark",
+        "owner": "profitia_access_owner",
+        "schema": "sg_runtime_benchmarks",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "BenchmarkProviderMapping",
+        "owner": "profitia_access_owner",
+        "schema": "sg_runtime_benchmarks",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "OrganizationBenchmarkSelection",
+        "owner": "profitia_access_owner",
+        "schema": "sg_runtime_benchmarks",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "users",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "organization_supplier_interest",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "user_supplier_interest",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "supplier_web_identity",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "schema_migrations",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "private_installation",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "organizations",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "lookup_requests",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "provider_attempts",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "source_snapshots",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "section_projections",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "financial_facts",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "mgbi_source_archives",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "msr_sources",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "msr_projections",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "catalog_companies",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "catalog_financial_facts",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "catalog_financial_indicators",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "catalog_kys_reports",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "financial_source_documents",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "suppliers",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      },
+      {
+        "rls": true,
+        "kind": "r",
+        "name": "financial_scanner_frames",
+        "owner": "profitia_access_owner",
+        "schema": "srm",
+        "forceRls": true
+      }
+    ],
+    "observedAt": "2026-10-19T18:03:49.405684+00:00",
+    "sessionRole": "neondb_owner",
+    "functionCount": 17
+  },
+  "installations": {
+    "role": "neondb_owner",
+    "audit": {
+      "singleton": true,
+      "source_ref": "ARCHITECTURE-E1-INITIAL-DIRECTORY-PREPARATION-20261017:DISABLED_DEVELOPMENT_PREPARATION",
+      "schema_digest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
+      "envelope_version": "1.0.0"
+    },
+    "counts": {
+      "accounts": 1,
+      "organisations": 1,
+      "bootstrapReceipts": 1
+    },
+    "modules": {
+      "singleton": true,
+      "schema_digest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
+      "schema_version": "1.0.0"
+    },
+    "database": "platform_private",
+    "directory": {
+      "singleton": true,
+      "schema_digest": "7004cc968183fdf1406b143066134138426eecfeaae823a3765321e72a9a4811",
+      "schema_version": "1.0.0"
+    },
+    "observedAt": "2026-10-19T18:04:44.064223+00:00",
+    "installation": {
+      "revision": 19,
+      "branch_id": "br-sparkling-term-b99l107x",
+      "singleton": true,
+      "project_id": "spring-bread-28217539",
+      "environment": "development",
+      "database_name": "platform_private",
+      "schema_digest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "schema_version": "1.0.0"
+    },
+    "optionalSchemas": null,
+    "applicationStates": [
+      {
+        "status": "DISABLED",
+        "applicationId": "spendguru"
+      },
+      {
+        "status": "DISABLED",
+        "applicationId": "srm"
+      }
+    ]
+  },
+  "actualRuntimeLogins": [
+    {
+      "role": "sg2_private_development_runtime",
+      "flags": {
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false
+      },
+      "database": "platform_private",
+      "observedAt": "2026-10-19T18:05:23.431488+00:00",
+      "sessionRole": "sg2_private_development_runtime",
+      "tablePrivileges": [
+        {
+          "table": "accounts",
+          "delete": false,
+          "insert": false,
+          "schema": "profitia_access",
+          "select": false,
+          "update": false,
+          "truncate": false
+        },
+        {
+          "table": "OrganizationBenchmarkSelection",
+          "delete": false,
+          "insert": true,
+          "schema": "sg_runtime_benchmarks",
+          "select": true,
+          "update": true,
+          "truncate": false
+        },
+        {
+          "table": "source_snapshots",
+          "delete": false,
+          "insert": false,
+          "schema": "srm",
+          "select": false,
+          "update": false,
+          "truncate": false
+        }
+      ],
+      "schemaPrivileges": [
+        {
+          "usage": true,
+          "create": false,
+          "schema": "profitia_access"
+        },
+        {
+          "usage": true,
+          "create": false,
+          "schema": "sg_runtime_benchmarks"
+        },
+        {
+          "usage": false,
+          "create": false,
+          "schema": "srm"
+        }
+      ],
+      "accessOwnerMembership": false
+    },
+    {
+      "role": "sg2_private_development_dashboard",
+      "flags": {
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false
+      },
+      "database": "platform_private",
+      "observedAt": "2026-10-19T18:05:28.59433+00:00",
+      "sessionRole": "sg2_private_development_dashboard",
+      "tablePrivileges": [
+        {
+          "table": "accounts",
+          "delete": false,
+          "insert": false,
+          "schema": "profitia_access",
+          "select": false,
+          "update": false,
+          "truncate": false
+        },
+        {
+          "table": "OrganizationBenchmarkSelection",
+          "delete": false,
+          "insert": false,
+          "schema": "sg_runtime_benchmarks",
+          "select": false,
+          "update": false,
+          "truncate": false
+        },
+        {
+          "table": "source_snapshots",
+          "delete": false,
+          "insert": false,
+          "schema": "srm",
+          "select": false,
+          "update": false,
+          "truncate": false
+        }
+      ],
+      "schemaPrivileges": [
+        {
+          "usage": true,
+          "create": false,
+          "schema": "profitia_access"
+        },
+        {
+          "usage": false,
+          "create": false,
+          "schema": "sg_runtime_benchmarks"
+        },
+        {
+          "usage": false,
+          "create": false,
+          "schema": "srm"
+        }
+      ],
+      "accessOwnerMembership": false
+    },
+    {
+      "role": "srm_private_development_runtime",
+      "flags": {
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false
+      },
+      "database": "platform_private",
+      "observedAt": "2026-10-19T18:05:19.520994+00:00",
+      "sessionRole": "srm_private_development_runtime",
+      "tablePrivileges": [
+        {
+          "table": "accounts",
+          "delete": false,
+          "insert": false,
+          "schema": "profitia_access",
+          "select": false,
+          "update": false,
+          "truncate": false
+        },
+        {
+          "table": "OrganizationBenchmarkSelection",
+          "delete": false,
+          "insert": false,
+          "schema": "sg_runtime_benchmarks",
+          "select": false,
+          "update": false,
+          "truncate": false
+        },
+        {
+          "table": "source_snapshots",
+          "delete": false,
+          "insert": false,
+          "schema": "srm",
+          "select": true,
+          "update": false,
+          "truncate": false
+        }
+      ],
+      "schemaPrivileges": [
+        {
+          "usage": true,
+          "create": false,
+          "schema": "profitia_access"
+        },
+        {
+          "usage": false,
+          "create": false,
+          "schema": "sg_runtime_benchmarks"
+        },
+        {
+          "usage": true,
+          "create": false,
+          "schema": "srm"
+        }
+      ],
+      "accessOwnerMembership": false
+    }
+  ],
+  "unscopedReads": [
+    {
+      "database": "platform_private",
+      "role": "sg2_private_development_runtime",
+      "visible_rows": "0"
+    },
+    {
+      "database": "platform_private",
+      "role": "srm_private_development_runtime",
+      "visible_rows": "0"
+    }
+  ],
+  "sampledPoliciesAndPermissionInventory": {
+    "role": "neondb_owner",
+    "database": "platform_private",
+    "policies": [
+      {
+        "name": "private_selection_scope",
+        "check": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN true\n    ELSE profitia_modules.scope_allows('benchmark'::text, (\"organizationId\")::uuid)\nEND",
+        "table": "OrganizationBenchmarkSelection",
+        "using": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN true\n    ELSE profitia_modules.scope_allows('benchmark'::text, (\"organizationId\")::uuid)\nEND",
+        "schema": "sg_runtime_benchmarks",
+        "permissive": true
+      },
+      {
+        "name": "private_selection_fence",
+        "check": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN true\n    ELSE profitia_modules.scope_allows('benchmark'::text, (\"organizationId\")::uuid)\nEND",
+        "table": "OrganizationBenchmarkSelection",
+        "using": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN true\n    ELSE profitia_modules.scope_allows('benchmark'::text, (\"organizationId\")::uuid)\nEND",
+        "schema": "sg_runtime_benchmarks",
+        "permissive": false
+      },
+      {
+        "name": "tenant_scope",
+        "check": "(organization_id = (NULLIF(current_setting('srm.organization_id'::text, true), ''::text))::uuid)",
+        "table": "source_snapshots",
+        "using": "(organization_id = (NULLIF(current_setting('srm.organization_id'::text, true), ''::text))::uuid)",
+        "schema": "srm",
+        "permissive": true
+      },
+      {
+        "name": "kys_expired_personal_snapshot_delete",
+        "check": null,
+        "table": "source_snapshots",
+        "using": "((data_class = 'KYS_PERSONAL'::text) AND (retention_until < now()))",
+        "schema": "srm",
+        "permissive": false
+      },
+      {
+        "name": "private_operation_admission",
+        "check": "profitia_modules.scope_allows('supplier_report'::text, organization_id)",
+        "table": "source_snapshots",
+        "using": "profitia_modules.scope_allows('supplier_report'::text, organization_id)",
+        "schema": "srm",
+        "permissive": true
+      },
+      {
+        "name": "private_operation_fence",
+        "check": "profitia_modules.scope_allows('supplier_report'::text, organization_id)",
+        "table": "source_snapshots",
+        "using": "profitia_modules.scope_allows('supplier_report'::text, organization_id)",
+        "schema": "srm",
+        "permissive": false
+      }
+    ],
+    "observedAt": "2026-10-19T18:06:23.236005+00:00",
+    "permissionInventory": [
+      {
+        "effect": "ALLOW",
+        "grants": 1,
+        "operation": "benchmark.selection.read"
+      },
+      {
+        "effect": "ALLOW",
+        "grants": 1,
+        "operation": "benchmark.selection.write"
+      },
+      {
+        "effect": "ALLOW",
+        "grants": 1,
+        "operation": "supplier.report.project"
+      },
+      {
+        "effect": "ALLOW",
+        "grants": 1,
+        "operation": "supplier.report.read"
+      }
+    ]
+  },
+  "negativeProbe": {
+    "role": "sg2_private_development_dashboard",
+    "operation": "SELECT count(*) FROM profitia_access.accounts",
+    "result": "PERMISSION_DENIED"
+  },
+  "initialProbeCorrection": "Qualified table-name ACL lookup hit foreign schema permission checks. Repeated using catalog OIDs without granting permissions; original errors retained.",
+  "interpretation": {
+    "initialDirectoryPrepared": true,
+    "ordinaryRuntimeRolesVerified": true,
+    "all43InspectedRelationsForceRls": true,
+    "newPrivateApplicationsEnabled": false,
+    "listedOptionalPrivateNamespacesInstalled": false,
+    "livePositiveTenantAccessProved": false,
+    "customerLoginProved": false,
+    "productDeploymentPerformed": false,
+    "databaseMutationPerformed": false
+  },
+  "limitations": [
+    "Catalog role/ACL/RLS metadata and unscoped refusals are preparation evidence, not live authorised positive operations or all-path isolation proof.",
+    "No customer business rows, email, credentials, source archives or private settings selected. Counts concern internal directory/control records only.",
+    "Owner role evidence is separate from actual ordinary logins. No runtime login was granted owner membership, elevated or changed.",
+    "New private application records remain disabled; existing business services are separate and remain running. Current Render environment-variable values were not read.",
+    "Only existing Development target queried. No Staging/Production query or mutation, provider purchase, cloud configuration/resource change, migration/recovery rehearsal, owner OTP or product release."
+  ]
+}
