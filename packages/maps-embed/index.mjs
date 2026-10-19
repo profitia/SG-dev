@@ -2,9 +2,10 @@ import {exactOrigin, isMapsMessage, mapsMessage, parseLocations, parseLocationSe
 import {openEmbeddedReadHost} from '@profitia/platform-contracts/embedded-read-channel'
 
 /** readLocations must call the host's authorized backend for any private data. */
-export function mountMaps({container, runtimeOrigin, readLocations, onSelect = () => {}, onStatus = () => {}, timeoutMs = 15000}) {
+export function mountMaps({container, runtimeOrigin, readLocations, onSelect = () => {}, onStatus = () => {}, timeoutMs = 15000, startupTimeoutMs = 90000}) {
   runtimeOrigin = exactOrigin(runtimeOrigin)
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 15000) throw new TypeError('Timeout exceeds the E1 channel limit')
+  if (!Number.isSafeInteger(startupTimeoutMs) || startupTimeoutMs < 1 || startupTimeoutMs > 120000) throw new TypeError('Invalid runtime startup timeout')
   if (!container?.ownerDocument || typeof readLocations !== 'function') throw new TypeError('Container and data gateway required')
   const doc = container.ownerDocument
   const win = doc.defaultView
@@ -55,7 +56,8 @@ export function mountMaps({container, runtimeOrigin, readLocations, onSelect = (
     }
   }
   win.addEventListener('message', receive)
-  timer = win.setTimeout(() => {if (!closed) {onStatus('error'); close()}}, timeoutMs)
+  // Runtime boot (including a sleeping Development service) is separate from E1 read admission.
+  timer = win.setTimeout(() => {if (!closed) {onStatus('error'); close()}}, startupTimeoutMs)
   container.append(frame)
   return Object.freeze({close})
 }

@@ -1,6 +1,6 @@
 {
   "name": "@profitia/maps-embed",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "exports": {".": {"types": "./index.d.mts", "import": "./index.mjs"}},
