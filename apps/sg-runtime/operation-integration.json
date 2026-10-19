@@ -1064,5 +1064,25 @@
     "runtimeRoleOrGrantChanged": false,
     "providerExecutionAdopted": false,
     "productDeploymentPerformed": false
+  },
+  "srmPrivateInspectionBusinessReadRegression": {
+    "projectKey": "SG2",
+    "taskId": "SG2-E1-SRM-PRIVATE-READS-REGRESSION-20261019",
+    "status": "SOURCE_REGRESSION_CANDIDATE_NOT_RELEASED",
+    "srmProducer": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-COMMITTED-SUPPLIER-PRIVATE-READS-20261019",
+      "repository": "profitia/SG-dev",
+      "sourceSha": "f249c2b0411dcbcdfaca4aea684e79d1a4731fef"
+    },
+    "platformVersionUnchanged": "1.19.0",
+    "rootImplementationUnchanged": "1.0.0-candidate.12",
+    "scope": "SG2_UNCHANGED_BUSINESS_REGRESSION_FOR_NATIVE_SRM_READ_ADOPTION",
+    "sg2BusinessOrUiChanged": false,
+    "srmReadHostAdoptedBySg2": false,
+    "mapsChanged": false,
+    "privatePackageCredentialCopied": false,
+    "liveSchemaOrGrantsChanged": false,
+    "productDeploymentPerformed": false
   }
 }
