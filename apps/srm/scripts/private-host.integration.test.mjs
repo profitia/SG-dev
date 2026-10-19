@@ -8,7 +8,7 @@ import { accessSchemaUrl, accessStoreSourceDigest, createAccessStore, moduleAudi
 import { moduleSchemaUrl, moduleSchemaDigest } from '@profitia/platform-contracts/module-scope'
 import { identitySourceDigest } from '@profitia/platform-contracts/identity-provider'
 import { privateOperationHostSourceDigest } from '@profitia/platform-contracts/private-operation-host'
-import { OPERATION_CONTRACT, operationPayloadDigest } from '@profitia/platform-contracts/operation-context'
+import { OPERATION_CONTRACT, isOperationDenied, operationPayloadDigest } from '@profitia/platform-contracts/operation-context'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import { privateBusinessPlan } from '../db/private-store/initialize.mjs'
 import { migrationManifest } from './staging-migrate.mjs'
@@ -71,7 +71,7 @@ test('SRM imports the exact optional external control source without adopting a 
   const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
   assert.equal(Object.keys(current.sourceDigests).length,20)
   assert.equal(Object.keys(native.sourceDigests).length,23)
-  for(const [path,digest]of Object.entries(manifest.delegatedNativeWorkSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+  for(const [path,digest]of Object.entries(manifest.privateSupplierAccessSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
   for(const name of ['externalCallAdopted','sql009Installed','runtimeRoleOrGrantChanged','humanSupplierRefreshAdopted','finderAiAdopted','kysOrPersonalDataAdopted','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
   assert.equal(sdk.externalCallEvidence({status:200,body:{}}),null)
 })
@@ -407,6 +407,15 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     await t.test('forged headers do not restore documents', async () => {
       assert.equal((await handler(request(A, U, { authorization: '', 'x-clerk-user-id': U, 'x-clerk-org-id': A, 'x-clerk-org-role': 'admin' }))).status, 401)
       assert.equal((await documents()).length, 0)
+    })
+    await t.test('SDK reception alone cannot enable private Supplier reads reveals or exports in the current report host',async()=>{
+      let effects=0
+      for(const operation of ['supplier.private.read','supplier.private.reveal','supplier.private.export']){
+        await assert.rejects(reportHost.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
+          operation,organisationId:A,resourceId:'private-supplier-synthetic',payload:{},request:request()},
+          async()=>{effects++;return null}),error=>isOperationDenied(error)&&error.reasonCode==='PERMISSION_DENIED')
+      }
+      assert.equal(effects,0);assert.equal((await documents()).length,0)
     })
     await t.test('real report restores its private archive in the same access/audit transaction', async () => {
       const response = await handler(request()); assert.equal(response.status, 200); assert.equal((await response.json()).financial.periods[0].facts[0].amount, '100')
@@ -758,8 +767,9 @@ test('SRM preserves historical AM23 source acceptance separately from current pr
  assert.equal(accepted.platformVersion,'1.14.0')
  assert.equal(accepted.producer.sourceSha,'70e6ebbd1bb931911fd3e3801f04e03d2d45b5df')
  assert.equal(accepted.sourceRecordIsHistorical,true)
- assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.13')
- assert.equal(manifest.delegatedNativeWorkSourceCompatibility.rootImplementation,OPERATION_CONTRACT.implementation)
+ assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.14')
+ assert.equal(manifest.delegatedNativeWorkSourceCompatibility.rootImplementation,'1.0.0-candidate.13')
+ assert.equal(manifest.privateSupplierAccessSourceCompatibility.rootImplementation,OPERATION_CONTRACT.implementation)
  assert.equal(await sdk.requestLedgerSourceDigest(),'f87c7d482dfa3bb75a86f85c9e0df20e22c2a5f6ca973400fb2fd21713cbb78e')
  assert.equal(await sdk.requestLedgerSourceDigest(),accepted.requestLedgerSourceDigest)
  assert.equal(await sdk.requestReservationSchemaDigest(),accepted.baseSchemaDigest)
@@ -1309,7 +1319,7 @@ test('historical Supplier delegation acceptance retains its values while current
  assert.equal(current.previousSourceRecordsAreHistorical,true);assert.equal(current.defaultForecastTargetUnchanged,true)
  assert.equal(Object.keys(current.sourceDigests).length,44)
  const sourceRoot=new URL('../',import.meta.resolve('@profitia/platform-contracts/delegated-job'))
- for(const[path,digest]of Object.entries(manifest.delegatedNativeWorkSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.privateSupplierAccessSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
  const binding={applicationId:'synthetic',environment:'development',projectId:'synthetic-project',branchId:'synthetic-branch',databaseName:'synthetic_db',role:'ordinary_fixture_role',schemaDigest:'a'.repeat(64)}
  assert.doesNotThrow(()=>jobs.createDelegatedJobStore({binding,schemaDigest:'b'.repeat(64)}))
  assert.throws(()=>jobs.createDelegatedJobStore({binding,schemaDigest:'b'.repeat(64),targetOperation:'supplier.report.refresh'}),TypeError)
@@ -1331,7 +1341,7 @@ test('current optional delegated private phase source is exact and does not acti
  assert.equal(current.previousSourceRecordsAreHistorical,true);assert.equal(current.defaultHumanAndForecastPreserved,true)
  const sourceRoot=new URL('../',import.meta.resolve('@profitia/platform-contracts/request-continuation'))
  assert.equal(Object.keys(current.sourceDigests).length,45)
- for(const[path,digest]of Object.entries(manifest.delegatedNativeWorkSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.privateSupplierAccessSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
  const unused=async()=>{throw Error('Constructor cannot authorize or query')}
  const application={appId:'synthetic-jobs',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic',configurationVersion:'1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,operations:['job.execute'],features:['job_execution']}
  const binding={applicationId:application.appId,environment:'development',projectId:'synthetic-project',branchId:'synthetic-branch',databaseName:'synthetic_db',role:'ordinary_fixture_role',schemaDigest:'a'.repeat(64),service:{schemaDigest:'a'.repeat(64),profileId:application.profileId,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion}}
@@ -1358,7 +1368,7 @@ test('optional committed phase inspection is accepted as exact source without ad
  assert.equal(current.defaultHumanAndForecastPreserved,true)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/request-inspection'))
  assert.equal(Object.keys(current.sourceDigests).length,48)
- for(const[path,digest]of Object.entries(manifest.delegatedNativeWorkSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.privateSupplierAccessSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
  for(const key of['nativePrivateInspectionAdopted','sql015Installed','runtimeRoleOrGrantChanged','providerExecutionAdopted','productDeploymentPerformed'])assert.equal(current[key],false,key)
 })
 
@@ -1367,7 +1377,7 @@ test('optional native SQL work accepts exact source without claiming native busi
  const current=manifest.delegatedNativeWorkSourceCompatibility
  const work=await import('@profitia/platform-contracts/request-work')
  const host=await import('@profitia/platform-contracts/private-operation-host')
- assert.equal(current.platformVersion,'1.20.0');assert.equal(current.rootImplementation,OPERATION_CONTRACT.implementation)
+ assert.equal(current.platformVersion,'1.20.0');assert.equal(current.rootImplementation,'1.0.0-candidate.13');assert.equal(current.sourceRecordIsHistorical,true)
  assert.equal(current.hostVersion,host.PRIVATE_OPERATION_HOST_CONTRACT.version)
  assert.equal(current.producer.sourceSha,'025146034b42381c6e1eb812ed1c159c69d05bb1');assert.equal(current.producer.pullRequest,534)
  assert.deepEqual(work.REQUEST_WORK_CONTRACT,{id:'profitia.request-work',version:'1.0.0',effect:'PRIVATE_SQL_WORK',replayOwner:'EXISTING_DOMAIN_STATE'})
@@ -1379,6 +1389,23 @@ test('optional native SQL work accepts exact source without claiming native busi
  assert.equal(current.defaultHumanAndForecastPreserved,true)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/request-work'))
  assert.equal(Object.keys(current.sourceDigests).length,51)
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.privateSupplierAccessSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
  for(const key of['nativeSqlWorkAdopted','sql016Installed','runtimeRoleOrGrantChanged','providerExecutionAdopted','productDeploymentPerformed'])assert.equal(current[key],false,key)
+})
+
+test('SRM explicitly receives platform1.21 without implicitly adopting sensitive HTTP paths or grants',async()=>{
+ const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
+ const current=manifest.privateSupplierAccessSourceCompatibility
+ const sdk=await import('@profitia/platform-contracts/operation-context')
+ assert.equal(current.taskId,'SRM-E1-PRIVATE-SUPPLIER-CONTRACT-RECEPTION-20261019')
+ assert.equal(current.platformVersion,'1.21.0');assert.equal(current.rootImplementation,sdk.OPERATION_CONTRACT.implementation)
+ assert.equal(current.producer.sourceSha,'fe5b31f1390d2a9b12f7d16df7e35249c1a75402');assert.equal(current.producer.initialSourceSha,'48714e896f206b4d5b7693c163c34eba0c895c2a');assert.equal(current.producer.pullRequest,551)
+ assert.equal(await sdk.operationSourceDigest(),manifest.contract.sourceDigest)
+ assert.equal(Object.keys(current.sourceDigests).length,51)
+ assert.equal(manifest.delegatedNativeWorkSourceCompatibility.sourceRecordIsHistorical,true)
+ const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+ for(const flag of ['previousFingerprintsPreserved','ordinarySrmFlowsPreserved'])assert.equal(current[flag],true,flag)
+ for(const flag of ['privateSupplierPermissionsInferred','nativeSensitiveHttpAdopted','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[flag],false,flag)
+ assert(manifest.operations.every(operation=>!operation.startsWith('supplier.private.')))
 })
