@@ -6,7 +6,7 @@ import { createSrmSupplierNativeWork, type SupplierNativeWorkOptions, type Suppl
 import { createSrmSupplierNativeWorkStore } from './supplier-native-work-store'
 import { createSrmSupplierSourceLink } from './supplier-source-link'
 import type { createSrmSupplierSourceRequest } from './supplier-source-request'
-import { createSrmProviderSourceTransport, createSrmMsrSourceTransport } from './provider-source-transport'
+import { createSrmProviderSourceTransport, createSrmMsrSourceTransport, guardOriginalProviderCall as originalCall } from './provider-source-transport'
 import { createSrmCorporateSourceStore, CORPORATE_PUBLICATION_VERSION, readCorporatePacket } from './corporate-source-store'
 import { projectPublicFinancialData } from './corporate-knowledge'
 import { createXrayCompanyLookup, type XrayCompanyPorts } from './xray-lookup'
@@ -26,17 +26,6 @@ type Options={work:SupplierNativeWorkOptions;namedInterestBoundaryDigest:string;
     msrExternal:ProviderOptions['external'];syntheticStorageOrigin?:string}}
 const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex')
-
-/** Preserve a genuine native control/uncertainty failure across the original
- * clients' network-error handling. This never retries or replaces a client. */
-async function originalCall<T>(fetcher:typeof fetch,action:(guarded:typeof fetch)=>Promise<T>):Promise<T>{
-  let failed=false,failure:unknown
-  const guarded:typeof fetch=async(...args)=>{
-    try{return await fetcher(...args)}catch(error){failed=true;failure=error;throw error}
-  }
-  try{const value=await action(guarded);if(failed)throw failure;return value}
-  catch(error){throw failed?failure:error}
-}
 
 /** Full original company engine; private purposes, Source HTTP and classified
  * publication use their existing independent native hosts. No HTTP activation,

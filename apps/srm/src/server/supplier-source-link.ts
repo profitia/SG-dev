@@ -4,7 +4,7 @@ import { createClerkAccountStatusReader } from '@profitia/platform-contracts/ide
 import { platformDeliveryEvidence } from '@profitia/platform-contracts/platform-ingestion'
 import { OPERATION_CONTRACT, OperationDenied, operationPayloadDigest, type DelegatedJob } from '@profitia/platform-contracts/operation-context'
 import { createSrmNativePgDriver } from './native-pg-driver'
-import { createSrmSupplierNativeWork, type SupplierNativeWork, type SupplierNativeWorkOptions, type SupplierNativeWorkSelection } from './supplier-request-work'
+import { createSrmSupplierNativeWork, type SupplierNativeWork, type SupplierNativeWorkOptions, type SupplierNativeWorkSelection, type SupplierNativeWorkUnit } from './supplier-request-work'
 import { createSrmSupplierNativeWorkStore } from './supplier-native-work-store'
 import { readSupplierRequest } from './supplier-request-operation'
 import { SUPPLIER_SOURCE_REQUEST, type createSrmSupplierSourceRequest } from './supplier-source-request'
@@ -15,9 +15,16 @@ const refuse=():never=>{throw new OperationDenied('DELEGATION_INVALID')}
  * Captured link metadata is released only after the real register COMMIT.
  * No incoming HTTP delivery key, empty metadata action or alternate writer. */
 export function createSrmSupplierSourceLink(options:{work:SupplierNativeWorkOptions;namedInterestBoundaryDigest:string;
-  source:ReturnType<typeof createSrmSupplierSourceRequest>}){
+  source:ReturnType<typeof createSrmSupplierSourceRequest>;
+  registration?:Readonly<{unitId:SupplierNativeWorkUnit;run:(work:SupplierNativeWork,selection:SupplierNativeWorkSelection)=>Promise<{supplierId:string;requestId:string}>}>}){
   if(typeof window!=='undefined'||!options.source?.port||!platformDeliveryEvidence(options.source.port))return refuse()
   const work=createSrmSupplierNativeWork(options.work),source=options.source
+  const registration=options.registration
+  if(registration!==undefined&&(!registration||Object.getPrototypeOf(registration)!==Object.prototype
+    ||Object.keys(registration).sort().join(',')!=='run,unitId'||Reflect.ownKeys(registration).length!==2
+    ||Object.values(Object.getOwnPropertyDescriptors(registration)).some(d=>!('value'in d)||!d.enumerable)
+    ||registration.unitId!=='SRM_SENSITIVE_REGISTER'||typeof registration.run!=='function'))return refuse()
+  const registerUnit=registration?.unitId??'SRM_REGISTER_LOOKUP',register=registration?.run
   const {application,binding,job,pool,auditPool,clerk,accountIdentity,now,transactionTimeoutMs}=options.work
   const dispatch=createDelegatedJobHost<PoolClient>({application,binding,job,now,transactionTimeoutMs,
     ...createSrmNativePgDriver(pool,auditPool),sourceDelivery:source.port,
@@ -28,7 +35,7 @@ export function createSrmSupplierSourceLink(options:{work:SupplierNativeWorkOpti
       let captured:Readonly<DelegatedJob>|undefined,entered=false
       const capture:SupplierNativeWork={run:async(s,unit,manifest,action)=>{
         try{return await work.run(s,unit,manifest,async(context,client)=>{
-          if(entered||unit!=='SRM_REGISTER_LOOKUP')return refuse();entered=true
+          if(entered||unit!==registerUnit)return refuse();entered=true
           await action(context,client)
           const d=context.delegation,actual=platformDeliveryEvidence(source.port)
           if(!d||!actual||d.sourceId!==SUPPLIER_SOURCE_REQUEST.id||actual.sourceId!==d.sourceId
@@ -40,8 +47,8 @@ export function createSrmSupplierSourceLink(options:{work:SupplierNativeWorkOpti
         })}catch(error){captured=undefined;throw error}
       }}
       try{
-        const store=createSrmSupplierNativeWorkStore({work:capture,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest})
-        const lookup=await store.register(selection),link=captured
+        const lookup=register?await register(capture,selection):await createSrmSupplierNativeWorkStore({work:capture,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest}).register(selection)
+        const link=captured
         if(!entered||!link)return refuse()
         const operation={contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
           operation:'job.execute' as const,organisationId:selection.organisationId,resourceId:selection.requestId,payload:selection.command,request:null}

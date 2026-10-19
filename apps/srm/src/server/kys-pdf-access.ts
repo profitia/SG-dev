@@ -47,8 +47,18 @@ export const KYS_PDF_SQL = `SELECT a.status AS "attemptStatus", s.id::text AS "s
   LEFT JOIN srm.catalog_kys_reports k ON k.nip=l.identifier AND k.entity_type=l.entity_type AND k.report_json->'data'=p.data_json
   WHERE l.organization_id=$1::uuid AND l.identifier_type='NIP' AND l.identifier=$2 AND l.entity_type=$3
   ORDER BY l.requested_at DESC, a.started_at DESC, p.projection_version DESC LIMIT 1`;
-export async function readStoredKysPdf(organizationId: string, selection: Selection, pool?: DatabasePool): Promise<StoredKysPdf | null> {
-  if (isRestrictedRegistrationStatus(await readSupplierRegistrationStatus(organizationId, selection.nip, selection.entityType, pool))) return null;
-  return withOrganization(organizationId, async client => (await client.query<StoredKysPdf>(KYS_PDF_SQL,
-    [organizationId, selection.nip, selection.entityType])).rows[0] ?? null, pool);
+/** Exact native snapshot and its stored envelope, without consulting a global cache. */
+export const KYS_PRIVATE_PDF_SQL = KYS_PDF_SQL
+  .replaceAll("k.report_json", "p.private_envelope")
+  .replace(/  LEFT JOIN srm\.catalog_kys_reports k[^\n]*\n/, "")
+  .replace("ORDER BY l.requested_at", "AND s.id=$4::uuid\n  ORDER BY l.requested_at");
+export type PrivateKysPdfRead = Readonly<{ snapshotId: string; readRegistrationStatus: typeof readSupplierRegistrationStatus }>;
+export async function readStoredKysPdf(organizationId: string, selection: Selection, pool?: DatabasePool, native?: PrivateKysPdfRead): Promise<StoredKysPdf | null> {
+  if (native && (!pool || typeof pool.connect !== "function" || typeof native.readRegistrationStatus !== "function"
+    || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(native.snapshotId)))
+    throw new TypeError("Explicit private KYS snapshot and status reader required");
+  const readStatus = native?.readRegistrationStatus ?? readSupplierRegistrationStatus;
+  if (isRestrictedRegistrationStatus(await readStatus(organizationId, selection.nip, selection.entityType, pool))) return null;
+  return withOrganization(organizationId, async client => (await client.query<StoredKysPdf>(native ? KYS_PRIVATE_PDF_SQL : KYS_PDF_SQL,
+    [organizationId, selection.nip, selection.entityType, ...(native ? [native.snapshotId] : [])])).rows[0] ?? null, pool);
 }

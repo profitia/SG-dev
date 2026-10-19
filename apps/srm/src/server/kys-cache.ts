@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { SectionEnvelope, VerclyKysData } from "@profitia/srm-xray";
 import { atLookupStage, kysMode, kysOutcome } from "./lookup-diagnostics";
-import { withOrganization } from "./db";
+import { withOrganization, assertOrganizationId, type DatabasePool } from "./db";
 
 export type KysEntityType = "COMPANY" | "JDG";
 export type KysSection = SectionEnvelope<VerclyKysData>;
@@ -50,29 +50,56 @@ export function hasCurrentKysProjection(section: KysSection | null): boolean {
   return Array.isArray(section?.data?.pepMatches);
 }
 
+type OrganisationCacheBinding = Readonly<{ organizationId: string; pool: DatabasePool }>;
+const cacheOwner = (binding: OrganisationCacheBinding | undefined, parameter: number) =>
+  binding ? ` AND organization_id = $${parameter}::uuid` : "";
+function cachePool(organizationId: string, binding?: OrganisationCacheBinding): DatabasePool | undefined {
+  if (binding === undefined) return undefined;
+  if (binding.organizationId !== organizationId || !binding.pool || typeof binding.pool.connect !== "function")
+    throw new TypeError("Explicit matching organization cache transaction required");
+  return binding.pool;
+}
+
+/** Native callers provide an already admitted, current short transaction.
+ * The existing cache writer and single-flight engine serve both stores. */
+export function createOrganisationKysCacheStore(organizationId: string, pool: DatabasePool): Readonly<KysCacheStore> {
+  assertOrganizationId(organizationId);
+  if (!pool || typeof pool.connect !== "function") throw new TypeError("Explicit bound cache pool required");
+  const binding = Object.freeze({ organizationId, pool });
+  const check = (actual: string) => { if (actual !== organizationId) throw new Error("KYS cache organization mismatch"); };
+  return Object.freeze({
+    read: (org: string, nip: string, entity: KysEntityType, now: Date) => { check(org); return readFreshKys(org, nip, entity, now, binding); },
+    claim: (org: string, nip: string, entity: KysEntityType, now: Date) => { check(org); return claimKysRefresh(org, nip, entity, now, binding); },
+    save: (org: string, nip: string, entity: KysEntityType, owner: string, section: KysSection, snapshot: string | null) => { check(org); return saveKysRefresh(org, nip, entity, owner, section, snapshot, binding); },
+    hold: (org: string, nip: string, entity: KysEntityType, owner: string) => { check(org); return holdKysRefresh(org, nip, entity, owner, binding); },
+    renew: (org: string, nip: string, entity: KysEntityType, owner: string, now: Date) => { check(org); return renewKysRefresh(org, nip, entity, owner, now, binding); },
+    release: (org: string, nip: string, entity: KysEntityType, owner: string) => { check(org); return releaseKysRefresh(org, nip, entity, owner, binding); },
+  });
+}
+
 export async function readFreshKys(organizationId: string, nip: string, entityType: KysEntityType,
-  now = new Date()): Promise<KysSection | null> {
+  now = new Date(), binding?: OrganisationCacheBinding): Promise<KysSection | null> {
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<CacheRow>(
-      "SELECT report_json, retrieved_at, retention_until FROM srm.catalog_kys_reports WHERE nip = $1 AND entity_type = $2",
-      [nip, entityType],
+      "SELECT report_json, retrieved_at, retention_until FROM srm.catalog_kys_reports WHERE nip = $1 AND entity_type = $2" + cacheOwner(binding, 3),
+      [nip, entityType, ...(binding ? [organizationId] : [])],
     );
     const row = result.rows[0];
     const section = row?.report_json;
     if (!section || !hasCurrentKysProjection(section) || !isFreshKys(row.retrieved_at, row.retention_until, now)) return null;
     if (section.status !== "SUCCESS") return null;
     return section;
-  });
+  }, cachePool(organizationId, binding));
 }
 
 export async function claimKysRefresh(organizationId: string, nip: string, entityType: KysEntityType,
-  now = new Date()): Promise<string | null> {
+  now = new Date(), binding?: OrganisationCacheBinding): Promise<string | null> {
   const owner = randomUUID();
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ lease_owner: string }>(
-      `INSERT INTO srm.catalog_kys_reports(nip, entity_type, lease_owner, lease_until)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (nip, entity_type) DO UPDATE SET
+      `INSERT INTO srm.catalog_kys_reports(${binding ? "organization_id, " : ""}nip, entity_type, lease_owner, lease_until)
+       VALUES (${binding ? "$7::uuid, " : ""}$1, $2, $3, $4)
+       ON CONFLICT (${binding ? "organization_id, " : ""}nip, entity_type) DO UPDATE SET
          lease_owner = EXCLUDED.lease_owner, lease_until = EXCLUDED.lease_until,
          updated_at = now()
        WHERE (srm.catalog_kys_reports.lease_until IS NULL OR srm.catalog_kys_reports.lease_until <= $5)
@@ -81,14 +108,14 @@ export async function claimKysRefresh(organizationId: string, nip: string, entit
            OR srm.catalog_kys_reports.retrieved_at + ($6::bigint * interval '1 millisecond') <= $5
            OR jsonb_typeof(srm.catalog_kys_reports.report_json #> '{data,pepMatches}') IS DISTINCT FROM 'array')
        RETURNING lease_owner`,
-      [nip, entityType, owner, new Date(now.getTime() + KYS_LEASE_MS), now, kysCacheTtlMs()],
+      [nip, entityType, owner, new Date(now.getTime() + KYS_LEASE_MS), now, kysCacheTtlMs(), ...(binding ? [organizationId] : [])],
     );
     return result.rows[0]?.lease_owner ?? null;
-  });
+  }, cachePool(organizationId, binding));
 }
 
 export async function saveKysRefresh(organizationId: string, nip: string, entityType: KysEntityType,
-  leaseOwner: string, section: KysSection, snapshotId: string | null): Promise<void> {
+  leaseOwner: string, section: KysSection, snapshotId: string | null, binding?: OrganisationCacheBinding): Promise<void> {
   if (section.status !== "SUCCESS" || !hasCurrentKysProjection(section) || !section.retrievedAt) {
     throw new Error("Only complete KYS reports may be cached");
   }
@@ -100,41 +127,52 @@ export async function saveKysRefresh(organizationId: string, nip: string, entity
       `UPDATE srm.catalog_kys_reports SET report_json = $5::jsonb, report_sha256 = $6,
        retrieved_at = $7, retention_until = $8, source_organization_id = $9,
        source_snapshot_id = $10, lease_owner = NULL, lease_until = NULL, updated_at = now()
-       WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3 AND lease_until > $4`,
+       WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3 AND lease_until > $4` + cacheOwner(binding, 9),
       [nip, entityType, leaseOwner, new Date(), json, digest, new Date(section.retrievedAt!), expiry, organizationId, snapshotId],
     );
     if (result.rowCount !== 1) throw new Error("KYS cache refresh lease expired");
-  });
+  }, cachePool(organizationId, binding));
 }
 
 export async function releaseKysRefresh(organizationId: string, nip: string, entityType: KysEntityType,
-  leaseOwner: string): Promise<void> {
+  leaseOwner: string, binding?: OrganisationCacheBinding): Promise<void> {
   await withOrganization(organizationId, async (client) => {
-    await client.query("UPDATE srm.catalog_kys_reports SET lease_owner = NULL, lease_until = NULL WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3",
-      [nip, entityType, leaseOwner]);
-  });
+    await client.query("UPDATE srm.catalog_kys_reports SET lease_owner = NULL, lease_until = NULL WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3" + cacheOwner(binding, 4),
+      [nip, entityType, leaseOwner, ...(binding ? [organizationId] : [])]);
+  }, cachePool(organizationId, binding));
 }
 
-/** Remove expired personal reports on every KYS request, including reports for other NIPs. */
-export async function purgeExpiredSharedKys(organizationId: string, now = new Date()): Promise<void> {
+/** Legacy cleanup retains its old store; native cleanup is organization-owned. */
+export async function purgeExpiredSharedKys(organizationId: string, now = new Date(), binding?: OrganisationCacheBinding): Promise<void> {
   await withOrganization(organizationId, async (client) => {
     await client.query(
-      "UPDATE srm.catalog_kys_reports SET report_json = NULL, report_sha256 = NULL WHERE report_json IS NOT NULL AND (retention_until <= $1 OR retrieved_at + ($2::bigint * interval '1 millisecond') <= $1)",
-      [now, kysCacheTtlMs()],
+      "UPDATE srm.catalog_kys_reports SET report_json = NULL, report_sha256 = NULL WHERE report_json IS NOT NULL AND (retention_until <= $1 OR retrieved_at + ($2::bigint * interval '1 millisecond') <= $1)" + cacheOwner(binding, 3),
+      [now, kysCacheTtlMs(), ...(binding ? [organizationId] : [])],
     );
-  });
+  }, cachePool(organizationId, binding));
+}
+export async function purgeOrganisationKysCache(organizationId: string, pool: DatabasePool, now = new Date()): Promise<void> {
+  assertOrganizationId(organizationId);
+  return purgeExpiredSharedKys(organizationId, now, Object.freeze({ organizationId, pool }));
 }
 
 /** An ambiguous paid POST requires explicit reconciliation; lease expiry must not silently order again. */
-export async function holdKysRefresh(organizationId: string, nip: string, entityType: KysEntityType, owner: string): Promise<void> {
-  await withOrganization(organizationId, async (client) => { await client.query("UPDATE srm.catalog_kys_reports SET lease_until = 'infinity'::timestamptz WHERE nip=$1 AND entity_type=$2 AND lease_owner=$3", [nip, entityType, owner]); });
+export async function holdKysRefresh(organizationId: string, nip: string, entityType: KysEntityType, owner: string, binding?: OrganisationCacheBinding): Promise<void> {
+  await withOrganization(organizationId, async (client) => {
+    const result = await client.query("UPDATE srm.catalog_kys_reports SET lease_until = 'infinity'::timestamptz WHERE nip=$1 AND entity_type=$2 AND lease_owner=$3" + cacheOwner(binding, 4), [nip, entityType, owner, ...(binding ? [organizationId] : [])]);
+    if (binding && result.rowCount !== 1) throw new Error("KYS cache ownership lost before native uncertainty fence");
+  }, cachePool(organizationId, binding));
 }
 
-export async function renewKysRefresh(organizationId: string, nip: string, entityType: KysEntityType, owner: string, now: Date): Promise<boolean> {
+export async function renewKysRefresh(organizationId: string, nip: string, entityType: KysEntityType, owner: string, now: Date, binding?: OrganisationCacheBinding): Promise<boolean> {
   return withOrganization(organizationId, async (client) => {
-    const result = await client.query("UPDATE srm.catalog_kys_reports SET lease_until = $5 WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3 AND lease_until > $4", [nip, entityType, owner, now, new Date(now.getTime() + KYS_LEASE_MS)]);
+    // Native paid work arms the original lease before sending. Keep that
+    // uncertainty fence until the successful cache save clears ownership;
+    // revocation between network completion and persistence must not repurchase.
+    const lease = binding ? "CASE WHEN lease_until='infinity'::timestamptz THEN lease_until ELSE $5 END" : "$5";
+    const result = await client.query("UPDATE srm.catalog_kys_reports SET lease_until = " + lease + " WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3 AND lease_until > $4" + cacheOwner(binding, 6), [nip, entityType, owner, now, new Date(now.getTime() + KYS_LEASE_MS), ...(binding ? [organizationId] : [])]);
     return result.rowCount === 1;
-  });
+  }, cachePool(organizationId, binding));
 }
 
 export async function getOrFetchKys(organizationId: string, nip: string, entityType: KysEntityType,
