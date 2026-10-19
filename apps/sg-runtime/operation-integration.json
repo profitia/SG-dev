@@ -1201,5 +1201,27 @@
     "privatePackageCredentialCopied": false,
     "liveSchemaOrGrantsChanged": false,
     "productDeploymentPerformed": false
+  },
+  "srmMsrNativeSourceRegression": {
+    "projectKey": "SG2",
+    "taskId": "SG2-E1-MSR-NATIVE-SOURCE-REGRESSION-20261019",
+    "status": "SOURCE_REGRESSION_CANDIDATE_NOT_RELEASED",
+    "srmProducer": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-MSR-NATIVE-SOURCE-TRANSPORT-20261019",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 540,
+      "sourceSha": "e19bbab354074212fe7726149861df9657b6655d"
+    },
+    "platformVersionUnchanged": "1.20.0",
+    "rootImplementationUnchanged": "1.0.0-candidate.13",
+    "scope": "UNCHANGED_SG2_RECEIVER_REGRESSION_FOR_SRM_MSR_SOURCE_TRANSPORT",
+    "validationBoundary": "ACTUAL_EXACT_CANDIDATE_TRUSTED_MAIN_PROOF_REQUIRED_BEFORE_MERGE",
+    "sg2BusinessOrUiChanged": false,
+    "srmMsrSourceTransportAdoptedBySg2": false,
+    "mapsChanged": false,
+    "privatePackageCredentialCopied": false,
+    "liveSchemaOrGrantsChanged": false,
+    "productDeploymentPerformed": false
   }
 }
