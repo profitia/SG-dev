@@ -14,6 +14,7 @@
   "files": [
     "native-external.mts",
     "supplier-delegation.mts",
-    "delegated-private-phases.mts"
+    "delegated-private-phases.mts",
+    "request-inspection.mts"
   ]
 }

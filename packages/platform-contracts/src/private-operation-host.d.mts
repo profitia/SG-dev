@@ -2,7 +2,7 @@ import type { AccessQuery, AccessStoreBinding, IdentityBinding, DatabaseServiceA
 import type { Actor, Application, BoundRequest, OperationContext, OperationExecutor, OperationOutcome, Resource } from './operation-context.mjs'
 import type { ModuleId } from './module-scope.mjs'
 
-export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.9.0' }>
+export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.10.0' }>
 export interface PrivateOperationScope {
   applicationId: string; environment: AccessStoreBinding['environment']; userId: string; organisationId: string | null
 }
@@ -77,3 +77,14 @@ export declare function createServiceReadHost<Transaction>(options: {
   projectOutput(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): unknown | Promise<unknown>
   describeOutcome?(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): OperationOutcome | Promise<OperationOutcome>
 }): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT }>
+
+/** Read-only inspection of an already committed Supplier phase. Uses current
+ * original delegation/account checks, no write reserve or dispatch claim. */
+export declare function createDelegatedPrivateInspectionHost<Transaction>(options:DelegatedJobHostOptions<Transaction>&{
+ job:{schemaDigest:string;targetOperation:'supplier.report.refresh';supplierSchemaDigest:string}
+ privateInspection:{schemaDigest:string;continuationSchemaDigest:string;delegatedSchemaDigest:string}
+ privateContinuation?:never;sourceDelivery?:never
+}):Readonly<{
+ contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT
+ inspectPrivatePhase(input:import('./operation-context.mjs').OperationInput,phase:Readonly<{phaseId:import('./request-continuation.mjs').SupplierPrivatePhaseId}>,action:(context:Readonly<OperationContext>,transaction:Transaction)=>void|Promise<void>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./request-ledger.mjs').RequestReceipt}>>
+}>
