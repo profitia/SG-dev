@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { OperationDenied, operationPayloadDigest, type Json } from '@profitia/platform-contracts/operation-context'
+import { OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
 import { bindOrganizationTransaction } from './db'
 import { createLookup } from './xray-repository'
 import { persistSection } from './xray-lookup'
@@ -9,13 +9,14 @@ import type { MgbiGeneralResult } from './mgbi-general'
 import type { MgbiFinancialResult } from './mgbi-financial'
 import { recordSupplierInterest } from './shared-catalog'
 import { readSupplierRequest } from './supplier-request-operation'
-import type { createSrmSupplierRequestContinuation, SupplierPrivatePhaseInput } from './supplier-request-continuation'
+import type { createSrmSupplierRequestContinuation, SupplierPrivatePhaseInput, SupplierServicePhaseInput, SupplierServiceContinuation } from './supplier-request-continuation'
 
 export const SUPPLIER_PRIVATE_STORE_VERSION = 'srm-supplier-private-store-v1'
 export const NAMED_SUPPLIER_INTEREST_VERSION = 'srm-named-supplier-interest-v1'
 export const MAX_PRIVATE_SUPPLIER_RESULT_BYTES = 32 * 1024 * 1024
 type Continuation = ReturnType<typeof createSrmSupplierRequestContinuation>
 type Selection = Omit<SupplierPrivatePhaseInput, 'phaseId' | 'data'>
+type ServiceSelection = Omit<SupplierServicePhaseInput, 'phaseId' | 'data'>
 type General = Pick<MgbiGeneralResult, 'section' | 'errorCode' | 'rawResponse'>
 type Financial = Pick<MgbiFinancialResult, 'section' | 'errorCode' | 'facts' | 'sourceData' | 'rawResponse'>
 const refuse = (): never => { throw new OperationDenied('RESOURCE_SCOPE_MISMATCH') }
@@ -40,29 +41,48 @@ function capture<T>(input: T, keys: string[]): { value: T; digest: string } {
 /** Existing domain writers, one existing native transaction, no new pool,
  * queue, provider client, catalogue writer or demo-user identity. Acquisition
  * happens outside this adapter; the common host rechecks rights at each write. */
-export function createSrmSupplierPrivateStore(options: { continuation: Continuation; boundaryDigest: string; namedInterestBoundaryDigest?: string }) {
+type HumanStoreOptions={continuation:Continuation&{executionMode?:never};boundaryDigest:string;namedInterestBoundaryDigest?:string;executionMode?:never;delegatedBoundaryDigest?:never}
+type ServiceStoreOptions={continuation:SupplierServiceContinuation;boundaryDigest:string;namedInterestBoundaryDigest?:string;executionMode:'DELEGATED_SERVICE';delegatedBoundaryDigest:string}
+type PhaseResult=Readonly<{requestId:string;phaseId:SupplierPrivatePhaseInput['phaseId'];status:'COMMITTED'|'REPLAY'}>
+interface PrivateStore<S>{
+  register(selection:S):Promise<PhaseResult>;general(selection:S,result:General):Promise<PhaseResult>
+  financial(selection:S,result:Financial):Promise<PhaseResult>;interest?: (selection:S)=>Promise<PhaseResult>
+}
+export function createSrmSupplierPrivateStore(options:ServiceStoreOptions):Readonly<PrivateStore<ServiceSelection>>
+export function createSrmSupplierPrivateStore(options:HumanStoreOptions):Readonly<PrivateStore<Selection>>
+export function createSrmSupplierPrivateStore(options:HumanStoreOptions|ServiceStoreOptions) {
+  const service=options.executionMode==='DELEGATED_SERVICE'
+  if(!service&&'executionMode'in options.continuation||options.executionMode!==undefined&&!service||Object.keys(options).some(k=>!['continuation','boundaryDigest','namedInterestBoundaryDigest','executionMode','delegatedBoundaryDigest'].includes(k))
+    ||service&&(!/^[a-f0-9]{64}$/.test(options.delegatedBoundaryDigest)||options.continuation.executionMode!=='DELEGATED_SERVICE'))throw TypeError('Explicit native Supplier store execution mode required')
   if (typeof window !== 'undefined' || !/^[a-f0-9]{64}$/.test(options.boundaryDigest)
     || Object.hasOwn(options,'namedInterestBoundaryDigest') && !/^[a-f0-9]{64}$/.test(options.namedInterestBoundaryDigest ?? '')
     || typeof options.continuation?.run !== 'function') throw new TypeError('Explicit private business continuation required')
   const { boundaryDigest, namedInterestBoundaryDigest } = options
-  const runContinuation = options.continuation.run.bind(options.continuation)
-  async function run(selection: Selection, phaseId: 'REGISTER_LOOKUP' | 'STORE_GENERAL' | 'STORE_FINANCIAL' | 'RECORD_INTEREST',
+  const humanRun=service?null:(options.continuation as Continuation).run.bind(options.continuation)
+  const serviceRun=service?(options.continuation as SupplierServiceContinuation).run.bind(options.continuation):null
+  const delegatedBoundaryDigest=service?options.delegatedBoundaryDigest:undefined
+  async function run(selection: Selection|ServiceSelection, phaseId: 'REGISTER_LOOKUP' | 'STORE_GENERAL' | 'STORE_FINANCIAL' | 'RECORD_INTEREST',
     body: General | Financial | null) {
     if (!selection || Object.getPrototypeOf(selection) !== Object.prototype
-      || Object.keys(selection).sort().join(',') !== 'command,idempotencyKey,organisationId,request,requestId') return refuse()
+      || Object.keys(selection).sort().join(',') !== (service?'command,organisationId,requestId':'command,idempotencyKey,organisationId,request,requestId')) return refuse()
     const command = readSupplierRequest(selection.command)
     const base = { requestId: selection.requestId, organisationId: selection.organisationId,
-      idempotencyKey: selection.idempotencyKey, request: selection.request, command }
+      command }
     const captured = body === null ? { value: null, digest: operationPayloadDigest(null) }
       : capture(body, phaseId === 'STORE_GENERAL' ? ['section','errorCode','rawResponse'] : ['section','errorCode','facts','sourceData','rawResponse'])
     const data: Json = { version: phaseId === 'RECORD_INTEREST' ? NAMED_SUPPLIER_INTEREST_VERSION : SUPPLIER_PRIVATE_STORE_VERSION, nip: command.nip, bodyDigest: captured.digest }
-    return runContinuation({ ...base, phaseId, data }, async (context, client, manifest) => {
+    const action=async (context:Readonly<OperationContext>, client:import('pg').PoolClient, manifest:Readonly<Json>) => {
       if (JSON.stringify(manifest) !== JSON.stringify(data) || context.requestContinuation?.phaseId !== phaseId) return refuse()
+      if(service?(context.actorKind!=='SERVICE'||!context.subjectUserId||context.actorId===context.subjectUserId
+        ||context.delegation?.subjectUserId!==context.subjectUserId||context.delegation.target.application.appId!=='srm'
+        ||context.delegation.target.operation!=='supplier.report.refresh')
+        :context.actorKind!=='HUMAN'||context.applicationId!=='srm'||context.actorId!==context.subjectUserId)return refuse()
       const descriptor = (await client.query('SELECT srm.supplier_business_descriptor() AS descriptor')).rows[0]?.descriptor
       if (descriptor?.businessSchemaVersion !== '1.0.0' || descriptor.businessBoundaryDigest !== boundaryDigest
-        || descriptor.applicationId !== 'srm' || !/^[a-f0-9]{40}$/.test(descriptor.businessSourceRef ?? '')) return refuse()
+        || descriptor.applicationId !== context.applicationId || !/^[a-f0-9]{40}$/.test(descriptor.businessSourceRef ?? '')
+        || service&&(descriptor.parentApplicationId!=='srm'||descriptor.delegatedBusinessBoundaryDigest!==delegatedBoundaryDigest)) return refuse()
       await client.query("SELECT set_config('srm.organization_id',$1,true)", [context.organisationId])
-      const pool = bindOrganizationTransaction(context.organisationId!, client)
+      const pool = bindOrganizationTransaction(context.organisationId!, client, service?context:undefined)
       if (phaseId === 'REGISTER_LOOKUP') {
         await createLookup(context.organisationId!, { type: 'NIP', value: command.nip }, 'COMPANY', pool, base.requestId)
         return
@@ -73,11 +93,12 @@ export function createSrmSupplierPrivateStore(options: { continuation: Continuat
       )).rows
       if (rows.length !== 1) return refuse()
       if (phaseId === 'RECORD_INTEREST') {
-        if (!namedInterestBoundaryDigest || body !== null || context.actorKind !== 'HUMAN'
-          || context.actorId !== context.subjectUserId || !context.subjectUserId) return refuse()
+        if (!namedInterestBoundaryDigest || body !== null || !context.subjectUserId
+          || !service&&(context.actorKind !== 'HUMAN'||context.actorId !== context.subjectUserId)) return refuse()
         const named = (await client.query('SELECT srm.named_interest_descriptor() AS descriptor')).rows[0]?.descriptor
         if (named?.namedSchemaVersion !== '1.0.0' || named.namedBoundaryDigest !== namedInterestBoundaryDigest
-          || named.applicationId !== 'srm' || !/^[a-f0-9]{40}$/.test(named.namedSourceRef ?? '')) return refuse()
+          || named.applicationId !== context.applicationId || !/^[a-f0-9]{40}$/.test(named.namedSourceRef ?? '')
+          || service&&(named.parentApplicationId!=='srm'||named.delegatedBusinessBoundaryDigest!==delegatedBoundaryDigest)) return refuse()
         await recordSupplierInterest(client, context.organisationId!, command.nip,
           {subjectKey:'profitia-account:'+context.subjectUserId,identityKind:'AUTHENTICATED'})
         return
@@ -104,12 +125,15 @@ export function createSrmSupplierPrivateStore(options: { continuation: Continuat
         await persistSection(context.organisationId!, lookup, 'financial', financial.section, financial.errorCode,
           financial.facts, undefined, financial.sourceData, 'PROVIDER', pool)
       }
-    })
+    }
+    if(service)return serviceRun!({...base,phaseId,data},action)
+    const human=selection as Selection
+    return humanRun!({...base,phaseId,data,idempotencyKey:human.idempotencyKey,request:human.request},action)
   }
   return Object.freeze({
-    ...(namedInterestBoundaryDigest ? { interest: (selection: Selection) => run(selection, 'RECORD_INTEREST', null) } : {}),
-    register: (selection: Selection) => run(selection, 'REGISTER_LOOKUP', null),
-    general: (selection: Selection, result: General) => run(selection, 'STORE_GENERAL', result),
-    financial: (selection: Selection, result: Financial) => run(selection, 'STORE_FINANCIAL', result),
+    ...(namedInterestBoundaryDigest ? { interest: (selection: Selection|ServiceSelection) => run(selection, 'RECORD_INTEREST', null) } : {}),
+    register: (selection: Selection|ServiceSelection) => run(selection, 'REGISTER_LOOKUP', null),
+    general: (selection: Selection|ServiceSelection, result: General) => run(selection, 'STORE_GENERAL', result),
+    financial: (selection: Selection|ServiceSelection, result: Financial) => run(selection, 'STORE_FINANCIAL', result),
   })
 }

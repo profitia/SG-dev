@@ -7,7 +7,7 @@ import { createLookup, startAttempt, finishAttempt, appendSnapshot, appendSectio
 import { saveMgbiArchive } from './mgbi-archive'
 import { saveFinancialDocuments } from './financial-documents'
 import { createSrmSupplierPrivateStore, MAX_PRIVATE_SUPPLIER_RESULT_BYTES } from './supplier-private-store'
-import type { createSrmSupplierRequestContinuation } from './supplier-request-continuation'
+import type { createSrmSupplierRequestContinuation, SupplierServiceContinuation, SupplierServicePhaseInput } from './supplier-request-continuation'
 
 const org = '11111111-1111-4111-8111-111111111111', foreign = '22222222-2222-4222-8222-222222222222'
 type Continuation = ReturnType<typeof createSrmSupplierRequestContinuation>
@@ -25,6 +25,42 @@ test('private business selection rejects authority fields before entering its co
   await assert.rejects(store.register({ ...selection, actorId: randomUUID() } as never))
   await assert.rejects(store.general(selection, { section: {}, errorCode: null, rawRecord: {} } as never))
   assert.equal(calls, 0)
+})
+test('Service business continuation cannot be selected implicitly by the HUMAN store', () => {
+  const continuation: SupplierServiceContinuation = { executionMode: 'DELEGATED_SERVICE', run: async () => { throw Error('must not run') } }
+  assert.throws(() => {
+    // @ts-expect-error A Service continuation requires explicit Service options.
+    createSrmSupplierPrivateStore({ continuation, boundaryDigest: 'a'.repeat(64) })
+  }, TypeError)
+  assert.throws(() => createSrmSupplierPrivateStore({ executionMode: 'DELEGATED_SERVICE', continuation,
+    boundaryDigest: 'a'.repeat(64), delegatedBoundaryDigest: '' }), TypeError)
+  assert.throws(() => createSrmSupplierPrivateStore({ executionMode: 'DELEGATED_SERVICE', continuation: {} as SupplierServiceContinuation,
+    boundaryDigest: 'a'.repeat(64), delegatedBoundaryDigest: 'b'.repeat(64) }), TypeError)
+})
+test('explicit Service selection refuses browser identity and authority fields before any continuation', async () => {
+  let calls = 0
+  const continuation: SupplierServiceContinuation = { executionMode: 'DELEGATED_SERVICE', run: async () => { calls++; throw Error('must not run') } }
+  const store = createSrmSupplierPrivateStore({ executionMode: 'DELEGATED_SERVICE', continuation,
+    boundaryDigest: 'a'.repeat(64), delegatedBoundaryDigest: 'b'.repeat(64) })
+  const selection = { requestId: randomUUID(), organisationId: org, command: { kind: 'SUPPLIER_REPORT' as const, nip: '8650004194' } }
+  for (const extra of [{ request: new Request('http://localhost:3400') }, { idempotencyKey: 'borrowed-browser-key' },
+    { actorId: randomUUID() }, { subjectUserId: randomUUID() }, { role: 'profitia_access_owner' }]) {
+    await assert.rejects(store.register({ ...selection, ...extra } as never))
+  }
+  assert.equal(calls, 0)
+})
+test('explicit Service register forwards only a closed manifest to the same continuation', async () => {
+  let observed: SupplierServicePhaseInput | undefined
+  const continuation: SupplierServiceContinuation = { executionMode: 'DELEGATED_SERVICE', run: async input => {
+    observed = input; return Object.freeze({ requestId: input.requestId, phaseId: input.phaseId, status: 'REPLAY' })
+  } }
+  const store = createSrmSupplierPrivateStore({ executionMode: 'DELEGATED_SERVICE', continuation,
+    boundaryDigest: 'a'.repeat(64), delegatedBoundaryDigest: 'b'.repeat(64) })
+  const selection = { requestId: randomUUID(), organisationId: org, command: { kind: 'SUPPLIER_REPORT' as const, nip: '8650004194' } }
+  assert.deepEqual(await store.register(selection), { requestId: selection.requestId, phaseId: 'REGISTER_LOOKUP', status: 'REPLAY' })
+  assert.deepEqual(Object.keys(observed!).sort(), ['command','data','organisationId','phaseId','requestId'])
+  assert.equal(observed!.command.nip, selection.command.nip)
+  assert.equal(observed!.phaseId, 'REGISTER_LOOKUP')
 })
 test('existing repository, archive and document helpers retain one explicit bound transaction', async () => {
   const calls: { sql: string; values?: unknown[] }[] = [], requestId = randomUUID(), supplierId = randomUUID(), attemptId = randomUUID(), snapshotId = randomUUID()

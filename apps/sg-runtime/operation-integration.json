@@ -948,5 +948,34 @@
     "runtimeRoleOrGrantChanged": false,
     "providerExecutionAdopted": false,
     "productDeploymentPerformed": false
+  },
+  "srmDelegatedBusinessRegression": {
+    "projectKey": "SG2",
+    "taskId": "SG2-E1-SRM-DELEGATED-BUSINESS-REGRESSION-20261019",
+    "status": "SOURCE_REGRESSION_CANDIDATE_NOT_RELEASED",
+    "srmBusinessProducer": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-DELEGATED-SUPPLIER-BUSINESS-20261019",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 525,
+      "sourceSha": "9456f2cdc06d980c082047f04f244e2e580d1220"
+    },
+    "srmDatabasePrerequisite": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-DELEGATED-DATABASE-SCOPE-20261019",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 525,
+      "sourceSha": "33b76832b388c4829a9eafe778e567efad02f631"
+    },
+    "sharedSourceRecord": "delegatedPrivatePhaseSourceCompatibility",
+    "sharedSourceCount": 45,
+    "platformVersion": "1.18.0",
+    "sg2BusinessCodeChanged": false,
+    "sg2DelegatedSupplierBusinessAdopted": false,
+    "srmPrivateSourceImported": false,
+    "runtimeRoleOrGrantChanged": false,
+    "providerExecutionAdopted": false,
+    "productDeploymentPerformed": false,
+    "separateExactCandidateProofRequired": true
   }
 }

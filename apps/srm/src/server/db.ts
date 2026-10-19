@@ -1,15 +1,40 @@
 import { assertProductConnection, productOrganizationId } from "./runtime-environment";
 import { atLookupStage } from "./lookup-diagnostics";
 import pg, { type PoolClient } from "pg";
+import type { OperationContext } from "@profitia/platform-contracts/operation-context";
 
 export type DatabasePool = Pick<pg.Pool, "connect">;
-const boundTransactions = new WeakMap<DatabasePool, { organizationId: string; client: PoolClient }>();
+interface DelegatedPhaseScope {
+  readonly actorId: string; readonly applicationId: string; readonly subjectUserId: string
+  readonly requestId: string; readonly phaseId: string; readonly inputDigest: string
+  readonly schemaDigest: string; readonly delegatedSchemaDigest: string; readonly transactionId: string
+}
+const boundTransactions = new WeakMap<DatabasePool, { organizationId: string; client: PoolClient; delegated?: Readonly<DelegatedPhaseScope> }>();
 
 /** Server-only capability for an already authorised, active transaction. */
-export function bindOrganizationTransaction(organizationId: string, client: PoolClient): DatabasePool {
+export function bindOrganizationTransaction(organizationId: string, client: PoolClient, serviceContext?: Readonly<OperationContext>): DatabasePool {
   assertOrganizationId(organizationId);
+  let delegated: Readonly<DelegatedPhaseScope> | undefined;
+  if (serviceContext !== undefined) {
+    const c = serviceContext, phase = c?.requestContinuation;
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!c || c.actorKind !== 'SERVICE' || c.actor?.kind !== 'SERVICE' || c.actorId !== c.actor.actorId
+      || c.actorId !== c.actor.serviceId || c.operation !== 'job.execute' || c.organisationId !== organizationId
+      || !uuid.test(c.actorId) || !uuid.test(c.subjectUserId ?? '') || !phase || !uuid.test(phase.requestId)
+      || c.resourceId !== phase.requestId || c.delegation?.requestId !== phase.requestId
+      || c.delegation.subjectUserId !== c.subjectUserId || c.delegation.organisationId !== organizationId
+      || c.delegation.target.operation !== 'supplier.report.refresh' || c.delegation.target.application.appId !== 'srm'
+      || !['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL','RECORD_INTEREST'].includes(phase.phaseId)
+      || ![phase.inputDigest,phase.schemaDigest,phase.delegatedSchemaDigest].every(v => /^[a-f0-9]{64}$/.test(v ?? ''))
+      || !/^[1-9][0-9]*$/.test(phase.transactionId) || !c.applicationId) throw new Error('Explicit current delegated Supplier phase required');
+    // Snapshot provenance only, never an identity token or authority. SQL below
+    // revalidates the real executor and current effect on the actual client.
+    delegated = Object.freeze({ actorId: c.actorId, applicationId: c.applicationId, subjectUserId: c.subjectUserId!,
+      requestId: phase.requestId, phaseId: phase.phaseId, inputDigest: phase.inputDigest,
+      schemaDigest: phase.schemaDigest, delegatedSchemaDigest: phase.delegatedSchemaDigest!, transactionId: phase.transactionId });
+  }
   const pool: DatabasePool = { connect: async () => client };
-  boundTransactions.set(pool, { organizationId, client });
+  boundTransactions.set(pool, { organizationId, client, ...(delegated ? { delegated } : {}) });
   return pool;
 }
 let sharedPool: pg.Pool | undefined;
@@ -71,7 +96,22 @@ export async function withOrganization<T>(
       "FROM pg_roles r WHERE r.rolname = current_user",
     );
     const role = identity.rows[0];
-    if (role?.database_name !== "srm_app") {
+    if (bound?.delegated) {
+      const d = bound.delegated;
+      const proof = await client.query<{ allowed: boolean; descriptor: Record<string,string> | null; transaction_id: string; role: string; login: string }>(
+        "SELECT profitia_request_phases.delegated_scope_allows($1::uuid,$2,$3,$4::uuid,$5::uuid) AS allowed, " +
+        "profitia_request_phases.delegated_descriptor($1::uuid,$2) AS descriptor, " +
+        "txid_current()::text AS transaction_id,current_user::text AS role,session_user::text AS login",
+        [d.requestId,d.phaseId,d.inputDigest,organizationId,d.subjectUserId],
+      );
+      const row = proof.rows[0], actual = row?.descriptor;
+      if (row?.allowed !== true || !actual || row.role !== row.login || actual.role !== row.role
+        || actual.applicationId !== d.applicationId || actual.databaseName !== role?.database_name
+        || actual.executorServiceId !== d.actorId || actual.subjectUserId !== d.subjectUserId
+        || actual.organisationId !== organizationId || actual.requestId !== d.requestId || actual.phaseId !== d.phaseId
+        || actual.schemaDigest !== d.schemaDigest || actual.delegatedSchemaDigest !== d.delegatedSchemaDigest
+        || actual.transactionId !== d.transactionId || row.transaction_id !== d.transactionId) throw new Error('SRM delegated private transaction scope mismatch');
+    } else if (role?.database_name !== "srm_app") {
       // Only a server-bound transaction admitted by the private host can use a
       // new store. The ordinary runtime URL/getPool contract stays unchanged.
       if (!bound) throw new Error("SRM product database identity mismatch");
