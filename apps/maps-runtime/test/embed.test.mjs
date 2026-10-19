@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {MessageChannel} from 'node:worker_threads'
-import {webcrypto} from 'node:crypto'
+import {webcrypto,createHash} from 'node:crypto'
+import fs from 'node:fs'
 import {setTimeout as delay} from 'node:timers/promises'
 import {mountMaps} from '@profitia/maps-embed'
 import {mapsMessage} from '@profitia/maps-contracts'
@@ -52,4 +53,21 @@ test('current host access denial prevents a private projection from reaching the
   const client = openEmbeddedReadClient({port: channel.port2, instanceId: 'denied-instance-001'})
   assert.equal((await client.read({view: 'locations'})).status, 403)
   host.close(); client.close()
+})
+
+test('explicit platform1.19 receipt accepts only tested peers and the unchanged current public channel', async () => {
+  const accepted=JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url)))
+  const entry=import.meta.resolve('@profitia/platform-contracts/embedded-read-channel'),root=new URL('../',entry)
+  const installed=JSON.parse(fs.readFileSync(new URL('package.json',root)))
+  assert.equal(accepted.taskId,'SRM-E1-MAPS-PLATFORM-119-COMPATIBILITY-20261019')
+  assert.equal(accepted.producer.sourceSha,'6260afa8771fbb427bd0b8e359557ab8f70dd9b5');assert.equal(accepted.producer.pullRequest,528)
+  assert.equal(installed.version,'1.19.0');assert.equal(accepted.platformVersion,installed.version)
+  assert.deepEqual(accepted.allowedPeerVersions,['1.18.0','1.19.0'])
+  const peer=JSON.parse(fs.readFileSync(new URL('./package.json',import.meta.resolve('@profitia/maps-embed'))))
+  assert.equal(peer.peerDependencies['@profitia/platform-contracts'],'1.18.0 || 1.19.0')
+  const sdk=await import('@profitia/platform-contracts/embedded-read-channel')
+  assert.equal(accepted.readWireContract,sdk.EMBEDDED_READ_CONTRACT.id+'@'+sdk.EMBEDDED_READ_CONTRACT.version)
+  assert.deepEqual(Object.keys(accepted.sourceDigests).sort(),['src/embedded-channel-core.mjs','src/embedded-read-channel.d.mts','src/embedded-read-channel.mjs'])
+  for(const[path,digest]of Object.entries(accepted.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+  for(const key of['privateInspectionAdopted','organizationLocationPersistenceAdopted','srmFeatureMounted','providerConfigurationChanged','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(accepted[key],false,key)
 })
