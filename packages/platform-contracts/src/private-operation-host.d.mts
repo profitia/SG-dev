@@ -2,7 +2,7 @@ import type { AccessQuery, AccessStoreBinding, IdentityBinding, DatabaseServiceA
 import type { Actor, Application, BoundRequest, OperationContext, OperationExecutor, OperationOutcome, Resource } from './operation-context.mjs'
 import type { ModuleId } from './module-scope.mjs'
 
-export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.10.0' }>
+export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.11.0' }>
 export interface PrivateOperationScope {
   applicationId: string; environment: AccessStoreBinding['environment']; userId: string; organisationId: string | null
 }
@@ -52,12 +52,12 @@ export interface DelegatedJobHost {
 }
 export declare function createDelegatedJobHost<Transaction>(options:DelegatedJobHostOptions<Transaction>&{
  job:{schemaDigest:string;targetOperation:'supplier.report.refresh';supplierSchemaDigest:string}
- privateContinuation:{schemaDigest:string;delegatedSchemaDigest:string};sourceDelivery?:never
+ privateContinuation:{schemaDigest:string;delegatedSchemaDigest:string};sourceDelivery?:never;privateWork?:never;privateInspection?:never
 }):Readonly<Omit<DelegatedJobHost,'deliver'>&{
  runPrivatePhase(input:import('./operation-context.mjs').OperationInput,phase:Readonly<{phaseId:import('./request-continuation.mjs').SupplierPrivatePhaseId;inputDigest:string}>,action:(context:Readonly<OperationContext>,transaction:Transaction)=>import('./request-ledger.mjs').RequestReceipt|Promise<import('./request-ledger.mjs').RequestReceipt>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./request-ledger.mjs').RequestReceipt}>>
 }>
 export declare function createDelegatedJobHost<Transaction>(options:DelegatedJobHostOptions<Transaction>&{
- sourceDelivery?:Readonly<import('./platform-ingestion.mjs').PlatformDeliveryPort>;privateContinuation?:never
+ sourceDelivery?:Readonly<import('./platform-ingestion.mjs').PlatformDeliveryPort>;privateContinuation?:never;privateWork?:never;privateInspection?:never
 }):Readonly<DelegatedJobHost>
 
 export interface ServiceReadScope {
@@ -83,8 +83,17 @@ export declare function createServiceReadHost<Transaction>(options: {
 export declare function createDelegatedPrivateInspectionHost<Transaction>(options:DelegatedJobHostOptions<Transaction>&{
  job:{schemaDigest:string;targetOperation:'supplier.report.refresh';supplierSchemaDigest:string}
  privateInspection:{schemaDigest:string;continuationSchemaDigest:string;delegatedSchemaDigest:string}
- privateContinuation?:never;sourceDelivery?:never
+ privateContinuation?:never;sourceDelivery?:never;privateWork?:never
 }):Readonly<{
  contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT
  inspectPrivatePhase(input:import('./operation-context.mjs').OperationInput,phase:Readonly<{phaseId:import('./request-continuation.mjs').SupplierPrivatePhaseId}>,action:(context:Readonly<OperationContext>,transaction:Transaction)=>void|Promise<void>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./request-ledger.mjs').RequestReceipt}>>
+}>
+
+/** Current reviewed SQL unit; callbacks return no public business output. */
+export declare function createDelegatedNativeWorkHost<Transaction>(options:DelegatedJobHostOptions<Transaction>&{
+ job:{schemaDigest:string;targetOperation:'supplier.report.refresh';supplierSchemaDigest:string}
+ privateWork:{schemaDigest:string};privateContinuation?:never;privateInspection?:never;sourceDelivery?:never
+}):Readonly<{
+ contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT
+ runSqlWork(input:import('./operation-context.mjs').OperationInput,unit:Readonly<{unitId:string;accessMode:import('./request-work.mjs').NativeWorkAccessMode;inputDigest:string}>,action:(context:Readonly<OperationContext>,transaction:Transaction)=>void|Promise<void>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./request-ledger.mjs').RequestReceipt}>>
 }>

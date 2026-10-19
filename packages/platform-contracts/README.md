@@ -431,3 +431,11 @@ and the unchanged four-phase and default Forecast paths. These producer tests
 do not install the contract in SRM, SG2 or Maps. Each consumer needs separately
 registered source/lock/compatibility acceptance. No cloud schema, account, role,
 vendor, deployment or business acceptance is implied.
+
+## Native SQL work source candidate 1.20.0
+
+`createDelegatedNativeWorkHost` is an explicit Supplier-job SQL unit host. It reuses the existing executor, real driver transaction, original Service/subject delegation and canonical audit writer. Each unit requires its original application’s finite, versioned policy with immutable purpose/access mode; SQL016 is optional and adds no runtime grants or activation. Canonical physical INTENT binds the unit, and physical OUTCOME is deferred until COMMIT. A unit cannot rebind its job or borrow dispatch, delivery, inspection or once-only phase controls. Existing domain state owns replay and external uncertainty; this scope adds no effect ledger, provider client or queue.
+
+Callbacks return void and perform only short native SQL work. The host returns a receipt only after commit; a receiving server adapter must separately verify any captured output and discard it on error. Policy source/expiry, original subject, organization, unit/access mode, input digest and physical transaction are audit evidence. READ never grants WRITE. An accepted SQL unit is not a completed report, source delivery or product release.
+
+The default HUMAN, Forecast, four-phase writer and committed inspection APIs remain separate. Product integration, per-table/per-row unit predicates, least-privilege grants, domain lifecycle tests and live release evidence belong to independently registered receivers. This producer is not native SRM/MSR adoption and performs no cloud mutation or deployment.

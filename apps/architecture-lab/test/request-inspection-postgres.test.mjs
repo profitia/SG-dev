@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import test from 'node:test'
 import { assertIsolatedTestConnection } from '../src/operation-postgres-fixture.mjs'
-import {createDelegatedJobHost,createPrivateOperationHost,createDelegatedPrivateInspectionHost} from '../../../packages/platform-contracts/src/private-operation-host.mjs'
+import {createDelegatedJobHost,createPrivateOperationHost,createDelegatedPrivateInspectionHost,createDelegatedNativeWorkHost} from '../../../packages/platform-contracts/src/private-operation-host.mjs'
 import {createClerkAccountStatusReader,createClerkIdentityAuthenticator} from '../../../packages/platform-contracts/src/identity-provider.mjs'
 import {createDelegatedJobStore} from '../../../packages/platform-contracts/src/delegated-job.mjs'
 import {operationPayloadDigest,OPERATION_CONTRACT,isOperationDenied} from '../../../packages/platform-contracts/src/operation-context.mjs'
@@ -114,6 +114,7 @@ test('private inspection reuses accepted phases and canonical physical audit wit
     runtime=new Client({connectionString:runtimeUrl.toString()});await runtime.connect()
     assert.deepEqual((await runtime.query('SELECT current_user::text role,session_user::text login')).rows[0],{role:EXECUTOR,login:EXECUTOR})
     let failOutcome=false,dropOutcome=false,dropIntent=false,providerActive=true,providerCalls=0,actions=0
+    const actualIntents=[]
     const readExternalAccount=createClerkAccountStatusReader({environment:'development',issuer:'https://identity.fixture.test',client:{users:{getUser:async subject=>{providerCalls++;return{id:subject,banned:!providerActive,locked:false,deprovisioned:false}}}}})
     const privateOptions={
       application:{appId:'supplier-jobs',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-worker',configurationVersion:'worker-fixture-v1',organisationId:null,identityIssuer:'urn:profitia:database-service-runtime:v1',features:['job_execution'],operations:['job.execute']},
@@ -128,7 +129,7 @@ test('private inspection reuses accepted phases and canonical physical audit wit
           if(dropIntent&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='INTENT')return{rows:[{recorded:true}]}
           if(dropOutcome&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME')return{rows:[{recorded:true}]}
           if(failOutcome&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME')throw Error('Synthetic canonical OUTCOME unavailable')
-          try{return await c.query(sql,args)}catch(error){console.error('INSPECTION_SQL_FAILURE',JSON.stringify({code:error.code,message:error.message,query:String(sql).slice(0,140)}));throw error}
+          try{const result=await c.query(sql,args);if(sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='INTENT')actualIntents.push(JSON.parse(args[0]));return result}catch(error){console.error('INSPECTION_SQL_FAILURE',JSON.stringify({code:error.code,message:error.message,query:String(sql).slice(0,140)}));throw error}
         }});await c.query('COMMIT');return v}catch(error){try{await c.query('ROLLBACK')}catch{}throw error}finally{clearTimeout(timer);await c.end()}
       }
     }
@@ -162,6 +163,20 @@ test('private inspection reuses accepted phases and canonical physical audit wit
       await owner.query(inspectionSql);await owner.query("INSERT INTO profitia_request_inspection.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(inspectionSql)])
       await owner.query(`GRANT USAGE ON SCHEMA profitia_request_inspection TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_request_inspection.descriptor(uuid,text),profitia_request_inspection.bind_scope(uuid,text,text,uuid,uuid),profitia_request_inspection.scope_allows(uuid,text,uuid,uuid) TO ${EXECUTOR}`)
       await owner.query(`GRANT SELECT ON phase_business.results TO ${EXECUTOR};CREATE POLICY inspected_read ON phase_business.results FOR SELECT TO ${EXECUTOR} USING(profitia_request_inspection.scope_allows(request_id,'REGISTER_LOOKUP',organisation_id,user_id))`)
+    })
+    const workSql=source('016-delegated-native-work.sql')
+    await t.test('optional native unit installation rejects wrong owner and atomically restores existing control functions',async()=>{
+      const before=(await owner.query("SELECT pg_get_functiondef('profitia_jobs.claim_dispatch(uuid)'::regprocedure) body")).rows[0].body
+      await assert.rejects(owner.query(workSql),e=>e.code==='42501')
+      await assert.rejects(controlled(async()=>{await owner.query(workSql);throw Error('Synthetic native installation rollback')}))
+      assert.equal((await owner.query("SELECT to_regnamespace('profitia_request_work') n")).rows[0].n,null)
+      assert.equal((await owner.query("SELECT pg_get_functiondef('profitia_jobs.claim_dispatch(uuid)'::regprocedure) body")).rows[0].body,before)
+    })
+    await controlled(async()=>{
+      await owner.query(workSql);await owner.query("INSERT INTO profitia_request_work.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(workSql)])
+      for(const[id,mode]of[['NATIVE_READ','READ'],['NATIVE_WRITE','WRITE']])await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_ONLY',$3)",[id,mode,future()])
+      await owner.query(`GRANT USAGE ON SCHEMA profitia_request_work TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_request_work.descriptor(uuid,text),profitia_request_work.bind_scope(uuid,text,text,uuid,uuid),profitia_request_work.scope_allows(uuid,text,uuid,uuid,text) TO ${EXECUTOR}`)
+      await owner.query(`GRANT SELECT,INSERT,UPDATE,DELETE ON phase_business.results TO ${EXECUTOR};CREATE POLICY native_unit_read ON phase_business.results FOR SELECT TO ${EXECUTOR} USING(profitia_request_work.scope_allows(request_id,'NATIVE_READ',organisation_id,user_id,'READ') OR profitia_request_work.scope_allows(request_id,'NATIVE_WRITE',organisation_id,user_id,'READ'));CREATE POLICY native_unit_write ON phase_business.results FOR ALL TO ${EXECUTOR} USING(profitia_request_work.scope_allows(request_id,'NATIVE_WRITE',organisation_id,user_id,'WRITE')) WITH CHECK(profitia_request_work.scope_allows(request_id,'NATIVE_WRITE',organisation_id,user_id,'WRITE'))`)
     })
     const {privateContinuation,...ordinaryOptions}=privateOptions
     const inspector=createDelegatedPrivateInspectionHost({...ordinaryOptions,privateInspection:{schemaDigest:hash(inspectionSql),continuationSchemaDigest:hash(phaseSql),delegatedSchemaDigest:hash(extension)}})
@@ -281,6 +296,123 @@ test('private inspection reuses accepted phases and canonical physical audit wit
       const [anchor]=(await owner.query("SELECT policy_version FROM profitia_request_phases.effects WHERE request_id=$1 AND phase_id='REGISTER_LOOKUP'",[requestId])).rows
       const [policy]=(await owner.query("SELECT version FROM profitia_request_phases.policies WHERE application_id='srm' AND phase_id='REGISTER_LOOKUP'")).rows
       assert.notEqual(anchor.policy_version,policy.version)
+    })
+    const native=createDelegatedNativeWorkHost({...ordinaryOptions,privateWork:{schemaDigest:hash(workSql)}})
+    const sqlUnit=(mode='WRITE')=>({unitId:mode==='WRITE'?'NATIVE_WRITE':'NATIVE_READ',accessMode:mode,inputDigest:hash('SYNTHETIC_NATIVE_INPUT')})
+    const runUnit=(id,action=async()=>{},mode='WRITE')=>native.runSqlWork(input(id),sqlUnit(mode),action)
+    const unitRequest=await freshJob()
+    await controlled(async()=>{
+      for(const[name,org,user]of[['FOREIGN_ORGANIZATION','22222222-2222-4222-8222-222222222222',U],['FOREIGN_SUBJECT',A,V]])await owner.query('INSERT INTO phase_business.results VALUES($1,$2,$3,$4,$5)',[unitRequest,name,hash(name),org,user])
+    })
+    await t.test('real ordinary unit commits under original authority without creating an effect, quota or dispatch claim',async()=>{
+      const before=await counts(),prior=(await owner.query('SELECT attempt_count FROM profitia_jobs.dispatches WHERE job_id=$1',[unitRequest])).rows[0].attempt_count
+      let calls=0
+      for(let i=0;i<2;i++){
+        const receipt=await runUnit(unitRequest,async(context,c)=>{
+          calls++;assert.equal(context.actorKind,'SERVICE');assert.equal(context.subjectUserId,U);assert.notEqual(context.actorId,U)
+          assert.equal(context.requestContinuation,undefined);assert.equal(context.requestInspection,undefined);assert.equal(context.requestReservation,undefined);assert.equal(context.dispatchAdmission,undefined)
+          assert.equal(context.requestWork.accessMode,'WRITE');assert.equal(context.requestWork.transactionId,(await c.query('SELECT txid_current()::text tx')).rows[0].tx)
+          await c.query('INSERT INTO phase_business.results VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING',[unitRequest,'NATIVE_DOMAIN_RESULT',sqlUnit().inputDigest,A,U])
+        })
+        assert.deepEqual(receipt.value,{requestId:unitRequest,status:'ACCEPTED'})
+        const events=(await owner.query('SELECT event FROM profitia_access.security_events WHERE decision_id=$1 ORDER BY event_id',[receipt.decisionId])).rows.map(x=>x.event)
+        assert.deepEqual(events.map(e=>e.phase),['INTENT','OUTCOME']);assert.deepEqual(events[0].requestWork,events[1].requestWork)
+        assert.equal(events[0].requestWork.policySourceRef,'SYNTHETIC_ONLY');assert(Date.parse(events[0].requestWork.policyExpiresAt)>Date.now())
+      }
+      assert.equal(calls,2,'The original domain ON CONFLICT owns replay; the authorization unit never skips the callback')
+      const after=await counts();assert.equal(after.business,before.business+1);assert.equal(after.effects,before.effects);assert.equal(after.quota,before.quota)
+      assert.equal((await owner.query('SELECT attempt_count FROM profitia_jobs.dispatches WHERE job_id=$1',[unitRequest])).rows[0].attempt_count,prior)
+    })
+    await t.test('unit READ excludes existing foreign rows and cannot borrow DML ACLs or a forged marker',async()=>{
+      assert.equal((await owner.query('SELECT * FROM phase_business.results WHERE request_id=$1',[unitRequest])).rowCount,3)
+      await runUnit(unitRequest,async(_context,c)=>{
+        assert.deepEqual((await c.query('SELECT phase_id FROM phase_business.results')).rows,[{phase_id:'NATIVE_DOMAIN_RESULT'}])
+        assert.equal((await c.query("UPDATE phase_business.results SET input_digest=$1 RETURNING phase_id",[hash('FORBIDDEN')])).rowCount,0)
+        assert.equal((await c.query('DELETE FROM phase_business.results RETURNING phase_id')).rowCount,0)
+        const marker=(await c.query("SELECT current_setting('profitia.native_work.scope') marker")).rows[0].marker
+        const forged=JSON.parse(marker);forged[0]=requestId;await c.query("SELECT set_config('profitia.native_work.scope',$1,true)",[JSON.stringify(forged)])
+        assert.equal((await c.query('SELECT * FROM phase_business.results')).rowCount,0)
+        await c.query("SELECT set_config('profitia.native_work.scope',$1,true)",[marker])
+      },'READ')
+      let rls=false
+      await assert.rejects(runUnit(unitRequest,async(_context,c)=>{
+        try{await c.query('INSERT INTO phase_business.results VALUES($1,$2,$3,$4,$5)',[unitRequest,'FORBIDDEN_READ_INSERT',hash('forbidden'),A,U])}catch(e){rls=e.code==='42501';throw e}
+      },'READ'),isOperationDenied);assert.equal(rls,true)
+    })
+    await t.test('an admitted native unit cannot claim dispatch, rebind its job or reserve another phase even through a savepoint',async()=>{
+      const before=await counts()
+      await runUnit(unitRequest,async(_context,c)=>{
+        await c.query('SAVEPOINT attempted_scope_change')
+        const state=(await c.query('SELECT profitia_jobs.current_job($1) state',[unitRequest])).rows[0].state
+        assert.equal((await c.query('SELECT profitia_jobs.lock_job($1,$2) state',[unitRequest,state.serviceBindingVersion])).rows[0].state,null)
+        assert.equal((await c.query('SELECT profitia_jobs.claim_dispatch($1) value',[unitRequest])).rows[0].value,null)
+        const phaseDescriptor=(await c.query("SELECT profitia_request_phases.delegated_descriptor($1,'REGISTER_LOOKUP') d",[unitRequest])).rows[0].d
+        assert(phaseDescriptor)
+        assert.equal((await c.query("SELECT profitia_request_phases.reserve($1,'REGISTER_LOOKUP',$2,$3,$4) value",[unitRequest,hash('blocked-phase'),randomUUID(),phaseDescriptor.policyVersion])).rows[0].value,null)
+        await c.query('ROLLBACK TO SAVEPOINT attempted_scope_change');await c.query('RELEASE SAVEPOINT attempted_scope_change')
+      },'READ');assert.deepEqual(await counts(),before)
+    })
+    await t.test('unit write RLS rejects another owner and permission is rechecked on every separate transaction',async()=>{
+      let refused=false
+      await assert.rejects(runUnit(unitRequest,async(_context,c)=>{
+        try{await c.query('INSERT INTO phase_business.results VALUES($1,$2,$3,$4,$5)',[unitRequest,'WRONG_OWNER',hash('wrong'),A,V])}catch(e){refused=e.code==='42501';throw e}
+      }),isOperationDenied);assert.equal(refused,true)
+      const deny=randomUUID();await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'DENY','supplier.report.refresh','supplier_report')",[deny,A,U]))
+      try{await assert.rejects(runUnit(unitRequest),isOperationDenied)}finally{await controlled(()=>owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[deny]))}
+      providerActive=false;try{await assert.rejects(runUnit(unitRequest),isOperationDenied)}finally{providerActive=true}
+      await runUnit(unitRequest)
+    })
+    await t.test('unknown unit, wrong access mode, foreign organization and unsafe metadata grant refuse before action',async()=>{
+      let actions=0;const action=async()=>{actions++}
+      for(const unit of[{...sqlUnit(),unitId:'UNKNOWN_PURPOSE'},{...sqlUnit('READ'),accessMode:'WRITE'}])await assert.rejects(native.runSqlWork(input(unitRequest),unit,action),isOperationDenied)
+      await assert.rejects(native.runSqlWork({...input(unitRequest),organisationId:'22222222-2222-4222-8222-222222222222'},sqlUnit(),action),isOperationDenied)
+      await controlled(()=>owner.query(`GRANT SELECT ON profitia_request_work.policies TO ${EXECUTOR}`))
+      try{await assert.rejects(runUnit(unitRequest,action),isOperationDenied)}finally{await controlled(()=>owner.query(`REVOKE SELECT ON profitia_request_work.policies FROM ${EXECUTOR}`))}
+      assert.equal(actions,0)
+    })
+    await t.test('actual domain mutation rolls back on missing physical INTENT or OUTCOME and callback output is not published',async()=>{
+      const before=await counts()
+      for(const mode of['DROP_INTENT','DROP_OUTCOME','FAIL_OUTCOME']){
+        let called=false;dropIntent=mode==='DROP_INTENT';dropOutcome=mode==='DROP_OUTCOME';failOutcome=mode==='FAIL_OUTCOME'
+        try{await assert.rejects(runUnit(unitRequest,async(_context,c)=>{called=true;await c.query('INSERT INTO phase_business.results VALUES($1,$2,$3,$4,$5)',[unitRequest,'AUDIT_'+mode,hash(mode),A,U])}),isOperationDenied)}finally{dropIntent=false;dropOutcome=false;failOutcome=false}
+        assert.equal(called,mode!=='DROP_INTENT');assert.deepEqual(await counts(),before)
+      }
+      await assert.rejects(runUnit(unitRequest,async()=>({private:'SYNTHETIC_PRIVATE_RESULT'})),isOperationDenied);assert.deepEqual(await counts(),before)
+    })
+    await t.test('expiry during actual SQL work rolls back its domain row and records no false success',async()=>{
+      const before=await counts()
+      await controlled(()=>owner.query("UPDATE profitia_request_work.policies SET expires_at=clock_timestamp()+interval '2 seconds' WHERE application_id='srm' AND unit_id='NATIVE_WRITE'"))
+      try{await assert.rejects(runUnit(unitRequest,async(_context,c)=>{
+        await c.query('INSERT INTO phase_business.results VALUES($1,$2,$3,$4,$5)',[unitRequest,'EXPIRED_DURING_WORK',hash('expiry'),A,U]);await c.query('SELECT pg_sleep(2.1)')
+      }),isOperationDenied)}finally{await controlled(()=>owner.query("UPDATE profitia_request_work.policies SET expires_at=$1 WHERE application_id='srm' AND unit_id='NATIVE_WRITE'",[future()]))}
+      assert.deepEqual(await counts(),before)
+    })
+    await t.test('canonical writer refuses physical inspection/work mode switching in either direction',async()=>{
+      const id=await freshJob();await host.runPrivatePhase(input(id),phase(),write)
+      const before=await counts();let workToRead=false,readToWork=false
+      await assert.rejects(runUnit(id,async(context,c)=>{
+        const d=(await c.query("SELECT profitia_request_inspection.descriptor($1,'REGISTER_LOOKUP') d",[id])).rows[0].d;assert(d)
+        const e=structuredClone(actualIntents.findLast(e=>e.decisionId===context.decisionId));delete e.requestWork
+        e.requestInspection={requestId:id,phaseId:'REGISTER_LOOKUP',inputDigest:d.inputDigest,policyVersion:d.policyVersion,schemaDigest:d.inspectionSchemaDigest,continuationSchemaDigest:d.schemaDigest,delegatedSchemaDigest:d.delegatedSchemaDigest,transactionId:d.transactionId,acceptedTransactionId:d.acceptedTransactionId}
+        try{await c.query('SELECT true AS recorded FROM profitia_jobs.append_audit($1::jsonb)',[JSON.stringify(e)])}catch(error){workToRead=/Native work cannot mix/.test(error.message);throw error}
+      }),isOperationDenied)
+      await assert.rejects(inspect(id,async(context,c)=>{
+        const d=(await c.query("SELECT profitia_request_work.descriptor($1,'NATIVE_WRITE') d",[id])).rows[0].d;assert(d)
+        const e=structuredClone(actualIntents.findLast(e=>e.decisionId===context.decisionId));delete e.requestInspection
+        e.requestWork={requestId:id,unitId:d.unitId,accessMode:d.accessMode,inputDigest:sqlUnit().inputDigest,policyVersion:d.policyVersion,policySourceRef:d.sourceRef,policyExpiresAt:d.policyExpiresAt,transactionId:d.transactionId,schemaDigest:d.schemaDigest}
+        try{await c.query('SELECT true AS recorded FROM profitia_jobs.append_audit($1::jsonb)',[JSON.stringify(e)])}catch(error){readToWork=/Native work cannot mix/.test(error.message);throw error}
+      }),isOperationDenied)
+      assert.equal(workToRead,true);assert.equal(readToWork,true);assert.deepEqual(await counts(),before)
+    })
+    await t.test('purpose access mode is immutable and disabled or expired policies grant no native unit',async()=>{
+      await assert.rejects(controlled(()=>owner.query("UPDATE profitia_request_work.policies SET access_mode='WRITE' WHERE application_id='srm' AND unit_id='NATIVE_READ'")),e=>e.code==='42501')
+      await controlled(()=>owner.query("UPDATE profitia_request_work.policies SET status='DISABLED' WHERE application_id='srm' AND unit_id='NATIVE_WRITE'"))
+      try{await assert.rejects(runUnit(unitRequest),isOperationDenied)}finally{await controlled(()=>owner.query("UPDATE profitia_request_work.policies SET status='ACTIVE' WHERE application_id='srm' AND unit_id='NATIVE_WRITE'"))}
+      await controlled(()=>owner.query("UPDATE profitia_request_work.policies SET expires_at=clock_timestamp()-interval '1 second' WHERE application_id='srm' AND unit_id='NATIVE_WRITE'"))
+      try{await assert.rejects(runUnit(unitRequest),isOperationDenied)}finally{await controlled(()=>owner.query("UPDATE profitia_request_work.policies SET expires_at=$1 WHERE application_id='srm' AND unit_id='NATIVE_WRITE'",[future()]))}
+      await runUnit(unitRequest)
+      await assert.rejects(runtime.query('SELECT * FROM profitia_request_work.installation'),e=>e.code==='42501')
+      assert.equal((await runtime.query('SELECT * FROM phase_business.results')).rowCount,0)
     })
   } finally {await runtime?.end();await sourceRuntime?.end();await sourceOwner?.end();await owner?.end();await root.end()}
 })

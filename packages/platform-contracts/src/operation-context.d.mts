@@ -32,6 +32,7 @@ export interface OperationState {
   access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY' | 'PLATFORM_BUDGET'; requestPolicy?: Readonly<RequestPolicy>; inputs?: Resource[]
   requestContinuation?: Readonly<import('./request-continuation.mjs').RequestContinuationEvidence>
   requestInspection?: Readonly<import('./request-inspection.mjs').RequestInspectionEvidence>
+  requestWork?: Readonly<import('./request-work.mjs').RequestWorkEvidence>
   ingestion?: Readonly<IngestionPolicy>
   delegation?: Readonly<DelegatedJob>
   dispatchAdmission?: import('./delegated-job.mjs').DispatchAdmission
@@ -73,6 +74,7 @@ export interface OperationContext {
   requestReservation?: Readonly<{requestId:string;replay:boolean;policyId:string;policyVersion:string}>
   requestContinuation?: Readonly<import('./request-continuation.mjs').RequestContinuationEvidence>
   requestInspection?: Readonly<import('./request-inspection.mjs').RequestInspectionEvidence>
+  requestWork?: Readonly<import('./request-work.mjs').RequestWorkEvidence>
   moduleEvidence?: Readonly<ModuleEvidence>
   delegation?: Readonly<DelegatedJob>
   dispatchAdmission?: import('./delegated-job.mjs').DispatchAdmission
@@ -100,7 +102,10 @@ export interface OperationSession<Transaction> {
   completeRequest?(context: Readonly<OperationContext>, value: RequestReceipt): Promise<void>
   /** Private dispatch only; source delivery is a separate transaction/authority. */
   admitDispatch?(context: Readonly<OperationContext>): Promise<import('./delegated-job.mjs').DispatchAdmission>
-  /** Inspection only: canonical INTENT in the same physical read transaction. */
+  /** Native work/inspection bind their canonical INTENT in the same physical SQL transaction. */
+  recordWorkIntent?(event:AuditEvent):Promise<void>
+  bindWork?(context:Readonly<OperationContext>):Promise<void>
+  verifyWork?(context:Readonly<OperationContext>):Promise<void>
   recordInspectionIntent?(event:AuditEvent):Promise<void>
   bindInspection?(context:Readonly<OperationContext>):Promise<void>
   verifyInspection?(context:Readonly<OperationContext>):Promise<void>
@@ -119,7 +124,7 @@ export interface OperationExecutor<Transaction = unknown> {
   contract: Readonly<{ id: string; version: string; implementation: string }>
   execute<T>(input: OperationInput, action: (context: Readonly<OperationContext>, transaction: Transaction) => T | Promise<T>): Promise<Readonly<{ decision: 'ALLOW'; decisionId: string; contractId: string; contractVersion: string; value: T }>>
 }
-export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.12' }>
+export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.13' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
 export declare function isOperationDenied(error: unknown): error is OperationDenied
