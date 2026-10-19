@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.13' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.14' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -34,6 +34,10 @@ const rules = Object.freeze({
   // Bounded AM24: one organisation report and its explicit shared/private
   // inputs. Personal exports and external acquisition remain unsupported.
   'supplier.report.export': rule('supplier_report', 'supplier_export', 'ORGANISATION_PRIVATE', 'EXPORT', 'SUPPLIER_INTELLIGENCE'),
+  // Private personal reports never inherit the shared catalogue read grant.
+  'supplier.private.read': rule('supplier_report', 'supplier_private_report', 'ORGANISATION_PRIVATE', 'READ', 'SUPPLIER_INTELLIGENCE'),
+  'supplier.private.reveal': rule('supplier_report', 'supplier_private_identifier', 'ORGANISATION_PRIVATE', 'READ', 'SUPPLIER_INTELLIGENCE'),
+  'supplier.private.export': rule('supplier_report', 'supplier_private_export', 'ORGANISATION_PRIVATE', 'EXPORT', 'SUPPLIER_INTELLIGENCE'),
 })
 export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules))
 const profiles = Object.freeze({
@@ -95,7 +99,24 @@ function permission(access, operation, feature, resourceId) {
   return !access.denies.some(matches) && access.permissions.some(matches)
 }
 
+const privateSupplierOperations = new Set(['supplier.private.read','supplier.private.reveal','supplier.private.export'])
+const privateSupplierKeys = ['entityType','nip','retentionUntil','snapshotId']
+/** Only technical metadata selected by the native adapter. No personal value,
+ * client-selected owner or provider response enters this authority envelope. */
+function privateSupplierDescriptor(resource, time) {
+  const d = resource?.privateSupplier
+  if (!d || Object.getPrototypeOf(d) !== Object.prototype
+    || Object.keys(d).sort().join(',') !== privateSupplierKeys.join(',')
+    || Reflect.ownKeys(d).length !== privateSupplierKeys.length
+    || Object.values(Object.getOwnPropertyDescriptors(d)).some(v => !('value' in v) || !v.enumerable)
+    || !['COMPANY','JDG'].includes(d.entityType) || typeof d.nip !== 'string' || !/^[0-9]{10}$/.test(d.nip)
+    || typeof d.snapshotId !== 'string' || !computeUuid.test(d.snapshotId) || resource.version !== d.snapshotId || resource.ownerUserId !== null
+    || !validUntil(d.retentionUntil, time) || new Date(d.retentionUntil).toISOString() !== d.retentionUntil) deny('RESOURCE_SCOPE_MISMATCH')
+  return d
+}
+
 function checkResource(resource, context, expected) {
+  if (resource?.privateSupplier !== undefined && !privateSupplierOperations.has(context.operation)) deny('RESOURCE_SCOPE_MISMATCH')
   if (!resource || resource.environment !== context.environment || resource.type !== expected.resourceType || resource.dataClass !== expected.dataClass || !nonempty(resource.id) || !nonempty(resource.version) || !nonempty(resource.projectionVersion)) deny('RESOURCE_SCOPE_MISMATCH')
   if (resource.dataClass === 'SHARED_KNOWLEDGE') {
     if (resource.ownerOrganisationId !== null || resource.ownerUserId !== null || resource.approvedSharedProjection !== true) deny('RESOURCE_SCOPE_MISMATCH')
@@ -282,6 +303,21 @@ export function createOperationExecutor(options) {
           if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
           if (state.resource.id !== request.resourceId || compute && state.resource.ownerUserId !== identity.userId) deny('RESOURCE_SCOPE_MISMATCH')
+          let privateSupplierInput
+          if (privateSupplierOperations.has(request.operation)) {
+            if (identity.kind !== 'HUMAN') deny('DELEGATION_INVALID')
+            if (moduleEvidence?.moduleId !== 'supplier_report') deny('APPLICATION_FEATURE_UNAVAILABLE')
+            const descriptor = privateSupplierDescriptor(state.resource, now())
+            if (request.operation !== 'supplier.private.read') {
+              if (!config.operations.includes('supplier.private.read') || !Array.isArray(state.inputs) || state.inputs.length !== 1) deny('PERMISSION_DENIED')
+              const report = state.inputs[0]
+              checkResource(report, context, rules['supplier.private.read'])
+              const inputDescriptor = privateSupplierDescriptor(report, now())
+              if (privateSupplierKeys.some(key => descriptor[key] !== inputDescriptor[key])) deny('RESOURCE_SCOPE_MISMATCH')
+              if (!permission(access, 'supplier.private.read', 'supplier_report', report.id)) deny('PERMISSION_DENIED')
+              privateSupplierInput = freeze(structuredClone(report))
+            }
+          }
           const productEvidence = []
           if(delegated) productEvidence.push(delegated.products)
           if (selected.product) productEvidence.push(productAvailable(state, selected.product, selected.feature, config, ceiling, now()))
@@ -441,6 +477,10 @@ export function createOperationExecutor(options) {
             computePolicy(requestPolicy, context, now())
           }
           const output = await session.projectOutput(value, bound)
+          if (privateSupplierOperations.has(request.operation)) {
+            privateSupplierDescriptor(bound.resource, now())
+            if (privateSupplierInput) privateSupplierDescriptor(privateSupplierInput, now())
+          }
           const outcome = session.describeOutcome === undefined ? 'SUCCEEDED' : await session.describeOutcome(output, bound)
           if (!['SUCCEEDED', 'NO_DATA', 'SELECTION_UNAVAILABLE'].includes(outcome)) deny('POLICY_UNAVAILABLE')
           if (!validUntil(identity.expiresAt, now()) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
