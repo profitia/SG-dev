@@ -355,8 +355,44 @@ revocation/audit/ownership refusals.
 
 A dispatch/source receipt means acceptance or delivery of a stored universal
 command. It is not completion of a supplier report, a provider purchase,
-permission to expose personal fields, or a HUMAN identity. Existing private
-Supplier phases still require HUMAN until their own separately governed
-service-delegation adoption. Actual product integrations, native long-running
+permission to expose personal fields, or a HUMAN identity. Existing product integrations have not yet adopted the separately governed
+optional Service phase boundary described below. Their active configuration
+and real business adoption require independent acceptance. Actual product integrations, native long-running
 workflow, real identity, current live data/roles/recovery and controlled release
 remain required. Publishing this producer source does not activate consumers.
+
+
+## Optional delegated Supplier private phases — candidate.11 / platform1.18
+
+The same private host and request-continuation ledger optionally execute
+REGISTER_LOOKUP, STORE_GENERAL, STORE_FINANCIAL and RECORD_INTEREST for a
+current Supplier job. The SERVICE executor remains the actual ordinary SQL
+login; the initiating human is a separate subject. No HUMAN proof is copied or
+renewed. No parent admission or quota is repeated. Current job, external account
+observation, directory, membership, permission, module, product, service and
+source binding are checked in each new short private transaction.
+
+Opt in to `createDelegatedJobHost` with the explicit Supplier target and
+`privateContinuation: {schemaDigest, delegatedSchemaDigest}`. The first digest
+pins original SQL011, the second optional SQL014. Only this factory exposes
+`runPrivatePhase(input, {phaseId, inputDigest}, action)`. Its SQL action returns
+exactly `{requestId, status: 'ACCEPTED'}` after a real commit; replay skips the
+action and still checks current authority. The configuration is mutually
+exclusive with source delivery. Network acquisition stays outside the bounded
+private transaction and does not receive permission from a phase receipt.
+
+SQL014 adds nullable executor/delegation references to the SAME phase effects
+and immutable FORCE RLS installation metadata. Original SQL001–013 stay
+byte-identical. The current Service descriptor and original parent identify the
+initiating application independently from the executor. A real correlated
+canonical INTENT and same-transaction OUTCOME are mandatory; a false success
+from an audit adapter cannot commit a phase. The RLS predicate accepts only the
+current RESERVED effect, never an accepted replay from a prior transaction.
+No second queue, ledger writer, runtime, role, runtime ACL or data seed is added.
+
+The existing HUMAN phase regression suite runs with SQL014 installed. A default
+Forecast job also executes in the same isolated database after this extension.
+Synthetic native tests are not evidence of actual Supplier business integration,
+cloud installation, vendor execution, real account login or product deployment.
+Consumer business predicates, domain composition and controlled releases retain
+their own tasks and acceptance boundaries.

@@ -66,12 +66,12 @@ test('SRM imports the exact optional external control source without adopting a 
   assert.deepEqual(sdk.EXTERNAL_CALL_CONTRACT,{id:'profitia.external-call',version:'1.0.0',unit:'UPSTREAM_ATTEMPT_ADMISSION'})
   const phaseSdk=await import('@profitia/platform-contracts/request-continuation')
   assert.equal(await phaseSdk.requestContinuationSchemaDigest(),current.schemaDigest)
-  assert.equal(await phaseSdk.requestContinuationSourceDigest(),current.sourceDigest)
+  assert.equal(await phaseSdk.requestContinuationSourceDigest(),manifest.delegatedPrivatePhaseSourceCompatibility.requestContinuationSourceDigest)
   assert.equal(phaseSdk.REQUEST_CONTINUATION_CONTRACT.effect,'PRIVATE_SQL_PHASE')
   const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
   assert.equal(Object.keys(current.sourceDigests).length,20)
   assert.equal(Object.keys(native.sourceDigests).length,23)
-  for(const [path,digest]of Object.entries(manifest.supplierDelegationSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+  for(const [path,digest]of Object.entries(manifest.delegatedPrivatePhaseSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
   for(const name of ['externalCallAdopted','sql009Installed','runtimeRoleOrGrantChanged','humanSupplierRefreshAdopted','finderAiAdopted','kysOrPersonalDataAdopted','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
   assert.equal(sdk.externalCallEvidence({status:200,body:{}}),null)
 })
@@ -99,7 +99,7 @@ test('SRM business adoption pins its actual writer sources and preserves release
 test('SRM accepts the published optional producer fingerprints', async () => {
   assert.equal(await accessStoreSourceDigest(), 'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
   assert.equal(await identitySourceDigest(), '9e1ced6498e8a127dd17fee81c5f4485a032c133bf85c08a72488e7909a0a299')
-  assert.equal(await privateOperationHostSourceDigest(), 'b47fdb3e1ed53a80aff90787702033710f42f88561744fa16e117af9b17fc487')
+  assert.equal(await privateOperationHostSourceDigest(), 'f227486dd76e03629e891073d2a0db398ad6fe7e1716911f8559eff2e753b8d8')
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
 })
@@ -670,8 +670,8 @@ test('SRM preserves historical AM23 source acceptance separately from current pr
  assert.equal(accepted.platformVersion,'1.14.0')
  assert.equal(accepted.producer.sourceSha,'70e6ebbd1bb931911fd3e3801f04e03d2d45b5df')
  assert.equal(accepted.sourceRecordIsHistorical,true)
- assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.10')
- assert.equal(manifest.supplierDelegationSourceCompatibility.rootImplementation,OPERATION_CONTRACT.implementation)
+ assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.11')
+ assert.equal(manifest.delegatedPrivatePhaseSourceCompatibility.rootImplementation,OPERATION_CONTRACT.implementation)
  assert.equal(await sdk.requestLedgerSourceDigest(),'f87c7d482dfa3bb75a86f85c9e0df20e22c2a5f6ca973400fb2fd21713cbb78e')
  assert.equal(await sdk.requestLedgerSourceDigest(),accepted.requestLedgerSourceDigest)
  assert.equal(await sdk.requestReservationSchemaDigest(),accepted.baseSchemaDigest)
@@ -1204,26 +1204,53 @@ test('real native supplier request admission keeps command, quota and audit in o
   }
 })
 
-test('current optional Supplier delegation source is exact and default Forecast product adoption is preserved',async()=>{
+test('historical Supplier delegation acceptance retains its values while current source remains exact',async()=>{
  const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
  const current=manifest.supplierDelegationSourceCompatibility
  const jobs=await import('@profitia/platform-contracts/delegated-job')
  const host=await import('@profitia/platform-contracts/private-operation-host')
- assert.equal(current.platformVersion,'1.17.0');assert.equal(current.rootImplementation,OPERATION_CONTRACT.implementation)
+ assert.equal(current.platformVersion,'1.17.0');assert.equal(current.rootImplementation,'1.0.0-candidate.10');assert.equal(current.sourceRecordIsHistorical,true)
  assert.equal(current.producer.sourceSha,'978e9526c9ec79ed415a6aaf904d4dac5ea9cc02')
  assert.equal(current.producer.pullRequest,512)
  assert.deepEqual(jobs.DELEGATED_JOB_CONTRACT,{id:'profitia.delegated-job',version:'1.1.0'})
- assert.equal(host.PRIVATE_OPERATION_HOST_CONTRACT.version,'1.8.0')
+ assert.equal(host.PRIVATE_OPERATION_HOST_CONTRACT.version,manifest.delegatedPrivatePhaseSourceCompatibility.hostVersion)
  assert.equal(await jobs.delegatedJobSourceDigest(),current.delegatedJobSourceDigest)
  assert.equal(await jobs.supplierDelegationSchemaDigest(),current.supplierSchemaDigest)
- assert.equal(await host.privateOperationHostSourceDigest(),current.privateHostSourceDigest)
+ assert.equal(await host.privateOperationHostSourceDigest(),manifest.delegatedPrivatePhaseSourceCompatibility.privateOperationHostSourceDigest)
  assert.equal(manifest.nativeExternalSourceCompatibility.sourceRecordIsHistorical,true)
  assert.equal(current.previousSourceRecordsAreHistorical,true);assert.equal(current.defaultForecastTargetUnchanged,true)
  assert.equal(Object.keys(current.sourceDigests).length,44)
  const sourceRoot=new URL('../',import.meta.resolve('@profitia/platform-contracts/delegated-job'))
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.delegatedPrivatePhaseSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
  const binding={applicationId:'synthetic',environment:'development',projectId:'synthetic-project',branchId:'synthetic-branch',databaseName:'synthetic_db',role:'ordinary_fixture_role',schemaDigest:'a'.repeat(64)}
  assert.doesNotThrow(()=>jobs.createDelegatedJobStore({binding,schemaDigest:'b'.repeat(64)}))
  assert.throws(()=>jobs.createDelegatedJobStore({binding,schemaDigest:'b'.repeat(64),targetOperation:'supplier.report.refresh'}),TypeError)
  for(const key of ['supplierJobAdopted','supplierPrivateServicePhaseAdopted','sql013Installed','runtimeRoleOrGrantChanged','providerExecutionAdopted','productDeploymentPerformed'])assert.equal(current[key],false,key)
+})
+
+test('current optional delegated private phase source is exact and does not activate a Supplier business workflow',async()=>{
+ const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
+ const current=manifest.delegatedPrivatePhaseSourceCompatibility
+ const phases=await import('@profitia/platform-contracts/request-continuation')
+ const hosts=await import('@profitia/platform-contracts/private-operation-host')
+ assert.equal(current.platformVersion,'1.18.0');assert.equal(current.rootImplementation,OPERATION_CONTRACT.implementation)
+ assert.equal(current.hostVersion,hosts.PRIVATE_OPERATION_HOST_CONTRACT.version)
+ assert.equal(current.continuationVersion,phases.REQUEST_CONTINUATION_CONTRACT.version)
+ assert.equal(current.producer.sourceSha,'3e0788aa5309a668ba8c08a4b9ea53a04bbd8478');assert.equal(current.producer.pullRequest,516)
+ assert.equal(await phases.requestContinuationSourceDigest(),current.requestContinuationSourceDigest)
+ assert.equal(await phases.delegatedPrivatePhasesSchemaDigest(),current.delegatedPrivatePhasesSchemaDigest)
+ assert.equal(await hosts.privateOperationHostSourceDigest(),current.privateOperationHostSourceDigest)
+ assert.equal(current.previousSourceRecordsAreHistorical,true);assert.equal(current.defaultHumanAndForecastPreserved,true)
+ const sourceRoot=new URL('../',import.meta.resolve('@profitia/platform-contracts/request-continuation'))
+ assert.equal(Object.keys(current.sourceDigests).length,45)
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
+ const unused=async()=>{throw Error('Constructor cannot authorize or query')}
+ const application={appId:'synthetic-jobs',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic',configurationVersion:'1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,operations:['job.execute'],features:['job_execution']}
+ const binding={applicationId:application.appId,environment:'development',projectId:'synthetic-project',branchId:'synthetic-branch',databaseName:'synthetic_db',role:'ordinary_fixture_role',schemaDigest:'a'.repeat(64),service:{schemaDigest:'a'.repeat(64),profileId:application.profileId,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion}}
+ const base={application,binding,job:{schemaDigest:'a'.repeat(64),targetOperation:'supplier.report.refresh',supplierSchemaDigest:'a'.repeat(64)},independentQuery:unused,transact:unused,readExternalAccount:unused}
+ assert.equal(hosts.createDelegatedJobHost(base).runPrivatePhase,undefined)
+ const host=hosts.createDelegatedJobHost({...base,privateContinuation:{schemaDigest:'b'.repeat(64),delegatedSchemaDigest:'c'.repeat(64)}})
+ assert.equal(typeof host.runPrivatePhase,'function');assert.equal(host.deliver,undefined)
+ assert.throws(()=>hosts.createDelegatedJobHost({...base,privateContinuation:{schemaDigest:'b'.repeat(64),delegatedSchemaDigest:'c'.repeat(64)},sourceDelivery:{deliver:unused}}),TypeError)
+ for(const key of ['supplierPrivateServicePhaseAdopted','sql014Installed','runtimeRoleOrGrantChanged','providerExecutionAdopted','productDeploymentPerformed'])assert.equal(current[key],false,key)
 })

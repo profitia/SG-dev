@@ -13,6 +13,7 @@
   },
   "files": [
     "native-external.mts",
-    "supplier-delegation.mts"
+    "supplier-delegation.mts",
+    "delegated-private-phases.mts"
   ]
 }

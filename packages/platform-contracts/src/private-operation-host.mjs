@@ -6,7 +6,7 @@ import { createRequestLedger, requestLedgerSourceDigest } from './request-ledger
 import { createRequestContinuationLedger, requestContinuationSourceDigest } from './request-continuation.mjs'
 import { createDelegatedJobStore, delegatedJobSourceDigest } from './delegated-job.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.8.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.9.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -16,6 +16,7 @@ const freeze = value => { if (value && typeof value === 'object') { Object.value
  * No request identity, lease or transaction is retained on the shared instance.
  */
 export function createPrivateOperationHost(options) {
+  if (options.privateContinuation!==undefined||options.delegatedContinuation!==undefined)throw new TypeError('Delegated phases require the explicit service host')
   if (options.binding?.service !== undefined) throw new TypeError('Human host cannot use a database service binding')
   return createBoundOperationHost(options, false)
 }
@@ -30,7 +31,7 @@ export function createServiceReadHost(options) {
     || s.configurationVersion !== a.configurationVersion
     || !Array.isArray(a.operations) || !a.operations.length
     || a.operations.some(op => !['knowledge.read','forecast.read','supplier.report.read'].includes(op))
-    || ['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
+    || ['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','privateContinuation','delegatedContinuation'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
   return createBoundOperationHost(options, true)
 }
 
@@ -54,11 +55,25 @@ export function createDelegatedJobHost(options){
     ||typeof options.readExternalAccount!=='function'||!closedJob
     ||!/^[a-f0-9]{64}$/.test(options.job.schemaDigest??'')
     ||options.sourceDelivery!==undefined&&typeof options.sourceDelivery?.deliver!=='function'
-    ||['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','readResources','projectOutput','describeOutcome','jobDelivery','deliverSource'].some(k=>Object.hasOwn(options,k)))throw TypeError('Explicit delegated private dispatch host required')
+    ||['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','readResources','projectOutput','describeOutcome','jobDelivery','deliverSource','delegatedContinuation'].some(k=>Object.hasOwn(options,k)))throw TypeError('Explicit delegated private dispatch host required')
+  const privateContinuation=options.privateContinuation
+  if(privateContinuation!==undefined&&(!privateContinuation||Object.getPrototypeOf(privateContinuation)!==Object.prototype
+    ||Reflect.ownKeys(privateContinuation).sort().join(',')!=='delegatedSchemaDigest,schemaDigest'
+    ||Object.values(Object.getOwnPropertyDescriptors(privateContinuation)).some(d=>!('value'in d)||!d.enumerable)
+    ||!Object.values(privateContinuation).every(v=>/^[a-f0-9]{64}$/.test(v??''))
+    ||j.targetOperation!=='supplier.report.refresh'||options.sourceDelivery!==undefined))throw TypeError('Explicit isolated Supplier private phase host required')
+  const phaseBinding=privateContinuation===undefined?undefined:freeze(copy(privateContinuation))
   const base={...options,application:freeze(copy(a)),binding:freeze(copy(options.binding)),job:freeze(copy(options.job)),projectOutput:value=>value}
   const host=createBoundOperationHost(base,'delegated')
   return Object.freeze({contract:host.contract,hostContract:host.hostContract,
     admit:input=>host.execute(input,context=>context.dispatchAdmission),
+    ...(privateContinuation===undefined?{}:{runPrivatePhase:(input,phase,action)=>{
+      if(!phase||Object.getPrototypeOf(phase)!==Object.prototype||Reflect.ownKeys(phase).sort().join(',')!=='inputDigest,phaseId'
+        ||Object.values(Object.getOwnPropertyDescriptors(phase)).some(d=>!('value'in d)||!d.enumerable)
+        ||typeof action!=='function')throw TypeError('Explicit private phase action required')
+      const phaseHost=createBoundOperationHost({...base,delegatedContinuation:{requestId:input?.resourceId,...copy(phase),...copy(phaseBinding)}},'delegated')
+      return phaseHost.execute(input,action)
+    }}),
     ...(base.sourceDelivery===undefined?{}:{deliver:(input,admission)=>{
       const deliveryHost=createBoundOperationHost({...base,jobDelivery:{admission:freeze(copy(admission))}},'delegated')
       return deliveryHost.execute(input,context=>context.dispatchAdmission)
@@ -90,6 +105,8 @@ function createBoundOperationHost(options, serviceMode) {
   const continuation=options.requestContinuation===undefined?null:freeze(copy(options.requestContinuation))
   if (continuation !== null && (!baseRequestLedger || serviceMode || delegated
     || requestOperation !== 'supplier.report.refresh' || application.operations.length !== 1)) throw new TypeError('Explicit HUMAN supplier-only private continuation required')
+  const delegatedContinuation=options.delegatedContinuation===undefined?null:freeze(copy(options.delegatedContinuation))
+  const privatePhaseLedger=delegatedContinuation===null?null:createRequestContinuationLedger({binding,continuation:delegatedContinuation,executionMode:'DELEGATED_SERVICE',now})
   const requestLedger = continuation === null ? baseRequestLedger
     : createRequestContinuationLedger({ ledger: baseRequestLedger, binding, continuation, now })
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
@@ -153,10 +170,12 @@ function createBoundOperationHost(options, serviceMode) {
               if(closed)unavailable()
               const requestPolicy = needsRequestLedger && request.operation === requestOperation
                 ? await requestLedger.loadPolicy(query, { actor, request }) : undefined
+              const phasePolicy=privatePhaseLedger?await privatePhaseLedger.loadPhase(query,{actor,request,lease}):null
               let reserveStarted = false, completeStarted = false, ownedReservation
               callbackResult = await run({
                 state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }),
                   ...(delegated?{delegation:{...lease.state.delegation,externalAccountObservation:observation}}:{}),
+                  ...(phasePolicy?{requestContinuation:privatePhaseLedger.evidence(phasePolicy)}:{}),
                   ...(requestPolicy ? { usagePolicy: 'PRODUCT_POLICY', requestPolicy, ...(continuation === null ? {} : {requestContinuation:requestLedger.evidence(requestPolicy)}) } : {}) },
                 ...(requestPolicy ? {
                   reserveUsage: async context => {
@@ -173,9 +192,22 @@ function createBoundOperationHost(options, serviceMode) {
                     if (closed) unavailable()
                   },
                 } : {}),
+                ...(phasePolicy?{
+                  reservePrivatePhase:async context=>{
+                    if(closed||reserveStarted)unavailable();reserveStarted=true
+                    ownedReservation=await privatePhaseLedger.reserve(query,phasePolicy,context)
+                    if(closed)unavailable();return ownedReservation
+                  },
+                  completePrivatePhase:async(context,value)=>{
+                    if(closed||completeStarted||!ownedReservation)unavailable();completeStarted=true
+                    await privatePhaseLedger.complete(query,phasePolicy,ownedReservation,context,value)
+                    if(closed)unavailable()
+                  }
+                }:{}),
                 ...(moduleEvidence ? { moduleEvidence } : {}),
                 ...(delegated?{admitDispatch:async context=>{
                   if(closed)unavailable()
+                  if(privatePhaseLedger)unavailable()
                   if(!options.jobDelivery)return jobStore.claimDispatch(query,lease)
                   const admission=options.jobDelivery.admission
                   const current=await jobStore.prepareDelivery(query,lease,admission,sourceDelivery)
