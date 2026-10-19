@@ -131,7 +131,7 @@ test('current native Supplier work receipt binds the original domain helpers wit
   assert.equal(link.acceptedLookupReplayTask.taskId,'SRM-E1-ACCEPTED-LOOKUP-IDEMPOTENCE-20261019')
   assert.equal(Object.keys(link.sourceDigests).length,24)
   assert.equal(link.sourceRecordIsHistorical,true)
-  const composition=manifest.fullNativeCompanyCompositionAdoption
+  const composition=manifest.fullNativeCompanyReplayRevision
   for(const[path,digest]of Object.entries(link.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),composition.sourceDigests[path]??digest,path)
   assert.equal(link.requestBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/009-supplier-source-request.sql',import.meta.url))))
   for(const flag of ['previousNativeWorkReceiptPreserved','sameRootDispatchAndSourceHost','actualOrdinaryPrivateAndSourceTransactionsTested','sourceOutcomeRequiredAtCommit','fundedRetryAfterIndependentSourceCommitVerified','currentAccountMembershipAndSourceGrantChecked','originalAcceptedLookupIdentityReused'])assert.equal(link[flag],true,flag)
@@ -152,7 +152,14 @@ test('full native company receipt pins its complete current closure and explicit
    ...Object.keys(manifest.corporateSourcePublicationAdoption.sourceDigests),
    'src/server/supplier-native-company.ts','src/server/provider-source-transport.ts','src/server/msr-source.ts'])
  assert.deepEqual(new Set(Object.keys(current.sourceDigests)),expected)
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+ assert.equal(current.sourceRecordIsHistorical,true)
+ const revision=manifest.fullNativeCompanyReplayRevision
+ assert.equal(revision.taskId,current.taskId);assert.equal(revision.version,'srm-native-company-replay-v1')
+ assert.equal(revision.authorityBeforeReplay,'505a23800fbd8a74f40a5a1e1947f3b2a62093bc')
+ assert.deepEqual(Object.keys(revision.sourceDigests),Object.keys(current.sourceDigests))
+ for(const[path,digest]of Object.entries(revision.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+ for(const flag of ['previousFullCompositionReceiptPreserved','typedOriginalFinancialFactsReplayed','changedUnknownAndDuplicatedFactsRefused','providerPurchaseAndCustomerQuotaSeparateFromSourceProjection','originalCacheFinancialOnlyPublicationPreserved'])assert.equal(revision[flag],true,flag)
+ for(const flag of ['sqlOrRolesChanged','httpEndpointActivated','productDeploymentPerformed'])assert.equal(revision[flag],false,flag)
  const company=fs.readFileSync(new URL('../src/server/supplier-native-company.ts',import.meta.url),'utf8')
  assert(!/from\s+['"](?:react|next)/.test(company))
  for(const name of ['previousSourceLinkReceiptPreserved','sameOriginalCompanyEngine','actualColdAndWarmOrdinaryRolesTested','actualOriginalMsrPathTested','newParentHasOwnPrivateHistory','indicatorsReadDoesNotWrite','independentProviderAndCorporateSources','networkOutsideSqlTransaction','currentAccountAndParentRechecked','sameCompletedParentHistoryReused','conflictingPrivateReplayRefused'])assert.equal(current[name],true,name)
