@@ -130,13 +130,33 @@ test('current native Supplier work receipt binds the original domain helpers wit
   assert.equal(link.taskId,'SRM-E1-PROTECTED-SUPPLIER-SOURCE-LINK-20261019')
   assert.equal(link.acceptedLookupReplayTask.taskId,'SRM-E1-ACCEPTED-LOOKUP-IDEMPOTENCE-20261019')
   assert.equal(Object.keys(link.sourceDigests).length,24)
-  for(const[path,digest]of Object.entries(link.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+  assert.equal(link.sourceRecordIsHistorical,true)
+  const composition=manifest.fullNativeCompanyCompositionAdoption
+  for(const[path,digest]of Object.entries(link.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),composition.sourceDigests[path]??digest,path)
   assert.equal(link.requestBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/009-supplier-source-request.sql',import.meta.url))))
   for(const flag of ['previousNativeWorkReceiptPreserved','sameRootDispatchAndSourceHost','actualOrdinaryPrivateAndSourceTransactionsTested','sourceOutcomeRequiredAtCommit','fundedRetryAfterIndependentSourceCommitVerified','currentAccountMembershipAndSourceGrantChecked','originalAcceptedLookupIdentityReused'])assert.equal(link[flag],true,flag)
   for(const flag of ['secondRequestOrDispatchLedgerIntroduced','networkInsideSqlTransaction','customerIdentityStoredInSource','serializedSourceReadMintsReceiptAuthority','completeNativeEngineComposition','liveProviderAcquisitionVerified','liveCustomerSessionVerified','liveSchemaOrGrantsChanged','httpEndpointActivated','mapsChanged','productDeploymentPerformed'])assert.equal(link[flag],false,flag)
   assert.equal(current.workBusinessBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/008-supplier-native-work.sql',import.meta.url))))
   for(const flag of ['historicalInspectionReceiptPreserved','sameNativeDriverAndCanonicalWriter','actualOrdinaryExecutorTested','sameOriginalMsrLifecycle','resultsReleasedOnlyAfterCommit','archiveProvenanceCheckedWithoutReadLocks','preparationLockDoesNotPermitArchiveWrite','requiresIndependentSharedCatalogSource'])assert.equal(current[flag],true,flag)
   for(const flag of ['secondDomainLedgerIntroduced','archiveRestoreInsideRead','completeNativeEngineComposition','liveProviderAcquisitionVerified','kysOrPersonalDataAdopted','legacyDemoHistoryReassigned','liveSchemaOrGrantsChanged','httpEndpointActivated','mapsChanged','productDeploymentPerformed'])assert.equal(current[flag],false,flag)
+})
+
+test('full native company receipt pins its complete current closure and explicit unreleased boundaries',()=>{
+ const manifest=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
+ const current=manifest.fullNativeCompanyCompositionAdoption
+ assert.equal(current.taskId,'SRM-E1-FULL-NATIVE-COMPANY-20261019');assert.equal(current.version,'srm-native-company-v1')
+ assert.equal(current.status,'SOURCE_CANDIDATE_NOT_RELEASED');assert.equal(current.originalCompanyPorts,16);assert.equal(current.reviewedNativeUnits,18)
+ assert.equal(current.corporateClassification.taskId,'SRM-E1-MSR-CORPORATE-PROVENANCE-20261019')
+ assert.equal(current.corporateClassification.version,'srm-corporate-fields-v2')
+ const expected=new Set([...Object.keys(manifest.protectedSupplierSourceLinkAdoption.sourceDigests),
+   ...Object.keys(manifest.corporateSourcePublicationAdoption.sourceDigests),
+   'src/server/supplier-native-company.ts','src/server/provider-source-transport.ts','src/server/msr-source.ts'])
+ assert.deepEqual(new Set(Object.keys(current.sourceDigests)),expected)
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+ const company=fs.readFileSync(new URL('../src/server/supplier-native-company.ts',import.meta.url),'utf8')
+ assert(!/from\s+['"](?:react|next)/.test(company))
+ for(const name of ['previousSourceLinkReceiptPreserved','sameOriginalCompanyEngine','actualColdAndWarmOrdinaryRolesTested','actualOriginalMsrPathTested','newParentHasOwnPrivateHistory','indicatorsReadDoesNotWrite','independentProviderAndCorporateSources','networkOutsideSqlTransaction','currentAccountAndParentRechecked','sameCompletedParentHistoryReused','conflictingPrivateReplayRefused'])assert.equal(current[name],true,name)
+ for(const name of ['secondDomainLedgerIntroduced','customerIdentityStoredInSource','httpEndpointActivated','liveProviderAcquisitionVerified','liveCustomerSessionVerified','liveSchemaOrGrantsChanged','mapsChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)
 })
 
 test('SRM accepts the published optional producer fingerprints', async () => {

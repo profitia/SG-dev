@@ -83,7 +83,9 @@ test('complete current cache avoids provider calls and keeps exact original stor
   const result = await createXrayCompanyLookup(f.ports)(ORG, request());
   assert.equal(result.identity.nip, NIP);
   assert.ok(f.calls.includes('pkd')); assert.ok(f.calls.includes('msr')); assert.ok(f.calls.includes('indicators'));
-  for (const c of ['fetch-general','fetch-financial','reproject','archive-pl-krs-wp-record','archive-pl-krs-rdf-record','persist-general']) assert.ok(!f.calls.includes(c), c);
+  for (const c of ['fetch-general','fetch-financial','reproject','archive-pl-krs-wp-record','archive-pl-krs-rdf-record','publish']) assert.ok(!f.calls.includes(c), c);
+  assert.deepEqual(f.snapshots.map(x=>x[2]),['general','financial']);
+  assert(f.snapshots.every(x=>x[8]==='CACHE'));
   assert.equal(f.calls.at(-1), 'interest');
 });
 
@@ -108,7 +110,8 @@ test('cached deregistered company does not acquire financial data, run MSR or re
   f.setCache({general, financial: f.financial.section});
   const result = await createXrayCompanyLookup(f.ports)(ORG, request());
   assert.equal(result.financial.status, 'NOT_REQUESTED'); assert.equal(result.kys.status, 'NOT_REQUESTED');
-  assert.deepEqual(f.calls, ['register','cache','pkd']);
+  assert.deepEqual(f.calls, ['register','cache','pkd','persist-general']);
+  assert.equal(f.snapshots.length,1);assert.equal(f.snapshots[0][2],'general');
 });
 
 test('new restricted company preserves general archive and snapshot but suppresses financial acquisition', async () => {

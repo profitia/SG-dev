@@ -6,7 +6,7 @@ import { readSupplierRequest } from './supplier-request-operation'
 import type { SupplierNativeWork, SupplierNativeWorkSelection, SupplierNativeWorkUnit } from './supplier-request-work'
 import { createLookup } from './xray-repository'
 import { persistSection } from './xray-lookup'
-import { readFreshCompany, recordSupplierInterest } from './shared-catalog'
+import { readFreshCompany, readFinancialIndicators, recordSupplierInterest } from './shared-catalog'
 import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
 import { reprojectFinancialArchive, type FinancialSourceFact } from './mgbi-financial'
@@ -92,6 +92,10 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       const s=select(input),at=new Date(now.getTime());if(!Number.isFinite(at.getTime()))return refuse()
       return run(s,'SRM_CACHE_READ',{at:at.toISOString()},pool=>readFreshCompany(s.organisationId,s.command.nip,at,pool))
     },
+    indicators(input:SupplierNativeWorkSelection,data:FinancialData){
+      const s=select(input),body=json(data)
+      return run(s,'SRM_CACHE_READ',{indicatorInputDigest:digest(body)},(_pool,client)=>readFinancialIndicators(client,s.command.nip,body))
+    },
     registration(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_GENERAL_METADATA_READ',null,pool=>readCompanyRegistration(s.organisationId,s.command.nip,pool))},
     pkd(input:SupplierNativeWorkSelection,general:SectionEnvelope<GeneralCompanyData>){const s=select(input),body=json(general);return run(s,'SRM_GENERAL_METADATA_READ',{bodyDigest:digest(body)},pool=>enrichCompanyPkd(s.organisationId,s.command.nip,body,pool))},
     reproject(input:SupplierNativeWorkSelection,history?:Parameters<typeof reprojectFinancialArchive>[2]){
@@ -123,6 +127,33 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       return run(s,section==='general'?'SRM_STORE_GENERAL':'SRM_STORE_FINANCIAL',{bodyDigest:digest(body)},async(pool,client)=>{
         const rows=(await client.query<{supplier_id:string}>("SELECT supplier_id FROM srm.lookup_requests WHERE organization_id=$1::uuid AND id=$2::uuid AND identifier=$3 AND entity_type='COMPANY'",[s.organisationId,s.requestId,s.command.nip])).rows
         if(rows.length!==1)return refuse()
+        // The original request/attempt/snapshot is the replay authority. The
+        // current native unit already serializes this request and section;
+        // no receipt cache, second writer or domain ledger is introduced.
+        const previous=(await client.query<{snapshot_id:string|null;matches:boolean}>(
+          `SELECT snapshot.id snapshot_id,
+             (a.completed_at IS NOT NULL AND a.error_code IS NOT DISTINCT FROM $4::text
+              AND ((a.status='NO_DATA' AND $5::jsonb='null'::jsonb AND snapshot.id IS NULL)
+                OR (a.status='SUCCESS' AND snapshot.id IS NOT NULL AND projection.id IS NOT NULL
+                  AND snapshot.supplier_id=$6::uuid AND snapshot.source_record_id IS NOT DISTINCT FROM $7::text
+                  AND snapshot.retrieved_at=$8::timestamptz AND snapshot.effective_at IS NOT DISTINCT FROM $9::timestamptz
+                  AND snapshot.payload_json=$10::jsonb AND projection.data_json=$5::jsonb))) matches
+           FROM srm.provider_attempts a LEFT JOIN srm.source_snapshots snapshot
+             ON snapshot.organization_id=a.organization_id AND snapshot.attempt_id=a.id AND snapshot.section=a.section
+           LEFT JOIN srm.section_projections projection ON projection.organization_id=snapshot.organization_id
+             AND projection.snapshot_id=snapshot.id AND projection.supplier_id=snapshot.supplier_id
+             AND projection.section=snapshot.section AND projection.projection_version=1
+           WHERE a.organization_id=$1::uuid AND a.request_id=$2::uuid AND a.section=$3 AND a.attempt_no=1`,
+          [s.organisationId,s.requestId,section,body.errorCode,JSON.stringify(body.envelope.data),rows[0].supplier_id,
+            body.envelope.source.recordId??null,body.envelope.retrievedAt,
+            body.envelope.effectiveAt&&!Number.isNaN(Date.parse(body.envelope.effectiveAt))?new Date(body.envelope.effectiveAt):null,
+            JSON.stringify(body.sourceData??body.envelope.data)])).rows
+        if(previous.length){
+          // A conflicting payload, unfinished/failed attempt or replacement
+          // financial provenance requires a new operation or reconciliation.
+          if(previous.length!==1||previous[0].matches!==true||body.facts.length)return refuse()
+          return previous[0].snapshot_id
+        }
         return persistSection(s.organisationId,{supplierId:rows[0].supplier_id,requestId:s.requestId},section,body.envelope,body.errorCode,body.facts,body.correlationId,body.sourceData,body.cacheStatus,pool)
       })
     },

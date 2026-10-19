@@ -175,9 +175,11 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
     const general = { ...cached.general, data: companyData && { ...companyData,
       registrationStatus: registration.status, deregisteredAt: registration.deregisteredAt } };
     const history=general.data?.registryHistory,allowedKrs=history?.members.map(m=>m.krs);
+    // A fresh shared payload still needs this organisation/request's private
+    // history. Publishing shared knowledge remains conditional on a change.
+    const generalSnapshotId=await ports.persistSection(organizationId,lookup,"general",general,null,[],undefined,undefined,"CACHE");
     if (cached.generalReprojected) {
-      const snapshotId=await ports.persistSection(organizationId,lookup,"general",general,null,[],undefined,undefined,"CACHE");
-      await ports.saveSharedCompany(organizationId,request.identifier.value,{general,financial:cached.financial,generalSnapshotId:snapshotId,financialSnapshotId:null,facts:[]});
+      await ports.saveSharedCompany(organizationId,request.identifier.value,{general,financial:cached.financial,generalSnapshotId,financialSnapshotId:null,facts:[]});
     }
     if (isCompanyReportRestricted(general.data)) return {
       identity: { krs: general.data?.krs ?? null, nip: request.identifier.value, name: general.data?.legalName ?? null },
@@ -199,9 +201,9 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
     const documents=await ports.readFinancialDocuments(organizationId,request.identifier.value);
     const savedFinancial = applyFinancialDocumentMetadata(msr.section,documents,history);
     const sourceData=msr.sourceData ? applyFinancialDocumentMetadata({...msr.section,data:msr.sourceData},documents,history).data ?? undefined : undefined;
+    const financialSnapshotId = await ports.persistSection(organizationId,lookup,"financial",savedFinancial,msr.errorCode,msr.facts,undefined,sourceData,"CACHE");
     if (msr.msrChanged || reconstructed || JSON.stringify(savedFinancial)!==JSON.stringify(cached.financial)) {
-      const snapshotId = await ports.persistSection(organizationId,lookup,"financial",savedFinancial,msr.errorCode,msr.facts,undefined,sourceData,"CACHE");
-      await ports.saveSharedCompany(organizationId,request.identifier.value,{general,financial:savedFinancial,generalSnapshotId:null,financialSnapshotId:snapshotId,facts:msr.facts,preserveGeneral:true});
+      await ports.saveSharedCompany(organizationId,request.identifier.value,{general,financial:savedFinancial,generalSnapshotId:null,financialSnapshotId,facts:msr.facts,preserveGeneral:true});
     }
     const financial = savedFinancial.data
       ? { ...savedFinancial, data: { ...savedFinancial.data, indicators: await ports.refreshFinancialIndicators(organizationId, request.identifier.value, savedFinancial.data) } }

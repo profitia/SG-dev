@@ -195,8 +195,8 @@ export async function saveSharedCompany(organizationId: string, nip: string, inp
   await withOrganization(organizationId, client => writeSharedCompany(client, organizationId, nip, input));
 }
 
-/** Recalculate from shared validated facts; persist provenance without another provider call. */
-export async function writeFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData): Promise<NonNullable<FinancialData["indicators"]>> {
+/** One stored-fact query and calculator shared by the pure reader and writer. */
+async function calculateStoredFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData) {
   const found = await client.query<CatalogIndicatorFact>(
     `SELECT metric_code AS "metricCode", period_start::text AS "periodStart", period_end::text AS "periodEnd",
        statement_scope AS "statementScope", amount::text AS amount, currency_code AS "currencyCode",
@@ -205,7 +205,22 @@ export async function writeFinancialIndicators(client: Pick<PoolClient, "query">
      FROM srm.catalog_financial_facts WHERE nip = $1 AND metric_code = ANY($2::text[])`,
     [nip, FINANCIAL_INDICATOR_INPUT_CODES],
   );
-  const calculated = calculateFinancialIndicators(nip, data, found.rows);
+  return calculateFinancialIndicators(nip, data, found.rows);
+}
+
+function publicFinancialIndicators(calculated: ReturnType<typeof calculateFinancialIndicators>): NonNullable<FinancialData["indicators"]> {
+  return calculated.map(({ inputFacts: _inputFacts, sourceSnapshotIds: _sourceSnapshotIds,
+    sourceDocumentIds: _sourceDocumentIds, nip: _nip, ...publicResult }) => publicResult);
+}
+
+/** Stored knowledge only: no provider request, row lock or business write. */
+export async function readFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData): Promise<NonNullable<FinancialData["indicators"]>> {
+  return publicFinancialIndicators(await calculateStoredFinancialIndicators(client, nip, data));
+}
+
+/** Recalculate from shared validated facts; persist provenance without another provider call. */
+export async function writeFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData): Promise<NonNullable<FinancialData["indicators"]>> {
+  const calculated = await calculateStoredFinancialIndicators(client, nip, data);
   if (calculated.length) {
     await client.query(
       `INSERT INTO srm.catalog_financial_indicators(nip, indicator_code, period_start, period_end,
@@ -239,8 +254,7 @@ export async function writeFinancialIndicators(client: Pick<PoolClient, "query">
       })))],
     );
   }
-  return calculated.map(({ inputFacts: _inputFacts, sourceSnapshotIds: _sourceSnapshotIds,
-    sourceDocumentIds: _sourceDocumentIds, nip: _nip, ...publicResult }) => publicResult);
+  return publicFinancialIndicators(calculated);
 }
 
 export async function refreshFinancialIndicators(organizationId: string, nip: string, data: FinancialData): Promise<NonNullable<FinancialData["indicators"]>> {
