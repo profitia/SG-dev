@@ -1172,5 +1172,34 @@
     "runtimeRoleOrGrantChanged": false,
     "providerExecutionAdopted": false,
     "productDeploymentPerformed": false
+  },
+  "srmNativeSupplierWorkRegression": {
+    "projectKey": "SG2",
+    "taskId": "SG2-E1-NATIVE-SUPPLIER-WORK-REGRESSION-20261019",
+    "status": "SOURCE_REGRESSION_CANDIDATE_NOT_RELEASED",
+    "srmProducer": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-NATIVE-SUPPLIER-WORK-BOUNDARY-20261019",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 538,
+      "sourceSha": "55601b4b3b57c2a8fb625e6bc8a5518b2c51282d"
+    },
+    "srmReceiptTask": {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-NATIVE-WORK-SOURCE-RECEIPTS-20261019",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 538,
+      "sourceSha": "55601b4b3b57c2a8fb625e6bc8a5518b2c51282d"
+    },
+    "platformVersionUnchanged": "1.20.0",
+    "rootImplementationUnchanged": "1.0.0-candidate.13",
+    "scope": "UNCHANGED_SG2_BUSINESS_REGRESSION_FOR_NATIVE_SRM_DOMAIN_WORK",
+    "validationBoundary": "EXACT_CANDIDATE_TRUSTED_MAIN_CONTROLLED_CI_REQUIRED_BEFORE_MERGE",
+    "sg2BusinessOrUiChanged": false,
+    "srmWorkStoreAdoptedBySg2": false,
+    "mapsChanged": false,
+    "privatePackageCredentialCopied": false,
+    "liveSchemaOrGrantsChanged": false,
+    "productDeploymentPerformed": false
   }
 }
