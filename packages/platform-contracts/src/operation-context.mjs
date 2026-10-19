@@ -116,6 +116,7 @@ function privateSupplierDescriptor(resource, time) {
 }
 
 function checkResource(resource, context, expected) {
+  if (resource?.privateSupplier !== undefined && !privateSupplierOperations.has(context.operation)) deny('RESOURCE_SCOPE_MISMATCH')
   if (!resource || resource.environment !== context.environment || resource.type !== expected.resourceType || resource.dataClass !== expected.dataClass || !nonempty(resource.id) || !nonempty(resource.version) || !nonempty(resource.projectionVersion)) deny('RESOURCE_SCOPE_MISMATCH')
   if (resource.dataClass === 'SHARED_KNOWLEDGE') {
     if (resource.ownerOrganisationId !== null || resource.ownerUserId !== null || resource.approvedSharedProjection !== true) deny('RESOURCE_SCOPE_MISMATCH')

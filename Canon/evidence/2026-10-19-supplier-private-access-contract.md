@@ -12,7 +12,7 @@ Reveal i eksport wymagają własnego uprawnienia oraz odczytu dokładnego prywat
 
 ## Weryfikacja i stan odbioru
 
-149 testów samego kontraktu oraz pełny zestaw kontraktu i laboratorium993/993 przeszły bez pominięć. Pełny zestaw obejmuje rzeczywiste, dotychczasowe testy zwykłych ról PostgreSQL; nie jest dowodem adopcji nowych prywatnych tabel lub wejść SRM. Build pakietu przeszedł. Nowe testy sprawdzają obce organizacje i snapshoty, brakujące i jawnie odebrane granty, rozdzielenie service/human, moduł, produkt, niedozwolone metadane i retencję wygasającą podczas projekcji. Awaria kanonicznego OUTCOME wstrzymuje publikację.
+150 testów samego kontraktu oraz pełny zestaw kontraktu i laboratorium994/994 przeszły bez pominięć. Pełny zestaw obejmuje rzeczywiste, dotychczasowe testy zwykłych ról PostgreSQL; nie jest dowodem adopcji nowych prywatnych tabel lub wejść SRM. Build pakietu przeszedł. Nowe testy sprawdzają obce organizacje i snapshoty, brakujące i jawnie odebrane granty, rozdzielenie service/human, moduł, produkt, niedozwolone metadane i retencję wygasającą podczas projekcji. Awaria kanonicznego OUTCOME wstrzymuje publikację. Dodatkowy test potwierdza odmowę użycia znacznika privateSupplier w dotychczasowej operacji wspólnego raportu; jawna klasyfikacja prywatna nie może przejąć semantyki SHARED_KNOWLEDGE.
 
 Niezależne porównanie zachowuje wcześniejsze30 reguł,77 scenariuszy, szablony ról, profile aplikacji, wszystkie SQL i kod produktów. Root package-lock miał wcześniej metadane wersji1.14.0 przy pakiecie1.20.0; jawnie wyrównano wyłącznie wersje do1.21.0. Wpisy zależności pozostały identyczne.
 

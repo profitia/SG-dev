@@ -143,6 +143,12 @@ test('candidate rules match exact normative rows and never imply the whole catal
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
 
+test('an ordinary shared report read cannot borrow private Supplier scope metadata',async()=>{
+ const f=fixture('supplier.report.read')
+ f.state.resource.privateSupplier={nip:'5213390341',entityType:'COMPANY',snapshotId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',retentionUntil:expiry}
+ await assert.rejects(f.execute(),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH');assert.equal(f.invoked,0);assert.deepEqual(f.writes,[])
+})
+
 for (const operation of ['supplier.private.read','supplier.private.reveal','supplier.private.export']) {
   const reject = [
     ['shared report rights cannot replace private rights', f => { f.state.access.permissions=f.state.access.permissions.filter(p=>!p.operation.startsWith('supplier.private.')) }, 'PERMISSION_DENIED'],
