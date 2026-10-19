@@ -2,7 +2,7 @@ import type { AccessQuery, AccessStoreBinding, IdentityBinding, DatabaseServiceA
 import type { Actor, Application, BoundRequest, OperationContext, OperationExecutor, OperationOutcome, Resource } from './operation-context.mjs'
 import type { ModuleId } from './module-scope.mjs'
 
-export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.7.0' }>
+export declare const PRIVATE_OPERATION_HOST_CONTRACT: Readonly<{ id: 'profitia.private-operation-host'; version: '1.8.0' }>
 export interface PrivateOperationScope {
   applicationId: string; environment: AccessStoreBinding['environment']; userId: string; organisationId: string | null
 }
@@ -40,7 +40,7 @@ export declare function privateOperationHostSourceDigest(): Promise<string>
 /** Private AM27 admission; does not execute a science/source effect. */
 export declare function createDelegatedJobHost<Transaction>(options:{
   application:Application;binding:AccessStoreBinding & {service:NonNullable<AccessStoreBinding['service']>}
-  job:{schemaDigest:string};now?:()=>number;transactionTimeoutMs?:number;independentQuery:AccessQuery
+  job:{schemaDigest:string}&import('./delegated-job.mjs').DelegatedJobTargetOptions;now?:()=>number;transactionTimeoutMs?:number;independentQuery:AccessQuery
   transact<T>(action:(session:{query:AccessQuery;transaction:Transaction})=>Promise<T>,limits:PrivateTransactionOptions):Promise<T>
   readExternalAccount(key:Readonly<import('./identity-provider.mjs').ExternalIdentityKey>):Promise<Readonly<import('./identity-provider.mjs').ExternalAccountObservation>|null>
   /** Fixed source adapter. Receives universal payload/key only, never a private actor or transaction. */

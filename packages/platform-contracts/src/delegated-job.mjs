@@ -2,8 +2,9 @@ import { createHash } from 'node:crypto'
 import { OperationDenied, operationPayloadDigest } from './operation-context.mjs'
 import {platformReceiptEvidence,platformDeliveryEvidence,platformIngestionSourceDigest} from './platform-ingestion.mjs'
 
-export const DELEGATED_JOB_CONTRACT=Object.freeze({id:'profitia.delegated-job',version:'1.0.0'})
+export const DELEGATED_JOB_CONTRACT=Object.freeze({id:'profitia.delegated-job',version:'1.1.0'})
 export const delegatedJobSchemaUrl=new URL('../migrations/access/007-delegated-jobs.sql',import.meta.url).href
+export const supplierDelegationSchemaUrl=new URL('../migrations/access/013-supplier-delegation.sql',import.meta.url).href
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 const text=value=>typeof value==='string'&&value.length>0&&value.length<=256
 const frozen=value=>{if(value&&typeof value==='object'){Object.values(value).forEach(frozen);Object.freeze(value)}return value}
@@ -11,9 +12,11 @@ const fail=()=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
 
 /** Closed SQL ports. All methods use the host's real, single transaction;
  * leases never become a serialized access token. No queue, timer or worker. */
-export function createDelegatedJobStore({binding,schemaDigest,now=Date.now}){
+export function createDelegatedJobStore({binding,schemaDigest,targetOperation='forecast.request',supplierSchemaDigest,now=Date.now}){
   const b=frozen(structuredClone(binding)),leases=new WeakSet()
-  if(!b||!['development','staging','production'].includes(b.environment)
+  if(!['forecast.request','supplier.report.refresh'].includes(targetOperation)
+    ||(targetOperation==='supplier.report.refresh'?!/^[a-f0-9]{64}$/.test(supplierSchemaDigest??''):supplierSchemaDigest!==undefined)
+    ||!b||!['development','staging','production'].includes(b.environment)
     || !['applicationId','projectId','branchId','databaseName','role'].every(k=>text(b[k]))
     || !/^[a-z][a-z0-9_]*$/.test(b.role)||!/^[a-f0-9]{64}$/.test(schemaDigest??'')||typeof now!=='function')throw TypeError('Explicit private dispatch binding required')
   const one=async(query,sql,values=[])=>{
@@ -27,6 +30,11 @@ export function createDelegatedJobStore({binding,schemaDigest,now=Date.now}){
     if(!d||r.database_name!==b.databaseName||r.role!==b.role||r.login!==b.role||d.applicationId!==b.applicationId
       ||d.environment!==b.environment||d.projectId!==b.projectId||d.branchId!==b.branchId||d.databaseName!==b.databaseName
       ||d.role!==b.role||d.schemaDigest!==b.schemaDigest||d.jobSchemaVersion!=='1.0.0'||d.jobSchemaDigest!==schemaDigest)fail()
+    if(targetOperation==='supplier.report.refresh'){
+      const extension=(await one(query,'SELECT profitia_jobs.supplier_runtime_descriptor() AS descriptor')).descriptor
+      if(!extension||extension.supplierSchemaVersion!=='1.0.0'||extension.supplierSchemaDigest!==supplierSchemaDigest
+        ||extension.jobSchemaDigest!==schemaDigest||extension.applicationId!==b.applicationId||extension.environment!==b.environment)fail()
+    }
     return d
   }
   const verifyScope=async(query,lease)=>{
@@ -40,7 +48,7 @@ export function createDelegatedJobStore({binding,schemaDigest,now=Date.now}){
   return Object.freeze({contract:DELEGATED_JOB_CONTRACT,
     async createDispatch(query,context){
       if(b.service!==undefined||context?.actor?.kind!=='HUMAN'||context.applicationId!==b.applicationId
-        ||context.environment!==b.environment||context.operation!=='forecast.request'||!text(context.configurationVersion)||!uuid.test(context.decisionId??'')
+        ||context.environment!==b.environment||context.operation!==targetOperation||!text(context.configurationVersion)||!uuid.test(context.decisionId??'')
         ||!uuid.test(context.requestReservation?.requestId??'')||context.requestReservation.replay!==false)fail()
       await descriptor(query)
       const r=await one(query,'SELECT profitia_jobs.create_dispatch($1::uuid,$2::uuid,$3) AS result',[context.requestReservation.requestId,context.decisionId,context.configurationVersion])
@@ -58,7 +66,7 @@ export function createDelegatedJobStore({binding,schemaDigest,now=Date.now}){
       if(s===null)throw new OperationDenied('DELEGATION_INVALID')
       if(!s||s.applicationId!==b.applicationId||s.environment!==b.environment||s.serviceBindingVersion!==actor.proofRef
         ||s.access?.actorId!==actor.actorId||s.access.type!=='DELEGATED_USER'||s.access.organisationId!==request.organisationId
-        ||s.resource?.id!==request.resourceId||s.delegation?.payloadDigest!==request.payloadDigest
+        ||s.resource?.id!==request.resourceId||s.delegation?.payloadDigest!==request.payloadDigest||s.delegation?.target?.operation!==targetOperation
         ||!/^access-v1:[1-9][0-9]*$/.test(s.policyVersion??'')||!/^[0-9]+$/.test(s.transactionId??''))fail()
       const expiry=Math.min(Date.parse(actor.expiresAt),Date.parse(s.access.expiresAt))
       if(!(expiry>now()))throw new OperationDenied('ACCESS_BASIS_INVALID')
@@ -125,6 +133,7 @@ export function createDelegatedJobStore({binding,schemaDigest,now=Date.now}){
 }
 
 export async function delegatedJobSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(delegatedJobSchemaUrl))).digest('hex')}
+export async function supplierDelegationSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(supplierDelegationSchemaUrl))).digest('hex')}
 export async function delegatedJobSourceDigest(){const fs=await import('node:fs');return createHash('sha256')
   .update(fs.readFileSync(new URL('./delegated-job.mjs',import.meta.url))).update(fs.readFileSync(new URL('./delegated-job.d.mts',import.meta.url)))
-  .update(await delegatedJobSchemaDigest()).update(await platformIngestionSourceDigest()).digest('hex')}
+  .update(await delegatedJobSchemaDigest()).update(await supplierDelegationSchemaDigest()).update(await platformIngestionSourceDigest()).digest('hex')}

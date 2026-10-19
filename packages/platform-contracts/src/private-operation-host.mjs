@@ -6,7 +6,7 @@ import { createRequestLedger, requestLedgerSourceDigest } from './request-ledger
 import { createRequestContinuationLedger, requestContinuationSourceDigest } from './request-continuation.mjs'
 import { createDelegatedJobStore, delegatedJobSourceDigest } from './delegated-job.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.7.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.8.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -41,11 +41,17 @@ export function createServiceReadHost(options) {
  * source transaction. Source commit cannot be undone by this private rollback;
  * its durable READY admission then remains available for a funded retry. */
 export function createDelegatedJobHost(options){
-  const a=options.application,s=options.binding?.service
+  const a=options.application,s=options.binding?.service,j=options.job
+  const keys=j&&Object.keys(j).sort().join(',')
+  const closedJob=j&&Object.getPrototypeOf(j)===Object.prototype
+    &&Reflect.ownKeys(j).length===Object.keys(j).length
+    &&Object.values(Object.getOwnPropertyDescriptors(j)).every(d=>'value'in d&&d.enumerable)
+    &&(keys==='schemaDigest'||keys==='schemaDigest,targetOperation'&&j.targetOperation==='forecast.request'
+      ||keys==='schemaDigest,supplierSchemaDigest,targetOperation'&&j.targetOperation==='supplier.report.refresh'&&/^[a-f0-9]{64}$/.test(j.supplierSchemaDigest??''))
   if(!a||!s||a.profileId!=='PLATFORM_INTERNAL'||a.identityIssuer!==DATABASE_SERVICE_ISSUER
     ||s.profileId!==a.profileId||s.deploymentId!==a.deploymentId||s.configurationVersion!==a.configurationVersion
     ||a.operations?.join(',')!=='job.execute'||a.features?.join(',')!=='job_execution'
-    ||typeof options.readExternalAccount!=='function'||!options.job||Object.keys(options.job).join(',')!=='schemaDigest'
+    ||typeof options.readExternalAccount!=='function'||!closedJob
     ||!/^[a-f0-9]{64}$/.test(options.job.schemaDigest??'')
     ||options.sourceDelivery!==undefined&&typeof options.sourceDelivery?.deliver!=='function'
     ||['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','readResources','projectOutput','describeOutcome','jobDelivery','deliverSource'].some(k=>Object.hasOwn(options,k)))throw TypeError('Explicit delegated private dispatch host required')
@@ -66,7 +72,7 @@ function createBoundOperationHost(options, serviceMode) {
   const binding = freeze(copy(options.binding))
   if (!application || !binding || binding.applicationId !== application.appId || binding.environment !== application.environment || [independentQuery, transact, ...(serviceMode ? [] : [createAuthenticator]), ...(delegated?[]:[readResources]), projectOutput, now].some(f => typeof f !== 'function') || !Number.isSafeInteger(transactionTimeoutMs) || transactionTimeoutMs < 100 || transactionTimeoutMs > 15000) throw new TypeError('Explicit application, private binding, identity factory and real transaction adapters required')
   const store = createAccessStore({ binding, now })
-  const jobStore=delegated?createDelegatedJobStore({binding,schemaDigest:options.job.schemaDigest,now}):null
+  const jobStore=delegated?createDelegatedJobStore({binding,schemaDigest:options.job.schemaDigest,targetOperation:options.job.targetOperation,supplierSchemaDigest:options.job.supplierSchemaDigest,now}):null
   const scopeStore=jobStore??store
   const module = options.module === undefined ? undefined : freeze(copy(options.module))
   if (module !== undefined && (!module || Object.getPrototypeOf(module) !== Object.prototype || Object.keys(module).length !== 3 || !/^[a-f0-9]{64}$/.test(module.auditSchemaDigest ?? '') || Object.keys(module).some(key => !['id','schemaDigest','auditSchemaDigest'].includes(key)))) throw new TypeError('Explicit accepted module audit boundary required')
