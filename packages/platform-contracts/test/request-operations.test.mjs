@@ -97,3 +97,11 @@ test('Finder result requires current own user and organization and explicit read
  f.state.access.permissions=[{operation:'knowledge.read',feature:'market',resourceId:null}];await assert.rejects(run(),denied('PERMISSION_DENIED'))
  f.state.access.permissions=[permission];f.state.resource.ownerOrganisationId=B;await assert.rejects(run(),denied('RESOURCE_SCOPE_MISMATCH'))
 })
+
+
+test('immutable schema digests remain hashes of the exact historical SQL, independently of added source dependencies',async()=>{
+ const {createHash}=await import('node:crypto'),ledger=await import('../src/request-ledger.mjs'),jobs=await import('../src/delegated-job.mjs'),work=await import('../src/request-work.mjs')
+ for(const[method,url]of[[ledger.requestReservationSchemaDigest,ledger.requestReservationSchemaUrl],[ledger.externalRequestSchemaDigest,ledger.externalRequestSchemaUrl],[jobs.delegatedJobSchemaDigest,jobs.delegatedJobSchemaUrl],[jobs.supplierDelegationSchemaDigest,jobs.supplierDelegationSchemaUrl],[work.requestWorkSchemaDigest,work.requestWorkSchemaUrl]]){
+  const expected=createHash('sha256').update(fs.readFileSync(new URL(url))).digest('hex');assert.equal(await method(),expected,url)
+ }
+})

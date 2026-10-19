@@ -14,7 +14,7 @@ Intencja i wynik Findera pozostają osobiste w organizacji; dane rynku pozostaj�
 
 ## Weryfikacja lokalna
 
-Pełny zestaw platform-contracts i architecture-lab na nowym, izolowanym PostgreSQL16: **1038/1038**, zero pominiętych i nieudanych testów; build wspólnego pakietu poprawny. Nie użyto chmurowej bazy klienta ani płatnych integracji. Test nowego rozszerzenia rzeczywiście łączy zwykłe loginy, przyjmuje zlecenie i jedną delegację, wykonuje pracę SERVICE oraz czyta osobisty wynik Findera przez rzeczywistą rolę HUMAN.
+Pełny zestaw platform-contracts i architecture-lab na nowym, izolowanym PostgreSQL16: **1039/1039**, zero pominiętych i nieudanych testów; build wspólnego pakietu poprawny. Nie użyto chmurowej bazy klienta ani płatnych integracji. Test nowego rozszerzenia rzeczywiście łączy zwykłe loginy, przyjmuje zlecenie i jedną delegację, wykonuje pracę SERVICE oraz czyta osobisty wynik Findera przez rzeczywistą rolę HUMAN.
 
 Sprawdzono brak jawnego grantu, replay i konflikt payloadu, inne organizacje i osoby, aktualne cofnięcie operacji, deaktywowane konto zewnętrzne, odczyt zwykłego loginu bez scope, bezpośrednie wstrzyknięcie zapisu, brak dostępu do instalacji, niezmienność potwierdzenia i rollback przerwanej migracji. Usługa pozostaje SERVICE, a inicjator subjectUserId; prywatny wynik nie trafia do technicznej odpowiedzi ani audytu. Dodatkowe testy jednostkowe i typów sprawdzają osobne prawa, produkty, moduły, limit, audyt, zakaz nadawania nowych celów staremu hostowi i brak prywatnej wartości zwracanej przez callback pracy.
 
@@ -29,3 +29,5 @@ Porównanie z authority początku potwierdziło identyczne wcześniejsze33 regu�
 ## Granice odbioru
 
 Ten dowód nie oznacza instalacji SQL017 w Neon, nadania uprawnień, uruchomienia Source, integracji HTTP/UI, ochrony wszystkich wejść ani wydania produktu. E1, Development, Staging, produkcja oraz biznesowy UAT nie są nim zamknięte. Dalsze integracje i wydanie Development mają odrębne tożsamości, bramki, LKG i testy zgodnie z aktualnym zleceniem właściciela. Staging i Production nie są objęte bieżącym wdrożeniem.
+
+Dalszy test odbiorcy wykrył regresję pomocnika externalRequestSchemaDigest: uwzględniał dodatkowe źródło zamiast wyłącznie historycznego SQL010. Przywrócono dokładną sumę pliku, zachowując rozszerzoną sumę źródła jako osobny dowód. Nowy test sprawdza wszystkie pięć dawnych digestów schematów niezależnie od nowych zależności;29/29 przypadków skoncentrowanych i pełne1039/1039 przeszły. Niezgodny kandydat nie był scalony ani wdrożony.

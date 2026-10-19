@@ -124,5 +124,5 @@ export async function requestReservationSchemaDigest(){
 }
 
 export async function externalRequestSchemaDigest(){
-  const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(externalRequestSchemaUrl))).update(await requestOperationsSourceDigest()).digest('hex')
+  const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(externalRequestSchemaUrl))).digest('hex')
 }
