@@ -14,11 +14,11 @@ export function createMapsServer(config, {root = path.join(appRoot, 'dist')} = {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
     res.setHeader('Cache-Control', 'no-store')
     res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()')
-    res.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'self' https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com; worker-src blob:; frame-src 'self' https://*.google.com; frame-ancestors ${ancestors}; object-src 'none'; base-uri 'none'`)
+    res.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com; worker-src blob:; frame-src 'self' https://*.google.com; frame-ancestors ${ancestors}; object-src 'none'; base-uri 'none'`)
     const json = (status, value) => {res.writeHead(status, {'Content-Type': 'application/json'}); res.end(JSON.stringify(value))}
     if (!['GET', 'HEAD'].includes(req.method)) return json(405, {error: 'Method not allowed'})
     const url = new URL(req.url, 'http://localhost')
-    if (url.pathname === '/api/health') return json(200, {service: 'maps-runtime', environment: config.environment, configured: config.configured, revision: config.revision, mode: 'read-only', persistence: false})
+    if (url.pathname === '/api/health') return json(200, {service: 'maps-runtime', environment: config.environment, configured: config.configured, revision: config.revision, runtimeVersion: process.version, mode: 'read-only', persistence: false})
     if (url.pathname === '/api/config') return json(200, publicConfig(config))
     let pathname
     try {pathname = decodeURIComponent(url.pathname)} catch {return json(400, {error: 'Invalid path'})}

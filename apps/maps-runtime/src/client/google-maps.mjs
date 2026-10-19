@@ -37,9 +37,10 @@ export async function drawGoogleMap(element, locations, config, {onSelect = () =
   const points = locations.filter(x => x.position)
   const map = new Map(element, {mapId: config.mapId, center: points[0]?.position || {lat: 52.2297, lng: 21.0122}, zoom: points.length === 1 ? 13 : 6, streetViewControl: false, mapTypeControl: false})
   const markers = points.map(location => {
-    const marker = new AdvancedMarkerElement({map, position: location.position, title: location.label})
-    marker.addListener('click', () => onSelect(location.id))
-    return marker
+    const marker = new AdvancedMarkerElement({map, position: location.position, title: location.label, gmpClickable: true})
+    const onClick = () => onSelect(location.id)
+    marker.addEventListener('gmp-click', onClick)
+    return {marker, onClick}
   })
   if (points.length > 1) {
     const bounds = new maps.LatLngBounds()
@@ -58,6 +59,6 @@ export async function drawGoogleMap(element, locations, config, {onSelect = () =
   })
   return {
     select(id) {const location = points.find(x => x.id === id); if (location) {map.panTo(location.position); map.setZoom(13)}},
-    close() {closed = true; window.clearTimeout(timer); window.removeEventListener('profitia:maps-auth-error', fail); tiles.remove(); markers.forEach(m => {maps.event.clearInstanceListeners(m); m.map = null}); maps.event.clearInstanceListeners(map); element.replaceChildren()},
+    close() {closed = true; window.clearTimeout(timer); window.removeEventListener('profitia:maps-auth-error', fail); tiles.remove(); markers.forEach(({marker, onClick}) => {marker.removeEventListener('gmp-click', onClick); maps.event.clearInstanceListeners(marker); marker.map = null}); maps.event.clearInstanceListeners(map); element.replaceChildren()},
   }
 }
