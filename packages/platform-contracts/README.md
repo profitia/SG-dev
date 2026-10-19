@@ -322,3 +322,41 @@ Public TypeScript positive/expected-negative contracts run with the laboratory's
 pinned TypeScript 5.9.3 dev dependency. This does not change product frameworks,
 React versions or runtime dependencies. Producer tests are not consumer adoption
 or Development release evidence; those remain separate acceptance tasks.
+
+## Closed Supplier delegation extension — package 1.17.0
+
+Operation implementation candidate.10 / private host1.8 / delegated-job1.1 extend
+one existing AM27 interpreter and private dispatch store with the additional
+explicit target `supplier.report.refresh`. The initiating account, identity,
+current membership/permission, `supplier_report` module and
+`SUPPLIER_INTELLIGENCE` offer remain separate from the actual SERVICE executor,
+its current grant and exact source binding. PORR_SUITE, SPENDGURU_SAAS and
+SUPPLIER_INTELLIGENCE_STANDALONE obey their own organization rules. No caller
+user/on-behalf claim, wildcard operation or Forecast entitlement substitutes for
+that target.
+
+Default stores and delegated hosts remain Forecast-only. Supplier configuration
+requires `targetOperation: 'supplier.report.refresh'` and the exact optional
+`supplierSchemaDigest`, in addition to the existing SQL007 base digest. The
+public type and runtime constructors refuse missing, mixed and unknown options.
+The same store checks the chosen target when creating and locking a dispatch;
+a default Forecast host cannot consume a Supplier job after installation.
+
+Additive SQL013 requires the actual accepted SQL007 and SQL010 installations.
+It keeps the existing private intent, delegation, dispatch, observation, audit
+and composite foreign-key authorities. A separate immutable, FORCE RLS
+installation records the optional extension; the original six job tables and
+SQL001–012 files retain their identity. The same active SQL functions use a
+closed choice of target feature/module/product/resource. No additional queue,
+writer, worker, role, runtime ACL, account, vendor acquisition or deployment is
+created. Ordinary-role tests cover the original default Forecast target both
+without and with SQL013, alongside Supplier acceptance/source receipt and
+revocation/audit/ownership refusals.
+
+A dispatch/source receipt means acceptance or delivery of a stored universal
+command. It is not completion of a supplier report, a provider purchase,
+permission to expose personal fields, or a HUMAN identity. Existing private
+Supplier phases still require HUMAN until their own separately governed
+service-delegation adoption. Actual product integrations, native long-running
+workflow, real identity, current live data/roles/recovery and controlled release
+remain required. Publishing this producer source does not activate consumers.

@@ -7,11 +7,14 @@ export interface DelegatedJobLease {
 export type DispatchAdmission = Readonly<{jobId:string;status:'BUSY'|'CONFIRMED'|'RECONCILE_REQUIRED'} | {
   jobId:string;requestId:string;status:'READY';sourceId:string;deliveryKey:string;leaseId:string;expiresAt:string;attempt:number
 }>
-export declare const DELEGATED_JOB_CONTRACT:Readonly<{id:'profitia.delegated-job';version:'1.0.0'}>
+export declare const DELEGATED_JOB_CONTRACT:Readonly<{id:'profitia.delegated-job';version:'1.1.0'}>
+export type DelegatedJobTargetOptions = {targetOperation?:'forecast.request';supplierSchemaDigest?:never}|{targetOperation:'supplier.report.refresh';supplierSchemaDigest:string}
+export declare const supplierDelegationSchemaUrl:string
+export declare function supplierDelegationSchemaDigest():Promise<string>
 export declare const delegatedJobSchemaUrl:string
 export declare function delegatedJobSchemaDigest():Promise<string>
 export declare function delegatedJobSourceDigest():Promise<string>
-export declare function createDelegatedJobStore(options:{binding:AccessStoreBinding;schemaDigest:string;now?:()=>number}):Readonly<{
+export declare function createDelegatedJobStore(options:{binding:AccessStoreBinding;schemaDigest:string;now?:()=>number}&DelegatedJobTargetOptions):Readonly<{
   contract:typeof DELEGATED_JOB_CONTRACT
   createDispatch(query:Query,context:Readonly<OperationContext>):Promise<Readonly<{jobId:string;requestId:string;status:'PENDING'}>>
   lockJob(query:Query,input:{actor:Readonly<Actor>;request:Readonly<BoundRequest>}):Promise<DelegatedJobLease>

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.9' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.10' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -147,11 +147,18 @@ function computeReceipt(value, id) {
 /** Reuses this engine's permission, resource and product checks for the exact
  * initiating target. A SERVICE remains a SERVICE; the subject is separate.
  * Host SQL supplies current control rows, and holds their revocation fence. */
+// Closed target policies for the SAME AM27 interpreter. The store/host also
+// selects its explicit target; adding Supplier never widens a Forecast host.
+const delegatedTargets=Object.freeze({
+  'forecast.request':Object.freeze({feature:'forecast',module:'benchmark',profiles:Object.freeze(['PORR_SUITE','SPENDGURU_SAAS'])}),
+  'supplier.report.refresh':Object.freeze({feature:'supplier_report',module:'supplier_report',profiles:Object.freeze(['PORR_SUITE','SPENDGURU_SAAS','SUPPLIER_INTELLIGENCE_STANDALONE'])}),
+})
 function delegatedJob(state, identity, request, config, time) {
   const d=state.delegation, t=d?.target, a=t?.application, ceiling=profiles[a?.profileId]
   const subject=d?.subjectUserId, observation=d?.externalAccountObservation, key=d?.identityKey
+  const target=Object.hasOwn(delegatedTargets,t?.operation)?delegatedTargets[t.operation]:null
   if (request.operation!=='job.execute' || identity.kind!=='SERVICE' || config.profileId!=='PLATFORM_INTERNAL'
-    || !d || !computeUuid.test(d.delegationId??'') || d.jobId!==request.resourceId || d.requestId!==d.jobId
+    || !d || !target || !computeUuid.test(d.delegationId??'') || d.jobId!==request.resourceId || d.requestId!==d.jobId
     || !computeUuid.test(d.jobId??'') || !computeUuid.test(subject??'')
     || d.organisationId!==request.organisationId || d.executorApplicationId!==config.appId
     || !nonempty(d.sourceId) || !/^[a-f0-9]{64}$/.test(d.deliveryKey??'') || d.payloadDigest!==request.payloadDigest
@@ -165,16 +172,16 @@ function delegatedJob(state, identity, request, config, time) {
     || observation.issuer!==key.issuer || observation.subject!==key.subject
     || !(Date.parse(observation.observedAt)<=time) || !validUntil(observation.expiresAt,time)
     || Date.parse(observation.expiresAt)>Date.parse(observation.observedAt)+5000
-    || !a || !['PORR_SUITE','SPENDGURU_SAAS'].includes(a.profileId) || !ceiling
+    || !a || !target.profiles.includes(a.profileId) || !ceiling
     || !nonempty(a.appId) || a.appId===config.appId || a.environment!==config.environment
-    || !nonempty(a.configurationVersion) || !Array.isArray(a.operations) || !a.operations.includes('forecast.request')
-    || !Array.isArray(a.features) || !a.features.includes('forecast') || a.features.some(f=>!ceiling.features.includes(f))
+    || !nonempty(a.configurationVersion) || !Array.isArray(a.operations) || !a.operations.includes(t.operation)
+    || !Array.isArray(a.features) || !a.features.includes(target.feature) || a.features.some(f=>!ceiling.features.includes(f))
     || (ceiling.fixed ? a.organisationId!==request.organisationId : a.organisationId!==null)
-    || t.operation!=='forecast.request' || !nonempty(t.resourceId) || !nonempty(t.policyVersion)
+    || !nonempty(t.resourceId) || !nonempty(t.policyVersion)
     || t.policyVersion!==state.policyVersion || t.access?.type!=='MEMBERSHIP' || t.access.actorId!==subject
     || t.access.organisationId!==request.organisationId || t.access.status!=='ACTIVE'
     || !nonempty(t.access.version) || !nonempty(t.access.sourceRef) || !validUntil(t.access.expiresAt,time)
-    || t.module?.id!=='benchmark' || !computeUuid.test(t.module.bindingId??'')
+    || t.module?.id!==target.module || !computeUuid.test(t.module.bindingId??'')
     || !nonempty(t.module.version) || !nonempty(t.module.sourceRef) || !validUntil(t.module.expiresAt,time)
     || state.resource.ownerUserId!==null) deny('DELEGATION_INVALID')
   const selected=rules[t.operation]

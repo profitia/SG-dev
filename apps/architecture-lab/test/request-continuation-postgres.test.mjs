@@ -129,7 +129,7 @@ test('private SQL phases continue accepted AM23 with current authority and same-
    assert.equal(row.status,'ACCEPTED');assert.equal(row.user_id,U);assert.equal(row.organisation_id,A);assert.equal(row.input_digest,inputDigest)
    const events=(await owner.query('SELECT event FROM profitia_access.security_events WHERE decision_id=$1 ORDER BY event_id',[row.decision_id])).rows.map(r=>r.event)
    assert.deepEqual(events.map(e=>e.phase),['INTENT','OUTCOME']);assert.equal(events[1].moduleEvidence.transactionId,evidence.transactionId)
-   assert.equal(events[0].correlationId,events[1].correlationId);assert(events.every(e=>e.implementationVersion==='1.0.0-candidate.9'))
+   assert.equal(events[0].correlationId,events[1].correlationId);assert(events.every(e=>e.implementationVersion==='1.0.0-candidate.10'))
   })
   await scenario('concurrent phase replay executes one private action and does not charge another parent',async()=>{
    const requestId=await parent(),f=phaseFixture(requestId)
