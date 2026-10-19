@@ -7,7 +7,7 @@ import {mountMaps} from '@profitia/maps-embed'
 import {mapsMessage} from '@profitia/maps-contracts'
 import {openEmbeddedReadClient} from '@profitia/platform-contracts/embedded-read-channel'
 
-test('independent host uses the real E1 channel and rejects wrong origin, window and version', async () => {
+test('independent host tolerates runtime boot beyond the E1 read deadline and rejects wrong origin, window and version', async () => {
   const listeners = new Set(), statuses = [], selections = []
   let client, reads = 0, removed = false
   const frame = {setAttribute() {}, remove() {removed = true}, contentWindow: {postMessage(message, origin, ports) {
@@ -17,7 +17,7 @@ test('independent host uses the real E1 channel and rejects wrong origin, window
   const win = {location: {origin: 'https://host.example'}, crypto: webcrypto, MessageChannel, setTimeout, clearTimeout,
     addEventListener: (_name, f) => listeners.add(f), removeEventListener: (_name, f) => listeners.delete(f)}
   const container = {ownerDocument: {defaultView: win, createElement: () => frame}, append() {}}
-  const mount = mountMaps({container, runtimeOrigin: 'https://maps.example', readLocations: async () => {reads++; return [{id: 'a', label: 'Host point', position: {lat: 1, lng: 2}}]}, onStatus: x => statuses.push(x), onSelect: x => selections.push(x), timeoutMs: 1000})
+  const mount = mountMaps({container, runtimeOrigin: 'https://maps.example', readLocations: async () => {reads++; return [{id: 'a', label: 'Host point', position: {lat: 1, lng: 2}}]}, onStatus: x => statuses.push(x), onSelect: x => selections.push(x), timeoutMs: 500, startupTimeoutMs: 2000})
   const instanceId = new URL(frame.src).searchParams.get('instanceId')
   const receive = [...listeners][0]
   for (const event of [
@@ -26,6 +26,9 @@ test('independent host uses the real E1 channel and rejects wrong origin, window
     {origin: 'https://maps.example', source: frame.contentWindow, data: {...mapsMessage('ready', instanceId), version: '99'}},
   ]) receive(event)
   assert.equal(client, undefined)
+  await delay(550)
+  assert.equal(removed, false)
+  assert.deepEqual(statuses, [])
   const event = data => ({origin: 'https://maps.example', source: frame.contentWindow, data})
   receive(event(mapsMessage('ready', instanceId)))
   const response = await client.read({view: 'locations'})

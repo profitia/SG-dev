@@ -4,6 +4,7 @@ const start = document.querySelector('[data-start]')
 let mount
 start.addEventListener('click', () => {
   start.disabled = true
+  document.querySelector('[data-status]').textContent = 'Ładowanie osadzonej mapy…'
   const runtimeOrigin = document.querySelector('[data-runtime-origin]').value.trim() || location.origin
   try {
     mount = mountMaps({container: document.querySelector('[data-host]'), runtimeOrigin,

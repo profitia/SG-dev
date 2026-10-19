@@ -35,6 +35,8 @@ The generic location projection is allowlisted and bounded: id, label, optional 
 
 The adapter uses the existing E1 public embedded-read channel. It transfers the MessagePort only after exact window/origin/version/instance verification. `readLocations` must enforce current access through the host's authorized backend for every private read. Synthetic harness tests do not establish actual E1 membership, RLS or user acceptance. Command/CRUD operations remain unsupported. No parallel authentication, organization store, backend identity token or foreign database is introduced.
 
+Runtime startup has a separate90s default deadline (`startupTimeoutMs`, maximum120s), accommodating Development service wake-up. E1 reads retain their independent15s maximum (`timeoutMs`); startup time never increases channel limits. Render Free sleeps after15 idle minutes and can take about a minute to wake: https://render.com/docs/free . This deployment is for technical Development tests, not a production availability commitment.
+
 For an independent-origin browser check, serve the built harness from a second local origin and set its runtime-origin field to the running Maps application. The runtime's allowed-host list must include that exact second origin. Its host CSP must allow the runtime frame. Browser Google key restrictions apply to the Maps runtime origin.
 
 ## Server geocoding boundary

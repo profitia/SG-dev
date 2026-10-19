@@ -26,6 +26,8 @@ test('actual HTTP surface has bounded static routes, no business writers or publ
   assert.equal((await fetch(base + '/api/geocode', {method: 'POST', body: '{}'})).status, 405)
   assert.equal((await fetch(base + '/api/locations')).status, 404)
   assert.equal((await fetch(base + '/%2e%2e%2f.env.local')).status, 404)
+  assert.equal((await fetch(base + '//[')).status, 400)
+  assert.equal((await fetch(base + '/api/health')).status, 200)
   assert.equal((await fetch(base + '/api/config')).status, 200)
   const page = await fetch(base + '/')
   assert.equal(page.status, 200)

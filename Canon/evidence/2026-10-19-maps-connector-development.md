@@ -32,3 +32,11 @@ The Render environment-variable update operation unexpectedly triggered a second
 Canonical onboarding closeout initially rejected manually supplied completion fields and then missing targetEnvironment before persistence. Corrected input used the canonical writer, preserved rejected inputs, and completed PMOS/PHR. These were operator-input corrections, not history rewrites or source gate waivers.
 
 Live server Geocoding, MGBI mapping, private location CRUD, organization persistence/RLS, business E1 admission, SRM feature mounting and customer UAT remain outside this connector slice. Standalone Maps connection and public transport readiness do not imply user readiness in SRM.
+
+## Retained-artifact rehearsal and corrected rendering
+
+Actual rollback POST to retained dep-dbat5v5g1s2s73defdtg produced dep-dbataebncjis73abklj0, LIVE; reverse restore of dep-dbat6alg1s2s73degmng produced dep-dbatb3m7bikc73at8r80, LIVE. Both retained the exact old source/application digest, configured HTTP200 and no database. These were actual provider rollback executions, not source rebuilds or mocked tests. Configuration fingerprints and scoped API responses remain in the isolated task evidence. The deletion procedure was also checked using the CLI's no-confirm dry run; no service was deleted.
+
+After exact PR521 CI39223045014/39223045061 and exact merged-main CI39223336406/39223336420 SUCCESS, pinned b161db4fa165b6c609e7a56533b9dbc0426f70e2 was deployed as dep-dbatc0e7bikc73atc1lg, LIVE. Health reports Node v22.23.3. Its real browser map rendered without warnings/errors; selecting Warsaw in the location list updated selection and panned/zoomed the Google map. Application digest67718120c894263458e6253e8921f0e37d54d3b3d2796fdbf0a12bc3fdc993bb.
+
+The final startup follow-up separates the default90s runtime boot deadline from the unchanged maximum15s E1 read deadline. Official Render Free guidance documents wake-up of about a minute; the old shared15s timer could abort an otherwise valid cold start. Regression test delays the runtime ready handshake beyond its read deadline and still completes the real E1 channel exchange. Actual15-minute idle/sleep/wake was not waited out. Free is a technical Development choice; do not infer production availability or unlimited artifact retention (only two prior deploys on Free).
