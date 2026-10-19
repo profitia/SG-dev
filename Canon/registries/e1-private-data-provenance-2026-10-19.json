@@ -1,0 +1,753 @@
+{
+  "schemaVersion": "1.0",
+  "registryId": "e1-private-data-provenance-2026-10-19",
+  "taskId": "ARCHITECTURE-E1-PRIVATE-DATA-PROVENANCE-BASELINE-20261019",
+  "status": "DATED_PREPARATORY_BASELINE_PROGRAMME_IN_PROGRESS",
+  "sourceAuthority": {
+    "repository": "profitia/SG-dev",
+    "branch": "main",
+    "sourceSha": "0c9266e84830bd97445311a6c3ed357b197bc1d0"
+  },
+  "targetEnvironment": "development",
+  "observationWindow": {
+    "start": "2026-10-19T06:56:33.759945+00:00",
+    "end": "2026-10-19T07:09:39.019036+00:00",
+    "atomicCrossProjectSnapshot": false
+  },
+  "ownerDecision": {
+    "source": "direct human reply in current host conversation",
+    "acceptedAt": "2026-10-19 07:10:38 UTC",
+    "privateHistory": "Prepared Profitia organization starts with empty history and its own lists. Legacy private history remains preserved with its existing owner. No transfer to Profitia or the named initial person.",
+    "sharedKnowledge": "Existing universal market and permitted supplier knowledge remain separate from private history; no new personal-data or source permission is granted.",
+    "rebootstrapAuthorized": false,
+    "historicalOwnershipReassignmentAuthorized": false
+  },
+  "privatePlatform": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "endpointId": "ep-late-heart-b9mxo8oi",
+    "databaseName": "platform_private",
+    "tableCount": 43,
+    "forceRlsTableCount": 43,
+    "schemaNames": [
+      "profitia_access",
+      "profitia_modules",
+      "public",
+      "sg_runtime_benchmarks",
+      "srm"
+    ],
+    "actualRuntimeLogins": [
+      {
+        "database": "platform_private",
+        "actual_role": "srm_private_development_runtime",
+        "actual_login": "srm_private_development_runtime",
+        "rolsuper": false,
+        "rolbypassrls": false,
+        "rolinherit": false,
+        "memberships": "0"
+      },
+      {
+        "database": "platform_private",
+        "actual_role": "sg2_private_development_runtime",
+        "actual_login": "sg2_private_development_runtime",
+        "rolsuper": false,
+        "rolbypassrls": false,
+        "rolinherit": false,
+        "memberships": "0"
+      },
+      {
+        "database": "platform_private",
+        "actual_role": "sg2_private_development_dashboard",
+        "actual_login": "sg2_private_development_dashboard",
+        "rolsuper": false,
+        "rolbypassrls": false,
+        "rolinherit": false,
+        "memberships": "0"
+      }
+    ],
+    "controlledOwnerMetadata": [
+      {
+        "role": "profitia_access_owner",
+        "login": false,
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false,
+        "memberships": 0
+      }
+    ],
+    "directoryCounts": {
+      "accounts": "1",
+      "organisations": "1",
+      "external_identities": "1",
+      "memberships": "1",
+      "permission_grants": "4",
+      "product_grants": "2",
+      "module_bindings": "2",
+      "bootstrap_receipts": "1"
+    },
+    "applications": [
+      {
+        "application_id": "spendguru",
+        "status": "DISABLED"
+      },
+      {
+        "application_id": "srm",
+        "status": "DISABLED"
+      }
+    ],
+    "initialPermissions": [
+      {
+        "application_id": "spendguru",
+        "operation": "benchmark.selection.read",
+        "effect": "ALLOW"
+      },
+      {
+        "application_id": "spendguru",
+        "operation": "benchmark.selection.write",
+        "effect": "ALLOW"
+      },
+      {
+        "application_id": "srm",
+        "operation": "supplier.report.project",
+        "effect": "ALLOW"
+      },
+      {
+        "application_id": "srm",
+        "operation": "supplier.report.read",
+        "effect": "ALLOW"
+      }
+    ],
+    "runtimeBindings": [
+      {
+        "login_role": "sg2_private_development_dashboard",
+        "application_id": "spendguru",
+        "status": "ACTIVE"
+      },
+      {
+        "login_role": "sg2_private_development_runtime",
+        "application_id": "spendguru",
+        "status": "ACTIVE"
+      },
+      {
+        "login_role": "srm_private_development_runtime",
+        "application_id": "srm",
+        "status": "ACTIVE"
+      }
+    ],
+    "productGrants": [
+      {
+        "application_id": "spendguru",
+        "product": "SPENDGURU",
+        "features": [
+          "benchmark"
+        ],
+        "status": "ACTIVE",
+        "current": true
+      },
+      {
+        "application_id": "srm",
+        "product": "SUPPLIER_INTELLIGENCE",
+        "features": [
+          "supplier_report"
+        ],
+        "status": "ACTIVE",
+        "current": true
+      }
+    ],
+    "moduleBindings": [
+      {
+        "application_id": "spendguru",
+        "module_id": "benchmark",
+        "status": "ACTIVE",
+        "current": true
+      },
+      {
+        "application_id": "srm",
+        "module_id": "supplier_report",
+        "status": "ACTIVE",
+        "current": true
+      }
+    ],
+    "installation": {
+      "schema_version": "1.0.0",
+      "schema_digest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "environment": "development",
+      "project_id": "spring-bread-28217539",
+      "branch_id": "br-sparkling-term-b99l107x",
+      "database_name": "platform_private",
+      "revision": "19"
+    },
+    "physicalCounts": {
+      "identity": {
+        "database": "platform_private",
+        "actual_role": "neondb_owner",
+        "actual_login": "neondb_owner",
+        "rolbypassrls": true
+      },
+      "tables": [
+        {
+          "rows": 1,
+          "schema": "profitia_access",
+          "table_name": "accounts"
+        },
+        {
+          "rows": 2,
+          "schema": "profitia_access",
+          "table_name": "applications"
+        },
+        {
+          "rows": 1,
+          "schema": "profitia_access",
+          "table_name": "bootstrap_receipts"
+        },
+        {
+          "rows": 1,
+          "schema": "profitia_access",
+          "table_name": "directory_installation"
+        },
+        {
+          "rows": 1,
+          "schema": "profitia_access",
+          "table_name": "external_identities"
+        },
+        {
+          "rows": 1,
+          "schema": "profitia_access",
+          "table_name": "installation"
+        },
+        {
+          "rows": 1,
+          "schema": "profitia_access",
+          "table_name": "memberships"
+        },
+        {
+          "rows": 1,
+          "schema": "profitia_access",
+          "table_name": "organisations"
+        },
+        {
+          "rows": 4,
+          "schema": "profitia_access",
+          "table_name": "permission_grants"
+        },
+        {
+          "rows": 2,
+          "schema": "profitia_access",
+          "table_name": "product_grants"
+        },
+        {
+          "rows": 3,
+          "schema": "profitia_access",
+          "table_name": "runtime_bindings"
+        },
+        {
+          "rows": 0,
+          "schema": "profitia_access",
+          "table_name": "security_events"
+        },
+        {
+          "rows": 2,
+          "schema": "profitia_modules",
+          "table_name": "application_bindings"
+        },
+        {
+          "rows": 1,
+          "schema": "profitia_modules",
+          "table_name": "audit_installation"
+        },
+        {
+          "rows": 1,
+          "schema": "profitia_modules",
+          "table_name": "installation"
+        },
+        {
+          "rows": 0,
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "BenchmarkProviderMapping"
+        },
+        {
+          "rows": 0,
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "BusinessBenchmark"
+        },
+        {
+          "rows": 0,
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "Category"
+        },
+        {
+          "rows": 0,
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "CategoryCostComponent"
+        },
+        {
+          "rows": 0,
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "OrganizationBenchmarkSelection"
+        },
+        {
+          "rows": 1,
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "private_installation"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "catalog_companies"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "catalog_financial_facts"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "catalog_financial_indicators"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "catalog_kys_reports"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "financial_facts"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "financial_scanner_frames"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "financial_source_documents"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "lookup_requests"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "mgbi_source_archives"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "msr_projections"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "msr_sources"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "organization_supplier_interest"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "organizations"
+        },
+        {
+          "rows": 1,
+          "schema": "srm",
+          "table_name": "private_installation"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "provider_attempts"
+        },
+        {
+          "rows": 18,
+          "schema": "srm",
+          "table_name": "schema_migrations"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "section_projections"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "source_snapshots"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "supplier_web_identity"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "suppliers"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "user_supplier_interest"
+        },
+        {
+          "rows": 0,
+          "schema": "srm",
+          "table_name": "users"
+        }
+      ]
+    },
+    "businessDataPresent": false,
+    "laterOptionalSchemasInstalled": false,
+    "disabledDescriptorRefusal": "EXPECTED_NOT_RUNTIME_ACCEPTANCE",
+    "runtimeRoleMetadata": [
+      {
+        "role": "sg2_private_development_dashboard",
+        "login": true,
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false,
+        "memberships": 0
+      },
+      {
+        "role": "sg2_private_development_runtime",
+        "login": true,
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false,
+        "memberships": 0
+      },
+      {
+        "role": "srm_private_development_runtime",
+        "login": true,
+        "inherit": false,
+        "createDb": false,
+        "bypassRls": false,
+        "superuser": false,
+        "createRole": false,
+        "memberships": 0
+      }
+    ]
+  },
+  "legacySrm": {
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-dark-surf-b1vrhda9",
+    "databaseName": "srm_app",
+    "actualRuntimeIdentity": {
+      "database": "srm_app",
+      "actual_role": "srm_app_runtime",
+      "actual_login": "srm_app_runtime",
+      "superuser": false,
+      "bypassRls": false,
+      "inherit": true,
+      "memberships": null
+    },
+    "tableCount": 21,
+    "forceRlsTableCount": 20,
+    "physicalCounts": {
+      "identity": {
+        "database": "srm_app",
+        "actual_role": "neondb_owner",
+        "actual_login": "neondb_owner",
+        "rolbypassrls": true
+      },
+      "tables": [
+        {
+          "rows": 42,
+          "table_name": "catalog_companies"
+        },
+        {
+          "rows": 7372,
+          "table_name": "catalog_financial_facts"
+        },
+        {
+          "rows": 4122,
+          "table_name": "catalog_financial_indicators"
+        },
+        {
+          "rows": 19,
+          "table_name": "catalog_kys_reports"
+        },
+        {
+          "rows": 31635,
+          "table_name": "financial_facts"
+        },
+        {
+          "rows": 29,
+          "table_name": "financial_scanner_frames"
+        },
+        {
+          "rows": 279,
+          "table_name": "financial_source_documents"
+        },
+        {
+          "rows": 497,
+          "table_name": "lookup_requests"
+        },
+        {
+          "rows": 78,
+          "table_name": "mgbi_source_archives"
+        },
+        {
+          "rows": 6,
+          "table_name": "msr_projections"
+        },
+        {
+          "rows": 7,
+          "table_name": "msr_sources"
+        },
+        {
+          "rows": 41,
+          "table_name": "organization_supplier_interest"
+        },
+        {
+          "rows": 1,
+          "table_name": "organizations"
+        },
+        {
+          "rows": 449,
+          "table_name": "provider_attempts"
+        },
+        {
+          "rows": 18,
+          "table_name": "schema_migrations"
+        },
+        {
+          "rows": 281,
+          "table_name": "section_projections"
+        },
+        {
+          "rows": 281,
+          "table_name": "source_snapshots"
+        },
+        {
+          "rows": 24,
+          "table_name": "supplier_web_identity"
+        },
+        {
+          "rows": 49,
+          "table_name": "suppliers"
+        },
+        {
+          "rows": 41,
+          "table_name": "user_supplier_interest"
+        },
+        {
+          "rows": 1,
+          "table_name": "users"
+        }
+      ]
+    },
+    "organizationComparison": {
+      "initialOrgCount": 1,
+      "legacyOrgCount": 1,
+      "anyMatchingPhysicalIdentifier": false
+    },
+    "userHistoryClasses": [
+      {
+        "identity_kind": "SHARED_DEMO",
+        "users": "1",
+        "interest_rows": "41"
+      }
+    ],
+    "kysRetentionCounts": [
+      {
+        "catalog_kys_rows": "19",
+        "report_rows": "14",
+        "retained_current_rows": "1",
+        "expired_report_rows": "13"
+      }
+    ],
+    "catalogProvenance": [
+      {
+        "catalog_rows": "42",
+        "general_private_org_lineage_rows": "42",
+        "general_private_snapshot_lineage_rows": "40",
+        "financial_private_org_lineage_rows": "42",
+        "financial_private_snapshot_lineage_rows": "26",
+        "financial_internal_top_level_fields_rows": "0",
+        "financial_internal_data_fields_rows": "0"
+      }
+    ],
+    "financialFactProvenance": [
+      {
+        "financial_fact_rows": "7372",
+        "private_org_lineage_rows": "7372",
+        "private_snapshot_lineage_rows": "7372"
+      }
+    ],
+    "indicatorProvenance": [
+      {
+        "indicator_rows": "4122",
+        "input_fact_rows": "3146",
+        "snapshot_id_rows": "3146",
+        "document_id_rows": "3146"
+      }
+    ],
+    "ownerReadDoesNotProveApplicationDisclosure": true
+  },
+  "market": {
+    "projectId": "autumn-waterfall-65938876",
+    "branchId": "br-dry-hall-b294222f",
+    "databaseName": "neondb",
+    "publicTableCount": 18,
+    "publicRlsTableCount": 0,
+    "separatePreparedReadBoundaryForceRlsTableCount": 1,
+    "ordinaryReaderProbe": {
+      "database": "neondb",
+      "actual_role": "sg2_market_read_development_runtime",
+      "actual_login": "sg2_market_read_development_runtime",
+      "default_read_only": "on",
+      "accepted_current_installations": "1",
+      "shared_series_probe": true,
+      "shared_observation_probe": true,
+      "trace_access": false,
+      "job_access": false
+    },
+    "ordinaryReaderMetadata": {
+      "database": "neondb",
+      "actual_role": "sg2_market_read_development_runtime",
+      "actual_login": "sg2_market_read_development_runtime",
+      "rolsuper": false,
+      "rolbypassrls": false,
+      "rolinherit": false,
+      "memberships": "0"
+    },
+    "directPublicTableReadOrWriteGranted": false,
+    "privateOrgUserSchemasPresent": false,
+    "technicalControlTables": [
+      "forecast_action_trace",
+      "forecast_preparation_execution_ledger",
+      "forecast_preparation_job"
+    ],
+    "schemaLocationAloneDoesNotClassifyData": true
+  },
+  "archivedLegacySg": {
+    "projectId": "old-smoke-90429853",
+    "branches": [
+      {
+        "id": "br-empty-bird-asg7u58f",
+        "name": "production",
+        "state": "archived"
+      },
+      {
+        "id": "br-old-wildflower-asw0m0uy",
+        "name": "development",
+        "state": "archived"
+      }
+    ],
+    "sqlPerformed": false,
+    "reactivated": false,
+    "currentContents": "NOT_VERIFIED"
+  },
+  "deploymentMetadata": {
+    "capturedAt": "2026-10-19 07:10:38 UTC",
+    "servicesObserved": 17,
+    "selectedLiveDeployments": [
+      {
+        "id": "srv-db78d82j9qps73bej0c0",
+        "environmentId": "evm-db717krrjlhs739jgo1g",
+        "repo": "https://github.com/profitia/SG-dev",
+        "autoDeploy": false,
+        "name": "architecture-development-pmos",
+        "rootDir": "apps/pmos",
+        "liveStatus": "live",
+        "deployId": "dep-db79knaj9qps73bjddeg",
+        "deploySha": "e03454fdf484c51a251bf3c736d82769821af117"
+      },
+      {
+        "id": "srv-db1vu6gm7kps73d0e3r0",
+        "environmentId": "evm-dapbd70ae00c73cgrup0",
+        "repo": "https://github.com/profitia/SG-dev",
+        "autoDeploy": false,
+        "name": "srm-development-runtime",
+        "rootDir": "",
+        "liveStatus": "live",
+        "deployId": "dep-db97cj6k1f9s738na1r0",
+        "deploySha": "6eede5cd19fd3a4519d66298effe9ef94633757a"
+      },
+      {
+        "id": "srv-dapa40ad0e5s73f8bjm0",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "repo": "https://github.com/profitia/SG-dev",
+        "autoDeploy": false,
+        "name": "sg2-development-forecast-verification-worker",
+        "rootDir": ".",
+        "liveStatus": "live",
+        "deployId": "dep-dbaqkap42hec73cbockg",
+        "deploySha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
+      },
+      {
+        "id": "srv-dapa3vlg1s2s739vp7dg",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "repo": "https://github.com/profitia/SG-dev",
+        "autoDeploy": false,
+        "name": "sg2-development-forecast-current-worker",
+        "rootDir": "",
+        "liveStatus": "live",
+        "deployId": "dep-dbaqkap42hec73cbocl0",
+        "deploySha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
+      },
+      {
+        "id": "srv-dapa3ujm8hqs73a9t2og",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "repo": "https://github.com/profitia/SG-dev",
+        "autoDeploy": false,
+        "name": "sg2-development-dashboard",
+        "rootDir": "apps/dashboard-preview",
+        "liveStatus": "live",
+        "deployId": "dep-dbaqkap42hec73cbocjg",
+        "deploySha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119"
+      },
+      {
+        "id": "srv-dapa3tid0e5s73f8bc5g",
+        "environmentId": "evm-dap98hm0tbcc738rro10",
+        "repo": "https://github.com/profitia/SG-dev",
+        "autoDeploy": false,
+        "name": "sg2-development-runtime",
+        "rootDir": ".",
+        "liveStatus": "live",
+        "deployId": "dep-dbaqkap42hec73cbocig",
+        "deploySha": "c55c551091b3584673726bd0a78254eb091c7197"
+      }
+    ],
+    "connectionConfigurationReverified": false
+  },
+  "readProbeInterpretation": [
+    "RLS-filtered zeros are not physical emptiness. Exact physical counts use a read-only existing administrator connection with BYPASSRLS; these are not ordinary-runtime security proofs.",
+    "Three private ordinary runtime identities and the prepared market reader are independently verified through their actual logins. Disabled descriptors and closed-table SELECT refuse as expected.",
+    "Exploratory missing-column and array-type expressions were corrected against actual source/schema; only successful final reads support the observations.",
+    "KYS expired rows and private calculation lineage are aggregate owner observations; no customer payload or source document was read and no application disclosure was attempted."
+  ],
+  "limitations": [
+    "Owner/admin aggregate reads are separate from actual ordinary-runtime proofs. RLS-filtered zero rows were not treated as proof of empty tables; physical counts used an explicitly read-only admin transaction with existing BYPASSRLS.",
+    "No customer records, identifiers, individual identity values, source payloads or document contents were retrieved into this baseline. Only aggregate counts and schema/access metadata.",
+    "No current Render secret values were read. Runtime configuration connection routing retains its dated earlier verification; current service/deploy observations are separate metadata evidence.",
+    "No migration, product data/SQL/schema/role/grant/configuration/secret/resource mutation, app activation, archived branch reactivation or deployment.",
+    "Column/type errors in exploratory read-only queries were corrected against schema metadata; only final successful reads support facts. Disabled-descriptor and closed-table refusals are distinguished from those query errors.",
+    "No customer-session, business UAT, cloud rollback rehearsal or full E1 acceptance.",
+    "Owner explicitly chose a fresh start for prepared Profitia. Legacy ownership/history must be preserved; this decision authorizes no data reassignment, real-customer record import, new infrastructure or broader source entitlement."
+  ],
+  "boundaries": {
+    "productDataChanged": false,
+    "productSchemaChanged": false,
+    "roleOrGrantChanged": false,
+    "credentialsReadOrCopied": false,
+    "productDeploymentPerformed": false,
+    "historyReassigned": false,
+    "pmosProfile": "ARCHITECTURE",
+    "programmeStatus": "IN_PROGRESS"
+  },
+  "evidence": "Canon/evidence/2026-10-19-e1-private-data-provenance.md"
+}
