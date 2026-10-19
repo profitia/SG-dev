@@ -12,13 +12,25 @@ import shape from './corporate-source-shape.json'
 
 export const CORPORATE_PUBLICATION_VERSION = 'srm-corporate-publication-v1'
 export const CORPORATE_SOURCE = Object.freeze({ id: 'srm.catalog.corporate', payloadSchema: CORPORATE_PUBLICATION_VERSION,
-  qualityVersion: 'srm-corporate-quality-v1', classificationVersion: 'srm-corporate-fields-v1' })
+  qualityVersion: 'srm-corporate-quality-v1', classificationVersion: 'srm-corporate-fields-v2' })
 export type CorporatePacket = { version: typeof CORPORATE_PUBLICATION_VERSION; nip: string
   general: SectionEnvelope<GeneralCompanyData>; financial: SectionEnvelope<FinancialData>
   facts: FinancialSourceFact[]; preserveGeneral: boolean }
 type Spec = string | Spec[] | { [key: string]: Spec }
 const unavailable = (): never => { throw new TypeError('Classified corporate publication required') }
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
+const msrBasis = Object.freeze({iXBRL:'MGBI_IAS_FLAG_AND_IXBRL_CONTEXTS_V1',XHTML:'MGBI_IAS_FLAG_AND_XHTML_PRIMARY_CELLS_V1'})
+function factProvenance(path:string,fact:FinancialSourceFact,periods:FinancialData['periods']):boolean {
+  // Structured provider paths retain their existing class, but cannot relabel
+  // a fact belonging to an original MSR projection as structured provider data.
+  if(path.startsWith('content.'))return periods.some(p=>!Object.values(msrBasis).includes(p.accountingStandardBasis as typeof msrBasis[keyof typeof msrBasis]))
+  const source=/^([a-f0-9]{24})\.(iXBRL|XHTML)\.([^\s\x00-\x1f\x7f/\\?#]{1,1024})$/u.exec(path)
+  if(!source||fact.normalizationRule!=='SOURCE_VALUE'||fact.validationStatus!=='VALID'||fact.sourceAmount!==fact.amount)return false
+  return periods.some(p=>p.documentId.replace(/:(?:cfy|pfy)$/,'')===source[1]
+    &&/:(?:cfy|pfy)$/.test(p.documentId)&&p.accountingStandard==='IAS_IFRS'&&p.isIasCompliant===true
+    &&p.accountingStandardBasis===msrBasis[source[2] as keyof typeof msrBasis])
+}
+
 
 /** Same closed packet shape is installed under controlled SQL ownership. This
  * does not detect personal information hidden inside arbitrary text. */
@@ -76,13 +88,14 @@ export function readCorporatePacket(input: unknown): CorporatePacket {
   }
   if (packet.facts.length && (!packet.financial.data || !['SUCCESS', 'PARTIAL'].includes(packet.financial.status))) return unavailable()
   for (const f of packet.facts) {
+    const periods=packet.financial.data?.periods.filter(p=>p.from===f.periodStart&&p.to===f.periodEnd
+      &&p.scope===(f.statementScope==='UNIT'?'standalone':'consolidated')
+      &&p.facts.some(v=>v.metricCode===f.metricCode&&v.amount===f.amount&&v.currency===f.currencyCode&&v.unit===f.unitCode))??[]
     if (!['YEAR', 'QUARTER', 'MONTH', 'OTHER'].includes(f.periodType) || !['UNIT', 'CONSOLIDATED'].includes(f.statementScope)
       || !['SOURCE_VALUE', 'VERIFIED_COST_MAGNITUDE_V1', 'UNVERIFIED_COST_SIGN'].includes(f.normalizationRule)
-      || !['VALID', 'REVIEW'].includes(f.validationStatus) || !f.sourcePath.startsWith('content.')
+      || !['VALID', 'REVIEW'].includes(f.validationStatus) || !factProvenance(f.sourcePath,f,periods)
       || f.periodStart > f.periodEnd || !/^[A-Z][A-Z0-9_]{1,79}$/.test(f.metricCode)
-      || !packet.financial.data?.periods.some(p => p.from === f.periodStart && p.to === f.periodEnd
-        && p.scope === (f.statementScope === 'UNIT' ? 'standalone' : 'consolidated')
-        && p.facts.some(v => v.metricCode === f.metricCode && v.amount === f.amount && v.currency === f.currencyCode && v.unit === f.unitCode))) return unavailable()
+      || !periods.length) return unavailable()
   }
   return packet
 }

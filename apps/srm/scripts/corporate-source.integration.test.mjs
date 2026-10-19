@@ -35,9 +35,10 @@ test('corporate source candidate pins its exact native sources without claiming 
  assert.equal(current.taskId,'SRM-E1-CORPORATE-SOURCE-PUBLICATION-20261019')
  assert.equal(Object.keys(current.sourceDigests).length,5)
  assert.equal(current.sourceRecordIsHistorical,true)
- const adoption=manifest.nativeSupplierBusinessWorkAdoption
- assert.equal(adoption.taskId,'SRM-E1-NATIVE-SUPPLIER-WORK-BOUNDARY-20261019')
- assert.equal(adoption.previousCorporateSourceReceiptPreserved,true)
+ const adoption=manifest.fullNativeCompanyCompositionAdoption
+ assert.equal(adoption.taskId,'SRM-E1-FULL-NATIVE-COMPANY-20261019')
+ assert.equal(manifest.nativeSupplierBusinessWorkAdoption.previousCorporateSourceReceiptPreserved,true)
+ assert.equal(adoption.corporateClassification.version,CORPORATE_SOURCE.classificationVersion)
  for(const[path,digest]of Object.entries(current.sourceDigests)){
   const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
   assert.equal(hash(read('../'+path)),expected,path)

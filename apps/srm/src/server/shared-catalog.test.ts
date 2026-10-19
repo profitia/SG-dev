@@ -33,7 +33,7 @@ test("financial cache requires the current source mapping", () => {
 });
 
 import type { PoolClient } from 'pg';
-import { writeSharedCompany, writeFinancialIndicators } from './shared-catalog';
+import { writeSharedCompany, writeFinancialIndicators, readFinancialIndicators } from './shared-catalog';
 import { mapMgbiFinancialRecords } from './mgbi-financial';
 const NIP = '5272443955', PROOF = '40000000-0000-4000-8000-000000000001';
 
@@ -67,12 +67,16 @@ test('explicit indicator writer uses original financial calculator and strips on
     content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ca_cfy:'300',lae_lapfl_stl_cfy:'200'}}}}],
     {type:'NIP',value:NIP},'2026-10-19T00:00:00.000Z');
   const facts=mapped.facts.map(f=>({...f,sourceSnapshotId:PROOF}));
-  let persisted:any[]=[];
+  let persisted:any[]=[];const statements:string[]=[];
   const client={query:async(sql:string,values:unknown[]=[])=>{
-    if(sql.startsWith('SELECT'))return {rows:facts};persisted=JSON.parse(String(values[0]));return {rows:[]};
+    statements.push(sql);if(sql.startsWith('SELECT'))return {rows:facts};persisted=JSON.parse(String(values[0]));return {rows:[]};
   }} as unknown as Pick<PoolClient,'query'>;
   const result=await writeFinancialIndicators(client,NIP,mapped.section.data!);
   assert.equal(result.find(i=>i.code==='CURRENT_RATIO')!.value,'1.500000');
   assert.deepEqual(persisted.find(i=>i.indicator_code==='CURRENT_RATIO').source_snapshot_ids,[PROOF]);
   for(const row of result)for(const key of ['nip','inputFacts','sourceSnapshotIds','sourceDocumentIds'])assert.equal(Object.hasOwn(row,key),false);
+  persisted=[];statements.length=0;
+  assert.deepEqual(await readFinancialIndicators(client,NIP,mapped.section.data!),result);
+  assert.deepEqual(persisted,[]);assert.equal(statements.length,1);
+  assert(statements[0].startsWith('SELECT'));assert(!/FOR\s+(SHARE|UPDATE)/i.test(statements[0]));
 });
