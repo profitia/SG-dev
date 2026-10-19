@@ -505,6 +505,19 @@ test('project routing rejects cross-product writes without changing physical own
   }
 })
 
+test('Maps surfaces have one explicit owner and do not grant access to private product or E1 sources', () => {
+  const targets = ['apps/maps-runtime/package.json', 'packages/maps-contracts/index.mjs', 'packages/maps-embed/index.mjs', '.github/workflows/maps-ci.yml']
+  for (const key of ['SRM', 'SG2']) {
+    const result = resolveProjectRouting({ profile: resolveProjectProfile(key, repositoryRoot), targets, repositoryRoot })
+    assert.equal(result.ok, true, result.error)
+    assert.equal(result.results.every((entry) => entry.currentOwner === 'Maps Capability' && entry.baselineClassification === 'ALIGNED'), true)
+  }
+  const denied = resolveProjectRouting({ profile: resolveProjectProfile('ARCHITECTURE', repositoryRoot), targets, repositoryRoot })
+  assert.equal(denied.ok, false)
+  const srm = resolveProjectProfile('SRM', repositoryRoot)
+  assert.equal(resolveProjectRouting({ profile: srm, targets: ['packages/platform-contracts/src/operation-context.mjs'], repositoryRoot }).ok, false)
+})
+
 test('project boundary policy fails closed on missing, malformed or wildcard allowlists', (t) => {
   const profile = resolveProjectProfile('SG2', repositoryRoot)
   const original = JSON.parse(fs.readFileSync(path.join(repositoryRoot, profile.repository.routingRegistry), 'utf8'))

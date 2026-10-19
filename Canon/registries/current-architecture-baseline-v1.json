@@ -6,6 +6,82 @@
   "pathResolutionStrategy": "MOST_SPECIFIC_MATCH_WINS",
   "surfaces": [
     {
+      "id": "MAPS-BASE-001",
+      "capability": "Maps Runtime",
+      "name": "Maps Runtime",
+      "pathPatterns": [
+        "apps/maps-runtime/**"
+      ],
+      "currentOwner": "Maps Capability",
+      "currentResponsibility": "Independent map UI and Google integration; no supplier persistence or identity authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "e1f0c8a7146d05eb52d636593813a6e2ee31cf3d",
+      "allowedProjectKeys": [
+        "SRM",
+        "SG2"
+      ],
+      "onboardingAuthorization": "Owner SRM Maps Full Autopilot instruction 2026-10-19; Maps amendment v1.2"
+    },
+    {
+      "id": "MAPS-BASE-002",
+      "capability": "Maps Contracts",
+      "name": "Maps Contracts",
+      "pathPatterns": [
+        "packages/maps-contracts/**"
+      ],
+      "currentOwner": "Maps Capability",
+      "currentResponsibility": "Framework-neutral versioned location and event contracts.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "e1f0c8a7146d05eb52d636593813a6e2ee31cf3d",
+      "allowedProjectKeys": [
+        "SRM",
+        "SG2"
+      ],
+      "onboardingAuthorization": "Owner SRM Maps Full Autopilot instruction 2026-10-19; Maps amendment v1.2"
+    },
+    {
+      "id": "MAPS-BASE-003",
+      "capability": "Maps Embed",
+      "name": "Maps Embed",
+      "pathPatterns": [
+        "packages/maps-embed/**"
+      ],
+      "currentOwner": "Maps Capability",
+      "currentResponsibility": "Host mounting lifecycle and explicit map event adapter.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "e1f0c8a7146d05eb52d636593813a6e2ee31cf3d",
+      "allowedProjectKeys": [
+        "SRM",
+        "SG2"
+      ],
+      "onboardingAuthorization": "Owner SRM Maps Full Autopilot instruction 2026-10-19; Maps amendment v1.2"
+    },
+    {
+      "id": "MAPS-BASE-004",
+      "capability": "Maps CI",
+      "name": "Maps CI",
+      "pathPatterns": [
+        ".github/workflows/maps-ci.yml"
+      ],
+      "currentOwner": "Maps Capability",
+      "currentResponsibility": "Maps contract, integration, build and routing validation.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "e1f0c8a7146d05eb52d636593813a6e2ee31cf3d",
+      "allowedProjectKeys": [
+        "SRM",
+        "SG2"
+      ],
+      "onboardingAuthorization": "Owner SRM Maps Full Autopilot instruction 2026-10-19; Maps amendment v1.2"
+    },
+    {
       "id": "SG2-BASE-001",
       "capability": "SG Runtime",
       "name": "SG Runtime Core",
