@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "owner": "Maps Capability",
+  "initialExecutionProfile": "SRM",
+  "repository": "profitia/SG-dev",
+  "sourcePath": "apps/maps-runtime",
+  "authorityBranch": "main",
+  "environments": {
+    "development": {
+      "status": "IMPLEMENTING",
+      "googleProjectId": "profitia-maps-development",
+      "renderWorkspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "renderProjectId": "prj-dapbd3hsrm7s73es53fg",
+      "renderEnvironmentId": "evm-dapbd70ae00c73cgrup0",
+      "serviceId": null,
+      "url": null,
+      "autoDeploy": false,
+      "database": null,
+      "privateOperations": "NOT_ADOPTED",
+      "srmFeatureMounted": false
+    },
+    "staging": {"status": "NOT_DEPLOYED", "googleProjectId": "profitia-maps-staging"},
+    "production": {"status": "NOT_DEPLOYED", "googleProjectId": "profitia-maps-production"}
+  }
+}

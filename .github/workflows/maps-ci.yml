@@ -1,0 +1,35 @@
+name: Maps connector
+on:
+  pull_request:
+    paths: ['apps/maps-runtime/**', 'packages/maps-contracts/**', 'packages/maps-embed/**', 'packages/platform-contracts/**', '.github/workflows/maps-ci.yml']
+  push:
+    branches: [main]
+    paths: ['apps/maps-runtime/**', 'packages/maps-contracts/**', 'packages/maps-embed/**', 'packages/platform-contracts/**', '.github/workflows/maps-ci.yml']
+jobs:
+  maps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install local public packages
+        run: npm --prefix apps/maps-runtime ci --install-links --ignore-scripts
+      - name: Build immutable browser assets
+        run: npm --prefix apps/maps-runtime run build
+      - name: Test contracts, real channel and provider boundaries
+        run: npm --prefix apps/maps-runtime test
+      - name: Source routing
+        run: >-
+          node scripts/governance/governance-preflight.mjs --ci --project SRM
+          --target-environment development --task-id CI-MAPS --title 'Maps source validation'
+          --workspace 'GitHub Actions' --execution-environment ci --scope implementation
+          --host-conversation-unavailable --target apps/maps-runtime/package.json
+          --target packages/maps-contracts/index.mjs --target packages/maps-embed/index.mjs
+          --target .github/workflows/maps-ci.yml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: maps-browser-artifact
+          path: apps/maps-runtime/dist
