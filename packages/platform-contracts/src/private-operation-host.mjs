@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto'
 import { createAccessStore, DATABASE_SERVICE_ISSUER } from './access-store.mjs'
-import { createOperationExecutor, OperationDenied } from './operation-context.mjs'
+import { createOperationExecutor, OperationDenied, OPERATION_CONTRACT } from './operation-context.mjs'
 import { createModuleScopeGuard } from './module-scope.mjs'
 import { createRequestLedger, requestLedgerSourceDigest } from './request-ledger.mjs'
 import { createRequestContinuationLedger, requestContinuationSourceDigest } from './request-continuation.mjs'
 import { createDelegatedJobStore, delegatedJobSourceDigest } from './delegated-job.mjs'
+import {createRequestInspection,requestInspectionSourceDigest} from './request-inspection.mjs'
 
-export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.9.0' })
+export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.10.0' })
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -16,7 +17,7 @@ const freeze = value => { if (value && typeof value === 'object') { Object.value
  * No request identity, lease or transaction is retained on the shared instance.
  */
 export function createPrivateOperationHost(options) {
-  if (options.privateContinuation!==undefined||options.delegatedContinuation!==undefined)throw new TypeError('Delegated phases require the explicit service host')
+  if (options.privateContinuation!==undefined||options.delegatedContinuation!==undefined||options.privateInspection!==undefined||options.delegatedInspection!==undefined)throw new TypeError('Delegated phases require the explicit service host')
   if (options.binding?.service !== undefined) throw new TypeError('Human host cannot use a database service binding')
   return createBoundOperationHost(options, false)
 }
@@ -31,7 +32,7 @@ export function createServiceReadHost(options) {
     || s.configurationVersion !== a.configurationVersion
     || !Array.isArray(a.operations) || !a.operations.length
     || a.operations.some(op => !['knowledge.read','forecast.read','supplier.report.read'].includes(op))
-    || ['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','privateContinuation','delegatedContinuation'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
+    || ['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','privateContinuation','delegatedContinuation','privateInspection','delegatedInspection'].some(key => Object.hasOwn(options,key))) throw new TypeError('Explicit bounded database service read host required')
   return createBoundOperationHost(options, true)
 }
 
@@ -41,7 +42,7 @@ export function createServiceReadHost(options) {
  * Optional deliver() holds a NEW current private fence across the independent
  * source transaction. Source commit cannot be undone by this private rollback;
  * its durable READY admission then remains available for a funded retry. */
-export function createDelegatedJobHost(options){
+function delegatedConfiguration(options){
   const a=options.application,s=options.binding?.service,j=options.job
   const keys=j&&Object.keys(j).sort().join(',')
   const closedJob=j&&Object.getPrototypeOf(j)===Object.prototype
@@ -55,7 +56,13 @@ export function createDelegatedJobHost(options){
     ||typeof options.readExternalAccount!=='function'||!closedJob
     ||!/^[a-f0-9]{64}$/.test(options.job.schemaDigest??'')
     ||options.sourceDelivery!==undefined&&typeof options.sourceDelivery?.deliver!=='function'
-    ||['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','readResources','projectOutput','describeOutcome','jobDelivery','deliverSource','delegatedContinuation'].some(k=>Object.hasOwn(options,k)))throw TypeError('Explicit delegated private dispatch host required')
+    ||['module','prepareInputs','createAuthenticator','requestLedger','requestContinuation','readResources','projectOutput','describeOutcome','jobDelivery','deliverSource','delegatedContinuation','delegatedInspection'].some(k=>Object.hasOwn(options,k)))throw TypeError('Explicit delegated private dispatch host required')
+  return {...options,application:freeze(copy(a)),binding:freeze(copy(options.binding)),job:freeze(copy(options.job)),projectOutput:value=>value}
+}
+
+export function createDelegatedJobHost(options){
+  if(options.privateInspection!==undefined)throw TypeError('Inspection requires its explicit read-only host')
+  const base=delegatedConfiguration(options),j=base.job
   const privateContinuation=options.privateContinuation
   if(privateContinuation!==undefined&&(!privateContinuation||Object.getPrototypeOf(privateContinuation)!==Object.prototype
     ||Reflect.ownKeys(privateContinuation).sort().join(',')!=='delegatedSchemaDigest,schemaDigest'
@@ -63,7 +70,6 @@ export function createDelegatedJobHost(options){
     ||!Object.values(privateContinuation).every(v=>/^[a-f0-9]{64}$/.test(v??''))
     ||j.targetOperation!=='supplier.report.refresh'||options.sourceDelivery!==undefined))throw TypeError('Explicit isolated Supplier private phase host required')
   const phaseBinding=privateContinuation===undefined?undefined:freeze(copy(privateContinuation))
-  const base={...options,application:freeze(copy(a)),binding:freeze(copy(options.binding)),job:freeze(copy(options.job)),projectOutput:value=>value}
   const host=createBoundOperationHost(base,'delegated')
   return Object.freeze({contract:host.contract,hostContract:host.hostContract,
     admit:input=>host.execute(input,context=>context.dispatchAdmission),
@@ -78,6 +84,28 @@ export function createDelegatedJobHost(options){
       const deliveryHost=createBoundOperationHost({...base,jobDelivery:{admission:freeze(copy(admission))}},'delegated')
       return deliveryHost.execute(input,context=>context.dispatchAdmission)
     }})})
+}
+
+/** Inspection never reserves/replays a write or claims a dispatch. Only the
+ * installed accepted-phase anchor and current original authority may be read. */
+export function createDelegatedPrivateInspectionHost(options){
+ const base=delegatedConfiguration(options),c=options.privateInspection
+ if(!c||Object.getPrototypeOf(c)!==Object.prototype||Reflect.ownKeys(c).sort().join(',')!=='continuationSchemaDigest,delegatedSchemaDigest,schemaDigest'
+  ||Object.values(Object.getOwnPropertyDescriptors(c)).some(d=>!('value'in d)||!d.enumerable)
+  ||!Object.values(c).every(v=>/^[a-f0-9]{64}$/.test(v??''))||base.job.targetOperation!=='supplier.report.refresh'
+  ||options.privateContinuation!==undefined||options.sourceDelivery!==undefined)throw TypeError('Explicit read-only Supplier inspection source required')
+ const captured=freeze(copy(c))
+ return Object.freeze({contract:OPERATION_CONTRACT,hostContract:PRIVATE_OPERATION_HOST_CONTRACT,
+  inspectPrivatePhase(input,phase,action){
+   if(!phase||Object.getPrototypeOf(phase)!==Object.prototype||Reflect.ownKeys(phase).join(',')!=='phaseId'
+    ||Object.values(Object.getOwnPropertyDescriptors(phase)).some(d=>!('value'in d)||!d.enumerable)
+    ||typeof action!=='function')throw TypeError('Explicit private phase inspection action required')
+   const host=createBoundOperationHost({...base,delegatedInspection:{requestId:input?.resourceId,phaseId:phase.phaseId,...copy(captured)}},'delegated')
+   return host.execute(input,async(context,transaction)=>{
+    if(await action(context,transaction)!==undefined)unavailable()
+    return Object.freeze({requestId:context.resourceId,status:'ACCEPTED'})
+   })
+  }})
 }
 
 function createBoundOperationHost(options, serviceMode) {
@@ -107,6 +135,9 @@ function createBoundOperationHost(options, serviceMode) {
     || requestOperation !== 'supplier.report.refresh' || application.operations.length !== 1)) throw new TypeError('Explicit HUMAN supplier-only private continuation required')
   const delegatedContinuation=options.delegatedContinuation===undefined?null:freeze(copy(options.delegatedContinuation))
   const privatePhaseLedger=delegatedContinuation===null?null:createRequestContinuationLedger({binding,continuation:delegatedContinuation,executionMode:'DELEGATED_SERVICE',now})
+  const inspectionBinding=options.delegatedInspection===undefined?null:freeze(copy(options.delegatedInspection))
+  if(inspectionBinding!==null&&(!delegated||delegatedContinuation!==null||options.sourceDelivery!==undefined))throw TypeError('Isolated current read inspection required')
+  const inspectionStore=inspectionBinding===null?null:createRequestInspection({binding,inspection:inspectionBinding,now})
   const requestLedger = continuation === null ? baseRequestLedger
     : createRequestContinuationLedger({ ledger: baseRequestLedger, binding, continuation, now })
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
@@ -171,11 +202,13 @@ function createBoundOperationHost(options, serviceMode) {
               const requestPolicy = needsRequestLedger && request.operation === requestOperation
                 ? await requestLedger.loadPolicy(query, { actor, request }) : undefined
               const phasePolicy=privatePhaseLedger?await privatePhaseLedger.loadPhase(query,{actor,request,lease}):null
+              const inspectionPolicy=inspectionStore?await inspectionStore.load(query,{request,lease}):null
               let reserveStarted = false, completeStarted = false, ownedReservation
               callbackResult = await run({
                 state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }),
                   ...(delegated?{delegation:{...lease.state.delegation,externalAccountObservation:observation}}:{}),
                   ...(phasePolicy?{requestContinuation:privatePhaseLedger.evidence(phasePolicy)}:{}),
+                  ...(inspectionPolicy?{requestInspection:inspectionStore.evidence(inspectionPolicy)}:{}),
                   ...(requestPolicy ? { usagePolicy: 'PRODUCT_POLICY', requestPolicy, ...(continuation === null ? {} : {requestContinuation:requestLedger.evidence(requestPolicy)}) } : {}) },
                 ...(requestPolicy ? {
                   reserveUsage: async context => {
@@ -204,6 +237,9 @@ function createBoundOperationHost(options, serviceMode) {
                     if(closed)unavailable()
                   }
                 }:{}),
+                ...(inspectionPolicy?{recordInspectionIntent:async event=>{if(closed)unavailable();await scopeStore.appendAudit(query,event,lease);if(closed)unavailable()},
+                  bindInspection:async context=>{if(closed)unavailable();await inspectionStore.bind(query,inspectionPolicy,context)},
+                  verifyInspection:async context=>{if(closed)unavailable();await inspectionStore.verify(query,inspectionPolicy,context)}}:{}),
                 ...(moduleEvidence ? { moduleEvidence } : {}),
                 ...(delegated?{admitDispatch:async context=>{
                   if(closed)unavailable()
@@ -257,5 +293,5 @@ export async function privateOperationHostSourceDigest() {
   const fs = await import('node:fs')
   return createHash('sha256').update(fs.readFileSync(new URL('./private-operation-host.mjs', import.meta.url)))
     .update(fs.readFileSync(new URL('./private-operation-host.d.mts', import.meta.url)))
-    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).digest('hex')
+    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).update(await requestInspectionSourceDigest()).digest('hex')
 }

@@ -16,8 +16,8 @@ function options() {
 }
 test('service host composes the same operation contract and requires no HTTP identity adapter',async()=>{
   const host=createServiceReadHost(options())
-  assert.equal(host.contract.implementation,'1.0.0-candidate.11')
-  assert.equal(host.hostContract.version,'1.9.0');assert(Object.isFrozen(host))
+  assert.equal(host.contract.implementation,'1.0.0-candidate.12')
+  assert.equal(host.hostContract.version,'1.10.0');assert(Object.isFrozen(host))
   assert.match(await serviceReadSchemaDigest(),/^[a-f0-9]{64}$/)
 })
 for(const operation of ['benchmark.selection.read','category.write','knowledge.ingest','job.execute','supplier.report.refresh','account.settings.read','personal.list.read']){

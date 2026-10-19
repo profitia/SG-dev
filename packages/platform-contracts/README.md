@@ -396,3 +396,38 @@ Synthetic native tests are not evidence of actual Supplier business integration,
 cloud installation, vendor execution, real account login or product deployment.
 Consumer business predicates, domain composition and controlled releases retain
 their own tasks and acceptance boundaries.
+
+## Optional committed Supplier inspection — candidate.12 / platform1.19
+
+`createDelegatedPrivateInspectionHost` uses the same delegated host, ordinary
+driver, current job authority, external account observer and canonical audit.
+Its explicit `privateInspection` pins SQL015 plus the original SQL011/014
+digests. `inspectPrivatePhase(input, {phaseId}, async (context, transaction) =>
+{ ... })` permits a void-only server callback after an already ACCEPTED phase.
+The public result is only the bounded request acceptance receipt after COMMIT.
+The trusted consumer must discard any captured data on rejection. No private
+data belongs in metadata, audit or the receipt.
+
+An accepted phase is an immutable historical anchor, not an access grant or
+renewed lease. Current organization, original subject, account, product,
+permissions, parent, service and exact phase policy still have to match. A read
+scope cannot be used as a RESERVED write scope. Inspection does not reserve a
+parent, phase, quota or dispatch and exposes no provider delivery method.
+
+SQL015 adds immutable FORCE RLS installation metadata and predicates over the
+existing job/phase ledgers. It creates no additional effect/read ledger, queue,
+role or runtime ACL. Its physical canonical INTENT and OUTCOME share the read
+transaction: binding refuses a missing INTENT, and a deferred constraint refuses
+COMMIT without the matching actual OUTCOME. The same audit writer remains in
+use. Ordinary operations retain their independent durable INTENT behavior.
+Original SQL001–014 files stay byte-identical. Failed inspections roll back the
+transactional audit pair; the existing independent DENY/FAILURE writer remains
+the diagnostic record.
+
+Actual ordinary PostgreSQL tests cover the accepted anchor, foreign row
+exclusion, installation ACL/role refusals, direct-read/write refusal, missing
+physical audit records, current denial/account and phase-policy revocation,
+and the unchanged four-phase and default Forecast paths. These producer tests
+do not install the contract in SRM, SG2 or Maps. Each consumer needs separately
+registered source/lock/compatibility acceptance. No cloud schema, account, role,
+vendor, deployment or business acceptance is implied.
