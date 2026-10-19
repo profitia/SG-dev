@@ -46,7 +46,7 @@ test('private SQL phases continue accepted AM23 with current authority and same-
   const queryFor=c=>async(sql,values=[])=>{const r=await c.query(sql,values);return{rows:r.rows}}
   const reset=async({capacity=2,expired=false}={})=>{
    assert.equal((await owner.query('SELECT current_database() AS db')).rows[0].db,DATABASE,'Reset only this run\'s new database')
-   await owner.query('DROP SCHEMA IF EXISTS profitia_request_phases CASCADE;DROP SCHEMA IF EXISTS request_fixture CASCADE;DROP SCHEMA IF EXISTS profitia_requests CASCADE;DROP SCHEMA IF EXISTS profitia_modules CASCADE;DROP SCHEMA IF EXISTS profitia_access CASCADE')
+   await owner.query('DROP SCHEMA IF EXISTS profitia_delegated_phases CASCADE;DROP SCHEMA IF EXISTS profitia_supplier_jobs CASCADE;DROP SCHEMA IF EXISTS profitia_jobs CASCADE;DROP SCHEMA IF EXISTS profitia_services CASCADE;DROP SCHEMA IF EXISTS profitia_request_phases CASCADE;DROP SCHEMA IF EXISTS request_fixture CASCADE;DROP SCHEMA IF EXISTS profitia_requests CASCADE;DROP SCHEMA IF EXISTS profitia_modules CASCADE;DROP SCHEMA IF EXISTS profitia_access CASCADE')
    await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner')
    try{
     await owner.query(sources[0]);await owner.query("INSERT INTO profitia_access.installation(schema_version,schema_digest,environment,project_id,branch_id,database_name) VALUES('1.0.0',$1,'development','isolated-request-project','isolated-request-branch',$2)",[digests[0],DATABASE])
@@ -79,6 +79,11 @@ test('private SQL phases continue accepted AM23 with current authority and same-
     await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'other-phase-fixture',$2,$3,'ALLOW','supplier.report.refresh','supplier_report')",[randomUUID(),A,U])
     await owner.query(phaseSql)
     await owner.query("INSERT INTO profitia_request_phases.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[phaseDigest])
+    // The complete existing HUMAN regression suite runs after optional SQL014.
+    for(const[file,table]of[['005-service-read.sql','profitia_services.installation'],['007-delegated-jobs.sql','profitia_jobs.installation'],['013-supplier-delegation.sql','profitia_supplier_jobs.installation'],['014-delegated-private-phases.sql','profitia_delegated_phases.installation']]){
+     const sql=fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/'+file,import.meta.url),'utf8')
+     await owner.query(sql);await owner.query(`INSERT INTO ${table} VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')`,[hash(sql)])
+    }
     for(const [index,phaseId] of ['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL','RECORD_INTEREST'].entries()){
      const previous=['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL'][index-1]??null
      await owner.query("INSERT INTO profitia_request_phases.policies(application_id,phase_id,sequence,predecessor,operation,effect,status,source_ref,expires_at) VALUES($1,$2,$3,$4,'supplier.report.refresh','PRIVATE_SQL_PHASE','ACTIVE','SYNTHETIC_ONLY',$5)",[APP,phaseId,index+1,previous,expires()])
@@ -129,7 +134,7 @@ test('private SQL phases continue accepted AM23 with current authority and same-
    assert.equal(row.status,'ACCEPTED');assert.equal(row.user_id,U);assert.equal(row.organisation_id,A);assert.equal(row.input_digest,inputDigest)
    const events=(await owner.query('SELECT event FROM profitia_access.security_events WHERE decision_id=$1 ORDER BY event_id',[row.decision_id])).rows.map(r=>r.event)
    assert.deepEqual(events.map(e=>e.phase),['INTENT','OUTCOME']);assert.equal(events[1].moduleEvidence.transactionId,evidence.transactionId)
-   assert.equal(events[0].correlationId,events[1].correlationId);assert(events.every(e=>e.implementationVersion==='1.0.0-candidate.10'))
+   assert.equal(events[0].correlationId,events[1].correlationId);assert(events.every(e=>e.implementationVersion==='1.0.0-candidate.11'))
   })
   await scenario('concurrent phase replay executes one private action and does not charge another parent',async()=>{
    const requestId=await parent(),f=phaseFixture(requestId)

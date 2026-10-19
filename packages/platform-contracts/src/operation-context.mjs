@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.10' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.11' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -331,15 +331,19 @@ export function createOperationExecutor(options) {
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
           const continuation=state.requestContinuation
-          if(continuation!==undefined && (!compute || request.operation!=='supplier.report.refresh'
+          const delegatedPhase=delegated!==null&&continuation!==undefined
+          if(continuation!==undefined && (!(compute&&request.operation==='supplier.report.refresh'||delegatedPhase&&delegated.delegation.target.operation==='supplier.report.refresh')
             ||!continuation||Object.getPrototypeOf(continuation)!==Object.prototype
-            ||Object.keys(continuation).sort().join(',')!=='inputDigest,phaseId,policyVersion,requestId,schemaDigest,transactionId'
+            ||Object.keys(continuation).sort().join(',')!==(delegatedPhase?'delegatedSchemaDigest,inputDigest,phaseId,policyVersion,requestId,schemaDigest,transactionId':'inputDigest,phaseId,policyVersion,requestId,schemaDigest,transactionId')
             ||!computeUuid.test(continuation.requestId??'')||!/^[A-Z][A-Z0-9_]{0,63}$/.test(continuation.phaseId??'')
             ||!['inputDigest','schemaDigest'].every(k=>/^[a-f0-9]{64}$/.test(continuation[k]??''))
             ||!/^[1-9][0-9]*$/.test(continuation.policyVersion??'')
-            ||continuation.transactionId!==moduleEvidence?.transactionId))deny('POLICY_UNAVAILABLE')
-          let bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID(), ...(delegated ? {delegation:delegated.delegation} : {}) })
-          audit = { ...audit, correlationId: bound.correlationId, resourceType: bound.resource.type, dataClass: bound.resource.dataClass, ownerOrganisationId: bound.resource.ownerOrganisationId, ownerUserId: bound.resource.ownerUserId, resourceVersion: bound.resource.version, projectionVersion: bound.resource.projectionVersion, productEvidence, usagePolicy: state.usagePolicy }
+            ||continuation.transactionId!==(delegatedPhase?state.transactionId:moduleEvidence?.transactionId)
+            ||delegatedPhase&&(!/^[a-f0-9]{64}$/.test(continuation.delegatedSchemaDigest??'')||continuation.requestId!==request.resourceId
+              ||!['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL','RECORD_INTEREST'].includes(continuation.phaseId)
+              ||typeof session.reservePrivatePhase!=='function'||typeof session.completePrivatePhase!=='function')))deny('POLICY_UNAVAILABLE')
+          let bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID(), ...(delegated ? {delegation:delegated.delegation} : {}),...(delegatedPhase?{requestContinuation:structuredClone(continuation)}:{}) })
+          audit = { ...audit, ...(delegatedPhase?{requestContinuation:structuredClone(continuation)}:{}), correlationId: bound.correlationId, resourceType: bound.resource.type, dataClass: bound.resource.dataClass, ownerOrganisationId: bound.resource.ownerOrganisationId, ownerUserId: bound.resource.ownerUserId, resourceVersion: bound.resource.version, projectionVersion: bound.resource.projectionVersion, productEvidence, usagePolicy: state.usagePolicy }
           try { await recordAudit(stamp({ ...audit, phase: 'INTENT', decision: 'ALLOW', reasonCode: 'AUTHORIZED' })) }
           catch (error) {
             if (isOperationDenied(error) && error.reasonCode === 'ACCESS_BASIS_INVALID') throw error
@@ -370,7 +374,13 @@ export function createOperationExecutor(options) {
           }
           let reservation
           let sourceReservation
-          if(delegated){
+          let privateReservation
+          if(delegatedPhase){
+            privateReservation=await session.reservePrivatePhase(bound)
+            if(!privateReservation||!['NEW','REPLAY'].includes(privateReservation.status)||privateReservation.requestId!==request.resourceId
+              ||privateReservation.transactionId!==continuation.transactionId||privateReservation.status==='REPLAY'&&!computeReceipt(privateReservation.value,request.resourceId))deny('POLICY_UNAVAILABLE')
+          }
+          if(delegated&&!delegatedPhase){
             if(typeof session.admitDispatch!=='function')deny('POLICY_UNAVAILABLE')
             const admission=await session.admitDispatch(bound)
             if(!admission||admission.jobId!==request.resourceId||!['READY','BUSY','CONFIRMED','RECONCILE_REQUIRED'].includes(admission.status))deny('POLICY_UNAVAILABLE')
@@ -387,7 +397,11 @@ export function createOperationExecutor(options) {
             bound=freeze({...bound,platformReservation:{effectId:sourceReservation.effectId,replay:sourceReservation.status==='REPLAY',
               policyId:sourceReservation.policyId,policyVersion:sourceReservation.policyVersion}})
           }
-          const value = reservation?.status === 'REPLAY' ? reservation.value : sourceReservation?.status==='REPLAY'?sourceReservation.receipt:await action(bound, session.transaction)
+          const value = privateReservation?.status==='REPLAY'?privateReservation.value:reservation?.status === 'REPLAY' ? reservation.value : sourceReservation?.status==='REPLAY'?sourceReservation.receipt:await action(bound, session.transaction)
+          if(delegatedPhase){
+            if(!computeReceipt(value,request.resourceId))deny('POLICY_UNAVAILABLE')
+            if(privateReservation.status==='NEW')await session.completePrivatePhase(bound,value)
+          }
           if(platform){
             if(!ingestionReceipt(value,sourceReservation.effectId))deny('POLICY_UNAVAILABLE')
             if(sourceReservation.status==='NEW')await session.completeIngestion(bound,value)
