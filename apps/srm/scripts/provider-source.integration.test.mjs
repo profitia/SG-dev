@@ -5,7 +5,8 @@ import http from 'node:http'
 import { randomUUID, randomBytes, createHash } from 'node:crypto'
 import pg from 'pg'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
-import { createSrmProviderSourceTransport, srmProviderSourcePolicy } from '../src/server/provider-source-transport.ts'
+import { createSrmProviderSourceTransport, createSrmMsrSourceTransport, srmProviderSourcePolicy, SRM_MSR_STORAGE_ORIGIN } from '../src/server/provider-source-transport.ts'
+import { downloadMsrOriginal } from '../src/server/msr-source.ts'
 import { fetchMgbiGeneral } from '../src/server/mgbi-general.ts'
 import { fetchMgbiFinancial } from '../src/server/mgbi-financial.ts'
 import { fetchMgbiPages } from '../src/server/mgbi-archive.ts'
@@ -14,6 +15,8 @@ import { fetchCeidgJdg } from '../src/server/integrations/ceidg.ts'
 
 const DATABASE = 'srm_provider_' + randomUUID().replaceAll('-', ''), ROLE = 'srm_source_fixture'
 const NIP = '5272443955', OTHER = '5260250274', CREDENTIAL = 'synthetic-provider-credential'
+const MSR_RECORD='d'.repeat(24),MSR_FILE=`https://api.mgbi.pl/v1/models/pl-krs-rdf-record/records/${MSR_RECORD}/files/main_document_uri`
+const STORAGE_URL=SRM_MSR_STORAGE_ORIGIN+'/fixture/one.xhtml?fixture-signature=synthetic-only'
 const hash = value => createHash('sha256').update(value).digest('hex'), key = () => randomBytes(32).toString('hex')
 const readSql = name => fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/' + name, import.meta.url), 'utf8')
 const rootSql = readSql('008-platform-ingestion.sql'), callSql = readSql('009-external-call-admission.sql'), nativeSql = readSql('012-native-external-transport.sql')
@@ -33,9 +36,11 @@ test('native provider source adoption pins original clients and keeps live relea
   assert.equal(current.originalProviderClientsReused, true); assert.equal(current.ordinaryNativePgDriverShared, true)
   assert.equal(Object.keys(current.sourceDigests).length, 8)
   assert.equal(current.sourceRecordIsHistorical,true)
-  const adoption=manifest.nativeSupplierBusinessWorkAdoption
-  assert.equal(adoption.taskId,'SRM-E1-NATIVE-SUPPLIER-WORK-BOUNDARY-20261019')
+  const adoption=manifest.nativeMsrProviderSourceAdoption
+  assert.equal(adoption.taskId,'SRM-E1-MSR-NATIVE-SOURCE-TRANSPORT-20261019')
   assert.equal(adoption.previousProviderSourceReceiptPreserved,true)
+  assert.equal(Object.keys(adoption.sourceDigests).length,9)
+  for(const[path,digest]of Object.entries(adoption.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
   for (const [path, digest] of Object.entries(current.sourceDigests)) {
     const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
     assert.equal(hash(fs.readFileSync(new URL('../' + path, import.meta.url))),expected,path)
@@ -61,6 +66,26 @@ test('original SRM clients use ordinary-role native source controls without a se
       res.setHeader('content-type', 'application/json'); res.setHeader('x-private', 'never-forward')
       const url = new URL(req.url, 'http://127.0.0.1')
       if (mode === 'REDIRECT') { res.statusCode = 302; res.setHeader('location', 'https://unapproved.invalid/report'); res.end('{}'); return }
+      if (mode.startsWith('MSR_')) {
+        if (url.pathname.endsWith('/limits')) {
+          if (mode==='MSR_LIMITS_REDIRECT') {res.statusCode=302;res.setHeader('location',STORAGE_URL);res.end('');return}
+          res.end(JSON.stringify({max:{files:1},used:{files:mode==='MSR_BUDGET'?1:0}}));return
+        }
+        if (mode==='MSR_DROP' && url.pathname.includes('/files/')) {req.socket.destroy();return}
+        if (url.pathname.includes('/files/') && /REDIRECT|CHAIN|FOREIGN/.test(mode)) {
+          res.statusCode=302;res.setHeader('location',mode==='MSR_FOREIGN'?'https://unapproved.invalid/file':STORAGE_URL);res.end('');return
+        }
+        if (url.pathname.startsWith('/fixture/') && /CHAIN/.test(mode)) {
+          const step=url.pathname.match(/\/(one|two|three|four)\.xhtml$/)?.[1]
+          if (step==='one' || mode==='MSR_CHAIN_EXCESS') {
+            const next={one:'two',two:'three',three:'four',four:'five'}[step]??'five'
+            res.statusCode=307;res.setHeader('location',SRM_MSR_STORAGE_ORIGIN+'/fixture/'+next+'.xhtml?fixture-signature=synthetic-only');res.end('');return
+          }
+        }
+        const prefix='<html><body><!--',suffix='--></body></html>',size=mode.endsWith('_MAX')?20*1024*1024:128
+        const bytes=Buffer.from(prefix+'x'.repeat(size-prefix.length-suffix.length)+suffix)
+        res.setHeader('content-type','application/xhtml+xml');res.setHeader('content-length',mode==='MSR_OVERSIZE'?20*1024*1024+1:bytes.length);res.end(bytes);return
+      }
       if (url.pathname.startsWith('/v1/models/')) {
         if (mode === 'TWO_PAGES') res.end(JSON.stringify({ count: 2, pages: 2, results: [{ id: 'page-' + url.searchParams.get('page') }] }))
         else if (mode === 'INCOMPLETE') res.end(JSON.stringify({ count: 2, pages: 2, results: url.searchParams.get('page') === '1' ? [generalRecord] : [] }))
@@ -98,14 +123,19 @@ test('original SRM clients use ordinary-role native source controls without a se
       await owner.query("INSERT INTO profitia_external_call.installation VALUES(true,'1.0.0',$1,$2,'development','synthetic-provider-project','synthetic-provider-branch',$3)", [callDigest, rootDigest, DATABASE])
       await owner.query(nativeSql)
       await owner.query("INSERT INTO profitia_external_native.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')", [nativeDigest])
-      for (const provider of ['MGBI', 'VERCLY', 'CEIDG']) {
+      const installedSources=new Set()
+      for (const provider of ['MGBI', 'VERCLY', 'CEIDG','MGBI_MSR_API','MGBI_MSR_STORAGE']) {
         const p = srmProviderSourcePolicy(provider)
+        if(!installedSources.has(p.source.id)) {
         await owner.query("INSERT INTO profitia_ingestion.sources(source_id,effect_kind,data_class,payload_schema,quality_version,classification_version,projection_version,status,source_ref,expires_at) VALUES($1,'STORED_SQL_TRANSACTION','SHARED_KNOWLEDGE',$2,$3,$4,'source-receipt-v1','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')", Object.values(p.source))
         await owner.query("INSERT INTO profitia_ingestion.grants(grant_id,login_role,source_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,'ALLOW','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')", [randomUUID(), ROLE, p.source.id])
         await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,'srm-provider-source',$2,'SOURCE_TRANSACTION',1000,now()-interval '1 hour',now()+interval '1 hour',now()+interval '1 hour','ACTIVE','SYNTHETIC_ONLY')", [randomUUID(), p.source.id])
+        installedSources.add(p.source.id)
+        }
         const policyId = randomUUID()
         await owner.query("INSERT INTO profitia_external_call.policies(policy_id,login_role,source_id,resource_id,configuration_version,origin,transport,path_rules,maximum_request_bytes,maximum_response_bytes,timeout_ms,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,$2,$3,$4,'provider-v1',$5,'LOCAL_SYNTHETIC_HTTP',$6::jsonb,8192,1048576,20000,'UPSTREAM_ATTEMPT_ADMISSION',200,now()-interval '1 hour',now()+interval '1 hour',now()+interval '1 hour','ACTIVE','SYNTHETIC_ONLY')", [policyId, ROLE, p.source.id, p.resourceId, origin, JSON.stringify(p.basePathRules)])
-        await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,1,$2::jsonb,'[]',1048576,'SERVER_HEADERS','ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '30 minutes','SYNTHETIC_ONLY')", [policyId, JSON.stringify(p.pathRules)])
+        const msr=provider.startsWith('MGBI_MSR_')
+        await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,1,$2::jsonb,$3::jsonb,$4,$5,'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '30 minutes','SYNTHETIC_ONLY')", [policyId, JSON.stringify(p.pathRules),JSON.stringify(msr?[SRM_MSR_STORAGE_ORIGIN]:[]),msr?20*1024*1024:1048576,provider==='MGBI_MSR_STORAGE'?'NONE':'SERVER_HEADERS'])
       }
       await owner.query(`GRANT USAGE ON SCHEMA profitia_ingestion,profitia_external_call,profitia_external_native TO ${ROLE}; GRANT EXECUTE ON FUNCTION profitia_ingestion.runtime_descriptor(),profitia_ingestion.current_state(text,text),profitia_ingestion.lock_ingestion(text,text,text),profitia_ingestion.scope_allows(text,text),profitia_ingestion.reserve(text,text,text,text,uuid),profitia_ingestion.complete(uuid,uuid),profitia_ingestion.receipt(text,text,text,text),profitia_ingestion.append_audit(jsonb),profitia_external_call.descriptor(text,text),profitia_external_call.apply_control(uuid,uuid,text),profitia_external_call.read_status(uuid,text,text),profitia_external_native.descriptor(text,text) TO ${ROLE}`)
     })
@@ -118,6 +148,10 @@ test('original SRM clients use ordinary-role native source controls without a se
       external: { configurationVersion: 'provider-v1', schemaDigest: callDigest, nativeSchemaDigest: nativeDigest, maximumResponseBytes: 1048576 },
       headers: { authorization: provider === 'MGBI' ? CREDENTIAL : 'Bearer ' + CREDENTIAL } })
     const transport = (provider, patch = {}) => { const s = { ...settings(provider), ...patch }; operationKeys.push(s.operationKey); return createSrmProviderSourceTransport(s) }
+    const msrTransport=(patch={})=>{
+      const {provider,providerOrigin,...base}=settings('MGBI'),options={...base,recordId:MSR_RECORD,external:{...base.external,maximumResponseBytes:20*1024*1024},...patch}
+      operationKeys.push(options.operationKey);return createSrmMsrSourceTransport(options)
+    }
     const counts = async () => ({ calls: (await owner.query('SELECT count(*)::int n FROM profitia_external_call.calls')).rows[0].n,
       admissions: (await owner.query('SELECT sum(admitted_count)::int n FROM profitia_external_call.policies')).rows[0].n,
       sourceTransactions: (await owner.query('SELECT sum(consumed_count)::int n FROM profitia_ingestion.budgets')).rows[0].n })
@@ -207,11 +241,95 @@ test('original SRM clients use ordinary-role native source controls without a se
       assert.throws(() => transport('MGBI', { application: { ...application, environment: 'staging' } }))
       assert.throws(() => transport('MGBI', { auditPool: pool }))
     })
+    await t.test('original MSR downloader retains a full20MiB admitted direct original without a JSON projection',async()=>{
+      mode='MSR_DIRECT_MAX';const n=hits,before=await counts()
+      try {
+        const original=await downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:msrTransport().fetcher})
+        assert.equal(original.bytes.length,20*1024*1024);assert.equal(original.checksum,hash(original.bytes));assert.equal(original.recordId,MSR_RECORD)
+        assert.equal(hits,n+2);assert(observed.slice(n).every(row=>row.authorization===CREDENTIAL))
+        const after=await counts();assert.equal(after.admissions-before.admissions,2);assert.equal(after.sourceTransactions-before.sourceTransactions,6)
+      } finally {mode='NORMAL'}
+    })
+    await t.test('only an actually admitted redirect permits credential-free storage and preserves original MSR bytes',async()=>{
+      mode='MSR_REDIRECT_MAX';const n=hits
+      try {
+        const selected=msrTransport(),before=await counts()
+        await assert.rejects(selected.fetcher(STORAGE_URL),unavailable);assert.equal(hits,n);assert.deepEqual(await counts(),before)
+        const original=await downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:selected.fetcher})
+        assert.equal(original.bytes.length,20*1024*1024);assert.equal(original.checksum,hash(original.bytes));assert.equal(hits,n+3)
+        assert.equal(observed[n].authorization,CREDENTIAL);assert.equal(observed[n+1].authorization,CREDENTIAL);assert.equal(observed[n+2].authorization,undefined)
+        await assert.rejects(selected.fetcher(STORAGE_URL),unavailable);assert.equal(hits,n+3)
+      } finally {mode='NORMAL'}
+    })
+    await t.test('MSR file choice, limits order and exact storage URL are enforced before an attempt',async()=>{
+      mode='MSR_REDIRECT';const n=hits
+      try {
+        await assert.rejects(msrTransport().fetcher(MSR_FILE),unavailable);assert.equal(hits,n)
+        const a=msrTransport()
+        await a.fetcher('https://api.mgbi.pl/v1/models/pl-krs-rdf-record/limits',{redirect:'error'})
+        await assert.rejects(a.fetcher(MSR_FILE.replace(MSR_RECORD,'e'.repeat(24))),unavailable);assert.equal(hits,n+1)
+        const b=msrTransport();await b.fetcher('https://api.mgbi.pl/v1/models/pl-krs-rdf-record/limits',{redirect:'error'});await b.fetcher(MSR_FILE,{redirect:'manual'})
+        const before=hits
+        for(const url of[STORAGE_URL+'&extra=1',STORAGE_URL.replace('one.xhtml','other.xhtml'),STORAGE_URL.replace('https:','http:')])await assert.rejects(b.fetcher(url),unavailable)
+        await assert.rejects(b.fetcher(STORAGE_URL,{headers:{Authorization:CREDENTIAL}}),unavailable);assert.equal(hits,before)
+      } finally {mode='NORMAL'}
+    })
+    await t.test('original MSR budget denial and approved redirect bound cannot become another paid attempt',async()=>{
+      let n=hits;mode='MSR_BUDGET'
+      try {
+        await assert.rejects(downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:msrTransport().fetcher}),error=>error.code==='MSR_FILE_BUDGET_EXHAUSTED');assert.equal(hits,n+1)
+        mode='MSR_CHAIN';n=hits;assert((await downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:msrTransport().fetcher})).bytes.length>0);assert.equal(hits,n+4)
+        mode='MSR_CHAIN_EXCESS';n=hits
+        await assert.rejects(downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:msrTransport().fetcher}),error=>error.code==='MSR_REDIRECT_LIMIT');assert.equal(hits,n+5)
+      } finally {mode='NORMAL'}
+    })
+    await t.test('unapproved redirect, oversize body and uncertain MSR acquisition are never retried',async()=>{
+      try {
+        for(const selectedMode of['MSR_FOREIGN','MSR_OVERSIZE','MSR_DROP']) {
+          mode=selectedMode;const operationKey=key(),selected=msrTransport({operationKey}),n=hits
+          await assert.rejects(downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:selected.fetcher}))
+          assert.equal(hits,n+2)
+          mode='MSR_DIRECT'
+          await assert.rejects(selected.fetcher(MSR_FILE),unavailable)
+          await assert.rejects(downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:msrTransport({operationKey}).fetcher}));assert.equal(hits,n+2)
+        }
+      } finally {mode='NORMAL'}
+    })
+    await t.test('current MSR Source revocation or expiry prevents the selected file attempt',async()=>{
+      mode='MSR_DIRECT';const selected=msrTransport(),n=hits
+      try {
+        await selected.fetcher('https://api.mgbi.pl/v1/models/pl-krs-rdf-record/limits',{redirect:'error'})
+        await controlled(()=>owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED' WHERE source_id='srm.provider.mgbi'"))
+        await assert.rejects(selected.fetcher(MSR_FILE),unavailable);assert.equal(hits,n+1)
+        await controlled(()=>owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE',expires_at=now()-interval '1 second' WHERE source_id='srm.provider.mgbi'"))
+        await assert.rejects(msrTransport().fetcher('https://api.mgbi.pl/v1/models/pl-krs-rdf-record/limits'),unavailable);assert.equal(hits,n+1)
+      } finally {await controlled(()=>owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE',expires_at=now()+interval '1 hour' WHERE source_id='srm.provider.mgbi'"));mode='NORMAL'}
+    })
+    await t.test('MSR storage configuration cannot be borrowed and a limits redirect is not file authority',async()=>{
+      const n=hits
+      assert.throws(()=>createSrmProviderSourceTransport({...settings('MGBI'),provider:'MGBI_MSR_STORAGE',providerOrigin:SRM_MSR_STORAGE_ORIGIN,headers:{},allowedStorageUrl:()=>STORAGE_URL}))
+      mode='MSR_LIMITS_REDIRECT'
+      try {
+        const selected=msrTransport()
+        await assert.rejects(downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:selected.fetcher}))
+        await assert.rejects(selected.fetcher(STORAGE_URL),unavailable);assert.equal(hits,n+1)
+      } finally {mode='NORMAL'}
+    })
+    await t.test('MSR source revocation during the actual selected response refuses its bytes and another attempt',async()=>{
+      mode='MSR_DIRECT';const selected=msrTransport(),n=hits
+      try {
+        await selected.fetcher('https://api.mgbi.pl/v1/models/pl-krs-rdf-record/limits',{redirect:'error'})
+        onRequest=()=>controlled(()=>owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED' WHERE source_id='srm.provider.mgbi'"))
+        await assert.rejects(selected.fetcher(MSR_FILE),unavailable);assert.equal(hits,n+2)
+        await assert.rejects(selected.fetcher(MSR_FILE),unavailable);assert.equal(hits,n+2)
+      } finally {await controlled(()=>owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE' WHERE source_id='srm.provider.mgbi'"));onRequest=null;mode='NORMAL'}
+    })
     await t.test('source records contain neither raw provider bodies, credentials, private keys nor invented human owners', async () => {
       const dump = JSON.stringify((await owner.query('SELECT event FROM profitia_ingestion.security_events')).rows)
         + JSON.stringify((await owner.query('SELECT * FROM profitia_external_call.calls')).rows)
       assert(!dump.includes(CREDENTIAL)); for (const value of operationKeys) assert(!dump.includes(value))
       assert(!dump.includes('Synthetic Company')); assert(!dump.includes(NIP))
+      assert(!dump.includes('fixture-signature'));assert(!dump.includes(MSR_RECORD))
       assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_ingestion.security_events WHERE event->>'organisationId' IS NOT NULL OR event->>'subjectUserId' IS NOT NULL")).rows[0].n, 0)
       await assert.rejects(pool.query('SELECT * FROM profitia_ingestion.security_events'), error => error.code === '42501')
       assert.equal((await owner.query("SELECT to_regnamespace('profitia_access') AS namespace")).rows[0].namespace, null)
