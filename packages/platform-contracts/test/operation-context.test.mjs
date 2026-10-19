@@ -28,7 +28,7 @@ function fixture(operation = 'benchmark.selection.read') {
     ]
   }
   const controls = { failIntent: false, failOutcome: false, failProjection: false }
-  const privateSupplier = operation.startsWith('supplier.private.')
+  const privateSupplier = ['supplier.private.read','supplier.private.reveal','supplier.private.export'].includes(operation)
   if (privateSupplier) {
     const snapshotId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
     state.resource.version=snapshotId
@@ -55,7 +55,7 @@ function fixture(operation = 'benchmark.selection.read') {
   return { input, state, application, options, events, writes, controls, issuer, action, get invoked() { return invoked }, execute: () => createOperationExecutor(options).execute(input, action) }
 }
 
-for (const operation of IMPLEMENTED_OPERATIONS.filter(value => !['forecast.request','supplier.report.refresh','job.execute','knowledge.ingest'].includes(value))) {
+for (const operation of IMPLEMENTED_OPERATIONS.filter(value => !['forecast.request','supplier.report.refresh','supplier.private.refresh','benchmark.discovery.request','benchmark.discovery.read','job.execute','knowledge.ingest'].includes(value))) {
   test(`${operation}: explicit positive rule and durable intent/outcome`, async () => {
     const f = fixture(operation); const result = await f.execute(); assert.equal(result.decision, 'ALLOW'); assert.equal(f.invoked, 1); assert.deepEqual(f.events.map(e => e.phase), operation === 'supplier.report.export' ? ['INTENT', 'INTENT', 'OUTCOME', 'OUTCOME'] : ['INTENT', 'OUTCOME'])
   })
@@ -138,8 +138,8 @@ test('payload is canonically bound and snapshotted before asynchronous authentic
 })
 test('candidate rules match exact normative rows and never imply the whole catalogue is implemented', async () => {
   const matrix = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url)))
-  assert.equal(IMPLEMENTED_OPERATIONS.length, 22); assert.equal(matrix.rules.length, 33)
-  for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === (['forecast.request','supplier.report.refresh'].includes(operation) ? 'PRODUCT_POLICY' : operation==='knowledge.ingest'?'PLATFORM_BUDGET':'NOT_APPLICABLE')).length, 1)
+  assert.equal(IMPLEMENTED_OPERATIONS.length, 25); assert.equal(matrix.rules.length, 36)
+  for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === (['forecast.request','supplier.report.refresh','supplier.private.refresh','benchmark.discovery.request'].includes(operation) ? 'PRODUCT_POLICY' : operation==='knowledge.ingest'?'PLATFORM_BUDGET':'NOT_APPLICABLE')).length, 1)
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
 

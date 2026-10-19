@@ -2,11 +2,12 @@ import type {AccessQuery,AccessStoreBinding} from './access-store.mjs'
 import type {BoundRequest,OperationContext} from './operation-context.mjs'
 import type {DelegatedJobLease} from './delegated-job.mjs'
 export type NativeWorkAccessMode='READ'|'WRITE'
-export interface RequestWorkBinding {
+interface RequestWorkBase {
  readonly requestId:string;readonly unitId:string;readonly accessMode:NativeWorkAccessMode
  readonly inputDigest:string;readonly schemaDigest:string
 }
-export interface RequestWorkEvidence extends RequestWorkBinding {readonly policyVersion:string;readonly policySourceRef:string;readonly policyExpiresAt:string;readonly transactionId:string}
+export type RequestWorkBinding=RequestWorkBase&({targetOperation?:never;operationSchemaDigest?:never}|{targetOperation:import('./request-operations.mjs').AdditionalRequestOperation;operationSchemaDigest:string})
+export interface RequestWorkEvidence extends RequestWorkBase {readonly policyVersion:string;readonly policySourceRef:string;readonly policyExpiresAt:string;readonly transactionId:string}
 export declare const REQUEST_WORK_CONTRACT:Readonly<{id:'profitia.request-work';version:'1.0.0';effect:'PRIVATE_SQL_WORK';replayOwner:'EXISTING_DOMAIN_STATE'}>
 export declare const requestWorkSchemaUrl:string
 export declare function requestWorkSchemaDigest():Promise<string>

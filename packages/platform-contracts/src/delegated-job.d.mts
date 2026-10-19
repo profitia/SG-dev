@@ -8,7 +8,7 @@ export type DispatchAdmission = Readonly<{jobId:string;status:'BUSY'|'CONFIRMED'
   jobId:string;requestId:string;status:'READY';sourceId:string;deliveryKey:string;leaseId:string;expiresAt:string;attempt:number
 }>
 export declare const DELEGATED_JOB_CONTRACT:Readonly<{id:'profitia.delegated-job';version:'1.1.0'}>
-export type DelegatedJobTargetOptions = {targetOperation?:'forecast.request';supplierSchemaDigest?:never}|{targetOperation:'supplier.report.refresh';supplierSchemaDigest:string}
+export type DelegatedJobTargetOptions = {targetOperation?:'forecast.request';supplierSchemaDigest?:never;operationSchemaDigest?:never}|{targetOperation:'supplier.report.refresh';supplierSchemaDigest:string;operationSchemaDigest?:never}|{targetOperation:import('./request-operations.mjs').AdditionalRequestOperation;supplierSchemaDigest:string;operationSchemaDigest:string}
 export declare const supplierDelegationSchemaUrl:string
 export declare function supplierDelegationSchemaDigest():Promise<string>
 export declare const delegatedJobSchemaUrl:string
