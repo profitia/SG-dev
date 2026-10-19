@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -196,4 +196,40 @@ test('actual npm ignores lifecycle during credential phase; later lifecycle exec
     assert.equal(lifecycle.status, 0)
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(directory, 'phase.json'))), {credentialPresent: false})
   } finally {fs.rmSync(directory, {recursive: true, force: true})}
+})
+
+
+function sourceLayoutFixture(implementation='1.0.0-candidate.15') {
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'contract-source-layout-'))
+ const names=['src/operation-context.mjs','src/operation-context.d.mts','src/request-operations.mjs','src/request-operations.d.mts','migrations/access/017-additional-request-operations.sql']
+ for(const name of names){const file=path.join(root,'packages/platform-contracts',name);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,name==='src/operation-context.mjs'?`export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '${implementation}' })\n`:name+' synthetic source\n')}
+ return{root,names,contract:{id:'profitia.operation-context',version:'1.0.0',implementation,sourceDigest:'a'.repeat(64)},file:name=>path.join(root,'packages/platform-contracts',name),close:()=>fs.rmSync(root,{recursive:true,force:true})}
+}
+for(const version of[1,3,14,15])test('fixed source provenance preserves explicit candidate'+version+' layout without evaluating candidate code',async()=>{
+ const {createHash}=await import('node:crypto'),f=sourceLayoutFixture('1.0.0-candidate.'+version)
+ try{const selected=f.names.slice(0,version===15?5:2),h=createHash('sha256');for(const name of selected)h.update(fs.readFileSync(f.file(name)));const before=f.names.map(name=>fs.readFileSync(f.file(name),'utf8'));assert.equal(operationContractProvenanceDigest(f.root,f.contract),h.digest('hex'));assert.deepEqual(f.names.map(name=>fs.readFileSync(f.file(name),'utf8')),before)}finally{f.close()}
+})
+test('candidate15 cannot downgrade to the two-file hash or supply its own source file list',async()=>{
+ const {createHash}=await import('node:crypto'),f=sourceLayoutFixture()
+ try{const h=createHash('sha256');for(const name of f.names.slice(0,2))h.update(fs.readFileSync(f.file(name)));const actual=operationContractProvenanceDigest(f.root,f.contract);assert.notEqual(actual,h.digest('hex'));assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,sourceFiles:['src/operation-context.mjs','src/operation-context.d.mts']}),/CONTRACT_PROVENANCE_MISMATCH/);assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,implementation:'1.0.0-candidate.14'}),/CONTRACT_IMPLEMENTATION_MISMATCH/)}finally{f.close()}
+})
+for(const name of['src/request-operations.mjs','src/request-operations.d.mts','migrations/access/017-additional-request-operations.sql'])test('candidate15 binds changes and refuses missing '+name,()=>{
+ const f=sourceLayoutFixture()
+ try{const before=operationContractProvenanceDigest(f.root,f.contract);fs.appendFileSync(f.file(name),'changed dependency');assert.notEqual(operationContractProvenanceDigest(f.root,f.contract),before);fs.unlinkSync(f.file(name));assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/)}finally{f.close()}
+})
+for(const implementation of['1.0.0-candidate.16','1.0.0-candidate.015','1.0.0-candidate.0','toString',null])test('unsupported source identity cannot select an implicit layout '+implementation,()=>{
+ const f=sourceLayoutFixture();try{assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,implementation}),/CONTRACT_SOURCE_LAYOUT_UNSUPPORTED|CONTRACT_PROVENANCE_MISMATCH/)}finally{f.close()}
+})
+test('regular files and bounded size are required; symlink files and parent directories never widen reads',()=>{
+ const f=sourceLayoutFixture(),outside=fs.mkdtempSync(path.join(os.tmpdir(),'untrusted-contract-source-'))
+ try{const file=f.file('src/request-operations.mjs');fs.unlinkSync(file);fs.writeFileSync(path.join(outside,'private-file'),'synthetic outside marker');fs.symlinkSync(path.join(outside,'private-file'),file);assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/);fs.unlinkSync(file);fs.writeFileSync(file,'a'.repeat(1024*1024+1));assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/);fs.writeFileSync(file,'small');const src=f.file('src');fs.renameSync(src,path.join(outside,'src'));fs.symlinkSync(path.join(outside,'src'),src,'dir');assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/)}finally{f.close();fs.rmSync(outside,{recursive:true,force:true})}
+})
+test('actual current source provenance is the exact accepted SDK digest with all old trust rules intact',async()=>{
+ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
+ assert.equal(operationContractProvenanceDigest(root,receipt.contract),receipt.contract.sourceDigest)
+ const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),receipt.contract.sourceDigest)
+})
+
+for(const patch of[{id:'untrusted.contract'},{version:'9.0.0'},{sourceDigest:'invalid'},{paths:['../../outside']},{implementation:'1.0.0-candidate.14'}])test('source identity refuses malformed metadata or a downgrade '+JSON.stringify(patch),()=>{
+ const f=sourceLayoutFixture();try{assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,...patch}),/CONTRACT_PROVENANCE_MISMATCH|CONTRACT_IMPLEMENTATION_MISMATCH/)}finally{f.close()}
 })

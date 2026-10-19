@@ -49,10 +49,13 @@ export function assertCredentialMetadata({scopes, expiresAt, login}, now = Date.
   if (!Number.isFinite(expiry) || expiry <= now || expiry > now + 31 * 86400000) fail('CREDENTIAL_EXPIRY_REJECTED')
 }
 
+function assertOperationContractMetadata(c) {
+  if (!c || Object.keys(c).sort().join(',') !== 'id,implementation,sourceDigest,version' || c.id !== 'profitia.operation-context' || c.version !== '1.0.0' || !/^1\.0\.0-candidate\.[1-9][0-9]*$/.test(c.implementation ?? '') || !/^[a-f0-9]{64}$/.test(c.sourceDigest ?? '')) fail('CONTRACT_PROVENANCE_MISMATCH')
+}
+
 export function assertReceipt(receipt) {
   if (receipt?.projectKey !== 'SG2' || receipt.targetEnvironment !== 'development' || receipt.scope !== 'ISOLATED_OPERATION_INTEGRATION_ONLY' || receipt.liveRouteUsesContract !== false || receipt.automaticProductDeployment !== false) fail('ADOPTION_RECEIPT_REJECTED')
-  const c = receipt.contract
-  if (!c || Object.keys(c).sort().join(',') !== 'id,implementation,sourceDigest,version' || c.id !== 'profitia.operation-context' || c.version !== '1.0.0' || !/^1\.0\.0-candidate\.[1-9][0-9]*$/.test(c.implementation ?? '') || !/^[a-f0-9]{64}$/.test(c.sourceDigest ?? '')) fail('CONTRACT_PROVENANCE_MISMATCH')
+  assertOperationContractMetadata(receipt.contract)
   return receipt
 }
 
@@ -181,6 +184,31 @@ async function resolve() {
   output('adopted', 'true'); output('candidate_sha', sha)
   console.log(`Accepted internal SG2 source ${sha}; control ${c.controlSha}`)
 }
+/** Static, closed source layouts. Candidate data selects neither file paths nor
+ * executable hashing code. Candidate15 additionally binds its imported request
+ * metadata and optional SQL; it may never fall back to the legacy two files. */
+export function operationContractProvenanceDigest(root, contract) {
+  assertOperationContractMetadata(contract)
+  const legacy = /^1\.0\.0-candidate\.([1-9][0-9]*)$/.exec(contract?.implementation ?? '')
+  if (!legacy || Number(legacy[1]) > 15) fail('CONTRACT_SOURCE_LAYOUT_UNSUPPORTED')
+  const names = ['src/operation-context.mjs', 'src/operation-context.d.mts',
+    ...(Number(legacy[1]) === 15 ? ['src/request-operations.mjs', 'src/request-operations.d.mts', 'migrations/access/017-additional-request-operations.sql'] : [])]
+  let base, contents
+  try {
+    base = fs.realpathSync(root)
+    contents = names.map(name => {
+      const file = path.join(base, 'packages/platform-contracts', name)
+      const stat = fs.lstatSync(file)
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024 || fs.realpathSync(file) !== file) fail('CONTRACT_SOURCE_FILE_REJECTED')
+      return fs.readFileSync(file)
+    })
+  } catch { fail('CONTRACT_SOURCE_FILE_REJECTED') }
+  const identity = /^export\s+const\s+OPERATION_CONTRACT\s*=\s*Object\.freeze\(\s*\{\s*id:\s*'profitia\.operation-context',\s*version:\s*'1\.0\.0',\s*implementation:\s*'(1\.0\.0-candidate\.[1-9][0-9]*)'\s*\}\s*\)\s*;?\s*$/m.exec(contents[0].toString('utf8'))
+  if (!identity || identity[1] !== contract.implementation) fail('CONTRACT_IMPLEMENTATION_MISMATCH')
+  const digest = createHash('sha256')
+  for (const content of contents) digest.update(content)
+  return digest.digest('hex')
+}
 function checkCandidate() {
   const c = assertTrustedContext(context()), state = readJson(statePath()), root = candidateRoot()
   if (state.controlSha !== c.controlSha || state.runId !== process.env.GITHUB_RUN_ID || !shaPattern.test(state.sha) || execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim() !== state.sha) fail('CANDIDATE_CHECKOUT_MISMATCH')
@@ -189,9 +217,7 @@ function checkCandidate() {
   assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))
   assertManifestPolicy(readJson(path.join(app, 'package.json')), readJson(path.join(controlRoot(), 'apps/sg-runtime/package.json')))
   assertLocalPackageSources(root, candidateLock)
-  const digest = createHash('sha256')
-  for (const name of ['operation-context.mjs', 'operation-context.d.mts']) digest.update(fs.readFileSync(path.join(root, 'packages/platform-contracts/src', name)))
-  if (digest.digest('hex') !== state.receipt.contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
+  if (operationContractProvenanceDigest(root, state.receipt.contract) !== state.receipt.contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
   return {state, app}
 }
 async function install() {
