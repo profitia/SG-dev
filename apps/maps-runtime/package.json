@@ -1,0 +1,9 @@
+{
+  "name": "@profitia/maps-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22"},
+  "scripts": {"build": "node scripts/build.mjs", "start": "node src/server/server.mjs", "test": "node --test test/*.test.mjs"},
+  "dependencies": {"@profitia/maps-contracts": "file:../../packages/maps-contracts", "@profitia/maps-embed": "file:../../packages/maps-embed", "@profitia/platform-contracts": "file:../../packages/platform-contracts"}
+}
