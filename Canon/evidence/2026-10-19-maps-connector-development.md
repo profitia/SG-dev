@@ -11,11 +11,11 @@ Onboarding PR519 merged e9eabd4bbab398185f6e42fc876e167e0a814ecd; governance19/1
 
 ## Verification status
 
-Local connector tests/build and independent-origin browser/provider verification are recorded after execution. A configured health response is not live Google proof. Synthetic channel tests are not private E1/RLS or customer UAT. Live server Geocoding, supplier records, CRUD, organization persistence and SRM feature integration are not claimed by this slice.
+Executed test and provider results are recorded below. A configured health response is not live Google proof. Synthetic channel tests are not private E1/RLS or customer UAT. Live server Geocoding, supplier records, CRUD, organization persistence and SRM feature integration are not claimed by this slice.
 
 ## Deployment and rollback
 
-New Maps runtime only; no existing product deployment replacement. Before initial bootstrap record the absent-service baseline, source/build manifest, environment configuration fingerprint, zero database/migrations and executable containment/removal procedure. Preserve exact resulting provider deployment/artifact evidence for later releases. Staging/Production remain untouched. Deployment remains pending until these checks complete.
+New Maps runtime only; no existing product deployment replacement. Before initial bootstrap record the absent-service baseline, source/build manifest, environment configuration fingerprint, zero database/migrations and executable containment/removal procedure. Preserve exact resulting provider deployment/artifact evidence for later releases. Staging/Production remain untouched. The executed deployment and rollback evidence is recorded below.
 
 ## Executed checks and first activation
 
