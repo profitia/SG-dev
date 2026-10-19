@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
-import { withOrganization } from "./db";
+import { withOrganization, type DatabasePool } from "./db";
 import { persistFinancialDocuments, projectArchivedFinancialDocuments, financialRecordsFromPages, type FinancialArchive } from "./financial-documents";
 import { MSR_PROJECTION_VERSION, selectMsrCandidates, projectMsrFinancial, mergeMsrFinancial, type MsrCandidate, type MsrProjection } from "./msr-financial";
 import { MSR_READABLE_MAPPING_VERSIONS, parseMsrOriginal, MsrParserError, type MsrParsed } from "./msr-parser";
@@ -59,7 +59,7 @@ export type MsrStore = {
   project?(candidate:MsrCandidate,projection:MsrProjection,archiveChecksum:string):Promise<void>;
   block(candidate:MsrCandidate,claimId:string,code:string):Promise<void>;
 };
-export function msrStore(organizationId:string,nip:string,requestId:string,allowedKrs?:readonly string[]):MsrStore {
+export function msrStore(organizationId:string,nip:string,requestId:string,allowedKrs?:readonly string[],pool?:DatabasePool):MsrStore {
   return {
     candidates:() => withOrganization(organizationId, async client => {
       const archive = (await client.query<FinancialArchive>(
@@ -70,17 +70,17 @@ export function msrStore(organizationId:string,nip:string,requestId:string,allow
       return {candidates,archiveChecksum:archive.payload_jsonb_sha256,metadataMissing:candidates.some(c=>records.some(r=>{
         const v=r as Record<string,unknown>;return v.id===c.recordId && !Object.hasOwn(v,'files');
       }))};
-    }),
-    claim:(c,id) => withOrganization(organizationId,client => claimMsrSource(client,organizationId,c,id,requestId)),
+    },pool),
+    claim:(c,id) => withOrganization(organizationId,client => claimMsrSource(client,organizationId,c,id,requestId),pool),
     read:c => withOrganization(organizationId,async client => (await client.query<MsrReceipt>(
-      "SELECT *,parsed_json::text AS parsed_text FROM srm.msr_sources WHERE organization_id=$1 AND nip=$2 AND record_id=$3", [organizationId,nip,c.recordId])).rows[0] ?? null),
+      "SELECT *,parsed_json::text AS parsed_text FROM srm.msr_sources WHERE organization_id=$1 AND nip=$2 AND record_id=$3", [organizationId,nip,c.recordId])).rows[0] ?? null,pool),
     receive:(c,id,original) => withOrganization(organizationId,async client => {
       const result = await client.query(
         `UPDATE srm.msr_sources SET state='RECEIVED',original_bytes=$5,original_sha256=$6,original_format=$7,original_container=$8,retrieved_at=$9
          WHERE organization_id=$1 AND nip=$2 AND record_id=$3 AND claim_id=$4 AND state='REQUESTED' AND identity_sha256=$10 RETURNING record_id`,
         [organizationId,nip,c.recordId,id,original.bytes,original.checksum,original.format,original.container,original.retrievedAt,identity(c)]);
       if (result.rows.length !== 1) throw new Error("MSR_SOURCE_FENCE_CONFLICT");
-    }),
+    },pool),
     save:(c,id,original,parsed,projection,archiveChecksum) => withOrganization(organizationId,async client => {
       const result = await client.query(
         `UPDATE srm.msr_sources SET state='READY',original_bytes=$5,original_sha256=$6,original_format=$7,original_container=$8,
@@ -90,14 +90,14 @@ export function msrStore(organizationId:string,nip:string,requestId:string,allow
       if (result.rows.length !== 1) throw new Error("MSR_SOURCE_FENCE_CONFLICT");
       const verified = await persistMsrProjection(client,organizationId,c,projection);
       await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum,verified);
-    }),
+    },pool),
     project:(c,projection,archiveChecksum) => withOrganization(organizationId,async client => {
       const verified = await persistMsrProjection(client,organizationId,c,projection);
       await persistFinancialDocuments(client,organizationId,nip,[projection.document],archiveChecksum,verified);
-    }),
+    },pool),
     block:(c,id,code) => withOrganization(organizationId, async client => { await client.query(
       `UPDATE srm.msr_sources SET state=CASE WHEN state='REQUESTED' AND $5 IN ('MSR_FILE_BUDGET_EXHAUSTED','MSR_BUDGET_UNAVAILABLE','MSR_PROVIDER_NOT_CONFIGURED') THEN 'DEFERRED' ELSE 'BLOCKED' END,
-       error_code=$5 WHERE organization_id=$1 AND nip=$2 AND record_id=$3 AND claim_id=$4 AND state IN ('REQUESTED','RECEIVED')`, [organizationId,nip,c.recordId,id,code]); }),
+       error_code=$5 WHERE organization_id=$1 AND nip=$2 AND record_id=$3 AND claim_id=$4 AND state IN ('REQUESTED','RECEIVED')`, [organizationId,nip,c.recordId,id,code]); },pool),
   };
 }
 

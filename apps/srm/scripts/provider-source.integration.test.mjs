@@ -32,7 +32,14 @@ test('native provider source adoption pins original clients and keeps live relea
   assert.equal(current.previousNativeSourceRecordIsHistorical, true)
   assert.equal(current.originalProviderClientsReused, true); assert.equal(current.ordinaryNativePgDriverShared, true)
   assert.equal(Object.keys(current.sourceDigests).length, 8)
-  for (const [path, digest] of Object.entries(current.sourceDigests)) assert.equal(hash(fs.readFileSync(new URL('../' + path, import.meta.url))), digest, path)
+  assert.equal(current.sourceRecordIsHistorical,true)
+  const adoption=manifest.nativeSupplierBusinessWorkAdoption
+  assert.equal(adoption.taskId,'SRM-E1-NATIVE-SUPPLIER-WORK-BOUNDARY-20261019')
+  assert.equal(adoption.previousProviderSourceReceiptPreserved,true)
+  for (const [path, digest] of Object.entries(current.sourceDigests)) {
+    const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
+    assert.equal(hash(fs.readFileSync(new URL('../' + path, import.meta.url))),expected,path)
+  }
   for (const key of ['humanSupplierRefreshAdopted', 'sharedCatalogWriteAdopted', 'msrFilesAdopted', 'krsFilesAdopted', 'liveSqlInstalled', 'runtimeRoleOrGrantChanged', 'productDeploymentPerformed']) assert.equal(current[key], false, key)
 })
 

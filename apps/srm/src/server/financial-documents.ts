@@ -133,7 +133,22 @@ export function projectArchivedFinancialDocuments(archive: FinancialArchive, org
 
 export async function saveFinancialDocuments(organizationId: string, nip: string, pages: unknown[], pool?: DatabasePool): Promise<{ documents: number; positions: number }> {
   const documents = projectFinancialDocuments(financialRecordsFromPages(pages));
-  return withOrganization(organizationId, client => persistFinancialDocuments(client, organizationId, nip, documents), pool);
+  const capturedPages = JSON.stringify(pages);
+  return withOrganization(organizationId, async client => {
+    if (!documents.length) return persistFinancialDocuments(client, organizationId, nip, documents);
+    // When the source has already been archived, prepare from its verified
+    // persisted bytes and bind the derived rows to that exact inventory. A
+    // later READ must not need an implicit write to establish provenance.
+    const archive = (await client.query<FinancialArchive & { pages_match: boolean }>(
+      `SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,
+        payload_json->'pages'=$3::jsonb AS pages_match FROM srm.mgbi_source_archives
+       WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE`,
+      [organizationId,nip,capturedPages])).rows[0];
+    if (!archive) return persistFinancialDocuments(client, organizationId, nip, documents);
+    if (!archive.pages_match) throw new Error("Financial preparation source differs from current archive");
+    return persistFinancialDocuments(client, organizationId, nip,
+      projectArchivedFinancialDocuments(archive,organizationId,nip),archive.payload_jsonb_sha256);
+  }, pool);
 }
 
 export async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
@@ -168,8 +183,10 @@ async function storedDocuments(client: DocumentClient, organizationId: string, n
   return rows;
 }
 
-/** Caller owns the withOrganization transaction. A shared archive lock fences provider
- * replacement until all derived rows commit; concurrent restores use the same upsert. */
+/** Caller owns the withOrganization transaction. Restoration locks its source
+ * until derived rows commit. A pure read uses its observed row/checksum without
+ * a row lock: PostgreSQL row-lock visibility also requires UPDATE USING policy,
+ * which must not make an existing archive look absent in a READ-only scope. */
 async function financialDocumentsFromArchive(client: DocumentClient, organizationId: string, nip: string, restore: boolean): Promise<FinancialSourceDocument[]> {
   const archive = (await client.query<FinancialArchive & { observed_checksum: string; financial_record_ids: string[]; observed_record_count: number; mismatched_supplier_count: number; page_count: number; source_registrations?:Record<string,string> }>(
     `SELECT organization_id,nip,model,payload_jsonb_sha256,record_count,
@@ -182,7 +199,7 @@ async function financialDocumentsFromArchive(client: DocumentClient, organizatio
        ARRAY(SELECT r->>'id' FROM jsonb_array_elements(payload_json->'pages') page
          CROSS JOIN LATERAL jsonb_array_elements(page->'results') r
          WHERE r#>>'{document,type}' IN ('financial_statement','consolidated_financial_statement') AND r->>'id' IS NOT NULL) AS financial_record_ids
-     FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE`, [organizationId,nip])).rows[0];
+     FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'${restore ? ' FOR SHARE' : ''}`, [organizationId,nip])).rows[0];
   const stored = await storedDocuments(client,organizationId,nip);
   const origins = (documents:FinancialSourceDocument[]) => documents.map(d => {
     const krs=archive?.source_registrations?.[d.recordId];
@@ -220,8 +237,8 @@ export async function readPreparedFinancialDocuments(client: DocumentClient, org
   return financialDocumentsFromArchive(client, organizationId, nip, false);
 }
 
-export async function readFinancialDocuments(organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
-  return withOrganization(organizationId, client => restoreFinancialDocumentsFromArchive(client,organizationId,nip));
+export async function readFinancialDocuments(organizationId: string, nip: string, pool?:DatabasePool): Promise<FinancialSourceDocument[]> {
+  return withOrganization(organizationId, client => restoreFinancialDocumentsFromArchive(client,organizationId,nip),pool);
 }
 
 /** Enrich saved tenant reports without re-fetching, revaluing facts or expanding the shared catalog. */

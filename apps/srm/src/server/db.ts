@@ -11,13 +11,35 @@ interface DelegatedPhaseScope {
   readonly schemaDigest: string; readonly delegatedSchemaDigest: string; readonly transactionId: string
   readonly inspectionSchemaDigest?: string; readonly acceptedTransactionId?: string
 }
-const boundTransactions = new WeakMap<DatabasePool, { organizationId: string; client: PoolClient; delegated?: Readonly<DelegatedPhaseScope> }>();
+interface DelegatedNativeWorkScope {
+  readonly kind:'NATIVE_WORK';readonly actorId:string;readonly applicationId:string;readonly subjectUserId:string
+  readonly requestId:string;readonly unitId:string;readonly accessMode:'READ'|'WRITE';readonly inputDigest:string
+  readonly schemaDigest:string;readonly transactionId:string;readonly policyVersion:string
+  readonly policySourceRef:string;readonly policyExpiresAt:string
+}
+type DelegatedPrivateScope=DelegatedPhaseScope|DelegatedNativeWorkScope
+const boundTransactions = new WeakMap<DatabasePool, { organizationId: string; client: PoolClient; delegated?: Readonly<DelegatedPrivateScope> }>();
 
 /** Server-only capability for an already authorised, active transaction. */
 export function bindOrganizationTransaction(organizationId: string, client: PoolClient, serviceContext?: Readonly<OperationContext>): DatabasePool {
   assertOrganizationId(organizationId);
-  let delegated: Readonly<DelegatedPhaseScope> | undefined;
+  let delegated: Readonly<DelegatedPrivateScope> | undefined;
   if (serviceContext !== undefined) {
+    if(serviceContext.requestWork!==undefined){
+      const c=serviceContext,w=c.requestWork!,uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if(c.actorKind!=='SERVICE'||c.actor?.kind!=='SERVICE'||c.actorId!==c.actor.actorId||c.actorId!==c.actor.serviceId
+        ||c.operation!=='job.execute'||c.organisationId!==organizationId||!uuid.test(c.actorId)||!uuid.test(c.subjectUserId??'')
+        ||!uuid.test(w.requestId)||c.resourceId!==w.requestId||c.delegation?.requestId!==w.requestId
+        ||c.delegation.subjectUserId!==c.subjectUserId||c.delegation.organisationId!==organizationId
+        ||c.delegation.target.operation!=='supplier.report.refresh'||c.delegation.target.application.appId!=='srm'
+        ||c.requestContinuation!==undefined||c.requestInspection!==undefined||!/^[A-Z][A-Z0-9_]{1,63}$/.test(w.unitId)
+        ||!['READ','WRITE'].includes(w.accessMode)||![w.inputDigest,w.schemaDigest].every(v=>/^[a-f0-9]{64}$/.test(v))
+        ||!/^[1-9][0-9]*$/.test(w.transactionId)||!/^[1-9][0-9]*$/.test(w.policyVersion)
+        ||!w.policySourceRef||!Number.isFinite(Date.parse(w.policyExpiresAt))||!c.applicationId)throw Error('Explicit current native Supplier work required')
+      delegated=Object.freeze({kind:'NATIVE_WORK',actorId:c.actorId,applicationId:c.applicationId,subjectUserId:c.subjectUserId!,
+        requestId:w.requestId,unitId:w.unitId,accessMode:w.accessMode,inputDigest:w.inputDigest,schemaDigest:w.schemaDigest,
+        transactionId:w.transactionId,policyVersion:w.policyVersion,policySourceRef:w.policySourceRef,policyExpiresAt:w.policyExpiresAt})
+    }else{
     const c = serviceContext, inspection = c?.requestInspection, phase = c?.requestContinuation ?? inspection;
     const schemaDigest = inspection?.continuationSchemaDigest ?? phase?.schemaDigest;
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -40,6 +62,7 @@ export function bindOrganizationTransaction(organizationId: string, client: Pool
       requestId: phase.requestId, phaseId: phase.phaseId, inputDigest: phase.inputDigest,
       schemaDigest: schemaDigest!, delegatedSchemaDigest: phase.delegatedSchemaDigest!, transactionId: phase.transactionId,
       ...(inspection ? { inspectionSchemaDigest: inspection.schemaDigest, acceptedTransactionId: inspection.acceptedTransactionId } : {}) });
+    }
   }
   const pool: DatabasePool = { connect: async () => client };
   boundTransactions.set(pool, { organizationId, client, ...(delegated ? { delegated } : {}) });
@@ -106,6 +129,22 @@ export async function withOrganization<T>(
     const role = identity.rows[0];
     if (bound?.delegated) {
       const d = bound.delegated;
+      if(d.kind==='NATIVE_WORK'){
+        const proof=await client.query<{allowed:boolean;descriptor:Record<string,string>|null;input_digest:string;transaction_id:string;role:string;login:string}>(
+          'SELECT profitia_request_work.scope_allows($1::uuid,$2,$3::uuid,$4::uuid,$5) AS allowed, '+
+          'profitia_request_work.descriptor($1::uuid,$2) AS descriptor, '+
+          "nullif(current_setting('profitia.native_work.scope',true),'')::jsonb->>2 AS input_digest, "+
+          'txid_current()::text AS transaction_id,current_user::text AS role,session_user::text AS login',
+          [d.requestId,d.unitId,organizationId,d.subjectUserId,d.accessMode])
+        const row=proof.rows[0],actual=row?.descriptor
+        if(row?.allowed!==true||!actual||row.role!==row.login||actual.role!==row.role
+          ||actual.applicationId!==d.applicationId||actual.databaseName!==role?.database_name
+          ||actual.executorServiceId!==d.actorId||actual.subjectUserId!==d.subjectUserId
+          ||actual.organisationId!==organizationId||actual.requestId!==d.requestId||actual.unitId!==d.unitId
+          ||actual.accessMode!==d.accessMode||actual.effect!=='PRIVATE_SQL_WORK'||actual.schemaDigest!==d.schemaDigest
+          ||actual.policyVersion!==d.policyVersion||actual.sourceRef!==d.policySourceRef||actual.policyExpiresAt!==d.policyExpiresAt
+          ||row.input_digest!==d.inputDigest||actual.transactionId!==d.transactionId||row.transaction_id!==d.transactionId)throw Error('SRM native work transaction scope mismatch')
+      }else{
       const inspecting = d.kind === 'INSPECTION';
       const proof = await client.query<{ allowed: boolean; descriptor: Record<string,string> | null; transaction_id: string; role: string; login: string }>(inspecting ?
         "SELECT profitia_request_inspection.scope_allows($1::uuid,$2,$3::uuid,$4::uuid) AS allowed, " +
@@ -125,6 +164,7 @@ export async function withOrganization<T>(
         || inspecting && (actual.effect !== 'PRIVATE_SQL_READ' || actual.inspectionSchemaDigest !== d.inspectionSchemaDigest
           || actual.acceptedTransactionId !== d.acceptedTransactionId || actual.inputDigest !== d.inputDigest)
         || actual.transactionId !== d.transactionId || row.transaction_id !== d.transactionId) throw new Error('SRM delegated private transaction scope mismatch');
+      }
     } else if (role?.database_name !== "srm_app") {
       // Only a server-bound transaction admitted by the private host can use a
       // new store. The ordinary runtime URL/getPool contract stays unchanged.
