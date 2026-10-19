@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
+import {requestOperationPolicy} from './request-operations.mjs'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.14' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.15' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -23,6 +24,9 @@ const rules = Object.freeze({
   // AM23 accepts a private intent and explicitly installed PRIVATE_SQL_PHASE
   // continuations of that accepted parent; no remote acquisition is executed.
   'supplier.report.refresh': rule('supplier_report', 'supplier_report_request', 'OPERATION_AUDIT', 'REQUEST_EXTERNAL', 'SUPPLIER_INTELLIGENCE'),
+  'supplier.private.refresh': rule('supplier_report', 'supplier_private_request', 'OPERATION_AUDIT', 'REQUEST_EXTERNAL', 'SUPPLIER_INTELLIGENCE'),
+  'benchmark.discovery.request': rule('benchmark', 'benchmark_discovery_request', 'OPERATION_AUDIT', 'REQUEST_EXTERNAL', 'SPENDGURU'),
+  'benchmark.discovery.read': rule('benchmark', 'benchmark_discovery_result', 'USER_IN_ORGANISATION_PRIVATE', 'READ', 'SPENDGURU'),
   // AM27 authorises the private dispatch boundary. Publication of shared
   // effects requires its own AM26 source authority and durable receipt.
   'job.execute': rule('job_execution', 'job', 'ORGANISATION_PRIVATE', 'EXECUTE_BOUND_OPERATION'),
@@ -170,14 +174,11 @@ function computeReceipt(value, id) {
  * Host SQL supplies current control rows, and holds their revocation fence. */
 // Closed target policies for the SAME AM27 interpreter. The store/host also
 // selects its explicit target; adding Supplier never widens a Forecast host.
-const delegatedTargets=Object.freeze({
-  'forecast.request':Object.freeze({feature:'forecast',module:'benchmark',profiles:Object.freeze(['PORR_SUITE','SPENDGURU_SAAS'])}),
-  'supplier.report.refresh':Object.freeze({feature:'supplier_report',module:'supplier_report',profiles:Object.freeze(['PORR_SUITE','SPENDGURU_SAAS','SUPPLIER_INTELLIGENCE_STANDALONE'])}),
-})
+
 function delegatedJob(state, identity, request, config, time) {
   const d=state.delegation, t=d?.target, a=t?.application, ceiling=profiles[a?.profileId]
   const subject=d?.subjectUserId, observation=d?.externalAccountObservation, key=d?.identityKey
-  const target=Object.hasOwn(delegatedTargets,t?.operation)?delegatedTargets[t.operation]:null
+  const target=requestOperationPolicy(t?.operation)
   if (request.operation!=='job.execute' || identity.kind!=='SERVICE' || config.profileId!=='PLATFORM_INTERNAL'
     || !d || !target || !computeUuid.test(d.delegationId??'') || d.jobId!==request.resourceId || d.requestId!==d.jobId
     || !computeUuid.test(d.jobId??'') || !computeUuid.test(subject??'')
@@ -293,7 +294,7 @@ export function createOperationExecutor(options) {
           }
           const moduleEvidence = session.moduleEvidence === undefined ? undefined : normalizeModuleEvidence(session.moduleEvidence, { now })
           if (moduleEvidence && selected.mode !== 'ORGANISATION') deny('CONTEXT_INVALID')
-          if (compute && moduleEvidence?.moduleId !== (request.operation === 'supplier.report.refresh' ? 'supplier_report' : 'benchmark')) deny('APPLICATION_FEATURE_UNAVAILABLE')
+          if (compute && moduleEvidence?.moduleId !== requestOperationPolicy(request.operation)?.module) deny('APPLICATION_FEATURE_UNAVAILABLE')
           let context = { ...audit, ...(delegated ? {subjectUserId:delegated.subjectUserId} : {}), organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId, ...(moduleEvidence ? { moduleEvidence } : {}) }
           const platformPolicy=platform?ingestionPolicy(state.ingestion,context,request,now()):null
           if(platformPolicy)context={...context,sourceId:platformPolicy.sourceId,sourceVersion:platformPolicy.sourceVersion,
@@ -303,6 +304,7 @@ export function createOperationExecutor(options) {
           if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
           if (state.resource.id !== request.resourceId || compute && state.resource.ownerUserId !== identity.userId) deny('RESOURCE_SCOPE_MISMATCH')
+          if(request.operation==='benchmark.discovery.read'&&(identity.kind!=='HUMAN'||moduleEvidence?.moduleId!=='benchmark'))deny('APPLICATION_FEATURE_UNAVAILABLE')
           let privateSupplierInput
           if (privateSupplierOperations.has(request.operation)) {
             if (identity.kind !== 'HUMAN') deny('DELEGATION_INVALID')
@@ -390,7 +392,7 @@ export function createOperationExecutor(options) {
             ||typeof session.recordInspectionIntent!=='function'||typeof session.bindInspection!=='function'||typeof session.verifyInspection!=='function'))deny('POLICY_UNAVAILABLE')
           const work=state.requestWork
           const working=delegated!==null&&work!==undefined
-          if(work!==undefined&&(!working||continuation!==undefined||inspection!==undefined||delegated.delegation.target.operation!=='supplier.report.refresh'
+          if(work!==undefined&&(!working||continuation!==undefined||inspection!==undefined||!requestOperationPolicy(delegated.delegation.target.operation)?.nativeWork
             ||!work||Object.getPrototypeOf(work)!==Object.prototype||Reflect.ownKeys(work).length!==9
             ||Object.values(Object.getOwnPropertyDescriptors(work)).some(d=>!('value'in d)||!d.enumerable)
             ||Object.keys(work).sort().join(',')!=='accessMode,inputDigest,policyExpiresAt,policySourceRef,policyVersion,requestId,schemaDigest,transactionId,unitId'
@@ -519,5 +521,5 @@ export function createOperationExecutor(options) {
 
 export function operationSourceDigest() {
   // Kept outside the decision path: consumers bind the implementation and types.
-  return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL('./operation-context.mjs', import.meta.url))).update(fs.readFileSync(new URL('./operation-context.d.mts', import.meta.url))).digest('hex'))
+  return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL('./operation-context.mjs', import.meta.url))).update(fs.readFileSync(new URL('./operation-context.d.mts', import.meta.url))).update(fs.readFileSync(new URL('./request-operations.mjs',import.meta.url))).update(fs.readFileSync(new URL('./request-operations.d.mts',import.meta.url))).update(fs.readFileSync(new URL('../migrations/access/017-additional-request-operations.sql',import.meta.url))).digest('hex'))
 }
