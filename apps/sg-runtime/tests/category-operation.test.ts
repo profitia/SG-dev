@@ -64,6 +64,34 @@ test('missing authentication, unknown query, duplicate or invalid organisation, 
   assert.equal((await collection.POST(input('POST','',{...body(),name:'x'.repeat(33000)}))).status,400)
   assert.equal(calls.length,0)
 })
+test('category ingress preserves only the actual proxy authority and the common boundary rejects foreign or forged hosts',async()=>{
+  const {createPublicIdentityRequestBoundary}=await import('@profitia/platform-contracts/public-request')
+  const normalize=createPublicIdentityRequestBoundary({publicOrigins:['https://dev-sg2.spendguru.app'],internalOrigins:['http://localhost:3001']})
+  const received:Request[]=[]
+  const executor={execute:async(value:Parameters<OperationExecutor<Prisma.TransactionClient>['execute']>[0])=>{
+    const normalized=normalize(value.request as Request)
+    if(!normalized)throw new OperationDenied('UNVERIFIED_IDENTITY')
+    received.push(normalized);throw new OperationDenied('PERMISSION_DENIED')
+  }} as unknown as OperationExecutor<Prisma.TransactionClient>
+  const collection=createOperationCategoryCollectionHandlers(executor,A),detail=createOperationCategoryDetailHandlers(executor,A)
+  const headers={host:'dev-sg2.spendguru.app',origin:'https://dev-sg2.spendguru.app',cookie:'legacy-session',
+    'x-forwarded-host':'foreign.example.test','x-forwarded-proto':'http','x-clerk-user-id':B,'x-clerk-org-id':B}
+  const proxyDetail=(method:string,value?:unknown)=>new Request(`http://localhost:3001/api/category/${category}`,{
+    method,headers:{...headers,authorization,'content-type':'application/json'},...(value===undefined?{}:{body:JSON.stringify(value)})})
+  assert.equal((await collection.GET(input('GET','',undefined,headers))).status,403)
+  assert.equal((await collection.POST(input('POST','',body(),headers))).status,403)
+  assert.equal((await detail.GET(proxyDetail('GET'),{params:{categoryId:category}})).status,403)
+  assert.equal((await detail.PATCH(proxyDetail('PATCH',body()),{params:{categoryId:category}})).status,403)
+  assert.equal(received.length,4)
+  for(const [index,request] of received.entries()){
+    assert.equal(request.url,'https://dev-sg2.spendguru.app/api/category'+(index>=2?'/'+category:''))
+    assert.deepEqual([...request.headers],[['authorization',authorization],['host','dev-sg2.spendguru.app'],['origin','https://dev-sg2.spendguru.app']])
+  }
+  for(const invalid of [{...headers,host:'foreign.example.test'},{...headers,origin:'https://foreign.example.test'},
+    {'x-forwarded-host':'dev-sg2.spendguru.app','x-forwarded-proto':'https'}])
+    assert.equal((await collection.GET(input('GET','',undefined,invalid))).status,401)
+  assert.equal(received.length,4)
+})
 test('actual body stream is bounded and cancelled instead of trusting a short declared length',async()=>{
   const {executor,calls}=capture(), collection=createOperationCategoryCollectionHandlers(executor,A);let cancelled=false
   const stream=new ReadableStream({start(controller){controller.enqueue(new Uint8Array(20000));controller.enqueue(new Uint8Array(20000))},cancel(){cancelled=true}})
@@ -179,6 +207,21 @@ test('category transport adoption preserves earlier acceptance and pins its comp
   for(const[key,value]of Object.entries(previous))assert.deepEqual(receipt[key],value,key)
   for(const path of Object.keys(previous.categoryShellAdoption.sourceDigests))assert(path in current.sourceDigests,path)
   for(const path of ['components/category-builder/category-operation-request.ts','components/category-builder/category-builder-client.tsx','tests/category-operation.test.ts'])assert(path in current.sourceDigests,path)
+  for(const[path,digest]of Object.entries(current.sourceDigests)){
+    const bytes=receipt.categoryIngressAdoption?execFileSync('git',['show',receipt.categoryIngressAdoption.previousApplicationAuthority+':apps/sg-runtime/'+path]):readFileSync(new URL('../'+path,import.meta.url))
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),digest,path)
+  }
+  assert.equal(current.productDeploymentPerformed,false)
+})
+
+test('category ingress reception preserves the accepted transport and pins the current complete receiver closure',async()=>{
+  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),{createHash}=await import('node:crypto')
+  const receipt=JSON.parse(readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8')),current=receipt.categoryIngressAdoption
+  assert.equal(current.taskId,'SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020');assert.equal(current.previousApplicationAuthority,'b9d4e15b34751dd56596aa71a8b9e1e8fe8228db')
+  const previous=JSON.parse(execFileSync('git',['show',current.previousApplicationAuthority+':apps/sg-runtime/operation-integration.json'],{encoding:'utf8'}))
+  for(const[key,value]of Object.entries(previous))assert.deepEqual(receipt[key],value,key)
+  for(const path of Object.keys(previous.categoryTransportAdoption.sourceDigests))assert(path in current.sourceDigests,path)
+  for(const path of ['lib/category/operation-handlers.ts','tests/category-operation.test.ts'])assert(path in current.sourceDigests,path)
   for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
   assert.equal(current.productDeploymentPerformed,false)
 })

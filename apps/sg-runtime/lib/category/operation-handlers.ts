@@ -47,9 +47,15 @@ function createHandler(executor: OperationExecutor<Prisma.TransactionClient>, de
           : { action, categoryId: selected, body: await readBody(request) }
       }
     } catch { return unavailable(400) }
-    // Bind SDK authentication to exactly this captured header. Neither legacy
-    // cookies nor caller identity/role headers are copied into the new request.
-    const authenticatedRequest = new Request(request.url, { method: 'GET', signal: request.signal, headers: { authorization } })
+    // Preserve the actual ingress authority for the existing deployment-owned
+    // public request boundary. It validates Host/Origin before SDK verification;
+    // forwarding hints, cookies and caller identity/role headers confer nothing.
+    const identityHeaders = new Headers({ authorization })
+    for (const name of ['host', 'origin']) {
+      const value = request.headers.get(name)
+      if (value !== null) identityHeaders.set(name, value)
+    }
+    const authenticatedRequest = new Request(request.url, { method: 'GET', signal: request.signal, headers: identityHeaders })
     let businessFailure: { code: keyof typeof CATEGORY_BUSINESS_ERRORS; requestId: string; reason: 'CONTEXT_INVALID' | 'RESOURCE_SCOPE_MISMATCH' } | undefined
     try {
       const result = await executor.execute({ contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version,
