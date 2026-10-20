@@ -106,3 +106,79 @@ test('the actual four deployed route exports refuse incomplete private configura
     const result=await handler(input(),{params:{categoryId:category}});assert.equal(result.status,503);assert.deepEqual(await result.json(),{error:'Operation unavailable'})
   }}finally{if(previous===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=previous}
 })
+
+test('category presentation uses a fresh credential for every exact native operation without forwarding cookies', async () => {
+  const {createCategoryOperationRequester}=await import('../components/category-builder/category-operation-request')
+  let issued=0;const calls:Array<{path:string;init:RequestInit}>=[]
+  const request=createCategoryOperationRequester({mode:()=> 'clerk',origin:()=> 'https://dev-sg2.spendguru.app',
+    getToken:async()=> `${++issued}.payload.signature`,fetch:async(path,init)=>{calls.push({path:String(path),init:init!});return Response.json({ok:true})}})
+  for(const path of ['/api/category','/api/category/one','/api/benchmark/selection'])await request(path)
+  for(const [path,method]of [['/api/category','POST'],['/api/category/one','PATCH']])
+    await request(path,{method,headers:{'Content-Type':'application/json'},body:'{}'})
+  assert.equal(issued,5);assert.equal(calls.length,5)
+  for(const [i,{init}]of calls.entries()){
+    assert.equal(new Headers(init.headers).get('authorization'),`Bearer ${i+1}.payload.signature`)
+    assert.equal(new Headers(init.headers).get('cookie'),null);assert.equal(init.credentials,'omit');assert.equal(init.cache,'no-store')
+    assert.equal(init.redirect,'manual');assert.equal(init.referrerPolicy,'no-referrer')
+  }
+  request.close()
+})
+
+test('category transport refuses foreign, unadopted and credential-tainted selections before reading the session', async () => {
+  const {createCategoryOperationRequester}=await import('../components/category-builder/category-operation-request')
+  let issued=0,network=0
+  const request=createCategoryOperationRequester({mode:()=> 'clerk',origin:()=> 'https://dev-sg2.spendguru.app',
+    getToken:async()=>{issued++;return 'synthetic.payload.signature'},fetch:async()=>{network++;return Response.json({ok:true})}})
+  for(const path of ['https://foreign.example.test/api/category','//foreign.example.test/api/category','/api/category?organisationId=other',
+    '/api/category#fragment','/api/category/ai-suggestions','/api/category/a/child','/api/category/%2e%2e','/api/category/../category','/api/category?x=1'])
+    await assert.rejects(request(path))
+  for(const init of [{method:'DELETE'},{headers:{Authorization:'Bearer synthetic_session'}},{headers:{Cookie:'synthetic_session'}},
+    {headers:{'x-organisation-id':'forged'}},{method:'POST',body:'{}'},{method:'POST',headers:{'Content-Type':'application/json'},body:'x'.repeat(32769)}])
+    await assert.rejects(request('/api/category',init))
+  assert.equal(issued,0);assert.equal(network,0);request.close()
+})
+
+test('unavailable mode or absent/invalid session never falls back to demo authentication', async () => {
+  const {createCategoryOperationRequester}=await import('../components/category-builder/category-operation-request')
+  let network=0
+  for(const mode of ['unavailable','clerk'] as const)for(const token of [null,'not-a-session','x'.repeat(8193)]){
+    const request=createCategoryOperationRequester({mode:()=>mode,origin:()=> 'https://dev-sg2.spendguru.app',getToken:async()=>token,
+      fetch:async()=>{network++;return Response.json({ok:true})}})
+    await assert.rejects(request('/api/category'));request.close()
+  }
+  assert.equal(network,0)
+})
+
+test('closing category presentation during session acquisition prevents a stale request from being sent', async () => {
+  const {createCategoryOperationRequester}=await import('../components/category-builder/category-operation-request')
+  let finish!:(token:string)=>void,network=0
+  const credential=new Promise<string>(resolve=>{finish=resolve})
+  const request=createCategoryOperationRequester({mode:()=> 'clerk',origin:()=> 'https://dev-sg2.spendguru.app',getToken:()=>credential,
+    fetch:async()=>{network++;return Response.json({ok:true})}})
+  const pending=request('/api/category');request.close();finish('synthetic.payload.signature')
+  await assert.rejects(pending,error=>error instanceof Error&&error.name==='AbortError')
+  await assert.rejects(request('/api/category'));assert.equal(network,0)
+})
+
+test('closing category presentation aborts an in-flight native operation; legacy transport remains explicit', async () => {
+  const {createCategoryOperationRequester}=await import('../components/category-builder/category-operation-request')
+  let started!:()=>void;const sent=new Promise<void>(resolve=>{started=resolve})
+  const request=createCategoryOperationRequester({mode:()=> 'clerk',origin:()=> 'https://dev-sg2.spendguru.app',getToken:async()=> 'synthetic.payload.signature',
+    fetch:async(_path,init)=>{started();return new Promise<Response>((_resolve,reject)=>init!.signal!.addEventListener('abort',()=>reject(new DOMException('Synthetic abort','AbortError')),{once:true}))}})
+  const pending=request('/api/category');await sent;request.close();await assert.rejects(pending,error=>error instanceof Error&&error.name==='AbortError')
+  let issued=0;const init={method:'GET'},legacy=createCategoryOperationRequester({mode:()=> 'legacy_demo',origin:()=> 'https://dev-sg2.spendguru.app',
+    getToken:async()=>{issued++;return null},fetch:async(path,options)=>{assert.equal(path,'/api/category');assert.strictEqual(options,init);return Response.json({legacy:true})}})
+  assert.deepEqual(await(await legacy('/api/category',init)).json(),{legacy:true});assert.equal(issued,0);legacy.close()
+})
+
+test('category transport adoption preserves earlier acceptance and pins its complete receiver closure', async () => {
+  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),{createHash}=await import('node:crypto')
+  const receipt=JSON.parse(readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8')),current=receipt.categoryTransportAdoption
+  assert.equal(current.taskId,'SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020');assert.equal(current.previousApplicationAuthority,'44f5868316981192b0d09f452d627d8d306d90bd')
+  const previous=JSON.parse(execFileSync('git',['show',current.previousApplicationAuthority+':apps/sg-runtime/operation-integration.json'],{encoding:'utf8'}))
+  for(const[key,value]of Object.entries(previous))assert.deepEqual(receipt[key],value,key)
+  for(const path of Object.keys(previous.categoryShellAdoption.sourceDigests))assert(path in current.sourceDigests,path)
+  for(const path of ['components/category-builder/category-operation-request.ts','components/category-builder/category-builder-client.tsx','tests/category-operation.test.ts'])assert(path in current.sourceDigests,path)
+  for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+  assert.equal(current.productDeploymentPerformed,false)
+})
