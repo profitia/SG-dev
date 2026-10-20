@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationVersion": "sg2-native-benchmark-discovery-dev-v1",
+  "activationVariable": "PROFITIA_BENCHMARK_DISCOVERY_ENABLED",
+  "defaultEnabled": false,
+  "observedState": "SOURCE_CANDIDATE_NOT_INITIALIZED_OR_ACTIVATED",
+  "purpose": "Planned Development receiver bindings only. No role, policy, source, HTTP path or service is activated by this file.",
+  "environment": "development",
+  "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+  "applicationId": "spendguru",
+  "privateStore": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "hosts": [
+      "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+      "ep-late-heart-b9mxo8oi-pooler.c-7.eu-central-1.aws.neon.tech"
+    ],
+    "databaseName": "platform_private",
+    "runtimeRole": "sg2_private_development_runtime"
+  },
+  "nativeWork": {
+    "applicationId": "spendguru-benchmark-dispatch",
+    "runtimeRole": "sg2_benchmark_dispatch_development_runtime",
+    "roleState": "PLANNED_NOT_PROVISIONED",
+    "source": "apps/sg-runtime/prisma/private-store/006-benchmark-discovery.sql",
+    "boundaryDigest": "8002d50d82612a34e14a63c48e2aa8f3dd346bb2cece02dbd6bd44c441673b88",
+    "units": {
+      "SG2_DISCOVERY_READ": "READ",
+      "SG2_DISCOVERY_SAVE": "WRITE"
+    },
+    "noNewProcessOrScheduler": true
+  },
+  "metadataRead": {
+    "projectId": "autumn-waterfall-65938876",
+    "branchId": "br-dry-hall-b294222f",
+    "hosts": [
+      "ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech",
+      "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech"
+    ],
+    "databaseName": "neondb",
+    "schemaName": "profitia_metadata_read",
+    "runtimeRole": "sg2_metadata_read_development_runtime",
+    "connectionLimit": 1,
+    "roleState": "PLANNED_NOT_PROVISIONED",
+    "source": "apps/sg-runtime/prisma-market-data/private-read/003-metadata-discovery.sql",
+    "schemaDigest": "b8d0c39dc4b2efb676103361e77fa88485739dfa8f228fdd4273cb9f0e752b11"
+  },
+  "requiredSharedSql": {
+    "006-request-reservation.sql": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
+    "007-delegated-jobs.sql": "6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb",
+    "010-external-request-admission.sql": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+    "013-supplier-delegation.sql": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
+    "016-delegated-native-work.sql": "19fb1d9045bccdb3299317b4c5b7df41e361e971c83ab683a55b56d6fbc8e5fe",
+    "017-additional-request-operations.sql": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94"
+  },
+  "retentionPolicy": "Must be explicitly installed before activation; no implicit retention is granted by this candidate.",
+  "remainingAcceptance": [
+    "Real independently budgeted Source provider composition",
+    "Six original HTTP methods and browser request integration",
+    "Current source identity and live policies",
+    "Exact candidate full CI and builds",
+    "Controlled Development configuration, recoverability, deployment and actual user acceptance"
+  ]
+}
