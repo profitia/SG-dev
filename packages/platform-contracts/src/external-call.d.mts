@@ -5,6 +5,8 @@ import type {NativeExternalTransport,NativeExternalResult} from './native-extern
 export {NATIVE_EXTERNAL_TRANSPORT,nativeExternalTransportSchemaUrl} from './native-external-transport.mjs'
 export type {NativeExternalTransport,NativeExternalResult,NativePathRule} from './native-external-transport.mjs'
 export declare const EXTERNAL_CALL_CONTRACT:Readonly<{id:'profitia.external-call';version:'1.0.0';unit:'UPSTREAM_ATTEMPT_ADMISSION'}>
+export declare const publicWebTransportSchemaUrl:string
+export declare function publicWebTransportSchemaDigest():Promise<string>
 export declare const externalCallSchemaUrl:string
 export declare function externalCallSchemaDigest():Promise<string>
 export declare function externalCallSourceDigest():Promise<string>
@@ -25,7 +27,9 @@ export declare function externalCallEvidence(value:unknown):Readonly<ExternalCal
 export declare function externalNativeResponse(value:NativeExternalResult):Response
 export interface ExternalCallOptions<Transaction,Command>{
  sourceHost:ReturnType<typeof createPlatformIngestionHost<Transaction>>;sourceId:string;resourceId:string
- binding:{role:string;configurationVersion:string;schemaDigest:string;origin:string;transport:'HTTPS'|'LOCAL_SYNTHETIC_HTTP';pathRules:readonly Readonly<{method:'GET'|'POST';path:string}>[]}
+ binding:{role:string;configurationVersion:string;schemaDigest:string;origin:string|null;transport:'HTTPS'|'LOCAL_SYNTHETIC_HTTP'|'PUBLIC_WEB';pathRules:readonly Readonly<{method:'GET'|'POST';path:string}>[]}
+ /** Opt-in credential-free public GET. Any synthetic origin requires matching actual Development-only SQL authority. */
+ publicWebTransport?:Readonly<{schemaDigest:string;syntheticOrigin?:string}>
  independentQuery:AccessQuery;query(transaction:Transaction,sql:string,values?:unknown[]):ReturnType<AccessQuery>;now?:()=>number
  /** Closed server-owned command parser; never receives authority from the browser. */
  parseCommand(command:unknown):Command
