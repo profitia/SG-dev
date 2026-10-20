@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "1.0",
+  "recordType": "DATED_READ_ONLY_RELEASE_READINESS_BASELINE",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCHITECTURE-E1-DEVELOPMENT-RELEASE-READINESS-20261020",
+  "targetEnvironment": "development",
+  "executionEnvironment": "local",
+  "sourceAuthority": "profitia/SG-dev/main",
+  "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+  "acceptedCandidateSha": "c3c261f704e50b1960de156f2e16881eb868c0d6",
+  "codeAccepted": true,
+  "fullE1Status": "IN_PROGRESS",
+  "mainCi": {
+    "runId": 39388041373,
+    "status": "SUCCESS",
+    "tests": {
+      "platform": 1089,
+      "governanceWorkspace": 62,
+      "sg2Runtime": 698,
+      "dashboard": 332,
+      "srmOperation": 305
+    },
+    "independentlyVerifiedProofs": [
+      "SG2_RUNTIME",
+      "SG2_DASHBOARD",
+      "SRM"
+    ]
+  },
+  "sourceFamilyCloseouts": {
+    "verifiedTasks": 14,
+    "status": "PASS",
+    "separateProjectDatabases": true,
+    "phrRemoteAuthorityVerified": true
+  },
+  "providerSnapshotCapturedAt": "2026-10-20T07:56:37.720Z",
+  "selectedLiveServices": [
+    {
+      "id": "srv-dbat5ulg1s2s73defcp0",
+      "environmentId": "evm-dapbd70ae00c73cgrup0",
+      "repo": "https://github.com/profitia/SG-dev",
+      "name": "profitia-maps-development-runtime",
+      "rootDir": "",
+      "buildFilter": {
+        "ignoredPaths": [],
+        "paths": [
+          "apps/maps-runtime/**",
+          "packages/maps-contracts/**",
+          "packages/maps-embed/**",
+          "packages/platform-contracts/**"
+        ]
+      },
+      "autoDeploy": false,
+      "liveStatus": "live",
+      "liveDeployId": "dep-dbati9rrjlhs73akpsj0",
+      "liveSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff"
+    },
+    {
+      "id": "srv-db78d82j9qps73bej0c0",
+      "environmentId": "evm-db717krrjlhs739jgo1g",
+      "repo": "https://github.com/profitia/SG-dev",
+      "name": "architecture-development-pmos",
+      "rootDir": "apps/pmos",
+      "autoDeploy": false,
+      "liveStatus": "live",
+      "liveDeployId": "dep-db79knaj9qps73bjddeg",
+      "liveSha": "e03454fdf484c51a251bf3c736d82769821af117"
+    },
+    {
+      "id": "srv-db1vu6gm7kps73d0e3r0",
+      "environmentId": "evm-dapbd70ae00c73cgrup0",
+      "repo": "https://github.com/profitia/SG-dev",
+      "name": "srm-development-runtime",
+      "rootDir": "",
+      "autoDeploy": false,
+      "liveStatus": "live",
+      "liveDeployId": "dep-db97cj6k1f9s738na1r0",
+      "liveSha": "6eede5cd19fd3a4519d66298effe9ef94633757a"
+    },
+    {
+      "id": "srv-dapa40ad0e5s73f8bjm0",
+      "environmentId": "evm-dap98hm0tbcc738rro10",
+      "repo": "https://github.com/profitia/SG-dev",
+      "name": "sg2-development-forecast-verification-worker",
+      "rootDir": ".",
+      "autoDeploy": false,
+      "liveStatus": "live",
+      "liveDeployId": "dep-dbaqkap42hec73cbockg",
+      "liveSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
+    },
+    {
+      "id": "srv-dapa3vlg1s2s739vp7dg",
+      "environmentId": "evm-dap98hm0tbcc738rro10",
+      "repo": "https://github.com/profitia/SG-dev",
+      "name": "sg2-development-forecast-current-worker",
+      "rootDir": "",
+      "autoDeploy": false,
+      "liveStatus": "live",
+      "liveDeployId": "dep-dbaqkap42hec73cbocl0",
+      "liveSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
+    },
+    {
+      "id": "srv-dapa3ujm8hqs73a9t2og",
+      "environmentId": "evm-dap98hm0tbcc738rro10",
+      "repo": "https://github.com/profitia/SG-dev",
+      "name": "sg2-development-dashboard",
+      "rootDir": "apps/dashboard-preview",
+      "autoDeploy": false,
+      "liveStatus": "live",
+      "liveDeployId": "dep-dbaqkap42hec73cbocjg",
+      "liveSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119"
+    },
+    {
+      "id": "srv-dapa3tid0e5s73f8bc5g",
+      "environmentId": "evm-dap98hm0tbcc738rro10",
+      "repo": "https://github.com/profitia/SG-dev",
+      "name": "sg2-development-runtime",
+      "rootDir": ".",
+      "autoDeploy": false,
+      "liveStatus": "live",
+      "liveDeployId": "dep-dbaqkap42hec73cbocig",
+      "liveSha": "c55c551091b3584673726bd0a78254eb091c7197"
+    }
+  ],
+  "privateCatalog": {
+    "observedAt": "2026-10-20T07:44:09.928Z",
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "database": "platform_private",
+    "observer": "neondb_owner",
+    "tableCount": 43,
+    "allInspectedTablesForceRls": true,
+    "applicationStates": {
+      "spendguru": "DISABLED",
+      "srm": "DISABLED"
+    },
+    "optionalExecutionSchemasInstalled": false
+  },
+  "ordinaryLoginEvidence": [
+    {
+      "role": "sg2_private_development_runtime",
+      "observedAt": "2026-10-20T07:33:00.840Z",
+      "unscopedSelections": 0,
+      "accountsSelect": false
+    },
+    {
+      "role": "sg2_private_development_dashboard",
+      "observedAt": "2026-10-20T07:34:16.703Z",
+      "accountsSelect": false,
+      "sg2SelectionsSelect": false
+    },
+    {
+      "role": "srm_private_development_runtime",
+      "observedAt": "2026-10-20T07:34:21.940Z",
+      "accountsSelect": false,
+      "sg2SelectionsSelect": false
+    }
+  ],
+  "recovery": {
+    "sshRead": "DENIED_PUBLICKEY_BEFORE_REMOTE_EXECUTION",
+    "accessChanged": false,
+    "artifactDigest": "NOT_MEASURED",
+    "retainedBuildEligibility": "NOT_VERIFIED",
+    "configurationCompatibility": "NOT_VERIFIED",
+    "recoveryRehearsal": "NOT_PERFORMED",
+    "oneOffJobCreated": false
+  },
+  "effects": {
+    "cloudMutation": false,
+    "databaseMutation": false,
+    "secretRead": false,
+    "renderNpmTokenRead": false,
+    "productDeployment": false,
+    "realOwnerProductLogin": false,
+    "businessUat": false,
+    "stagingOrProductionMutation": false
+  },
+  "limitations": [
+    "Source and isolated tests are not live acceptance.",
+    "Administrative catalog observations are distinct from actual ordinary runtime connections.",
+    "Initial qualified-name ACL failures retained and retried through catalog OIDs without granting rights.",
+    "Legacy demo data ownership is preserved; new Profitia history and lists start empty.",
+    "Current stored Render configuration is not evidence of the environment of a historical deployment.",
+    "Remaining recovery, preparation, deployment and owner-login acceptance retain separate task identities and evidence."
+  ]
+}
