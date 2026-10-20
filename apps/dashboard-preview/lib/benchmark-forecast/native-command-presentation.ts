@@ -3,6 +3,7 @@ import {FORECAST_PORTFOLIO_MODELS,FORECAST_TARGET_SEMANTICS,FORECAST_TARGET_BASE
 
 export type NativeForecastCommandSelection=Readonly<{kind:'CURRENT'|'VERIFICATION';modelId:ForecastPortfolioModelId;targetSemantics:ForecastTargetSemantics}>
 export type NativeForecastCommandOutcome='ACCEPTED'|'DENIED'|'LIMIT_REACHED'|'INVALID'|'UNKNOWN'
+export type NativeForecastPendingCommand=Readonly<{kind:NativeForecastCommandSelection['kind'];state:NativeForecastCommandOutcome|'SENDING'}>
 export function parseNativeForecastCommand(value:unknown):NativeForecastCommandSelection|null{
   if(!value||typeof value!=='object'||Array.isArray(value))return null
   const v=value as Record<string,unknown>
@@ -23,4 +24,22 @@ export function nativeForecastCommandOutcome(status:number,body:unknown):NativeF
   if(status===429)return'LIMIT_REACHED'
   if(status===400)return'INVALID'
   return'UNKNOWN'
+}
+
+/** Presentation invalidation only. An accepted intent is not a prepared result
+ * or an access grant; each resulting read still uses the protected host port. */
+export function nativeForecastCompletionPlan(input:{modelId:ForecastPortfolioModelId;targetBasis:ForecastTargetBasis;
+  currentReadiness?:string;fullVerificationReadiness?:string;pending:NativeForecastPendingCommand|null}){
+  const completed:NativeForecastCommandSelection[]=[]
+  for(const kind of ['CURRENT','VERIFICATION'] as const){
+    const ready=kind==='CURRENT'?input.currentReadiness==='READY':input.fullVerificationReadiness==='READY'
+    const command=ready?nativeForecastCommandFromUi(input.modelId,input.targetBasis,kind):null
+    if(command)completed.push(command)
+  }
+  const pending=input.pending,observing=pending?.state==='ACCEPTED'||pending?.state==='UNKNOWN'
+  const validPending=pending?nativeForecastCommandFromUi(input.modelId,input.targetBasis,pending.kind):null
+  const clearPending=!!pending&&pending.state!=='SENDING'&&completed.some(command=>command.kind===pending.kind)
+  return {completed,clearPending,
+    poll:!!validPending&&observing&&!clearPending,
+    refreshCurrent:clearPending&&observing&&(pending?.kind==='CURRENT'||input.targetBasis==='POINT_IN_TIME')}
 }

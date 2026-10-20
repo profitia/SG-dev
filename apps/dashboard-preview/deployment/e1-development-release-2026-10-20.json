@@ -14,5 +14,26 @@
   "nativeRelayNoSessionSeriesRead": 401,
   "legacyUnadoptedRoutes": "CLOSED_BY_MIDDLEWARE",
   "canonicalReceipt": "apps/sg-runtime/deployment/e1-development-release-2026-10-20.json",
-  "programAcceptance": false
+  "programAcceptance": false,
+  "nativeCommandCompletionAdoption": {
+    "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+    "previousApplicationAuthority": "04dc4d071699ed5f6add091880ee04a9c7091937",
+    "status": "SOURCE_CORRECTION_VALIDATED_LOCALLY_NOT_RELEASED",
+    "confirmedTrigger": "Genuine ETS Current request75d94fac-abf0-48c5-b1d9-62ce657231e4 succeeded in worker at2026-10-20T17:06:37.390Z, while unchanged selected UI kept NOT_PREPARED. Idle exact-capability polling later timed out and closed the presentation.",
+    "behavior": "Only an explicit accepted or ambiguous native command polls for its own scientific completion. Ready Current invalidates the earlier no-data read once; full point-in-time verification refreshes the calibrated Current read. No automatic preparation, legacy polling change, identity/channel/schema/role/access weakening.",
+    "localValidation": {
+      "dashboardTests": 335,
+      "failed": 0,
+      "skipped": 0,
+      "typecheck": "PASS"
+    },
+    "sourceDigests": {
+      "components/raw-data-view/index.tsx": "e1e39ffe8c42bb81dca50eac5670d98c959ed5dd504687a88bd8223d97ec3d9d",
+      "lib/benchmark-forecast/native-command-presentation.ts": "b50d01de803739020fe3c6eedad0687ae45ba90ec9007469aef86f12534104a1",
+      "tests/native-forecast-command-presentation.test.ts": "3808459a1f7d8cc0d2f09b1d40fb69acb6717ea45d203325547198a50534b750"
+    },
+    "actualUiWorkerRegression": "REQUIRED_AFTER_EXACT_SOURCE_CONTROLLED_RELEASE",
+    "programAcceptance": false,
+    "stagingOrProductionMutated": false
+  }
 }
