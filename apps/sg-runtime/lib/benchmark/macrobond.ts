@@ -56,6 +56,7 @@ type MacrobondAttributeInfo = {
 const providerStateKey={}
 function newProviderState(){return {
  tokenCache:null as TokenCache|null,
+ tokenFlight:null as Promise<string>|null,
  metadataDefinitionCache:null as CacheEntry<BenchmarkMetadataDefinition[]>|null,
  metadataValuesCache:new Map<string,CacheEntry<BenchmarkMetadataValue[]>>(),
  semanticContextCache:new Map<string,CacheEntry<BenchmarkSemanticContext>>(),
@@ -205,7 +206,19 @@ function isExpired(cache: TokenCache | null) {
   return Date.now() >= cache.expiresAt
 }
 
-async function getAccessToken(forceRefresh = false) {
+async function getAccessToken(forceRefresh = false):Promise<string> {
+  // Coalesce only concurrent credential acquisition inside one explicit
+  // operation. A settled401 still asks the original client to refresh; neither
+  // another actor nor the old demo can borrow this in-flight Source attempt.
+  if(!hasBenchmarkProviderScope())return loadAccessToken(forceRefresh)
+  const state=providerState()
+  if(!forceRefresh&&!isExpired(state.tokenCache))return state.tokenCache!.accessToken
+  if(state.tokenFlight)return state.tokenFlight
+  const flight=loadAccessToken(forceRefresh);state.tokenFlight=flight
+  try{return await flight}finally{if(state.tokenFlight===flight)state.tokenFlight=null}
+}
+
+async function loadAccessToken(forceRefresh = false) {
   if (!forceRefresh && !isExpired(providerState().tokenCache)) {
     return providerState().tokenCache!.accessToken
   }

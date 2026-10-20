@@ -102,16 +102,16 @@ test('the original Macrobond client sends actual OAuth and query calls through t
  assert.equal(tokens,2);assert.equal(queries,2)
 })
 test('the original metadata cache is reused inside one scope and never borrowed by a second operation',async()=>{
- const client=await originalMacrobond();let queries=0
+ const client=await originalMacrobond();let queries=0,tokens=0
  const fetcher:typeof fetch=async(input)=>{
-  const url=new URL(String(input));if(url.pathname==='/mbauth/connect/token')return Response.json({access_token:'fixture-access',expires_in:3600})
+  const url=new URL(String(input));if(url.pathname==='/mbauth/connect/token'){tokens++;await pause(1);return Response.json({access_token:'fixture-access',expires_in:3600})}
   assert.equal(url.pathname,'/v1/metadata/getattributeinformation');queries++
   return Response.json([{description:'Original definition',canListValues:true,appliesTo:['TimeSeries']}])
  }
  for(let operation=0;operation<2;operation++)await runWithBenchmarkProviderScope(ports(fetcher),async()=>{
   const before=queries,a=await client.getMacrobondMetadataDefinitions();assert.equal(a.length,13);assert.equal(queries-before,13)
   assert.deepEqual(await client.getMacrobondMetadataDefinitions(),a);assert.equal(queries-before,13)
- });assert.equal(queries,26)
+ });assert.equal(queries,26);assert.equal(tokens,2)
 })
 test('the original metadata reader uses its supplied ordinary client, and a caught SQL error still prevents publication',async()=>{
  const client=await import('../lib/benchmark/metadata-store');let reads=0
