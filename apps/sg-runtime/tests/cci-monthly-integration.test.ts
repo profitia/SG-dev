@@ -196,6 +196,12 @@ test('methodology identity includes actual methods/versions/policies in stable c
   const first = calculated(input)
   const reversed = calculated({ ...input, components: [...input.components].reverse() })
   assert.deepEqual(first, reversed)
+  const reorderedMetadata = calculated({ ...input, components: input.components.map(c => ({ ...c,
+    qualification: { evidenceRef: c.qualification.evidenceRef, calendar: c.qualification.calendar,
+      periodBasis: c.qualification.periodBasis, valueKind: c.qualification.valueKind },
+    reduction: c.reduction.method === 'NATIVE_ONLY' ? c.reduction : { approvalRef: c.reduction.approvalRef, method: c.reduction.method },
+  })) })
+  assert.equal(first.methodology.id, reorderedMetadata.methodology.id)
   assert.equal(first.methodology.scope, 'PREPARATION_METHODOLOGY_NOT_IMMUTABLE_SNAPSHOT')
   assert.equal(first.methodology.id, `cci-monthly-preparation-v1:${createHash('sha256').update(JSON.stringify(first.methodology.definition)).digest('hex')}`)
   assert.equal(first.cciInput.inputSemantics.monthlyPreparationPolicyId, first.methodology.id)
@@ -282,6 +288,6 @@ test('J: real pipeline uses supplied history without network or resolving market
   } finally {
     globalThis.fetch = previousFetch
     if (previousDb) Object.defineProperty(globalThis, '__sgRuntimeMarketDataPrisma__', previousDb)
-    else delete globalThis.__sgRuntimeMarketDataPrisma__
+    else Reflect.deleteProperty(globalThis, '__sgRuntimeMarketDataPrisma__')
   }
 })
