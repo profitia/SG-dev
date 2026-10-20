@@ -6,8 +6,8 @@ import { validateXrayRequest } from './xray-lookup'
 export const SUPPLIER_REQUEST_PROJECTION = 'srm-private-supplier-request-v1'
 export const MAX_SUPPLIER_REQUEST_BYTES = 1024
 export const PRIVATE_SUPPLIER_REQUEST_PROJECTION = 'srm-private-acquisition-request-v1'
-export type SupplierPrivateTarget = Readonly<{entityType:'COMPANY'|'JDG';section:'kys'|'jdg'}>
-export type SupplierPrivateAcquisition = SupplierPrivateTarget & Readonly<{boundaryDigest:string}>
+export type SupplierPrivateTarget = Readonly<{entityType:'COMPANY'|'JDG';section:'kys'|'jdg'|'web'}>
+export type SupplierPrivateAcquisition = SupplierPrivateTarget & Readonly<{boundaryDigest:string;webBoundaryDigest?:string}>
 export type SupplierRequestCommand = Readonly<{ kind: 'SUPPLIER_REPORT'; nip: string }>
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const refuse = (): never => { throw new OperationDenied('RESOURCE_SCOPE_MISMATCH') }
@@ -35,17 +35,19 @@ export function readSupplierPrivateTarget(value:unknown):SupplierPrivateTarget {
     ||Reflect.ownKeys(value).length!==2||Object.keys(value).sort().join(',')!=='entityType,section'
     ||Object.values(Object.getOwnPropertyDescriptors(value)).some(d=>!('value'in d)||!d.enumerable))return refuse()
   const v=value as Record<string,unknown>
-  if(typeof v.entityType!=='string'||typeof v.section!=='string'||!['COMPANY','JDG'].includes(v.entityType)||!['kys','jdg'].includes(v.section)
+  if(typeof v.entityType!=='string'||typeof v.section!=='string'||!['COMPANY','JDG'].includes(v.entityType)||!['kys','jdg','web'].includes(v.section)
     ||v.section==='jdg'&&v.entityType!=='JDG')return refuse()
   return Object.freeze({entityType:v.entityType as SupplierPrivateTarget['entityType'],section:v.section as SupplierPrivateTarget['section']})
 }
 export function readSupplierPrivateAcquisition(value:unknown):SupplierPrivateAcquisition {
   if(!value||Object.getPrototypeOf(value)!==Object.prototype
-    ||Reflect.ownKeys(value).length!==3||Object.keys(value).sort().join(',')!=='boundaryDigest,entityType,section'
     ||Object.values(Object.getOwnPropertyDescriptors(value)).some(d=>!('value'in d)||!d.enumerable))return refuse()
-  const v=value as Record<string,unknown>
-  if(typeof v.boundaryDigest!=='string'||!/^[a-f0-9]{64}$/.test(v.boundaryDigest))return refuse()
-  return Object.freeze({...readSupplierPrivateTarget({entityType:v.entityType,section:v.section}),boundaryDigest:v.boundaryDigest})
+  const v=value as Record<string,unknown>,web=v.section==='web'
+  if(Reflect.ownKeys(value).length!==(web?4:3)||Object.keys(value).sort().join(',')!==(web?'boundaryDigest,entityType,section,webBoundaryDigest':'boundaryDigest,entityType,section')
+    ||typeof v.boundaryDigest!=='string'||!/^[a-f0-9]{64}$/.test(v.boundaryDigest)
+    ||web&&(typeof v.webBoundaryDigest!=='string'||!/^[a-f0-9]{64}$/.test(v.webBoundaryDigest)))return refuse()
+  return Object.freeze({...readSupplierPrivateTarget({entityType:v.entityType,section:v.section}),boundaryDigest:v.boundaryDigest,
+    ...(web?{webBoundaryDigest:v.webBoundaryDigest as string}:{})})
 }
 export function privateSupplierRequestResourceId(command:SupplierRequestCommand,target:SupplierPrivateTarget):string {
   const selected=readSupplierPrivateTarget(target)
@@ -54,7 +56,7 @@ export function privateSupplierRequestResourceId(command:SupplierRequestCommand,
 export function supplierRequestTarget(resourceId:string,command:SupplierRequestCommand):Readonly<{operation:'supplier.report.refresh'}|({operation:'supplier.private.refresh'}&SupplierPrivateTarget)> {
   if(typeof resourceId!=='string')return refuse()
   if(resourceId===supplierRequestResourceId(command))return Object.freeze({operation:'supplier.report.refresh'})
-  const m=/^supplier-private-request:(COMPANY|JDG):(kys|jdg):([a-f0-9]{64})$/.exec(resourceId)
+  const m=/^supplier-private-request:(COMPANY|JDG):(kys|jdg|web):([a-f0-9]{64})$/.exec(resourceId)
   if(!m)return refuse()
   const target=readSupplierPrivateTarget({entityType:m[1],section:m[2]})
   if(resourceId!==privateSupplierRequestResourceId(command,target))return refuse()

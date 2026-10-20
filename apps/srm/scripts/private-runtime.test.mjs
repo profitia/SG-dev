@@ -56,7 +56,7 @@ test('private supplier request is explicit opt-in with its own version, never an
   for(const value of['','TRUE','yes','1','unknown'])assert.throws(()=>readSrmPrivateReportConfiguration({...env,PROFITIA_SUPPLIER_REQUEST_ENABLED:value}),IdentityConfigurationUnavailable)
   for(const value of[undefined,'foreign',''])assert.throws(()=>readSrmPrivateReportConfiguration({...env,PROFITIA_SUPPLIER_REQUEST_ENABLED:'true',PROFITIA_SUPPLIER_REQUEST_CONFIGURATION_VERSION:value}),IdentityConfigurationUnavailable)
 })
-test('actual supplier request API is separately forwarded then refuses incomplete Clerk; legacy lookup remains closed',async()=>{
+test('actual supplier request API and protected lookup are forwarded then refuse incomplete Clerk',async()=>{
   const old=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
   try{
     const url='https://app.fixture.test/api/xray/requests'
@@ -64,7 +64,43 @@ test('actual supplier request API is separately forwarded then refuses incomplet
     const response=await deployedSupplierRequestPOST(new Request(url,{method:'POST',headers:{'content-type':'application/json','idempotency-key':'synthetic-request-key-0001','x-clerk-user-id':'forged'},body:JSON.stringify({kind:'SUPPLIER_REPORT',nip:'8650004194'})}))
     assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'Operation unavailable'})
     assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(response.headers.get('vary'),'Cookie, Authorization')
-    assert.equal((await middleware(new NextRequest('https://app.fixture.test/api/xray/lookup'))).status,401)
+    assert.equal((await middleware(new NextRequest('https://app.fixture.test/api/xray/lookup'))).headers.get('x-middleware-next'),'1')
+  }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old}
+})
+test('the first seven fully protected supplier paths retain their adopted outer gate; their real entries refuse incomplete Clerk without demo fallback',async()=>{
+  const old=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
+  try{
+    const paths=['search','lookup','jdg','jdg/kys','kys','kys/pesel','kys/pdf']
+    for(const path of paths){
+      const url='https://app.fixture.test/api/xray/'+path
+      const gate=await middleware(new NextRequest(url))
+      assert.equal(gate.headers.get('x-middleware-next'),'1',path)
+      const entry=await import('../app/api/xray/'+path+'/route.ts')
+      const result=await entry.POST(new Request(url,{method:'POST',headers:{origin:'https://app.fixture.test','content-type':'application/json','idempotency-key':'synthetic-deployed-refusal-key'},body:JSON.stringify({identifier:'8650004194'})}))
+      assert.equal(result.status,503,path);assert.deepEqual(await result.json(),{error:'Operation unavailable'})
+      assert.equal(result.headers.get('cache-control'),'private, no-store');assert.equal(result.headers.get('vary'),'Cookie, Authorization')
+    }
+    for(const path of ['web-identity/unknown','kys/unknown','other']){
+      const result=await middleware(new NextRequest('https://app.fixture.test/api/xray/'+path))
+      assert.equal(result.status,401,path);assert.equal(result.headers.get('x-middleware-next'),null)
+    }
+  }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old}
+})
+
+test('the separately verified KRS entry reaches only its native backend and never forwards look-alike paths',async()=>{
+  const old=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
+  try{
+    const url='https://app.fixture.test/api/xray/kys/krs'
+    const gate=await middleware(new NextRequest(url));assert.equal(gate.headers.get('x-middleware-next'),'1')
+    assert.equal(gate.headers.get('cache-control'),'private, no-store')
+    const {POST}=await import('../app/api/xray/kys/krs/route.ts')
+    const result=await POST(new Request(url,{method:'POST',headers:{origin:'https://app.fixture.test','content-type':'application/json','x-clerk-user-id':'forged','x-clerk-org-id':'forged'},body:JSON.stringify({snapshotId:'11111111-1111-4111-8111-111111111111'})}))
+    assert.equal(result.status,503);assert.deepEqual(await result.json(),{error:'Operation unavailable'})
+    assert.equal(result.headers.get('cache-control'),'private, no-store');assert.equal(result.headers.get('vary'),'Cookie, Authorization')
+    for(const path of ['kys/krs/','kys/krs-extra','kys/krs/other','web-identity-extra']){
+      const response=await middleware(new NextRequest('https://app.fixture.test/api/xray/'+path))
+      assert.equal(response.status,401,path);assert.equal(response.headers.get('x-middleware-next'),null,path)
+    }
   }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old}
 })
 
@@ -167,7 +203,7 @@ test('middleware forwards only the adopted report/export APIs; actual entries re
     const response=await deployedPOST(request());assert.equal(response.status,503)
     assert.equal(response.headers.get('Cache-Control'),'private, no-store')
     assert.deepEqual(await response.json(),{error:'Operation unavailable'})
-    assert.equal((await middleware(new NextRequest('https://app.fixture.test/api/xray/lookup'))).status,401)
+    assert.equal((await middleware(new NextRequest('https://app.fixture.test/api/xray/web-identity'))).headers.get('x-middleware-next'),'1')
     for (const path of ['/', '/login']) {
       const shell = await middleware(new NextRequest(`https://app.fixture.test${path}`))
       assert.equal(shell.headers.get('x-middleware-next'),'1')
@@ -205,4 +241,20 @@ test('financial output fence refuses wrong company, private headers, MIME, lengt
   }
   await assert.rejects(projectPrivateFinancialExcel(new Response('plain',{headers}),context))
   await assert.rejects(projectPrivateFinancialExcel(Response.json({error:'hidden diagnostics'},{status:404,headers}),context))
+})
+
+test('the verified website entry forwards only its exact path and refuses forged or incomplete Clerk without legacy fallback',async()=>{
+ const old=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
+ try{
+  const url='https://app.fixture.test/api/xray/web-identity',gate=await middleware(new NextRequest(url))
+  assert.equal(gate.headers.get('x-middleware-next'),'1');assert.equal(gate.headers.get('cache-control'),'private, no-store')
+  const {POST}=await import('../app/api/xray/web-identity/route.ts')
+  const result=await POST(new Request(url,{method:'POST',headers:{origin:'https://app.fixture.test','content-type':'application/json','idempotency-key':'synthetic-web-entry-request','x-clerk-user-id':'forged','x-clerk-org-id':'forged'},body:JSON.stringify({identifier:'8650004194',entityType:'COMPANY'})}))
+  assert.equal(result.status,503);assert.deepEqual(await result.json(),{error:'Operation unavailable'})
+  assert.equal(result.headers.get('cache-control'),'private, no-store');assert.equal(result.headers.get('vary'),'Cookie, Authorization')
+  for(const path of ['web-identity/','web-identity-extra','web-identity/other','web-identities','kys/unknown']){
+   const rejected=await middleware(new NextRequest('https://app.fixture.test/api/xray/'+path))
+   assert.equal(rejected.status,401,path);assert.equal(rejected.headers.get('x-middleware-next'),null,path)
+  }
+ }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old}
 })

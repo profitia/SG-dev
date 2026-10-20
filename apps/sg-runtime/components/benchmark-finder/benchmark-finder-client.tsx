@@ -1,11 +1,12 @@
 'use client'
 
+import {createDiscoveryRequester} from './discovery-request'
 import { NativeAnalyticsEmbed } from './native-analytics-embed'
 
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useSg2BrowserPersistencePolicy, useSg2IdentityMode } from '@/components/auth/session-boundary'
+import { useSg2BrowserPersistencePolicy, useSg2IdentityMode, useSg2SessionCredential } from '@/components/auth/session-boundary'
 import { selectLegacySessionStorage, type BrowserPersistencePolicy } from '@/lib/platform/browser-session-storage'
 
 import {
@@ -906,6 +907,23 @@ export function BenchmarkFinderClient({
 }: BenchmarkFinderClientProps) {
   const persistence = useSg2BrowserPersistencePolicy()
   const identityMode = useSg2IdentityMode()
+  const sessionCredential=useSg2SessionCredential()
+  const discoveryPresentationRef=useRef({identityMode,sessionCredential})
+  discoveryPresentationRef.current={identityMode,sessionCredential}
+  const discoveryRequestRef=useRef<ReturnType<typeof createDiscoveryRequester>|null>(null)
+  const discoveryActiveRef=useRef(true)
+  useEffect(()=>{discoveryActiveRef.current=true;return()=>{
+    discoveryActiveRef.current=false;discoveryRequestRef.current?.close();discoveryRequestRef.current=null
+  }},[])
+  const discoveryFetch=(input:string,init?:RequestInit)=>{
+    if(!discoveryActiveRef.current)return Promise.reject(Error('Session unavailable'))
+    if(!discoveryRequestRef.current)discoveryRequestRef.current=createDiscoveryRequester({
+      mode:()=>discoveryPresentationRef.current.identityMode,
+      getToken:async()=>discoveryPresentationRef.current.sessionCredential?.()??null,
+      origin:()=>window.location.origin,fetch:(...args)=>fetch(...args),newKey:()=> 'finder_'+crypto.randomUUID(),
+    })
+    return discoveryRequestRef.current(input,init)
+  }
   const t = useTranslations('BenchmarkFinder')
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -1016,7 +1034,7 @@ export function BenchmarkFinderClient({
 
     const request = (async () => {
       setMetadataError(null)
-      const payload = await readJson<{ items: BenchmarkMetadataDefinition[] }>(await fetch('/api/benchmark/metadata', { cache: 'no-store' }))
+      const payload = await readJson<{ items: BenchmarkMetadataDefinition[] }>(await discoveryFetch('/api/benchmark/metadata', { cache: 'no-store' }))
       setMetadataDefinitions(payload.items)
       setMetadataDefinitionsLoaded(true)
       return payload.items
@@ -1087,7 +1105,7 @@ export function BenchmarkFinderClient({
     }))
 
     try {
-      const payload = await readJson<MetadataValuesResponse>(await fetch(buildMetadataValuesRequestPath({
+      const payload = await readJson<MetadataValuesResponse>(await discoveryFetch(buildMetadataValuesRequestPath({
         metadataKey,
         filterSignature,
         remoteFiltering,
@@ -1425,7 +1443,7 @@ export function BenchmarkFinderClient({
     const searchId = beginSearchTiming('simple')
     try {
       const params = new URLSearchParams({ q: normalizedQuery, limit: String(SEARCH_RESULTS_FETCH_LIMIT) })
-      const payload = await readJson<{ items: BenchmarkCandidate[] }>(await fetch(`/api/benchmark/search?${params.toString()}`, {
+      const payload = await readJson<{ items: BenchmarkCandidate[] }>(await discoveryFetch(`/api/benchmark/search?${params.toString()}`, {
         cache: 'no-store',
         signal: controller.signal,
       }))
@@ -1487,7 +1505,7 @@ export function BenchmarkFinderClient({
     const { requestId, controller } = beginSearchRequest()
     const searchId = beginSearchTiming(normalizedExactSeriesId ? 'exact' : 'advanced')
     try {
-      const payload = await readJson<{ items: BenchmarkCandidate[] }>(await fetch('/api/benchmark/search', {
+      const payload = await readJson<{ items: BenchmarkCandidate[] }>(await discoveryFetch('/api/benchmark/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1571,7 +1589,7 @@ export function BenchmarkFinderClient({
     const { requestId, controller } = beginSearchRequest()
 
     try {
-      const payload = await readJson<BenchmarkAiSearchResult>(await fetch('/api/benchmark/ai-search', {
+      const payload = await readJson<BenchmarkAiSearchResult>(await discoveryFetch('/api/benchmark/ai-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: normalizedPrompt }),
@@ -1845,7 +1863,7 @@ export function BenchmarkFinderClient({
     const controller = new AbortController()
     semanticContextAbortControllerRef.current = controller
 
-    const payload = await readJson<BenchmarkContextResponse>(await fetch('/api/benchmark/context', {
+    const payload = await readJson<BenchmarkContextResponse>(await discoveryFetch('/api/benchmark/context', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seriesIds: pendingSeriesIds }),

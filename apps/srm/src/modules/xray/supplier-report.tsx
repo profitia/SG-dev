@@ -9,6 +9,7 @@ import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
 import { reportAvailability, ReportAvailabilityView, type ReportAvailability, inactiveJdgMessage } from "@profitia/srm-xray";
 import { supplierNip, inactiveSupplier, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
+import {createSupplierWebRequest} from './supplier-web-request';
 
 type Scope = FinancialPeriod["scope"];
 export type SupplierReportContext = {
@@ -220,11 +221,11 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
 function ReportWebIdentity({ nip, entityType, name, children }: {
   nip: string; entityType: "COMPANY" | "JDG"; name: string; children: ReactNode;
 }) {
+  const loader = useRef<{selection:string;load:ReturnType<typeof createSupplierWebRequest>} | null>(null);
   const load = useCallback(async (signal: AbortSignal): Promise<SupplierWebIdentityData> => {
-    const response = await fetch("/api/xray/web-identity", { method: "POST", signal,
-      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: nip, entityType }) });
-    if (!response.ok) throw new Error("WEBSITE_UNAVAILABLE");
-    return response.json() as Promise<SupplierWebIdentityData>;
+    const selection = `${entityType}:${nip}`;
+    if (loader.current?.selection !== selection) loader.current = {selection, load:createSupplierWebRequest(nip,entityType)};
+    return loader.current.load(signal);
   }, [nip, entityType]);
   return <SupplierWebIdentity name={name} load={load}>{children}</SupplierWebIdentity>;
 }

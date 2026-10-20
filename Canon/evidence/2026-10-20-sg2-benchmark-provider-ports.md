@@ -1,0 +1,13 @@
+# SG2 — jawne porty oryginalnych klientów Findera
+
+Zadanie SG2-E1-BENCHMARK-PROVIDER-PORTS-20261020, profil SG2, Development. Status: LOCAL_PROVIDER_PORTS_VERIFIED_NOT_ACTIVATED. To przygotowanie odbiorcy, nie dowód działającego chronionego endpointu.
+
+Oryginalne algorytmy Macrobond oraz wyszukiwania AI zachowano. Jawny scope serwerowy przekazuje rzeczywiste wywołania sieciowe do dostarczonych portów Source i metadane do dostarczonego zwykłego klienta bazy. W jego obrębie nie ma powrotu do starego połączenia lub globalnego fetch. Cache oryginalnego klienta jest osobny dla operacji. Niepewny transport albo błąd prywatnego portu danych pozostaje błędem także po przechwyceniu przez kod biznesowy; następne wywołanie nie uruchamia ukrytego ponowienia. Zakończone scope nie pozwala na późniejsze użycie przez odłączone zadanie.
+
+Poza jawnym scope dotychczasowe połączenia i cache pozostają zgodne z zachowaniem demo. W scope klient OpenAI korzysta ze stałego publicznego origin i ma wyłączone ponowienia SDK; kontrola rzeczywistych wywołań należy do portu Source. Treści błędu Macrobond nie są publikowane w tym nowym torze. Scope sam nie przyznaje prawa użytkownika, połączenia SQL, produktu ani budżetu.
+
+12/12 testów, bez pominięć: dwie równoległe operacje z osobnymi portami i cache, trwała odmowa po niepewnym transporcie, brak fallbacku metadanych, zakaz wymiany scope, zamknięte i odłączone zadania. Oryginalny klient Macrobond faktycznie wykonał przechwycone lokalnie wywołania OAuth i danych oraz swoje odświeżenie po zakończonej odpowiedzi401. Oryginalny cache metadanych działa w jednej operacji i nie jest pożyczany następnej. Nie kontaktowano się z płatnym dostawcą. Lokalna walidacja użyła wyłącznie publicznego Zod z dokładnego lockfile SG2; nie instalowano prywatnych pakietów ani nie odczytywano poświadczeń.
+
+Odrębny wcześniejszy kandydat d6ddd3cef5da6b0d125248b1eff51274feecada2 przeszedł [kontrolowane CI39377420545](https://github.com/profitia/SG-dev/actions/runs/39377420545):605/605 testów, typecheck i build. Ten wynik nie obejmuje jeszcze nowych portów z tego zadania; wymagają ponownego CI dokładnej wersji. Następna integracja musi dostarczyć aktualną autoryzację Root, trwałe zlecenie, delegowaną pracę SQL, kontrolę każdego wywołania Source oraz świeży odczyt prywatnego wyniku. Brak aktywacji HTTP, ról, polityk, SQL i deploymentu. E1 pozostaje niezakończone.
+
+Porty w dokładnym kandydacie c803e22488f06d0688f5a14f7a5289f6601d9f21 przeszły [kontrolowane CI39378420672](https://github.com/profitia/SG-dev/actions/runs/39378420672):617/617 testów, bez pominięć, typecheck i build. Status przyjęcia portów: CONTROLLED_CI_VERIFIED_NOT_ACTIVATED. Dowód nie obejmuje późniejszej prywatnej granicy Findera ani deploymentu.

@@ -5,8 +5,9 @@ import { createPlatformIngestionHost } from '@profitia/platform-contracts/platfo
 import { createExternalCallHost, externalNativeResponse, ExternalCallUnavailable, type NativePathRule } from '@profitia/platform-contracts/external-call'
 import { createSrmNativePgDriver } from './native-pg-driver'
 import { readSupplierRequest } from './supplier-request-operation'
+import {createSafePublicFetch, publicUrl, type PublicFetch} from '@profitia/platform-contracts/public-web-transport'
 
-export type SrmProvider = 'MGBI' | 'VERCLY' | 'CEIDG' | 'MGBI_MSR_API' | 'MGBI_MSR_STORAGE'
+export type SrmProvider = 'MGBI' | 'VERCLY' | 'VERCLY_KRS' | 'CEIDG' | 'MGBI_MSR_API' | 'MGBI_MSR_STORAGE'
 type SourceOptions = Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]
 type Command = Readonly<{ url: string; method: 'GET' | 'POST'; body: string | null }>
 const paths = ['/v1/models/pl-krs-wp-record/records', '/v1/models/pl-krs-rdf-record/records'] as const
@@ -15,7 +16,7 @@ const MSR_RECORDS = '/v1/models/pl-krs-rdf-record/records/'
 export const SRM_MSR_STORAGE_ORIGIN = 'https://mgbi-prod-krs-rdf-main-content-files.s3.amazonaws.com'
 const refuse = (): never => { throw new ExternalCallUnavailable('NOT_SENT') }
 const sources = {
-  MGBI: 'srm.provider.mgbi', VERCLY: 'srm.provider.vercly', CEIDG: 'srm.provider.ceidg',
+  MGBI: 'srm.provider.mgbi', VERCLY: 'srm.provider.vercly', VERCLY_KRS:'srm.provider.vercly', CEIDG: 'srm.provider.ceidg',
   MGBI_MSR_API: 'srm.provider.mgbi', MGBI_MSR_STORAGE: 'srm.provider.mgbi',
 } as const
 export function srmProviderSourcePolicy(provider: SrmProvider) {
@@ -26,14 +27,15 @@ export function srmProviderSourcePolicy(provider: SrmProvider) {
         { method: 'GET', prefix: MSR_RECORDS, parameter: 'HEX24', suffix: '/files/main_document_uri', requestFormat: 'NONE' }]
     : provider === 'MGBI_MSR_STORAGE' ? [{ method: 'GET', prefix: '/', parameter: 'STORAGE_PATH', suffix: '', requestFormat: 'NONE' }]
     : provider === 'CEIDG' ? [{ method: 'GET', path: '/api/ceidg/v3/firma', requestFormat: 'NONE' }]
+    : provider === 'VERCLY_KRS' ? [{method:'GET',prefix:'/api/krs/',parameter:'OPAQUE',suffix:'',requestFormat:'NONE'}]
       : [{ method: 'POST', path: '/api/verifications', requestFormat: 'JSON' },
         { method: 'GET', prefix: '/api/verifications/', parameter: 'OPAQUE', suffix: '', requestFormat: 'NONE' }]
   return {
     source: { id: sources[provider], payloadSchema: 'external-call-control-v1', qualityVersion: 'srm-source-control-v1', classificationVersion: 'technical-source-control-v1' },
-    resourceId: provider === 'MGBI_MSR_API' ? 'srm-provider:mgbi-files-api'
+    resourceId: provider === 'VERCLY_KRS'?'srm-provider:vercly-krs':provider === 'MGBI_MSR_API' ? 'srm-provider:mgbi-files-api'
       : provider === 'MGBI_MSR_STORAGE' ? 'srm-provider:mgbi-files-storage' : `srm-provider:${provider.toLowerCase()}`,
     pathRules,
-    basePathRules: provider === 'VERCLY' ? [{ method: 'POST' as const, path: '/api/verifications' }, { method: 'GET' as const, path: '/api/verifications' }]
+    basePathRules: provider==='VERCLY_KRS'?[{method:'GET' as const,path:'/api/krs'}]:provider === 'VERCLY' ? [{ method: 'POST' as const, path: '/api/verifications' }, { method: 'GET' as const, path: '/api/verifications' }]
       : provider === 'MGBI_MSR_API' ? [{ method: 'GET' as const, path: MSR_LIMITS }, { method: 'GET' as const, path: MSR_RECORDS.slice(0,-1) }]
       : provider === 'MGBI_MSR_STORAGE' ? [{ method: 'GET' as const, path: '/' }]
       : pathRules.map(rule => ({ method: rule.method, path: 'path' in rule ? rule.path : refuse() })),
@@ -54,6 +56,8 @@ type ProviderSourceOptions = {
   syntheticOrigin?: string
   /** Only the original server-selected MSR candidate, never an HTTP parameter. */
   recordId?: string
+  /** Reference read from the exact currently authorized private KYS snapshot. */
+  krsReference?:string
   /** Consumed redirect captured by the closed MSR composition below. */
   allowedStorageUrl?: () => string | null
 }
@@ -62,7 +66,7 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
   const policy = srmProviderSourcePolicy(provider), root = structuredClone({ application: options.application, binding: options.binding, external: options.external })
   const nip = readSupplierRequest({ kind: 'SUPPLIER_REPORT', nip: options.nip }).nip
   const operationKey = options.operationKey, providerOrigin = options.providerOrigin
-  const recordId = options.recordId, allowedStorageUrl = options.allowedStorageUrl
+  const recordId = options.recordId, allowedStorageUrl = options.allowedStorageUrl,krsReference=options.krsReference
   const credentialFree = provider === 'MGBI_MSR_STORAGE'
   let configured: URL, network: URL
   try { configured = new URL(providerOrigin); network = new URL(options.syntheticOrigin ?? providerOrigin) } catch { throw new TypeError('Fixed provider origin required') }
@@ -72,6 +76,7 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
     || credentialFree && providerOrigin !== SRM_MSR_STORAGE_ORIGIN
     || provider === 'MGBI_MSR_API' && !/^[a-f0-9]{24}$/.test(recordId ?? '')
     || provider !== 'MGBI_MSR_API' && recordId !== undefined
+    || (provider==='VERCLY_KRS'?!/^[A-Za-z0-9_-]{8,100}-[0-9]{9}$/.test(krsReference??''):krsReference!==undefined)
     || credentialFree && typeof allowedStorageUrl !== 'function'
     || !credentialFree && allowedStorageUrl !== undefined
     || provider === 'CEIDG' && providerOrigin !== 'https://dane.biznes.gov.pl'
@@ -112,6 +117,8 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
         || url.searchParams.get('per_page') !== '100') return refuse()
     } else if (provider === 'CEIDG') {
       if (c.method !== 'GET' || url.pathname !== '/api/ceidg/v3/firma' || keys.join(',') !== 'nip' || url.searchParams.get('nip') !== nip) return refuse()
+    } else if(provider==='VERCLY_KRS'){
+      if(c.method!=='GET'||entries.length||url.pathname!=='/api/krs/'+krsReference)return refuse()
     } else {
       if (entries.length) return refuse()
       if (c.method === 'POST') {
@@ -133,7 +140,7 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
     parseCommand, buildRequest: c => ({ method: c.method, url: network.origin + new URL(c.url).pathname + new URL(c.url).search, body: c.body }),
   })
   let ordinal = 0, busy = false, unavailable = false, postAttempted = false, correlation: string | null = null
-  let msrLimitsSeen = false, msrFileAttempted = false
+  let msrLimitsSeen = false, msrFileAttempted = false,krsAttempted=false
   const nextPage = new Map<string, number>()
   const fetcher: typeof fetch = async (input, init = {}) => {
     if (busy || unavailable || input instanceof Request || Object.keys(init).some(key => !['method', 'headers', 'body', 'signal', 'cache', 'redirect'].includes(key))
@@ -146,6 +153,7 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
     }
     const command = parseCommand({ url: String(input), method: init.method ?? 'GET', body: init.body ?? null })
     const url = new URL(command.url)
+    if(provider==='VERCLY_KRS'){if(krsAttempted)return refuse();krsAttempted=true}
     if (provider === 'MGBI_MSR_API') {
       if (init.redirect === 'error' && url.pathname !== MSR_LIMITS) return refuse()
       if (url.pathname === MSR_LIMITS) { if (msrLimitsSeen || msrFileAttempted) return refuse() }
@@ -186,9 +194,17 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
 /** Existing public clients cannot instantiate a storage transport or supply a
  * redirect predicate. The closed MSR composition owns those internal options. */
 export function createSrmProviderSourceTransport(options:Omit<ProviderSourceOptions,
-  'provider'|'recordId'|'allowedStorageUrl'> & {provider:'MGBI'|'VERCLY'|'CEIDG'}) {
+  'provider'|'recordId'|'allowedStorageUrl'|'krsReference'> & {provider:'MGBI'|'VERCLY'|'CEIDG'}) {
   if (!['MGBI','VERCLY','CEIDG'].includes(options?.provider)) throw TypeError('Explicit original provider required')
   return createProviderSourceTransport(options)
+}
+
+/** Closed single download. Neither an order nor an arbitrary Vercly path.
+ * The caller owns fresh HUMAN pre/post checks; Source controls the actual GET. */
+export function createSrmKrsSourceTransport(options:Omit<ProviderSourceOptions,
+ 'provider'|'recordId'|'allowedStorageUrl'|'krsReference'>&{reference:string}){
+ const {reference,...rest}=options
+ return createProviderSourceTransport({...rest,provider:'VERCLY_KRS',krsReference:reference})
 }
 
 /** Routes the unchanged original MSR client through the same Source transport.
@@ -239,4 +255,54 @@ export async function guardOriginalProviderCall<T>(fetcher:typeof fetch,action:(
   }
   try{const value=await action(guarded);if(failed)throw failure;return value}
   catch(error){throw failed?failure:error}
+}
+
+export const SRM_PUBLIC_WEB_SOURCE=Object.freeze({
+ source:{id:'srm.provider.public-web',payloadSchema:'external-call-control-v1',qualityVersion:'srm-source-control-v1',classificationVersion:'technical-source-control-v1'},
+ resourceId:'srm-provider:public-web',basePathRules:[{method:'GET' as const,path:'/'}],
+ pathRules:[{method:'GET' as const,prefix:'/',parameter:'PUBLIC_PATH' as const,suffix:'',requestFormat:'NONE' as const}],
+})
+type PublicWebSourceOptions={
+ application:SourceOptions['application'];binding:SourceOptions['binding'];pool:pg.Pool;auditPool:pg.Pool;now?:()=>number
+ external:{configurationVersion:string;schemaDigest:string;nativeSchemaDigest:string;publicWebSchemaDigest:string}
+ operationKey:string;syntheticOrigin?:string
+}
+/** Original discovery owns candidate selection and its finite budget. Each
+ * actual redirect hop is admitted independently by the single Source host.
+ * Private names, NIP, URLs and page bytes never enter the Source control log. */
+export function createSrmPublicWebSourceTransport(options:PublicWebSourceOptions){
+ if(typeof window!=='undefined'||!options||Object.getPrototypeOf(options)!==Object.prototype
+  ||Object.keys(options).some(k=>!['application','binding','pool','auditPool','now','external','operationKey','syntheticOrigin'].includes(k))
+  ||!/^[a-f0-9]{64}$/.test(options.operationKey)||options.application.appId!=='srm-provider-source'
+  ||options.binding.applicationId!==options.application.appId
+  ||options.application.environment!==options.binding.environment)throw TypeError('Explicit public web Source required')
+ const fixed=structuredClone({application:options.application,binding:options.binding,external:options.external}),policy=SRM_PUBLIC_WEB_SOURCE
+ const driver=createSrmNativePgDriver(options.pool,options.auditPool)
+ const sourceHost=createPlatformIngestionHost<PoolClient>({...fixed,source:policy.source,now:options.now,...driver,
+  validateSharedPayload:value=>!!value&&typeof value==='object'&&!Array.isArray(value)
+   &&Object.keys(value).sort().join(',')==='action,callId,configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status'})
+ const host=createExternalCallHost<PoolClient,Readonly<{url:string}>>({sourceHost,sourceId:policy.source.id,resourceId:policy.resourceId,now:options.now,
+  binding:{role:fixed.binding.role,configurationVersion:fixed.external.configurationVersion,schemaDigest:fixed.external.schemaDigest,
+   origin:null,transport:'PUBLIC_WEB',pathRules:policy.basePathRules},
+  publicWebTransport:{schemaDigest:fixed.external.publicWebSchemaDigest,...(options.syntheticOrigin!==undefined?{syntheticOrigin:options.syntheticOrigin}:{})},
+  nativeTransport:{schemaDigest:fixed.external.nativeSchemaDigest,pathRules:policy.pathRules,redirectOrigins:[],maximumResponseBytes:2000000,
+   credentialMode:'NONE',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'},
+  independentQuery:driver.independentQuery,query:async(client,sql,values=[])=>({rows:(await client.query(sql,values)).rows}),
+  parseCommand:value=>{
+   if(!value||Object.getPrototypeOf(value)!==Object.prototype||Reflect.ownKeys(value).length!==1
+    ||Object.keys(value).join(',')!=='url')return refuse()
+   const v=value as Record<string,unknown>
+   if(typeof v.url!=='string'||v.url.length>4096)return refuse()
+   const url=publicUrl(v.url);if(url.href!==v.url)return refuse();return Object.freeze({url:url.href})
+  },buildRequest:command=>({method:'GET',url:command.url,body:null})})
+ const operationKey=options.operationKey
+ let ordinal=0,busy=false,failed=false,failure:unknown
+ const fetcher:PublicFetch=createSafePublicFetch(async(url,request)=>{
+  if(failed||busy||ordinal>=90)return refuse()
+  const intentKey=createHmac('sha256',Buffer.from(operationKey,'hex')).update(JSON.stringify(['srm-public-web-hop-v1',ordinal++])).digest('hex')
+  busy=true
+  try{return externalNativeResponse(await host.execute({intentKey,command:{url}},{signal:request.signal}))}
+  catch(error){failed=true;failure=error;throw error}finally{busy=false}
+ })
+ return Object.freeze({fetcher,assertSettled(){if(failed)throw failure}})
 }

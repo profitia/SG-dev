@@ -1,0 +1,7 @@
+# E1 — exact supplier entry forwarding, source progress
+
+SRM / `SRM-E1-SUPPLIER-ENTRY-GUARD-20261020`, Development. This guard forwards only the seven separately implemented search, lookup, JDG, JDG/KYS, KYS, reveal and KYS/PDF paths to their own native backend boundary in explicit Clerk mode. It retains the four previously adopted report/export/request paths and original legacy behavior. It grants no identity, product, organization or data authority.
+
+The composed isolated SRM working tree passed all16 actual configuration/middleware/deployed-entry tests, zero failures/skips. Invalid or incomplete Clerk refuses with private/no-store headers; forged headers cannot initialize a user. Unknown and look-alike paths, KRS and website discovery remain closed in this first guard revision. The composed working supplier/KRS backend separately passed61 real ordinary PostgreSQL/API tests; totals overlap and are not additive.
+
+This is a source progress checkpoint, not remote acceptance or completion of the parent HTTP task. The parent `SRM-E1-WORKING-SUPPLIER-HTTP-20261020` and external receiver `SRM-E1-SUPPLIER-EXTERNAL-ADOPTION-20261020` still contain separately owned pending source. Exact combined-candidate/main CI, source closure, canonical PMOS/PHR completion and Development release remain required. No cloud resource, database, role, grant, secret, configuration or deployment changed. Staging/Production and Maps feature work are outside this guard task.

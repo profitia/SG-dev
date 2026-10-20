@@ -1,6 +1,7 @@
 import {createHmac} from 'node:crypto'
 import {readPresentationJson} from './embedded-read-channel.mjs'
 import {operationPayloadDigest} from './operation-context.mjs'
+import {publicUrl} from './public-web-transport.mjs'
 
 // Protocol helpers only. The existing external host owns the sole HTTP send,
 // source authority, counters, control transactions, audit and settlement.
@@ -15,25 +16,27 @@ const invalid=()=>{throw new TypeError('Explicit native external protocol requir
 const pathPart=v=>typeof v==='string'&&v.length<=255&&/^[A-Za-z0-9/._-]*$/.test(v)&&!v.includes('..')&&!v.includes('//')
 const formats=['NONE','JSON','FORM'],parameters=['HEX24','UUID','OPAQUE','STORAGE_PATH']
 
-export function validNativePathRules(rules){
+export function validNativePathRules(rules,publicWeb=false){
  return Array.isArray(rules)&&rules.length>0&&rules.length<=32&&rules.every(r=>{
   if(!record(r)||!['GET','POST'].includes(r.method)||!formats.includes(r.requestFormat)||r.method==='GET'&&r.requestFormat!=='NONE')return false
   if(exact(r,'method,path,requestFormat'))return pathPart(r.path)&&r.path.startsWith('/')
   return exact(r,'method,parameter,prefix,requestFormat,suffix')&&pathPart(r.prefix)&&r.prefix.startsWith('/')
-   &&pathPart(r.suffix)&&parameters.includes(r.parameter)
+   &&pathPart(r.suffix)&&(parameters.includes(r.parameter)||publicWeb&&r.parameter==='PUBLIC_PATH'&&r.method==='GET'&&r.prefix==='/'&&r.suffix===''&&r.requestFormat==='NONE')
  })&&new Set(rules.map(r=>operationPayloadDigest(r))).size===rules.length
 }
 function origin(value,transport){
  try{const u=new URL(value);return u.origin===value&&!u.username&&!u.password&&u.pathname==='/'&&!u.search&&!u.hash
    &&(u.protocol==='https:'||transport==='LOCAL_SYNTHETIC_HTTP'&&u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.port)}catch{return false}
 }
-export function captureNativeTransport(value,transport){
+export function captureNativeTransport(value,transport,publicWeb=false){
  if(!exact(value,'completionMode,credentialMode,maximumResponseBytes,pathRules,redirectOrigins,schemaDigest')
    ||!hex.test(value.schemaDigest??'')||value.completionMode!==NATIVE_EXTERNAL_TRANSPORT.completionMode
-   ||!['NONE','SERVER_HEADERS'].includes(value.credentialMode)||!validNativePathRules(value.pathRules)
+   ||!['NONE','SERVER_HEADERS'].includes(value.credentialMode)||!validNativePathRules(value.pathRules,publicWeb)
    ||!Number.isInteger(value.maximumResponseBytes)||value.maximumResponseBytes<1||value.maximumResponseBytes>33554432
    ||!Array.isArray(value.redirectOrigins)||value.redirectOrigins.length>3
-   ||new Set(value.redirectOrigins).size!==value.redirectOrigins.length||!value.redirectOrigins.every(o=>origin(o,transport)))invalid()
+   ||new Set(value.redirectOrigins).size!==value.redirectOrigins.length||!value.redirectOrigins.every(o=>origin(o,transport))
+   ||publicWeb&&(transport!=='PUBLIC_WEB'||value.credentialMode!=='NONE'||value.maximumResponseBytes>2000000||value.redirectOrigins.length!==0
+    ||operationPayloadDigest(value.pathRules)!==operationPayloadDigest([{method:'GET',prefix:'/',parameter:'PUBLIC_PATH',suffix:'',requestFormat:'NONE'}])))invalid()
  return freeze(structuredClone(value))
 }
 export function assertNativeDescriptor(config,descriptor){
@@ -47,6 +50,7 @@ export function assertNativeDescriptor(config,descriptor){
    ||!Number.isFinite(Date.parse(descriptor.nativeExpiresAt)))invalid()
 }
 function parameter(value,kind){
+ if(kind==='PUBLIC_PATH')return value.length<=2047&&!/[\u0000-\u0020\u007f\\]/.test(value)
  if(kind==='HEX24')return /^[a-f0-9]{24}$/i.test(value)
  if(kind==='UUID')return uuid.test(value)
  if(kind==='OPAQUE')return /^[A-Za-z0-9_-]{1,128}$/.test(value)
@@ -82,7 +86,7 @@ function boundedHeader(response,key,max){
  if(Buffer.byteLength(value)>max||/[\r\n\0]/.test(value))invalid()
  return value
 }
-export async function readNativeProviderResponse(response,{config,requestUrl,assertActive,signal}){
+export async function readNativeProviderResponse(response,{config,requestUrl,assertActive,signal,publicWeb=false}){
  if(!(signal instanceof AbortSignal))invalid()
  assertActive()
  const headers={}
@@ -93,8 +97,10 @@ export async function readNativeProviderResponse(response,{config,requestUrl,ass
   if(![301,302,303,307,308].includes(response.status))invalid()
   const location=boundedHeader(response,'location',8192);if(!location)invalid()
   const u=new URL(location,requestUrl)
-  if(u.username||u.password||u.hash||!config.redirectOrigins.includes(u.origin))invalid()
-  headers.location=u.href
+  if(u.username||u.password||!publicWeb&&(u.hash||!config.redirectOrigins.includes(u.origin)))invalid()
+  // Public website fragments are client-side anchors. Preserve the original
+  // discovery normalization before the next separately admitted HTTP hop.
+  headers.location=publicWeb?publicUrl(u.href).href:u.href
  }
  const length=boundedHeader(response,'content-length',32)
  if(length!==null&&(!/^[0-9]+$/.test(length)||!Number.isSafeInteger(Number(length))||Number(length)>config.maximumResponseBytes)){

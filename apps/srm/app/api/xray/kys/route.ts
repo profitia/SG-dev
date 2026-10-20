@@ -1,3 +1,4 @@
+import {createRuntimeSupplierOperationHandler} from '../../../../src/server/supplier-acquisition-http';
 import { withLookupDiagnostics, withKysDiagnostics, measureLookup, logLookupFailure } from "../../../../src/server/lookup-diagnostics";
 import { productEnvironmentReady, productOrganizationId } from "../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
@@ -9,7 +10,7 @@ import { toPublicKysSection } from "../../../../src/server/pesel-reveal";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) { return withKysDiagnostics(() => handlePost(request), request.signal); }
+async function legacyPost(request: Request) { return withKysDiagnostics(() => handlePost(request), request.signal); }
 
 async function handlePost(request: Request) {
   if (!productEnvironmentReady()) return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404 });
@@ -33,3 +34,5 @@ async function handlePost(request: Request) {
     }
   });
 }
+
+export const POST=createRuntimeSupplierOperationHandler('company-kys',legacyPost);

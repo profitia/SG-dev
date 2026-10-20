@@ -1,3 +1,5 @@
+import {createDiscoveryHttpHandler} from '@/lib/benchmark/discovery-http'
+import {getSg2SelectionRuntime} from '@/lib/platform/private-runtime'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 
@@ -50,7 +52,7 @@ function logSearchPerf(mode: 'simple' | 'advanced' | 'exact', startedAt: number,
   )
 }
 
-export const GET = withCognitionAuth(async (_auth, request: NextRequest) => {
+const legacyGET = withCognitionAuth(async (_auth, request: NextRequest) => {
   const parsed = parseSearchParams(request, QuerySchema)
   if (!parsed.ok) {
     return cognitionError('VALIDATION_ERROR', parsed.message, 400)
@@ -72,7 +74,7 @@ export const GET = withCognitionAuth(async (_auth, request: NextRequest) => {
   }
 })
 
-export const POST = withCognitionAuth(async (_auth, request: NextRequest) => {
+const legacyPOST = withCognitionAuth(async (_auth, request: NextRequest) => {
   const parsed = await parseJsonBody(request, AdvancedBodySchema)
   if (!parsed.ok) {
     return cognitionError('VALIDATION_ERROR', parsed.message, 400)
@@ -101,3 +103,6 @@ export const POST = withCognitionAuth(async (_auth, request: NextRequest) => {
     return cognitionError('INTERNAL_ERROR', 'Benchmark search failed.', 500)
   }
 })
+export const GET = createDiscoveryHttpHandler('SEARCH','GET',getSg2SelectionRuntime,(request,context)=>legacyGET(request as NextRequest))
+
+export const POST = createDiscoveryHttpHandler('SEARCH','POST',getSg2SelectionRuntime,(request,context)=>legacyPOST(request as NextRequest))
