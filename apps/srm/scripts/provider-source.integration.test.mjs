@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import {execFileSync} from 'node:child_process'
 import http from 'node:http'
 import { randomUUID, randomBytes, createHash } from 'node:crypto'
 import pg from 'pg'
@@ -41,11 +42,12 @@ test('native provider source adoption pins original clients and keeps live relea
   assert.equal(adoption.previousProviderSourceReceiptPreserved,true)
   assert.equal(Object.keys(adoption.sourceDigests).length,9)
   const latest=manifest.nativeSensitiveSupplierCompositionAdoption
-  for(const[path,digest]of Object.entries(adoption.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),latest.sourceDigests[path]??digest,path)
+  for(const[path,digest]of Object.entries(adoption.sourceDigests))assert.equal(hash(execFileSync('git',['show','0403b34da82796c9c001be9cf53c5dcb6f9d823d:apps/srm/'+path])),latest.sourceDigests[path]??digest,path)
   for (const [path, digest] of Object.entries(current.sourceDigests)) {
     const expected=latest.sourceDigests[path]??adoption.sourceDigests[path]??digest
-    assert.equal(hash(fs.readFileSync(new URL('../' + path, import.meta.url))),expected,path)
+    assert.equal(hash(execFileSync('git',['show','0403b34da82796c9c001be9cf53c5dcb6f9d823d:apps/srm/'+path])),expected,path)
   }
+  for(const[path,digest]of Object.entries(manifest.workingSupplierHttpSourceProgress.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
   for (const key of ['humanSupplierRefreshAdopted', 'sharedCatalogWriteAdopted', 'msrFilesAdopted', 'krsFilesAdopted', 'liveSqlInstalled', 'runtimeRoleOrGrantChanged', 'productDeploymentPerformed']) assert.equal(current[key], false, key)
 })
 
