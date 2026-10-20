@@ -32,6 +32,7 @@ test('actual Finder provider sends use the sole native Source engine, ordinary S
     const intent={concept:'PRIVATE_FIXTURE_AI_RESPONSE',searchTerms:['steel'],region:null,market:null,instrumentType:null,currency:null,frequency:null,useCase:null,industryContext:null,interpretation:'Requires clarification',confidence:0.1}
     res.end(JSON.stringify({id:'resp_fixture',object:'response',created_at:Math.floor(Date.now()/1000),model:credentials.openAiModel,status:'completed',output:[{id:'msg_fixture',type:'message',status:'completed',role:'assistant',content:[{type:'output_text',text:JSON.stringify(intent),annotations:[]}]}]}))
    }
+   else if(req.url.startsWith('/v1/search/'))res.end(JSON.stringify({results:[{Name:'fixture_series',Title:'Fixture series'}]}))
    else if(req.url.startsWith('/v1/metadata/getattributeinformation'))res.end(JSON.stringify([{description:'Original fixture metadata',canListValues:true,appliesTo:['TimeSeries']}]))
    else res.end(JSON.stringify([{metadata:{Title:'PRIVATE_FIXTURE_MARKET_RESPONSE'}}]))
   })
@@ -81,7 +82,11 @@ test('actual Finder provider sends use the sole native Source engine, ordinary S
    await runWithBenchmarkProviderScope({...transport,loadMetadataClient:async()=>assert.fail('Direct provider metadata fixture has no SQL metadata fallback')},async()=>{
     const rows=await client.getMacrobondMetadataDefinitions();assert.equal(rows.length,13)
     assert.deepEqual(await client.getMacrobondMetadataDefinitions(),rows)
-   });assert.equal(hits-before,14)
+    const items=await client.searchMacrobondBenchmarks({query:'fixture series',limit:8})
+    assert.equal(items[0].providerSeries.providerSeriesId,'fixture_series')
+    assert.equal(observed.slice(before).some(r=>r.url==='/v1/series/fetchentities'),true)
+    assert.equal(observed.slice(before).some(r=>r.url==='/v1/series/fetchseries'),false)
+   });assert.equal(hits-before,16)
   })
   await t.test('the original AI SDK uses the admitted Responses port with fixed model, no retained input and no hidden retry',async()=>{
    const {runBenchmarkAiSearch}=await import('../lib/benchmark/ai-search.ts'),transport=create(),before=hits
