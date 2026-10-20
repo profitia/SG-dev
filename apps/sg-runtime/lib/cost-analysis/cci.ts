@@ -1,33 +1,12 @@
+import { CCI_WEIGHT_SUM_TOLERANCE, invalid, sum, calculateFixedBaseComponent, calculateFixedBaseIndex, calculatePeriodChange } from './cci-math'
+export { CciValidationError, CCI_WEIGHT_SUM_TOLERANCE } from './cci-math'
 import type {
   CciComponentInput,
-  CciComponentResult,
-  CciIndex,
   CciInput,
   CciInputSemantics,
   CciMonthlyResult,
   CciResult,
-  CciValidationCode,
-  CciValidationIssue,
-  PercentChange,
-  PercentagePoints,
 } from './contracts'
-
-/** Absolute tolerance in percentage points, approximately 64 ulps at 100. */
-export const CCI_WEIGHT_SUM_TOLERANCE = 64 * Number.EPSILON * 100
-
-export class CciValidationError extends Error {
-  readonly issue: CciValidationIssue
-
-  constructor(issue: CciValidationIssue) {
-    super(issue.message)
-    this.name = 'CciValidationError'
-    this.issue = Object.freeze({ ...issue })
-  }
-}
-
-function invalid(code: CciValidationCode, message: string, componentId?: string, period?: string): never {
-  throw new CciValidationError({ code, message, ...(componentId === undefined ? {} : { componentId }), ...(period === undefined ? {} : { period }) })
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -61,25 +40,6 @@ function copySemantics(value: unknown): CciInputSemantics {
       currencyPolicy: { kind: policy.kind, currency: policy.currency, conversionPolicyId: policy.conversionPolicyId } }
   }
   return invalid('INVALID_INPUT_SEMANTICS', 'Currency policy must declare native relatives or already converted common-currency levels.')
-}
-
-/** Compensated addition preserves precision; it does not round or rescale weights. */
-function sum(values: readonly number[]): number {
-  let total = 0
-  let correction = 0
-  for (const value of values) {
-    const next = total + value
-    correction += Math.abs(total) >= Math.abs(value) ? (total - next) + value : (value - next) + total
-    total = next
-  }
-  return total + correction
-}
-
-function computed(value: number, positive: boolean, period: string, componentId?: string): number {
-  if (!Number.isFinite(value) || (positive && value <= 0)) {
-    return invalid('NUMERIC_RANGE', 'Calculation exceeds the supported finite numeric range.', componentId, period)
-  }
-  return value
 }
 
 type PreparedComponent = {
@@ -132,24 +92,6 @@ function prepareComponents(input: CciInput, baseMonth: number): { components: Pr
   return { components, lastMonth }
 }
 
-function componentResult(component: PreparedComponent, period: string): CciComponentResult {
-  const identity = { componentId: component.componentId, weightPercent: component.weightPercent }
-  const benchmarkValue = component.values.get(period) ?? null
-  if (component.weightPercent === 0) {
-    return { ...identity, status: 'EXCLUDED_ZERO_WEIGHT', benchmarkValue, benchmarkRelative: null,
-      componentIndex: null, contributionPercentagePoints: 0 as PercentagePoints }
-  }
-  if (benchmarkValue === null) {
-    return { ...identity, status: 'MISSING_OBSERVATION', benchmarkValue: null, benchmarkRelative: null,
-      componentIndex: null, contributionPercentagePoints: null }
-  }
-  // prepareComponents has established a strictly positive base for active components.
-  const relative = computed(benchmarkValue / component.baseValue!, true, period, component.componentId)
-  return { ...identity, status: 'COMPLETE', benchmarkValue, benchmarkRelative: relative,
-    componentIndex: computed(100 * relative, true, period, component.componentId) as CciIndex,
-    contributionPercentagePoints: computed(component.weightPercent * (relative - 1), false, period, component.componentId) as PercentagePoints }
-}
-
 /**
  * Fixed base-weight CCI on prepared monthly levels, with no I/O or hidden clock.
  * The output covers every month from basePeriod through the latest month of an
@@ -165,19 +107,17 @@ export function calculateCci(input: CciInput): CciResult {
   const monthly: CciMonthlyResult[] = []
   for (let month = baseMonth; month <= lastMonth; month++) {
     const period = monthLabel(month)
-    const results = components.map(component => componentResult(component, period))
+    const results = components.map(component => calculateFixedBaseComponent(component, component.values.get(period) ?? null, component.baseValue, period))
     const missingComponentIds = results.filter(component => component.status === 'MISSING_OBSERVATION').map(component => component.componentId)
     if (missingComponentIds.length > 0) {
       monthly.push({ period, status: 'INCOMPLETE', cci: null, cumulativeChangePercent: null,
         monthOverMonthChangePercent: null, monthOverMonthUnavailableReason: 'CURRENT_MONTH_INCOMPLETE', missingComponentIds, components: results })
       continue
     }
-    const weightedRelatives = results.flatMap(component => component.status === 'COMPLETE'
-      ? [(component.weightPercent / 100) * component.benchmarkRelative] : [])
-    const cci = computed(month === baseMonth ? 100 : 100 * sum(weightedRelatives), true, period) as CciIndex
+    const cci = calculateFixedBaseIndex(results, month === baseMonth, period)
     const previous = monthly.at(-1)
     const monthOverMonthChangePercent = previous?.status === 'COMPLETE'
-      ? computed((cci / previous.cci - 1) * 100, false, period) as PercentChange : null
+      ? calculatePeriodChange(cci, previous.cci, period) : null
     monthly.push({ period, status: 'COMPLETE', cci, cumulativeChangePercent: (cci - 100) as PercentChange,
       monthOverMonthChangePercent, monthOverMonthUnavailableReason: month === baseMonth ? 'BASE_PERIOD' : previous?.status !== 'COMPLETE' ? 'PREVIOUS_MONTH_INCOMPLETE' : null,
       missingComponentIds: [], components: results })
