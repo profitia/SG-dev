@@ -1,0 +1,268 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "DEVELOPMENT_ROLLOUT_IN_PROGRESS_ACCEPTANCE_PENDING",
+  "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+  "documentationAuthoritySha": "82c89a2ce476da35cd003ec20c2ebbca15772dce",
+  "targetEnvironment": "development",
+  "observedAt": "2026-10-20T11:04:59.785Z",
+  "programAcceptance": false,
+  "stagingOrProductionMutated": false,
+  "governance": {
+    "authority": "profitia/SG-dev/main",
+    "hostConversationId": "01a133c2-c245-77a0-bb6b-33165e2ad80c",
+    "profilesAndPmosSeparate": true
+  },
+  "legacyOwnershipProof": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[\n  {\n    \"organizations\": 1,\n    \"organization_assignments\": 41,\n    \"user_assignments\": 41\n  }\n]"
+          }
+        ],
+        "structuredContent": null,
+        "isError": false
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[\n  {\n    \"organizations\": 1,\n    \"users\": 0,\n    \"organization_assignments\": 0,\n    \"user_assignments\": 0,\n    \"forecast_request_cutover_grant\": \"DENY\"\n  }\n]"
+          }
+        ],
+        "structuredContent": null,
+        "isError": false
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[\n  {\n    \"status\": \"FAILED\",\n    \"count\": 6\n  },\n  {\n    \"status\": \"SUCCEEDED\",\n    \"count\": 142\n  }\n]"
+          }
+        ],
+        "structuredContent": null,
+        "isError": false
+      }
+    }
+  ],
+  "providerEffects": {
+    "privateSourceEffects": 0,
+    "privateSourceEvents": 0,
+    "marketSourceEffects": 0,
+    "marketSourceEvents": 0
+  },
+  "remainingMandatory": [
+    "Genuine owner sign-in and positive business operations with matching audit/persistence evidence",
+    "Authenticated foreign-organisation and scope refusal",
+    "Repair Current Development Clerk configuration, deploy exact candidate and verify worker operation",
+    "Remove temporary forecast.request DENY only after native Current and Verification acceptance",
+    "Canonical own-profile PMOS save, integrity and downstream publication verification"
+  ],
+  "knownLimitations": [
+    "OpenAI key was absent in pre-existing SG2 Development; AI Search is not claimed operational until explicitly configured and verified",
+    "Finite technical Source budgets expire 2026-11-19; Vercly bounded credential policy expires 2026-11-08",
+    "Physical cleanup of expired Finder results and periodic sensitive-report retention remain explicit gaps",
+    "E2 self-service organisation administration, billing and replacement identity provider are outside this E1 receipt"
+  ],
+  "projectKey": "SG2",
+  "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+  "pmos": {
+    "projectId": "lucky-dream-96138453",
+    "database": "neondb",
+    "registrationId": "cmvgeclt500005upzbsqu35ap",
+    "status": "RUNNING_CLOSEOUT_NOT_DONE",
+    "memoros": "REQUIRED_NOT_YET_DELIVERED_FOR_THIS_TASK",
+    "phr": "NOT_YET_PUBLISHED_FOR_THIS_TASK"
+  },
+  "services": [
+    {
+      "name": "Runtime",
+      "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+      "deployId": "dep-dbbkajrrjlhs73ei6q0g",
+      "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+      "status": "LIVE_POSITIVE_ACCEPTANCE_PENDING"
+    },
+    {
+      "name": "Dashboard",
+      "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+      "deployId": "dep-dbbkak3ncjis7391ijf0",
+      "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+      "status": "LIVE_EMBED_ACCEPTANCE_PENDING"
+    },
+    {
+      "name": "Verification",
+      "serviceId": "srv-dapa40ad0e5s73f8bjm0",
+      "deployId": "dep-dbbkc261egvs738asnc0",
+      "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+      "status": "LIVE_TWO_NATIVE_INSTANCES_STARTED_BUSINESS_EXECUTION_NOT_YET_PROVEN"
+    },
+    {
+      "name": "Current",
+      "serviceId": "srv-dapa3vlg1s2s739vp7dg",
+      "deployId": "dep-dbbkiblg1s2s7399rcl0",
+      "sourceSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b",
+      "status": "LEGACY_LKG_RESTORED_PENDING_CLERK_KEY_REPAIR",
+      "failedCandidateDeployId": "dep-dbbkc267bikc738s0emg"
+    }
+  ],
+  "buildConfiguration": "NPM_CONFIG_INSTALL_LINKS=true bash ./scripts/build-sg-runtime-private-service.sh",
+  "forecastCutover": {
+    "grantId": "a30cbd48-aa25-49bd-a6a4-ee85e2451546",
+    "operation": "forecast.request",
+    "effect": "DENY",
+    "temporary": true,
+    "restoreCondition": "Exact native worker deployment, valid identity configuration, functional tests and current service-policy bindings"
+  },
+  "recovery": {
+    "nativeArtifactRollbacksPerformed": [
+      {
+        "service": "Dashboard",
+        "deployId": "dep-dbbk73gm7kps73f8sjdg",
+        "status": "LIVE_VERIFIED_BEFORE_CONTROLLED_RELEASE"
+      },
+      {
+        "service": "Current",
+        "deployId": "dep-dbbkiblg1s2s7399rcl0",
+        "status": "LIVE_VERIFIED"
+      }
+    ],
+    "databaseBackupBranches": [
+      "br-raspy-mode-b9d4x8rp",
+      "br-delicate-butterfly-b2jeoigm"
+    ],
+    "dataResetPerformed": false
+  },
+  "configurationObservation": "Render MCP update_environment_variables triggered an API deploy even with autoDeploy off. Do not treat it as SaveOnly. Unexpected tip deployments were rolled back or failed before replacing live services; subsequent exact-SHA deploys used CLI. No source file repair was retained.",
+  "negativeHttpProof": {
+    "observedAt": "2026-10-20T11:01:06.742Z",
+    "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+    "probes": [
+      {
+        "id": "selection",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "error": "{\"error\":\"Operation unavailable\",\"code\":\"OPERATION_DENIED\",\"timestamp\":\"2026-10-20T11:01:06.216Z\"}"
+      },
+      {
+        "id": "category",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "error": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "metadata",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+      },
+      {
+        "id": "metadata-values",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+      },
+      {
+        "id": "search",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+      },
+      {
+        "id": "ai-search",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+      },
+      {
+        "id": "context",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+      }
+    ]
+  },
+  "retainedArtifactMeasurements": [
+    {
+      "providerLogId": "e9cd2c91-accc-4445-bc09-c709ae873082",
+      "providerTimestamp": "2026-10-20T08:08:40.990915722Z",
+      "jobId": "job-dbbi2l5g1s2s7392fiig",
+      "proof": {
+        "kind": "E1_LKG_ARTIFACT",
+        "status": "PASS",
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "sourceSha": "c55c551091b3584673726bd0a78254eb091c7197",
+        "algorithm": "sha256-sorted-path-type-content-v1",
+        "roots": [
+          ".next",
+          "node_modules",
+          "public",
+          "package.json",
+          "package-lock.json"
+        ],
+        "excluded": [
+          ".next/cache",
+          "nested .cache directories"
+        ],
+        "symlinkMode": "LINK_TARGET_TEXT_NOT_DEREFERENCED",
+        "fileCount": 14411,
+        "totalBytes": 402322673,
+        "artifactDigest": "8a54f3d10ac6b63677946bd25b9c7bba182123ff1bab7755acb3f6d842acdeb8",
+        "buildIdDigest": "ac8286b8d74b5ef0524d6c752a05cb818fa5fe13189c1afc6618a9cd31f08c5b",
+        "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
+        "observedAt": "2026-10-20T08:08:40.919Z"
+      }
+    },
+    {
+      "providerLogId": "5101c6ee-6839-4887-bf99-912d18d6d2eb",
+      "providerTimestamp": "2026-10-20T08:08:48.706628646Z",
+      "jobId": "job-dbbi2qdg1s2s7392g23g",
+      "proof": {
+        "kind": "E1_LKG_ARTIFACT",
+        "status": "PASS",
+        "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+        "sourceSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119",
+        "algorithm": "sha256-sorted-path-type-content-v1",
+        "roots": [
+          ".next",
+          "node_modules",
+          "public",
+          "package.json",
+          "package-lock.json"
+        ],
+        "excluded": [
+          ".next/cache",
+          "nested .cache directories"
+        ],
+        "symlinkMode": "LINK_TARGET_TEXT_NOT_DEREFERENCED",
+        "fileCount": 16746,
+        "totalBytes": 575086272,
+        "artifactDigest": "69b78604d2f795564a4ed5de707c16911387104878c2409393480da4391e1738",
+        "buildIdDigest": "71e4741dcb65acd170b8de8fcc411b979aa2644efef6b096bdf5bddccfa69ada",
+        "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
+        "observedAt": "2026-10-20T08:08:48.684Z"
+      }
+    }
+  ]
+}

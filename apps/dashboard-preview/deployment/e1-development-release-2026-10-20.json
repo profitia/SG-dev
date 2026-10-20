@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "SG2",
+  "targetEnvironment": "development",
+  "status": "DEPLOYED_EMBED_ACCEPTANCE_PENDING",
+  "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+  "service": {
+    "name": "Dashboard",
+    "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+    "deployId": "dep-dbbkak3ncjis7391ijf0",
+    "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+    "status": "LIVE_EMBED_ACCEPTANCE_PENDING"
+  },
+  "nativeRelayNoSessionSeriesRead": 401,
+  "legacyUnadoptedRoutes": "CLOSED_BY_MIDDLEWARE",
+  "canonicalReceipt": "apps/sg-runtime/deployment/e1-development-release-2026-10-20.json",
+  "programAcceptance": false
+}
