@@ -523,6 +523,10 @@ async function fetchMacrobondEntityMetadataBatch(names: string[]) {
 }
 
 async function fetchMacrobondSeriesMetadataBatch(names: string[]) {
+  // Governed discovery consumes metadata only. The provider's entity endpoint
+  // returns that metadata without downloading a complete time series. Keep
+  // the existing unscoped demo behavior until its own controlled migration.
+  if (hasBenchmarkProviderScope()) return fetchMacrobondEntityMetadataBatch(names)
   const uniqueNames = [...new Set(names.map((name) => name.trim()).filter(Boolean))]
   if (uniqueNames.length === 0) {
     return new Map<string, Record<string, unknown>>()

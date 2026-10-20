@@ -5,6 +5,9 @@ import { ClerkProvider, ClerkFailed, SignOutButton, useAuth } from '@clerk/react
 import { enUS, plPL } from '@clerk/localizations'
 import type { BrowserPersistencePolicy } from '@/lib/platform/browser-session-storage'
 
+const CredentialGetter=createContext<(()=>Promise<string|null>)|null>(null)
+export function useSg2SessionCredential(){return useContext(CredentialGetter)}
+
 const ProviderMode = createContext<'legacy_demo' | 'clerk' | null>(null)
 const unavailable = <p role="alert">Logowanie jest chwilowo niedostępne. / Sign-in is temporarily unavailable.</p>
 
@@ -35,14 +38,14 @@ export function Sg2SessionContent({ session, locale, children }: { session: Sg2S
   return <Fragment key={JSON.stringify([session.userId, session.sessionId])}>{children}</Fragment>
 }
 function ClerkSessionContent({ locale, children }: { locale: 'pl' | 'en'; children: ReactNode }) {
-  const { isLoaded, isSignedIn, userId, sessionId } = useAuth()
+  const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth()
   const session: Sg2SessionPresentation = !isLoaded ? { status: 'loading' }
     : isSignedIn && userId && sessionId ? { status: 'signed-in', userId, sessionId } : { status: 'signed-out' }
   return <Sg2SessionContent session={session} locale={locale}>
     <div className="flex justify-end px-6 pt-4"><SignOutButton redirectUrl={`/${locale}`}>
       <button type="button" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800">{locale === 'en' ? 'Sign out' : 'Wyloguj się'}</button>
     </SignOutButton></div>
-    {children}
+    <CredentialGetter.Provider value={getToken}>{children}</CredentialGetter.Provider>
   </Sg2SessionContent>
 }
 export function Sg2AuthenticatedView({ locale, children }: { locale: 'pl' | 'en'; children: ReactNode }) {

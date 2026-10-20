@@ -28,7 +28,8 @@
       "SG2_DISCOVERY_READ": "READ",
       "SG2_DISCOVERY_SAVE": "WRITE"
     },
-    "noNewProcessOrScheduler": true
+    "noNewProcessOrScheduler": true,
+    "configurationVersion": "sg2-finder-dispatch-dev-v1"
   },
   "metadataRead": {
     "projectId": "autumn-waterfall-65938876",
@@ -55,8 +56,6 @@
   },
   "retentionPolicy": "Must be explicitly installed before activation; no implicit retention is granted by this candidate.",
   "remainingAcceptance": [
-    "Real independently budgeted Source provider composition",
-    "Six original HTTP methods and browser request integration",
     "Current source identity and live policies",
     "Exact candidate full CI and builds",
     "Controlled Development configuration, recoverability, deployment and actual user acceptance"
@@ -90,6 +89,15 @@
     "budgetPolicy": "Explicit bounded current policies required before activation; no limits are seeded by this source candidate.",
     "privateControlPayload": "HMAC_METADATA_ONLY_NO_RAW_PROMPT_OR_CREDENTIALS",
     "automaticRetry": false,
-    "openAiStore": false
+    "openAiStore": false,
+    "runtimeConfigurationVersion": "sg2-finder-source-dev-v1"
+  },
+  "serviceSchemaDigest": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
+  "localSourceVerification": {
+    "allSixMethods": true,
+    "ordinaryPrivateNativeAndSource": true,
+    "originalBusinessAlgorithms": true,
+    "actualDeployed": false,
+    "actualUserAcceptance": false
   }
 }

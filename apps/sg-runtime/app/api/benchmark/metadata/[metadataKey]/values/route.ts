@@ -1,3 +1,5 @@
+import {createDiscoveryHttpHandler} from '@/lib/benchmark/discovery-http'
+import {getSg2SelectionRuntime} from '@/lib/platform/private-runtime'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 
@@ -19,7 +21,7 @@ type Params = {
   }
 }
 
-export const GET = withCognitionAuth(async (_auth, request: NextRequest, context?: Params) => {
+const legacyGET = withCognitionAuth(async (_auth, request: NextRequest, context?: Params) => {
   const metadataKey = context?.params.metadataKey?.trim()
   if (!metadataKey) {
     return cognitionError('VALIDATION_ERROR', 'Metadata key is required.', 400)
@@ -64,3 +66,4 @@ export const GET = withCognitionAuth(async (_auth, request: NextRequest, context
     return cognitionError('INTERNAL_ERROR', 'Benchmark metadata values could not be loaded.', 500)
   }
 })
+export const GET = createDiscoveryHttpHandler('METADATA_VALUES','GET',getSg2SelectionRuntime,(request,context)=>legacyGET(request as NextRequest,context))

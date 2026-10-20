@@ -1564,5 +1564,73 @@
     "cloudExtensionInstalled": false,
     "runtimeRoleOrGrantChanged": false,
     "productDeploymentPerformed": false
+  },
+  "nativeFinderDiscoveryAdoption": {
+    "taskId": "SG2-E1-WORKING-FINDER-HTTP-20261020",
+    "status": "LOCAL_HTTP_WITH_NATIVE_SOURCE_VERIFIED_NOT_RELEASED",
+    "platformVersion": "1.23.0",
+    "rootImplementation": "1.0.0-candidate.15",
+    "priorReceiptFileDigest": "6ece6d0f5c0b19df8b6b31ec6ad994f70ed787c49386a32268b33ba9a79255da",
+    "sourceDependencyCommit": "2be0919cd4fb9d1900ff19e0be913e63ea7e2425",
+    "methods": [
+      "GET /api/benchmark/search",
+      "POST /api/benchmark/search",
+      "GET /api/benchmark/metadata",
+      "GET /api/benchmark/metadata/[metadataKey]/values",
+      "POST /api/benchmark/context",
+      "POST /api/benchmark/ai-search"
+    ],
+    "mechanism": "HUMAN Root reservation and standard dispatch; current private NativeWork; original business algorithms with independently admitted Source and ordinary shared metadata ORM; fresh HUMAN private result read",
+    "priorReceiptsPreserved": true,
+    "codeDigests": {
+      "apps/sg-runtime/app/api/benchmark/ai-search/route.ts": "c55307560132a02db0bccd8d69cafe8621c73c7fc21518c45722e7b2b750dbda",
+      "apps/sg-runtime/app/api/benchmark/context/route.ts": "e28e4206429636a0d77342ea91dece6688cc7514442d721edf32ab1981312b2e",
+      "apps/sg-runtime/app/api/benchmark/metadata/[metadataKey]/values/route.ts": "388871c7191642be9aea7d198c3b4086ab2a0a519a99d633d0f5a59f50e9805b",
+      "apps/sg-runtime/app/api/benchmark/metadata/route.ts": "2a3ef335e9f62fb2af878f5a0a5e404ed10b8bf97c4a3b3b67961a365107f7b0",
+      "apps/sg-runtime/app/api/benchmark/search/route.ts": "cd7b36283996f8f8d68c9d5eb44a90bf44f87fbe8d3367c2a7478089120999b7",
+      "apps/sg-runtime/components/auth/session-boundary.tsx": "48c288acaec80ba68578a9c373f1e354ab8249564786e542573a4f6ace064c18",
+      "apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx": "60ee8053afac06067420cb762216fc3029975748ab785b02dd3af4e9e54e8e10",
+      "apps/sg-runtime/components/benchmark-finder/discovery-request.ts": "e4403b2e9854c7db1c50d73be48b915bbcd5c23dafd2a443b00c260e7a2d4bf0",
+      "apps/sg-runtime/deployment/benchmark-discovery-targets.json": "9e54dd216f83fab38e77ba1d05f597cd9fa57276415d81e613b74af5a3e78c14",
+      "apps/sg-runtime/lib/benchmark/ai-search.ts": "c9faae7a3d8b53a479fdaeb4d328b5fa8119df46861536dbbc06d86c63a6783d",
+      "apps/sg-runtime/lib/benchmark/discovery-api.ts": "43991b95af955a2abb2815e2fc5827b0b91fc6a696238e85ed3dba75279118b3",
+      "apps/sg-runtime/lib/benchmark/discovery-host.ts": "0ea39c6e95e50c85856364c24ca2eade6c364501c104fa49f8cf217ddb369752",
+      "apps/sg-runtime/lib/benchmark/discovery-http.ts": "94e560195dd420ed00c874c48ed49fcf1466e519044814e4189929d94601e4e7",
+      "apps/sg-runtime/lib/benchmark/discovery-metadata.ts": "6907b243390ee1691d9b655a9f66f8df6a0ec49b183139a2b138c3113302af48",
+      "apps/sg-runtime/lib/benchmark/discovery-native.ts": "33da114f9dc9b3f530ff6d912b49d7782ce8664eb92577f5bed18ee15ceb4b92",
+      "apps/sg-runtime/lib/benchmark/discovery-operation.ts": "1c893659a2ae52e3852d78e654be48cb844d2be63ecde9f196ddfadb522a23b5",
+      "apps/sg-runtime/lib/benchmark/discovery-runtime.ts": "ec23415c0f441765f4bf85bb137323a27c2329e7e7522a07527d791f2c75519a",
+      "apps/sg-runtime/lib/benchmark/discovery-source.ts": "b06a3959e1163d33f58592acf18ed324f860324aba9e31ae35bd479dac5197d1",
+      "apps/sg-runtime/lib/benchmark/macrobond.ts": "42690cb4af1f7f9340bef348f039b89b137fab51d9b596d3b9ce1815773c38ee",
+      "apps/sg-runtime/lib/benchmark/provider-scope.ts": "049f929887a35d0cb65b04d58db825d5fd6cba9aede3647cca818994a7eaf7b1",
+      "apps/sg-runtime/lib/benchmark/service.ts": "0a2417881ca32ecea995600114f494aecdfbd574822dea83d0ce27898446a162",
+      "apps/sg-runtime/lib/platform/private-runtime.ts": "e79e04bc757ca641db397e164c922e32575674e71d08f7a5f364ace6e62c5e95",
+      "apps/sg-runtime/package.json": "450eda4fc5f91875c6db22ede9f398a3e362c2257b2e189a8f42a23d2c0aefdd",
+      "apps/sg-runtime/prisma-market-data/private-read/003-metadata-discovery.sql": "b8d0c39dc4b2efb676103361e77fa88485739dfa8f228fdd4273cb9f0e752b11",
+      "apps/sg-runtime/prisma/private-store/006-benchmark-discovery.sql": "8002d50d82612a34e14a63c48e2aa8f3dd346bb2cece02dbd6bd44c441673b88",
+      "apps/sg-runtime/tests/benchmark-discovery-http.integration.test.mjs": "1a8477a7e4cc6a3c0c7dfa4855cc74a5d5aa593a0994d0be8edec656dec3d4ab",
+      "apps/sg-runtime/tests/benchmark-discovery-http.test.ts": "1f72df25a7ed72752e42655e43a241e3bb5a447f3b9dcd56849750163f14daf3",
+      "apps/sg-runtime/tests/benchmark-discovery-request.test.ts": "4ed9c4a3d197769c7dd43471675dfdaee66f9ef40406845c621c55f8c596ca8c",
+      "apps/sg-runtime/tests/fixtures/benchmark-discovery-hosts.mjs": "4e9300c543c60e0bae02d67e1cdbb568f020ccef3ae4f4855f9479931be5ba76"
+    },
+    "localVerification": {
+      "httpUnitAndBrowserTests": 15,
+      "actualPostgresAndHttpTests": 16,
+      "noSkipped": true,
+      "paidProviderCalls": 0,
+      "sourceOnly": true
+    },
+    "live": {
+      "schemaPrepared": false,
+      "rolesProvisioned": false,
+      "configurationActivated": false,
+      "deployed": false,
+      "realUserAccepted": false
+    },
+    "limitations": [
+      "retention access expiry is not physical purging",
+      "AI clarification returns a generic 422; repeating that settled logical request does not repurchase the discarded provider response",
+      "actual operator-approved grants, budgets, retention, restricted roles, recovery, Development deployment and real login remain required"
+    ]
   }
 }
