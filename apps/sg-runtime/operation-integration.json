@@ -1593,7 +1593,7 @@
       "apps/sg-runtime/components/benchmark-finder/discovery-request.ts": "e4403b2e9854c7db1c50d73be48b915bbcd5c23dafd2a443b00c260e7a2d4bf0",
       "apps/sg-runtime/deployment/benchmark-discovery-targets.json": "9e54dd216f83fab38e77ba1d05f597cd9fa57276415d81e613b74af5a3e78c14",
       "apps/sg-runtime/lib/benchmark/ai-search.ts": "c9faae7a3d8b53a479fdaeb4d328b5fa8119df46861536dbbc06d86c63a6783d",
-      "apps/sg-runtime/lib/benchmark/discovery-api.ts": "43991b95af955a2abb2815e2fc5827b0b91fc6a696238e85ed3dba75279118b3",
+      "apps/sg-runtime/lib/benchmark/discovery-api.ts": "fd4dd4f00c535251704304c270f3392acec9331b297a4d642ef5c7240a7bf6af",
       "apps/sg-runtime/lib/benchmark/discovery-host.ts": "0ea39c6e95e50c85856364c24ca2eade6c364501c104fa49f8cf217ddb369752",
       "apps/sg-runtime/lib/benchmark/discovery-http.ts": "94e560195dd420ed00c874c48ed49fcf1466e519044814e4189929d94601e4e7",
       "apps/sg-runtime/lib/benchmark/discovery-metadata.ts": "6907b243390ee1691d9b655a9f66f8df6a0ec49b183139a2b138c3113302af48",
@@ -1611,14 +1611,15 @@
       "apps/sg-runtime/tests/benchmark-discovery-http.integration.test.mjs": "1a8477a7e4cc6a3c0c7dfa4855cc74a5d5aa593a0994d0be8edec656dec3d4ab",
       "apps/sg-runtime/tests/benchmark-discovery-http.test.ts": "1f72df25a7ed72752e42655e43a241e3bb5a447f3b9dcd56849750163f14daf3",
       "apps/sg-runtime/tests/benchmark-discovery-request.test.ts": "4ed9c4a3d197769c7dd43471675dfdaee66f9ef40406845c621c55f8c596ca8c",
-      "apps/sg-runtime/tests/fixtures/benchmark-discovery-hosts.mjs": "4e9300c543c60e0bae02d67e1cdbb568f020ccef3ae4f4855f9479931be5ba76"
+      "apps/sg-runtime/tests/fixtures/benchmark-discovery-hosts.mjs": "69e66aa4d0af9b2410488a0a878d41c2c05471594800f585948f96b08bcf839a"
     },
     "localVerification": {
       "httpUnitAndBrowserTests": 15,
       "actualPostgresAndHttpTests": 16,
       "noSkipped": true,
       "paidProviderCalls": 0,
-      "sourceOnly": true
+      "sourceOnly": true,
+      "parallelNativeAndHttpTests": 29
     },
     "live": {
       "schemaPrepared": false,

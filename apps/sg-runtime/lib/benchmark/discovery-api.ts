@@ -40,7 +40,7 @@ export function createSg2DiscoveryApi(options:DiscoveryApiOptions):DiscoveryApi{
  const admit=(request:Request,organisationId:string,command:Readonly<DiscoveryCommand>,idempotencyKey:string)=>options.requestHost.execute({
   contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'benchmark.discovery.request',
   organisationId,resourceId:discoveryRequestResourceId(command),payload:command,idempotencyKey,request},options.persist)
- return Object.freeze({async execute(request,organisationId,input,idempotencyKey){
+ return Object.freeze({async execute(request:Request,organisationId:string,input:Readonly<DiscoveryCommand>,idempotencyKey:string){
   try{
    const command=readDiscoveryCommand(input)
    const accepted=await readPresentationJson((await admit(request,organisationId,command,idempotencyKey)).value,1024) as {requestId:string}
