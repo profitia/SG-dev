@@ -1,0 +1,13 @@
+# E1: explicit public identity request behind the existing reverse proxy
+
+Task: `ARCHITECTURE-E1-PUBLIC-REQUEST-BOUNDARY-20261020`. Target: Development. Producer implementation; consumer adoption and deployed acceptance remain separate.
+
+The genuine owner signed in to SRM Development on 20 October 2026. The UI displayed its individual session, but the first supplier operation was denied with `UNVERIFIED_IDENTITY` before a provider effect. The deployed service starts the Next standalone server with `HOSTNAME=0.0.0.0` and port 10000. The installed Next server constructs the request's absolute authority from that bind address and port; its route adapter uses that internal URL. The existing shared authenticator correctly rejects an internal origin that is absent from its public authorized parties. Fixture requests using public URLs had not covered this native hosting distinction.
+
+`@profitia/platform-contracts/public-request` supplies one framework independent, explicit adapter. It accepts exact deployment-owned public origins and exact loopback/bind origins. An internal request must carry a Host matching one configured public origin. Existing public URLs must agree with Host when present. An Origin header must equal the selected public origin. Foreign, ambiguous or malformed authorities fail closed. Forwarded headers never select authority. Path and query cannot replace the host.
+
+The adapter creates a header-only request exclusively for the existing identity authenticator. It preserves method, headers and cancellation, never consumes or replaces the original business body, and works after that body has already been read. It does not verify credentials, produce an actor, grant permissions, choose an organization, or bypass current Clerk session/account status and private-store authority. The original operation payload and resource checks remain in their existing hosts.
+
+Validation: 779 package tests passed, one pre-existing optional database test skipped, zero failures; package syntax build passed. Seventeen focused cases cover proxy/public routing, spoofed Host and Origin, ignored forwarding headers, explicit configuration, cancellation, path/query safety, consumed bodies and existing identity refusal. Native Next adapters and individual product integrations require their own tests before release. An initial sandbox run could not bind a local test server; the full suite passed when run with authorized local networking.
+
+No product or infrastructure deployment, database migration, identity grant or Staging/Production change is performed by this producer task. Product release tasks retain their own PMOS, exact source binding, recovery and live acceptance requirements.
