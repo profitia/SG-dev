@@ -1,8 +1,9 @@
+import { freeze, preparationDefinition, type CciPreparationMethodology as CciMonthlyMethodology } from './preparation-context'
 import { createHash } from 'node:crypto'
 import { calculateCci, CciValidationError } from './cci'
 import type { CciInput, CciResult } from './contracts'
 import { prepareCciMarketData } from './market-data-adapter'
-import type { CciAlignmentResult, CciMarketDataRequest, CciPreparationMethod } from './market-data-contracts'
+import type { CciAlignmentResult, CciMarketDataRequest } from './market-data-contracts'
 import { CciMarketDataValidationError } from './node-alignment'
 
 const limitations = [
@@ -13,59 +14,7 @@ const limitations = [
   'ECONOMIC_QUALIFICATION_AND_APPROVAL_REFERENCES_SUPPLIED_BY_CALLER',
 ] as const
 
-function compare(left: string, right: string): number {
-  return left < right ? -1 : left > right ? 1 : 0
-}
-
-/** Freeze only objects owned by this integration, never the caller's request. */
-function freeze<T>(value: T): T {
-  if (value !== null && typeof value === 'object') {
-    for (const child of Object.values(value)) freeze(child)
-    Object.freeze(value)
-  }
-  return value
-}
-
-function preparationDefinition(alignment: CciAlignmentResult) {
-  return {
-    mappingVersion: 'CCI_MONTHLY_MAPPING_V1' as const,
-    alignmentVersion: alignment.methodologyVersion,
-    calendar: 'UTC_CALENDAR' as const,
-    nodeBasis: alignment.nodeBasis,
-    currencyPolicy: 'NATIVE_CURRENCY_RELATIVES' as const,
-    missingDataPolicy: 'NULL_WITHOUT_FILL_OR_REWEIGHT' as const,
-    components: [...alignment.series].sort((a, b) => compare(a.componentId, b.componentId)).map(series => {
-      const methods = new Map<string, CciPreparationMethod>()
-      for (const node of alignment.nodes) {
-        const component = node.components.find(value => value.componentId === series.componentId)
-        if (component?.method) {
-          const { id, version, approvalRef } = component.method
-          const method = { id, version, approvalRef }
-          methods.set(JSON.stringify(method), method)
-        }
-      }
-      const { valueKind, periodBasis, calendar, evidenceRef } = series.qualification
-      const policy = series.preparationPolicy
-      return {
-        componentId: series.componentId,
-        provider: series.provider,
-        seriesId: series.seriesId,
-        nativeCadence: series.nativeCadence,
-        excludedZeroWeight: series.weightPercent === 0,
-        qualification: { valueKind, periodBasis, calendar, evidenceRef },
-        reductionPolicy: policy.method === 'NATIVE_ONLY' ? { method: policy.method } : { method: policy.method, approvalRef: policy.approvalRef },
-        // Include every actual method/version/approval, including those used before base.
-        methods: [...methods.entries()].sort(([a], [b]) => compare(a, b)).map(([, method]) => method),
-      }
-    }),
-  }
-}
-
-export interface CciMonthlyMethodology {
-  readonly id: string
-  readonly scope: 'PREPARATION_METHODOLOGY_NOT_IMMUTABLE_SNAPSHOT'
-  readonly definition: ReturnType<typeof preparationDefinition>
-}
+export type { CciPreparationMethodology as CciMonthlyMethodology } from './preparation-context'
 
 interface MonthlyContext {
   /** Original prepared alignment, copied by the adapter and recursively frozen here. */
