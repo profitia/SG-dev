@@ -59,5 +59,26 @@
     "intermittentBlankFrame": "OPEN_DIAGNOSTIC_BOUNDARY_NOT_CLAIMED_RESOLVED",
     "programAcceptance": false,
     "stagingOrProductionMutated": false
+  },
+  "embeddedDocumentFontAdoption": {
+    "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+    "previousDashboardSource": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
+    "previousDeployId": "dep-dbbqne8473hc738gr5m0",
+    "status": "SOURCE_CORRECTION_VALIDATED_LOCALLY_NOT_RELEASED",
+    "observation": "After a genuine whole-page reload the owner again observed a blank frame. The selected frame still exposed about:blank and an empty body before application startup; its public server document completed200 with correct exact frame-ancestors, preceded by103 Early Hints for the font.",
+    "hypothesis": "NOT_PROVEN: compare iframe navigation without the optional font preload/Early Hints optimization. Self-hosted font, fallback, CSP, authenticated channel and protected reads remain unchanged.",
+    "behavior": "Load Inter through existing self-hosted CSS without preloading it from every document navigation.",
+    "localValidation": {
+      "dashboardTests": 336,
+      "failed": 0,
+      "skipped": 0,
+      "typecheck": "PASS"
+    },
+    "sourceDigests": {
+      "app/layout.tsx": "7b9a3129a714f9d65533a30b65f5afd3f59f4c88f935a631c000693b81681289"
+    },
+    "actualNavigationAcceptance": "REQUIRED_AFTER_EXACT_CONTROLLED_RELEASE; revert if hypothesis fails",
+    "programAcceptance": false,
+    "stagingOrProductionMutated": false
   }
 }
