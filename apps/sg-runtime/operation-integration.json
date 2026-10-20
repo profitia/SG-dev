@@ -1983,7 +1983,7 @@
       "components/benchmark-finder/result-window.ts": "fac195d8f3bbfb61dede8900d684d6d86bcc66459ef03d98fcda25a0f14211b2",
       "components/benchmark-picker/picker-controller.ts": "74a2803888a492096161039b90834abd90c5895c254fab23040afe7f708ca096",
       "components/benchmark-picker/presentation.ts": "a7ead0e2cba2f00840108accbdcf3fef53b340a544b35b99796431503637f6a5",
-      "components/benchmark-picker/shared-benchmark-picker.tsx": "2a99fa89a7e187df7134e6a6158c11bb352f3e08697324bccd234ef5d4253fc5",
+      "components/benchmark-picker/shared-benchmark-picker.tsx": "29d81f0ae6a2cec676cbd7dee865d76d7fd2a2e538293b84780548858a819e8e",
       "components/category-builder/benchmark-picker-draft.ts": "7a973f0fbe63c16075812804a308ba115c35988554ada415a0549624c90972a3",
       "components/category-builder/category-builder-client.tsx": "e684e27ba4ad1b68648da91bd25d23b65df840e405db187e8b7fa0b6561b0ba9",
       "components/category-builder/category-operation-request.ts": "a8915b160ffb649105a17b6c01b50e935be2538b15f933afb497e39770b278f9",

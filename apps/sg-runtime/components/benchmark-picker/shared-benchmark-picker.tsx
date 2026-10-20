@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useAuth } from '@clerk/react'
 import { useSg2IdentityMode } from '../auth/session-boundary'
 import { createBenchmarkRequester } from '../benchmark-finder/benchmark-request'
@@ -98,6 +98,8 @@ function PickerSession(props: SharedBenchmarkPickerProps & { mode: 'clerk' | 'le
   const live = useRef(props); live.current = props
   const controller = useRef<ReturnType<typeof createPickerController> | null>(null)
   const stop = useRef<(() => void) | null>(null)
+  // Invalidate the old context during unmount commit, before any deferred reply can publish.
+  useLayoutEffect(() => () => { stop.current?.() }, [])
   useEffect(() => {
     const request = createBenchmarkRequester({ mode: () => live.current.mode, getToken: () => live.current.getToken(),
       origin: () => window.location.origin, fetch: (...args) => globalThis.fetch(...args), newKey: () => 'finder_' + crypto.randomUUID() }, 'picker')
