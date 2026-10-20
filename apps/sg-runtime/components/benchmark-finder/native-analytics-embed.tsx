@@ -21,7 +21,9 @@ function NamedAnalyticsEmbed({ locale, ...props }: Props) {
     } catch { setUnavailable(true) }
   }, [props.src])
   if (unavailable) return <p role="status">{locale === 'pl' ? 'Podgląd jest chwilowo niedostępny.' : 'Preview is temporarily unavailable.'}</p>
-  return <iframe {...props} ref={iframe} referrerPolicy="no-referrer"
+  // The Finder mounts this frame only after explicit expansion and eligibility.
+  // A second browser-level lazy gate must not delay its identity-channel startup.
+  return <iframe {...props} loading="eager" ref={iframe} referrerPolicy="no-referrer"
     style={{ ...props.style, ...(height === null ? {} : { height: `${height}px` }) }} />
 }
 

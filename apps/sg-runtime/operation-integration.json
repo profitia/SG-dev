@@ -1955,5 +1955,14 @@
       "tests/rolling-daily-verification.test.ts": "1937c4661f3fa0c6cf3f044c0a2bcf11eac13ad5941c810874fc622dbf5c3e64"
     },
     "productDeploymentPerformed": false
+  },
+  "explicitNativeFrameLoadingAdoption": {
+    "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+    "previousApplicationAuthority": "c09862d8e8a4d8aeb579b7bcdd6f724b12b7780d",
+    "activation": "Existing explicit Finder expansion and server eligibility; native loading eager only after mount; legacy loading preserved",
+    "sourceDigests": {
+      "components/benchmark-finder/native-analytics-embed.tsx": "de573bb2cae396e2efe3888b967da41ce5f1bc04e0d64474fe77f770a74170de"
+    },
+    "productDeploymentPerformed": false
   }
 }
