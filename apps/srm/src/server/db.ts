@@ -36,7 +36,7 @@ export function bindOrganizationTransaction(organizationId: string, client: Pool
         ||c.actorId===c.subjectUserId||!/^[a-f0-9]{64}$/.test(c.payloadDigest)
         ||c.delegation.payloadDigest!==c.payloadDigest
         ||!(c.delegation.target.operation==='supplier.private.refresh'
-          ?/^supplier-private-request:(COMPANY:kys|JDG:kys|JDG:jdg):[a-f0-9]{64}$/.test(c.delegation.target.resourceId)
+          ?/^supplier-private-request:(COMPANY:kys|JDG:kys|JDG:jdg|COMPANY:web|JDG:web):[a-f0-9]{64}$/.test(c.delegation.target.resourceId)
           :/^supplier-request:[a-f0-9]{64}$/.test(c.delegation.target.resourceId))
         ||c.delegation.target.resourceId.split(':').at(-1)!==c.payloadDigest
         ||c.requestContinuation!==undefined||c.requestInspection!==undefined||!/^[A-Z][A-Z0-9_]{1,63}$/.test(w.unitId)

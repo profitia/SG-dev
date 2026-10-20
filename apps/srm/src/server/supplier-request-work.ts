@@ -22,7 +22,8 @@ export const SUPPLIER_SENSITIVE_WORK_UNITS = Object.freeze({
   SRM_KYS_CACHE_READ:'READ', SRM_KYS_CACHE_CLAIM:'WRITE', SRM_KYS_CACHE_SAVE:'WRITE',
   SRM_KYS_CACHE_HOLD:'WRITE', SRM_KYS_CACHE_RENEW:'WRITE', SRM_KYS_CACHE_RELEASE:'WRITE',
 } as const)
-const allNativeUnits = Object.freeze({...SUPPLIER_NATIVE_WORK_UNITS,...SUPPLIER_SENSITIVE_WORK_UNITS})
+export const SUPPLIER_WEB_WORK_UNITS=Object.freeze({SRM_WEB_SUBJECT_READ:'READ',SRM_WEB_CLAIM:'WRITE',SRM_WEB_SAVE:'WRITE'} as const)
+const allNativeUnits = Object.freeze({...SUPPLIER_NATIVE_WORK_UNITS,...SUPPLIER_SENSITIVE_WORK_UNITS,...SUPPLIER_WEB_WORK_UNITS})
 export type SupplierSensitiveWorkUnit = keyof typeof SUPPLIER_SENSITIVE_WORK_UNITS
 export type SupplierNativeWorkUnit = keyof typeof allNativeUnits
 export type SupplierNativeWorkSelection = Readonly<{requestId:string;organisationId:string;command:SupplierRequestCommand}>
@@ -92,6 +93,7 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
           ||acquisition&&(d.privateAcquisitionSchemaVersion!=='1.0.0'||d.privateAcquisitionBoundaryDigest!==acquisition.boundaryDigest
             ||d.entityType!==acquisition.entityType||d.section!==acquisition.section
             ||d.operation!=='supplier.private.refresh')
+          ||acquisition?.section==='web'&&(d.webWork!==true||d.webSchemaVersion!=='1.0.0'||d.webBoundaryDigest!==acquisition.webBoundaryDigest)
           ||!acquisition&&d.operation!=='supplier.report.refresh')return refuse()
         const commands=await client.query('SELECT command_json FROM profitia_supplier_requests.commands WHERE request_id=$1::uuid',[selected.requestId])
         if(commands.rows.length!==1||operationPayloadDigest(readSupplierRequest(commands.rows[0].command_json))!==context.payloadDigest)return refuse()

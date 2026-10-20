@@ -5,6 +5,7 @@ import { createPlatformIngestionHost } from '@profitia/platform-contracts/platfo
 import { createExternalCallHost, externalNativeResponse, ExternalCallUnavailable, type NativePathRule } from '@profitia/platform-contracts/external-call'
 import { createSrmNativePgDriver } from './native-pg-driver'
 import { readSupplierRequest } from './supplier-request-operation'
+import {createSafePublicFetch, publicUrl, type PublicFetch} from '@profitia/platform-contracts/public-web-transport'
 
 export type SrmProvider = 'MGBI' | 'VERCLY' | 'VERCLY_KRS' | 'CEIDG' | 'MGBI_MSR_API' | 'MGBI_MSR_STORAGE'
 type SourceOptions = Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]
@@ -254,4 +255,54 @@ export async function guardOriginalProviderCall<T>(fetcher:typeof fetch,action:(
   }
   try{const value=await action(guarded);if(failed)throw failure;return value}
   catch(error){throw failed?failure:error}
+}
+
+export const SRM_PUBLIC_WEB_SOURCE=Object.freeze({
+ source:{id:'srm.provider.public-web',payloadSchema:'external-call-control-v1',qualityVersion:'srm-source-control-v1',classificationVersion:'technical-source-control-v1'},
+ resourceId:'srm-provider:public-web',basePathRules:[{method:'GET' as const,path:'/'}],
+ pathRules:[{method:'GET' as const,prefix:'/',parameter:'PUBLIC_PATH' as const,suffix:'',requestFormat:'NONE' as const}],
+})
+type PublicWebSourceOptions={
+ application:SourceOptions['application'];binding:SourceOptions['binding'];pool:pg.Pool;auditPool:pg.Pool;now?:()=>number
+ external:{configurationVersion:string;schemaDigest:string;nativeSchemaDigest:string;publicWebSchemaDigest:string}
+ operationKey:string;syntheticOrigin?:string
+}
+/** Original discovery owns candidate selection and its finite budget. Each
+ * actual redirect hop is admitted independently by the single Source host.
+ * Private names, NIP, URLs and page bytes never enter the Source control log. */
+export function createSrmPublicWebSourceTransport(options:PublicWebSourceOptions){
+ if(typeof window!=='undefined'||!options||Object.getPrototypeOf(options)!==Object.prototype
+  ||Object.keys(options).some(k=>!['application','binding','pool','auditPool','now','external','operationKey','syntheticOrigin'].includes(k))
+  ||!/^[a-f0-9]{64}$/.test(options.operationKey)||options.application.appId!=='srm-provider-source'
+  ||options.binding.applicationId!==options.application.appId
+  ||options.application.environment!==options.binding.environment)throw TypeError('Explicit public web Source required')
+ const fixed=structuredClone({application:options.application,binding:options.binding,external:options.external}),policy=SRM_PUBLIC_WEB_SOURCE
+ const driver=createSrmNativePgDriver(options.pool,options.auditPool)
+ const sourceHost=createPlatformIngestionHost<PoolClient>({...fixed,source:policy.source,now:options.now,...driver,
+  validateSharedPayload:value=>!!value&&typeof value==='object'&&!Array.isArray(value)
+   &&Object.keys(value).sort().join(',')==='action,callId,configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status'})
+ const host=createExternalCallHost<PoolClient,Readonly<{url:string}>>({sourceHost,sourceId:policy.source.id,resourceId:policy.resourceId,now:options.now,
+  binding:{role:fixed.binding.role,configurationVersion:fixed.external.configurationVersion,schemaDigest:fixed.external.schemaDigest,
+   origin:null,transport:'PUBLIC_WEB',pathRules:policy.basePathRules},
+  publicWebTransport:{schemaDigest:fixed.external.publicWebSchemaDigest,...(options.syntheticOrigin!==undefined?{syntheticOrigin:options.syntheticOrigin}:{})},
+  nativeTransport:{schemaDigest:fixed.external.nativeSchemaDigest,pathRules:policy.pathRules,redirectOrigins:[],maximumResponseBytes:2000000,
+   credentialMode:'NONE',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'},
+  independentQuery:driver.independentQuery,query:async(client,sql,values=[])=>({rows:(await client.query(sql,values)).rows}),
+  parseCommand:value=>{
+   if(!value||Object.getPrototypeOf(value)!==Object.prototype||Reflect.ownKeys(value).length!==1
+    ||Object.keys(value).join(',')!=='url')return refuse()
+   const v=value as Record<string,unknown>
+   if(typeof v.url!=='string'||v.url.length>4096)return refuse()
+   const url=publicUrl(v.url);if(url.href!==v.url)return refuse();return Object.freeze({url:url.href})
+  },buildRequest:command=>({method:'GET',url:command.url,body:null})})
+ const operationKey=options.operationKey
+ let ordinal=0,busy=false,failed=false,failure:unknown
+ const fetcher:PublicFetch=createSafePublicFetch(async(url,request)=>{
+  if(failed||busy||ordinal>=90)return refuse()
+  const intentKey=createHmac('sha256',Buffer.from(operationKey,'hex')).update(JSON.stringify(['srm-public-web-hop-v1',ordinal++])).digest('hex')
+  busy=true
+  try{return externalNativeResponse(await host.execute({intentKey,command:{url}},{signal:request.signal}))}
+  catch(error){failed=true;failure=error;throw error}finally{busy=false}
+ })
+ return Object.freeze({fetcher,assertSettled(){if(failed)throw failure}})
 }
