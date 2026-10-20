@@ -36,7 +36,9 @@ export function computed(value: number, positive: boolean, period: string, compo
   return value
 }
 
-export function calculateFixedBaseComponent(identity: { componentId: string; weightPercent: number }, benchmarkValue: number | null, baseValue: number | null, period: string): CciComponentResult {
+export function calculateFixedBaseComponent(component: { componentId: string; weightPercent: number }, benchmarkValue: number | null, baseValue: number | null, period: string): CciComponentResult {
+  // Do not leak caller-private preparation maps/base levels into the public result.
+  const identity = { componentId: component.componentId, weightPercent: component.weightPercent }
   if (identity.weightPercent === 0) {
     return { ...identity, status: 'EXCLUDED_ZERO_WEIGHT', benchmarkValue, benchmarkRelative: null,
       componentIndex: null, contributionPercentagePoints: 0 as PercentagePoints }
