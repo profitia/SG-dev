@@ -7,7 +7,7 @@ import { PrismaClient } from '@prisma/client'
 import type { Prisma } from '@prisma/client'
 import type { Application, OperationExecutor } from '@profitia/platform-contracts/operation-context'
 import type { AccessStoreBinding } from '@profitia/platform-contracts/access-store'
-import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
+import type { PublicIdentityApplication as IdentityApplication } from '@profitia/platform-contracts/public-request'
 import targets from '@/deployment/private-runtime-targets.json'
 import { createSg2ClerkClient, IdentityConfigurationUnavailable, readSg2IdentityRuntime } from './identity-runtime'
 import { createSg2PrivateForecastRequestHost, createSg2PrivateBenchmarkHost, createSg2SupplierSummaryHost, createSg2PrivateCategoryHost, createSg2PrivateMarketHost, createSg2PrivateForecastCurrentHost, createSg2PrivateForecastVerificationHost, createSg2PrivateForecastReadinessHost } from './private-host'
@@ -132,7 +132,8 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
       configurationVersion: env.PROFITIA_DASHBOARD_CONFIGURATION_VERSION, applicationId: 'spendguru', environment: identity.application.environment })
   }
   const discovery=readDiscoveryConfiguration(env)
-  const configuration: PrivateConfiguration = { ...(discovery?{discovery}:{}), provider: 'clerk', databaseUrl: url.toString(), identity: identity.application,
+  const configuration: PrivateConfiguration = { ...(discovery?{discovery}:{}), provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
+    requestBoundary: { publicOrigins: [...identity.application.authorizedParties], internalOrigins: ['http://0.0.0.0:10000', 'https://0.0.0.0:10000'] } },
     application: { appId: 'spendguru', profileId: 'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
       identityIssuer: identity.application.issuer, organisationId: env.PROFITIA_FIXED_ORGANISATION_ID!,

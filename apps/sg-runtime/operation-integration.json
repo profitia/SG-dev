@@ -1635,5 +1635,54 @@
       "AI clarification returns a generic 422; repeating that settled logical request does not repurchase the discarded provider response",
       "actual operator-approved grants, budgets, retention, restricted roles, recovery, Development deployment and real login remain required"
     ]
+  },
+  "publicIdentityRequestAdoption": {
+    "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+    "status": "SOURCE_VERIFIED_LIVE_ACCEPTANCE_PENDING",
+    "previousApplicationAuthority": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-E1-PUBLIC-REQUEST-BOUNDARY-20261020",
+      "sourceSha": "74df44d1f0d6df66e358bd432ebd80c3c955f70a"
+    },
+    "sdkDigest": "a4f2c41df487704522e5ac2e73e80e66295713dd6a84bd4f984edd5c07cdd394",
+    "sourceDigests": {
+      "app/api/benchmark/ai-search/route.ts": "c55307560132a02db0bccd8d69cafe8621c73c7fc21518c45722e7b2b750dbda",
+      "app/api/benchmark/context/route.ts": "e28e4206429636a0d77342ea91dece6688cc7514442d721edf32ab1981312b2e",
+      "app/api/benchmark/metadata/[metadataKey]/values/route.ts": "388871c7191642be9aea7d198c3b4086ab2a0a519a99d633d0f5a59f50e9805b",
+      "app/api/benchmark/metadata/route.ts": "2a3ef335e9f62fb2af878f5a0a5e404ed10b8bf97c4a3b3b67961a365107f7b0",
+      "app/api/benchmark/search/route.ts": "cd7b36283996f8f8d68c9d5eb44a90bf44f87fbe8d3367c2a7478089120999b7",
+      "components/auth/session-boundary.tsx": "48c288acaec80ba68578a9c373f1e354ab8249564786e542573a4f6ace064c18",
+      "components/benchmark-finder/benchmark-finder-client.tsx": "60ee8053afac06067420cb762216fc3029975748ab785b02dd3af4e9e54e8e10",
+      "components/benchmark-finder/discovery-request.ts": "e4403b2e9854c7db1c50d73be48b915bbcd5c23dafd2a443b00c260e7a2d4bf0",
+      "deployment/benchmark-discovery-targets.json": "9e54dd216f83fab38e77ba1d05f597cd9fa57276415d81e613b74af5a3e78c14",
+      "lib/benchmark/ai-search.ts": "c9faae7a3d8b53a479fdaeb4d328b5fa8119df46861536dbbc06d86c63a6783d",
+      "lib/benchmark/discovery-api.ts": "118147f429937fab4f9c7751d61be406157ef97b57922a96bd325679d2af26ba",
+      "lib/benchmark/discovery-host.ts": "5da2a33763af1558ff168eb67bbf374e678266b4cc52c07f0c2c6b31a7f74651",
+      "lib/benchmark/discovery-http.ts": "94e560195dd420ed00c874c48ed49fcf1466e519044814e4189929d94601e4e7",
+      "lib/benchmark/discovery-metadata.ts": "6907b243390ee1691d9b655a9f66f8df6a0ec49b183139a2b138c3113302af48",
+      "lib/benchmark/discovery-native.ts": "33da114f9dc9b3f530ff6d912b49d7782ce8664eb92577f5bed18ee15ceb4b92",
+      "lib/benchmark/discovery-operation.ts": "1c893659a2ae52e3852d78e654be48cb844d2be63ecde9f196ddfadb522a23b5",
+      "lib/benchmark/discovery-runtime.ts": "ec23415c0f441765f4bf85bb137323a27c2329e7e7522a07527d791f2c75519a",
+      "lib/benchmark/discovery-source.ts": "b06a3959e1163d33f58592acf18ed324f860324aba9e31ae35bd479dac5197d1",
+      "lib/benchmark/macrobond.ts": "42690cb4af1f7f9340bef348f039b89b137fab51d9b596d3b9ce1815773c38ee",
+      "lib/benchmark/provider-scope.ts": "049f929887a35d0cb65b04d58db825d5fd6cba9aede3647cca818994a7eaf7b1",
+      "lib/benchmark/service.ts": "0a2417881ca32ecea995600114f494aecdfbd574822dea83d0ce27898446a162",
+      "lib/platform/private-host.ts": "cbdf3ea083743e935cf2ecf992a0086e6b12f0f26fe987b4ee6a5d3975780760",
+      "lib/platform/private-runtime.ts": "ca6c17f40771e3e6a1b3ed3731ea1e428a32b30afa605a7a7feb800c055ed2fe",
+      "lib/platform/supplier-summary-runtime.ts": "f14292f39f4f44692480626bfebacb671c68aa15871075d176d2d49f51c0b73e",
+      "package.json": "450eda4fc5f91875c6db22ede9f398a3e362c2257b2e189a8f42a23d2c0aefdd",
+      "prisma-market-data/private-read/003-metadata-discovery.sql": "b8d0c39dc4b2efb676103361e77fa88485739dfa8f228fdd4273cb9f0e752b11",
+      "prisma/private-store/006-benchmark-discovery.sql": "8002d50d82612a34e14a63c48e2aa8f3dd346bb2cece02dbd6bd44c441673b88",
+      "tests/benchmark-discovery-http.integration.test.mjs": "1a8477a7e4cc6a3c0c7dfa4855cc74a5d5aa593a0994d0be8edec656dec3d4ab",
+      "tests/benchmark-discovery-http.test.ts": "1f72df25a7ed72752e42655e43a241e3bb5a447f3b9dcd56849750163f14daf3",
+      "tests/benchmark-discovery-request.test.ts": "4ed9c4a3d197769c7dd43471675dfdaee66f9ef40406845c621c55f8c596ca8c",
+      "tests/fixtures/benchmark-discovery-hosts.mjs": "69e66aa4d0af9b2410488a0a878d41c2c05471594800f585948f96b08bcf839a",
+      "tests/identity-runtime.test.ts": "c2d3ef5779c23b4b7b8ad388d2e7e197b3bae34b827c6376cbf77241e06e62e3"
+    },
+    "privateStoreChecksPreserved": true,
+    "officialIdentityVerifierUnchanged": true,
+    "historicalReceiptsPreserved": true,
+    "productDeploymentPerformed": false
   }
 }

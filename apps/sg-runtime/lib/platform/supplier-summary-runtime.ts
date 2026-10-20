@@ -24,7 +24,10 @@ export function createOperationSupplierSummaryHandler(executor: OperationExecuto
     } catch { return response(400) }
     // Authentication and the outbound request use exactly this captured bearer,
     // never a different cookie or a caller-supplied identity/role header.
-    const authenticatedRequest = new Request(request.url, { method: 'GET', signal: request.signal, headers: { authorization } })
+    const identityHeaders = new Headers({ authorization })
+    const host = request.headers.get('host')
+    if (host !== null) identityHeaders.set('host', host)
+    const authenticatedRequest = new Request(request.url, { method: 'GET', signal: request.signal, headers: identityHeaders })
     try {
       const result = await executor.execute({ contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version,
         operation: 'supplier.report.read', organisationId, resourceId: `supplier-report:${selection.entityType}:${selection.nip}`,
