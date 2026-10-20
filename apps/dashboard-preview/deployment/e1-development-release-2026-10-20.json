@@ -35,5 +35,29 @@
     "actualUiWorkerRegression": "REQUIRED_AFTER_EXACT_SOURCE_CONTROLLED_RELEASE",
     "programAcceptance": false,
     "stagingOrProductionMutated": false
+  },
+  "sourceReceiptIsInitialSnapshot": true,
+  "verificationReadFeedbackCorrection": {
+    "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+    "previousApplicationAuthority": "43911cd75ec84b63ed7457561f8d3a5e4c3c59ca",
+    "previousDashboardSource": "31999d7e2139f6cd6760779cbdd1bd5a9b84a581",
+    "status": "SOURCE_CORRECTION_VALIDATED_LOCALLY_NOT_RELEASED",
+    "confirmedTrigger": "Genuine Naive MONTHLY_AVERAGE Current command6997a517-9531-4c00-a692-9c36fe6476ea completed17:43:50Z and automatically refreshed the selected view. Verification commandb28ba874-2c74-4c40-b7bd-87a3d204e5d0 completed17:45:32Z,6slices,0failures. The native cache-free verification effect then reread on each new response object.",
+    "behavior": "Native verification read depends on exact selection readiness rather than each committed response object. Existing expiry and explicit reload continue protected revalidation. Full observed verification completion invalidates the earlier Fast presentation once. Legacy cache behavior unchanged. No scientific work is submitted automatically.",
+    "localValidation": {
+      "dashboardTests": 336,
+      "failed": 0,
+      "skipped": 0,
+      "typecheck": "PASS"
+    },
+    "sourceDigests": {
+      "components/raw-data-view/index.tsx": "416a243f234f6666c40b7ebdd6e3194b3bf905a9a39de1c0908cf0b9bb6465ee",
+      "lib/benchmark-forecast/native-command-presentation.ts": "c7c6e87cd75f2bd07eff7af5aafe7bb9b49a543af7144b544a6a48a592bd1109",
+      "tests/native-forecast-command-presentation.test.ts": "daba3ddc8eb5000cfd51278e11556c6ca60f13c6eaa665b5d14d08addd19cc41"
+    },
+    "actualUiWorkerRegression": "REQUIRED_AFTER_EXACT_SOURCE_CONTROLLED_RELEASE",
+    "intermittentBlankFrame": "OPEN_DIAGNOSTIC_BOUNDARY_NOT_CLAIMED_RESOLVED",
+    "programAcceptance": false,
+    "stagingOrProductionMutated": false
   }
 }

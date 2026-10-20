@@ -61,11 +61,25 @@ test('Fast verification does not complete a full command; completed daily calibr
   const selection={modelId:'naive',targetBasis:'POINT_IN_TIME',currentReadiness:'READY',pending:{kind:'VERIFICATION',state:'ACCEPTED'}} as const
   const fast=nativeForecastCompletionPlan({...selection,fullVerificationReadiness:'NOT_PREPARED'})
   assert.equal(fast.poll,true);assert.equal(fast.clearPending,false);assert.equal(fast.refreshCurrent,false)
+  assert.equal(fast.refreshVerification,false)
   assert.deepEqual(fast.completed.map(command=>command.kind),['CURRENT'])
   const full=nativeForecastCompletionPlan({...selection,fullVerificationReadiness:'READY'})
   assert.equal(full.poll,false);assert.equal(full.clearPending,true);assert.equal(full.refreshCurrent,true)
+  assert.equal(full.refreshVerification,true)
   assert.deepEqual(full.completed.map(command=>command.kind),['CURRENT','VERIFICATION'])
   assert.equal(nativeForecastCompletionPlan({...selection,targetBasis:'MONTHLY_AVERAGE',fullVerificationReadiness:'READY'}).refreshCurrent,false)
+})
+
+test('full monthly verification replaces the Fast view once, without refreshing Current or submitting new scientific work',()=>{
+  const selection={modelId:'naive',targetBasis:'MONTHLY_AVERAGE',currentReadiness:'READY',fullVerificationReadiness:'READY'} as const
+  const completed=nativeForecastCompletionPlan({...selection,pending:{kind:'VERIFICATION',state:'ACCEPTED'}})
+  assert.equal(completed.refreshVerification,true);assert.equal(completed.refreshCurrent,false);assert.equal(completed.clearPending,true)
+  const displayed=nativeForecastCompletionPlan({...selection,pending:null})
+  assert.equal(displayed.refreshVerification,false);assert.equal(displayed.poll,false)
+  for(const state of ['SENDING','DENIED','INVALID','LIMIT_REACHED'] as const){
+    assert.equal(nativeForecastCompletionPlan({...selection,pending:{kind:'VERIFICATION',state}}).refreshVerification,false)
+  }
+  assert.equal(nativeForecastCompletionPlan({...selection,pending:{kind:'CURRENT',state:'ACCEPTED'}}).refreshVerification,false)
 })
 
 test('sending, denied and limited commands are never polled or promoted by acknowledgement; ambiguous intent waits for actual readiness',()=>{
