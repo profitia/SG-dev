@@ -2,14 +2,14 @@
   "schemaVersion": "1.0.0",
   "projectKey": "SG2",
   "targetEnvironment": "development",
-  "status": "DEPLOYED_EMBED_ACCEPTANCE_PENDING",
-  "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+  "status": "DEVELOPMENT_NATIVE_RESULTS_VERIFIED_OWNER_INTERMITTENT_BLANK_OPEN",
+  "sourceSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
   "service": {
     "name": "Dashboard",
     "serviceId": "srv-dapa3ujm8hqs73a9t2og",
-    "deployId": "dep-dbbkak3ncjis7391ijf0",
-    "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
-    "status": "LIVE_EMBED_ACCEPTANCE_PENDING"
+    "deployId": "dep-dbbr34rncjis738t5phg",
+    "sourceSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
+    "status": "LIVE_RETAINED_ARTIFACT_OWNER_INTERMITTENT_BLANK_OPEN"
   },
   "nativeRelayNoSessionSeriesRead": 401,
   "legacyUnadoptedRoutes": "CLOSED_BY_MIDDLEWARE",
@@ -18,7 +18,7 @@
   "nativeCommandCompletionAdoption": {
     "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
     "previousApplicationAuthority": "04dc4d071699ed5f6add091880ee04a9c7091937",
-    "status": "SOURCE_CORRECTION_VALIDATED_LOCALLY_NOT_RELEASED",
+    "status": "LIVE_ACTUAL_CURRENT_AND_VERIFICATION_AUTO_REFRESH_VERIFIED",
     "confirmedTrigger": "Genuine ETS Current request75d94fac-abf0-48c5-b1d9-62ce657231e4 succeeded in worker at2026-10-20T17:06:37.390Z, while unchanged selected UI kept NOT_PREPARED. Idle exact-capability polling later timed out and closed the presentation.",
     "behavior": "Only an explicit accepted or ambiguous native command polls for its own scientific completion. Ready Current invalidates the earlier no-data read once; full point-in-time verification refreshes the calibrated Current read. No automatic preparation, legacy polling change, identity/channel/schema/role/access weakening.",
     "localValidation": {
@@ -32,16 +32,16 @@
       "lib/benchmark-forecast/native-command-presentation.ts": "b50d01de803739020fe3c6eedad0687ae45ba90ec9007469aef86f12534104a1",
       "tests/native-forecast-command-presentation.test.ts": "3808459a1f7d8cc0d2f09b1d40fb69acb6717ea45d203325547198a50534b750"
     },
-    "actualUiWorkerRegression": "REQUIRED_AFTER_EXACT_SOURCE_CONTROLLED_RELEASE",
+    "actualUiWorkerRegression": "PASS_GENUINE_NAIVE_MONTHLY_CURRENT_AND_VERIFICATION_SUBMITTED_ONCE",
     "programAcceptance": false,
     "stagingOrProductionMutated": false
   },
-  "sourceReceiptIsInitialSnapshot": true,
+  "sourceReceiptIsInitialSnapshot": false,
   "verificationReadFeedbackCorrection": {
     "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
     "previousApplicationAuthority": "43911cd75ec84b63ed7457561f8d3a5e4c3c59ca",
     "previousDashboardSource": "31999d7e2139f6cd6760779cbdd1bd5a9b84a581",
-    "status": "SOURCE_CORRECTION_VALIDATED_LOCALLY_NOT_RELEASED",
+    "status": "LIVE_NATIVE_VERIFICATION_REVALIDATION_VERIFIED",
     "confirmedTrigger": "Genuine Naive MONTHLY_AVERAGE Current command6997a517-9531-4c00-a692-9c36fe6476ea completed17:43:50Z and automatically refreshed the selected view. Verification commandb28ba874-2c74-4c40-b7bd-87a3d204e5d0 completed17:45:32Z,6slices,0failures. The native cache-free verification effect then reread on each new response object.",
     "behavior": "Native verification read depends on exact selection readiness rather than each committed response object. Existing expiry and explicit reload continue protected revalidation. Full observed verification completion invalidates the earlier Fast presentation once. Legacy cache behavior unchanged. No scientific work is submitted automatically.",
     "localValidation": {
@@ -55,9 +55,26 @@
       "lib/benchmark-forecast/native-command-presentation.ts": "c7c6e87cd75f2bd07eff7af5aafe7bb9b49a543af7144b544a6a48a592bd1109",
       "tests/native-forecast-command-presentation.test.ts": "daba3ddc8eb5000cfd51278e11556c6ca60f13c6eaa665b5d14d08addd19cc41"
     },
-    "actualUiWorkerRegression": "REQUIRED_AFTER_EXACT_SOURCE_CONTROLLED_RELEASE",
-    "intermittentBlankFrame": "OPEN_DIAGNOSTIC_BOUNDARY_NOT_CLAIMED_RESOLVED",
+    "actualUiWorkerRegression": "PASS_TWO_INITIAL_READS_THEN_APPROX_31_SECONDS_PROTECTED_EXPIRY",
+    "intermittentBlankFrame": "OPEN_OWNER_FAILED_FULL_RELOAD_AFTER_AGENT_SUCCESSES",
     "programAcceptance": false,
     "stagingOrProductionMutated": false
+  },
+  "observedAt": "2026-10-20T19:03:29.860785+00:00",
+  "nativeRollback": {
+    "deployId": "dep-dbbr34rncjis738t5phg",
+    "retainedTarget": "dep-dbbqne8473hc738gr5m0",
+    "artifactDigest": "913d4966bd879e44867d9029fb749f250ddcf8fc892d8f91a8b62032d079312b",
+    "fontProbeUnsuccessfulAndReverted": true,
+    "sourceRevertPr": 583,
+    "postRollbackRuntimeFilesystemDigest": "NOT_REMEASURED"
+  },
+  "ownerUiIssue": {
+    "status": "OPEN",
+    "agentSuccessAndOwnerScreenshotsRecorded": true,
+    "ownerFailedNormalReloadAlsoRecorded": true,
+    "cause": "NOT_ESTABLISHED",
+    "independentBrowserComparison": "PENDING",
+    "fullE1AcceptanceClaimed": false
   }
 }

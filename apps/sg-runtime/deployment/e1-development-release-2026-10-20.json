@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0.0",
-  "status": "DEVELOPMENT_ROLLOUT_IN_PROGRESS_ACCEPTANCE_PENDING",
-  "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
-  "documentationAuthoritySha": "82c89a2ce476da35cd003ec20c2ebbca15772dce",
+  "status": "DEVELOPMENT_DEPLOYED_TECHNICAL_TESTS_PASSED_OWNER_UI_ISSUE_OPEN",
+  "sourceSha": "f03968d474a937cfe5badcc192e1bc81781bcb91",
+  "documentationAuthoritySha": "07856e774d7d60d12e564d0d7fa7a88d3b6f2ad8",
   "targetEnvironment": "development",
-  "observedAt": "2026-10-20T11:04:59.785Z",
+  "observedAt": "2026-10-20T19:03:29.860785+00:00",
   "programAcceptance": false,
   "stagingOrProductionMutated": false,
   "governance": {
@@ -12,65 +12,17 @@
     "hostConversationId": "01a133c2-c245-77a0-bb6b-33165e2ad80c",
     "profilesAndPmosSeparate": true
   },
-  "legacyOwnershipProof": [
-    {
-      "status": "fulfilled",
-      "value": {
-        "content": [
-          {
-            "type": "text",
-            "text": "[\n  {\n    \"organizations\": 1,\n    \"organization_assignments\": 41,\n    \"user_assignments\": 41\n  }\n]"
-          }
-        ],
-        "structuredContent": null,
-        "isError": false
-      }
-    },
-    {
-      "status": "fulfilled",
-      "value": {
-        "content": [
-          {
-            "type": "text",
-            "text": "[\n  {\n    \"organizations\": 1,\n    \"users\": 0,\n    \"organization_assignments\": 0,\n    \"user_assignments\": 0,\n    \"forecast_request_cutover_grant\": \"DENY\"\n  }\n]"
-          }
-        ],
-        "structuredContent": null,
-        "isError": false
-      }
-    },
-    {
-      "status": "fulfilled",
-      "value": {
-        "content": [
-          {
-            "type": "text",
-            "text": "[\n  {\n    \"status\": \"FAILED\",\n    \"count\": 6\n  },\n  {\n    \"status\": \"SUCCEEDED\",\n    \"count\": 142\n  }\n]"
-          }
-        ],
-        "structuredContent": null,
-        "isError": false
-      }
-    }
-  ],
-  "providerEffects": {
-    "privateSourceEffects": 0,
-    "privateSourceEvents": 0,
-    "marketSourceEffects": 0,
-    "marketSourceEvents": 0
-  },
   "remainingMandatory": [
-    "Genuine owner sign-in and positive business operations with matching audit/persistence evidence",
-    "Authenticated foreign-organisation and scope refusal",
-    "Repair Current Development Clerk configuration, deploy exact candidate and verify worker operation",
-    "Remove temporary forecast.request DENY only after native Current and Verification acceptance",
-    "Canonical own-profile PMOS save, integrity and downstream publication verification"
+    "Resolve intermittent owner blank iframe after whole-page reload; successful agent renders and owner screenshots do not supersede owner failures",
+    "Canonical SG2 PMOS closeout, required MEMOROS delivery and remote PHR verification after task acceptance"
   ],
   "knownLimitations": [
-    "OpenAI key was absent in pre-existing SG2 Development; AI Search is not claimed operational until explicitly configured and verified",
-    "Finite technical Source budgets expire 2026-11-19; Vercly bounded credential policy expires 2026-11-08",
-    "Physical cleanup of expired Finder results and periodic sensitive-report retention remain explicit gaps",
-    "E2 self-service organisation administration, billing and replacement identity provider are outside this E1 receipt"
+    "Owner still reports intermittent empty chart and unfinished page load after full reload. The font probe failed and was fully reverted. Browser/tooling influence is an unconfirmed hypothesis; independent Safari test pending.",
+    "Native category AI suggestions are explicitly unavailable; manual categories and organisational persistence were genuinely verified. Benchmark AI search is not claimed accepted by a real provider call.",
+    "No live paid KYS order; known MSR/MSSF document/mapping limitations remain explicit.",
+    "Finite technical policies expire2026-11-19; bounded Vercly policy expires2026-11-08. Physical cleanup of expired results and periodic sensitive-report retention remain gaps.",
+    "Clerk remains the temporary identity adapter. E2 self-service organisation administration, billing, own identity provider and Staging/Production acceptance are outside this Development receipt.",
+    "Naive monthly capability retains RECENT_MISSING and CALIBRATION_INSUFFICIENT_SAMPLES. Successful selected variants are not evidence for all forecast models or calibration."
   ],
   "projectKey": "SG2",
   "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
@@ -86,40 +38,40 @@
     {
       "name": "Runtime",
       "serviceId": "srv-dapa3tid0e5s73f8bc5g",
-      "deployId": "dep-dbbkajrrjlhs73ei6q0g",
-      "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
-      "status": "LIVE_POSITIVE_ACCEPTANCE_PENDING"
+      "deployId": "dep-dbbpblom7kps73dj51mg",
+      "sourceSha": "f03968d474a937cfe5badcc192e1bc81781bcb91",
+      "status": "LIVE_NATIVE_IDENTITY_CATEGORY_AND_FORECAST_API_VERIFIED"
     },
     {
       "name": "Dashboard",
       "serviceId": "srv-dapa3ujm8hqs73a9t2og",
-      "deployId": "dep-dbbkak3ncjis7391ijf0",
+      "deployId": "dep-dbbr34rncjis738t5phg",
+      "sourceSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
+      "status": "LIVE_RETAINED_ARTIFACT_NATIVE_RESULTS_VERIFIED_OWNER_INTERMITTENT_BLANK_OPEN"
+    },
+    {
+      "name": "Current",
+      "serviceId": "srv-dapa3vlg1s2s739vp7dg",
+      "deployId": "dep-dbblross728c738srl0g",
       "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
-      "status": "LIVE_EMBED_ACCEPTANCE_PENDING"
+      "status": "LIVE_ACTUAL_NEW_DAMPED_ETS_AND_NAIVE_MONTHLY_EXECUTION_VERIFIED"
     },
     {
       "name": "Verification",
       "serviceId": "srv-dapa40ad0e5s73f8bjm0",
       "deployId": "dep-dbbkc261egvs738asnc0",
       "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
-      "status": "LIVE_TWO_NATIVE_INSTANCES_STARTED_BUSINESS_EXECUTION_NOT_YET_PROVEN"
-    },
-    {
-      "name": "Current",
-      "serviceId": "srv-dapa3vlg1s2s739vp7dg",
-      "deployId": "dep-dbbkiblg1s2s7399rcl0",
-      "sourceSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b",
-      "status": "LEGACY_LKG_RESTORED_PENDING_CLERK_KEY_REPAIR",
-      "failedCandidateDeployId": "dep-dbbkc267bikc738s0emg"
+      "status": "LIVE_ACTUAL_NEW_NAIVE_MONTHLY_SIX_SLICES_ZERO_FAILURES_VERIFIED"
     }
   ],
   "buildConfiguration": "NPM_CONFIG_INSTALL_LINKS=true bash ./scripts/build-sg-runtime-private-service.sh",
   "forecastCutover": {
     "grantId": "a30cbd48-aa25-49bd-a6a4-ee85e2451546",
     "operation": "forecast.request",
-    "effect": "DENY",
-    "temporary": true,
-    "restoreCondition": "Exact native worker deployment, valid identity configuration, functional tests and current service-policy bindings"
+    "effect": "ALLOW",
+    "temporary": false,
+    "restoreCondition": "Actual native role/service/worker and real authorised command acceptance proven",
+    "restoredAt": "2026-10-20T14:26:00Z"
   },
   "recovery": {
     "nativeArtifactRollbacksPerformed": [
@@ -138,131 +90,312 @@
       "br-raspy-mode-b9d4x8rp",
       "br-delicate-butterfly-b2jeoigm"
     ],
-    "dataResetPerformed": false
+    "dataResetPerformed": false,
+    "latestDashboardRollback": {
+      "deployId": "dep-dbbr34rncjis738t5phg",
+      "targetRetainedDeployId": "dep-dbbqne8473hc738gr5m0",
+      "liveAt": "2026-10-20T18:24:01.863695Z",
+      "configurationDrift": "NONE_REPORTED_BY_NATIVE_ROLLBACK",
+      "freshRebuild": false,
+      "sourceRevertPr": 583,
+      "sourceRevertMerge": "07856e774d7d60d12e564d0d7fa7a88d3b6f2ad8",
+      "failedFontProbeRetained": false,
+      "databaseChangedByRollback": false,
+      "postRollbackRuntimeFilesystemDigest": "NOT_REMEASURED"
+    }
   },
   "configurationObservation": "Render MCP update_environment_variables triggered an API deploy even with autoDeploy off. Do not treat it as SaveOnly. Unexpected tip deployments were rolled back or failed before replacing live services; subsequent exact-SHA deploys used CLI. No source file repair was retained.",
-  "negativeHttpProof": {
-    "observedAt": "2026-10-20T11:01:06.742Z",
-    "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
-    "probes": [
+  "historicalInitialReleaseObservations": {
+    "legacyOwnershipProof": [
       {
-        "id": "selection",
-        "status": 401,
-        "cacheControl": "private, no-store",
-        "accessDenied": true,
-        "validationDenied": false,
-        "error": "{\"error\":\"Operation unavailable\",\"code\":\"OPERATION_DENIED\",\"timestamp\":\"2026-10-20T11:01:06.216Z\"}"
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "[\n  {\n    \"organizations\": 1,\n    \"organization_assignments\": 41,\n    \"user_assignments\": 41\n  }\n]"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
       },
       {
-        "id": "category",
-        "status": 401,
-        "cacheControl": "private, no-store",
-        "accessDenied": true,
-        "validationDenied": false,
-        "error": "{\"error\":\"Operation unavailable\"}"
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "[\n  {\n    \"organizations\": 1,\n    \"users\": 0,\n    \"organization_assignments\": 0,\n    \"user_assignments\": 0,\n    \"forecast_request_cutover_grant\": \"DENY\"\n  }\n]"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
       },
       {
-        "id": "metadata",
-        "status": 401,
-        "cacheControl": "private, no-store",
-        "accessDenied": true,
-        "validationDenied": false,
-        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
-      },
-      {
-        "id": "metadata-values",
-        "status": 401,
-        "cacheControl": "private, no-store",
-        "accessDenied": true,
-        "validationDenied": false,
-        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
-      },
-      {
-        "id": "search",
-        "status": 401,
-        "cacheControl": "private, no-store",
-        "accessDenied": true,
-        "validationDenied": false,
-        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
-      },
-      {
-        "id": "ai-search",
-        "status": 401,
-        "cacheControl": "private, no-store",
-        "accessDenied": true,
-        "validationDenied": false,
-        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
-      },
-      {
-        "id": "context",
-        "status": 401,
-        "cacheControl": "private, no-store",
-        "accessDenied": true,
-        "validationDenied": false,
-        "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+        "status": "fulfilled",
+        "value": {
+          "content": [
+            {
+              "type": "text",
+              "text": "[\n  {\n    \"status\": \"FAILED\",\n    \"count\": 6\n  },\n  {\n    \"status\": \"SUCCEEDED\",\n    \"count\": 142\n  }\n]"
+            }
+          ],
+          "structuredContent": null,
+          "isError": false
+        }
       }
-    ]
+    ],
+    "providerEffects": {
+      "privateSourceEffects": 0,
+      "privateSourceEvents": 0,
+      "marketSourceEffects": 0,
+      "marketSourceEvents": 0
+    },
+    "negativeHttpProof": {
+      "observedAt": "2026-10-20T11:01:06.742Z",
+      "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+      "probes": [
+        {
+          "id": "selection",
+          "status": 401,
+          "cacheControl": "private, no-store",
+          "accessDenied": true,
+          "validationDenied": false,
+          "error": "{\"error\":\"Operation unavailable\",\"code\":\"OPERATION_DENIED\",\"timestamp\":\"2026-10-20T11:01:06.216Z\"}"
+        },
+        {
+          "id": "category",
+          "status": 401,
+          "cacheControl": "private, no-store",
+          "accessDenied": true,
+          "validationDenied": false,
+          "error": "{\"error\":\"Operation unavailable\"}"
+        },
+        {
+          "id": "metadata",
+          "status": 401,
+          "cacheControl": "private, no-store",
+          "accessDenied": true,
+          "validationDenied": false,
+          "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+        },
+        {
+          "id": "metadata-values",
+          "status": 401,
+          "cacheControl": "private, no-store",
+          "accessDenied": true,
+          "validationDenied": false,
+          "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+        },
+        {
+          "id": "search",
+          "status": 401,
+          "cacheControl": "private, no-store",
+          "accessDenied": true,
+          "validationDenied": false,
+          "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+        },
+        {
+          "id": "ai-search",
+          "status": 401,
+          "cacheControl": "private, no-store",
+          "accessDenied": true,
+          "validationDenied": false,
+          "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+        },
+        {
+          "id": "context",
+          "status": 401,
+          "cacheControl": "private, no-store",
+          "accessDenied": true,
+          "validationDenied": false,
+          "error": "{\"error\":{\"code\":\"OPERATION_DENIED\",\"message\":\"Operation unavailable\"}}"
+        }
+      ]
+    },
+    "retainedArtifactMeasurements": [
+      {
+        "providerLogId": "e9cd2c91-accc-4445-bc09-c709ae873082",
+        "providerTimestamp": "2026-10-20T08:08:40.990915722Z",
+        "jobId": "job-dbbi2l5g1s2s7392fiig",
+        "proof": {
+          "kind": "E1_LKG_ARTIFACT",
+          "status": "PASS",
+          "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+          "sourceSha": "c55c551091b3584673726bd0a78254eb091c7197",
+          "algorithm": "sha256-sorted-path-type-content-v1",
+          "roots": [
+            ".next",
+            "node_modules",
+            "public",
+            "package.json",
+            "package-lock.json"
+          ],
+          "excluded": [
+            ".next/cache",
+            "nested .cache directories"
+          ],
+          "symlinkMode": "LINK_TARGET_TEXT_NOT_DEREFERENCED",
+          "fileCount": 14411,
+          "totalBytes": 402322673,
+          "artifactDigest": "8a54f3d10ac6b63677946bd25b9c7bba182123ff1bab7755acb3f6d842acdeb8",
+          "buildIdDigest": "ac8286b8d74b5ef0524d6c752a05cb818fa5fe13189c1afc6618a9cd31f08c5b",
+          "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
+          "observedAt": "2026-10-20T08:08:40.919Z"
+        }
+      },
+      {
+        "providerLogId": "5101c6ee-6839-4887-bf99-912d18d6d2eb",
+        "providerTimestamp": "2026-10-20T08:08:48.706628646Z",
+        "jobId": "job-dbbi2qdg1s2s7392g23g",
+        "proof": {
+          "kind": "E1_LKG_ARTIFACT",
+          "status": "PASS",
+          "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+          "sourceSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119",
+          "algorithm": "sha256-sorted-path-type-content-v1",
+          "roots": [
+            ".next",
+            "node_modules",
+            "public",
+            "package.json",
+            "package-lock.json"
+          ],
+          "excluded": [
+            ".next/cache",
+            "nested .cache directories"
+          ],
+          "symlinkMode": "LINK_TARGET_TEXT_NOT_DEREFERENCED",
+          "fileCount": 16746,
+          "totalBytes": 575086272,
+          "artifactDigest": "69b78604d2f795564a4ed5de707c16911387104878c2409393480da4391e1738",
+          "buildIdDigest": "71e4741dcb65acd170b8de8fcc411b979aa2644efef6b096bdf5bddccfa69ada",
+          "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
+          "observedAt": "2026-10-20T08:08:48.684Z"
+        }
+      }
+    ],
+    "initialObservedAt": "2026-10-20T11:04:59.785Z",
+    "initialSourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06"
   },
-  "retainedArtifactMeasurements": [
+  "autoDeploy": "OFF_VERIFIED_FOR_ALL_FOUR_SERVICES",
+  "dataOwnership": {
+    "organisation": "Profitia — organizacja wewnętrzna",
+    "organisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+    "actorId": "092c2d9f-a84b-4c18-b3d6-e172a61399b8",
+    "genuineClerkLogin": true,
+    "privateCategoryCreateUpdateReload": true,
+    "oldSrmOwnershipTransferred": false,
+    "oldSrmAssignmentsPreserved": {
+      "organisation": 41,
+      "user": 41
+    },
+    "unscopedOrdinaryRoleVisibleCategories": 0,
+    "foreignOrganisationApiStatus": 403,
+    "runtimeRoles": {
+      "superuser": false,
+      "bypassRls": false,
+      "memberships": 0
+    },
+    "sourceKnowledgeRemainsShared": true
+  },
+  "nativeForecastAcceptance": {
+    "privateCurrentRequestId": "6997a517-9531-4c00-a692-9c36fe6476ea",
+    "currentScientificJob": "d33aa1e668a39373d5b04edbb5b9c29de32e594ff41516f9760481977c9ca4bd",
+    "currentCompletedAt": "2026-10-20T17:43:50.290Z",
+    "privateVerificationRequestId": "b28ba874-2c74-4c40-b7bd-87a3d204e5d0",
+    "verificationScientificJob": "02c859e54f164510e97f6360a1bf1da8d700065f4fd91c5f8b2ad59634e03ab0",
+    "verificationCompletedAt": "2026-10-20T17:45:32.848Z",
+    "model": "naive",
+    "targetSemantics": "MONTHLY_AVERAGE",
+    "verificationSlices": 6,
+    "verificationFailures": 0,
+    "genuineUiSubmitOncePerCommand": true,
+    "selectedUiAutomaticallyRefreshed": true,
+    "fastScorePercent": 95.9,
+    "fullScorePercent": 94.4,
+    "directionScorePercent": 0,
+    "noAdditionalForecastCommandsDuringFinalReads": true,
+    "privateForecastPolicyUsed": 4,
+    "matchingAuthorisationAndOutcomeAudit": true
+  },
+  "latestRetainedBuildMeasurements": [
     {
-      "providerLogId": "e9cd2c91-accc-4445-bc09-c709ae873082",
-      "providerTimestamp": "2026-10-20T08:08:40.990915722Z",
-      "jobId": "job-dbbi2l5g1s2s7392fiig",
-      "proof": {
-        "kind": "E1_LKG_ARTIFACT",
-        "status": "PASS",
-        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
-        "sourceSha": "c55c551091b3584673726bd0a78254eb091c7197",
-        "algorithm": "sha256-sorted-path-type-content-v1",
-        "roots": [
-          ".next",
-          "node_modules",
-          "public",
-          "package.json",
-          "package-lock.json"
-        ],
-        "excluded": [
-          ".next/cache",
-          "nested .cache directories"
-        ],
-        "symlinkMode": "LINK_TARGET_TEXT_NOT_DEREFERENCED",
-        "fileCount": 14411,
-        "totalBytes": 402322673,
-        "artifactDigest": "8a54f3d10ac6b63677946bd25b9c7bba182123ff1bab7755acb3f6d842acdeb8",
-        "buildIdDigest": "ac8286b8d74b5ef0524d6c752a05cb818fa5fe13189c1afc6618a9cd31f08c5b",
-        "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
-        "observedAt": "2026-10-20T08:08:40.919Z"
-      }
+      "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+      "sourceSha": "f03968d474a937cfe5badcc192e1bc81781bcb91",
+      "jobId": "job-dbbpjmon74is7398vfdg",
+      "algorithm": "sha256-sorted-path-type-content-v1",
+      "artifactDigest": "9fb05047c20e3dbbbbd4aff9dc32933d338c81984f28861ffd06d9acfb22830e",
+      "buildIdDigest": "6c709023be54d0501cff8bd382aa113cbc34c9a715be036cfad31bef000c0132",
+      "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
+      "observedAt": "2026-10-20T16:43:15.715Z"
     },
     {
-      "providerLogId": "5101c6ee-6839-4887-bf99-912d18d6d2eb",
-      "providerTimestamp": "2026-10-20T08:08:48.706628646Z",
-      "jobId": "job-dbbi2qdg1s2s7392g23g",
-      "proof": {
-        "kind": "E1_LKG_ARTIFACT",
-        "status": "PASS",
-        "serviceId": "srv-dapa3ujm8hqs73a9t2og",
-        "sourceSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119",
-        "algorithm": "sha256-sorted-path-type-content-v1",
-        "roots": [
-          ".next",
-          "node_modules",
-          "public",
-          "package.json",
-          "package-lock.json"
-        ],
-        "excluded": [
-          ".next/cache",
-          "nested .cache directories"
-        ],
-        "symlinkMode": "LINK_TARGET_TEXT_NOT_DEREFERENCED",
-        "fileCount": 16746,
-        "totalBytes": 575086272,
-        "artifactDigest": "69b78604d2f795564a4ed5de707c16911387104878c2409393480da4391e1738",
-        "buildIdDigest": "71e4741dcb65acd170b8de8fcc411b979aa2644efef6b096bdf5bddccfa69ada",
-        "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
-        "observedAt": "2026-10-20T08:08:48.684Z"
-      }
+      "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+      "sourceSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
+      "algorithm": "sha256-sorted-path-type-content-v1",
+      "artifactDigest": "913d4966bd879e44867d9029fb749f250ddcf8fc892d8f91a8b62032d079312b",
+      "buildIdDigest": "b22ee730db283fef59fefb2e9f3f6b99af8260ba4fe9e247164528fb9dfd4186",
+      "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
+      "observedAt": "2026-10-20T18:01:52.657Z",
+      "jobId": "job-dbbqoe8ae00c73ai7p1g"
     }
-  ]
+  ],
+  "benchmarkDiscoveryTechnicalGuardrail": {
+    "ownerDecision": "Tak — zatwierdzam limit 1000 w tym zakresie",
+    "ownerDecisionReference": "call_9657141e356f4e51b8ab057609c0f40d",
+    "scope": "spring-bread-28217539/br-sparkling-term-b99l107x/platform_private",
+    "oldPolicyId": "4da79e53-c7f6-4eea-a38d-04928ff56b38",
+    "oldPolicyStatus": "REVOKED_HISTORY_PRESERVED",
+    "oldCapacity": 100,
+    "oldConsumed": 100,
+    "activePolicyId": "df07a8a6-3aad-4825-860f-c98784334622",
+    "activePolicyVersion": 2,
+    "activeCapacity": 1000,
+    "consumedCarriedForward": 100,
+    "observedUsedAfterGenuineSearch": 108,
+    "expiresAt": "2026-11-19T00:00:00Z",
+    "sourceAndUpstreamBudgetDefinitionsUnchanged": true,
+    "upstreamCapacities": {
+      "macrobondApi": 1000,
+      "macrobondToken": 100,
+      "openai": 100
+    },
+    "immutablePolicyTriggerPreserved": true,
+    "rotationAndCompensationRehearsedInCopyAndRolledBack": true,
+    "liveCompensationPolicyIdReservedNotInstalled": "fb198204-c916-4476-af29-fce41d8f6f51",
+    "postRotationGenuineDiscoveryRequestsAndReadsSucceeded": 8,
+    "schemaRoleSecretOrDeploymentChanged": false
+  },
+  "validation": {
+    "runtime716Tests": {
+      "passed": 716,
+      "failed": 0,
+      "controlledRun": "39456049276"
+    },
+    "dashboard336Tests": {
+      "passed": 336,
+      "failed": 0,
+      "typecheck": "PASS",
+      "controlledRun": "39469672475"
+    },
+    "fontProbeSourceRevert": {
+      "controlledCi": "39475583057",
+      "prCi": "39474328108",
+      "mainCi": "39476520759",
+      "all": "SUCCESS",
+      "revertTreeEqualsAccepted873d4655": true
+    },
+    "realBrowserHistory": true,
+    "realBrowserCurrentAndVerification": true,
+    "fullParentReloadSamplesSeconds": [
+      2.341,
+      2.243
+    ],
+    "ownerLatestResult": "INTERMITTENT_FAILURE_STILL_OPEN",
+    "newForecastRequestsAfter1745": 0,
+    "sharedFinancialModuleInBothReact18AndReact19Hosts": "VERIFIED_EARLIER_IN_THIS_TASK"
+  }
 }
