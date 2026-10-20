@@ -17,7 +17,7 @@
     "Canonical SG2 PMOS closeout, required MEMOROS delivery and remote PHR verification after task acceptance"
   ],
   "knownLimitations": [
-    "Owner still reports intermittent empty chart and unfinished page load after full reload. The font probe failed and was fully reverted. Browser/tooling influence is an unconfirmed hypothesis; independent Safari test pending.",
+    "Owner still reports intermittent empty chart and unfinished page load in Chrome after full reload. Independent owner Safari test without DevTools passed. Font probe failed and was fully reverted; browser/tooling influence remains an unconfirmed hypothesis. Chrome acceptance is still open.",
     "Native category AI suggestions are explicitly unavailable; manual categories and organisational persistence were genuinely verified. Benchmark AI search is not claimed accepted by a real provider call.",
     "No live paid KYS order; known MSR/MSSF document/mapping limitations remain explicit.",
     "Finite technical policies expire2026-11-19; bounded Vercly policy expires2026-11-08. Physical cleanup of expired results and periodic sensitive-report retention remain gaps.",
@@ -396,6 +396,18 @@
     ],
     "ownerLatestResult": "INTERMITTENT_FAILURE_STILL_OPEN",
     "newForecastRequestsAfter1745": 0,
-    "sharedFinancialModuleInBothReact18AndReact19Hosts": "VERIFIED_EARLIER_IN_THIS_TASK"
+    "sharedFinancialModuleInBothReact18AndReact19Hosts": "VERIFIED_EARLIER_IN_THIS_TASK",
+    "independentOwnerSafari": {
+      "status": "PASS_OWNER_REPORTED",
+      "questionReference": "call_52acf63a53e3457895305082bea0e859",
+      "browser": "Safari",
+      "url": "https://dev-sg2.spendguru.app/pl/benchmark-finder",
+      "devToolsOpened": false,
+      "ownerAnswer": "Safari działa — wykres i kontrolka są widoczne",
+      "noNewForecastCommandsRequested": true,
+      "observedAt": "2026-10-20T19:06:47.282738+00:00",
+      "chromeIssueResolved": false,
+      "cause": "NOT_ESTABLISHED"
+    }
   }
 }

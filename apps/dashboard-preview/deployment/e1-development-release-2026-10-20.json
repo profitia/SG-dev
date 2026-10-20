@@ -74,7 +74,19 @@
     "agentSuccessAndOwnerScreenshotsRecorded": true,
     "ownerFailedNormalReloadAlsoRecorded": true,
     "cause": "NOT_ESTABLISHED",
-    "independentBrowserComparison": "PENDING",
-    "fullE1AcceptanceClaimed": false
+    "independentBrowserComparison": "PASS_OWNER_SAFARI_WITHOUT_DEVTOOLS_CHROME_STILL_OPEN",
+    "fullE1AcceptanceClaimed": false,
+    "independentOwnerSafari": {
+      "status": "PASS_OWNER_REPORTED",
+      "questionReference": "call_52acf63a53e3457895305082bea0e859",
+      "browser": "Safari",
+      "url": "https://dev-sg2.spendguru.app/pl/benchmark-finder",
+      "devToolsOpened": false,
+      "ownerAnswer": "Safari działa — wykres i kontrolka są widoczne",
+      "noNewForecastCommandsRequested": true,
+      "observedAt": "2026-10-20T19:06:47.282738+00:00",
+      "chromeIssueResolved": false,
+      "cause": "NOT_ESTABLISHED"
+    }
   }
 }
