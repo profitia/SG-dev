@@ -1,7 +1,7 @@
 import type { GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
 import { fetchMgbiPages } from "./mgbi-archive";
 import { companyRegistration } from "./company-activity";
-import { resolveCompanyRecords } from "./company-continuity";
+import { registryCalendarDate, resolveCompanyRecords } from "./company-continuity";
 
 export type CompanyIdentifier = { type: "NIP" | "KRS"; value: string };
 export type MgbiGeneralResult = {
@@ -31,6 +31,17 @@ function at(value: unknown, ...path: string[]): unknown {
 }
 function str(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+function registryEffectiveAt(value: unknown): string | null {
+  const day = registryCalendarDate(value), text = str(value);
+  if (day || !text) return day;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(text)
+    && registryCalendarDate(text.slice(0, 10)) && Number.isFinite(Date.parse(text))
+    && new Date(text).toISOString().slice(0, 10) === text.slice(0, 10)) return text;
+  // KRS local excerpt clocks carry no time zone. Preserve their explicit day;
+  // retrievedAt remains the precise retrieval instant and the archive is raw.
+  const local = /^(\d{2}\.\d{2}\.\d{4}) ([0-2]\d):([0-5]\d):([0-5]\d)$/.exec(text);
+  return local && Number(local[2]) < 24 ? registryCalendarDate(local[1]) : null;
 }
 function first(value: unknown): unknown {
   return Array.isArray(value) ? value[0] : value;
@@ -71,7 +82,7 @@ export function mapMgbiGeneralRecord(record: unknown, retrievedAt: string): Mgbi
     nip: str(identifiers?.pl_nip),
     regon: str(identifiers?.pl_regon),
     registeredAddress: address(rawAddress),
-    registeredAt: str(at(header, "dataRejestracjiWKRS")),
+    registeredAt: registryCalendarDate(at(header, "dataRejestracjiWKRS")),
     mainPkd: mapPrimaryPkd(activity).code,
     mainPkdDescription: mapPrimaryPkd(activity).description,
     website: str(at(excerpt, "dane", "dzial1", "siedzibaIAdres", "adresStronyInternetowej")),
@@ -84,7 +95,7 @@ export function mapMgbiGeneralRecord(record: unknown, retrievedAt: string): Mgbi
       status,
       source: { ...SOURCE, recordId: str(sourceRecord.id) },
       retrievedAt,
-      effectiveAt: str(at(header, "stanZDnia")) ?? str(at(header, "dataCzasOdpisu")),
+      effectiveAt: registryEffectiveAt(at(header, "stanZDnia")) ?? registryEffectiveAt(at(header, "dataCzasOdpisu")),
       data: hasData ? data : null,
       warnings: missing.map((field) => `MGBI_MISSING_${field}`),
     },
