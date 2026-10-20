@@ -147,7 +147,7 @@ export async function createMetadataFinderFixture(){
  const future=()=>new Date(Date.now()+3600000).toISOString()
  const rootUrl=assertIsolatedTestConnection(process.env.SG2_OPERATION_TEST_OWNER_URL,'sg2_operation_test','architecture_test_owner')
  const root=new Client({connectionString:rootUrl});await root.connect();const db='sg2_metadata_'+randomUUID().replaceAll('-',''),url=new URL(rootUrl);url.pathname='/'+db
- const role='sg2_metadata_read_fixture',ownerRole='profitia_market_read_owner'
+ const role='sg2_metadata_http_fixture',ownerRole='profitia_market_read_owner'
  const sql=fs.readFileSync(new URL('../../prisma-market-data/private-read/003-metadata-discovery.sql',import.meta.url),'utf8')
  let owner,prisma,created=false
  try{

@@ -29,9 +29,9 @@ function fixture(){
  const sdk=host=>path.join(directory,'apps',host,'node_modules/@profitia/platform-contracts')
  const sourcePublic=path.join(source,'node_modules/ipaddr.js')
  return {directory,source,app,helper,installed,sdk,sourcePublic,
-  run(code='process.exit(0)',extra={}){
+  run(code='process.exit(0)',extra={},host='sg-runtime'){
    const env={...process.env};for(const key of ['NPM_TOKEN','NODE_AUTH_TOKEN','SG2_PACKAGES_READ_TOKEN'])delete env[key]
-   const result=spawnSync(process.execPath,[helper,'--input-type=module','-e',code],{cwd:app,env:{...env,...extra},encoding:'utf8'})
+   const result=spawnSync(process.execPath,[helper,'--input-type=module','-e',code],{cwd:path.join(directory,'apps',host),env:{...env,...extra},encoding:'utf8'})
    assert.ifError(result.error);return result
   },close(){fs.rmSync(directory,{recursive:true,force:true})}}
 }
@@ -50,6 +50,16 @@ test('stages genuine source and reviewed installed public dependency for both ho
 test('preserves an already installed identical SDK directory',()=>scoped(f=>{
  fs.cpSync(f.source,f.sdk('sg-runtime'),{recursive:true})
  const r=f.run();assert.equal(r.status,0,r.stderr);assert.equal(fs.lstatSync(f.sdk('sg-runtime')).isDirectory(),true)
+}))
+test('independently installed dashboard uses its own reviewed public bytes without an SG Runtime install',()=>scoped(f=>{
+ const installed=path.join(f.directory,'apps/dashboard-preview/node_modules/ipaddr.js');fs.mkdirSync(path.dirname(installed),{recursive:true});fs.renameSync(f.installed,installed)
+ const r=f.run("import assert from 'node:assert/strict';import {isPublicAddress} from '@profitia/platform-contracts/public-web-transport';assert.equal(isPublicAddress('8.8.8.8'),true)",{},'dashboard-preview')
+ assert.equal(r.status,0,r.stderr);assert.equal(fs.existsSync(f.installed),false);assert.equal(fs.existsSync(f.sdk('sg-runtime')),false);assert.equal(fs.existsSync(f.sourcePublic),false);assert.equal(fs.existsSync(installed),true)
+}))
+test('an unregistered receiving directory cannot stage any dependency',()=>scoped(f=>{
+ fs.mkdirSync(path.join(f.directory,'apps/another-app'))
+ const r=f.run("throw Error('CHILD_MUST_NOT_RUN')",{},'another-app')
+ assert.equal(r.status,1);assert.match(r.stderr,/Explicit receiving host required/);assert.doesNotMatch(r.stderr,/CHILD_MUST_NOT_RUN/);assert.equal(fs.existsSync(f.sourcePublic),false)
 }))
 for(const field of ['dependencies','peerDependencies','optionalDependencies'])test(`rejects unreviewed ${field}`,()=>scoped(f=>{
  const file=path.join(f.source,'package.json'),v=read(file);v[field]={...v[field],unreviewed:'1.0.0'};write(file,v)
