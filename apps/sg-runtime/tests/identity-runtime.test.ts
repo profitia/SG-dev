@@ -42,7 +42,10 @@ test('SG2 explicitly receives the peer identity producer without enabling cross-
     assert.equal(hash(readFileSync(new URL(path, root))), digest, path)
     assert.equal(hash(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':packages/platform-contracts/' + path])), previous.publicWebTransportSourceCompatibility.sourceDigests[path])
   }
-  for (const [path, digest] of Object.entries(accepted.sourceDigests)) assert.equal(hash(readFileSync(new URL('../' + path, import.meta.url))), digest, path)
+  // The earlier receiver receipt remains immutable; the additive repair below
+  // pins the complete current closure, including all earlier receiver paths.
+  for (const [path, digest] of Object.entries(accepted.sourceDigests))
+    assert.equal(hash(execFileSync('git', ['show', 'f1f606cbb884d9eaaae99028f46d1c72d0eaac77:apps/sg-runtime/' + path])), digest, path)
   const config = readSg2IdentityRuntime(fixture()); assert.equal(config.provider, 'clerk')
   if (config.provider !== 'clerk') throw Error('Expected Clerk')
   assert.equal(config.application.bearerPeerReads, undefined)
@@ -164,4 +167,19 @@ test('missing provider or invalid explicit configuration never renders the indiv
 test('the SG2 receiver cannot relabel Development identity as Staging',()=>{
   assert.throws(()=>readSg2IdentityRuntime({...fixture(),TARGET_ENVIRONMENT:'staging'}),IdentityConfigurationUnavailable)
   assert.throws(()=>readSg2IdentityRuntime({...fixture(),TARGET_ENVIRONMENT:undefined,APP_ENV:'development'}),IdentityConfigurationUnavailable)
+})
+
+test('stored readiness source repair preserves prior acceptance and pins its complete current receiver closure', () => {
+  const receipt = JSON.parse(readFileSync(new URL('../operation-integration.json', import.meta.url), 'utf8'))
+  const accepted = receipt.storedReadSourceAdoption
+  assert.equal(accepted.taskId, 'SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020')
+  assert.equal(accepted.previousApplicationAuthority, 'f1f606cbb884d9eaaae99028f46d1c72d0eaac77')
+  const previous = JSON.parse(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
+  for (const path of Object.keys(previous.peerReadIdentityAdoption.sourceDigests)) assert(path in accepted.sourceDigests, path)
+  for (const path of ['lib/forecast/stored-current-read.ts','lib/forecast/stored-readiness-read.ts','lib/forecast/stored-verification-read.ts','lib/forecast/rolling-daily-verification.ts',
+    'tests/rolling-daily-verification.test.ts','tests/private-host.integration.test.mjs','tests/identity-runtime.test.ts']) assert(path in accepted.sourceDigests, path)
+  for (const [path, digest] of Object.entries(accepted.sourceDigests))
+    assert.equal(createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex'), digest, path)
+  assert.equal(accepted.productDeploymentPerformed, false)
 })

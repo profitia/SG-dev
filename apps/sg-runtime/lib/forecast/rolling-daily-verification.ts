@@ -33,7 +33,7 @@ type MarketDataPrismaClient = NonNullable<ReturnType<typeof getMarketDataPrisma>
 
 export type PreparedRollingDailyForecastVerificationDependencies = (
   | {prisma?:PreparedRollingDailyVerificationReadClient;projection?:never}
-  | {prisma:Prisma.TransactionClient;projection:'STORED_SHARED'}
+  | {prisma:Prisma.TransactionClient;projection:'STORED_SHARED';storedSource?:StoredRollingDailyVerificationSource}
 ) & {
   resolveHistory?: typeof resolveBenchmarkHistoricalSeries
   emitPreparedRead?: typeof forecastStressTelemetry.emit
@@ -42,6 +42,69 @@ export type PreparedRollingDailyForecastVerificationDependencies = (
 export type PreparedRollingDailyVerificationReadClient = {
   readonly rollingDailyVerificationRecord: Pick<MarketDataPrismaClient['rollingDailyVerificationRecord'], 'findMany'>
   readonly rollingDailyMaintenanceState: Pick<MarketDataPrismaClient['rollingDailyMaintenanceState'], 'findUnique'>
+}
+
+type StoredRollingSelection = Pick<ForecastRequestInput, 'seriesId' | 'modelId'>
+type StoredRollingMaintenance = {
+  latestSourceHistoryFingerprint: string | null
+  latestSourceObservationAt: Date | null
+  lastProcessedOriginAt: Date | null
+  lastMaintenanceStatus: string | null
+}
+export type StoredRollingDailyVerificationSource = Readonly<{
+  readRecords: (input: StoredRollingSelection) => Promise<Prisma.RollingDailyVerificationRecordGetPayload<{}>[]>
+  readMaintenance: (input: StoredRollingSelection) => Promise<StoredRollingMaintenance | null>
+}>
+const sourceTransactions = new WeakMap<StoredRollingDailyVerificationSource, Prisma.TransactionClient>()
+
+/** Share stored source facts only within one genuine source transaction. The
+ * three scientific scopes still independently apply their original policies.
+ * No identity, permission, decision or result survives the operation. */
+export function createStoredRollingDailyVerificationSource(transaction: Prisma.TransactionClient): StoredRollingDailyVerificationSource {
+  if (!transaction || '$transaction' in transaction || typeof transaction.$queryRawUnsafe !== 'function'
+    || typeof transaction.$executeRawUnsafe !== 'function') throw new TypeError('A live Rolling projection transaction is required')
+  const records = new Map<string, Promise<Prisma.RollingDailyVerificationRecordGetPayload<{}>[]>>()
+  const maintenance = new Map<string, Promise<StoredRollingMaintenance | null>>()
+  const key = (input: StoredRollingSelection) => {
+    if (!/^[a-z0-9_./-]{1,256}$/i.test(input.seriesId) || !['naive','damped_holt','ets','arima'].includes(input.modelId))
+      throw new TypeError('Explicit stored Rolling selection required')
+    return JSON.stringify([input.seriesId, input.modelId])
+  }
+  const values = (input: StoredRollingSelection) => [input.seriesId, ROLLING_DAILY_INPUT_SOURCE, 'POINT_IN_TIME',
+    ROLLING_DAILY_METHOD_ID, ROLLING_DAILY_METHOD_VERSION, input.modelId]
+  const source: StoredRollingDailyVerificationSource = Object.freeze({
+    readRecords(input) {
+      const selected = key(input)
+      let result = records.get(selected)
+      if (!result) {
+        result = transaction.$queryRawUnsafe<Prisma.RollingDailyVerificationRecordGetPayload<{}>[]>(`SELECT
+          id,"seriesId","inputSource","inputRunId","targetBasis"::text AS "targetBasis","methodId","methodVersion","modelId","forecastOriginAt",
+          "horizonLabel","horizonMonths","horizonSteps","targetCalendarDate","verificationObservedAt","maturityStatus"::text AS "maturityStatus",
+          "originValue","forecastValue","actualValue","errorValue","absoluteErrorValue","deltaValue","deltaPct","residualValue","maseScale",
+          "trainingHistoryStartAt","trainingHistoryEndAt","trainingObservationCount","sourceHistoryFingerprint","selectedVariant","selectionMetric",
+          "selectionScore","metadataJson","createdAt","updatedAt"
+          FROM profitia_forecast_read.rolling_daily_verification_records WHERE "seriesId"=$1 AND "inputSource"=$2 AND "targetBasis"::text=$3
+            AND "methodId"=$4 AND "methodVersion"=$5 AND "modelId"=$6 ORDER BY "horizonMonths","targetCalendarDate","forecastOriginAt"`, ...values(input)).then(rows => rows)
+        records.set(selected, result)
+      }
+      return result
+    },
+    readMaintenance(input) {
+      const selected = key(input)
+      let result = maintenance.get(selected)
+      if (!result) {
+        result = transaction.$queryRawUnsafe<StoredRollingMaintenance[]>(
+          `SELECT "latestSourceHistoryFingerprint","latestSourceObservationAt","lastProcessedOriginAt","lastMaintenanceStatus"
+            FROM profitia_forecast_read.rolling_daily_maintenance_state WHERE "seriesId"=$1 AND "inputSource"=$2 AND "targetBasis"::text=$3
+              AND "methodId"=$4 AND "methodVersion"=$5 AND "modelId"=$6 LIMIT 2`, ...values(input))
+          .then(rows => { if (rows.length > 1) throw new Error('Stored Rolling identity is not unique'); return rows[0] ?? null })
+        maintenance.set(selected, result)
+      }
+      return result
+    },
+  })
+  sourceTransactions.set(source, transaction)
+  return source
 }
 
 function asNumber(value: { toString(): string } | number | null) {
@@ -80,6 +143,9 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
     const projection=dependencies?.projection==='STORED_SHARED'?dependencies.prisma:null
     if(dependencies?.projection!==undefined&&(dependencies.projection!=='STORED_SHARED'||!projection||'$transaction' in projection
       ||typeof projection.$queryRawUnsafe!=='function'||typeof projection.$executeRawUnsafe!=='function'))throw new TypeError('A live Rolling projection transaction is required')
+    const storedSource = dependencies?.projection === 'STORED_SHARED' ? dependencies.storedSource : undefined
+    if (storedSource && sourceTransactions.get(storedSource) !== projection) throw new TypeError('Stored Rolling source transaction mismatch')
+    const projectedSource = projection ? storedSource ?? createStoredRollingDailyVerificationSource(projection) : null
     const explicitPrisma = dependencies == null || Object.prototype.hasOwnProperty.call(dependencies, 'prisma')
     const prisma = explicitPrisma ? dependencies?.prisma : getMarketDataPrisma()
     if (!prisma
@@ -100,15 +166,7 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
       points: history.historical,
     }
     const sourceHistoryFingerprint = buildRollingDailyHistoryFingerprint(rollingDailyHistory)
-    const persistedRecords = projection ? await projection.$queryRawUnsafe<Prisma.RollingDailyVerificationRecordGetPayload<{}>[]>(`SELECT
-      id,"seriesId","inputSource","inputRunId","targetBasis"::text AS "targetBasis","methodId","methodVersion","modelId","forecastOriginAt",
-      "horizonLabel","horizonMonths","horizonSteps","targetCalendarDate","verificationObservedAt","maturityStatus"::text AS "maturityStatus",
-      "originValue","forecastValue","actualValue","errorValue","absoluteErrorValue","deltaValue","deltaPct","residualValue","maseScale",
-      "trainingHistoryStartAt","trainingHistoryEndAt","trainingObservationCount","sourceHistoryFingerprint","selectedVariant","selectionMetric",
-      "selectionScore","metadataJson","createdAt","updatedAt"
-      FROM profitia_forecast_read.rolling_daily_verification_records WHERE "seriesId"=$1 AND "inputSource"=$2 AND "targetBasis"::text=$3
-        AND "methodId"=$4 AND "methodVersion"=$5 AND "modelId"=$6 ORDER BY "horizonMonths","targetCalendarDate","forecastOriginAt"`,
-      input.seriesId,ROLLING_DAILY_INPUT_SOURCE,'POINT_IN_TIME',ROLLING_DAILY_METHOD_ID,ROLLING_DAILY_METHOD_VERSION,input.modelId)
+    const persistedRecords = projectedSource ? await projectedSource.readRecords(input)
       : await prisma.rollingDailyVerificationRecord.findMany({
       where: {
         seriesId: input.seriesId,
@@ -126,12 +184,7 @@ function createPreparedRollingDailyForecastVerificationReaderForScope(
       sourceHistoryFingerprint,
     )
 
-    const projectedStates=projection?await projection.$queryRawUnsafe<Array<{latestSourceHistoryFingerprint:string|null;latestSourceObservationAt:Date|null;lastProcessedOriginAt:Date|null;lastMaintenanceStatus:string|null}>>(
-      `SELECT "latestSourceHistoryFingerprint","latestSourceObservationAt","lastProcessedOriginAt","lastMaintenanceStatus"
-        FROM profitia_forecast_read.rolling_daily_maintenance_state WHERE "seriesId"=$1 AND "inputSource"=$2 AND "targetBasis"::text=$3
-          AND "methodId"=$4 AND "methodVersion"=$5 AND "modelId"=$6 LIMIT 2`,input.seriesId,ROLLING_DAILY_INPUT_SOURCE,'POINT_IN_TIME',ROLLING_DAILY_METHOD_ID,ROLLING_DAILY_METHOD_VERSION,input.modelId):null
-    if(projectedStates&&projectedStates.length>1)throw new Error('Stored Rolling identity is not unique')
-    const maintenanceState = projectedStates ? projectedStates[0]??null : await prisma.rollingDailyMaintenanceState.findUnique({
+    const maintenanceState = projectedSource ? await projectedSource.readMaintenance(input) : await prisma.rollingDailyMaintenanceState.findUnique({
       where: {
         seriesId_inputSource_targetBasis_methodId_methodVersion_modelId: {
           seriesId: input.seriesId,

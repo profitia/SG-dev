@@ -6,7 +6,7 @@ import { resolveForecastCapabilities } from './capability-resolver'
 import { buildLiveForecastBridgePayloadFromHistory } from './live-market-input'
 import { buildForecastHistoryFingerprint, createForecastLibraryService, readVerificationRunFromPrisma, readLatestVerificationRunFromPrisma } from './service'
 import { resolvePreparedForecastVerification } from './route-handlers'
-import { createPreparedRollingDailyForecastVerificationReader, createPreparedRollingDailyFastForecastVerificationReader, createPreparedRollingDailyRecentForecastVerificationReader } from './rolling-daily-verification'
+import { createPreparedRollingDailyForecastVerificationReader, createPreparedRollingDailyFastForecastVerificationReader, createPreparedRollingDailyRecentForecastVerificationReader, type StoredRollingDailyVerificationSource } from './rolling-daily-verification'
 import { createStoredForecastSourceReader, type StoredForecastBinding } from './stored-current-read'
 import { ForecastVerificationSelection, forecastVerificationUnavailable, validatePublicForecastVerification,
   type ForecastVerificationSelectionValue, type PublicForecastVerificationResult } from '@/lib/platform/forecast-verification'
@@ -15,6 +15,7 @@ import { ForecastVerificationSelection, forecastVerificationUnavailable, validat
  * canonical Verification history. This is not an estimator or a job producer. */
 async function readPrepared(
   transaction: Prisma.TransactionClient, history: BenchmarkHistoricalSeriesResult, selection: ForecastVerificationSelectionValue,
+  storedSource?: StoredRollingDailyVerificationSource,
 ) {
   const sourceFrequency=normalizeForecastSourceFrequency(history.frequency)
   const targetSemantics=selection.targetBasis==='POINT_IN_TIME'?'ROLLING_DAILY_POINT_IN_TIME':selection.targetBasis
@@ -31,7 +32,7 @@ async function readPrepared(
     if(seriesId!==selection.seriesId||range!=='ALL')throw new Error('Stored history scope mismatch')
     return {history,marketDataSource:'postgres',cacheStatus:'hit'}
   }
-  const rollingDependencies={prisma:transaction,resolveHistory,projection:'STORED_SHARED' as const}
+  const rollingDependencies={prisma:transaction,resolveHistory,projection:'STORED_SHARED' as const,storedSource}
   const rollingFull=createPreparedRollingDailyForecastVerificationReader(rollingDependencies)
   const rollingFast=createPreparedRollingDailyFastForecastVerificationReader(rollingDependencies)
   const rollingRecent=createPreparedRollingDailyRecentForecastVerificationReader(rollingDependencies)
@@ -71,12 +72,12 @@ async function readPrepared(
 /** Compose only inside a verified source transaction. This is the same closed
  * read used by the standalone endpoint; it never starts a nested transaction. */
 export async function readStoredVerificationFromSource(transaction: Prisma.TransactionClient,
-  history: BenchmarkHistoricalSeriesResult | null, value: ForecastVerificationSelectionValue) {
+  history: BenchmarkHistoricalSeriesResult | null, value: ForecastVerificationSelectionValue, storedSource?: StoredRollingDailyVerificationSource) {
   const parsed=ForecastVerificationSelection.safeParse(value)
   if(!parsed.success)throw new BenchmarkAppError('VALIDATION_ERROR','Invalid stored verification selection.',400)
   const selection=parsed.data
   if(!history)return forecastVerificationUnavailable(selection)
-  const result=await readPrepared(transaction,history,selection)
+  const result=await readPrepared(transaction,history,selection,storedSource)
   if(result.status!=='AVAILABLE')return forecastVerificationUnavailable(selection)
   validatePublicForecastVerification(result,selection)
   return result

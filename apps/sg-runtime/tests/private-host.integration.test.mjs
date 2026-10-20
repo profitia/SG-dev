@@ -1172,6 +1172,17 @@ test('SG2 Prisma host composes the accepted access store with existing selection
           const {createSg2PrivateForecastReadinessHost}=await import('../lib/platform/private-host.ts')
           const {createOperationForecastReadinessHandler}=await import('../lib/forecast/readiness-operation-handlers.ts')
           const sourceRead=createStoredForecastReadinessReader(source,{projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:sourceRole,schemaDigest:sourceDigest,marketSchemaDigest:marketDigest})
+          await t.test('the real ordinary transaction shares one lazy stored query across scientific consumers',async()=>{
+            const {createStoredRollingDailyVerificationSource}=await import('../lib/forecast/rolling-daily-verification.ts')
+            await source.$transaction(async transaction=>{
+              const port=createStoredRollingDailyVerificationSource(transaction),input={seriesId,modelId:'naive'}
+              const [full,fast,recent]=await Promise.all([port.readRecords(input),port.readRecords(input),port.readRecords(input)])
+              assert.strictEqual(full,fast);assert.strictEqual(fast,recent);assert.equal(full.length,24)
+              assert(full.every(row=>row.seriesId===seriesId&&row.modelId==='naive'))
+              const another=await createStoredRollingDailyVerificationSource(transaction).readRecords(input)
+              assert.notStrictEqual(full,another);assert.deepEqual(full,another)
+            })
+          })
           const host=createSg2PrivateForecastReadinessHost(forecastConfig)
           let reads=0
           const read=async selected=>{reads++;return sourceRead(selected)}

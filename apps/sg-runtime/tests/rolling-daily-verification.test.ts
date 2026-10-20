@@ -5,7 +5,68 @@ import { buildRollingDailyHistoryFingerprint } from '../lib/forecast/rolling-dai
 import {
   createPreparedRollingDailyForecastVerificationReader,
   createPreparedRollingDailyRecentForecastVerificationReader,
+  createStoredRollingDailyVerificationSource,
 } from '../lib/forecast/rolling-daily-verification'
+import type { Prisma } from '../generated/market-data-client'
+
+test('one source transaction executes a lazy native query once across concurrent scientific scopes', async () => {
+  const executed: Array<{ sql: string; values: unknown[] }> = []
+  const transaction = {
+    $executeRawUnsafe: async () => { throw Error('No source writes permitted') },
+    $queryRawUnsafe(sql: string, ...values: unknown[]) {
+      // Prisma queries are lazy thenables. Caching that thenable itself would
+      // silently execute the same query again for each consumer.
+      return { then(resolve: (value: unknown[]) => unknown, reject: (failure: unknown) => unknown) {
+        executed.push({ sql, values })
+        return Promise.resolve(sql.includes('rolling_daily_maintenance_state') ? [] : [{ id: 'stored-row' }]).then(resolve, reject)
+      } }
+    },
+  } as unknown as Prisma.TransactionClient
+  const source = createStoredRollingDailyVerificationSource(transaction)
+  const input = { seriesId: 'wocaes0074', modelId: 'naive' as const }
+  const results = await Promise.all([source.readRecords(input), source.readRecords(input), source.readRecords(input),
+    source.readMaintenance(input), source.readMaintenance(input), source.readMaintenance(input)])
+  assert.equal(executed.length, 2)
+  assert.strictEqual(results[0], results[1]); assert.strictEqual(results[1], results[2])
+  assert.deepEqual(results.slice(3), [null, null, null])
+  assert(executed.every(({ sql, values }) => /^SELECT\s/.test(sql) && sql.includes('profitia_forecast_read.')
+    && !sql.includes(input.seriesId) && values[0] === input.seriesId && values[5] === input.modelId))
+  await source.readRecords({ ...input, modelId: 'ets' })
+  await source.readRecords({ ...input, seriesId: 'other_series' })
+  assert.equal(executed.length, 4)
+  await createStoredRollingDailyVerificationSource(transaction).readRecords(input)
+  assert.equal(executed.length, 5, 'a separate operation never reuses the first source cache')
+  assert.throws(() => source.readRecords({ ...input, seriesId: 'bad?selection' }))
+  assert.throws(() => source.readRecords({ ...input, modelId: 'unknown' as 'naive' }))
+  assert.equal(executed.length, 5)
+})
+
+test('a failed stored query remains failed for every scope and is retried only by a fresh source', async () => {
+  let executed = 0
+  const failure = new Error('Synthetic stored source failure')
+  const transaction = { $executeRawUnsafe: async () => 0,
+    $queryRawUnsafe: () => ({ then(resolve: (value: unknown[]) => unknown, reject: (failure: unknown) => unknown) {
+      executed++; return Promise.reject(failure).then(resolve, reject)
+    } }),
+  } as unknown as Prisma.TransactionClient
+  const input = { seriesId: 'wocaes0074', modelId: 'naive' as const }
+  const source = createStoredRollingDailyVerificationSource(transaction)
+  for (const result of await Promise.allSettled([source.readRecords(input), source.readRecords(input), source.readRecords(input)])) {
+    assert.equal(result.status, 'rejected'); if (result.status === 'rejected') assert.strictEqual(result.reason, failure)
+  }
+  assert.equal(executed, 1)
+  await assert.rejects(createStoredRollingDailyVerificationSource(transaction).readRecords(input), error => error === failure)
+  assert.equal(executed, 2)
+})
+
+test('a source from another transaction cannot be attached to a native scientific reader', async () => {
+  const makeTransaction = () => ({ $executeRawUnsafe: async () => 0, $queryRawUnsafe: async () => [] }) as unknown as Prisma.TransactionClient
+  const first = makeTransaction(), second = makeTransaction()
+  const read = createPreparedRollingDailyForecastVerificationReader({ prisma: second, projection: 'STORED_SHARED',
+    storedSource: createStoredRollingDailyVerificationSource(first), resolveHistory: async () => { throw Error('Must not read history') } })
+  await assert.rejects(read({ seriesId: 'wocaes0074', modelId: 'naive', targetBasis: 'POINT_IN_TIME' }), /source transaction mismatch/)
+  assert.throws(() => createStoredRollingDailyVerificationSource({ ...first, $transaction() {} } as unknown as Prisma.TransactionClient), /live Rolling projection/)
+})
 
 function createHistory() {
   return {
