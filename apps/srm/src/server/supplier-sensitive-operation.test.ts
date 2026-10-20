@@ -3,7 +3,8 @@ import {test} from 'node:test'
 import type {OperationContext} from '@profitia/platform-contracts/operation-context'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import type {SectionEnvelope,VerclyKysData,JdgRegistryData} from '@profitia/srm-xray'
-import {projectSensitiveSupplierOutput,readPrivateSupplierSelection,privateSupplierReportId,privateSupplierExportId,sensitiveActorSecret} from './supplier-sensitive-operation'
+import {projectSensitiveSupplierOutput,readPrivateSupplier,readPrivateSupplierSelection,privateSupplierReportId,privateSupplierExportId,sensitiveActorSecret} from './supplier-sensitive-operation'
+import type {PoolClient} from 'pg'
 import {verifyPeselToken} from './pesel-reveal'
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 const U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',V='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',S='cccccccc-cccc-4ccc-8ccc-cccccccccccc'
@@ -29,6 +30,18 @@ test('private selection is canonical, immutable, finite and tied to supplier/ent
 test('reference key is stable for an internal actor and cannot transfer to another organization or user',()=>{
  const a=sensitiveActorSecret(secret,A,U);assert.equal(a,sensitiveActorSecret(secret,A,U));assert.notEqual(a,sensitiveActorSecret(secret,A,V));assert.notEqual(a,sensitiveActorSecret(secret,B,U))
  assert.throws(()=>sensitiveActorSecret('short',A,U),isOperationDenied)
+})
+test('classified empty snapshots remain readable and never acquire an export reference',async()=>{
+ for(const status of ['EMPTY','ERROR'] as const){
+  const c=context(),e={...envelope(),status,data:null}
+  const client={query:async()=>({rows:[{section:'kys',envelope:e,projectionVersion:2,projectionHash:'a'.repeat(32),dataClass:'KYS_PERSONAL',
+   retrievedAt:e.retrievedAt,retentionUntil:c.resource.privateSupplier!.retentionUntil}]})} as unknown as PoolClient
+  const value=await readPrivateSupplier(c,client,secret)
+  assert.equal(value.exportRef,null);assert.equal(value.envelope.data,null)
+  const body=await(await projectSensitiveSupplierOutput(value,c,secret)).json()
+  assert.equal(body.section.status,status);assert.equal(body.section.data,null);assert.equal(body.privateReport.exportRef,null)
+  await denied({...value,exportRef:'a'.repeat(64)},c)
+ }
 })
 test('KYS read masks plaintext identifiers and mints short-lived actor and organization scoped references',async()=>{
  const c=context(),value=read(),original=JSON.stringify(value),r=await projectSensitiveSupplierOutput(value,c,secret)
@@ -65,4 +78,14 @@ test('private PDF is released only with exact supplier filename, private headers
  const c=context('supplier.private.export'),r=pdf();assert.equal(await projectSensitiveSupplierOutput({kind:'EXPORT',snapshotId:S,response:r},c,secret),r)
  for(const response of[pdf({'Cache-Control':'public'}),pdf({Vary:'Cookie'}),pdf({'Content-Type':'text/html'}),pdf({'X-Download-Filename':'KYS_5272443955_2026-10-19.pdf'}),pdf({'Content-Disposition':'inline'}),pdf({},200,'<html>PRIVATE</html>'),pdf({},409)])await denied({kind:'EXPORT',snapshotId:S,response},c)
  await denied({kind:'EXPORT',snapshotId:V,response:pdf()},c)
+})
+test('expected private export unavailability remains an audited typed result without exposing data or a forged PDF',async()=>{
+ const c=context('supplier.private.export')
+ for(const status of[404,409,410] as const){
+  const r=await projectSensitiveSupplierOutput({kind:'EXPORT_UNAVAILABLE',snapshotId:S,status},c,secret)
+  assert.equal(r.status,status);assert.equal(r.headers.get('cache-control'),'private, no-store');assert.equal(r.headers.get('content-type'),'application/json')
+  assert.deepEqual(Object.keys(await r.json()),['error'])
+ }
+ for(const value of[{kind:'EXPORT_UNAVAILABLE',snapshotId:V,status:409},{kind:'EXPORT_UNAVAILABLE',snapshotId:S,status:500},
+  {kind:'EXPORT_UNAVAILABLE',snapshotId:S,status:409,error:'PRIVATE_BODY'}])await denied(value,c)
 })

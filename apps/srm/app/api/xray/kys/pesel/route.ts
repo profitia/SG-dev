@@ -1,3 +1,4 @@
+import {createRuntimeSupplierOperationHandler} from '../../../../../src/server/supplier-acquisition-http';
 import { productEnvironmentReady, productOrganizationId } from "../../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
 import { hasDemoSession } from "../../../../../src/server/demo-auth";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const headers = { "Cache-Control": "no-store" };
 
-export async function POST(request: Request) {
+async function legacyPost(request: Request) {
   if (!productEnvironmentReady()) return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404, headers });
   if (!await hasDemoSession(request)) return NextResponse.json({ error: "Wymagane logowanie." }, { status: 401, headers });
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 403, headers });
@@ -29,3 +30,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nie udało się ujawnić numeru." }, { status: 503, headers });
   }
 }
+
+export const POST=createRuntimeSupplierOperationHandler('reveal',legacyPost);

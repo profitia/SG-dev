@@ -21,6 +21,17 @@ const initialState = (): ReportState => ({ result: null, busy: false, error: nul
 export function inactiveSupplier(result: SearchResult | null): boolean { return result?.entityType === "JDG" ? isDeregisteredJdg(result.section.data) : result?.entityType === "COMPANY" && isCompanyReportRestricted(result.card.general.data); }
 export function supplierNip(result: SearchResult | null): string | null { return result?.entityType === "JDG" ? result.nip : result?.card.identity.nip ?? null; }
 function message(error: unknown, fallback: string): string { return error instanceof Error ? error.message : fallback; }
+type PrivateKysReference={snapshotId:string;nip:string;entityType:'COMPANY'|'JDG';retentionUntil:string;exportRef:string|null;retrievedAt:string}
+function privateReference(value:unknown,nip:string,entityType:'COMPANY'|'JDG',section:DisplayCard['kys'],now:Date):PrivateKysReference|null{
+ if(value===null)return null
+ if(!value||Object.getPrototypeOf(value)!==Object.prototype||Object.keys(value).sort().join(',')!=='entityType,exportRef,nip,retentionUntil,snapshotId')throw Error('Nie udało się potwierdzić wersji prywatnego raportu.')
+ const v=value as Omit<PrivateKysReference,'retrievedAt'>
+ if(v.nip!==nip||v.entityType!==entityType||!section.retrievedAt||!Number.isFinite(Date.parse(section.retrievedAt))
+  ||Date.parse(section.retrievedAt)>now.getTime()||!Number.isFinite(Date.parse(v.retentionUntil))||Date.parse(v.retentionUntil)<=now.getTime()
+  ||typeof v.snapshotId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v.snapshotId)
+  ||v.exportRef!==null&&(typeof v.exportRef!=='string'||!/^[a-f0-9]{64}$/.test(v.exportRef)))throw Error('Nie udało się potwierdzić wersji prywatnego raportu.')
+ return {...v,retrievedAt:new Date(section.retrievedAt).toISOString()}
+}
 
 /** Host request lifecycle only. No financial calculations, cache or provider policy. */
 export class SupplierReportController {
@@ -30,17 +41,22 @@ export class SupplierReportController {
   private metadataSequence = 0;
   private requests = new Set<AbortController>();
   private metadataRequest?: AbortController;
+  private logicalKeys=new Map<string,string>();
+  private privateKysReference:PrivateKysReference|null|undefined;
   constructor(private readonly transport: typeof fetch = (input, init) => fetch(input, init),
-    private readonly now: () => Date = () => new Date()) {}
+    private readonly now: () => Date = () => new Date(),
+    private readonly newRequestKey:()=>string=()=>crypto.randomUUID()) {}
   getSnapshot = (): ReportState => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private update(change: Partial<ReportState>) { this.state = { ...this.state, ...change }; for (const listener of this.listeners) listener(); }
-  dispose = () => { this.generation += 1; this.metadataSequence += 1; for (const request of this.requests) request.abort(); this.requests.clear(); };
+  dispose = () => { this.generation += 1; this.metadataSequence += 1; for (const request of this.requests) request.abort(); this.requests.clear(); this.logicalKeys.clear(); this.privateKysReference=undefined; };
   reset = () => { this.dispose(); this.state = initialState(); for (const listener of this.listeners) listener(); };
   private async json(path: string, body: unknown, controller: AbortController): Promise<unknown> {
+    const logical=path+':'+JSON.stringify(body),key=this.logicalKeys.get(logical)??this.newRequestKey();
+    this.logicalKeys.set(logical,key);
     this.requests.add(controller);
     try {
-      const response = await this.transport(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store", signal: controller.signal });
+      const response = await this.transport(path, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key":key }, body: JSON.stringify(body), cache: "no-store", signal: controller.signal });
       const payload = await response.json();
       if (path.endsWith("/kys") && payload && typeof payload === "object") {
         const requestId = response.headers.get("X-SRM-Request-Id");
@@ -48,6 +64,7 @@ export class SupplierReportController {
         if (requestId && /^[0-9a-f-]{36}$/.test(requestId)) payload.timing = { requestId, mode: ["PROVIDER", "CACHE", "FOLLOWER"].includes(mode ?? "") ? mode : "UNAVAILABLE", serverTiming: response.headers.get("Server-Timing") };
       }
       if (!response.ok) throw new ReportRequestError(typeof payload?.error === "string" ? payload.error : "Nie udało się odczytać raportu.", payload?.timing);
+      if(this.logicalKeys.get(logical)===key)this.logicalKeys.delete(logical);
       return payload;
     } finally { this.requests.delete(controller); }
   }
@@ -72,6 +89,14 @@ export class SupplierReportController {
       const payload = await this.json("/api/xray/report-data", { nip, entityType: result.entityType }, request) as SupplierReportData;
       if (generation !== this.generation || sequence !== this.metadataSequence) return;
       if (payload?.schemaVersion !== "1.0" || payload.nip !== nip || payload.entityType !== result.entityType) throw new Error("Nie udało się potwierdzić metadanych tego dostawcy.");
+      if(this.privateKysReference!==undefined){
+        const ref=this.privateKysReference;
+        const valid=ref&&ref.nip===nip&&ref.entityType===result.entityType&&Date.parse(ref.retentionUntil)>this.now().getTime();
+        // Use the reference actually issued by the current private HUMAN read.
+        // Financial metadata cannot manufacture or replace private PDF authority.
+        payload.kys={...payload.kys,exportRef:valid?ref.exportRef:null,
+          freshness:valid?{...payload.kys.freshness,retrievedAt:ref.retrievedAt,retentionUntil:ref.retentionUntil}:payload.kys.freshness};
+      }
       this.update({ metadata: payload });
     } catch (error) { if (generation === this.generation && sequence === this.metadataSequence) this.update({ metadata: null, metadataError: message(error, "Metadane aktualności są niedostępne.") }); }
     finally { if (generation === this.generation && sequence === this.metadataSequence) this.update({ metadataBusy: false }); }
@@ -80,12 +105,17 @@ export class SupplierReportController {
     const result = this.state.result, nip = supplierNip(result);
     if (this.state.busy || this.state.kysBusy || !result || !nip || inactiveSupplier(result)) return;
     const generation = this.generation, startedAt = performance.now(), requestedAt = this.now().toISOString();
+    if(this.privateKysReference!==undefined)this.privateKysReference=null;
     this.update({ kysRequestedAt: undefined, kysTiming: undefined, kysBusy: true, kysError: null, kys: { ...emptySection(), status: "PENDING" } });
     try {
-      const payload = await this.json(result.entityType === "JDG" ? "/api/xray/jdg/kys" : "/api/xray/kys", { identifier: nip }, new AbortController()) as { section: DisplayCard["kys"]; timing?: Omit<KysRenderTiming, "startedAt" | "apiMs"> };
+      const payload = await this.json(result.entityType === "JDG" ? "/api/xray/jdg/kys" : "/api/xray/kys", { identifier: nip }, new AbortController()) as { section: DisplayCard["kys"]; privateReport?:unknown; timing?: Omit<KysRenderTiming, "startedAt" | "apiMs"> };
       if (generation !== this.generation) return;
       if (!payload?.section || !["SUCCESS", "PARTIAL", "EMPTY", "ERROR", "PENDING", "NOT_REQUESTED"].includes(payload.section.status)
         || (payload.section.data?.company?.nip && payload.section.data.company.nip !== nip)) throw new Error("Nie udało się potwierdzić raportu KYS tego dostawcy.");
+      if(Object.hasOwn(payload,'privateReport')){
+        this.privateKysReference=null;
+        this.privateKysReference=privateReference(payload.privateReport,nip,result.entityType,payload.section,this.now());
+      }else this.privateKysReference=undefined;
       this.update({ kys: payload.section, kysRequestedAt: payload.section.data && ["SUCCESS", "PARTIAL"].includes(payload.section.status) ? requestedAt : undefined, kysTiming: payload.timing ? { ...payload.timing, startedAt, apiMs: performance.now() - startedAt } : undefined });
     } catch (error) { if (generation === this.generation) this.update({ kysTiming: error instanceof ReportRequestError && error.timing ? { ...error.timing, startedAt, apiMs: performance.now() - startedAt } : undefined, kysError: message(error, "Nie udało się pobrać raportu KYS."), kys: { ...emptySection(), status: "ERROR", warnings: ["REPORT_WARNING"] } }); }
     finally { if (generation === this.generation) { this.update({ kysBusy: false }); await this.refreshMetadata(); } }

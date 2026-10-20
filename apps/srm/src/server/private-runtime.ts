@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto'
+import type {SrmSupplierApi} from './supplier-api-composition'
+import {readSrmNativeSupplierConfiguration,createSrmNativeSupplierRuntime} from './supplier-native-runtime'
 import pg, { type PoolClient, type PoolConfig } from 'pg'
 import type { Application, OperationExecutor } from '@profitia/platform-contracts/operation-context'
 import { OperationDenied } from '@profitia/platform-contracts/operation-context'
@@ -12,14 +14,15 @@ import { validateFinancialExcelSelection } from './financial-excel'
 import { restoreFinancialDocumentsFromArchive } from './financial-documents'
 import { projectPrivateFinancialExcel, describePrivateFinancialExcel } from './financial-excel-runtime'
 import { NO_STORED_FINANCIAL_SOURCE, projectSharedFinancialResponse } from './shared-financial-read'
-import { readSupplierRequest, supplierRequestResourceId, projectSupplierRequest, SUPPLIER_REQUEST_PROJECTION, PRIVATE_SUPPLIER_REQUEST_PROJECTION, privateSupplierRequestResourceId, readSupplierPrivateAcquisition, type SupplierPrivateAcquisition } from './supplier-request-operation'
+import {createSrmSupplierRequestOperationHost} from './supplier-request-host'
 
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<PoolClient>; defaultOrganisationId: string
   supplierRequest?: Readonly<{ executor: OperationExecutor<PoolClient> }>
+  supplierApi?: SrmSupplierApi
 }>
-type PrivateConfiguration = Readonly<{
+export type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
   binding: AccessStoreBinding; module: { id: 'supplier_report'; schemaDigest: string; auditSchemaDigest: string }
   supplierRequest?: Readonly<{ configurationVersion: string; baseSchemaDigest: string; externalSchemaDigest: string; commandBoundaryDigest: string }>
@@ -32,7 +35,10 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 export function readSrmPrivateReportConfiguration(env: EnvironmentInput = process.env): Readonly<{ provider: 'legacy_demo' }> | PrivateConfiguration {
   if (typeof window !== 'undefined') unavailable()
   const identity = readSrmIdentityRuntime(env)
-  if (identity.provider === 'legacy_demo') return Object.freeze({ provider: 'legacy_demo' })
+  if (identity.provider === 'legacy_demo') {
+    if(env.PROFITIA_SUPPLIER_API_ENABLED==='true') unavailable()
+    return Object.freeze({ provider: 'legacy_demo' })
+  }
   if (identity.application.environment !== 'development') unavailable()
   const target = targets.environments.development
   if (env.PROFITIA_OPERATION_CONFIGURATION_VERSION !== targets.configurationVersion
@@ -87,39 +93,8 @@ export function srmPrivatePoolConfiguration(config: PrivateConfiguration, max: 1
 }
 
 type DriverOptions = Parameters<typeof createSrmPrivateOperationHost>[0]
-export function createSrmSupplierRequestOperationHost(options: Omit<DriverOptions, 'readResources' | 'projectOutput' | 'prepareInputs' | 'describeOutcome' | 'requestLedger'> & {
-  requestLedger: { schemaDigest: string; externalSchemaDigest: string; operationSchemaDigest?:string }; commandBoundaryDigest: string
-  privateAcquisition?:SupplierPrivateAcquisition
-}) {
-  const acquisition=options.privateAcquisition===undefined?undefined:readSupplierPrivateAcquisition(options.privateAcquisition)
-  const operation=acquisition?'supplier.private.refresh':'supplier.report.refresh'
-  if (options.application.operations.length !== 1 || options.application.operations[0] !== operation
-    || (acquisition?!/^[a-f0-9]{64}$/.test(options.requestLedger.operationSchemaDigest??''):options.requestLedger.operationSchemaDigest!==undefined)
-    || !/^[a-f0-9]{64}$/.test(options.commandBoundaryDigest)) throw new TypeError('Explicit supplier request and command boundary required')
-  const digest = options.commandBoundaryDigest
-  const operationSchemaDigest=options.requestLedger.operationSchemaDigest
-  const resourceId=(command:ReturnType<typeof readSupplierRequest>)=>acquisition?privateSupplierRequestResourceId(command,{entityType:acquisition.entityType,section:acquisition.section}):supplierRequestResourceId(command)
-  return createSrmPrivateOperationHost({ ...options,
-    readResources: async ({ actor, request, scope, query }) => {
-      const command = readSupplierRequest(request.payload)
-      if (actor.kind !== 'HUMAN' || !scope.organisationId || !scope.userId
-        || request.operation!==operation||request.resourceId !== resourceId(command)) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
-      const receipt = await query("SELECT source_ref FROM profitia_supplier_requests.installation WHERE singleton AND schema_version='1.0.0' AND boundary_digest=$1", [digest])
-      if (receipt.rows.length !== 1 || typeof receipt.rows[0].source_ref !== 'string'
-        || !receipt.rows[0].source_ref.length || receipt.rows[0].source_ref.length > 256) throw new OperationDenied('POLICY_UNAVAILABLE')
-      if(acquisition){
-        const descriptor=(await query('SELECT srm.private_acquisition_descriptor() AS descriptor')).rows[0]?.descriptor as Record<string,unknown>|null|undefined
-        if(!descriptor||descriptor.privateAcquisitionSchemaVersion!=='1.0.0'||descriptor.privateAcquisitionBoundaryDigest!==acquisition.boundaryDigest
-          ||descriptor.operationSchemaDigest!==operationSchemaDigest
-          ||descriptor.commandBoundaryDigest!==digest)throw new OperationDenied('POLICY_UNAVAILABLE')
-      }
-      return { resource: { id: request.resourceId, type: acquisition?'supplier_private_request':'supplier_report_request', dataClass: 'OPERATION_AUDIT',
-        environment: scope.environment, ownerOrganisationId: scope.organisationId, ownerUserId: scope.userId,
-        version: 'srm-private-command-v1', projectionVersion: acquisition?PRIVATE_SUPPLIER_REQUEST_PROJECTION:SUPPLIER_REQUEST_PROJECTION } }
-    },
-    projectOutput: projectSupplierRequest,
-  })
-}
+export {createSrmSupplierRequestOperationHost} from './supplier-request-host'
+
 /** Same report DTO and database business path in both fixture and real entry.
  * Its private resource is the org-scoped projection; its shared input is the
  * approved stored corporate financial view, including an explicit absent state.
@@ -181,7 +156,8 @@ declare global {
 export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmReportRuntime {
   const config = readSrmPrivateReportConfiguration(env)
   if (config.provider === 'legacy_demo') return config
-  const key = createHash('sha256').update(JSON.stringify([config, env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
+  const native=readSrmNativeSupplierConfiguration(config,env)
+  const key = createHash('sha256').update(JSON.stringify([config,native,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
   const cached = globalThis.__srmPrivateReportRuntime__
   if (cached) { if (cached.key !== key) unavailable(); return cached.runtime }
   const clerk = createSrmClerkClient(env)
@@ -197,7 +173,20 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     requestLedger: { schemaDigest: config.supplierRequest.baseSchemaDigest, externalSchemaDigest: config.supplierRequest.externalSchemaDigest },
     commandBoundaryDigest: config.supplierRequest.commandBoundaryDigest,
   }) }) : undefined
+  let supplierApi:SrmSupplierApi|undefined
+  if(native){
+    const pair=(databaseUrl:string)=>{
+      const selected={...config,databaseUrl}
+      const pool=new pg.Pool(srmPrivatePoolConfiguration(selected,3)),audit=new pg.Pool(srmPrivatePoolConfiguration(selected,1))
+      for(const p of [pool,audit])p.on('error',()=>console.error('Supplier native database connection unavailable'))
+      return {pool,audit}
+    }
+    const jobs=pair(native.jobsUrl),source=pair(native.providerSourceUrl),corporate=pair(native.corporateSourceUrl)
+    supplierApi=createSrmNativeSupplierRuntime(native,{pool,auditPool,clerk,jobsPool:jobs.pool,jobsAudit:jobs.audit,
+      sourcePool:source.pool,sourceAudit:source.audit,corporatePool:corporate.pool,corporateAudit:corporate.audit})
+  }
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
+    ...(supplierApi?{supplierApi}:{}),
     ...(supplierRequest ? { supplierRequest } : {}) })
   globalThis.__srmPrivateReportRuntime__ = { key, runtime }
   return runtime

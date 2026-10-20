@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationVersion": "srm-native-supplier-e1-v1",
+  "activationState": "NOT_ACTIVATED",
+  "purpose": "Reviewed source configuration only; roles, optional installations and active service bindings require separate live verification before Development release.",
+  "environment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "runtimeRoles": {
+    "jobs": "srm_private_development_jobs",
+    "providerSource": "srm_provider_development_source",
+    "corporateSource": "srm_corporate_development_source"
+  },
+  "coreSchemaDigests": {
+    "001-internal-access.sql": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+    "002-module-scope.sql": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
+    "003-module-audit.sql": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
+    "005-service-read.sql": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
+    "006-request-reservation.sql": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
+    "007-delegated-jobs.sql": "6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb",
+    "008-platform-ingestion.sql": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+    "009-external-call-admission.sql": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+    "010-external-request-admission.sql": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+    "012-native-external-transport.sql": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
+    "013-supplier-delegation.sql": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
+    "016-delegated-native-work.sql": "19fb1d9045bccdb3299317b4c5b7df41e361e971c83ab683a55b56d6fbc8e5fe",
+    "017-additional-request-operations.sql": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94"
+  },
+  "businessBoundaryDigests": {
+    "001-supplier-requests.sql": "c50daebea28aee2de2bc4fd2789c3158e67dd767e66c0f69320cf2cd13396eab",
+    "003-named-supplier-interest.sql": "2f7d5a37f7ee23f9aa02974e1f110c3c1aa3a3e2212d37373ee99c766881a4c6",
+    "008-supplier-native-work.sql": "faf4322f620c609dc0c30965f289f4ebece0f0652dc19a73a96a5cbd63ad86f8",
+    "009-supplier-source-request.sql": "2ab955fa5890132f3363e5d340971ce1c1a7d490f1bd89f04cd58b7ddfa9b077",
+    "010-supplier-sensitive-work.sql": "b42f494e69d7380b80af59d7a17018ca7abdd62fd83b2ca57884d263de4140e1",
+    "011-supplier-private-acquisition.sql": "1b1eceb75501c536386ab1f2bec2ad39d965d3fdf25ca62eefa616138c6a867c"
+  },
+  "corporatePublicationSchemaDigest": "1e1d5b3c170eb4e97a6114d2f628c192ad6385480f563a2e9b27c2a97effcb1b"
+}

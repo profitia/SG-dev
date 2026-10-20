@@ -12,6 +12,7 @@ import {kysCacheTtlMs} from './kys-cache'
 import {kysExportRef,authorizeStoredKys,readStoredKysPdf,KysPdfError} from './kys-pdf-access'
 import {validateKysPdfSelection,renderKysPdf} from './kys-pdf'
 import {readSupplierRegistrationStatus} from './company-activity'
+import {verclyKrsReference} from './vercly-krs'
 
 export const SENSITIVE_SUPPLIER_PROJECTION='srm-sensitive-supplier-v1'
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
@@ -57,10 +58,11 @@ function reportResource(m:Metadata,environment:'development'|'staging'|'producti
   privateSupplier:{nip:m.nip,entityType:m.entityType,snapshotId:m.snapshotId,retentionUntil:m.retentionUntil}}
 }
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
-export function createSrmSensitiveOperationHost(options:Omit<DriverOptions,'readResources'|'projectOutput'|'prepareInputs'|'describeOutcome'>&{sensitiveBoundaryDigest:string;secret:string}){
+export function createSrmSensitiveOperationHost(options:Omit<DriverOptions,'readResources'|'projectOutput'|'prepareInputs'|'describeOutcome'>&{sensitiveBoundaryDigest:string;secret:string;exportMode?:'KYS_PDF'|'KRS_PREPARE'|'KRS_PDF'}){
  if(!/^[a-f0-9]{64}$/.test(options.sensitiveBoundaryDigest)||typeof options.secret!=='string'||options.secret.length<32
   ||options.application.operations.length!==3||!(['supplier.private.read','supplier.private.reveal','supplier.private.export'] as OperationId[]).every(v=>options.application.operations.includes(v)))throw TypeError('Explicit three-operation sensitive host required')
- const digest=options.sensitiveBoundaryDigest,secret=options.secret
+ if(options.exportMode!==undefined&&!['KYS_PDF','KRS_PREPARE','KRS_PDF'].includes(options.exportMode))throw TypeError('Explicit private export mode required')
+ const digest=options.sensitiveBoundaryDigest,secret=options.secret,mode=options.exportMode??'KYS_PDF'
  return createSrmPrivateOperationHost({...options,
   readResources:async({actor,request,scope,query})=>{
    if(actor.kind!=='HUMAN'||!scope.organisationId||scope.userId!==actor.actorId)return refuse()
@@ -85,7 +87,9 @@ export function createSrmSensitiveOperationHost(options:Omit<DriverOptions,'read
    const m=effectiveMetadata(row,scope.organisationId),report=reportResource(m,scope.environment)
    if(request.operation==='supplier.private.read')return {resource:report}
    return {resource:{...report,id:request.resourceId,type:request.operation==='supplier.private.reveal'?'supplier_private_identifier':'supplier_private_export'},inputs:[report]}
-  },projectOutput:(value,context)=>projectSensitiveSupplierOutput(value,context,secret),
+  },projectOutput:(value,context)=>mode==='KRS_PREPARE'?projectPrivateKrsAuthorization(value,context):projectSensitiveSupplierOutput(value,context,secret,mode==='KRS_PDF'?'KRS':'KYS'),
+  describeOutcome:value=>value instanceof Response&&value.status===409?'SELECTION_UNAVAILABLE'
+   :value instanceof Response&&[404,410].includes(value.status)?'NO_DATA':'SUCCEEDED',
  })
 }
 function bound(context:Readonly<OperationContext>){
@@ -107,8 +111,25 @@ function redactJdg(data:JdgRegistryData):JdgRegistryData{
 }
 type ReadValue={kind:'READ';snapshotId:string;nip:string;entityType:Entity;section:'jdg'|'kys';envelope:SectionEnvelope<JdgRegistryData|VerclyKysData>;exportRef:string|null}
 type RevealValue={kind:'REVEAL';snapshotId:string;pesel:string|null}
-type ExportValue={kind:'EXPORT';snapshotId:string;response:Response}
-export async function projectSensitiveSupplierOutput(value:unknown,context:Readonly<OperationContext>,secret:string):Promise<Response>{
+type ExportUnavailable=Readonly<{kind:'EXPORT_UNAVAILABLE';snapshotId:string;status:404|409|410}>
+type ExportValue={kind:'EXPORT';snapshotId:string;response:Response}|ExportUnavailable
+function exportUnavailable(error:unknown,snapshotId:string):ExportUnavailable{
+ if(!(error instanceof KysPdfError)||![404,409,410].includes(error.status))throw error
+ return Object.freeze({kind:'EXPORT_UNAVAILABLE',snapshotId,status:error.status as 404|409|410})
+}
+function privateExportError(value:unknown,context:Readonly<OperationContext>):Response|null{
+ if(!value||typeof value!=='object'||!('kind'in value)||value.kind!=='EXPORT_UNAVAILABLE')return null
+ const d=bound(context)
+ if(context.operation!=='supplier.private.export'||!closed(value,['kind','snapshotId','status']))return refuse()
+ const v=value as Record<string,unknown>
+ if(v.snapshotId!==d.snapshotId||typeof v.status!=='number'||![404,409,410].includes(v.status))return refuse()
+ const status=v.status as 404|409|410
+ const error=status===409?'Wersja raportu zmieniła się lub nie została potwierdzona. Wyświetl właściwy raport przed eksportem.'
+  :status===410?'Raport KYS stracił ważność. Nowe pobranie wymaga osobnego działania.':'Brak zapisanego raportu dostępnego do eksportu.'
+ return Response.json({error},{status,headers:privateHeaders})
+}
+export async function projectSensitiveSupplierOutput(value:unknown,context:Readonly<OperationContext>,secret:string,pdfKind:'KYS'|'KRS'='KYS'):Promise<Response>{
+ if(!['KYS','KRS'].includes(pdfKind))return refuse()
  const d=bound(context)
  if(!value||typeof value!=='object'||Array.isArray(value))return refuse()
  const v=value as ReadValue|RevealValue|ExportValue
@@ -118,11 +139,12 @@ export async function projectSensitiveSupplierOutput(value:unknown,context:Reado
   return v.pesel===null?Response.json({error:'Numer nie jest dostępny.'},{status:404,headers:privateHeaders}):Response.json({pesel:v.pesel},{headers:privateHeaders})
  }
  if(context.operation==='supplier.private.export'){
+  const unavailable=privateExportError(value,context);if(unavailable)return unavailable
   if(!closed(v,['kind','snapshotId','response'])||v.kind!=='EXPORT'||!(v.response instanceof Response)
    ||v.response.headers.get('Cache-Control')!==privateHeaders['Cache-Control']||v.response.headers.get('Vary')!==privateHeaders.Vary)return refuse()
   if(v.response.status!==200||v.response.headers.get('content-type')!=='application/pdf')return refuse()
   const filename=v.response.headers.get('X-Download-Filename')
-  if(!filename||!/^KYS_[0-9]{10}_[0-9]{4}-[0-9]{2}-[0-9]{2}\.pdf$/.test(filename)||!filename.startsWith(`KYS_${d.nip}_`)
+  if(!filename||!new RegExp('^'+pdfKind+'_[0-9]{10}_[0-9]{4}-[0-9]{2}-[0-9]{2}\\.pdf$').test(filename)||!filename.startsWith(`${pdfKind}_${d.nip}_`)
    ||v.response.headers.get('Content-Disposition')!==`attachment; filename="${filename}"`)return refuse()
   const bytes=new Uint8Array(await v.response.clone().arrayBuffer())
   if(bytes.length<5||bytes.length>24*1024*1024||String.fromCharCode(...bytes.slice(0,5))!=='%PDF-')return refuse()
@@ -130,6 +152,8 @@ export async function projectSensitiveSupplierOutput(value:unknown,context:Reado
  }
  if(context.operation!=='supplier.private.read'||!closed(v,['kind','snapshotId','nip','entityType','section','envelope','exportRef'])
   ||v.kind!=='READ'||v.nip!==d.nip||v.entityType!==d.entityType||!['kys','jdg'].includes(v.section)
+  ||v.exportRef!==null&&(typeof v.exportRef!=='string'||!/^[a-f0-9]{64}$/.test(v.exportRef))
+  ||(v.section!=='kys'||v.envelope.data===null||!['SUCCESS','PARTIAL'].includes(v.envelope.status))&&v.exportRef!==null
   ||v.envelope.source.provider!==(v.section==='kys'?'VERCLY':'CEIDG')||Date.parse(v.envelope.retrievedAt??'')>Date.now())return refuse()
  let projected
  if(v.section==='kys'){
@@ -153,9 +177,11 @@ export async function readPrivateSupplier(context:Readonly<OperationContext>,cli
    md5(p.data_json::text||COALESCE((p.private_envelope->'warnings')::text,'[]')) AS "projectionHash"
    FROM srm.source_snapshots v JOIN srm.section_projections p ON p.organization_id=v.organization_id AND p.snapshot_id=v.id AND p.supplier_id=v.supplier_id AND p.section=v.section
    WHERE v.organization_id=$1::uuid AND v.id=$2::uuid ORDER BY p.projection_version DESC LIMIT 1`,[context.organisationId,d.snapshotId])).rows[0]
- if(!row?.envelope||row.envelope.data===null||!['kys','jdg'].includes(row.section))return refuse()
+ // A classified EMPTY/ERROR envelope is still this organisation's audited
+ // snapshot. Absence of data must not become an access refusal or a fake PDF.
+ if(!row?.envelope||!['kys','jdg'].includes(row.section))return refuse()
  const key=sensitiveActorSecret(secret,context.organisationId!,context.actorId)
- const exportRef=row.section==='kys'?kysExportRef(context.organisationId!,d,{snapshotId:d.snapshotId,projectionVersion:row.projectionVersion,
+ const exportRef=row.section==='kys'&&row.envelope.data!==null&&['SUCCESS','PARTIAL'].includes(row.envelope.status)?kysExportRef(context.organisationId!,d,{snapshotId:d.snapshotId,projectionVersion:row.projectionVersion,
   projectionHash:row.projectionHash,dataClass:row.dataClass,retrievedAt:row.retrievedAt,retentionUntil:row.retentionUntil},key):null
  return {kind:'READ',snapshotId:d.snapshotId,nip:d.nip,entityType:d.entityType,section:row.section,envelope:row.envelope,exportRef}
 }
@@ -167,7 +193,7 @@ export async function revealPrivateSupplier(context:Readonly<OperationContext>,c
  const pesel=await readKysPersonPesel(context.organisationId!,reference.snapshotId,reference.list,reference.index,bindOrganizationTransaction(context.organisationId!,client))
  return {kind:'REVEAL',snapshotId:d.snapshotId,pesel}
 }
-export async function exportPrivateKys(context:Readonly<OperationContext>,client:PoolClient,secret:string,render=renderKysPdf):Promise<ExportValue>{
+function privateKysRead(context:Readonly<OperationContext>,client:PoolClient,secret:string){
  const d=bound(context);if(context.operation!=='supplier.private.export')return refuse()
  const selected=validateKysPdfSelection(context.payload),pool=bindOrganizationTransaction(context.organisationId!,client)
  const readStatus:typeof readSupplierRegistrationStatus=async(org,nip,entity,boundPool)=>{
@@ -178,6 +204,11 @@ export async function exportPrivateKys(context:Readonly<OperationContext>,client
  }
  const env={...process.env,SRM_DEMO_SESSION_SECRET:sensitiveActorSecret(secret,context.organisationId!,context.actorId)}
  const read=()=>readStoredKysPdf(context.organisationId!,selected,pool,{snapshotId:d.snapshotId,readRegistrationStatus:readStatus})
+ return {d,selected,env,read}
+}
+export async function exportPrivateKys(context:Readonly<OperationContext>,client:PoolClient,secret:string,render=renderKysPdf):Promise<ExportValue>{
+ const {selected,env,read,d}=privateKysRead(context,client,secret)
+ try{
  const now=new Date(),authorized=authorizeStoredKys(await read(),context.organisationId!,selected,now,env)
  const document=kysPdfDocument(authorized.row.data,{...selected,retrievedAt:new Date(authorized.row.retrievedAt!).toISOString(),generatedAt:now.toISOString(),
   expiresAt:authorized.expiresAt,partial:authorized.row.data.isComplete!==true||!authorized.row.completionConfirmed,warnings:authorized.row.warnings})
@@ -186,4 +217,45 @@ export async function exportPrivateKys(context:Readonly<OperationContext>,client
  const filename=`KYS_${d.nip}_${now.toISOString().slice(0,10)}.pdf`
  return {kind:'EXPORT',snapshotId:d.snapshotId,response:new Response(new Uint8Array(bytes),{headers:{...privateHeaders,'Content-Type':'application/pdf',
   'Content-Disposition':`attachment; filename="${filename}"`,'X-Download-Filename':filename}})}
+ }catch(error){return exportUnavailable(error,d.snapshotId)}
+}
+
+export type PrivateKrsAuthorization=Readonly<{kind:'KRS_AUTHORIZATION';snapshotId:string;nip:string;organisationId:string;userId:string;
+ reference:string;decisionId:string;payloadDigest:string}>
+function projectPrivateKrsAuthorization(value:unknown,context:Readonly<OperationContext>):PrivateKrsAuthorization|Response{
+ const d=bound(context)
+ const unavailable=privateExportError(value,context);if(unavailable)return unavailable
+ if(context.operation!=='supplier.private.export'||d.entityType!=='COMPANY'
+  ||!closed(value,['kind','snapshotId','nip','organisationId','userId','reference','decisionId','payloadDigest']))return refuse()
+ const v=value as unknown as PrivateKrsAuthorization
+ if(v.kind!=='KRS_AUTHORIZATION'||v.snapshotId!==d.snapshotId||v.nip!==d.nip||v.organisationId!==context.organisationId
+  ||v.userId!==context.actorId||v.decisionId!==context.decisionId||v.payloadDigest!==context.payloadDigest
+  ||!uuid.test(v.decisionId)||!/^[A-Za-z0-9_-]{8,100}-[0-9]{9}$/.test(v.reference))return refuse()
+ return Object.freeze({...v})
+}
+/** Internal selection only, never a bearer capability or an HTTP response.
+ * Actual export authority is read again after the network operation. */
+export async function preparePrivateKrs(context:Readonly<OperationContext>,client:PoolClient,secret:string):Promise<PrivateKrsAuthorization|ExportUnavailable>{
+ const {d,selected,env,read}=privateKysRead(context,client,secret)
+ if(d.entityType!=='COMPANY'||selected.entityType!=='COMPANY')return refuse()
+ try{
+  const authorized=authorizeStoredKys(await read(),context.organisationId!,selected,new Date(),env)
+  return Object.freeze({kind:'KRS_AUTHORIZATION',snapshotId:d.snapshotId,nip:d.nip,organisationId:context.organisationId!,
+   userId:context.actorId,reference:verclyKrsReference(authorized.row.data),decisionId:context.decisionId,payloadDigest:context.payloadDigest})
+ }catch(error){return exportUnavailable(error,d.snapshotId)}
+}
+/** Rechecks the original authorization and exact stored reference in a NEW
+ * current HUMAN transaction, then constructs the private response. No HTTP. */
+export async function completePrivateKrs(context:Readonly<OperationContext>,client:PoolClient,secret:string,
+ prepared:PrivateKrsAuthorization,download:Uint8Array):Promise<ExportValue>{
+ const {d,selected,env,read}=privateKysRead(context,client,secret)
+ if(!prepared||prepared.kind!=='KRS_AUTHORIZATION'||prepared.nip!==d.nip||prepared.snapshotId!==d.snapshotId
+  ||prepared.organisationId!==context.organisationId||prepared.userId!==context.actorId||prepared.payloadDigest!==context.payloadDigest
+  ||selected.entityType!=='COMPANY'||!(download instanceof Uint8Array)||download.length<5||download.length>24*1024*1024
+  ||String.fromCharCode(...download.slice(0,5))!=='%PDF-')return refuse()
+ const authorized=authorizeStoredKys(await read(),context.organisationId!,selected,new Date(),env)
+ if(verclyKrsReference(authorized.row.data)!==prepared.reference)return refuse()
+ const filename='KRS_'+d.nip+'_'+new Date().toISOString().slice(0,10)+'.pdf'
+ return {kind:'EXPORT',snapshotId:d.snapshotId,response:new Response(new Uint8Array(download),{headers:{...privateHeaders,
+  'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="${filename}"`,'X-Download-Filename':filename}})}
 }

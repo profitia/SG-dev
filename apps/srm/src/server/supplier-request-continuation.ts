@@ -6,7 +6,7 @@ import type {AccessStoreBinding} from '@profitia/platform-contracts/access-store
 import {createClerkAccountStatusReader,type ClerkIdentityClient} from '@profitia/platform-contracts/identity-provider'
 import {createSrmNativePgDriver} from './native-pg-driver'
 import { validRequestIdempotencyKey } from '@profitia/platform-contracts/request-ledger'
-import { createSrmSupplierRequestOperationHost } from './private-runtime'
+import { createSrmSupplierRequestOperationHost } from './supplier-request-host'
 import { readSupplierRequest, supplierRequestResourceId, type SupplierRequestCommand } from './supplier-request-operation'
 
 export const SUPPLIER_PRIVATE_PHASES = Object.freeze(['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL','RECORD_INTEREST'] as const)

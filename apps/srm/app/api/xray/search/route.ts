@@ -1,3 +1,4 @@
+import {createRuntimeSupplierOperationHandler} from '../../../../src/server/supplier-acquisition-http';
 import { withLookupDiagnostics, logLookupFailure } from "../../../../src/server/lookup-diagnostics";
 import { productEnvironmentReady, productOrganizationId } from "../../../../src/server/runtime-environment";
 import { NextResponse } from "next/server";
@@ -9,7 +10,7 @@ import { toPublicSection, validateXrayRequest } from "../../../../src/server/xra
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function legacyPost(request: Request) {
   if (!productEnvironmentReady()) return NextResponse.json({ error: "Środowisko niedostępne." }, { status: 404 });
   if (!await hasDemoSession(request)) return NextResponse.json({ error: "Wymagane logowanie." }, { status: 401 });
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: "Nieprawidłowe żądanie." }, { status: 403 });
@@ -48,3 +49,5 @@ export async function POST(request: Request) {
     }
   });
 }
+
+export const POST=createRuntimeSupplierOperationHandler('search',legacyPost);

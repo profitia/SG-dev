@@ -94,6 +94,8 @@ test('native sensitive installation preserves the legacy source and admits only 
 })
 
 import http from 'node:http'
+import {createSrmSupplierApi} from '../src/server/supplier-api-composition.ts'
+import {createSrmSupplierOperationHandler} from '../src/server/supplier-acquisition-http.ts'
 import {createSrmNativeCompanyLookup} from '../src/server/supplier-native-company.ts'
 import {srmProviderSourcePolicy,SRM_MSR_STORAGE_ORIGIN} from '../src/server/provider-source-transport.ts'
 import {CORPORATE_SOURCE,CORPORATE_PUBLICATION_VERSION} from '../src/server/corporate-source-store.ts'
@@ -130,7 +132,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
  const DATABASE='srm_sensitive_native_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
- const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false;const networkObservations=[]
+ const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,revokeKrsExport=false;const networkObservations=[]
  let syntheticOrigin
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
@@ -203,7 +205,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     await owner.query("INSERT INTO profitia_external_call.installation VALUES(true,'1.0.0',$1,$2,'development','isolated-source-project','isolated-source-branch',$3)",[hash(core('009-external-call-admission.sql')),hash(core('008-platform-ingestion.sql')),DATABASE])
     await owner.query(core('012-native-external-transport.sql'));await owner.query("INSERT INTO profitia_external_native.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(core('012-native-external-transport.sql'))])
     const installed=new Set()
-    for(const provider of['VERCLY','CEIDG']){
+    for(const provider of['VERCLY','CEIDG','MGBI','VERCLY_KRS']){
      const policy=srmProviderSourcePolicy(provider)
      if(!installed.has(policy.source.id)){
       await owner.query("INSERT INTO profitia_ingestion.sources(source_id,effect_kind,data_class,payload_schema,quality_version,classification_version,projection_version,status,source_ref,expires_at) VALUES($1,'STORED_SQL_TRANSACTION','SHARED_KNOWLEDGE',$2,$3,$4,'source-receipt-v1','ACTIVE','SYNTHETIC_ONLY',$5)",[...Object.values(policy.source),future()])
@@ -212,7 +214,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
      }
      const id=randomUUID(),msr=false
      await owner.query("INSERT INTO profitia_external_call.policies(policy_id,login_role,source_id,resource_id,configuration_version,origin,transport,path_rules,maximum_request_bytes,maximum_response_bytes,timeout_ms,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,$2,$3,$4,'company-provider-v1',$5,'LOCAL_SYNTHETIC_HTTP',$6::jsonb,8192,1048576,20000,'UPSTREAM_ATTEMPT_ADMISSION',200,now()-interval '1 hour',now()+interval '2 hours',$7,'ACTIVE','SYNTHETIC_ONLY')",[id,SOURCE,policy.source.id,policy.resourceId,syntheticOrigin,JSON.stringify(policy.basePathRules),future()])
-     await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,1,$2::jsonb,$3::jsonb,$4,$5,'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '30 minutes','SYNTHETIC_ONLY')",[id,JSON.stringify(policy.pathRules),JSON.stringify(msr?[SRM_MSR_STORAGE_ORIGIN]:[]),msr?20*1024*1024:1024*1024,provider==='MGBI_MSR_STORAGE'?'NONE':'SERVER_HEADERS'])
+     await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,1,$2::jsonb,$3::jsonb,$4,$5,'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '30 minutes','SYNTHETIC_ONLY')",[id,JSON.stringify(policy.pathRules),JSON.stringify(msr?[SRM_MSR_STORAGE_ORIGIN]:[]),provider==='VERCLY_KRS'?24*1024*1024:msr?20*1024*1024:1024*1024,provider==='MGBI_MSR_STORAGE'?'NONE':'SERVER_HEADERS'])
     }
     await owner.query(`GRANT USAGE ON SCHEMA profitia_external_call,profitia_external_native TO ${SOURCE};GRANT EXECUTE ON FUNCTION profitia_ingestion.receipt(text,text,text,text),profitia_external_call.descriptor(text,text),profitia_external_call.apply_control(uuid,uuid,text),profitia_external_call.read_status(uuid,text,text),profitia_external_native.descriptor(text,text) TO ${SOURCE}`)
     await owner.query(own('004-corporate-source.sql'))
@@ -234,12 +236,22 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    server=http.createServer(async(req,res)=>{
     try{
      networkHits++
-     const open=(await owner.query("SELECT usename FROM pg_stat_activity WHERE datname=$1 AND usename=ANY($2::text[])AND state IN('idle in transaction','idle in transaction (aborted)')",[DATABASE,[EXECUTOR,SOURCE]])).rows
+     const open=(await owner.query("SELECT usename FROM pg_stat_activity WHERE datname=$1 AND usename=ANY($2::text[])AND state IN('idle in transaction','idle in transaction (aborted)')",[DATABASE,[FOREGROUND,EXECUTOR,SOURCE,CORPORATE]])).rows
      assert.deepEqual(open,[],'No private/Source SQL transaction during real HTTP')
      networkObservations.push({path:req.url,authorization:req.headers.authorization,openTransactions:open.length})
      assert.equal(req.headers.authorization,'Bearer synthetic-native-sensitive-key');res.setHeader('content-type','application/json')
      const url=new URL(req.url,'http://127.0.0.1')
-     if(url.pathname==='/api/ceidg/v3/firma'){const nip=url.searchParams.get('nip');res.end(JSON.stringify({firma:[{id:'synthetic-jdg-'+nip,nazwa:'SYNTHETIC_JDG',status:'AKTYWNY',wlasciciel:{nip,pesel:'12345678901'},adresDzialalnosci:{miasto:'TEST_CITY'}}]}));return}
+     if(url.pathname==='/api/ceidg/v3/firma'){if(emptyCeidg){res.end(JSON.stringify({firma:[]}));return}const nip=url.searchParams.get('nip');res.end(JSON.stringify({firma:[{id:'synthetic-jdg-'+nip,nazwa:'SYNTHETIC_JDG',status:'AKTYWNY',wlasciciel:{nip,pesel:'12345678901'},adresDzialalnosci:{miasto:'TEST_CITY'}}]}));return}
+     if(url.pathname.startsWith('/v1/models/')){
+      const nip=url.searchParams.get('identifiers.pl_nip')
+      const wp={id:'a'.repeat(24),identifiers:{pl_nip:nip,pl_krs:'0000217580'},content:{current_excerpt:{naglowekA:{},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic Native Company',formaPrawna:'SA'}}}}}}
+      const rdf={id:'b'.repeat(24),identifiers:{pl_nip:nip,pl_krs:'0000217580'},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31'},files:[],content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ca_cfy:'300',lae_lapfl_stl_cfy:'200'}}}}
+      res.end(JSON.stringify({count:1,results:[url.pathname.includes('wp-record')?wp:rdf]}));return
+     }
+     if(url.pathname.startsWith('/api/krs/')){
+      if(revokeKrsExport)await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY'WHERE application_id='srm'AND organisation_id=$1 AND operation='supplier.private.export'",[A]))
+      res.setHeader('content-type','application/pdf');res.end('%PDF-1.7\nSYNTHETIC_KRS_ONLY');return
+     }
      if(req.method==='POST'){
       if(revokeAfterPost)await controlled(()=>owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED'WHERE organisation_id=$1 AND user_id=$2",[A,U]))
       if(interruptPost){res.destroy();return}
@@ -248,7 +260,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
       const id='syntheticCorrelation'+(++nextReport);reports.set(id,value[0].Id);res.end(JSON.stringify([id]));return
      }
      const id=url.pathname.split('/').at(-1),nip=reports.get(id);assert(nip)
-     res.end(JSON.stringify([{Header:{CorrelationId:id,Id:'synthetic-'+id},Body:{IsComplete:true,Entity:{Name:'SYNTHETIC_SENSITIVE_COMPANY',Ids:[{Type:'VatID',Value:'PL'+nip}],Beneficiaries:{Count:1,Values:[{FullName:'SYNTHETIC_PERSON',Pesel:'12345678901',Source:'CRBR'}]},PepPositions:{Count:0}}}}]))
+     res.end(JSON.stringify([{Header:{CorrelationId:id,Id:'synthetic-'+id},Body:{IsComplete:true,Entity:{Name:'SYNTHETIC_SENSITIVE_COMPANY',Ids:[{Type:'VatID',Value:'PL'+nip},{Type:'KRS',Value:'0000217580'},{Type:'Regon',Value:'140566233'}],Beneficiaries:{Count:1,Values:[{FullName:'SYNTHETIC_PERSON',Pesel:'12345678901',Source:'CRBR'}]},PepPositions:{Count:0}}}}]))
     }catch(error){res.statusCode=500;res.end('{}');console.error('SYNTHETIC_SENSITIVE_HTTP_FAILURE',error.message)}
    })
    await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
@@ -380,6 +392,29 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    const result=await human.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation,organisationId:org,resourceId,payload,request:new Request(ORIGIN+'/api/xray/private',{method:'POST',headers:{origin:ORIGIN}})},action??((context,client)=>readPrivateSupplier(context,client,privateSecret)))
    return result.value
   }
+  let api
+  if(privateMode){
+   const cpUrl=new URL(db);cpUrl.username=CORPORATE;cpUrl.password='isolated_ci_only'
+   corporatePool=new pg.Pool({connectionString:cpUrl.toString(),max:2});corporateAudit=new pg.Pool({connectionString:cpUrl.toString(),max:1})
+   const application={...sourceOptions.application,appId:'srm-corporate-source',deploymentId:'synthetic-company-publication',configurationVersion:'corporate-v1'}
+   const shapeText=fs.readFileSync(new URL('../src/server/corporate-source-shape.json',import.meta.url),'utf8')
+   const {operationSchemaDigest:_extra,...publicLedger}=humanOptions.requestLedger
+   const publicJob={schemaDigest:job.schemaDigest,targetOperation:'supplier.report.refresh',supplierSchemaDigest:job.supplierSchemaDigest}
+   const flow=(entityType,section)=>({request:{...humanOptions,privateAcquisition:privateTarget(entityType,section)},lookup:{
+    work:{...workOptions,privateAcquisition:privateTarget(entityType,section),workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))},
+    namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,entityType,section,
+    provider:{apiKey:'synthetic-native-sensitive-key',origin:section==='jdg'?'https://dane.biznes.gov.pl':'https://vercly.fixture.test',source:sourceProvider}}})
+   await controlled(async()=>{for(const org of[A,B])await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature)VALUES($1,'srm',$2,$3,'ALLOW','supplier.report.read','supplier_report')",[randomUUID(),org,U])})
+   api=createSrmSupplierApi({company:{request:{...humanOptions,application:{...humanOptions.application,operations:['supplier.report.refresh']},requestLedger:publicLedger},
+    lookup:{work:{...workOptions,job:publicJob,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},
+     namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,
+     corporate:{application,binding:{...sourceOptions.binding,applicationId:application.appId,role:CORPORATE,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool:corporatePool,auditPool:corporateAudit,publicationSchemaDigest:hash(own('004-corporate-source.sql')+own('005-corporate-source-access.sql')+shapeText)},
+     mgbi:{apiKey:'synthetic-native-sensitive-key',authScheme:'bearer',source:sourceProvider,msrExternal:{...sourceProvider.external,maximumResponseBytes:20*1024*1024}}},
+    read:{...privateHumanOptions,application:{...humanOptions.application,operations:['supplier.report.read']}}},
+    companyKys:flow('COMPANY','kys'),jdgKys:flow('JDG','kys'),jdgRegistry:flow('JDG','jdg'),
+    privateRead:{...privateHumanOptions,application:{...humanOptions.application,operations:['supplier.private.read','supplier.private.reveal','supplier.private.export']},sensitiveBoundaryDigest:hash(own('010-supplier-sensitive-work.sql')),secret:privateSecret},
+    krs:{apiKey:'synthetic-native-sensitive-key',source:{...sourceOptions,providerOrigin:'https://vercly.fixture.test',syntheticOrigin,external:{...sourceProvider.external,maximumResponseBytes:24*1024*1024}}}})
+  }
   let selectedA,kysA,viewA
   if(privateMode){
    await t.test('public corporate admission cannot authorize private native Work, and the private grant is never inferred',async()=>{
@@ -472,6 +507,76 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    assert.equal(view.privateReport.snapshotId,result.snapshotId);assert(!JSON.stringify(view).includes('12345678901'));assert(JSON.stringify(view).includes('TEST_CITY'))
    assert.equal((await native('JDG','jdg').run(selected)).replayed,true);assert.equal(networkHits,before+1)
   })
+  await t.test('original no-data KYS persistence keeps NO_DATA without creating a false snapshot or export authority',async()=>{
+   const selected=selection(await parent(A,'5250009335')),store=createSrmSensitiveNativeStore({work:nativeWork,entityType:'COMPANY',section:'kys'})
+   const lookup=await store.register(selected),now=new Date().toISOString()
+   const empty={status:'EMPTY',source:{provider:'VERCLY',model:'KYS_NIP',recordId:null},retrievedAt:now,effectiveAt:null,warnings:[],data:null}
+   const snapshot=await store.storeKys(selected,lookup,empty,null,null,'PROVIDER');assert.equal(snapshot,null)
+   assert.equal((await owner.query('SELECT status FROM srm.provider_attempts WHERE request_id=$1',[selected.requestId])).rows[0].status,'NO_DATA')
+   assert.equal((await owner.query('SELECT count(*)::int n FROM srm.source_snapshots s JOIN srm.provider_attempts a ON a.id=s.attempt_id WHERE a.request_id=$1',[selected.requestId])).rows[0].n,0)
+   await assert.rejects(humanRun('supplier.private.read',privateInput(A,selected.command.nip)),isOperationDenied)
+  })
+  if(privateMode){
+   const http=(route,body,key='synthetic-real-http-'+randomUUID(),org=A)=>createSrmSupplierOperationHandler(route,api,A)(new Request(ORIGIN+'/api/xray/'+route+'?organisationId='+org,{method:'POST',headers:{origin:ORIGIN,'content-type':'application/json','idempotency-key':key},body:JSON.stringify(body)}))
+   await t.test('actual company HTTP releases the original classified corporate DTO after a fresh HUMAN read',async()=>{
+    const before=networkHits,response=await http('company',{identifier:'5260250274'});assert.equal(response.status,200)
+    const body=await response.json();assert.equal(body.identity.nip,'5260250274');assert.equal(body.general.data.legalName,'Synthetic Native Company')
+    assert.equal(body.financial.data.indicators.find(i=>i.code==='CURRENT_RATIO').value,'1.500000')
+    assert.equal(body.kys.status,'NOT_REQUESTED');assert.equal(body.kys.data,null);assert.equal(body.general.source,undefined);assert(!JSON.stringify(body).includes('12345678901'))
+    assert.equal(networkHits,before+2);assert(networkObservations.every(x=>x.openTransactions===0))
+   })
+   await t.test('actual unknown search preserves empty CEIDG fallback; a fresh known company skips CEIDG',async()=>{
+    const before=networkHits;emptyCeidg=true
+    let result
+    try{result=await http('search',{identifier:'5210087493'})}finally{emptyCeidg=false}
+    assert.equal(result.status,200);assert.equal((await result.json()).entityType,'COMPANY');assert.equal(networkHits,before+3)
+    const paths=networkObservations.slice(-3).map(x=>x.path);assert(paths[0].startsWith('/api/ceidg/'));assert(paths[1].includes('wp-record'));assert(paths[2].includes('rdf-record'))
+    const freshBefore=networkHits,known=await http('search',{identifier:'5260250274'})
+    assert.equal(known.status,200);assert.equal((await known.json()).entityType,'COMPANY');assert.equal(networkHits,freshBefore)
+   })
+   await t.test('actual protected KYS HTTP composes current HUMAN admission, native original engine and current masked read, and retries do not purchase',async()=>{
+    const key='synthetic-http-repeat-'+randomUUID(),before=networkHits
+    const first=await http('company-kys',{identifier:NIP},key);assert.equal(first.status,200);const firstBody=await first.json()
+    assert.equal(first.headers.get('cache-control'),'private, no-store');assert(firstBody.privateReport.snapshotId);assert(firstBody.privateReport.exportRef)
+    assert(!JSON.stringify(firstBody).includes('12345678901'));assert.equal(firstBody.section.data.company.nip,NIP)
+    const second=await http('company-kys',{identifier:NIP},key);assert.equal(second.status,200);const secondBody=await second.json()
+    assert.equal(firstBody.privateReport.snapshotId,secondBody.privateReport.snapshotId);assert.equal(networkHits,before)
+    const token=firstBody.section.data.beneficialOwners[0].peselRevealToken
+    const reveal=await http('reveal',{token});assert.equal(reveal.status,200);assert.equal((await reveal.json()).pesel,'12345678901')
+    const pdf=await http('pdf',{nip:NIP,entityType:'COMPANY',retrievedAt:firstBody.section.retrievedAt,exportRef:firstBody.privateReport.exportRef})
+    assert.equal(pdf.status,200);assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0,5).toString(),'%PDF-');assert.equal(networkHits,before)
+   })
+   await t.test('actual KRS HTTP uses the exact current private snapshot, one admitted GET and fresh export checks after download',async()=>{
+    const read=await http('company-kys',{identifier:NIP}),view=await read.json(),before=networkHits
+    const selected={nip:NIP,entityType:'COMPANY',retrievedAt:view.section.retrievedAt,exportRef:view.privateReport.exportRef}
+    const response=await http('krs',selected);assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'application/pdf')
+    assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(Buffer.from(await response.arrayBuffer()).subarray(0,5).toString(),'%PDF-');assert.equal(networkHits,before+1)
+    assert(networkObservations.at(-1).path.startsWith('/api/krs/syntheticCorrelation'));assert(networkObservations.every(x=>x.openTransactions===0))
+    const after=networkHits,foreign=await http('krs',selected,undefined,B);assert.equal(foreign.status,409);assert.equal(networkHits,after)
+    assert.equal((await http('krs',{...selected,reference:'foreign-reference'})).status,400);assert.equal(networkHits,after)
+   })
+   await t.test('export revocation during actual KRS download refuses downloaded bytes instead of publishing or retrying',async()=>{
+    const view=await(await http('company-kys',{identifier:NIP})).json(),before=networkHits
+    const selected={nip:NIP,entityType:'COMPANY',retrievedAt:view.section.retrievedAt,exportRef:view.privateReport.exportRef}
+    revokeKrsExport=true
+    try{const result=await http('krs',selected);assert.equal(result.status,403);assert(!JSON.stringify(await result.json()).includes('%PDF'));assert.equal(networkHits,before+1)}
+    finally{revokeKrsExport=false;await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='ALLOW'WHERE application_id='srm'AND organisation_id=$1 AND operation='supplier.private.export'",[A]))}
+   })
+   await t.test('actual JDG HTTP uses its closed private registry target and masks identifiers',async()=>{
+    const response=await http('jdg',{identifier:OTHER_NIP});assert.equal(response.status,200);const body=await response.json()
+    assert.equal(body.nip,OTHER_NIP);assert.equal(body.section.status,'SUCCESS');assert(body.privateReport.snapshotId);assert.equal(body.privateReport.exportRef,null)
+    assert(!JSON.stringify(body).includes('12345678901'))
+   })
+   await t.test('actual HTTP refuses current read, tenant, audit and forged body authority without releasing personal output',async()=>{
+    for(const[sql,undo,args]of[
+     ["UPDATE profitia_access.permission_grants SET effect='DENY'WHERE application_id='srm'AND organisation_id=$1 AND operation='supplier.private.read'","UPDATE profitia_access.permission_grants SET effect='ALLOW'WHERE application_id='srm'AND organisation_id=$1 AND operation='supplier.private.read'",[A]],
+     ["UPDATE profitia_access.memberships SET status='SUSPENDED'WHERE organisation_id=$1 AND user_id=$2","UPDATE profitia_access.memberships SET status='ACTIVE'WHERE organisation_id=$1 AND user_id=$2",[A,U]],
+    ]){await controlled(()=>owner.query(sql,args));try{const response=await http('company-kys',{identifier:NIP});assert.equal(response.status,403);assert(!JSON.stringify(await response.json()).includes('12345678901'))}finally{await controlled(()=>owner.query(undo,args))}}
+    const before=networkHits
+    assert.equal((await http('company-kys',{identifier:NIP,userId:U,organisationId:B})).status,400);assert.equal(networkHits,before)
+    failHumanOutcome=true;try{assert.equal((await http('company-kys',{identifier:NIP})).status,503)}finally{failHumanOutcome=false}
+   })
+  }
   const refused=error=>isOperationDenied(error)||!!error?.cause&&refused(error.cause)
   const refusedOrSource=error=>refused(error)||error?.name==='ExternalCallUnavailable'||!!error?.cause&&refusedOrSource(error.cause)
   const workStore=(entityType='COMPANY',section='kys')=>createSrmSensitiveNativeStore({work:nativeWork,entityType,section})
@@ -503,7 +608,9 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     await assert.rejects(humanRun('supplier.private.reveal',{token:otherToken},A,(c,client)=>revealPrivateSupplier(c,client,privateSecret)),isOperationDenied)
     assert.equal((await humanRun('supplier.private.reveal',{token:ownToken},A,(c,client)=>revealPrivateSupplier(c,client,privateSecret))).status,200)
     const foreignRef={nip:NIP,entityType:'COMPANY',retrievedAt:viewA.section.retrievedAt,exportRef:viewA.privateReport.exportRef}
-    await assert.rejects(humanRun('supplier.private.export',foreignRef,A,(c,client)=>exportPrivateKys(c,client,privateSecret)),isOperationDenied)
+    const refusedExport=await humanRun('supplier.private.export',foreignRef,A,(c,client)=>exportPrivateKys(c,client,privateSecret))
+    assert.equal(refusedExport.status,409);assert.equal(refusedExport.headers.get('content-type'),'application/json');assert.deepEqual(Object.keys(await refusedExport.json()),['error'])
+    assert((await owner.query("SELECT 1 FROM profitia_access.security_events WHERE event->>'actorId'=$1 AND event->>'operation'='supplier.private.export'AND phase='OUTCOME'AND event->>'reasonCode'='SELECTION_UNAVAILABLE'",[colleague])).rowCount>0)
    }finally{currentUser=U}
   })
   await t.test('private query remains scoped to the admitted snapshot even after local SRM org GUC tampering',async()=>{
