@@ -59,8 +59,8 @@ try{
   if(manifest.name!==name||fs.realpathSync(source)!==source
     ||JSON.stringify(manifest.dependencies)!==JSON.stringify({[publicDependency.name]:publicDependency.version})
     ||['peerDependencies','optionalDependencies'].some(key=>Object.keys(manifest[key]??{}).length))throw Error('Local SDK requires an explicit dependency setup review')
-  const host=path.join(root,'apps/sg-runtime'),installedPublic=path.join(host,'node_modules',publicDependency.name)
-  if(fs.realpathSync(process.cwd())!==host)throw Error('Explicit receiving host required')
+  const host=fs.realpathSync(process.cwd()),installedPublic=path.join(host,'node_modules',publicDependency.name)
+  if(!['sg-runtime','dashboard-preview'].map(app=>path.join(root,'apps',app)).includes(host))throw Error('Explicit receiving host required')
   dependencyRecord(read(path.join(source,'package-lock.json')))
   for(const app of['sg-runtime','dashboard-preview'])dependencyRecord(read(path.join(root,'apps',app,'package-lock.json')))
   verifyPublicDirectory(installedPublic)
