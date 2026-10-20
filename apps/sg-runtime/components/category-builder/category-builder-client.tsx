@@ -862,13 +862,18 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
 
       {finderOpen ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm" data-testid="category-finder-modal">
-          <div role="dialog" aria-modal="true" aria-label={targetComponentId ? t('modal.changeTitle') : t('modal.addTitle')} className="mx-auto max-w-6xl rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200">
+          <div onKeyDown={event => {
+            if (event.key !== 'Tab') return
+            const controls = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href]')]
+            const first = controls[0], last = controls.at(-1)
+            if (event.shiftKey && document.activeElement === first && last) { event.preventDefault(); last.focus() }
+            else if (!event.shiftKey && document.activeElement === last && first) { event.preventDefault(); first.focus() }
+          }} role="dialog" aria-modal="true" aria-label={targetComponentId ? t('modal.changeTitle') : t('modal.addTitle')} className="mx-auto max-w-6xl rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">{targetComponentId ? t('modal.changeTitle') : t('modal.addTitle')}</h2>
                 <p className="mt-1 text-sm text-slate-500">{t('modal.subtitle')}</p>
               </div>
-
             </div>
             <div className="max-h-[85vh] overflow-y-auto">
               <SharedBenchmarkPicker

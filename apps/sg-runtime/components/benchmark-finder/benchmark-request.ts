@@ -18,7 +18,16 @@ export function createBenchmarkRequester(options:{mode:()=> 'clerk'|'legacy_demo
    ||url.pathname==='/api/benchmark/selection'&&['GET','POST'].includes(method)
   if(url.origin!==origin||url.username||url.password||url.hash||!(surface==='discovery'?accepted:pickerAccepted)||init.body!==undefined&&typeof init.body!=='string'
    ||init.credentials!==undefined&&init.credentials!=='same-origin'||init.redirect!==undefined&&init.redirect!=='error')throw Error('Finder request unavailable')
+  if(surface==='picker'){
+   const allowed=url.pathname==='/api/benchmark/search'?['q','limit']:url.pathname==='/api/benchmark/preview'?['seriesName','range']:url.pathname.includes('/metadata/')?['limit']:[]
+   const headers=new Headers(init.headers)
+   if([...url.searchParams.keys()].some(k=>!allowed.includes(k)||url.searchParams.getAll(k).length!==1)
+    ||[...headers.keys()].some(k=>k!=='content-type')||method==='GET'&&init.body!=null
+    ||method==='POST'&&(typeof init.body!=='string'||headers.get('content-type')!=='application/json'))throw Error('Finder request unavailable')
+   if(init.signal?.aborted)throw new DOMException('Picker request aborted','AbortError')
+  }
   const token=await options.getToken();if(closed||!token||/[\s,]/.test(token)||token.length>8192)throw Error('Session unavailable')
+  if(surface==='picker'&&init.signal?.aborted)throw new DOMException('Picker request aborted','AbortError')
   const discovery=accepted
   const signature=JSON.stringify([method,url.pathname+url.search,init.body??null])
   let key=pending.get(signature);if(discovery&&!key){key=options.newKey();if(!/^finder_[A-Za-z0-9_-]{16,100}$/.test(key))throw Error('Finder request unavailable');pending.set(signature,key)}
