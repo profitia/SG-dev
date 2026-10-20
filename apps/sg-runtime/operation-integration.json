@@ -1593,7 +1593,7 @@
       "apps/sg-runtime/components/benchmark-finder/discovery-request.ts": "e4403b2e9854c7db1c50d73be48b915bbcd5c23dafd2a443b00c260e7a2d4bf0",
       "apps/sg-runtime/deployment/benchmark-discovery-targets.json": "9e54dd216f83fab38e77ba1d05f597cd9fa57276415d81e613b74af5a3e78c14",
       "apps/sg-runtime/lib/benchmark/ai-search.ts": "c9faae7a3d8b53a479fdaeb4d328b5fa8119df46861536dbbc06d86c63a6783d",
-      "apps/sg-runtime/lib/benchmark/discovery-api.ts": "fd4dd4f00c535251704304c270f3392acec9331b297a4d642ef5c7240a7bf6af",
+      "apps/sg-runtime/lib/benchmark/discovery-api.ts": "118147f429937fab4f9c7751d61be406157ef97b57922a96bd325679d2af26ba",
       "apps/sg-runtime/lib/benchmark/discovery-host.ts": "0ea39c6e95e50c85856364c24ca2eade6c364501c104fa49f8cf217ddb369752",
       "apps/sg-runtime/lib/benchmark/discovery-http.ts": "94e560195dd420ed00c874c48ed49fcf1466e519044814e4189929d94601e4e7",
       "apps/sg-runtime/lib/benchmark/discovery-metadata.ts": "6907b243390ee1691d9b655a9f66f8df6a0ec49b183139a2b138c3113302af48",
@@ -1619,7 +1619,9 @@
       "noSkipped": true,
       "paidProviderCalls": 0,
       "sourceOnly": true,
-      "parallelNativeAndHttpTests": 29
+      "parallelNativeAndHttpTests": 29,
+      "previousFullCandidateRuntimeTests": 698,
+      "previousFullCandidateBuildPassed": false
     },
     "live": {
       "schemaPrepared": false,

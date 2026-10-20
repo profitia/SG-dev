@@ -19,6 +19,13 @@ export function discoveryDenied(error:unknown){
  return discoveryFailure(reason==='UNVERIFIED_IDENTITY'?401:reason==='CONTEXT_INVALID'?400:
   reason&& !['AUDIT_UNAVAILABLE','POLICY_UNAVAILABLE'].includes(reason)?403:503)
 }
+function hostResponse(value:unknown):Response{
+ // The generic executor declaration describes the callback's domain return;
+ // this receiving host projects it after the committed operation. Verify the
+ // actual projection instead of casting a private domain object to Response.
+ if(!(value instanceof Response))throw TypeError('Finder host projection unavailable')
+ return value
+}
 async function originalBusiness(command:Readonly<DiscoveryCommand>){
  // Original business modules are loaded only after the actual HUMAN and native
  // work checks. Their algorithms and DTOs are shared with the existing Finder.
@@ -43,7 +50,7 @@ export function createSg2DiscoveryApi(options:DiscoveryApiOptions):DiscoveryApi{
  return Object.freeze({async execute(request:Request,organisationId:string,input:Readonly<DiscoveryCommand>,idempotencyKey:string){
   try{
    const command=readDiscoveryCommand(input)
-   const accepted=await readPresentationJson((await admit(request,organisationId,command,idempotencyKey)).value,1024) as {requestId:string}
+   const accepted=await readPresentationJson(hostResponse((await admit(request,organisationId,command,idempotencyKey)).value),1024) as {requestId:string}
    const selected={requestId:accepted.requestId,organisationId,command}
    if(!await options.work.read(selected)){
     try{
@@ -62,9 +69,9 @@ export function createSg2DiscoveryApi(options:DiscoveryApiOptions):DiscoveryApi{
      throw error
     }
    }
-   return (await options.readHost.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
+   return hostResponse((await options.readHost.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
     operation:'benchmark.discovery.read',organisationId,resourceId:discoveryResultResourceId(selected.requestId),
-    payload:{requestId:selected.requestId},request},readPrivateDiscovery)).value
+    payload:{requestId:selected.requestId},request},readPrivateDiscovery)).value)
   }catch(error){return error instanceof ExternalCallUnavailable?discoveryFailure():discoveryDenied(error)}
  }})
 }
