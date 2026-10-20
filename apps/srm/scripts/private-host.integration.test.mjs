@@ -1497,14 +1497,15 @@ test('working supplier HTTP progress verifies its complete source closure withou
  for(const flag of['websiteImplemented','cloudSqlInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[flag],false,flag)
 })
 
-test('website source progress pins the complete current nine-route closure and preserves the previous eight-route record',()=>{
+test('website source progress preserves its complete accepted nine-route closure before the explicit public identity boundary',()=>{
  const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),current=receipt.workingSupplierWebSourceProgress
  const before=JSON.parse(execFileSync('git',['show',current.previousProgressSourceAuthority+':apps/srm/operation-integration.json'],{encoding:'utf8'}))
  for(const[key,value]of Object.entries(before))assert.deepEqual(receipt[key],value,key)
  assert.equal(current.taskId,'SRM-E1-WORKING-SUPPLIER-HTTP-20261020')
  assert.equal(current.externalTaskId,'SRM-E1-SUPPLIER-EXTERNAL-ADOPTION-20261020');assert.equal(current.clientAndEntryTaskId,'SRM-E1-WEB-ENTRY-CLIENT-20261020')
  assert.deepEqual(current.workingRoutes,['search','lookup','jdg','jdg/kys','kys','kys/pesel','kys/pdf','kys/krs','web-identity'])
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+ assert.equal(receipt.publicIdentityRequestAdoption.previousApplicationAuthority,'05a7d705e1aeeae04465e59b371ea0cd5a0d4c06')
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.publicIdentityRequestAdoption.previousApplicationAuthority+':apps/srm/'+path])),digest,path)
  assert.equal(current.webBoundaryDigest,hash(fs.readFileSync(new URL('../db/private-store/012-supplier-web-identity.sql',import.meta.url))))
  const facade=fs.readFileSync(new URL('../src/server/safe-public-fetch.ts',import.meta.url),'utf8');assert(facade.includes("from '@profitia/platform-contracts/public-web-transport'"));assert(!facade.includes('http.get'))
  for(const flag of['previousRecordsPreserved','sameOriginalDiscoveryAndCacheWriter','perActualHopSourceAdmission','organizationOwnedAssociation','freshHumanReadBeforePublication','publicWebDataClassIsNotPrivateAssociation','sourceNetworkOutsideSqlTransaction','allNineExactEntryGuardsForwardToBackend'])assert.equal(current[flag],true,flag)

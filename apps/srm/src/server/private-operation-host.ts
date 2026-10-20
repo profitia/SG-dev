@@ -2,7 +2,8 @@ import type pg from "pg";
 import type { PoolClient } from "pg";
 import { createSrmNativePgDriver } from "./native-pg-driver";
 import { createPrivateOperationHost } from "@profitia/platform-contracts/private-operation-host";
-import { createClerkIdentityAuthenticator, type ClerkIdentityClient, type IdentityApplication } from "@profitia/platform-contracts/identity-provider";
+import { createClerkIdentityAuthenticator, type ClerkIdentityClient } from "@profitia/platform-contracts/identity-provider";
+import { bindPublicIdentityAuthenticator, type PublicIdentityApplication as IdentityApplication } from "@profitia/platform-contracts/public-request";
 
 type HostOptions = Parameters<typeof createPrivateOperationHost<PoolClient>>[0];
 
@@ -26,7 +27,10 @@ export function createSrmPrivateOperationHost(options: Omit<HostOptions, "indepe
     transactionTimeoutMs: options.transactionTimeoutMs,
     readResources: options.readResources, projectOutput: options.projectOutput,
     prepareInputs: options.prepareInputs, describeOutcome: options.describeOutcome,
-    createAuthenticator: ({ resolveBinding }) => createClerkIdentityAuthenticator({ client: clerk, application: identity, resolveBinding, now }),
+    createAuthenticator: ({ resolveBinding }) => {
+      const authenticate = createClerkIdentityAuthenticator({ client: clerk, application: identity, resolveBinding, now });
+      return identity.requestBoundary ? bindPublicIdentityAuthenticator(authenticate, identity.requestBoundary) : authenticate;
+    },
     ...createSrmNativePgDriver(pool, auditPool),
   });
 }

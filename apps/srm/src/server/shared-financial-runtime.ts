@@ -26,7 +26,10 @@ export function createOperationSharedFinancialHandler(executor: OperationExecuto
     } catch { return respond(400) }
     // This bearer-only port never allows an unrelated cookie to win SDK token
     // selection. The official adapter still verifies issuer, party and session.
-    const authenticatedRequest = new Request(request.url, { method: 'GET', signal: request.signal, headers: { authorization } })
+    const identityHeaders = new Headers({ authorization })
+    const host = request.headers.get('host')
+    if (host !== null) identityHeaders.set('host', host)
+    const authenticatedRequest = new Request(request.url, { method: 'GET', signal: request.signal, headers: identityHeaders })
     try {
       const result = await executor.execute({ contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version,
         operation: 'supplier.report.read', organisationId, resourceId: `supplier-report:${selection.entityType}:${selection.nip}`,
