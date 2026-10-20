@@ -96,6 +96,9 @@ test('category shell adoption preserves the prior source acceptance and pins the
   for(const [key,value]of Object.entries(previous))assert.deepEqual(receipt[key],value,key)
   for(const path of Object.keys(previous.storedReadSourceAdoption.sourceDigests))assert(path in current.sourceDigests,path)
   for(const path of ['middleware.ts','app/[locale]/category-builder/page.tsx','tests/porr-demo-middleware.test.ts'])assert(path in current.sourceDigests,path)
-  for(const [path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+  for(const [path,digest]of Object.entries(current.sourceDigests)){
+    const bytes=receipt.categoryTransportAdoption?execFileSync('git',['show',receipt.categoryTransportAdoption.previousApplicationAuthority+':apps/sg-runtime/'+path]):readFileSync(new URL('../'+path,import.meta.url))
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),digest,path)
+  }
   assert.equal(current.productDeploymentPerformed,false)
 })
