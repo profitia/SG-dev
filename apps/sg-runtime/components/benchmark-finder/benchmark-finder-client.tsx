@@ -6,6 +6,8 @@ import './benchmark-finder-visual.css'
 import {SpendGuruLogo} from './visual/SpendGuruLogo'
 import {BenchmarkPresentation, BenchmarkThemeSwitch} from './visual/benchmark-presentation'
 
+import { RESULT_PREVIEW_LIMIT, RESULT_BATCH_SIZE, SEARCH_RESULTS_FETCH_LIMIT, nextVisibleResultCount } from './result-window'
+
 import {createDiscoveryRequester} from './discovery-request'
 import { NativeAnalyticsEmbed } from './native-analytics-embed'
 
@@ -187,9 +189,6 @@ class BenchmarkUiError extends Error {
   }
 }
 
-const RESULT_PREVIEW_LIMIT = 5
-const RESULT_BATCH_SIZE = 5
-const SEARCH_RESULTS_FETCH_LIMIT = 25
 const MAX_METADATA_VISIBLE_ITEMS = 40
 const RECENT_SEARCH_LIMIT = 8
 const RECENT_SEARCHES_SESSION_KEY = 'benchmark-finder-recent-searches'
@@ -2597,7 +2596,7 @@ export function BenchmarkFinderClient({
                     data-library-component="SRM-C02"
                     type="button"
                     className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-                    onClick={() => setVisibleResultCount((current) => Math.min(current + RESULT_BATCH_SIZE, results.length))}
+                    onClick={() => setVisibleResultCount((current) => nextVisibleResultCount(current, results.length))}
                   >
                     {t('results.showMore')}
                   </button>

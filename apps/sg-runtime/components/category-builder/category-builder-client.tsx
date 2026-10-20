@@ -5,7 +5,8 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
-import { BenchmarkFinderClient } from '@/components/benchmark-finder/benchmark-finder-client'
+import { SharedBenchmarkPicker } from '@/components/benchmark-picker/shared-benchmark-picker'
+import { attachCategoryBenchmark } from './benchmark-picker-draft'
 import { useSg2IdentityMode, useSg2SessionCredential } from '@/components/auth/session-boundary'
 import { createCategoryOperationRequester } from './category-operation-request'
 import { sanitizeUserFacingPublisher } from '@/lib/benchmark/presentation'
@@ -227,6 +228,8 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
   const [selectedSuggestionIds, setSelectedSuggestionIds] = useState<string[]>([])
   const [suggestionError, setSuggestionError] = useState<string | null>(null)
   const [finderOpen, setFinderOpen] = useState(false)
+  const finderActiveRef = useRef(false)
+  finderActiveRef.current = finderOpen
   const [targetComponentId, setTargetComponentId] = useState<string | null>(null)
   const [targetSuggestion, setTargetSuggestion] = useState<CategoryComponentSuggestion | null>(null)
   const [finderPrefill, setFinderPrefill] = useState<FinderPrefill>({ mode: 'search', query: '', aiPrompt: '' })
@@ -409,29 +412,12 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
   }
 
   function handleBenchmarkSelected(benchmark: SavedBenchmark) {
-    setDraft((current) => {
-      if (targetComponentId) {
-        return {
-          ...current,
-          components: current.components.map((component) => component.id === targetComponentId
-            ? { ...component, benchmark }
-            : component),
-        }
-      }
-
-      return {
-        ...current,
-        components: [
-          ...current.components,
-          {
-            id: `draft-${crypto.randomUUID()}`,
-            name: targetSuggestion?.name ?? suggestComponentName(benchmark),
-            weightPercent: 0,
-            benchmark,
-          },
-        ],
-      }
-    })
+    if (!finderActiveRef.current) return
+    finderActiveRef.current = false
+    setDraft((current) => attachCategoryBenchmark(current, benchmark, {
+      componentId: targetComponentId,
+      newComponent: () => ({ id: `draft-${crypto.randomUUID()}`, name: targetSuggestion?.name ?? suggestComponentName(benchmark) }),
+    }))
 
     setFinderOpen(false)
     setTargetComponentId(null)
@@ -876,33 +862,28 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
 
       {finderOpen ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm" data-testid="category-finder-modal">
-          <div className="mx-auto max-w-6xl rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200">
+          <div role="dialog" aria-modal="true" aria-label={targetComponentId ? t('modal.changeTitle') : t('modal.addTitle')} className="mx-auto max-w-6xl rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">{targetComponentId ? t('modal.changeTitle') : t('modal.addTitle')}</h2>
                 <p className="mt-1 text-sm text-slate-500">{t('modal.subtitle')}</p>
               </div>
-              <button
-                type="button"
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-                onClick={() => {
+
+            </div>
+            <div className="max-h-[85vh] overflow-y-auto">
+              <SharedBenchmarkPicker
+                key={targetComponentId ?? targetSuggestion?.id ?? 'new-component'}
+                locale={locale}
+                initialQuery={finderPrefill.query}
+                initialSelectedBenchmarkId={draft.components.find(component => component.id === targetComponentId)?.benchmark.businessBenchmarkId ?? null}
+                onSelect={handleBenchmarkSelected}
+                onCancel={() => {
+                  finderActiveRef.current = false
                   setFinderOpen(false)
                   setTargetComponentId(null)
                   setTargetSuggestion(null)
                   setFinderPrefill({ mode: 'search', query: '', aiPrompt: '' })
                 }}
-              >
-                {t('actions.close')}
-              </button>
-            </div>
-            <div className="max-h-[85vh] overflow-y-auto">
-              <BenchmarkFinderClient
-                locale={locale}
-                selectionMode="picker"
-                onBenchmarkSelected={handleBenchmarkSelected}
-                initialMode={finderPrefill.mode}
-                initialSearchQuery={finderPrefill.query}
-                initialAiPrompt={finderPrefill.aiPrompt}
               />
             </div>
           </div>
