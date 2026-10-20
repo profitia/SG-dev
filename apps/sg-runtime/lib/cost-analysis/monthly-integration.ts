@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { calculateCci, CciValidationError } from './cci'
 import type { CciInput, CciResult } from './contracts'
 import { prepareCciMarketData } from './market-data-adapter'
-import type { CciAlignmentResult, CciMarketDataRequest } from './market-data-contracts'
+import type { CciAlignmentResult, CciMarketDataRequest, CciPreparationMethod } from './market-data-contracts'
 import { CciMarketDataValidationError } from './node-alignment'
 
 const limitations = [
@@ -35,19 +35,27 @@ function preparationDefinition(alignment: CciAlignmentResult) {
     currencyPolicy: 'NATIVE_CURRENCY_RELATIVES' as const,
     missingDataPolicy: 'NULL_WITHOUT_FILL_OR_REWEIGHT' as const,
     components: [...alignment.series].sort((a, b) => compare(a.componentId, b.componentId)).map(series => {
-      const methods = alignment.nodes.flatMap(node => node.components
-        .filter(component => component.componentId === series.componentId && component.method !== null)
-        .map(component => JSON.stringify(component.method)))
+      const methods = new Map<string, CciPreparationMethod>()
+      for (const node of alignment.nodes) {
+        const component = node.components.find(value => value.componentId === series.componentId)
+        if (component?.method) {
+          const { id, version, approvalRef } = component.method
+          const method = { id, version, approvalRef }
+          methods.set(JSON.stringify(method), method)
+        }
+      }
+      const { valueKind, periodBasis, calendar, evidenceRef } = series.qualification
+      const policy = series.preparationPolicy
       return {
         componentId: series.componentId,
         provider: series.provider,
         seriesId: series.seriesId,
         nativeCadence: series.nativeCadence,
         excludedZeroWeight: series.weightPercent === 0,
-        qualification: { ...series.qualification },
-        reductionPolicy: { ...series.preparationPolicy },
+        qualification: { valueKind, periodBasis, calendar, evidenceRef },
+        reductionPolicy: policy.method === 'NATIVE_ONLY' ? { method: policy.method } : { method: policy.method, approvalRef: policy.approvalRef },
         // Include every actual method/version/approval, including those used before base.
-        methods: [...new Set(methods)].sort(compare).map(method => JSON.parse(method) as NonNullable<typeof alignment.nodes[number]['components'][number]['method']>),
+        methods: [...methods.entries()].sort(([a], [b]) => compare(a, b)).map(([, method]) => method),
       }
     }),
   }
