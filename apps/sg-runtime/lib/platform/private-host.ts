@@ -3,7 +3,8 @@ import { FORECAST_VERIFICATION_PROJECTION, readForecastVerificationSelection, fo
 import { FORECAST_READINESS_PROJECTION, readForecastReadinessSelection, forecastReadinessResourceId, projectForecastReadinessResponse } from './forecast-readiness'
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { createPrivateOperationHost } from '@profitia/platform-contracts/private-operation-host'
-import { createClerkIdentityAuthenticator, type ClerkIdentityClient, type IdentityApplication } from '@profitia/platform-contracts/identity-provider'
+import { createClerkIdentityAuthenticator, type ClerkIdentityClient } from '@profitia/platform-contracts/identity-provider'
+import { bindPublicIdentityAuthenticator, type PublicIdentityApplication as IdentityApplication } from '@profitia/platform-contracts/public-request'
 import type { AccessQuery, AccessStoreBinding } from '@profitia/platform-contracts/access-store'
 import { OperationDenied, type Application, type OperationContext } from '@profitia/platform-contracts/operation-context'
 import { projectSupplierSummaryResponse, readSupplierSummarySelection, SUPPLIER_SUMMARY_PROJECTION } from './supplier-summary'
@@ -75,9 +76,10 @@ function hostBase(options: Sg2PrivateHostOptions, moduleId: Sg2PrivateHostOption
     transact: (work, limits) => prisma.$transaction(transaction => work({
       transaction, query: queryFor(transaction),
     }), { timeout: limits.timeoutMs, maxWait: limits.maxWaitMs }),
-    createAuthenticator: ({ resolveBinding }) => createClerkIdentityAuthenticator({
-      client: clerk, application: identity, resolveBinding, now,
-    }),
+    createAuthenticator: ({ resolveBinding }) => {
+      const authenticate = createClerkIdentityAuthenticator({ client: clerk, application: identity, resolveBinding, now })
+      return identity.requestBoundary ? bindPublicIdentityAuthenticator(authenticate, identity.requestBoundary) : authenticate
+    },
   }
 }
 

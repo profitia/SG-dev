@@ -7,11 +7,48 @@ import { clerkConfigurationSourceDigest } from '@profitia/platform-contracts/cle
 import { readSg2IdentityRuntime, createSg2ClerkClient, IdentityConfigurationUnavailable } from '../lib/platform/identity-runtime'
 import { ClerkSignIn } from '../components/auth/clerk-sign-in'
 import { Sg2IdentityProvider, Sg2SessionContent, Sg2AuthenticatedView } from '../components/auth/session-boundary'
+import { IncomingMessage } from 'node:http'
+import { Socket } from 'node:net'
+import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
+import { NodeNextRequest } from 'next/dist/server/base-http/node.js'
+import { NextRequestAdapter } from 'next/dist/server/web/spec-extension/adapters/next-request.js'
+import { addRequestMeta } from 'next/dist/server/request-meta.js'
+import { createPublicIdentityRequestBoundary, publicIdentityRequestSourceDigest } from '@profitia/platform-contracts/public-request'
 
 const host='identity-fixture.clerk.accounts.dev'
 const fixture=()=>({PROFITIA_AUTH_PROVIDER:'clerk',TARGET_ENVIRONMENT:'development',PROFITIA_CLERK_ISSUER:`https://${host}`,
   PROFITIA_CLERK_PUBLISHABLE_KEY:`pk_test_${Buffer.from(host+'$').toString('base64url')}`,PROFITIA_CLERK_SECRET_KEY:'sk_test_fixture',
   PROFITIA_CLERK_AUTHORIZED_PARTIES:'["http://localhost:3001"]'})
+
+test('the actual SG2 Next adapter uses an internal bind URL and the shared identity boundary pins the public authority', t => {
+  const socket = new Socket(); t.after(() => socket.destroy())
+  const incoming = new IncomingMessage(socket), publicOrigin = 'https://dev-sg2.spendguru.app'
+  incoming.method = 'GET'; incoming.url = '/api/benchmarks/selection?context=public-fixture'
+  incoming.headers = { host: new URL(publicOrigin).host, origin: publicOrigin }
+  addRequestMeta(incoming, 'initURL', 'https://0.0.0.0:10000' + incoming.url)
+  const request = NextRequestAdapter.fromNodeNextRequest(new NodeNextRequest(incoming), new AbortController().signal)
+  assert.equal(new URL(request.url).origin, 'https://0.0.0.0:10000')
+  const normalize = createPublicIdentityRequestBoundary({ publicOrigins: [publicOrigin], internalOrigins: ['https://0.0.0.0:10000'] })
+  assert.equal(normalize(request)!.url, publicOrigin + incoming.url)
+  request.headers.set('origin', 'https://foreign.example.test')
+  assert.equal(normalize(request), null)
+})
+test('the public identity adoption preserves historical receipts and pins the complete current SG2 closure', async () => {
+  const receipt = JSON.parse(readFileSync(new URL('../operation-integration.json', import.meta.url), 'utf8'))
+  const adoption = receipt.publicIdentityRequestAdoption
+  assert.equal(adoption.taskId, 'SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020')
+  assert.equal(adoption.previousApplicationAuthority, '05a7d705e1aeeae04465e59b371ea0cd5a0d4c06')
+  assert.equal(adoption.producer.projectKey, 'ARCHITECTURE'); assert.equal(adoption.producer.sourceSha, '74df44d1f0d6df66e358bd432ebd80c3c955f70a')
+  assert.equal(adoption.sdkDigest, await publicIdentityRequestSourceDigest())
+  const previous = JSON.parse(execFileSync('git', ['show', adoption.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
+  for (const [path, digest] of Object.entries(adoption.sourceDigests)) {
+    assert.equal(createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex'), digest, path)
+  }
+  assert.equal(adoption.productDeploymentPerformed, false)
+})
 
 test('SG2 requires explicit complete Clerk mode and uses the one accepted configuration parser',async()=>{
   assert.deepEqual(readSg2IdentityRuntime({}),{provider:'legacy_demo'})

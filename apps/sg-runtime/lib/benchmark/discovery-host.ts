@@ -1,6 +1,7 @@
 import type {Prisma,PrismaClient} from '@prisma/client'
 import {createPrivateOperationHost} from '@profitia/platform-contracts/private-operation-host'
-import {createClerkIdentityAuthenticator,type ClerkIdentityClient,type IdentityApplication} from '@profitia/platform-contracts/identity-provider'
+import {createClerkIdentityAuthenticator,type ClerkIdentityClient} from '@profitia/platform-contracts/identity-provider'
+import {bindPublicIdentityAuthenticator,type PublicIdentityApplication as IdentityApplication} from '@profitia/platform-contracts/public-request'
 import type {AccessQuery,AccessStoreBinding} from '@profitia/platform-contracts/access-store'
 import {OperationDenied,type Application} from '@profitia/platform-contracts/operation-context'
 import {DISCOVERY_REQUEST_PROJECTION,DISCOVERY_RESULT_PROJECTION,discoveryRequestResourceId,discoveryResultResourceId,discoveryUuid,
@@ -28,8 +29,10 @@ function base(options:DiscoveryHostOptions,operation:'benchmark.discovery.reques
   transactionTimeoutMs:options.transactionTimeoutMs,independentQuery:discoveryQuery(auditPrisma),
   transact:<T>(work:(session:{query:AccessQuery;transaction:Prisma.TransactionClient})=>Promise<T>,limits:{timeoutMs:number;maxWaitMs:number})=>
    prisma.$transaction(tx=>work({query:discoveryQuery(tx),transaction:tx}),{timeout:limits.timeoutMs,maxWait:limits.maxWaitMs}),
-  createAuthenticator:({resolveBinding}:Parameters<Parameters<typeof createPrivateOperationHost<Prisma.TransactionClient>>[0]['createAuthenticator']>[0])=>
-   createClerkIdentityAuthenticator({client:clerk,application:options.identity,resolveBinding,now})}
+  createAuthenticator:({resolveBinding}:Parameters<Parameters<typeof createPrivateOperationHost<Prisma.TransactionClient>>[0]['createAuthenticator']>[0])=>{
+   const authenticate=createClerkIdentityAuthenticator({client:clerk,application:options.identity,resolveBinding,now})
+   return options.identity.requestBoundary?bindPublicIdentityAuthenticator(authenticate,options.identity.requestBoundary):authenticate
+  }}
 }
 async function installed(query:AccessQuery,boundaryDigest:string){
  const rows=await query('SELECT profitia_benchmark_discovery.runtime_descriptor() AS descriptor')
