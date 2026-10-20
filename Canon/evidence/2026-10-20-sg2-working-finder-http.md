@@ -1,0 +1,20 @@
+# SG2 — pełne wejścia Findera przez wspólną platformę
+
+Zadanie SG2-E1-WORKING-FINDER-HTTP-20261020. Profil SG2. TARGET_ENVIRONMENT=development. Status: LOCAL_HTTP_WITH_NATIVE_SOURCE_VERIFIED_NOT_RELEASED.
+
+Sześć oryginalnych metod obejmuje GET/POST wyszukiwania, GET definicji i wartości metadanych, POST kontekstu oraz POST wyszukiwania AI. Każda indywidualna operacja wymaga rzeczywistego poświadczenia sesji przekazanego przez oficjalny getter i niezależnie sprawdzonego przez backend, aktualnego członkostwa, dostępu produktu i prawa operacji. Identyfikatory użytkownika, role, wybór bazy i uprawnienia nie pochodzą z treści formularza. Identyfikator organizacji jest wyborem sprawdzanym przez Root, a domyślna organizacja pochodzi z konfiguracji gospodarza. Metered GET nie akceptuje samej automatycznie przesłanej cookie.
+
+Kompozycja korzysta z tego samego Root i standardowej delegacji: rezerwacja polecenia, bieżący odczyt NativeWork, oryginalne algorytmy biznesowe z odrębnym Source, trwały prywatny wynik i nowy, niezależny odczyt HUMAN. Pobranie z dostawcy nie nadaje uprawnienia do publikacji. Zmienione członkostwo lub prawo odczytu wstrzymuje wynik. Dane pośrednie Findera należą do użytkownika w organizacji; wspólne metadane rynkowe odczytuje zwykły ORM przez kontrolowane widoki. Nie wprowadzono drugiego writera, globalnego fetch, procesu ani schedulera. Istniejący runtime i połączenia HUMAN są współdzielone, a role pracy i Source mają osobne ograniczone pule i niezależny audyt.
+
+Konfiguracja jest domyślnie wyłączona i wiąże konkretne środowisko, usługę, projekt, branch, bazę, rolę oraz wersję. Niekompletna konfiguracja indywidualna kończy się odmową zamiast powrotu do demo. Dotychczasowe jawne demo zachowuje stary handler. Klient UI zachowuje oryginalne ścieżki, formularze i DTO, pamięta klucz logicznego żądania przy niepewnym lub niezakończonym wyniku i usuwa go po ukończonym sukcesie. Zamknięcie instancji użytkownika/sesji blokuje również opóźnione pobranie poświadczenia.
+
+Weryfikacja lokalna:
+
+- 15/15 testów HTTP, parsera, konfiguracji, klienta i cyklu sesji; brak pominięć. Osobne 12/12 regresji istniejącego scope również przeszło.
+- 16/16 testów rzeczywistego jednorazowego PostgreSQL, zwykłych ról i HTTP loopback, bez pominięć. Wszystkie sześć metod zwraca oryginalne DTO, w tym wynik oryginalnego SDK AI i ranking. Powtórzenie sukcesu odczytuje własny trwały wynik bez kolejnego zakupu. Przygotowane metadane nie wykonują HTTP.
+- Odmowy dla innego użytkownika/organizacji, fałszywej tożsamości, alternatywnej ścieżki, cofniętego prawa odczytu, zmiany członkostwa podczas HTTP, braku audytu HUMAN/NativeWork/Source, dryfu roli metadanych, przekierowania i przerwania połączenia. Source nie zapisuje surowych zapytań, promptów, odpowiedzi ani poświadczeń.
+- Parser nadmiernego body odmawia bez tworzenia nieczytanej drugiej gałęzi strumienia. Bounded parser otrzymuje oryginalny strumień; uwierzytelnienie otrzymuje niezmienione URL, metodę, nagłówki i sygnał anulowania, bez autorytetu pochodzącego z body.
+
+Pełny przyrost ma osobny blok nativeFinderDiscoveryAdoption z sumami źródeł; wcześniejsze rekordy odbioru zachowano dokładnie. Ostatni pełny CI df9997d8a320fd0a39a05b9f699a2ee03f4ae409 potwierdził 665/665 testów, typecheck i build, lecz poprzedza ten przyrost. Nowy pełny kandydat wymaga własnego CI i buildów.
+
+Granice: ustawienia chmurowe, polityki, role, SQL i prawdziwe logowanie nie są aktywowane przez ten commit. Retencja odmawia dostępu po terminie, ale nie stanowi mechanizmu fizycznego usuwania. Oryginalne doprecyzowanie AI zwraca bezpieczne 422 bez prywatnego intentu; ponowienie tej samej, już rozliczonej operacji nie kupuje ponownie odpowiedzi i może zwrócić niedostępność. Zmieniony prompt jest odrębną operacją. Nadal wymagane są jawne ograniczone prawa, budżety i retencja, dowody odzyskiwania, kontrolowane wdrożenie Development oraz rzeczywisty odbiór użytkownika. Staging/Production nie objęto tym przyrostem. E1 nadal w toku.

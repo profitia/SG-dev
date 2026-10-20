@@ -1,3 +1,5 @@
+import {readDiscoveryConfiguration} from '@/lib/benchmark/discovery-runtime'
+import type {DiscoveryApi} from '@/lib/benchmark/discovery-api'
 import type { ForecastReadinessSelectionValue, PublicForecastReadinessResult } from './forecast-readiness'
 import type { ForecastVerificationSelectionValue, PublicForecastVerificationResult } from './forecast-verification'
 import { createHash } from 'node:crypto'
@@ -33,6 +35,7 @@ export function validateNativeDashboardBinding(input: unknown): NativeDashboardB
 
 export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<Prisma.TransactionClient>; defaultOrganisationId: string
+  benchmarkDiscovery?:()=>Promise<DiscoveryApi>
   dashboardEmbed?: NativeDashboardBinding
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
   category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
@@ -49,6 +52,7 @@ export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
 }>
 type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
+  discovery?:NonNullable<ReturnType<typeof readDiscoveryConfiguration>>
   binding: AccessStoreBinding; module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string }
   dashboardEmbed?: NativeDashboardBinding
   supplierSummary?: Readonly<{ origin: string; configurationVersion: string }>
@@ -127,7 +131,8 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
     dashboardEmbed = validateNativeDashboardBinding({ origin: env.PROFITIA_DASHBOARD_ORIGIN,
       configurationVersion: env.PROFITIA_DASHBOARD_CONFIGURATION_VERSION, applicationId: 'spendguru', environment: identity.application.environment })
   }
-  const configuration: PrivateConfiguration = { provider: 'clerk', databaseUrl: url.toString(), identity: identity.application,
+  const discovery=readDiscoveryConfiguration(env)
+  const configuration: PrivateConfiguration = { ...(discovery?{discovery}:{}), provider: 'clerk', databaseUrl: url.toString(), identity: identity.application,
     application: { appId: 'spendguru', profileId: 'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
       identityIssuer: identity.application.issuer, organisationId: env.PROFITIA_FIXED_ORGANISATION_ID!,
@@ -243,7 +248,10 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
         read:async(selection:ForecastVerificationSelectionValue)=>(await loadReaders()).verification(selection)}),
     })
   })() : undefined
+  let discoveryPromise:Promise<DiscoveryApi>|undefined
+  const benchmarkDiscovery=config.discovery?()=>discoveryPromise??=import('@/lib/benchmark/discovery-runtime').then(({createDiscoveryRuntime})=>createDiscoveryRuntime(config.discovery!,{prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,module:config.module})):undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
+    ...(benchmarkDiscovery?{benchmarkDiscovery}:{}),
     ...(forecastRequest ? { forecastRequest } : {}), ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}), ...(config.dashboardEmbed ? { dashboardEmbed: config.dashboardEmbed } : {}) })
   globalThis.__sg2PrivateSelectionRuntime__ = { key, runtime }
   return runtime
