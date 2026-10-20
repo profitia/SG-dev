@@ -5,6 +5,7 @@ import { mapMgbiFinancialRecords } from './mgbi-financial'
 import { decodeMsrOriginal } from './msr-source'
 import { parseMsrOriginal } from './msr-parser'
 import { projectMsrFinancial } from './msr-financial'
+import { mapMgbiGeneralRecord } from './mgbi-general'
 
 const NIP = '5272443955', KRS = '0000217580'
 const packet = () => {
@@ -25,6 +26,26 @@ test('closed SOURCE packet preserves original financial mapping and detached dat
   assert.equal(result.facts.find(f => f.metricCode === 'BS_A_CA')!.amount, '300')
   input.general.data.legalName = 'changed'; assert.equal(result.general.data!.legalName, 'Synthetic Company')
 })
+
+test('native Polish KRS dates cross the unchanged classified corporate boundary after provider mapping', () => {
+  const input = packet();
+  const raw = { id: 'a'.repeat(24), identifiers: { pl_nip: NIP, pl_krs: KRS },
+    content: { current_excerpt: { naglowekA: { dataRejestracjiWKRS: '02.05.2001', stanZDnia: '24.04.2026' },
+      dane: { dzial1: { danePodmiotu: { nazwa: 'Synthetic Company', formaPrawna: 'SA' },
+        siedzibaIAdres: { adresStronyInternetowej: 'WWW.EXAMPLE.PL' } } } } } };
+  const mapped = mapMgbiGeneralRecord(raw, input.general.retrievedAt);
+  const result = readCorporatePacket({ ...input, general: mapped.section });
+  assert.equal(result.general.data!.registeredAt, '2001-05-02');
+  assert.equal(result.general.effectiveAt, '2026-04-24');
+  assert.equal(result.general.data!.website, 'https://www.example.pl/');
+  assert.equal(raw.content.current_excerpt.naglowekA.dataRejestracjiWKRS, '02.05.2001');
+  const unnormalized = structuredClone(result);
+  unnormalized.general.data!.registeredAt = '02.05.2001';
+  assert.throws(() => readCorporatePacket(unnormalized), TypeError);
+  unnormalized.general.data!.registeredAt = result.general.data!.registeredAt;
+  unnormalized.general.data!.website = 'WWW.EXAMPLE.PL';
+  assert.throws(() => readCorporatePacket(unnormalized), TypeError);
+});
 
 test('source packet rejects private owner IDs, archive containers, people, unknown fields and caller proof IDs', () => {
   for (const change of [

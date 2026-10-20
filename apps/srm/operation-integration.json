@@ -2173,5 +2173,24 @@
     "officialIdentityVerifierUnchanged": true,
     "historicalReceiptsPreserved": true,
     "productDeploymentPerformed": false
+  },
+  "registryDateNormalizationAdoption": {
+    "taskId": "SRM-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+    "status": "SOURCE_REGRESSION_VERIFIED_LIVE_ACCEPTANCE_PENDING",
+    "previousApplicationAuthority": "95834d1e079df719bf58f94aefd9432eb51bd541",
+    "reason": "Normalize native Polish KRS calendar dates and bare registry websites through existing strict provider DTO helpers before unchanged classified publication",
+    "sharedCalendarParserReused": true,
+    "localExcerptClockNotRelabeledUtc": true,
+    "rawArchivePreserved": true,
+    "publicationSchemaUnchanged": true,
+    "historicalReceiptsPreserved": true,
+    "sourceDigests": {
+      "src/server/mgbi-general.ts": "c4e2e41919b5a59a2822b9d1583e826e16cec865562411c8d8d353ed448369a0",
+      "src/server/company-continuity.ts": "5b54c7eeeddc767821adec27f45cf73ebccccd43c5a3047bc08ca5c9e65900b2",
+      "src/server/mgbi-general.test.ts": "d115a2d623d314b6cc47e768542603ce0247cfcb0058553745fc01e66765620b",
+      "src/server/corporate-source-store.test.ts": "56e39733ae61e9f0ce353a61454fa00d6262c3748ffc8bd93bfa6d731e9137e2"
+    },
+    "productDeploymentPerformed": false,
+    "existingSafeWebsiteProjectionReused": true
   }
 }

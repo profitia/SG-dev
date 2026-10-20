@@ -10,7 +10,7 @@ function values(v: unknown, key: string): string[] {
   return list(v).flatMap(item => { const value = text(item) ?? text(object(item)[key]); return value ? [value] : []; });
 }
 const normalized = (v: string) => v.normalize("NFD").replace(/\p{Diacritic}/gu, "").trim().toUpperCase().replaceAll("Ł","L");
-function iso(v: unknown): string | null {
+export function registryCalendarDate(v: unknown): string | null {
   const s = text(v), match = s && /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s);
   const date = match ? `${match[3]}-${match[2]}-${match[1]}` : s;
   return date && /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(Date.parse(date)) && new Date(date).toISOString().slice(0,10) === date ? date : null;
@@ -41,7 +41,7 @@ function candidate(record: unknown) {
   const entries = list(fullHeader.wpis).map(object);
   return { record, recordId:id, identityConflict, nip, regon: text(ids.pl_regon)?.replace(/^(\d{9})00000$/, "$1") ?? null,
     member: {krs, legalName:name, legalForm:form, status, deregisteredAt:registration.deregisteredAt,
-      registeredAt:iso(header.dataRejestracjiWKRS) ?? iso(entries.find(e => Number(e.numerWpisu) === 1)?.dataWpisu)},
+      registeredAt:registryCalendarDate(header.dataRejestracjiWKRS) ?? registryCalendarDate(entries.find(e => Number(e.numerWpisu) === 1)?.dataWpisu)},
     predecessors:[...new Set([...predecessors(current), ...predecessors(full)])] };
 }
 

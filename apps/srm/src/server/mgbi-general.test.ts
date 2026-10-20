@@ -30,6 +30,38 @@ test("maps WP record to public company fields and provenance", () => {
   assert.deepEqual(result.section.warnings, []);
 });
 
+test("normalizes Polish KRS calendar dates without changing the original archive", () => {
+  const input = structuredClone(record);
+  input.content.current_excerpt.naglowekA = { dataRejestracjiWKRS: "02.05.2001", stanZDnia: "24.04.2026" };
+  const result = mapMgbiGeneralRecord(input, date().toISOString());
+  assert.equal(result.section.data?.registeredAt, "2001-05-02");
+  assert.equal(result.section.effectiveAt, "2026-04-24");
+  assert.equal(input.content.current_excerpt.naglowekA.dataRejestracjiWKRS, "02.05.2001");
+  assert.deepEqual(result.rawRecord, input);
+});
+
+test("rejects impossible or ambiguous registry dates instead of guessing a day", () => {
+  for (const invalid of ["31.02.2026", "2026-02-30", "02/05/2001", "unknown"]) {
+    const input = structuredClone(record);
+    input.content.current_excerpt.naglowekA = { dataRejestracjiWKRS: invalid, stanZDnia: invalid };
+    const result = mapMgbiGeneralRecord(input, date().toISOString());
+    assert.equal(result.section.data?.registeredAt, null, invalid);
+    assert.equal(result.section.effectiveAt, null, invalid);
+    assert(result.section.warnings.includes("MGBI_MISSING_registeredAt"));
+  }
+});
+
+test("keeps proven UTC instants but never labels a local KRS clock as UTC", () => {
+  const input = structuredClone(record);
+  Object.assign(input.content.current_excerpt.naglowekA, { stanZDnia: "", dataCzasOdpisu: "24.04.2026 12:08:06" });
+  assert.equal(mapMgbiGeneralRecord(input, date().toISOString()).section.effectiveAt, "2026-04-24");
+  for (const [value, expected] of [["2026-04-24T12:08:06.123456Z", "2026-04-24T12:08:06.123456Z"],
+    ["31.02.2026 12:08:06", null], ["24.04.2026 24:08:06", null], ["2026-02-30T12:08:06Z", null]]) {
+    Object.assign(input.content.current_excerpt.naglowekA, { dataCzasOdpisu: value });
+    assert.equal(mapMgbiGeneralRecord(input, date().toISOString()).section.effectiveAt, expected);
+  }
+});
+
 test("labels absent fields as partial without inventing values", () => {
   const result = mapMgbiGeneralRecord({ id: "wp-2", identifiers: { pl_krs: "0000123456" } }, date().toISOString());
   assert.equal(result.section.status, "PARTIAL");
@@ -93,9 +125,19 @@ test("rejects invalid identifiers before the provider call", async () => {
 test("current website is optional; historical arrays are not current website hints", () => {
   const current = structuredClone(record);
   Object.assign(current.content.current_excerpt.dane.dzial1.siedzibaIAdres, { adresStronyInternetowej: "https://example.pl" });
-  assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, "https://example.pl");
+  assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, "https://example.pl/");
   assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.status, "SUCCESS");
   assert.equal(mapMgbiGeneralRecord(record, date().toISOString()).section.data?.website, null);
   Object.assign(current.content.current_excerpt.dane.dzial1.siedzibaIAdres, { adresStronyInternetowej: ["https://old.example.pl"] });
   assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, null);
+});
+
+test("normalizes bare KRS websites through the existing safe public URL rule", () => {
+  for (const [input, expected] of [["WWW.EXAMPLE.PL", "https://www.example.pl/"],
+    ["javascript:alert(1)", null], ["http://127.0.0.1/", null], ["https://user:password@example.pl/", null]]) {
+    const current = structuredClone(record);
+    Object.assign(current.content.current_excerpt.dane.dzial1.siedzibaIAdres, { adresStronyInternetowej: input });
+    assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, expected);
+    assert.equal((current.content.current_excerpt.dane.dzial1.siedzibaIAdres as Record<string, unknown>).adresStronyInternetowej, input);
+  }
 });
