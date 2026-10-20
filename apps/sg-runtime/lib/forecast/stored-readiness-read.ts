@@ -7,6 +7,7 @@ import { createInteractiveForecastPreparationService } from './interactive-prepa
 import { readForecastPreparedVariantsFromPort, type ForecastPreparedStateDataPort, type PreparedPeriodStateKey } from './prepared-state'
 import { createStoredForecastSourceReader, type StoredForecastBinding } from './stored-current-read'
 import { readStoredVerificationFromSource } from './stored-verification-read'
+import { createStoredRollingDailyVerificationSource } from './rolling-daily-verification'
 import { readStoredPeriodCurrent } from './stored-period-current'
 import { readRollingDailyCurrentForecastSnapshotFromPort, type RollingDailySnapshotReadPort } from './rolling-daily-current-forecast-snapshot'
 import { ROLLING_DAILY_INPUT_SOURCE, ROLLING_DAILY_METHOD_ID, ROLLING_DAILY_METHOD_VERSION } from './rolling-daily-maintenance'
@@ -117,13 +118,14 @@ export function createStoredForecastCapabilityPolicy(transaction:Prisma.Transact
  * No connection, hydration, provider access, preparation or execution is exposed. */
 export function createStoredForecastReadinessPolicy(transaction:Prisma.TransactionClient,history:BenchmarkHistoricalSeriesResult,boundSeriesId:string) {
   const capabilities=createStoredForecastCapabilityPolicy(transaction,history,boundSeriesId)
+  const rollingSource=createStoredRollingDailyVerificationSource(transaction)
   const refuse = async (): Promise<never> => { throw new Error('Stored capability cannot execute preparation or persistence') }
   const verification = (scope: 'FAST' | 'FULL' | 'RECENT') => async (input: ForecastRequestInput | ForecastServiceRequest) =>
     ensureHistoricalVerificationContract(await readStoredVerificationFromSource(transaction, history, {
       seriesId: input.seriesId, modelId: input.modelId as ForecastRequestInput['modelId'], targetBasis: input.targetBasis,
       verificationScope: scope,
       ...(input.sourceFrequency ? { sourceFrequency: input.sourceFrequency, targetCadence: input.targetCadence } : {}),
-    }))
+    }, rollingSource))
   const service = createInteractiveForecastPreparationService({
     resolveExactCapability: capabilities.resolveExact, resolveCapabilitiesBySeriesId: capabilities.resolveBySeriesId,
     prepareMonthlyCurrent: refuse, prepareRollingCurrent: refuse, prepareRollingDailyOwnership: refuse,

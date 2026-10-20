@@ -114,7 +114,10 @@ export function createStoredForecastSourceReader(prisma: Pick<PrismaClient, '$tr
         const result = await work(transaction, history)
         if (receipt.expires_at.getTime() <= Date.now()) throw unavailable()
         return result
-      }, { timeout: 5000, maxWait: 3000 })
+      // The stored read includes history, exact artifact and readiness checks.
+      // Keep it bounded below the private host's 15s transaction deadline;
+      // individual SQL and lock limits above remain 4s and 2s.
+      }, { timeout: 10000, maxWait: 3000 })
     } catch (error) {
       if (error instanceof BenchmarkAppError) throw error
       throw unavailable()
