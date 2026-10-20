@@ -21,8 +21,10 @@ test('explicit Next standalone internal authority becomes the exact public ident
 test('public requests remain public and proxy headers never select an authority', () => {
   const normalize = createPublicIdentityRequestBoundary(configuration())
   for (const url of [origin + '/api/read?x=1', internal + '/api/read?x=1']) {
-    const result = normalize(request(url, { 'x-forwarded-host': 'evil.example.test', 'x-forwarded-proto': 'http', forwarded: 'host=evil.example.test' }))
+    const result = normalize(request(url, { 'x-forwarded-host': 'evil.example.test', 'x-forwarded-proto': 'http', 'x-forwarded-port': '81', 'cloudfront-forwarded-proto': 'http', forwarded: 'host=evil.example.test' }))
     assert.equal(result.url, origin + '/api/read?x=1')
+    for (const name of ['forwarded', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'cloudfront-forwarded-proto']) assert.equal(result.headers.has(name), false)
+    assert.equal(result.headers.get('host'), new URL(origin).host)
   }
   assert.equal(normalize(new Request(origin + '/api/read')).url, origin + '/api/read')
 })
