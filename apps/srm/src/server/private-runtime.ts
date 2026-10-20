@@ -5,7 +5,7 @@ import pg, { type PoolClient, type PoolConfig } from 'pg'
 import type { Application, OperationExecutor } from '@profitia/platform-contracts/operation-context'
 import { OperationDenied } from '@profitia/platform-contracts/operation-context'
 import type { AccessStoreBinding } from '@profitia/platform-contracts/access-store'
-import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
+import type { PublicIdentityApplication as IdentityApplication } from '@profitia/platform-contracts/public-request'
 import targets from '../../deployment/private-runtime-targets.json'
 import { createSrmClerkClient, IdentityConfigurationUnavailable, readSrmIdentityRuntime } from './identity-runtime'
 import { createSrmPrivateOperationHost } from './private-operation-host'
@@ -57,7 +57,8 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
     || url.searchParams.getAll('sslmode').length !== 1 || url.searchParams.get('sslmode') !== 'require'
     || url.searchParams.getAll('channel_binding').length > 1
     || (url.searchParams.has('channel_binding') && url.searchParams.get('channel_binding') !== 'require')) unavailable()
-  const config: PrivateConfiguration = { provider: 'clerk', databaseUrl: url.toString(), identity: identity.application,
+  const config: PrivateConfiguration = { provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
+    requestBoundary: { publicOrigins: [...identity.application.authorizedParties], internalOrigins: ['http://0.0.0.0:10000', 'https://0.0.0.0:10000'] } },
     application: { appId: 'srm', profileId: 'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
       identityIssuer: identity.application.issuer, organisationId: env.PROFITIA_FIXED_ORGANISATION_ID!,
