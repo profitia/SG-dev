@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
   // boundary. Other legacy entrances are still closed in explicit Clerk mode.
   if (["/api/xray/report-data", "/api/xray/financial-excel", "/api/xray/financial-summary", "/api/xray/requests",
     "/api/xray/search", "/api/xray/lookup", "/api/xray/jdg", "/api/xray/jdg/kys",
-    "/api/xray/kys", "/api/xray/kys/pesel", "/api/xray/kys/pdf"].includes(path) && process.env.PROFITIA_AUTH_PROVIDER === "clerk") {
+    "/api/xray/kys", "/api/xray/kys/pesel", "/api/xray/kys/pdf", "/api/xray/kys/krs"].includes(path) && process.env.PROFITIA_AUTH_PROVIDER === "clerk") {
     return NextResponse.next({ headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization" } });
   }
   const authenticated = await hasDemoSession(request);
