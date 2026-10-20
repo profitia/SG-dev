@@ -47,7 +47,10 @@ test('native provider source adoption pins original clients and keeps live relea
     const expected=latest.sourceDigests[path]??adoption.sourceDigests[path]??digest
     assert.equal(hash(execFileSync('git',['show','0403b34da82796c9c001be9cf53c5dcb6f9d823d:apps/srm/'+path])),expected,path)
   }
-  for(const[path,digest]of Object.entries(manifest.workingSupplierWebSourceProgress.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
+  const identityAdoption = manifest.publicIdentityRequestAdoption
+  assert.equal(identityAdoption.previousApplicationAuthority, '05a7d705e1aeeae04465e59b371ea0cd5a0d4c06')
+  for(const[path,digest]of Object.entries(manifest.workingSupplierWebSourceProgress.sourceDigests))assert.equal(hash(execFileSync('git',['show',identityAdoption.previousApplicationAuthority+':apps/srm/'+path])),digest,path)
+  for(const[path,digest]of Object.entries(identityAdoption.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path)
   for (const key of ['humanSupplierRefreshAdopted', 'sharedCatalogWriteAdopted', 'msrFilesAdopted', 'krsFilesAdopted', 'liveSqlInstalled', 'runtimeRoleOrGrantChanged', 'productDeploymentPerformed']) assert.equal(current[key], false, key)
 })
 
