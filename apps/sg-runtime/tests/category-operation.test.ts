@@ -222,6 +222,30 @@ test('category ingress reception preserves the accepted transport and pins the c
   for(const[key,value]of Object.entries(previous))assert.deepEqual(receipt[key],value,key)
   for(const path of Object.keys(previous.categoryTransportAdoption.sourceDigests))assert(path in current.sourceDigests,path)
   for(const path of ['lib/category/operation-handlers.ts','tests/category-operation.test.ts'])assert(path in current.sourceDigests,path)
-  for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+  for(const[path,digest]of Object.entries(current.sourceDigests)){
+    const bytes=receipt.benchmarkPickerAdoption?execFileSync('git',['show',receipt.benchmarkPickerAdoption.previousApplicationAuthority+':apps/sg-runtime/'+path]):readFileSync(new URL('../'+path,import.meta.url))
+    assert.equal(createHash('sha256').update(bytes).digest('hex'),digest,path)
+  }
   assert.equal(current.productDeploymentPerformed,false)
+})
+
+
+test('shared benchmark picker receiver acceptance preserves every earlier E1 receipt and pins the complete current closure',async()=>{
+  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),{createHash}=await import('node:crypto')
+  const receipt=JSON.parse(readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8')),current=receipt.benchmarkPickerAdoption
+  assert.equal(current.taskId,'SG2-PICKER-RECEIVER-ADOPTION-TASK04A-20261020');assert.equal(current.previousApplicationAuthority,'faa97ee433a9f60de28b417b4ee323759c7c9ffb')
+  const previous=JSON.parse(execFileSync('git',['show',current.previousApplicationAuthority+':apps/sg-runtime/operation-integration.json'],{encoding:'utf8'}))
+  for(const[key,value]of Object.entries(previous))assert.deepEqual(receipt[key],value,key)
+  for(const path of Object.keys(previous.categoryIngressAdoption.sourceDigests))assert(path in current.sourceDigests,path)
+  for(const path of ['components/benchmark-picker/shared-benchmark-picker.tsx','components/benchmark-picker/picker-controller.ts','components/benchmark-picker/presentation.ts',
+    'components/benchmark-finder/benchmark-request.ts','components/benchmark-finder/discovery-request.ts','components/benchmark-finder/result-window.ts',
+    'components/category-builder/benchmark-picker-draft.ts','tests/benchmark-picker-controller.test.ts','tests/benchmark-picker-request.test.ts',
+    'tests/shared-benchmark-picker.test.tsx','tests/category-benchmark-picker.test.ts'])assert(path in current.sourceDigests,path)
+  for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+  for(const path of ['lib/category/operation-handlers.ts','components/category-builder/category-operation-request.ts',
+    'lib/benchmark/operation-context.ts','lib/benchmark/selection-handlers.ts','lib/benchmark/runtime-handlers.ts','lib/benchmark/discovery-http.ts',
+    'lib/benchmark/discovery-api.ts','lib/benchmark/discovery-operation.ts','lib/benchmark/preview-handlers.ts','components/auth/session-boundary.tsx']){
+    assert.deepEqual(readFileSync(new URL('../'+path,import.meta.url)),execFileSync('git',['show',current.previousApplicationAuthority+':apps/sg-runtime/'+path]),path)
+  }
+  assert.equal(current.productDeploymentPerformed,false);assert.equal(current.backendAuthorizationChanged,false)
 })
