@@ -2,6 +2,9 @@ import type { GeneralCompanyData, SectionEnvelope } from "@profitia/srm-xray";
 import { fetchMgbiPages } from "./mgbi-archive";
 import { companyRegistration } from "./company-activity";
 import { registryCalendarDate, resolveCompanyRecords } from "./company-continuity";
+import { normalizedWebsite } from "./website-discovery";
+import { isIP } from "node:net";
+import { isPublicAddress } from "./safe-public-fetch";
 
 export type CompanyIdentifier = { type: "NIP" | "KRS"; value: string };
 export type MgbiGeneralResult = {
@@ -42,6 +45,12 @@ function registryEffectiveAt(value: unknown): string | null {
   // retrievedAt remains the precise retrieval instant and the archive is raw.
   const local = /^(\d{2}\.\d{2}\.\d{4}) ([0-2]\d):([0-5]\d):([0-5]\d)$/.exec(text);
   return local && Number(local[2]) < 24 ? registryCalendarDate(local[1]) : null;
+}
+function registryWebsite(value: unknown): string | null {
+  const url = normalizedWebsite(value);
+  if (!url) return null;
+  const host = new URL(url).hostname.replace(/^\[|\]$/g, "");
+  return isIP(host) && !isPublicAddress(host) ? null : url;
 }
 function first(value: unknown): unknown {
   return Array.isArray(value) ? value[0] : value;
@@ -85,7 +94,7 @@ export function mapMgbiGeneralRecord(record: unknown, retrievedAt: string): Mgbi
     registeredAt: registryCalendarDate(at(header, "dataRejestracjiWKRS")),
     mainPkd: mapPrimaryPkd(activity).code,
     mainPkdDescription: mapPrimaryPkd(activity).description,
-    website: str(at(excerpt, "dane", "dzial1", "siedzibaIAdres", "adresStronyInternetowej")),
+    website: registryWebsite(at(excerpt, "dane", "dzial1", "siedzibaIAdres", "adresStronyInternetowej")),
   };
   const missing = FIELD_NAMES.filter((field) => data[field] === null);
   const hasData = missing.length < FIELD_NAMES.length;

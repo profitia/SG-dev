@@ -125,9 +125,19 @@ test("rejects invalid identifiers before the provider call", async () => {
 test("current website is optional; historical arrays are not current website hints", () => {
   const current = structuredClone(record);
   Object.assign(current.content.current_excerpt.dane.dzial1.siedzibaIAdres, { adresStronyInternetowej: "https://example.pl" });
-  assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, "https://example.pl");
+  assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, "https://example.pl/");
   assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.status, "SUCCESS");
   assert.equal(mapMgbiGeneralRecord(record, date().toISOString()).section.data?.website, null);
   Object.assign(current.content.current_excerpt.dane.dzial1.siedzibaIAdres, { adresStronyInternetowej: ["https://old.example.pl"] });
   assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, null);
+});
+
+test("normalizes bare KRS websites through the existing safe public URL rule", () => {
+  for (const [input, expected] of [["WWW.EXAMPLE.PL", "https://www.example.pl/"],
+    ["javascript:alert(1)", null], ["http://127.0.0.1/", null], ["https://user:password@example.pl/", null]]) {
+    const current = structuredClone(record);
+    Object.assign(current.content.current_excerpt.dane.dzial1.siedzibaIAdres, { adresStronyInternetowej: input });
+    assert.equal(mapMgbiGeneralRecord(current, date().toISOString()).section.data?.website, expected);
+    assert.equal((current.content.current_excerpt.dane.dzial1.siedzibaIAdres as Record<string, unknown>).adresStronyInternetowej, input);
+  }
 });
