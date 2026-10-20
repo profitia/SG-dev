@@ -6,6 +6,7 @@ import type {
   CciInputSemantics,
   CciMonthlyResult,
   CciResult,
+  PercentChange,
 } from './contracts'
 
 function isRecord(value: unknown): value is Record<string, unknown> {

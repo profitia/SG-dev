@@ -1,5 +1,5 @@
 import { CCI_WEIGHT_SUM_TOLERANCE, CciValidationError, sum, calculateFixedBaseComponent, calculateFixedBaseIndex, calculatePeriodChange } from './cci-math'
-import type { CciAlignedNode, CciCadence, CciPeriodIdentity } from './market-data-contracts'
+import type { CciAlignedComponentValue, CciAlignedNode, CciCadence, CciPeriodIdentity } from './market-data-contracts'
 import type { CciNodeInput, CciNodeInputSemantics, CciNodeResult, CciNodesResult, CciNodeValidationCode, CciNodeValidationIssue } from './cci-node-contracts'
 import type { PercentChange } from './contracts'
 
@@ -94,7 +94,8 @@ function validate(input: CciNodeInput) {
   const components = [...weights].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([componentId, weightPercent]) => ({ componentId, weightPercent }))
   const missingIntervals: CciNodesResult['missingIntervals'][number][] = []
   let previous: CciAlignedNode | undefined
-  for (const node of input.nodes) {
+  const suppliedNodes: readonly CciAlignedNode[] = input.nodes
+  for (const node of suppliedNodes) {
     if (!record(node)) invalid('INVALID_MODEL', 'Every supplied node must be an object.')
     validatePeriod(node.period, input.analysisCadence, cutoff)
     if (previous) {
@@ -105,7 +106,7 @@ function validate(input: CciNodeInput) {
     if (!Array.isArray(node.components) || node.components.length !== components.length) invalid('INVALID_NODE_COMPONENTS', 'Each node must identify every declared component; missing levels are explicit nulls.')
     const seen = new Set<string>()
     let complete = true
-    for (const c of node.components) {
+    for (const c of node.components as readonly CciAlignedComponentValue[]) {
       if (!record(c) || !weights.has(c.componentId) || seen.has(c.componentId) || weights.get(c.componentId) !== c.weightPercent) {
         invalid('INVALID_NODE_COMPONENTS', 'Node components must match unique declared identities and fixed weights.')
       }
@@ -119,7 +120,7 @@ function validate(input: CciNodeInput) {
     if (node.status !== (complete ? 'COMPLETE' : 'INCOMPLETE')) invalid('INCONSISTENT_NODE_STATUS', 'Node completeness must agree with active component values.')
     previous = node
   }
-  const base = input.nodes.find(node => node.period.start === input.baseNodeStart)
+  const base = suppliedNodes.find(node => node.period.start === input.baseNodeStart)
   if (!base) invalid('MISSING_BASE_NODE', 'The exact requested base node must be present; it is never moved.')
   if (base.status !== 'COMPLETE') invalid('INCOMPLETE_BASE_NODE', 'Every active component must have a valid base level.')
   return { inputSemantics, components, base, missingIntervals }
