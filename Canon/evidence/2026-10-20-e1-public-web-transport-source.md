@@ -14,11 +14,13 @@ Package1.23.0 is React-independent. Root candidate.15, catalogue1.2.0, AM-01–A
 
 ## Local verification
 
-The final full common-contract/laboratory run used a new local PostgreSQL16 cluster, distinct disposable databases, ordinary LOGIN roles and real HTTP servers: **1088 tests, 1088 passed, zero failed/skipped**. The cluster was stopped after the run. This includes 33 network guard cases and the public Source integration, original JSON/fixed native Source regressions, operation/type contracts and existing laboratory tests. Focused Source67 and earlier compatibility39 runs overlap the full run and are not additional totals.
+The final full common-contract/laboratory run used a new local PostgreSQL16 cluster, distinct disposable databases, ordinary LOGIN roles and real HTTP servers: **1089 tests, 1089 passed, zero failed/skipped**. The cluster was stopped after the run. This includes 34 network guard cases and the public Source integration, original JSON/fixed native Source regressions, operation/type contracts and existing laboratory tests. Focused Source67 and earlier compatibility39 runs overlap the full run and are not additional totals.
 
 Verified positives include real bytes, three committed control phases, two independently admitted redirect requests, preserved fixed native behavior, current policy and finite budget. Negatives include actual elevated/foreign SQL identity, installer/digest/active-binding refusal and rollback, credential and origin substitution, private/mixed/mapped addresses, invalid protocol/path, concurrent duplicate, acknowledgement loss, audit outage, oversized/cancelled response, policy revocation after committed ATTEMPT and after network response, expiry, actual non-Development synthetic refusal, direct table/column ACL drift, forced RLS and no raw query/token/response in control history.
 
 An initial test attempted policy revocation while its own parent policy row was still locked; it correctly timed out rather than proving a post-commit transition. The fixture now revokes at the independent descriptor read after ATTEMPT commits. Another initial fixture tried to jump an immutable admission counter; the final finite-budget test changes the explicitly mutable Source budget instead. Original negative conditions were retained. A separate non-elevated local run could not bind loopback (`EPERM`); the complete final run used the permitted isolated local execution path and has no skipped socket tests.
+
+Final parity review added a regression for ordinary redirect anchors: PUBLIC_WEB strips the client-only fragment before the next independently admitted hop, as original SRM discovery did. Fixed native origins keep their original fragment refusal. The final1089 run verifies the updated exact source; the earlier1088 run is retained as historical validation.
 
 The synthetic Source server proves real TCP/control/SQL behavior, not real public DNS/TLS or a live supplier service. DNS/address and redirect validation have separate negative tests. No live provider request, customer data, production DNS, purchase or customer OTP is claimed.
 
@@ -26,7 +28,7 @@ The synthetic Source server proves real TCP/control/SQL behavior, not real publi
 
 | Boundary | SHA-256 |
 | --- | --- |
-| External Source SDK closure | `10734621dbbd8047a0b49339912f2c02ca9f00aca3a89ff4f9a07605d56dde40` |
+| External Source SDK closure | `dedad0ede99bfabd65481022fcafd74a7436d1c827fe3b346b25a237bc639c53` |
 | Existing Core009 | `69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206` |
 | Existing Core012 | `6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde` |
 | Optional Core018 | `f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d` |

@@ -97,8 +97,10 @@ export async function readNativeProviderResponse(response,{config,requestUrl,ass
   if(![301,302,303,307,308].includes(response.status))invalid()
   const location=boundedHeader(response,'location',8192);if(!location)invalid()
   const u=new URL(location,requestUrl)
-  if(u.username||u.password||u.hash||(publicWeb?publicUrl(u.href).href!==u.href:!config.redirectOrigins.includes(u.origin)))invalid()
-  headers.location=u.href
+  if(u.username||u.password||!publicWeb&&(u.hash||!config.redirectOrigins.includes(u.origin)))invalid()
+  // Public website fragments are client-side anchors. Preserve the original
+  // discovery normalization before the next separately admitted HTTP hop.
+  headers.location=publicWeb?publicUrl(u.href).href:u.href
  }
  const length=boundedHeader(response,'content-length',32)
  if(length!==null&&(!/^[0-9]+$/.test(length)||!Number.isSafeInteger(Number(length))||Number(length)>config.maximumResponseBytes)){

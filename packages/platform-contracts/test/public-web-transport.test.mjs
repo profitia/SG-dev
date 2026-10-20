@@ -39,6 +39,12 @@ test('each public redirect Location is revalidated without credential or cookie 
  assert.equal(r.headers.location,'https://other.example/b');assert.equal(r.headers['set-cookie'],undefined)
  for(const location of ['http://metadata.internal/a','https://u:p@other.example/a','https://other.example:8443/a'])await assert.rejects(readNativeProviderResponse(new Response(null,{status:302,headers:{location}}),opts))
 })
+test('public redirect anchors keep original website behavior while fixed native policies still reject them',async()=>{
+ const requestUrl='https://supplier.example/a',base={config,requestUrl,signal:new AbortController().signal,assertActive(){}}
+ const r=await readNativeProviderResponse(new Response(null,{status:302,headers:{location:'/kontakt#firma'}}),{...base,publicWeb:true})
+ assert.equal(r.headers.location,'https://supplier.example/kontakt')
+ await assert.rejects(readNativeProviderResponse(new Response(null,{status:302,headers:{location:'/kontakt#firma'}}),{...base,config:{...config,redirectOrigins:['https://supplier.example']}}))
+})
 test('one real bounded synthetic socket uses original fixed headers and never follows a redirect',async()=>{
  let hits=0,seen;const server=http.createServer((req,res)=>{hits++;seen=req.headers;if(req.url==='/redirect'){res.writeHead(302,{location:'https://other.example/final','set-cookie':'private'});res.end()}else if(req.url==='/compressed'){res.writeHead(200,{'content-encoding':'gzip'});res.end('x')}else res.end('hello')})
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)})
