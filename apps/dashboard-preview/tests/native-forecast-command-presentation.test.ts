@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import {nativeForecastCommandFromUi,nativeForecastCommandOutcome,parseNativeForecastCommand} from '../lib/benchmark-forecast/native-command-presentation'
+import {nativeForecastCommandFromUi,nativeForecastCommandOutcome,parseNativeForecastCommand,nativeForecastCompletionPlan} from '../lib/benchmark-forecast/native-command-presentation'
 import {createEmbeddedForecastSubmitter} from '../lib/platform/native-embedded-command'
 import type {EmbeddedCommandRequest} from '@profitia/platform-contracts/embedded-command-channel'
 const current={kind:'CURRENT',modelId:'naive',targetSemantics:'MONTHLY_AVERAGE'} as const
@@ -35,4 +35,49 @@ test('abort observation is propagated without replacing intent or presenting acc
   const submitter=createEmbeddedForecastSubmitter({async submit(request){seen.push(request.intentId);throw new DOMException('cancelled','AbortError')}},()=>{generated++;return'11111111-1111-4111-8111-111111111111'})
   await assert.rejects(submitter.submit(current),e=>e instanceof Error&&e.name==='AbortError');await assert.rejects(submitter.submit(current),e=>e instanceof Error&&e.name==='AbortError')
   assert.equal(generated,1);assert.equal(seen[0],seen[1])
+})
+
+test('accepted Current is read again only after scientific readiness; idle presentation does not poll for unrequested verification',async()=>{
+  const requests:EmbeddedCommandRequest[]=[],ids=['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222']
+  let generated=0
+  const submitter=createEmbeddedForecastSubmitter({async submit(request){requests.push(request);return{status:202,body:{status:'ACCEPTED'}}}},()=>ids[generated++])
+  const selection={modelId:'naive',targetBasis:'MONTHLY_AVERAGE'} as const
+  const idle=nativeForecastCompletionPlan({...selection,currentReadiness:'READY',pending:null})
+  assert.equal(idle.poll,false);assert.equal(idle.refreshCurrent,false)
+  const state=await submitter.submit(current)
+  const pending={kind:'CURRENT',state} as const
+  const waiting=nativeForecastCompletionPlan({...selection,currentReadiness:'NOT_PREPARED',pending})
+  assert.equal(waiting.poll,true);assert.equal(waiting.refreshCurrent,false);assert.equal(waiting.clearPending,false)
+  const ready=nativeForecastCompletionPlan({...selection,currentReadiness:'READY',fullVerificationReadiness:'NOT_PREPARED',pending})
+  assert.equal(ready.poll,false);assert.equal(ready.refreshCurrent,true);assert.equal(ready.clearPending,true)
+  for(const command of ready.completed)submitter.observeCompletion(command)
+  const displayed=nativeForecastCompletionPlan({...selection,currentReadiness:'READY',pending:null})
+  assert.equal(displayed.poll,false);assert.equal(displayed.refreshCurrent,false,'Clearing the observed intent prevents repeated reads')
+  assert.equal(requests.length,1,'Readiness must not create another preparation request')
+  await submitter.submit(current);assert.notEqual(requests[0].intentId,requests[1].intentId)
+})
+
+test('Fast verification does not complete a full command; completed daily calibration refreshes Current without new work',()=>{
+  const selection={modelId:'naive',targetBasis:'POINT_IN_TIME',currentReadiness:'READY',pending:{kind:'VERIFICATION',state:'ACCEPTED'}} as const
+  const fast=nativeForecastCompletionPlan({...selection,fullVerificationReadiness:'NOT_PREPARED'})
+  assert.equal(fast.poll,true);assert.equal(fast.clearPending,false);assert.equal(fast.refreshCurrent,false)
+  assert.deepEqual(fast.completed.map(command=>command.kind),['CURRENT'])
+  const full=nativeForecastCompletionPlan({...selection,fullVerificationReadiness:'READY'})
+  assert.equal(full.poll,false);assert.equal(full.clearPending,true);assert.equal(full.refreshCurrent,true)
+  assert.deepEqual(full.completed.map(command=>command.kind),['CURRENT','VERIFICATION'])
+  assert.equal(nativeForecastCompletionPlan({...selection,targetBasis:'MONTHLY_AVERAGE',fullVerificationReadiness:'READY'}).refreshCurrent,false)
+})
+
+test('sending, denied and limited commands are never polled or promoted by acknowledgement; ambiguous intent waits for actual readiness',()=>{
+  for(const state of ['SENDING','DENIED','LIMIT_REACHED','INVALID'] as const){
+    const plan=nativeForecastCompletionPlan({modelId:'ets',targetBasis:'POINT_IN_TIME',currentReadiness:'READY',pending:{kind:'CURRENT',state}})
+    assert.equal(plan.poll,false);assert.equal(plan.refreshCurrent,false)
+    if(state==='SENDING')assert.equal(plan.clearPending,false)
+  }
+  for(const readiness of ['NOT_PREPARED','STALE','FAILED']){
+    const plan=nativeForecastCompletionPlan({modelId:'ets',targetBasis:'POINT_IN_TIME',currentReadiness:readiness,pending:{kind:'CURRENT',state:'UNKNOWN'}})
+    assert.equal(plan.poll,true);assert.equal(plan.refreshCurrent,false);assert.equal(plan.clearPending,false)
+  }
+  const completed=nativeForecastCompletionPlan({modelId:'ets',targetBasis:'POINT_IN_TIME',currentReadiness:'READY',pending:{kind:'CURRENT',state:'UNKNOWN'}})
+  assert.equal(completed.refreshCurrent,true);assert.equal(completed.poll,false)
 })

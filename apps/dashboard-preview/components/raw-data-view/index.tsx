@@ -1,7 +1,7 @@
 'use client'
 
 import { useEmbeddedReadPresentation } from '../native-embedded-read-provider'
-import {nativeForecastCommandFromUi,type NativeForecastCommandOutcome,type NativeForecastCommandSelection} from '@/lib/benchmark-forecast/native-command-presentation'
+import {nativeForecastCommandFromUi,nativeForecastCompletionPlan,type NativeForecastCommandOutcome,type NativeForecastCommandSelection} from '@/lib/benchmark-forecast/native-command-presentation'
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
@@ -2935,15 +2935,14 @@ export function RawDataView({
   )
   const selectedCurrentPrepared = !preparedReadsOnly || selectedCapabilityVariant?.currentReadiness === 'READY'
   const pendingFullNativeCommand=nativeCommandState?.kind==='VERIFICATION'&&['ACCEPTED','UNKNOWN'].includes(nativeCommandState.state)
+  const nativeCompletion=nativeForecastCompletionPlan({modelId:forecastModel,targetBasis:selectedForecastTargetBasis,
+    currentReadiness:selectedCapabilityVariant?.currentReadiness,fullVerificationReadiness:selectedCapabilityVariant?.fullVerificationReadiness,
+    pending:nativeCommandState})
   useEffect(()=>{
     if(!nativeCommands)return
-    for(const kind of ['CURRENT','VERIFICATION'] as const){
-      const ready=kind==='CURRENT'?selectedCapabilityVariant?.currentReadiness==='READY':selectedCapabilityVariant?.fullVerificationReadiness==='READY'
-      if(!ready)continue
-      const command=nativeForecastCommandFromUi(forecastModel,selectedForecastTargetBasis,kind)
-      if(command)nativeCommands.observeCompletion(command)
-      if(nativeCommandState?.kind===kind&&nativeCommandState.state!=='SENDING')setNativeCommandState(null)
-    }
+    for(const command of nativeCompletion.completed)nativeCommands.observeCompletion(command)
+    if(nativeCompletion.refreshCurrent)setForecastCurrentReloadNonce(value=>value+1)
+    if(nativeCompletion.clearPending)setNativeCommandState(null)
   },[nativeCommands,forecastModel,selectedForecastTargetBasis,selectedCapabilityVariant?.currentReadiness,selectedCapabilityVariant?.fullVerificationReadiness,nativeCommandState?.kind,nativeCommandState?.state])
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
   const forecastCurrentObservedProgressState = resolveForecastCurrentObservedProgressState(
@@ -3115,6 +3114,7 @@ export function RawDataView({
       || !benchmarkSeriesId
       || !showForecast
       || forecastCapabilityState !== 'ready'
+      || nativeReadOnly&&!nativeCompletion.poll
     ) {
       return
     }
@@ -3190,6 +3190,8 @@ export function RawDataView({
     showForecast,
     pendingFullNativeCommand,
     forecastPreparationPollNonce,
+    nativeReadOnly,
+    nativeCompletion.poll,
   ])
 
   useEffect(() => {
