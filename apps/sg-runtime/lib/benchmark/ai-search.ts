@@ -5,6 +5,7 @@ import type { BenchmarkAiSearchResult, BenchmarkCandidate, BenchmarkSearchIntent
 import { BenchmarkAppError } from '@/lib/benchmark/errors'
 import { searchBenchmarks } from '@/lib/benchmark/service'
 import { serverEnv } from '@/lib/env'
+import {benchmarkProviderFetch,hasBenchmarkProviderScope} from './provider-scope'
 
 const DEFAULT_OPENAI_MODEL = 'gpt-5.6-luna'
 const MAX_PROMPT_LENGTH = 500
@@ -91,7 +92,10 @@ function getOpenAiClient() {
     )
   }
 
-  return new OpenAI({ apiKey: serverEnv.OPENAI_API_KEY })
+  return new OpenAI({ apiKey: serverEnv.OPENAI_API_KEY,
+    ...(hasBenchmarkProviderScope()?{baseURL:'https://api.openai.com/v1',maxRetries:0,
+      fetch:((input,init)=>benchmarkProviderFetch('openai',input,init)) as typeof fetch}:{}),
+  })
 }
 
 function getOpenAiModel() {
