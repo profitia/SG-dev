@@ -93,7 +93,7 @@ function getOpenAiClient() {
   }
 
   return new OpenAI({ apiKey: serverEnv.OPENAI_API_KEY,
-    ...(hasBenchmarkProviderScope()?{baseURL:'https://api.openai.com/v1',maxRetries:0,
+    ...(hasBenchmarkProviderScope()?{baseURL:'https://api.openai.com/v1',maxRetries:0,organization:null,project:null,
       fetch:((input,init)=>benchmarkProviderFetch('openai',input,init)) as typeof fetch}:{}),
   })
 }
@@ -230,6 +230,7 @@ async function requestStructuredOutput<T>(params: {
 }) {
   const client = getOpenAiClient()
   const response = await client.responses.create({
+    ...(hasBenchmarkProviderScope()?{store:false}:{}),
     model: getOpenAiModel(),
     input: [
       {

@@ -12,7 +12,7 @@ export type DiscoveryHostOptions={prisma:PrismaClient;auditPrisma:PrismaClient;c
  now?:()=>number;transactionTimeoutMs?:number}
 const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
 export const discoveryQuery=(client:Pick<Prisma.TransactionClient,'$queryRawUnsafe'|'$executeRawUnsafe'>):AccessQuery=>async(sql,values=[])=>{
- const audit=['SELECT profitia_access.append_audit($1::jsonb)','SELECT profitia_jobs.append_audit($1::jsonb)'].includes(sql)
+ const audit=['SELECT profitia_access.append_audit($1::jsonb)','SELECT profitia_jobs.append_audit($1::jsonb)','SELECT profitia_ingestion.append_audit($1::jsonb)'].includes(sql)
  if(/^\s*SELECT\b/i.test(sql)&&!audit)return{rows:await client.$queryRawUnsafe<Record<string,unknown>[]>(sql,...values)}
  if(!/^SET LOCAL\b/.test(sql)&&!audit)return refuse()
  await client.$executeRawUnsafe(sql,...values);return{rows:[]}
