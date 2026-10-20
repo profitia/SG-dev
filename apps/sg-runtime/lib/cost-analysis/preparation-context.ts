@@ -54,4 +54,3 @@ export interface CciPreparationMethodology {
   readonly scope: 'PREPARATION_METHODOLOGY_NOT_IMMUTABLE_SNAPSHOT'
   readonly definition: ReturnType<typeof preparationDefinition>
 }
-
