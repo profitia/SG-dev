@@ -15,6 +15,7 @@ import type {
   ProviderRef,
 } from '@/lib/benchmark/contracts'
 import { BenchmarkAppError } from '@/lib/benchmark/errors'
+import {benchmarkProviderFetch,hasBenchmarkProviderScope,scopedBenchmarkProviderState} from './provider-scope'
 
 const MACROBOND_PROVIDER: ProviderRef = {
   providerCode: 'MACROBOND',
@@ -52,11 +53,16 @@ type MacrobondAttributeInfo = {
   appliesTo: string[]
 }
 
-let tokenCache: TokenCache | null = null
-let metadataDefinitionCache: CacheEntry<BenchmarkMetadataDefinition[]> | null = null
-const metadataValuesCache = new Map<string, CacheEntry<BenchmarkMetadataValue[]>>()
-const semanticContextCache = new Map<string, CacheEntry<BenchmarkSemanticContext>>()
-const semanticEntityCache = new Map<string, CacheEntry<Record<string, unknown> | null>>()
+const providerStateKey={}
+function newProviderState(){return {
+ tokenCache:null as TokenCache|null,
+ metadataDefinitionCache:null as CacheEntry<BenchmarkMetadataDefinition[]>|null,
+ metadataValuesCache:new Map<string,CacheEntry<BenchmarkMetadataValue[]>>(),
+ semanticContextCache:new Map<string,CacheEntry<BenchmarkSemanticContext>>(),
+ semanticEntityCache:new Map<string,CacheEntry<Record<string,unknown>|null>>(),
+}}
+const legacyProviderState=newProviderState()
+function providerState(){return scopedBenchmarkProviderState(providerStateKey,newProviderState)??legacyProviderState}
 
 const METADATA_CACHE_TTL_MS = 30 * 60 * 1000
 const METADATA_VALUES_CACHE_MAX_ENTRIES = 24
@@ -200,12 +206,12 @@ function isExpired(cache: TokenCache | null) {
 }
 
 async function getAccessToken(forceRefresh = false) {
-  if (!forceRefresh && !isExpired(tokenCache)) {
-    return tokenCache!.accessToken
+  if (!forceRefresh && !isExpired(providerState().tokenCache)) {
+    return providerState().tokenCache!.accessToken
   }
 
   const config = getMacrobondConfig()
-  const response = await fetch(config.tokenUrl, {
+  const response = await benchmarkProviderFetch('macrobond',config.tokenUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -224,12 +230,12 @@ async function getAccessToken(forceRefresh = false) {
 
   const payload = await response.json() as { access_token: string; expires_in?: number }
   const expiresIn = Math.max(60, payload.expires_in ?? 3600)
-  tokenCache = {
+  providerState().tokenCache = {
     accessToken: payload.access_token,
     expiresAt: Date.now() + (expiresIn - Math.min(60, Math.max(5, Math.floor(expiresIn / 10)))) * 1000,
   }
 
-  return tokenCache.accessToken
+  return providerState().tokenCache!.accessToken
 }
 
 async function macrobondRequest<T>(path: string, init: RequestInit): Promise<T> {
@@ -237,7 +243,7 @@ async function macrobondRequest<T>(path: string, init: RequestInit): Promise<T> 
   let token = await getAccessToken(false)
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const response = await fetch(`${config.baseUrl}${path}`, {
+    const response = await benchmarkProviderFetch('macrobond',`${config.baseUrl}${path}`, {
       ...init,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -264,7 +270,7 @@ async function macrobondRequest<T>(path: string, init: RequestInit): Promise<T> 
       const body = await response.text()
       throw new BenchmarkAppError(
         'PROVIDER_UNAVAILABLE',
-        body || `Macrobond request failed with status ${response.status}.`,
+        (hasBenchmarkProviderScope() ? null : body) || `Macrobond request failed with status ${response.status}.`,
         502,
       )
     }
@@ -532,8 +538,8 @@ async function resolveSemanticEntityMetadata(ids: string[]) {
   const missingIds: string[] = []
 
   for (const id of uniqueIds) {
-    const cached = getCacheValue(semanticEntityCache, id)
-    if (cached !== null || semanticEntityCache.has(id)) {
+    const cached = getCacheValue(providerState().semanticEntityCache, id)
+    if (cached !== null || providerState().semanticEntityCache.has(id)) {
       result.set(id, cached)
       continue
     }
@@ -545,7 +551,7 @@ async function resolveSemanticEntityMetadata(ids: string[]) {
     const fetched = await fetchMacrobondEntityMetadataBatch(missingIds)
     for (const id of missingIds) {
       const metadata = fetched.get(id) ?? null
-      setCacheValue(semanticEntityCache, id, metadata, SEMANTIC_ENTITY_CACHE_MAX_ENTRIES, 'semanticEntity')
+      setCacheValue(providerState().semanticEntityCache, id, metadata, SEMANTIC_ENTITY_CACHE_MAX_ENTRIES, 'semanticEntity')
       result.set(id, metadata)
     }
   }
@@ -1107,8 +1113,8 @@ export async function lookupMacrobondSeriesExact(seriesName: string): Promise<Be
 }
 
 export async function getMacrobondMetadataDefinitions(): Promise<BenchmarkMetadataDefinition[]> {
-  if (!isCacheExpired(metadataDefinitionCache)) {
-    return metadataDefinitionCache!.value
+  if (!isCacheExpired(providerState().metadataDefinitionCache)) {
+    return providerState().metadataDefinitionCache!.value
   }
 
   const startedAt = Date.now()
@@ -1124,7 +1130,7 @@ export async function getMacrobondMetadataDefinitions(): Promise<BenchmarkMetada
     )
   ).filter((item): item is BenchmarkMetadataDefinition => item !== null)
 
-  metadataDefinitionCache = {
+  providerState().metadataDefinitionCache = {
     value: definitions,
     expiresAt: Date.now() + METADATA_CACHE_TTL_MS,
   }
@@ -1156,7 +1162,7 @@ export async function getMacrobondMetadataValues(
   const normalizedFilters = normalizeSearchFilters(filters.filter((filter) => filter.metadataKey !== metadataKey))
   const cacheKey = JSON.stringify({ metadataKey, filters: normalizedFilters })
   const normalizedQuery = options?.query?.trim() ?? ''
-  const cached = getCacheValue(metadataValuesCache, cacheKey)
+  const cached = getCacheValue(providerState().metadataValuesCache, cacheKey)
   let allValues: BenchmarkMetadataValue[]
 
   if (cached) {
@@ -1165,7 +1171,7 @@ export async function getMacrobondMetadataValues(
       providerMs: 0,
       cacheHit: true,
       valueCount: cached.length,
-      cacheEntries: metadataValuesCache.size,
+      cacheEntries: providerState().metadataValuesCache.size,
     })
     allValues = cached
   } else {
@@ -1181,7 +1187,7 @@ export async function getMacrobondMetadataValues(
       operation: `values:${metadataKey}`,
       stage: 'before-fetch',
       filterCount: Object.keys(normalizedFilters).length,
-      cacheEntries: metadataValuesCache.size,
+      cacheEntries: providerState().metadataValuesCache.size,
       queryLength: options?.query?.trim().length ?? 0,
     })
     const payload = await macrobondRequest<unknown>(`/v1/metadata/listattributevalues?${params.toString()}`, {
@@ -1200,7 +1206,7 @@ export async function getMacrobondMetadataValues(
         valueCount: totalCount,
         filteredCount: filteredValues.length,
         cacheStored: false,
-        cacheEntries: metadataValuesCache.size,
+        cacheEntries: providerState().metadataValuesCache.size,
       })
 
       if (totalCount >= MEMORY_LOG_MIN_VALUE_COUNT || metadataKey === 'Region') {
@@ -1210,7 +1216,7 @@ export async function getMacrobondMetadataValues(
           valueCount: totalCount,
           filteredCount: filteredValues.length,
           cacheStored: false,
-          cacheEntries: metadataValuesCache.size,
+          cacheEntries: providerState().metadataValuesCache.size,
         })
       }
 
@@ -1227,7 +1233,7 @@ export async function getMacrobondMetadataValues(
 
     const shouldCacheValues = values.length <= MAX_METADATA_VALUES_CACHEABLE_ITEMS
     if (shouldCacheValues) {
-      setCacheValue(metadataValuesCache, cacheKey, values, METADATA_VALUES_CACHE_MAX_ENTRIES, 'metadataValues', values.length)
+      setCacheValue(providerState().metadataValuesCache, cacheKey, values, METADATA_VALUES_CACHE_MAX_ENTRIES, 'metadataValues', values.length)
     }
 
     logPerf('BENCHMARK_METADATA_PERF', {
@@ -1236,7 +1242,7 @@ export async function getMacrobondMetadataValues(
       cacheHit: false,
       valueCount: values.length,
       cacheStored: shouldCacheValues,
-      cacheEntries: metadataValuesCache.size,
+      cacheEntries: providerState().metadataValuesCache.size,
     })
 
     if (values.length >= MEMORY_LOG_MIN_VALUE_COUNT || metadataKey === 'Region') {
@@ -1245,7 +1251,7 @@ export async function getMacrobondMetadataValues(
         stage: 'after-normalize',
         valueCount: values.length,
         cacheStored: shouldCacheValues,
-        cacheEntries: metadataValuesCache.size,
+        cacheEntries: providerState().metadataValuesCache.size,
       })
     }
 
@@ -1286,7 +1292,7 @@ export async function getMacrobondSemanticContexts(seriesNames: string[]) {
   const missingSeriesNames: string[] = []
 
   for (const seriesName of uniqueSeriesNames) {
-    const cached = getCacheValue(semanticContextCache, seriesName)
+    const cached = getCacheValue(providerState().semanticContextCache, seriesName)
     if (cached) {
       contexts.set(seriesName, cached)
       continue
@@ -1306,8 +1312,8 @@ export async function getMacrobondSemanticContexts(seriesNames: string[]) {
     operation: 'semanticContext',
     stage: 'before-resolve',
     seriesCount: missingSeriesNames.length,
-    contextCacheEntries: semanticContextCache.size,
-    entityCacheEntries: semanticEntityCache.size,
+    contextCacheEntries: providerState().semanticContextCache.size,
+    entityCacheEntries: providerState().semanticEntityCache.size,
   })
 
   for (const metadata of seriesMetadata.values()) {
@@ -1332,7 +1338,7 @@ export async function getMacrobondSemanticContexts(seriesNames: string[]) {
     }
 
     const context = deriveSemanticContext(metadata, relatedEntities)
-    setCacheValue(semanticContextCache, seriesName, context, SEMANTIC_CONTEXT_CACHE_MAX_ENTRIES, 'semanticContext')
+    setCacheValue(providerState().semanticContextCache, seriesName, context, SEMANTIC_CONTEXT_CACHE_MAX_ENTRIES, 'semanticContext')
     contexts.set(seriesName, context)
   }
 
@@ -1341,8 +1347,8 @@ export async function getMacrobondSemanticContexts(seriesNames: string[]) {
     stage: 'after-resolve',
     seriesCount: missingSeriesNames.length,
     relatedEntityCount: relatedEntityIds.size,
-    contextCacheEntries: semanticContextCache.size,
-    entityCacheEntries: semanticEntityCache.size,
+    contextCacheEntries: providerState().semanticContextCache.size,
+    entityCacheEntries: providerState().semanticEntityCache.size,
   })
 
   return Object.fromEntries(contexts.entries())

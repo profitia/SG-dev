@@ -3,6 +3,7 @@ import type {
   BenchmarkMetadataValue,
   BenchmarkSearchFilter,
 } from '@/lib/benchmark/contracts'
+import {benchmarkProviderFailure,hasBenchmarkProviderScope,scopedBenchmarkMetadataClient} from './provider-scope'
 
 const MACROBOND_PROVIDER_CODE = 'MACROBOND'
 const REGION_METADATA_KEY = 'Region'
@@ -81,6 +82,7 @@ const LOCAL_METADATA_KEYS = new Set(LOCAL_METADATA_DEFINITIONS.map((item) => ite
 const LOCAL_METADATA_ORDER = new Map(LOCAL_METADATA_DEFINITIONS.map((item, index) => [item.key, index]))
 
 async function loadMarketDataPrisma() {
+  if(hasBenchmarkProviderScope())return scopedBenchmarkMetadataClient()
   const { getMarketDataPrisma } = await import('@/lib/market-data/client')
   return getMarketDataPrisma()
 }
@@ -177,6 +179,7 @@ export async function getStoredBenchmarkMetadataDefinitions(): Promise<Benchmark
       .filter((row): row is BenchmarkMetadataDefinition => row !== null)
       .sort((left, right) => (LOCAL_METADATA_ORDER.get(left.key) ?? Number.MAX_SAFE_INTEGER) - (LOCAL_METADATA_ORDER.get(right.key) ?? Number.MAX_SAFE_INTEGER))
   } catch (error) {
+    if(hasBenchmarkProviderScope())return benchmarkProviderFailure(error)
     console.warn('[BENCHMARK_METADATA_STORE_READ_FAILED] operation=definitions', error)
     return null
   }
@@ -262,6 +265,7 @@ export async function getStoredBenchmarkMetadataValues(
       limited: filteredCount > limit,
     }
   } catch (error) {
+    if(hasBenchmarkProviderScope())return benchmarkProviderFailure(error)
     console.warn(`[BENCHMARK_METADATA_STORE_READ_FAILED] operation=values key=${metadataKey}`, error)
     return null
   }
@@ -298,6 +302,7 @@ export async function resolveStoredBenchmarkMetadataDisplayLabel(metadataKey: st
 
     return row?.label ?? null
   } catch (error) {
+    if(hasBenchmarkProviderScope())return benchmarkProviderFailure(error)
     console.warn(`[BENCHMARK_METADATA_STORE_READ_FAILED] operation=label key=${metadataKey}`, error)
     return null
   }
