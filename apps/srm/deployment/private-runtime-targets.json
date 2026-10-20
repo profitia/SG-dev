@@ -22,6 +22,12 @@
       "businessSchemaVerification": "Exact receipt, owner, policies and source checked by the controlled initialization/release; not a per-request receipt read.",
       "observedAt": "2026-10-17T13:25:47.122Z",
       "observedStateEvidence": "apps/srm/deployment/private-business-preparation.json",
+      "summaryPeerRead": {
+        "configurationVersion": "srm-sg2-summary-peer-dev-v1",
+        "sourceOrigin": "https://dev-sg2.spendguru.app",
+        "targetOrigin": "https://srm-development-runtime.onrender.com",
+        "path": "/api/xray/financial-summary"
+      },
       "supplierRequest": {
         "configurationVersion": "srm-private-supplier-request-e1-v1",
         "baseSchemaDigest": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",

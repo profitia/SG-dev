@@ -1,13 +1,15 @@
+import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createElement, version as reactVersion } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { createClerkIdentityAuthenticator } from '@profitia/platform-contracts/identity-provider'
+import { createClerkIdentityAuthenticator, identitySourceDigest } from '@profitia/platform-contracts/identity-provider'
 import { clerkConfigurationSourceDigest } from '@profitia/platform-contracts/clerk-configuration'
 import { readSg2IdentityRuntime, createSg2ClerkClient, IdentityConfigurationUnavailable } from '../lib/platform/identity-runtime'
 import { ClerkSignIn } from '../components/auth/clerk-sign-in'
 import { Sg2IdentityProvider, Sg2SessionContent, Sg2AuthenticatedView } from '../components/auth/session-boundary'
-import { IncomingMessage } from 'node:http'
+import { IncomingMessage, ServerResponse } from 'node:http'
 import { Socket } from 'node:net'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -15,13 +17,64 @@ import { execFileSync } from 'node:child_process'
 import { NodeNextRequest } from 'next/dist/server/base-http/node.js'
 import { NextRequestAdapter } from 'next/dist/server/web/spec-extension/adapters/next-request.js'
 import { addRequestMeta } from 'next/dist/server/request-meta.js'
+import { getResolveRoutes } from 'next/dist/server/lib/router-utils/resolve-routes.js'
 import { createPublicIdentityRequestBoundary, publicIdentityRequestSourceDigest } from '@profitia/platform-contracts/public-request'
+import { readSg2PrivateSelectionConfiguration } from '../lib/platform/private-runtime'
+import privateTargets from '../deployment/private-runtime-targets.json'
 
 const host='identity-fixture.clerk.accounts.dev'
 const fixture=()=>({PROFITIA_AUTH_PROVIDER:'clerk',TARGET_ENVIRONMENT:'development',PROFITIA_CLERK_ISSUER:`https://${host}`,
   PROFITIA_CLERK_PUBLISHABLE_KEY:`pk_test_${Buffer.from(host+'$').toString('base64url')}`,PROFITIA_CLERK_SECRET_KEY:'sk_test_fixture',
   PROFITIA_CLERK_AUTHORIZED_PARTIES:'["http://localhost:3001"]'})
 
+test('SG2 explicitly receives the peer identity producer without enabling cross-origin browser authentication', async () => {
+  const receipt = JSON.parse(readFileSync(new URL('../operation-integration.json', import.meta.url), 'utf8'))
+  const accepted = receipt.peerReadIdentityAdoption, hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
+  assert.equal(accepted.producer.sourceSha, '9a226aef8dc36949b13999dbeba046dc1cf62a29')
+  assert.equal(accepted.producer.projectKey, 'ARCHITECTURE'); assert.equal(accepted.producer.pullRequest, 568)
+  assert.equal(accepted.previousApplicationAuthority, 'c82d400ab53783376fefecd487131b0ef6812ad8')
+  assert.equal(accepted.identityDigest, await identitySourceDigest())
+  const previous = JSON.parse(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
+  const root = new URL('../', pathToFileURL(createRequire(import.meta.url).resolve('@profitia/platform-contracts/identity-provider')))
+  assert.deepEqual(Object.keys(accepted.sdkSourceDigests).sort(), ['src/identity-provider.d.mts', 'src/identity-provider.mjs'])
+  for (const [path, digest] of Object.entries(accepted.sdkSourceDigests)) {
+    assert.equal(hash(readFileSync(new URL(path, root))), digest, path)
+    assert.equal(hash(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':packages/platform-contracts/' + path])), previous.publicWebTransportSourceCompatibility.sourceDigests[path])
+  }
+  for (const [path, digest] of Object.entries(accepted.sourceDigests)) assert.equal(hash(readFileSync(new URL('../' + path, import.meta.url))), digest, path)
+  const config = readSg2IdentityRuntime(fixture()); assert.equal(config.provider, 'clerk')
+  if (config.provider !== 'clerk') throw Error('Expected Clerk')
+  assert.equal(config.application.bearerPeerReads, undefined)
+  assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
+})
+
+test('native Next14 next-start routing derives localhost and the actual SG2 configuration normalizes only approved public hosts', async t => {
+  const target = privateTargets.environments.development, publicOrigin = 'https://dev-sg2.spendguru.app'
+  const url = new URL('postgresql://fixture.invalid'); url.hostname = target.hosts[0]; url.username = target.runtimeRole
+  url.password = 'synthetic_fixture_only'; url.pathname = '/' + target.databaseName; url.search = '?sslmode=require'
+  const configured = readSg2PrivateSelectionConfiguration({ ...fixture(),
+    PROFITIA_CLERK_AUTHORIZED_PARTIES: JSON.stringify([publicOrigin]), PROFITIA_PRIVATE_DATABASE_URL: url.toString(),
+    PROFITIA_FIXED_ORGANISATION_ID: '11111111-1111-4111-8111-111111111111',
+    PROFITIA_OPERATION_CONFIGURATION_VERSION: privateTargets.configurationVersion, RENDER_SERVICE_ID: target.serviceId, RENDER_GIT_COMMIT: 'a'.repeat(40) })
+  assert.equal(configured.provider, 'clerk'); if (configured.provider !== 'clerk') throw Error('Expected Clerk')
+  const normalize = createPublicIdentityRequestBoundary(configured.identity.requestBoundary!)
+  type Args = Parameters<typeof getResolveRoutes>
+  const resolve = getResolveRoutes({ buildId: 'isolated', getMiddlewareMatchers: () => undefined,
+    getItem: async () => ({ type: 'appFile', itemPath: '/api/benchmark/search' }) } as unknown as Args[0],
+    { experimental: { trustHostHeader: false }, basePath: '', useFileSystemPublicRoutes: true } as Args[1],
+    { port: 10000, hostname: undefined, minimalMode: true } as Args[2], {} as Args[3], {} as Args[4])
+  for (const protocol of ['http', 'https']) {
+    const socket = new Socket(); t.after(() => socket.destroy())
+    const incoming = new IncomingMessage(socket); incoming.method = 'GET'; incoming.url = '/api/benchmark/search?q=oil'
+    incoming.headers = { host: new URL(publicOrigin).host, 'x-forwarded-proto': protocol }
+    await resolve({ req: incoming, res: new ServerResponse(incoming), isUpgradeReq: false, signal: new AbortController().signal })
+    const request = NextRequestAdapter.fromNodeNextRequest(new NodeNextRequest(incoming), new AbortController().signal)
+    assert.equal(new URL(request.url).origin, protocol + '://localhost:10000')
+    assert.equal(normalize(request)!.url, publicOrigin + incoming.url)
+    request.headers.set('host', 'foreign.example.test'); assert.equal(normalize(request), null)
+  }
+})
 test('the actual SG2 Next adapter uses an internal bind URL and the shared identity boundary pins the public authority', t => {
   const socket = new Socket(); t.after(() => socket.destroy())
   const incoming = new IncomingMessage(socket), publicOrigin = 'https://dev-sg2.spendguru.app'
@@ -45,7 +98,7 @@ test('the public identity adoption preserves historical receipts and pins the co
   const previous = JSON.parse(execFileSync('git', ['show', adoption.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
   for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
   for (const [path, digest] of Object.entries(adoption.sourceDigests)) {
-    assert.equal(createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex'), digest, path)
+    assert.equal(createHash('sha256').update(execFileSync('git', ['show', 'c82d400ab53783376fefecd487131b0ef6812ad8:apps/sg-runtime/' + path])).digest('hex'), digest, path)
   }
   assert.equal(adoption.productDeploymentPerformed, false)
 })

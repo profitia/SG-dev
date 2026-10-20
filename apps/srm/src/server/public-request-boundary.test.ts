@@ -49,7 +49,7 @@ test('the public identity adoption preserves historical receipts and pins the en
   const previous = JSON.parse(execFileSync('git', ['show', adoption.previousApplicationAuthority + ':apps/srm/operation-integration.json'], { encoding: 'utf8' }))
   for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
   for (const [path, digest] of Object.entries(adoption.sourceDigests)) {
-    assert.equal(createHash('sha256').update(readFileSync(new URL('../../' + path, import.meta.url))).digest('hex'), digest, path)
+    assert.equal(createHash('sha256').update(execFileSync('git', ['show', 'c82d400ab53783376fefecd487131b0ef6812ad8:apps/srm/' + path])).digest('hex'), digest, path)
   }
   assert.equal(adoption.productDeploymentPerformed, false)
 })

@@ -133,7 +133,7 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   }
   const discovery=readDiscoveryConfiguration(env)
   const configuration: PrivateConfiguration = { ...(discovery?{discovery}:{}), provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
-    requestBoundary: { publicOrigins: [...identity.application.authorizedParties], internalOrigins: ['http://0.0.0.0:10000', 'https://0.0.0.0:10000'] } },
+    requestBoundary: { publicOrigins: [...identity.application.authorizedParties], internalOrigins: ['http://0.0.0.0:10000', 'https://0.0.0.0:10000', 'http://localhost:10000', 'https://localhost:10000'] } },
     application: { appId: 'spendguru', profileId: 'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
       identityIssuer: identity.application.issuer, organisationId: env.PROFITIA_FIXED_ORGANISATION_ID!,
