@@ -1,0 +1,221 @@
+{
+  "schemaVersion": "1.0.0",
+  "registryId": "e1-development-control-preparation-2026-10-20",
+  "owner": "Architecture Platform",
+  "taskId": "ARCHITECTURE-E1-DEVELOPMENT-CONTROL-PREPARATION-20261020",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "observedThrough": "2026-10-20T09:30:20Z",
+  "status": "SHARED_SCHEMA_PREPARATION_VERIFIED_PRODUCTS_NOT_DEPLOYED",
+  "sourceAuthority": {
+    "repository": "profitia/SG-dev",
+    "branch": "main",
+    "acceptedProductSourceSHA": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+    "preparationBaseSHA": "760ef0a607221a66e14a1408ce285aab844ab571",
+    "sourceBodiesAltered": false
+  },
+  "scope": {
+    "newProjects": false,
+    "newRepositories": false,
+    "staging": false,
+    "production": false,
+    "productDeployment": false,
+    "productConfigurationActivated": false,
+    "customerOwnershipMigration": false,
+    "privateApplicationsActive": false
+  },
+  "sharedInstallations": [
+    {
+      "projectId": "spring-bread-28217539",
+      "branchId": "br-sparkling-term-b99l107x",
+      "databaseName": "platform_private",
+      "status": "ADDITIVE_INSTALLED_AND_READ_BACK",
+      "migrations": [
+        {
+          "path": "packages/platform-contracts/migrations/access/005-service-read.sql",
+          "sha256": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
+          "receipt": "profitia_services.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/006-request-reservation.sql",
+          "sha256": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
+          "receipt": "profitia_requests.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/007-delegated-jobs.sql",
+          "sha256": "6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb",
+          "receipt": "profitia_jobs.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/010-external-request-admission.sql",
+          "sha256": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+          "receipt": "profitia_requests.external_installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/011-request-continuation.sql",
+          "sha256": "d12b2e404cd6a9174f954c233982633076501f7ea493facd0cabf34c709604c1",
+          "receipt": "profitia_request_phases.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/013-supplier-delegation.sql",
+          "sha256": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
+          "receipt": "profitia_supplier_jobs.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/014-delegated-private-phases.sql",
+          "sha256": "13f4bb374cbfb31604823083261bbc8f5142e88be7443b704c792a232defb6e3",
+          "receipt": "profitia_delegated_phases.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/015-delegated-private-inspection.sql",
+          "sha256": "00db4ebae666f6cd94475b789fecfbb775c0ebb2d66f87e595d674b827cdf13d",
+          "receipt": "profitia_request_inspection.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/016-delegated-native-work.sql",
+          "sha256": "19fb1d9045bccdb3299317b4c5b7df41e361e971c83ab683a55b56d6fbc8e5fe",
+          "receipt": "profitia_request_work.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/017-additional-request-operations.sql",
+          "sha256": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+          "receipt": "profitia_requests.operation_installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/008-platform-ingestion.sql",
+          "sha256": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+          "receipt": "profitia_ingestion.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/009-external-call-admission.sql",
+          "sha256": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+          "receipt": "profitia_external_call.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/012-native-external-transport.sql",
+          "sha256": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
+          "receipt": "profitia_external_native.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/018-public-web-transport.sql",
+          "sha256": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+          "receipt": "profitia_public_web.installation"
+        }
+      ]
+    },
+    {
+      "projectId": "autumn-waterfall-65938876",
+      "branchId": "br-dry-hall-b294222f",
+      "databaseName": "neondb",
+      "status": "SHARED_SOURCE_ONLY_INSTALLED_AND_READ_BACK",
+      "migrations": [
+        {
+          "path": "packages/platform-contracts/migrations/access/008-platform-ingestion.sql",
+          "sha256": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+          "receipt": "profitia_ingestion.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/009-external-call-admission.sql",
+          "sha256": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+          "receipt": "profitia_external_call.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/012-native-external-transport.sql",
+          "sha256": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
+          "receipt": "profitia_external_native.installation"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/018-public-web-transport.sql",
+          "sha256": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+          "receipt": "profitia_public_web.installation"
+        }
+      ]
+    }
+  ],
+  "recoverability": [
+    {
+      "projectId": "spring-bread-28217539",
+      "backupBranchId": "br-raspy-mode-b9d4x8rp",
+      "backupEndpointCount": 0,
+      "rehearsalBranchId": "br-dark-bird-b9qw3as8",
+      "rehearsalEndpointId": "ep-quiet-scene-b9gmegql",
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "suspendSeconds": 300,
+      "parentLsn": "0/24A0248",
+      "copiedPreChangeStateRead": true,
+      "restoredLiveBranch": false
+    },
+    {
+      "projectId": "autumn-waterfall-65938876",
+      "backupBranchId": "br-delicate-butterfly-b2jeoigm",
+      "backupEndpointCount": 0,
+      "rehearsalBranchId": "br-old-term-b2b2qi17",
+      "rehearsalEndpointId": "ep-round-breeze-b2mt9f96",
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "suspendSeconds": 300,
+      "parentLsn": "1/9283D158",
+      "copiedPreChangeStateRead": true,
+      "restoredLiveBranch": false
+    }
+  ],
+  "verification": {
+    "privateCodeFunctions": {
+      "count": 163,
+      "namespaces": 19,
+      "exactDefinitionParityBetweenCopyAndDisabledDevelopment": true
+    },
+    "unsafeControlledPrivateTables": 0,
+    "controlledOwners": [
+      "profitia_access_owner",
+      "profitia_ingestion_owner"
+    ],
+    "ownersCanLogin": false,
+    "ownersHaveElevatedFlags": false,
+    "ownersHaveRuntimeMemberships": false,
+    "ownersStandingDatabaseCreate": false,
+    "privateApplicationStates": {
+      "spendguru": "DISABLED",
+      "srm": "DISABLED"
+    },
+    "privateSourceBindingCount": 0,
+    "privateBusinessSelections": 0,
+    "srmOrganisationInterests": 0,
+    "srmUserInterests": 0,
+    "newRehearsalRuntimeLoginsVerified": 11,
+    "newRuntimeRolesInDevelopmentInitiallyNoLogin": 11,
+    "genuineProductOwnerSessionVerified": false,
+    "productBusinessUat": "NOT_PERFORMED"
+  },
+  "recoveryProcedure": {
+    "duringInstallation": "One checked transaction; failed DDL rolls back. On ambiguous outcome independently reconcile receipts, definitions, owners and policies before any retry.",
+    "afterSuccessfulAdditiveInstallation": "Leave accepted schemas/data intact; do not drop or reset. Disabled private applications do not replace current product databases. Retain original deployment and database paths until separately verified product cutover.",
+    "dataDisaster": "Preserve damaged branch and evidence; create a reviewed recovery child from the retained backup, independently verify source/roles/data, and revalidate receiver host/branch bindings before any routing. A copied installation receipt alone does not authorize the new physical branch.",
+    "codeRelease": "Consumer release tasks must prove retained Render artifact and compatible configuration; this shared preparation does not certify product rollback."
+  },
+  "receiverWork": [
+    {
+      "projectKey": "SG2",
+      "taskId": "SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+      "sourceSHA": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+      "status": "IN_PROGRESS_NOT_DEPLOYED",
+      "scope": "Ordinary runtime roles, policies, market receivers, retained artifacts, Development rollout and functional acceptance"
+    },
+    {
+      "projectKey": "SRM",
+      "taskId": "SRM-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+      "sourceSHA": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+      "status": "IN_PROGRESS_NOT_DEPLOYED",
+      "scope": "Ordinary runtime roles, policies, retained artifact, Development rollout and functional acceptance"
+    }
+  ],
+  "knownLimits": [
+    "Preparation is not full E1, live login, tenant business UAT or a SaaS onboarding acceptance.",
+    "New market forecast-owner/receiver installation was refused by automatic approval review before execution; an explicit additional authorization is pending at this dated checkpoint.",
+    "Positive and negative source/consumer CI belongs to accepted source SHA; eleven new cloud role sessions were on isolated recovery copies.",
+    "No cloud native Render rollback or live database restore was executed by this task.",
+    "Finder ephemeral result retention is separate from permanent benchmark/category selections; physical purge gaps remain receiver findings."
+  ],
+  "evidenceDocument": "Canon/evidence/2026-10-20-e1-development-control-preparation.md"
+}
