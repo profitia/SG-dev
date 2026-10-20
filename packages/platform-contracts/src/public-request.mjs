@@ -45,7 +45,13 @@ export function createPublicIdentityRequestBoundary(input) {
     // them, including paths starting with //; they cannot replace the host.
     const target = new URL(publicOrigin)
     target.pathname = url.pathname; target.search = url.search
-    return new Request(target, { method: request.method, headers: new Headers(request.headers), signal: request.signal })
+    const headers = new Headers(request.headers)
+    // The official SDK also interprets these proxy headers. After validating
+    // the actual ingress authority above, prevent a second URL reconstruction
+    // from caller-controlled forwarding hints inside that verifier.
+    for (const name of ['forwarded', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'cloudfront-forwarded-proto']) headers.delete(name)
+    headers.set('host', target.host)
+    return new Request(target, { method: request.method, headers, signal: request.signal })
   }
 }
 
