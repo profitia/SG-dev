@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
 import { BenchmarkFinderClient } from '@/components/benchmark-finder/benchmark-finder-client'
+import { useSg2IdentityMode, useSg2SessionCredential } from '@/components/auth/session-boundary'
+import { createCategoryOperationRequester } from './category-operation-request'
 import { sanitizeUserFacingPublisher } from '@/lib/benchmark/presentation'
 import type { SavedBenchmark } from '@/lib/benchmark/contracts'
 import type { CategoryComponentSuggestion, CategoryRecord, CategoryStatus, CategorySummary } from '@/lib/category/contracts'
@@ -193,6 +195,21 @@ function resolveErrorMessage(locale: 'pl' | 'en', error: unknown, t: ReturnType<
 }
 
 export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
+  const identityMode = useSg2IdentityMode(), sessionCredential = useSg2SessionCredential()
+  const presentationRef = useRef({ identityMode, sessionCredential })
+  presentationRef.current = { identityMode, sessionCredential }
+  const requesterRef = useRef<ReturnType<typeof createCategoryOperationRequester> | null>(null)
+  const activeRef = useRef(true)
+  useEffect(() => { activeRef.current = true; return () => {
+    activeRef.current = false; requesterRef.current?.close(); requesterRef.current = null
+  } }, [])
+  const fetch = (path: string, init?: RequestInit) => {
+    if (!activeRef.current) return Promise.reject(new Error('Category operation unavailable'))
+    requesterRef.current ??= createCategoryOperationRequester({ mode: () => presentationRef.current.identityMode,
+      getToken: async () => presentationRef.current.sessionCredential?.() ?? null,
+      origin: () => window.location.origin, fetch: (...args) => globalThis.fetch(...args) })
+    return requesterRef.current(path, init)
+  }
   const t = useTranslations('CategoryBuilder')
   const searchParams = useSearchParams()
   const seededBenchmarkId = searchParams.get('seedBenchmarkId')
@@ -628,7 +645,8 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
                         loadAiSuggestions().catch((error: unknown) => setSuggestionError(resolveErrorMessage(locale, error, t)))
                       })
                     }}
-                    disabled={isSuggesting || !draft.name.trim()}
+                    disabled={identityMode !== 'legacy_demo' || isSuggesting || !draft.name.trim()}
+                    title={identityMode === 'legacy_demo' ? undefined : locale === 'pl' ? 'Sugestie są chwilowo niedostępne. Dodaj komponent ręcznie.' : 'Suggestions are temporarily unavailable. Add a component manually.'}
                     data-testid="category-ask-suggestions"
                   >
                     {isSuggesting ? t('common.loading') : t('actions.askSuggestions')}
@@ -655,7 +673,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
                           loadAiSuggestions().catch((error: unknown) => setSuggestionError(resolveErrorMessage(locale, error, t)))
                         })
                       }}
-                      disabled={isSuggesting}
+                      disabled={identityMode !== 'legacy_demo' || isSuggesting}
                     >
                       {t('actions.generateAgain')}
                     </button>
