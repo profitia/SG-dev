@@ -1,0 +1,7 @@
+# E1 — supplier external adoption, pending source checkpoint
+
+SRM / `SRM-E1-SUPPLIER-EXTERNAL-ADOPTION-20261020`, Development. This progress commit contains only the original fixed Vercly KRS GET receiver: one bounded Source-native attempt using the existing provider Source host. It admits the exact stored reference, preserves normal fixed-origin/credential policy, and returns no independent HUMAN access authority.
+
+The composed parent/KRS source passed61/61 actual ordinary PostgreSQL/native/API cases and typecheck, with the separately tested outer KRS guard17/17. The tests use the original provider helper and current pre/post-network HUMAN private export checks; unknown references deny before I/O, current revocation after a real GET denies publication, and no service SQL transaction is held during network. Counts overlap.
+
+The separate PUBLIC_WEB producer candidate is draft PR560 and has not been received by this checkout. Website adapter, cache/SQL purposes, package adoption and its full positive/negative integration remain pending. The parent working supplier task is not complete, and this commit does not assert complete external adoption, exact remote acceptance, PMOS/PHR closeout or deployment. No shared producer branch has been merged into this product workspace. No live resources, access, credentials, roles, grants, schema, data or configuration were changed; Staging/Production and Maps features are outside scope.
