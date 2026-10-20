@@ -84,7 +84,7 @@ test('J/K: view actions delegate to the consumer/controller; keyboard Escape use
     if (e.type === 'button' && e.props['aria-label'] === 'Select: Copper 0') (e.props.onClick as () => void)()
   })
   ;(tree.props.onKeyDown as (event: { key: string; preventDefault(): void; stopPropagation(): void }) => void)({ key: 'Escape', preventDefault() {}, stopPropagation() {} })
-  assert.deepEqual(calls, ['search', 's0', 'more', 'cancel'])
+  assert.deepEqual(calls, ['search', item().candidateId, 'more', 'cancel'])
 })
 test('isolation: shared picker code contains no reverse domain imports or forecast/analytics work', () => {
   for (const name of ['shared-benchmark-picker.tsx', 'picker-controller.ts', 'presentation.ts']) {

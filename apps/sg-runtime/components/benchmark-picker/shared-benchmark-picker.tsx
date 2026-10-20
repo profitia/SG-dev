@@ -113,9 +113,14 @@ function PickerSession(props: SharedBenchmarkPickerProps & { mode: 'clerk' | 'le
     select={candidate => { void controller.current?.select(candidate) }} cancel={props.onCancel ? () => { stop.current?.(); props.onCancel?.() } : undefined} />
 }
 
+function UnavailablePicker(props: SharedBenchmarkPickerProps) {
+  return <div className="space-y-3 p-6"><p role="alert">{copy[props.locale].unavailable}</p>
+    {props.onCancel ? <button type="button" className={button} onClick={props.onCancel}>{copy[props.locale].cancel}</button> : null}</div>
+}
+
 function ClerkPicker(props: SharedBenchmarkPickerProps) {
   const { isLoaded, isSignedIn, userId, sessionId, orgId, getToken } = useAuth()
-  if (!isLoaded || !isSignedIn || !userId || !sessionId) return <p role="alert">{copy[props.locale].unavailable}</p>
+  if (!isLoaded || !isSignedIn || !userId || !sessionId) return <UnavailablePicker {...props} />
   // SDK IDs only invalidate UI memory; backend remains the sole organization/permission authority.
   return <PickerSession key={JSON.stringify([userId, sessionId, orgId, props.initialQuery, props.initialSelectedBenchmarkId])} {...props} mode="clerk" getToken={getToken} />
 }
@@ -125,5 +130,5 @@ export function SharedBenchmarkPicker(props: SharedBenchmarkPickerProps) {
   if (props.disabled) return <BenchmarkPickerView {...props} state={emptyPickerState()} query={props.initialQuery ?? ''} setQuery={() => {}} search={() => {}} more={() => {}} select={() => {}} cancel={props.onCancel} />
   if (mode === 'clerk') return <ClerkPicker {...props} />
   if (mode === 'legacy_demo') return <PickerSession key={JSON.stringify([props.initialQuery, props.initialSelectedBenchmarkId])} {...props} mode="legacy_demo" getToken={async () => null} />
-  return <p role="alert">{copy[props.locale].unavailable}</p>
+  return <UnavailablePicker {...props} />
 }
