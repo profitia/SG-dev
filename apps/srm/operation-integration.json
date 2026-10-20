@@ -2173,5 +2173,23 @@
     "officialIdentityVerifierUnchanged": true,
     "historicalReceiptsPreserved": true,
     "productDeploymentPerformed": false
+  },
+  "registryDateNormalizationAdoption": {
+    "taskId": "SRM-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+    "status": "SOURCE_REGRESSION_VERIFIED_LIVE_ACCEPTANCE_PENDING",
+    "previousApplicationAuthority": "95834d1e079df719bf58f94aefd9432eb51bd541",
+    "reason": "Native KRS day strings must cross unchanged classified corporate date boundary as explicit ISO calendar dates",
+    "sharedCalendarParserReused": true,
+    "localExcerptClockNotRelabeledUtc": true,
+    "rawArchivePreserved": true,
+    "publicationSchemaUnchanged": true,
+    "historicalReceiptsPreserved": true,
+    "sourceDigests": {
+      "src/server/mgbi-general.ts": "e7bbe902c0b0fc82a856ee81f8d442ed6f86d7185cbc44846d8e440805336c38",
+      "src/server/company-continuity.ts": "5b54c7eeeddc767821adec27f45cf73ebccccd43c5a3047bc08ca5c9e65900b2",
+      "src/server/mgbi-general.test.ts": "6d2aa30884dc98f5608154efbcc1f2b4b899919d47f52b9a76db3a3f82feea78",
+      "src/server/corporate-source-store.test.ts": "48e81a3c7855a3426da0b31fd5abedafc87813f55b864daef38dab803d3308de"
+    },
+    "productDeploymentPerformed": false
   }
 }
