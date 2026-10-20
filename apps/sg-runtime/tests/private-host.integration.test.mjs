@@ -1,6 +1,7 @@
 import { createEmptyVerificationSourceFixture, grantVerificationProjectionSourceColumns } from './fixtures/stored-forecast-verification-source.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import {execFileSync} from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import test from 'node:test'
@@ -30,7 +31,7 @@ const moduleAuditSql = fs.readFileSync(new URL(moduleAuditSchemaUrl), 'utf8')
 const auditDigest = await moduleAuditSchemaDigest()
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 
-const currentSdkDigests=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))).privateAcquisitionSourceCompatibility.sdkDigests
+const currentSdkDigests=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))).publicWebTransportSourceCompatibility.sdkDigests
 
 test('SG2 imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
@@ -49,7 +50,7 @@ test('SG2 imports the exact optional external control source without adopting a 
   assert.equal(native.previousSourceRecordsAreHistorical,true)
   assert.equal(current.sourceRecordIsHistorical,true)
   assert.equal(native.producer.sourceSha,'2a44365b981d6a4c786f4e572fe2ca34a8a4fc92')
-  assert.equal(await sdk.externalCallSourceDigest(),native.sourceDigest)
+  assert.equal(await sdk.externalCallSourceDigest(),manifest.publicWebTransportSourceCompatibility.sdkDigests.externalCallSourceDigest)
   assert.equal(await sdk.nativeExternalTransportSchemaDigest(),native.nativeSchemaDigest)
   assert.equal(native.baseSchemaDigest,accepted.schemaDigest)
   assert.equal(sdk.NATIVE_EXTERNAL_TRANSPORT.completionMode,'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT')
@@ -64,7 +65,7 @@ test('SG2 imports the exact optional external control source without adopting a 
   const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
   assert.equal(Object.keys(current.sourceDigests).length,20)
   assert.equal(Object.keys(native.sourceDigests).length,23)
-  for(const [path,digest]of Object.entries(manifest.privateAcquisitionSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+  for(const [path,digest]of Object.entries(manifest.publicWebTransportSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
   for(const name of ['externalCallAdopted','sql009Installed','runtimeRoleOrGrantChanged','humanSupplierRefreshAdopted','finderAiAdopted','kysOrPersonalDataAdopted','productDeploymentPerformed'])assert.equal(accepted[name],false,name)
   assert.equal(sdk.externalCallEvidence({status:200,body:{}}),null)
 })
@@ -1505,7 +1506,7 @@ test('historical Supplier delegation acceptance retains its values while current
  assert.equal(current.previousSourceRecordsAreHistorical,true);assert.equal(current.defaultForecastTargetUnchanged,true)
  assert.equal(Object.keys(current.sourceDigests).length,44)
  const sourceRoot=new URL('../',import.meta.resolve('@profitia/platform-contracts/delegated-job'))
- for(const[path,digest]of Object.entries(manifest.privateAcquisitionSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.publicWebTransportSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
  const binding={applicationId:'synthetic',environment:'development',projectId:'synthetic-project',branchId:'synthetic-branch',databaseName:'synthetic_db',role:'ordinary_fixture_role',schemaDigest:'a'.repeat(64)}
  assert.doesNotThrow(()=>jobs.createDelegatedJobStore({binding,schemaDigest:'b'.repeat(64)}))
  assert.throws(()=>jobs.createDelegatedJobStore({binding,schemaDigest:'b'.repeat(64),targetOperation:'supplier.report.refresh'}),TypeError)
@@ -1527,7 +1528,7 @@ test('current optional delegated private phase source is exact and does not acti
  assert.equal(current.previousSourceRecordsAreHistorical,true);assert.equal(current.defaultHumanAndForecastPreserved,true)
  const sourceRoot=new URL('../',import.meta.resolve('@profitia/platform-contracts/request-continuation'))
  assert.equal(Object.keys(current.sourceDigests).length,45)
- for(const[path,digest]of Object.entries(manifest.privateAcquisitionSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.publicWebTransportSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,sourceRoot))).digest('hex'),digest,path)
  const unused=async()=>{throw Error('Constructor cannot authorize or query')}
  const application={appId:'synthetic-jobs',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic',configurationVersion:'1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,operations:['job.execute'],features:['job_execution']}
  const binding={applicationId:application.appId,environment:'development',projectId:'synthetic-project',branchId:'synthetic-branch',databaseName:'synthetic_db',role:'ordinary_fixture_role',schemaDigest:'a'.repeat(64),service:{schemaDigest:'a'.repeat(64),profileId:application.profileId,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion}}
@@ -1554,7 +1555,7 @@ test('optional committed phase inspection is accepted as exact source without ad
  assert.equal(current.defaultHumanAndForecastPreserved,true)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/request-inspection'))
  assert.equal(Object.keys(current.sourceDigests).length,48)
- for(const[path,digest]of Object.entries(manifest.privateAcquisitionSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.publicWebTransportSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
  for(const key of['nativePrivateInspectionAdopted','sql015Installed','runtimeRoleOrGrantChanged','providerExecutionAdopted','productDeploymentPerformed'])assert.equal(current[key],false,key)
 })
 
@@ -1575,7 +1576,7 @@ test('optional native SQL work accepts exact source without claiming native busi
  assert.equal(current.defaultHumanAndForecastPreserved,true)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/request-work'))
  assert.equal(Object.keys(current.sourceDigests).length,51)
- for(const[path,digest]of Object.entries(manifest.privateAcquisitionSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(manifest.publicWebTransportSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
  for(const key of['nativeSqlWorkAdopted','sql016Installed','runtimeRoleOrGrantChanged','providerExecutionAdopted','productDeploymentPerformed'])assert.equal(current[key],false,key)
 })
 
@@ -1603,9 +1604,29 @@ test('SG2 explicitly accepts additional request source while preserving old rece
  const sdk=await import('@profitia/platform-contracts/operation-context'),fsRoot=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))
  assert.equal(current.taskId,'SG2-E1-PRIVATE-ACQUISITION-RECEPTION-20261020');assert.equal(current.platformVersion,'1.22.0');assert.equal(current.rootImplementation,sdk.OPERATION_CONTRACT.implementation)
  assert.equal(current.producer.sourceSha,'e71f9953d74f683e447f315e633db3696ec365ba');assert.equal(current.operationSchemaDigest,current.sourceDigests['migrations/access/017-additional-request-operations.sql']);assert.equal(Object.keys(current.sourceDigests).length,54)
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,fsRoot))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',manifestPublicHistoryAuthority()+':packages/platform-contracts/'+path])).digest('hex'),digest,path)
  assert.equal(current.previousRecord,'privateSupplierAccessSourceCompatibility');assert.equal(receipt.privateSupplierAccessSourceCompatibility.platformVersion,'1.21.0')
  for(const flag of['previousFingerprintsPreserved','ordinaryFlowsPreserved'])assert.equal(current[flag],true)
  for(const flag of['privateAcquisitionHttpAdopted','cloudExtensionInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[flag],false)
  for(const operation of[...current.newRequestTargets,current.newReadTarget])assert(!receipt.operations.includes(operation))
+})
+
+function manifestPublicHistoryAuthority(){return '0403b34da82796c9c001be9cf53c5dcb6f9d823d'}
+
+test('public web source receipt preserves historical records and verifies every current SDK file without activation',async()=>{
+ const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),current=receipt.publicWebTransportSourceCompatibility
+ const before=JSON.parse(execFileSync('git',['show',manifestPublicHistoryAuthority()+':apps/sg-runtime/operation-integration.json'],{encoding:'utf8'}))
+ for(const[key,value]of Object.entries(before))assert.deepEqual(receipt[key],value,key)
+ assert.equal(current.taskId,'SG2-E1-PUBLIC-WEB-SOURCE-RECEPTION-20261020');assert.equal(current.platformVersion,'1.23.0');assert.equal(current.rootImplementation,OPERATION_CONTRACT.implementation)
+ assert.equal(current.producer.projectKey,'ARCHITECTURE');assert.equal(current.producer.sourceSha,'403255c88bbf81a67e384c269e38cae848b018f1')
+ const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,current.platformVersion)
+ assert.equal(await sdk.externalCallSourceDigest(),current.sdkDigests.externalCallSourceDigest)
+ assert.equal(await sdk.publicWebTransportSchemaDigest(),current.sdkDigests.publicWebTransportSchemaDigest)
+ assert.equal(Object.keys(current.sourceDigests).length,57)
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(receipt.privateAcquisitionSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',current.historicalSourceAuthority+':packages/platform-contracts/'+path])).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(receipt.nativeExternalSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.nativeExternalSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,path)
+ for(const flag of['previousFingerprintsPreserved','previousSourceRecordsAreHistorical','ordinaryFlowsPreserved'])assert.equal(current[flag],true,flag)
+ for(const flag of['publicWebTransportAdopted','cloudExtensionInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[flag],false,flag)
 })
