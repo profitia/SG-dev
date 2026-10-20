@@ -1,4 +1,5 @@
+import {createRuntimeSupplierOperationHandler} from '../../../../src/server/supplier-acquisition-http';
 import { supplierWebIdentityHandler } from "../../../../src/server/supplier-web-identity";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export async function POST(request: Request) { return supplierWebIdentityHandler(request); }
+export const POST=createRuntimeSupplierOperationHandler('web',supplierWebIdentityHandler);

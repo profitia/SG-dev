@@ -97,7 +97,7 @@ import http from 'node:http'
 import {createSrmSupplierApi} from '../src/server/supplier-api-composition.ts'
 import {createSrmSupplierOperationHandler} from '../src/server/supplier-acquisition-http.ts'
 import {createSrmNativeCompanyLookup} from '../src/server/supplier-native-company.ts'
-import {srmProviderSourcePolicy,SRM_MSR_STORAGE_ORIGIN} from '../src/server/provider-source-transport.ts'
+import {srmProviderSourcePolicy,SRM_MSR_STORAGE_ORIGIN,SRM_PUBLIC_WEB_SOURCE,createSrmPublicWebSourceTransport} from '../src/server/provider-source-transport.ts'
 import {CORPORATE_SOURCE,CORPORATE_PUBLICATION_VERSION} from '../src/server/corporate-source-store.ts'
 import {OPERATION_CONTRACT,operationPayloadDigest,isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {createDelegatedJobStore} from '@profitia/platform-contracts/delegated-job'
@@ -106,7 +106,7 @@ import {createSrmSupplierRequestContinuation} from '../src/server/supplier-reque
 import {createSrmSupplierPrivateStore} from '../src/server/supplier-private-store.ts'
 import {createSrmSupplierRequestInspection} from '../src/server/supplier-request-inspection.ts'
 import {createSrmSupplierPrivateReader} from '../src/server/supplier-private-reader.ts'
-import {createSrmSupplierNativeWork,SUPPLIER_NATIVE_WORK_UNITS,SUPPLIER_SENSITIVE_WORK_UNITS} from '../src/server/supplier-request-work.ts'
+import {createSrmSupplierNativeWork,SUPPLIER_NATIVE_WORK_UNITS,SUPPLIER_SENSITIVE_WORK_UNITS,SUPPLIER_WEB_WORK_UNITS} from '../src/server/supplier-request-work.ts'
 import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-work-store.ts'
 import {bindOrganizationTransaction,withOrganization} from '../src/server/db.ts'
 import {persistSupplierRequest,supplierRequestResourceId} from '../src/server/supplier-request-operation.ts'
@@ -132,7 +132,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
  const DATABASE='srm_sensitive_native_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
- const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,revokeKrsExport=false;const networkObservations=[]
+ const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,revokeKrsExport=false,revokeWebRead=false;const networkObservations=[]
  let syntheticOrigin
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
@@ -204,6 +204,12 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     await owner.query(core('009-external-call-admission.sql'))
     await owner.query("INSERT INTO profitia_external_call.installation VALUES(true,'1.0.0',$1,$2,'development','isolated-source-project','isolated-source-branch',$3)",[hash(core('009-external-call-admission.sql')),hash(core('008-platform-ingestion.sql')),DATABASE])
     await owner.query(core('012-native-external-transport.sql'));await owner.query("INSERT INTO profitia_external_native.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(core('012-native-external-transport.sql'))])
+    if(privateMode){
+     await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='REVOKED'")
+     await owner.query(core('018-public-web-transport.sql'))
+     await owner.query("INSERT INTO profitia_public_web.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(core('018-public-web-transport.sql'))])
+     await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='ACTIVE'")
+    }
     const installed=new Set()
     for(const provider of['VERCLY','CEIDG','MGBI','VERCLY_KRS']){
      const policy=srmProviderSourcePolicy(provider)
@@ -217,6 +223,17 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
      await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,1,$2::jsonb,$3::jsonb,$4,$5,'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '30 minutes','SYNTHETIC_ONLY')",[id,JSON.stringify(policy.pathRules),JSON.stringify(msr?[SRM_MSR_STORAGE_ORIGIN]:[]),provider==='VERCLY_KRS'?24*1024*1024:msr?20*1024*1024:1024*1024,provider==='MGBI_MSR_STORAGE'?'NONE':'SERVER_HEADERS'])
     }
     await owner.query(`GRANT USAGE ON SCHEMA profitia_external_call,profitia_external_native TO ${SOURCE};GRANT EXECUTE ON FUNCTION profitia_ingestion.receipt(text,text,text,text),profitia_external_call.descriptor(text,text),profitia_external_call.apply_control(uuid,uuid,text),profitia_external_call.read_status(uuid,text,text),profitia_external_native.descriptor(text,text) TO ${SOURCE}`)
+    if(privateMode){
+     const policy=SRM_PUBLIC_WEB_SOURCE,id=randomUUID()
+     await owner.query("INSERT INTO profitia_ingestion.sources(source_id,effect_kind,data_class,payload_schema,quality_version,classification_version,projection_version,status,source_ref,expires_at) VALUES($1,'STORED_SQL_TRANSACTION','SHARED_KNOWLEDGE',$2,$3,$4,'source-receipt-v1','ACTIVE','SYNTHETIC_ONLY',$5)",[...Object.values(policy.source),future()])
+     await owner.query("INSERT INTO profitia_ingestion.grants(grant_id,login_role,source_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,'ALLOW','ACTIVE','SYNTHETIC_ONLY',$4)",[randomUUID(),SOURCE,policy.source.id,future()])
+     await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,'srm-provider-source',$2,'SOURCE_TRANSACTION',1000,now()-interval '1 hour',now()+interval '2 hours',$3,'ACTIVE','SYNTHETIC_ONLY')",[randomUUID(),policy.source.id,future()])
+     await owner.query("INSERT INTO profitia_external_call.policies(policy_id,login_role,source_id,resource_id,configuration_version,origin,transport,path_rules,maximum_request_bytes,maximum_response_bytes,timeout_ms,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,$2,$3,$4,'company-provider-v1',NULL,'PUBLIC_WEB',$5::jsonb,8192,2000000,8000,'UPSTREAM_ATTEMPT_ADMISSION',200,now()-interval '1 hour',now()+interval '2 hours',$6,'ACTIVE','SYNTHETIC_ONLY')",[id,SOURCE,policy.source.id,policy.resourceId,JSON.stringify(policy.basePathRules),future()])
+     await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,1,$2::jsonb,'[]',2000000,'NONE','ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '30 minutes','SYNTHETIC_ONLY')",[id,JSON.stringify(policy.pathRules)])
+     await owner.query("INSERT INTO profitia_public_web.policies(policy_id,base_policy_version,maximum_redirects,synthetic_origin,status,expires_at,source_ref) VALUES($1,1,4,$2,'ACTIVE',now()+interval '20 minutes','SYNTHETIC_ONLY')",[id,syntheticOrigin])
+     await owner.query(`GRANT USAGE ON SCHEMA profitia_public_web TO ${SOURCE};GRANT EXECUTE ON FUNCTION profitia_public_web.descriptor(text,text) TO ${SOURCE}`)
+    }
+
     await owner.query(own('004-corporate-source.sql'))
     const shapeText=fs.readFileSync(new URL('../src/server/corporate-source-shape.json',import.meta.url),'utf8')
     await owner.query("INSERT INTO profitia_ingestion.runtime_bindings(login_role,binding_id,service_id,application_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'srm-corporate-source','PLATFORM_INTERNAL','synthetic-company-publication','corporate-v1','ACTIVE','SYNTHETIC_ONLY',$4)",[CORPORATE,randomUUID(),randomUUID(),future()])
@@ -239,6 +256,14 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
      const open=(await owner.query("SELECT usename FROM pg_stat_activity WHERE datname=$1 AND usename=ANY($2::text[])AND state IN('idle in transaction','idle in transaction (aborted)')",[DATABASE,[FOREGROUND,EXECUTOR,SOURCE,CORPORATE]])).rows
      assert.deepEqual(open,[],'No private/Source SQL transaction during real HTTP')
      networkObservations.push({path:req.url,authorization:req.headers.authorization,openTransactions:open.length})
+     const webUrl=new URL(req.url,'http://127.0.0.1')
+     if(privateMode&&webUrl.pathname==='/uncertain-web'){assert.equal(req.headers.authorization,undefined);req.socket.destroy();return}
+     if(privateMode&&['/','/website-data'].includes(webUrl.pathname)){
+      assert.equal(req.headers.authorization,undefined);assert.equal(req.headers.cookie,undefined)
+      if(webUrl.pathname==='/'){res.statusCode=307;res.setHeader('location','/website-data#contact');res.end();return}
+      if(revokeWebRead)await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY'WHERE application_id='srm'AND organisation_id=$1 AND operation='supplier.private.read'",[A]))
+      res.setHeader('content-type','text/html');res.end('<html><body>Synthetic Native Company, Synthetic Active JDG. NIP:5260250274; NIP:5272443955; NIP:8650004194</body></html>');return
+     }
      assert.equal(req.headers.authorization,'Bearer synthetic-native-sensitive-key');res.setHeader('content-type','application/json')
      const url=new URL(req.url,'http://127.0.0.1')
      if(url.pathname==='/api/ceidg/v3/firma'){if(emptyCeidg){res.end(JSON.stringify({firma:[]}));return}const nip=url.searchParams.get('nip');res.end(JSON.stringify({firma:[{id:'synthetic-jdg-'+nip,nazwa:'SYNTHETIC_JDG',status:'AKTYWNY',wlasciciel:{nip,pesel:'12345678901'},adresDzialalnosci:{miasto:'TEST_CITY'}}]}));return}
@@ -315,10 +340,20 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
      assert.equal((await owner.query("SELECT count(*)::int n FROM pg_constraint WHERE conrelid='profitia_supplier_requests.commands'::regclass AND contype='f'")).rows[0].n,keys)
     })
     await owner.query(own('011-supplier-private-acquisition.sql'));await owner.query("INSERT INTO srm.supplier_private_acquisition_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('011-supplier-private-acquisition.sql')),'1'.repeat(40)])
+    await t.test('website installation rollback restores the current work function and never leaves partial cache metadata',async()=>{
+     const before=(await owner.query("SELECT pg_get_functiondef('srm.current_supplier_work(uuid,uuid,text)'::regprocedure) value")).rows[0].value
+     await owner.query('SAVEPOINT website_installation');await owner.query(own('012-supplier-web-identity.sql'))
+     await owner.query('ROLLBACK TO SAVEPOINT website_installation;RELEASE SAVEPOINT website_installation')
+     assert.equal((await owner.query("SELECT to_regclass('srm.supplier_web_installation') x")).rows[0].x,null)
+     assert.equal((await owner.query("SELECT pg_get_functiondef('srm.current_supplier_work(uuid,uuid,text)'::regprocedure) value")).rows[0].value,before)
+    })
+    await owner.query(own('012-supplier-web-identity.sql'));await owner.query("INSERT INTO srm.supplier_web_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('012-supplier-web-identity.sql')),'2'.repeat(40)])
+    for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION srm.web_installation_descriptor(),srm.web_subject_row(text,uuid,uuid,uuid,text,text),srm.web_human_row(uuid,text,text,uuid,timestamptz),srm.web_cache_scope(uuid,text,text,text),srm.private_web_metadata(uuid,text,text) TO ${role}`)
+    await owner.query(`GRANT SELECT ON srm.supplier_web_identity TO ${FOREGROUND};GRANT SELECT,INSERT,UPDATE ON srm.supplier_web_identity TO ${EXECUTOR}`)
     for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION profitia_requests.operation_runtime_descriptor() TO ${role}`)
     await owner.query(`GRANT EXECUTE ON FUNCTION srm.private_acquisition_descriptor() TO ${FOREGROUND}`)
    }
-   for(const[unit,mode]of Object.entries({...SUPPLIER_NATIVE_WORK_UNITS,...SUPPLIER_SENSITIVE_WORK_UNITS}))await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_NATIVE_UNIT',$3)",[unit,mode,future()])
+   for(const[unit,mode]of Object.entries({...SUPPLIER_NATIVE_WORK_UNITS,...SUPPLIER_SENSITIVE_WORK_UNITS,...(privateMode?SUPPLIER_WEB_WORK_UNITS:{})}))await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_NATIVE_UNIT',$3)",[unit,mode,future()])
    await owner.query(`GRANT USAGE ON SCHEMA profitia_request_work TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_request_work.descriptor(uuid,text),profitia_request_work.bind_scope(uuid,text,text,uuid,uuid),profitia_request_work.scope_allows(uuid,text,uuid,uuid,text),srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${EXECUTOR};GRANT SELECT,INSERT,UPDATE ON srm.msr_sources,srm.msr_projections TO ${EXECUTOR};GRANT SELECT ON srm.catalog_companies,srm.catalog_financial_facts,srm.catalog_financial_indicators TO ${EXECUTOR}`)
    for(const role of[FOREGROUND,EXECUTOR,...(full?[CORPORATE]:[])])await owner.query(`GRANT EXECUTE ON FUNCTION srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${role}`)
    for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION srm.current_supplier_inspection(uuid,uuid,text),srm.inspected_supplier_row(text,uuid,uuid,uuid,uuid,text,text) TO ${role}`)
@@ -364,7 +399,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
   const baseBinding={applicationId:'srm',environment:'development',projectId:'isolated-srm-service-project',branchId:'isolated-srm-service-branch',databaseName:DATABASE,role:FOREGROUND,schemaDigest:hash(core('001-internal-access.sql'))}
   const humanOptions={pool,auditPool,clerk,binding:baseBinding,module:{id:'supplier_report',schemaDigest:hash(core('002-module-scope.sql')),auditSchemaDigest:hash(core('003-module-audit.sql'))},identity:{appId:'srm',environment:'development',issuer:ISSUER,authorizedParties:[ORIGIN]},application:{appId:'srm',profileId:'SUPPLIER_INTELLIGENCE_STANDALONE',environment:'development',deploymentId:'synthetic-srm-request',configurationVersion:'request-v1',identityIssuer:ISSUER,organisationId:null,features:['supplier_report'],operations:[requestOperation]},requestLedger:{...(privateMode?{operationSchemaDigest:hash(core('017-additional-request-operations.sql'))}:{}),schemaDigest:hash(core('006-request-reservation.sql')),externalSchemaDigest:hash(core('010-external-request-admission.sql'))},commandBoundaryDigest:hash(own('001-supplier-requests.sql'))}
   const job={schemaDigest:hash(core('007-delegated-jobs.sql')),targetOperation:requestOperation,...(privateMode?{operationSchemaDigest:hash(core('017-additional-request-operations.sql'))}:{}),supplierSchemaDigest:hash(core('013-supplier-delegation.sql'))}
-  const privateTarget=(entityType='COMPANY',section='kys')=>({entityType,section,boundaryDigest:hash(own('011-supplier-private-acquisition.sql'))})
+  const privateTarget=(entityType='COMPANY',section='kys')=>({entityType,section,boundaryDigest:hash(own('011-supplier-private-acquisition.sql')),...(section==='web'?{webBoundaryDigest:hash(own('012-supplier-web-identity.sql'))}:{})})
   const requestHost=(entityType='COMPANY',section='kys')=>createSrmSupplierRequestOperationHost({...humanOptions,...(privateMode?{privateAcquisition:privateTarget(entityType,section)}:{})})
   const foreground=requestHost(),jobs=createDelegatedJobStore({binding:baseBinding,...job})
   const parent=async(org=A,nip=NIP,entityType='COMPANY',section='kys')=>{const command={kind:'SUPPLIER_REPORT',nip},key='synthetic-supplier-'+randomUUID()
@@ -405,6 +440,10 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,entityType,section,
     provider:{apiKey:'synthetic-native-sensitive-key',origin:section==='jdg'?'https://dane.biznes.gov.pl':'https://vercly.fixture.test',source:sourceProvider}}})
    await controlled(async()=>{for(const org of[A,B])await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature)VALUES($1,'srm',$2,$3,'ALLOW','supplier.report.read','supplier_report')",[randomUUID(),org,U])})
+   const webFlow=entityType=>({request:{...humanOptions,privateAcquisition:privateTarget(entityType,'web')},lookup:{entityType,
+    work:{...workOptions,privateAcquisition:privateTarget(entityType,'web'),workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('012-supplier-web-identity.sql'))},
+    source:{application:sourceOptions.application,binding:sourceOptions.binding,pool:sourcePool,auditPool:sourceAudit,syntheticOrigin,
+     external:{configurationVersion:'company-provider-v1',schemaDigest:hash(core('009-external-call-admission.sql')),nativeSchemaDigest:hash(core('012-native-external-transport.sql')),publicWebSchemaDigest:hash(core('018-public-web-transport.sql'))}}}})
    api=createSrmSupplierApi({company:{request:{...humanOptions,application:{...humanOptions.application,operations:['supplier.report.refresh']},requestLedger:publicLedger},
     lookup:{work:{...workOptions,job:publicJob,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},
      namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,
@@ -412,6 +451,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
      mgbi:{apiKey:'synthetic-native-sensitive-key',authScheme:'bearer',source:sourceProvider,msrExternal:{...sourceProvider.external,maximumResponseBytes:20*1024*1024}}},
     read:{...privateHumanOptions,application:{...humanOptions.application,operations:['supplier.report.read']}}},
     companyKys:flow('COMPANY','kys'),jdgKys:flow('JDG','kys'),jdgRegistry:flow('JDG','jdg'),
+    web:{company:webFlow('COMPANY'),jdg:webFlow('JDG'),read:{...privateHumanOptions,application:{...humanOptions.application,operations:['supplier.private.read']},webBoundaryDigest:hash(own('012-supplier-web-identity.sql'))}},
     privateRead:{...privateHumanOptions,application:{...humanOptions.application,operations:['supplier.private.read','supplier.private.reveal','supplier.private.export']},sensitiveBoundaryDigest:hash(own('010-supplier-sensitive-work.sql')),secret:privateSecret},
     krs:{apiKey:'synthetic-native-sensitive-key',source:{...sourceOptions,providerOrigin:'https://vercly.fixture.test',syntheticOrigin,external:{...sourceProvider.external,maximumResponseBytes:24*1024*1024}}}})
   }
@@ -566,6 +606,61 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     const response=await http('jdg',{identifier:OTHER_NIP});assert.equal(response.status,200);const body=await response.json()
     assert.equal(body.nip,OTHER_NIP);assert.equal(body.section.status,'SUCCESS');assert(body.privateReport.snapshotId);assert.equal(body.privateReport.exportRef,null)
     assert(!JSON.stringify(body).includes('12345678901'))
+   })
+   await t.test('actual website HTTP reuses original discovery with per-hop Source admission and private durable organization cache',async()=>{
+    const before=networkHits,key='synthetic-web-'+randomUUID(),response=await http('web',{identifier:'5260250274',entityType:'COMPANY'},key)
+    assert.equal(response.status,200);const body=await response.json();assert.equal(body.status,'FOUND');assert.equal(body.websiteUrl,'https://synthetic.pl/website-data')
+    assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(networkHits,before+2)
+    const row=(await owner.query("SELECT organization_id,result_version,result_json FROM srm.supplier_web_identity WHERE organization_id=$1 AND nip=$2 AND entity_type='COMPANY'",[A,'5260250274'])).rows[0]
+    assert(row.result_version);assert.deepEqual(row.result_json,body);assert.equal(row.organization_id,A)
+    const replay=await http('web',{identifier:'5260250274',entityType:'COMPANY'},key);assert.equal(replay.status,200);assert.deepEqual(await replay.json(),body);assert.equal(networkHits,before+2)
+    assert(networkObservations.every(x=>x.openTransactions===0))
+    const records=(await owner.query("SELECT to_jsonb(x)::text t FROM profitia_external_call.calls x WHERE source_id='srm.provider.public-web'")).rows
+    assert.equal(records.length,2);assert(records.every(x=>!x.t.includes('synthetic.pl')&&!x.t.includes('5260250274')))
+   })
+   await t.test('website private associations do not cross organizations and a retained JDG remains a separate private target',async()=>{
+    const before=networkHits,foreign=await http('web',{identifier:'5260250274',entityType:'COMPANY'},undefined,B)
+    assert.equal(foreign.status,404);assert.equal((await foreign.json()).status,'NOT_FOUND');assert.equal(networkHits,before)
+    const jdg=await http('web',{identifier:OTHER_NIP,entityType:'JDG'});assert.equal(jdg.status,200);assert.equal((await jdg.json()).status,'FOUND')
+    const raw=await rawService.query('SELECT result_json FROM srm.supplier_web_identity');assert.equal(raw.rowCount,0)
+    const humanClient=await pool.connect();try{const humanRaw=await humanClient.query('SELECT result_json FROM srm.supplier_web_identity');assert.equal(humanRaw.rowCount,0)}finally{humanClient.release()}
+    assert.equal((await http('web',{identifier:NIP,entityType:'JDG',organisationId:B})).status,400)
+   })
+   await t.test('revocation during website HTTP prevents the completed private association from being released',async()=>{
+    const beforeCompany=networkHits,company=await http('company',{identifier:NIP});assert.equal(company.status,200)
+    const before=networkHits;assert(before>=beforeCompany)
+    revokeWebRead=true
+    try{const result=await http('web',{identifier:NIP,entityType:'COMPANY'});assert.equal(result.status,403)
+     const body=await result.json();assert.equal(body.websiteUrl,undefined);assert.equal(networkHits,before+2)}
+    finally{revokeWebRead=false;await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='ALLOW'WHERE application_id='srm'AND organisation_id=$1 AND operation='supplier.private.read'",[A]))}
+    const replay=await http('web',{identifier:NIP,entityType:'COMPANY'});assert.equal(replay.status,200);assert.equal((await replay.json()).status,'FOUND');assert.equal(networkHits,before+2)
+   })
+   await t.test('a reconstructed public website transport cannot repeat an uncertain logical upstream attempt',async()=>{
+    const operationKey=operationPayloadDigest({version:'srm-private-website-v1',requestId:randomUUID()}),before=networkHits
+    const options={application:sourceOptions.application,binding:sourceOptions.binding,pool:sourcePool,auditPool:sourceAudit,syntheticOrigin,operationKey,
+     external:{configurationVersion:'company-provider-v1',schemaDigest:hash(core('009-external-call-admission.sql')),nativeSchemaDigest:hash(core('012-native-external-transport.sql')),publicWebSchemaDigest:hash(core('018-public-web-transport.sql'))}}
+    const unavailable=error=>error?.name==='ExternalCallUnavailable'&&error.retryAllowed===false
+    await assert.rejects(createSrmPublicWebSourceTransport(options).fetcher('https://uncertain.example/uncertain-web'),unavailable)
+    assert.equal(networkHits,before+1)
+    await assert.rejects(createSrmPublicWebSourceTransport(options).fetcher('https://uncertain.example/uncertain-web'),unavailable)
+    assert.equal(networkHits,before+1)
+   })
+   await t.test('physical website RLS or ordinary-role privilege drift refuses the API, while Source cannot read private cache',async()=>{
+    await assert.rejects(rawSource.query('SELECT result_json FROM srm.supplier_web_identity'),error=>error.code==='42501')
+    await controlled(()=>owner.query('ALTER TABLE srm.supplier_web_identity NO FORCE ROW LEVEL SECURITY'))
+    try{assert.equal((await http('web',{identifier:'5260250274',entityType:'COMPANY'})).status,503)}
+    finally{await controlled(()=>owner.query('ALTER TABLE srm.supplier_web_identity FORCE ROW LEVEL SECURITY'))}
+    await controlled(()=>owner.query(`GRANT TRUNCATE ON srm.supplier_web_identity TO ${FOREGROUND}`))
+    try{assert.equal((await http('web',{identifier:'5260250274',entityType:'COMPANY'})).status,503)}
+    finally{await controlled(()=>owner.query(`REVOKE TRUNCATE ON srm.supplier_web_identity FROM ${FOREGROUND}`))}
+    assert.equal((await http('web',{identifier:'5260250274',entityType:'COMPANY'})).status,200)
+   })
+   await t.test('website output requires current HUMAN read and audit after the actual discovery',async()=>{
+    const before=networkHits
+    await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY'WHERE application_id='srm'AND organisation_id=$1 AND operation='supplier.private.read'",[A]))
+    try{assert.equal((await http('web',{identifier:'5260250274',entityType:'COMPANY'})).status,403);assert.equal(networkHits,before)}
+    finally{await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='ALLOW'WHERE application_id='srm'AND organisation_id=$1 AND operation='supplier.private.read'",[A]))}
+    failHumanOutcome=true;try{assert.equal((await http('web',{identifier:'5260250274',entityType:'COMPANY'})).status,503);assert.equal(networkHits,before)}finally{failHumanOutcome=false}
    })
    await t.test('actual HTTP refuses current read, tenant, audit and forged body authority without releasing personal output',async()=>{
     for(const[sql,undo,args]of[

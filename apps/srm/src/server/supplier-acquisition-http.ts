@@ -10,7 +10,7 @@ import type {SrmReportRuntime} from './private-runtime'
 import {getSrmReportRuntime} from './private-runtime'
 import {KysPdfError} from './kys-pdf-access'
 import {validateKysPdfSelection} from './kys-pdf'
-type Route='search'|'company'|'jdg'|'company-kys'|'jdg-kys'|'reveal'|'pdf'|'krs'
+type Route='search'|'company'|'jdg'|'company-kys'|'jdg-kys'|'reveal'|'pdf'|'krs'|'web'
 const privateHeaders={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}
 const response=(status:number,error='Operation unavailable')=>Response.json({error},{status,headers:privateHeaders})
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
@@ -28,7 +28,7 @@ export function supplierHttpFailure(error:unknown){
 /** The existing business URLs use this same bounded dispatcher in real tests.
  * Query/body never choose an identity, provider, role, transport or work host. */
 export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi,defaultOrganisationId:string){
- if(!uuid.test(defaultOrganisationId)||!['search','company','jdg','company-kys','jdg-kys','reveal','pdf','krs'].includes(route))throw TypeError('Explicit supplier HTTP route required')
+ if(!uuid.test(defaultOrganisationId)||!['search','company','jdg','company-kys','jdg-kys','reveal','pdf','krs','web'].includes(route))throw TypeError('Explicit supplier HTTP route required')
  return async(request:Request):Promise<Response>=>{
   if(request.method!=='POST'){const r=response(405);r.headers.set('Allow','POST');return r}
   if(!isSameOriginRequest(request))return response(403)
@@ -53,6 +53,12 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
     if(route==='krs'&&body.entityType!=='COMPANY')return response(400)
     try{const selected=validateKysPdfSelection(body);readSupplierRequest({kind:'SUPPLIER_REPORT',nip:selected.nip})}catch{return response(400)}
     return route==='pdf'?await api.pdf(scope,body):await api.krs(scope,body)
+   }
+   if(route==='web'){
+    const key=request.headers.get('idempotency-key')
+    if(!validRequestIdempotencyKey(key)||!closed(body,['identifier','entityType'])||!['COMPANY','JDG'].includes(body.entityType as string))return response(400)
+    const selected=readSupplierRequest({kind:'SUPPLIER_REPORT',nip:validateXrayRequest(body).identifier.value})
+    return await api.web({...scope,command:selected,idempotencyKey:key},body.entityType as 'COMPANY'|'JDG')
    }
    const idempotencyKey=request.headers.get('idempotency-key')
    if(!validRequestIdempotencyKey(idempotencyKey)||!closed(body,['identifier']))return response(400)

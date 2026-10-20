@@ -79,12 +79,21 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
     entityType,section,provider:{apiKey:section==='jdg'?config.ceidgKey:config.verclyKey,
      origin:section==='jdg'?'https://dane.biznes.gov.pl':config.verclyOrigin,source:provider}}}
  }
+ const webFlow=(entityType:'COMPANY'|'JDG')=>{
+  const privateAcquisition={entityType,section:'web' as const,boundaryDigest:own['011-supplier-private-acquisition.sql'],webBoundaryDigest:own['012-supplier-web-identity.sql']}
+  return {request:{...requestBase,application:app(['supplier.private.refresh']),privateAcquisition,
+    requestLedger:{...ledger,operationSchemaDigest:core['017-additional-request-operations.sql']}},
+   lookup:{entityType,work:{...workBase,job:privateJob,privateAcquisition,workBusinessBoundaryDigest:own['012-supplier-web-identity.sql']},
+    source:{application:sourceOptions.application,binding:sourceOptions.binding,pool:pools.sourcePool,auditPool:pools.sourceAudit,
+     external:{configurationVersion:version,schemaDigest:core['009-external-call-admission.sql'],nativeSchemaDigest:core['012-native-external-transport.sql'],publicWebSchemaDigest:core['018-public-web-transport.sql']}}}}
+ }
  return createSrmSupplierApi({
   company:{request:{...requestBase,application:app(['supplier.report.refresh'])},
    lookup:{work:{...workBase,job:publicJob,workBusinessBoundaryDigest:own['008-supplier-native-work.sql']},namedInterestBoundaryDigest:own['003-named-supplier-interest.sql'],source,corporate,
     mgbi:{apiKey:config.mgbiKey,authScheme:config.mgbiScheme,source:provider,msrExternal:{...external,maximumResponseBytes:20*1024*1024}}},
    read:{...human,application:app(['supplier.report.read'])}},
   companyKys:privateFlow('COMPANY','kys'),jdgKys:privateFlow('JDG','kys'),jdgRegistry:privateFlow('JDG','jdg'),
+  web:{company:webFlow('COMPANY'),jdg:webFlow('JDG'),read:{...human,application:app(['supplier.private.read']),webBoundaryDigest:own['012-supplier-web-identity.sql']}},
   privateRead:{...human,application:app(['supplier.private.read','supplier.private.reveal','supplier.private.export']),
    sensitiveBoundaryDigest:own['010-supplier-sensitive-work.sql'],secret:config.referenceSecret},
   krs:{source:{...sourceOptions,providerOrigin:config.verclyOrigin,external:{...external,maximumResponseBytes:24*1024*1024}},apiKey:config.verclyKey},

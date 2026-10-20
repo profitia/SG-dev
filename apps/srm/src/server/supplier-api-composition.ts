@@ -8,7 +8,9 @@ import {createSrmNativeSensitiveLookup} from './supplier-native-sensitive'
 import {createSrmCompanyCardRead,createSrmKnownCompanyRead,type CompanyReadOptions} from './supplier-company-read'
 import {createSrmSensitiveOperationHost,readPrivateSupplier,revealPrivateSupplier,exportPrivateKys,preparePrivateKrs,completePrivateKrs,privateSupplierReportId,privateSupplierExportId,type PrivateKrsAuthorization} from './supplier-sensitive-operation'
 import {persistSupplierRequest,readSupplierRequest,supplierRequestResourceId,privateSupplierRequestResourceId,type SupplierPrivateTarget,type SupplierRequestCommand} from './supplier-request-operation'
-import type {SupplierNativeWorkSelection} from './supplier-request-work'
+import type {SupplierNativeWorkSelection,SupplierNativeWorkOptions} from './supplier-request-work'
+import {createSrmNativeWebLookup} from './supplier-native-web'
+import {createSrmWebOperationHost,privateWebResourceId,readPrivateWeb,type WebReadOptions} from './supplier-web-operation'
 import {validateKysPdfSelection} from './kys-pdf'
 import {createSrmKrsSourceTransport,guardOriginalProviderCall} from './provider-source-transport'
 import {downloadVerclyKrsPdf} from './vercly-krs'
@@ -22,6 +24,7 @@ type PrivateFlow=Readonly<{request:RequestOptions;lookup:SensitiveOptions}>
 export type SupplierApiOptions=Readonly<{
  company:Readonly<{request:RequestOptions;lookup:CompanyOptions;read:CompanyReadOptions}>
  companyKys:PrivateFlow;jdgKys:PrivateFlow;jdgRegistry:PrivateFlow;privateRead:PrivateReadOptions
+ web?:Readonly<{company:Readonly<{request:RequestOptions;lookup:Parameters<typeof createSrmNativeWebLookup>[0]}>;jdg:Readonly<{request:RequestOptions;lookup:Parameters<typeof createSrmNativeWebLookup>[0]}>;read:WebReadOptions}>
  krs?:Readonly<{source:Omit<Parameters<typeof createSrmKrsSourceTransport>[0],'reference'|'operationKey'|'nip'|'headers'>;apiKey:string}>
 }>
 export type SupplierHttpInput=Readonly<{request:Request;organisationId:string;command:SupplierRequestCommand;idempotencyKey:string}>
@@ -33,14 +36,14 @@ const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]
 export function supplierChildIdempotencyKey(key:string,purpose:string){
  return 'srm-http-'+createHash('sha256').update(JSON.stringify(['srm-native-http-v1',key,purpose])).digest('hex')
 }
-function requestFlow(request:RequestOptions,work:CompanyOptions['work']|SensitiveOptions['work'],target?:SupplierPrivateTarget){
+function requestFlow(request:RequestOptions,work:SupplierNativeWorkOptions,target?:SupplierPrivateTarget){
  const expected=target?'supplier.private.refresh':'supplier.report.refresh'
  if(request.application.operations.length!==1||request.application.operations[0]!==expected||work.job.targetOperation!==expected
   ||request.application.environment!==work.application.environment
   ||['projectId','branchId','databaseName'].some(k=>request.binding[k as keyof typeof request.binding]!==work.binding[k as keyof typeof work.binding])
   ||target&&(!request.privateAcquisition||!work.privateAcquisition
     ||request.privateAcquisition.entityType!==target.entityType||request.privateAcquisition.section!==target.section
-    ||['entityType','section','boundaryDigest'].some(k=>request.privateAcquisition![k as keyof NonNullable<typeof request.privateAcquisition>]!==work.privateAcquisition![k as keyof NonNullable<typeof work.privateAcquisition>]))
+    ||['entityType','section','boundaryDigest','webBoundaryDigest'].some(k=>request.privateAcquisition![k as keyof NonNullable<typeof request.privateAcquisition>]!==work.privateAcquisition![k as keyof NonNullable<typeof work.privateAcquisition>]))
   ||!target&&(request.privateAcquisition!==undefined||work.privateAcquisition!==undefined))return refuse()
  const human=createSrmSupplierRequestOperationHost(request),jobs=createDelegatedJobStore({binding:request.binding,...work.job})
  return async(input:SupplierHttpInput,purpose:string):Promise<SupplierNativeWorkSelection>=>{
@@ -79,6 +82,8 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
    admit:requestFlow(flow.request,flow.lookup.work,{entityType,section})}
  }
  const companyKys=capture(options.companyKys,'COMPANY','kys'),jdgKys=capture(options.jdgKys,'JDG','kys'),jdgRegistry=capture(options.jdgRegistry,'JDG','jdg')
+ const web=options.web?{company:{native:createSrmNativeWebLookup(options.web.company.lookup),admit:requestFlow(options.web.company.request,options.web.company.lookup.work,{entityType:'COMPANY',section:'web'})},
+  jdg:{native:createSrmNativeWebLookup(options.web.jdg.lookup),admit:requestFlow(options.web.jdg.request,options.web.jdg.lookup.work,{entityType:'JDG',section:'web'})},read:createSrmWebOperationHost(options.web.read)}:undefined
  const read=async(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string,entityType:'COMPANY'|'JDG',section:'jdg'|'kys')=>{
   const payload={nip,entityType,section}
   return publication((await privateRead.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
@@ -113,6 +118,19 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
   },
   jdg:(input:SupplierHttpInput)=>sensitive(input,jdgRegistry,'JDG','jdg'),
   kys:(input:SupplierHttpInput,entityType:'COMPANY'|'JDG')=>sensitive(input,entityType==='COMPANY'?companyKys:jdgKys,entityType,'kys'),
+  async web(input:SupplierHttpInput,entityType:'COMPANY'|'JDG'){
+   if(!web||!['COMPANY','JDG'].includes(entityType))throw new OperationDenied('POLICY_UNAVAILABLE')
+   const flow=entityType==='COMPANY'?web.company:web.jdg,purpose=entityType+':web'
+   const selected=await flow.admit(input,purpose),status=await flow.native.run(selected,input.request.signal)
+   input.request.signal.throwIfAborted()
+   if(status!=='AVAILABLE'){
+    await flow.admit(input,purpose)
+    return Response.json({status,websiteUrl:null,logoDataUrl:null,evidenceUrl:null,logoSourceUrl:null,method:null,checkedAt:null},{status:status==='PENDING'?202:404,headers:{'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}})
+   }
+   const payload={nip:input.command.nip,entityType}
+   return publication((await web.read.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
+    operation:'supplier.private.read',organisationId:input.organisationId,resourceId:privateWebResourceId(payload.nip,entityType),payload,request:input.request},readPrivateWeb)).value)
+  },
   async reveal(input:Pick<SupplierHttpInput,'request'|'organisationId'>,token:string){
    return publication((await privateRead.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
     operation:'supplier.private.reveal',organisationId:input.organisationId,resourceId:'supplier-private-identifier',payload:{token},request:input.request},

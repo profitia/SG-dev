@@ -21,3 +21,11 @@ Live ordinary roles/schema/grants/policies/configuration, executable recovery pr
 ## Kontrolowany odbiór platform1.23
 
 Po osobnej zgodzie właściciela przyjęto źródło ARCHITECTURE403255c. Pełna regresja na własnym PostgreSQL, rzeczywistych zwykłych rolach, oryginalnych klientach oraz aktualnych ścieżkach HTTP:182/182 PASS, zero pominięć (srm-focused-public123-final.log). Dodano osobny zapis57 aktualnych plików SDK i67 plików obecnej aplikacji. Dawne rekordy i fingerprinty zachowano; historyczna aplikacja sprawdzana z main0403. Nadal8/9 przepływów, bez rozpoznawania strony i bez aktywacji chmurowej lub deploymentu.
+
+## Końcowa walidacja lokalna przepływów strony
+
+Zintegrowana regresja odbioru, zwykłych ról i handlerów API:190/190 PASS, zero pominięć (srm-focused-web-nine-final.log). Oryginalne testy biznesowe z prawidłową osobną bazą migracyjną:590/590 PASS, zero pominięć (srm-business-web-business-isolated-create.log). Wejścia, klient i projekcja:26/26 PASS, typecheck i build PASS (e1-srm-web-entry-client-20261020).
+
+Pierwsza próba pełnej puli biznesowej poprawnie odmówiła użycia wcześniej utworzonej lokalnej bazy; poprawiono wyłącznie runner, pozostawiając niezmienione zabezpieczenia i testy. Rozpoznawanie korzysta z jednego transportu platform1.23 i oryginalnego writera; usunięto redundantną bezpośrednią zależność ipaddr z aplikacji. Kontrola Source zachowuje stałą tożsamość logicznego żądania także po rekonstrukcji transportu i nie powtarza niepewnego GET.
+
+Obecne źródło obejmuje9 rzeczywistych handlerów i9 dokładnych bramek. Nowa pełna lista79 plików aplikacji jest sprawdzana osobno od historycznego odbioru8 przepływów. Ten etap nie potwierdza rzeczywistej sesji klienta, aktywacji chmurowego SQL/ACL, dostawców ani deploymentu. E1 pozostaje w toku: integracja SG2, kontrolowane przyjęcie i własne wydanie Development wymagają dalszych dowodów.

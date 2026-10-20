@@ -26,7 +26,8 @@
     "012-native-external-transport.sql": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
     "013-supplier-delegation.sql": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
     "016-delegated-native-work.sql": "19fb1d9045bccdb3299317b4c5b7df41e361e971c83ab683a55b56d6fbc8e5fe",
-    "017-additional-request-operations.sql": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94"
+    "017-additional-request-operations.sql": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+    "018-public-web-transport.sql": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d"
   },
   "businessBoundaryDigests": {
     "001-supplier-requests.sql": "c50daebea28aee2de2bc4fd2789c3158e67dd767e66c0f69320cf2cd13396eab",
@@ -34,7 +35,8 @@
     "008-supplier-native-work.sql": "faf4322f620c609dc0c30965f289f4ebece0f0652dc19a73a96a5cbd63ad86f8",
     "009-supplier-source-request.sql": "2ab955fa5890132f3363e5d340971ce1c1a7d490f1bd89f04cd58b7ddfa9b077",
     "010-supplier-sensitive-work.sql": "b42f494e69d7380b80af59d7a17018ca7abdd62fd83b2ca57884d263de4140e1",
-    "011-supplier-private-acquisition.sql": "1b1eceb75501c536386ab1f2bec2ad39d965d3fdf25ca62eefa616138c6a867c"
+    "011-supplier-private-acquisition.sql": "1b1eceb75501c536386ab1f2bec2ad39d965d3fdf25ca62eefa616138c6a867c",
+    "012-supplier-web-identity.sql": "98c2ea8ae6418382e8d8e9c7cf16e43a91dd3b5d7e815ae53d23dc684d8301b8"
   },
   "corporatePublicationSchemaDigest": "1e1d5b3c170eb4e97a6114d2f628c192ad6385480f563a2e9b27c2a97effcb1b"
 }

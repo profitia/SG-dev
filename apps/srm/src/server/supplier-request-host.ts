@@ -28,6 +28,8 @@ export function createSrmSupplierRequestOperationHost(options: Omit<DriverOption
         if(!descriptor||descriptor.privateAcquisitionSchemaVersion!=='1.0.0'||descriptor.privateAcquisitionBoundaryDigest!==acquisition.boundaryDigest
           ||descriptor.operationSchemaDigest!==operationSchemaDigest
           ||descriptor.commandBoundaryDigest!==digest)throw new OperationDenied('POLICY_UNAVAILABLE')
+        if(acquisition.section==='web'){const web=(await query('SELECT srm.web_installation_descriptor() AS descriptor')).rows[0]?.descriptor as Record<string,unknown>|undefined
+          if(!web||web.webSchemaVersion!=='1.0.0'||web.webBoundaryDigest!==acquisition.webBoundaryDigest||web.privateAcquisitionBoundaryDigest!==acquisition.boundaryDigest)throw new OperationDenied('POLICY_UNAVAILABLE')}
       }
       return { resource: { id: request.resourceId, type: acquisition?'supplier_private_request':'supplier_report_request', dataClass: 'OPERATION_AUDIT',
         environment: scope.environment, ownerOrganisationId: scope.organisationId, ownerUserId: scope.userId,
