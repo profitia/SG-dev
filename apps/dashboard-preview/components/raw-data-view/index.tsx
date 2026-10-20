@@ -2942,6 +2942,7 @@ export function RawDataView({
     if(!nativeCommands)return
     for(const command of nativeCompletion.completed)nativeCommands.observeCompletion(command)
     if(nativeCompletion.refreshCurrent)setForecastCurrentReloadNonce(value=>value+1)
+    if(nativeCompletion.refreshVerification)setForecastVerificationReloadNonce(value=>value+1)
     if(nativeCompletion.clearPending)setNativeCommandState(null)
   },[nativeCommands,forecastModel,selectedForecastTargetBasis,selectedCapabilityVariant?.currentReadiness,selectedCapabilityVariant?.fullVerificationReadiness,nativeCommandState?.kind,nativeCommandState?.state])
   const forecastCurrentDisplayState = resolveForecastCurrentDisplayState(forecastCurrentState, selectedProgressiveVariant)
@@ -2986,6 +2987,14 @@ export function RawDataView({
     selectedCapabilityVariant,
     selectedProgressiveVariant,
   ) || Boolean(selectedForecastVerificationResult)
+  const selectedVerificationResultReady = selectedForecastIdentity !== null
+    && isExactSelectedVerificationResult(selectedForecastVerificationResult, selectedForecastIdentity)
+  // Native reads deliberately bypass the legacy cache. Depending on each fresh
+  // response object here would make committing a result trigger another read.
+  // Selection, readiness, explicit reload and the existing expiry still recheck
+  // access; the legacy cache retains its original dependency behavior.
+  const verificationResultReadDependency = nativeReadOnly
+    ? selectedVerificationResultReady : selectedForecastVerificationResult
   const forecastVerificationBannerState = selectedForecastIdentity
     ? resolveForecastVerificationBannerState({
         forecastVerificationState,
@@ -4251,12 +4260,6 @@ export function RawDataView({
       return
     }
 
-    const selectedVerificationResultReady = isExactSelectedVerificationResult(selectedForecastVerificationResult, {
-      seriesId: activeSeriesId,
-      modelId: forecastModel,
-      targetBasis: selectedForecastTargetBasis,
-    })
-
     if (
       selectedProgressiveVariant
       && selectedProgressiveVariant.verificationState !== 'FAST_READY'
@@ -4427,7 +4430,7 @@ export function RawDataView({
       }
       controller.abort()
     }
-  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedCapabilityVariant?.sourceFrequency, selectedCapabilityVariant?.targetCadence, selectedForecastTargetBasis, selectedForecastVerificationResult, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])
+  }, [benchmarkSeriesId, forecastModel, forecastVerificationReloadNonce, isForecastPortfolioVariant, locale, preparedReadsOnly, selectedCapabilityVariant?.sourceFrequency, selectedCapabilityVariant?.targetCadence, selectedForecastTargetBasis, verificationResultReadDependency, selectedProgressiveVariant?.verificationState, selectedVerificationPrepared, showForecast, showForecastVerification, t])
 
   const forecastPortfolioPayload = isForecastPortfolioVariant
     ? buildForecastPortfolioPayload({

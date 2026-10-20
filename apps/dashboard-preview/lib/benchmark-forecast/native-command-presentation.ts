@@ -41,5 +41,6 @@ export function nativeForecastCompletionPlan(input:{modelId:ForecastPortfolioMod
   const clearPending=!!pending&&pending.state!=='SENDING'&&completed.some(command=>command.kind===pending.kind)
   return {completed,clearPending,
     poll:!!validPending&&observing&&!clearPending,
+    refreshVerification:clearPending&&observing&&pending?.kind==='VERIFICATION',
     refreshCurrent:clearPending&&observing&&(pending?.kind==='CURRENT'||input.targetBasis==='POINT_IN_TIME')}
 }
