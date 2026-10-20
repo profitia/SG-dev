@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0.0",
-  "status": "DEVELOPMENT_DEPLOYED_TECHNICAL_TESTS_PASSED_OWNER_UI_ISSUE_OPEN",
+  "status": "DEVELOPMENT_RELEASE_ACCEPTED_WITH_DOCUMENTED_LIMITATIONS",
   "sourceSha": "f03968d474a937cfe5badcc192e1bc81781bcb91",
-  "documentationAuthoritySha": "07856e774d7d60d12e564d0d7fa7a88d3b6f2ad8",
+  "documentationAuthoritySha": "76fb4f9c8fb9b80c11c5ada8de9f150b3d425569",
   "targetEnvironment": "development",
-  "observedAt": "2026-10-20T19:03:29.860785+00:00",
+  "observedAt": "2026-10-20T19:26:39.251820+00:00",
   "programAcceptance": false,
   "stagingOrProductionMutated": false,
   "governance": {
@@ -13,11 +13,11 @@
     "profilesAndPmosSeparate": true
   },
   "remainingMandatory": [
-    "Resolve intermittent owner blank iframe after whole-page reload; successful agent renders and owner screenshots do not supersede owner failures",
-    "Canonical SG2 PMOS closeout, required MEMOROS delivery and remote PHR verification after task acceptance"
+    "Canonical SG2 PMOS closeout, required MEMOROS delivery and remote PHR verification; this receipt records the state before that closeout",
+    "Separate exact-source Staging release contract and acceptance are required to complete programme E1; this task does not deploy Staging"
   ],
   "knownLimitations": [
-    "Owner still reports intermittent empty chart and unfinished page load in Chrome after full reload. Independent owner Safari test without DevTools passed. Font probe failed and was fully reverted; browser/tooling influence remains an unconfirmed hypothesis. Chrome acceptance is still open.",
+    "Earlier intermittent Chrome empty iframe remains an unresolved diagnostic observation. Latest independent owner Chrome test after agent browser operations ended and independent Safari test both passed. This is acceptance of the observed scenario, not proof of a permanent fix or a known browser/instrumentation root cause.",
     "Native category AI suggestions are explicitly unavailable; manual categories and organisational persistence were genuinely verified. Benchmark AI search is not claimed accepted by a real provider call.",
     "No live paid KYS order; known MSR/MSSF document/mapping limitations remain explicit.",
     "Finite technical policies expire2026-11-19; bounded Vercly policy expires2026-11-08. Physical cleanup of expired results and periodic sensitive-report retention remain gaps.",
@@ -30,9 +30,11 @@
     "projectId": "lucky-dream-96138453",
     "database": "neondb",
     "registrationId": "cmvgeclt500005upzbsqu35ap",
-    "status": "RUNNING_CLOSEOUT_NOT_DONE",
+    "status": "RUNNING_AT_RECEIPT_PUBLICATION_CLOSEOUT_TRACKED_IN_PMOS_AND_PHR",
     "memoros": "REQUIRED_NOT_YET_DELIVERED_FOR_THIS_TASK",
-    "phr": "NOT_YET_PUBLISHED_FOR_THIS_TASK"
+    "phr": "NOT_YET_PUBLISHED_FOR_THIS_TASK",
+    "snapshotObservedAt": "2026-10-20T19:26:39.251820+00:00",
+    "finalCloseoutAuthority": "Canonical PMOS registration and PHR publication SG2:SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020"
   },
   "services": [
     {
@@ -47,7 +49,7 @@
       "serviceId": "srv-dapa3ujm8hqs73a9t2og",
       "deployId": "dep-dbbr34rncjis738t5phg",
       "sourceSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
-      "status": "LIVE_RETAINED_ARTIFACT_NATIVE_RESULTS_VERIFIED_OWNER_INTERMITTENT_BLANK_OPEN"
+      "status": "LIVE_RETAINED_ARTIFACT_NATIVE_RESULTS_AND_OWNER_SCENARIO_VERIFIED"
     },
     {
       "name": "Current",
@@ -394,7 +396,7 @@
       2.341,
       2.243
     ],
-    "ownerLatestResult": "INTERMITTENT_FAILURE_STILL_OPEN",
+    "ownerLatestResult": "PASS_INDEPENDENT_CHROME_AND_SAFARI_OWNER_REPORTED",
     "newForecastRequestsAfter1745": 0,
     "sharedFinancialModuleInBothReact18AndReact19Hosts": "VERIFIED_EARLIER_IN_THIS_TASK",
     "independentOwnerSafari": {
@@ -408,6 +410,58 @@
       "observedAt": "2026-10-20T19:06:47.282738+00:00",
       "chromeIssueResolved": false,
       "cause": "NOT_ESTABLISHED"
+    },
+    "independentOwnerChrome": {
+      "status": "PASS_OWNER_REPORTED",
+      "questionReference": "call_b9e333a7485c46e3b1f3a9289e7e20b6",
+      "browser": "Chrome",
+      "url": "https://dev-sg2.spendguru.app/pl/benchmark-finder",
+      "requestedScenario": "Wait30seconds after agent final; close DevTools; refresh parent; search oil; expand Brent; check history and forecast control within20seconds; no forecast command",
+      "ownerAnswer": "Tak — wykres i kontrolka są widoczne",
+      "agentBrowserInteractionInThisReplyTurn": false,
+      "elapsedTimeIndependentlyMeasured": false,
+      "observedAt": "2026-10-20T19:26:39.251820+00:00",
+      "rootCause": "NOT_ESTABLISHED",
+      "earlierIntermittentFailureErased": false,
+      "permanentFixClaimed": false
+    },
+    "publication585MainCi": {
+      "runId": 39481767768,
+      "sourceSha": "76fb4f9c8fb9b80c11c5ada8de9f150b3d425569",
+      "status": "SUCCESS"
     }
+  },
+  "developmentAcceptance": {
+    "status": "PASS_BOUNDED_DEVELOPMENT_RELEASE",
+    "ownerChrome": {
+      "status": "PASS_OWNER_REPORTED",
+      "questionReference": "call_b9e333a7485c46e3b1f3a9289e7e20b6",
+      "browser": "Chrome",
+      "url": "https://dev-sg2.spendguru.app/pl/benchmark-finder",
+      "requestedScenario": "Wait30seconds after agent final; close DevTools; refresh parent; search oil; expand Brent; check history and forecast control within20seconds; no forecast command",
+      "ownerAnswer": "Tak — wykres i kontrolka są widoczne",
+      "agentBrowserInteractionInThisReplyTurn": false,
+      "elapsedTimeIndependentlyMeasured": false,
+      "observedAt": "2026-10-20T19:26:39.251820+00:00",
+      "rootCause": "NOT_ESTABLISHED",
+      "earlierIntermittentFailureErased": false,
+      "permanentFixClaimed": false
+    },
+    "ownerSafari": {
+      "status": "PASS_OWNER_REPORTED",
+      "questionReference": "call_52acf63a53e3457895305082bea0e859",
+      "browser": "Safari",
+      "url": "https://dev-sg2.spendguru.app/pl/benchmark-finder",
+      "devToolsOpened": false,
+      "ownerAnswer": "Safari działa — wykres i kontrolka są widoczne",
+      "noNewForecastCommandsRequested": true,
+      "observedAt": "2026-10-20T19:06:47.282738+00:00",
+      "chromeIssueResolved": false,
+      "cause": "NOT_ESTABLISHED"
+    },
+    "technicalEvidence": "Exact controlled source tests, genuine internal identity and private category create/update/reload, owner isolation denial, Current and Verification jobs with matching audit, measured and rehearsed recovery",
+    "programE1Completed": false,
+    "staging": "NOT_RELEASED_BY_THIS_TASK",
+    "knownIntermittentObservation": "NOT_REPRODUCED_IN_LATEST_OWNER_CHROME_AND_SAFARI_TESTS_CAUSE_UNKNOWN"
   }
 }

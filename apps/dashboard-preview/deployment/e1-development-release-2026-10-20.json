@@ -2,14 +2,14 @@
   "schemaVersion": "1.0.0",
   "projectKey": "SG2",
   "targetEnvironment": "development",
-  "status": "DEVELOPMENT_NATIVE_RESULTS_VERIFIED_OWNER_INTERMITTENT_BLANK_OPEN",
+  "status": "DEVELOPMENT_NATIVE_RESULTS_AND_OWNER_SCENARIO_VERIFIED_WITH_LIMITATIONS",
   "sourceSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
   "service": {
     "name": "Dashboard",
     "serviceId": "srv-dapa3ujm8hqs73a9t2og",
     "deployId": "dep-dbbr34rncjis738t5phg",
     "sourceSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
-    "status": "LIVE_RETAINED_ARTIFACT_OWNER_INTERMITTENT_BLANK_OPEN"
+    "status": "LIVE_RETAINED_ARTIFACT_NATIVE_RESULTS_AND_OWNER_SCENARIO_VERIFIED"
   },
   "nativeRelayNoSessionSeriesRead": 401,
   "legacyUnadoptedRoutes": "CLOSED_BY_MIDDLEWARE",
@@ -56,11 +56,11 @@
       "tests/native-forecast-command-presentation.test.ts": "daba3ddc8eb5000cfd51278e11556c6ca60f13c6eaa665b5d14d08addd19cc41"
     },
     "actualUiWorkerRegression": "PASS_TWO_INITIAL_READS_THEN_APPROX_31_SECONDS_PROTECTED_EXPIRY",
-    "intermittentBlankFrame": "OPEN_OWNER_FAILED_FULL_RELOAD_AFTER_AGENT_SUCCESSES",
+    "intermittentBlankFrame": "LATEST_INDEPENDENT_OWNER_CHROME_AND_SAFARI_PASS_EARLIER_CAUSE_UNRESOLVED",
     "programAcceptance": false,
     "stagingOrProductionMutated": false
   },
-  "observedAt": "2026-10-20T19:03:29.860785+00:00",
+  "observedAt": "2026-10-20T19:26:39.251820+00:00",
   "nativeRollback": {
     "deployId": "dep-dbbr34rncjis738t5phg",
     "retainedTarget": "dep-dbbqne8473hc738gr5m0",
@@ -70,11 +70,11 @@
     "postRollbackRuntimeFilesystemDigest": "NOT_REMEASURED"
   },
   "ownerUiIssue": {
-    "status": "OPEN",
+    "status": "LATEST_OWNER_SCENARIO_ACCEPTED_DIAGNOSTIC_CAUSE_UNRESOLVED",
     "agentSuccessAndOwnerScreenshotsRecorded": true,
     "ownerFailedNormalReloadAlsoRecorded": true,
     "cause": "NOT_ESTABLISHED",
-    "independentBrowserComparison": "PASS_OWNER_SAFARI_WITHOUT_DEVTOOLS_CHROME_STILL_OPEN",
+    "independentBrowserComparison": "PASS_OWNER_CHROME_AFTER_AGENT_OPERATIONS_AND_SAFARI_WITHOUT_DEVTOOLS",
     "fullE1AcceptanceClaimed": false,
     "independentOwnerSafari": {
       "status": "PASS_OWNER_REPORTED",
@@ -87,6 +87,22 @@
       "observedAt": "2026-10-20T19:06:47.282738+00:00",
       "chromeIssueResolved": false,
       "cause": "NOT_ESTABLISHED"
-    }
-  }
+    },
+    "independentOwnerChrome": {
+      "status": "PASS_OWNER_REPORTED",
+      "questionReference": "call_b9e333a7485c46e3b1f3a9289e7e20b6",
+      "browser": "Chrome",
+      "url": "https://dev-sg2.spendguru.app/pl/benchmark-finder",
+      "requestedScenario": "Wait30seconds after agent final; close DevTools; refresh parent; search oil; expand Brent; check history and forecast control within20seconds; no forecast command",
+      "ownerAnswer": "Tak — wykres i kontrolka są widoczne",
+      "agentBrowserInteractionInThisReplyTurn": false,
+      "elapsedTimeIndependentlyMeasured": false,
+      "observedAt": "2026-10-20T19:26:39.251820+00:00",
+      "rootCause": "NOT_ESTABLISHED",
+      "earlierIntermittentFailureErased": false,
+      "permanentFixClaimed": false
+    },
+    "permanentFixClaimed": false
+  },
+  "developmentAcceptance": "PASS_BOUNDED_DEVELOPMENT_RELEASE_WITH_DOCUMENTED_LIMITATIONS"
 }
