@@ -105,7 +105,8 @@ function validateCalculation(c: CciNodesResult): void {
         if (component.weightPercent !== 0 || component.benchmarkRelative !== null || component.contributionPercentagePoints !== 0) invalid('INVALID_CCI_RESULT', 'Zero-weight components must remain explicitly excluded.')
       } else if (component.status !== 'MISSING_OBSERVATION' || component.weightPercent <= 0 || component.benchmarkRelative !== null || component.contributionPercentagePoints !== null) invalid('INVALID_CCI_RESULT', 'Missing components require explicit null results.')
     }
-    const missing = node.components.filter(x => x.status === 'MISSING_OBSERVATION').map(x => x.componentId)
+    const sourceComponents: CciNodesResult['nodes'][number]['components'] = node.components
+    const missing = sourceComponents.filter(x => x.status === 'MISSING_OBSERVATION').map(x => x.componentId)
     if (missing.length !== node.missingComponentIds.length || missing.some((id, i) => id !== node.missingComponentIds[i])
       || (missing.length > 0) !== (node.status === 'INCOMPLETE')) invalid('INVALID_CCI_RESULT', 'CCI completeness must agree with its explicit missing components.')
     if (node.status === 'COMPLETE' ? !finite(node.cci) || node.cci <= 0 || !finite(node.cumulativeChangePercent) : node.cci !== null || node.cumulativeChangePercent !== null) invalid('INVALID_CCI_RESULT', 'Unavailable CCI values must remain null; complete indices must be positive and finite.')
