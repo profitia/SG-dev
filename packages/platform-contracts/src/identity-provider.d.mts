@@ -5,6 +5,9 @@ export interface IdentityBinding extends ExternalIdentityKey {
 }
 export interface IdentityApplication {
   appId: string; environment: Environment; issuer: string; authorizedParties: string[]
+  /** Deployment-owned opt-in for a bearer-only GET at an exact receiver path.
+   * Both origins must already be authorized. Never confers product/resource access. */
+  bearerPeerReads?: { sourceOrigin: string; targetOrigin: string; path: string }[]
 }
 /** Observation only: never an authenticated Actor or an access grant. */
 export interface ExternalAccountObservation extends ExternalIdentityKey {
