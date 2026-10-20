@@ -1,0 +1,250 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "DEVELOPMENT_ROLLOUT_IN_PROGRESS_ACCEPTANCE_PENDING",
+  "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+  "documentationAuthoritySha": "82c89a2ce476da35cd003ec20c2ebbca15772dce",
+  "targetEnvironment": "development",
+  "observedAt": "2026-10-20T11:04:59.785Z",
+  "programAcceptance": false,
+  "stagingOrProductionMutated": false,
+  "governance": {
+    "authority": "profitia/SG-dev/main",
+    "hostConversationId": "01a133c2-c245-77a0-bb6b-33165e2ad80c",
+    "profilesAndPmosSeparate": true
+  },
+  "legacyOwnershipProof": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[\n  {\n    \"organizations\": 1,\n    \"organization_assignments\": 41,\n    \"user_assignments\": 41\n  }\n]"
+          }
+        ],
+        "structuredContent": null,
+        "isError": false
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[\n  {\n    \"organizations\": 1,\n    \"users\": 0,\n    \"organization_assignments\": 0,\n    \"user_assignments\": 0,\n    \"forecast_request_cutover_grant\": \"DENY\"\n  }\n]"
+          }
+        ],
+        "structuredContent": null,
+        "isError": false
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[\n  {\n    \"status\": \"FAILED\",\n    \"count\": 6\n  },\n  {\n    \"status\": \"SUCCEEDED\",\n    \"count\": 142\n  }\n]"
+          }
+        ],
+        "structuredContent": null,
+        "isError": false
+      }
+    }
+  ],
+  "providerEffects": {
+    "privateSourceEffects": 0,
+    "privateSourceEvents": 0,
+    "marketSourceEffects": 0,
+    "marketSourceEvents": 0
+  },
+  "remainingMandatory": [
+    "Genuine owner sign-in and positive business operations with matching audit/persistence evidence",
+    "Authenticated foreign-organisation and scope refusal",
+    "Canonical own-profile PMOS save, integrity and downstream publication verification"
+  ],
+  "knownLimitations": [
+    "OpenAI key was absent in pre-existing SG2 Development; AI Search is not claimed operational until explicitly configured and verified",
+    "Finite technical Source budgets expire 2026-11-19; Vercly bounded credential policy expires 2026-11-08",
+    "Physical cleanup of expired Finder results and periodic sensitive-report retention remain explicit gaps",
+    "E2 self-service organisation administration, billing and replacement identity provider are outside this E1 receipt"
+  ],
+  "projectKey": "SRM",
+  "taskId": "SRM-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+  "pmos": {
+    "projectId": "bold-breeze-68888550",
+    "database": "srm_pmos",
+    "registrationId": "cmvgecqo200006qmumksngaou",
+    "status": "RUNNING_CLOSEOUT_NOT_DONE",
+    "memoros": "DISABLED_BY_PROFILE",
+    "phr": "NOT_YET_PUBLISHED_FOR_THIS_TASK"
+  },
+  "services": [
+    {
+      "name": "SRM",
+      "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+      "deployId": "dep-dbbkh96i0phs73ea9qv0",
+      "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+      "status": "LIVE_POSITIVE_ACCEPTANCE_PENDING"
+    }
+  ],
+  "privateTransport": {
+    "host": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "database": "platform_private",
+    "roles": [
+      "srm_private_development_runtime",
+      "srm_private_development_jobs",
+      "srm_provider_development_source",
+      "srm_corporate_development_source"
+    ],
+    "strictTls": true,
+    "credentialRotation": false,
+    "reason": "Accepted pg driver uses a startup search_path; pooled transport returned 08P01. Same role and query passed through the already-allowed direct endpoint in Render."
+  },
+  "initialBusinessOrganisation": {
+    "id": "225e465b-8b89-467d-92d1-7fef61b555fe",
+    "slug": "profitia-internal",
+    "users": 0,
+    "organisationSupplierAssignments": 0,
+    "userSupplierAssignments": 0,
+    "legacyHistoryReassigned": false
+  },
+  "recovery": {
+    "retainedOriginalDeployId": "dep-db97cj6k1f9s738na1r0",
+    "nativeRollbackDeployId": "dep-dbbk7h49v7es73fh0img",
+    "nativeRollbackLiveVerified": true,
+    "intermediateConfigTriggerDeployId": "dep-dbbkh467bikc738sfsgg",
+    "intermediateDeployCanceled": true,
+    "dataResetPerformed": false
+  },
+  "negativeHttpProof": {
+    "observedAt": "2026-10-20T11:00:30.766Z",
+    "sourceSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+    "deployId": "dep-dbbkh96i0phs73ea9qv0",
+    "probes": [
+      {
+        "id": "report-no-session",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "report-foreign-org-no-session",
+        "status": 401,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "lookup-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "kys-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "krs-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "jdg-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "jdg-kys-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "web-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "excel-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "kys-pdf-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      },
+      {
+        "id": "kys-sensitive-no-session",
+        "status": 403,
+        "cacheControl": "private, no-store",
+        "accessDenied": true,
+        "validationDenied": false,
+        "errorBody": "{\"error\":\"Operation unavailable\"}"
+      }
+    ]
+  },
+  "retainedArtifactMeasurements": [
+    {
+      "providerLogId": "2eb94538-74c2-4887-bff3-9a19da87c47a",
+      "providerTimestamp": "2026-10-20T08:08:42.467306546Z",
+      "jobId": "job-dbbi2qmq1p3s73cmob6g",
+      "proof": {
+        "kind": "E1_LKG_ARTIFACT",
+        "status": "PASS",
+        "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+        "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+        "algorithm": "sha256-sorted-path-type-content-v1",
+        "roots": [
+          ".next",
+          "node_modules",
+          "public",
+          "package.json",
+          "package-lock.json"
+        ],
+        "excluded": [
+          ".next/cache",
+          "nested .cache directories"
+        ],
+        "symlinkMode": "LINK_TARGET_TEXT_NOT_DEREFERENCED",
+        "fileCount": 20795,
+        "totalBytes": 548006020,
+        "artifactDigest": "d419e35a1131f637b6009ce9ae9b511f3c193f077b9ada9fe71e4548db19301e",
+        "buildIdDigest": "33a6dd4739d99b477790daca4c0883f87df7fd2d961b6d1c6cd4cf1cca7f8dbe",
+        "measurement": "LATEST_SUCCESSFUL_BUILD_ONE_OFF_JOB_NOT_HISTORICAL_ENV_OR_POST_ROLLBACK_RUNTIME",
+        "observedAt": "2026-10-20T08:08:42.446Z"
+      }
+    }
+  ]
+}
