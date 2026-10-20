@@ -111,7 +111,7 @@ test('shared output refuses private capabilities, supplier substitution and cach
     await assert.rejects(projectSharedFinancialResponse(value, context))
   }
 })
-test('bearer-only request port removes cookies and cannot select another operation or private payload', async () => {
+test('bearer-only request port rejects browser credentials and cannot select another operation or private payload', async () => {
   let calls = 0
   const executor = { async execute(input: { operation: string; request: Request; payload: unknown }) {
     calls++; assert.equal(input.operation, 'supplier.report.read'); assert.deepEqual(input.payload, selection)
@@ -120,8 +120,12 @@ test('bearer-only request port removes cookies and cannot select another operati
   } } as unknown as OperationExecutor<PoolClient>
   const handler = createOperationSharedFinancialHandler(executor, org)
   const make = (query = `nip=${selection.nip}`, authorization = 'Bearer fixture') => new Request(`https://app.fixture.test/api/xray/financial-summary?${query}`, {
-    headers: { authorization, Cookie: 'unrelated', 'x-clerk-user-id': 'forged', 'x-clerk-org-id': org, 'x-clerk-org-role': 'admin' } })
+    headers: { authorization, 'x-clerk-user-id': 'forged', 'x-clerk-org-id': org, 'x-clerk-org-role': 'admin' } })
   assert.equal((await handler(make())).status, 200)
+  for (const headers of [{ cookie: 'unrelated' }, { cookie: '' }, { origin: 'https://app.fixture.test' }]) {
+    const request = make(); for (const [key, value] of Object.entries(headers)) request.headers.set(key, value)
+    assert.equal((await handler(request)).status, 401)
+  }
   for (const query of [`nip=${selection.nip}&nip=${selection.nip}`, `nip=${selection.nip}&organisationId=demo`, `nip=${selection.nip}&organisationId=`, `nip=${selection.nip}&operation=supplier.report.export`]) assert.equal((await handler(make(query))).status, 400)
   for (const authorization of ['', 'Basic fixture', 'Bearer fixture extra']) assert.equal((await handler(make(undefined, authorization))).status, 401)
   assert.equal(calls, 1)

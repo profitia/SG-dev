@@ -57,7 +57,16 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
     || url.searchParams.getAll('sslmode').length !== 1 || url.searchParams.get('sslmode') !== 'require'
     || url.searchParams.getAll('channel_binding').length > 1
     || (url.searchParams.has('channel_binding') && url.searchParams.get('channel_binding') !== 'require')) unavailable()
+  let bearerPeerReads: IdentityApplication['bearerPeerReads']
+  if (env.PROFITIA_SUPPLIER_SUMMARY_PEER_READ_VERSION !== undefined) {
+    const { configurationVersion, ...peer } = target.summaryPeerRead
+    if (env.PROFITIA_SUPPLIER_SUMMARY_PEER_READ_VERSION !== configurationVersion
+      || !identity.application.authorizedParties.includes(peer.sourceOrigin)
+      || !identity.application.authorizedParties.includes(peer.targetOrigin)) unavailable()
+    bearerPeerReads = [peer]
+  }
   const config: PrivateConfiguration = { provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
+    ...(bearerPeerReads ? { bearerPeerReads } : {}),
     requestBoundary: { publicOrigins: [...identity.application.authorizedParties], internalOrigins: ['http://0.0.0.0:10000', 'https://0.0.0.0:10000'] } },
     application: { appId: 'srm', profileId: 'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,

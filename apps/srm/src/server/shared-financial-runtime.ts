@@ -13,6 +13,7 @@ export function createOperationSharedFinancialHandler(executor: OperationExecuto
   env: Readonly<Record<string, string | undefined>> = process.env) {
   return async (request: Request): Promise<Response> => {
     if (request.method !== 'GET') { const response = respond(405); response.headers.set('Allow', 'GET'); return response }
+    if (request.headers.has('cookie') || request.headers.has('origin')) return respond(401)
     const authorization = request.headers.get('authorization') ?? ''
     if (!/^Bearer [^\s]{1,8192}$/.test(authorization)) return respond(401)
     let selection, organisationId: string
@@ -24,8 +25,8 @@ export function createOperationSharedFinancialHandler(executor: OperationExecuto
       organisationId = params.get('organisationId') ?? defaultOrganisationId
       if (!uuid.test(organisationId)) return respond(400)
     } catch { return respond(400) }
-    // This bearer-only port never allows an unrelated cookie to win SDK token
-    // selection. The official adapter still verifies issuer, party and session.
+    // Reject browser credentials before projecting headers. Their absence is a
+    // real ingress check, not a consequence of stripping them before identity.
     const identityHeaders = new Headers({ authorization })
     const host = request.headers.get('host')
     if (host !== null) identityHeaders.set('host', host)
