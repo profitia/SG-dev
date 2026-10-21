@@ -1,0 +1,111 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-E1-SUPPLIER-LOCATION-MAPS-C16-ADOPTION-20261021",
+  "relatedTasks": {
+    "SG2": "SG2-E1-SUPPLIER-LOCATION-C16-ADOPTION-20261021",
+    "ARCHITECTURE": "ARCHITECTURE-SUPPLIER-LOCATIONS-E1-CI-20261021"
+  },
+  "repository": "profitia/SG-dev",
+  "targetEnvironment": "development",
+  "scope": "SOURCE_CONTRACT_ADOPTION_ONLY",
+  "packageVersion": "1.24.0",
+  "contract": {
+    "id": "profitia.operation-context",
+    "version": "1.0.0",
+    "implementation": "1.0.0-candidate.16",
+    "sourceDigest": "9fe1ee707bb5510e66cbe9470ba970de177f8a6fe4533470f771af88d68bf728"
+  },
+  "producer": {
+    "pullRequest": 594,
+    "implementationSourceSha": "88c3337d943fa3893f2f357bb11b78c565e50047",
+    "referenceHead": "311dc5b087340c5ff14b3ce672bc42a82f4bd6df"
+  },
+  "receivers": {
+    "SG2": {
+      "pullRequest": 595,
+      "ownerSourceSha": "423e936fa94afc5608d77b3058201acfb99e40c3",
+      "receipt": "apps/sg-runtime/operation-integration.json"
+    },
+    "SRM": {
+      "pullRequest": 596,
+      "ownerSourceSha": "657b908b4737d235260daa68eadcfc17dca091be",
+      "receipt": "apps/srm/operation-integration.json"
+    },
+    "MAPS": {
+      "includedInSrmPr": 596,
+      "receipt": "apps/maps-runtime/platform-integration.json",
+      "wireContract": "profitia.embedded-read@1.0.0",
+      "privateBusinessAuthorityAdopted": false
+    }
+  },
+  "publication": {
+    "authorityBranch": "main",
+    "requires": "Exact producer and both receiver commits present with matching receipts, all actual candidate/main checks and trusted exact-source proof; no failing PR merge",
+    "finalVerification": "Independent owner PMOS/PHR final handoff records actual combined/main SHAs and CI links after publication",
+    "noOldPr590ProofReuse": true
+  },
+  "operations": {
+    "supplier.location.read": "READ",
+    "supplier.location.write": "WRITE",
+    "supplier.location.sync": "REQUEST_COMPUTE",
+    "supplier.location.geocode": "REQUEST_EXTERNAL"
+  },
+  "feature": "supplier_report",
+  "product": "SUPPLIER_INTELLIGENCE",
+  "ownership": "ORGANISATION_PRIVATE; User ID is creator/editor attribution",
+  "sql019": {
+    "sourceReady": true,
+    "schemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+    "path": "packages/platform-contracts/migrations/access/019-supplier-location-operations.sql",
+    "liveInstallation": "NOT_PERFORMED",
+    "installationRequires": "Separate explicit installation authority, exact SQL017 chain, controlled disabled applications/minimal roles/grants, verified LKG and reversible snapshot/rollback before activation"
+  },
+  "defaultPaidGeocodingAllowance": 0,
+  "paidGeocodingEnabled": false,
+  "mapsExecutorEndpointImplemented": false,
+  "runtimeOperationGrantsAdded": false,
+  "organisationLocationPersistenceActivated": false,
+  "productFeatureActivated": false,
+  "productDeploymentPerformed": false,
+  "cloudConfigurationChanged": false,
+  "localValidation": {
+    "SRMFull": {
+      "tests": 600,
+      "pass": 600,
+      "fail": 0,
+      "skip": 0
+    },
+    "SRMPrivateOrdinarySql": {
+      "tests": 307,
+      "pass": 307,
+      "fail": 0,
+      "skip": 0
+    },
+    "Maps": {
+      "tests": 12,
+      "pass": 12,
+      "fail": 0,
+      "skip": 0
+    },
+    "SG2Dashboard": {
+      "tests": 336,
+      "pass": 336,
+      "fail": 0,
+      "skip": 0
+    },
+    "LocationProducer": {
+      "tests": 97,
+      "pass": 97,
+      "fail": 0,
+      "skip": 0
+    }
+  },
+  "task02Requirements": [
+    "Read final source/CI/continuity publication receipts and verify the exact current accepted contract; source adoption is not live SQL installation",
+    "Implement organisation/supplier/location composite FKs, current server identity/source resolution, manual CRUD writer and creator/editor attribution under a separate SRM feature task",
+    "Use deterministic accepted-report/source versions for local synchronisation/upsert, preserve manual locations, and withhold expired/revoked private KYS-derived positions",
+    "Install SQL019 only through separately authorised governed installation with verified rollback; no automatic migration or default grants",
+    "Separately adopt bounded existing Maps/Source execution with exact address/executor, finite organisation/provider Root+Source policy, current result checks and uncertain-delivery fence; paid allowance stays0 until owner approval",
+    "Verify applicable Google EEA coordinate retention/sharing and existing environment-specific browser/server key restrictions at separately authorised provider/runtime adoption; no Google configuration action is required in this source task"
+  ]
+}
