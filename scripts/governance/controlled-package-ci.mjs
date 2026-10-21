@@ -189,14 +189,15 @@ async function resolve() {
   console.log(`Accepted internal SG2 source ${sha}; control ${c.controlSha}`)
 }
 /** Static, closed source layouts. Candidate data selects neither file paths nor
- * executable hashing code. Candidate15 additionally binds its imported request
- * metadata and optional SQL; it may never fall back to the legacy two files. */
+ * executable hashing code. Candidate15 binds its imported request metadata and optional SQL;
+ * candidate16 adds the fixed supplier-location policy/types/installation; it may never fall back to the legacy two files. */
 export function operationContractProvenanceDigest(root, contract) {
   assertOperationContractMetadata(contract)
   const legacy = /^1\.0\.0-candidate\.([1-9][0-9]*)$/.exec(contract?.implementation ?? '')
-  if (!legacy || Number(legacy[1]) > 15) fail('CONTRACT_SOURCE_LAYOUT_UNSUPPORTED')
+  if (!legacy || Number(legacy[1]) > 16) fail('CONTRACT_SOURCE_LAYOUT_UNSUPPORTED')
   const names = ['src/operation-context.mjs', 'src/operation-context.d.mts',
-    ...(Number(legacy[1]) === 15 ? ['src/request-operations.mjs', 'src/request-operations.d.mts', 'migrations/access/017-additional-request-operations.sql'] : [])]
+    ...(Number(legacy[1]) >= 15 ? ['src/request-operations.mjs', 'src/request-operations.d.mts', 'migrations/access/017-additional-request-operations.sql'] : []),
+    ...(Number(legacy[1]) === 16 ? ['src/supplier-location.mjs', 'src/supplier-location.d.mts', 'migrations/access/019-supplier-location-operations.sql'] : [])]
   let base, contents
   try {
     base = fs.realpathSync(root)
