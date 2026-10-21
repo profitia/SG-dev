@@ -47,7 +47,7 @@ test('the public identity adoption preserves historical receipts and pins the en
   assert.equal(adoption.producer.projectKey, 'ARCHITECTURE'); assert.equal(adoption.producer.sourceSha, '74df44d1f0d6df66e358bd432ebd80c3c955f70a')
   assert.equal(adoption.sdkDigest, await publicIdentityRequestSourceDigest())
   const previous = JSON.parse(execFileSync('git', ['show', adoption.previousApplicationAuthority + ':apps/srm/operation-integration.json'], { encoding: 'utf8' }))
-  for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(['contract','producer'].includes(key) ? receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   for (const [path, digest] of Object.entries(adoption.sourceDigests)) {
     assert.equal(createHash('sha256').update(execFileSync('git', ['show', 'c82d400ab53783376fefecd487131b0ef6812ad8:apps/srm/' + path])).digest('hex'), digest, path)
   }
