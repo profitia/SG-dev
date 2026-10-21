@@ -544,6 +544,42 @@
         "ARCHITECTURE"
       ],
       "onboardingAuthorization": "E0-A-04–09 Full Autopilot, owner instruction 2026-10-13"
+    },
+    {
+      "id": "IDENTITY-BASE-001",
+      "capability": "Identity Runtime",
+      "name": "Identity Runtime",
+      "pathPatterns": [
+        "apps/identity-runtime/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Shared conversational registration, login and recovery orchestration through official Clerk SDK and canonical Profitia identity/access contracts; no independent authentication provider or authorization engine.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "faa97ee433a9f60de28b417b4ee323759c7c9ffb",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner instruction in Codex host 01a15aed-8d94-7fe0-9cff-c54f72b5f8a8, 2026-10-21, TASK B0 OWNER APPROVAL CONFIRMATION; Canon/v1.0-identity-runtime-architecture-and-ownership-canon.md"
+    },
+    {
+      "id": "IDENTITY-BASE-002",
+      "capability": "Identity Runtime CI",
+      "name": "Identity Runtime CI",
+      "pathPatterns": [
+        ".github/workflows/identity-runtime-ci.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Independent Identity Runtime validation and shared-contract compatibility; no deployment authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "faa97ee433a9f60de28b417b4ee323759c7c9ffb",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner instruction in Codex host 01a15aed-8d94-7fe0-9cff-c54f72b5f8a8, 2026-10-21, TASK B0 OWNER APPROVAL CONFIRMATION; Canon/v1.0-identity-runtime-architecture-and-ownership-canon.md"
     }
   ],
   "cleanupFindings": [

@@ -59,5 +59,52 @@
     "suspendSeconds": 300,
     "ownerUrlEnvironmentKey": "ARCHITECTURE_PMOS_VALIDATION_OWNER_URL",
     "afterValidation": "SUSPEND_ENDPOINT_AND_RETAIN_EVIDENCE"
-  }
+  },
+  "plannedModules": [
+    {
+      "capability": "Identity Runtime",
+      "owner": "Architecture Platform",
+      "projectKey": "ARCHITECTURE",
+      "targetEnvironment": "development",
+      "pathPattern": "apps/identity-runtime/**",
+      "ciPath": ".github/workflows/identity-runtime-ci.yml",
+      "approval": {
+        "decision": "G1 GRANTED",
+        "sourceType": "EXPLICIT_OWNER_CHAT_INSTRUCTION",
+        "hostConversationId": "01a15aed-8d94-7fe0-9cff-c54f72b5f8a8",
+        "date": "2026-10-21",
+        "reference": "Canon/v1.0-identity-runtime-architecture-and-ownership-canon.md"
+      },
+      "status": "GOVERNANCE_ONLY_NO_IMPLEMENTATION",
+      "sharedContractsPath": "packages/platform-contracts/**",
+      "continuityProjectKey": "ARCHITECTURE",
+      "runtimeCreated": false,
+      "resourceCreationAuthority": "OWNER_ONLY_SEPARATE_APPROVAL",
+      "plannedRender": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-db717krrjlhs739jgo0g",
+        "environmentId": "evm-db717krrjlhs739jgo1g",
+        "proposedName": "identity-runtime-development",
+        "serviceType": "web_service",
+        "region": "frankfurt",
+        "serviceId": null,
+        "deploymentPolicy": "MANUAL_EXACT_SHA"
+      },
+      "profileStorage": {
+        "neonProjectId": "spring-bread-28217539",
+        "branchId": "br-sparkling-term-b99l107x",
+        "databaseName": "platform_private",
+        "proposedRelation": "profitia_profile.user_profiles",
+        "status": "DESIGN_PENDING_PR_ACCEPTANCE_NO_SCHEMA",
+        "runtimeRole": null
+      },
+      "githubEnvironment": {
+        "name": "architecture-development",
+        "id": 24168168252,
+        "action": "REUSE_EXISTING_MAIN_ONLY_NO_NEW_ENVIRONMENT"
+      },
+      "decisionDocument": "Canon/v1.0-identity-runtime-architecture-and-ownership-canon.md",
+      "evidenceDocument": "Canon/evidence/2026-10-21-identity-runtime-b0-onboarding.md"
+    }
+  ]
 }
