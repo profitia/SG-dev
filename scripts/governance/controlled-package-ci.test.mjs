@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -27,15 +27,31 @@ test('provider policy must bind exact registered identity and sole main branch, 
   rejection(() => assertEnvironment({...env, id: 1}, [{name: 'main', type: 'branch'}], expected))
   rejection(() => assertEnvironment({...env, deployment_branch_policy: null}, [{name: 'main', type: 'branch'}], expected))
 })
-test('internal reviewed PR is pinned; no owner-triggered fork, other product branch, stale SHA or arbitrary revision', () => {
+test('internal reviewed PR is pinned; no owner-triggered fork, unapproved branch, stale SHA or arbitrary revision', () => {
   assert.equal(selectCandidate(context(), pr(), other), other)
   assert.equal(selectCandidate(context(), null, sha), sha)
-  for (const change of [p => p.head.repo.full_name = 'profitia/fork', p => p.user.login = 'attacker', p => p.head.ref = 'srm/work', p => p.base.ref = 'staging', p => p.state = 'closed']) {
+  for (const change of [p => p.head.repo.full_name = 'profitia/fork', p => p.user.login = 'attacker', p => p.head.ref = 'feature/work', p => p.base.ref = 'staging', p => p.state = 'closed']) {
     const p = pr(); change(p); rejection(() => selectCandidate(context(), p, other))
   }
   rejection(() => selectCandidate(context(), pr(), sha))
   rejection(() => selectCandidate(context(), pr(), undefined))
   rejection(() => selectCandidate(context(), null, other))
+})
+test('explicit internal SRM and ARCHITECTURE candidates retain the same exact-source consumer proof boundary', () => {
+  assert.deepEqual(CONTROLLED_CANDIDATE_PREFIXES, ['sg2/', 'srm/', 'architecture/'])
+  assert(Object.isFrozen(CONTROLLED_CANDIDATE_PREFIXES))
+  for (const ref of ['sg2/current', 'srm/supplier-locations', 'architecture/location-producer']) {
+    const p = pr(); p.head.ref = ref
+    assert.equal(selectCandidate(context(), p, other), other)
+    for (const edit of [p => p.user.login = 'another-owner', p => p.head.repo.full_name = 'profitia/fork', p => p.base.repo.full_name = 'other/SG-dev', p => p.base.ref = 'production', p => p.head.sha = sha]) {
+      const altered = structuredClone(p); edit(altered)
+      rejection(() => selectCandidate(context(), altered, other))
+    }
+    rejection(() => selectCandidate({...context(), ref:'refs/heads/srm/untrusted-control'}, p, other))
+  }
+  for (const ref of ['srm/', 'architecture/', 'sg2/', 'srm-evil/work', 'architecture-evil/work', 'SRM/work', 'feature/srm/work', 'refs/pull/590/merge', '', null]) {
+    const p=pr(); p.head.ref=ref; rejection(() => selectCandidate(context(), p, other))
+  }
 })
 test('credential metadata rejects broader scopes, another issuer account, missing/expired/unbounded lifetime', () => {
   const now = Date.parse('2026-10-17T00:00:00Z')

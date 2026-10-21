@@ -10,6 +10,10 @@ import {fileURLToPath} from 'node:url'
 export const REPOSITORY = 'profitia/SG-dev'
 export const WORKFLOW = '.github/workflows/platform-contracts-ci.yml'
 export const ARTIFACT = 'sg2-controlled-operation-proof'
+// Candidate namespace is not a governance profile or deployment permission.
+// Every candidate still proves the SAME SG2 consumer at its exact source.
+export const CONTROLLED_CANDIDATE_PREFIXES = Object.freeze(['sg2/', 'srm/', 'architecture/'])
+const eligibleCandidateBranch = ref => typeof ref === 'string' && CONTROLLED_CANDIDATE_PREFIXES.some(prefix => ref.startsWith(prefix) && ref.length > prefix.length)
 export const PRIVATE_PACKAGES = Object.freeze(['@profitia/advisory-widget', '@profitia/cic-core', '@profitia/cic-procurement'])
 export const LOCAL_PACKAGES = Object.freeze({
   '@profitia/platform-contracts': '../../packages/platform-contracts',
@@ -37,7 +41,7 @@ export function selectCandidate(context, pr, expectedSha) {
     if (expectedSha && expectedSha !== context.controlSha) fail('CANDIDATE_SHA_MISMATCH')
     return context.controlSha
   }
-  if (pr.state !== 'open' || pr.base?.repo?.full_name !== REPOSITORY || pr.base?.ref !== 'main' || pr.head?.repo?.full_name !== REPOSITORY || pr.user?.login !== 'profitia' || !pr.head?.ref?.startsWith('sg2/')) fail('UNTRUSTED_CANDIDATE')
+  if (pr.state !== 'open' || pr.base?.repo?.full_name !== REPOSITORY || pr.base?.ref !== 'main' || pr.head?.repo?.full_name !== REPOSITORY || pr.user?.login !== 'profitia' || !eligibleCandidateBranch(pr.head?.ref)) fail('UNTRUSTED_CANDIDATE')
   if (!shaPattern.test(expectedSha ?? '') || pr.head.sha !== expectedSha) fail('CANDIDATE_SHA_MISMATCH')
   return expectedSha
 }
