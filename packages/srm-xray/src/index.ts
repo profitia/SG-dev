@@ -68,3 +68,5 @@ export { formatKysRetrievedAt, kysRegistryRows, kysListRows } from "./kys-conten
 export { KysIcon } from "./kys-report";
 
 export { SupplierHeader, SUPPLIER_HEADER_TITLE } from "./header";
+
+export * from "./supplier-locations";

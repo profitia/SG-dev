@@ -191,6 +191,8 @@ export type SupplierReportData = {
   schemaVersion: "1.0";
   /** Opaque authenticated organization/session preference namespace; never data authority. */
   preferenceScope?: string;
+  /** Opaque existing supplier identity in the authenticated organisation. */
+  locationSubject?: {supplierId:string};
   nip: string;
   entityType: "COMPANY" | "JDG";
   financial: {

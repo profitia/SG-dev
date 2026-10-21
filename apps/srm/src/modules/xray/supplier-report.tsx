@@ -9,6 +9,7 @@ import { ReportNavigation, navigateReportSection } from "./report-navigation";
 export { navigateReportSection } from "./report-navigation";
 import { reportAvailability, ReportAvailabilityView, type ReportAvailability, inactiveJdgMessage } from "@profitia/srm-xray";
 import { supplierNip, inactiveSupplier, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
+import {SupplierLocations} from './supplier-locations-view';
 import {createSupplierWebRequest} from './supplier-web-request';
 
 type Scope = FinancialPeriod["scope"];
@@ -156,6 +157,9 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         {!scanner && availability.code === "AVAILABLE" && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
       </CanonElement>
       {primaryPkd?.registryHistory && primaryPkd.registryHistory.members.length>1 && <p className="report-metadata-note" data-company-continuity="true">Firma kontynuuje działalność po przekształceniu. Aktualny KRS: {primaryPkd.registryHistory.currentKrs}. Historia finansowa obejmuje potwierdzonych poprzedników, z oznaczeniem podmiotu składającego sprawozdanie.</p>}
+      {supplier.entityType==='COMPANY' && state.metadata?.locationSubject && state.metadata.preferenceScope && <SupplierLocations
+        key={state.metadata.preferenceScope+':'+state.metadata.locationSubject.supplierId} supplierId={state.metadata.locationSubject.supplierId}
+        refreshKey={[supplier.card.general.retrievedAt,state.kys?.retrievedAt,state.metadata.kys.lastAttemptAt].join(':')} />}
     </section>
     {!scanner && !availability.hideDetails && <ReportNavigation root={root} items={navigation} />}
     {scanner && <section id="report-finance" className="report-content-section report-scanner" aria-labelledby="scanner-title">{scanner}{availability.code === "AVAILABLE" && <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />}</section>}

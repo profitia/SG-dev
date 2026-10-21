@@ -1,4 +1,7 @@
 import { createHash } from 'node:crypto'
+import {createSupplierLocationRuntime,type SupplierLocationRuntime} from './supplier-locations'
+import locationTargets from '../../deployment/supplier-location-targets.json'
+import nativeTargets from '../../deployment/supplier-native-targets.json'
 import type {SrmSupplierApi} from './supplier-api-composition'
 import {readSrmNativeSupplierConfiguration,createSrmNativeSupplierRuntime} from './supplier-native-runtime'
 import pg, { type PoolClient, type PoolConfig } from 'pg'
@@ -21,6 +24,7 @@ export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<PoolClient>; defaultOrganisationId: string
   supplierRequest?: Readonly<{ executor: OperationExecutor<PoolClient> }>
   supplierApi?: SrmSupplierApi
+  locations?: SupplierLocationRuntime
 }>
 export type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
@@ -36,7 +40,7 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
   if (typeof window !== 'undefined') unavailable()
   const identity = readSrmIdentityRuntime(env)
   if (identity.provider === 'legacy_demo') {
-    if(env.PROFITIA_SUPPLIER_API_ENABLED==='true') unavailable()
+    if(env.PROFITIA_SUPPLIER_API_ENABLED==='true'||env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED==='true') unavailable()
     return Object.freeze({ provider: 'legacy_demo' })
   }
   if (identity.application.environment !== 'development') unavailable()
@@ -142,12 +146,13 @@ export function createSrmReportOperationHost(options: Omit<DriverOptions, 'readR
       if (!(value instanceof Response) || !value.ok) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       const body: unknown = await value.clone().json()
       const selection = validateReportSelection(context.payload)
-      const allowed = ['schemaVersion','nip','entityType','financial','kys','preferenceScope']
+      const allowed = ['schemaVersion','nip','entityType','financial','kys','preferenceScope','locationSubject']
       if (!body || typeof body !== 'object' || Array.isArray(body)
         || Object.keys(body).some(key => !allowed.includes(key)) || !('schemaVersion' in body) || body.schemaVersion !== '1.0'
         || !('nip' in body) || body.nip !== selection.nip || !('entityType' in body) || body.entityType !== selection.entityType
         || !('financial' in body) || !body.financial || typeof body.financial !== 'object'
         || !('kys' in body) || !body.kys || typeof body.kys !== 'object'
+        || ('locationSubject' in body && (!body.locationSubject || typeof body.locationSubject!=='object' || Array.isArray(body.locationSubject) || Object.keys(body.locationSubject).join(',')!=='supplierId' || !('supplierId' in body.locationSubject) || !uuid.test(String(body.locationSubject.supplierId))))
         || ('preferenceScope' in body && (typeof body.preferenceScope !== 'string' || !/^[a-f0-9]{64}$/.test(body.preferenceScope)))) {
         throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
       }
@@ -167,7 +172,9 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   const config = readSrmPrivateReportConfiguration(env)
   if (config.provider === 'legacy_demo') return config
   const native=readSrmNativeSupplierConfiguration(config,env)
-  const key = createHash('sha256').update(JSON.stringify([config,native,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
+  const locationEnabled=env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED??'false'
+  if(!['true','false'].includes(locationEnabled)||locationEnabled==='true' && (env.PROFITIA_SUPPLIER_LOCATIONS_CONFIGURATION_VERSION!==locationTargets.configurationVersion || config.binding.projectId!==locationTargets.projectId || config.binding.branchId!==locationTargets.branchId || config.binding.databaseName!==locationTargets.databaseName || config.binding.role!==locationTargets.runtimeRole))unavailable()
+  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
   const cached = globalThis.__srmPrivateReportRuntime__
   if (cached) { if (cached.key !== key) unavailable(); return cached.runtime }
   const clerk = createSrmClerkClient(env)
@@ -195,8 +202,15 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     supplierApi=createSrmNativeSupplierRuntime(native,{pool,auditPool,clerk,jobsPool:jobs.pool,jobsAudit:jobs.audit,
       sourcePool:source.pool,sourceAudit:source.audit,corporatePool:corporate.pool,corporateAudit:corporate.audit})
   }
+  const core=nativeTargets.coreSchemaDigests
+  const locations=locationEnabled==='true'?createSupplierLocationRuntime({pool,auditPool,clerk,identity:config.identity,binding:config.binding,module:config.module,
+    application:{...config.application,configurationVersion:locationTargets.configurationVersion},businessDigest:locationTargets.businessSchemaDigest,
+    ledger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],operationSchemaDigest:core['017-additional-request-operations.sql'],locationSchemaDigest:locationTargets.sql019Digest},
+    ...(supplierApi?{readAcceptedKys:supplierApi.readAcceptedKys}:{}),
+  }):undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
     ...(supplierApi?{supplierApi}:{}),
+    ...(locations?{locations}:{}),
     ...(supplierRequest ? { supplierRequest } : {}) })
   globalThis.__srmPrivateReportRuntime__ = { key, runtime }
   return runtime

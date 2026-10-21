@@ -108,6 +108,7 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
   return read(input,input.command.nip,entityType,section)
  }
  return Object.freeze({
+  readAcceptedKys:(request:Request,organisationId:string,nip:string)=>read({request,organisationId},nip,'COMPANY','kys'),
   known:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>known.read(input.request,input.organisationId,nip),
   async company(input:SupplierHttpInput){
    const selected=await admitCompany(input,'COMPANY:report')
