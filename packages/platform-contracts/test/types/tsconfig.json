@@ -15,6 +15,7 @@
     "native-external.mts",
     "supplier-delegation.mts",
     "delegated-private-phases.mts",
-    "request-inspection.mts"
+    "request-inspection.mts",
+    "identity-profile.mts"
   ]
 }
