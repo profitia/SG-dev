@@ -2097,8 +2097,10 @@
     "applicationSourceDigests": {
       "tests/private-host.integration.test.mjs": "9db1b2899c39aefc6360d5f80fffc65469e3446968f1e3d91390391ef525ab58",
       "tests/identity-runtime.test.ts": "b04cf13d9b637269894cffe6b259483d3842cd70d83445090637e9010a7ee2dd",
-      "tests/operation-context.test.mjs": "fd0dd268801238a3357fe24ed95c8a8e46d0c38eea3a1a0929d19ed606b72028",
-      "package-lock.json": "67249991c5e35f51f9f332d5e2df3611a543cfa57bc1617b9f3a471d68e873a1"
+      "tests/operation-context.test.mjs": "455e196ee80848951a20cf29f167bf3566ff4e635145634721a9b2abbf138683",
+      "package-lock.json": "67249991c5e35f51f9f332d5e2df3611a543cfa57bc1617b9f3a471d68e873a1",
+      "tests/category-operation.test.ts": "ca2bb27675abe9804f2b303b9a8070e7a24515697266717a8307330534af2e2c",
+      "tests/porr-demo-middleware.test.ts": "1f9edced4c2de76d7bc20f580900d6e25c0b0e05270afa3c5b3f27afd7fa9287"
     },
     "previousFingerprintsPreserved": true,
     "ordinaryFlowsPreserved": true,

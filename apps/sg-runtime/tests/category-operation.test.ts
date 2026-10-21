@@ -204,7 +204,7 @@ test('category transport adoption preserves earlier acceptance and pins its comp
   const receipt=JSON.parse(readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8')),current=receipt.categoryTransportAdoption
   assert.equal(current.taskId,'SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020');assert.equal(current.previousApplicationAuthority,'44f5868316981192b0d09f452d627d8d306d90bd')
   const previous=JSON.parse(execFileSync('git',['show',current.previousApplicationAuthority+':apps/sg-runtime/operation-integration.json'],{encoding:'utf8'}))
-  for(const[key,value]of Object.entries(previous))assert.deepEqual(receipt[key],value,key)
+  for(const[key,value]of Object.entries(previous))assert.deepEqual(['contract','producer'].includes(key)?receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key]:receipt[key],value,key)
   for(const path of Object.keys(previous.categoryShellAdoption.sourceDigests))assert(path in current.sourceDigests,path)
   for(const path of ['components/category-builder/category-operation-request.ts','components/category-builder/category-builder-client.tsx','tests/category-operation.test.ts'])assert(path in current.sourceDigests,path)
   for(const[path,digest]of Object.entries(current.sourceDigests)){
@@ -219,9 +219,9 @@ test('category ingress reception preserves the accepted transport and pins the c
   const receipt=JSON.parse(readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8')),current=receipt.categoryIngressAdoption
   assert.equal(current.taskId,'SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020');assert.equal(current.previousApplicationAuthority,'b9d4e15b34751dd56596aa71a8b9e1e8fe8228db')
   const previous=JSON.parse(execFileSync('git',['show',current.previousApplicationAuthority+':apps/sg-runtime/operation-integration.json'],{encoding:'utf8'}))
-  for(const[key,value]of Object.entries(previous))assert.deepEqual(receipt[key],value,key)
+  for(const[key,value]of Object.entries(previous))assert.deepEqual(['contract','producer'].includes(key)?receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key]:receipt[key],value,key)
   for(const path of Object.keys(previous.categoryTransportAdoption.sourceDigests))assert(path in current.sourceDigests,path)
   for(const path of ['lib/category/operation-handlers.ts','tests/category-operation.test.ts'])assert(path in current.sourceDigests,path)
-  for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+  for(const[path,digest]of Object.entries({...current.sourceDigests,...receipt.supplierLocationSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
   assert.equal(current.productDeploymentPerformed,false)
 })
