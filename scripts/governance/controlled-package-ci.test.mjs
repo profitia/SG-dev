@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -27,15 +27,31 @@ test('provider policy must bind exact registered identity and sole main branch, 
   rejection(() => assertEnvironment({...env, id: 1}, [{name: 'main', type: 'branch'}], expected))
   rejection(() => assertEnvironment({...env, deployment_branch_policy: null}, [{name: 'main', type: 'branch'}], expected))
 })
-test('internal reviewed PR is pinned; no owner-triggered fork, other product branch, stale SHA or arbitrary revision', () => {
+test('internal reviewed PR is pinned; no owner-triggered fork, unapproved branch, stale SHA or arbitrary revision', () => {
   assert.equal(selectCandidate(context(), pr(), other), other)
   assert.equal(selectCandidate(context(), null, sha), sha)
-  for (const change of [p => p.head.repo.full_name = 'profitia/fork', p => p.user.login = 'attacker', p => p.head.ref = 'srm/work', p => p.base.ref = 'staging', p => p.state = 'closed']) {
+  for (const change of [p => p.head.repo.full_name = 'profitia/fork', p => p.user.login = 'attacker', p => p.head.ref = 'feature/work', p => p.base.ref = 'staging', p => p.state = 'closed']) {
     const p = pr(); change(p); rejection(() => selectCandidate(context(), p, other))
   }
   rejection(() => selectCandidate(context(), pr(), sha))
   rejection(() => selectCandidate(context(), pr(), undefined))
   rejection(() => selectCandidate(context(), null, other))
+})
+test('explicit internal SRM and ARCHITECTURE candidates retain the same exact-source consumer proof boundary', () => {
+  assert.deepEqual(CONTROLLED_CANDIDATE_PREFIXES, ['sg2/', 'srm/', 'architecture/'])
+  assert(Object.isFrozen(CONTROLLED_CANDIDATE_PREFIXES))
+  for (const ref of ['sg2/current', 'srm/supplier-locations', 'architecture/location-producer']) {
+    const p = pr(); p.head.ref = ref
+    assert.equal(selectCandidate(context(), p, other), other)
+    for (const edit of [p => p.user.login = 'another-owner', p => p.head.repo.full_name = 'profitia/fork', p => p.base.repo.full_name = 'other/SG-dev', p => p.base.ref = 'production', p => p.head.sha = sha]) {
+      const altered = structuredClone(p); edit(altered)
+      rejection(() => selectCandidate(context(), altered, other))
+    }
+    rejection(() => selectCandidate({...context(), ref:'refs/heads/srm/untrusted-control'}, p, other))
+  }
+  for (const ref of ['srm/', 'architecture/', 'sg2/', 'srm-evil/work', 'architecture-evil/work', 'SRM/work', 'feature/srm/work', 'refs/pull/590/merge', '', null]) {
+    const p=pr(); p.head.ref=ref; rejection(() => selectCandidate(context(), p, other))
+  }
 })
 test('credential metadata rejects broader scopes, another issuer account, missing/expired/unbounded lifetime', () => {
   const now = Date.parse('2026-10-17T00:00:00Z')
@@ -201,13 +217,13 @@ test('actual npm ignores lifecycle during credential phase; later lifecycle exec
 
 function sourceLayoutFixture(implementation='1.0.0-candidate.15') {
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'contract-source-layout-'))
- const names=['src/operation-context.mjs','src/operation-context.d.mts','src/request-operations.mjs','src/request-operations.d.mts','migrations/access/017-additional-request-operations.sql']
+ const names=['src/operation-context.mjs','src/operation-context.d.mts','src/request-operations.mjs','src/request-operations.d.mts','migrations/access/017-additional-request-operations.sql','src/supplier-location.mjs','src/supplier-location.d.mts','migrations/access/019-supplier-location-operations.sql']
  for(const name of names){const file=path.join(root,'packages/platform-contracts',name);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,name==='src/operation-context.mjs'?`export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '${implementation}' })\n`:name+' synthetic source\n')}
  return{root,names,contract:{id:'profitia.operation-context',version:'1.0.0',implementation,sourceDigest:'a'.repeat(64)},file:name=>path.join(root,'packages/platform-contracts',name),close:()=>fs.rmSync(root,{recursive:true,force:true})}
 }
-for(const version of[1,3,14,15])test('fixed source provenance preserves explicit candidate'+version+' layout without evaluating candidate code',async()=>{
+for(const version of[1,3,14,15,16])test('fixed source provenance preserves explicit candidate'+version+' layout without evaluating candidate code',async()=>{
  const {createHash}=await import('node:crypto'),f=sourceLayoutFixture('1.0.0-candidate.'+version)
- try{const selected=f.names.slice(0,version===15?5:2),h=createHash('sha256');for(const name of selected)h.update(fs.readFileSync(f.file(name)));const before=f.names.map(name=>fs.readFileSync(f.file(name),'utf8'));assert.equal(operationContractProvenanceDigest(f.root,f.contract),h.digest('hex'));assert.deepEqual(f.names.map(name=>fs.readFileSync(f.file(name),'utf8')),before)}finally{f.close()}
+ try{const selected=f.names.slice(0,version===16?8:version===15?5:2),h=createHash('sha256');for(const name of selected)h.update(fs.readFileSync(f.file(name)));const before=f.names.map(name=>fs.readFileSync(f.file(name),'utf8'));assert.equal(operationContractProvenanceDigest(f.root,f.contract),h.digest('hex'));assert.deepEqual(f.names.map(name=>fs.readFileSync(f.file(name),'utf8')),before)}finally{f.close()}
 })
 test('candidate15 cannot downgrade to the two-file hash or supply its own source file list',async()=>{
  const {createHash}=await import('node:crypto'),f=sourceLayoutFixture()
@@ -217,7 +233,7 @@ for(const name of['src/request-operations.mjs','src/request-operations.d.mts','m
  const f=sourceLayoutFixture()
  try{const before=operationContractProvenanceDigest(f.root,f.contract);fs.appendFileSync(f.file(name),'changed dependency');assert.notEqual(operationContractProvenanceDigest(f.root,f.contract),before);fs.unlinkSync(f.file(name));assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/)}finally{f.close()}
 })
-for(const implementation of['1.0.0-candidate.16','1.0.0-candidate.015','1.0.0-candidate.0','toString',null])test('unsupported source identity cannot select an implicit layout '+implementation,()=>{
+for(const implementation of['1.0.0-candidate.17','1.0.0-candidate.015','1.0.0-candidate.0','toString',null])test('unsupported source identity cannot select an implicit layout '+implementation,()=>{
  const f=sourceLayoutFixture();try{assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,implementation}),/CONTRACT_SOURCE_LAYOUT_UNSUPPORTED|CONTRACT_PROVENANCE_MISMATCH/)}finally{f.close()}
 })
 test('regular files and bounded size are required; symlink files and parent directories never widen reads',()=>{
@@ -232,4 +248,13 @@ test('actual current source provenance is the exact accepted SDK digest with all
 
 for(const patch of[{id:'untrusted.contract'},{version:'9.0.0'},{sourceDigest:'invalid'},{paths:['../../outside']},{implementation:'1.0.0-candidate.14'}])test('source identity refuses malformed metadata or a downgrade '+JSON.stringify(patch),()=>{
  const f=sourceLayoutFixture();try{assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,...patch}),/CONTRACT_PROVENANCE_MISMATCH|CONTRACT_IMPLEMENTATION_MISMATCH/)}finally{f.close()}
+})
+
+for(const name of['src/supplier-location.mjs','src/supplier-location.d.mts','migrations/access/019-supplier-location-operations.sql'])test('candidate16 binds new dependency bytes and rejects missing '+name,()=>{
+ const f=sourceLayoutFixture('1.0.0-candidate.16')
+ try{const before=operationContractProvenanceDigest(f.root,f.contract);fs.appendFileSync(f.file(name),'changed fixed dependency');assert.notEqual(operationContractProvenanceDigest(f.root,f.contract),before);fs.unlinkSync(f.file(name));assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/)}finally{f.close()}
+})
+test('candidate16 cannot select an older layout, altered file identity or candidate-provided source list',()=>{
+ const f=sourceLayoutFixture('1.0.0-candidate.16')
+ try{for(const patch of[{implementation:'1.0.0-candidate.15'},{sourceFiles:['src/operation-context.mjs']},{implementation:'1.0.0-candidate.17'}])assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,...patch}));fs.appendFileSync(f.file('src/supplier-location.mjs'),'\nthrow Error("must never execute candidate metadata")');assert.match(operationContractProvenanceDigest(f.root,f.contract),/^[a-f0-9]{64}$/)}finally{f.close()}
 })

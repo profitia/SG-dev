@@ -35,7 +35,7 @@ on:
         options: [integration, validate-sg2, policy-probe]
         default: integration
       candidate_pr:
-        description: 'Internal SG2 PR number; empty validates exact main'
+        description: 'Internal SG2/SRM/ARCHITECTURE PR number; empty validates exact main'
         type: string
       expected_sha:
         description: 'Exact 40-character candidate HEAD; required for a PR'
