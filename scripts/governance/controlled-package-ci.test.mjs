@@ -4,8 +4,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
-import {spawnSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES} from './controlled-package-ci.mjs'
+import {spawnSync, execFileSync} from 'node:child_process'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -42,12 +42,14 @@ test('explicit internal SRM and ARCHITECTURE candidates retain the same exact-so
   assert(Object.isFrozen(CONTROLLED_CANDIDATE_PREFIXES))
   for (const ref of ['sg2/current', 'srm/supplier-locations', 'architecture/location-producer']) {
     const p = pr(); p.head.ref = ref
-    assert.equal(selectCandidate(context(), p, other), other)
+    const options = ref.startsWith('architecture/') ? {files: architectureFiles()} : {}
+    if (ref.startsWith('architecture/')) {p.changed_files = 2; p.base.sha = sha}
+    assert.equal(selectCandidate(context(), p, other, options), other)
     for (const edit of [p => p.user.login = 'another-owner', p => p.head.repo.full_name = 'profitia/fork', p => p.base.repo.full_name = 'other/SG-dev', p => p.base.ref = 'production', p => p.head.sha = sha]) {
       const altered = structuredClone(p); edit(altered)
-      rejection(() => selectCandidate(context(), altered, other))
+      rejection(() => selectCandidate(context(), altered, other, options))
     }
-    rejection(() => selectCandidate({...context(), ref:'refs/heads/srm/untrusted-control'}, p, other))
+    rejection(() => selectCandidate({...context(), ref:'refs/heads/srm/untrusted-control'}, p, other, options))
   }
   for (const ref of ['srm/', 'architecture/', 'sg2/', 'srm-evil/work', 'architecture-evil/work', 'SRM/work', 'feature/srm/work', 'refs/pull/590/merge', '', null]) {
     const p=pr(); p.head.ref=ref; rejection(() => selectCandidate(context(), p, other))
@@ -257,4 +259,160 @@ for(const name of['src/supplier-location.mjs','src/supplier-location.d.mts','mig
 test('candidate16 cannot select an older layout, altered file identity or candidate-provided source list',()=>{
  const f=sourceLayoutFixture('1.0.0-candidate.16')
  try{for(const patch of[{implementation:'1.0.0-candidate.15'},{sourceFiles:['src/operation-context.mjs']},{implementation:'1.0.0-candidate.17'}])assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,...patch}));fs.appendFileSync(f.file('src/supplier-location.mjs'),'\nthrow Error("must never execute candidate metadata")');assert.match(operationContractProvenanceDigest(f.root,f.contract),/^[a-f0-9]{64}$/)}finally{f.close()}
+})
+
+const authorityRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+const architecturePr = (count = 2) => ({...pr(), changed_files: count, base: {...pr().base, sha}, head: {...pr().head, ref: 'architecture/profile'}})
+const producerFile = (filename = 'packages/platform-contracts/src/user-profile.mjs') => ({filename, status: 'modified', sha: 'c'.repeat(40)})
+const architectureFiles = () => [producerFile(), producerFile('Canon/evidence/2026-10-21-identity-profile-b1-handoff.md')]
+
+test('Architecture admission requires complete source files, exact SHA and actual trusted ownership', () => {
+  assert.equal(selectCandidate(context(), architecturePr(), other, {files: architectureFiles()}), other)
+  for (const files of [undefined, [], architectureFiles().slice(0, 1), [...architectureFiles(), producerFile()]]) rejection(() => selectCandidate(context(), architecturePr(), other, {files}))
+  for (const expected of [undefined, sha, 'main']) rejection(() => selectCandidate(context(), architecturePr(), expected, {files: architectureFiles()}))
+  const {proof, run} = fixture()
+  assertProof(proof, run, selectCandidate(context(), architecturePr(), other, {files: architectureFiles()}), 34)
+  rejection(() => assertProof(proof, run, sha, 34))
+  // SG2 retains its original separate semantics; it requires no Architecture file list.
+  assert.equal(selectCandidate(context(), pr(), other), other)
+})
+
+test('Architecture prefix never relaxes internal repository, owner, main or execution trust', () => {
+  for (const edit of [p => p.head.repo.full_name = 'attacker/fork', p => p.base.repo.full_name = 'attacker/SG-dev', p => p.user.login = 'attacker', p => p.base.ref = 'staging', p => p.state = 'closed', p => p.head.ref = 'feature/work', p => p.head.sha = sha]) {
+    const candidate = architecturePr(); edit(candidate)
+    rejection(() => selectCandidate(context(), candidate, other, {files: architectureFiles()}))
+  }
+  for (const delta of [{ref: 'refs/heads/architecture/profile'}, {event: 'pull_request_target'}, {actor: 'attacker'}, {workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/untrusted`}]) rejection(() => selectCandidate({...context(), ...delta}, architecturePr(), other, {files: architectureFiles()}))
+})
+
+for (const name of ['apps/sg-runtime/package.json', 'apps/srm/page.tsx', 'apps/identity-runtime/index.mjs', 'packages/srm-xray/package.json',
+  'scripts/governance/controlled-package-ci.mjs', WORKFLOW, '.github/workflows/identity-runtime-ci.yml', 'AGENTS.md',
+  'Canon/registries/current-architecture-baseline-v1.json', 'Canon/registries/architecture-environment-topology-v1.json',
+  'packages/platform-contracts/.npmrc', 'packages/platform-contracts/.env', 'packages/platform-contracts/scripts/install.mjs',
+  'packages/platform-contracts/src/../../srm-xray/escape.mjs', 'packages/platform-contracts/src//escape.mjs', 'packages/platform-contracts/src/%2e%2e/escape.mjs',
+  'packages/platform-contracts/src/escape.mjs\n', 'packages/platform-contracts-unrelated/src/escape.mjs', 'Canon/evidence/undated.md']) {
+  test('Architecture rejects protected or non-producer path ' + JSON.stringify(name), () => rejection(() => selectCandidate(context(), architecturePr(), other, {files: [producerFile(), producerFile(name)]})))
+}
+
+test('Architecture rejects renames, forged/incomplete metadata, duplicate paths and evidence-only PRs', () => {
+  for (const delta of [{status: 'renamed', previous_filename: 'apps/sg-runtime/escape.mjs'}, {previous_filename: 'apps/srm/escape.mjs'}, {status: 'copied'}, {sha: 'unverified'}]) rejection(() => selectCandidate(context(), architecturePr(), other, {files: [producerFile(), {...producerFile('packages/platform-contracts/src/other.mjs'), ...delta}]}))
+  rejection(() => selectCandidate(context(), architecturePr(), other, {files: [producerFile(), producerFile()]}))
+  rejection(() => selectCandidate(context(), architecturePr(1), other, {files: [architectureFiles()[1]]}))
+  for (const count of [undefined, 0, 301, '2']) rejection(() => selectCandidate(context(), {...architecturePr(), changed_files: count}, other, {files: architectureFiles()}))
+})
+
+function routingFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-routing-authority-'))
+  fs.mkdirSync(path.join(root, 'Canon/registries'), {recursive: true})
+  for (const name of ['profitia-projects-v1.json', 'current-architecture-baseline-v1.json']) fs.copyFileSync(path.join(authorityRoot, 'Canon/registries', name), path.join(root, 'Canon/registries', name))
+  return root
+}
+
+test('trusted ownership/project boundary drift fails closed; candidate declarations cannot substitute routing', () => {
+  const root = routingFixture(), file = path.join(root, 'Canon/registries/current-architecture-baseline-v1.json'), original = fs.readFileSync(file, 'utf8')
+  try {
+    assertArchitectureFiles(architecturePr(), architectureFiles(), root)
+    for (const patch of [{currentOwner: 'SG2 Runtime'}, {allowedProjectKeys: ['SG2']}, {baselineClassification: 'TRANSITIONAL'}]) {
+      const registry = JSON.parse(original), surface = registry.surfaces.find(s => s.pathPatterns.includes('packages/platform-contracts/**'))
+      Object.assign(surface, patch); fs.writeFileSync(file, JSON.stringify(registry))
+      rejection(() => assertArchitectureFiles(architecturePr(), architectureFiles(), root))
+    }
+  } finally {fs.rmSync(root, {recursive: true, force: true})}
+})
+
+function apiFixture(candidate, files, after = candidate) {
+  const calls = []
+  return {calls, request: async endpoint => {
+    calls.push(endpoint)
+    const m = /\/files\?per_page=100&page=([1-4])$/.exec(endpoint)
+    return {data: m ? files.slice((Number(m[1]) - 1) * 100, Number(m[1]) * 100) : structuredClone(calls.length === 1 ? candidate : after)}
+  }}
+}
+
+test('trusted GitHub admission paginates actual files and fences exact PR metadata', async () => {
+  const files = Array.from({length: 107}, (_, i) => producerFile(`packages/platform-contracts/src/contract-${i}.mjs`)), candidate = architecturePr(files.length), api = apiFixture(candidate, files)
+  const result = await resolveCandidateAdmission(context(), '591', other, api.request)
+  assert.equal(result.sha, other); assert.equal(result.admission.kind, 'ARCHITECTURE'); assert.equal(result.admission.files.length, 107)
+  assert.deepEqual(api.calls, [`repos/${REPOSITORY}/pulls/591`, `repos/${REPOSITORY}/pulls/591/files?per_page=100&page=1`, `repos/${REPOSITORY}/pulls/591/files?per_page=100&page=2`, `repos/${REPOSITORY}/pulls/591`])
+  for (const after of [{...candidate, head: {...candidate.head, sha}}, {...candidate, base: {...candidate.base, sha: other}}, {...candidate, changed_files: 106}, {...candidate, state: 'closed'}]) {
+    const changed = apiFixture(candidate, files, after)
+    await assert.rejects(resolveCandidateAdmission(context(), '591', other, changed.request))
+  }
+  const truncated = apiFixture(candidate, files.slice(0, 100)); await assert.rejects(resolveCandidateAdmission(context(), '591', other, truncated.request))
+  const missing = apiFixture(candidate, []); await assert.rejects(resolveCandidateAdmission(context(), '591', other, missing.request))
+  const duplicate = apiFixture(candidate, [...files.slice(0, 106), files[0]]); await assert.rejects(resolveCandidateAdmission(context(), '591', other, duplicate.request))
+  const broad = apiFixture(architecturePr(301), files); await assert.rejects(resolveCandidateAdmission(context(), '591', other, broad.request)); assert.equal(broad.calls.length, 1)
+})
+
+test('unavailable file API is a failure; SG2 and exact-main keep their original no-list path', async () => {
+  const unavailable = async endpoint => {if (endpoint.includes('/files?')) throw new Error('unavailable'); return {data: architecturePr()}}
+  await assert.rejects(resolveCandidateAdmission(context(), '591', other, unavailable))
+  for (const ref of ['sg2/integration', 'srm/supplier-locations']) {
+    const candidate = pr(); candidate.head.ref = ref
+    const consumer = apiFixture(candidate, [])
+    assert.deepEqual(await resolveCandidateAdmission(context(), '591', other, consumer.request), {sha: other})
+    assert.equal(consumer.calls.length, 1, 'consumer candidates retain the accepted no-producer-list path')
+  }
+  assert.deepEqual(await resolveCandidateAdmission(context(), '', sha, () => {throw new Error('must not request')}), {sha})
+})
+
+function checkoutFixture(edit = () => {}) {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-checkout-')))
+  const git = (...args) => execFileSync('git', args, {cwd: root, encoding: 'utf8', env: {...process.env, GIT_AUTHOR_NAME: 'Synthetic CI', GIT_AUTHOR_EMAIL: 'ci@example.invalid', GIT_COMMITTER_NAME: 'Synthetic CI', GIT_COMMITTER_EMAIL: 'ci@example.invalid'}}).trim()
+  const filename = 'packages/platform-contracts/src/profile.mjs'
+  fs.mkdirSync(path.dirname(path.join(root, filename)), {recursive: true}); fs.writeFileSync(path.join(root, filename), 'original synthetic source\n')
+  git('init', '-q'); git('add', '.'); git('commit', '-qm', 'synthetic baseline'); const baseSha = git('rev-parse', 'HEAD')
+  fs.writeFileSync(path.join(root, filename), 'changed synthetic source\n'); edit(root, filename)
+  git('add', '.'); git('commit', '-qm', 'synthetic candidate'); const candidateSha = git('rev-parse', 'HEAD'), blob = git('rev-parse', `${candidateSha}:${filename}`)
+  return {root, filename, candidateSha, admission: {kind: 'ARCHITECTURE', baseSha, files: [{filename, sha: blob, status: 'modified'}]}, close: () => fs.rmSync(root, {recursive: true, force: true})}
+}
+
+test('pinned real Git checkout binds complete diff, actual blob and regular-file contents before credentials', () => {
+  const f = checkoutFixture()
+  try {
+    assertArchitectureCheckout(f.root, f.candidateSha, f.admission)
+    const {proof, run} = fixture(); proof.candidateSha = f.candidateSha; assertProof(proof, run, f.candidateSha, 34)
+    rejection(() => assertArchitectureCheckout(f.root, f.candidateSha, {...f.admission, files: [{...f.admission.files[0], sha: 'd'.repeat(40)}]}))
+    fs.appendFileSync(path.join(f.root, f.filename), 'uncommitted replacement')
+    rejection(() => assertArchitectureCheckout(f.root, f.candidateSha, f.admission))
+  } finally {f.close()}
+})
+
+test('pinned Git diff rejects a hidden consumer mutation omitted from the API list', () => {
+  const f = checkoutFixture(root => {fs.mkdirSync(path.join(root, 'apps/sg-runtime'), {recursive: true}); fs.writeFileSync(path.join(root, 'apps/sg-runtime/protected.mjs'), 'synthetic')})
+  try {assert.throws(() => assertArchitectureCheckout(f.root, f.candidateSha, f.admission), /ARCHITECTURE_DIFF_MISMATCH/)} finally {f.close()}
+})
+
+test('Architecture Git checkout rejects symlink source even when API blob SHA matches', () => {
+  const f = checkoutFixture((root, filename) => {fs.unlinkSync(path.join(root, filename)); fs.symlinkSync('/synthetic-outside-not-read', path.join(root, filename))})
+  try {assert.throws(() => assertArchitectureCheckout(f.root, f.candidateSha, f.admission), /ARCHITECTURE_CHECKOUT_REJECTED/)} finally {f.close()}
+})
+
+test('all new trusted routing inputs invalidate the policy fingerprint; no candidate source is executed to hash them', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-policy-fingerprint-'))
+  try {
+    for (const name of CONTROL_POLICY_FILES) {fs.mkdirSync(path.dirname(path.join(root, name)), {recursive: true}); fs.copyFileSync(path.join(authorityRoot, name), path.join(root, name))}
+    const before = controlPolicyDigest(root)
+    for (const name of CONTROL_POLICY_FILES) {const file = path.join(root, name), original = fs.readFileSync(file); fs.appendFileSync(file, '\n'); assert.notEqual(controlPolicyDigest(root), before, name); fs.writeFileSync(file, original)}
+  } finally {fs.rmSync(root, {recursive: true, force: true})}
+})
+
+test('workflow keeps main-only pinned controller, credential-free execution/proof and unchanged private installation phase', () => {
+  const source = fs.readFileSync(path.join(authorityRoot, WORKFLOW), 'utf8'), privileged = source.slice(source.indexOf('  controlled-sg2:'), source.indexOf('  environment-policy-probe:'))
+  assert.match(privileged, /if: github\.ref == 'refs\/heads\/main'/)
+  assert.match(privileged, /environment: architecture-development/)
+  assert.equal((privileged.match(/secrets\.SG2_PACKAGES_READ_TOKEN/g) ?? []).length, 1)
+  const execute = privileged.slice(privileged.indexOf('      - name: Run lifecycle'), privileged.indexOf('      - name: Record sanitized'))
+  for (const key of ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN']) assert(execute.includes(`${key}: ''`))
+  assert(!execute.includes('secrets.')); assert.match(privileged, /run: node control\/scripts\/governance\/controlled-package-ci.mjs proof/)
+  assert(!privileged.includes('continue-on-error')); assert(!privileged.includes('pull_request_target'))
+})
+
+test('missing proof is rejected and proof command refuses a credential before reading candidate state', () => {
+  const {run} = fixture()
+  rejection(() => assertProof(undefined, run, other, 34))
+  rejection(() => assertProof({}, run, other, 34))
+  const result = spawnSync(process.execPath, [path.join(authorityRoot, 'scripts/governance/controlled-package-ci.mjs'), 'proof'], {encoding: 'utf8', env: {...process.env, NPM_TOKEN: 'synthetic-canary-no-authority', NODE_AUTH_TOKEN: '', GH_TOKEN: ''}})
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /CREDENTIAL_PRESENT_IN_EXECUTION_PHASE/)
 })
