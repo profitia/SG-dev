@@ -29,13 +29,13 @@ The resulting source adds no candidate.17 and does not downgrade Root to candida
 | --- | --- |
 | Accepted candidate.16 | operation-context, request-operations, supplier-location, private-operation-host, request-ledger, request-work, declarations and all accepted SQL remain byte-identical to main |
 | Existing consumers | SG2 Runtime/Dashboard, SRM and Maps source, lockfiles and integration receipts remain byte-identical to main |
-| Identity Provisioning | Original B1 code/types/tests retained; existing official-SDK verifier, live session/user checks, exact issuer/subject binding, atomic single internal UUID, retry/concurrency, no email linking or automatic grants |
+| Identity Provisioning | Original B1 production code/types/tests retained; existing official-SDK verifier, live session/user checks, exact issuer/subject binding, atomic single internal UUID, retry/concurrency, no email linking or automatic grants |
 | User Profile | Original B1 code/types/tests retained; ACCOUNT_SELF, closed patch, avatar preference, optional unverified E.164, expectedVersion, same-organisation privacy, ordinary-role RLS and required audit |
 | Security | Unbound/expired/revoked/disabled states deny; same-receiver mutation/Origin rules retained; no user-selected owner, policy/key read, role escalation or source credentials in proof execution |
 | SQL | Profile migration is byte-identical to original B1; accepted access installation and every existing migration remain unchanged |
 | CI/governance | Workflow/controller, policies, routing/manifest and profile identities remain unchanged |
 
-The review follows actual B1 entrypoints through the existing authenticator, Access Store, private host, SQL attestation and transactional output/audit. No replacement IdP/authorization engine is introduced. The SQL scope seal is a short-lived backend transaction attestation, never a browser credential; no production PII or key is included in evidence. No B1 implementation change was needed after reconciliation. Historical B1 installation/admission/renewal/retention limits remain explicit.
+The review follows actual B1 entrypoints through the existing authenticator, Access Store, private host, SQL attestation and transactional output/audit. No replacement IdP/authorization engine is introduced. The SQL scope seal is a short-lived backend transaction attestation, never a browser credential; no production PII or key is included in evidence. No B1 production implementation change was needed after reconciliation. The existing B1 fixture receives only the TCP-readiness correction described below. Historical B1 installation/admission/renewal/retention limits remain explicit.
 
 ## Local validation
 
@@ -48,9 +48,15 @@ The review follows actual B1 entrypoints through the existing authenticator, Acc
 
 The first full lab invocation lacked the mandatory local operation fixture: 973 PASS, 14 FAIL, 3 SKIP. Its log is retained; the failures were Invalid URL from absent fixture configuration. Supplying the existing required disposable local fixture, without changing tests or source, produces the complete 1307/1307 result above. No failed gate is relabeled PASS.
 
+### Bounded CI fixture correction
+
+The first public producer job for intermediate source d8e8330ef31da00ba9b13848dc3d216d41e6ff9c passed 1289 tests but terminated the B1 PostgreSQL connection before its subtests. The Docker fallback used pg_isready without a host and could accept the image's temporary Unix-socket initialization server, which is then stopped before the final TCP server starts. This matches the observed mapped TCP connection termination; local native PostgreSQL tests do not exercise that Docker branch. [Official PostgreSQL image entrypoint](https://github.com/docker-library/postgres/blob/master/16/bookworm/docker-entrypoint.sh) explicitly starts that temporary server with TCP disabled.
+
+The minimal correction remains inside the existing B1 fixture: require pg_isready against explicit 127.0.0.1:5432/postgres, set a one-second probe timeout, retain the bounded polling loop, and fail closed/remove the disposable container if readiness never arrives. No test is skipped, weakened or retried to obtain PASS. No production code, SQL, controller or workflow changes. All original39 B1 cases remain. The exact corrected SHA must receive its own new controlled proof; intermediate run39653734428 cannot substitute for it. Final public Linux CI exercises the real Docker path; the local machine has PostgreSQL16 but no Docker executable.
+
 ## Exact changed scope
 
-Relative to accepted main, this PR contains the original 16 B1 files and this new evidence file. The original B1 handoff receives an explicit reconciliation note; its original historical installation policy is preserved. The only implementation-integration changes from original B1 are package.json and package-lock.json. No consumer or accepted shared-contract source is changed.
+Relative to accepted main, this PR contains the original 16 B1 files and this new evidence file. The original B1 handoff receives an explicit reconciliation note; its original historical installation policy is preserved. The only integration changes from original B1 are package.json, package-lock.json and the B1 PostgreSQL fixture readiness check. No consumer or accepted shared-contract source is changed.
 
 1. Canon/evidence/2026-10-21-identity-profile-b1-handoff.md
 2. Canon/evidence/2026-10-21-identity-profile-b1-reconciliation.md

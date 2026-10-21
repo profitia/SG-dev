@@ -35,10 +35,14 @@ export async function postgresFixture() {
     if(r.status!==0||!/^[a-f0-9]{64}$/.test(container??''))throw Error('Local PostgreSQL required; DATABASE_ACCEPTANCE=PENDING_OWNER_RESOURCE')
     const mapped=spawnSync('docker',['port',container,'5432/tcp'],{encoding:'utf8'}).stdout?.trim()
     if(!/^127\.0\.0\.1:[0-9]+$/.test(mapped??''))throw Error('Synthetic loopback PostgreSQL only')
+    let ready=false
     for(let i=0;i<60;i++) {
-      if(spawnSync('docker',['exec',container,'pg_isready','-U','b1_operator'],{stdio:'ignore'}).status===0)break
+      // The image's temporary initialization server accepts Unix sockets only.
+      // Require the final TCP listener used by the mapped loopback connection.
+      if(spawnSync('docker',['exec',container,'pg_isready','-h','127.0.0.1','-p','5432','-U','b1_operator','-d','postgres','-t','1'],{stdio:'ignore'}).status===0){ready=true;break}
       await new Promise(resolve=>setTimeout(resolve,500))
     }
+    if(!ready){spawnSync('docker',['rm','--force',container],{stdio:'ignore'});throw Error('Synthetic PostgreSQL TCP readiness deadline exceeded')}
     operator=new pg.Client({host:'127.0.0.1',port:Number(mapped.split(':')[1]),user:'b1_operator',database:'postgres'})
   }
   await operator.connect()
