@@ -112,7 +112,7 @@
     },
     "mapsCandidateCI": {
       "run": "https://github.com/profitia/SG-dev/actions/runs/39612866867",
-      "pass": 12,
+      "pass": 11,
       "fail": 1,
       "skip": 0,
       "reason": "Existing Maps local package/acceptance remains pinned to1.23.0 while candidate is1.24.0; separate owner acceptance required"
