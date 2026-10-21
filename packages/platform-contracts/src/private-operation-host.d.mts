@@ -12,7 +12,7 @@ export declare function createPrivateOperationHost<Transaction>(options: {
   /** Optional, deployment-owned module boundary. Requires SQL002 + accepted SQL003 and the extra descriptor ACL. */
   module?: { id: ModuleId; schemaDigest: string; auditSchemaDigest: string }
   /** AM20 uses SQL006; bounded HUMAN AM23 additionally requires accepted SQL010. No remote dispatch. */
-  requestLedger?: { schemaDigest: string; externalSchemaDigest?: string; operationSchemaDigest?: string }
+  requestLedger?: { schemaDigest: string; externalSchemaDigest?: string; operationSchemaDigest?: string; locationSchemaDigest?:string }
   /** Optional explicit current-authorised PRIVATE_SQL_PHASE of an accepted AM23 parent; never remote execution. */
   requestContinuation?: import('./request-continuation.mjs').RequestContinuationBinding
   /** Fresh authoritative reads and independently committed INTENT/DENY/FAILURE. */
@@ -91,7 +91,7 @@ export declare function createDelegatedPrivateInspectionHost<Transaction>(option
 
 /** Current reviewed SQL unit; callbacks return no public business output. */
 export declare function createDelegatedNativeWorkHost<Transaction>(options:DelegatedJobHostOptions<Transaction>&{
- job:{schemaDigest:string}&({targetOperation:'supplier.report.refresh';supplierSchemaDigest:string;operationSchemaDigest?:never}|{targetOperation:import('./request-operations.mjs').AdditionalRequestOperation;supplierSchemaDigest:string;operationSchemaDigest:string})
+ job:{schemaDigest:string}&({targetOperation:'supplier.report.refresh';supplierSchemaDigest:string;operationSchemaDigest?:never}|{targetOperation:import('./request-operations.mjs').AdditionalRequestOperation;supplierSchemaDigest:string;operationSchemaDigest:string}|{targetOperation:import('./request-operations.mjs').LocationDelegatedOperation;supplierSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest:string})
  privateWork:{schemaDigest:string};privateContinuation?:never;privateInspection?:never;sourceDelivery?:never
 }):Readonly<{
  contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT

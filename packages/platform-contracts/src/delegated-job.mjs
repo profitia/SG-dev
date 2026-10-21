@@ -14,11 +14,11 @@ const fail=()=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
 
 /** Closed SQL ports. All methods use the host's real, single transaction;
  * leases never become a serialized access token. No queue, timer or worker. */
-export function createDelegatedJobStore({binding,schemaDigest,targetOperation='forecast.request',supplierSchemaDigest,operationSchemaDigest,now=Date.now}){
+export function createDelegatedJobStore({binding,schemaDigest,targetOperation='forecast.request',supplierSchemaDigest,operationSchemaDigest,locationSchemaDigest,now=Date.now}){
   const b=frozen(structuredClone(binding)),leases=new WeakSet()
   const target=requestOperationPolicy(targetOperation)
-  if(!target||(target.additional?!/^[a-f0-9]{64}$/.test(operationSchemaDigest??''):operationSchemaDigest!==undefined)
-    ||(target.external?!/^[a-f0-9]{64}$/.test(supplierSchemaDigest??''):supplierSchemaDigest!==undefined)
+  if(!target||target.delegated===false||(target.location?!/^[a-f0-9]{64}$/.test(locationSchemaDigest??''):locationSchemaDigest!==undefined)||(target.additional?!/^[a-f0-9]{64}$/.test(operationSchemaDigest??''):operationSchemaDigest!==undefined)
+    ||(target.external||target.location?!/^[a-f0-9]{64}$/.test(supplierSchemaDigest??''):supplierSchemaDigest!==undefined)
     ||!b||!['development','staging','production'].includes(b.environment)
     || !['applicationId','projectId','branchId','databaseName','role'].every(k=>text(b[k]))
     || !/^[a-z][a-z0-9_]*$/.test(b.role)||!/^[a-f0-9]{64}$/.test(schemaDigest??'')||typeof now!=='function')throw TypeError('Explicit private dispatch binding required')
@@ -33,7 +33,7 @@ export function createDelegatedJobStore({binding,schemaDigest,targetOperation='f
     if(!d||r.database_name!==b.databaseName||r.role!==b.role||r.login!==b.role||d.applicationId!==b.applicationId
       ||d.environment!==b.environment||d.projectId!==b.projectId||d.branchId!==b.branchId||d.databaseName!==b.databaseName
       ||d.role!==b.role||d.schemaDigest!==b.schemaDigest||d.jobSchemaVersion!=='1.0.0'||d.jobSchemaDigest!==schemaDigest)fail()
-    if(target.external){
+    if(target.external||target.location){
       const extension=(await one(query,'SELECT profitia_jobs.supplier_runtime_descriptor() AS descriptor')).descriptor
       if(!extension||extension.supplierSchemaVersion!=='1.0.0'||extension.supplierSchemaDigest!==supplierSchemaDigest
         ||extension.jobSchemaDigest!==schemaDigest||extension.applicationId!==b.applicationId||extension.environment!==b.environment)fail()
@@ -42,6 +42,7 @@ export function createDelegatedJobStore({binding,schemaDigest,targetOperation='f
       const extension=(await one(query,'SELECT profitia_requests.operation_runtime_descriptor() AS descriptor')).descriptor
       if(!extension||extension.operationSchemaVersion!=='1.0.0'||extension.operationSchemaDigest!==operationSchemaDigest||extension.applicationId!==b.applicationId||extension.environment!==b.environment)fail()
     }
+    if(target.location){const extension=(await one(query,'SELECT profitia_requests.location_runtime_descriptor() AS descriptor')).descriptor;if(!extension||extension.locationSchemaVersion!=='1.0.0'||extension.locationSchemaDigest!==locationSchemaDigest||extension.applicationId!==b.applicationId||extension.environment!==b.environment)fail()}
     return d
   }
   const verifyScope=async(query,lease)=>{

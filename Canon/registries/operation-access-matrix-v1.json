@@ -52,7 +52,8 @@
     "IDEMPOTENCY_CONFLICT",
     "AUDIT_UNAVAILABLE",
     "POLICY_UNAVAILABLE",
-    "EXPLICIT_DENY"
+    "EXPLICIT_DENY",
+    "RESOURCE_VERSION_CONFLICT"
   ],
   "requiredGlobalGuards": [
     "G01_IDENTITY",
@@ -109,7 +110,11 @@
     "PRIVATE_SUPPLIER_RETENTION": "Wyłącznie HUMAN z aktualnym modułem supplier_report. Serwer wybiera organizację, NIP, typ podmiotu, snapshot i termin retencji; resource.version jest ID snapshotu. Własność organizacji bez osobistego właściciela. Retencja jest sprawdzana przed operacją i po projekcji; dane osobowe nie stają się SHARED_KNOWLEDGE.",
     "PRIVATE_SUPPLIER_READ_COMPOSITE": "Reveal i eksport wymagają odrębnego jawnego prawa danej operacji oraz supplier.private.read do dokładnego prywatnego raportu wejściowego, tej samej organizacji, NIP, typu podmiotu, snapshotu i retencji. supplier.report.read/project/export ani nazwa roli nie nadają tych praw. Odczyt i eksport nie ujawniają pełnego identyfikatora osobistego; ujawnienie ma własny kontrolowany projektor i audyt.",
     "PRIVATE_ACQUISITION_REQUEST": "Wyłącznie HUMAN; jawny grant dokładnej operacji, bieżący moduł i produkt oraz liczona, idempotentna rezerwacja. Zlecenie ma prywatnego inicjatora i organizację; nie nadaje prawa źródła, odczytu ani ujawnienia danych. Delegacja zachowuje operację i ponownie sprawdza aktualne prawa. Dodatkowe operacje wymagają jawnie przyjętego rozszerzenia tego samego rejestru.",
-    "PERSONAL_DISCOVERY_RESULT": "Wynik Findera i intencja są osobiste w organizacji; oba identyfikatory muszą zgadzać się z aktualnym HUMAN. Wymagane jawne benchmark.discovery.read, moduł benchmark i produkt SPENDGURU. Samo knowledge.read lub supplier.report.read nie wystarcza. Wspólne dane rynkowe nie przejmują prywatnej intencji klienta."
+    "PERSONAL_DISCOVERY_RESULT": "Wynik Findera i intencja są osobiste w organizacji; oba identyfikatory muszą zgadzać się z aktualnym HUMAN. Wymagane jawne benchmark.discovery.read, moduł benchmark i produkt SPENDGURU. Samo knowledge.read lub supplier.report.read nie wystarcza. Wspólne dane rynkowe nie przejmują prywatnej intencji klienta.",
+    "SUPPLIER_LOCATION_SCOPE": "Serwer rozstrzyga organisationId, supplierId, locationId i aktualny zasób. Zapisane lokalizacje są ORGANISATION_PRIVATE, ownerUserId=null; autor/edytor to oddzielne atrybuty. Źródła wymagają jawnych aktualnych praw i retencji; osoba/JDG nie jest lokalizacją spółki powiązanej. Brak kontekstu, audytu albo potwierdzenia SQL019 kończy się odmową.",
+    "SUPPLIER_LOCATION_MANUAL_WRITE": "Wyłącznie ręczny CREATE/UPDATE/DEACTIVATE. Tożsamość nowego zasobu nadaje serwer. Istniejący rejestr żądań rezerwuje skończoną lokalną politykę liczby poleceń; klucz i digest zapobiegają duplikacji. NEW wymaga właściwej wersji, REPLAY nadal aktualnego dostępu. Zapis i OUTCOME atomowo; brak prawa do zmiany źródła, delegacji lub geokodowania.",
+    "SUPPLIER_LOCATION_SOURCE_SYNC": "Intencja HUMAN dotyczy dokładnych zaakceptowanych wersji MGBI/KYS. Ograniczona delegacja zachowuje SERVICE oraz inicjatora. Wersje, aktualne prawa i retencja są sprawdzane ponownie przed pracą. Operacja nie zamawia nowych raportów i nie nadaje prawa do sieci.",
+    "SUPPLIER_LOCATION_GEOCODING": "Dokładna lokalizacja, wersja adresu i jawny executor. Skończona rezerwacja Root poprzedza intencję. Niezależna, aktualna polityka Source/dostawcy i atomowy budżet poprzedzają rzeczywistą sieć. Domyślnie zero płatnych wywołań; brak polityki, audytu lub praw odmawia. Niepewne dostarczenie nie jest automatycznie powtarzane. Wynik wymaga ponownej kontroli adresu/źródła u konsumenta."
   },
   "dataClasses": [
     {
@@ -1268,6 +1273,101 @@
       "effect": "READ",
       "audit": "SECURITY_REQUIRED",
       "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-37",
+      "operation": "supplier.location.read",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.location.read",
+      "resourceType": "supplier_location_collection",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_LOCATION_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-38",
+      "operation": "supplier.location.write",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.location.write",
+      "resourceType": "supplier_location",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_LOCATION_SCOPE",
+        "SUPPLIER_LOCATION_MANUAL_WRITE"
+      ],
+      "usagePolicy": "PRODUCT_POLICY",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-39",
+      "operation": "supplier.location.sync",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.location.sync",
+      "resourceType": "supplier_location_sync_request",
+      "dataClasses": [
+        "OPERATION_AUDIT"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_LOCATION_SCOPE",
+        "SUPPLIER_LOCATION_SOURCE_SYNC"
+      ],
+      "usagePolicy": "PRODUCT_POLICY",
+      "effect": "REQUEST_COMPUTE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-40",
+      "operation": "supplier.location.geocode",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.location.geocode",
+      "resourceType": "supplier_location_geocode_request",
+      "dataClasses": [
+        "OPERATION_AUDIT"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_LOCATION_SCOPE",
+        "SUPPLIER_LOCATION_GEOCODING"
+      ],
+      "usagePolicy": "PRODUCT_POLICY",
+      "effect": "REQUEST_EXTERNAL",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
     }
   ],
   "acceptanceCases": [
@@ -1982,6 +2082,70 @@
       "expectedDecision": "DENY",
       "expectedReason": "PERMISSION_DENIED",
       "executionStatus": "SPECIFIED_NOT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-90",
+      "ruleId": "AM-37",
+      "scenario": "Bieżący członek z jawnym uprawnieniem korzysta z zasobu organizacji niezależnie od autora; źródła i wersje są potwierdzone. Przy zleceniu istnieją skończona polityka, idempotencja i audyt.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_PRODUCT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-91",
+      "ruleId": "AM-37",
+      "scenario": "Obca organizacja, cofnięty grant, podmiana autora za właściciela lub brak wymaganych praw źródła nie dają dostępu.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_PRODUCT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-92",
+      "ruleId": "AM-38",
+      "scenario": "Bieżący członek z jawnym uprawnieniem korzysta z zasobu organizacji niezależnie od autora; źródła i wersje są potwierdzone. Przy zleceniu istnieją skończona polityka, idempotencja i audyt.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_PRODUCT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-93",
+      "ruleId": "AM-38",
+      "scenario": "Obca organizacja, cofnięty grant, podmiana autora za właściciela lub brak wymaganych praw źródła nie dają dostępu.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_PRODUCT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-94",
+      "ruleId": "AM-39",
+      "scenario": "Bieżący członek z jawnym uprawnieniem korzysta z zasobu organizacji niezależnie od autora; źródła i wersje są potwierdzone. Przy zleceniu istnieją skończona polityka, idempotencja i audyt.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_PRODUCT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-95",
+      "ruleId": "AM-39",
+      "scenario": "Obca organizacja, cofnięty grant, podmiana autora za właściciela lub brak wymaganych praw źródła nie dają dostępu.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_PRODUCT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-96",
+      "ruleId": "AM-40",
+      "scenario": "Bieżący członek z jawnym uprawnieniem korzysta z zasobu organizacji niezależnie od autora; źródła i wersje są potwierdzone. Przy zleceniu istnieją skończona polityka, idempotencja i audyt.",
+      "expectedDecision": "ALLOW",
+      "expectedReason": null,
+      "executionStatus": "SPECIFIED_NOT_PRODUCT_RUNTIME_TESTED"
+    },
+    {
+      "id": "OC-97",
+      "ruleId": "AM-40",
+      "scenario": "Obca organizacja, cofnięty grant, podmiana autora za właściciela lub brak wymaganych praw źródła nie dają dostępu.",
+      "expectedDecision": "DENY",
+      "expectedReason": "RESOURCE_SCOPE_MISMATCH",
+      "executionStatus": "SPECIFIED_NOT_PRODUCT_RUNTIME_TESTED"
     }
   ],
   "openCommercialParameters": {
@@ -1991,5 +2155,5 @@
     "unknownPolicyDecision": "DENY"
   },
   "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń.",
-  "catalogueRevision": "1.2.0"
+  "catalogueRevision": "1.3.0"
 }

@@ -52,7 +52,8 @@ function delegatedConfiguration(options){
     &&Object.values(Object.getOwnPropertyDescriptors(j)).every(d=>'value'in d&&d.enumerable)
     &&(keys==='schemaDigest'||keys==='schemaDigest,targetOperation'&&j.targetOperation==='forecast.request'
       ||keys==='schemaDigest,supplierSchemaDigest,targetOperation'&&j.targetOperation==='supplier.report.refresh'&&/^[a-f0-9]{64}$/.test(j.supplierSchemaDigest??'')
-      ||keys==='operationSchemaDigest,schemaDigest,supplierSchemaDigest,targetOperation'&&requestOperationPolicy(j.targetOperation)?.additional&&/^[a-f0-9]{64}$/.test(j.supplierSchemaDigest??'')&&/^[a-f0-9]{64}$/.test(j.operationSchemaDigest??''))
+      ||keys==='locationSchemaDigest,operationSchemaDigest,schemaDigest,supplierSchemaDigest,targetOperation'&&requestOperationPolicy(j.targetOperation)?.location&&requestOperationPolicy(j.targetOperation)?.delegated!==false&&/^[a-f0-9]{64}$/.test(j.locationSchemaDigest??'')&&/^[a-f0-9]{64}$/.test(j.operationSchemaDigest??'')&&/^[a-f0-9]{64}$/.test(j.supplierSchemaDigest??'')
+      ||keys==='operationSchemaDigest,schemaDigest,supplierSchemaDigest,targetOperation'&&requestOperationPolicy(j.targetOperation)?.additional&&!requestOperationPolicy(j.targetOperation)?.location&&/^[a-f0-9]{64}$/.test(j.supplierSchemaDigest??'')&&/^[a-f0-9]{64}$/.test(j.operationSchemaDigest??''))
   if(!a||!s||a.profileId!=='PLATFORM_INTERNAL'||a.identityIssuer!==DATABASE_SERVICE_ISSUER
     ||s.profileId!==a.profileId||s.deploymentId!==a.deploymentId||s.configurationVersion!==a.configurationVersion
     ||a.operations?.join(',')!=='job.execute'||a.features?.join(',')!=='job_execution'
@@ -141,7 +142,7 @@ function createBoundOperationHost(options, serviceMode) {
   const binding = freeze(copy(options.binding))
   if (!application || !binding || binding.applicationId !== application.appId || binding.environment !== application.environment || [independentQuery, transact, ...(serviceMode ? [] : [createAuthenticator]), ...(delegated?[]:[readResources]), projectOutput, now].some(f => typeof f !== 'function') || !Number.isSafeInteger(transactionTimeoutMs) || transactionTimeoutMs < 100 || transactionTimeoutMs > 15000) throw new TypeError('Explicit application, private binding, identity factory and real transaction adapters required')
   const store = createAccessStore({ binding, now })
-  const jobStore=delegated?createDelegatedJobStore({binding,schemaDigest:options.job.schemaDigest,targetOperation:options.job.targetOperation,supplierSchemaDigest:options.job.supplierSchemaDigest,operationSchemaDigest:options.job.operationSchemaDigest,now}):null
+  const jobStore=delegated?createDelegatedJobStore({binding,schemaDigest:options.job.schemaDigest,targetOperation:options.job.targetOperation,supplierSchemaDigest:options.job.supplierSchemaDigest,operationSchemaDigest:options.job.operationSchemaDigest,locationSchemaDigest:options.job.locationSchemaDigest,now}):null
   const scopeStore=jobStore??store
   const module = options.module === undefined ? undefined : freeze(copy(options.module))
   if (module !== undefined && (!module || Object.getPrototypeOf(module) !== Object.prototype || Object.keys(module).length !== 3 || !/^[a-f0-9]{64}$/.test(module.auditSchemaDigest ?? '') || Object.keys(module).some(key => !['id','schemaDigest','auditSchemaDigest'].includes(key)))) throw new TypeError('Explicit accepted module audit boundary required')
@@ -151,7 +152,7 @@ function createBoundOperationHost(options, serviceMode) {
   const requestOperation=requestOperations[0],target=requestOperationPolicy(requestOperation)
   const needsRequestLedger=target!==null
   const requestBinding=options.requestLedger===undefined?null:freeze(copy(options.requestLedger))
-  const requestKeys=['schemaDigest',...(target?.external?['externalSchemaDigest']:[]),...(target?.additional?['operationSchemaDigest']:[])]
+  const requestKeys=['schemaDigest',...(target?.external||target?.location?['externalSchemaDigest']:[]),...(target?.additional?['operationSchemaDigest']:[]),...(target?.location?['locationSchemaDigest']:[])]
   if(needsRequestLedger ? serviceMode||module?.id!==target.module||!requestBinding
     ||Object.keys(requestBinding).sort().join(',')!==requestKeys.sort().join(',')||requestKeys.some(key=>!/^[a-f0-9]{64}$/.test(requestBinding[key]??''))
     :requestBinding!==null)throw TypeError('Private request requires its explicit same-store ledger and accepted module')
@@ -167,7 +168,7 @@ function createBoundOperationHost(options, serviceMode) {
   const inspectionStore=inspectionBinding===null?null:createRequestInspection({binding,inspection:inspectionBinding,now})
   const workBinding=options.delegatedWork===undefined?null:freeze(copy(options.delegatedWork))
   if(workBinding!==null&&(!delegated||delegatedContinuation!==null||inspectionBinding!==null||options.sourceDelivery!==undefined))throw TypeError('Isolated current native work required')
-  const workStore=workBinding===null?null:createRequestWorkScope({binding,work:{...workBinding,...(options.job.operationSchemaDigest===undefined?{}:{targetOperation:options.job.targetOperation,operationSchemaDigest:options.job.operationSchemaDigest})},now})
+  const workStore=workBinding===null?null:createRequestWorkScope({binding,work:{...workBinding,...(options.job.operationSchemaDigest===undefined?{}:{targetOperation:options.job.targetOperation,operationSchemaDigest:options.job.operationSchemaDigest,...(requestOperationPolicy(options.job.targetOperation)?.location?{locationSchemaDigest:options.job.locationSchemaDigest}:{})})},now})
   const requestLedger = continuation === null ? baseRequestLedger
     : createRequestContinuationLedger({ ledger: baseRequestLedger, binding, continuation, now })
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
@@ -230,7 +231,7 @@ function createBoundOperationHost(options, serviceMode) {
               const observation=delegated?await readExternalAccount(lease.state.delegation.identityKey):null
               if(closed)unavailable()
               const requestPolicy = needsRequestLedger && request.operation === requestOperation
-                ? await requestLedger.loadPolicy(query, { actor, request }) : undefined
+                ? await requestLedger.loadPolicy(query, { actor, request, resource:resources.resource }) : undefined
               const phasePolicy=privatePhaseLedger?await privatePhaseLedger.loadPhase(query,{actor,request,lease}):null
               const inspectionPolicy=inspectionStore?await inspectionStore.load(query,{request,lease}):null
               const nativeWorkPolicy=workStore?await workStore.load(query,{request,lease}):null
