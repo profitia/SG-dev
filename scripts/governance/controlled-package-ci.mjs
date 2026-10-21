@@ -6,6 +6,8 @@ import path from 'node:path'
 import {createHash} from 'node:crypto'
 import {execFileSync, spawnSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
+import {resolveProjectProfile} from './project-profile.mjs'
+import {resolveProjectRouting} from './routing-engine.mjs'
 
 export const REPOSITORY = 'profitia/SG-dev'
 export const WORKFLOW = '.github/workflows/platform-contracts-ci.yml'
@@ -31,15 +33,88 @@ export function assertEnvironment(environment, branches, registered) {
   if (p?.protected_branches !== false || p?.custom_branch_policies !== true || branches.length !== 1 || branches[0].name !== 'main' || branches[0].type !== 'branch') fail('ENVIRONMENT_POLICY_DRIFT')
 }
 
-export function selectCandidate(context, pr, expectedSha) {
+function candidateFamily(context, pr, expectedSha) {
   assertTrustedContext(context)
   if (!pr) {
     if (expectedSha && expectedSha !== context.controlSha) fail('CANDIDATE_SHA_MISMATCH')
-    return context.controlSha
+    return 'MAIN'
   }
-  if (pr.state !== 'open' || pr.base?.repo?.full_name !== REPOSITORY || pr.base?.ref !== 'main' || pr.head?.repo?.full_name !== REPOSITORY || pr.user?.login !== 'profitia' || !pr.head?.ref?.startsWith('sg2/')) fail('UNTRUSTED_CANDIDATE')
+  if (pr.state !== 'open' || pr.base?.repo?.full_name !== REPOSITORY || pr.base?.ref !== 'main' || pr.head?.repo?.full_name !== REPOSITORY || pr.user?.login !== 'profitia') fail('UNTRUSTED_CANDIDATE')
+  const family = pr.head?.ref?.startsWith('sg2/') ? 'SG2' : pr.head?.ref?.startsWith('architecture/') ? 'ARCHITECTURE' : null
+  if (!family) fail('UNTRUSTED_CANDIDATE')
   if (!shaPattern.test(expectedSha ?? '') || pr.head.sha !== expectedSha) fail('CANDIDATE_SHA_MISMATCH')
+  return family
+}
+
+// Scope is deliberately narrower than all ARCHITECTURE-owned source. In
+// particular no app, workflow, policy, npm configuration or executable tooling.
+function architecturePathAllowed(name) {
+  if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
+  return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
+    || /^Canon\/evidence\/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.md$/.test(name)
+}
+
+export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
+  if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
+    || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  const names = new Set()
+  for (const file of files) {
+    if (!architecturePathAllowed(file.filename) || !['added', 'modified', 'removed'].includes(file.status)
+      || Object.hasOwn(file, 'previous_filename') || !shaPattern.test(file.sha ?? '') || names.has(file.filename)) fail('ARCHITECTURE_PATH_REJECTED')
+    names.add(file.filename)
+  }
+  const profile = resolveProjectProfile('ARCHITECTURE', repositoryRoot)
+  if (profile.repository.slug !== REPOSITORY || profile.repository.routingRegistry !== 'Canon/registries/current-architecture-baseline-v1.json') fail('ARCHITECTURE_ROUTING_REJECTED')
+  const routing = resolveProjectRouting({profile, targets: [...names], repositoryRoot})
+  if (!routing.ok || routing.results.some(r => r.projectBoundaryStatus !== 'ALLOWED' || r.baselineClassification !== 'ALIGNED'
+    || r.currentOwner !== (r.normalizedPath.startsWith('packages/') ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
+  if (![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
+}
+
+export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
+  const family = candidateFamily(context, pr, expectedSha)
+  if (family === 'MAIN') return context.controlSha
+  if (family === 'ARCHITECTURE') assertArchitectureFiles(pr, files, repositoryRoot)
   return expectedSha
+}
+
+export async function resolveCandidateAdmission(c, number, expectedSha, request = api, repositoryRoot = controlRoot()) {
+  assertTrustedContext(c)
+  if (number && !/^[1-9][0-9]*$/.test(number)) fail('PR_NUMBER_REJECTED')
+  const endpoint = `repos/${REPOSITORY}/pulls/${number}`
+  const pr = number ? (await request(endpoint)).data : null
+  const family = candidateFamily(c, pr, expectedSha)
+  if (family !== 'ARCHITECTURE') return {sha: selectCandidate(c, pr, expectedSha)}
+  if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  const files = []
+  for (let page = 1; page <= 4; page++) {
+    const batch = (await request(`${endpoint}/files?per_page=100&page=${page}`)).data
+    if (!Array.isArray(batch) || batch.length > 100) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+    files.push(...batch)
+    if (files.length > 300) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+    if (batch.length < 100) break
+  }
+  // PR files are not SHA-addressed. Fence pagination with a second metadata
+  // read, then bind the complete list to the actual pinned Git tree below.
+  const current = (await request(endpoint)).data
+  if (candidateFamily(c, current, expectedSha) !== family || current.base.sha !== pr.base.sha || current.changed_files !== pr.changed_files) fail('CANDIDATE_CHANGED_DURING_RESOLUTION')
+  const sha = selectCandidate(c, current, expectedSha, {files, repositoryRoot})
+  return {sha, admission: {kind: family, baseSha: pr.base.sha, files: files.map(({filename, status, sha}) => ({filename, status, sha}))}}
+}
+
+export function assertArchitectureCheckout(root, sha, admission, repositoryRoot = controlRoot()) {
+  if (!admission || admission.kind !== 'ARCHITECTURE' || !shaPattern.test(sha ?? '') || !shaPattern.test(admission.baseSha ?? '')) fail('ARCHITECTURE_CHECKOUT_REJECTED')
+  assertArchitectureFiles({changed_files: admission.files?.length, base: {sha: admission.baseSha}}, admission.files, repositoryRoot)
+  const changed = execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', `${admission.baseSha}...${sha}`], {cwd: root, encoding: 'utf8'}).split('\0').filter(Boolean).sort()
+  if (JSON.stringify(changed) !== JSON.stringify(admission.files.map(f => f.filename).sort())) fail('ARCHITECTURE_DIFF_MISMATCH')
+  for (const file of admission.files) {
+    const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
+    if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if (!['100644', '100755'].some(mode => entry === `${mode} blob ${file.sha}\t${file.filename}\0`)) fail('ARCHITECTURE_CHECKOUT_REJECTED')
+    const target = path.join(root, file.filename), stat = fs.lstatSync(target)
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024 || fs.realpathSync(target) !== target
+      || execFileSync('git', ['hash-object', '--no-filters', '--', file.filename], {cwd: root, encoding: 'utf8'}).trim() !== file.sha) fail('ARCHITECTURE_CHECKOUT_REJECTED')
+  }
 }
 
 export function assertCredentialMetadata({scopes, expiresAt, login}, now = Date.now()) {
@@ -145,7 +220,10 @@ function context(env = process.env) {
   return {repository: env.GITHUB_REPOSITORY, ref: env.GITHUB_REF, workflowRef: env.GITHUB_WORKFLOW_REF, event: env.GITHUB_EVENT_NAME, actor: env.GITHUB_ACTOR, triggeringActor: env.GITHUB_TRIGGERING_ACTOR, controlSha: env.GITHUB_SHA}
 }
 function controlRoot() {return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')}
-const policyFiles = [WORKFLOW, 'scripts/governance/controlled-package-ci.mjs', 'Canon/registries/architecture-environment-topology-v1.json']
+export const CONTROL_POLICY_FILES = Object.freeze([WORKFLOW, 'scripts/governance/controlled-package-ci.mjs', 'Canon/registries/architecture-environment-topology-v1.json',
+  'scripts/governance/project-profile.mjs', 'scripts/governance/routing-engine.mjs', 'scripts/architecture-classify.mjs',
+  'Canon/registries/profitia-projects-v1.json', 'Canon/registries/current-architecture-baseline-v1.json'])
+const policyFiles = CONTROL_POLICY_FILES
 export function controlPolicyDigest(root = controlRoot()) {
   const digest = createHash('sha256')
   for (const name of policyFiles) digest.update(fs.readFileSync(path.join(root, name)))
@@ -172,15 +250,13 @@ async function resolve() {
   if (execFileSync('git', ['rev-parse', 'HEAD'], {cwd: controlRoot(), encoding: 'utf8'}).trim() !== c.controlSha) fail('CONTROL_CHECKOUT_MISMATCH')
   const registered = await checkEnvironment()
   const number = process.env.CANDIDATE_PR ?? ''
-  if (number && !/^[1-9][0-9]*$/.test(number)) fail('PR_NUMBER_REJECTED')
-  const pr = number ? (await api(`repos/${REPOSITORY}/pulls/${number}`)).data : null
-  const sha = selectCandidate(c, pr, process.env.EXPECTED_SHA)
+  const {sha, admission} = await resolveCandidateAdmission(c, number, process.env.EXPECTED_SHA)
   let receipt
   try {receipt = (await api(`repos/${REPOSITORY}/contents/apps/sg-runtime/operation-integration.json?ref=${sha}`)).data}
   catch (error) {if (!number && error.message === 'GITHUB_API_404') {output('adopted', 'false'); console.log('NOT_ADOPTED: no SG2 runtime proof claimed'); return}; throw error}
   receipt = JSON.parse(Buffer.from(receipt.content, 'base64').toString('utf8'))
   assertReceipt(receipt)
-  fs.writeFileSync(statePath(), JSON.stringify({sha, controlSha: c.controlSha, runId: process.env.GITHUB_RUN_ID, receipt, registered}), {mode: 0o600})
+  fs.writeFileSync(statePath(), JSON.stringify({sha, controlSha: c.controlSha, runId: process.env.GITHUB_RUN_ID, receipt, registered, ...(admission ? {admission} : {})}), {mode: 0o600})
   output('adopted', 'true'); output('candidate_sha', sha)
   console.log(`Accepted internal SG2 source ${sha}; control ${c.controlSha}`)
 }
@@ -212,6 +288,7 @@ export function operationContractProvenanceDigest(root, contract) {
 function checkCandidate() {
   const c = assertTrustedContext(context()), state = readJson(statePath()), root = candidateRoot()
   if (state.controlSha !== c.controlSha || state.runId !== process.env.GITHUB_RUN_ID || !shaPattern.test(state.sha) || execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim() !== state.sha) fail('CANDIDATE_CHECKOUT_MISMATCH')
+  if (state.admission) assertArchitectureCheckout(root, state.sha, state.admission)
   const app = path.join(root, 'apps/sg-runtime')
   const candidateLock = readJson(path.join(app, 'package-lock.json'))
   assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))

@@ -14,6 +14,10 @@ on:
       - 'Canon/registries/architecture-environment-topology-v1.json'
       - '.github/workflows/platform-contracts-ci.yml'
       - 'scripts/governance/controlled-package-ci*'
+      - 'scripts/governance/project-profile.mjs'
+      - 'scripts/governance/routing-engine.mjs'
+      - 'scripts/architecture-classify.mjs'
+      - 'Canon/registries/current-architecture-baseline-v1.json'
   push:
     branches: [main]
     paths:
@@ -28,6 +32,10 @@ on:
       - 'Canon/registries/architecture-environment-topology-v1.json'
       - '.github/workflows/platform-contracts-ci.yml'
       - 'scripts/governance/controlled-package-ci*'
+      - 'scripts/governance/project-profile.mjs'
+      - 'scripts/governance/routing-engine.mjs'
+      - 'scripts/architecture-classify.mjs'
+      - 'Canon/registries/current-architecture-baseline-v1.json'
   workflow_dispatch:
     inputs:
       mode:
@@ -35,7 +43,7 @@ on:
         options: [integration, validate-sg2, policy-probe]
         default: integration
       candidate_pr:
-        description: 'Internal SG2 PR number; empty validates exact main'
+        description: 'Internal SG2 or bounded Architecture producer PR; empty validates exact main'
         type: string
       expected_sha:
         description: 'Exact 40-character candidate HEAD; required for a PR'
