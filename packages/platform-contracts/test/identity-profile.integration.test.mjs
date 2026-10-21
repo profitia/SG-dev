@@ -161,4 +161,11 @@ test('real ordinary PostgreSQL identity/profile acceptance',async t=>{
     try {await assert.rejects(db.admin.query(fs.readFileSync(new URL('../migrations/profile/001-user-profile.sql',import.meta.url),'utf8')))}finally{await db.admin.query('ROLLBACK')}
     assert.equal((await db.admin.query('SELECT schema_digest FROM profitia_profile.installation')).rows[0].schema_digest,profileSchemaDigest())
   })
+  await t.test('timed-out transaction cannot issue a late query after the connection returns to the pool',async()=>{
+    let captured
+    await assert.rejects(db.transact(async session=>{captured=session.query;await new Promise(resolve=>setTimeout(resolve,40));await session.query('SELECT 1')},{timeoutMs:5}))
+    await assert.rejects(captured('SELECT 1'))
+    assert.equal((await db.independentQuery('SELECT 1 AS ready')).rows[0].ready,1)
+    await new Promise(resolve=>setTimeout(resolve,60))
+  })
 })

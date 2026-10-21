@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizeProfilePatch } from '../src/user-profile.mjs'
+import { normalizeProfilePatch as normalize } from '../src/user-profile.mjs'
+import { parsePhoneNumberWithError } from 'libphonenumber-js/max'
+const normalizeProfilePatch = value => normalize(value, parsePhoneNumberWithError)
 
 test('avatar preference and optional fields normalize without granting roles or verification', () => {
   assert.deepEqual(normalizeProfilePatch({avatar_sex:'female',job:'  Engineer  ',phone:'+1 (202) 555-0123'}),{avatar_sex:'female',job:'Engineer',phone:'+12025550123'})

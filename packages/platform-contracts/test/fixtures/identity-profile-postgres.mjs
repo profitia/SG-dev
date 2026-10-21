@@ -4,6 +4,7 @@ import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { createHash, randomBytes } from 'node:crypto'
 import pg from '../../../../apps/architecture-lab/node_modules/pg/lib/index.js'
+import { parsePhoneNumberWithError } from 'libphonenumber-js/max'
 import { profileSchemaDigest } from '../../src/user-profile.mjs'
 
 export function clerkFixture(subject = 'user_synthetic_a') {
@@ -19,24 +20,30 @@ export function clerkFixture(subject = 'user_synthetic_a') {
 }
 
 export async function postgresFixture() {
-  const external = process.env.B1_TEST_ADMIN_URL
-  let directory, bin, operator
-  if (external) {
-    const u = new URL(external)
-    if (!['localhost','127.0.0.1','[::1]'].includes(u.hostname) || u.pathname !== '/identity_profile_b1_test') throw Error('Synthetic loopback database only')
-    operator = new pg.Client({ connectionString: external })
-  } else {
-    bin = process.env.B1_PG_BIN || (fs.existsSync('/opt/homebrew/opt/postgresql@16/bin/initdb') ? '/opt/homebrew/opt/postgresql@16/bin' : '/usr/lib/postgresql/16/bin')
-    if (!fs.existsSync(path.join(bin,'initdb'))) throw Error('Local PostgreSQL required; DATABASE_ACCEPTANCE=PENDING_OWNER_RESOURCE')
+  let directory, container, operator
+  const bin = process.env.B1_PG_BIN || (fs.existsSync('/opt/homebrew/opt/postgresql@16/bin/initdb') ? '/opt/homebrew/opt/postgresql@16/bin' : '/usr/lib/postgresql/16/bin')
+  if (fs.existsSync(path.join(bin,'initdb'))) {
     directory=fs.mkdtempSync(path.join(os.tmpdir(),'b1pg-'))
     const run = (name,args) => { const r=spawnSync(path.join(bin,name),args,{encoding:'utf8'});if(r.status!==0)throw Error('Local PostgreSQL setup failed: '+name) }
     run('initdb',['-D',directory+'/data','-U','b1_operator','-A','trust','--no-locale','-E','UTF8'])
     run('pg_ctl',['-D',directory+'/data','-l',directory+'/server.log','-o',`-c listen_addresses='' -k ${directory}`,'-w','start'])
     operator=new pg.Client({host:directory,user:'b1_operator',database:'postgres'})
+  } else {
+    // Ephemeral local CI fixture only; no cloud API/Neon project or database.
+    const r=spawnSync('docker',['run','--detach','--rm','--publish','127.0.0.1::5432','--env','POSTGRES_USER=b1_operator','--env','POSTGRES_HOST_AUTH_METHOD=trust','postgres:16'],{encoding:'utf8'})
+    container=r.stdout?.trim()
+    if(r.status!==0||!/^[a-f0-9]{64}$/.test(container??''))throw Error('Local PostgreSQL required; DATABASE_ACCEPTANCE=PENDING_OWNER_RESOURCE')
+    const mapped=spawnSync('docker',['port',container,'5432/tcp'],{encoding:'utf8'}).stdout?.trim()
+    if(!/^127\.0\.0\.1:[0-9]+$/.test(mapped??''))throw Error('Synthetic loopback PostgreSQL only')
+    for(let i=0;i<60;i++) {
+      if(spawnSync('docker',['exec',container,'pg_isready','-U','b1_operator'],{stdio:'ignore'}).status===0)break
+      await new Promise(resolve=>setTimeout(resolve,500))
+    }
+    operator=new pg.Client({host:'127.0.0.1',port:Number(mapped.split(':')[1]),user:'b1_operator',database:'postgres'})
   }
   await operator.connect()
   const operatorConfig=operator.connectionParameters
-  if (!external) await operator.query('CREATE DATABASE identity_profile_b1_test')
+  await operator.query('CREATE DATABASE identity_profile_b1_test')
   const config={host:operatorConfig.host,port:operatorConfig.port,user:operatorConfig.user,password:operatorConfig.password,database:'identity_profile_b1_test'}
   const admin=new pg.Client(config);await admin.connect()
   const proofKey=randomBytes(32)
@@ -64,13 +71,14 @@ export async function postgresFixture() {
   const pool=new pg.Pool({...config,user:binding.role,max:8})
   const independentQuery=(text,values)=>pool.query(text,values)
   const transact=async(run,limits={timeoutMs:15000})=>{
-    const c=await pool.connect();let timeout
-    try {await c.query('BEGIN');const task=run({query:(text,values)=>c.query(text,values),transaction:c});const result=await Promise.race([task,new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('Transaction deadline')),limits.timeoutMs)})]);await c.query('COMMIT');return result}
-    catch(error){await c.query('ROLLBACK');throw error}finally{clearTimeout(timeout);c.release()}
+    const c=await pool.connect();let timeout,closed=false
+    const query=async(text,values)=>{if(closed)throw Error('Transaction closed');const result=await c.query(text,values);if(closed)throw Error('Transaction closed');return result}
+    try {await c.query('BEGIN');const task=run({query,transaction:c});const result=await Promise.race([task,new Promise((_,reject)=>{timeout=setTimeout(()=>{closed=true;reject(Error('Transaction deadline'))},limits.timeoutMs)})]);await c.query('COMMIT');return result}
+    catch(error){closed=true;await c.query('ROLLBACK');throw error}finally{closed=true;clearTimeout(timeout);c.release()}
   }
   const options=f=>({client:f.client,identityApplication:{appId:binding.applicationId,environment:'development',issuer:f.issuer,authorizedParties:[f.origin]},binding,schemaDigest:profileSchemaDigest(),proofKey,transact,
-    independentQuery,application:{appId:binding.applicationId,profileId:'SPENDGURU_SAAS',environment:'development',deploymentId:'synthetic-deployment',configurationVersion:'synthetic-v1',identityIssuer:f.issuer,organisationId:null,features:['account'],operations:['account.settings.read','account.settings.write']}})
+    independentQuery,phoneParser:parsePhoneNumberWithError,application:{appId:binding.applicationId,profileId:'SPENDGURU_SAAS',environment:'development',deploymentId:'synthetic-deployment',configurationVersion:'synthetic-v1',identityIssuer:f.issuer,organisationId:null,features:['account'],operations:['account.settings.read','account.settings.write']}})
   return {admin,pool,config,binding,proofKey,options,independentQuery,transact,
-    async close(){await pool.end();await admin.end();await operator.end();if(directory){spawnSync(path.join(bin,'pg_ctl'),['-D',directory+'/data','-m','immediate','-w','stop']);fs.rmSync(directory,{recursive:true,force:true})}},
+    async close(){await pool.end();await admin.end();await operator.end();if(directory){spawnSync(path.join(bin,'pg_ctl'),['-D',directory+'/data','-m','immediate','-w','stop']);fs.rmSync(directory,{recursive:true,force:true})}if(container)spawnSync('docker',['rm','--force',container],{stdio:'ignore'})},
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.24.0",
+  "version": "1.23.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",
@@ -119,13 +119,5 @@
   },
   "devDependencies": {
     "libphonenumber-js": "1.13.15"
-  },
-  "peerDependencies": {
-    "libphonenumber-js": "1.13.15"
-  },
-  "peerDependenciesMeta": {
-    "libphonenumber-js": {
-      "optional": true
-    }
   }
 }

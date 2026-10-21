@@ -17,9 +17,10 @@ export interface UserProfile {
 export declare class ProfileConflict extends Error { readonly code: 'PROFILE_VERSION_CONFLICT' }
 export declare const profileSchemaUrl: string
 export declare function profileSchemaDigest(): string
-export declare function normalizeProfilePatch(value: unknown): Readonly<UserProfilePatch>
+export type ProfilePhoneParser = (input: string, options: { extract: false }) => { number: string; ext?: string; isValid(): boolean }
+export declare function normalizeProfilePatch(value: unknown, phoneParser: ProfilePhoneParser): Readonly<UserProfilePatch>
 export declare function createUserProfileBackend<Transaction>(options: IdentityProvisioningOptions<Transaction> & {
-  application: Application; independentQuery: AccessQuery
+  application: Application; independentQuery: AccessQuery; phoneParser: ProfilePhoneParser
 }): Readonly<{
   contract: typeof USER_PROFILE_CONTRACT
   getCurrentUserProfile(request: Request): Promise<UserProfile | null>

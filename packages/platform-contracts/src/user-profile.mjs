@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import { parsePhoneNumberWithError } from 'libphonenumber-js/max'
 import { createClerkIdentityAuthenticator } from './identity-provider.mjs'
 import { createPrivateOperationHost } from './private-operation-host.mjs'
 import { OPERATION_CONTRACT, OperationDenied } from './operation-context.mjs'
@@ -7,7 +6,7 @@ import { closedObject, createProfileSql, deny, ProfileConflict } from './identit
 export { profileSchemaUrl, profileSchemaDigest, ProfileConflict } from './identity-profile-sql.mjs'
 
 export const USER_PROFILE_CONTRACT = Object.freeze({ id: 'profitia.user-profile', version: '1.0.0' })
-export function normalizeProfilePatch(value) {
+export function normalizeProfilePatch(value, phoneParser) {
   if (!closedObject(value) || Object.keys(value).length === 0 || Object.keys(value).some(k => !['avatar_sex', 'job', 'phone'].includes(k))) throw new OperationDenied('PERMISSION_DENIED')
   const out = {}
   for (const [key, item] of Object.entries(value)) {
@@ -25,7 +24,8 @@ export function normalizeProfilePatch(value) {
       if (!input) { out[key] = null; continue }
       if (input.length > 64 || !/^\+[0-9 ()\-.]+$/.test(input)) throw new TypeError('International phone required')
       let phone
-      try { phone = parsePhoneNumberWithError(input, { extract: false }) } catch { throw new TypeError('Invalid phone number') }
+      if (typeof phoneParser !== 'function') throw new TypeError('Explicit server-owned phone parser required')
+      try { phone = phoneParser(input, { extract: false }) } catch { throw new TypeError('Invalid phone number') }
       if (!phone.isValid() || phone.ext || !/^\+[1-9][0-9]{1,14}$/.test(phone.number)) throw new TypeError('Invalid phone number')
       out[key] = phone.number
     }
@@ -34,11 +34,12 @@ export function normalizeProfilePatch(value) {
 }
 
 export function createUserProfileBackend(options) {
-  const { client, identityApplication, application, binding, independentQuery, transact, schemaDigest, proofKey, now = Date.now } = options
+  const { client, identityApplication, application, binding, independentQuery, transact, schemaDigest, proofKey, phoneParser, now = Date.now } = options
   if (identityApplication?.appId !== application?.appId || identityApplication?.issuer !== application?.identityIssuer
     || identityApplication?.environment !== application?.environment || application?.organisationId !== null
     || application?.operations?.join(',') !== 'account.settings.read,account.settings.write'
-    || application?.features?.join(',') !== 'account' || identityApplication?.bearerPeerReads?.length) throw new TypeError('Explicit same-receiver account-self application required')
+    || application?.features?.join(',') !== 'account' || identityApplication?.bearerPeerReads?.length
+    || typeof phoneParser !== 'function') throw new TypeError('Explicit same-receiver account-self application and trusted phone parser required')
   const sql = createProfileSql({ binding, issuer: identityApplication.issuer, schemaDigest, proofKey, now })
   const queries = new WeakMap()
   const host = createPrivateOperationHost({ application, binding, independentQuery, now,
@@ -85,7 +86,7 @@ export function createUserProfileBackend(options) {
       if (!closedObject(input) || Object.keys(input).sort().join(',') !== 'expectedVersion,patch'
         || typeof input.expectedVersion !== 'string' || !/^[1-9][0-9]{0,18}$/.test(input.expectedVersion)
         || BigInt(input.expectedVersion) > 9223372036854775807n) throw new TypeError('Explicit expected version and closed profile patch required')
-      const patch = normalizeProfilePatch(input.patch)
+      const patch = normalizeProfilePatch(input.patch, phoneParser)
       return execute(request, 'update', patch, input.expectedVersion)
     },
   })
