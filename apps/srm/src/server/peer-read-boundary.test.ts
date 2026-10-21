@@ -41,13 +41,13 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   assert.equal(accepted.previousApplicationAuthority, 'c82d400ab53783376fefecd487131b0ef6812ad8')
   assert.equal(accepted.identityDigest, await identitySourceDigest())
   const previous = JSON.parse(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':apps/srm/operation-integration.json'], { encoding: 'utf8' }))
-  for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(['contract','producer'].includes(key) ? receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   const root = new URL('../', pathToFileURL(createRequire(import.meta.url).resolve('@profitia/platform-contracts/identity-provider')))
   assert.deepEqual(Object.keys(accepted.sdkSourceDigests).sort(), ['src/identity-provider.d.mts', 'src/identity-provider.mjs'])
   for (const [path, digest] of Object.entries(accepted.sdkSourceDigests)) {
     assert.equal(hash(readFileSync(new URL(path, root))), digest, path)
     assert.equal(hash(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':packages/platform-contracts/' + path])), previous.publicWebTransportSourceCompatibility.sourceDigests[path])
   }
-  for (const [path, digest] of Object.entries(accepted.sourceDigests)) assert.equal(hash(readFileSync(new URL('../../' + path, import.meta.url))), digest, path)
+  for (const [path, digest] of Object.entries({ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests })) assert.equal(hash(readFileSync(new URL('../../' + path, import.meta.url))), digest, path)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })
