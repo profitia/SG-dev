@@ -29,3 +29,22 @@ test('latest filter wins over a late previous-page response',async()=>{
  resolvers[1](Response.json({...page,offset:50,total:60}));await second;resolvers[0](Response.json(page));await first
  assert.equal(controller.getSnapshot().page?.offset,50)
 })
+test('a read-only member retains the map after denied automatic sync or manual write',async()=>{
+ const actions:string[]=[]
+ const controller=new SupplierLocationController(supplier,async(_url,init)=>{
+  const input=JSON.parse(String(init?.body));actions.push(input.action)
+  return input.action==='READ'?Response.json(page):Response.json({error:'denied'},{status:403})
+ })
+ await controller.sync();assert.equal(controller.getSnapshot().sync,'UNAVAILABLE');assert.equal(controller.getSnapshot().blocked,false)
+ await controller.load();assert(controller.getSnapshot().page)
+ await assert.rejects(controller.save('CREATE',null,null,command));assert.equal(controller.getSnapshot().page,null);assert.equal(controller.getSnapshot().blocked,false)
+ await controller.load();assert(controller.getSnapshot().page)
+ assert.deepEqual(actions,['SYNC','READ','READ','CREATE','READ','READ'])
+})
+test('a denied sync followed by current read revocation clears the map and blocks writes',async()=>{
+ let revoked=false;const actions:string[]=[]
+ const controller=new SupplierLocationController(supplier,async(_url,init)=>{actions.push(JSON.parse(String(init?.body)).action);return revoked?Response.json({error:'denied'},{status:403}):Response.json(page)})
+ await controller.load();assert(controller.getSnapshot().page);revoked=true;await controller.sync()
+ assert.equal(controller.getSnapshot().page,null);assert.equal(controller.getSnapshot().blocked,true)
+ assert.deepEqual(actions,['READ','SYNC','READ']);await assert.rejects(controller.save('CREATE',null,null,command),/dostępu/)
+})

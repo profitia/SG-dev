@@ -17,7 +17,12 @@ export class SupplierLocationController{
    const r=await this.transport('/api/supplier-locations',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json',...(key?{'Idempotency-Key':key}:{})},body:JSON.stringify(body),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(30000),...(parentSignal?[parentSignal]:[])])})
    if(controller.signal.aborted||generation!==this.generation)throw new DOMException('Stale location context','AbortError')
    if(!r.ok){
-    if([401,403].includes(r.status)){this.generation++;for(const request of this.pending)request.abort();this.keys.clear();this.update({page:null,blocked:true})}
+    if(r.status===403&&(body as {action?:string})?.action!=='READ'){
+     // Denied WRITE/SYNC does not imply denied READ. Withhold the old map
+     // immediately, then let a fresh protected read decide current access.
+     this.update({page:null})
+     await this.request({action:'READ',supplierId:this.supplierId,group:'ALL',offset:0,limit:1},undefined,controller.signal)
+    }else if([401,403].includes(r.status)){this.generation++;for(const request of this.pending)request.abort();this.keys.clear();this.update({page:null,blocked:true})}
     throw new LocationRequestError(r.status===409?'Lokalizacja zmieniła się. Odczytaj aktualny zapis przed kolejną zmianą.':r.status===429?'Limit zapisu został osiągnięty. Spróbuj później.':'Nie można teraz odczytać lub zapisać lokalizacji.')
    }
    const value=await r.json();if(controller.signal.aborted||generation!==this.generation)throw new DOMException('Stale location context','AbortError')

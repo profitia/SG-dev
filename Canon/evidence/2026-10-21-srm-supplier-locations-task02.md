@@ -175,7 +175,7 @@ are recorded in the final PMOS/PHR receipt after their actual execution.
 
 Local SRM regression: **610/610**, zero failures/skips, including the seven
 optional migration/financial PostgreSQL tests (their loopback database was
-explicitly configured). Targeted locations: **31/31**, zero failures/skips.
+explicitly configured). Targeted locations after read-only correction: **33/33**, zero failures/skips.
 Maps regression: **15/15**, zero failures/skips. SRM TypeScript and production
 build and Maps production build passed. Browser checks above passed and their
 unthemed synthetic form/list screenshot was visually inspected.
@@ -184,7 +184,9 @@ The full E1 regression was rerun on a clean local fixture after a previous
 reusable test database retained `profitia_ingestion`; that old fixture initially
 failed reinitialisation with SQLSTATE42P06. A separate clean diagnostic passed
 100/100 without source/test weakening. The original failure log is retained.
-Final full E1 regression: **329/329**, zero failures/skips. Cloud CI and exact
+Full E1 regression before the frontend-only correction: **329/329**, zero
+failures/skips. The final exact-HEAD CI reruns the complete suite including two
+new read-only member tests. Cloud CI and exact
 publication identities are recorded separately in the final PMOS/PHR receipt.
 The current Maps build at the uncommitted source base is local validation only;
 its source label is not a deployed/accepted artifact identity.
@@ -215,3 +217,10 @@ No prerequisite is silently waived by that separation.
 TASK03 may refine the implemented UI against local fixtures now; live product
 acceptance and the actual working Development entry point remain conditional on
 the above release. See the adjacent machine-readable UX handoff.
+
+Pre-merge review also corrected frontend treatment of a denied WRITE/SYNC. The
+old projection is withheld immediately and a fresh E1 READ decides whether the
+member still has read access. Read-only members keep access to the map; current
+READ revocation still clears the iframe and blocks mutation. Two unit tests and
+the real component/browser fixture (SYNC403 plus READ200) passed. No server
+permission was widened.
