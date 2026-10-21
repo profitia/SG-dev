@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
+import {CONTROL_POLICY_FILES} from './controlled-package-ci.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const workflow = '.github/workflows/platform-contracts-ci.yml'
@@ -79,4 +80,10 @@ test('both events cover the workflow, its guard/controller and registry inputs w
   }
   assert.deepEqual(patternsFor('pull_request'), patternsFor('push'))
   assert.match(text, /\n  push:\n    branches: \[main\]\n/)
+})
+
+test('both events cover every trusted transitive admission and fingerprint input', () => {
+  for (const event of events) for (const file of CONTROL_POLICY_FILES) {
+    assert(patternsFor(event).some(pattern => covers(pattern, file)), `Trusted admission input ${file} omitted from ${event}`)
+  }
 })
