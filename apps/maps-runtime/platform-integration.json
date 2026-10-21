@@ -226,5 +226,19 @@
     "sourceDigest": "9fe1ee707bb5510e66cbe9470ba970de177f8a6fe4533470f771af88d68bf728"
   },
   "supplierLocationPrivateOperationsAdopted": false,
-  "paidGeocodingEnabled": false
+  "paidGeocodingEnabled": false,
+  "supplierLocationsTask02": {
+    "taskId": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+    "environment": "development",
+    "scope": "SOURCE_ONLY_NOT_DEPLOYED",
+    "sourceCommand": "src/server/geocoding-command.mjs",
+    "publicGeocodingRoute": false,
+    "defaultPaidAllowance": 0,
+    "nativeE1ServiceAndSourceRequired": true,
+    "currentDomainVersionsRequired": true,
+    "sharedGoogleCacheMaximumDays": 29,
+    "liveGeocoding": "WAITING_OWNER",
+    "providerConfigurationChanged": false,
+    "runtimeRoleOrGrantChanged": false
+  }
 }

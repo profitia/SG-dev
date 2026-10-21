@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {geocodeAddress} from '../src/server/google/geocoding.mjs'
 
-const valid = {status: 'OK', results: [{geometry: {location: {lat: 52, lng: 21}}, place_id: 'place', formatted_address: 'restricted response'}]}
+const valid = {status: 'OK', results: [{geometry: {location: {lat: 52, lng: 21}, location_type: 'ROOFTOP'}, place_id: 'place', formatted_address: 'restricted response'}]}
 test('server adapter pins destination and projects only coordinates and place ID', async () => {
   let calls = 0
   const result = await geocodeAddress('test', {apiKey: 'not-a-real-key', fetch: async (url, options) => {
@@ -42,4 +42,11 @@ test('browser loader loads once and reports authorization/network/timeout failur
     assert.equal(count, 1)
     assert.equal(new URL(script.src).origin, 'https://maps.googleapis.com')
   }
+})
+
+test('route interpolations, centroids and unknown precision do not become confident supplier markers',async()=>{
+ for(const location_type of ['RANGE_INTERPOLATED','GEOMETRIC_CENTER','APPROXIMATE',undefined]){
+  const body={...valid,results:[{...valid.results[0],geometry:{...valid.results[0].geometry,location_type}}]}
+  assert.deepEqual(await geocodeAddress('test',{apiKey:'synthetic',fetch:async()=>Response.json(body)}),{status:'unresolved',reason:'low-precision'})
+ }
 })

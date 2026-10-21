@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+  "projectProfile": "SRM",
+  "targetEnvironment": "development",
+  "status": "CONDITIONAL",
+  "implementedComponent": "apps/srm/src/modules/xray/supplier-locations-view.tsx",
+  "reusableDomainContract": "packages/srm-xray/src/supplier-locations.ts",
+  "renderer": "existing @profitia/maps-embed and apps/maps-runtime",
+  "entry": "Google Maps button on a protected COMPANY supplier report with server-resolved locationSubject",
+  "groups": [
+    "Siedziba i oddziały",
+    "Podmioty powiązane",
+    "Własne lokalizacje"
+  ],
+  "actions": [
+    "Open/close modal",
+    "Switch group",
+    "Page current records",
+    "Retry current read",
+    "Create manual location",
+    "Edit with expected version",
+    "Deactivate manual location"
+  ],
+  "manualForm": [
+    "Name",
+    "Street and number",
+    "Postal code",
+    "Locality",
+    "Country",
+    "Optional description",
+    "Optional complete latitude/longitude pair"
+  ],
+  "api": {
+    "method": "POST",
+    "path": "/api/supplier-locations",
+    "actions": [
+      "READ",
+      "SYNC",
+      "CREATE",
+      "UPDATE",
+      "DEACTIVATE"
+    ],
+    "identity": "Server-validated current E1 organisation and internal user; no client identity authority",
+    "writes": "Idempotency-Key; UPDATE/DEACTIVATE require expectedVersion; conflict requires current read",
+    "paging": "50 rows per UI page; visible lawful total and unresolved rows preserved"
+  },
+  "mapEvents": [
+    "Explicit user open loads embed",
+    "E1 channel performs fresh protected read",
+    "Current group/page projects minimal locations",
+    "Close/hidden-page/scope change/revocation destroys iframe and transient data"
+  ],
+  "states": [
+    "Loading",
+    "Source sync pending/unavailable",
+    "Empty group",
+    "Unlocated legal entity",
+    "Incomplete address",
+    "Branches NOT_CONFIRMED",
+    "Current coordinates",
+    "Map unavailable with postal list retained",
+    "Version conflict",
+    "Access revoked",
+    "Zero-budget geocoding WAITING_OWNER"
+  ],
+  "constraints": [
+    "No raw KYS/MGBI or actors in renderer",
+    "No browser persistence",
+    "No paid provider acquisition on open",
+    "Related entities are separate from supplier branches",
+    "No fabricated markers",
+    "Google attribution and existing runtime layout remain authoritative"
+  ],
+  "uxWork": [
+    "Refine modal/list/form layout within existing SRM canon",
+    "Improve source and unlocated status hierarchy",
+    "Design explicit deactivation feedback/confirmation",
+    "Validate keyboard and responsive layouts in final theme",
+    "Preserve CAS/idempotency and security teardown during redesign"
+  ],
+  "developmentEntryPoint": "https://srm-development-runtime.onrender.com",
+  "featureLiveAtEntryPoint": false,
+  "localBrowserProof": "Actual component plus built Maps iframe; synthetic local HTTP; no Google calls; not live user acceptance",
+  "releaseBlockers": [
+    "Controlled SQL019 and SQL013 installation with approved recovery and shared SRM/SG2 window",
+    "Exact runtime LKG/artifact/config/schema rollback proof",
+    "Ordinary-role cloud acceptance and authenticated two-user/two-organisation Development UAT",
+    "Adopt and verify existing private-source retention maintenance before persisting KYS derivatives"
+  ],
+  "liveGeocoding": "WAITING_OWNER",
+  "paidGeocodingBudget": 0,
+  "stagingChanged": false,
+  "productionChanged": false
+}

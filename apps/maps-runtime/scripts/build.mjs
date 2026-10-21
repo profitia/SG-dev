@@ -34,7 +34,7 @@ async function hashDirectory(folder) {
   }
 }
 await hashDirectory(dist)
-for (const name of ['package.json', 'package-lock.json', 'src/server/config.mjs', 'src/server/server.mjs', 'src/server/google/geocoding.mjs']) files[`runtime/${name}`] = createHash('sha256').update(await fs.readFile(path.join(root, name))).digest('hex')
+for (const name of ['package.json', 'package-lock.json', 'src/server/config.mjs', 'src/server/server.mjs', 'src/server/google/geocoding.mjs', 'src/server/geocoding-command.mjs']) files[`runtime/${name}`] = createHash('sha256').update(await fs.readFile(path.join(root, name))).digest('hex')
 const digest = createHash('sha256').update(JSON.stringify(files)).digest('hex')
 const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim()
 await fs.writeFile(path.join(dist, 'build-manifest.json'), JSON.stringify({sourceSha, digest, files}, null, 2))

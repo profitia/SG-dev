@@ -255,6 +255,10 @@ export async function readReportData(organizationId: string, selection: ReportSe
         [organizationId, selection.nip, frame.id, JSON.stringify({ ...scanner, referenceFrames:[frame], periods:scanner.periods.filter(p=>p.referenceFrameId===frame.id) })]);
     }
     report.kys.exportRef = report.kys.reportAvailable && row.kys ? kysExportRef(organizationId, selection, row.kys, process.env.SRM_DEMO_SESSION_SECRET) : null;
+    if(pool && selection.entityType === "COMPANY" && process.env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED === 'true') {
+      const subject=(await client.query<{id:string}>('SELECT id FROM srm.suppliers WHERE organization_id=$1 AND nip=$2',[organizationId,selection.nip])).rows;
+      if(subject.length===1)report.locationSubject={supplierId:subject[0].id};
+    }
     return report;
   }, pool);
 }

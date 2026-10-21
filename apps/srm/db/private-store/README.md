@@ -88,3 +88,95 @@ with the host and SQL fences. There is no fallback pool for the named path, no
 new audit writer and no HTTP endpoint or user-list UI adoption in this source
 increment. KYS and web identity remain CLOSED. A source acceptance test does not
 prove live directory, role, data, session or recovery readiness.
+
+## Optional supplier locations — SQL019 + SRM SQL013 (TASK02)
+
+This is a separate optional adoption after the existing private-store initializer.
+Do not append SQL013 to the eighteen pinned baseline migrations or change their
+manifest. `013-supplier-locations.sql` creates organisation/supplier collections,
+locations and an immutable installation receipt. Location authors reference E1
+accounts; authorship does not make the row personal. Runtime roles receive no
+direct table DML, default operation permissions, activation or paid allowance.
+
+The source is ready for a controlled Development installation; it is **not
+installed or activated** by this change. The target receipt is
+`../../deployment/supplier-location-targets.json`. Recompute its business digest
+from the exact SQL bytes at the accepted source SHA before installation. The
+current E1 prerequisites are package 1.24.0, Root candidate.16, SQL017 digest
+`a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94`, and SQL019
+digest `34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5`.
+
+The release operator must complete these gates, in order:
+
+1. Refresh authority and verify the exact accepted commit, Root eight-file digest,
+   both SQL byte digests, provider project/branch/database, ordinary runtime role
+   and controlled `profitia_access_owner` (NOLOGIN, NOINHERIT, no elevated flags or
+   inherited memberships). Record current installation descriptors and grants.
+2. Obtain an approved recovery point covering the **current** database, prove its
+   restore in an authorised isolated setting, and record the current Render LKG
+   commit, deployment/artifact ID and digest, configuration version and schema
+   state. An older backup or another task's restore receipt is not automatically
+   this task's recovery proof. Creating a new Neon branch/snapshot is reserved to
+   the owner. Do not create one implicitly.
+3. Obtain a coordinated Development window for **all applications in the shared
+   receiver**, including SRM and SG2. Drain protected work and disable bindings
+   lawfully; the SQL019/SQL013 guards require all bindings DISABLED. Do not turn
+   off an active service just to satisfy the guard. Re-read state immediately
+   before installation and preserve its pre-window status for restoration.
+4. In one outer transaction, under the controlled owner, execute the unchanged
+   accepted SQL019 installation procedure and its exact immutable receipt, then
+   the unchanged SQL013 bytes. Insert the one SQL013 receipt with schema version
+   `1.0.0`, the verified SQL013 SHA256 and accepted 40-character source commit.
+   Do not interpolate source or relax a guard. On any error roll back the entire
+   transaction. An uncertain COMMIT requires receipt readback before any retry.
+5. Grant only the required EXECUTE entry points to the ordinary HUMAN runtime:
+   `location_installation_descriptor`, `location_metadata`, `location_page`,
+   `location_manual_write`, `location_sync_target`, `location_sync_write`,
+   `location_expire`, `location_sources_admitted`, and
+   `location_work_catalog_row(text,text)` (the boolean catalog RLS helper).
+   Use their exact signatures from SQL013 and retain the separately adopted E1
+   SQL019 descriptor/evidence/permission/location-scope grants. Internal
+   SECURITY DEFINER helpers and tables receive no additional runtime privileges.
+   The fixture's explicit grant list is an executable reference, not cloud
+   installation authority. Never copy its test-only administrator seeding.
+6. Owner-review separate current `supplier.location.read`, `.write` and `.sync`
+   permissions and existing report/source rights. Read back FORCE RLS, ownership,
+   PUBLIC revocations, installation receipts and effective ordinary-role grants.
+   Before persisting KYS derivatives, adopt and prove the existing approved
+   private-source retention cleanup through the controlled expiry port; protected
+   read-time cleanup alone is not background retention acceptance.
+   Prove ordinary-role read/write/replay/audit/CAS, same-organisation sharing,
+   cross-organisation denial and revocation before restoring authorised bindings.
+7. Build the accepted source and verify the exact artefact and rollback. Initially
+   keep `PROFITIA_SUPPLIER_LOCATIONS_ENABLED=false`. After installation acceptance,
+   activate core A and presentation B only with
+   `PROFITIA_SUPPLIER_LOCATIONS_ENABLED=true` and
+   `PROFITIA_SUPPLIER_LOCATIONS_CONFIGURATION_VERSION=srm-supplier-locations-v1`
+   on the exact server-bound Development target. Verify actual authenticated
+   report refresh, persistence/reload, two users and two organisations. A source
+   test or feature flag alone is not release acceptance.
+
+Paid geocoding C is **independent and inactive**. The conditional request factory
+in `src/server/supplier-location-geocoding.ts` and command in Maps Runtime require
+an explicitly reviewed existing SERVICE executor, current execution grants,
+existing job binding, Source external-call host and owner-approved Google project,
+key restrictions and positive cost budget. There is no public geocoding proxy.
+Without that adoption they return WAITING_OWNER with zero provider attempts.
+Grant a reviewed HUMAN requester only `location_geocode_metadata`; grant the
+reviewed SERVICE only `location_geocode_target` / `location_geocode_store` plus
+the already accepted common Work/Source entry points, never direct table access.
+
+Shared Google coordinates use a 29-day cache, capped by private-source retention.
+Before enabling C, approve and prove an **existing** maintenance execution at most
+24 hours apart so physical expiry occurs within Google's 30-day ceiling.
+`location_expire_controlled()` is a controlled-owner-only SECURITY INVOKER port;
+do not grant it to HUMAN/SERVICE runtimes or create a scheduler as a side effect.
+Current protected reads also perform bounded expiry and withhold expired data.
+Private KYS-derived rows are removed at expiry; source-right revocation hides
+their data immediately. Manual postal data survives source refresh/expiry.
+
+Rollback starts by disabling the feature and stopping propagation, then restoring
+the verified prior runtime/configuration and approved database recovery where
+needed. Do not automatically reverse data migrations, drop populated tables or
+overwrite newer shared work. Recovery authority and executable proof remain
+mandatory before deployment.

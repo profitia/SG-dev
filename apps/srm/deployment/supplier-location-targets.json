@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationVersion": "srm-supplier-locations-v1",
+  "activationState": "NOT_ACTIVATED",
+  "environment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "runtimeRole": "srm_private_development_runtime",
+  "businessSchemaDigest": "b3f05a4c56f32bd32c0c59dcc8b60c486d4d4813823665301ce08318f793704b",
+  "sql019Digest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+  "paidGeocodingBudget": 0,
+  "mapsRuntimeOrigin": "https://profitia-maps-development-runtime.onrender.com",
+  "geocodingActivation": "WAITING_OWNER",
+  "sharedGoogleCacheMaintenance": "REQUIRES_APPROVED_AT_MOST_24H_OPERATOR_INTERVAL"
+}

@@ -46,3 +46,15 @@ test('candidate16 acceptance preserves the exact previous receipts and has no ru
   for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),accepted.sdkDigests[name],name)}
   assert.equal(accepted.sdkDigests.supplierLocationSchemaDigest,'34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5')
 })
+
+
+test('TASK02 has a separate current source receipt and keeps live activation closed',async()=>{
+ const current=receipt.supplierLocationFullStackAdoption
+ assert.equal(current.taskId,'SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021')
+ assert.equal(current.rootDigest,await operationSourceDigest());assert.equal(current.environment,'development')
+ assert.equal(current.defaultEnabled,false);assert.equal(current.sql019Installed,false);assert.equal(current.productDeploymentPerformed,false)
+ assert.equal(current.paidGeocodingAllowance,0);assert.equal(current.liveGeocoding,'WAITING_OWNER')
+ for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+ const before=JSON.parse(execFileSync('git',['show',current.previousAuthority+':apps/srm/operation-integration.json'],{encoding:'utf8'}))
+ for(const[key,value]of Object.entries(before))assert.deepEqual(receipt[key],value,key)
+})

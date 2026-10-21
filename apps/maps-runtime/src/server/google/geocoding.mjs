@@ -27,6 +27,7 @@ export async function geocodeAddress(address, {apiKey, fetch: request = fetch, t
     if (!Array.isArray(body.results) || body.results.length !== 1 || body.results[0].partial_match) return {status: 'unresolved', reason: 'ambiguous'}
     const result = body.results[0], position = result.geometry?.location
     if (!position || !Number.isFinite(position.lat) || !Number.isFinite(position.lng) || Math.abs(position.lat) > 90 || Math.abs(position.lng) > 180) return {status: 'unavailable', reason: 'invalid-response'}
+    if (result.geometry.location_type !== 'ROOFTOP') return {status: 'unresolved', reason: 'low-precision'}
     // Only coordinates/place ID: no Google-formatted address is stored or mapped onto customer labels.
     return {status: 'resolved', position: {lat: position.lat, lng: position.lng}, ...(typeof result.place_id === 'string' ? {placeId: result.place_id} : {})}
   } catch {return {status: 'unavailable', reason: signal?.aborted ? 'cancelled' : 'delivery-unverified'}}
