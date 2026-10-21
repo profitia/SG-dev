@@ -1,0 +1,230 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-SUPPLIER-LOCATIONS-E1-CI-20261021",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "classification": "CANDIDATE_NOT_ADOPTED",
+  "status": "CONDITIONAL",
+  "repository": "profitia/SG-dev",
+  "producerPr": "https://github.com/profitia/SG-dev/pull/594",
+  "producerSourceSha": "88c3337d943fa3893f2f357bb11b78c565e50047",
+  "packageVersion": "1.24.0",
+  "contract": {
+    "id": "profitia.operation-context",
+    "version": "1.0.0",
+    "implementation": "1.0.0-candidate.16",
+    "sourceDigest": "9fe1ee707bb5510e66cbe9470ba970de177f8a6fe4533470f771af88d68bf728"
+  },
+  "operationCatalogueRevision": "1.3.0",
+  "feature": "supplier_report",
+  "product": "SUPPLIER_INTELLIGENCE",
+  "operations": {
+    "supplier.location.read": {
+      "effect": "READ",
+      "resource": "supplier_location_collection",
+      "ownership": "ORGANISATION_PRIVATE",
+      "creatorFilter": false
+    },
+    "supplier.location.write": {
+      "effect": "WRITE",
+      "resource": "supplier_location",
+      "actions": [
+        "CREATE",
+        "UPDATE",
+        "DEACTIVATE"
+      ],
+      "idempotency": "EXISTING_REQUEST_LEDGER",
+      "usageUnit": "FINITE_LOCAL_COMMAND_COUNT",
+      "implicitExternalEffect": false
+    },
+    "supplier.location.sync": {
+      "effect": "REQUEST_COMPUTE",
+      "resource": "supplier_location_sync_request",
+      "sources": "EXISTING_ACCEPTED_MGBI_KYS_VERSIONS",
+      "paidAcquisition": false
+    },
+    "supplier.location.geocode": {
+      "effect": "REQUEST_EXTERNAL",
+      "resource": "supplier_location_geocode_request",
+      "defaultPaidAllowance": 0,
+      "requires": [
+        "EXACT_ADDRESS_VERSION",
+        "APPROVED_EXECUTOR",
+        "ROOT_INTENT_RESERVATION",
+        "SOURCE_PROVIDER_BUDGET",
+        "PLAN_ATTEMPT_SETTLE",
+        "NO_BLIND_RETRY",
+        "CURRENT_RESULT_ACCEPTANCE"
+      ]
+    }
+  },
+  "installation": {
+    "status": "SOURCE_ONLY",
+    "path": "packages/platform-contracts/migrations/access/019-supplier-location-operations.sql",
+    "schemaVersion": "1.0.0",
+    "schemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+    "prerequisite": "Exact existing SQL017 plus its historical chain; controlled NOLOGIN owner and disabled applications",
+    "liveProductInstallationPerformed": false,
+    "localOrdinaryRoleValidation": "PASS",
+    "grantsAutomaticallyCreated": false,
+    "rollback": "No live mutation. Future installation requires its own verified LKG/snapshot, exact artifact/config/migration receipts and tested rollback before activation."
+  },
+  "protectedWork": {
+    "producerTests": "PASS",
+    "primitive": "EXISTING_REQUEST_JOB_NATIVE_WORK_SOURCE",
+    "humanInitiatorDistinctFromService": true,
+    "privateKysRetentionAndSourceRights": "RECHECK_CURRENT",
+    "mapsExecutorConfigured": false,
+    "externalSourceConfigured": false
+  },
+  "validation": {
+    "producerSuite": {
+      "tests": 1268,
+      "pass": 1268,
+      "fail": 0,
+      "skip": 0
+    },
+    "focusedLocationSuite": {
+      "tests": 97,
+      "pass": 97,
+      "fail": 0,
+      "skip": 0
+    },
+    "producerBuild": "PASS",
+    "types": "PASS_IN_PRODUCER_SUITE",
+    "executionPreflight": "PASS",
+    "e0ConsumerAdoptionTests": {
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "skip": 0
+    },
+    "newE1ConsumerAdoption": "PENDING_SEPARATE_OWNER_TASKS",
+    "unchangedCandidateGovernanceTests": {
+      "tests": 68,
+      "pass": 66,
+      "fail": 2,
+      "skip": 0,
+      "expectedBlockers": [
+        "LOCAL_PACKAGE_VERSION_MISMATCH",
+        "CONTRACT_IMPLEMENTATION_MISMATCH"
+      ]
+    },
+    "mapsCandidateCI": {
+      "run": "https://github.com/profitia/SG-dev/actions/runs/39612866867",
+      "pass": 11,
+      "fail": 1,
+      "skip": 0,
+      "reason": "Existing Maps local package/acceptance remains pinned to1.23.0 while candidate is1.24.0; separate owner acceptance required"
+    }
+  },
+  "controlledCI": {
+    "status": "PASS",
+    "policyPr": "https://github.com/profitia/SG-dev/pull/592",
+    "policyCandidateSha": "d358490f7402ad6edb99d5d2d782480aa6c1e0a4",
+    "trustedMainSha": "77f68f8e90e28551d03b9b4a11b75dc71b8c3ed8",
+    "policyDigest": "bc8ddaa1af9db57e27425c1c48b831e8df14c4e43ec34786f64cba6ab59f49df",
+    "localPolicyTests": {
+      "tests": 44,
+      "pass": 44,
+      "fail": 0,
+      "skip": 0
+    },
+    "pr590ExactSha": "69fabecafce9712e7cbe6f41bc363885d897f6f0",
+    "pr590ProofRun": "https://github.com/profitia/SG-dev/actions/runs/39611811505",
+    "pr590ProofJob": "https://github.com/profitia/SG-dev/actions/runs/39611811505/job/119262328417",
+    "independentProofReadback": "PASS",
+    "producerCandidateExactConsumerProof": "BLOCKED_UNTIL_EXPLICIT_CONSUMER_ADOPTION",
+    "mainOnlyEnvironmentUnchanged": true,
+    "credentialsRemovedBeforeCandidateExecution": true,
+    "privatePackageArtifactsPublished": false
+  },
+  "consumerAdoptionRequired": [
+    {
+      "owner": "SRM",
+      "action": "Separately register consumer adoption, pin producer SHA/version/digests and static candidate16 eight-file provenance, refresh exact private host/job/work/request metadata and local package lock, run complete tests/types/build; do not silently rewrite historical receipts."
+    },
+    {
+      "owner": "SG2",
+      "action": "Separately register compatibility adoption of candidate16, current host digests and local package version/lock; retain current behaviour and pass exact-SHA controlled CI. No supplier UI is required."
+    },
+    {
+      "owner": "SRM TASK02",
+      "action": "Implement domain composite organisation/supplier/location FKs, server-resolved identity and source records, org-owned manual CRUD with creator/last-editor, atomic version-qualified write, reconciliation/upsert keys and lawful replay. Collection reads must enumerate current permitted source rows, withhold expired private sources and never use creator-only filtering."
+    },
+    {
+      "owner": "Maps/Source",
+      "action": "Separately adopt existing bounded Maps executor and external source with exact approved binding, organisation/provider Root+Source policies and default budget zero; recheck actual current address/supplier/source before transmission and accepting results."
+    },
+    {
+      "owner": "SRM-owned Maps Runtime",
+      "action": "Separately accept producer1.24.0 in the existing local dependency/lock and connector acceptance tests; no product mounting or paid geocoding is implied."
+    }
+  ],
+  "ownerControlledGoogleConfiguration": {
+    "requiredNow": false,
+    "changedByThisTask": false,
+    "futureRequirements": [
+      "Verify existing development project/API keys and referrer/API restrictions for Maps JavaScript API",
+      "Separate server credential/source restriction for geocoding; never reuse exposed browser credential",
+      "Explicit owner-approved finite organisation/provider budget before any paid attempt",
+      "Verify applicable EEA/provider coordinate retention and shared organisation use; never infer unlimited shared retention from per-user exceptions"
+    ]
+  },
+  "unresolvedGates": [
+    {
+      "owner": "SG2, SRM and SRM-owned Maps Runtime",
+      "gate": "EXPLICIT_CANDIDATE16_ACCEPTANCE_AND_GREEN_CONSUMER_CI",
+      "blocks": "Producer merge/publication as accepted authority and unconditional TASK02 dependency readiness"
+    },
+    {
+      "owner": "Separately authorised installation/release task",
+      "gate": "LIVE_SQL019_AND_MINIMAL_GRANTS_WITH_VERIFIED_ROLLBACK",
+      "blocks": "Live location runtime use"
+    },
+    {
+      "owner": "SRM/Maps consumer tasks",
+      "gate": "DOMAIN_WRITER_AND_BOUNDED_SOURCE_EXECUTOR_ADOPTION",
+      "blocks": "User-facing functionality and paid effects"
+    }
+  ],
+  "srmConsumerAdoptionPerformed": false,
+  "mapsConsumerAdoptionPerformed": false,
+  "productDeploymentPerformed": false,
+  "producerChangedFiles": [
+    "Canon/registries/operation-access-matrix-v1.json",
+    "Canon/v1.0-operation-context-and-access-contract.md",
+    "apps/architecture-lab/test/request-continuation-postgres.test.mjs",
+    "apps/architecture-lab/test/supplier-location-postgres.test.mjs",
+    "packages/platform-contracts/migrations/access/019-supplier-location-operations.sql",
+    "packages/platform-contracts/package-lock.json",
+    "packages/platform-contracts/package.json",
+    "packages/platform-contracts/src/delegated-job.d.mts",
+    "packages/platform-contracts/src/delegated-job.mjs",
+    "packages/platform-contracts/src/operation-context.d.mts",
+    "packages/platform-contracts/src/operation-context.mjs",
+    "packages/platform-contracts/src/private-operation-host.d.mts",
+    "packages/platform-contracts/src/private-operation-host.mjs",
+    "packages/platform-contracts/src/request-ledger.d.mts",
+    "packages/platform-contracts/src/request-ledger.mjs",
+    "packages/platform-contracts/src/request-operations.d.mts",
+    "packages/platform-contracts/src/request-operations.mjs",
+    "packages/platform-contracts/src/request-work.d.mts",
+    "packages/platform-contracts/src/request-work.mjs",
+    "packages/platform-contracts/src/supplier-location.d.mts",
+    "packages/platform-contracts/src/supplier-location.mjs",
+    "packages/platform-contracts/test/operation-context.test.mjs",
+    "packages/platform-contracts/test/private-operation-host.test.mjs",
+    "packages/platform-contracts/test/request-operations.test.mjs",
+    "packages/platform-contracts/test/service-read.test.mjs",
+    "packages/platform-contracts/test/supplier-location.test.mjs",
+    "packages/platform-contracts/test/types/supplier-location.mts"
+  ],
+  "ciPolicyChangedFiles": [
+    ".github/workflows/platform-contracts-ci.yml",
+    "Canon/runbooks/controlled-package-ci-v1.md",
+    "scripts/governance/controlled-package-ci.mjs",
+    "scripts/governance/controlled-package-ci.test.mjs"
+  ],
+  "memoros": "DISABLED_BY_PROFILE"
+}

@@ -35,7 +35,7 @@ test('SG2 explicitly receives the peer identity producer without enabling cross-
   assert.equal(accepted.previousApplicationAuthority, 'c82d400ab53783376fefecd487131b0ef6812ad8')
   assert.equal(accepted.identityDigest, await identitySourceDigest())
   const previous = JSON.parse(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
-  for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(['contract','producer'].includes(key) ? receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   const root = new URL('../', pathToFileURL(createRequire(import.meta.url).resolve('@profitia/platform-contracts/identity-provider')))
   assert.deepEqual(Object.keys(accepted.sdkSourceDigests).sort(), ['src/identity-provider.d.mts', 'src/identity-provider.mjs'])
   for (const [path, digest] of Object.entries(accepted.sdkSourceDigests)) {
@@ -99,7 +99,7 @@ test('the public identity adoption preserves historical receipts and pins the co
   assert.equal(adoption.producer.projectKey, 'ARCHITECTURE'); assert.equal(adoption.producer.sourceSha, '74df44d1f0d6df66e358bd432ebd80c3c955f70a')
   assert.equal(adoption.sdkDigest, await publicIdentityRequestSourceDigest())
   const previous = JSON.parse(execFileSync('git', ['show', adoption.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
-  for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(['contract','producer'].includes(key) ? receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   for (const [path, digest] of Object.entries(adoption.sourceDigests)) {
     assert.equal(createHash('sha256').update(execFileSync('git', ['show', 'c82d400ab53783376fefecd487131b0ef6812ad8:apps/sg-runtime/' + path])).digest('hex'), digest, path)
   }
@@ -175,11 +175,11 @@ test('stored readiness source repair preserves prior acceptance and pins its com
   assert.equal(accepted.taskId, 'SG2-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020')
   assert.equal(accepted.previousApplicationAuthority, 'f1f606cbb884d9eaaae99028f46d1c72d0eaac77')
   const previous = JSON.parse(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
-  for (const [key, value] of Object.entries(previous)) assert.deepEqual(receipt[key], value, key)
+  for (const [key, value] of Object.entries(previous)) assert.deepEqual(['contract','producer'].includes(key) ? receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   for (const path of Object.keys(previous.peerReadIdentityAdoption.sourceDigests)) assert(path in accepted.sourceDigests, path)
   for (const path of ['lib/forecast/stored-current-read.ts','lib/forecast/stored-readiness-read.ts','lib/forecast/stored-verification-read.ts','lib/forecast/rolling-daily-verification.ts',
     'tests/rolling-daily-verification.test.ts','tests/private-host.integration.test.mjs','tests/identity-runtime.test.ts']) assert(path in accepted.sourceDigests, path)
-  for (const [path, digest] of Object.entries(accepted.sourceDigests))
+  for (const [path, digest] of Object.entries({ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests }))
     assert.equal(createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex'), digest, path)
   assert.equal(accepted.productDeploymentPerformed, false)
 })

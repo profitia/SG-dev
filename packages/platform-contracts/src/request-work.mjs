@@ -19,9 +19,9 @@ export async function requestWorkSourceDigest(){const fs=await import('node:fs')
  * creates neither a second effect ledger nor a permission to call a provider. */
 export function createRequestWorkScope({binding,work,now=Date.now}){
  const targetOperation=work?.targetOperation??'supplier.report.refresh',target=requestOperationPolicy(targetOperation)
- const extra=target?.additional?['targetOperation','operationSchemaDigest']:[]
+ const extra=target?.additional?['targetOperation','operationSchemaDigest',...(target?.location?['locationSchemaDigest']:[])]:[]
  if(!target?.nativeWork||!binding?.service||typeof now!=='function'||!exact(work,['requestId','unitId','accessMode','inputDigest','schemaDigest',...extra])
-  ||target.additional&&!digest.test(work.operationSchemaDigest??'')
+  ||target.additional&&!digest.test(work.operationSchemaDigest??'')||target.location&&!digest.test(work.locationSchemaDigest??'')
   ||!uuid.test(work.requestId??'')||!unit.test(work.unitId??'')||!['READ','WRITE'].includes(work.accessMode)
   ||!digest.test(work.inputDigest??'')||!digest.test(work.schemaDigest??''))throw TypeError('Explicit current native SQL work unit required')
  const b=freeze(structuredClone(binding)),c=freeze(structuredClone(work)),handles=new WeakMap()
@@ -31,7 +31,7 @@ export function createRequestWorkScope({binding,work,now=Date.now}){
   if(!d||d.schemaVersion!=='1.0.0'||d.schemaDigest!==c.schemaDigest||d.owner!=='profitia_access_owner'
    ||!['applicationId','environment','projectId','branchId','databaseName','role'].every(k=>d[k]===b[k])
    ||d.requestId!==c.requestId||d.unitId!==c.unitId||d.accessMode!==c.accessMode||d.effect!=='PRIVATE_SQL_WORK'
-   ||d.operation!==targetOperation||target.additional&&(d.operationSchemaVersion!=='1.0.0'||d.operationSchemaDigest!==c.operationSchemaDigest)||!digest.test(d.payloadDigest??'')||!integer.test(d.policyVersion??'')
+   ||d.operation!==targetOperation||target.location&&(d.locationSchemaVersion!=='1.0.0'||d.locationSchemaDigest!==c.locationSchemaDigest)||target.additional&&(d.operationSchemaVersion!=='1.0.0'||d.operationSchemaDigest!==c.operationSchemaDigest)||!digest.test(d.payloadDigest??'')||!integer.test(d.policyVersion??'')
    ||!integer.test(d.transactionId??'')||!['executorServiceId','subjectUserId','organisationId','delegationId'].every(k=>uuid.test(d[k]??''))
    ||typeof d.parentApplicationId!=='string'||!d.parentApplicationId.length||typeof d.resourceId!=='string'||!d.resourceId.length
    ||typeof d.sourceRef!=='string'||d.sourceRef.length<1||d.sourceRef.length>256

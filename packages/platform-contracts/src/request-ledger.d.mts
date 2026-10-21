@@ -13,9 +13,9 @@ export interface RequestReceipt {readonly requestId:string;readonly status:'ACCE
 export type RequestReservation = Readonly<{status:'NEW';requestId:string;policyId:string;policyVersion:string;transactionId:string}>
   | Readonly<{status:'REPLAY';requestId:string;policyId:string;policyVersion:string;transactionId:string;value:RequestReceipt}>
 export declare function validRequestIdempotencyKey(value:unknown):value is string
-export declare function createRequestLedger(options:{binding:AccessStoreBinding;schemaDigest:string;now?:()=>number}&({operation?:'forecast.request';externalSchemaDigest?:never;operationSchemaDigest?:never}|{operation:'supplier.report.refresh';externalSchemaDigest:string;operationSchemaDigest?:never}|{operation:import('./request-operations.mjs').AdditionalRequestOperation;externalSchemaDigest:string;operationSchemaDigest:string})):Readonly<{
+export declare function createRequestLedger(options:{binding:AccessStoreBinding;schemaDigest:string;now?:()=>number}&({operation?:'forecast.request';externalSchemaDigest?:never;operationSchemaDigest?:never;locationSchemaDigest?:never}|{operation:'supplier.report.refresh';externalSchemaDigest:string;operationSchemaDigest?:never;locationSchemaDigest?:never}|{operation:import('./request-operations.mjs').AdditionalRequestOperation;externalSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest?:never}|{operation:import('./request-operations.mjs').LocationRequestOperation;externalSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest:string})):Readonly<{
   contract:typeof REQUEST_LEDGER_CONTRACT
-  loadPolicy(query:AccessQuery,input:{actor:Readonly<Actor>;request:Readonly<BoundRequest>}):Promise<Readonly<RequestPolicy>>
+  loadPolicy(query:AccessQuery,input:{actor:Readonly<Actor>;request:Readonly<BoundRequest>;resource?:Readonly<import('./operation-context.mjs').Resource>}):Promise<Readonly<RequestPolicy>>
   reserve(query:AccessQuery,policy:Readonly<RequestPolicy>,context:Readonly<OperationContext>):Promise<RequestReservation>
   complete(query:AccessQuery,policy:Readonly<RequestPolicy>,reservation:RequestReservation,context:Readonly<OperationContext>,value:unknown):Promise<void>
 }>

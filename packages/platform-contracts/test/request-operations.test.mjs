@@ -56,7 +56,7 @@ for(const operation of ['supplier.private.refresh','benchmark.discovery.request'
  test(operation+': current replay never repeats the request action',async()=>{const f=fixture(operation);f.controls.replay=true;await f.execute();assert.equal(f.actions,0);assert.equal(f.completes,0);f.state.access.status='REVOKED';await assert.rejects(f.execute(),denied('ACCESS_BASIS_INVALID'))})
 }
 test('closed immutable request metadata adds no wildcard, inherited permission or forecast work',async()=>{
- assert.deepEqual(REQUEST_OPERATIONS,['forecast.request','supplier.report.refresh','supplier.private.refresh','benchmark.discovery.request'])
+ assert.deepEqual(REQUEST_OPERATIONS,['forecast.request','supplier.report.refresh','supplier.private.refresh','benchmark.discovery.request','supplier.location.write','supplier.location.sync','supplier.location.geocode'])
  for(const op of REQUEST_OPERATIONS){const p=requestOperationPolicy(op);assert(Object.isFrozen(p));assert(Object.isFrozen(p.profiles))}
  for(const op of['toString','__proto__','supplier.private.read','knowledge.read',null,{}])assert.equal(requestOperationPolicy(op),null)
  assert.equal(requestOperationPolicy('forecast.request').nativeWork,false)

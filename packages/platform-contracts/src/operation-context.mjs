@@ -1,9 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto'
 import {requestOperationPolicy} from './request-operations.mjs'
+import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence} from './supplier-location.mjs'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.15' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.16' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
-const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
+const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
 // Explicit implementation, not an interpreter of the target specification JSON.
 // Everything outside this bounded candidate is denied, including billing.
@@ -26,6 +27,10 @@ const rules = Object.freeze({
   'supplier.report.refresh': rule('supplier_report', 'supplier_report_request', 'OPERATION_AUDIT', 'REQUEST_EXTERNAL', 'SUPPLIER_INTELLIGENCE'),
   'supplier.private.refresh': rule('supplier_report', 'supplier_private_request', 'OPERATION_AUDIT', 'REQUEST_EXTERNAL', 'SUPPLIER_INTELLIGENCE'),
   'benchmark.discovery.request': rule('benchmark', 'benchmark_discovery_request', 'OPERATION_AUDIT', 'REQUEST_EXTERNAL', 'SPENDGURU'),
+  'supplier.location.read': rule('supplier_report','supplier_location_collection','ORGANISATION_PRIVATE','READ','SUPPLIER_INTELLIGENCE'),
+  'supplier.location.write': rule('supplier_report','supplier_location','ORGANISATION_PRIVATE','WRITE','SUPPLIER_INTELLIGENCE'),
+  'supplier.location.sync': rule('supplier_report','supplier_location_sync_request','OPERATION_AUDIT','REQUEST_COMPUTE','SUPPLIER_INTELLIGENCE'),
+  'supplier.location.geocode': rule('supplier_report','supplier_location_geocode_request','OPERATION_AUDIT','REQUEST_EXTERNAL','SUPPLIER_INTELLIGENCE'),
   'benchmark.discovery.read': rule('benchmark', 'benchmark_discovery_result', 'USER_IN_ORGANISATION_PRIVATE', 'READ', 'SPENDGURU'),
   // AM27 authorises the private dispatch boundary. Publication of shared
   // effects requires its own AM26 source authority and durable receipt.
@@ -117,6 +122,39 @@ function privateSupplierDescriptor(resource, time) {
     || typeof d.snapshotId !== 'string' || !computeUuid.test(d.snapshotId) || resource.version !== d.snapshotId || resource.ownerUserId !== null
     || !validUntil(d.retentionUntil, time) || new Date(d.retentionUntil).toISOString() !== d.retentionUntil) deny('RESOURCE_SCOPE_MISMATCH')
   return d
+}
+
+function locationEvidence(state,request,context,identity,config,moduleEvidence,time,delegatedSubject=null){
+ if(!SUPPLIER_LOCATION_OPERATIONS.includes(request.operation)){
+  if(state.resource?.supplierLocation!==undefined)deny('RESOURCE_SCOPE_MISMATCH')
+  return null
+ }
+ if((identity.kind!=='HUMAN'&&!(identity.kind==='SERVICE'&&computeUuid.test(delegatedSubject??'')&&context.subjectUserId===delegatedSubject))||moduleEvidence?.moduleId!=='supplier_report')deny('DELEGATION_INVALID')
+ let e;try{e=normalizeSupplierLocationEvidence(state.resource.supplierLocation,{environment:context.environment,organisationId:context.organisationId,now:()=>time})}catch{deny('RESOURCE_SCOPE_MISMATCH')}
+ const p=request.payload,keys=['action','supplierId','locationId','addressVersion','expectedVersion','command']
+ if(!p||Object.getPrototypeOf(p)!==Object.prototype||Object.keys(p).sort().join(',')!==keys.sort().join(',')
+  ||p.supplierId!==e.supplierId||p.locationId!==e.locationId||p.addressVersion!==e.addressVersion
+  ||operationPayloadDigest(p.command)!==e.commandDigest||Buffer.byteLength(canonical(p))>16384)deny('RESOURCE_SCOPE_MISMATCH')
+ const op=request.operation
+ if(op==='supplier.location.read'&&(p.action!=='READ'||e.origin!=='COLLECTION'||e.locationId!==null||p.expectedVersion!==null||p.command!==null||e.executorApplicationId!==null))deny('RESOURCE_SCOPE_MISMATCH')
+ if(op==='supplier.location.write'&&(!['CREATE','UPDATE','DEACTIVATE'].includes(p.action)||e.origin!=='MANUAL'||e.locationId!==state.resource.id||e.executorApplicationId!==null
+  ||(p.action==='CREATE'?(e.serverAssignedId!==true||p.expectedVersion!==null):(!e.exists||!nonempty(p.expectedVersion)))))deny('RESOURCE_SCOPE_MISMATCH')
+ if(op==='supplier.location.sync'&&(p.action!=='SYNC'||e.origin!=='COLLECTION'||e.locationId!==null||!e.sources.length||!nonempty(p.expectedVersion)||e.executorApplicationId!==null))deny('RESOURCE_SCOPE_MISMATCH')
+ if(op==='supplier.location.sync'){
+  if(!p.command||Object.getPrototypeOf(p.command)!==Object.prototype||Object.keys(p.command).join(',')!=='sources'||!Array.isArray(p.command.sources)
+   ||p.command.sources.length!==e.sources.length||p.command.sources.some((s,i)=>!s||Object.getPrototypeOf(s)!==Object.prototype
+    ||Object.keys(s).sort().join(',')!=='id,version'||s.id!==e.sources[i].resource.id||s.version!==e.sources[i].resource.version))deny('RESOURCE_SCOPE_MISMATCH')
+ }
+ if(op==='supplier.location.geocode'&&(p.action!=='GEOCODE'||!e.exists||e.locationId===null||!nonempty(e.addressVersion)||!nonempty(p.expectedVersion)||!nonempty(e.executorApplicationId)
+  ||!p.command||Object.keys(p.command).sort().join(',')!=='address,executorApplicationId'||p.command.executorApplicationId!==e.executorApplicationId
+  ||typeof p.command.address!=='string'||p.command.address.trim().length<1||p.command.address.length>512))deny('RESOURCE_SCOPE_MISMATCH')
+ for(const source of e.sources){
+  const operation=source.kind==='MGBI'?'supplier.report.read':'supplier.private.read'
+  if(!config.operations.includes(operation)||!permission(state.access,operation,'supplier_report',source.resource.id))deny('PERMISSION_DENIED')
+  checkResource(source.resource,{...context,operation},rules[operation])
+  if(source.kind==='KYS')privateSupplierDescriptor(source.resource,time)
+ }
+ return e
 }
 
 function checkResource(resource, context, expected) {
@@ -212,6 +250,7 @@ function delegatedJob(state, identity, request, config, time) {
   checkResource(t.resource,context,selected)
   if(t.resource.id!==t.resourceId || t.resource.ownerUserId!==subject) deny('RESOURCE_SCOPE_MISMATCH')
   const products=productAvailable({access:t.access,products:t.products},selected.product,selected.feature,a,ceiling,time)
+  if(target.location)locationEvidence({resource:t.resource,access:t.access},{...request,operation:t.operation,resourceId:t.resourceId},{...context,subjectUserId:subject},identity,a,{moduleId:t.module.id},time,subject)
   return {delegation:freeze(structuredClone(d)),subjectUserId:subject,products}
 }
 
@@ -261,7 +300,8 @@ export function createOperationExecutor(options) {
         if (!config.features.includes(selected.feature)) deny('APPLICATION_FEATURE_UNAVAILABLE')
         if (typeof action !== 'function' || !nonempty(input.resourceId) || !(input.organisationId === null || nonempty(input.organisationId))) deny('CONTEXT_INVALID')
         const payload = freeze(JSON.parse(canonical(input.payload)))
-        const compute = ['REQUEST_COMPUTE','REQUEST_EXTERNAL'].includes(selected.effect)
+        // Manual WRITE uses the same atomic private request ledger for replay, never external permission.
+        const compute = ['REQUEST_COMPUTE','REQUEST_EXTERNAL'].includes(selected.effect)||input.operation==='supplier.location.write'
         const platform=selected.mode==='PLATFORM'
         if (compute||platform ? typeof input.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{24,128}$/.test(input.idempotencyKey)
           : input.idempotencyKey != null) deny('CONTEXT_INVALID')
@@ -303,8 +343,9 @@ export function createOperationExecutor(options) {
           audit = { ...context }
           if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
-          if (state.resource.id !== request.resourceId || compute && state.resource.ownerUserId !== identity.userId) deny('RESOURCE_SCOPE_MISMATCH')
+          if (state.resource.id !== request.resourceId || compute && request.operation!=='supplier.location.write' && state.resource.ownerUserId !== identity.userId) deny('RESOURCE_SCOPE_MISMATCH')
           if(request.operation==='benchmark.discovery.read'&&(identity.kind!=='HUMAN'||moduleEvidence?.moduleId!=='benchmark'))deny('APPLICATION_FEATURE_UNAVAILABLE')
+          const location=locationEvidence(state,request,context,identity,config,moduleEvidence,now())
           let privateSupplierInput
           if (privateSupplierOperations.has(request.operation)) {
             if (identity.kind !== 'HUMAN') deny('DELEGATION_INVALID')
@@ -461,6 +502,9 @@ export function createOperationExecutor(options) {
             bound=freeze({...bound,platformReservation:{effectId:sourceReservation.effectId,replay:sourceReservation.status==='REPLAY',
               policyId:sourceReservation.policyId,policyVersion:sourceReservation.policyVersion}})
           }
+          if(location&&reservation?.status==='NEW'){
+            if(request.operation==='supplier.location.write'&&payload.action==='CREATE'?location.exists:payload.expectedVersion!==location.targetVersion)deny('RESOURCE_VERSION_CONFLICT')
+          }
           const value = privateReservation?.status==='REPLAY'?privateReservation.value:reservation?.status === 'REPLAY' ? reservation.value : sourceReservation?.status==='REPLAY'?sourceReservation.receipt:await action(bound, session.transaction)
           if(working){if(!computeReceipt(value,request.resourceId))deny('POLICY_UNAVAILABLE');await session.verifyWork(bound)}
           if(inspecting){if(!computeReceipt(value,request.resourceId))deny('POLICY_UNAVAILABLE');await session.verifyInspection(bound)}
@@ -483,6 +527,7 @@ export function createOperationExecutor(options) {
             privateSupplierDescriptor(bound.resource, now())
             if (privateSupplierInput) privateSupplierDescriptor(privateSupplierInput, now())
           }
+          if(location)locationEvidence(state,request,context,identity,config,moduleEvidence,now())
           const outcome = session.describeOutcome === undefined ? 'SUCCEEDED' : await session.describeOutcome(output, bound)
           if (!['SUCCEEDED', 'NO_DATA', 'SELECTION_UNAVAILABLE'].includes(outcome)) deny('POLICY_UNAVAILABLE')
           if (!validUntil(identity.expiresAt, now()) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
@@ -521,5 +566,5 @@ export function createOperationExecutor(options) {
 
 export function operationSourceDigest() {
   // Kept outside the decision path: consumers bind the implementation and types.
-  return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL('./operation-context.mjs', import.meta.url))).update(fs.readFileSync(new URL('./operation-context.d.mts', import.meta.url))).update(fs.readFileSync(new URL('./request-operations.mjs',import.meta.url))).update(fs.readFileSync(new URL('./request-operations.d.mts',import.meta.url))).update(fs.readFileSync(new URL('../migrations/access/017-additional-request-operations.sql',import.meta.url))).digest('hex'))
+  return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL('./operation-context.mjs', import.meta.url))).update(fs.readFileSync(new URL('./operation-context.d.mts', import.meta.url))).update(fs.readFileSync(new URL('./request-operations.mjs',import.meta.url))).update(fs.readFileSync(new URL('./request-operations.d.mts',import.meta.url))).update(fs.readFileSync(new URL('../migrations/access/017-additional-request-operations.sql',import.meta.url))).update(fs.readFileSync(new URL('./supplier-location.mjs',import.meta.url))).update(fs.readFileSync(new URL('./supplier-location.d.mts',import.meta.url))).update(fs.readFileSync(new URL('../migrations/access/019-supplier-location-operations.sql',import.meta.url))).digest('hex'))
 }

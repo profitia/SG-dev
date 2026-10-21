@@ -1,3 +1,4 @@
+import {normalizeSupplierLocationEvidence} from './supplier-location.mjs'
 import {requestOperationsSourceDigest} from './request-operations.mjs'
 import { createHash } from 'node:crypto'
 import { OperationDenied } from './operation-context.mjs'
@@ -26,9 +27,9 @@ function receipt(value,id){return exact(value,['requestId','status'])&&value.req
 
 /** No connection, new access policy, command payload, compute or queue. This
  * adapter uses the existing host's current scoped SQL transaction only. */
-export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,operationSchemaDigest,now=Date.now}){
-  const target=requestOperationPolicy(operation),external=target?.external
-  if(!target||(target.additional?!digest.test(operationSchemaDigest??''):operationSchemaDigest!==undefined)||(external?!digest.test(externalSchemaDigest??''):externalSchemaDigest!==undefined))throw new TypeError('Explicit accepted request operation/schema extension required')
+export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,operationSchemaDigest,locationSchemaDigest,now=Date.now}){
+  const target=requestOperationPolicy(operation),external=target?.external||target?.location
+  if(!target||(target.location?!digest.test(locationSchemaDigest??''):locationSchemaDigest!==undefined)||(target.additional?!digest.test(operationSchemaDigest??''):operationSchemaDigest!==undefined)||(external?!digest.test(externalSchemaDigest??''):externalSchemaDigest!==undefined))throw new TypeError('Explicit accepted request operation/schema extension required')
   const config=freeze(structuredClone(binding))
   if(!config||config.service!==undefined||!digest.test(schemaDigest??'')||typeof now!=='function'
     ||!['applicationId','projectId','branchId','databaseName','role'].every(k=>text(config[k]))
@@ -41,9 +42,10 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
     return result.rows[0]
   }
   async function descriptor(query){
-    const d=(await one(query,target.additional?'SELECT profitia_requests.operation_runtime_descriptor() AS descriptor':external?'SELECT profitia_requests.external_runtime_descriptor() AS descriptor':'SELECT profitia_requests.runtime_descriptor() AS descriptor')).descriptor
+    const d=(await one(query,target.location?'SELECT profitia_requests.location_runtime_descriptor() AS descriptor':target.additional?'SELECT profitia_requests.operation_runtime_descriptor() AS descriptor':external?'SELECT profitia_requests.external_runtime_descriptor() AS descriptor':'SELECT profitia_requests.runtime_descriptor() AS descriptor')).descriptor
     if(!d||d.schemaVersion!==REQUEST_LEDGER_CONTRACT.schemaVersion||d.schemaDigest!==schemaDigest||!text(d.sourceRef)
       ||external&&(d.externalSchemaVersion!=='1.0.0'||d.externalSchemaDigest!==externalSchemaDigest)
+      ||target.location&&(d.locationSchemaVersion!=='1.0.0'||d.locationSchemaDigest!==locationSchemaDigest)
       ||target.additional&&(d.operationSchemaVersion!=='1.0.0'||d.operationSchemaDigest!==operationSchemaDigest)
       ||d.owner!=='profitia_access_owner'||['applicationId','environment','projectId','branchId','databaseName','role'].some(k=>d[k]!==config[k]))deny()
   }
@@ -67,13 +69,20 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
       ||context.organisationId!==owned.scope.organisationId||context.resourceId!==owned.scope.resourceId
       ||context.payloadDigest!==owned.scope.payloadDigest||!uuid.test(context.decisionId??'')
       ||context.moduleEvidence?.moduleId!==target.module||context.moduleEvidence.transactionId!==policy.transactionId
+      ||target.location&&JSON.stringify(context.resource?.supplierLocation)!==JSON.stringify(owned.location)
       ||!(Date.parse(policy.expiresAt)>now())||!(Date.parse(policy.windowEnd)>now()))deny('LIMIT_POLICY_UNAVAILABLE')
     return owned.scope
   }
   return Object.freeze({
     contract:REQUEST_LEDGER_CONTRACT,
-    async loadPolicy(query,{actor,request}){
+    async loadPolicy(query,{actor,request,resource}){
       const selected=scope(actor,request);await descriptor(query)
+      let location
+      if(target.location){
+        try{location=normalizeSupplierLocationEvidence(resource?.supplierLocation,{environment:config.environment,organisationId:request.organisationId,now})}catch{deny('RESOURCE_SCOPE_MISMATCH')}
+        const bound=(await one(query,'SELECT profitia_requests.bind_location_scope($1,$2::uuid,$3::uuid,$4,$5,$6::jsonb) AS allowed',[operation,request.organisationId,actor.actorId,request.resourceId,request.payloadDigest,JSON.stringify(location)])).allowed
+        if(bound!==true)deny('PERMISSION_DENIED')
+      }
       const value=(await one(query,external?'SELECT profitia_requests.policy($1,$2::uuid,$3::uuid,$4) AS policy':'SELECT profitia_requests.policy($1::uuid,$2::uuid,$3) AS policy',
         [...(external?[operation]:[]),selected.organisationId,selected.actorId,selected.resourceId])).policy
       denied(value)
@@ -86,7 +95,7 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
         ||!Number.isSafeInteger(value.used)||value.used<0||value.used>value.capacity
         ||!(Date.parse(value.windowStart)<=now())||!(Date.parse(value.windowEnd)>now())
         ||!(Date.parse(value.expiresAt)>now())||Date.parse(value.expiresAt)>Date.parse(value.windowEnd))deny('LIMIT_POLICY_UNAVAILABLE')
-      const policy=freeze(structuredClone(value));policies.set(policy,{query,scope:selected});return policy
+      const policy=freeze(structuredClone(value));policies.set(policy,{query,scope:selected,location});return policy
     },
     async reserve(query,policy,context){
       const selected=current(policy,query,context);await descriptor(query)
