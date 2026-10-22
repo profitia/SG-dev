@@ -2,25 +2,25 @@
   "schemaVersion": "1.0.0",
   "businessTask": "SRM-KRS-NAME-SEARCH-INTEGRATION-20261022",
   "targetEnvironment": "development",
-  "activationState": "BLOCKED_PENDING_P0_ACCEPTANCE",
+  "activationState": "ACCEPTED",
   "enabledByDefault": false,
-  "mapsAcceptanceReceipt": null,
-  "registryProducerReceipt": null,
-  "catalogInstallationReceipt": null,
-  "financialConsumerReceipt": null,
-  "retainedReleaseRecoveryReceipt": null,
-  "catalogServiceId": null,
-  "catalogDatabase": null,
+  "mapsAcceptanceReceipt": "NOT_REQUIRED_ISOLATED_PILOT:USER-20261022-KRS-ISOLATED-PILOT",
+  "registryProducerReceipt": "PR627:26c5df097bf914f658d6688d6db7ee020b4881bb",
+  "catalogInstallationReceipt": "krs_registry_pilot:001+002+008+009+012:binding13a96879-bec5-46ab-8284-dd146603a5e5",
+  "financialConsumerReceipt": "PR624:696806676c5362f38fc6196c6d9fd23d77763cb2:bindings4333c7d6-6ae2-4f0c-bbd4-085c6bc8c41e,78588238-19ed-4356-8fab-029164af7cda,c67adcf1-446a-4600-b2a2-46451afdd70f",
+  "retainedReleaseRecoveryReceipt": "CLOSED_BOOTSTRAP:dep-dbd5hm4ipgvc73d98vdg:2936119359f4614f7c864fa2456c4317a0ec065d;feature-off/suspend pilot only;business rollback UAT pending",
+  "catalogServiceId": "srv-dbd5hlcipgvc73d98ukg",
+  "catalogDatabase": "fancy-cell-49425728/br-divine-fog-baohc5ay/krs_registry_pilot",
   "periodicSynchronizationEnabled": false,
-  "note": "This is a disabled source candidate. It assigns no resource, grant, role, cohort, budget or live release authority.",
+  "note": "Owner-approved isolated Free Development pilot only. Exact final deployment rebinding is mandatory before enabling the environment flag. The source candidate alone does not prove live browser or Financial success. Shared SRM/Maps unchanged; catalog contains one real company and has no completeness claim.",
   "acceptedContract": {
     "version": "1.0.1",
     "sourceSha": "2936119359f4614f7c864fa2456c4317a0ec065d",
     "sourceDigest": "383d39d4a533bd1ff1a49a9587b2ad5fd23de5d3d9934ee9656a1b99be0861b6"
   },
   "acceptedRuntime": {
-    "version": "1.1.1",
-    "sourceSha": "bc5a4a8c1fcc1a9a22baed53d1e800d985e8dcfb",
-    "sourceDigest": "4424dcd81af7d8a81807a6fc3e6360ba89a6ef64d4d0815a427e656a5aa83c83"
+    "version": "1.1.2",
+    "sourceSha": "26c5df097bf914f658d6688d6db7ee020b4881bb",
+    "sourceDigest": "a94121c2b6b3d01b25415c46538440d5a43172d8e887f9117ab2705373cd7187"
   }
 }

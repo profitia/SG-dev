@@ -67,6 +67,26 @@ test('actual supplier request API and protected lookup are forwarded then refuse
     assert.equal((await middleware(new NextRequest('https://app.fixture.test/api/xray/lookup'))).headers.get('x-middleware-next'),'1')
   }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old}
 })
+test('exact KRS pilot entries reach their own protected backend; disabled and look-alike routes cannot disclose data',async()=>{
+ const old=process.env.PROFITIA_AUTH_PROVIDER,flag=process.env.SRM_KRS_NAME_SEARCH_ENABLED
+ process.env.PROFITIA_AUTH_PROVIDER='clerk';process.env.SRM_KRS_NAME_SEARCH_ENABLED='false'
+ try{
+  for(const action of ['status','search','verify','lookup']){
+   const url='https://app.fixture.test/api/xray/krs/'+action
+   const gate=await middleware(new NextRequest(url));assert.equal(gate.headers.get('x-middleware-next'),'1',action)
+   assert.equal(gate.headers.get('cache-control'),'private, no-store')
+   const entry=await import('../app/api/xray/krs/'+action+'/route.ts')
+   const response=await entry[action==='status'?'GET':'POST'](new Request(url,{method:action==='status'?'GET':'POST',headers:{origin:'https://app.fixture.test','content-type':'application/json','x-clerk-user-id':'forged','x-clerk-org-id':'forged'},...(action==='status'?{}:{body:'{}'})}))
+   assert.equal(response.status,action==='status'?200:503)
+   const body=await response.json();if(action==='status')assert.deepEqual(body,{enabled:false});else assert.deepEqual(Object.keys(body),['error'])
+   assert.equal(response.headers.get('cache-control'),'private, no-store')
+  }
+  for(const path of ['krs','krs/search/','krs/search-extra','krs/admin']){
+   const response=await middleware(new NextRequest('https://app.fixture.test/api/xray/'+path))
+   assert.equal(response.status,401,path);assert.equal(response.headers.get('x-middleware-next'),null,path)
+  }
+ }finally{if(old===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=old;if(flag===undefined)delete process.env.SRM_KRS_NAME_SEARCH_ENABLED;else process.env.SRM_KRS_NAME_SEARCH_ENABLED=flag}
+})
 test('the first seven fully protected supplier paths retain their adopted outer gate; their real entries refuse incomplete Clerk without demo fallback',async()=>{
   const old=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
   try{
