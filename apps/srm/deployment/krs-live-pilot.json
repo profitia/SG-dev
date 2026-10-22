@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "taskId": "SRM-KRS-LIVE-DEVELOPMENT-PILOT-20261022",
-  "state": "ACCEPTED_SOURCE_PENDING_INSTALLATION",
+  "state": "ACCEPTED_RUNTIME_BINDINGS",
   "environment": "development",
   "render": {
     "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
@@ -38,5 +38,25 @@
     "jobs": "srm_krs_pilot_jobs",
     "providerSource": "srm_krs_pilot_source",
     "corporateSource": "srm_krs_pilot_corporate"
+  },
+  "installation": {
+    "acceptedConsumerSha": "696806676c5362f38fc6196c6d9fd23d77763cb2",
+    "acceptedProducerSha": "26c5df097bf914f658d6688d6db7ee020b4881bb",
+    "checkedAt": "2026-10-22T19:53:41.048Z",
+    "ordinaryRolesVerified": true,
+    "temporarySetRoleRevoked": true,
+    "existingUserGrantsUnchanged": true,
+    "originalBudgetsUnchanged": true,
+    "finalDeploymentRebindingRequired": true,
+    "sourceAcquisitions": 2,
+    "financialCalls": 0,
+    "catalogEvidenceRef": "KRS:0000028860:3cfdc797ce00743519a974562ae9b001f9626802e631028abcc1451c5fa6dc50",
+    "catalogEffectRef": "f0c8b0bb-6d8c-4441-a8d9-868735b82c3c",
+    "catalogCompanies": 1
+  },
+  "recovery": {
+    "retainedBootstrapDeployment": "dep-dbd5hm4ipgvc73d98vdg",
+    "stop": "Suspend only this Free pilot; disable name flag; do not drop or reset catalogs or Source counters",
+    "rollbackTest": "PENDING_LIVE_UAT"
   }
 }
