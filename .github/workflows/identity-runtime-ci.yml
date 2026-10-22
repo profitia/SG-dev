@@ -36,6 +36,7 @@ jobs:
         working-directory: apps/identity-runtime
         env:
           CANDIDATE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          VALIDATION_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: npm run ci:proof
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
