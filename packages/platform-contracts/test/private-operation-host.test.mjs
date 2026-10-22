@@ -18,7 +18,7 @@ test('the versioned host pins the additive candidate and preserves the base SQL'
   assert.equal(host.contract.implementation,'1.0.0-candidate.16')
   assert.equal(host.hostContract.version,'1.11.0')
   assert.match(await privateOperationHostSourceDigest(),/^[a-f0-9]{64}$/)
-  assert.equal(await operationSourceDigest(),'9fe1ee707bb5510e66cbe9470ba970de177f8a6fe4533470f771af88d68bf728')
+  assert.equal(await operationSourceDigest(),'567f8f29e1812ca8ab3c104a72dc17a76e59b54e0e6021678c640d0bdc198cfb')
   assert.equal(await identitySourceDigest(),'b7f3e09e6c62bbaf20c42752f514022c91b0dc0fef9db387f41f613a124ce0b4')
   assert.equal(await accessStoreSourceDigest(),'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')

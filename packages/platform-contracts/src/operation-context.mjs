@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto'
 import {requestOperationPolicy} from './request-operations.mjs'
-import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence} from './supplier-location.mjs'
+import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence,isSupplierLocationAdmission} from './supplier-location.mjs'
 
 export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.16' })
+export const SUPPLIER_LOCATION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.17'})
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -278,6 +279,8 @@ function ingestionReservation(value,policy){
 
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
+  if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
+  const executionContract=options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
@@ -285,16 +288,16 @@ export function createOperationExecutor(options) {
   const stamp = event => ({ ...event, occurredAt: new Date(now()).toISOString() })
 
   return Object.freeze({
-    contract: OPERATION_CONTRACT,
+    contract: executionContract,
     async execute(input, action) {
       const decisionId = randomUUID()
       const operationStartedAt = new Date(now()).toISOString()
-      let audit = { decisionId, contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, implementationVersion: OPERATION_CONTRACT.implementation, applicationId: config.appId, applicationProfile: config.profileId, deploymentId: config.deploymentId, configurationVersion: config.configurationVersion, environment: config.environment, operationStartedAt, occurredAt: operationStartedAt, operation: typeof input?.operation === 'string' && input.operation.length < 128 ? input.operation : null, actorId: null, actorKind: null, subjectUserId: null, organisationId: null }
+      let audit = { decisionId, contractId: executionContract.id, contractVersion: executionContract.version, implementationVersion: executionContract.implementation, applicationId: config.appId, applicationProfile: config.profileId, deploymentId: config.deploymentId, configurationVersion: config.configurationVersion, environment: config.environment, operationStartedAt, occurredAt: operationStartedAt, operation: typeof input?.operation === 'string' && input.operation.length < 128 ? input.operation : null, actorId: null, actorKind: null, subjectUserId: null, organisationId: null }
       let intentRecorded = false
       const preparationAudits = []
       try {
         // Snapshot inputs before the first await; never execute a later, mutated payload.
-        if (!input || input.contractId !== OPERATION_CONTRACT.id || input.contractVersion !== OPERATION_CONTRACT.version) deny('UNSUPPORTED_CONTRACT')
+        if (!input || input.contractId !== executionContract.id || input.contractVersion !== executionContract.version) deny('UNSUPPORTED_CONTRACT')
         const selected = Object.hasOwn(rules, input.operation) ? rules[input.operation] : null
         if (!selected || !config.operations.includes(input.operation)) deny('PERMISSION_DENIED')
         if (!config.features.includes(selected.feature)) deny('APPLICATION_FEATURE_UNAVAILABLE')
@@ -341,7 +344,17 @@ export function createOperationExecutor(options) {
             qualityVersion:platformPolicy.qualityVersion,classificationVersion:platformPolicy.classificationVersion,payloadSchema:platformPolicy.payloadSchema,
             budgetPolicyId:platformPolicy.policyId,budgetPolicyVersion:platformPolicy.policyVersion,budgetUnit:platformPolicy.unit}
           audit = { ...context }
-          if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
+          const admission=state.requestPolicy?.locationAdmission
+          if(admission!==undefined){
+            if(options.locationAdmissionSchemaDigest!==admission.schemaDigest||!isSupplierLocationAdmission(admission)
+              ||admission.organisationId!==organisationId||admission.userId!==identity.actorId||admission.resourceId!==request.resourceId
+              ||admission.payloadDigest!==request.payloadDigest||admission.operation!==request.operation||admission.action!==payload.action
+              ||admission.transactionId!==moduleEvidence?.transactionId)deny('RESOURCE_SCOPE_MISMATCH')
+          }
+          if(admission?.action==='CREATE'){
+            if(!access.permissions?.some(p=>p.operation===request.operation&&p.feature===selected.feature&&p.resourceId===admission.parent.collectionId)
+              ||access.denies?.some(p=>p.operation===request.operation&&p.feature===selected.feature&&(p.resourceId===null||[request.resourceId,admission.parent.collectionId].includes(p.resourceId))))deny('PERMISSION_DENIED')
+          }else if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
           if (state.resource.id !== request.resourceId || compute && request.operation!=='supplier.location.write' && state.resource.ownerUserId !== identity.userId) deny('RESOURCE_SCOPE_MISMATCH')
           if(request.operation==='benchmark.discovery.read'&&(identity.kind!=='HUMAN'||moduleEvidence?.moduleId!=='benchmark'))deny('APPLICATION_FEATURE_UNAVAILABLE')
@@ -545,7 +558,7 @@ export function createOperationExecutor(options) {
             if (isOperationDenied(error) && ['ACCESS_BASIS_INVALID','PRODUCT_UNAVAILABLE','APPLICATION_FEATURE_UNAVAILABLE'].includes(error.reasonCode)) throw error
             deny('AUDIT_UNAVAILABLE')
           }
-          return Object.freeze({ decision: 'ALLOW', decisionId, contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, value: output })
+          return Object.freeze({ decision: 'ALLOW', decisionId, contractId: executionContract.id, contractVersion: executionContract.version, value: output })
         })
       } catch (error) {
         const rejected = isOperationDenied(error) ? error : new OperationDenied('POLICY_UNAVAILABLE', decisionId)

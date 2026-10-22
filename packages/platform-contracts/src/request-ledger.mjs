@@ -1,4 +1,4 @@
-import {normalizeSupplierLocationEvidence} from './supplier-location.mjs'
+import {normalizeSupplierLocationEvidence,createSupplierLocationAdmission} from './supplier-location.mjs'
 import {requestOperationsSourceDigest} from './request-operations.mjs'
 import { createHash } from 'node:crypto'
 import { OperationDenied } from './operation-context.mjs'
@@ -27,13 +27,15 @@ function receipt(value,id){return exact(value,['requestId','status'])&&value.req
 
 /** No connection, new access policy, command payload, compute or queue. This
  * adapter uses the existing host's current scoped SQL transaction only. */
-export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,operationSchemaDigest,locationSchemaDigest,now=Date.now}){
+export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,operationSchemaDigest,locationSchemaDigest,locationAdmission,now=Date.now}){
   const target=requestOperationPolicy(operation),external=target?.external||target?.location
   if(!target||(target.location?!digest.test(locationSchemaDigest??''):locationSchemaDigest!==undefined)||(target.additional?!digest.test(operationSchemaDigest??''):operationSchemaDigest!==undefined)||(external?!digest.test(externalSchemaDigest??''):externalSchemaDigest!==undefined))throw new TypeError('Explicit accepted request operation/schema extension required')
   const config=freeze(structuredClone(binding))
   if(!config||config.service!==undefined||!digest.test(schemaDigest??'')||typeof now!=='function'
     ||!['applicationId','projectId','branchId','databaseName','role'].every(k=>text(config[k]))
     ||!['development','staging','production'].includes(config.environment))throw new TypeError('Explicit private request ledger binding required')
+  if(locationAdmission!==undefined&&(!target.location||!['supplier.location.write','supplier.location.sync'].includes(operation)))throw TypeError('P1 is a bounded opt-in location extension')
+  const admission=locationAdmission===undefined?null:createSupplierLocationAdmission({binding:config,...locationAdmission})
   const policies=new WeakMap(),reservations=new WeakMap()
   const one=async(query,sql,values=[])=>{
     if(typeof query!=='function')deny()
@@ -77,13 +79,14 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
     contract:REQUEST_LEDGER_CONTRACT,
     async loadPolicy(query,{actor,request,resource}){
       const selected=scope(actor,request);await descriptor(query)
-      let location
+      let location,admissionEvidence
+      if(admission)admissionEvidence=await admission.bind(query,{actor,request,resource})
       if(target.location){
         try{location=normalizeSupplierLocationEvidence(resource?.supplierLocation,{environment:config.environment,organisationId:request.organisationId,now})}catch{deny('RESOURCE_SCOPE_MISMATCH')}
         const bound=(await one(query,'SELECT profitia_requests.bind_location_scope($1,$2::uuid,$3::uuid,$4,$5,$6::jsonb) AS allowed',[operation,request.organisationId,actor.actorId,request.resourceId,request.payloadDigest,JSON.stringify(location)])).allowed
         if(bound!==true)deny('PERMISSION_DENIED')
       }
-      const value=(await one(query,external?'SELECT profitia_requests.policy($1,$2::uuid,$3::uuid,$4) AS policy':'SELECT profitia_requests.policy($1::uuid,$2::uuid,$3) AS policy',
+      const value=(await one(query,admission?'SELECT profitia_requests.location_admission_policy($1,$2::uuid,$3::uuid,$4) AS policy':external?'SELECT profitia_requests.policy($1,$2::uuid,$3::uuid,$4) AS policy':'SELECT profitia_requests.policy($1::uuid,$2::uuid,$3) AS policy',
         [...(external?[operation]:[]),selected.organisationId,selected.actorId,selected.resourceId])).policy
       denied(value)
       if(!exact(value,['status','policyId','version','sourceRef','expiresAt','windowStart','windowEnd','capacity','used',
@@ -95,7 +98,7 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
         ||!Number.isSafeInteger(value.used)||value.used<0||value.used>value.capacity
         ||!(Date.parse(value.windowStart)<=now())||!(Date.parse(value.windowEnd)>now())
         ||!(Date.parse(value.expiresAt)>now())||Date.parse(value.expiresAt)>Date.parse(value.windowEnd))deny('LIMIT_POLICY_UNAVAILABLE')
-      const policy=freeze(structuredClone(value));policies.set(policy,{query,scope:selected,location});return policy
+      const policy=freeze({...structuredClone(value),...(admissionEvidence?{locationAdmission:admissionEvidence}:{})});policies.set(policy,{query,scope:selected,location});return policy
     },
     async reserve(query,policy,context){
       const selected=current(policy,query,context);await descriptor(query)
