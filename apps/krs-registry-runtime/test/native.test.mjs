@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import {randomUUID,createHash} from 'node:crypto'
+import {installationPlan} from '../scripts/install-pilot.mjs'
+import {createPlatformIngestionHost,platformReceiptEvidence} from '@profitia/platform-contracts/platform-ingestion'
 import {createPrivateOperationHost} from '@profitia/platform-contracts/private-operation-host'
 import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider'
 import {accessSchemaUrl,moduleAuditSchemaUrl} from '@profitia/platform-contracts/access-store'
@@ -78,5 +80,46 @@ export async function nativeReadTests(t,{owner,reader,catalog,url,Pool}){
  }finally{
   await pool?.end();await auditPool?.end()
   await owner.query('ROLLBACK');await owner.query('DROP SCHEMA IF EXISTS profitia_modules CASCADE;DROP SCHEMA IF EXISTS profitia_access CASCADE;DROP OWNED BY krs_human_test,profitia_access_owner;DROP ROLE krs_human_test,profitia_access_owner')
+ }
+}
+
+
+export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
+ const deploymentId='synthetic-controlled-installer',sourceSha='a'.repeat(40)
+ const plan=installationPlan({ownerLogin:'krs_test_owner',database:'krs_registry_test',project:'isolated-project',branch:'isolated-branch',deploymentId,sourceSha,approvalRef:'SYNTHETIC_ONLY'})
+ const u=new URL(url);u.username='krs_ingest';u.password='isolated_ci_only'
+ let auditPool
+ try{
+  await owner.query('CREATE ROLE krs_catalog_owner NOLOGIN NOINHERIT;CREATE ROLE profitia_ingestion_owner NOLOGIN NOINHERIT;ALTER DATABASE krs_registry_test OWNER TO krs_catalog_owner')
+  await t.test('exact empty pilot installation rolls back all Source/catalog DDL atomically',async()=>{
+   await owner.query('BEGIN')
+   try{for(const sql of plan.statements)await owner.query(sql)}finally{await owner.query('ROLLBACK')}
+   assert.equal((await owner.query("SELECT to_regnamespace('krs_registry') AS v")).rows[0].v,null)
+   assert.equal((await owner.query("SELECT to_regnamespace('profitia_ingestion') AS v")).rows[0].v,null)
+  })
+  await owner.query('BEGIN');try{for(const sql of plan.statements)await owner.query(sql);await owner.query('COMMIT')}catch(e){await owner.query('ROLLBACK');throw e}
+  auditPool=new Pool({connectionString:u.href,max:1})
+  const driver={independentQuery:async(sql,args)=>({rows:(await auditPool.query(sql,args)).rows}),transact:async work=>{const c=await ingest.connect();try{await c.query('BEGIN');const result=await work({transaction:c,query:async(sql,args)=>({rows:(await c.query(sql,args)).rows})});await c.query('COMMIT');return result}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}}
+  const host=createPlatformIngestionHost({...driver,application:{appId:'krs-registry-source',profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId,configurationVersion:'krs-native-pilot-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},binding:{applicationId:'krs-registry-source',environment:'development',projectId:'isolated-project',branchId:'isolated-branch',databaseName:'krs_registry_test',role:'krs_ingest',deploymentId,configurationVersion:'krs-native-pilot-v1',schemaDigest:plan.schemaDigests.ingestion},source:{id:'krs.registry.catalog',payloadSchema:'profitia.krs-report-projection/1.0.0',qualityVersion:'krs-normalizer/1.0.1',classificationVersion:'krs-public-company-v1'},validateSharedPayload:()=>true})
+  const id='0000028860',snap=await normalizeExtract(bytes(extract({id})),{krs:id,register:'P',extract:'CURRENT',retrievedAt:new Date().toISOString()})
+  const input={resourceId:'krs-catalog:'+id,payload:{fixture:'synthetic classified manifest'},idempotencyKey:'synthetic-native-source-publication-001'}
+  await t.test('direct ordinary writes cannot substitute for native Source publication',async()=>{
+   await assert.rejects(ingest.query("INSERT INTO krs_registry.companies(krs,entity_key,state) VALUES($1,$2,'UNKNOWN')",[id,'PL:KRS:'+id]),e=>e.code==='42501')
+  })
+  let writes=0
+  const publish=()=>host.ingest(input,async(_payload,tx,context)=>{writes++;await storeSnapshot(tx,snap,context.platformReservation.effectId)})
+  await t.test('actual Source reservation, snapshot, OUTCOME and receipt share one commit; replay writes once',async()=>{
+   const result=await publish();assert.ok(platformReceiptEvidence(result.value));assert.equal(writes,1)
+   assert.equal((await owner.query('SELECT effect_ref FROM krs_registry.snapshots')).rows[0].effect_ref,platformReceiptEvidence(result.value).effectId)
+   const replay=await publish();assert.ok(platformReceiptEvidence(replay.value));assert.equal(writes,1)
+  })
+  await t.test('Source OUTCOME outage rolls back domain write and admission with no receipt',async()=>{
+   await owner.query("CREATE FUNCTION profitia_ingestion.fail_catalog_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' THEN RAISE EXCEPTION 'fixture outage'; END IF; RETURN NEW; END $$;CREATE TRIGGER fail_catalog_outcome BEFORE INSERT ON profitia_ingestion.security_events FOR EACH ROW EXECUTE FUNCTION profitia_ingestion.fail_catalog_outcome()")
+   try{await assert.rejects(host.ingest({...input,idempotencyKey:'synthetic-native-source-publication-002'},async(_p,tx,c)=>{await tx.query('UPDATE krs_registry.metadata SET generation=999');assert.ok(c.platformReservation.effectId)}))}finally{await owner.query('DROP TRIGGER fail_catalog_outcome ON profitia_ingestion.security_events;DROP FUNCTION profitia_ingestion.fail_catalog_outcome()')}
+   assert.notEqual((await owner.query('SELECT generation FROM krs_registry.metadata')).rows[0].generation,'999')
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_ingestion.effects')).rows[0].n,1)
+  })
+ }finally{
+  await auditPool?.end();await owner.query('ALTER DATABASE krs_registry_test OWNER TO krs_test_owner;DROP SCHEMA IF EXISTS krs_registry CASCADE;DROP SCHEMA IF EXISTS profitia_external_native CASCADE;DROP SCHEMA IF EXISTS profitia_external_call CASCADE;DROP SCHEMA IF EXISTS profitia_ingestion CASCADE;DROP OWNED BY krs_catalog_owner,profitia_ingestion_owner;DROP ROLE krs_catalog_owner,profitia_ingestion_owner')
  }
 }
