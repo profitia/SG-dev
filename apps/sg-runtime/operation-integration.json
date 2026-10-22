@@ -2246,7 +2246,7 @@
     "producer": {
       "projectKey": "ARCHITECTURE",
       "taskId": "ARCHITECTURE-IDENTITY-SELF-SERVICE-MVP-20261022",
-      "sourceSha": "c9d9c3cc5a61d43672c824057b9a2f7bfd4f6cf5"
+      "sourceSha": "4fab823d679a6794c95f67f2c898b0c07f61a0bc"
     },
     "producerSourceStatus": "PROPOSED_NOT_PROMOTED",
     "accountInterface": "profitia.identity-account.http.v1",
@@ -2316,6 +2316,7 @@
     "organisationOrProductGrantsAdded": false,
     "runtimeRoleOrGrantChanged": false,
     "productDeploymentPerformed": false,
-    "reconciledWithAcceptedPlatform125": true
+    "reconciledWithAcceptedPlatform125": true,
+    "continuedByTaskId": "SG2-SELF-SERVICE-DEVELOPMENT-LIVE-20261022"
   }
 }
