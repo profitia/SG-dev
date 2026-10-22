@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-KRS-REGISTRY-01B-ACCEPTANCE-20261022",
+  "requestedTaskId": "ARCHITECTURE-KRS-REGISTRY-G1-ONBOARDING-20261022",
+  "taskIdDeviation": "Requested ID is already completed (cmvjexp5v0000u6vu87yo3jam); new continuation ID preserves canonical completed history.",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "executionEnvironment": "local",
+  "authoritySha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+  "previousCandidateSha": "64821ac5260ca6c8bf2feabf1a10ecf922af9f61",
+  "originalFoundationSha": "92167e83ec9007bc70e4dc4113b63f51cd096739",
+  "formalG1": {
+    "decision": "G1 GRANTED",
+    "sourceType": "EXPLICIT_OWNER_CHAT_INSTRUCTION",
+    "sourceTitle": "KRS REGISTRY — FORMAL OWNER APPROVAL G1",
+    "hostConversationId": null,
+    "hostConversationIdStatus": "UNAVAILABLE",
+    "date": "2026-10-22",
+    "reference": "Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md",
+    "registrationTaskId": "ARCHITECTURE-KRS-REGISTRY-G1-ONBOARDING-20261022"
+  },
+  "requestedTaskSha256": "3b44a25cad706546062e1b1229b0c47dfc8f2e10d9d011e77a051af167aadab2",
+  "pmos": {
+    "registrationId": "cmvjfqcs30000penm1ixb7hfl",
+    "conversationId": "pmos-task-v2:28a8fc412cdba5a99577a0577775ce9ff8323adfb3b49563b970786a0692bd95",
+    "database": "architecture_pmos",
+    "role": "architecture_pmos_runtime",
+    "requireBegin": "PASS"
+  },
+  "contract": {
+    "id": "profitia.krs-company-identity",
+    "version": "1.0.0",
+    "status": "DESIGN_ONLY_NOT_IMPLEMENTED",
+    "dtoBlockSha256": "562a056d7d5fa1bb8b8eabc563c55f1b898b66766f1c503eb055022011d10871",
+    "handoffRevision": "1.1 / TASK01B",
+    "fixturesScope": "Synthetic shape/type fixtures only; no actual identity, E1 permission or provider/financial acceptance asserted.",
+    "verifiedFixture": {
+      "contract": "profitia.krs-company-identity",
+      "version": "1.0.0",
+      "status": "VERIFIED",
+      "selectedKrs": "0000028860",
+      "identity": {
+        "entityKey": "PL:KRS:0000028860",
+        "krs": "0000028860",
+        "nip": "7740001454",
+        "regon": null,
+        "officialName": "SYNTHETIC CONTRACT FIXTURE"
+      },
+      "source": {
+        "provider": "KRS",
+        "register": "P",
+        "extract": "CURRENT",
+        "sourceRecordId": "0000028860",
+        "sourceVersion": "synthetic-version-1",
+        "normalizerVersion": "1.0.0",
+        "rawDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "contentDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "sourceAsOfDate": null,
+        "entryNumber": 1,
+        "retrievedAt": "2026-10-22T11:00:00.000Z",
+        "checkedAt": "2026-10-22T11:00:01.000Z"
+      },
+      "validity": {
+        "policy": "KRS_FINANCIAL_IDENTITY_FRESHNESS_V1",
+        "maxAgeSeconds": 300,
+        "maxClockSkewSeconds": 30,
+        "expiresAt": "2026-10-22T11:05:00.000Z"
+      },
+      "evidenceRef": "synthetic-ref-1",
+      "historicalCandidates": [],
+      "evidenceDigest": "c4d5c6b5a90bb0aaad4ca7774140f199936d2bfde0403d05cce92f2cca435194"
+    },
+    "blockedFixture": {
+      "contract": "profitia.krs-company-identity",
+      "version": "1.0.0",
+      "status": "BLOCKED",
+      "selectedKrs": "0000028860",
+      "identity": null,
+      "code": "MISSING_NIP",
+      "candidateKrs": [],
+      "generalSnapshotRef": "synthetic-general-1",
+      "sourceEvidenceRef": null,
+      "retryAfter": null
+    },
+    "paidAcquisitionInStage02": "FORBIDDEN_IN_ALL_PATHS",
+    "continuityOwner": "SRM KRS_CONTINUITY_V1",
+    "stage03Boundary": "Existing authorized MGBI Financial acquisition and independent company/document verification; no second company identity authority."
+  },
+  "mainRouting": "CANDIDATE_ONLY_AT_CHECKPOINT",
+  "ci": "PENDING_FOR_THIS_SOURCE",
+  "protectedSourceTrees": {
+    "apps/srm": "044b3a0f618c8501f6c73bd10030be2b12d831d1",
+    "apps/maps-runtime": "fb6f9d6d9d4f799fb515780d493a7f2552e02a43",
+    "packages/maps-contracts": "0d86e234bba9c5e8b2e51539709c4e444b5452fa",
+    "packages/maps-embed": "32b4566349950e91cf6662dad4e939b17f083bfc",
+    "packages/srm-xray": "9f78818dd4f2aecc0bd1f001581aa02d6e67763d",
+    "packages/platform-contracts": "86299cdb0b4511c7c6410974eb08b9c51caa78d9"
+  },
+  "preservedHistoricalEvidence": [
+    "Canon/evidence/2026-10-22-krs-registry-foundation.md",
+    "Canon/evidence/2026-10-22-krs-registry-foundation.json",
+    "Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md",
+    "Canon/evidence/2026-10-22-krs-registry-g1-onboarding.json"
+  ],
+  "activation": {
+    "stage02Started": false,
+    "paidProviderCalls": 0,
+    "productSourceChanges": false,
+    "productDatabaseWrites": false,
+    "e1GrantsExpanded": false,
+    "renderChanges": false,
+    "newCloudResources": false,
+    "providerSwitch": false,
+    "syncEnabled": false
+  },
+  "ciAcceptanceDependency": {
+    "currentControllerAdmitsOnboarding": false,
+    "knownDenial": "ARCHITECTURE_PATH_REJECTED",
+    "canonicalBootstrapRunbook": "Canon/runbooks/controlled-package-ci-v1.md",
+    "repair": "Separate bounded Governance/ARCHITECTURE policy PR, old trusted-main exact-source proof then reviewed merge, fresh new-policy proof of PR603. No candidate controller loaded into secret phase.",
+    "concurrentIdentityPr": 605,
+    "identityCorrectiveAdmitsKrs": false,
+    "mainAccepted": false
+  }
+}

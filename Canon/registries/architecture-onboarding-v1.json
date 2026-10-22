@@ -105,6 +105,57 @@
       },
       "decisionDocument": "Canon/v1.0-identity-runtime-architecture-and-ownership-canon.md",
       "evidenceDocument": "Canon/evidence/2026-10-21-identity-runtime-b0-onboarding.md"
+    },
+    {
+      "capability": "KRS Registry",
+      "owner": "Architecture Platform",
+      "projectKey": "ARCHITECTURE",
+      "targetEnvironment": "development",
+      "pathPattern": "apps/krs-registry-runtime/**",
+      "contractsPath": "packages/krs-registry-contracts/**",
+      "ciPath": ".github/workflows/krs-registry-ci.yml",
+      "approval": {
+        "decision": "G1 GRANTED",
+        "sourceType": "EXPLICIT_OWNER_CHAT_INSTRUCTION",
+        "sourceTitle": "KRS REGISTRY — FORMAL OWNER APPROVAL G1",
+        "hostConversationId": null,
+        "hostConversationIdStatus": "UNAVAILABLE",
+        "date": "2026-10-22",
+        "reference": "Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md",
+        "registrationTaskId": "ARCHITECTURE-KRS-REGISTRY-G1-ONBOARDING-20261022"
+      },
+      "status": "GOVERNANCE_ONLY_NO_IMPLEMENTATION",
+      "continuityProjectKey": "ARCHITECTURE",
+      "allowedConsumerProfiles": [
+        "SRM",
+        "SG2"
+      ],
+      "consumerAdoption": "SEPARATE_OWNER_TASK_AND_EXACT_CONTRACT_ACCEPTANCE",
+      "runtimeCreated": false,
+      "resourceCreationAuthority": "NOT_AUTHORIZED_BY_G1",
+      "deploymentAuthority": "NOT_AUTHORIZED_BY_G1",
+      "productDatabaseMutationAuthority": "NOT_AUTHORIZED_BY_G1",
+      "e1GrantExpansionAuthority": "NOT_AUTHORIZED_BY_G1",
+      "activation": "DEFERRED",
+      "synchronization": "DISABLED",
+      "stage02Authority": "SEPARATE_TASK_AFTER_MAIN_ROUTING_ACCEPTANCE",
+      "financialProvider": "MGBI",
+      "registryBackup": "MGBI",
+      "financialAdmissionInvariant": "Verified KRS and NIP reconciliation against each MGBI Financial company/document before acceptance; unresolved identity blocks new attribution.",
+      "decisionDocument": "Canon/v1.0-krs-registry-architecture-and-ownership-canon.md",
+      "evidenceDocument": "Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md",
+      "plannedRender": {
+        "serviceId": null,
+        "createOrDeployAuthorized": false
+      },
+      "catalogStorage": {
+        "projectId": null,
+        "branchId": null,
+        "databaseName": null,
+        "schemaName": "krs_registry",
+        "status": "DESIGN_ONLY_NO_INSTALLATION"
+      },
+      "publicContractVersioning": "INDEPENDENT_VERSIONED_NO_PRIVATE_APP_IMPORTS"
     }
   ]
 }

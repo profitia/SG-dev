@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-KRS-REGISTRY-G1-ONBOARDING-20261022",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "executionEnvironment": "local",
+  "authoritySha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+  "priorFoundationSha": "92167e83ec9007bc70e4dc4113b63f51cd096739",
+  "status": "G1_GRANTED_SOURCE_PREPARED_MAIN_ACCEPTANCE_PENDING",
+  "approval": {
+    "decision": "G1 GRANTED",
+    "sourceType": "EXPLICIT_OWNER_CHAT_INSTRUCTION",
+    "sourceTitle": "KRS REGISTRY — FORMAL OWNER APPROVAL G1",
+    "hostConversationId": null,
+    "hostConversationIdStatus": "UNAVAILABLE",
+    "date": "2026-10-22",
+    "reference": "Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md",
+    "registrationTaskId": "ARCHITECTURE-KRS-REGISTRY-G1-ONBOARDING-20261022"
+  },
+  "ownerInstruction": "# KRS REGISTRY — FORMAL OWNER APPROVAL G1\n\nDECISION: G1 — GRANTED\n\nJako właściciel projektu zatwierdzam utworzenie nowej funkcjonalności pierwszej klasy KRS Registry, rozwijanej w monorepo profitia/SG-dev.\nZatwierdzam:\n- Formal owner: Architecture Platform.\n- Execution profile: ARCHITECTURE.\n- Runtime: apps/krs-registry-runtime/**.\n- Contracts: packages/krs-registry-contracts/**.\n- CI: .github/workflows/krs-registry-ci.yml.\n- Proponowany onboarding ALIGNED zgodnie z obowiązującą polityką klasyfikacji, bez zmiany historycznego baseline.\n- Niezależne wersjonowanie i development KRS.\n- Zachowanie MGBI Registry jako Backup oraz MGBI Financial jako dostawcy finansowego.\n- Obowiązkową rekoncyliację tożsamości KRS/NIP z MGBI Financial przed przyjęciem danych finansowych.\n- Model BUILD COMPLETE — ACTIVATION DEFERRED podczas trwających prac Google Maps / Supplier Locations.\nUpoważniam do przeprowadzenia właściwego onboardingu governance i rejestracji tych ścieżek w kanonicznym routingu, z zachowaniem obowiązujących bramek, testów i autoryzacji merge.\nTa decyzja nie upoważnia do wdrożenia aplikacji, zmian w aktywnej bazie, nowych zasobów chmurowych, rozszerzania grantów E1 ani przełączenia SRM na KRS.\nPrace implementacyjne ETAPU 02 pozostają osobnym zadaniem po zaakceptowaniu routingu na main.\n",
+  "instructionProjectionSha256": "7a3093ab09e99bca26f9e4799f023d884833f3d41ba7c4898c0014cb679b9967",
+  "registeredSurfaces": [
+    {
+      "id": "KRS-BASE-001",
+      "capability": "KRS Registry Runtime",
+      "name": "KRS Registry Runtime",
+      "pathPatterns": [
+        "apps/krs-registry-runtime/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Official KRS source adapter, legal-company catalog, discovery and synchronization; no organisation-private supplier store or identity authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner instruction KRS REGISTRY — FORMAL OWNER APPROVAL G1, 2026-10-22; Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md"
+    },
+    {
+      "id": "KRS-BASE-002",
+      "capability": "KRS Registry Contracts",
+      "name": "KRS Registry Contracts",
+      "pathPatterns": [
+        "packages/krs-registry-contracts/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Framework-neutral versioned registry snapshot, identity evidence and candidate contracts; no provider transport or E1 authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner instruction KRS REGISTRY — FORMAL OWNER APPROVAL G1, 2026-10-22; Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md"
+    },
+    {
+      "id": "KRS-BASE-003",
+      "capability": "KRS Registry CI",
+      "name": "KRS Registry CI",
+      "pathPatterns": [
+        ".github/workflows/krs-registry-ci.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Independent offline validation/build with isolated local PostgreSQL; no deployment, live migration, secrets or provider switching.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner instruction KRS REGISTRY — FORMAL OWNER APPROVAL G1, 2026-10-22; Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md"
+    }
+  ],
+  "pmos": {
+    "registrationId": "cmvjexp5v0000u6vu87yo3jam",
+    "conversationId": "pmos-task-v2:20c51b952a8400a1378b0b17e86acda72c2d2de981c335c7863738d8c9e30a96",
+    "database": "architecture_pmos",
+    "role": "architecture_pmos_runtime",
+    "preflightRequireBegin": "PASS",
+    "previousCompletedTaskReopened": false,
+    "previousPhr": "85e0f74789205f8e2e6ef474ee7108d359aae952"
+  },
+  "sourceOnly": {
+    "newApplicationFiles": false,
+    "newContractFiles": false,
+    "newKrsWorkflow": false,
+    "productSourceChanged": false,
+    "e1SourceChanged": false,
+    "e1GrantsChanged": false,
+    "productDatabaseChangedByTask": false,
+    "renderChangedByTask": false,
+    "stage02Started": false
+  },
+  "protectedSourceTrees": {
+    "apps/srm": "044b3a0f618c8501f6c73bd10030be2b12d831d1",
+    "apps/maps-runtime": "fb6f9d6d9d4f799fb515780d493a7f2552e02a43",
+    "packages/maps-contracts": "0d86e234bba9c5e8b2e51539709c4e444b5452fa",
+    "packages/maps-embed": "32b4566349950e91cf6662dad4e939b17f083bfc",
+    "packages/srm-xray": "9f78818dd4f2aecc0bd1f001581aa02d6e67763d",
+    "packages/platform-contracts": "86299cdb0b4511c7c6410974eb08b9c51caa78d9"
+  },
+  "historicalFoundationFiles": [
+    "Canon/evidence/2026-10-22-krs-registry-foundation.md",
+    "Canon/evidence/2026-10-22-krs-registry-foundation.json"
+  ],
+  "mainAcceptance": "PENDING",
+  "ci": "NOT_YET_EXECUTED_FOR_THIS_SOURCE",
+  "knownCiAdmissionFinding": {
+    "controllerPath": "scripts/governance/controlled-package-ci.mjs",
+    "currentAuthority": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+    "architectureAllowedShape": "platform-contracts producer plus bounded dated Markdown evidence only",
+    "onboardingShapeAdmitted": false,
+    "policyChangedByTask": false,
+    "unsafeBypassPerformed": false
+  },
+  "localValidation": {
+    "manifest": "PASS",
+    "governanceRoutingControlledCiTests": {
+      "pass": 120,
+      "fail": 0,
+      "skip": 0
+    },
+    "pmosLifecyclePhrTests": {
+      "pass": 56,
+      "fail": 0,
+      "skip": 0
+    },
+    "pmosTypecheck": "PASS",
+    "pmosLifecycleTypecheck": "PASS",
+    "protectedTreesUnchanged": true,
+    "historicalFoundationBytesUnchanged": true,
+    "controlledAdmission": "ARCHITECTURE_PATH_REJECTED"
+  }
+}

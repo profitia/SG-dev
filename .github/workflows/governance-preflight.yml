@@ -36,7 +36,7 @@ jobs:
       - name: Validate governance manifest
         run: node scripts/governance/validate-governance-manifest.mjs
       - name: Test governance validators
-        run: node --test scripts/governance/governance.test.mjs
+        run: node --test scripts/governance/governance.test.mjs scripts/governance/identity-runtime-onboarding.test.mjs scripts/governance/krs-registry-routing.test.mjs
       - name: Install PMOS dependencies
         working-directory: apps/pmos
         run: npm ci
