@@ -27,6 +27,16 @@ export async function reconcileKrsFinancial(identity:VerifiedIdentityV1,input:Mg
   if(records.length&&!eligible.length)return empty(input,'FINANCIAL_COMPANY_MISMATCH');
   const at=input.section.retrievedAt;
   if(!at||!Number.isFinite(Date.parse(at)))return empty(input,'FINANCIAL_IDENTITY_EVIDENCE_MISSING');
+  if(eligible.length===records.length){
+    // The existing acquisition may already include XML, XHTML/iXBRL projections,
+    // revisions and comparative periods. Once every original record is eligible,
+    // retain those results rather than rebuilding a reduced RDF-only report.
+    const registration={krs:verified.selectedKrs,legalName:verified.identity.officialName,relationship:'CURRENT' as const};
+    const registered=(data:NonNullable<MgbiFinancialResult['section']['data']>)=>({...data,
+      periods:data.periods.map(period=>({...period,sourceRegistration:registration}))});
+    return {...input,section:{...input.section,data:input.section.data?registered(input.section.data):null},
+      ...(input.sourceData?{sourceData:registered(input.sourceData)}:{})};
+  }
   const mapped=mapMgbiFinancialRecords(eligible,{type:'KRS',value:verified.selectedKrs},at,eligible.length);
   mapped.section={...mapped.section,status:input.section.status==='PARTIAL'&&mapped.section.status==='SUCCESS'?'PARTIAL':mapped.section.status,
     warnings:[...new Set([...input.section.warnings,...mapped.section.warnings])]};

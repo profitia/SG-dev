@@ -12,5 +12,10 @@
   "catalogServiceId": null,
   "catalogDatabase": null,
   "periodicSynchronizationEnabled": false,
-  "note": "This is a disabled source candidate. It assigns no resource, grant, role, cohort, budget or live release authority."
+  "note": "This is a disabled source candidate. It assigns no resource, grant, role, cohort, budget or live release authority.",
+  "acceptedContract": {
+    "version": "1.0.0",
+    "sourceSha": "418a2ef0f30d840ce25ca645f5ef047e35d02192",
+    "sourceDigest": "34a980696b8e3b148c492d2106c787d9d7a6fea73355dbae6026bddcc9541edb"
+  }
 }

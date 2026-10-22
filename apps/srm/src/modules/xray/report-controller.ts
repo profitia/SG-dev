@@ -103,7 +103,15 @@ export class SupplierReportController {
   refreshMetadata = async () => {
     // Name-mode metadata was composed from the identity-eligible financial result.
     // Do not replace it with an unrelated legacy NIP cache or start another acquisition.
-    if(this.nameSelection)return;
+    if(this.nameSelection){
+      const metadata=this.state.metadata,ref=this.privateKysReference;
+      if(metadata&&ref!==undefined){
+        const valid=ref&&ref.nip===this.nameSelection.nip&&ref.entityType==='COMPANY'&&Date.parse(ref.retentionUntil)>this.now().getTime();
+        this.update({metadata:{...metadata,kys:{...metadata.kys,exportRef:valid?ref.exportRef:null,
+          freshness:valid?{...metadata.kys.freshness,retrievedAt:ref.retrievedAt,retentionUntil:ref.retentionUntil}:metadata.kys.freshness}}});
+      }
+      return;
+    }
     const result = this.state.result, nip = supplierNip(result); if (!result || !nip || inactiveSupplier(result)) return;
     const generation = this.generation, sequence = ++this.metadataSequence;
     this.metadataRequest?.abort(); const request = new AbortController(); this.metadataRequest = request;

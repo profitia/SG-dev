@@ -52,6 +52,19 @@ test('missing returned NIP cannot adopt documents even with the same KRS',async(
   const f=await fixture([record('missing',krs,'','999999')]);
   assert.equal((await reconcileKrsFinancial(f.selected.identity,f.result,time)).section.data,null);
 });
+test('identity reconciliation retains enriched Financial data, source periods and facts when all original records are eligible',async()=>{
+ const f=await fixture();
+ const period={...f.result.section.data!.periods[0],accountingStandard:'IAS_IFRS' as const,
+  documentId:'right:cfy',facts:[{metricCode:'PALA_NRFS',amount:'1200',unit:'PLN' as const}]};
+ f.result.sourceData={...f.result.section.data!,periods:[period]};
+ f.result.section={...f.result.section,data:f.result.sourceData};
+ const result=await reconcileKrsFinancial(f.selected.identity,f.result,time);
+ assert.deepEqual(result.section.data?.periods[0].facts,period.facts);
+ assert.deepEqual(result.sourceData?.periods[0].facts,period.facts);
+ assert.equal(result.section.data?.periods[0].accountingStandard,'IAS_IFRS');
+ assert.equal(result.facts,f.result.facts);assert.equal(result.rawResponse,f.result.rawResponse);
+ assert.equal(result.section.data?.periods[0].sourceRegistration?.krs,krs);
+});
 for(const mutation of ['stale','forged','missing-nip','substituted-krs','unsupported'] as const)test('rejected '+mutation+' identity has zero Financial effects',async()=>{
   const f=await fixture();
   if(mutation==='stale')f.ports={...f.ports,now:()=>time+300001};
