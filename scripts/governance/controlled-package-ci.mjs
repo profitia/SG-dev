@@ -49,8 +49,26 @@ function candidateFamily(context, pr, expectedSha) {
   return family
 }
 
-// Scope is deliberately narrower than all ARCHITECTURE-owned source. In
-// particular no app, workflow, policy, npm configuration or executable tooling.
+// The producer class remains deliberately narrower than ARCHITECTURE ownership.
+// A separate closed KRS governance review bundle below grants no app or generic
+// workflow/tooling admission and never reads a candidate-provided allowlist.
+export const KRS_GOVERNANCE_REVIEW_FILES = Object.freeze([
+  '.github/workflows/governance-preflight.yml',
+  'Canon/evidence/2026-10-22-krs-registry-foundation.json',
+  'Canon/evidence/2026-10-22-krs-registry-foundation.md',
+  'Canon/evidence/2026-10-22-krs-registry-g1-onboarding.json',
+  'Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md',
+  'Canon/evidence/2026-10-22-krs-registry-01b-acceptance.json',
+  'Canon/evidence/2026-10-22-krs-registry-01b-acceptance.md',
+  'Canon/registries/architecture-onboarding-v1.json',
+  'Canon/registries/current-architecture-baseline-v1.json',
+  'Canon/registries/governance-manifest-v2.json',
+  'Canon/runbooks/krs-registry-task02-execution-handoff-v1.md',
+  'Canon/v1.0-krs-registry-architecture-and-ownership-canon.md',
+  'Canon/v1.1-repository-routing-and-module-ownership-canon.md',
+  'scripts/governance/identity-runtime-onboarding.test.mjs',
+  'scripts/governance/krs-registry-routing.test.mjs',
+])
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -60,9 +78,12 @@ function architecturePathAllowed(name) {
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  const krsReview = files.length === KRS_GOVERNANCE_REVIEW_FILES.length
+    && files.every(file => KRS_GOVERNANCE_REVIEW_FILES.includes(file?.filename))
   const names = new Set()
   for (const file of files) {
-    if (!architecturePathAllowed(file.filename) || !['added', 'modified', 'removed'].includes(file.status)
+    if (!(krsReview || architecturePathAllowed(file.filename))
+      || !(krsReview ? ['added', 'modified'] : ['added', 'modified', 'removed']).includes(file.status)
       || Object.hasOwn(file, 'previous_filename') || !shaPattern.test(file.sha ?? '') || names.has(file.filename)) fail('ARCHITECTURE_PATH_REJECTED')
     names.add(file.filename)
   }
@@ -71,7 +92,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const routing = resolveProjectRouting({profile, targets: [...names], repositoryRoot})
   if (!routing.ok || routing.results.some(r => r.projectBoundaryStatus !== 'ALLOWED' || r.baselineClassification !== 'ALIGNED'
     || r.currentOwner !== (r.normalizedPath.startsWith('packages/') ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
-  if (![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
+  if (!krsReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
 }
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
