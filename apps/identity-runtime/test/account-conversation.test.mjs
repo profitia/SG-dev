@@ -1,0 +1,49 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { createClerkConversation, conversationClientScript } from '../dist/src/account-conversation.js'
+import { conversationMarkup } from '../dist/src/account-visuals.js'
+function fixture(registration=true, overrides={}) {
+ const calls=[], factors=[{strategy:'email_code',emailAddressId:'email_fixture'},{strategy:'password'}]
+ const wrap=(name,result)=>async input=>{calls.push([name,input]); if (overrides[name]) return overrides[name](input); return result}
+ const complete={status:'complete',createdSessionId:'sess_fixture'}
+ const signup={create:wrap('createUp',{status:'missing_requirements',missingFields:[]}),prepareEmailAddressVerification:wrap('prepareUp',{}),attemptEmailAddressVerification:wrap('verifyUp',complete)}
+ const signin={supportedFirstFactors:factors,create:wrap('createIn',{status:'needs_first_factor',supportedFirstFactors:factors}),prepareFirstFactor:wrap('prepareIn',{}),attemptFirstFactor:wrap('verifyIn',complete)}
+ const sdk={client:{signUp:signup,signIn:signin},setActive:wrap('activate',{})}
+ return {model:createClerkConversation(sdk,registration),calls,sdk}
+}
+async function registrationToCode(f) { for(const x of ['male','Adam','Testowy','synthetic@example.test']) await f.model.submit(x) }
+test('short registration uses official create, email prepare, actual verification and setActive in order',async()=>{
+ const f=fixture();await registrationToCode(f);assert.equal(f.model.state.step,'code');assert.equal(f.model.state.complete,false)
+ assert.deepEqual(f.calls,[['createUp',{firstName:'Adam',lastName:'Testowy',emailAddress:'synthetic@example.test'}],['prepareUp',{strategy:'email_code'}]])
+ await f.model.submit('123456');assert.equal(f.model.state.complete,true);assert.deepEqual(f.calls.at(-2),['verifyUp',{code:'123456'}]);assert.deepEqual(f.calls.at(-1),['activate',{session:'sess_fixture'}])
+})
+test('wrong or expired provider code never activates and permits retry',async()=>{
+ const f=fixture(true,{verifyUp:()=>{throw Error('provider rejected')}});await registrationToCode(f);await assert.rejects(f.model.submit('123456'));assert.equal(f.model.state.step,'code');assert.equal(f.model.state.complete,false);assert(!f.calls.some(x=>x[0]==='activate'));assert.equal(f.model.state.busy,false)
+})
+test('missing required provider fields and legal acceptance go to the official challenge',async()=>{
+ const f=fixture(true,{createUp:()=>({status:'missing_requirements',missingFields:['legal_accepted']})});await registrationToCode(f);assert.equal(f.model.state.step,'challenge');assert.deepEqual(f.calls.map(x=>x[0]),['createUp']);assert.equal(f.model.state.complete,false)
+})
+test('email sign-in selects provider-issued email factor and waits for verified session',async()=>{
+ const f=fixture(false);for(const x of ['female','email_code','synthetic@example.test'])await f.model.submit(x);assert.equal(f.model.state.step,'code');assert.deepEqual(f.calls.at(-1),['prepareIn',{strategy:'email_code',emailAddressId:'email_fixture'}]);await f.model.submit('654321');assert.deepEqual(f.calls.at(-2),['verifyIn',{strategy:'email_code',code:'654321'}]);assert.equal(f.model.state.complete,true)
+})
+test('password sign-in keeps password out of conversation state and delegates device/MFA challenge',async()=>{
+ const f=fixture(false,{verifyIn:()=>({status:'needs_second_factor'})});for(const x of ['male','password','synthetic@example.test','sensitive fixture only'])await f.model.submit(x);assert.equal(f.model.state.step,'challenge');assert.equal(f.model.state.complete,false);assert(!JSON.stringify(f.model.state).includes('sensitive'));assert(!f.calls.some(x=>x[0]==='activate'));assert.deepEqual(f.calls.at(-1),['verifyIn',{strategy:'password',password:'sensitive fixture only'}])
+})
+test('unsupported sign-in strategies cannot be locally treated as authenticated',async()=>{
+ const f=fixture(false);f.sdk.client.signIn.supportedFirstFactors=[];for(const x of ['male','email_code','synthetic@example.test'])await f.model.submit(x);assert.equal(f.model.state.step,'challenge');assert(!f.calls.some(x=>x[0]==='activate'))
+})
+test('incomplete provider result with session id and complete result without id cannot activate',async()=>{
+ for(const result of [{status:'needs_second_factor',createdSessionId:'sess_incomplete'},{status:'complete',createdSessionId:null}]){const f=fixture(true,{verifyUp:()=>result});await registrationToCode(f);await f.model.submit('123456');assert.equal(f.model.state.complete,false);assert(!f.calls.some(x=>x[0]==='activate'))}
+})
+test('parallel submission is fenced and code format is checked before the SDK',async()=>{
+ let release;const f=fixture(true,{verifyUp:()=>new Promise(r=>{release=r})});await registrationToCode(f);await assert.rejects(f.model.submit('12x'));assert.equal(f.calls.length,2);const first=f.model.submit('123456');await f.model.submit('654321');assert.equal(f.calls.filter(x=>x[0]==='verifyUp').length,1);release({status:'complete',createdSessionId:'sess_fixture'});await first;assert.equal(f.model.state.complete,true)
+})
+test('provider activation failure never reports account ready',async()=>{
+ const f=fixture(true,{activate:()=>{throw Error('activation failed')}});await registrationToCode(f);await assert.rejects(f.model.submit('123456'));assert.equal(f.model.state.complete,false)
+})
+test('resend remains provider-owned and contains no user supplied verification authority',async()=>{
+ const f=fixture();await registrationToCode(f);await f.model.resend();assert.deepEqual(f.calls.at(-1),['prepareUp',{strategy:'email_code'}]);assert.equal(f.model.state.complete,false)
+})
+test('V2 keeps six secure code inputs, submit/Enter semantics, accessible send and avatar controls',()=>{
+ const html=conversationMarkup(false,true,'https://identity.example/login','https://identity.example/registration');assert.equal((html.match(/class="sg-v2-code-input"/g)||[]).length,6);assert(html.includes('type="submit"'));assert(html.includes('aria-label="Wyślij"'));assert(html.includes('id="clerk-captcha"'));assert(html.includes('Zmień awatara'));assert(!/firma|branża|Organisation ID|Symulacja|dowolny kod/.test(html));assert(!/innerHTML|insertAdjacentHTML|localStorage|sessionStorage|console\./.test(conversationClientScript));assert(conversationClientScript.includes('row.animate'));assert(conversationClientScript.includes('prefers-reduced-motion'))
+})
