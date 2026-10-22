@@ -456,7 +456,7 @@ SQL requires an explicitly accepted existing access installation and an operator
 
 Source and real synthetic PostgreSQL tests do not install this schema into Neon, configure Clerk, create an app/service or establish browser-session compatibility. The installation plan, operator actions, privacy/rollback policy and exact checksum are in `Canon/evidence/2026-10-21-identity-profile-b1-handoff.md`. Do not use mechanical DROP SCHEMA for rollback or enable registration before that installation/acceptance task.
 
-## Optional binding renewal source — package 1.25.0
+## Optional binding renewal source — unchanged aggregate 1.24.0
 
 `identity-renewal`1.0.0 and additive profile SQL002 leave SQL001 and both accepted installation digests unchanged. The existing provisioner opts in only with an explicit `renewalSchemaDigest`; otherwise its original expired-binding denial remains. SQL002 installs no role, key, policy activation or identity. Its separate installation digest and three API grants require owner-controlled installation after verified recovery. All new policy columns default off.
 
