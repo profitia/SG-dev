@@ -1,8 +1,14 @@
-import {closed,demand,krs,calendarDate,parseJson,instant} from '@profitia/krs-registry-contracts'
+import {closed,demand,krs,calendarDate,parseJson,instant,sha256} from '@profitia/krs-registry-contracts'
 import type {RegistryCommand} from '@profitia/krs-registry-contracts'
 import type {NativeExternalResult} from '@profitia/platform-contracts/external-call'
+import {externalCallEvidence} from '@profitia/platform-contracts/external-call'
+import type {ExternalCallEvidence} from '@profitia/platform-contracts/external-call'
 import {RegistryError} from './errors.js'
 export const KRS_ORIGIN='https://api-krs.ms.gov.pl'
+export type KrsResponse={bytes:Uint8Array;retrievedAt:string}
+const responseProofs=new WeakMap<object,Readonly<{source:Readonly<ExternalCallEvidence>;rawDigest:string;retrievedAt:string;url:string}>>()
+/** Process-owned proof from the actual settled native Source, never a JSON DTO. */
+export const krsResponseEvidence=(value:unknown)=>value&&typeof value==='object'?responseProofs.get(value)??null:null
 export function parseCommand(value:unknown):RegistryCommand{
   const op=(value as {operation?:unknown})?.operation
   if(op==='CURRENT'||op==='FULL'){
@@ -29,7 +35,7 @@ export function createKrsClient(options:{source?:AdmittedSourcePort;externalEnab
   const now=options.now??Date.now,limit=options.maximumCalls??20,timeout=options.timeoutMs??20000,cap=options.maximumBytes??4*1024*1024
   demand(Number.isInteger(limit)&&limit>0&&limit<=1000&&timeout>0&&timeout<=20000&&cap>0&&cap<=4*1024*1024)
   return Object.freeze({
-    async get(value:unknown,intentKey:string):Promise<{bytes:Uint8Array;retrievedAt:string}>{
+    async get(value:unknown,intentKey:string):Promise<KrsResponse>{
       const command=parseCommand(value);demand(typeof intentKey==='string'&&intentKey.length>0&&intentKey.length<=256)
       if(!options.externalEnabled||!options.source)throw new RegistryError('SOURCE_ADMISSION_UNAVAILABLE')
       if(inFlight||calls>=limit||now()<openUntil)throw new RegistryError('SOURCE_BUDGET_OR_CIRCUIT_DENIED')
@@ -46,7 +52,10 @@ export function createKrsClient(options:{source?:AdmittedSourcePort;externalEnab
         if(result.bytes.length>cap)throw new RegistryError('OVERSIZED_RESPONSE',null,'RESPONSE')
         if(result.status!==200){const retry=result.headers['retry-after'],retryAfter=retry&&/^\d{1,5}$/.test(retry)?new Date(now()+Number(retry)*1000).toISOString():instant(retry)?retry:null;throw new RegistryError('KRS_HTTP_'+result.status,retryAfter,'RESPONSE')}
         parseJson(new TextDecoder('utf-8',{fatal:true}).decode(result.bytes),cap)
-        failures=0;return {bytes:result.bytes,retrievedAt:new Date(now()).toISOString()}
+        const response={bytes:new Uint8Array(result.bytes),retrievedAt:new Date(now()).toISOString()},source=externalCallEvidence(result)
+        if(source?.transportProtocol==='profitia.external-native-http')responseProofs.set(response,Object.freeze({
+          source,rawDigest:await sha256(response.bytes),retrievedAt:response.retrievedAt,url:result.url}))
+        failures=0;return response
       }catch(error){failures++;if(failures>=3)openUntil=now()+60000
         if(error instanceof RegistryError)throw error
         throw new RegistryError('KRS_UNAVAILABLE',null,(error as {certainty?:string})?.certainty==='NOT_SENT'?'NOT_SENT':'UNVERIFIED')

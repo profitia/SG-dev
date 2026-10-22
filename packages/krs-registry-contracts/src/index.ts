@@ -2,7 +2,7 @@ export * from './validation.js'
 export * from './identity.js'
 import type {HistoricalRegistrationCandidateV1} from './identity.js'
 import {closed,demand,text,krs,nip,regon,digest,instant,calendarDate,canonical,sha256,parseJson} from './validation.js'
-import {NORMALIZER_VERSION} from './identity.js'
+import {acceptedNormalizerVersion} from './identity.js'
 export const REGISTRY_CONTRACT = Object.freeze({id:'profitia.krs-registry',version:'1.0.0'})
 export type Register = 'P'|'S'
 export type Extract = 'CURRENT'|'FULL'
@@ -48,7 +48,7 @@ export async function validateCompanySnapshot(input:unknown):Promise<CompanySnap
   for(const value of v.historicalCandidates){const h=closed(value,['krs','relationship','basis','evidenceRefs','evidenceDigest']);demand(krs(h.krs)&&h.krs!==v.canonicalKrs&&!seen.has(h.krs));seen.add(h.krs);demand(['PREDECESSOR_CANDIDATE','SUCCESSOR_CANDIDATE'].includes(h.relationship as string)&&h.basis==='KRS_FORMATION_TRANSFORMATION'&&digest(h.evidenceDigest));demand(Array.isArray(h.evidenceRefs)&&h.evidenceRefs.length>=1&&h.evidenceRefs.length<=4&&h.evidenceRefs.every(x=>text(x))&&new Set(h.evidenceRefs).size===h.evidenceRefs.length)}
   for(const field of ['missingFields','warnings'])demand(Array.isArray(v[field])&&(v[field] as unknown[]).length<=100&&(v[field] as unknown[]).every(x=>text(x)))
   const s=closed(v.source,['provider','register','extract','sourceRecordId','sourceVersion','normalizerVersion','rawDigest','contentDigest','sourceAsOfDate','entryNumber','retrievedAt','checkedAt'])
-  demand(s.provider==='KRS'&&['P','S'].includes(s.register as string)&&['CURRENT','FULL'].includes(s.extract as string)&&s.sourceRecordId===v.canonicalKrs&&s.normalizerVersion===NORMALIZER_VERSION&&text(s.sourceVersion)&&digest(s.rawDigest)&&digest(s.contentDigest)&&(s.sourceAsOfDate===null||calendarDate(s.sourceAsOfDate)))
+  demand(s.provider==='KRS'&&['P','S'].includes(s.register as string)&&['CURRENT','FULL'].includes(s.extract as string)&&s.sourceRecordId===v.canonicalKrs&&acceptedNormalizerVersion(s.normalizerVersion)&&text(s.sourceVersion)&&digest(s.rawDigest)&&digest(s.contentDigest)&&(s.sourceAsOfDate===null||calendarDate(s.sourceAsOfDate)))
   demand((s.entryNumber===null||Number.isSafeInteger(s.entryNumber)&&(s.entryNumber as number)>0)&&instant(s.retrievedAt)&&instant(s.checkedAt)&&Date.parse(s.checkedAt)>=Date.parse(s.retrievedAt))
   demand(text(v.evidenceRef))
   const {contract,version,source,evidenceRef,...facts}=v
