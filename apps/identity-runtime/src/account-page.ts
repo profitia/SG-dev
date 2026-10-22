@@ -54,7 +54,7 @@ window.addEventListener('load', async () => {
   }
   retry.onclick = () => { if (!sdkReady) { window.location.reload(); return; } active = null; void complete(); };
   logout.onclick = async () => { ++generation; active = null; controller?.abort(); status.textContent = cfg.en ? 'Signing out…' : 'Wylogowywanie…';
-    try { await window.Clerk.signOut(); void complete(); } catch { status.textContent = cfg.en ? 'Sign-out was not confirmed. Please try again.' : 'Wylogowanie nie zostało potwierdzone. Spróbuj ponownie.'; retry.hidden = true; logout.hidden = false; } };
+    try { await window.Clerk.signOut({ redirectUrl: cfg.signInUrl }); void complete(); } catch { status.textContent = cfg.en ? 'Sign-out was not confirmed. Please try again.' : 'Wylogowanie nie zostało potwierdzone. Spróbuj ponownie.'; retry.hidden = true; logout.hidden = false; } };
   try { if (!window.Clerk || !window.__internal_ClerkUICtor) throw Error('SDK_UNAVAILABLE');
     await window.Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor }, signInUrl: cfg.signInUrl, signUpUrl: cfg.signUpUrl,
       allowedRedirectOrigins: cfg.allowedRedirectOrigins, localization: cfg.localization }); sdkReady = true;
