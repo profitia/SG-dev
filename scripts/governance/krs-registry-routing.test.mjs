@@ -17,6 +17,21 @@ const registryPath='Canon/registries/current-architecture-baseline-v1.json'
 const original=JSON.parse(execFileSync('git',['show',`${evidence.authoritySha}:${registryPath}`],{cwd:root,encoding:'utf8'}))
 const candidates=evidence.registeredSurfaces
 const targets=['apps/krs-registry-runtime/src/server.mjs','packages/krs-registry-contracts/src/index.mjs','.github/workflows/krs-registry-ci.yml']
+// This immutable acceptance checkpoint predates TASK02 source creation. Git
+// failures must fail the test; only a successful empty tree listing is absence.
+const g1Checkpoint='0ad9525f1397d41b965787fb487492a713ba0e54'
+const implementationPaths=['apps/krs-registry-runtime','packages/krs-registry-contracts',targets[2]]
+function inspectCheckpoint(repositoryRoot,checkpoint){
+ assert.match(checkpoint,/^[a-f0-9]{40}$/)
+ const git=args=>execFileSync('git',args,{cwd:repositoryRoot,encoding:'utf8',stdio:['ignore','pipe','pipe']})
+ const commit=git(['rev-parse','--verify',`${checkpoint}^{commit}`]).trim()
+ assert.equal(commit,checkpoint,'Checkpoint must identify the exact commit')
+ const tree=git(['rev-parse','--verify',`${commit}^{tree}`]).trim()
+ assert.match(tree,/^[a-f0-9]{40}$/)
+ const present=git(['ls-tree','--full-tree','--name-only','-z',tree,'--',...implementationPaths]).split('\0').filter(Boolean)
+ assert.ok(present.every(p=>implementationPaths.includes(p)),'Unexpected Git tree output')
+ return {commit,tree,present}
+}
 const fixture=(fn,{candidate=true}={})=>{
  const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'krs-routing-'))
  try{
@@ -100,7 +115,39 @@ test('active onboarding preserves physical resources and earlier planned modules
  assert.equal(k.runtimeCreated,false);assert.equal(k.plannedRender.serviceId,null);assert.equal(k.plannedRender.createOrDeployAuthorized,false);assert.equal(k.catalogStorage.projectId,null)
  assert.equal(k.activation,'DEFERRED');assert.equal(k.synchronization,'DISABLED');assert.match(k.financialAdmissionInvariant,/KRS and NIP reconciliation/)
  for(const key of ['resourceCreationAuthority','deploymentAuthority','productDatabaseMutationAuthority','e1GrantExpansionAuthority'])assert.equal(k[key],'NOT_AUTHORIZED_BY_G1')
- for(const p of ['apps/krs-registry-runtime','packages/krs-registry-contracts',targets[2]])assert.equal(fs.existsSync(path.join(root,p)),false)
+ const checkpoint=inspectCheckpoint(root,g1Checkpoint)
+ assert.deepEqual(checkpoint.present,[],'Accepted G1/TASK01B Git tree must contain no KRS implementation')
+})
+test('historical inspection distinguishes absent paths from invalid objects and unrelated Git failure',()=>{
+ assert.deepEqual(inspectCheckpoint(root,g1Checkpoint).present,[])
+ assert.throws(()=>inspectCheckpoint(root,'f'.repeat(40)))
+ assert.throws(()=>inspectCheckpoint(root,'main'))
+ const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'krs-no-repository-'))
+ try{assert.throws(()=>inspectCheckpoint(scratch,g1Checkpoint))}finally{fs.rmSync(scratch,{recursive:true,force:true})}
+})
+test('historical absence remains true after present-day implementation paths are created',()=>{
+ const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'krs-checkpoint-'))
+ const git=args=>execFileSync('git',args,{cwd:scratch,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const commit=()=>git(['-c','user.name=KRS fixture','-c','user.email=krs-fixture@example.invalid','-c','commit.gpgsign=false','commit','--allow-empty','-m','Synthetic historical checkpoint'])
+ try{
+  git(['init','--quiet']);commit();const before=git(['rev-parse','HEAD'])
+  assert.deepEqual(inspectCheckpoint(scratch,before).present,[])
+  for(const [i,p]of implementationPaths.entries()){
+   const file=path.join(scratch,i===2?p:`${p}/fixture.mjs`)
+   fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,'// Synthetic source fixture, no runtime or cloud effect\n')
+  }
+  git(['add','--',...implementationPaths]);commit();const after=git(['rev-parse','HEAD'])
+  assert.deepEqual(inspectCheckpoint(scratch,after).present.sort(),[...implementationPaths].sort())
+  assert.deepEqual(inspectCheckpoint(scratch,before).present,[])
+ }finally{fs.rmSync(scratch,{recursive:true,force:true})}
+})
+test('present source still requires the current accepted exact owner routes',()=>{
+ for(let i=0;i<implementationPaths.length;i++)if(fs.existsSync(path.join(root,implementationPaths[i]))){
+  const result=activeRoute('ARCHITECTURE',[targets[i]])
+  assert.equal(result.ok,true,result.error);assert.equal(result.results[0].currentOwner,'Architecture Platform')
+  for(const consumer of ['SRM','SG2'])assert.equal(activeRoute(consumer,[targets[i]]).ok,false)
+ }
+ fixture(({resolve})=>{assert.equal(resolve('ARCHITECTURE',targets).ok,false)},{candidate:false})
 })
 test('manifest adds only the G1 decision after its active dependencies',()=>{
  const p='Canon/registries/governance-manifest-v2.json',m=JSON.parse(fs.readFileSync(path.join(root,p),'utf8'))
