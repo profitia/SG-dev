@@ -1,0 +1,673 @@
+{
+  "schemaVersion": "1.0.0",
+  "contractId": "srm.supplier-locations.design",
+  "status": "DESIGN_NOT_ADOPTED",
+  "taskId": "SRM-SUPPLIER-LOCATIONS-TASK01-20261021",
+  "sourceSha": "39d0aadfafa621c214a69ac1b7f666a8220a51b1",
+  "referenceSha": "faa97ee433a9f60de28b417b4ee323759c7c9ffb",
+  "targetEnvironment": "development",
+  "verdicts": {
+    "TASK_01_STATUS": "PARTIAL",
+    "MGBI_HEADQUARTERS": "VERIFIED",
+    "MGBI_BRANCHES": "NOT_CONFIRMED",
+    "VERCLY_RELATED_ENTITIES": "PARTIAL",
+    "RELATED_ENTITY_ADDRESS_SOURCE": "PARTIAL",
+    "THREE_GROUP_DOMAIN_CONTRACT": "PASS",
+    "E1_OPERATION_COVERAGE": "EXTENSION_REQUIRED",
+    "E1_PRODUCER_PUBLICATION": "PENDING",
+    "SRM_CONSUMER_ADOPTION_READY": "NO",
+    "GOOGLE_GEOCODING_POLICY": "PARTIAL",
+    "INFRASTRUCTURE_ACTION_REQUIRED": "YES",
+    "TASK_02_READY": "CONDITIONAL"
+  },
+  "providerVerdicts": {
+    "HEADQUARTERS": "VERIFIED",
+    "BRANCHES": "NOT_CONFIRMED",
+    "ADDITIONAL_MGBI_REQUEST_REQUIRED": "UNKNOWN",
+    "ADDITIONAL_MGBI_COST_OR_PERMISSION_REQUIRED": "UNKNOWN",
+    "RELATED_ENTITIES_SOURCE": "PARTIAL",
+    "RELATED_ENTITY_ADDRESS_SOURCE": "MGBI",
+    "RELATED_ENTITY_ENRICHMENT_REQUIRED": "YES",
+    "RELATED_ENTITY_PROVIDER_COST_GATE": "UNKNOWN"
+  },
+  "groups": {
+    "SUPPLIER_LOCATIONS": [
+      "HEADQUARTERS",
+      "BRANCH"
+    ],
+    "RELATED_ENTITIES": [
+      "RELATED_ENTITY_HEADQUARTERS",
+      "RELATED_ENTITY_OTHER_LOCATION"
+    ],
+    "USER_LOCATIONS": [
+      "USER_DEFINED"
+    ]
+  },
+  "enabledPopulation": {
+    "HEADQUARTERS": "FROM_VERIFIED_ACCEPTED_MGBI_SOURCE",
+    "BRANCH": "DISABLED_UNTIL_VERIFIED_PROVIDER_CONTRACT",
+    "RELATED_ENTITY_HEADQUARTERS": "VERIFIED_LEGAL_ENTITY_AND_AUTHORIZED_ADDRESS_REQUIRED",
+    "RELATED_ENTITY_OTHER_LOCATION": "DISABLED_UNTIL_VERIFIED_PROVIDER_CONTRACT",
+    "USER_DEFINED": "AUTHORIZED_MANUAL_INPUT"
+  },
+  "resource": {
+    "dataClass": "ORGANISATION_PRIVATE",
+    "ownerKeys": [
+      "organisationId"
+    ],
+    "scopeKeys": [
+      "organisationId",
+      "supplierId",
+      "locationId"
+    ],
+    "authorFields": [
+      "createdByUserId",
+      "updatedByUserId"
+    ],
+    "securityOwnerUserId": null,
+    "fields": {
+      "locationId": "server-generated opaque stable resource ID",
+      "organisationId": "verified E1 internal organisation UUID",
+      "supplierId": "existing organisation-scoped SRM supplier ID; not report/snapshot ID",
+      "group": "closed group enum",
+      "kind": "closed kind for the group",
+      "entity": "SUPPLIER or verified RELATED_LEGAL_ENTITY; country/KRS/NIP/REGON as corroborated source identity",
+      "label": "bounded user or admitted company text; never executable markup",
+      "address": "structured postal data plus original source text; immutable source provenance; address may be null for an unlocated related entity",
+      "addressFingerprint": "SHA256 of versioned normalized address; not identity or a permission",
+      "sourceIdentity": "provider/model/stable record/entity/branch ID; null where unverified",
+      "sourceSnapshot": "source report ID, version/digest, retrievedAt, effectiveAt, completeness",
+      "relationship": "private source snapshot, type, start/end, validity and retention; null outside RELATED_ENTITIES",
+      "provenance": "separate relationship and address sources; creator/editor are separate",
+      "version": "server monotonic optimistic-concurrency version",
+      "lifecycle": "ACTIVE|STALE|SUPERSEDED|INACTIVE|DEACTIVATED|PENDING_RECONCILIATION",
+      "syncStatus": "CURRENT|PENDING|SOURCE_UNAVAILABLE|CONFLICT|UNSUPPORTED_SOURCE",
+      "geocoding": "UNREQUESTED|PENDING|RESOLVED|UNRESOLVED|AMBIGUOUS|LOW_PRECISION|EXPIRED|QUOTA_EXCEEDED|UNAVAILABLE|DELIVERY_UNCERTAIN",
+      "geocodingEvidence": "provider, addressVersion, fetchedAt, expiresAt, placeId, position only while permitted; server credential absent",
+      "retentionUntil": "earliest applicable source/data-policy expiry; manual input follows organisation retention policy",
+      "auditRef": "protected decision/intent/outcome reference without raw private payload"
+    }
+  },
+  "identity": {
+    "businessKey": [
+      "organisationId",
+      "supplierId",
+      "group",
+      "kind",
+      "verifiedSourceEntityId",
+      "verifiedSourceBranchId"
+    ],
+    "deduplicateByCoordinates": false,
+    "deduplicateByAddressAlone": false,
+    "manualIdentity": "server locationId with actor/org/supplier-scoped idempotency key",
+    "missingStableSourceId": "PENDING_RECONCILIATION; stable observation within same snapshot only, no inferred cross-version merge",
+    "relatedEntityMatch": "country plus verified KRS; NIP checksum plus unique corroborating corporate record if no KRS; REGON secondary; name-only and sole-proprietor/person matches never admit marker"
+  },
+  "providerFields": [
+    {
+      "id": "MGBI_HQ",
+      "path": "content.current_excerpt.dane.dzial1.siedzibaIAdres.adres",
+      "type": "object|null",
+      "cardinality": "0..1",
+      "fields": [
+        "ulica",
+        "nrDomu",
+        "nrLokalu",
+        "kodPocztowy",
+        "miejscowosc",
+        "poczta",
+        "kraj"
+      ],
+      "sourceDatePaths": [
+        "content.current_excerpt.naglowekA.stanZDnia",
+        "content.current_excerpt.naglowekA.dataCzasOdpisu"
+      ],
+      "mapping": "SUPPLIER_LOCATIONS/HEADQUARTERS",
+      "evidence": "official Get Records public sample plus current mapper and synthetic mapper regression; not a new live customer request",
+      "confidence": "VERIFIED_STRUCTURAL_MAPPING; source freshness/completeness and geographic accuracy are separate",
+      "legalUse": "Account licence/reuse entitlement not inferred from public example; admitted corporate projection only"
+    },
+    {
+      "id": "MGBI_BRANCH",
+      "path": null,
+      "type": "UNVERIFIED",
+      "cardinality": "UNKNOWN",
+      "stableBranchId": null,
+      "mapping": "SUPPLIER_LOCATIONS/BRANCH",
+      "fallback": "UNSUPPORTED_SOURCE; do not infer an empty current branch set or publish guessed markers"
+    },
+    {
+      "id": "VERCLY_RELATION",
+      "path": "Body.DepEntities[]",
+      "fields": [
+        "Name",
+        "Role",
+        "Ids[].Type/Value",
+        "Attributes[Name=Start].Value",
+        "Attributes[Name=Koniec].Value",
+        "Mandates[].Description",
+        "Sanctions"
+      ],
+      "mapping": "RELATED_ENTITIES candidate only",
+      "evidence": "current mapper and synthetic response; apps/vercly declares unknown[]; address capability and live provider payload not confirmed"
+    },
+    {
+      "id": "VERCLY_RELATED_ADDRESS",
+      "path": null,
+      "type": "UNVERIFIED",
+      "mapping": "NONE",
+      "fallback": "do not reuse Body.Entity address for every related entity"
+    },
+    {
+      "id": "MGBI_RELATED_HQ",
+      "path": "content.current_excerpt.dane.dzial1.siedzibaIAdres.adres",
+      "mapping": "RELATED_ENTITIES/RELATED_ENTITY_HEADQUARTERS only after unique legal-entity match",
+      "evidence": "address capability verified; availability for each private related entity and contract entitlement not verified"
+    }
+  ],
+  "provenancePolicy": {
+    "rawKysAllowedInMap": false,
+    "naturalPersonsAllowed": false,
+    "publicResidentialAddressInference": false,
+    "relationshipAndAddressSeparate": true,
+    "classificationDoesNotBecomeSharedByEnrichment": true,
+    "sourceAccessRecheckedBeforeRead": true,
+    "maxKysHours": 168,
+    "privateProjectionExpiry": "min(sourceRetention,relationshipValidity,grantValidity,organisationPolicy); no retention extension by copying"
+  },
+  "operations": [
+    {
+      "operation": "supplier.location.read",
+      "feature": "supplier_report",
+      "resourceType": "supplier_location_collection",
+      "dataClass": "ORGANISATION_PRIVATE",
+      "effect": "READ",
+      "product": "SUPPLIER_INTELLIGENCE",
+      "actor": "HUMAN with current membership",
+      "permission": "explicit read for collection; plus supplier.private.read for current KYS input when related group is requested",
+      "usage": "no provider call",
+      "idempotency": "read current authorised projection; cache private/no-store",
+      "audit": "SECURITY_REQUIRED INTENT/OUTCOME; minimal IDs, versions and result"
+    },
+    {
+      "operation": "supplier.location.write",
+      "feature": "supplier_report",
+      "resourceType": "supplier_location",
+      "dataClass": "ORGANISATION_PRIVATE",
+      "effect": "WRITE",
+      "product": "SUPPLIER_INTELLIGENCE",
+      "actor": "HUMAN with current membership",
+      "permission": "explicit write, resource scope; create/update/deactivate MANUAL only; read rights required for returned resource",
+      "usage": "no implicit geocoding",
+      "idempotency": "actor/org/supplier/operation/key plus payload digest; expectedVersion; conflict409",
+      "audit": "SECURITY_REQUIRED atomic write and protected OUTCOME"
+    },
+    {
+      "operation": "supplier.location.sync",
+      "feature": "supplier_report",
+      "resourceType": "supplier_location_sync_request",
+      "dataClass": "OPERATION_AUDIT",
+      "effect": "REQUEST_COMPUTE",
+      "product": "SUPPLIER_INTELLIGENCE",
+      "actor": "HUMAN admission; SERVICE executes via bounded existing job.execute delegation",
+      "permission": "explicit sync; exact authorised accepted report inputs; KYS private.read when applicable",
+      "usage": "local source reuse only; no new MGBI/Vercly/Google call",
+      "idempotency": "org/supplier/source-kind/source-snapshot/projector-version; durable work fence and expected collection version",
+      "audit": "SECURITY_REQUIRED accepted request plus actual service and initiating subjectUserId"
+    },
+    {
+      "operation": "supplier.location.geocode",
+      "feature": "supplier_report",
+      "resourceType": "supplier_location_geocode_request",
+      "dataClass": "OPERATION_AUDIT",
+      "effect": "REQUEST_EXTERNAL",
+      "product": "SUPPLIER_INTELLIGENCE",
+      "actor": "HUMAN admission; SERVICE via bounded job.execute plus existing Source transport authority",
+      "permission": "explicit geocode and read exact location/addressVersion; related input current private.read; no write via browser key",
+      "usage": "finite owner-approved organisation and provider caps; atomic reservation before possible upstream attempt; default0",
+      "idempotency": "org/location/addressVersion/provider/policy-version; one in-flight attempt; uncertain delivery never blindly retried",
+      "audit": "SECURITY_REQUIRED reserve/attempt/settle and outcome; provider error bodies/key/address omitted"
+    }
+  ],
+  "access": {
+    "unknownOperation": "DENY",
+    "crossOrganisation": "DENY",
+    "authorAsOwner": "DENY",
+    "revokedMembership": "DENY_AND_INVALIDATE_HOST_PROJECTION",
+    "privateSourceExpired": "WITHHOLD_AND_PURGE_PRIVATE_DERIVATIVES",
+    "missingAudit": "DENY",
+    "missingBudget": "DENY_NEW_EXTERNAL_EFFECT",
+    "staleVersion": "CONFLICT_NO_WRITE",
+    "directMapsWrite": "UNSUPPORTED",
+    "embedded": "host authorised projection; existing generic read channel only; commands require separate explicit host/channel adoption"
+  },
+  "lifecycle": [
+    {
+      "event": "FIRST_ACCEPTED_REPORT",
+      "action": "admit exact source snapshot then idempotent sync; preserve unresolved postal records; geocode only with separate admitted budget"
+    },
+    {
+      "event": "REOPEN_REPORT",
+      "action": "authorised stored read; no source acquisition/sync duplication; SDK lazy until explicit map action"
+    },
+    {
+      "event": "NEW_ACCEPTED_REPORT",
+      "action": "compare authoritative source version; update source-owned rows; preserve manual rows; same version/digest no-op"
+    },
+    {
+      "event": "SAME_EFFECTIVE_DATE_DIFFERENT_DIGEST",
+      "action": "CONFLICT/PENDING_RECONCILIATION; retrieval time alone does not prove source supersession"
+    },
+    {
+      "event": "PARTIAL_OR_FAILED_SOURCE",
+      "action": "keep last known source evidence with stale status; do not interpret omissions as closure"
+    },
+    {
+      "event": "VERIFIED_BRANCH_REMOVAL_OR_RELATIONSHIP_END",
+      "action": "mark inactive/superseded with source evidence; exclude current markers; keep only retention-permitted history"
+    },
+    {
+      "event": "MANUAL_CHANGE",
+      "action": "write own organisation manual record with expectedVersion; preserve provenance and unrelated records"
+    },
+    {
+      "event": "PRIVATE_SOURCE_EXPIRY",
+      "action": "stop related-entity projection immediately; purge expired private address relationship derivatives; retain minimal allowed audit"
+    },
+    {
+      "event": "GOOGLE_COORDINATE_EXPIRY",
+      "action": "delete expired cached coordinates; keep lawful business address; expose unresolved/expired pending separately authorised resolution"
+    }
+  ],
+  "geocodingPolicy": {
+    "jurisdiction": "EEA_CONSERVATIVE_PENDING_BILLING_COUNTRY_READBACK",
+    "billingCountryVerified": false,
+    "coordinateCacheMaxDays": 30,
+    "indefiniteEndUserCacheSharedAcrossUsers": false,
+    "placeIdMayBeRetained": true,
+    "copyGoogleFormattedAddress": false,
+    "sourceAddressPersistentSeparately": true,
+    "relatedExpiryBoundedByKys": true,
+    "failedOrAmbiguousMarker": false,
+    "automaticPaidRetry": false,
+    "singleFlightScope": [
+      "organisationId",
+      "locationId",
+      "addressVersion",
+      "provider",
+      "policyVersion"
+    ],
+    "defaultProviderCalls": 0,
+    "mapLoadBilling": "Dynamic Maps loads can be separately billed; reopening report does not mount/load SDK automatically",
+    "acceptedAutomaticLocationTypes": [
+      "ROOFTOP"
+    ],
+    "otherPrecision": "LOW_PRECISION with no automatic marker; postal record preserved; Google precision inspected transiently only"
+  },
+  "references": {
+    "mgbiRecords": "https://mgbi-api.apidog.io/get-records-9055163e0",
+    "mgbiProjections": "https://mgbi-api.apidog.io/get-projections-14004863e0",
+    "mgbiConcepts": "https://mgbi-api.apidog.io/poj%C4%99cia-691258m0",
+    "googleEea": "https://cloud.google.com/terms/maps-platform/eea/maps-service-terms",
+    "googleGeocoding": "https://developers.google.com/maps/documentation/geocoding/policies",
+    "googleBilling": "https://developers.google.com/maps/documentation/geocoding/usage-and-billing",
+    "mapBilling": "https://developers.google.com/maps/documentation/javascript/usage-and-billing"
+  },
+  "routing": {
+    "SRM": [
+      {
+        "path": "apps/srm/src/server/supplier-locations.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/supplier-location-store.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/supplier-location-sync.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/supplier-location-geocoding.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/mgbi-general.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/company-general-cache.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/vercly-kys.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/supplier-api-composition.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/supplier-sensitive-operation.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/supplier-native-company.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/supplier-native-sensitive.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/server/private-runtime.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/modules/xray/supplier-report.tsx",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/modules/xray/use-supplier-report.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/modules/xray/report-controller.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/src/app/api/supplier-locations/route.ts",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/db/private-store/013-supplier-locations.sql",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/srm/operation-integration.json",
+        "owner": "SRM Runtime",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/srm-xray/src/supplier-locations.ts",
+        "owner": "SRM X-Ray Module",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/srm-xray/src/contracts.ts",
+        "owner": "SRM X-Ray Module",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/srm-xray/src/index.ts",
+        "owner": "SRM X-Ray Module",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/maps-contracts/index.mjs",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/maps-contracts/index.d.mts",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/maps-embed/index.mjs",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/maps-embed/index.d.mts",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/maps-runtime/src/client/embed.mjs",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/maps-runtime/src/server/google/geocoding.mjs",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/maps-runtime/src/server/server.mjs",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/maps-runtime/src/server/config.mjs",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "apps/maps-runtime/platform-integration.json",
+        "owner": "Maps Capability",
+        "state": "ALIGNED"
+      }
+    ],
+    "ARCHITECTURE": [
+      {
+        "path": "packages/platform-contracts/src/operation-context.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/operation-context.d.mts",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/request-operations.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/access-store.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/test/operation-context.test.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "Canon/registries/operation-access-matrix-v1.json",
+        "owner": "Governance Source Layer",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "Canon/v1.0-operation-context-and-access-contract.md",
+        "owner": "Governance Source Layer",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/private-operation-host.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/request-ledger.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/delegated-job.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/request-work.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/external-call.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/src/native-external-transport.mjs",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      },
+      {
+        "path": "packages/platform-contracts/migrations/access/019-supplier-location-operations.sql",
+        "owner": "Architecture Platform",
+        "state": "ALIGNED"
+      }
+    ]
+  },
+  "samples": [
+    {
+      "id": "synthetic-hq",
+      "label": "SYNTHETIC supplier headquarters",
+      "kind": "HEADQUARTERS",
+      "source": "MGBI",
+      "address": "SYNTHETIC ADDRESS A",
+      "position": {
+        "lat": 52.2297,
+        "lng": 21.0122
+      }
+    },
+    {
+      "id": "synthetic-related",
+      "label": "SYNTHETIC legal entity",
+      "kind": "RELATED_ENTITY_HEADQUARTERS",
+      "source": "VERCLY_RELATION+MGBI_ADDRESS"
+    },
+    {
+      "id": "synthetic-manual",
+      "label": "SYNTHETIC construction site",
+      "kind": "USER_DEFINED",
+      "source": "USER",
+      "address": "SYNTHETIC ADDRESS A",
+      "position": {
+        "lat": 52.2297,
+        "lng": 21.0122
+      }
+    }
+  ],
+  "consumerAcceptance": [
+    "two users same organisation share records without creator filter",
+    "same supplier in second organisation cannot read first organisation manual points or KYS relations",
+    "one user switching organisations cannot retain previous map state",
+    "revocation between request/worker/read denies or withholds result",
+    "source reload/retry/concurrent sync does not duplicate records/orders",
+    "source failure and missing fields preserve manual and last known source evidence",
+    "entity name-only/person/ambiguous match produces no marker",
+    "Google/KYS expiry invalidates coordinates/derived projection",
+    "ordinary database role RLS plus API/export/cache/background tests",
+    "actual Google/provider/UAT evidence stays separate from synthetic tests"
+  ],
+  "geocodingTransport": {
+    "status": "PROPOSED_REQUIRES_E1_PRODUCER_AND_BOTH_HOST_ADOPTIONS",
+    "caller": "SRM protected admitted geocode intent",
+    "executor": "existing Maps Runtime server; generic SERVICE executor; no business-row access or separate human login",
+    "endpoint": "POST /api/internal/geocode",
+    "authentication": "producer-approved existing E1 service identity and current bounded delegation; no local token verifier or browser credential",
+    "requestFields": [
+      "commandId",
+      "jobRef",
+      "addressVersion",
+      "address"
+    ],
+    "authorityFieldsInRequestBody": [],
+    "authorization": "jobRef resolves an unexpired grant for exact caller/executor/environment/organisation/location/addressVersion/address digest and bounded provider budget; recheck initiator authority; no authority from request IDs alone",
+    "maxAddressChars": 512,
+    "maxResponseBytes": 262144,
+    "providerDeadlineMs": 7000,
+    "responseFields": [
+      "commandId",
+      "addressVersion",
+      "status",
+      "position",
+      "placeId",
+      "coordinatesFetchedAt",
+      "coordinatesExpiresAt",
+      "auditReceiptRef"
+    ],
+    "persistence": "SRM applies result only after current access/source checks and matching addressVersion; Maps Runtime never connects to the SRM business schema",
+    "failure": "DENY before external effect when unsupported; retain uncertain delivery fence and settle audit; no fallback to public Google or local app-private import"
+  },
+  "observedDevelopment": {
+    "observedOn": "2026-10-21",
+    "srm": {
+      "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+      "deployId": "dep-dbbnb22fngtc73bn0i90",
+      "sourceSha": "260ade12608faaea27376c1c976db392f046f267",
+      "status": "live",
+      "autoDeploy": "off"
+    },
+    "maps": {
+      "serviceId": "srv-dbat5ulg1s2s73defcp0",
+      "deployId": "dep-dbati9rrjlhs73akpsj0",
+      "sourceSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+      "status": "live",
+      "businessPersistence": false
+    },
+    "privateBinding": {
+      "projectId": "spring-bread-28217539",
+      "branchId": "br-sparkling-term-b99l107x",
+      "database": "platform_private",
+      "role": "srm_private_development_runtime",
+      "superuser": false,
+      "bypassRls": false,
+      "privateRowsVisibleWithoutContext": 0
+    },
+    "legacyBinding": {
+      "projectId": "snowy-breeze-40315151",
+      "branchId": "br-dark-surf-b1vrhda9",
+      "database": "srm_app",
+      "role": "srm_app_runtime",
+      "superuser": false,
+      "bypassRls": false,
+      "privateRowsVisibleWithoutContext": 0
+    },
+    "inferenceLimit": "Zero visible rows without admitted context does not mean data is absent. No owner role, tenant impersonation, customer payload or paid provider call used."
+  },
+  "validations": {
+    "syntheticSourceAndContract": {
+      "pass": 43,
+      "fail": 0,
+      "skipped": 0,
+      "command": "node --import tsx --test --test-concurrency=1 scripts/supplier-locations-task01.test.mjs src/server/mgbi-general.test.ts src/server/company-general-cache.test.ts src/server/vercly-kys.test.ts src/server/kys-cache.test.ts"
+    },
+    "e1OperationContext": {
+      "pass": 150,
+      "fail": 0,
+      "skipped": 0,
+      "scope": "existing controlled authority tests, not new live operation adoption"
+    },
+    "maps": {
+      "pass": 12,
+      "fail": 0,
+      "skipped": 0,
+      "build": "PASS"
+    },
+    "newBusinessDatabaseE2E": "NOT_IMPLEMENTED_NOT_RUN",
+    "liveGoogleGeocoding": "NOT_RUN",
+    "liveCustomerProviderPayload": "NOT_READ"
+  }
+}
