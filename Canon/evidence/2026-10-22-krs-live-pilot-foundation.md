@@ -44,7 +44,8 @@ Producer PR620 is accepted on main2936119359f4614f7c864fa2456c4317a0ec065d.
 The owner subsequently approved USER-20261022-KRS-ISOLATED-PILOT: exact Free
 Render service and separate catalog DB on existing compute, limited technical
 bindings, at most20 official ORLEN reads, existing Financial budget only.
-Both resource IDs are now registered in the canonical topology. Render readback
+The SRM service is registered in its canonical topology; the public catalog
+is registered in the KRS-owned deployment target and this accepted KRS Canon. Render readback
 confirms service srv-dbd5hlcipgvc73d98ukg, Free, auto-deploy off, environment
 evm-dapbd70ae00c73cgrup0. Its bootstrap dep-dbd5hm4ipgvc73d98vdg serves only
 health200 and unavailable503; no authenticated application is claimed live.
@@ -64,9 +65,11 @@ Existing SRM regression:634 PASS,7 optional SQL tests skipped,0 failures.
 Credential transfer is separately awaiting explicit approval after automatic
 approval review rejected exporting source-service secrets. No secret copied.
 
-The catalog is registered under Development.publicKnowledgeStores, separately
-from the two immutable LAB identities. The primary laboratory and PMOS resource
-routing is preserved; the pilot does not substitute for either technical lab.
+The Architecture topology remains the exact historical PMOS/two-LAB registry.
+The new public application store is registered in KRS deployment/pilot-targets.json
+and the KRS Canon, separately from those laboratory identities. Its exact
+project/branch/database/ordinary-role binding is verified by the native Source
+installation and consumer connection checks; no laboratory routing is replaced.
 During publication, main advanced to a0a3b0626fac16e011b57d6284ce55abcfcd3ca3
 (coordinated Supplier Locations release / SDK1.25.0). This installer branch
 merges that accepted authority without changing its SDK or Maps sources.
