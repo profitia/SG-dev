@@ -100,9 +100,10 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
     },
     registration(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_GENERAL_METADATA_READ',null,pool=>readCompanyRegistration(s.organisationId,s.command.nip,pool))},
     pkd(input:SupplierNativeWorkSelection,general:SectionEnvelope<GeneralCompanyData>){const s=select(input),body=json(general);return run(s,'SRM_GENERAL_METADATA_READ',{bodyDigest:digest(body)},pool=>enrichCompanyPkd(s.organisationId,s.command.nip,body,pool))},
-    reproject(input:SupplierNativeWorkSelection,history?:Parameters<typeof reprojectFinancialArchive>[2]){
+    reproject(input:SupplierNativeWorkSelection,history?:Parameters<typeof reprojectFinancialArchive>[2],includeOriginalResponse=false){
+      if(typeof includeOriginalResponse!=='boolean')return refuse()
       const s=select(input),captured=history===undefined?undefined:json(history)
-      return run(s,'SRM_FINANCIAL_REPROJECT_READ',{historyDigest:digest(captured??null)},pool=>reprojectFinancialArchive(s.organisationId,s.command.nip,captured,pool))
+      return run(s,'SRM_FINANCIAL_REPROJECT_READ',{historyDigest:digest(captured??null),...(includeOriginalResponse?{includeOriginalResponse:true}:{})},pool=>reprojectFinancialArchive(s.organisationId,s.command.nip,captured,pool,includeOriginalResponse))
     },
     archive(input:SupplierNativeWorkSelection,model:'pl-krs-wp-record'|'pl-krs-rdf-record',pages:unknown[],recordCount:number,retrievedAt:string){
       const s=select(input),body=json({pages,recordCount,retrievedAt})

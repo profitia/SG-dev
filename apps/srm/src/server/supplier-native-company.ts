@@ -78,7 +78,7 @@ export function createSrmNativeCompanyLookup(options:Options){
       readFreshCompany:async(org,nip,at)=>{scope(org,nip);return store.cache(selection,at??clock())},
       readCompanyRegistration:async(org,nip)=>{scope(org,nip);return store.registration(selection)},
       enrichCompanyPkd:async(org,nip,section)=>{scope(org,nip);return store.pkd(selection,section)},
-      reprojectFinancialArchive:async(org,nip,history)=>{scope(org,nip);return store.reproject(selection,history)},
+      reprojectFinancialArchive:async(org,nip,history,callerPool,includeOriginalResponse)=>{scope(org,nip);if(callerPool!==undefined)return refuse();return store.reproject(selection,history,includeOriginalResponse)},
       fetchMgbiGeneral:async identifier=>{
         scope(selection.organisationId,identifier.value);if(identifier.type!=='NIP')return refuse()
         return originalCall(transport().fetcher,fetcher=>fetchMgbiGeneral(identifier,clientOptions(fetcher)))

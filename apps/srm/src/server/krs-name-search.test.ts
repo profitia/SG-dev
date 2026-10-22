@@ -30,6 +30,13 @@ test('typing and verifying are independent pure operations with zero Financial e
   const choice=await api.verify(f.request,krs);assert.equal(choice.selectionRef,f.selected.snapshot.evidenceRef);
   assert.deepEqual(f.calls,{acquire:0,publish:0,verify:1,search:1});
 });
+test('bounded licensed-document work returns only protected General and pending Financial without publication',async()=>{
+ const f=await fixture();f.ports.financial.acquire=async()=>({...f.result,workPending:true});
+ const result=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-pending-request-001');
+ assert.equal(result.pending,true);assert.equal(result.result.card.general.data?.registrySource?.provider,'KRS');
+ assert.equal(result.result.card.financial.status,'PENDING');assert.equal(result.result.card.financial.data,null);
+ assert.equal(result.metadata,null);assert.equal(f.calls.publish,0);
+});
 test('name report composes KRS General and the existing RDF mapper once, without MGBI General',async()=>{
   const f=await fixture(),r=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-name-request-001');
   assert.equal(r.result.card.identity.krs,krs);assert.equal(r.result.card.general.data?.registrySource?.provider,'KRS');

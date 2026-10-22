@@ -10,7 +10,7 @@ import {createSupplierSearchGateway} from '../src/modules/xray/supplier-search-g
 import { SupplierReport, reportMessage, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
 import { supplierNip, inactiveSupplier } from "../src/modules/xray/report-controller";
-import { SrmAuthenticatedView, SrmLogout, SrmSessionActions } from "./session-boundary";
+import { SrmAuthenticatedView, SrmLogout, SrmSessionActions, useSrmSessionTransport } from "./session-boundary";
 
 const summarySlot: NonNullable<SupplierReportSlots["summary"]> = context => <ExecutiveSummary input={{
   nip: supplierNip(context.supplier) ?? "", entityType: context.supplier.entityType, metadata: context.metadata,
@@ -33,9 +33,10 @@ export default function Home() {
 }
 
 function SupplierReportHome() {
-  const { state, controller } = useSupplierReport();
+  const transport=useSrmSessionTransport();
+  const { state, controller } = useSupplierReport(transport);
   const [identifier, setIdentifier] = useState("");
-  const [searchGateway] = useState(()=>createSupplierSearchGateway());
+  const [searchGateway] = useState(()=>createSupplierSearchGateway(transport));
   const inputRef = useRef<HTMLInputElement>(null);
   const inactive = inactiveSupplier(state.result);
   const entry = !state.result;

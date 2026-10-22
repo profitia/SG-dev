@@ -65,7 +65,7 @@ export class SupplierReportController {
         if (requestId && /^[0-9a-f-]{36}$/.test(requestId)) payload.timing = { requestId, mode: ["PROVIDER", "CACHE", "FOLLOWER"].includes(mode ?? "") ? mode : "UNAVAILABLE", serverTiming: response.headers.get("Server-Timing") };
       }
       if (!response.ok) throw new ReportRequestError(typeof payload?.error === "string" ? payload.error : "Nie udało się odczytać raportu.", payload?.timing);
-      if(this.logicalKeys.get(logical)===key)this.logicalKeys.delete(logical);
+      if(!(path==='/api/xray/krs/lookup'&&response.status===202)&&this.logicalKeys.get(logical)===key)this.logicalKeys.delete(logical);
       return payload;
     } finally { this.requests.delete(controller); }
   }
@@ -90,13 +90,21 @@ export class SupplierReportController {
     const requestKey=retryKey??this.newRequestKey();this.logicalKeys.set(logical,requestKey);
     const generation=this.generation;this.update({busy:true});
     try{
-      const response=await this.json(path,body,new AbortController()) as {result:SearchResult;metadata:SupplierReportData|null};
+      for(let step=0;step<20;step++){
+      const response=await this.json(path,body,new AbortController()) as {pending?:true;result:SearchResult;metadata:SupplierReportData|null};
       if(generation!==this.generation)return;
       const payload=response?.result;
       if(payload?.entityType!=='COMPANY'||supplierNip(payload)!==selection.nip||payload.card.identity.krs!==selection.krs
         ||payload.card.general.data?.krs!==selection.krs||payload.card.general.data.nip!==selection.nip
         ||response.metadata&&(response.metadata.nip!==selection.nip||response.metadata.entityType!=='COMPANY'))throw Error('Dane raportu nie zgadzają się z wybraną spółką.');
-      this.update({result:payload,metadata:response.metadata,busy:false});
+      this.update({result:payload,metadata:response.metadata,busy:response.pending===true});
+      if(generation!==this.generation)return;
+      if(response.pending!==true)return;
+      this.logicalKeys.set(logical,requestKey);
+      await new Promise(resolve=>setTimeout(resolve,250));
+      if(generation!==this.generation)return;
+      }
+      throw Error('Przygotowanie dokumentów trwa dłużej. Spróbuj ponownie, aby kontynuować zapisane pobranie.');
     }catch(error){if(generation===this.generation){this.logicalKeys.set(logical,requestKey);this.update({error:message(error,'Nie udało się pobrać raportu wybranej spółki.')});}}
     finally{if(generation===this.generation)this.update({busy:false});}
   };

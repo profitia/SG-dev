@@ -2936,7 +2936,7 @@
       },
       "src/modules/xray/report-controller.ts": {
         "previousSha256": "a449d4f30fc76bac6342dbe405ad8a00e8c7c72b9fc05e168413c1f1cc18e0a0",
-        "sourceSha256": "69588c77731dca7d85be5216378904c7145cbe53fa75ea0f9bd749497fca4b46"
+        "sourceSha256": "2a4e057b37edd4c9535a5f7f2947c4e6f764ebd70c91e853a13b705e4ec99261"
       },
       "src/server/peer-read-boundary.test.ts": {
         "previousSha256": "c73896751325f89cbedfd5f4f52bb6fbd380ce1a71569d57f170b46a22cb9b3b",
@@ -2952,7 +2952,7 @@
       },
       "src/server/supplier-native-company.ts": {
         "previousSha256": "ec94312ccab9aa0f8eea1cf709d97b6891edc768c3eb43a6fa3a4d3bfad7f69c",
-        "sourceSha256": "7d4f71798e7bc2257b16e5f70d624c0a0f1f7a7be70137d8917677b6081e9e21"
+        "sourceSha256": "0f5f79dec5ed3698ca914531cffa70ac8735cbe8f86b0bb67a7d16e461417a2c"
       },
       "src/server/supplier-native-runtime.ts": {
         "previousSha256": "fb06cf47fa70fdfa7957d4f25722c984a23e2e47eeb9688ecf5d916889312093",
@@ -2992,11 +2992,19 @@
       },
       "src/server/supplier-native-work-store.ts": {
         "previousSha256": "06b6bc25f43e3d4dbd0ec4a239a51b30dba90ebf6399bb9e5796957cccd29d1e",
-        "sourceSha256": "4ece70d1ad0074ff71039ce1f855cba51013e8cd258dc1f799333f9f5bb36a16"
+        "sourceSha256": "ef6282df40def7ff187b83c391fd3d6fe25dc6b1c9d9247bd48867c5be246f76"
       },
       "src/server/supplier-source-link.ts": {
         "previousSha256": "a759c52c60262c4bea239408b9bb220459b9f4fa5aaf915dfd769651797fa4e9",
         "sourceSha256": "86691c8e8dbf936c66fa9413825828d5677b2468329ea9c4070f05d9f5382619"
+      },
+      "src/server/mgbi-financial.ts": {
+        "previousSha256": "3f6fa494cc937a7f3a1224bd625009e25ddaa2244cc8e0acef0eece5a814aa52",
+        "sourceSha256": "7ae4eff0d786e765fd5b8bcf7f4645d2c3b019c497b2acb46065358a5d3183d7"
+      },
+      "src/server/msr-repository.ts": {
+        "previousSha256": "621d368172a533339164b855f491508e4aff1257ad38854e1ff27508d918702f",
+        "sourceSha256": "e9867a257f2842326561488e37fd5b01a0d2906fc47717f7a7a45b314170fc5e"
       }
     }
   }
