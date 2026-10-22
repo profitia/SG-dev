@@ -9,6 +9,7 @@ import {Catalog,storeSnapshot} from './catalog.js'
 import {resolveIdentity} from './identity.js'
 import {createKrsClient,krsResponseEvidence,buildRequest} from './client.js'
 import type {KrsResponse} from './client.js'
+import {createAdmittedKrsSource} from './e1.js'
 import {normalizeExtract} from './normalizer.js'
 
 export const REGISTRY_REPORT_PROJECTION='profitia.krs-report-projection/1.0.0'
@@ -89,6 +90,11 @@ export function createNativeRegistryAccess(options:{
       return execute(request,s,()=>catalog.search({query:s.query,limit:10}))
     },
     selected,
+    async snapshot(request:unknown,id:string):Promise<CompanySnapshot>{
+      return execute(request,selector({action:'SELECTED',krs:id,reference:null}),async()=>{
+        const value=await catalog.read(id);if(!value)return deny();return validateCompanySnapshot(value)
+      })
+    },
     async accepted(request:unknown,reference:string){
       const match=/^KRS:([0-9]{10}):[a-f0-9]{64}$/.exec(reference)
       if(!match)return deny();return selected(request,match[1]!,reference)
@@ -110,7 +116,7 @@ export function createNativeCatalogPublication(options:{host:Omit<Ingestion,'val
   })
   return Object.freeze({async publish(input:{snapshot:unknown;response:KrsResponse},intentKey:string){
     const snapshot=await validateCompanySnapshot(input.snapshot),proof=krsResponseEvidence(input.response)
-    if(!proof||proof.source.sourceId!==options.acceptedSourceId||proof.source.environment!==options.host.application.environment
+    if(!proof||proof.source.applicationId!==options.host.application.appId||proof.source.sourceId!==options.acceptedSourceId||proof.source.environment!==options.host.application.environment
       ||proof.rawDigest!==snapshot.source.rawDigest||proof.rawDigest!==await sha256(input.response.bytes)
       ||proof.retrievedAt!==snapshot.source.retrievedAt||proof.url!==buildRequest({operation:snapshot.source.extract==='CURRENT'?'CURRENT':'FULL',krs:snapshot.canonicalKrs,register:snapshot.source.register}).url)return deny()
     const rebuilt=await normalizeExtract(input.response.bytes,{krs:snapshot.canonicalKrs,register:snapshot.source.register,
@@ -145,4 +151,26 @@ export function createOfficialSeed(options:{client:ReturnType<typeof createKrsCl
     const receipt=await options.publication.publish({snapshot,response},'krs-publication-'+key)
     return {snapshot,receipt}
   }})
+}
+
+
+export const NATIVE_KRS_SOURCES=Object.freeze({official:'krs.registry.official',catalog:'krs.registry.catalog',resource:'krs-official:current'})
+/** Complete native Source wiring. SQL008/009/012 and its ordinary-role bindings
+ * remain installation prerequisites. No fixture network or alternate fetch. */
+export async function createNativeRegistrySource(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;
+ externalSchemaDigest:string;approvedKrs:readonly string[];approvalRef:string}){
+ const sourceHost=createPlatformIngestionHost<PoolClient>({...options.host,
+  source:{id:NATIVE_KRS_SOURCES.official,payloadSchema:'external-call-control-v1',qualityVersion:'krs-source-control-v1',classificationVersion:'technical-source-control-v1'},
+  validateSharedPayload:value=>!!value&&typeof value==='object'&&!Array.isArray(value)
+   &&Object.keys(value).sort().join(',')==='action,callId,configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status',
+ })
+ const source=await createAdmittedKrsSource<PoolClient>({sourceHost,sourceId:NATIVE_KRS_SOURCES.official,resourceId:NATIVE_KRS_SOURCES.resource,
+  binding:{role:options.host.binding.role,configurationVersion:options.host.binding.configurationVersion,schemaDigest:options.externalSchemaDigest,
+   origin:'https://api-krs.ms.gov.pl',transport:'HTTPS',pathRules:[{method:'GET',path:'/api/krs/OdpisAktualny'}]},
+  independentQuery:options.host.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows}),now:options.host.now??Date.now,
+ })
+ const client=createKrsClient({source,externalEnabled:true,maximumCalls:20,now:options.host.now??Date.now})
+ const publication=createNativeCatalogPublication({acceptedSourceId:NATIVE_KRS_SOURCES.official,host:{...options.host,
+  source:{id:NATIVE_KRS_SOURCES.catalog,payloadSchema:REGISTRY_REPORT_PROJECTION,qualityVersion:'krs-normalizer/1.0.1',classificationVersion:'krs-public-company-v1'}}})
+ return createOfficialSeed({client,publication,approvedKrs:options.approvedKrs,approvalRef:options.approvalRef})
 }
