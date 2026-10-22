@@ -21,7 +21,7 @@ Before any first deployment, owner must accept the corrective source and it must
 | Compute | `free`,0.1CPU/512MB,$0/month compute; no paid compute upgrade |
 | Source | connected `https://github.com/profitia/SG-dev`, branch main, exact owner-accepted corrective SHA/first-release receipt required |
 | Root directory | empty / repository root, to retain both app and file-linked platform contracts |
-| Build | `npm --prefix apps/identity-runtime ci --ignore-scripts --include=dev --no-audit --no-fund && npm --prefix apps/identity-runtime run build` |
+| Build | `test -n "$IDENTITY_RUNTIME_EXPECTED_SOURCE_SHA" && test "$RENDER_GIT_COMMIT" = "$IDENTITY_RUNTIME_EXPECTED_SOURCE_SHA" && npm --prefix apps/identity-runtime ci --ignore-scripts --include=dev --no-audit --no-fund && npm --prefix apps/identity-runtime run build` |
 | Start | `node apps/identity-runtime/dist/src/main.js` |
 | Pre-deploy | absent; no migration/initialization/seed |
 | Auto-deploy / previews | off / off, including unrelated commits; no deploy hook creation |
@@ -33,11 +33,15 @@ The [current Node setting](https://render.com/docs/node-version) supports a serv
 
 Current MCP creation cannot set project/environment/healthCheckPath. Do not create in a default environment then repair placement. After explicit GO use the verified Dashboard creation route `https://dashboard.render.com/project/prj-db717krrjlhs739jgo0g/environment/evm-db717krrjlhs739jgo1g/web/new` or an independently verified complete API payload. The existing `architecture-development-pmos` service must never be edited/reused.
 
+The documented [Render environment](https://render.com/docs/environment-variables) supplies `RENDER_GIT_COMMIT` and supports `SKIP_INSTALL_DEPS`. Set the latter to true so the platform cannot first install unrelated root dependencies. The nonsecret expected-SHA input is the literal reviewed main promotion commit, recorded after owner source acceptance/merge; an unexpected tip fails the build before dependency installation. A promotion hash is pending, not invented or assumed equal to the PR candidate.
+
 ## Typed configuration and secret boundary
 
 | Input | State A | Validation / future State B |
 | --- | --- | --- |
 | `NODE_VERSION` | `24.15.0` | exact reviewed runtime |
+| `SKIP_INSTALL_DEPS` | `true` | skip automatic root dependency installation; use only the reviewed package lockfile command |
+| `IDENTITY_RUNTIME_EXPECTED_SOURCE_SHA` | exact owner-accepted main promotion SHA | reject a branch advancing between review and service creation |
 | `HOST` / `PORT` | `0.0.0.0` / Render `PORT`10000 | actual bound port; numeric1–65535, no reserved port |
 | `TARGET_ENVIRONMENT` | `development` | deployment label; enabled authority comes from validated runtime/binding, never arbitrary headers |
 | `IDENTITY_RUNTIME_ENABLED` | literal `false` | real identity activation needs separate explicit owner approval |
