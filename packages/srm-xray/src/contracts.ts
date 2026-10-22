@@ -16,7 +16,7 @@ export type SupplierIdentity = {
 };
 
 export type SourceProvenance = {
-  provider: "MGBI" | "VERCLY" | "CEIDG";
+  provider: "MGBI" | "VERCLY" | "CEIDG" | "KRS";
   model: string;
   recordId: string | null;
 };
@@ -31,6 +31,8 @@ export type SectionEnvelope<T> = {
 };
 
 export type GeneralCompanyData = {
+  /** Registry display evidence only; never a Supplier Location or permission. */
+  registrySource?: {provider:'KRS'; evidenceRef:string; retrievedAt:string; coverage:'PROGRESSIVE'};
   /** Historical projections may omit status; missing fields never prove removal. */
   registrationStatus?: "ACTIVE" | "LIQUIDATION" | "DEREGISTERED" | "UNKNOWN";
   deregisteredAt?: string | null;

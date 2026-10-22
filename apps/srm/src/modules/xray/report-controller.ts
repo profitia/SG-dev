@@ -87,7 +87,7 @@ export class SupplierReportController {
     const path='/api/xray/krs/lookup',body={selectionRef:selection.selectionRef},logical=path+':'+JSON.stringify(body);
     const retryKey=this.logicalKeys.get(logical);
     this.reset();this.nameSelection=selection;
-    if(retryKey)this.logicalKeys.set(logical,retryKey);
+    const requestKey=retryKey??this.newRequestKey();this.logicalKeys.set(logical,requestKey);
     const generation=this.generation;this.update({busy:true});
     try{
       const response=await this.json(path,body,new AbortController()) as {result:SearchResult;metadata:SupplierReportData|null};
@@ -97,7 +97,7 @@ export class SupplierReportController {
         ||payload.card.general.data?.krs!==selection.krs||payload.card.general.data.nip!==selection.nip
         ||response.metadata&&(response.metadata.nip!==selection.nip||response.metadata.entityType!=='COMPANY'))throw Error('Dane raportu nie zgadzają się z wybraną spółką.');
       this.update({result:payload,metadata:response.metadata,busy:false});
-    }catch(error){if(generation===this.generation)this.update({error:message(error,'Nie udało się pobrać raportu wybranej spółki.')});}
+    }catch(error){if(generation===this.generation){this.logicalKeys.set(logical,requestKey);this.update({error:message(error,'Nie udało się pobrać raportu wybranej spółki.')});}}
     finally{if(generation===this.generation)this.update({busy:false});}
   };
   refreshMetadata = async () => {

@@ -2,6 +2,7 @@
 import { CanonLink, CanonButton, SupplierHeader, SupplierSearch } from '@profitia/srm-xray';
 
 import "@profitia/srm-xray/financial-scanner.css";
+import "@profitia/srm-xray/supplier-search.css";
 
 import { ExecutiveSummary, FinancialScannerMount, KysOverview, type KysPdfSelection } from "@profitia/srm-xray";
 import { useRef, useState } from "react";

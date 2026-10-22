@@ -1,7 +1,6 @@
 "use client";
 import {useEffect, useId, useLayoutEffect, useRef, useState, type RefObject, type KeyboardEvent} from 'react';
 import {CanonButton, CanonInput} from './ui-canon';
-import './supplier-search.css';
 
 /** Data selected by the host. A suggestion or selection reference grants no access. */
 export type SupplierCandidate = Readonly<{krs:string; name:string; nip:string|null; locality:string|null}>;

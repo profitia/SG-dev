@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0.0",
+  "businessTask": "SRM-KRS-NAME-SEARCH-INTEGRATION-20261022",
+  "targetEnvironment": "development",
+  "activationState": "BLOCKED_PENDING_P0_ACCEPTANCE",
+  "enabledByDefault": false,
+  "mapsAcceptanceReceipt": null,
+  "registryProducerReceipt": null,
+  "catalogInstallationReceipt": null,
+  "financialConsumerReceipt": null,
+  "retainedReleaseRecoveryReceipt": null,
+  "catalogServiceId": null,
+  "catalogDatabase": null,
+  "periodicSynchronizationEnabled": false,
+  "note": "This is a disabled source candidate. It assigns no resource, grant, role, cohort, budget or live release authority."
+}
