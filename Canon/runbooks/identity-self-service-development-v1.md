@@ -27,9 +27,9 @@ This list describes source inputs only; none is installed by this task.
 
 ## Binding lifecycle gate
 
-PR600 is proposal input, not accepted policy. Current B1 SQL001 explicitly denies expired/revoked/disabled bindings and accounts and does not renew them. This source preserves that rule and its TTL. Active bindings work normally; native Clerk persistence alone cannot restore an expired internal binding. The missing lifecycle approval blocks claiming reliable return-after-expiry or live MVP acceptance. B1_RENEWAL=APPROVAL_PENDING; no new migration, callback-based replacement engine or silent reactivation is introduced.
+PR600 is proposal input, not accepted policy. Current B1 SQL001 explicitly denies expired/revoked/disabled bindings and accounts and does not renew them. SQL001 and its digest remain unchanged. The Development live-delivery candidate adds a separate optional SQL002/API: ACTIVE renewal only within30s of expiry, and separately enabled recovery of expired ACTIVE mappings within an approved maximum7-day window. The lease stays within fresh provider proof and the existing maximum300s cap. Installation, API grants, runtime flag/digest and policy all require the consolidated owner GO. All defaults remain off. B1_RENEWAL=APPROVAL_PENDING until that decision; native Clerk persistence is not sufficient by itself.
 
-Owner must approve the exact ACTIVE-renewal and expired-nonrevoked recovery policy, its authority/limits/attestation/audit and controlled implementation/installation before that dependent capability can run. Explicit revocation and disabled accounts must remain terminal denials. This task does not replace that decision with a longer TTL. The unapproved policy is not invented here.
+Owner must approve the exact proposed ACTIVE-renewal and expired-nonrevoked recovery policy, its authority/limits/attestation/audit and controlled implementation/installation before that dependent capability can run. Explicit revocation and disabled accounts remain terminal denials. This task does not replace that decision with a longer TTL. Missing policy, schema digest, key or ordinary-role configuration fails closed.
 
 ## Single consolidated release gate
 

@@ -19,6 +19,11 @@ function accountFixture(patch = {}) {
     f.sql.push(sql)
     if (sql === 'COMMIT' && f.commitFailure) throw Error('synthetic commit failure')
     if (sql.includes('profitia_profile.runtime_descriptor')) return { rows: [{ descriptor: { ...binding, profileSchemaDigest: 'b'.repeat(64), issuer, enabled: !f.disabledPolicy } }] }
+    if (sql.includes('profitia_profile.binding_renewal_descriptor')) return { rows: [{ descriptor: { renewalSchemaDigest: f.wrongRenewalDigest ? 'e'.repeat(64) : 'c'.repeat(64) } }] }
+    if (sql.includes('profitia_profile.binding_renewal_metadata')) return { rows: [{ metadata: f.bindingMissing ? null : {
+      userId: ids.a, version: ids.a + ':1:1', revision: 1, expiresAt: new Date(f.now + (f.bindingExpired ? -1000 : 120000)).toISOString(),
+      allowRenewal: !f.disabledRenewal, allowExpiredRecovery: !f.disabledRenewal, maxRecoveryAgeMs: 604800000 } }] }
+    if (sql.includes('profitia_profile.renew_binding')) { f.bindingExpired = false; return { rows: [{ binding: {} }] } }
     if (sql.includes('txid_current')) return { rows: [{ transaction_id: '42' }] }
     if (sql.includes('provision_account')) {
       if (f.bindingStatus !== 'ACTIVE' || f.bindingExpired) throw Object.assign(Error('synthetic deny'), { code: 'PT403' })
@@ -32,7 +37,7 @@ function accountFixture(patch = {}) {
     return { rows: [] }
   }, release(destroy = false) { f.releases.push(destroy) } } } }
   f.account = createAccountSurface({ configuration: f.config, client: f.client, authority: f.authority, binding,
-    schemaDigest: 'b'.repeat(64), proofKey: randomBytes(32), transact: accountTransactions(pool), now: () => f.now })
+    schemaDigest: 'b'.repeat(64), ...(f.renewal ? { renewalSchemaDigest: 'c'.repeat(64) } : {}), proofKey: randomBytes(32), transact: accountTransactions(pool), now: () => f.now })
   f.handler = createHttpHandler(f.boundary, f.account)
   return f
 }
@@ -68,6 +73,28 @@ for (const patch of [{ unverified: true }, { sessionStatus: 'revoked' }, { banne
 test('commit failure never produces account success; cleanup does not release a poisoned transaction as active', async () => {
   const f = accountFixture({ commitFailure: true }), response = await f.handler(f.request('/v1/account', 'POST', {}))
   assert.equal(response.status, 503); assert(f.sql.includes('ROLLBACK')); assert.equal(f.releases.length, 1)
+})
+test('opt-in HTTP account completion renews an expired ACTIVE binding before its independent read', async () => {
+  const f = accountFixture({ renewal: true, bindingExpired: true })
+  const response = await f.handler(f.request('/v1/account', 'POST', {}))
+  assert.equal(response.status, 200); assert.equal((await response.json()).userId, ids.a)
+  assert(f.sql.some(s => s.includes('renew_binding'))); assert(f.sql.includes('COMMIT'))
+  assert(!f.sql.some(s => s.includes('provision_account'))); assert.equal(f.created.size, 0)
+})
+test('opt-in remains fail closed for disabled recovery, wrong installation and revoked accounts', async () => {
+  for (const patch of [{ disabledRenewal: true }, { wrongRenewalDigest: true }, { bindingStatus: 'REVOKED' }]) {
+    const f = accountFixture({ renewal: true, bindingExpired: true, ...patch })
+    assert.notEqual((await f.handler(f.request('/v1/account', 'POST', {}))).status, 200)
+    assert(!f.sql.includes('COMMIT')); assert(f.sql.includes('ROLLBACK'))
+  }
+})
+test('opt-in first registration still uses B1 and commit failure never confirms an account', async () => {
+  const f = accountFixture({ renewal: true, bindingMissing: true })
+  assert.equal((await f.handler(f.request('/v1/account', 'POST', {}))).status, 200)
+  assert(f.sql.some(s => s.includes('provision_account')))
+  const failed = accountFixture({ renewal: true, bindingExpired: true, commitFailure: true })
+  assert.equal((await failed.handler(failed.request('/v1/account', 'POST', {}))).status, 503)
+  assert(failed.sql.includes('ROLLBACK'))
 })
 test('peer path is GET-only, current verified binding required, never anonymous or browser CORS', async () => {
   const f = accountFixture({ party: 'https://sg2.example.test' }), req = new Request(origin + '/v1/account', { headers: { authorization: 'Bearer synthetic_fixture_only' } })

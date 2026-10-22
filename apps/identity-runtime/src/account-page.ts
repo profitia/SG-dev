@@ -38,7 +38,7 @@ window.addEventListener('load', async () => {
       mounted = true; return; }
     status.textContent = cfg.en ? 'Preparing your account…' : 'Przygotowujemy Twoje konto…';
     try {
-      const credential = await session.getToken(); if (current !== generation) return; if (!credential) throw Error('SESSION_REQUIRED');
+      const credential = await session.getToken({ skipCache: true }); if (current !== generation) return; if (!credential) throw Error('SESSION_REQUIRED');
       const response = await fetch('/v1/account', { method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal,
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + credential }, body: '{}' });
       const result = await response.json();

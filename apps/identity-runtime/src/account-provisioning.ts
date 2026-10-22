@@ -57,9 +57,9 @@ export interface AccountSurface {
   ensure(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
   read(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
 }
-export function createAccountSurface({ configuration: inputConfiguration, client, authority, binding, schemaDigest, proofKey, transact, now = Date.now }: {
+export function createAccountSurface({ configuration: inputConfiguration, client, authority, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, now = Date.now }: {
   configuration: RuntimeConfiguration; client: RuntimeSdk; authority: IdentityAuthority
-  binding: IdentityProvisioningOptions<pg.PoolClient>['binding']; schemaDigest: string; proofKey: Uint8Array
+  binding: IdentityProvisioningOptions<pg.PoolClient>['binding']; schemaDigest: string; renewalSchemaDigest?: string; proofKey: Uint8Array
   transact: ReturnType<typeof accountTransactions>; now?: () => number
 }): AccountSurface {
   if (!(proofKey instanceof Uint8Array) || proofKey.byteLength !== 32) throw new BoundaryError(503, 'PROFILE_CONFIGURATION_REQUIRED')
@@ -67,7 +67,7 @@ export function createAccountSurface({ configuration: inputConfiguration, client
   const verifiedClient = verifiedEmailClient(client)
   const provisionerFor = (signal?: AbortSignal) => createIdentityProvisioner({ client: verifiedClient,
     identityApplication: { appId: configuration.applicationId, environment: configuration.environment, issuer: configuration.issuer, authorizedParties: [configuration.origin] },
-    binding: ownBinding, schemaDigest, proofKey: ownKey, now,
+    binding: ownBinding, schemaDigest, ...(renewalSchemaDigest === undefined ? {} : { renewalSchemaDigest }), proofKey: ownKey, now,
     transact: (action, limits) => transact(action, limits, signal) })
   provisionerFor() // Validate the private binding without provider/SQL calls.
   const peers = [...new Set(Object.values(configuration.targets).map(t => t.origin))].filter(origin => origin !== configuration.origin)
