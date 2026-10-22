@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "ARCHITECTURE-KRS-LIVE-PILOT-FOUNDATION-20261022",
+  "state": "PROPOSED_REQUIRES_RESOURCE_APPROVAL",
+  "environment": "development",
+  "owner": "Architecture Platform",
+  "catalog": {
+    "projectId": "fancy-cell-49425728",
+    "branchId": "br-divine-fog-baohc5ay",
+    "databaseName": "krs_registry_pilot",
+    "separateCompute": false,
+    "ordinaryRoles": ["krs_reader", "krs_ingest"],
+    "ownerRole": "krs_migrator",
+    "dataClass": "PUBLIC_REGISTRY_PROJECTION_AND_TECHNICAL_E1_CONTROL",
+    "privateSupplierDataAllowed": false
+  },
+  "seed": {"krs": ["0000028860"], "register": "P", "maximumUpstreamAttempts": 20, "scheduled": false},
+  "sourceId": "krs.registry.official",
+  "publicationSourceId": "krs.registry.catalog",
+  "acceptedOperation": "supplier.report.read",
+  "sdkVersion": "1.24.0",
+  "deployment": {"mode": "SRM_NATIVE_LIBRARY", "separateKrsWebService": false},
+  "installed": false,
+  "ownerApprovalRef": null
+}
