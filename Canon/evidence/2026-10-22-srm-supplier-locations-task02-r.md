@@ -1,6 +1,6 @@
 # TASK02-R — controlled Supplier Locations release preparation
 
-Current-status authority: **Owner acceptance and source reconciliation**, appended below. Earlier dated observations remain historical; the companion JSON selects `ownerAcceptedExecution`.
+Current-status authority: **Executable owner packages after PR601 promotion**, appended below. All earlier dated/undated status labels below this pointer remain historical; the companion JSON selects `ownerExecutionPackages`.
 
 Status: **PARTIAL — coordinated gate closure;82 tables verified,20 isolated tests PASS; installation remains NO-GO**.
 Initial checkpoint: 2026-10-22 04:14:59 UTC. The final **Coordinated Release Gate Closure** section and JSON coordinatedGateClosure are current; earlier dated observations and window variants are retained history and are superseded.
@@ -1447,3 +1447,352 @@ with23 exact pending objects, and no protected R2 operation was executed. After
 promotion, independently prepare complete owner-routed P1/I1 execution prompts,
 the exact R2 request and concrete K1/U1 manifest/procedure. No duplicate SRM task
 or artificial final TASK02-R PHR is created.
+
+
+## Executable owner packages after PR601 promotion — 2026-10-22T09:15:26Z
+
+PR601 is MERGED. Final reviewed head `0485e82d5e6c38cd05049e4fb9e27bb19c046014`; promotion main `1cf170fa7180445877d980de4e6b8df37bbd7d49`,2026-10-22T08:57:31Z. Exactly two evidence files; accepted historical matrix/SQL unchanged. Exact-head [governance CI](https://github.com/profitia/SG-dev/actions/runs/39750941415) and [post-merge CI](https://github.com/profitia/SG-dev/actions/runs/39751686825) PASS. No product source, workflow or live activation change.
+
+New executable deliverable is option B for P1: full owner-routed source prompt with closed candidate paths, additive migration semantics and real PostgreSQL acceptance matrix. I1 now includes explicit fresh-proof lifecycle, an SRM receiver appendix and the unresolved controlled directory port. Existing Identity service is accepted HEALTH_ONLY, not onboarding; independent owner PHR [75d51ee](https://github.com/profitia/project-history-repository/commit/75d51ee5890cf40a54d09e3a5198ef411664f68f), five integrity-listed files verified. R2 preserves all nine exact v2 scopes. K1/U1 contains finite cohort, exact-resource procedure and fail-closed draft manifest. These are prepared deliverables, not grants or source implementation.
+
+Private control state remains revision109, five ACTIVE apps, identity application/binding DISABLED, profile policies/profiles/location grants/location policies/location intents all0; SQL019/SQL013 absent. SRM and Maps live deploy IDs unchanged. The new Architecture service is an independently approved owner release; DEVELOPMENT_CHANGED=NO refers to product runtime/data/config changes by this TASK02-R, not all activity by all projects. Source documentation601 and PMOS continuity are the only task mutations.
+
+R2 accepted82/105 comprises78full-owner aggregates+4complete singletons;23pending. Snapshot source/point/LSN and ready restored nondefault branch verified; API expiry omitted, earlier UI Never is not refreshed eternal-retention evidence. Full recovery/combined release rollback remains PARTIAL. No protected23-table query executed. Earlier20/20local tests retained as historical evidence; no new feature suite claimed for documentation preparation.
+
+### R2 — complete owner execution prompt
+
+```text
+Pracujesz w profitia/SG-dev, authority origin/main, TARGET_ENVIRONMENT=development. To jest pakiet do decyzji właściciela, a nie dowód już udzielonej zgody. Przed pracą potwierdź bezpośrednią zgodę właściciela na dokładny opisany zakres. PR601 zaakceptowano i scalono tylko jako dokumentację. Nie wolno wyprowadzać z tego uprawnień do kodu producenta, uprzywilejowanych odczytów, tożsamości, grantów, SQL ani deploymentu.
+Załaduj aktualny root/nested AGENTS, manifest, wymagane CORE i adapter właściwego właściciela. Przed każdą mutacją odśwież origin/main, potwierdź repo/branch/HEAD/środowisko/working tree, zabezpiecz cudzą pracę, użyj izolowanej gałęzi i przejdź pełny fail-closed preflight dla dokładnych ścieżek. Wymagana jest kanoniczna rejestracja PMOS właściwego profilu; nigdy nie zapisuj ARCHITECTURE ani SG2 do srm_pmos i odwrotnie. MEMOROS pozostaje wyłączony. Nie obchodź gate/protection przez zmianę profilu. Nie zakładaj, że ścieżka zaproponowana poniżej jest zatwierdzona przed odczytem bieżącego routingu.
+Koordynacja wraca do istniejącego SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022; nie twórz duplikatu zadania SRM ani sztucznego finalnego PHR TASK02-R. Źródło pakietu: Canon/evidence/2026-10-22-srm-supplier-locations-task02-r-release.json, sekcja ownerExecutionPackages. Bazą przygotowania jest main1cf170fa7180445877d980de4e6b8df37bbd7d49; przed wykonaniem sprawdź drift i istniejące zadania. Zachowaj zgodność i historyczne dowody SQL019/SQL013 oraz candidate16/package1.24.0.
+
+R2 — gotowy wniosek wykonawczy srm-task02-r-protected-recovery-readback-v2; NIE zgoda i NIE wykonano.
+Właściciele: Architecture Platform (12 tabel), SRM Runtime (10), SG Runtime/SG2 (1). Kontrolowany operator bazy: istniejące połączenie neondb_owner, wykonywane przez agenta Codex w tym czacie wyłącznie po jawnych zgodach właścicieli i potwierdzeniu prawa operatora do tego zadania. Nazwa roli nie udowadnia zgody operatora. Nie ustanawia się nowej roli, członkostwa ani standing runtime privilege. Istniejące rolbypassrls=true jest cechą zastanej kontrolowanej roli i musi być jawnie przyjęte jako ryzyko owner readback; NIE ustawiaj BYPASSRLS ani nie poszerzaj uprawnień.
+
+Fizyczny zakres: project spring-bread-28217539, db platform_private. Porównaj oryginał br-sparkling-term-b99l107x / ep-late-heart-b9mxo8oi / ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech oraz recovery br-green-glitter-b9weet99 / ep-divine-mode-b9fekhdg / ep-divine-mode-b9fekhdg.c-7.eu-central-1.aws.neon.tech. Snapshot snap-bold-bird-b99s4c9q, utworzony2026-10-22T05:23:04Z, recovery point05:22:36Z, LSN0/3B8E828. Recovery ready/restored/nondefault; pierwotny Development pozostaje default. Żadnych nowych snapshotów/branchy, restore/finalize ani migracji endpointów.
+
+Każda zgoda musi wymienić dokładne scope IDs i digests z poniższej tabeli. Nie zmieniaj 105-elementowej macierzy ani 23-elementowego zakresu v2.
+
+| Scope | Właściciel | Tabele | SQL SHA256 |
+|---|---|---:|---|
+| R-ARCH-INSTALL | Architecture Platform | 2 | `5e6d383fbf0a43a26c2e8b43523e63edbfecf5f570034f5b4b64b9b6aba16414` |
+| R-ARCH-POLICY | Architecture Platform | 7 | `5208f48c882399564ff080187855c1914a936873307e3dbfc9ce32448dc815a2` |
+| R-ARCH-EFFECT | Architecture Platform | 3 | `f4ec25efdefab5e5df27e2f874d83d9083794b3004dd74e2d607046dcdb62cb8` |
+| R-SRM-WITNESS | SRM Runtime | 2 | `e3fba1c975850faf4ac221b66561c42af8f116a26d0a74f2ad223bf1dc205638` |
+| R-SRM-PUBLICATION | SRM Runtime | 1 | `566944ed313c4a322bbb8fea02749b220b6aadfcdf877e6902b1d93b81cb1655` |
+| R-SRM-IDENTITY | SRM Runtime | 3 | `f5f4a03b617020cd5ff8df5309b32283c3219f0f6199a69134f1a400b4560bb0` |
+| R-SRM-CATALOG | SRM Runtime | 3 | `c15a2b98c20ae6731874f5c823c1ddeab8a0fea7c43afcc6b76376e08307b47a` |
+| R-SRM-SCANNER | SRM Runtime | 1 | `af5d783cabf73967fe24473361f0d705a8e0206a6648f377ef6c3ac5feeac095` |
+| R-SG2-BENCHMARK | SG Runtime / SG2 | 1 | `9df43f4a3880d8a73cdcc0284f305c65eb3b9393cf76f89c42aa275a52d85414` |
+
+Dokładne obiekty, SQL, dodatki effect-status, powody, role, audit/cleanup i hash są w controlledRecoveryContinuation.recovery.protectedReadbackProposal.groups tego samego JSON. Wniosek obejmuje tylko niezmienione SQL wskazanego digest; nie odtwarzaj zapytań z pamięci. Dodatkowe totals z R-ARCH-EFFECT.additionalAggregateSql wymagają odrębnego jawnego zatwierdzenia swoich digestów, nie wynikają ze zgody na podstawowy count/hash.
+
+Po otrzymaniu właściwych zgód:
+1. Zapisz zaufany approval source/owner/accepted scope IDs/digests/actual operator/expiry/cleanup i waliduj każdą grupę fail-closed. Jeśli któryś właściciel nie zatwierdził, wykonaj tylko zatwierdzone grupy; pozostałe zachowaj PENDING. Praca właściciela ARCHITECTURE/SG2 ma własną ciągłość jeśli Canon tego wymaga; nie zapisuj cudzej historii w SRM.
+2. Odśwież repo/main i source sha, snapshot/branch/default/compute metadata; potwierdź rzeczywistą rolę current_user/session_user/read_only i liczbę wymaganych obiektów. Weryfikacja metadanych i descriptorów nie przyznaje prawa do chronionych payloadów.
+3. Jedna łączna authority lifetime<=15min liczona od pierwszego wykonania, oba endpointy/tylko zaakceptowane scope. Na każdym endpointcie BEGIN z REPEATABLE READ READ ONLY, statement_timeout30s, lock_timeout3s, idle_in_transaction_session_timeout60s; użyj dokładnego transactionPrefix i principalReadbackSql z v2. Przed chronionym SQL sprawdź DB i zatwierdzoną rolę, potem querySha256.
+4. Zbieraj tylko table_id/count/sorted full-row SHA256 oraz osobno zaakceptowane effect-status totals. Nie eksportuj wierszy, identyfikatorów klientów, body, credentialów ani subjectów. W receipt zachowaj approval/operator/target/SQLdigest/transaction instant/result, nie tokeny. Brak DML/DDL, SET ROLE escalation, RLS change, provider acquisition, replay/settlement, writes do recovery albo Source.
+5. Każdy timeout/wrong endpoint/unapproved scope/unexpected lock/write/nieoczekiwany digest przerywa odpowiednią operację; zamknij połączenia na deadline. Mismatch nie upoważnia do dopisywania nowych forensic SQL ani synchronizacji kopii. Odróżnij dowód recovery point od późniejszego live drift. Jeśli istniejący agregat nie pozwala przypisać zmiany do czasu, zgłoś UNEXPLAINED/PARTIAL i poproś o konkretny dodatkowy zakres, zamiast ogłaszać corruption lub PASS.
+6. Zachowaj osobno znaną różnicę recovery role catalog token_roles (NOLOGIN/no memberships/no dependencies); nie ogłaszaj pełnej równości ról. Snapshot API bieżąco nie zwraca expires_at dla tego snapshotu; wcześniejszy UI wskazywał Never. Bez świeżego niezależnego potwierdzenia nie nazywaj retencji snapshotu wieczystą gwarancją. Sprawdź expiry przed W1 i przydatność dla aktualnego recovery objective, nie tylko historyczne istnienie.
+7. Cleanup: COMMIT/ROLLBACK read-only transakcji i zamknięcie sesji, usunięcie tymczasowego materiału operatora, żadnego nowego stałego uprawnienia; zachowaj wyłącznie aggregate receipts. Nie wykonuj Finalize Restore ani zmiany połączeń.
+8. Zaktualizuj istniejący TASK02-R: RECOVERY_TABLES_VERIFIED/PENDING, DATA_INTEGRITY/RESTORE_USABILITY PASS|PARTIAL|FAIL, każdą approval row, drift i role finding. Start82/105 to78pełnych ownerhash +4singletons, pending23; lokalne20/20testów i bazowy schema proof zachowaj bez sztucznego powtarzania. Gate PASS dopiero z kompletną ważną coverage/recovery-objective/rollback acceptance, nie po samym upłynięciu operacji.
+
+Wymagana decyzja do wklejenia przez uprawnionego właściciela: wskazać zatwierdzone scope IDs i ich dokładne hashe, istniejącego kontrolowanego operatora neondb_owner, oba powyższe endpointy, jednorazowe <=15min aggregate read-only, dozwolone extra totals lub NONE, źródło umocowania/data owner i termin ważności. Samo ogólne „akceptuję PR601” nie jest taką decyzją. Ten wniosek nie uruchamia W1 i nie wymaga wyłączenia aplikacji.
+
+```
+
+### P1 — complete owner execution prompt
+
+```text
+Pracujesz w profitia/SG-dev, authority origin/main, TARGET_ENVIRONMENT=development. To jest pakiet do decyzji właściciela, a nie dowód już udzielonej zgody. Przed pracą potwierdź bezpośrednią zgodę właściciela na dokładny opisany zakres. PR601 zaakceptowano i scalono tylko jako dokumentację. Nie wolno wyprowadzać z tego uprawnień do kodu producenta, uprzywilejowanych odczytów, tożsamości, grantów, SQL ani deploymentu.
+Załaduj aktualny root/nested AGENTS, manifest, wymagane CORE i adapter właściwego właściciela. Przed każdą mutacją odśwież origin/main, potwierdź repo/branch/HEAD/środowisko/working tree, zabezpiecz cudzą pracę, użyj izolowanej gałęzi i przejdź pełny fail-closed preflight dla dokładnych ścieżek. Wymagana jest kanoniczna rejestracja PMOS właściwego profilu; nigdy nie zapisuj ARCHITECTURE ani SG2 do srm_pmos i odwrotnie. MEMOROS pozostaje wyłączony. Nie obchodź gate/protection przez zmianę profilu. Nie zakładaj, że ścieżka zaproponowana poniżej jest zatwierdzona przed odczytem bieżącego routingu.
+Koordynacja wraca do istniejącego SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022; nie twórz duplikatu zadania SRM ani sztucznego finalnego PHR TASK02-R. Źródło pakietu: Canon/evidence/2026-10-22-srm-supplier-locations-task02-r-release.json, sekcja ownerExecutionPackages. Bazą przygotowania jest main1cf170fa7180445877d980de4e6b8df37bbd7d49; przed wykonaniem sprawdź drift i istniejące zadania. Zachowaj zgodność i historyczne dowody SQL019/SQL013 oraz candidate16/package1.24.0.
+
+P1 — ARCHITECTURE / E1: bounded CREATE oraz rzeczywiste rolling24h. Tryb po zatwierdzeniu: SOURCE-ONLY, bez instalacji i live danych.
+Właściciel producenta: Architecture Platform. Proponowana nazwa nowego zadania, NIEZAREJESTROWANA: ARCHITECTURE-E1-SUPPLIER-LOCATION-ADMISSION-20261022. Najpierw sprawdź duplikaty i przejmij istniejące właściwe zadanie, jeśli już jest. Profil i PMOS/PHR ARCHITECTURE. Nie edytuj pod tym profilem aplikacji SRM/Maps/SG2.
+
+1. Potwierdzone źródło i cel
+Current producer1.24.0/candidate16 rozpoznaje CREATE/UPDATE/DEACTIVATE w payloadzie operation-context, lecz dowód SQL019 location_evidence_current nie zawiera action; location_access/bind_location_scope wymagają istniejącego exact-child grant. Grant na przyszły UUID nie tworzy uprawnienia CREATE, a resource_id=NULL jest szerokim dopasowaniem. READ/SYNC używają supplier-locations:<supplierUUID>. Należy skorygować TEN SAM silnik E1.
+SQL006 ma narastające accepted_count<=capacity, created_at oznacza rezerwację, brak accepted_at. Nie udawaj rolling24h przez nowy fixed-window, rotację policy_id lub osobny limiter SRM.
+
+2. Dokładne proponowane target paths — przed rejestracją potwierdź routing i zakres
+packages/platform-contracts/migrations/access/020-supplier-location-admission.sql — NOWA addytywna migracja;020 jest wolne na bazie pakietu. Jeśli numer zajęty, ponownie uzgodnij rzeczywisty następny numer i odnotuj zmianę przed mutacją.
+packages/platform-contracts/src/supplier-location.mjs
+packages/platform-contracts/src/supplier-location.d.mts
+packages/platform-contracts/src/operation-context.mjs
+packages/platform-contracts/src/operation-context.d.mts
+packages/platform-contracts/src/request-ledger.mjs
+packages/platform-contracts/src/request-ledger.d.mts
+packages/platform-contracts/src/private-operation-host.mjs
+packages/platform-contracts/src/private-operation-host.d.mts
+packages/platform-contracts/test/supplier-location.test.mjs
+packages/platform-contracts/test/request-reservation.test.mjs
+packages/platform-contracts/test/operation-context.test.mjs
+packages/platform-contracts/test/private-operation-host.test.mjs
+packages/platform-contracts/test/types/supplier-location.mts
+packages/platform-contracts/test/supplier-location-admission.integration.test.mjs — NOWY rzeczywisty PostgreSQL test, nie sam mock SQL
+packages/platform-contracts/test/fixtures/supplier-location-postgres.mjs — NOWY fixture wykorzystujący istniejący wzorzec izolowanego PostgreSQL z test/fixtures/identity-profile-postgres.mjs
+packages/platform-contracts/package.json
+packages/platform-contracts/package-lock.json
+packages/platform-contracts/README.md
+Canon/evidence/2026-10-22-e1-supplier-location-admission.md — NOWY producer receipt, routing Governance Source Layer, osobno zadeklarowany.
+Lista jest zamkniętym kandydatem do zatwierdzenia. Usuń niepotrzebne pliki przed begin zamiast robić pozorne zmiany; rozszerzenie poza listę wymaga ponownego routingu/zakresu. Nie zmieniaj SQL001–019, macierzy uprawnień, workflow ani konsumenckich locków bez osobnej właściwej zgody.
+
+3. Kontrakt CREATE
+Zachowaj supplier.location.write, feature supplier_report, product SUPPLIER_INTELLIGENCE, istniejący Access Store/audit i exact-child UPDATE/DEACTIVATE. Zaproponuj jawnie wersjonowany, opt-in descriptor/migration digest nowej semantyki; stary candidate i brak przyjętego descriptor mają zachować dotychczasowe restrykcje.
+Nowy CREATE wymaga bieżącego HUMAN/internal UserID, aktywnej OrganizationID/member/product/module, dokładnego grant WRITE na supplier-locations:<supplierUUID>, serwerowo odczytanego bieżącego związku dostawca→organizacja, server-generated locationUUID, MANUAL/USER_LOCATIONS, commandDigest, supplier/source/target versions i expectedVersion=null. Effect resource pozostaje dokładnym childUUID, parent permission nie zamienia się w wildcard.
+Nie dodawaj action do zamkniętego v1 dowodu bez wersjonowania i zgodności. Nowy zaufany dowód/SQL admission musi wiązać action CREATE/UPDATE/DEACTIVATE z rzeczywistą komendą, parentem, aktorem, wersjami oraz tą samą transakcją; client-selected parent/organisation lub zwykły GUC nie jest dowodem. Producent otrzymuje zweryfikowany kontrakt rodzica od właściwego receivera; nie hardkoduje tabel SRM ani ID klienta. UPDATE/DEACTIVATE nadal wymagają aktualnego exact-child grant/CAS; kolekcyjny CREATE nie daje aktualizacji cudzych punktów. Stosuj istniejące DENY/revocation precedence także dla CREATE.
+Po utworzeniu dziecka nie zakładaj automatycznego nadania future-child UPDATE/DEACTIVATE. Jeżeli business UAT ma edytować nowy punkt, wymagana jest osobno zatwierdzona ścieżka przyznania exact-child prawa albo dodatkowy wyraźnie przyjęty parent-child model tej operacji. Nie rozszerzaj tego milcząco przez grant NULL ani autora rekordu. Odczyt dla A2 wynika z organisation membership/READ i nigdy z created_by.
+
+4. Specyfikacja migracji rolling24h
+Dodaj opt-in mode FIXED / ROLLING_24H do ISTNIEJĄCYCH policies i guarded intents; domyślny FIXED pozostaje zgodny. Dokładne nazwy i upgrade descriptor podlegają zatwierdzeniu producenta. Tylko rolling policies dla supplier.location.write i supplier.location.sync:100 przyjęć każdego rodzaju na organizację w poprzednich24h, zbiorczo dla wszystkich aktorów i uprawnionych usług; usługi nadal wymagają własnej dopuszczonej ścieżki E1 i nie otrzymują jej z tej migracji.
+Wprowadź niemodyfikowalny accepted_at generowany przez DB przy guarded przejściu RESERVED→ACCEPTED. created_at nie może oznaczać akceptacji. Bez klientowskiego zegara i bez produkcyjnego test-clock override. Dla rolling sprawdzaj committed ACCEPTED w przedziale (t-24h,t], t z autorytatywnego DB przy admission. Recheck i ustawienie accepted_at muszą być atomowe, z audytem i efektem biznesowym, na jednym connection/transaction. Rezerwacja wcześniejsza niż24h z akceptacją teraz liczy się teraz. Brak commitu nie liczy się.
+Nie opieraj synchronizacji wyłącznie na lock policy_id: serializacja ma być stabilna dla environment/organisation/operation i tego samego zatwierdzonego budżetu organizacji także przy replacement policy oraz zmianie aplikacji wykonawczej, obejmować reservation/admission/accepted transitions i dwóch aktorów/połączeń. Zastosuj istniejący poprawny wzorzec blokowania E1 albo uzasadnij stały scope-lock; nie dodawaj drugiego katalogu limitów. Licz wszystkie policy IDs tego scope, nie tylko current policy. Application/executor identity pozostaje audytem, a nie sposobem resetu limitu: wszystkie dopuszczone usługi/lokalizacyjne ścieżki tej organizacji muszą konsumować TEN SAM zaakceptowany scope budżetu E1. Nie rozdzielaj100 na application IDs. Jeśli obecny kontrakt application-scoped nie pozwala tego wyrazić, skoryguj jawnie opt-in rolling aggregation/locking w tym samym ledger, zachowując legacy FIXED. Oddziel WRITE od SYNC.
+Zachowaj monotoniczne accepted_count jako lifetime metrykę, ale dla opt-in rolling usuń zależność od lifetime<=100 poprzez jawny warunkowy constraint i guard; FIXED nadal ma swój stary capacity check. Rozwiąż też limit int/retencję: BIGINT dla narastającej metryki jeśli konieczny, bez cichego zmieniania starych typów/API. Same replay po100 nie może zwiększyć licznika ani wymagać dodatkowego slotu, lecz nadal przechodzi aktualną autoryzację. Zmieniony payload przy tym samym key jest konfliktem. Stabilny source-version SYNC replay=0 dodatkowych jednostek; nowa przyjęta source-version=1 nawet przy braku fizycznej różnicy adresu. Jawnie odróżnij taką nową operację od powtórnego renderowania raportu.
+Historię ACCEPTED z accepted_at=NULL traktuj fail-closed: przed włączeniem rolling dla takiego scope przerwij albo zastosuj jawnie zatwierdzoną, dowiedzioną konwersję. Nie przepisuj created_at jako acceptance bez dowodu. Bieżący Development ma0location intents, ale nie gwarantuje tego dla przyszłej instalacji. Retencja istniejącego ledger musi zachować co najmniej cały moving interval i dowód idempotencji; nie dodawaj kasowania danych. Zaprojektuj bounded index na istniejącym ledger dla scope/status/accepted_at i analizę zapytania. Nie wprowadzaj nowej tabeli kwot SRM, lokalnych cache jako authority ani automatycznej korekty historii.
+Nowy SQL020 ma być opcjonalny/nieaktywny do osobnej instalacji. Jego descriptor musi wiązać nowe funkcje/digest z faktycznie zainstalowaną wersją. Uaktualnij source fingerprints (Root/host/request-ledger/location) jawnie, nie podmieniaj starych receiptów; SQL019 pozostaje SHA25634ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5.
+
+5. Obowiązkowa macierz odbioru — rzeczywisty PostgreSQL ordinary role, bez Neon
+CREATE poprawny parent/server UUID PASS; child z innego parent/org, client parent spoof, user/org spoof, brak product/member/grant, brak wersji/descriptor DENY.
+UPDATE exact child + CAS PASS; foreign/stale/missing grant DENY; DEACTIVATE PASS i zachowana izolacja; revoked account/member/permission/product DENY także na replay.
+RLS/SECURITY DEFINER/search_path/current-role checks, direct SQL/GUC action forgery i przypadkowe broad GRANT nie mogą ominąć guard; brak DML ordinary role.
+Dwa lub więcej realnych połączeń/aktorów przy99 wspólnie przepuszczają tylko jedną nową akceptację;101 odrzucona. WRITE i SYNC niezależne. Policy rotation ani drugi dopuszczony service/application executor nie resetują ani nie mnożą limitu organizacji. Dokładna granica24h wyłącza stary wpis. Utwórz datowane fixture wyłącznie w lokalnej bazie przez testowego operatora, bez wystawiania produkcyjnej funkcji wyboru czasu.
+Rezerwacja stara/akceptacja nowa, rollback po biznesie, audit failure, timeout/niepewny commit, same-key replay przy capacity i changed payload, source/supplier/version mismatch, stable-version SYNC i nowa wersja bez fizycznego delta.
+Po upływie24h można zaakceptować101. lifetime operację, gdy moving count<100 — regresja accepted_count<=capacity musi być jawnie przetestowana.
+Zero provider/geocode wywołań. SG2/SRM default compatibility; brak automatycznej konsumenckiej adopcji. UAT/live nie wynika z fixture.
+
+6. Walidacja i zwrot
+npm --prefix packages/platform-contracts ci --ignore-scripts --no-audit --no-fund; npm --prefix packages/platform-contracts run build; npm --prefix packages/platform-contracts test. Istniejący CI .github/workflows/platform-contracts-ci.yml używa PostgreSQL16/Node24 i apps/architecture-lab fixtures; rozszerz test w istniejącej ścieżce bez poświadczeń providerów. Wykonaj właściwy type fixture check według istniejącego runnera i komplet dotkniętych producer/lab tests. Uruchom kontrolowane exact-head CI oraz oddzielny read-only compatibility check SG2/SRM. Nie edytuj receiverów, żeby maskować ich wymagane nowe acceptance.
+Zwróć taskID, sourceHEAD, dokładny PR, manifest/diff i immutable migration digests, rzeczywisty transcript PostgreSQL (PASS/FAIL/NOT_RUN), testy/types/build/CI URL+SHA, consumer compatibility/adoption matrix, pełny ARCHITECTURE PMOS/PHR/integrity. Draft PR jest kandydatem; merge wymaga normalnej odrębnej authority/protection. Żadnej instalacji SQL, deploy, live policy/grant, key, geocoding ani nowych usług. Potem SRM właściciel planuje osobną, dokładnie ograniczoną adopcję nowych fingerprintów pod SRM authority, nadal w istniejącym TASK02-R jeśli governance na to pozwoli.
+
+```
+
+### I1 — complete owner execution prompt
+
+```text
+Pracujesz w profitia/SG-dev, authority origin/main, TARGET_ENVIRONMENT=development. To jest pakiet do decyzji właściciela, a nie dowód już udzielonej zgody. Przed pracą potwierdź bezpośrednią zgodę właściciela na dokładny opisany zakres. PR601 zaakceptowano i scalono tylko jako dokumentację. Nie wolno wyprowadzać z tego uprawnień do kodu producenta, uprzywilejowanych odczytów, tożsamości, grantów, SQL ani deploymentu.
+Załaduj aktualny root/nested AGENTS, manifest, wymagane CORE i adapter właściwego właściciela. Przed każdą mutacją odśwież origin/main, potwierdź repo/branch/HEAD/środowisko/working tree, zabezpiecz cudzą pracę, użyj izolowanej gałęzi i przejdź pełny fail-closed preflight dla dokładnych ścieżek. Wymagana jest kanoniczna rejestracja PMOS właściwego profilu; nigdy nie zapisuj ARCHITECTURE ani SG2 do srm_pmos i odwrotnie. MEMOROS pozostaje wyłączony. Nie obchodź gate/protection przez zmianę profilu. Nie zakładaj, że ścieżka zaproponowana poniżej jest zatwierdzona przed odczytem bieżącego routingu.
+Koordynacja wraca do istniejącego SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022; nie twórz duplikatu zadania SRM ani sztucznego finalnego PHR TASK02-R. Źródło pakietu: Canon/evidence/2026-10-22-srm-supplier-locations-task02-r-release.json, sekcja ownerExecutionPackages. Bazą przygotowania jest main1cf170fa7180445877d980de4e6b8df37bbd7d49; przed wykonaniem sprawdź drift i istniejące zadania. Zachowaj zgodność i historyczne dowody SQL019/SQL013 oraz candidate16/package1.24.0.
+
+I1 — ARCHITECTURE/B1: existing-auth admission i skończony lifecycle, bez live provisioning.
+Proponowana nazwa, NIEZAREJESTROWANA: ARCHITECTURE-B1-SRM-UAT-LIFECYCLE-20261022. Profil ARCHITECTURE; nie duplikuj istniejącego zadania. Producer B1/profile/access należy do Architecture Platform. SRM receiver/composition należy do SRM Runtime. Live organisation/member/product/permission decisions: uprawnieni właściciele Access Store + SRM/business owner. Clerk verification nie nadaje tych praw.
+
+1. Fakty bieżące
+B1/profile001 jest zainstalowane, lecz identity-runtime-development/identity_b1_runtime DISABLED, runtime_policies0 i user_profiles0; Access Store revision109. Aktualna SRM sesja używa oficjalnego Clerk, ale apps/srm/src/server/identity-runtime.ts nie komponuje createIdentityProvisioner; ekran login ma SignIn/signUp:false. SQL profile001 provision_account tworzy UUID/account/binding/pusty profil przy jawnej policy, nie membership/product/grants. Istniejące wygasłe/revoked binding są odrzucane; brak zaakceptowanego lifecycle odnowienia/re-admission. Source policy ma hard cap1000..300000ms. Access Store public API nie jest administracyjnym portem tworzenia membership/grants.
+Nowa usługa B2 srv-dbcse6jrjlhs73eib3sg, deploy dep-dbcse73rjlhs73eib57g na aa95c0a0..., jest HEALTH_ONLY, IDENTITY_RUNTIME_ENABLED=false; PHR75d51ee5890cf40a54d09e3a5198ef411664f68f to dowód StateA, nie login/onboarding. Nie aktywuj jej dla trzech kont UAT. PR600 Draft zachowuje Single Identity Core/Configurable Client Deployments, PORR first/multi-org, bez automatycznego dostępu.
+
+2. Zakres do zatwierdzenia: źródło producenta, lokalne testy, kandydat zwykłego PR
+packages/platform-contracts/migrations/profile/002-binding-lifecycle.sql — NOWA addytywna migracja (002 wolne na bazie; sprawdź kolizję), profile001 nietknięty.
+packages/platform-contracts/src/identity-provisioning.mjs
+packages/platform-contracts/src/identity-provisioning.d.mts
+packages/platform-contracts/src/identity-profile-sql.mjs
+packages/platform-contracts/src/user-profile.mjs
+packages/platform-contracts/src/user-profile.d.mts
+packages/platform-contracts/test/identity-provisioning.test.mjs
+packages/platform-contracts/test/identity-profile.integration.test.mjs
+packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs
+packages/platform-contracts/test/types/identity-profile.mts
+packages/platform-contracts/package.json
+packages/platform-contracts/package-lock.json
+packages/platform-contracts/README.md
+Canon/evidence/2026-10-22-b1-srm-uat-lifecycle.md — NOWY owner receipt, zadeklaruj routing Governance Source Layer.
+Jeśli potrzebny jest nowy kontrolowany directory/UAT-admission port do memberships/grants, nie ukrywaj tego w profile lifecycle: najpierw sprawdź istniejący zatwierdzony operator. Jeśli brak, przedstaw dokładny najmniejszy interfejs, osobną addytywną migrację access (numer po aktualnym P1, nigdy kolizja020), docelowe pliki i osobną decyzję właściciela przed source mutacją tej części. Jest to niezależna approval row; pakiet nie upoważnia do ogólnego admin engine ani live INSERT. Stosuj istniejący Access Store, revision/audit/authority i finite manifest trzech kont/dwóch org. Nie twórz kopii identity directory, nowego IdP, nowego portalu ani automatycznej organizacji per konto.
+
+3. Kontrakt lifecycle do jawnej decyzji właściciela
+Przyjmij istniejącą oficjalną sesję SRM Clerk (issuer https://unified-drum-7191.clerk.accounts.dev) i verified official SDK/session/account jako dowód zewnętrzny. Nie dopuszczaj HTTP-asserted identity, email matching, tokenu w URL/iframe/message lub client orgID. Jeden issuer/subject daje istniejący internalUserUUID; email nie staje się kluczem.
+Rozróżnij jawne operacje: NEW_ADMIT po świeżym zweryfikowaniu i accepted allow_registration; RENEW_ACTIVE dla nadal ważnego ACTIVE binding+ACTIVE account i świeżego oficjalnego dowodu; EXPIRED_RE_ADMIT wyłącznie jeśli właściciel osobno zatwierdził świeżą explicit-sign-in admission po wygaśnięciu. W przeciwnym razie expired pozostaje DENY. REVOKED binding, DISABLED account, revoked/suspended member/entitlement nie są automatycznie ożywiane. Nie zastępuj tego ignorowaniem expires_at.
+Propozycja, nie standard E1: max binding300s w ramach obecnego SQL hardcap, expiry=min(verified JWT expiry, actual official session validity, accepted max lifetime, UAT deadline). Każde odnowienie wymaga świeżego SDK evidence i aktualnej policy, nie tylko cookie/refresh token fact. Nie zakładaj, że JWT zawsze daje300s. Proof5s pozostaje związany z transakcją/role/app/purpose/subject/issuer/identity-expiry, klucz oddzielny32B nie jest DB credential. Żadnego signing oracle. Zastosuj recheck przed commit i serializację po binding/account/access revision; audyt atomowy; stale version/revocation race kończy DENY/rollback. Odnowienie binding nie przedłuża member/product/operation rights.
+Właściciel wybiera skończony UAT deadline T0+<=60min. Membership i nowe UAT product entitlements mają expires_at<=deadline; istniejących org-wide product praw nie skracaj ani nie nadpisuj. permission_grants nie ma własnego expires_at w obecnym SQL001: skuteczne ograniczenie zapewnia skończone membership/product/policy plus kontrolowane odwołanie grantów UAT po terminie. Jeśli wymagany osobny per-grant TTL, potrzebna jest jawna addytywna zmiana kontraktu, a nie nieistniejące pole w instrukcji operatora.
+
+4. Receiver appendix — osobny owner scope SRM, nie implementuj jako ARCHITECTURE
+Kandydat późniejszej adopcji: apps/srm/src/server/identity-runtime.ts; apps/srm/src/server/private-runtime.ts (tylko bezpieczna kompozycja transaction ports, fixed org pozostaje); apps/srm/app/api/account/admit/route.ts NOWY same-origin POST; apps/srm/src/server/identity-runtime.test.ts; apps/srm/scripts/private-runtime.test.mjs; apps/srm/operation-integration.json; apps/srm/package.json/package-lock.json, tylko jeśli zmieni się package acceptance.
+Przed begin pod SRM potwierdź rzeczywiste ścieżki/AGENTS/routing i rozszerzenie obecnych declared targets; ten pakiet tego nie dokonuje. Nie włączaj public signup ani nie wdrażaj endpointu. Official-identity-only response, CSRF/origin guard, private/no-store, bez cache cross-user i bez wrażliwych redirectów; invalid method/origin/forged caller identity DENY.
+Najpierw właściciel przyjmuje jawny deployment-owned provisioning binding/ordinary role i bezpieczny server-only proof-key port dla receivera. Brak obecnie zaakceptowanego role/binding dla takiej kompozycji; nie przejmuj identity_b1_runtime, nie aktywuj DISABLED app, nie udzielaj srm_private_development_runtime DML/owner praw. Przygotuj deployment plan, nie wykonuj go. Trusted provisioner jest server-internal, nie tworzy drugiej sesji ani duplicate identity engine.
+Aktualny fixed-org SRM receiver pozostaje organisation A. B1 legalnie należy do B i ma zostać odrzucony przy żądaniu A. Pozytywny odczyt zasobów B nie jest wymagany; przyszła dodatnia multi-org selection/adoption jest osobnym etapem.
+
+5. Przyjęcie i testy
+Źródłowe unit/type/real PostgreSQL pod zwykłymi rolami: genuine official-proof simulation lokalnie, idempotent first admission/same internalUUID/concurrent admission, wrong issuer/audience/origin/method; expired JWT/official session/revoked/disabled provider account; renewed ACTIVE vs expired forbidden vs osobno opted-in explicit re-admission; REVOKED never resurrected; shorterJWTdeadline; proof5s/exacttransaction/role/purpose replay/forgery; expiry during transaction/revocation race; audit failure rollback; membership/product/grants nie powstają i nie odnawiają się automatycznie; cross-org fixed A denies B; no secrets/PII in logs/audit. Oddziel źródłową symulację SDK od live UAT — localfixture nie jest genuine-user proof.
+Użyj packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs (izolowany lokalny PostgreSQL16 albo loopback Docker, nigdy cloud creds), npm --prefix packages/platform-contracts run build oraz test, istniejących type fixtures i exact-head platform CI. Zachowaj SG2/SRM default compatibility. B2 runtime pozostaje HEALTH_ONLY; jego zmiana nie jest konieczna do producer local test.
+Zwróć konkretną policy decision row dla max lifetime/renewal/re-admission/UATTTL/cleanup oraz kontrakt zwykłej roli, dokładny sourceHEAD/PR/diff/digests, CI i rzeczywisty PG transcript, zaakceptowany owner/admin admission route albo dokładny brak, producer ARCHITECTURE PMOS/PHR i receiver-adoption requirements. Nie twórz kont, invitations, grantów, SQL installation, kluczy, deploymentu ani Source effects. Source merge podlega normalnemu owner acceptance/protection, nie wynika z tego pakietu. Do SRM TASK02-R wracają dowody i nadal osobna zgoda na realne U1/W1.
+
+```
+
+### K1_U1 — complete owner execution prompt
+
+```text
+Pracujesz w profitia/SG-dev, authority origin/main, TARGET_ENVIRONMENT=development. To jest pakiet do decyzji właściciela, a nie dowód już udzielonej zgody. Przed pracą potwierdź bezpośrednią zgodę właściciela na dokładny opisany zakres. PR601 zaakceptowano i scalono tylko jako dokumentację. Nie wolno wyprowadzać z tego uprawnień do kodu producenta, uprzywilejowanych odczytów, tożsamości, grantów, SQL ani deploymentu.
+Załaduj aktualny root/nested AGENTS, manifest, wymagane CORE i adapter właściwego właściciela. Przed każdą mutacją odśwież origin/main, potwierdź repo/branch/HEAD/środowisko/working tree, zabezpiecz cudzą pracę, użyj izolowanej gałęzi i przejdź pełny fail-closed preflight dla dokładnych ścieżek. Wymagana jest kanoniczna rejestracja PMOS właściwego profilu; nigdy nie zapisuj ARCHITECTURE ani SG2 do srm_pmos i odwrotnie. MEMOROS pozostaje wyłączony. Nie obchodź gate/protection przez zmianę profilu. Nie zakładaj, że ścieżka zaproponowana poniżej jest zatwierdzona przed odczytem bieżącego routingu.
+Koordynacja wraca do istniejącego SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022; nie twórz duplikatu zadania SRM ani sztucznego finalnego PHR TASK02-R. Źródło pakietu: Canon/evidence/2026-10-22-srm-supplier-locations-task02-r-release.json, sekcja ownerExecutionPackages. Bazą przygotowania jest main1cf170fa7180445877d980de4e6b8df37bbd7d49; przed wykonaniem sprawdź drift i istniejące zadania. Zachowaj zgodność i historyczne dowody SQL019/SQL013 oraz candidate16/package1.24.0.
+
+K1/U1 — konkretny plan odbioru HQ + MANUAL; decyzja i rzeczywista kohorta nadal PENDING.
+K1 proponowany zakres: autoryzowane MGBI siedziby/adresy w przyjętej projekcji, ręczne punkty współdzielone w organizacji, istniejący Maps Runtime. Bez utrwalania KYS-derived lokalizacji, bez płatnego Google Geocoding, bez nowej usługi/schedulera. Pełny KYS operator pozostaje BLOCKED. Lokalne wcześniejsze20/20 zawierały fence/retention/manual-preservation; nie stanowią live operator acceptance.
+Wymagana osobna decyzja biznesowa K1: zaakceptować ograniczony UAT, jawnie odłożyć pełną retencję KYS; niczego nie aktywować przed I1/P1/R2/W1. Przed W1 potwierdzić PUSTY KYS-derived location store oraz aktualny brak kombinacji supplier.private.read/KYS i location persist dla KAŻDEGO uczestniczącego HUMAN/SERVICE, w tym report/source executorów. Dotychczas0location grants nie jest dowodem przyszłej konfiguracji. Nie odbieraj praw istniejącym użytkownikom klientów; wybierz izolowaną kohortę i exact resource grants. Jeżeli prawa/Source projections nie pozwalają wykazać fence, K1 activation pozostaje BLOCKED. Wspólne app/service prawa muszą być sprawdzone w obecnej wersji E1, nie tylko trzy konta.
+
+Właściciel U1 wykonuje minimalne czynności:
+1. Otwórz istniejący Clerk Development, app app_3KoJk9FmKeTC4hhlQwTgX6PMZmD, instance ins_3KoJk8us60Ywqei67JBwUx6R5pi, issuer https://unified-drum-7191.clerk.accounts.dev. Użyj Development, nie Production. Nie twórz nowego IdP ani Clerk org jako zastępstwa Profitia OrganisationID.
+2. Wskaż trzy kontrolowane, prawdziwe identyfikatory testowe (A1,A2,B1). Istniejące jedno prawdziwe konto może zostać A1 dopiero po jawnej zgodzie. Nie używaj kont klientów ani pięciu wyłączonych fixture subjects. Manifest ma puste pola, nie fikcyjne adresy.
+3. W allowlist Development dopisz wyłącznie te3 identyfikatory przy zachowaniu obecnych wpisów. Ponieważ SRM SignIn ma signup:false, załóż/zaproś ich przez normalny Clerk Dashboard Users/Invite, jeśli potrzebują nowych kont, a nie przez włączenie publicznego signup SRM. Właściciel sam wykonuje zaproszenia; ten task ich nie wysyła. Jeśli istniejące konto zweryfikowane, nie wysyłaj zbędnego zaproszenia. Każdy użytkownik sam przechodzi oficjalną weryfikację i logowanie, bez przekazywania OTP/haseł/session tokens do czatu.
+4. Po zaakceptowaniu source i osobnym deployment/admission GO dla I1 użyj zaakceptowanego B1 server-side admission. Odczytaj otrzymany internal account UUID z kanonicznego wyniku, wiążąc go z issuer/subject w zatwierdzonym, prywatnym operator receipt. Nie używaj Clerk subject/email jako UserID; nie wstawiaj rekordów SQL ręcznie.
+5. Właściciel Access Store akceptuje konkretne membership operations przez istniejący accepted admin port albo minimalny jawnie przyjęty port I1. A1 i A2 → A, B1 → wyłącznie B. OrganisationA fixed SRM UUID225e465b-8b89-467d-92d1-7fef61b555fe jest znanym receiver target, ale test danych wymaga osobnej zgody właściciela. B musi być odrębną realnie upoważnioną organizacją, nie starym suspended fixture. Nie wykonuj live SQL INSERT.
+6. Wybierz jawnie legalne supplierUUID i MGBI report/source-version/resource IDs do testu. Znane2 suppliers/6 snapshots nie są zgodą na użycie danych. Bez nowego płatnego MGBI acquisition i bez syntetycznego seeding live. Właściciel autoryzuje minimalny exact current resource tuple, brak zgody pozostawia pola null.
+7. Minimalne product access: orgA/application srm, aktywny SUPPLIER_INTELLIGENCE, feature supplier_report i skończone ważne policy/member prawa. Istniejących szerszych org-wide product praw nie nadpisuj dla UAT. A1 exact supplier-locations:<supplierUUID> READ/SYNC i zatwierdzony P1 parent CREATE WRITE. A2 ten sam exact collection READ, żadnych WRITE/SYNC/geocode; odrzucenia tych operacji są testem. Report/source permissions tylko na wskazane, zaakceptowane MGBI report resources zgodnie z istniejącym E1. Exact-child UPDATE/DEACTIVATE wymagają dodatkowej jawnie zaakceptowanej dynamic grant/admission ścieżki P1 po utworzeniu dziecka — nie grantNULL. B1 membershipB bez jakichkolwiek A grants/product membership; na A-bound receiverze odczyt i zapis A DENY. W tej wersji nie testujemy pozytywnego B-hostingu i nie rozluźniamy fixed org.
+8. Zatwierdź I1 policy: max binding proposal300s (ograniczony krótszym realnym JWT/session), membership/new UAT product/policy expiry<=T0+60min, jawne fresh-proof renewal / osobne explicit expired re-admission albo DENY. Brak przyjętej policy = brak aktywacji. WRITE100 oraz SYNC100/rolling24h wymagają accepted P1, a nie lokalnej konfiguracji udającej limit.
+9. Po WSZYSTKICH prerequisites i osobnym W1 GO wykonaj live: A1 ładuje autoryzowany MGBI report, HQ/adresy synchronizują się raz na source version; odświeżenie/ponowny odczyt nie duplikuje danych/jednostek. A1 dodaje ręczną lokalizację, po nowej sesji nadal widoczna; A2 widzi HQ/manual z organisation A i nie może mutować/sync; B1 nie widzi A; revocation natychmiast blokuje kolejną operację, KYS-derived brak i Google paidcalls0. Zapisuj creator/last-editor jako audit provenance, bez filtrowania innych członków po created_by. Adres bez dozwolonych współrzędnych może pozostać saved/unresolved; nie obiecuj automatycznego pinu bez legalnego źródła współrzędnych i nie włączaj płatnego geocoding.
+10. Zakończ UAT do deadline: zakończenie/revocation bindings według accepted I1, usunięcie/odwołanie TYLKO nowych grantów/policies/memberships zgodnie z manifestem i audytem, przywrócenie wyłącznie dodanych test allowlist entries. Nie kasuj legalnego audytu, istniejących memberships/product praw ani rekordów klientów. Lokalizacje testowe obsłuż accepted deactivate/retention path; fizyczne usunięcie danych wymaga osobnej zgody. Zweryfikuj końcowe role/grants/flags/source accounting/paid0 i aktualne deployment IDs. Nie podawaj kont/sekretów w repo.
+
+Owner decision packet do zatwierdzenia przed U1/W1 zawiera: pseudonimy A1/A2/B1 z prywatną listą wybranych prawdziwych identyfikatorów; zgoda naOrganisationA/resources i OrganisationB; konkretny accepted B1 admission/admin port i final lifecycle policy; exact parent/child/report grants; scope K1 i dowód fence wszystkich service/HUMAN; expiry/cleanup responsibility; P1/R2/Source/LKG receipts. Nie nazywaj tego zatwierdzonym oknem. Po spełnieniu przygotuj jeden późniejszy W1 installation approval <=60min, bez SQL/deploy przed tą decyzją.
+
+```
+
+### U1 — draft fail-closed cohort manifest
+
+```json
+{
+  "id": "srm-task02-r-genuine-uat-cohort-v1",
+  "status": "DRAFT_NOT_APPLICABLE_UNTIL_OWNER_ACCEPTED",
+  "clerk": {
+    "environment": "development",
+    "applicationId": "app_3KoJk9FmKeTC4hhlQwTgX6PMZmD",
+    "instanceId": "ins_3KoJk8us60Ywqei67JBwUx6R5pi",
+    "issuer": "https://unified-drum-7191.clerk.accounts.dev"
+  },
+  "organisationA": {
+    "candidateId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+    "ownerApproved": false
+  },
+  "organisationB": {
+    "id": null,
+    "ownerApproved": false,
+    "reuseSyntheticSuspended": false
+  },
+  "members": [
+    {
+      "alias": "A1",
+      "organisation": "A",
+      "privateProviderReference": null,
+      "internalUserId": null,
+      "genuineVerified": false,
+      "ownerApproved": false,
+      "operations": [
+        "supplier.location.read",
+        "supplier.location.write",
+        "supplier.location.sync"
+      ]
+    },
+    {
+      "alias": "A2",
+      "organisation": "A",
+      "privateProviderReference": null,
+      "internalUserId": null,
+      "genuineVerified": false,
+      "ownerApproved": false,
+      "operations": [
+        "supplier.location.read"
+      ]
+    },
+    {
+      "alias": "B1",
+      "organisation": "B",
+      "privateProviderReference": null,
+      "internalUserId": null,
+      "genuineVerified": false,
+      "ownerApproved": false,
+      "operations": []
+    }
+  ],
+  "suppliers": [],
+  "requiredSupplierTuple": [
+    "supplierId",
+    "reportResourceId",
+    "sourceSnapshotVersion",
+    "projectionVersion",
+    "lawfulOwnerApproval"
+  ],
+  "resourceScope": {
+    "collectionPattern": "supplier-locations:<approved supplierUUID>",
+    "childScope": "Exact server-child UUID and separately accepted P1 authority",
+    "nullResourceAllowed": false,
+    "feature": "supplier_report",
+    "product": "SUPPLIER_INTELLIGENCE"
+  },
+  "ownerApprovals": {
+    "K1": null,
+    "I1Policy": null,
+    "I1AdminPort": null,
+    "P1AcceptedSource": null,
+    "R2": null,
+    "W1": null
+  },
+  "uatStartsAt": null,
+  "uatDeadline": null,
+  "maxMinutes": 60,
+  "bindingMaxMsProposal": 300000,
+  "bindingPolicyAccepted": false,
+  "kysFence": {
+    "allHumansAndServicesVerified": false,
+    "privateDerivedStoreEmpty": null,
+    "fullKysOperatorAccepted": false
+  },
+  "quota": {
+    "write": 100,
+    "sync": 100,
+    "movingHours": 24,
+    "acceptedP1Required": true
+  },
+  "cleanup": {
+    "owner": null,
+    "newGrantIdsPrivateReceipt": null,
+    "completed": false,
+    "preserveExistingCustomerAccess": true,
+    "deleteSecurityAudit": false
+  },
+  "paidGeocodingBudget": 0,
+  "applyEnabled": false,
+  "validation": "Reject apply if any owner approval, genuine member/internalUserID, lawful exact supplier tuple, finite timestamps, accepted admission/admin/lifecycle path or complete KYS fence is missing. This manifest is a specification, not an executable authority token."
+}
+```
+
+### Consolidated current result
+
+```text
+TASK_ID = SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022
+TASK_STATUS = PARTIAL
+PR601_OWNER_ACCEPTANCE = CONFIRMED
+PR601_CURRENT_HEAD = 0485e82d5e6c38cd05049e4fb9e27bb19c046014
+PR601_DOCUMENTATION_PROMOTION = MERGED
+CURRENT_MAIN_SHA = 1cf170fa7180445877d980de4e6b8df37bbd7d49
+R2_VERIFIED_TABLES = 82/105
+R2_PENDING_TABLES = 23
+R2_OWNER_APPROVALS = 9/9 scoped approvals PENDING; operator authority PENDING
+R2_RECOVERY_GATE = READY_FOR_OWNER_APPROVAL
+P1_CREATE_CORRECTIVE = READY_FOR_OWNER_TASK
+P1_ROLLING_QUOTA_CORRECTIVE = READY_FOR_OWNER_TASK
+P1_ARCHITECTURE_TASK = NONE
+P1_SOURCE_PR = NONE
+P1_CI = PENDING
+P1_PHR = NOT_APPLICABLE
+I1_ONBOARDING_ROUTE = READY_FOR_OWNER_APPROVAL
+I1_BINDING_LIFETIME_POLICY = PENDING
+I1_ARCHITECTURE_TASK = NONE
+I1_UAT_IDENTITY_READINESS = PENDING
+K1_HQ_MANUAL_SUBSET = READY_FOR_OWNER_APPROVAL
+K1_FULL_KYS_OPERATOR = BLOCKED
+U1_GENUINE_TEST_USERS = PENDING
+U1_ORGANISATION_SCOPES = PENDING
+U1_LIVE_UAT = NOT_EXECUTED
+SOURCE_CONTRACT_COMPATIBILITY = PARTIAL
+SQL019_INSTALLED = NO
+SQL013_INSTALLED = NO
+SRM_DEPLOYMENT = NOT_PERFORMED
+MAPS_DEPLOYMENT = NOT_PERFORMED
+PAID_GEOCODING_BUDGET = ZERO
+DEVELOPMENT_CHANGED = NO
+STAGING_CHANGED = NO
+PRODUCTION_CHANGED = NO
+INSTALLATION_WINDOW_APPROVAL = NOT_REQUESTED
+INSTALLATION_APPROVAL_PACKAGE = PARTIAL
+SRM_PMOS = RUNNING
+TASK02_R_FINAL_PHR = NOT_PUBLISHED
+```
+
+Next executable step: owner-routed acceptance of the P1/I1 source-only packages and exact R2 read scopes, together with the reserved K1 business choice/U1 lawful-cohort decisions. Owner may paste the full prompts into the appropriate existing owner chat; no cross-chat message was sent under this task. W1 is not requested. After prerequisite closure refresh LKG/source in-flight/schema/config/recovery freshness and present one exact <=60min installation approval. Same SRM registration remains RUNNING; no final TASK02-R PHR.
