@@ -13,6 +13,9 @@ const read = p => JSON.parse(fs.readFileSync(path.join(root, p), 'utf8'))
 const baselinePath = 'Canon/registries/current-architecture-baseline-v1.json'
 const beforeSha = 'faa97ee433a9f60de28b417b4ee323759c7c9ffb'
 const before = p => JSON.parse(execFileSync('git', ['show', `${beforeSha}:${p}`], { cwd: root, encoding: 'utf8' }))
+// B0 is historical evidence. Later approved modules do not rewrite its receipt.
+const acceptedSha = '37947047776d7061bac0d102d7703d84b6ad6b2a'
+const accepted = p => JSON.parse(execFileSync('git', ['show', `${acceptedSha}:${p}`], { cwd: root, encoding: 'utf8' }))
 const route = (key, targets) => resolveProjectRouting({ profile: resolveProjectProfile(key, root), targets, repositoryRoot: root })
 const app = 'apps/identity-runtime/package.json'
 const workflow = '.github/workflows/identity-runtime-ci.yml'
@@ -47,7 +50,10 @@ test('SG2/SRM cannot write runtime, identity CI or the existing shared contracts
 
 test('onboarding adds exactly two rules and preserves every existing surface and epoch', () => {
   const previous = before(baselinePath)
-  const current = read(baselinePath)
+  const current = accepted(baselinePath)
+  // Preserve the whole accepted routing snapshot inside today's additive registry.
+  const active = new Map(read(baselinePath).surfaces.map(s => [s.id, s]))
+  for (const surface of current.surfaces) assert.deepEqual(active.get(surface.id), surface)
   const oldIds = new Set(previous.surfaces.map(s => s.id))
   assert.deepEqual(current.surfaces.filter(s => oldIds.has(s.id)), previous.surfaces)
   assert.deepEqual(current.surfaces.filter(s => !oldIds.has(s.id)).map(s => s.id), ['IDENTITY-BASE-001', 'IDENTITY-BASE-002'])
@@ -79,7 +85,8 @@ test('manifest and onboarding bind the same decision without fake physical activ
   const doc = manifest.activeDocuments.find(d => d.id === 'identity-runtime-architecture-and-ownership')
   assert.equal(doc.owner, 'Architecture Platform')
   assert.deepEqual(doc.appliesTo, ['SG2', 'SRM', 'ARCHITECTURE'])
-  const current = read('Canon/registries/architecture-onboarding-v1.json')
+  const current = accepted('Canon/registries/architecture-onboarding-v1.json')
+  assert.deepEqual(read('Canon/registries/architecture-onboarding-v1.json').plannedModules.find(m => m.capability === 'Identity Runtime'), current.plannedModules[0])
   const previous = before('Canon/registries/architecture-onboarding-v1.json')
   const { plannedModules, ...unchanged } = current
   assert.deepEqual(unchanged, previous)
@@ -101,6 +108,6 @@ test('manifest and onboarding bind the same decision without fake physical activ
 
 test('B0 preserves project/environment identities and creates no application or workflow', () => {
   for (const p of ['Canon/registries/profitia-projects-v1.json', 'Canon/registries/architecture-environment-topology-v1.json', 'Canon/registries/sg2-environment-topology-v1.json', 'Canon/registries/srm-environment-topology-v1.json']) assert.deepEqual(read(p), before(p))
-  assert.equal(fs.existsSync(path.join(root, 'apps/identity-runtime')), false)
-  assert.equal(fs.existsSync(path.join(root, workflow)), false)
+  assert.equal(execFileSync('git', ['ls-tree', acceptedSha, '--', 'apps/identity-runtime'], {cwd: root, encoding: 'utf8'}), '')
+  assert.equal(execFileSync('git', ['ls-tree', acceptedSha, '--', workflow], {cwd: root, encoding: 'utf8'}), '')
 })
