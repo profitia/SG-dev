@@ -345,6 +345,129 @@ test('KRS full review uses actual Git diff/blob/regular-file validation, rejecti
   } finally {fs.rmSync(root,{recursive:true,force:true})}
 })
 
+// Actual B2-E review surface, deliberately independent of controller constants.
+const identityReviewFiles = () => [
+  'Canon/evidence/2026-10-22-identity-runtime-porr-first-decision.md',
+  'Canon/evidence/2026-10-22-identity-runtime-lifecycle-b2-e.md',
+  'Canon/runbooks/identity-runtime-lifecycle-and-persistent-login-v1.md',
+  'apps/identity-runtime/test/lifecycle-resilience.test.mjs',
+  'apps/architecture-lab/test/access-store-postgres.test.mjs',
+].map(producerFile)
+
+test('complete Identity lifecycle review admits its exact five files without a producer change', () => {
+  const files = identityReviewFiles(), candidate = architecturePr(files.length)
+  assert.equal(files.some(f => f.filename.startsWith('packages/')), false)
+  assert.equal(selectCandidate(context(), candidate, other, {files}), other)
+  assert.equal(selectCandidate(context(), candidate, other, {files: files.toReversed().map(f => ({...f, status: 'added'}))}), other)
+  const {proof, run} = fixture()
+  assertProof(proof, run, selectCandidate(context(), candidate, other, {files}), 34)
+  rejection(() => assertProof({...proof, candidateSha: sha}, run, other, 34))
+  rejection(() => assertProof({...proof, controlPolicyDigest: 'f'.repeat(64)}, run, other, 34))
+})
+
+test('Identity review is not a general documentation, application-test or producer exception', () => {
+  const files = identityReviewFiles()
+  for (let i = 0; i < files.length; i++) {
+    const missing = files.toSpliced(i, 1)
+    rejection(() => selectCandidate(context(), architecturePr(missing.length), other, {files: missing}))
+  }
+  for (const name of ['apps/identity-runtime/src/main.ts', 'apps/identity-runtime/test/other.test.mjs',
+    'apps/architecture-lab/src/probe.mjs', 'apps/architecture-lab/test/other.test.mjs',
+    'apps/sg-runtime/lib/platform/private-runtime.ts', 'apps/srm/src/server/db.ts',
+    'apps/identity-runtime/package.json', 'apps/identity-runtime/package-lock.json',
+    'apps/identity-runtime/.env', 'apps/identity-runtime/.npmrc',
+    WORKFLOW, '.github/workflows/identity-runtime-ci.yml', 'scripts/governance/controlled-package-ci.mjs',
+    'Canon/registries/current-architecture-baseline-v1.json', 'Canon/registries/architecture-environment-topology-v1.json',
+    'Canon/runbooks/other.md', 'Canon/evidence/2026-10-23-identity-runtime-lifecycle-b2-e.md',
+    'packages/platform-contracts/src/user-profile.mjs', 'packages/platform-contracts/.npmrc',
+    'apps/identity-runtime/test/../src/main.ts', 'apps/identity-runtime/test//lifecycle-resilience.test.mjs',
+    'apps/identity-runtime/test/%2e%2e/src/main.ts', 'apps/identity-runtime/test/lifecycle-resilience.test.mjs\n']) {
+    const extra = [...files, producerFile(name)], replacement = [...files.slice(0, -1), producerFile(name)]
+    rejection(() => selectCandidate(context(), architecturePr(extra.length), other, {files: extra}))
+    rejection(() => selectCandidate(context(), architecturePr(replacement.length), other, {files: replacement}))
+  }
+})
+
+test('Identity review rejects deletion, rename, duplicate, forged blob, incomplete count and stale SHA', () => {
+  for (const patch of [{status: 'removed'}, {status: 'renamed'}, {status: 'copied'},
+    {previous_filename: 'apps/identity-runtime/src/main.ts'}, {sha: 'main'}]) {
+    const files = identityReviewFiles(); files[3] = {...files[3], ...patch}
+    rejection(() => selectCandidate(context(), architecturePr(5), other, {files}))
+  }
+  const files = identityReviewFiles(); files[4] = {...files[3]}
+  rejection(() => selectCandidate(context(), architecturePr(5), other, {files}))
+  for (const expected of [sha, undefined, 'main']) rejection(() => selectCandidate(context(), architecturePr(5), expected, {files: identityReviewFiles()}))
+  for (const count of [0, 4, 6, 301, '5']) rejection(() => selectCandidate(context(), architecturePr(count), other, {files: identityReviewFiles()}))
+  for (const edit of [p => p.head.repo.full_name = 'attacker/fork', p => p.user.login = 'attacker',
+    p => p.base.ref = 'production', p => p.state = 'closed', p => p.head.ref = 'feature/review']) {
+    const p = architecturePr(5); edit(p)
+    rejection(() => selectCandidate(context(), p, other, {files: identityReviewFiles()}))
+  }
+  for (const delta of [{ref: 'refs/pull/600/merge'}, {event: 'pull_request_target'}, {triggeringActor: 'attacker'}, {workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/candidate`}]) {
+    rejection(() => selectCandidate({...context(), ...delta}, architecturePr(5), other, {files: identityReviewFiles()}))
+  }
+})
+
+test('producer, complete KRS and complete Identity admissions coexist independently', () => {
+  for (const files of [architectureFiles(), krsReviewFiles(), identityReviewFiles()]) {
+    assert.equal(selectCandidate(context(), architecturePr(files.length), other, {files}), other)
+    assert.equal(selectCandidate(context(), architecturePr(files.length), other, {files: [...files].reverse()}), other)
+  }
+})
+
+test('closed review classes reject their union, cross-class substitutions and extra class members', () => {
+  const krs = krsReviewFiles(), identity = identityReviewFiles(), union = [...krs, ...identity]
+  rejection(() => selectCandidate(context(), architecturePr(union.length), other, {files: union}))
+  for (const [review, foreign] of [[krs, identity], [identity, krs]]) {
+    for (const file of foreign) {
+      const extra = [...review, file]
+      rejection(() => selectCandidate(context(), architecturePr(extra.length), other, {files: extra}))
+      for (let i = 0; i < review.length; i++) {
+        const substituted = review.map((existing, at) => at === i ? file : existing)
+        rejection(() => selectCandidate(context(), architecturePr(substituted.length), other, {files: substituted}))
+      }
+    }
+  }
+})
+
+test('ownership and profile rules remain class-specific when another valid owner is substituted', () => {
+  const root = routingFixture(), file = path.join(root, 'Canon/registries/current-architecture-baseline-v1.json')
+  const original = fs.readFileSync(file, 'utf8')
+  const classes = [architectureFiles(), krsReviewFiles(), identityReviewFiles()]
+  try {
+    for (const [pattern, swappedOwner, denied] of [
+      ['Canon/**', 'Architecture Platform', [0, 1, 2]],
+      ['scripts/governance/**', 'Architecture Platform', [1]],
+      ['apps/identity-runtime/**', 'Governance Source Layer', [2]],
+      ['apps/architecture-lab/**', 'Governance Source Layer', [2]],
+      ['packages/platform-contracts/**', 'Governance Source Layer', [0]],
+    ]) {
+      for (const patch of [{currentOwner: swappedOwner}, {allowedProjectKeys: ['SG2']}, {baselineClassification: 'LEGACY'}]) {
+        const registry = JSON.parse(original), surface = registry.surfaces.find(s => s.pathPatterns.includes(pattern))
+        assert(surface, 'actual trusted surface required: ' + pattern)
+        Object.assign(surface, patch); fs.writeFileSync(file, JSON.stringify(registry))
+        for (const [index, files] of classes.entries()) {
+          const admission = () => assertArchitectureFiles(architecturePr(files.length), files, root)
+          if (denied.includes(index)) rejection(admission)
+          else assert.doesNotThrow(admission)
+        }
+      }
+    }
+  } finally {fs.rmSync(root, {recursive: true, force: true})}
+})
+
+test('every admission class retains full exact-source proof and policy provenance requirements', () => {
+  for (const files of [architectureFiles(), krsReviewFiles(), identityReviewFiles()]) {
+    const candidate = selectCandidate(context(), architecturePr(files.length), other, {files})
+    const {proof, run} = fixture()
+    assertProof(proof, run, candidate, 34)
+    for (const patch of [{candidateSha: sha}, {controlPolicyDigest: 'f'.repeat(64)}, {runId: '13'}, {tests: 'SKIPPED'}]) {
+      rejection(() => assertProof({...proof, ...patch}, run, candidate, 34))
+    }
+    rejection(() => assertProof(proof, {...run, head_branch: 'untrusted'}, candidate, 34))
+  }
+})
+
 test('Architecture admission requires complete source files, exact SHA and actual trusted ownership', () => {
   assert.equal(selectCandidate(context(), architecturePr(), other, {files: architectureFiles()}), other)
   for (const files of [undefined, [], architectureFiles().slice(0, 1), [...architectureFiles(), producerFile()]]) rejection(() => selectCandidate(context(), architecturePr(), other, {files}))
@@ -399,6 +522,21 @@ test('trusted ownership/project boundary drift fails closed; candidate declarati
   } finally {fs.rmSync(root, {recursive: true, force: true})}
 })
 
+test('Identity review resolves every application owner and profile from trusted routing', () => {
+  const root = routingFixture(), file = path.join(root, 'Canon/registries/current-architecture-baseline-v1.json'), original = fs.readFileSync(file, 'utf8')
+  try {
+    assertArchitectureFiles(architecturePr(5), identityReviewFiles(), root)
+    for (const pattern of ['apps/identity-runtime/**', 'apps/architecture-lab/**', 'Canon/**']) {
+      for (const patch of [{currentOwner: 'SG2 Runtime'}, {allowedProjectKeys: ['SG2']}, {baselineClassification: 'TRANSITIONAL'}]) {
+        const registry = JSON.parse(original), surface = registry.surfaces.find(s => s.pathPatterns.includes(pattern))
+        assert(surface, 'actual trusted routing surface required: ' + pattern)
+        Object.assign(surface, patch); fs.writeFileSync(file, JSON.stringify(registry))
+        rejection(() => assertArchitectureFiles(architecturePr(5), identityReviewFiles(), root))
+      }
+    }
+  } finally {fs.rmSync(root, {recursive: true, force: true})}
+})
+
 function apiFixture(candidate, files, after = candidate) {
   const calls = []
   return {calls, request: async endpoint => {
@@ -435,16 +573,56 @@ test('unavailable file API is a failure; SG2 and exact-main keep their original 
   assert.deepEqual(await resolveCandidateAdmission(context(), '', sha, () => {throw new Error('must not request')}), {sha})
 })
 
-function checkoutFixture(edit = () => {}) {
+test('Identity review uses the same complete GitHub file resolution and metadata race fence', async () => {
+  const files = identityReviewFiles(), candidate = architecturePr(files.length), api = apiFixture(candidate, files)
+  const result = await resolveCandidateAdmission(context(), '600', other, api.request)
+  assert.equal(result.sha, other); assert.equal(result.admission.kind, 'ARCHITECTURE'); assert.deepEqual(result.admission.files, files)
+  assert.equal(api.calls.length, 3, 'metadata, complete files, then metadata fence')
+  for (const after of [{...candidate, head: {...candidate.head, sha}}, {...candidate, base: {...candidate.base, sha: other}}, {...candidate, changed_files: 4}]) {
+    await assert.rejects(resolveCandidateAdmission(context(), '600', other, apiFixture(candidate, files, after).request))
+  }
+  await assert.rejects(resolveCandidateAdmission(context(), '600', other, apiFixture(candidate, files.slice(0, 4)).request))
+  await assert.rejects(resolveCandidateAdmission(context(), '600', other, async endpoint => {
+    if (endpoint.includes('/files?')) throw Error('synthetic unavailable file API')
+    return {data: candidate}
+  }))
+})
+
+function checkoutFixture(edit = () => {}, filenames = ['packages/platform-contracts/src/profile.mjs']) {
   const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-checkout-')))
   const git = (...args) => execFileSync('git', args, {cwd: root, encoding: 'utf8', env: {...process.env, GIT_AUTHOR_NAME: 'Synthetic CI', GIT_AUTHOR_EMAIL: 'ci@example.invalid', GIT_COMMITTER_NAME: 'Synthetic CI', GIT_COMMITTER_EMAIL: 'ci@example.invalid'}}).trim()
-  const filename = 'packages/platform-contracts/src/profile.mjs'
-  fs.mkdirSync(path.dirname(path.join(root, filename)), {recursive: true}); fs.writeFileSync(path.join(root, filename), 'original synthetic source\n')
+  const filename = filenames[0]
+  for (const name of filenames) {fs.mkdirSync(path.dirname(path.join(root, name)), {recursive: true}); fs.writeFileSync(path.join(root, name), 'original synthetic source\n')}
   git('init', '-q'); git('add', '.'); git('commit', '-qm', 'synthetic baseline'); const baseSha = git('rev-parse', 'HEAD')
-  fs.writeFileSync(path.join(root, filename), 'changed synthetic source\n'); edit(root, filename)
-  git('add', '.'); git('commit', '-qm', 'synthetic candidate'); const candidateSha = git('rev-parse', 'HEAD'), blob = git('rev-parse', `${candidateSha}:${filename}`)
-  return {root, filename, candidateSha, admission: {kind: 'ARCHITECTURE', baseSha, files: [{filename, sha: blob, status: 'modified'}]}, close: () => fs.rmSync(root, {recursive: true, force: true})}
+  for (const name of filenames) fs.writeFileSync(path.join(root, name), 'changed synthetic source\n')
+  edit(root, filename)
+  git('add', '.'); git('commit', '-qm', 'synthetic candidate'); const candidateSha = git('rev-parse', 'HEAD')
+  return {root, filename, candidateSha, admission: {kind: 'ARCHITECTURE', baseSha, files: filenames.map(name => ({filename: name, sha: git('rev-parse', `${candidateSha}:${name}`), status: 'modified'}))}, close: () => fs.rmSync(root, {recursive: true, force: true})}
 }
+
+test('Identity review pins all five real Git blobs without executing candidate test code', () => {
+  const f = checkoutFixture(root => {
+    fs.writeFileSync(path.join(root, 'apps/identity-runtime/test/lifecycle-resilience.test.mjs'),
+      "import fs from 'node:fs'; fs.writeFileSync(new URL('../../../must-not-execute', import.meta.url), 'bad'); throw Error('must not execute')\n")
+  }, identityReviewFiles().map(f => f.filename))
+  try {
+    assertArchitectureCheckout(f.root, f.candidateSha, f.admission)
+    assert.equal(fs.existsSync(path.join(f.root, 'must-not-execute')), false)
+    const forged = structuredClone(f.admission); forged.files[3].sha = 'd'.repeat(40)
+    rejection(() => assertArchitectureCheckout(f.root, f.candidateSha, forged))
+    fs.appendFileSync(path.join(f.root, 'apps/identity-runtime/test/lifecycle-resilience.test.mjs'), 'replacement')
+    rejection(() => assertArchitectureCheckout(f.root, f.candidateSha, f.admission))
+  } finally {f.close()}
+})
+
+test('Identity review rejects a hidden runtime mutation and an exact-name symlink blob', () => {
+  const paths = identityReviewFiles().map(f => f.filename)
+  for (const edit of [root => {fs.mkdirSync(path.join(root, 'apps/identity-runtime/src'), {recursive: true}); fs.writeFileSync(path.join(root, 'apps/identity-runtime/src/main.ts'), 'unauthorised')},
+    root => {const p = path.join(root, paths[3]); fs.unlinkSync(p); fs.symlinkSync('/synthetic-outside-never-read', p)}]) {
+    const f = checkoutFixture(edit, paths)
+    try {rejection(() => assertArchitectureCheckout(f.root, f.candidateSha, f.admission))} finally {f.close()}
+  }
+})
 
 test('pinned real Git checkout binds complete diff, actual blob and regular-file contents before credentials', () => {
   const f = checkoutFixture()
