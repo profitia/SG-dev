@@ -1,10 +1,11 @@
 "use client";
-import { CanonLink, CanonInput, CanonButton, SupplierHeader } from '@profitia/srm-xray';
+import { CanonLink, CanonButton, SupplierHeader, SupplierSearch } from '@profitia/srm-xray';
 
 import "@profitia/srm-xray/financial-scanner.css";
 
 import { ExecutiveSummary, FinancialScannerMount, KysOverview, type KysPdfSelection } from "@profitia/srm-xray";
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState } from "react";
+import {createSupplierSearchGateway} from '../src/modules/xray/supplier-search-gateway';
 import { SupplierReport, reportMessage, type SupplierReportSlots } from "../src/modules/xray/supplier-report";
 import { useSupplierReport } from "../src/modules/xray/use-supplier-report";
 import { supplierNip, inactiveSupplier } from "../src/modules/xray/report-controller";
@@ -33,11 +34,11 @@ export default function Home() {
 function SupplierReportHome() {
   const { state, controller } = useSupplierReport();
   const [identifier, setIdentifier] = useState("");
+  const [searchGateway] = useState(()=>createSupplierSearchGateway());
   const inputRef = useRef<HTMLInputElement>(null);
   const inactive = inactiveSupplier(state.result);
   const entry = !state.result;
   function newReport() { controller.reset(); setIdentifier(""); requestAnimationFrame(() => inputRef.current?.focus()); }
-  async function search(event: FormEvent<HTMLFormElement>) { event.preventDefault(); await controller.search(identifier); }
 
   async function revealPesel(token: string): Promise<string> {
     const response = await fetch("/api/xray/kys/pesel", {
@@ -110,18 +111,6 @@ function SupplierReportHome() {
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
-  const searchForm = <form id="supplier-search" tabIndex={-1} className={entry ? "srm-entry-search" : "appshield-search appshield-header-search"} aria-label="Wyszukaj dostawcę" onSubmit={search}>
-        <label className={entry ? "srm-entry-label" : "srm-sr-only"} htmlFor="identifier">Wpisz NIP</label>
-        <div className="appshield-search-fields">
-          <CanonInput canonId="SRM-C06" usage="page:02" ref={inputRef} id="identifier" name="identifier" inputMode="numeric" pattern="[0-9]{10}" maxLength={14}
-            placeholder="Wpisz numer NIP…" required value={identifier} aria-describedby="supplier-search-help" onChange={event => {
-              setIdentifier(event.target.value.replace(/[\s-]/g, ""));
-            }} />
-          <CanonButton canonId="SRM-C01" usage="page:03" type="submit" disabled={state.busy}>{state.busy ? "Wyszukiwanie…" : "Wyszukaj"}</CanonButton>
-        </div>
-        <small className="srm-sr-only" id="supplier-search-help">Dane finansowe i rejestrowe są pobierane przy wyszukiwaniu. Raport KYS zamawiasz osobno.</small>
-      </form>;
-
   return <main className="appshield">
     {!inactive && <CanonLink canonId="SRM-C55" usage="page:01" className="report-skip-link" href={entry ? "#supplier-search" : "#new-report"}>Przejdź do wyszukiwania</CanonLink>}
     <SupplierHeader>
@@ -132,7 +121,8 @@ function SupplierReportHome() {
         </div>
       </SrmSessionActions>
     </SupplierHeader>
-    {entry && <section className="srm-ui srm-entry-main" aria-label="Wyszukiwanie dostawcy">{searchForm}</section>}
+    {entry && <SupplierSearch nip={identifier} onNipChange={setIdentifier} inputRef={inputRef} busy={state.busy}
+      onNipSearch={()=>void controller.search(identifier)} gateway={searchGateway} onNameSearch={selection=>void controller.searchKrs(selection)} />}
     <div className="appshield-content report-page">
 
       {state.busy && <p role="status" className="report-loading">Wyszukiwanie dostawcy. Poczekaj na wynik…</p>}
