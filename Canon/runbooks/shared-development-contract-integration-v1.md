@@ -19,3 +19,39 @@ Workflow Platform contract integration uruchamia się na PR oraz push main po zm
 Testy konsumentów są konkretnymi testami weryfikacji Development, uruchamianymi przez npm run test:platform-contract. Czytają aktualne rejestry i porównują jawnie przyjętą wersję/digest z jednym źródłem kontraktu. Nie zastępują pełnego produktu E2E, typechecku/builda ani istniejącego SRM CI. SG2 private-package installation nie jest potrzebna do tych testów; workflow nie pobiera sekretów Render.
 
 Każdy konsument publikuje w GitHub Actions sanitized proof: projectKey, targetEnvironment, acceptedVersion, sourceDigest, producerSourceSha, rzeczywisty validationSha checkoutu oraz candidateHeadSha. Dla PR checkout może reprezentować syntetyczny merge; oba SHA są nazwane osobno. Artefakt nie zawiera danych aplikacyjnych, połączeń lub haseł.
+
+
+## TASK02-R — proposed atomic source publication, awaiting owner acceptance
+
+This is a source proposal, not an active exception or merge authority. The existing
+separate owner PRs and their PMOS/PHR remain the source of ownership. Producer604,
+SG2 607, Maps608, Identity611 and SRM613 are immutable inputs, subject to a fresh
+exact-SHA read. The SRM FAST-TRACK UI follow-up and KRS CI follow-up have their own
+actual owner scope. None authorizes runtime installation or activation.
+
+The present checks require platform1.25 and every consumer receipt together;
+merging either side first leaves main invalid. A source-only composite may be
+assembled locally for testing from exact owner commits, without changing main.
+It is not proof that the independent PR checks passed. Before publishing a single
+aggregate transport PR, the owner must explicitly accept this coordinated
+publication procedure and its exact input manifest. No all-owner aggregate PR is
+authorized by this proposed text alone.
+
+Proposed procedure: preserve all original owner PRs and receipts; construct one
+transport commit from current main and only exact reviewed owner commits. Its
+manifest lists owner, task, PR, input SHA, changed-path/blob digests, and historical
+receipt. Reject unowned, extra, conflicting or manually overwritten owner paths.
+Run all ordinary owner jobs and trusted-main controlled CI on the exact final
+candidate. Keep complete path partitions and actual-owner governance results.
+Credential-bearing package installation remains separate from candidate code.
+No controller, workflow pin, author/repository fence or privileged policy changes
+are included. The existing controller accepts internal srm/* candidates; the
+branch prefix never grants ownership over dependency commits.
+
+Obtain explicit SOURCE GO for the final immutable candidate only after checks
+pass. Promote atomically so main never contains half the adoption; original PRs
+are not individually merged in a failing order. Refresh main, provenance and
+checks before promotion; a changed SHA or main invalidates the proposed GO.
+Verify final main CI and record actual integration lineage. Any unresolved
+mandatory check prevents promotion. INSTALLATION GO, R2 protected recovery
+scope, Identity/cohort provisioning and ACTIVATION GO remain separate decisions.

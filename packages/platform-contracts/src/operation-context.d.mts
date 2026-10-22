@@ -135,10 +135,12 @@ export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
 export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
-  application: Application; now?: () => number
+  application: Application; now?: () => number; locationAdmissionSchemaDigest?:string
   authenticate(request: unknown): Promise<Actor | null>
   /** Locks authoritative state and commits effects + OUTCOME atomically; rollback on throw. */
   withTransaction<T>(binding: { actor: Readonly<Actor>; request: Readonly<BoundRequest> }, action: (session: OperationSession<Transaction>) => Promise<T>): Promise<T>
   /** Independent durable append: ordinary INTENT before effect, DENY/FAILURE after rollback. Inspection requires its same-transaction intent port. */
   recordAudit(event: AuditEvent): Promise<void>
 }): OperationExecutor<Transaction>
+
+export declare const SUPPLIER_LOCATION_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.17'}>
