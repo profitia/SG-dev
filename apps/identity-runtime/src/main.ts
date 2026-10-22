@@ -6,9 +6,13 @@ import { createHttpHandler } from './http-handler.js'
 import { createNodeServer } from './node-server.js'
 import { readDeploymentOrigin } from './deployment-configuration.js'
 import type { SessionBoundary } from './contracts.js'
+import { createAccountSurface, accountTransactions, type AccountSurface } from './account-provisioning.js'
 let pool: pg.Pool | null = null
 async function start() {
 let boundary: SessionBoundary | null = null
+let account: AccountSurface | null = null
+if (process.env.IDENTITY_SELF_SERVICE_ENABLED !== undefined && !['true', 'false'].includes(process.env.IDENTITY_SELF_SERVICE_ENABLED)) throw Error('INVALID_SELF_SERVICE_FLAG')
+if (process.env.IDENTITY_SELF_SERVICE_ENABLED === 'true' && process.env.IDENTITY_RUNTIME_ENABLED !== 'true') throw Error('RUNTIME_REQUIRED')
 const port = Number(process.env.PORT ?? '3600'); if (!Number.isInteger(port) || port < 1 || port > 65535) throw Error('INVALID_PORT')
 let origin = readDeploymentOrigin(process.env.IDENTITY_RUNTIME_PUBLIC_ORIGIN, `http://127.0.0.1:${port}`)
 if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
@@ -23,9 +27,16 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
   pool = new pg.Pool({ host: u.hostname, port: Number(u.port || '5432'), user: binding.role, password: decodeURIComponent(u.password), database: binding.databaseName, ssl: { rejectUnauthorized: true }, max: 8, connectionTimeoutMillis: 5000 })
   pool.on('error', () => {})
   const authority = createDatabaseAuthority(binding, (sql, values) => pool!.query(sql, values), config.issuer)
-  boundary = createSessionBoundary({ configuration: config, client: createOfficialClient(config, process.env.CLERK_SECRET_KEY), authority }); origin = config.origin
+  const client = createOfficialClient(config, process.env.CLERK_SECRET_KEY)
+  boundary = createSessionBoundary({ configuration: config, client, authority }); origin = config.origin
+  if (process.env.IDENTITY_SELF_SERVICE_ENABLED === 'true') {
+    const key = process.env.IDENTITY_PROFILE_PROOF_KEY, digest = process.env.IDENTITY_PROFILE_SCHEMA_DIGEST
+    if (!/^[a-f0-9]{64}$/.test(key ?? '') || !/^[a-f0-9]{64}$/.test(digest ?? '')) throw Error('PROFILE_CONFIGURATION_REQUIRED')
+    account = createAccountSurface({ configuration: config, client, authority, binding, schemaDigest: digest!,
+      proofKey: Buffer.from(key!, 'hex'), transact: accountTransactions(pool) })
+  }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary)); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account)); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => { server.close(() => { void pool?.end().finally(() => process.exit(0)); if (!pool) process.exit(0) }); server.closeIdleConnections() })
 }
 start().catch(async () => { console.error('identity-runtime configuration unavailable'); await pool?.end(); process.exitCode = 1 })
