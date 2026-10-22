@@ -12,6 +12,7 @@
     ]
   },
   "files": [
+    "registry-read.mts",
     "native-external.mts",
     "supplier-delegation.mts",
     "delegated-private-phases.mts",
