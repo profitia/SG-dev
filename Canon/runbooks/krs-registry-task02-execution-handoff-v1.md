@@ -4,6 +4,7 @@ Status: **G1_GRANTED / MAIN_ROUTING_ACCEPTANCE_REQUIRED / DO NOT START AUTOMATIC
 Target: **BUILD COMPLETE / ACTIVATION DEFERRED**.
 Producer profile: ARCHITECTURE, approved owner Architecture Platform, Development.
 Prepared by TASK01 `ARCHITECTURE-KRS-REGISTRY-FOUNDATION-20261022`,2026-10-22.
+Handoff revision: **1.1 / TASK01B**, mandatory Company Identity Reconciliation; independent source DTO contract `profitia.krs-company-identity/1.0.0`. This is design acceptance, not implemented package/runtime readiness.
 
 This is a future execution specification, not a new task authorization. Read [the G1 decision](../v1.0-krs-registry-architecture-and-ownership-canon.md), [onboarding evidence](../evidence/2026-10-22-krs-registry-g1-onboarding.md) and [historical foundation evidence](../evidence/2026-10-22-krs-registry-foundation.md), then revalidate current main, contracts, provider state and concurrent P1/I1/Maps work. Do not copy a historical baseline or narrated approval into authority.
 
@@ -44,6 +45,32 @@ Contracts remain independent of React/Next. No app-private imports from SRM, Map
 The MF mapping example only proves that one NIP resolved. Its production integration/limits/access policy must be accepted separately; GUS requires registration/key and report-field validation and is not a mandatory dependency for a progressive source-only runtime. No credential request, provider contact or legal agreement acceptance is authorized by this handoff.
 
 Catalog starts PROGRESSIVE. Bootstrap import is disabled and accepts only a separately approved public KRS seed manifest or approved bulletin windows. Do not automatically export customer suppliers, SRM raw MGBI archives or organisational interest lists. A zero match is NOT_IN_CATALOG, not proof of nonexistent company. A complete catalog is a separate accepted data-source/coverage project if later required.
+
+## Mandatory Company Identity Reconciliation
+
+Implement the exact closed `SelectedKrsIdentityEvidenceV1` wire DTO and constraints in [architecture sections5.1–5.2](../v1.0-krs-registry-architecture-and-ownership-canon.md#51-mandatory-company-identity-reconciliation--task01b). This domain is mandatory for Stage02 acceptance, not a follow-up enhancement. Export the versioned schema/validator from the approved KRS contracts package, with KRS-side authoritative evidence production in the runtime. No paid MGBI integration or copy of SRM's `KRS_CONTINUITY_V1` is permitted.
+
+Preserve the original selected KRS through official validation, verified NIP and later Financial context. Emit VERIFIED only for an exact selectedKrs/identity.krs/sourceRecordId/entityKey match, valid NIP checksum, applicable validated REGON, closed source/version/digest metadata and current server freshness. Source fields preserve P/S, current extract, official as-of/entry evidence and retrieval/check clocks separately. Public evidence contains no org/user, E1 permission or financial eligibility grant. Unknown authority fields, caller-edited evidence, ambiguous candidates, identifier conflicts and stale/missing source fail closed with the exact DTO codes. Historical transformation candidates contain bounded evidence refs and explicitly do not establish eligibility.
+
+Use the stated300s retrieval-based expiry/30s future-skew policy; validate all clock relations, boundary equality, source invalidation and tampered digests. Rechecking old bytes does not renew them. Reuse existing authoritative storage/admitted transport; an evidenceRef/hash is not a new token or identity store. Do not create a second financial-continuity engine. The existing SRM consumer validates accepted reference/source/digest and current rights again before a later external effect and attachment.
+
+Required Stage02 fixtures, all with **zero paid MGBI calls**:
+
+| Fixture | Required KRS-side result / future consumer invariant |
+| --- | --- |
+| Different abbreviations/historical names, exact authoritative IDs agree | VERIFIED selected registration; names do not deny an otherwise valid identity |
+| Same name, different KRS/NIP or contradictory P/S/header evidence | IDENTIFIER_CONFLICT; do not choose first/best name |
+| Missing NIP / invalid format or checksum / all-zero identifiers | MISSING_NIP / INVALID_NIP / INVALID_KRS; General snapshot may remain |
+| Multiple companies for NIP or selected KRS substituted in transit | AMBIGUOUS_COMPANY / IDENTIFIER_CONFLICT; selection remains fixed |
+| REGON9 vs14 without accepted relation, invalid or conflicting applicable REGON | Explicit conflict/invalid result; no automatic suffix stripping |
+| Predecessor own record/link missing, branching/cyclic chain, merger partner | Evidence stays a candidate; UNCONFIRMED_HISTORICAL_KRS for unresolved selected identity; future continuity denies attribution |
+| Unsupported version/normalizer, unknown nested keys, forged status/ref/digest, duplicate JSON keys | Closed validation DENY; no E1 authority accepted from DTO |
+| KRS unavailable, stale cache, exact expiry, future clocks or snapshot superseded | KRS_UNAVAILABLE / STALE_IDENTITY_EVIDENCE; no TTL renewal from cached bytes |
+| Repeated search/resolve/identity validation, including VERIFIED | Stable selected identity/evidence semantics; acquisition spy remains0 |
+
+The later **Stage03 SRM acceptance** must prove the whole sequence `name search → selected KRS → official identity → verified NIP+KRS → current E1 Source/Request admission → existing MGBI Financial acquisition → returned company/document verification → unified report`. Assert0paid calls on incomplete identity or missing/revoked admission, and exactly one existing acquisition for the same accepted work intent despite retries/concurrency; no speculative paid General lookup. Verify MGBI returned NIP/company KRS/document source KRS, preserved selected registration, separately accepted predecessor eligibility under `KRS_CONTINUITY_V1`, missing/incorrect document KRS, MGBI outage/uncertain outcome, same-name wrong company and different-name correct company. Excluded documents contribute no period/indicator/scanner values; a partial section includes only independently verified documents and visible rejection state. General remains available when Financial cannot be attributed. Existing accepted history is retained under its original source identity.
+
+Stage02 supplies fixtures suitable for that consumer adoption, without pretending a simulated MGBI boundary is deployed integration. Stage03 separately verifies XML/XHTML/iXBRL, periods, Financial Scanner, existing cost/idempotency/retry/admission, Locations/Maps and registry-provider rollback. WERK remains outside this task. No implementation here starts Stage02 or Stage03.
 
 ## Required test matrix
 
