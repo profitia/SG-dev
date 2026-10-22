@@ -1,5 +1,5 @@
 import { isDeregisteredJdg, isCompanyReportRestricted } from "@profitia/srm-xray";
-import type { JdgRegistryData, SectionEnvelope, SupplierReportData, SupplierXRayCard } from "@profitia/srm-xray";
+import type { JdgRegistryData, SectionEnvelope, SupplierReportData, SupplierXRayCard, SupplierSelection } from "@profitia/srm-xray";
 
 export type DisplayCard = { identity: SupplierXRayCard["identity"]; general: Omit<SupplierXRayCard["general"], "source">;
   financial: Omit<SupplierXRayCard["financial"], "source">; kys: Omit<SupplierXRayCard["kys"], "source"> };
@@ -43,6 +43,7 @@ export class SupplierReportController {
   private metadataRequest?: AbortController;
   private logicalKeys=new Map<string,string>();
   private privateKysReference:PrivateKysReference|null|undefined;
+  private nameSelection:SupplierSelection|null=null;
   constructor(private readonly transport: typeof fetch = (input, init) => fetch(input, init),
     private readonly now: () => Date = () => new Date(),
     private readonly newRequestKey:()=>string=()=>crypto.randomUUID()) {}
@@ -50,7 +51,7 @@ export class SupplierReportController {
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private update(change: Partial<ReportState>) { this.state = { ...this.state, ...change }; for (const listener of this.listeners) listener(); }
   dispose = () => { this.generation += 1; this.metadataSequence += 1; for (const request of this.requests) request.abort(); this.requests.clear(); this.logicalKeys.clear(); this.privateKysReference=undefined; };
-  reset = () => { this.dispose(); this.state = initialState(); for (const listener of this.listeners) listener(); };
+  reset = () => { this.dispose(); this.nameSelection=null; this.state = initialState(); for (const listener of this.listeners) listener(); };
   private async json(path: string, body: unknown, controller: AbortController): Promise<unknown> {
     const logical=path+':'+JSON.stringify(body),key=this.logicalKeys.get(logical)??this.newRequestKey();
     this.logicalKeys.set(logical,key);
@@ -80,7 +81,37 @@ export class SupplierReportController {
     } catch (error) { if (generation === this.generation) this.update({ error: message(error, "Nie udało się pobrać raportu.") }); }
     finally { if (generation === this.generation) this.update({ busy: false }); }
   };
+  /** Name selections use only their protected BFF path. Never classify by NIP or invoke the NIP lookup. */
+  searchKrs = async (selection:SupplierSelection) => {
+    if(this.state.busy)return;
+    const path='/api/xray/krs/lookup',body={selectionRef:selection.selectionRef},logical=path+':'+JSON.stringify(body);
+    const retryKey=this.logicalKeys.get(logical);
+    this.reset();this.nameSelection=selection;
+    const requestKey=retryKey??this.newRequestKey();this.logicalKeys.set(logical,requestKey);
+    const generation=this.generation;this.update({busy:true});
+    try{
+      const response=await this.json(path,body,new AbortController()) as {result:SearchResult;metadata:SupplierReportData|null};
+      if(generation!==this.generation)return;
+      const payload=response?.result;
+      if(payload?.entityType!=='COMPANY'||supplierNip(payload)!==selection.nip||payload.card.identity.krs!==selection.krs
+        ||payload.card.general.data?.krs!==selection.krs||payload.card.general.data.nip!==selection.nip
+        ||response.metadata&&(response.metadata.nip!==selection.nip||response.metadata.entityType!=='COMPANY'))throw Error('Dane raportu nie zgadzają się z wybraną spółką.');
+      this.update({result:payload,metadata:response.metadata,busy:false});
+    }catch(error){if(generation===this.generation){this.logicalKeys.set(logical,requestKey);this.update({error:message(error,'Nie udało się pobrać raportu wybranej spółki.')});}}
+    finally{if(generation===this.generation)this.update({busy:false});}
+  };
   refreshMetadata = async () => {
+    // Name-mode metadata was composed from the identity-eligible financial result.
+    // Do not replace it with an unrelated legacy NIP cache or start another acquisition.
+    if(this.nameSelection){
+      const metadata=this.state.metadata,ref=this.privateKysReference;
+      if(metadata&&ref!==undefined){
+        const valid=ref&&ref.nip===this.nameSelection.nip&&ref.entityType==='COMPANY'&&Date.parse(ref.retentionUntil)>this.now().getTime();
+        this.update({metadata:{...metadata,kys:{...metadata.kys,exportRef:valid?ref.exportRef:null,
+          freshness:valid?{...metadata.kys.freshness,retrievedAt:ref.retrievedAt,retentionUntil:ref.retentionUntil}:metadata.kys.freshness}}});
+      }
+      return;
+    }
     const result = this.state.result, nip = supplierNip(result); if (!result || !nip || inactiveSupplier(result)) return;
     const generation = this.generation, sequence = ++this.metadataSequence;
     this.metadataRequest?.abort(); const request = new AbortController(); this.metadataRequest = request;

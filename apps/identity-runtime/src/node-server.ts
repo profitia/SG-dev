@@ -10,7 +10,10 @@ export function createNodeServer(origin: string, handler: (request: Request) => 
     }, 5000) })
     incoming.on('aborted', () => abort.abort())
     try {
-      if (incoming.headers.host !== expected.host || !/^\/[a-z0-9/-]*$/.test(raw) || raw.includes('//') || raw.includes('..')) throw Error('REQUEST_TARGET')
+      const question = raw.indexOf('?'), rawPath = question < 0 ? raw : raw.slice(0, question)
+      const sdkEntry = incoming.method === 'GET' && /^\/account\/[a-z0-9-]+\/[a-z0-9-]+\/(registration|login|recovery)$/.test(rawPath)
+      if (incoming.headers.host !== expected.host || !/^\/[a-z0-9/-]*$/.test(rawPath) || rawPath.includes('//') || rawPath.includes('..')
+        || question >= 0 && (!sdkEntry || raw.length - question > 8192 || /[\u0000-\u0020\u007f\\]/.test(raw))) throw Error('REQUEST_TARGET')
       const headers = new Headers(); for (let i=0;i<incoming.rawHeaders.length;i+=2) headers.append(incoming.rawHeaders[i]!, incoming.rawHeaders[i+1]!)
       const method = incoming.method ?? 'GET', chunks: Buffer[] = []; let total = 0
       for await (const chunk of incoming) { total += chunk.length; if (total > 4096 || abort.signal.aborted) throw Error('BODY_LIMIT'); chunks.push(chunk) }

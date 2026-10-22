@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0.0",
+  "businessTask": "SRM-KRS-NAME-SEARCH-INTEGRATION-20261022",
+  "targetEnvironment": "development",
+  "activationState": "BLOCKED_PENDING_P0_ACCEPTANCE",
+  "enabledByDefault": false,
+  "mapsAcceptanceReceipt": null,
+  "registryProducerReceipt": null,
+  "catalogInstallationReceipt": null,
+  "financialConsumerReceipt": null,
+  "retainedReleaseRecoveryReceipt": null,
+  "catalogServiceId": null,
+  "catalogDatabase": null,
+  "periodicSynchronizationEnabled": false,
+  "note": "This is a disabled source candidate. It assigns no resource, grant, role, cohort, budget or live release authority.",
+  "acceptedContract": {
+    "version": "1.0.1",
+    "sourceSha": "2936119359f4614f7c864fa2456c4317a0ec065d",
+    "sourceDigest": "383d39d4a533bd1ff1a49a9587b2ad5fd23de5d3d9934ee9656a1b99be0861b6"
+  },
+  "acceptedRuntime": {
+    "version": "1.1.1",
+    "sourceSha": "bc5a4a8c1fcc1a9a22baed53d1e800d985e8dcfb",
+    "sourceDigest": "4424dcd81af7d8a81807a6fc3e6360ba89a6ef64d4d0815a427e656a5aa83c83"
+  }
+}

@@ -13,6 +13,6 @@
     "start": "node dist/src/main.js",
     "ci:proof": "node scripts/ci-proof.mjs"
   },
-  "dependencies": { "@clerk/backend": "3.25.0", "@profitia/platform-contracts": "file:../../packages/platform-contracts", "pg": "8.23.1" },
+  "dependencies": { "@clerk/localizations": "4.23.0", "@clerk/backend": "3.25.0", "@profitia/platform-contracts": "file:../../packages/platform-contracts", "pg": "8.23.1" },
   "devDependencies": { "@types/node": "24.10.1", "@types/pg": "8.15.5", "typescript": "5.9.3" }
 }

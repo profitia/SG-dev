@@ -1,5 +1,7 @@
 import { BoundaryError, type SessionBoundary } from './contracts.js'
 import { checkRequest } from './session-boundary.js'
+import type { AccountSurface } from './account-provisioning.js'
+import { accountPage, accountBrowserScript } from './account-page.js'
 const headers = { 'cache-control': 'private, no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', vary: 'Cookie, Authorization, Origin', 'content-type': 'application/json' }
 function json(status: number, body: unknown) { return new Response(JSON.stringify(body), { status, headers }) }
 async function body(request: Request): Promise<unknown> {
@@ -11,10 +13,31 @@ async function body(request: Request): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
+      if (url.pathname === '/v1/account' || url.pathname === '/account-client' || url.pathname.startsWith('/account/')) {
+        if (url.hash || url.pathname === '/v1/account' && url.search) return json(404, { error: 'NOT_FOUND' })
+        if (!boundary || !account) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
+        if (url.pathname !== '/v1/account') {
+          if (request.method !== 'GET') return json(405, { error: 'METHOD_NOT_ALLOWED' })
+          // Public navigation can come from the satellite. Opaque bounded SDK
+          // handshake query stays in the browser, never an identity/return input.
+          if (url.origin !== boundary.configuration.origin || url.username || url.password || url.search.length > 8192) return json(403, { error: 'REQUEST_ORIGIN_REJECTED' })
+          const page = /^\/account\/([a-z0-9-]+)\/([a-z0-9-]+)\/(registration|login|recovery)$/.exec(url.pathname)
+          if (url.pathname !== '/account-client' && !page) return json(404, { error: 'NOT_FOUND' })
+          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!) : accountBrowserScript,
+            { headers: { ...headers, 'content-type': page ? 'text/html; charset=utf-8' : 'text/javascript; charset=utf-8',
+              'content-security-policy': "frame-ancestors 'none'; base-uri 'none'", 'x-frame-options': 'DENY' } })
+        }
+        if (request.method === 'GET') return json(200, await account.read(request))
+        if (request.method !== 'POST') return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        checkRequest(request, boundary.configuration, true)
+        const input = await body(request)
+        if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length) return json(400, { error: 'EMPTY_OBJECT_REQUIRED' })
+        return json(200, await account.ensure(request))
+      }
       if (url.search || url.hash || !['/healthz','/readyz','/v1/session','/v1/flows','/v1/flows/consume','/v1/session/logout'].includes(url.pathname)) return json(404, { error: 'NOT_FOUND' })
       const get = ['/healthz','/readyz','/v1/session'].includes(url.pathname)
       if (request.method !== (get ? 'GET' : 'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })

@@ -5,6 +5,7 @@
   "description": "Reusable SRM X-Ray section mounts and host contract",
   "type": "module",
   "exports": {
+    "./supplier-search.css": "./src/supplier-search.css",
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"

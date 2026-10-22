@@ -73,3 +73,42 @@ test('invalid or foreign private references are refused and an unavailable priva
  const f=setup();await f.controller.search(nip);await f.controller.fetchKys();assert.equal(f.controller.getSnapshot().metadata?.kys.exportRef,privateRef.exportRef)
  f.setFail(true);await f.controller.fetchKys();assert.equal(f.controller.getSnapshot().metadata?.kys.exportRef,null)
 })
+
+const selection={krs:'0000028860',nip,name:'Synthetic selected company',locality:'Synthetic locality',selectionRef:'KRS:0000028860:'+ 'a'.repeat(64)};
+function nameResult(){return {result:{entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip,krs:selection.krs},
+ general:{...sampleCard.general,data:{...sampleCard.general.data,nip,krs:selection.krs}}}},metadata:metadata()}}
+test('selected-company retries preserve the logical Financial key and never invoke legacy NIP search or metadata acquisition',async()=>{
+ let calls=0,sequence=0;const keys:string[]=[],paths:string[]=[];
+ const transport:typeof fetch=async(path,init)=>{
+  paths.push(String(path));assert.equal(path,'/api/xray/krs/lookup');assert.deepEqual(JSON.parse(String(init?.body)),{selectionRef:selection.selectionRef});
+  keys.push(new Headers(init?.headers).get('Idempotency-Key')!);if(++calls===1)throw TypeError('Synthetic delivery uncertainty');
+  return Response.json(nameResult());
+ };
+ const c=new SupplierReportController(transport,()=>now,()=>`synthetic-selected-key-${++sequence}`);
+ await c.searchKrs(selection);assert(c.getSnapshot().error);await c.searchKrs(selection);
+ assert(c.getSnapshot().result);assert.equal(c.getSnapshot().error,null);assert.equal(keys[0],keys[1]);
+ await c.refreshMetadata();assert.equal(paths.length,2);
+ await c.searchKrs(selection);assert.notEqual(keys[2],keys[1]);
+});
+test('selected-company mismatch cannot attach a report and a reset discards a late response',async()=>{
+ for(const location of ['identity','general','metadata']){
+  const payload=nameResult();if(location==='identity')payload.result.card.identity.krs='0000000001';
+  if(location==='general')payload.result.card.general.data.nip=other;
+  if(location==='metadata')payload.metadata.nip=other;
+  const c=new SupplierReportController(async()=>Response.json(payload),()=>now,()=> 'synthetic-key-forged-result');
+  await c.searchKrs(selection);assert.equal(c.getSnapshot().result,null);assert(c.getSnapshot().error);
+ }
+ let complete!:(r:Response)=>void;
+ const c=new SupplierReportController(async()=>new Promise(resolve=>{complete=resolve}),()=>now,()=> 'synthetic-key-stale-result');
+ const pending=c.searchKrs(selection);c.reset();complete(Response.json(nameResult()));await pending;
+ assert.equal(c.getSnapshot().result,null);assert.equal(c.getSnapshot().busy,false);
+});
+test('name report keeps eligible Financial metadata while applying only its current private KYS PDF reference',async()=>{
+ const calls:string[]=[];
+ const c=new SupplierReportController(async(path)=>{
+  calls.push(String(path));return String(path).endsWith('/lookup')?Response.json(nameResult()):Response.json({section:{...sampleCard.kys,retrievedAt},privateReport:privateRef});
+ },()=>now,()=> 'synthetic-private-reference-key');
+ await c.searchKrs(selection);const financial=c.getSnapshot().metadata?.financial;
+ await c.fetchKys();assert.deepEqual(calls,['/api/xray/krs/lookup','/api/xray/kys']);
+ assert.equal(c.getSnapshot().metadata?.kys.exportRef,privateRef.exportRef);assert.deepEqual(c.getSnapshot().metadata?.financial,financial);
+});
