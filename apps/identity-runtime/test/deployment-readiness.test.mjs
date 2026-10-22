@@ -30,7 +30,8 @@ async function unusedPort() {
 
 async function start(t, origin) {
   const port = await unusedPort()
-  const process = spawn(globalThis.process.execPath, ['dist/src/main.js'], {
+  const egressGuard = `import net from 'node:net'; const deny = () => { process.stderr.write('UNEXPECTED_EGRESS_ATTEMPT'); throw Error('EGRESS_BLOCKED_BY_FIXTURE'); }; globalThis.fetch = deny; net.Socket.prototype.connect = deny;`
+  const process = spawn(globalThis.process.execPath, ['--import', 'data:text/javascript,' + encodeURIComponent(egressGuard), 'dist/src/main.js'], {
     env: { PATH: globalThis.process.env.PATH, HOST: '0.0.0.0', PORT: String(port), IDENTITY_RUNTIME_ENABLED: 'false', IDENTITY_RUNTIME_PUBLIC_ORIGIN: origin },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
