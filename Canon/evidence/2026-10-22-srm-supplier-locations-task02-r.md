@@ -954,3 +954,432 @@ MAINTENANCE_WINDOW_APPROVAL = NOT_REQUESTED
 PMOS_TASK_STATE = RUNNING
 PHR_TASK02_R_PUBLICATION = NOT_YET_PUBLISHED
 ```
+
+
+## Controlled Recovery Closure & Remaining Release Dependencies — 2026-10-22T07:32:06Z
+
+This is the current controlling checkpoint for **the same TASK02-R**. Earlier dated
+sections/readbacks remain historical receipts. No new SRM registration, product
+source, migration, deployment, infrastructure, live grant/binding or final PHR was
+created. Exact changed targets are this file and its existing release JSON.
+SRM profile / SG-dev Codespaces SRM / Development; execution is local, not a
+Codespace claim. Fresh main remains4115d539501bfd73c4467129caacbadd6c94b8a4.
+Full require-begin preflight PASS; the existing registration remains RUNNING.
+
+**Result: PARTIAL; installation approval package PARTIAL.** The useful next
+decisions are the object-specific recovery reads, a bounded E1 producer corrective,
+the existing-auth UAT lifecycle, the restricted HQ/manual business scope and the
+real test cohort. Installation/deployment permission is not requested while those
+dependencies remain incomplete.
+
+### What actually changed in recovery evidence
+
+One more complete protected table is independently verified:
+**profitia_external_call.installation**. Existing ordinary
+`srm_provider_development_source` called the accepted non-mutating
+`profitia_external_call.descriptor('srm.provider.mgbi','srm-provider:mgbi')` on both
+explicit computes in REPEATABLE READ READ ONLY. All eight stored columns are
+reconstructed and equal; validated NOT NULL + PK(singleton) + CHECK(singleton)
+prove exactly one row. Complete reconstructed-record SHA256 is `953ce5d7b7eb9f39ae28e637f267868658dffd7fb3c45a846f8ed979809fd941`
+(sorted JSON algorithm; not confused with PostgreSQL row-text hashing).
+No external provider call, quota reservation, audit writer or privilege change ran.
+
+The earlier82-table claim also contained an insufficient empty RLS read for
+**srm.financial_scanner_frames**. Its current policies have no owner-TRUE read
+branch; matching visible0/empty-hash is not accepted here as complete physical
+coverage. That table returns to pending. The historical result is preserved,
+not rewritten. Current strict result is therefore **78 complete owner count/hash
+comparisons +4 complete singleton descriptors =82/105;23 pending**. It is not a
+claim that the same23 objects remain unchanged.
+
+The benchmark-specific hypothesis was tested without changing RLS: both attempted
+controlled-owner reads were refused, with the recovery retry reporting
+`Ordinary isolated runtime required`. Its additional category-input policy still
+calls runtime authority. No bypass retry followed. Native/public Source descriptors
+also cannot prove their installation records: their SourceRef fields refer to
+**policies**, leaving installation.source_ref unobserved. Their FOR SHARE paths
+were not invoked merely to obtain an incomplete proof.
+
+Current original/recovery metadata again agrees for105 ordinary tables,846
+columns,730 constraints,172 indexes,454 RLS policies,208 functions and161 triggers,
+plus namespaces/ACLs/sequences/extensions and23 memberships. The known additional
+recovery `token_roles` remains an explicitly recorded role-catalog difference,
+not an assertion of exact full role equality. These metadata comparisons do not
+replace the pending data evidence.
+
+### Complete105-table matrix
+
+The companion JSON `controlledRecoveryContinuation.recovery.tableMatrix105`
+contains every object exactly once, with actual database owner, routed source
+owner/path, classification, all applicable SELECT policies, existing reader,
+why a proof is incomplete, need for row access, operator/approval, expected output
+and PASS criterion. No raw business export is required for any table. Complete
+prior per-table counts/hashes and current singleton maps are linked in each row.
+AGG = complete controlled-owner count/hash; DESC = complete singleton descriptor;
+PENDING = no accepted complete data proof. Classifications are descriptive, not
+invented E1 enums or assumptions that a provider packet is shared knowledge.
+
+| Table | Routed source owner | Class | Data proof | Rows / required group |
+| --- | --- | --- | --- | --- |
+| profitia_access.accounts | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 6 |
+| profitia_access.applications | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 6 |
+| profitia_access.bootstrap_receipts | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 1 |
+| profitia_access.directory_installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_access.external_identities | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 6 |
+| profitia_access.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_access.memberships | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 3 |
+| profitia_access.organisations | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 2 |
+| profitia_access.permission_grants | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 18 |
+| profitia_access.product_grants | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 3 |
+| profitia_access.runtime_bindings | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 7 |
+| profitia_access.security_events | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 2499 |
+| profitia_benchmark_discovery.commands | SG Runtime / SG2 | PRIVATE_BENCHMARK_WORK | AGG / PASS | 136 |
+| profitia_benchmark_discovery.installation | SG Runtime / SG2 | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_benchmark_discovery.results | SG Runtime / SG2 | PRIVATE_BENCHMARK_WORK | AGG / PASS | 136 |
+| profitia_category.installation | SG Runtime / SG2 | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_delegated_phases.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_external_call.calls | Architecture Platform | CONTROL_AUDIT_EFFECT | PENDING | R-ARCH-EFFECT |
+| profitia_external_call.installation | Architecture Platform | INSTALLATION_RECEIPT | DESC / PASS | 1 |
+| profitia_external_call.policies | Architecture Platform | CONTROL_RIGHTS_BUDGET | PENDING | R-ARCH-POLICY |
+| profitia_external_native.installation | Architecture Platform | INSTALLATION_RECEIPT | PENDING | R-ARCH-INSTALL |
+| profitia_external_native.policies | Architecture Platform | CONTROL_RIGHTS_BUDGET | PENDING | R-ARCH-POLICY |
+| profitia_forecast_dispatch.discovery_installation | SG Runtime / SG2 | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_forecast_dispatch.installation | SG Runtime / SG2 | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_forecast_requests.commands | SG Runtime / SG2 | PRIVATE_BENCHMARK_WORK | AGG / PASS | 4 |
+| profitia_forecast_requests.installation | SG Runtime / SG2 | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_ingestion.budgets | Architecture Platform | CONTROL_RIGHTS_BUDGET | PENDING | R-ARCH-POLICY |
+| profitia_ingestion.effects | Architecture Platform | CONTROL_AUDIT_EFFECT | PENDING | R-ARCH-EFFECT |
+| profitia_ingestion.grants | Architecture Platform | CONTROL_RIGHTS_BUDGET | PENDING | R-ARCH-POLICY |
+| profitia_ingestion.installation | Architecture Platform | INSTALLATION_RECEIPT | DESC / PASS | 1 |
+| profitia_ingestion.runtime_bindings | Architecture Platform | CONTROL_RIGHTS_BUDGET | PENDING | R-ARCH-POLICY |
+| profitia_ingestion.security_events | Architecture Platform | CONTROL_AUDIT_EFFECT | PENDING | R-ARCH-EFFECT |
+| profitia_ingestion.sources | Architecture Platform | CONTROL_RIGHTS_BUDGET | PENDING | R-ARCH-POLICY |
+| profitia_jobs.delegations | Architecture Platform | CONTROL_REQUEST_AUDIT | AGG / PASS | 150 |
+| profitia_jobs.delivery_observations | Architecture Platform | CONTROL_REQUEST_AUDIT | AGG / PASS | 11 |
+| profitia_jobs.dispatches | Architecture Platform | CONTROL_REQUEST_AUDIT | AGG / PASS | 150 |
+| profitia_jobs.execution_grants | Architecture Platform | CONTROL_RIGHTS_BUDGET | AGG / PASS | 4 |
+| profitia_jobs.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_jobs.operation_bindings | Architecture Platform | CONTROL_RIGHTS_BUDGET | AGG / PASS | 4 |
+| profitia_modules.application_bindings | Architecture Platform | CONTROL_RIGHTS_BUDGET | AGG / PASS | 4 |
+| profitia_modules.audit_installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_modules.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_profile.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_profile.runtime_policies | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 0 |
+| profitia_profile.user_profiles | Architecture Platform | IDENTITY_ACCESS_AUDIT | AGG / PASS | 0 |
+| profitia_public_web.installation | Architecture Platform | INSTALLATION_RECEIPT | PENDING | R-ARCH-INSTALL |
+| profitia_public_web.policies | Architecture Platform | CONTROL_RIGHTS_BUDGET | PENDING | R-ARCH-POLICY |
+| profitia_request_inspection.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_request_phases.effects | Architecture Platform | CONTROL_REQUEST_AUDIT | AGG / PASS | 0 |
+| profitia_request_phases.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_request_phases.policies | Architecture Platform | CONTROL_RIGHTS_BUDGET | AGG / PASS | 0 |
+| profitia_request_work.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_request_work.policies | Architecture Platform | CONTROL_RIGHTS_BUDGET | AGG / PASS | 37 |
+| profitia_requests.external_installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_requests.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_requests.intents | Architecture Platform | CONTROL_REQUEST_AUDIT | AGG / PASS | 150 |
+| profitia_requests.operation_installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_requests.policies | Architecture Platform | CONTROL_RIGHTS_BUDGET | AGG / PASS | 5 |
+| profitia_services.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_services.read_grants | Architecture Platform | CONTROL_RIGHTS_BUDGET | AGG / PASS | 0 |
+| profitia_services.runtime_bindings | Architecture Platform | CONTROL_RIGHTS_BUDGET | AGG / PASS | 3 |
+| profitia_srm_acquisition.installation | SRM Runtime | INSTALLATION_RECEIPT | DESC / PASS | 1 |
+| profitia_srm_acquisition.outcome_witnesses | SRM Runtime | SOURCE_OUTCOME_AUDIT | PENDING | R-SRM-WITNESS |
+| profitia_srm_catalog.installation | SRM Runtime | INSTALLATION_RECEIPT | DESC / PASS | 1 |
+| profitia_srm_catalog.outcome_witnesses | SRM Runtime | SOURCE_OUTCOME_AUDIT | PENDING | R-SRM-WITNESS |
+| profitia_srm_catalog.publications | SRM Runtime | MIXED_SOURCE_PACKET | PENDING | R-SRM-PUBLICATION |
+| profitia_supplier_jobs.installation | Architecture Platform | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| profitia_supplier_requests.commands | SRM Runtime | CONTROL_REQUEST_AUDIT | AGG / PASS | 10 |
+| profitia_supplier_requests.installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| sg_runtime_benchmarks.BenchmarkProviderMapping | SG Runtime / SG2 | PRIVATE_BENCHMARK_WORK | AGG / PASS | 1 |
+| sg_runtime_benchmarks.BusinessBenchmark | SG Runtime / SG2 | PRIVATE_BENCHMARK | PENDING | R-SG2-BENCHMARK |
+| sg_runtime_benchmarks.Category | SG Runtime / SG2 | PRIVATE_BENCHMARK_WORK | AGG / PASS | 1 |
+| sg_runtime_benchmarks.CategoryCostComponent | SG Runtime / SG2 | PRIVATE_BENCHMARK_WORK | AGG / PASS | 1 |
+| sg_runtime_benchmarks.OrganizationBenchmarkSelection | SG Runtime / SG2 | PRIVATE_BENCHMARK_WORK | AGG / PASS | 1 |
+| sg_runtime_benchmarks.private_installation | SG Runtime / SG2 | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.catalog_companies | SRM Runtime | SOURCE_RIGHTS_CATALOGUE | PENDING | R-SRM-CATALOG |
+| srm.catalog_financial_facts | SRM Runtime | SOURCE_RIGHTS_CATALOGUE | PENDING | R-SRM-CATALOG |
+| srm.catalog_financial_indicators | SRM Runtime | SOURCE_RIGHTS_CATALOGUE | PENDING | R-SRM-CATALOG |
+| srm.catalog_kys_reports | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 0 |
+| srm.delegated_supplier_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.financial_facts | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 111 |
+| srm.financial_scanner_frames | SRM Runtime | PRIVATE_FINANCIAL_FRAME | PENDING | R-SRM-SCANNER |
+| srm.financial_source_documents | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 19 |
+| srm.lookup_requests | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 7 |
+| srm.mgbi_source_archives | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 4 |
+| srm.msr_projections | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 0 |
+| srm.msr_sources | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 3 |
+| srm.named_interest_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.organization_supplier_interest | SRM Runtime | PRIVATE_ACCOUNT_INTEREST | PENDING | R-SRM-IDENTITY |
+| srm.organizations | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 1 |
+| srm.private_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.provider_attempts | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 11 |
+| srm.schema_migrations | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 18 |
+| srm.section_projections | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 6 |
+| srm.source_snapshots | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 6 |
+| srm.supplier_business_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.supplier_inspection_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.supplier_private_acquisition_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.supplier_sensitive_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.supplier_web_identity | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 2 |
+| srm.supplier_web_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.supplier_work_installation | SRM Runtime | INSTALLATION_RECEIPT | AGG / PASS | 1 |
+| srm.suppliers | SRM Runtime | PRIVATE_SUPPLIER_SOURCE | AGG / PASS | 2 |
+| srm.user_supplier_interest | SRM Runtime | PRIVATE_ACCOUNT_INTEREST | PENDING | R-SRM-IDENTITY |
+| srm.users | SRM Runtime | PRIVATE_ACCOUNT_INTEREST | PENDING | R-SRM-IDENTITY |
+
+### Recovery owner decisions, narrowed to actual objects
+
+The unapproved homogeneous v1 request is **superseded** by
+`srm-task02-r-protected-recovery-readback-v2`. No extra authority is inferred from
+this continuation. Ownership is corrected from database-role inference to actual
+source routing: profitia_srm_catalog/acquisition are **SRM Runtime** migrations,
+although their database owner is profitia_ingestion_owner. Shared controlled
+backup authority remains Architecture Platform. The full105 matrix follows that
+distinction, including SG2's domain schemas.
+
+| Decision scope | Data owner | Exact objects | Why narrower business proof is insufficient |
+| --- | --- | --- | --- |
+| R-ARCH-INSTALL | Architecture Platform | profitia_external_native.installation; profitia_public_web.installation | Existing native/public descriptors expose schema version/digest but nativeSourceRef/publicWebSourceRef come from POLICY rows, not installation.source_ref. They also acquire FOR SHARE locks. They cannot reconstruct the complete singleton record. No misleading equivalence was accepted. |
+| R-ARCH-POLICY | Architecture Platform | profitia_external_call.policies; profitia_external_native.policies; profitia_public_web.policies; profitia_ingestion.budgets; profitia_ingestion.grants; profitia_ingestion.runtime_bindings; profitia_ingestion.sources | Existing ordinary Source current_state/descriptor exposes only the active currently admitted source/resource and omits some stored fields and inactive/expired/revoked/history rows. Two external policy projections match, but do not prove complete tables. |
+| R-ARCH-EFFECT | Architecture Platform | profitia_external_call.calls; profitia_ingestion.effects; profitia_ingestion.security_events | Existing read_status requires a known call plus current role/source/resource/policy; receipt requires exact key/payload. Neither enumerates the complete ledger or proves all uncertain external effects. No accepted global integrity operator/receipt was found. |
+| R-SRM-WITNESS | SRM Runtime | profitia_srm_acquisition.outcome_witnesses; profitia_srm_catalog.outcome_witnesses | SRM owns these migration paths even though database owner is profitia_ingestion_owner. Existing receipt/current_packet is bound to a particular source transaction and cannot supply full outcome-witness coverage. |
+| R-SRM-PUBLICATION | SRM Runtime | profitia_srm_catalog.publications | current_packet requires an admitted current transaction/effect. It is not a historical catalogue enumerator. Packet contents are mixed source data and not automatically approved shared knowledge. |
+| R-SRM-IDENTITY | SRM Runtime | srm.users; srm.user_supplier_interest; srm.organization_supplier_interest | Current named-person and delegated-target policies require an actual admitted human/request. Administrative SET ROLE alone does not provide that context; no complete-table permitted descriptor or independent owner receipt was found. |
+| R-SRM-CATALOG | SRM Runtime | srm.catalog_companies; srm.catalog_financial_facts; srm.catalog_financial_indicators | Corporate/native reader requires the current source or HUMAN work scope. A single supplier report is not complete catalogue integrity evidence. Ordinary source admission rejects the administrative session. |
+| R-SRM-SCANNER | SRM Runtime | srm.financial_scanner_frames | Prior count=0/hash(empty) was obtained through FORCE RLS. Current permissive/restrictive policies call profitia_modules.scope_allows and have no controlled-owner TRUE branch. Treat the earlier result as visible-content-only until full owner evidence exists; do not silently include it in physical coverage. |
+| R-SG2-BENCHMARK | SG Runtime / SG2 | sg_runtime_benchmarks.BusinessBenchmark | Table-specific recheck on both branches was refused; explicit retry on recovery returned Ordinary isolated runtime required. The additional private_category_benchmark_input SELECT policy calls module authority even though other policies contain owner CASE branches. No RLS/policy change or bypass was attempted. |
+
+
+All nine scopes have exact precompiled SQL and SHA256, stored separately in JSON.
+Together:12 Architecture,10 SRM and1 SG2 table. The proposed existing backup
+principal is neondb_owner, only under the expressly approved object/owner scope.
+Existing BYPASSRLS is not enabled or granted by this task, nor used for protected
+content here. No new account, credential, membership, table grant or helper is
+required. The owning project may instead supply an already accepted equivalent
+complete integrity receipt; none was found in current source/PMOS/PHR.
+
+Execution request: at most15minutes total, exact spring-bread-28217539 /
+platform_private, original br-sparkling-term-b99l107x / ep-late-heart-b9mxo8oi and
+recovery br-green-glitter-b9weet99 / ep-divine-mode-b9fekhdg. Each transaction is
+REPEATABLE READ READ ONLY, statement30s/lock3s/idle60s. Return only transaction
+identity/time and per-table counts + sorted full-row SHA256. R-ARCH-EFFECT also
+returns call/effect status totals, never request bodies, identities or URLs.
+Audit actual actor, approval, owner, SQL digest and physical target. Close the
+session on completion/timeout; no standing grant exists to revoke. Stop on target
+or read-only mismatch, missing scope, errors or unexplained live/snapshot drift.
+Do not export raw rows, mutate either branch, replay, settle or cancel effects.
+
+Snapshot snap-bold-bird-b99s4c9q remains preserved from the original, created
+05:23:04Z for data05:22:36Z/LSN0/3B8E828. Its previously verified console expiry
+is Never; current API still omits expires_at for the unchanged manual snapshot.
+This is not mislabelled as a new UI expiry observation. Recovery remains
+ready/restored/nondefault; restored_as is restore intent, not Finalize Restore.
+Original remains default/primary with unchanged endpoint. No fresh snapshot,
+branch, migration, restore/finalize or connection change occurred.
+
+### Concrete KYS disposition
+
+SRM Runtime owns KYS/native source retention; Architecture Platform controls the
+privileged execution boundary. Current Render inventory has41 services, one
+unrelated contact-email cron and **no accepted SRM periodic maintenance operator**.
+The foreign profitia/KYS auto-deploying web service is not that operator. Existing
+SRM_SENSITIVE_PURGE is request-scoped; SQL013's location_expire_controlled() is
+not installed. Its prior actual local PostgreSQL expiry/manual preservation,
+rollback, retry and ordinary-role denial tests remain20/20; they are not a live
+scheduling proof. No duplicate schedule/framework or privileged app role was added.
+
+**Decision K1-HQ-MANUAL-UAT-SUBSET is ready for explicit business acceptance:**
+activate only MGBI headquarters/address projections and manual locations for the
+finite approved UAT cohort/supplier(s), with zero KYS-derived persistence and zero
+paid geocoding. Use the already tested existing E1 default-deny fence: every
+location-capable HUMAN/SERVICE lacks KYS/private-source READ; initial derivative
+store is empty; unrelated users retain existing KYS rights but have no location
+grants. Verify the complete cohort/service intersection before activation. Any
+actor/service with both rights closes this subset gate. No source flag or new
+scheduler is needed for that tested, bounded option. Full KYS remains BLOCKED.
+
+If full KYS is required instead, first approve an actual controlled periodic
+execution channel and owner/cadence/maximum-lag derived from KYS policy. There is
+no identified existing executor to pretend to adopt. New external infrastructure
+is excluded from this task. Future paid Google coordinate caching has its own
+existing <=24h cleanup adoption requirement for the29-day/30-day rule; it does
+not establish a KYS retention schedule.
+
+### Identity follow-up resolved to the smallest actual dependency
+
+PR598 is merged. PR599 remains **DRAFT / OPEN**, exact head
+c8936471e2e295dde0a470361ab309fcd12c37f3. Its two exact-head CI runs39734792780 and
+39734792679 passed. It only corrects strict public Host handling for a disabled,
+health-only listener; its own owner handoff awaits source/first-service approval.
+It supplies no onboarding, binding renewal, memberships, product rights or live
+Clerk/browser acceptance. No Identity Runtime service exists in current inventory.
+
+Independent ordinary-role architecture_pmos read confirms B2-D completed
+06:45:38.413Z with those operational approvals still pending. Its PHR commit
+d67e34abd4739c5c9fda41994259d5e29c7b194b, directory
+history/2026/10/22/2026-10-22-06-45-30Z__architecture-architecture-identity-b2-dev-prep-20261022,
+is on current PHR main; all five integrity-listed file hashes match. Its recorded
+bundle hash is f4e2f731127717c173c07bc467b47de6ddcfff7fa5777cfbbfe3fad614176319
+(recorded value; no invented independent bundle-algorithm recomputation).
+Foreign continuity was read, never amended. No newer relevant producer corrective
+appears in current PR inventory; this is bounded evidence, not approval-by-absence.
+
+Use existing SRM official Clerk login and accepted B1 provisioning, not a mandatory
+B2 deployment. The verified issuer is unified-drum-7191.clerk.accounts.dev,
+app app_3KoJk9FmKeTC4hhlQwTgX6PMZmD, instance ins_3KoJk8us60Ywqei67JBwUx6R5pi.
+SRM currently resolves existing internal bindings but does not invoke B1's
+createIdentityProvisioner. B1's installed ordinary identity_b1_runtime/app remain
+DISABLED; profile policy/profile rows are0. Thus an invitation alone cannot
+onboard three users and no current accepted productive route exists.
+
+Decision I1 is precisely **existing-auth B1 admission/lifecycle acceptance**:
+reuse official current session/user verification and accepted provision_account,
+with an owner-approved receiver composition and scoped ordinary credential
+delivery. No raw account INSERT, impersonation, synthetic account reactivation,
+Clerk-metadata role or full new service deployment. Real internal UUIDs must be
+returned by that lifecycle. No genuine A1/A2/B1 fixture is assumed from the one
+currently ACTIVE account/membership.
+
+Proposed finite policy for owner/producer acceptance: binding expires at the
+minimum of verified JWT expiry, live Clerk session expiry/abandonment, now+300s
+and approved UAT deadline;300s is a ceiling, never a guaranteed duration. Permit
+renewal only from fresh official proof for the same still-ACTIVE, unexpired
+authority, with audit. Expired/revoked/suspended authority is not resurrected;
+re-admission after expiry needs its own accepted rule. Membership/product/operation
+rights end no later than T0+60min. Official signOut/session revocation and E1
+revocation are separate checks. Revoke finite UAT entitlements through the accepted
+lifecycle; account/profile deletion requires actual retention policy.
+
+Owner cohort procedure: use that exact Clerk Development instance; explicitly
+approve identifiers in the existing allowlist; create/invite genuine A1/A2/B1
+through normal provider flow and complete verification. No passwords/JWTs/keys
+in chat. Approve fixed A225e465b-8b89-467d-92d1-7fef61b555fe, independent B and exact
+supplier/source test resources; existing two suppliers/six snapshots are not
+silently adopted. A1 receives exact READ/WRITE/SYNC and lawful report rights;
+A2 exact READ only; B1 valid B membership and no A membership must deny at fixed-A
+SRM. Positive B data hosting is unnecessary; do not relax the fixed-host guard.
+Internal IDs, live admission and actual three-user UAT remain PENDING.
+
+### Exact E1 producer correction and permission decision
+
+**CREATE remains OWNER_CORRECTIVE_REQUIRED.** An exact existing child UUID grant
+does not authorise an arbitrary future server-issued child; resource_id=NULL is
+an unapproved wildcard. Smallest producer proposal: retain supplier.location.write
+and child-bound effects, add an explicit typed MANUAL-child collection scope for
+one verified supplier in one organisation. Bind current server-selected
+supplier/child/existence/origin to current receiver ownership/CAS/source evidence;
+never accept a caller's parent claim. Define CREATE and subsequent UPDATE/
+DEACTIVATE semantics expressly, preserving exact-child grants and cross-tenant
+denial. No SRM-only selector or alternate permission engine.
+
+**Rolling24h remains OWNER_CORRECTIVE_REQUIRED.** Existing immutable fixed-window
+policy/accepted_count is not a moving window. Use the existing requests intents/
+policies ledger only, serialised on the authoritative scope policy, across all
+users/services and policy rotations for environment/application/org/operation.
+Count unique accepted operations in (database_now-24h,database_now], <=100WRITE
+and <=100SYNC separately. Existing created_at is reservation time, not a proven
+acceptance instant: the additive producer must define an immutable accepted
+timestamp/backfill or prove an exact equivalent; do not silently ignore history
+or reset via a new policy ID. Keep existing capacity as an additional bound.
+
+Accepted identical replay consumes0 extra; changed payload denies; rollback or
+failed audit consumes no accepted unit. Same-key concurrent calls accept once.
+Unchanged stable source sync key replays; a new accepted source-version sync
+consumes one even if physical rows changed=0. Physical row writes and paid
+external calls are distinct. At exactly accepted_at+24h the older operation leaves
+the moving window. Tests must cover concurrent100/101 across users and policy
+rotation, exact boundary, revocation/CAS/audit rollback, zero paid effects and
+unchanged SG2/SRM compatibility.
+
+The JSON names exact existing producer files and proposed additive migration020
+(subject to current-main collision/routing checks). Historical SQL001-019 and
+receipts remain unchanged. P1 authorisation is for a separately governed
+ARCHITECTURE producer source corrective/PR/CI/PMOS/PHR, **not** live SQL or merge.
+Its accepted version must precede consumer adoption. Any additional consumer
+path must pass its own routing/continuity scope; do not silently expand this
+task's registered paths or create another SRM TASK03.
+
+READ/current collection/source checks, exact UPDATE/CAS, DEACTIVATE, stable SYNC,
+zero geocoding allowance, cross-org and expired/revoked denials retain their
+actual isolated SQL proofs. CREATE-for-any-new-child, moving quotas and genuine
+live admission remain unproven. The complete operation matrix is in JSON. No
+fixture's broad synthetic setup grant is proposed for live users.
+
+### LKG, current safety and one next-action packet
+
+SRM still runs dep-dbbnb22fngtc73bn0i90 /260ade12608faaea27376c1c976db392f046f267;
+Maps still runs dep-dbati9rrjlhs73akpsj0 /db2df0a6cccb994ea4654ae0eb5b3af4b46867ff.
+Both remain autoDeploy off. Earlier independently measured actual retained SRM
+artifact/config and Maps13-file/config digests remain in JSON; unchanged deploy
+IDs were freshly checked, not falsely reported as new byte-level measurements.
+Complete combined LKG/rollback acceptance still needs protected data/effect
+coverage, schema compatibility and executable window timing. Do not swap the
+whole shared database over newer writes or run destructive down migrations.
+
+Fresh E1 readback: revision109, five ACTIVE applications, one ACTIVE genuine
+identity/account/membership, five disabled accounts, two suspended memberships,
+identity app/binding DISABLED, profile rows/policies0, location grants/policies/
+intents0. SQL019/SQL013 absent. No application shutdown, deploy, active permission,
+provider acquisition, paid geocoding, restore/finalize, endpoint or Stage/Prod
+change was performed. “Original unchanged” means unchanged by this task; it is
+not a claim that unrelated shared application activity was frozen. Current
+uncertain Source effect state remains explicitly unverified pending R-ARCH-EFFECT.
+
+One consolidated next-action packet contains:
+
+1. **R2**: approve the selected object-specific recovery scopes or return complete
+   accepted owner integrity receipts. No new snapshot or technical resource hunt.
+2. **P1**: authorise exact source-only E1 parent/child and rolling-quota correction
+   under ARCHITECTURE continuity; return immutable source/CI/PHR receipt.
+3. **I1**: accept and implement the smallest existing-auth B1 UAT admission/
+   lifetime path under correct producer/receiver ownership, with secure ordinary
+   role delivery. No B2 service dependency or live identity activation inferred.
+4. **K1**: formally accept the bounded HQ/manual UAT subset, or keep full release
+   blocked until a real KYS controlled periodic operator/channel is accepted.
+5. **U1**: approve/create the genuine cohort and exact organisation/supplier/source
+   test scope; no passwords/keys or customer-account reuse.
+6. **W1 later**: once the above dependencies have real acceptance receipts, refresh
+   source/LKG/config/schema/receiver/effect evidence and request the single <=60min
+   controlled installation window. No current time slot or feasibility is claimed.
+
+These scopes are reviewable decisions, not approvals. No privileged read or
+foreign producer task was executed on an inferred blanket authority. Independent
+preparation is complete for this continuation checkpoint; the same SRM PMOS stays
+RUNNING. Final TASK02-R PHR remains NOT_PUBLISHED.
+
+### Required continuation handoff
+
+```text
+TASK_ID = SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022
+TASK_STATUS = PARTIAL
+RECOVERY_TABLES_TOTAL = 105
+RECOVERY_TABLES_VERIFIED = 82
+RECOVERY_TABLES_PENDING = 23
+RECOVERY_GATE = READY_FOR_OWNER_APPROVAL
+RECOVERY_SNAPSHOT = snap-bold-bird-b99s4c9q
+RECOVERY_BRANCH = br-green-glitter-b9weet99
+RECOVERY_ORIGINAL_DEVELOPMENT_UNCHANGED = YES
+KYS_RETENTION_OWNER = SRM Runtime; privileged channel Architecture Platform; periodic operator UNASSIGNED
+KYS_OPERATOR_ADOPTION = BLOCKED
+KYS_RETENTION_GATE = BLOCKED
+IDENTITY_B2_STATUS = PR598_MERGED_SOURCE_ONLY_PR599_DRAFT_HEALTH_ONLY
+E1_ONBOARDING_ROUTE = ARCHITECTURE_DEPENDENCY
+UAT_IDENTITIES = PENDING
+BINDING_LIFETIME_POLICY = PENDING
+LOCATION_CREATE_AUTHORITY = OWNER_CORRECTIVE_REQUIRED
+ROLLING_24H_QUOTA = OWNER_CORRECTIVE_REQUIRED
+LOCATION_PERMISSION_GATE = BLOCKED
+WRITE_QUOTA = 100_PER_ORG_ROLLING_24H
+SYNC_QUOTA = 100_PER_ORG_ROLLING_24H
+PAID_GEOCODING_BUDGET = ZERO
+SQL019_INSTALLED = NO
+SQL013_INSTALLED = NO
+DEVELOPMENT_DEPLOYMENT = NOT_PERFORMED
+STAGING_CHANGED = NO
+PRODUCTION_CHANGED = NO
+OWNER_DECISIONS_REQUIRED = R2 scoped integrity / P1 E1 producer / I1 lifecycle / K1 bounded subset or accepted full KYS operator / U1 genuine cohort; W1 only after dependencies
+CROSS_PROJECT_TASKS_REQUIRED = ARCHITECTURE E1 location admission corrective; ARCHITECTURE existing-auth B1 UAT lifecycle corrective; SG2 scoped recovery receipt if required by owner continuity. No duplicate SRM TASK03.
+INSTALLATION_APPROVAL_PACKAGE = PARTIAL
+SRM_PMOS = RUNNING
+TASK02_R_FINAL_PHR = NOT_PUBLISHED
+```
