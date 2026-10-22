@@ -2969,6 +2969,10 @@
       "../../packages/srm-xray/src/index.ts": {
         "previousSha256": "7bc395bab52aa42cde84af542af774fec8c0a91021b7ac53176bc2b93179b1e0",
         "sourceSha256": "aa78210510f0f5272bc1f023bb10ad7dbf9503dbbd65a31b8c87fd988ccb5f6e"
+      },
+      "scripts/supplier-location-admission.integration.test.mjs": {
+        "previousSha256": "1ba84220274309eba05aa45d46abf2c424b64c5d9c4cd2d24d42e28f677240b4",
+        "sourceSha256": "ebdf0dc0049091e4c00f448d8746e3a54887875edd047bc3223af8ac21f49030"
       }
     }
   }
