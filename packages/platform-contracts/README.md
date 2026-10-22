@@ -455,3 +455,8 @@ RLS uses the existing Access Store context plus a five-second HMAC attestation b
 SQL requires an explicitly accepted existing access installation and an operator-installed `public.hmac(bytea,bytea,text)` from pgcrypto. It creates no extension, role, account, binding or activation. The operator records the exact migration digest, grants only the documented APIs to a separately provisioned ordinary runtime, configures its disabled policy and safely delivers the independent32-byte key. Profile values remain ACCOUNT_PRIVATE. The canonical audit carries internal IDs, operation outcome and metadata, never profile values; updates and OUTCOME share one transaction. A failed OUTCOME rolls back the profile write.
 
 Source and real synthetic PostgreSQL tests do not install this schema into Neon, configure Clerk, create an app/service or establish browser-session compatibility. The installation plan, operator actions, privacy/rollback policy and exact checksum are in `Canon/evidence/2026-10-21-identity-profile-b1-handoff.md`. Do not use mechanical DROP SCHEMA for rollback or enable registration before that installation/acceptance task.
+
+
+### KRS registry pure-read candidate
+
+SDK1.26.0 / Root1.0.0-candidate.18 adds only the three explicitly granted HUMAN registry reads and data-only resource/selection helpers exported from `operation-context`. Read the KRS amendment and dated producer evidence. No second policy engine, market/report-read widening, live grant or SQL change is included. The earlier P1/SDK1.25 candidate is independent and absent here. A package label is not source acceptance: all native consumers and the main-controlled source policy must independently accept this exact implementation and digest before promotion.

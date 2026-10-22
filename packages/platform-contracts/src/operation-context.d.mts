@@ -1,5 +1,12 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
-export type OperationId = import('./supplier-location.mjs').SupplierLocationOperation | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
+export type RegistryReadOperation='supplier.registry.search'|'supplier.registry.read'|'supplier.registry.resolve'
+export type RegistryReadSelection={query:string;limit:number;cursor:string|null}|{selectedKrs:string}
+export type RegistryReadEvidence=Readonly<{contract:'profitia.krs-registry-read';version:'1.0.0';provider:'KRS';kind:'CATALOG'|'COMPANY';selectedKrs:string|null;generation:string;snapshotRef:string|null}>
+export const REGISTRY_READ_OPERATIONS:readonly RegistryReadOperation[]
+export function registryReadSelection(operation:RegistryReadOperation,input:unknown):Readonly<RegistryReadSelection>
+export function registryReadResource(operation:RegistryReadOperation,selection:RegistryReadSelection,observation:{environment:Environment;generation:string;snapshotRef:string|null}):Readonly<Resource>&{registry:RegistryReadEvidence}
+
+export type OperationId = RegistryReadOperation | import('./supplier-location.mjs').SupplierLocationOperation | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -19,6 +26,7 @@ export interface AccessBasis {
   permissions: Permission[]; denies: Permission[]
 }
 export interface Resource {
+  registry?: RegistryReadEvidence
   id: string; type: string; dataClass: string; environment: Environment
   ownerOrganisationId: string | null; ownerUserId: string | null; version: string; projectionVersion: string
   approvedSharedProjection?: boolean; contentRequirements?: Array<{ product: string; feature: string }>

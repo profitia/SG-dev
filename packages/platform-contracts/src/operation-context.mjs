@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import {requestOperationPolicy} from './request-operations.mjs'
 import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence} from './supplier-location.mjs'
 
-export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.16' })
+export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.18' })
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -39,6 +39,9 @@ const rules = Object.freeze({
   'personal.list.read': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'READ'),
   'personal.list.write': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'WRITE'),
   'supplier.report.read': rule('supplier_report', 'supplier_report', 'SHARED_KNOWLEDGE', 'READ', 'SUPPLIER_INTELLIGENCE'),
+  'supplier.registry.search': rule('supplier_report', 'supplier_registry_catalog', 'SHARED_KNOWLEDGE', 'READ', 'SUPPLIER_INTELLIGENCE'),
+  'supplier.registry.read': rule('supplier_report', 'supplier_registry_company', 'SHARED_KNOWLEDGE', 'READ', 'SUPPLIER_INTELLIGENCE'),
+  'supplier.registry.resolve': rule('supplier_report', 'supplier_registry_company', 'SHARED_KNOWLEDGE', 'READ', 'SUPPLIER_INTELLIGENCE'),
   'supplier.report.project': rule('supplier_report', 'supplier_projection', 'ORGANISATION_PRIVATE', 'WRITE', 'SUPPLIER_INTELLIGENCE'),
   // Bounded AM24: one organisation report and its explicit shared/private
   // inputs. Personal exports and external acquisition remain unsupported.
@@ -110,6 +113,48 @@ function permission(access, operation, feature, resourceId) {
 
 const privateSupplierOperations = new Set(['supplier.private.read','supplier.private.reveal','supplier.private.export'])
 const privateSupplierKeys = ['entityType','nip','retentionUntil','snapshotId']
+export const REGISTRY_READ_OPERATIONS=Object.freeze(['supplier.registry.search','supplier.registry.read','supplier.registry.resolve'])
+const registryReference=/^KRS:([0-9]{10}):[a-f0-9]{64}$/
+const plainClosed=(v,keys)=>v&&Object.getPrototypeOf(v)===Object.prototype
+  &&Reflect.ownKeys(v).length===keys.length&&Object.keys(v).sort().join(',')===[...keys].sort().join(',')
+  &&Object.values(Object.getOwnPropertyDescriptors(v)).every(d=>'value'in d&&d.enumerable)
+/** Selection parsing and projection descriptors, never identity/access authority.
+ * The native reader obtains generation/ref from accepted catalog SQL rows. */
+export function registryReadSelection(operation,value){
+  if(!REGISTRY_READ_OPERATIONS.includes(operation))deny('RESOURCE_SCOPE_MISMATCH')
+  if(operation==='supplier.registry.search'){
+    if(!plainClosed(value,['query','limit','cursor'])||typeof value.query!=='string'||value.query!==value.query.trim()
+      ||value.query.length<2||value.query.length>150||!Number.isSafeInteger(value.limit)||value.limit<1||value.limit>10
+      ||value.cursor!==null&&(typeof value.cursor!=='string'||!/^[A-Za-z0-9_-]{1,2048}$/.test(value.cursor)))deny('RESOURCE_SCOPE_MISMATCH')
+  }else if(!plainClosed(value,['selectedKrs'])||typeof value.selectedKrs!=='string'||!/^[0-9]{10}$/.test(value.selectedKrs))deny('RESOURCE_SCOPE_MISMATCH')
+  return freeze(structuredClone(value))
+}
+export function registryReadResource(operation,selection,observation){
+  const selected=registryReadSelection(operation,selection),search=operation==='supplier.registry.search'
+  if(!plainClosed(observation,['environment','generation','snapshotRef'])||!['development','staging','production'].includes(observation.environment)
+    ||typeof observation.generation!=='string'||!/^(0|[1-9][0-9]{0,19})$/.test(observation.generation)
+    ||search&&observation.snapshotRef!==null||!search&&(typeof observation.snapshotRef!=='string'||registryReference.exec(observation.snapshotRef)?.[1]!==selected.selectedKrs))deny('RESOURCE_SCOPE_MISMATCH')
+  return freeze({id:search?'krs-registry:catalog':'krs-registry:company:'+selected.selectedKrs,
+    type:search?'supplier_registry_catalog':'supplier_registry_company',dataClass:'SHARED_KNOWLEDGE',environment:observation.environment,
+    ownerOrganisationId:null,ownerUserId:null,version:search?'catalog:'+observation.generation:observation.snapshotRef,
+    projectionVersion:'profitia.krs-registry-read/1.0.0',approvedSharedProjection:true,
+    registry:{contract:'profitia.krs-registry-read',version:'1.0.0',provider:'KRS',kind:search?'CATALOG':'COMPANY',
+      selectedKrs:search?null:selected.selectedKrs,generation:observation.generation,snapshotRef:observation.snapshotRef}})
+}
+function registryReadEvidence(resource,operation,payload,moduleEvidence,identity){
+  if(!REGISTRY_READ_OPERATIONS.includes(operation)){
+    if(resource?.registry!==undefined)deny('RESOURCE_SCOPE_MISMATCH')
+    return
+  }
+  if(identity.kind!=='HUMAN')deny('DELEGATION_INVALID')
+  if(moduleEvidence?.moduleId!=='supplier_report')deny('APPLICATION_FEATURE_UNAVAILABLE')
+  const d=resource?.registry
+  if(!plainClosed(d,['contract','version','provider','kind','selectedKrs','generation','snapshotRef'])
+    ||d.contract!=='profitia.krs-registry-read'||d.version!=='1.0.0'||d.provider!=='KRS')deny('RESOURCE_SCOPE_MISMATCH')
+  const expected=registryReadResource(operation,payload,{environment:resource.environment,generation:d.generation,snapshotRef:d.snapshotRef})
+  for(const key of ['id','type','dataClass','environment','ownerOrganisationId','ownerUserId','version','projectionVersion','approvedSharedProjection'])if(resource[key]!==expected[key])deny('RESOURCE_SCOPE_MISMATCH')
+  if(canonical(d)!==canonical(expected.registry))deny('RESOURCE_SCOPE_MISMATCH')
+}
 /** Only technical metadata selected by the native adapter. No personal value,
  * client-selected owner or provider response enters this authority envelope. */
 function privateSupplierDescriptor(resource, time) {
@@ -344,6 +389,7 @@ export function createOperationExecutor(options) {
           if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
           if (state.resource.id !== request.resourceId || compute && request.operation!=='supplier.location.write' && state.resource.ownerUserId !== identity.userId) deny('RESOURCE_SCOPE_MISMATCH')
+          registryReadEvidence(state.resource,request.operation,request.payload,moduleEvidence,identity)
           if(request.operation==='benchmark.discovery.read'&&(identity.kind!=='HUMAN'||moduleEvidence?.moduleId!=='benchmark'))deny('APPLICATION_FEATURE_UNAVAILABLE')
           const location=locationEvidence(state,request,context,identity,config,moduleEvidence,now())
           let privateSupplierInput

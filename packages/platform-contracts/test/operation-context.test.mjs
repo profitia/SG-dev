@@ -4,12 +4,15 @@ import { createRequire } from 'node:module'
 import test from 'node:test'
 import { createOperationExecutor, IMPLEMENTED_OPERATIONS, OperationDenied, isOperationDenied, OPERATION_CONTRACT, operationPayloadDigest, operationSourceDigest, normalizeModuleEvidence } from '../src/operation-context.mjs'
 import { createTestIdentityIssuer } from '../../../apps/architecture-lab/src/operation-test-authority.mjs'
+import {registryReadResource,REGISTRY_READ_OPERATIONS} from '../src/operation-context.mjs'
 
 const time = Date.parse('2026-10-16T22:00:00Z')
 const expiry = new Date(time + 3_600_000).toISOString()
 function fixture(operation = 'benchmark.selection.read') {
   const issuer = createTestIdentityIssuer({ applicationId: 'app-1', now: () => time })
+  const registry=REGISTRY_READ_OPERATIONS.includes(operation)
   const r = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url))).rules.find(r => r.operation === operation)
+    ??(registry?{contextMode:'ORGANISATION',dataClasses:['SHARED_KNOWLEDGE'],feature:'supplier_report',resourceType:operation==='supplier.registry.search'?'supplier_registry_catalog':'supplier_registry_company'}:null)
   const application = { appId: 'app-1', profileId: 'SPENDGURU_SAAS', deploymentId: 'isolated-test', configurationVersion: 'v1', environment: 'development', identityIssuer: issuer.issuer, organisationId: null, operations: IMPLEMENTED_OPERATIONS.filter(op=>!['job.execute','knowledge.ingest'].includes(op)), features: ['account', 'benchmark', 'market', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'] }
   const organisationId = r.contextMode === 'ACCOUNT' ? null : 'org-a'
   const shared = r.dataClasses[0] === 'SHARED_KNOWLEDGE'
@@ -40,8 +43,8 @@ function fixture(operation = 'benchmark.selection.read') {
     recordAudit: async event => { if (controls.failIntent && event.phase === 'INTENT') throw Error('audit unavailable'); events.push(event) },
     withTransaction: async (_binding, action) => {
       const pending = []
-      const value = await action({ state, transaction: pending, transactionalEffects: true, outputBoundaryVersion: 'v1',
-        ...(privateSupplier?{moduleEvidence:{moduleId:'supplier_report',moduleBindingId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',version:'1',sourceRef:'synthetic-private-module',expiresAt:expiry,transactionId:'1',moduleSchemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64)}}:{}),
+      const value = await action({ state, transaction: pending, transactionalEffects: true, outputBoundaryVersion: registry?'profitia.krs-registry-read/1.0.0':'v1',
+        ...(privateSupplier||registry?{moduleEvidence:{moduleId:'supplier_report',moduleBindingId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',version:'1',sourceRef:'synthetic-private-module',expiresAt:expiry,transactionId:'1',moduleSchemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64)}}:{}),
         recordOutcome: async e => { if (controls.failOutcome) throw Error('outcome unavailable'); pending.push(e) },
         projectOutput: value => { if (controls.failProjection) throw Error('unsafe output'); return value },
         prepareInputs: async () => {},
@@ -50,6 +53,11 @@ function fixture(operation = 'benchmark.selection.read') {
     },
   }
   const input = { contractId: OPERATION_CONTRACT.id, contractVersion: OPERATION_CONTRACT.version, operation, resourceId: 'r1', organisationId, payload: { selected: 'series-a' }, request: new Request('https://isolated.test', { headers: { authorization: `Bearer ${issuer.issue('user-a')}` } }) }
+  if(registry){
+    input.payload=operation==='supplier.registry.search'?{query:'Fi',limit:10,cursor:null}:{selectedKrs:'0000000001'}
+    state.resource=registryReadResource(operation,input.payload,{environment:'development',generation:'1',snapshotRef:operation==='supplier.registry.search'?null:'KRS:0000000001:'+ 'a'.repeat(64)})
+    input.resourceId=state.resource.id
+  }
   let invoked = 0
   const action = async (context, tx) => { invoked++; tx.push({ organisationId: context.organisationId, actorId: context.actorId }); return { ok: true } }
   return { input, state, application, options, events, writes, controls, issuer, action, get invoked() { return invoked }, execute: () => createOperationExecutor(options).execute(input, action) }
@@ -138,7 +146,7 @@ test('payload is canonically bound and snapshotted before asynchronous authentic
 })
 test('candidate rules match exact normative rows and never imply the whole catalogue is implemented', async () => {
   const matrix = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url)))
-  assert.equal(IMPLEMENTED_OPERATIONS.length, 29); assert.equal(matrix.rules.length, 40)
+  assert.equal(IMPLEMENTED_OPERATIONS.length, 32); assert.equal(matrix.rules.length, 43)
   for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === (['forecast.request','supplier.report.refresh','supplier.private.refresh','benchmark.discovery.request','supplier.location.write','supplier.location.sync','supplier.location.geocode'].includes(operation) ? 'PRODUCT_POLICY' : operation==='knowledge.ingest'?'PLATFORM_BUDGET':'NOT_APPLICABLE')).length, 1)
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
