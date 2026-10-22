@@ -138,7 +138,7 @@ export function createSrmNativeCompanyLookup(options:Options){
     return engine(ports)
   }
   return Object.freeze({
-    run:(selection:SupplierNativeWorkSelection)=>execute(selection,ports=>createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}})),
+    run:(selection:SupplierNativeWorkSelection)=>execute(selection,ports=>createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}}),undefined,true),
     prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:()=>Promise<void>)=>execute(selection,
       ports=>prepareKrsFinancialWork(ports,selection,identity,recheck,()=>clock().getTime()),recheck,true),
   })
