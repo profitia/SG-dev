@@ -7,7 +7,8 @@ import {canonical,sha256,validateCompanySnapshot,validateIdentityEvidence,krs} f
 import type {CompanySnapshot,VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {Catalog,storeSnapshot} from './catalog.js'
 import {resolveIdentity} from './identity.js'
-import {createKrsClient} from './client.js'
+import {createKrsClient,krsResponseEvidence,buildRequest} from './client.js'
+import type {KrsResponse} from './client.js'
 import {normalizeExtract} from './normalizer.js'
 
 export const REGISTRY_REPORT_PROJECTION='profitia.krs-report-projection/1.0.0'
@@ -39,7 +40,11 @@ export function createNativeRegistryAccess(options:{
     ||options.host.module.id!=='supplier_report'||!options.host.application.operations.includes('supplier.report.read')
     ||!organisationId||organisationId.length>128)return deny()
   const observe=async(s:Selector)=>{
-    if(s.action==='SEARCH')return 'catalog:'+(await catalog.pool.query('SELECT generation::text FROM krs_registry.metadata')).rows[0]?.generation
+    if(s.action==='SEARCH'){
+      const generation=(await catalog.pool.query('SELECT generation::text FROM krs_registry.metadata')).rows[0]?.generation
+      if(typeof generation!=='string'||!/^\d+$/.test(generation))return deny()
+      return 'catalog:'+generation
+    }
     const snapshot=await catalog.read(s.krs)
     if(!snapshot||s.reference!==null&&snapshot.evidenceRef!==s.reference)return deny()
     await validateCompanySnapshot(snapshot)
@@ -93,7 +98,7 @@ export function createNativeRegistryAccess(options:{
 
 /** Source and catalog use one existing native ingestion transaction. A real
  * receipt is returned only after the domain write and canonical OUTCOME commit. */
-export function createNativeCatalogPublication(options:{host:Omit<Ingestion,'validateSharedPayload'>}){
+export function createNativeCatalogPublication(options:{host:Omit<Ingestion,'validateSharedPayload'>;acceptedSourceId:string}){
   const pending=new Map<string,CompanySnapshot>()
   const host=createPlatformIngestionHost<PoolClient>({...options.host,
     validateSharedPayload:async(payload)=>{
@@ -103,8 +108,12 @@ export function createNativeCatalogPublication(options:{host:Omit<Ingestion,'val
         &&!!snapshot&&snapshot.evidenceRef===v.evidenceRef&&snapshot.canonicalKrs===v.krs
     },
   })
-  return Object.freeze({async publish(input:unknown,intentKey:string){
-    const snapshot=await validateCompanySnapshot(input),digest=operationPayloadDigest(snapshot as unknown as Json)
+  return Object.freeze({async publish(input:{snapshot:unknown;response:KrsResponse},intentKey:string){
+    const snapshot=await validateCompanySnapshot(input.snapshot),proof=krsResponseEvidence(input.response)
+    if(!proof||proof.source.sourceId!==options.acceptedSourceId||proof.source.environment!==options.host.application.environment
+      ||proof.rawDigest!==snapshot.source.rawDigest||proof.rawDigest!==await sha256(input.response.bytes)
+      ||proof.retrievedAt!==snapshot.source.retrievedAt||proof.url!==buildRequest({operation:snapshot.source.extract==='CURRENT'?'CURRENT':'FULL',krs:snapshot.canonicalKrs,register:snapshot.source.register}).url)return deny()
+    const digest=operationPayloadDigest(snapshot as unknown as Json)
     const manifest={version:REGISTRY_REPORT_PROJECTION,krs:snapshot.canonicalKrs,evidenceRef:snapshot.evidenceRef,digest}
     if(pending.has(digest))throw new OperationDenied('POLICY_UNAVAILABLE')
     pending.set(digest,snapshot)
@@ -130,7 +139,7 @@ export function createOfficialSeed(options:{client:ReturnType<typeof createKrsCl
     const key=await sha256(canonical({approval:options.approvalRef,krs:id,register,run:runReference}))
     const response=await options.client.get({operation:'CURRENT',krs:id,register},'krs-source-'+key)
     const snapshot=await normalizeExtract(response.bytes,{krs:id,register,extract:'CURRENT',retrievedAt:response.retrievedAt})
-    const receipt=await options.publication.publish(snapshot,'krs-publication-'+key)
+    const receipt=await options.publication.publish({snapshot,response},'krs-publication-'+key)
     return {snapshot,receipt}
   }})
 }
