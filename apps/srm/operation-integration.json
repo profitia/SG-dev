@@ -2952,7 +2952,7 @@
       },
       "src/server/supplier-native-company.ts": {
         "previousSha256": "ec94312ccab9aa0f8eea1cf709d97b6891edc768c3eb43a6fa3a4d3bfad7f69c",
-        "sourceSha256": "0f5f79dec5ed3698ca914531cffa70ac8735cbe8f86b0bb67a7d16e461417a2c"
+        "sourceSha256": "c086f5c3048f6caa2c750d6556f24c49547f6f2bf2125e580d2e898ba882a582"
       },
       "src/server/supplier-native-runtime.ts": {
         "previousSha256": "fb06cf47fa70fdfa7957d4f25722c984a23e2e47eeb9688ecf5d916889312093",

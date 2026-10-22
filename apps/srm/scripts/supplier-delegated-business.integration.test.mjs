@@ -772,7 +772,19 @@ async function supplierBusinessFixture(t,full=false){
    const history=async s=>(await owner.query("SELECT snapshot.section,count(*)::int n FROM srm.source_snapshots snapshot JOIN srm.provider_attempts a ON a.organization_id=snapshot.organization_id AND a.id=snapshot.attempt_id WHERE snapshot.organization_id=$1 AND a.request_id=$2 GROUP BY snapshot.section ORDER BY snapshot.section",[s.organisationId,s.requestId])).rows
    let cold,msrSelected
    await t.test('complete original company engine really acquires, privately stores, publishes and calculates under ordinary native roles',async()=>{
-    cold=selection(await parent(A,FULL_NIP));const before=networkHits,report=await company.run(cold)
+    await controlled(async()=>{
+     await owner.query("CREATE FUNCTION srm.fixture_nip_update_helper() RETURNS boolean LANGUAGE sql AS 'SELECT true'")
+     await owner.query('REVOKE ALL ON FUNCTION srm.fixture_nip_update_helper() FROM PUBLIC')
+     await owner.query("CREATE POLICY fixture_nip_update_helper ON srm.suppliers FOR UPDATE TO PUBLIC USING(current_user='profitia_access_owner' AND srm.fixture_nip_update_helper()) WITH CHECK(false)")
+    })
+    cold=selection(await parent(A,FULL_NIP));const before=networkHits;let report
+    try{
+     assert.equal((await rawService.query("SELECT has_function_privilege(current_user,'srm.fixture_nip_update_helper()','EXECUTE') allowed")).rows[0].allowed,false)
+     report=await company.run(cold)
+    }finally{await controlled(async()=>{
+     await owner.query('DROP POLICY fixture_nip_update_helper ON srm.suppliers')
+     await owner.query('DROP FUNCTION srm.fixture_nip_update_helper()')
+    })}
     assert.equal(report.identity.nip,FULL_NIP);assert.equal(report.general.data.legalName,'Synthetic Native Company')
     assert.equal(report.financial.data.indicators.find(i=>i.code==='CURRENT_RATIO').value,'1.500000')
     assert.equal(networkHits,before+2);assert.deepEqual(await history(cold),[{section:'financial',n:1},{section:'general',n:1}])
