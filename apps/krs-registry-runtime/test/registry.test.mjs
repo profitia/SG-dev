@@ -71,3 +71,10 @@ test('bulletin padding, dedup, literal empty, Warsaw cutoff/DST, finite plan onl
  for(const copy of [{...plan,days:['2026-10-22']},{...plan,days:['2026-10-21','2026-10-21']},{...plan,range:'all'},{...plan,maximumCalls:Infinity}])assert.throws(()=>validatePlan(copy,NOW))
  assert.throws(()=>isolatedDatabaseUrl('postgres://krs_reader@ep-x.neon.tech/krs_registry_test','krs_reader'));assert.throws(()=>isolatedDatabaseUrl('postgres://krs_reader@localhost/architecture_pmos','krs_reader'))
 })
+
+test('logical retry keys cross native Source as stable opaque 256-bit intents',async()=>{
+ const seen=[],command={operation:'DAILY',day:'2026-10-21'};
+ const client=createKrsClient({externalEnabled:true,source:fixtureSource(async input=>{seen.push(input.intentKey);assert.match(input.intentKey,/^[a-f0-9]{64}$/);return {status:200,url:buildRequest(command).url,headers:{},bytes:bytes([])}})});
+ await client.get(command,'logical-retry-key');await client.get(command,'logical-retry-key');await client.get(command,'changed-logical-key');
+ assert.equal(seen[0],seen[1]);assert.notEqual(seen[0],seen[2]);
+})

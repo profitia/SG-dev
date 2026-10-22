@@ -38,12 +38,15 @@ export function createKrsClient(options:{source?:AdmittedSourcePort;externalEnab
     async get(value:unknown,intentKey:string):Promise<KrsResponse>{
       const command=parseCommand(value);demand(typeof intentKey==='string'&&intentKey.length>0&&intentKey.length<=256)
       if(!options.externalEnabled||!options.source)throw new RegistryError('SOURCE_ADMISSION_UNAVAILABLE')
+      // The shared native Source accepts an opaque 256-bit intent, whereas
+      // callers use bounded logical retry keys. Preserve their stable identity.
+      const sourceIntent=await sha256(intentKey)
       if(inFlight||calls>=limit||now()<openUntil)throw new RegistryError('SOURCE_BUDGET_OR_CIRCUIT_DENIED')
       const signal=AbortSignal.timeout(timeout);calls++;inFlight=true;let dispatched=false
       try{
         let onAbort:()=>void=()=>{}
         const aborted=new Promise<never>((_,reject)=>{onAbort=()=>reject(new RegistryError('SOURCE_TIMEOUT',null,'UNVERIFIED'));signal.addEventListener('abort',onAbort,{once:true})})
-        const effect=options.source.execute({command,intentKey},{signal});dispatched=true
+        const effect=options.source.execute({command,intentKey:sourceIntent},{signal});dispatched=true
         // A local deadline cannot claim the admitted Source effect has settled.
         void effect.finally(()=>{inFlight=false}).catch(()=>{})
         const result=await Promise.race([effect,aborted]).finally(()=>signal.removeEventListener('abort',onAbort))
