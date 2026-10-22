@@ -1383,3 +1383,28 @@ INSTALLATION_APPROVAL_PACKAGE = PARTIAL
 SRM_PMOS = RUNNING
 TASK02_R_FINAL_PHR = NOT_PUBLISHED
 ```
+
+
+### Subsequent owner decision — PR600, independently checked after PR601 opened
+
+Concurrent draft PR600, exact head97d2839dde880bf9ab20c605ef5eb7b736f112a4, records
+Architecture task ARCHITECTURE-IDENTITY-B2-D-FIRST-RELEASE-20261022 and the owner's
+**Single Identity Core / Configurable Client Deployments** business requirement.
+First client is PORR; one deployment must support multiple independently
+authorised Organisation IDs, including separate customer and internal-test
+contexts. Deployment/client branding is not an organisation or a permission.
+The exact43-line decision file and its Git blob/content digest are retained in
+the JSON; it was not treated as a new source/merge/infrastructure authority.
+
+This is consistent with reusable Maps consuming validated server-side context,
+without tenant IDs in shared components. Current SRM's fixed-A receiver is an
+observed present limit, not a target single-organisation identity design. A valid
+B-only user's denial at that host remains a lawful negative UAT; positive
+multi-organisation hosting needs accepted receiver/context adoption later.
+
+PR600 creates no user/organisation/membership/grant and expressly leaves B1
+app/binding disabled, live Clerk/browser acceptance, renewal and productive PII
+policy pending. Its health-only first-release proposal still requires a separate
+combined owner GO. Thus I1/P1/U1 and the handoff values above remain unchanged.
+The present packet neither duplicates that Identity Runtime task nor makes its
+full deployment a prerequisite for the smallest existing-auth SRM UAT route.

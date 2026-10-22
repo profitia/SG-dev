@@ -2109,7 +2109,7 @@
     "PMOS_TASK_STATE": "RUNNING",
     "PHR_TASK02_R_PUBLICATION": "NOT_YET_PUBLISHED"
   },
-  "updatedAt": "2026-10-22T07:32:06Z",
+  "updatedAt": "2026-10-22T07:45:19+00:00",
   "ownerResponse": {
     "source": "Direct human async answer to consolidated gate; conditional preparation authority only",
     "directionConfirmed": true,
@@ -11470,7 +11470,29 @@
         "Return non-secret Clerk user references via the approved identity workflow. Accepted E1 provisioning must return authoritative internal UUIDs; do not equate provider subject with User ID.",
         "Owner approves organisation A/B, exact finite memberships/products/supplier-source scope and test supplier resource. Existing two suppliers/six snapshots are not implicitly authorised test fixtures.",
         "Do not claim E1 admission from a Clerk invitation alone. Run live UAT only after accepted producer/admission path and separately approved installation/activation."
-      ]
+      ],
+      "subsequentOwnerDecisionPr600": {
+        "pr": 600,
+        "state": "DRAFT_OPEN",
+        "head": "97d2839dde880bf9ab20c605ef5eb7b736f112a4",
+        "file": "https://github.com/profitia/SG-dev/blob/97d2839dde880bf9ab20c605ef5eb7b736f112a4/Canon/evidence/2026-10-22-identity-runtime-porr-first-decision.md",
+        "gitBlobSha": "3e00376ec8ec765c7f9302c84a3fc9e405103134",
+        "contentSha256": "d5e594852410a4fd88bbb4cbe186cf912b6a7ea2fb65cbe32ff0ff4446f0993d",
+        "ownerTask": "ARCHITECTURE-IDENTITY-B2-D-FIRST-RELEASE-20261022",
+        "ownerHost": "01a15aed-8d94-7fe0-9cff-c54f72b5f8a8",
+        "decision": "Single Identity Core / Configurable Client Deployments; first client PORR, multiple independently authorised Organisation IDs in one deployment",
+        "authority": "Explicit business input recorded by its owner in a separate draft evidence PR; no operational/merge/first-release GO is inferred and main remains4115d539501bfd73c4467129caacbadd6c94b8a4",
+        "consumerImpact": "Keep Maps identity-neutral and reuse validated server-side E1 context. Current SRM fixed-A host remains the actual accepted receiver constraint for present UAT; valid B-only user denial tests it without defining the future portal as single-organisation. Positive multi-org hosting requires separately accepted receiver/context adoption, never hard-coded identities in shared components.",
+        "doesNotClose": [
+          "B1 productive admission/renewal",
+          "organisation/membership/product onboarding",
+          "real three-user UAT",
+          "CREATE parent-child semantics",
+          "rolling24h quota",
+          "KYS retention operator"
+        ],
+        "rawSourceEvidence": "# Identity Runtime — reusable core and PORR-first deployment decision\n\n22 October 2026. Owner: Architecture Platform. Profile: ARCHITECTURE. Environment: development. Repository authority: profitia/SG-dev, main.\n\n## Decision and its source\n\nThe owner-established business/architecture requirement is **Single Identity Core / Configurable Client Deployments**. Its source is sections 4 and 12 of the owner-supplied task “TASK B2-D — Source Promotion & Controlled Development First Deployment”, task `ARCHITECTURE-IDENTITY-B2-D-FIRST-RELEASE-20261022`, in host conversation `01a15aed-8d94-7fe0-9cff-c54f72b5f8a8`. This is a reference to the actual supplied decision, not a GitHub approval or an invented approval identifier.\n\nThe requirement is accepted as business/architecture input. This separate governance-only record is proposed for source review; it does not activate routing, an application, infrastructure or authentication. It must not be inserted into the already reviewed corrective PR #599.\n\n## One reusable identity core\n\nMaintain one canonical Identity Runtime, authentication/session engine and deterministic Conversational Form Engine. Reuse centrally maintained security and session contracts and the shared visual components derived from [the MagicPath design](https://www.magicpath.ai/files/463393726950178816). Clerk retains authentication authority; Profitia retains internal identities, organisations, memberships and product permissions through the existing Access Store.\n\nFuture reviewed configuration may select branding, approved registration/login steps and additional validated client fields. Optional dedicated client deployments may differ in URL, configuration and release lifecycle while using the same canonical source. They must not create permanent source forks, independent identity authority, duplicate B1 databases or separate authentication engines.\n\n## First rollout: PORR, with multiple organisations\n\n`FIRST_DEPLOYMENT_CLIENT = PORR`. Initially one Identity Portal deployment serves the PORR implementation. Multiple Organisation IDs must be supportable within that deployment. Expected later organisational contexts are PORR customer users and Profitia internal testers, kept separate by canonical membership and product permissions.\n\nOne client deployment is not one Organisation ID. One identity account is not one organisation membership. An authenticated user is not automatically an authorised product user. A user may later hold several explicitly authorised memberships; session establishment must grant none automatically. A form field, URL or branding choice cannot select trusted organisation authority.\n\nReuse before duplication: adding an organisation does not require cloning Render infrastructure or Clerk instances. No permanent requirement to create one service per organisation is established. Optional client deployments and organisation membership remain separate architectural concepts.\n\n## Bounded first-release proposal and approval gate\n\nB1 remains INSTALLED_ACCEPTED; B2 is merged at `4115d539501bfd73c4467129caacbadd6c94b8a4`. The completed preparation is recorded in [PHR d67e34a](https://github.com/profitia/project-history-repository/commit/d67e34abd4739c5c9fda41994259d5e29c7b194b). Its immutable records are retained.\n\n[Corrective PR #599](https://github.com/profitia/SG-dev/pull/599), exact candidate `c8936471e2e295dde0a470361ab309fcd12c37f3`, remains a separate source approval. Its strict deployment-owned public origin corrects the demonstrated health-only Host mismatch without weakening Host validation or changing session contracts. The [candidate first-release runbook](https://github.com/profitia/SG-dev/blob/c8936471e2e295dde0a470361ab309fcd12c37f3/Canon/runbooks/identity-runtime-development-first-release-v1.md) defines exact build/start/configuration and stop controls.\n\nThe operational proposal is one Frankfurt Free native Node Web Service, `identity-runtime-development`, in existing Render workspace `tea-d7lps8rbc2fs73cn80dg`, Architecture project `prj-db717krrjlhs739jgo0g`, Development environment `evm-db717krrjlhs739jgo1g`. Only HEALTH_ONLY / `IDENTITY_RUNTIME_ENABLED=false` is proposed. The logical PORR-first decision does not imply productive PORR access or a PORR-branded UI.\n\nThe task expressly withholds merge, infrastructure and spending permission. One separate combined owner GO must cover the exact PR candidate; one service and first deployment; Free compute plus at most USD 25 additional Performance pipeline spend, one build attempt and a 20-minute build limit; and the exact health-only configuration, restart and stop/cancel/suspend plan. Before that GO: OWNER_APPROVAL=PENDING, FIRST_DEPLOY_EXECUTED=NO. Source promotion SHA, service hostname/ID and deploy/artifact identifiers remain unknown until verified execution. There is no prior Identity Runtime LKG artifact.\n\nCreation can initiate deployment. It must establish the exact project/environment atomically; no create-then-relocate repair is allowed. After GO, revalidate source, provider inventory, quotas/cost, hostname, settings and cancel/suspend capability. Actual Render ingress/TLS/Host, protected503, restart and stop tests remain unexecuted. Historical CI/local readiness is not live provider acceptance.\n\n## Deferred work and preserved boundaries\n\nNo UI, form engine, schema extension, deployment manager, no-code builder, client cloning, additional instance, per-organisation Clerk instance, organisation onboarding, automatic assignment or consumer integration is implemented here. No PORR/Profitia organisation record, user, membership or grant is created. Product source, database schema/data, Clerk configuration, credentials and deployments remain unchanged.\n\nThe first service requires no Clerk, Neon, binding, policy or attestation secret. B1 app/binding remain DISABLED with no profile policy. Live Clerk/browser SSO, binding renewal, PII retention, multi-process rollout behaviour and consumer adoption require separate acceptance. C/D later build a conversational form over accepted backend/session contracts; no general-purpose AI chat, iframe authentication or second session mechanism is introduced.\n\nCanonical ARCHITECTURE PMOS/PHR records the factual execution and approval state independently of this source proposal. MEMOROS is DISABLED_BY_PROFILE. Future execution must preserve the actual owner approval reference and must not infer operational consent from this architectural requirement.\n"
+      }
     },
     "permissions": {
       "createAuthority": "OWNER_CORRECTIVE_REQUIRED",
@@ -11992,7 +12014,8 @@
       "preflightReceipt": "apps/pmos/.pmos/recovery/task02-r/preflight-continuation-checkpoint-commit.json",
       "priorIsolatedPostgres": "20_OF_20_RETAINED_NOT_RERUN",
       "productMutations": "NONE"
-    }
+    },
+    "dependencyFreshnessAt": "2026-10-22T07:45:19+00:00"
   },
   "currentEvidenceSection": "controlledRecoveryContinuation"
 }
