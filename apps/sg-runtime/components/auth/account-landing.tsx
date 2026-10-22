@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useAuth, useClerk } from '@clerk/react'
 
-type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'signing-out' | 'logout-failed'; userId?: string }
+type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string }
 export function AccountLanding({ locale, completionUrl }: { locale: 'pl' | 'en'; completionUrl: string }) {
   const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth(), clerk = useClerk()
   const key = JSON.stringify([userId, sessionId]), current = useRef<AbortController | null>(null)
@@ -16,12 +16,19 @@ export function AccountLanding({ locale, completionUrl }: { locale: 'pl' | 'en';
         const response = await fetch('/api/account', { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal,
           headers: { Authorization: `Bearer ${credential}` } })
         const result = await response.json()
-        if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string') throw Error('ACCOUNT_UNAVAILABLE')
-        if (!controller.signal.aborted) setState({ key, status: 'ready', userId: result.userId })
+        if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_UNAVAILABLE')
+        if (!controller.signal.aborted) setState({ key, status: 'ready', userId: result.userId, expiresAt: result.expiresAt })
       } catch { if (!controller.signal.aborted) setState({ key, status: 'failed' }) }
     })()
     return () => controller.abort()
   }, [isLoaded, isSignedIn, userId, sessionId, getToken, key, retry])
+  useEffect(() => {
+    if (state.status !== 'ready' || !state.expiresAt) return
+    // One local expiry invalidation, not permission polling or session renewal.
+    const timer = setTimeout(() => setState(previous => previous.key === state.key && previous.status === 'ready'
+      ? { key: previous.key, status: 'expired' } : previous), Math.min(2147483647, Math.max(0, Date.parse(state.expiresAt) - Date.now())))
+    return () => clearTimeout(timer)
+  }, [state.key, state.status, state.expiresAt])
   async function logout() {
     current.current?.abort(); setState({ key, status: 'signing-out' })
     try { await clerk.signOut({ sessionId: sessionId ?? undefined, redirectUrl: `/${locale}` }) }
@@ -36,7 +43,9 @@ export function AccountLanding({ locale, completionUrl }: { locale: 'pl' | 'en';
       <p>{en ? 'You are signed in to your Profitia account.' : 'Jesteś zalogowany do swojego konta Profitia.'}</p>
       <p className="break-all text-xs text-slate-500">{en ? 'Account ID' : 'Identyfikator konta'}: {state.userId}</p>
       <p className="text-sm text-slate-600">{en ? 'Organisation setup will be available in a later step.' : 'Konfiguracja organizacji będzie dostępna w kolejnym etapie.'}</p></>
-      : status === 'failed' ? <><p role="alert">{en ? 'We could not confirm your account. Please try again.' : 'Nie udało się potwierdzić konta. Spróbuj ponownie.'}</p>
+      : status === 'failed' || status === 'expired' ? <><p role="alert">{status === 'expired'
+        ? (en ? 'Confirm your session again to continue.' : 'Potwierdź ponownie sesję, aby kontynuować.')
+        : (en ? 'We could not confirm your account. Please try again.' : 'Nie udało się potwierdzić konta. Spróbuj ponownie.')}</p>
         <button onClick={() => setRetry(n => n + 1)} className="underline">{en ? 'Try again' : 'Spróbuj ponownie'}</button><p><a href={completionUrl} className="underline">{en ? 'Finish preparing your account' : 'Dokończ przygotowanie konta'}</a></p></>
       : status === 'logout-failed' ? <p role="alert">{en ? 'Sign-out was not confirmed. Please try again.' : 'Wylogowanie nie zostało potwierdzone. Spróbuj ponownie.'}</p>
       : <p role="status">{status === 'signing-out' ? (en ? 'Signing out…' : 'Wylogowywanie…') : (en ? 'Confirming your account…' : 'Potwierdzamy Twoje konto…')}</p>}

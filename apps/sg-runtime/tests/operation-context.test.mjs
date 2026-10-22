@@ -42,7 +42,7 @@ test('candidate16 acceptance preserves the exact previous receipts and has no ru
     assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
     assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,path)
   }
-  for(const[path,digest]of Object.entries(accepted.applicationSourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+  for(const[path,digest]of Object.entries({...accepted.applicationSourceDigests,...receipt.selfServiceAccountSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
   for(const record of ['categoryShellAdoption','categoryIngressAdoption'])for(const[path,digest]of Object.entries(receipt[record].sourceDigests)){
     const previousBytes=execFileSync('git',['show',accepted.previousReceiptSourceSha+':apps/sg-runtime/'+path])
     assert.equal(createHash('sha256').update(previousBytes).digest('hex'),digest,record+':'+path)

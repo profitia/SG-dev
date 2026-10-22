@@ -44,7 +44,7 @@ export async function readSelfServiceAccount(request: Request, { env = process.e
     const response = await transport(config.runtimeOrigin + '/v1/account', { method: 'GET',
       headers: { authorization: credential! }, credentials: 'omit', cache: 'no-store', redirect: 'error',
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(4000)]) })
-    if (!response.ok) return accountUnavailable(response.status === 401 ? 401 : response.status === 403 ? 403 : 503)
+    if (!response.ok) { await response.body?.cancel(); return accountUnavailable(response.status === 401 ? 401 : response.status === 403 ? 403 : 503) }
     const reader = response.body?.getReader(); if (!reader) return accountUnavailable()
     const chunks: Uint8Array[] = []; let size = 0
     try { for (;;) { const item = await reader.read(); if (item.done) break; size += item.value.byteLength
@@ -52,7 +52,7 @@ export async function readSelfServiceAccount(request: Request, { env = process.e
     finally { reader.releaseLock() }
     const result = JSON.parse(Buffer.concat(chunks).toString('utf8'))
     if (!result || Object.keys(result).sort().join(',') !== 'authenticated,expiresAt,userId' || result.authenticated !== true
-      || typeof result.userId !== 'string' || !/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(result.userId)
+      || typeof result.userId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(result.userId)
       || typeof result.expiresAt !== 'string' || !(Date.parse(result.expiresAt) > now()) || request.signal.aborted) return accountUnavailable()
     return new Response(JSON.stringify(result), { status: 200, headers })
   } catch { return accountUnavailable() }

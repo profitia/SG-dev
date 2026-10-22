@@ -1,6 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
+import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import { readSelfServiceAccountConfiguration, accountCompletionUrl, readSelfServiceAccount } from '../lib/platform/account-session'
 
 const issuer = 'https://self-service-fixture.clerk.accounts.dev', publicOrigin = 'http://localhost:3001'
@@ -86,4 +89,26 @@ test('actual HTTP peer request uses no database or mutation and preserves the ex
   const address = server.address(); assert(address && typeof address === 'object')
   const response = await readSelfServiceAccount(request(), { env: { ...env(), PROFITIA_IDENTITY_RUNTIME_ORIGIN: 'http://127.0.0.1:' + address.port } })
   assert.equal(response.status, 200); assert.equal((await response.json()).userId, userA)
+})
+test('new source receipt preserves every previous acceptance and pins the complete current receiver without granting adoption', () => {
+  const receipt = JSON.parse(readFileSync(new URL('../operation-integration.json', import.meta.url), 'utf8'))
+  const current = receipt.selfServiceAccountSourceCompatibility
+  assert.equal(current.taskId, 'SG2-SELF-SERVICE-FIRST-USE-MVP-20261022')
+  assert.equal(current.previousApplicationAuthority, '418a2ef0f30d840ce25ca645f5ef047e35d02192')
+  const beforeBytes = execFileSync('git', ['show', current.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'])
+  assert.equal(createHash('sha256').update(beforeBytes).digest('hex'), current.previousReceiptSha256)
+  const before = JSON.parse(beforeBytes.toString('utf8'))
+  for (const [key, value] of Object.entries(before)) assert.deepEqual(receipt[key], value, key)
+  for (const record of ['storedReadSourceAdoption', 'categoryShellAdoption', 'categoryTransportAdoption', 'categoryIngressAdoption'])
+    for (const path of Object.keys(before[record].sourceDigests)) assert(path in current.applicationSourceDigests, path)
+  for (const path of Object.keys(before.supplierLocationSourceCompatibility.applicationSourceDigests)) assert(path in current.applicationSourceDigests, path)
+  for (const [path, expected] of Object.entries(current.applicationSourceDigests)) {
+    const observed = createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex')
+    assert.equal(observed, expected, path)
+    assert.notEqual(createHash('sha256').update('mutated-source').digest('hex'), expected, 'Mutation must not pass: ' + path)
+  }
+  assert.equal(current.defaultEnabled, false); assert.equal(current.productDeploymentPerformed, false)
+  assert.equal(current.organisationOrProductGrantsAdded, false); assert.equal(current.accountReadUsesExistingPeerGetOnly, true)
+  assert.equal(current.producerSourceStatus, 'PROPOSED_NOT_PROMOTED')
+  assert.deepEqual(receipt.operations, before.operations)
 })

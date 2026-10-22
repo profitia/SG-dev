@@ -179,7 +179,7 @@ test('stored readiness source repair preserves prior acceptance and pins its com
   for (const path of Object.keys(previous.peerReadIdentityAdoption.sourceDigests)) assert(path in accepted.sourceDigests, path)
   for (const path of ['lib/forecast/stored-current-read.ts','lib/forecast/stored-readiness-read.ts','lib/forecast/stored-verification-read.ts','lib/forecast/rolling-daily-verification.ts',
     'tests/rolling-daily-verification.test.ts','tests/private-host.integration.test.mjs','tests/identity-runtime.test.ts']) assert(path in accepted.sourceDigests, path)
-  for (const [path, digest] of Object.entries({ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests }))
+  for (const [path, digest] of Object.entries({ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests, ...receipt.selfServiceAccountSourceCompatibility.applicationSourceDigests }))
     assert.equal(createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex'), digest, path)
   assert.equal(accepted.productDeploymentPerformed, false)
 })
