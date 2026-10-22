@@ -3,6 +3,7 @@ import { createDelegatedNativeWorkHost } from '@profitia/platform-contracts/priv
 import { createClerkAccountStatusReader } from '@profitia/platform-contracts/identity-provider'
 import { OPERATION_CONTRACT, OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
 import { createSrmNativePgDriver } from './native-pg-driver'
+import {LookupStageError,sanitizedLookupFailure} from './lookup-diagnostics'
 import { readSupplierRequest, supplierRequestResourceId, privateSupplierRequestResourceId, readSupplierPrivateAcquisition, type SupplierPrivateAcquisition, type SupplierRequestCommand } from './supplier-request-operation'
 import type { SupplierServiceContinuationOptions } from './supplier-request-continuation'
 
@@ -38,6 +39,14 @@ export interface SupplierNativeWork {
 }
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
+const invariantLabels=new Map([
+ ['Explicit current native Supplier work required','NATIVE_CONTEXT'],
+ ['SRM native work transaction scope mismatch','NATIVE_SCOPE'],
+ ['SRM application role must enforce row-level security','ROLE_ISOLATION'],
+ ['SRM bound transaction context mismatch','ORGANISATION_CONTEXT'],
+ ['SRM organization must be provisioned before runtime use','ORGANISATION_PROVISIONING'],
+ ['Accepted lookup identity conflicts with its current owner or command','LOOKUP_IDENTITY'],
+])
 const freeze=<T>(v:T):T=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
 
 /** Same common host, native driver and canonical audit. No captured dataset,
@@ -76,6 +85,8 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
       const receipt=await host.runSqlWork({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
         operation:'job.execute',organisationId:selected.organisationId,resourceId:selected.requestId,payload:selected.command,request:null},
       {unitId,accessMode,inputDigest},async(context,client)=>{
+       let phase='BUSINESS_DESCRIPTOR'
+       try{
         const work=context.requestWork
         if(performed||context.actorKind!=='SERVICE'||context.applicationId!==fixed.application.appId
           ||context.actorId===context.subjectUserId||context.organisationId!==selected.organisationId
@@ -98,8 +109,15 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
         const commands=await client.query('SELECT command_json FROM profitia_supplier_requests.commands WHERE request_id=$1::uuid',[selected.requestId])
         if(commands.rows.length!==1||operationPayloadDigest(readSupplierRequest(commands.rows[0].command_json))!==context.payloadDigest)return refuse()
         await client.query("SELECT set_config('srm.organization_id',$1,true)",[selected.organisationId])
+        phase='DOMAIN_ACTION'
         if(await action(context,client)!==undefined)return refuse()
         performed=true
+       }catch(error){
+        const cause=error instanceof LookupStageError?error.cause:error
+        const invariant=cause instanceof Error?invariantLabels.get(cause.message):undefined
+        console.error('Native Supplier work failed',{unitId,phase,...sanitizedLookupFailure(error),...(invariant?{invariant}:{})})
+        throw error
+       }
       })
       if(!performed||receipt.value.requestId!==selected.requestId||receipt.value.status!=='ACCEPTED')return refuse()
       return Object.freeze({requestId:selected.requestId,unitId,status:'ACCEPTED' as const})
