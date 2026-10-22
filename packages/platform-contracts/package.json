@@ -113,11 +113,16 @@
       "types": "./src/user-profile.d.mts",
       "import": "./src/user-profile.mjs",
       "require": "./src/user-profile.mjs"
+    },
+    "./identity-renewal": {
+      "types": "./src/identity-renewal.d.mts",
+      "import": "./src/identity-renewal.mjs",
+      "require": "./src/identity-renewal.mjs"
     }
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs && node --check src/clerk-configuration.mjs && node --check src/embedded-read-channel.mjs && node --check src/request-ledger.mjs && node --check src/delegated-job.mjs && node --check src/platform-ingestion.mjs && node --check src/embedded-channel-core.mjs && node --check src/embedded-command-channel.mjs && node --check src/external-call.mjs && node --check src/request-continuation.mjs && node --check src/native-external-transport.mjs && node --check src/request-inspection.mjs && node --check src/request-work.mjs && node --check src/request-operations.mjs && node --check src/public-web-transport.mjs && node --check src/public-request.mjs && node --check src/supplier-location.mjs && node --check src/identity-provisioning.mjs && node --check src/user-profile.mjs && node --check src/identity-profile-sql.mjs"
+    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs && node --check src/clerk-configuration.mjs && node --check src/embedded-read-channel.mjs && node --check src/request-ledger.mjs && node --check src/delegated-job.mjs && node --check src/platform-ingestion.mjs && node --check src/embedded-channel-core.mjs && node --check src/embedded-command-channel.mjs && node --check src/external-call.mjs && node --check src/request-continuation.mjs && node --check src/native-external-transport.mjs && node --check src/request-inspection.mjs && node --check src/request-work.mjs && node --check src/request-operations.mjs && node --check src/public-web-transport.mjs && node --check src/public-request.mjs && node --check src/supplier-location.mjs && node --check src/identity-provisioning.mjs && node --check src/user-profile.mjs && node --check src/identity-profile-sql.mjs && node --check src/identity-renewal.mjs"
   },
   "dependencies": {
     "ipaddr.js": "2.2.0"
