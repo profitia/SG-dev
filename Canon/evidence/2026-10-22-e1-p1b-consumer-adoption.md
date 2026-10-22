@@ -383,3 +383,66 @@ An initial shell wrapper continued after CODE_STATE_GATE BLOCKED during an unrel
 ## Final coordination status
 
 At this source checkpoint: Maps owner adoption PASS, SG2 real controlled acceptance still requires final successful run, SRM receiver source BLOCKED on separately approved additive boundary, Identity proof corrective BLOCKED on explicit owner scope approval, trusted publication plan not accepted. Coordinator status **PARTIAL**, never source-ready/live-ready. Final actual CI, independent owner closeouts and Architecture PMOS/PHR acknowledgement are reported in the execution handoff after they exist. SRM TASK02-R remains OPEN for R2/I1/K1/U1/W1 and its final PHR is NOT PUBLISHED here.
+
+
+## Final verified owner receipts — 2026-10-22
+
+SG2 trusted-main run **39776338029** SUCCESS, exact candidate **8c5d07c85eb2ae8a9041dff56d2ffcd0505f0d48**, control **0ad9525f1397d41b965787fb487492a713ba0e54**. Actual full suite **718/718 PASS,0FAIL,0SKIP**, including ordinary-role PostgreSQL/API/persistence/revocation/audit regressions; typecheck and Next production build PASS. Sanitized proof independently verified by the current canonical assertProof and controlPolicyDigest: **40edabaf60ec580af8c647546f4b316883d6433cc3a1e8fbe83b1ada87ca1d87**. Credential removal, actual root digest, actor/repository/workflow/run/source SHA and complete successful run provenance all checked. No private package artifacts downloaded or published.
+
+Public exact-head SG2 proof verification also PASS: https://github.com/profitia/SG-dev/actions/runs/39775109258/job/119820341069 . This job READS the successful trusted proof; it is not another execution of718 tests. Its overall run remains red for other unadopted owner/Identity checks.
+
+SG2 own PMOS registration **cmvjh003b0000tkdw8s96w29w** completed PARTIAL_SUCCESS with CLOSEOUT_COMPLETE and runtime/pending/lock PASS. Required MEMOROS publication is independently stored **DELIVERED**, with provider import ACK for Thread cmvjikio800001glb038wcky6 and SourceRecord00885245-8be4-4a32-9905-42abece93658. Own immutable PHR **b7ed6aece4e667227d6128e4b87e2bc419fbacd1**, history/2026/10/22/2026-10-22-12-25-10Z__sg2-sg2-e1-p1b-platform125-source-adoption-20261022: remote-main ancestry,5file hashes and final successful publication/archive verified independently. No owner lifecycle was copied to Architecture as a locally executed task.
+
+Maps owner receipt remains **65998bbd5749a450c84102e2a4b3a84da8a87d84**, exact e1901a4e/PR608;15/15, source build, Maps and Governance CI PASS. Both owner PRs remain Draft/unmerged and inherit immutable604/f35.
+
+Current field mapping (source-only):
+
+```text
+TASK_ID = ARCHITECTURE-E1-SUPPLIER-LOCATION-P1B-ADOPTION-20261022
+EXECUTION_SCOPE = SOURCE_ONLY
+TASK_STATUS = PARTIAL
+PRODUCER_PR = 604
+PRODUCER_HEAD_SHA = f35c82b6d9d39720c04b4df2c6f0042f5379982a
+PRODUCER_VERSION = 1.25.0
+PRODUCER_MERGED = NO
+PRODUCER_IMPLEMENTATION = VERIFIED
+PRODUCER_REGRESSION = PASS
+SQL020_DIGEST = 90ac1d28103f689edc8d11979210ce83cd6218e9f3549f37150fd307d165e9cc
+SG2_ADOPTION_TASK = SG2-E1-P1B-PLATFORM125-SOURCE-ADOPTION-20261022
+SG2_ADOPTION_PR = https://github.com/profitia/SG-dev/pull/607
+SG2_CONTRACT_ACCEPTANCE = PASS
+SG2_CONTROLLED_CI = PASS
+SRM_ADOPTION_TASK = NOT_REGISTERED; existing TASK02-R remains its coordination parent
+SRM_ADOPTION_PR = NOT_CREATED
+SRM_RECEIVER_P1 = BLOCKED
+SRM_REAL_POSTGRES = PARTIAL; original319/331; new P1 receiver NOT_RUN
+SRM_EXACT_CHILD_GRANTS = PENDING
+MAPS_ADOPTION_TASK = SRM-E1-P1B-MAPS-PLATFORM125-ADOPTION-20261022
+MAPS_ADOPTION_PR = https://github.com/profitia/SG-dev/pull/608
+MAPS_PLATFORM_125 = PASS
+MAPS_REGRESSION = PASS
+TRUSTED_CI_PROVENANCE = PARTIAL globally; exact SG2 owner proof VERIFIED
+EXACT_HEAD_CI = PARTIAL
+COMPOSITE_CANDIDATE_VALIDATION = NOT_APPLICABLE; no accepted multi-PR proof context
+OWNER_ROUTING = BLOCKED for pending new scopes; executed owner routes PASS
+SOURCE_COMPATIBILITY = PARTIAL
+MERGE_ORDER = NOT_APPROVED; use dependency graph above; no independent consumer merge
+PR604_READY_FOR_OWNER_ACCEPTANCE = NO
+SQL019_INSTALLED = NO
+SQL020_INSTALLED = NO
+SQL013_INSTALLED = NO
+LIVE_E1_POLICIES_CHANGED = NO
+LIVE_E1_GRANTS_CHANGED = NO
+SRM_DEPLOYED = NO
+SG2_DEPLOYED = NO
+MAPS_DEPLOYED = NO
+PAID_GEOCODING_BUDGET = ZERO
+STAGING_CHANGED = NO
+PRODUCTION_CHANGED = NO
+SRM_TASK02_R = OPEN
+SRM_TASK02_R_FINAL_PHR = NOT_PUBLISHED
+OWNER_DECISIONS_REMAINING = DecisionA Identity CI source scope; DecisionB additive SRM parent/receiver source scope; later exact controlled publication/source acceptance
+FINAL_VERDICT = PARTIAL
+```
+
+Architecture coordinator PMOS/PHR completion is reported from the actual canonical acknowledgement after save; this source file does not invent a self-referential future publication commit. The requested two source scopes stay pending until an explicit human answer; elapsed time is not approval. No merge/install/deploy follows from approving those source scopes.
