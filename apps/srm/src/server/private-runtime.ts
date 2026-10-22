@@ -207,10 +207,10 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   }
   const core=nativeTargets.coreSchemaDigests
   const locations=locationEnabled==='true'?createSupplierLocationRuntime({pool,auditPool,clerk,identity:config.identity,binding:config.binding,module:config.module,
-    application:{...config.application,configurationVersion:locationTargets.configurationVersion},businessDigest:locationTargets.businessSchemaDigest,
+    application:{...config.application,configurationVersion:locationTargets.configurationVersion},businessDigest:locationTargets.businessSchemaDigest,sourceScope:'HEADQUARTERS_MANUAL',
     locationAdmission:createSrmLocationAdmission(admission!),parentSchemaDigest:admission!.parentSchemaDigest,
     ledger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],operationSchemaDigest:core['017-additional-request-operations.sql'],locationSchemaDigest:locationTargets.sql019Digest},
-    ...(supplierApi?{readAcceptedKys:supplierApi.readAcceptedKys}:{}),
+    // Limited UAT never receives a KYS reader, even when the host has one.
   }):undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
     ...(supplierApi?{supplierApi}:{}),

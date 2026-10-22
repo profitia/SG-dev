@@ -13,6 +13,7 @@ import {readLocationCompany,acceptedKysLocations,type AcceptedKysLocations} from
 
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
 export type SupplierLocationRuntimeOptions=Omit<DriverOptions,'readResources'|'projectOutput'|'prepareInputs'|'describeOutcome'|'requestLedger'>&{
+ sourceScope?:'HEADQUARTERS_MANUAL';
  businessDigest:string;parentSchemaDigest?:string;ledger:NonNullable<DriverOptions['requestLedger']>;
  readAcceptedKys?:(request:Request,org:string,nip:string)=>Promise<Response>
 }
@@ -22,7 +23,8 @@ const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
 const closed=(v:unknown,keys:string[]):v is Record<string,unknown>=>!!v&&Object.getPrototypeOf(v)===Object.prototype&&Object.keys(v).sort().join(',')===[...keys].sort().join(',')
 const payload=(supplierId:string):LocationPayload=>({action:'READ',supplierId,locationId:null,addressVersion:null,expectedVersion:null,command:null})
 export function createSupplierLocationHost(options:SupplierLocationRuntimeOptions,operation:'supplier.location.read'|'supplier.location.write'|'supplier.location.sync',sources:readonly ReturnType<typeof locationSourceEvidence>[]=[]){
- const {businessDigest,parentSchemaDigest,locationAdmission,ledger,readAcceptedKys:__,...driver}=options
+ const {businessDigest,parentSchemaDigest,locationAdmission,ledger,readAcceptedKys:__,sourceScope,...driver}=options
+ if(sourceScope==='HEADQUARTERS_MANUAL'&&sources.some(v=>v.kind!=='MGBI'))return refuse()
  if(!/^[a-f0-9]{64}$/.test(businessDigest)||sources.length>64)throw TypeError('Exact SRM location boundary required')
  if(locationAdmission&&!/^[a-f0-9]{64}$/.test(parentSchemaDigest??''))throw TypeError('Exact P1 receiver digest required')
  return createSrmPrivateOperationHost({...driver,
@@ -68,7 +70,7 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
    organisationId:input.organisationId,resourceId:p.locationId??locationCollectionId(input.supplierId),payload:p as unknown as Json,request:input.request,...(key?{idempotencyKey:key}:{})},run)
  const read=async<T>(input:Input,run:Parameters<typeof reader.execute<T>>[1])=>(await execute(reader,input,payload(input.supplierId),run)).value
  return Object.freeze({
-  async page(input:Input,group:string,offset:number,limit:number){return read(input,(context,client)=>readLocationPage(context,client,input.supplierId,group,offset,limit))},
+  async page(input:Input,group:string,offset:number,limit:number){if(options.sourceScope==='HEADQUARTERS_MANUAL'&&!['SUPPLIER_LOCATIONS','USER_LOCATIONS'].includes(group))return refuse();return read(input,(context,client)=>readLocationPage(context,client,input.supplierId,group,offset,limit))},
   async write(input:Input,action:'CREATE'|'UPDATE'|'DEACTIVATE',locationId:string|null,expectedVersion:string|null,command:unknown,key:string){
    if(!validRequestIdempotencyKey(key))return refuse()
    const selected=action==='DEACTIVATE'?null:parseManualLocation(command)
@@ -87,7 +89,7 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
     return {nip:row.nip as string,company:await readLocationCompany(client,input.organisationId,input.supplierId,row.nip)}
    })
    let kys:AcceptedKysLocations|null=null
-   if(options.readAcceptedKys){
+   if(options.sourceScope!=='HEADQUARTERS_MANUAL'&&options.readAcceptedKys){
     // This existing protected read cannot acquire a provider report. A missing
     // private grant withholds related entities while HQ/manual data still work.
     try{const r=await options.readAcceptedKys(input.request,input.organisationId,selected.nip);if(r.ok)kys=acceptedKysLocations(await r.json(),selected.nip)}

@@ -200,6 +200,16 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
    const sync=await call({action:'SYNC',supplierId:S});assert.equal(sync.status,200,await sync.clone().text())
    const after=(await(await page()).json()).items,current=after.find(v=>v.kind==='HEADQUARTERS');assert.equal(current.id,hq.id);assert.notEqual(current.addressVersion,hq.addressVersion);assert.match(current.address.line1,/Nowa/);assert.equal(after.filter(v=>v.origin==='MANUAL').length,1)
   })
+  await t.test('limited UAT blocks KYS/ALL reads and never calls an available KYS reader during actual MGBI sync',async()=>{
+   let kysCalls=0
+   const limited=createSupplierLocationHandler(createSupplierLocationRuntime({...options,sourceScope:'HEADQUARTERS_MANUAL',readAcceptedKys:async()=>{kysCalls++;throw Error('KYS must not be called')}}),A)
+   const request=body=>limited(new Request(ORIGIN+'/api/supplier-locations',{method:'POST',headers:{Authorization:'Bearer external-'+U,Origin:ORIGIN,'Content-Type':'application/json'},body:JSON.stringify(body)}))
+   for(const group of ['RELATED_ENTITIES','ALL'])assert.equal((await request({action:'READ',supplierId:S,group,offset:0,limit:50})).status,403)
+   const before=(await owner.query("SELECT count(*)::int n FROM srm.supplier_locations WHERE location_group='RELATED_ENTITIES'")).rows[0].n
+   const sync=await request({action:'SYNC',supplierId:S});assert.equal(sync.status,200,await sync.clone().text());assert.equal(kysCalls,0)
+   assert.equal((await owner.query("SELECT count(*)::int n FROM srm.supplier_locations WHERE location_group='RELATED_ENTITIES'")).rows[0].n,before)
+   for(const group of ['SUPPLIER_LOCATIONS','USER_LOCATIONS']){const response=await request({action:'READ',supplierId:S,group,offset:0,limit:50});assert.equal(response.status,200);assert((await response.json()).items.every(v=>v.group===group&&v.sources.every(s=>s.kind!=='KYS')))}
+  })
   await t.test('current KYS legal entities reconcile, exact source revocation withholds them and retention physically removes derivatives',async()=>{
    const snapshot=randomUUID(),request=randomUUID(),attempt=randomUUID(),retrieved=new Date(Date.now()-5000).toISOString(),until=new Date(Date.now()+3600000).toISOString()
    const data={relatedEntities:[{name:'Related company',krs:'0000999999',nip:null,regon:null,role:'SUBSIDIARY',relationshipStart:'2020-01-01',relationshipEnd:null,stakeDescription:null,sanctionsMatch:null}]}
