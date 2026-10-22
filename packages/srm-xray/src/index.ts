@@ -70,3 +70,5 @@ export { KysIcon } from "./kys-report";
 export { SupplierHeader, SUPPLIER_HEADER_TITLE } from "./header";
 
 export * from "./supplier-locations";
+
+export { FinancialHistoryDialog } from "./FinancialHistoryDialog";

@@ -455,3 +455,103 @@ RLS uses the existing Access Store context plus a five-second HMAC attestation b
 SQL requires an explicitly accepted existing access installation and an operator-installed `public.hmac(bytea,bytea,text)` from pgcrypto. It creates no extension, role, account, binding or activation. The operator records the exact migration digest, grants only the documented APIs to a separately provisioned ordinary runtime, configures its disabled policy and safely delivers the independent32-byte key. Profile values remain ACCOUNT_PRIVATE. The canonical audit carries internal IDs, operation outcome and metadata, never profile values; updates and OUTCOME share one transaction. A failed OUTCOME rolls back the profile write.
 
 Source and real synthetic PostgreSQL tests do not install this schema into Neon, configure Clerk, create an app/service or establish browser-session compatibility. The installation plan, operator actions, privacy/rollback policy and exact checksum are in `Canon/evidence/2026-10-21-identity-profile-b1-handoff.md`. Do not use mechanical DROP SCHEMA for rollback or enable registration before that installation/acceptance task.
+
+
+## P1 source candidate: exact supplier-child CREATE and rolling24h (package1.25)
+
+This is an optional producer candidate, `profitia.supplier-location-admission@1.0.0`.
+Explicit `locationAdmission` on the existing HUMAN private host selects Root
+`1.0.0-candidate.17` and host1.12.0. Hosts without this option retain their
+candidate16/host1.11 descriptors and FIXED semantics. New source/type fingerprints
+still require separate SG2/SRM acceptance. No receiver manifests, locks, routes,
+users, Google configuration, live policies, grants or deployments are changed.
+
+SQL020 is additive after the unchanged SQL019. Its installation requires the
+controlled NOLOGIN owner, disabled applications, the exact SQL019 receipt and
+preinstalled pgcrypto HMAC. It creates no extension, login, key, grant, policy or
+enabled receiver. The installer must use one outer transaction and record the
+SQL020 digest separately. The guarded installation receipt and disabled-by-default
+receiver configuration are not another permission catalog. The receiver's32-byte
+attestation key is separate from SQL credentials and is future operator-delivered
+server configuration; it never enters an iframe, browser, audit or API response.
+This source task generates keys only inside disposable synthetic test fixtures.
+
+`createSupplierLocationAdmission({binding,schemaDigest,proofKey,readParent})` exposes
+`locationId({organisationId,userId,supplierId,idempotencyKey})` and an internal bind
+port used by the same request ledger. The UUIDv8 is derived server-side from the
+verified organisation, actor, supplier, application/environment and retry key.
+The host recomputes it from its authenticated actor; a caller-selected arbitrary
+child UUID is denied. Its namespace is independent of rotating proof keys, so
+identity remains stable on a lawful retry. An identifier is never authority.
+
+The receiver MUST read and lock its actual current organisation/supplier parent
+with `readParent` in the same bounded query transaction. Return exactly
+`{supplierId,organisationId,collectionId:'supplier-locations:'+supplierId,version}`.
+This is ownership of the organisation's supplier relationship/map, not ownership
+of shared KRS company knowledge. A client parent flag or request ID is not proof.
+The port signs the closed server observation, complete location evidence, action,
+command-payload digest, authenticated actor/org, exact child/parent, physical
+project/branch/database/role, schema digest and transaction ID with a DB-authored
+expiry of at most5seconds. SQL verifies this signature against the private
+receiver configuration. GUCs alone cannot mint or transfer admission. Current
+membership/product/module/source rights and expiry are still independently read.
+
+For CREATE only, E1 requires an exact `supplier.location.write` ALLOW for the
+parent collection; NULL is insufficient. Parent or child DENY overrides it.
+The business target and audit remain the exact child UUID. UPDATE/DEACTIVATE keep
+exact-child permissions and CAS; parent CREATE or authorship grants neither.
+A later child edit needs a separately controlled exact-child grant, not an
+automatic permission mutation in the write transaction. Manual ownership remains
+ORGANISATION_PRIVATE with creator/editor provenance; organisation sharing does
+not filter by creation author. The ledger/envelope is OPERATION_AUDIT metadata
+without address/label/command bodies. Receiver installation/key configuration is
+restricted access material, never a business response.
+
+The same `profitia_requests.policies` and `intents` support opt-in ROLLING_24H
+for WRITE/SYNC, each with capacity100. `window_start/end/expires_at` remain
+finite policy-validity bounds, not quota-reset boundaries. A stable advisory
+transaction lock covers physical environment/organisation/operation across all
+users, applications and policy IDs. Production uses READ COMMITTED; repeatable
+snapshots are rejected for the new mode. This choice follows PostgreSQL16's
+[transaction isolation](https://www.postgresql.org/docs/16/transaction-iso.html)
+and [application consistency guidance](https://www.postgresql.org/docs/16/applevel-consistency.html):
+a fresh observation after acquiring the shared budget lock is required.
+
+The acceptance trigger authors immutable `accepted_at` on RESERVED→ACCEPTED;
+only transitions that ultimately commit count. The interval is `(DB-now-24h,DB-now]`.
+Reservation time is not acceptance time. The rolling count is independent of the
+BIGINT lifetime counter and crosses all policy/application IDs. A replacement
+policy or downgrade to FIXED cannot fork an established organisation budget.
+Unknown historical ACCEPTED timestamps block opt-in until a separately approved
+conversion; none are invented, backfilled or deleted here. FIXED keeps its prior
+capacity constraint and reserve/accept behavior. Failed business/audit/output or
+transaction rollback leaves no committed unit. Same-key replay reauthorises and
+uses no extra unit even at capacity. A new admitted source-version SYNC counts
+once even when its physical domain effect is a no-op. The receiver must preserve
+its stable source-version retry key and current source projection; merely reading
+an existing report must not manufacture a new accepted command.
+
+No new direct SERVICE request authority is introduced: current HUMAN request
+admission and existing delegated SERVICE execution remain separate. Workers retain
+original initiating-user provenance and the original canonical accepted unit.
+Any separately authorised accepted location intent shares the organisation budget;
+application or executor identity is not a budget namespace.
+
+SRM adoption is separate. Reuse existing bounded READ metadata where sufficient,
+but prove the actual supplier parent lock/recheck and accepted projection/version.
+If a missing receiver SQL port requires an additive migration, route it under SRM;
+never modify immutable SQL013 or grant broad table SELECT/DML to compensate.
+SQL019/SQL013 bytes stay unchanged; their presence alone does not adopt P1.
+A future approved sequence is exact019→020→receiver schema/adoption, then disabled
+configuration, exact ACLs and explicit activation only under its own W1 approval.
+Public function grants must be enumerated: internal `location_rolling_used` and
+quota-lock/trigger helpers receive no runtime EXECUTE grant. No production
+admission clock override exists; timestamp fixtures occur only in disposable tests.
+
+Acceptance uses the existing isolated PostgreSQL16 fixture, ordinary runtime roles,
+real concurrent connections, exact parent/child denial, revocation, signature
+transaction/role/expiry binding,100/101 WRITE and SYNC, same-key concurrency,
+rotation/downgrade, exact microsecond boundary, aged-out101st lifetime operation,
+old reservation/new acceptance, unknown history, actual OUTCOME failure rollback
+and legacy FIXED. Full producer/lab regressions run without Neon or paid providers.
+Live consumer adoption, installation, user UAT and deployment are separate evidence.

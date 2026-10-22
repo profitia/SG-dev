@@ -9,6 +9,7 @@ export interface PrivateOperationScope {
 export interface PrivateTransactionOptions { readonly timeoutMs: number; readonly maxWaitMs: number }
 export declare function createPrivateOperationHost<Transaction>(options: {
   application: Application; binding: AccessStoreBinding; now?: () => number; transactionTimeoutMs?: number
+  locationAdmission?:import('./supplier-location.mjs').SupplierLocationAdmissionOptions
   /** Optional, deployment-owned module boundary. Requires SQL002 + accepted SQL003 and the extra descriptor ACL. */
   module?: { id: ModuleId; schemaDigest: string; auditSchemaDigest: string }
   /** AM20 uses SQL006; bounded HUMAN AM23 additionally requires accepted SQL010. No remote dispatch. */
@@ -34,7 +35,7 @@ export declare function createPrivateOperationHost<Transaction>(options: {
    * correlated INTENT. Use this same bounded SQL transaction; no provider calls. */
   prepareInputs?(input: { context: Readonly<OperationContext>; query: AccessQuery; transaction: Transaction }): void | Promise<void>
   describeOutcome?(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): OperationOutcome | Promise<OperationOutcome>
-}): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT }>
+}): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof SUPPLIER_LOCATION_HOST_CONTRACT }>
 export declare function privateOperationHostSourceDigest(): Promise<string>
 
 /** The real SQL SERVICE remains distinct from the initiating account. */
@@ -97,3 +98,5 @@ export declare function createDelegatedNativeWorkHost<Transaction>(options:Deleg
  contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT
  runSqlWork(input:import('./operation-context.mjs').OperationInput,unit:Readonly<{unitId:string;accessMode:import('./request-work.mjs').NativeWorkAccessMode;inputDigest:string}>,action:(context:Readonly<OperationContext>,transaction:Transaction)=>void|Promise<void>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./request-ledger.mjs').RequestReceipt}>>
 }>
+
+export declare const SUPPLIER_LOCATION_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.12.0'}>
