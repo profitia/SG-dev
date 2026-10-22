@@ -1,6 +1,7 @@
 import {canonical, sha256, closed, demand, text, krs, nip, regon, digest, instant, calendarDate, parseJson} from './validation.js'
 export const IDENTITY_CONTRACT = Object.freeze({id:'profitia.krs-company-identity',version:'1.0.0'})
-export const NORMALIZER_VERSION = 'krs-normalizer/1.0.0'
+export const NORMALIZER_VERSION = 'krs-normalizer/1.0.1'
+export const acceptedNormalizerVersion = (value:unknown):boolean => value === NORMALIZER_VERSION || value === 'krs-normalizer/1.0.0'
 export type IdentityBlockCodeV1 = 'MISSING_NIP'|'INVALID_NIP'|'INVALID_KRS'|'INVALID_REGON'|'IDENTIFIER_CONFLICT'|'AMBIGUOUS_COMPANY'|'UNCONFIRMED_HISTORICAL_KRS'|'KRS_UNAVAILABLE'|'STALE_IDENTITY_EVIDENCE'|'UNSUPPORTED_EVIDENCE_VERSION'
 export type IdentitySourceV1 = {
   provider:'KRS';register:'P'|'S';extract:'CURRENT';sourceRecordId:string;sourceVersion:string;normalizerVersion:string;
@@ -44,7 +45,7 @@ export async function validateIdentityEvidence(input: unknown, now: number): Pro
   demand(nip(id.nip),'INVALID_NIP');demand(id.regon===null||regon(id.regon),'INVALID_REGON');demand(text(id.officialName,1000))
   const s=closed(v.source,['provider','register','extract','sourceRecordId','sourceVersion','normalizerVersion','rawDigest','contentDigest','sourceAsOfDate','entryNumber','retrievedAt','checkedAt'])
   demand(s.provider==='KRS'&&['P','S'].includes(s.register as string)&&s.extract==='CURRENT'&&s.sourceRecordId===v.selectedKrs,'IDENTIFIER_CONFLICT')
-  demand(text(s.sourceVersion)&&s.normalizerVersion===NORMALIZER_VERSION,'UNSUPPORTED_EVIDENCE_VERSION')
+  demand(text(s.sourceVersion)&&acceptedNormalizerVersion(s.normalizerVersion),'UNSUPPORTED_EVIDENCE_VERSION')
   demand(digest(s.rawDigest)&&digest(s.contentDigest)&&(s.sourceAsOfDate===null||calendarDate(s.sourceAsOfDate)))
   demand(s.entryNumber===null||(Number.isSafeInteger(s.entryNumber)&&(s.entryNumber as number)>0))
   demand(instant(s.retrievedAt)&&instant(s.checkedAt))
