@@ -49,8 +49,18 @@ function candidateFamily(context, pr, expectedSha) {
   return family
 }
 
-// Scope is deliberately narrower than all ARCHITECTURE-owned source. In
-// particular no app, workflow, policy, npm configuration or executable tooling.
+// Closed B2-E review bundle, not an apps/** or test-extension allowance. All
+// five paths must be present, added/modified only; no producer delta is needed.
+const identityLifecycleReviewPaths = Object.freeze([
+  'Canon/evidence/2026-10-22-identity-runtime-porr-first-decision.md',
+  'Canon/evidence/2026-10-22-identity-runtime-lifecycle-b2-e.md',
+  'Canon/runbooks/identity-runtime-lifecycle-and-persistent-login-v1.md',
+  'apps/identity-runtime/test/lifecycle-resilience.test.mjs',
+  'apps/architecture-lab/test/access-store-postgres.test.mjs',
+])
+
+// Producer scope remains deliberately narrower than all ARCHITECTURE source.
+// No general app, workflow, policy, npm configuration or tooling allowance.
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -60,9 +70,11 @@ function architecturePathAllowed(name) {
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  const identityReview = files.length === identityLifecycleReviewPaths.length
+    && identityLifecycleReviewPaths.every(name => files.some(file => file?.filename === name && ['added', 'modified'].includes(file.status)))
   const names = new Set()
   for (const file of files) {
-    if (!architecturePathAllowed(file.filename) || !['added', 'modified', 'removed'].includes(file.status)
+    if ((!identityReview && !architecturePathAllowed(file.filename)) || !['added', 'modified', 'removed'].includes(file.status)
       || Object.hasOwn(file, 'previous_filename') || !shaPattern.test(file.sha ?? '') || names.has(file.filename)) fail('ARCHITECTURE_PATH_REJECTED')
     names.add(file.filename)
   }
@@ -70,8 +82,8 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   if (profile.repository.slug !== REPOSITORY || profile.repository.routingRegistry !== 'Canon/registries/current-architecture-baseline-v1.json') fail('ARCHITECTURE_ROUTING_REJECTED')
   const routing = resolveProjectRouting({profile, targets: [...names], repositoryRoot})
   if (!routing.ok || routing.results.some(r => r.projectBoundaryStatus !== 'ALLOWED' || r.baselineClassification !== 'ALIGNED'
-    || r.currentOwner !== (r.normalizedPath.startsWith('packages/') ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
-  if (![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
+    || r.currentOwner !== (r.normalizedPath.startsWith('Canon/') ? 'Governance Source Layer' : 'Architecture Platform'))) fail('ARCHITECTURE_ROUTING_REJECTED')
+  if (!identityReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
 }
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {

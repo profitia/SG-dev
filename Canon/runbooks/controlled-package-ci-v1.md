@@ -54,3 +54,32 @@ Te same warunki ownera, otwartego wewnętrznego PR do main i dokładnego SHA obe
 Aktualizacja tej polityki jest odrębnym pierwszym PR w zadaniu ARCHITECTURE. Jej kandydat bootstrap korzysta z dotychczas dopuszczonego namespace `sg2/`, przy niezmienionym profilu ARCHITECTURE i wyłącznie jego targetach. Nie zmienia się brancha/HEAD istniejącego PR SRM. Stary zaufany kontroler main może sprawdzić dokładne niezmienione zależności SG2 tego pierwszego kandydata. Dopiero po jego rzeczywistym przyjęciu nowy kontroler z main waliduje kandydatów SRM/ARCHITECTURE. Nowy digest polityki wymaga nowych dowodów; przed scaleniem odśwież authority i powtórz wymagane bramki. Nie udostępnia się sekretu kandydatowi, nie zmienia reguł Environment i nie publikuje pakietów/cache.
 
 Kontroler rozpoznaje także zamknięty układ Root `1.0.0-candidate.16`: pięć plików candidate15 oraz dokładnie `src/supplier-location.mjs`, `src/supplier-location.d.mts` i `migrations/access/019-supplier-location-operations.sql` we wspólnym pakiecie. Hashuje rzeczywiste bajty regularnych plików bez wykonywania kodu kandydata. Układy historyczne zachowują dotychczasowe znaczenie; nieznane przyszłe wersje, brak pliku, symlink, rozbieżna tożsamość i lista ścieżek podana przez kandydata są odrzucane. Obsługa układu nie przyjmuje wersji w aplikacji ani nie zmienia jej receiptów.
+
+## Zamknięta klasa przeglądu Identity Lifecycle — propozycja B2-E-CI-01
+
+Status: propozycja źródłowa, do osobnego przyjęcia przez właściciela. Rejestracja zadania i lokalny PASS nie aktywują nowej polityki na main ani nie stanowią kontrolowanego dowodu SG2.
+
+Oprócz istniejącej klasy producenta kontroler dopuszcza jeden zamknięty zestaw **wszystkich pięciu** ścieżek, wyłącznie added/modified, bez żadnej innej ścieżki:
+
+1. `Canon/evidence/2026-10-22-identity-runtime-porr-first-decision.md`
+2. `Canon/evidence/2026-10-22-identity-runtime-lifecycle-b2-e.md`
+3. `Canon/runbooks/identity-runtime-lifecycle-and-persistent-login-v1.md`
+4. `apps/identity-runtime/test/lifecycle-resilience.test.mjs`
+5. `apps/architecture-lab/test/access-store-postgres.test.mjs`
+
+Tylko dla kompletnego zestawu nie wymaga się fikcyjnej zmiany `packages/platform-contracts/**`. Kolejność plików nie ma znaczenia; brak, dodatkowa ścieżka, deletion/rename/copy, duplikat, zły blob/SHA lub zmieniony routing powodują odmowę. Nie ma ogólnego wyjątku dla `apps/**`, rozszerzenia `.test.mjs`, innych dokumentów, przyszłych plików albo mieszania tej klasy z producentem. Zmiana zestawu wymaga kolejnego przeglądu polityki.
+
+Niezmienione pozostają owner/actor i triggering_actor, otwarty wewnętrzny PR do main, dokładny HEAD, kompletne pobranie listy GitHub z ponownym odczytem metadanych, liczność, brak rename, trusted routing ALLOWED/ALIGNED, Git diff/tree/blob, zwykły plik/realpath/limit rozmiaru oraz ponowne sprawdzenie przed instalacją i proof. Owner obu plików testowych musi być Architecture Platform; trzech dokumentów — Governance Source Layer. Kandydat nie podaje własnej allowlisty. Testy są wykonywalnym kodem i wymagają przeglądu; nazwa pliku nie dowodzi nieszkodliwości. Żaden kod kandydata nie jest importowany do admission.
+
+Workflow i GitHub Environment protection nie zmieniają się. Poświadczenie nadal trafia tylko do istniejącej instalacji `--ignore-scripts`; późniejsze wykonanie i proof pozostają bez poświadczeń. Format i weryfikacja proof nie mają wyjątku dla tej klasy. Zmiana kontrolera zmienia istniejący policy digest; stary proof nie może spełnić nowej walidacji.
+
+### Owner GO i późniejsza walidacja
+
+1. Właściciel przegląda osobny DRAFT PR korekty i dokładny source SHA z jego handoffu. Niniejsze zadanie nie wykonuje żadnego merge ani uprzywilejowanego dispatchu. PR #600 i jego źródła pozostają bez zmian.
+2. Jeżeli przed przyjęciem korekty wymagany jest kontrolowany proof jej samej, wymaga to jawnego GO. Canonical bootstrap używa namespace `sg2/` przy niezmienionym profilu ARCHITECTURE oraz wyłącznie governance targets; to nie daje prawa zapisu do SG2. Istniejący kontroler main może zweryfikować niezmienione zależności konsumenta dla exact SHA korekty. Nie kopiuje się nowej polityki do procesu z sekretami przed przyjęciem, nie poszerza Environment i nie pomija wymaganego checka. Brak tego proof pozostaje jawnym owner gate, a nie PASS.
+3. Po odrębnym zatwierdzeniu właściciel scala wyłącznie przyjęty exact source. Odczytać rzeczywisty merge SHA i aktualny main, porównać zaakceptowane pliki/digest, wymagane kontrole i politykę Environment. Merge SHA może różnić się od source SHA. Różnica kodu, sekret/polityka środowiska wymagająca zmiany lub niespójność zatrzymuje wykonanie.
+4. W osobnej autoryzowanej jednostce odświeżyć main i PR #600, właściwy preflight/BEGIN oraz cały current diff. Jeżeli synchronizacja z main/rebase zmieniła HEAD, pobrać nowy exact SHA; nie używać automatycznie historycznego `70b4b05a870f93921529319f3a1693dd345ed0af`. Aktualny zestaw musi nadal przechodzić nowe admission i Git blob validation; nie edytować metadanych lub dodawać sztucznego producenta dla obejścia odmowy.
+5. Dopiero po GO uruchomić istniejący workflow na **main**, mode=`validate-sg2`, candidate_pr=`600`, expected_sha=`<odczytany aktualny SHA>`. Wymagany jest rzeczywisty sukces testów/API/typecheck/build, istniejący ograniczony sekret bez ujawniania i nowy proof wiążący candidate SHA, control/merge SHA, run ID oraz aktualny policy digest. Brak/wygaśnięcie sekretu lub dodatkowe wymagania dostępu oznaczają STOP i działanie właściciela, bez automatycznej zmiany secrets/Environment.
+6. Po sukcesie ponowić publiczny check dla tego samego aktualnego SHA i potwierdzić niezależnie wszystkie wymagane wyniki. Zmiana HEAD lub polityki unieważnia proof i wymaga nowej walidacji. Brak proof nie jest PASS. PR #600 nadal pozostaje DRAFT do odrębnego odbioru; zgoda na walidację nie jest zgodą na jego merge, deployment ani Live Clerk Acceptance.
+
+Rollback propozycji: pozostawić/odrzucić draft, bez zmiany main. Po przyjęciu ewentualny przeglądany revert usuwa wyłącznie nową klasę; historia dowodów zostaje. Ponieważ digest się zmienia, nowe walidacje wymagają proof zgodnego z przywróconym main — bez wyjątków dla starego digestu i bez cofania produktu/bazy.
