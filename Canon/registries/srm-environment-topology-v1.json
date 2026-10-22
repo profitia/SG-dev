@@ -77,6 +77,20 @@
             "topologyReference": "Canon/registries/maps-environment-topology-v1.json",
             "privateOperations": "NOT_ADOPTED",
             "srmFeatureMounted": false
+          },
+          "krsPilot": {
+            "serviceId": "srv-dbd5hlcipgvc73d98ukg",
+            "name": "srm-krs-pilot-development",
+            "url": "https://srm-krs-pilot-development.onrender.com",
+            "autoDeploy": false,
+            "plan": "free",
+            "logicalOwner": "SRM Platform",
+            "sourcePath": "apps/srm",
+            "ownerApprovalRef": "USER-20261022-KRS-ISOLATED-PILOT",
+            "acceptanceStatus": "CLOSED_BOOTSTRAP_BUSINESS_ACTIVATION_PENDING",
+            "bootstrapDeployId": "dep-dbd5hm4ipgvc73d98vdg",
+            "bootstrapSha": "2936119359f4614f7c864fa2456c4317a0ec065d",
+            "googleMapsEnabled": false
           }
         }
       },

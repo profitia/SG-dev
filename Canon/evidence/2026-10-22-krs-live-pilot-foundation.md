@@ -37,3 +37,39 @@ no scheduled sync. New resource/technical binding approval is pending. No produc
 cloud schema, grants, deployments, new paid budget or user entitlement changed.
 Native publication requires its exact ordinary-role installation; the proposal
 file alone does not install or authorize it. SRM live and Financial tests pending.
+
+## Approved isolated installation candidate
+
+Producer PR620 is accepted on main2936119359f4614f7c864fa2456c4317a0ec065d.
+The owner subsequently approved USER-20261022-KRS-ISOLATED-PILOT: exact Free
+Render service and separate catalog DB on existing compute, limited technical
+bindings, at most20 official ORLEN reads, existing Financial budget only.
+The SRM service is registered in its canonical topology; the public catalog
+is registered in the KRS-owned deployment target and this accepted KRS Canon. Render readback
+confirms service srv-dbd5hlcipgvc73d98ukg, Free, auto-deploy off, environment
+evm-dapbd70ae00c73cgrup0. Its bootstrap dep-dbd5hm4ipgvc73d98vdg serves only
+health200 and unavailable503; no authenticated application is claimed live.
+Neon readback confirms DB122089, owner krs_catalog_owner, ordinary reader/ingest
+roles, and denied CONNECT to architecture_sg_lab and architecture_srm_lab.
+The accidentally privileged unused krs_migrator role was deleted only after
+the owner's explicit deletion approval; readback count0. No database/data deleted.
+
+The installation candidate reuses immutable native Source SQL008/009/012 and
+adds a domain write fence. Actual isolated PostgreSQL:24/24 PASS, including
+atomic DDL rollback, ordinary direct-write denial, genuine Source reservation,
+domain write and paired OUTCOME in one commit, process-owned receipt and
+idempotent replay, plus Source audit-outage rollback. Data/identity assertions
+are synthetic; no HTTP or paid provider call occurs in these tests. The new
+cloud DB remains empty until the accepted exact installation is applied.
+Existing SRM regression:634 PASS,7 optional SQL tests skipped,0 failures.
+Credential transfer is separately awaiting explicit approval after automatic
+approval review rejected exporting source-service secrets. No secret copied.
+
+The Architecture topology remains the exact historical PMOS/two-LAB registry.
+The new public application store is registered in KRS deployment/pilot-targets.json
+and the KRS Canon, separately from those laboratory identities. Its exact
+project/branch/database/ordinary-role binding is verified by the native Source
+installation and consumer connection checks; no laboratory routing is replaced.
+During publication, main advanced to a0a3b0626fac16e011b57d6284ce55abcfcd3ca3
+(coordinated Supplier Locations release / SDK1.25.0). This installer branch
+merges that accepted authority without changing its SDK or Maps sources.

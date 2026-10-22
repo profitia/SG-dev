@@ -1,5 +1,5 @@
 import test from 'node:test'
-import {nativeReadTests} from './native.test.mjs'
+import {nativeReadTests,nativePublicationTests} from './native.test.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import os from 'node:os'
@@ -137,6 +137,7 @@ test('isolated PostgreSQL catalog, roles, transactional sync and 100k search',as
   })
   await nativeReadTests(t,{owner,reader,catalog,url,Pool})
   await t.test('rollback discards isolated schema, migration reapplies cleanly',async()=>{await migrate(down);assert.equal((await owner.query("SELECT to_regnamespace('krs_registry') AS schema")).rows[0].schema,null);await migrate(up);assert.equal((await catalog.coverage()).observedCompanies,0);await migrate(down)})
+  await nativePublicationTests(t,{owner,ingest,url,Pool})
   await fs.mkdir(new URL('../dist/',import.meta.url),{recursive:true});await fs.writeFile(new URL('../dist/postgres-evidence.json',import.meta.url),JSON.stringify(proof,null,2)+'\n')
  }finally{await reader?.end();await ingest?.end();await owner.query('DROP SCHEMA IF EXISTS krs_registry CASCADE');await owner.query('DROP OWNED BY krs_reader,krs_ingest,krs_migrator;DROP ROLE krs_reader,krs_ingest,krs_migrator');await owner.end()}
 })

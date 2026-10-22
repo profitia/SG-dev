@@ -107,7 +107,9 @@ test('manifest and onboarding bind the same decision without fake physical activ
 })
 
 test('B0 preserves project/environment identities and creates no application or workflow', () => {
-  for (const p of ['Canon/registries/profitia-projects-v1.json', 'Canon/registries/architecture-environment-topology-v1.json', 'Canon/registries/sg2-environment-topology-v1.json', 'Canon/registries/srm-environment-topology-v1.json']) assert.deepEqual(read(p), before(p))
+  // Compare the accepted B0 tree with its actual predecessor. Current topology
+  // is independently validated by current governance and provider readback.
+  for (const p of ['Canon/registries/profitia-projects-v1.json', 'Canon/registries/architecture-environment-topology-v1.json', 'Canon/registries/sg2-environment-topology-v1.json', 'Canon/registries/srm-environment-topology-v1.json']) assert.deepEqual(accepted(p), before(p))
   assert.equal(execFileSync('git', ['ls-tree', acceptedSha, '--', 'apps/identity-runtime'], {cwd: root, encoding: 'utf8'}), '')
   assert.equal(execFileSync('git', ['ls-tree', acceptedSha, '--', workflow], {cwd: root, encoding: 'utf8'}), '')
 })
