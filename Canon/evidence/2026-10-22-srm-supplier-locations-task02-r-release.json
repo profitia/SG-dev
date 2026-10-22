@@ -1,0 +1,502 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022",
+  "projectKey": "SRM",
+  "workspace": "SG-dev Codespaces SRM",
+  "targetEnvironment": "development",
+  "observedAt": "2026-10-22T04:14:59Z",
+  "phase": "PREPARED_WAITING_CONSOLIDATED_OWNER_GATE",
+  "registration": {
+    "id": "cmvj0baur0000t43u7k05vcpm",
+    "conversationId": "pmos-task-v2:c9d8a78c718d4c20bffceca4f4d75df78069eb89c0761ed803533930112f5102",
+    "hostConversationId": "01a133ad-8739-7a21-ac6e-36f0a9bf8ed5",
+    "database": "srm_pmos",
+    "executionStatus": "running",
+    "closeout": "PENDING_RELEASE_ACCEPTANCE",
+    "phrPublication": "PENDING_RELEASE_ACCEPTANCE",
+    "memoros": "DISABLED_BY_PROFILE"
+  },
+  "authority": {
+    "repository": "profitia/SG-dev",
+    "branch": "main",
+    "sourceMainSha": "fd6b630afa37fb6f055b3291332d380b0d19e005",
+    "isolatedBranch": "srm/supplier-locations-release-task02-r-20261022",
+    "executionEnvironment": "local",
+    "governanceManifestVersion": "3.27.0",
+    "applicableDocuments": 41,
+    "governancePreflight": "PASS",
+    "routingOwners": [
+      "SRM Runtime",
+      "Maps Capability",
+      "Governance Source Layer"
+    ],
+    "codeState": "ALIGNED",
+    "sourceChanged": false
+  },
+  "source": {
+    "pr": "https://github.com/profitia/SG-dev/pull/597",
+    "candidateSha": "3c6805cbb1aa135454b6f6e1aad9308951cfea85",
+    "mainCi": "https://github.com/profitia/SG-dev/actions/runs/39674364353",
+    "srmCi": "https://github.com/profitia/SG-dev/actions/runs/39674364559",
+    "mapsCi": "https://github.com/profitia/SG-dev/actions/runs/39674364509",
+    "currentMainRequiredChecks": "PASS",
+    "platformVersion": "1.24.0",
+    "rootImplementation": "1.0.0-candidate.16",
+    "rootFileCount": 8,
+    "rootDigest": "9fe1ee707bb5510e66cbe9470ba970de177f8a6fe4533470f771af88d68bf728",
+    "sourceClosureFiles": 33,
+    "sourceClosureMismatches": [],
+    "historicalMigrationCount": 18,
+    "initializerAndHistoricalMigrationsChanged": false,
+    "sql017Digest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+    "sql019Digest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+    "srmSql013Digest": "b3f05a4c56f32bd32c0c59dcc8b60c486d4d4813823665301ce08318f793704b",
+    "sharedFunctionBodiesComparedToSql017": 5,
+    "sharedFunctionBodyMismatches": []
+  },
+  "neon": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "database": "platform_private",
+    "runtimeRole": "srm_private_development_runtime",
+    "endpoint": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+    "descriptorRevision": 75,
+    "sql019Installed": false,
+    "sql013Installed": false,
+    "locationTablesPresent": false,
+    "locationGrants": 0,
+    "locationPolicies": 0,
+    "locationIntents": 0,
+    "accounts": 1,
+    "organisations": 1,
+    "activeMemberships": 1,
+    "identityProfiles": 0,
+    "readback": [
+      [],
+      [],
+      [
+        {
+          "facts": {
+            "jobs": [
+              {
+                "count": 11,
+                "status": "CONFIRMED"
+              },
+              {
+                "count": 139,
+                "status": "PENDING"
+              }
+            ],
+            "intents": [
+              {
+                "count": 4,
+                "status": "ACCEPTED",
+                "operation": "supplier.report.refresh",
+                "application_id": "srm"
+              },
+              {
+                "count": 136,
+                "status": "ACCEPTED",
+                "operation": "benchmark.discovery.request",
+                "application_id": "spendguru"
+              },
+              {
+                "count": 6,
+                "status": "ACCEPTED",
+                "operation": "supplier.private.refresh",
+                "application_id": "srm"
+              },
+              {
+                "count": 4,
+                "status": "ACCEPTED",
+                "operation": "forecast.request",
+                "application_id": "spendguru"
+              }
+            ],
+            "sources": [
+              {
+                "source": "sg2.forecast.queue",
+                "status": "ACTIVE",
+                "expires": "2027-01-15T11:11:30.585005+00:00",
+                "executor": "spendguru-forecast-dispatch",
+                "operation": "forecast.request",
+                "application": "spendguru"
+              },
+              {
+                "source": "sg2.provider.macrobond_api",
+                "status": "ACTIVE",
+                "expires": "2027-01-15T11:11:30.585005+00:00",
+                "executor": "spendguru-benchmark-dispatch",
+                "operation": "benchmark.discovery.request",
+                "application": "spendguru"
+              },
+              {
+                "source": "srm.supplier.source-request",
+                "status": "ACTIVE",
+                "expires": "2027-01-15T11:11:30.585005+00:00",
+                "executor": "srm-jobs",
+                "operation": "supplier.report.refresh",
+                "application": "srm"
+              },
+              {
+                "source": "srm.supplier.source-request",
+                "status": "ACTIVE",
+                "expires": "2027-01-15T11:11:30.585005+00:00",
+                "executor": "srm-jobs",
+                "operation": "supplier.private.refresh",
+                "application": "srm"
+              }
+            ],
+            "receipts": {
+              "sql017": {
+                "singleton": true,
+                "source_ref": "ARCHITECTURE-E1-DEVELOPMENT-CONTROL-PREPARATION-20261020:DISABLED_DEVELOPMENT_INSTALLATION",
+                "schema_digest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+                "schema_version": "1.0.0"
+              },
+              "srm_private": {
+                "singleton": true,
+                "source_ref": "7e9def92fd367137258696aae211ac4e6554e7fd",
+                "installed_at": "2026-10-17T13:22:35.564347+00:00",
+                "installed_by": "neondb_owner",
+                "schema_digest": "3d8367474454eb15a8171c28bf99f80f51299b58746efa8dfb4f65289de57dcd",
+                "schema_version": "1.0.0",
+                "boundary_digest": "19220c7bb31365ed058bc55a99bca2aa4a9f38b7f8ca2a2ddde52ec71ed16ed4"
+              }
+            },
+            "identity_counts": {
+              "accounts": 1,
+              "organisations": 1,
+              "active_memberships": 1
+            },
+            "location_grants": 0,
+            "location_policies": null
+          }
+        }
+      ]
+    ],
+    "sharedFunctionReadback": [
+      {
+        "function": "profitia_jobs.append_audit(jsonb)",
+        "body_sha256": "d1a18518ce2e6f163c00930e1e179cc0c85e6c506756e4e357ce2817423ec86b",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_jobs.create_dispatch(uuid,uuid,text)",
+        "body_sha256": "95416ba1a0a20ad5cc692496e8c35aa1f5fcd7142bf2db3b95c6c3ff175598b2",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_jobs.current_job(uuid)",
+        "body_sha256": "59ac728a3a9b4341a52a4f2dd742c06e5a4602ce89f4ad7ae397939bdf37eabd",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_request_work.descriptor(uuid,text)",
+        "body_sha256": "52502fb7b73cd815a95595d10fce03bf61014a4087f581708faa9ca43985fc5a",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_requests.scope_allows(text,uuid,uuid,text)",
+        "body_sha256": "7b92df196cf113bf907bc14048c0ad0b2984e65a1177ba525173b85fcf27f734",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_requests.scope_allows(uuid,uuid,text)",
+        "body_sha256": "d70aad67b0480aefeedf059b52aea769128bd57d86ad82f4ea1c76b7024d7c90",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      }
+    ],
+    "pendingJobs": 139,
+    "confirmedJobs": 11,
+    "unexpiredJobLeases": 0,
+    "pendingSources": {
+      "sg2.provider.macrobond_api": 136,
+      "srm.supplier.source-request": 3
+    },
+    "longRunningQueriesOver5Minutes": 0,
+    "nonAcceptedPhaseEffects": 0,
+    "backgroundRetentionOperator": "NONE_ACCEPTED",
+    "pgCronInstalled": false,
+    "sourceExternalCallCounters": "NOT_VERIFIED_CONTROLLED_SOURCE_OWNER_NOT_ACCESSIBLE"
+  },
+  "applications": [
+    {
+      "application": "srm",
+      "status": "ACTIVE",
+      "roles": [
+        "srm_private_development_runtime"
+      ]
+    },
+    {
+      "application": "srm-jobs",
+      "status": "ACTIVE",
+      "roles": [
+        "srm_private_development_jobs"
+      ]
+    },
+    {
+      "application": "spendguru",
+      "status": "ACTIVE",
+      "roles": [
+        "sg2_private_development_dashboard",
+        "sg2_private_development_runtime"
+      ]
+    },
+    {
+      "application": "spendguru-benchmark-dispatch",
+      "status": "ACTIVE",
+      "roles": [
+        "sg2_benchmark_dispatch_development_runtime"
+      ]
+    },
+    {
+      "application": "spendguru-forecast-dispatch",
+      "status": "ACTIVE",
+      "roles": [
+        "sg2_forecast_dispatch_development_runtime"
+      ]
+    },
+    {
+      "application": "identity-runtime-development",
+      "status": "DISABLED",
+      "roles": [
+        "identity_b1_runtime"
+      ]
+    }
+  ],
+  "recovery": {
+    "verdict": "WAITING_OWNER",
+    "rehearsal": "NOT_PERFORMED",
+    "existingBranchId": "br-square-field-b9vzels8",
+    "existingBranchName": "identity-b1-i-restore-rehearsal-20261021",
+    "existingSnapshotId": "snap-noisy-art-b9uwq5rf",
+    "existingSnapshotCreatedAt": "2026-10-21T19:34:40Z",
+    "existingSnapshotExpiresAt": "2026-10-22T19:34:39Z",
+    "existingSnapshotCoverage": "B1_PREINSTALL_NOT_ACCEPTED_FOR_CURRENT_INSTALLED_STATE",
+    "restoredBranchCurrentTaskCoverage": "NOT_ACCEPTED",
+    "newResourceCreated": false,
+    "proposedSnapshotPrefix": "srm-supplier-locations-task02-r-preinstall-",
+    "proposedRestoreBranchPrefix": "srm-supplier-locations-task02-r-restore-",
+    "proposedSnapshotRetentionDays": 7,
+    "restoreFinalizeAllowed": false,
+    "pointInTimeDatabaseRollbackAllowed": false,
+    "fullDatabaseRestoreRequiresSeparateIncidentDecision": true
+  },
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "environmentId": "evm-dapbd70ae00c73cgrup0",
+    "srm": {
+      "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+      "deployId": "dep-dbbnb22fngtc73bn0i90",
+      "sourceSha": "260ade12608faaea27376c1c976db392f046f267",
+      "status": "live",
+      "autoDeploy": false,
+      "health": "PASS",
+      "configurationFingerprint": "d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5",
+      "configurationFingerprintScope": "CURRENT_SERVICE_ENVIRONMENT_VALUES_NOT_PROOF_OF_HISTORICAL_DEPLOY_CONFIGURATION",
+      "locationFeatureFlag": "ABSENT_DEFAULT_FALSE",
+      "locationConfigurationVersion": null,
+      "artifactDigest": null,
+      "retainedArtifactAvailability": "NOT_VERIFIED",
+      "lkgVerified": false,
+      "readOnlySsh": "DENIED_PUBLICKEY"
+    },
+    "maps": {
+      "serviceId": "srv-dbat5ulg1s2s73defcp0",
+      "deployId": "dep-dbati9rrjlhs73akpsj0",
+      "sourceSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+      "status": "live",
+      "autoDeploy": false,
+      "health": "PASS",
+      "publicConfigurationFingerprint": "b158ce539500f912cbe215b28526a3a699f434fa29abb44e46a5922aa4d81e56",
+      "serviceEnvironmentFingerprint": "8b843de82c8c56d0fa02702e42746906e99e329392ca8da84048867a65f66cf3",
+      "secretFile": "maps-development.env",
+      "secretFileFingerprint": "NOT_VERIFIED",
+      "buildManifestDigest": "357464b3948e1141e73f8877f4bc42047d2fc7fcc1299e913d8ad98c6fabb984",
+      "publicFilesVerified": 13,
+      "publicFilesMatchCurrentMain": true,
+      "privateRuntimeBytesVerified": false,
+      "deploymentRequiredForZeroBudgetCore": false,
+      "newLocalBuildDigest": "d036e19eb963f956d866add4296fcd0d318402be394547a62344cca017ef2bb1",
+      "googleBrowserSdkExecuted": false
+    },
+    "sharedDevelopmentServiceIds": [
+      "srv-dapa3ujm8hqs73a9t2og",
+      "srv-dapa3tid0e5s73f8bc5g",
+      "srv-dapa3vlg1s2s739vp7dg",
+      "srv-dapa40ad0e5s73f8bjm0"
+    ],
+    "configurationMutated": false,
+    "deploymentsTriggered": 0
+  },
+  "concurrency": {
+    "threadId": "01a15aed-8d94-7fe0-9cff-c54f72b5f8a8",
+    "title": "Flow, rejestracja i logowanie czatem",
+    "task": "TASK B1-I Stage 2 - Ordinary Runtime & Functional Acceptance",
+    "sharedReceiver": true,
+    "coordinationStatus": "OWNER_SERIALISATION_REQUIRED",
+    "messageSent": false
+  },
+  "tests": {
+    "locations": {
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "OWN_LOCAL_POSTGRES_SYNTHETIC"
+    },
+    "maps": {
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sourceAcceptance": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "mapsBuild": "PASS",
+    "localPostgresStopped": true,
+    "liveAuthenticatedUat": "NOT_TESTED",
+    "sourceCiReverified": true,
+    "initialMapsSandboxSocketAttempt": "EPERM_RETRIED_SUCCESSFULLY_WITH_LOCAL_SOCKET_PERMISSION",
+    "invalidWorkingDirectoryInvocation": "CORRECTED_NO_SOURCE_OR_CLOUD_EFFECT"
+  },
+  "effects": {
+    "cloudProductWrites": 0,
+    "newCloudResources": 0,
+    "googleApiChanges": 0,
+    "googleRequestsFromThisExecution": 0,
+    "paidGeocodingBudget": 0,
+    "sharedApplicationsChanged": false,
+    "stagingChanged": false,
+    "productionChanged": false
+  },
+  "approvalPackage": {
+    "version": "srm-locations-task02-r-owner-gate-v1",
+    "accepted": false,
+    "windowProposed": "OWNER_SELECTS_SINGLE_EXCLUSIVE_60_MINUTE_DEVELOPMENT_WINDOW_AFTER_B1_I_STAGE2",
+    "windowTimeoutMinutes": 60,
+    "sqlPlan": "ONE_OUTER_TRANSACTION_UNCHANGED_SQL019_THEN_SRM_SQL013_WITH_EXACT_IMMUTABLE_RECEIPTS",
+    "applicationRuntimeRole": "srm_private_development_runtime",
+    "paidOrServiceGeocodingGrants": [],
+    "humanSql013ExecuteGrants": [
+      "srm.location_installation_descriptor()",
+      "srm.location_metadata(uuid,uuid,text,uuid)",
+      "srm.location_page(uuid,uuid,text,integer,integer)",
+      "srm.location_manual_write(uuid,uuid,uuid,text,bigint,uuid,text,text,text)",
+      "srm.location_sync_target(uuid,uuid,text)",
+      "srm.location_sync_write(uuid,uuid,bigint,uuid,text,text,jsonb)",
+      "srm.location_expire(uuid,uuid)",
+      "srm.location_sources_admitted(uuid,uuid,jsonb)",
+      "srm.location_work_catalog_row(text,text)"
+    ],
+    "humanSql019ExecuteGrants": [
+      "profitia_requests.location_runtime_descriptor()",
+      "profitia_requests.location_permission(text,uuid,uuid,text,text)",
+      "profitia_requests.location_evidence_current(jsonb,text,uuid,uuid)",
+      "profitia_requests.bind_location_scope(text,uuid,uuid,text,text,jsonb)"
+    ],
+    "permissionOperations": [
+      "supplier.location.read",
+      "supplier.location.write",
+      "supplier.location.sync"
+    ],
+    "permissionFeature": "supplier_report",
+    "permissionScope": "ONLY_OWNER_APPROVED_CURRENT_E1_ORGANISATION_AND_ACCOUNTS_NO_WILDCARD_OR_MIGRATION_OF_IDENTITIES",
+    "proposedRequestCountPolicy": {
+      "operations": [
+        "supplier.location.write",
+        "supplier.location.sync"
+      ],
+      "capacityPerOperationPerOrganisation": 100,
+      "windowHours": 24,
+      "paidAllowance": 0
+    },
+    "tableDmlGrants": [],
+    "ownerMaintenancePort": "srm.location_expire_controlled()",
+    "ordinaryRuntimeMayExecuteMaintenance": false
+  },
+  "ownerActions": [
+    "After serialising the B1-I Stage2 operation, create and identify a fresh current-state Neon snapshot and a dedicated multi-step restore branch; do not finalize or migrate primary connections. Seven-day retention proposed.",
+    "Enable existing read-only running-artifact/configuration verification or supply independently verifiable Render LKG digest, exact retained deploy artifact, historical configuration version and rollback availability. Do not generate credentials in chat.",
+    "Approve one exclusive Development maintenance window covering SRM/SG2 applications, consumers, bindings and controlled SQL019/SQL013 installation; preserve all pending work and verify Source effects through its authorised owner before quiescence.",
+    "Approve bounded location EXECUTE/operation/count-policy grants for named lawful E1 users and organisations, using the exact reviewed parameter set before execution.",
+    "Identify an existing approved retention execution and its responsible owner, or keep KYS location persistence/projection blocked. No competing scheduler or owner grants to runtime.",
+    "Provide lawful authenticated UAT access for two organisation members plus a separate organisation through the existing identity process; no credential sharing, impersonation or synthetic identities in the shared cloud receiver."
+  ],
+  "verdicts": {
+    "TASK_02_R_STATUS": "PARTIAL",
+    "PROJECT_PROFILE": "SRM",
+    "TARGET_ENVIRONMENT": "development",
+    "SOURCE_BASELINE": "VERIFIED",
+    "RECOVERY_GATE": "WAITING_OWNER",
+    "RESTORE_REHEARSAL": "NOT_PERFORMED",
+    "LKG_VERIFIED": "NO",
+    "MAINTENANCE_WINDOW": "WAITING_OWNER",
+    "SHARED_E1_APPLICATIONS_RESTORED": "NOT_CHANGED",
+    "SQL019_INSTALLATION": "NOT_INSTALLED",
+    "SQL013_INSTALLATION": "NOT_INSTALLED",
+    "SQL_RECEIPT_READBACK": "NOT_APPLICABLE",
+    "ORDINARY_ROLE_SECURITY": "PARTIAL",
+    "E1_LOCATION_READ": "BLOCKED",
+    "E1_LOCATION_WRITE": "BLOCKED",
+    "E1_LOCATION_SYNC": "BLOCKED",
+    "KYS_RETENTION_OPERATOR": "PENDING",
+    "GOOGLE_CACHE_MAINTENANCE": "NOT_REQUIRED_FOR_ZERO_BUDGET",
+    "LOCATION_PERSISTENCE_LIVE": "NOT_TESTED",
+    "MANUAL_LOCATION_CRUD_LIVE": "NOT_TESTED",
+    "ORGANISATION_SHARING_LIVE": "NOT_TESTED",
+    "CROSS_ORGANISATION_ISOLATION": "NOT_TESTED",
+    "MGBI_HEADQUARTERS_LIVE": "NOT_TESTED",
+    "MGBI_BRANCHES": "NOT_CONFIRMED",
+    "KYS_RELATED_ENTITIES_LIVE": "NOT_TESTED",
+    "THREE_GROUP_UI_LIVE": "NOT_TESTED",
+    "MAPS_EMBED_LIVE": "NOT_TESTED",
+    "AUTHENTICATED_BROWSER_UAT": "NOT_TESTED",
+    "PAID_GEOCODING_ENABLED": "NO",
+    "PAID_GEOCODING_BUDGET": "ZERO",
+    "UNAPPROVED_PAID_EFFECTS": "NONE",
+    "SG2_SHARED_E1_REGRESSION": "PARTIAL",
+    "SRM_REGRESSION": "PARTIAL",
+    "MAPS_REGRESSION": "PASS",
+    "SRM_DEPLOYMENT": "PENDING",
+    "MAPS_DEPLOYMENT": "NOT_REQUIRED",
+    "DEPLOYED_SRM_SHA": "260ade12608faaea27376c1c976db392f046f267",
+    "DEPLOYED_MAPS_SHA": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+    "SOURCE_MAIN_SHA": "fd6b630afa37fb6f055b3291332d380b0d19e005",
+    "CONFIGURATION_VERSION": "NONE",
+    "STAGING_CHANGED": "NO",
+    "PRODUCTION_CHANGED": "NO",
+    "OWNER_ACTION_REQUIRED": "YES",
+    "TASK_03_MAGICPATH_READY": "CONDITIONAL",
+    "PMOS_CLOSEOUT": "PARTIAL",
+    "PHR_PUBLICATION": "PENDING",
+    "MEMOROS": "DISABLED_BY_PROFILE"
+  }
+}
+
