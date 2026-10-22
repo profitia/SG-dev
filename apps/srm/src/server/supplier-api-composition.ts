@@ -1,7 +1,7 @@
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {createHash} from 'node:crypto'
 import type {PoolClient} from 'pg'
-import {OPERATION_CONTRACT,OperationDenied} from '@profitia/platform-contracts/operation-context'
+import {OPERATION_CONTRACT,OperationDenied,isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {createDelegatedJobStore} from '@profitia/platform-contracts/delegated-job'
 import {createSrmSupplierRequestOperationHost} from './supplier-request-host'
 import {createSrmNativeCompanyLookup} from './supplier-native-company'
@@ -113,10 +113,18 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
   known:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>known.read(input.request,input.organisationId,nip),
   async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:()=>Promise<void>){
    if(input.command.nip!==identity.identity.nip)return refuse()
-   await recheck()
-   const selected=await admitCompany(input,'COMPANY:KRS-FINANCIAL:'+identity.selectedKrs+':'+identity.evidenceRef)
-   input.request.signal.throwIfAborted()
-   return company.prepareFinancial(selected,identity,recheck)
+   let stage='IDENTITY_RECHECK'
+   try{
+    await recheck()
+    stage='HUMAN_REQUEST_ADMISSION'
+    const selected=await admitCompany(input,'COMPANY:KRS-FINANCIAL:'+identity.selectedKrs+':'+identity.evidenceRef)
+    input.request.signal.throwIfAborted()
+    stage='NATIVE_FINANCIAL_WORK'
+    return await company.prepareFinancial(selected,identity,recheck)
+   }catch(error){
+    console.error('KRS Financial preparation failed',{stage,reason:isOperationDenied(error)?error.reasonCode:'INTERNAL_FAILURE'})
+    throw error
+   }
   },
   async company(input:SupplierHttpInput){
    const selected=await admitCompany(input,'COMPANY:report')

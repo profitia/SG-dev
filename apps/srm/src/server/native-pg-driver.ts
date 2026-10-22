@@ -3,6 +3,26 @@ import type { PoolClient } from "pg";
 import type { createPrivateOperationHost } from "@profitia/platform-contracts/private-operation-host";
 type NativeDriver = Pick<Parameters<typeof createPrivateOperationHost<PoolClient>>[0], "independentQuery" | "transact">;
 
+/** Diagnostics never include SQL text, parameters, credentials or error messages.
+ * The original result and error still reach the unchanged E1 verifier. */
+async function queryNative(target: pg.Pool | PoolClient, sql: string, values: readonly unknown[] = []) {
+  const kind = sql === 'SELECT profitia_services.runtime_descriptor() AS descriptor' ? 'SERVICE_DESCRIPTOR'
+    : sql.includes('profitia_jobs.lock_job(') ? 'DELEGATED_JOB_LOCK'
+    : sql.includes('.append_audit(') ? 'AUDIT_APPEND' : 'NATIVE_SQL';
+  try {
+    const result = await target.query(sql, [...values]);
+    if (kind === 'SERVICE_DESCRIPTOR') {
+      const remainingMs = Date.parse(result.rows[0]?.descriptor?.expiresAt) - Date.now();
+      if (remainingMs > 30000) console.warn('E1 service proof starts outside local clock window', { remainingMs });
+    }
+    return { rows: result.rows };
+  } catch (error) {
+    const code = (error as { code?: unknown })?.code;
+    console.error('Native SQL query failed', { kind, code: typeof code === 'string' && /^[A-Z0-9]{5}$/.test(code) ? code : 'UNAVAILABLE' });
+    throw error;
+  }
+}
+
 /** A late connection cannot escape after the caller's acquisition deadline. */
 function acquire(pool: pg.Pool, maxWaitMs: number): Promise<PoolClient> {
   return new Promise((resolve, reject) => {
@@ -23,7 +43,7 @@ function acquire(pool: pg.Pool, maxWaitMs: number): Promise<PoolClient> {
 export function createSrmNativePgDriver(pool: pg.Pool, auditPool: pg.Pool): NativeDriver {
   if (!pool || !auditPool || pool === auditPool) throw new TypeError("Distinct native transaction and independent audit pools required");
   return {
-    independentQuery: async (sql, values = []) => ({ rows: (await auditPool.query(sql, values)).rows }),
+    independentQuery: async (sql, values = []) => queryNative(auditPool, sql, values),
     transact: async (work, limits) => {
       const client = await acquire(pool, limits.maxWaitMs);
       let expired = false, released = false, discard = false;
@@ -40,7 +60,7 @@ export function createSrmNativePgDriver(pool: pg.Pool, auditPool: pg.Pool): Nati
       });
       const transaction = (async () => {
         await client.query("BEGIN");
-        const result = await work({ transaction: client, query: async (sql, values = []) => ({ rows: (await client.query(sql, values)).rows }) });
+        const result = await work({ transaction: client, query: async (sql, values = []) => queryNative(client, sql, values) });
         if (expired) throw new Error("Expired private transaction");
         await client.query("COMMIT");
         return result;
