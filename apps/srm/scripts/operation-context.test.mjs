@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
+import { posix } from 'node:path'
 import test from 'node:test'
 import { OPERATION_CONTRACT, operationSourceDigest } from '@profitia/platform-contracts/operation-context'
 import { operationSourceDigest as sourceDigest } from '../../../packages/platform-contracts/src/operation-context.mjs'
@@ -54,7 +55,18 @@ test('TASK02 has a separate current source receipt and keeps live activation clo
  assert.equal(current.rootDigest,await operationSourceDigest());assert.equal(current.environment,'development')
  assert.equal(current.defaultEnabled,false);assert.equal(current.sql019Installed,false);assert.equal(current.productDeploymentPerformed,false)
  assert.equal(current.paidGeocodingAllowance,0);assert.equal(current.liveGeocoding,'WAITING_OWNER')
- for(const[path,digest]of Object.entries(current.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(current.sourceDigests)){
+  const amendment=receipt.krsNameSearchSourceCompatibility,changed=amendment?.changedFiles[path];let expected=digest;
+  if(changed){
+   assert.equal(amendment.previousApplicationAuthority,'418a2ef0f30d840ce25ca645f5ef047e35d02192');assert.equal(amendment.status,'SOURCE_CANDIDATE_ONLY');
+   assert.equal(amendment.productDeploymentPerformed,false);assert.equal(amendment.platformSdkVersion,'1.24.0');assert.equal(changed.previousSha256,digest,path);
+   const preceding=JSON.parse(execFileSync('git',['show',amendment.previousApplicationAuthority+':apps/srm/operation-integration.json'],{encoding:'utf8'}));
+   for(const[key,value]of Object.entries(preceding))assert.deepEqual(receipt[key],value,key);
+   assert.equal(createHash('sha256').update(execFileSync('git',['show',amendment.previousApplicationAuthority+':'+posix.normalize('apps/srm/'+path)])).digest('hex'),digest,path);
+   expected=changed.sourceSha256;
+  }
+  assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),expected,path);
+ }
  const before=JSON.parse(execFileSync('git',['show',current.previousAuthority+':apps/srm/operation-integration.json'],{encoding:'utf8'}))
  for(const[key,value]of Object.entries(before))assert.deepEqual(receipt[key],value,key)
 })

@@ -2527,6 +2527,10 @@
         "previousSha256": "f118de89c1eac2c09f5289c83e2002683b97189a54dbfa71be9f4999373e3325",
         "sourceSha256": "92f6257b1207e34582a475dc9df622aff083c323416558856d2d17338479a6e9"
       },
+      "scripts/operation-context.test.mjs": {
+        "previousSha256": "0e2c6fb25ba195db94eadc1c0924951804b4cf293a6243fe02e9619e664b78ee",
+        "sourceSha256": "3703aa822b749cb6073ef8635abf483883aa8a6b9dc1edcea17390b8a0a832ff"
+      },
       "../../packages/srm-xray/src/contracts.ts": {
         "previousSha256": "d41eaf50a6ad1356b4da02f4911d763aacc37527b06b204254d5943b7c73e6d5",
         "sourceSha256": "a4f332e98a699dc8ccd3f8e70c928e72dd0034952d1cf85cc8f7d121fb145a07"
