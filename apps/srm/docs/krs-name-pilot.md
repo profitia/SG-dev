@@ -31,3 +31,13 @@ Focused server/controller tests validate synthetic composition, no Financial dur
 The app build hook verifies the immutable accepted KRS1.0 source digest before compiling its public DTO into the consumer's own install-links dependency. It neither modifies producer source nor requires a private registry token. Existing Financial/NIP/server/locations suites and remote CI must pass at the final PR head. Current PMOS/PHR and CI identifiers are in the consolidated execution handoff; older source receipts are retained.
 
 No release was performed. Recovery for this source candidate is to retain the previous deployed source/configuration and keep name mode disabled; no installed database rollback was exercised or claimed. A real activation must first retain and test the actual compatible artifact/configuration/schema recovery plan.
+
+## Live pilot checkpoint after source acceptance (2026-10-22)
+
+The preceding sections retain the historical PR617 source-only state. It is superseded for the isolated pilot by accepted SRM PR624, KRS PR620/623/625/626/627 and explicit owner approvals. Current SDK1.25.0 and runtime1.1.2 consume existing AM21; no proposed Registry operation or SDK1.26 is needed. The shared SRM/Maps deployment is unchanged.
+
+The Free service srv-dbd5hlcipgvc73d98ukg and separate public database krs_registry_pilot are registered. Source/catalog SQL001/002/008/009/012 installed atomically. Ordinary public roles cannot connect to Architecture Labs. Three separate ordinary technical private roles are installed with24h bindings, original HUMAN permissions and existing source budgets. Their role-local MGBI ceiling is1; no commercial budget increase. Temporary administrative SET ROLE was revoked and independently checked.
+
+Real native acquisition/publication accepted ORLEN SA, KRS0000028860, NIP7740001454, PLOCK. Search orl returns this real catalog candidate. Two official runtime reads were admitted; one exposed a null-prototype hashing integration defect, fixed in1.1.2. Native Source/receipt/counter history is retained. No MGBI call has occurred at this checkpoint.
+
+The environment flag remains off until exact final accepted deployment SHA is rebound to the installed roles. Live browser, Financial reconciliation, NIP regression and exercised rollback remain pending; source/installation acceptance is not their proof. Public topology/receipt files contain no credentials. A retained closed bootstrap deployment exists; never claim it is a functional business LKG. Recovery first stops only the pilot without database deletion or counter resets.
