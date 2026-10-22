@@ -1,0 +1,330 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022",
+  "executionStrategy": "FAST_TRACK_LIMITED_UAT",
+  "projectKey": "SRM",
+  "environment": "development",
+  "executionEnvironment": "local",
+  "authorityMain": "418a2ef0f30d840ce25ca645f5ef047e35d02192",
+  "registrationId": "cmvj0baur0000t43u7k05vcpm",
+  "registrationState": "RUNNING",
+  "finalParentPhr": "NOT_PUBLISHED_TASK_RUNNING",
+  "magicpath": {
+    "projectId": "460628300646219776",
+    "componentId": "460628347660177408",
+    "acceptedRevisionId": "464039002702499840",
+    "canonicalId": "MAP-01",
+    "mutated": false
+  },
+  "releaseTrain": [
+    {
+      "pr": 604,
+      "owner": "ARCHITECTURE",
+      "sha": "f35c82b6d9d39720c04b4df2c6f0042f5379982a"
+    },
+    {
+      "pr": 607,
+      "owner": "SG2",
+      "sha": "8c5d07c85eb2ae8a9041dff56d2ffcd0505f0d48"
+    },
+    {
+      "pr": 608,
+      "owner": "SRM/Maps",
+      "sha": "e1901a4e0bcafe9392b9336c8cc140456ed4cede"
+    },
+    {
+      "pr": 611,
+      "owner": "ARCHITECTURE/Identity",
+      "sha": "30c07f0684d5a5dce707e8dcb38b8ba63d6db03b"
+    },
+    {
+      "pr": 613,
+      "owner": "SRM",
+      "sha": "926ca94b691a799100c0b54d7322d1cb872faecc"
+    },
+    {
+      "pr": 618,
+      "owner": "ARCHITECTURE/KRS CI",
+      "sha": "2f8afef692f26e69fba91a028f1f84400badad7e"
+    }
+  ],
+  "scope": {
+    "included": [
+      "Accepted MGBI headquarters",
+      "Organisation-owned manual CREATE with E1 parent grant",
+      "Exact-child UPDATE/DEACTIVATE with CAS",
+      "Existing real Maps embed for verified coordinates"
+    ],
+    "excluded": [
+      "KYS read/write/sync from limited location capability",
+      "Paid Google geocoding",
+      "KRS Registry Primary change",
+      "Identity/Clerk provisioning or lifecycle changes",
+      "Staging",
+      "Production"
+    ]
+  },
+  "tests": {
+    "targetedSource": {
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0
+    },
+    "ordinaryRolePostgresql16": {
+      "passed": 43,
+      "failed": 0,
+      "skipped": 0,
+      "newCase": "Limited UAT blocks RELATED_ENTITIES/ALL reads and never calls available KYS reader during actual MGBI sync",
+      "scope": "LOCAL_DISPOSABLE_NOT_NEON_NOT_LIVE_UAT"
+    },
+    "governance": {
+      "passed": 39,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "PASS",
+    "build": "PASS",
+    "browser": {
+      "scope": "ISOLATED_REAL_COMPONENT_SYNTHETIC_TRANSPORT_NOT_LIVE_UAT",
+      "nativeModal": true,
+      "escape": true,
+      "closeX": true,
+      "focusRestoration": true,
+      "tabCycle": true,
+      "backgroundInertNativeModal": true,
+      "noFakePin": true,
+      "addressReadable": true,
+      "empty": true,
+      "missingAddress": true,
+      "permissionDenied": true,
+      "narrowMetrics": {
+        "gap": "16px",
+        "scrollWidth": 390,
+        "targetHeight": "44px",
+        "targetWidth": "44px",
+        "viewport": 390
+      },
+      "desktopMetrics": {
+        "gap": "24px",
+        "targetWidth": "44px",
+        "viewport": 1280
+      }
+    },
+    "liveUat": "NOT_EXECUTED_OWNER_GO_PENDING",
+    "serverRegression": {
+      "total": 610,
+      "passed": 603,
+      "failed": 0,
+      "skipped": 7,
+      "skipReason": "Existing optional isolated-SQL tests without their separate fixture;43/43 actual location suite ran separately"
+    },
+    "stylesheetRegression": {
+      "initialCi": "39811445532 FAILED on forbidden globals.css @import",
+      "correction": "Use existing Next layout CSS entry; preserve original prohibition",
+      "localServerTestsAfterCorrection": "603PASS0FAIL7explicitOptionalSkips"
+    }
+  },
+  "migrations": {
+    "sql019": {
+      "digest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "installed": false
+    },
+    "sql020": {
+      "digest": "90ac1d28103f689edc8d11979210ce83cd6218e9f3549f37150fd307d165e9cc",
+      "installed": false
+    },
+    "srm013": {
+      "digest": "b3f05a4c56f32bd32c0c59dcc8b60c486d4d4813823665301ce08318f793704b",
+      "installed": false
+    },
+    "srm014": {
+      "digest": "2a22a1962ab5f9a9cd8249c5816ac71b7916338d5c4ff6cb1f6a30d038381ef8",
+      "installed": false
+    },
+    "dependencyOrder": [
+      "SQL019 + existing pgcrypto HMAC",
+      "SQL020",
+      "SRM013 (also valid immediately after019)",
+      "SRM014 after020 AND013"
+    ],
+    "immutability": "producer001-019/SRM001-013 unchanged"
+  },
+  "providerReadback": {
+    "neon": {
+      "projectId": "spring-bread-28217539",
+      "branchId": "br-sparkling-term-b99l107x",
+      "database": "platform_private",
+      "role": "srm_private_development_runtime",
+      "readOnly": true,
+      "allFourInstallationObjectsAbsent": true
+    },
+    "recovery": {
+      "snapshotId": "snap-bold-bird-b99s4c9q",
+      "createdAt": "2026-10-22T05:23:04Z",
+      "snapshotSourceBranch": "br-sparkling-term-b99l107x",
+      "branchId": "br-green-glitter-b9weet99",
+      "branchState": "ready",
+      "restoreStatus": "restored",
+      "restoredFrom": "snap-bold-bird-b99s4c9q",
+      "recoveryPoint": "2026-10-22T05:22:36Z",
+      "lsn": "0/3B8E828",
+      "default": false,
+      "expiresAt": "NOT_RETURNED_BY_API",
+      "integrityCoverage": "82/105 historical accepted;23 protected pending; NOT re-executed",
+      "r2OwnerGate": "REQUIRED_NOT_WAIVED",
+      "finalizeRestore": false
+    },
+    "render": {
+      "srm": {
+        "deployId": "dep-dbbnb22fngtc73bn0i90",
+        "sourceSha": "260ade12608faaea27376c1c976db392f046f267",
+        "status": "live"
+      },
+      "maps": {
+        "deployId": "dep-dbati9rrjlhs73akpsj0",
+        "sourceSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+        "status": "live"
+      },
+      "changed": false
+    },
+    "lkg": {
+      "previousMeasured": {
+        "srm": {
+          "deployId": "dep-dbbnb22fngtc73bn0i90",
+          "sourceSha": "260ade12608faaea27376c1c976db392f046f267",
+          "artifactDigest": "f4216032035055e8ab8ad3e387882cf2fb02a82d8daca6bc4a58e57e52f502cf",
+          "configurationFingerprint": "d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5",
+          "runtimeInventory": "VERIFIED"
+        },
+        "maps": {
+          "deployId": "dep-dbati9rrjlhs73akpsj0",
+          "sourceSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+          "buildManifestDigest": "357464b3948e1141e73f8877f4bc42047d2fc7fcc1299e913d8ad98c6fabb984",
+          "publicFilesVerified": 13,
+          "deploymentChanged": false
+        },
+        "database": {
+          "projectId": "spring-bread-28217539",
+          "branchId": "br-sparkling-term-b99l107x",
+          "database": "platform_private",
+          "schemaState": "SQL017_INSTALLED_SQL019_SQL013_ABSENT",
+          "recovery": "WAITING_OWNER"
+        },
+        "e1Bindings": {
+          "revision": 109,
+          "applicationStates": [
+            {
+              "application": "srm",
+              "status": "ACTIVE",
+              "roles": [
+                "srm_private_development_runtime"
+              ]
+            },
+            {
+              "application": "srm-jobs",
+              "status": "ACTIVE",
+              "roles": [
+                "srm_private_development_jobs"
+              ]
+            },
+            {
+              "application": "spendguru",
+              "status": "ACTIVE",
+              "roles": [
+                "sg2_private_development_dashboard",
+                "sg2_private_development_runtime"
+              ]
+            },
+            {
+              "application": "spendguru-benchmark-dispatch",
+              "status": "ACTIVE",
+              "roles": [
+                "sg2_benchmark_dispatch_development_runtime"
+              ]
+            },
+            {
+              "application": "spendguru-forecast-dispatch",
+              "status": "ACTIVE",
+              "roles": [
+                "sg2_forecast_dispatch_development_runtime"
+              ]
+            },
+            {
+              "application": "identity-runtime-development",
+              "status": "DISABLED",
+              "roles": [
+                "identity_b1_runtime"
+              ]
+            }
+          ],
+          "newInstallationAuthority": false
+        }
+      },
+      "acceptance": "PARTIAL: unchanged deploy identities are fresh; prior artifact/config measurements retained as historical, not fresh rollback success; refresh artifact/config and complete R2 before release"
+    }
+  },
+  "decisions": {
+    "sourceGo": "PENDING",
+    "installationGo": "PENDING",
+    "activationGo": "PENDING",
+    "paidGeocodingBudget": 0,
+    "featureActivated": false
+  },
+  "identityUat": {
+    "readiness": "PENDING",
+    "route": "Existing official Clerk/B1 route preferred; no requirement for all future B2 capabilities",
+    "cohort": "A1/A2 same organisation;B1 separate organisation; no genuine cohort IDs accepted yet",
+    "blocker": "Accepted B1 admission/lifecycle/operator authority and genuine cohort remain pending. PR614 is source only, not live onboarding proof."
+  },
+  "concurrentChanges": {
+    "pr614": "Identity self-service proposal; no prerequisite to complete all B2; no live route inferred",
+    "pr616": "New KRS E1 producer proposal, deferred from this release",
+    "pr617": "KRS SRM proposal overlaps operation-integration.json, index.ts and tests; not included; no accepted shared maintenance window inferred"
+  },
+  "approvalPackage": {
+    "id": "srm-task02-r-fasttrack-owner-gate-v1",
+    "source": [
+      "Accept pending coordinated atomic-publication procedure and exact input owner receipts",
+      "After complete final candidate/required CI, approve exact SOURCE GO; never merge failing intermediates"
+    ],
+    "recovery": [
+      "Original nine scope IDs and SQL digests from PR601 R2 v2 remain exact owner/operator approval request; no protected SQL executed",
+      "Confirm snapshot expiry/recovery objective and prove retained artifact/config/current migration rollback suitability"
+    ],
+    "activation": [
+      "Provide/approve lawful finite A1/A2/B1 cohort through existing official identity route",
+      "Exact parent CREATE/READ/SYNC and exact-child UPDATE/DEACTIVATE; no wildcard/default automatic grant",
+      "Approve limited HQ/manual scope,100WRITE/100SYNC perorganisation perrolling24h; paid geocodingZERO",
+      "Secure32byte P1 attestation-key delivery through existing protected operator/storage, never in report/chat"
+    ],
+    "installation": [
+      "Only after previous mandatory gates: explicit Development window<=60min; exact SQL019/020/SRM013/014, preexisting HMAC, recorded app/binding pause/resume",
+      "Recheck external work in flight, competing owner windows, fresh LKG/config/role/schema and STOP on drift",
+      "Deploy only accepted SRM source, preserve compatible live Maps; activate flags only after role/key/policy/smoke verification"
+    ],
+    "abortRollback": [
+      "Any source/digest/config/endpoint drift, incompatible in-flight effect, failed recovery/role/audit/tenant test prevents or stops installation",
+      "Keep feature disabled; preserve paused-status journal; restore exact retained SRM artifact/config only after schema compatibility check",
+      "No automatic reverse data migration, Finalize Restore, endpoint migration or destructive restore"
+    ]
+  },
+  "deferredBacklog": [
+    "Full KYS retention/operator adoption and related entities",
+    "Paid geocoding",
+    "KRS Primary switch",
+    "Advanced map controls, filters and usage analytics",
+    "Non-critical styling/tooltip refinements after lawful UAT"
+  ],
+  "finalVerdict": "PARTIAL",
+  "sourceCandidate": {
+    "branch": "srm/task02-r-fasttrack-uat-20261022",
+    "pr": 619,
+    "exactShaAuthority": "Read current immutable PR HEAD; source is pending acceptance"
+  },
+  "architectureCloseout": {
+    "task": "ARCHITECTURE-TASK02-R-RELEASE-CI-CLOSURE-20261022",
+    "registrationId": "cmvjq16hs0000d5235zkrwydn",
+    "state": "CLOSEOUT_COMPLETE",
+    "phrCommit": "d570f3137822c14fcf25c97f258a3d3a59627346"
+  }
+}

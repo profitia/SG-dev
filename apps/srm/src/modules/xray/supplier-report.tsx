@@ -153,13 +153,13 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
   return <ReportContext.Provider value={context}><div ref={root} className="supplier-report">
     <section id="supplier-identity" className="report-identity" aria-labelledby="supplier-identity-title">
       <CanonElement as="div" canonId="SRM-C53" usage="supplier-report:02" className="report-identity-heading"><ReportWebIdentity key={`${supplier.entityType}:${supplierNip(supplier)}`} nip={supplierNip(supplier) ?? ""} entityType={supplier.entityType} name={name ?? "Dostawca"}><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
-        <p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}{primaryPkd?.mainPkd && <> · <span className="report-primary-pkd">PKD {primaryPkd.mainPkd}{primaryPkd.mainPkdDescription ? ` — ${primaryPkd.mainPkdDescription}` : ""}</span></>}</p></div></ReportWebIdentity>
+        <div className="srm-supplier-meta-row"><p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}{primaryPkd?.mainPkd && <> · <span className="report-primary-pkd">PKD {primaryPkd.mainPkd}{primaryPkd.mainPkdDescription ? ` — ${primaryPkd.mainPkdDescription}` : ""}</span></>}</p>{supplier.entityType==='COMPANY' && state.metadata?.locationSubject && state.metadata.preferenceScope && <SupplierLocations
+        key={state.metadata.preferenceScope+':'+state.metadata.locationSubject.supplierId} supplierId={state.metadata.locationSubject.supplierId} supplierName={name ?? "Dostawca"}
+        refreshKey={[supplier.card.general.retrievedAt,state.kys?.retrievedAt,state.metadata.kys.lastAttemptAt].join(':')} />}</div></div></ReportWebIdentity>
         {!scanner && availability.code === "AVAILABLE" && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
       </CanonElement>
       {primaryPkd?.registryHistory && primaryPkd.registryHistory.members.length>1 && <p className="report-metadata-note" data-company-continuity="true">Firma kontynuuje działalność po przekształceniu. Aktualny KRS: {primaryPkd.registryHistory.currentKrs}. Historia finansowa obejmuje potwierdzonych poprzedników, z oznaczeniem podmiotu składającego sprawozdanie.</p>}
-      {supplier.entityType==='COMPANY' && state.metadata?.locationSubject && state.metadata.preferenceScope && <SupplierLocations
-        key={state.metadata.preferenceScope+':'+state.metadata.locationSubject.supplierId} supplierId={state.metadata.locationSubject.supplierId}
-        refreshKey={[supplier.card.general.retrievedAt,state.kys?.retrievedAt,state.metadata.kys.lastAttemptAt].join(':')} />}
+
     </section>
     {!scanner && !availability.hideDetails && <ReportNavigation root={root} items={navigation} />}
     {scanner && <section id="report-finance" className="report-content-section report-scanner" aria-labelledby="scanner-title">{scanner}{availability.code === "AVAILABLE" && <FinancialLimitations state={state} onReadMetadata={onReadMetadata} />}</section>}
