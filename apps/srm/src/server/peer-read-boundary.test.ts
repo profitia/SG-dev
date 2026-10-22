@@ -48,6 +48,6 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
     assert.equal(hash(readFileSync(new URL(path, root))), digest, path)
     assert.equal(hash(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':packages/platform-contracts/' + path])), previous.publicWebTransportSourceCompatibility.sourceDigests[path])
   }
-  for (const [path, digest] of Object.entries({ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests, ...receipt.supplierLocationFullStackAdoption.sourceDigests })) assert.equal(hash(readFileSync(new URL('../../' + path, import.meta.url))), digest, path)
+  for (const [path, digest] of Object.entries({ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests, ...receipt.supplierLocationFullStackAdoption.sourceDigests, ...receipt.p1ReceiverSourceCompatibility.applicationSourceDigests })) assert.equal(hash(readFileSync(new URL('../../' + path, import.meta.url))), digest, path)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

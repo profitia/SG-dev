@@ -13,5 +13,16 @@
   "paidGeocodingBudget": 0,
   "mapsRuntimeOrigin": "https://profitia-maps-development-runtime.onrender.com",
   "geocodingActivation": "WAITING_OWNER",
-  "sharedGoogleCacheMaintenance": "REQUIRES_APPROVED_AT_MOST_24H_OPERATOR_INTERVAL"
+  "sharedGoogleCacheMaintenance": "REQUIRES_APPROVED_AT_MOST_24H_OPERATOR_INTERVAL",
+  "limitedUat": {
+    "sourceScope": "HEADQUARTERS_MANUAL",
+    "allowedGroups": [
+      "SUPPLIER_LOCATIONS",
+      "USER_LOCATIONS"
+    ],
+    "kysPersistence": false,
+    "kysSynchronisation": false,
+    "paidGeocodingBudget": 0,
+    "sourceActivationRequiresSeparateOwnerGo": true
+  }
 }

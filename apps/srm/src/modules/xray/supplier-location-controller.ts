@@ -21,7 +21,7 @@ export class SupplierLocationController{
      // Denied WRITE/SYNC does not imply denied READ. Withhold the old map
      // immediately, then let a fresh protected read decide current access.
      this.update({page:null})
-     await this.request({action:'READ',supplierId:this.supplierId,group:'ALL',offset:0,limit:1},undefined,controller.signal)
+     await this.request({action:'READ',supplierId:this.supplierId,group:'SUPPLIER_LOCATIONS',offset:0,limit:1},undefined,controller.signal)
     }else if([401,403].includes(r.status)){this.generation++;for(const request of this.pending)request.abort();this.keys.clear();this.update({page:null,blocked:true})}
     throw new LocationRequestError(r.status===409?'Lokalizacja zmieniła się. Odczytaj aktualny zapis przed kolejną zmianą.':r.status===429?'Limit zapisu został osiągnięty. Spróbuj później.':'Nie można teraz odczytać lub zapisać lokalizacji.')
    }
