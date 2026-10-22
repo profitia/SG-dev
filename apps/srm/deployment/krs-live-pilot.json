@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "taskId": "SRM-KRS-LIVE-DEVELOPMENT-PILOT-20261022",
-  "state": "PROPOSED_REQUIRES_RESOURCE_APPROVAL",
+  "state": "ACCEPTED_SOURCE_PENDING_INSTALLATION",
   "environment": "development",
   "render": {
     "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
@@ -9,7 +9,8 @@
     "plan": "free",
     "paidUpgradeAllowed": false,
     "autoDeploy": false,
-    "serviceId": null
+    "serviceId": "srv-dbd5hlcipgvc73d98ukg",
+    "url": "https://srm-krs-pilot-development.onrender.com"
   },
   "privateStore": {
     "projectId": "spring-bread-28217539",
@@ -24,8 +25,18 @@
     "databaseName": "krs_registry_pilot"
   },
   "cohort": "Only existing currently authorised HUMAN accounts; no identity manufacture or permission expansion",
-  "financial": {"provider": "MGBI", "existingBudgetOnly": true, "newBudgetAllowed": false, "generalCallsInNameMode": 0},
+  "financial": {
+    "provider": "MGBI",
+    "existingBudgetOnly": true,
+    "newBudgetAllowed": false,
+    "generalCallsInNameMode": 0
+  },
   "googleMapsChanges": false,
   "productionOrStagingAllowed": false,
-  "ownerApprovalRef": null
+  "ownerApprovalRef": "USER-20261022-KRS-ISOLATED-PILOT",
+  "runtimeRoles": {
+    "jobs": "srm_krs_pilot_jobs",
+    "providerSource": "srm_krs_pilot_source",
+    "corporateSource": "srm_krs_pilot_corporate"
+  }
 }

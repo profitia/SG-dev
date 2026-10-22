@@ -26,8 +26,11 @@
     "@clerk/backend": "3.25.0",
     "@clerk/localizations": "4.23.0",
     "@clerk/react": "6.17.8",
-    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
     "@profitia/krs-registry-contracts": "file:../../packages/krs-registry-contracts",
+    "@profitia/krs-registry-runtime": "file:../krs-registry-runtime",
+    "@profitia/maps-contracts": "file:../../packages/maps-contracts",
+    "@profitia/maps-embed": "file:../../packages/maps-embed",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
     "@profitia/srm-xray": "file:../../packages/srm-xray",
     "cheerio": "1.1.2",
     "exceljs": "^4.4.0",
@@ -37,17 +40,15 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "saxes": "5.0.1",
-    "sharp": "0.35.5",
-    "@profitia/maps-embed": "file:../../packages/maps-embed",
-    "@profitia/maps-contracts": "file:../../packages/maps-contracts"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
-    "playwright-core": "1.62.1",
     "@types/node": "^20",
     "@types/pdfkit": "0.17.6",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "playwright-core": "1.62.1",
     "tsx": "^4.23.15",
     "typescript": "^5"
   }

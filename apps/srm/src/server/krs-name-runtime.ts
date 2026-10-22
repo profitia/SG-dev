@@ -3,6 +3,7 @@ import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-l
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context';
 import {isSameOriginRequest} from './request-origin';
 import {createKrsNameSearch,type KrsNamePorts} from './krs-name-search';
+import {getSrmReportRuntime} from './private-runtime';
 import targets from '../../deployment/krs-name-pilot-targets.json';
 export type KrsNameHttpRuntime=Readonly<{api:ReturnType<typeof createKrsNameSearch>;available(request:Request):Promise<boolean>}>;
 export function createKrsNameHttpRuntime(ports:KrsNamePorts,available:KrsNameHttpRuntime['available']):KrsNameHttpRuntime{
@@ -10,23 +11,25 @@ export function createKrsNameHttpRuntime(ports:KrsNamePorts,available:KrsNameHtt
   return Object.freeze({api:createKrsNameSearch(ports),available});
 }
 /** No live binding was accepted. A flag alone cannot turn test ports into production authority. */
-export function getSrmKrsNameRuntime(env:Readonly<Record<string,string|undefined>>=process.env):KrsNameHttpRuntime|null{
+export function getSrmKrsNameRuntime(env:Readonly<Record<string,string|undefined>>=process.env):KrsNameHttpRuntime|null|Promise<KrsNameHttpRuntime>{
   const enabled=env.SRM_KRS_NAME_SEARCH_ENABLED??'false';
   if(enabled==='false')return null;
   if(enabled!=='true'||env.TARGET_ENVIRONMENT!=='development'||targets.activationState!=='ACCEPTED')throw Error('KRS_PILOT_BINDING_UNAVAILABLE');
-  throw Error('KRS_NATIVE_PRODUCER_CONSUMER_NOT_ACCEPTED');
+  const runtime=getSrmReportRuntime(env);
+  if(runtime.provider!=='clerk'||!runtime.krsName)throw Error('KRS_PILOT_BINDING_UNAVAILABLE');
+  return runtime.krsName;
 }
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'};
 const unavailable=(status:number)=>Response.json({error:'Wyszukiwanie po nazwie jest obecnie niedostępne.'},{status,headers});
 const closed=(v:unknown,key:string):v is Record<string,string>=>!!v&&Object.getPrototypeOf(v)===Object.prototype
   &&Object.keys(v).join(',')===key&&typeof (v as Record<string,unknown>)[key]==='string';
-export function createKrsNameHttpHandler(action:'status'|'search'|'verify'|'lookup',getRuntime:()=>KrsNameHttpRuntime|null=getSrmKrsNameRuntime){
+export function createKrsNameHttpHandler(action:'status'|'search'|'verify'|'lookup',getRuntime:()=>KrsNameHttpRuntime|null|Promise<KrsNameHttpRuntime>=getSrmKrsNameRuntime){
   return async(request:Request):Promise<Response>=>{
     if(request.method!==(action==='status'?'GET':'POST'))return unavailable(405);
     if(new URL(request.url).search)return unavailable(400);
     if(action!=='status'&&!isSameOriginRequest(request))return unavailable(403);
     try{
-      const runtime=getRuntime();
+      const runtime=await getRuntime();
       if(action==='status')return Response.json({enabled:runtime?await runtime.available(request):false},{headers});
       if(!runtime)return unavailable(503);
       if(!await runtime.available(request))return unavailable(403);

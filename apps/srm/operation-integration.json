@@ -2563,6 +2563,22 @@
       "scripts/operation-context.test.mjs": {
         "previousSha256": "3703aa822b749cb6073ef8635abf483883aa8a6b9dc1edcea17390b8a0a832ff",
         "sourceSha256": "13ad18778b2a57655ce65c4049ae24e771003ca65c8010a2a8ac7dbedf47b8b4"
+      },
+      "package.json": {
+        "previousSha256": "03bc760575a6cc3249c818fd6c7518e32da62215d1821c86a279246db54acbe8",
+        "sourceSha256": "8b87a8b14c3f939bbc86ac163dc5f64cf3ef613079d488d010f052522cc3b470"
+      },
+      "package-lock.json": {
+        "previousSha256": "8a9252b1c75de3bf3a3c2d533aecee1f4a99cb71904eef89c2a46b5053f8d0fa",
+        "sourceSha256": "2db8697ef180c9dcc85ee637441bcfdf1658891e54c0ffc3570fdd6a17866e49"
+      },
+      "src/server/private-runtime.ts": {
+        "previousSha256": "95c10fbc61981c7351075a6df4f4dd9cf9156a69a7d0836e82394c9835144783",
+        "sourceSha256": "c9220f14360b6f2d80b46e61a7cd4fe0365927636f11fdeb1bbaa6cbd33ad0ad"
+      },
+      "src/server/supplier-native-runtime.ts": {
+        "previousSha256": "fb06cf47fa70fdfa7957d4f25722c984a23e2e47eeb9688ecf5d916889312093",
+        "sourceSha256": "ebb6bff410e6da30bb528b8dfda8d72f97e55b177d187b197379af79fbb2c46d"
       }
     }
   }

@@ -1,3 +1,5 @@
+import {createSrmKrsNativeRuntime,srmKrsPilotTarget,krsPilotDatabaseUrl} from './krs-native-runtime'
+import type {KrsNameHttpRuntime} from './krs-name-runtime'
 import { createHash } from 'node:crypto'
 import {createSupplierLocationRuntime,type SupplierLocationRuntime} from './supplier-locations'
 import locationTargets from '../../deployment/supplier-location-targets.json'
@@ -24,6 +26,7 @@ export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<PoolClient>; defaultOrganisationId: string
   supplierRequest?: Readonly<{ executor: OperationExecutor<PoolClient> }>
   supplierApi?: SrmSupplierApi
+  krsName?:Promise<KrsNameHttpRuntime>
   locations?: SupplierLocationRuntime
 }>
 export type PrivateConfiguration = Readonly<{
@@ -44,7 +47,8 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
     return Object.freeze({ provider: 'legacy_demo' })
   }
   if (identity.application.environment !== 'development') unavailable()
-  const target = targets.environments.development
+  const pilot=srmKrsPilotTarget(env)
+  const target = {...targets.environments.development,...(pilot?{serviceId:pilot.render.serviceId!}:{})}
   if (env.PROFITIA_OPERATION_CONFIGURATION_VERSION !== targets.configurationVersion
     || env.RENDER_SERVICE_ID !== target.serviceId || !/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT ?? '')
     || (env.APP_ENV !== undefined && env.APP_ENV !== identity.application.environment)
@@ -174,7 +178,10 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   const native=readSrmNativeSupplierConfiguration(config,env)
   const locationEnabled=env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED??'false'
   if(!['true','false'].includes(locationEnabled)||locationEnabled==='true' && (env.PROFITIA_SUPPLIER_LOCATIONS_CONFIGURATION_VERSION!==locationTargets.configurationVersion || config.binding.projectId!==locationTargets.projectId || config.binding.branchId!==locationTargets.branchId || config.binding.databaseName!==locationTargets.databaseName || config.binding.role!==locationTargets.runtimeRole))unavailable()
-  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
+  const nameEnabled=env.SRM_KRS_NAME_SEARCH_ENABLED??'false'
+  if(!['true','false'].includes(nameEnabled)||nameEnabled==='true'&&!srmKrsPilotTarget(env))unavailable()
+  const krsConfig=nameEnabled==='true'?{reader:krsPilotDatabaseUrl(env.KRS_CATALOG_READER_URL,'krs_reader'),source:krsPilotDatabaseUrl(env.KRS_CATALOG_SOURCE_URL,'krs_ingest')}:null
+  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,krsConfig,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
   const cached = globalThis.__srmPrivateReportRuntime__
   if (cached) { if (cached.key !== key) unavailable(); return cached.runtime }
   const clerk = createSrmClerkClient(env)
@@ -208,10 +215,19 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     ledger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],operationSchemaDigest:core['017-additional-request-operations.sql'],locationSchemaDigest:locationTargets.sql019Digest},
     ...(supplierApi?{readAcceptedKys:supplierApi.readAcceptedKys}:{}),
   }):undefined
-  const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
+  const baseRuntime = { provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
     ...(supplierApi?{supplierApi}:{}),
     ...(locations?{locations}:{}),
-    ...(supplierRequest ? { supplierRequest } : {}) })
+    ...(supplierRequest ? { supplierRequest } : {}) }
+  let krsName:Promise<KrsNameHttpRuntime>|undefined
+  if(krsConfig){
+    const catalog=new pg.Pool(srmPrivatePoolConfiguration({...config,databaseUrl:krsConfig.reader},3))
+    const source=new pg.Pool(srmPrivatePoolConfiguration({...config,databaseUrl:krsConfig.source},3))
+    const sourceAudit=new pg.Pool(srmPrivatePoolConfiguration({...config,databaseUrl:krsConfig.source},1))
+    for(const p of [catalog,source,sourceAudit])p.on('error',()=>console.error('KRS pilot database unavailable'))
+    krsName=createSrmKrsNativeRuntime(config,{pool,auditPool,clerk,catalog,source,sourceAudit},baseRuntime,env)
+  }
+  const runtime=Object.freeze({...baseRuntime,...(krsName?{krsName}:{})})
   globalThis.__srmPrivateReportRuntime__ = { key, runtime }
   return runtime
 }
