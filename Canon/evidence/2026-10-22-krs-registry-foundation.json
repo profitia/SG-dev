@@ -1,0 +1,1401 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-KRS-REGISTRY-FOUNDATION-20261022",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "executionEnvironment": "local",
+  "authoritySha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+  "status": "PARTIAL",
+  "approval": {
+    "businessDirection": "OWNER_APPROVED_IN_TASK01",
+    "formalCapabilityAcceptance": "REQUIRED_NOT_RECORDED",
+    "formalApprovalId": null,
+    "originalTaskSha256": "3306a3bd7984c8209b46afe3b2e31f8cc6af3a50a8d753a9a75cbc69e8280bbe",
+    "hostConversationId": null
+  },
+  "pmos": {
+    "registrationId": "cmvjdogu90000i4v0jvqvr5l3",
+    "conversationId": "pmos-task-v2:560fd7d80d3d80d9cbf8474dec241b7bd8524fe37e4020afadcf639f0eb58c36",
+    "database": "architecture_pmos",
+    "projectId": "billowing-credit-07394675",
+    "role": "architecture_pmos_runtime",
+    "preExecutionPreflight": "PASS_REQUIRE_BEGIN",
+    "closeout": "NOT_YET_PERFORMED_AT_SOURCE_SNAPSHOT"
+  },
+  "onboardingProposal": {
+    "status": "SIMULATION_ONLY_NOT_ACTIVE_ROUTING",
+    "requires": "Explicit formal first-class owner acceptance including classification, then governed registry/manifest/onboarding change accepted on main. No approval ID is fabricated.",
+    "surfaces": [
+      {
+        "id": "KRS-BASE-001",
+        "capability": "KRS Registry Runtime",
+        "name": "KRS Registry Runtime",
+        "pathPatterns": [
+          "apps/krs-registry-runtime/**"
+        ],
+        "currentOwner": "Architecture Platform",
+        "currentResponsibility": "Official KRS source adapter, legal-company catalog, discovery and synchronization; no organisation-private supplier store or identity authority.",
+        "baselineClassification": "ALIGNED",
+        "parentSurfaceId": null,
+        "cleanupReason": null,
+        "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+        "allowedProjectKeys": [
+          "ARCHITECTURE"
+        ],
+        "onboardingAuthorization": null
+      },
+      {
+        "id": "KRS-BASE-002",
+        "capability": "KRS Registry Contracts",
+        "name": "KRS Registry Contracts",
+        "pathPatterns": [
+          "packages/krs-registry-contracts/**"
+        ],
+        "currentOwner": "Architecture Platform",
+        "currentResponsibility": "Framework-neutral versioned registry snapshot, identity evidence and candidate contracts; no provider transport or E1 authority.",
+        "baselineClassification": "ALIGNED",
+        "parentSurfaceId": null,
+        "cleanupReason": null,
+        "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+        "allowedProjectKeys": [
+          "ARCHITECTURE"
+        ],
+        "onboardingAuthorization": null
+      },
+      {
+        "id": "KRS-BASE-003",
+        "capability": "KRS Registry CI",
+        "name": "KRS Registry CI",
+        "pathPatterns": [
+          ".github/workflows/krs-registry-ci.yml"
+        ],
+        "currentOwner": "Architecture Platform",
+        "currentResponsibility": "Independent offline validation/build with isolated local PostgreSQL; no deployment, live migration, secrets or provider switching.",
+        "baselineClassification": "ALIGNED",
+        "parentSurfaceId": null,
+        "cleanupReason": null,
+        "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+        "allowedProjectKeys": [
+          "ARCHITECTURE"
+        ],
+        "onboardingAuthorization": null
+      }
+    ]
+  },
+  "officialDocumentation": {
+    "url": "https://prs.ms.gov.pl/krs/openApi",
+    "readMethod": "Rendered official browser accessibility tree, 2026-10-22",
+    "release": "1.03.034 / 12.08.2026",
+    "services": [
+      "OdpisAktualny",
+      "OdpisPelny",
+      "Biuletyn",
+      "BiuletynGodzinowy"
+    ],
+    "registers": [
+      "P",
+      "S"
+    ],
+    "nameSearch": "NO_DOCUMENTED_OPERATION",
+    "nipSearch": "NO_DOCUMENTED_OPERATION",
+    "regonSearch": "NO_DOCUMENTED_OPERATION",
+    "bulkCatalog": "NOT_CONFIRMED",
+    "rateLimit": "NOT_PUBLISHED_IN_REVIEWED_PAGE",
+    "personalFields": "Official PRS overview states names and PESEL are anonymized; do not restore or promise their availability."
+  },
+  "probes": [
+    {
+      "url": "https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/0000028860?rejestr=P&format=json",
+      "method": "GET",
+      "authentication": "NONE",
+      "tlsVerification": true,
+      "startedAt": "2026-10-22T10:11:15.210808+00:00",
+      "status": 200,
+      "curlExitCode": 0,
+      "durationMs": 203,
+      "bytes": 63344,
+      "sha256": "1c7ec79699290b10ebc384ea129c240899c1c578d09c8ac6a306d9c9074722c7",
+      "headers": {
+        "content-type": "application/json",
+        "date": "Thu, 22 Oct 2026 10:11:14 GMT"
+      },
+      "summary": {
+        "topKeys": [
+          "odpis"
+        ],
+        "odpisKeys": [
+          "rodzaj",
+          "naglowekA",
+          "dane"
+        ],
+        "header": {
+          "rejestr": "RejP",
+          "numerKRS": "0000028860",
+          "dataCzasOdpisu": "22.10.2026 12:11:15",
+          "stanZDnia": "09.10.2026",
+          "dataRejestracjiWKRS": "19.07.2001",
+          "numerOstatniegoWpisu": 222,
+          "dataOstatniegoWpisu": "09.10.2026",
+          "stanPozycji": 1
+        },
+        "company": {
+          "nazwa": "ORLEN SPÓŁKA AKCYJNA",
+          "formaPrawna": "SPÓŁKA AKCYJNA",
+          "identyfikatory": {
+            "regon": "61018820100000",
+            "nip": "7740001454"
+          }
+        },
+        "address": {
+          "ulica": "CHEMIKÓW",
+          "nrDomu": "7",
+          "miejscowosc": "PŁOCK",
+          "kodPocztowy": "09-411",
+          "poczta": "PŁOCK-BIAŁA",
+          "kraj": "POLSKA"
+        },
+        "dzial6Keys": [
+          "polaczeniePodzialPrzeksztalcenie"
+        ]
+      }
+    },
+    {
+      "url": "https://api-krs.ms.gov.pl/api/krs/OdpisPelny/0000028860?rejestr=P&format=json",
+      "method": "GET",
+      "authentication": "NONE",
+      "tlsVerification": true,
+      "startedAt": "2026-10-22T10:11:16.415787+00:00",
+      "status": 200,
+      "curlExitCode": 0,
+      "durationMs": 198,
+      "bytes": 435387,
+      "sha256": "c99cb431854f6c08a80df0e8d7c6471ab72ee0132938d2eb5450f47f03f012d8",
+      "headers": {
+        "content-type": "application/json",
+        "date": "Thu, 22 Oct 2026 10:11:15 GMT"
+      },
+      "summary": {
+        "topKeys": [
+          "odpis"
+        ],
+        "odpisKeys": [
+          "rodzaj",
+          "naglowekP",
+          "dane"
+        ],
+        "header": {
+          "rejestr": "RejP",
+          "numerKRS": "0000028860",
+          "dataCzasOdpisu": "22.10.2026 12:11:16",
+          "stanZDnia": "09.10.2026",
+          "dataRejestracjiWKRS": null,
+          "numerOstatniegoWpisu": null,
+          "dataOstatniegoWpisu": null,
+          "stanPozycji": 1,
+          "entryCount": 222,
+          "maximumEntryNumber": 222
+        },
+        "company": {
+          "nazwa": [
+            {
+              "nazwa": "POLSKI KONCERN NAFTOWY ORLEN SPÓŁKA AKCYJNA",
+              "nrWpisuWykr": "151",
+              "nrWpisuWprow": "1"
+            },
+            {
+              "nazwa": "ORLEN SPÓŁKA AKCYJNA",
+              "nrWpisuWprow": "151"
+            }
+          ],
+          "formaPrawna": [
+            {
+              "formaPrawna": "SPÓŁKA AKCYJNA",
+              "nrWpisuWprow": "1"
+            }
+          ],
+          "identyfikatory": [
+            {
+              "identyfikatory": {
+                "regon": "61018820100000"
+              },
+              "nrWpisuWykr": "34",
+              "nrWpisuWprow": "1"
+            },
+            {
+              "identyfikatory": {
+                "regon": "61018820100000",
+                "nip": "7740001454"
+              },
+              "nrWpisuWprow": "34"
+            }
+          ]
+        },
+        "address": [
+          {
+            "ulica": "CHEMIKÓW",
+            "nrDomu": "7",
+            "miejscowosc": "PŁOCK",
+            "kodPocztowy": "09-411",
+            "poczta": "PŁOCK-BIAŁA",
+            "kraj": "POLSKA",
+            "nrWpisuWprow": "1"
+          }
+        ],
+        "dzial6Keys": [
+          "rozwiazanieUniewaznienie",
+          "polaczeniePodzialPrzeksztalcenie"
+        ]
+      }
+    },
+    {
+      "url": "https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/0000030897?rejestr=S&format=json",
+      "method": "GET",
+      "authentication": "NONE",
+      "tlsVerification": true,
+      "startedAt": "2026-10-22T10:11:17.530724+00:00",
+      "status": 200,
+      "curlExitCode": 0,
+      "durationMs": 101,
+      "bytes": 18082,
+      "sha256": "7eefdc145a5d26a433e73091f4d6d533828797a0aea271d194183f755a29938f",
+      "headers": {
+        "content-type": "application/json",
+        "date": "Thu, 22 Oct 2026 10:11:16 GMT"
+      },
+      "summary": {
+        "topKeys": [
+          "odpis"
+        ],
+        "odpisKeys": [
+          "rodzaj",
+          "naglowekA",
+          "dane"
+        ],
+        "header": {
+          "rejestr": "RejS",
+          "numerKRS": "0000030897",
+          "dataCzasOdpisu": "22.10.2026 12:11:17",
+          "stanZDnia": "20.11.2025",
+          "dataRejestracjiWKRS": "25.07.2001",
+          "numerOstatniegoWpisu": 31,
+          "dataOstatniegoWpisu": "03.04.2025",
+          "stanPozycji": 3
+        },
+        "company": {
+          "nazwa": "FUNDACJA WIELKA ORKIESTRA ŚWIĄTECZNEJ POMOCY",
+          "formaPrawna": "FUNDACJA",
+          "identyfikatory": {
+            "nip": "5213003700"
+          }
+        },
+        "address": {
+          "ulica": "DOMINIKAŃSKA",
+          "nrDomu": "19 C",
+          "miejscowosc": "WARSZAWA",
+          "kodPocztowy": "02-738",
+          "poczta": "WARSZAWA",
+          "kraj": "POLSKA"
+        },
+        "dzial6Keys": []
+      }
+    },
+    {
+      "url": "https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/0000000000?rejestr=P&format=json",
+      "method": "GET",
+      "authentication": "NONE",
+      "tlsVerification": true,
+      "startedAt": "2026-10-22T10:11:18.636579+00:00",
+      "status": 400,
+      "curlExitCode": 0,
+      "durationMs": 97,
+      "bytes": 163,
+      "sha256": "039c52205876853a2aa53146674b77c7b89733e2ad3b0b345724356207738392",
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "date": "Thu, 22 Oct 2026 10:11:18 GMT"
+      },
+      "summary": {
+        "topKeys": [
+          "type",
+          "title",
+          "status",
+          "traceId"
+        ],
+        "odpisKeys": [],
+        "header": null,
+        "company": {
+          "nazwa": null,
+          "formaPrawna": null,
+          "identyfikatory": null
+        },
+        "address": null,
+        "dzial6Keys": []
+      }
+    },
+    {
+      "url": "https://api-krs.ms.gov.pl/api/Krs/Biuletyn/2026-10-21",
+      "method": "GET",
+      "authentication": "NONE",
+      "tlsVerification": true,
+      "startedAt": "2026-10-22T10:11:19.872203+00:00",
+      "status": 200,
+      "curlExitCode": 0,
+      "durationMs": 229,
+      "bytes": 43855,
+      "sha256": "9c43cdc74b63086c1b64d0947945b83045d919a3fa02524eea0319d87e3a75a7",
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "date": "Thu, 22 Oct 2026 10:11:19 GMT"
+      },
+      "summary": {
+        "type": "array",
+        "count": 4668,
+        "all10DigitKrs": false,
+        "uniqueCount": 2962,
+        "minimumKrsLength": 4,
+        "maximumKrsLength": 7,
+        "allDigits": true,
+        "normalization": "Validate 1..10 ASCII digits, reject zero, padStart(10,\"0\"), deduplicate; not an instruction to enumerate identifiers."
+      }
+    },
+    {
+      "url": "https://api-krs.ms.gov.pl/api/Krs/BiuletynGodzinowy/2026-10-21?godzinaOd=10&godzinaDo=11",
+      "method": "GET",
+      "authentication": "NONE",
+      "tlsVerification": true,
+      "startedAt": "2026-10-22T10:11:20.990728+00:00",
+      "status": 200,
+      "curlExitCode": 0,
+      "durationMs": 109,
+      "bytes": 4386,
+      "sha256": "9e527f83d518271b9e26e02c463e9ad61339a4637dabdc154cd6a810d21a7b83",
+      "headers": {
+        "content-type": "application/json; charset=utf-8",
+        "date": "Thu, 22 Oct 2026 10:11:20 GMT"
+      },
+      "summary": {
+        "type": "array",
+        "count": 466,
+        "all10DigitKrs": false,
+        "uniqueCount": 324,
+        "minimumKrsLength": 4,
+        "maximumKrsLength": 7,
+        "allDigits": true,
+        "normalization": "Validate 1..10 ASCII digits, reject zero, padStart(10,\"0\"), deduplicate; not an instruction to enumerate identifiers."
+      }
+    }
+  ],
+  "probeFailures": {
+    "pythonTls": "Six local Python TLS verification failures before HTTP; retained as diagnostic. System curl succeeded with certificate verification enabled; TLS was never disabled.",
+    "additionalCurrentExtract": "One successful system-curl diagnostic current-extract GET preceded the six recorded curl probes. Seven completed KRS HTTP responses in total: six HTTP200 and one invalid-input HTTP400. Six earlier Python attempts failed local TLS verification before HTTP."
+  },
+  "mfMappingProbe": {
+    "url": "https://wl-api.mf.gov.pl/api/search/nip/7740001454?date=2026-10-22",
+    "method": "GET",
+    "authentication": "NONE",
+    "status": 200,
+    "exitCode": 0,
+    "observedAt": "2026-10-22T10:13:09.713044+00:00",
+    "sha256": "06a2ed7fc1983dfdf0dc8cee1fcb566d0b526b49ecc3601783c859ff2d0ebca4",
+    "projection": {
+      "name": "ORLEN SPÓŁKA AKCYJNA",
+      "nip": "7740001454",
+      "krs": "0000028860",
+      "regon": "610188201",
+      "statusVat": "Czynny"
+    }
+  },
+  "providerBefore": {
+    "capturedAt": "2026-10-22T10:14:05.407Z",
+    "render": {
+      "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "krsServicePresent": false,
+      "services": [
+        {
+          "id": "srv-dbcse6jrjlhs73eib3sg",
+          "name": "identity-runtime-development",
+          "type": "web_service",
+          "environmentId": "evm-db717krrjlhs739jgo1g",
+          "autoDeploy": "no",
+          "rootDir": "",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-dbat5ulg1s2s73defcp0",
+          "name": "profitia-maps-development-runtime",
+          "type": "web_service",
+          "environmentId": "evm-dapbd70ae00c73cgrup0",
+          "autoDeploy": "no",
+          "rootDir": "",
+          "buildFilter": {
+            "ignoredPaths": [],
+            "paths": [
+              "apps/maps-runtime/**",
+              "packages/maps-contracts/**",
+              "packages/maps-embed/**",
+              "packages/platform-contracts/**"
+            ]
+          }
+        },
+        {
+          "id": "srv-db78d82j9qps73bej0c0",
+          "name": "architecture-development-pmos",
+          "type": "private_service",
+          "environmentId": "evm-db717krrjlhs739jgo1g",
+          "autoDeploy": "no",
+          "rootDir": "apps/pmos",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-db496b3tqb8s73eh5sfg",
+          "name": "srm-staging-runtime",
+          "type": "web_service",
+          "environmentId": "evm-dapbdbbbc2fs73f4g7gg",
+          "autoDeploy": "no",
+          "rootDir": "",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-db1vu6gm7kps73d0e3r0",
+          "name": "srm-development-runtime",
+          "type": "web_service",
+          "environmentId": "evm-dapbd70ae00c73cgrup0",
+          "autoDeploy": "no",
+          "rootDir": "",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-dapa40ad0e5s73f8bjm0",
+          "name": "sg2-development-forecast-verification-worker",
+          "type": "background_worker",
+          "environmentId": "evm-dap98hm0tbcc738rro10",
+          "autoDeploy": "no",
+          "rootDir": ".",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-dapa3vlg1s2s739vp7dg",
+          "name": "sg2-development-forecast-current-worker",
+          "type": "background_worker",
+          "environmentId": "evm-dap98hm0tbcc738rro10",
+          "autoDeploy": "no",
+          "rootDir": "",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-dapa3ujm8hqs73a9t2og",
+          "name": "sg2-development-dashboard",
+          "type": "web_service",
+          "environmentId": "evm-dap98hm0tbcc738rro10",
+          "autoDeploy": "no",
+          "rootDir": "apps/dashboard-preview",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-dapa3tid0e5s73f8bc5g",
+          "name": "sg2-development-runtime",
+          "type": "web_service",
+          "environmentId": "evm-dap98hm0tbcc738rro10",
+          "autoDeploy": "no",
+          "rootDir": ".",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-daoksvuk1f9s73cg4bk0",
+          "name": "spendguru-forecast-current-worker",
+          "type": "background_worker",
+          "environmentId": "evm-d98a52eq1p3s73835qi0",
+          "autoDeploy": "no",
+          "rootDir": "",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-dansibrtqb8s73d0nn3g",
+          "name": "spendguru-forecast-preparation-worker",
+          "type": "background_worker",
+          "environmentId": "evm-d98a52eq1p3s73835qi0",
+          "autoDeploy": "no",
+          "rootDir": ".",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-daclno3m8hqs73bb7rrg",
+          "name": "spendguru-porr-demo",
+          "type": "web_service",
+          "environmentId": "evm-d98a52eq1p3s73835qi0",
+          "autoDeploy": "no",
+          "rootDir": ".",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-dacln50jo6nc738lbag0",
+          "name": "spendguru-porr-dashboard",
+          "type": "web_service",
+          "environmentId": "evm-d98a52eq1p3s73835qi0",
+          "autoDeploy": "no",
+          "rootDir": "apps/dashboard-preview",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-da2i7j9t0dsc73ag7qv0",
+          "name": "dashboards-library",
+          "type": "web_service",
+          "environmentId": null,
+          "autoDeploy": "no",
+          "rootDir": "apps/dashboard-preview",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-d9tmgddbedkc739jr24g",
+          "name": "BENCHMARK-FINDER-CATEGORY-BUILDER",
+          "type": "web_service",
+          "environmentId": null,
+          "autoDeploy": "no",
+          "rootDir": "apps/sg-runtime",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-d98a73btqb8s73fabp90",
+          "name": "spendguru-stage",
+          "type": "web_service",
+          "environmentId": "evm-d98a52eq1p3s73835qi0",
+          "autoDeploy": "no",
+          "rootDir": ".",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-d936ue3tqb8s738njptg",
+          "name": "sg2-pcos-cognition-explorer-preview",
+          "type": "web_service",
+          "environmentId": "evm-d936tpbtqb8s738nie0g",
+          "autoDeploy": "yes",
+          "rootDir": "",
+          "buildFilter": {
+            "ignoredPaths": [],
+            "paths": [
+              "apps/pcos-explorer/**",
+              "packages/pcos-contracts/**"
+            ]
+          }
+        },
+        {
+          "id": "srv-d89j9oml51nc738gdsb0",
+          "name": "Vector-SG20",
+          "type": "web_service",
+          "environmentId": "evm-d89j645ckfvc738msv5g",
+          "autoDeploy": "yes",
+          "rootDir": "apps/vector",
+          "buildFilter": null
+        },
+        {
+          "id": "srv-d88utm77f7vs73blrj1g",
+          "name": "pmos-spendguru2-development",
+          "type": "web_service",
+          "environmentId": "evm-d88urem7r5hc73csgga0",
+          "autoDeploy": "yes",
+          "rootDir": "apps/pmos",
+          "buildFilter": {
+            "ignoredPaths": [],
+            "paths": [
+              "apps/pmos/**",
+              "Canon/registries/profitia-projects-v1.json",
+              "render.yaml"
+            ]
+          }
+        }
+      ],
+      "deploys": {
+        "srv-db1vu6gm7kps73d0e3r0": [
+          {
+            "commit": {
+              "createdAt": "2026-10-20T13:47:22Z",
+              "id": "260ade12608faaea27376c1c976db392f046f267",
+              "message": "Merge commit '8b3fb13b0d2fb7169b7733e74848d9f16c2b5e2e' into sg2/e1-development-release-20261020"
+            },
+            "createdAt": "2026-10-20T14:07:04.600359Z",
+            "finishedAt": "2026-10-20T14:08:26.364445Z",
+            "id": "dep-dbbnb22fngtc73bn0i90",
+            "startedAt": "2026-10-20T14:07:04.568366Z",
+            "status": "live",
+            "trigger": "api",
+            "updatedAt": "2026-10-20T14:08:55.939161Z"
+          }
+        ],
+        "srv-dbat5ulg1s2s73defcp0": [
+          {
+            "commit": {
+              "createdAt": "2026-10-19T08:44:44Z",
+              "id": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+              "message": "Merge pull request #522 from profitia/srm/maps-connector-runtime-20261019\n\nMaps: handle delayed startup and malformed HTTP requests"
+            },
+            "createdAt": "2026-10-19T08:47:35.341874Z",
+            "finishedAt": "2026-10-19T08:48:15.983269Z",
+            "id": "dep-dbati9rrjlhs73akpsj0",
+            "startedAt": "2026-10-19T08:47:35.313835Z",
+            "status": "live",
+            "trigger": "api",
+            "updatedAt": "2026-10-22T04:07:18.815051Z"
+          }
+        ],
+        "srv-dbcse6jrjlhs73eib3sg": [
+          {
+            "commit": {
+              "createdAt": "2026-10-22T08:13:55Z",
+              "id": "aa95c0a0a14fb2f2ba5af7338c8d83a6fb349269",
+              "message": "Merge pull request #599 from profitia/architecture/identity-b2-dev-prep-20261022\n\nfix(identity-runtime): prepare strict health-only Development ingress"
+            },
+            "createdAt": "2026-10-22T08:19:40.303273Z",
+            "finishedAt": "2026-10-22T08:20:40.07833Z",
+            "id": "dep-dbcse73rjlhs73eib57g",
+            "startedAt": "2026-10-22T08:19:40.299299Z",
+            "status": "live",
+            "trigger": "manual",
+            "updatedAt": "2026-10-22T09:14:24.928032Z"
+          }
+        ],
+        "srv-db78d82j9qps73bej0c0": [
+          {
+            "commit": {
+              "createdAt": "2026-10-13T20:53:45Z",
+              "id": "e03454fdf484c51a251bf3c736d82769821af117",
+              "message": "Merge pull request #285 from profitia/architecture/e0a-07-reporting-20261013\n\nE0-A-07: identify Architecture reporting and preserve project references"
+            },
+            "createdAt": "2026-10-13T20:53:49.389125Z",
+            "finishedAt": "2026-10-13T20:55:13.462813Z",
+            "id": "dep-db79knaj9qps73bjddeg",
+            "startedAt": "2026-10-13T20:53:49.364199Z",
+            "status": "live",
+            "trigger": "api",
+            "updatedAt": "2026-10-13T20:55:40.374886Z"
+          }
+        ]
+      }
+    },
+    "neon": {
+      "privateTables": [
+        {
+          "table_schema": "profitia_access",
+          "table_name": "accounts",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "applications",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "bootstrap_receipts",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "directory_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "external_identities",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "memberships",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "organisations",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "permission_grants",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "product_grants",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "runtime_bindings",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_access",
+          "table_name": "security_events",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_benchmark_discovery",
+          "table_name": "commands",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_benchmark_discovery",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_benchmark_discovery",
+          "table_name": "results",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_category",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_delegated_phases",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_external_call",
+          "table_name": "calls",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_external_call",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_external_call",
+          "table_name": "policies",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_external_native",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_external_native",
+          "table_name": "policies",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_forecast_dispatch",
+          "table_name": "discovery_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_forecast_dispatch",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_forecast_requests",
+          "table_name": "commands",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_forecast_requests",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_ingestion",
+          "table_name": "budgets",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_ingestion",
+          "table_name": "effects",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_ingestion",
+          "table_name": "grants",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_ingestion",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_ingestion",
+          "table_name": "runtime_bindings",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_ingestion",
+          "table_name": "security_events",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_ingestion",
+          "table_name": "sources",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_jobs",
+          "table_name": "delegations",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_jobs",
+          "table_name": "delivery_observations",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_jobs",
+          "table_name": "dispatches",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_jobs",
+          "table_name": "execution_grants",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_jobs",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_jobs",
+          "table_name": "operation_bindings",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_modules",
+          "table_name": "application_bindings",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_modules",
+          "table_name": "audit_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_modules",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_profile",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_profile",
+          "table_name": "runtime_policies",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_profile",
+          "table_name": "user_profiles",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_public_web",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_public_web",
+          "table_name": "policies",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_request_inspection",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_request_phases",
+          "table_name": "effects",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_request_phases",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_request_phases",
+          "table_name": "policies",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_request_work",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_request_work",
+          "table_name": "policies",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_requests",
+          "table_name": "external_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_requests",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_requests",
+          "table_name": "intents",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_requests",
+          "table_name": "operation_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_requests",
+          "table_name": "policies",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_services",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_services",
+          "table_name": "read_grants",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_services",
+          "table_name": "runtime_bindings",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_srm_acquisition",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_srm_acquisition",
+          "table_name": "outcome_witnesses",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_srm_catalog",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_srm_catalog",
+          "table_name": "outcome_witnesses",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_srm_catalog",
+          "table_name": "publications",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_supplier_jobs",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_supplier_requests",
+          "table_name": "commands",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "profitia_supplier_requests",
+          "table_name": "installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "sg_runtime_benchmarks",
+          "table_name": "BenchmarkProviderMapping",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "sg_runtime_benchmarks",
+          "table_name": "BusinessBenchmark",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "sg_runtime_benchmarks",
+          "table_name": "Category",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "sg_runtime_benchmarks",
+          "table_name": "CategoryCostComponent",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "sg_runtime_benchmarks",
+          "table_name": "OrganizationBenchmarkSelection",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "sg_runtime_benchmarks",
+          "table_name": "private_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "catalog_companies",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "catalog_financial_facts",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "catalog_financial_indicators",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "catalog_kys_reports",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "delegated_supplier_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "financial_facts",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "financial_scanner_frames",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "financial_source_documents",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "lookup_requests",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "mgbi_source_archives",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "msr_projections",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "msr_sources",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "named_interest_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "organization_supplier_interest",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "organizations",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "private_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "provider_attempts",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "schema_migrations",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "section_projections",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "source_snapshots",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "supplier_business_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "supplier_inspection_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "supplier_private_acquisition_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "supplier_sensitive_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "supplier_web_identity",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "supplier_web_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "supplier_work_installation",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "suppliers",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "user_supplier_interest",
+          "table_type": "BASE TABLE"
+        },
+        {
+          "table_schema": "srm",
+          "table_name": "users",
+          "table_type": "BASE TABLE"
+        }
+      ],
+      "scope": "Schema/table names only; no private product rows, grants, policies or migration receipts read."
+    },
+    "openPrs": [
+      {
+        "number": 600,
+        "title": "docs(identity): prepare lifecycle and transactional authorization for PORR",
+        "headSha": "70b4b05a870f93921529319f3a1693dd345ed0af",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/600"
+      },
+      {
+        "number": 590,
+        "title": "SRM: supplier locations architecture and E1 handoff",
+        "headSha": "69fabecafce9712e7cbe6f41bc363885d897f6f0",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/590"
+      },
+      {
+        "number": 588,
+        "title": "docs(sg2): Identity Runtime architecture, ownership and routing proposal",
+        "headSha": "3f22388ca82bac3ee72b81c27d33c3da95b91a7d",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/588"
+      },
+      {
+        "number": 587,
+        "title": "feat(sg2): shared benchmark picker for Category Builder",
+        "headSha": "adbf34ffe16f25f4e097c9456dc962260bb1963e",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/587"
+      },
+      {
+        "number": 584,
+        "title": "SG2: CCI indexed purchase price and component decomposition (Task 03)",
+        "headSha": "e0db53c450eaff330382dd58cf91962ce050b7dc",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/584"
+      },
+      {
+        "number": 580,
+        "title": "SG2: cadence-agnostic CCI with bidirectional history (Task 02B)",
+        "headSha": "3f9333db7fcaac72b76a3243c533f4c826f75258",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/580"
+      },
+      {
+        "number": 578,
+        "title": "SG2: connect monthly CCI market data to calculation Core (Task 02A)",
+        "headSha": "71f8cf734efa0ee47041382b6a14f24316879172",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/578"
+      },
+      {
+        "number": 575,
+        "title": "SG2: native-cadence CCI data preparation (Task 02 partial)",
+        "headSha": "71f483d6cef0c199a1aff217c9374c6e00b2cfa8",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/575"
+      },
+      {
+        "number": 571,
+        "title": "SG2: deterministic fixed-base CCI calculation core",
+        "headSha": "4e530d40349496a4679d2607a210f89674294c9f",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/571"
+      },
+      {
+        "number": 156,
+        "title": "SG2: preserve immutable PMOS snapshots and append lifecycle evidence",
+        "headSha": "1950993217d6b400f760a76014041d4a28cf336d",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/156"
+      },
+      {
+        "number": 154,
+        "title": "SG2 Stage 1: fail-closed identity and release readiness",
+        "headSha": "2a24efa878cb074c2567a20facc600d1775b4509",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/154"
+      },
+      {
+        "number": 97,
+        "title": "SRM X-Ray: MGBI RDF adapter and financial metric foundation",
+        "headSha": "05707dc5e95aece6becab126903728b18fc15a8b",
+        "state": "open",
+        "draft": true,
+        "url": "https://github.com/profitia/SG-dev/pull/97"
+      }
+    ]
+  },
+  "protectedSourceTrees": {
+    "apps/srm": "044b3a0f618c8501f6c73bd10030be2b12d831d1",
+    "apps/maps-runtime": "fb6f9d6d9d4f799fb515780d493a7f2552e02a43",
+    "packages/maps-contracts": "0d86e234bba9c5e8b2e51539709c4e444b5452fa",
+    "packages/maps-embed": "32b4566349950e91cf6662dad4e939b17f083bfc",
+    "packages/srm-xray": "9f78818dd4f2aecc0bd1f001581aa02d6e67763d",
+    "packages/platform-contracts": "86299cdb0b4511c7c6410974eb08b9c51caa78d9"
+  },
+  "noActivation": {
+    "taskActions": {
+      "productSqlWrites": 0,
+      "paidProviderCalls": 0,
+      "renderMutations": 0,
+      "newCloudResources": 0,
+      "krsApplicationFilesCreated": 0,
+      "srmSourceChanges": 0,
+      "mapsSourceChanges": 0,
+      "platformSourceChanges": 0
+    },
+    "scopeOfEvidence": "Own task actions, source tree hashes and bounded before/after metadata; no global claim that independent teams performed no changes."
+  },
+  "verification": {
+    "local": {
+      "governanceTests": {
+        "passed": 34,
+        "failed": 0,
+        "skipped": 0
+      },
+      "pmosTests": {
+        "passed": 32,
+        "failed": 0,
+        "skipped": 0
+      },
+      "pmosTypecheck": "PASS",
+      "pmosLifecycleTypecheck": "PASS",
+      "manifest": "PASS",
+      "localPostgresqlNameIndex": "PASS_100003_SYNTHETIC_ROWS",
+      "limits": "Search-index feasibility only; not full catalog schema, E1, national-scale load or application normalizer validation. Initial tsx CLI test invocation was blocked by sandbox IPC; identical tests passed through Node --import tsx without changing tests."
+    },
+    "github": "EXACT_SOURCE_PR_CI_AND_PARITY_RECORDED_IN_FINAL_PMOS_NOT_SELF_ASSERTED",
+    "remoteAcceptance": "NO_MAIN_ROUTING_ACCEPTANCE"
+  },
+  "nextStage": {
+    "stage02Ready": "CONDITIONAL",
+    "sourceOnly": true,
+    "activation": "DEFERRED",
+    "requiredGates": [
+      "FORMAL_FIRST_CLASS_APPROVAL",
+      "ACCEPTED_MAIN_ROUTING",
+      "EXPLICIT_TASK02",
+      "REQUIRED_E1_PRODUCER_ACCEPTANCE_OR_OFFLINE_DENY_SCOPE"
+    ]
+  },
+  "localCatalogProbe": {
+    "scope": "LOCAL_SYNTHETIC_NAME_INDEX_PROBE_ONLY_NOT_FULL_RUNTIME_OR_E1",
+    "rows": 100003,
+    "cloudConnections": 0,
+    "listenAddresses": "",
+    "role": "krs_catalog_reader",
+    "queries": {
+      "prefix": {
+        "sql": "SELECT DISTINCT krs FROM krs_registry.names WHERE normalized_name LIKE 'LODZ%' ORDER BY krs LIMIT 20",
+        "indexes": [
+          "names_prefix"
+        ],
+        "executionTimeMs": 0.078,
+        "planningTimeMs": 0.99,
+        "resultKrs": [
+          "0000200001"
+        ],
+        "clientP95IncludingPsqlStartupMs": 11.816,
+        "samples": 20
+      },
+      "fragment": {
+        "sql": "SELECT DISTINCT krs FROM krs_registry.names WHERE normalized_name LIKE '%METAL%' ORDER BY krs LIMIT 20",
+        "indexes": [
+          "names_fragment"
+        ],
+        "executionTimeMs": 0.074,
+        "planningTimeMs": 0.794,
+        "resultKrs": [
+          "0000200001",
+          "0000200002"
+        ],
+        "clientP95IncludingPsqlStartupMs": 11.379,
+        "samples": 20
+      }
+    },
+    "postgresVersion": "16.14 (Homebrew)",
+    "writeDenied": true,
+    "ddlDenied": true,
+    "normalizationFixture": {
+      "input": "Łódź Metal",
+      "expected": "LODZ METAL",
+      "scope": "Search text supplied already normalized; application normalizer not implemented or validated by this SQL probe."
+    },
+    "result": "PASS"
+  }
+}
