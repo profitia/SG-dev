@@ -10,30 +10,40 @@ export type PersistedSection = Section | "jdg";
 export type TerminalStatus = "SUCCESS" | "NO_DATA" | "TIMEOUT" | "ERROR";
 
 
-export async function createLookup(organizationId: string, identifier: Identifier, entityType: "COMPANY" | "JDG" = "COMPANY", pool?: DatabasePool, acceptedRequestId?: string): Promise<{ supplierId: string; requestId: string }> {
+export type ExistingSupplierRegistration = 'TOUCH' | 'KEEP';
+export async function createLookup(organizationId: string, identifier: Identifier, entityType: "COMPANY" | "JDG" = "COMPANY", pool?: DatabasePool, acceptedRequestId?: string, existingSupplier: ExistingSupplierRegistration = 'TOUCH'): Promise<{ supplierId: string; requestId: string }> {
   if (acceptedRequestId !== undefined && (!pool || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(acceptedRequestId))) throw new Error("A bound accepted request UUID is required");
+  if (!['TOUCH','KEEP'].includes(existingSupplier) || existingSupplier === 'KEEP' && acceptedRequestId === undefined) throw new Error("A bound accepted request UUID is required");
   if (!/^[0-9]{10}$/.test(identifier.value)) throw new Error("NIP or KRS must have ten digits");
   return withOrganization(organizationId, async (client) => {
     const column = identifier.type === "NIP" ? "nip" : "krs";
     const supplier = await client.query<{ id: string }>(
       "INSERT INTO srm.suppliers(organization_id, " + column + ") VALUES ($1, $2) " +
       "ON CONFLICT (organization_id, " + column + ") WHERE " + column + " IS NOT NULL " +
-      "DO UPDATE SET updated_at = now() RETURNING id",
+      (existingSupplier === 'KEEP' ? "DO NOTHING RETURNING id" : "DO UPDATE SET updated_at = now() RETURNING id"),
       [organizationId, identifier.value],
     );
+    // KRS Financial needs the current supplier identity, not an update of its
+    // registry record. A separate statement sees a concurrent committed insert;
+    // the same tenant RLS still controls both creation and selection.
+    const supplierRow = supplier.rows[0] ?? (existingSupplier === 'KEEP' ? (await client.query<{id:string}>(
+      "SELECT id FROM srm.suppliers WHERE organization_id=$1::uuid AND " + column + "=$2",
+      [organizationId, identifier.value],
+    )).rows[0] : undefined);
+    if (!supplierRow) throw new Error("Accepted lookup identity conflicts with its current owner or command");
     // Ordinary lookups retain their new identity. A bound accepted request may
     // retry only the identical existing lookup under the same current RLS.
     const request = await client.query<{ id: string }>(
       "INSERT INTO srm.lookup_requests(organization_id, supplier_id, identifier_type, identifier, entity_type, id) VALUES ($1, $2, $3, $4, $5, coalesce($6::uuid,gen_random_uuid())) " +
       (acceptedRequestId === undefined ? "" : "ON CONFLICT (organization_id, id) DO NOTHING ") + "RETURNING id",
-      [organizationId, supplier.rows[0].id, identifier.type, identifier.value, entityType, acceptedRequestId ?? null],
+      [organizationId, supplierRow.id, identifier.type, identifier.value, entityType, acceptedRequestId ?? null],
     );
     const existing = request.rows[0] ?? (acceptedRequestId === undefined ? undefined : (await client.query<{id:string}>(
       "SELECT id FROM srm.lookup_requests WHERE id=$1::uuid AND organization_id=$2::uuid AND supplier_id=$3::uuid AND identifier_type=$4 AND identifier=$5 AND entity_type=$6",
-      [acceptedRequestId,organizationId,supplier.rows[0].id,identifier.type,identifier.value,entityType],
+      [acceptedRequestId,organizationId,supplierRow.id,identifier.type,identifier.value,entityType],
     )).rows[0]);
     if (!existing) throw new Error("Accepted lookup identity conflicts with its current owner or command");
-    return { supplierId: supplier.rows[0].id, requestId: existing.id };
+    return { supplierId: supplierRow.id, requestId: existing.id };
   }, pool);
 }
 

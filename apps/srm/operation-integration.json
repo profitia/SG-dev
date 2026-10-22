@@ -2952,7 +2952,7 @@
       },
       "src/server/supplier-native-company.ts": {
         "previousSha256": "ec94312ccab9aa0f8eea1cf709d97b6891edc768c3eb43a6fa3a4d3bfad7f69c",
-        "sourceSha256": "b97c66df3eacd643d9636dbc40d5457ea2e3e12e09f308dec8486e9126119c0b"
+        "sourceSha256": "7d4f71798e7bc2257b16e5f70d624c0a0f1f7a7be70137d8917677b6081e9e21"
       },
       "src/server/supplier-native-runtime.ts": {
         "previousSha256": "fb06cf47fa70fdfa7957d4f25722c984a23e2e47eeb9688ecf5d916889312093",
@@ -2985,6 +2985,18 @@
       "src/server/supplier-request-work.ts": {
         "previousSha256": "4aa2ca2b5fdc7e35740625f82079c9d69af2bb0dff36e21fd44b3244d7badf76",
         "sourceSha256": "17ae5dd2663f8b7261c42929603be605047da4ecd079ea273b80e6ed78b48982"
+      },
+      "src/server/xray-repository.ts": {
+        "previousSha256": "2a70418acaabb4678affc75ad026234584a08a4ed0386cf3aa31a03bcd7b909f",
+        "sourceSha256": "a761edbb9524522a795bd3d20c78cc7f0c491c86bad70f5e11b723bb812f2c15"
+      },
+      "src/server/supplier-native-work-store.ts": {
+        "previousSha256": "06b6bc25f43e3d4dbd0ec4a239a51b30dba90ebf6399bb9e5796957cccd29d1e",
+        "sourceSha256": "4ece70d1ad0074ff71039ce1f855cba51013e8cd258dc1f799333f9f5bb36a16"
+      },
+      "src/server/supplier-source-link.ts": {
+        "previousSha256": "a759c52c60262c4bea239408b9bb220459b9f4fa5aaf915dfd769651797fa4e9",
+        "sourceSha256": "86691c8e8dbf936c66fa9413825828d5677b2468329ea9c4070f05d9f5382619"
       }
     }
   }
