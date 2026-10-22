@@ -1,6 +1,6 @@
 # TASK02-R — controlled Supplier Locations release preparation
 
-Status: **PARTIAL — preparation enriched after the owner's conditional response**.
+Status: **PARTIAL — owner-created recovery copy inspected; installation remains NO-GO**.
 Initial checkpoint: 2026-10-22 04:14:59 UTC; subsequent read-only evidence below supersedes its time-sensitive observations.
 Task: `SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022`. Profile SRM; Development only.
 This is a prepared installation and acceptance package, not installation, activation or release evidence.
@@ -8,8 +8,9 @@ This is a prepared installation and acceptance package, not installation, activa
 The owner's subsequent direct response confirms the direction and provisionally
 accepts write100/sync100 per organisation per24h and paid budget ZERO. It expressly
 withholds approval for a service window, application disablement, SQL019/SQL013,
-active binding changes and grant activation. The owner will create recovery
-resources and any new user accounts. No release GO or new-resource authority is inferred.
+active binding changes and grant activation. The owner has now created the Task02-R recovery snapshot, isolated branch and compute.
+The permitted read-only verification is recorded below. Any new user accounts remain
+owner-created. No release GO or agent resource-creation authority is inferred.
 
 ## Authority and verified source
 
@@ -99,9 +100,10 @@ The existing B1 resource `br-square-field-b9vzels8` was restored from
 `snap-noisy-art-b9uwq5rf` (B1 preinstall snapshot, 2026-10-21 19:34:40 UTC).
 It expires 2026-10-22 19:34:39 UTC (21:34:39 Europe/Warsaw).
 It is not accepted as coverage for the current installed B1 state or this window.
-No current TASK02-R restore rehearsal has run.
+At the initial checkpoint no TASK02-R restore rehearsal had run. The owner's
+subsequent isolated restore and its current read-only verification are recorded below.
 
-Owner console action — verified against the actual current Neon UI:
+Historical owner console instructions — creation is now complete; retained for traceability:
 
 1. Open [this exact Backup & Restore page](https://console.neon.tech/app/projects/spring-bread-28217539/branches/br-sparkling-term-b99l107x/restore).
    Confirm project **profitia-platform-private / spring-bread-28217539**, branch
@@ -147,7 +149,8 @@ Owner console action — verified against the actual current Neon UI:
 
 The multi-step confirmation was opened read-only on an existing B1 snapshot to
 verify its wording, then cancelled. No snapshot, branch, compute or restore was
-created or executed by this task.
+created or executed by the agent. The owner subsequently performed the authorised
+snapshot and Multi-step restore; no Finalize Restore or connection migration followed.
 
 This follows the current [Neon backup/restore procedure](https://neon.com/docs/guides/backup-restore).
 A new branch or snapshot must be created by the owner, not implicitly by the agent.
@@ -261,7 +264,8 @@ plpgsql/pgcrypto; no pg_cron. The existing Render inventory has no SRM retention
 cron. Read-time cleanup plus the controlled location_expire_controlled() port
 does not establish background retention.
 
-The owner must identify an approved existing execution and responsible operator.
+The completed investigation found no accepted periodic execution or named operator.
+A concrete SRM/Architecture adoption decision is therefore still required.
 Adoption must prove physical removal at retentionUntil, manual-row preservation,
 source-right revocation, idempotency, bounded work, execution audit and missed-run
 handling. Do not grant the owner-only port to HUMAN/SERVICE runtimes or create a
@@ -312,7 +316,7 @@ Owner account-creation instructions:
    assignments require the accepted E1 operator/admission process and explicit
    Architecture owner authority for these three named subjects. B1 source/SQL
    acceptance is not productive onboarding activation: its app/policy is disabled,
-   no Identity Runtime application is implemented/deployed, and automatic
+   no Identity Runtime application is on current main or deployed, and automatic
    organisation/product onboarding remains later work. Do not manufacture raw
    INSERT instructions or enable registration to bypass that missing admission.
 6. The exact unresolved Architecture decision is a lawful controlled onboarding
@@ -442,3 +446,129 @@ newer writes. Never automatically reverse migrations or drop populated tables.
 The owner response is preserved as conditional preparation authority. This
 updated packet does not request an unconditional maintenance GO while recovery,
 identity, retention and exact resource-scope decisions remain unresolved.
+
+## Owner-created recovery verification — 2026-10-22T05:43:12Z
+
+The owner supplied and authorised inspection of:
+
+| Resource | Verified identity / state |
+| --- | --- |
+| Project / database | spring-bread-28217539 / platform_private |
+| Snapshot | snap-bold-bird-b99s4c9q; manual; srm-supplier-locations-task02-r-preinstall-20261022 |
+| Snapshot created | 2026-10-22 05:23:04 UTC |
+| Restored data point | parent_timestamp 2026-10-22 05:22:36 UTC; parent_lsn 0/3B8E828 |
+| Recovery branch | br-green-glitter-b9weet99; created05:25:09 UTC; ready; restore_status=restored |
+| Recovery compute | ep-divine-mode-b9fekhdg; separate endpoint; fixed0.25CU; suspend300s |
+| Original branch / compute | br-sparkling-term-b99l107x remains primary/default; ep-late-heart-b9mxo8oi remains attached |
+| Expiration | snapshot console explicitly says **Expires on: never**; recovery branch says **Never** |
+| Finalize / migration | neither executed; restored branch remains non-primary/non-default |
+
+The snapshot API omits expires_at for this snapshot. The independently observed
+console text resolves that ambiguity. Current [Neon snapshot retention documentation](https://neon.com/docs/guides/backup-restore#snapshot-retention)
+also states that manual snapshots have no automatic expiry unless one is assigned.
+The one-day PITR/history window is a separate setting and does not expire this
+manual snapshot. No retention setting, backup schedule or resource was changed.
+Resource availability/expiry and capture drift must still be checked before any
+later approved window; this is not an RPO0 promise while legitimate writes continue.
+
+Read-only verification used explicitly selected project, branch, compute and
+database. Catalog/content transactions were REPEATABLE READ READ ONLY; controlled
+content was read as SET LOCAL ROLE profitia_access_owner, never by disabling RLS
+or granting a new role. An ordinary srm_private_development_runtime login also
+read the existing supplier business descriptor successfully on both endpoints.
+
+Verified comparisons:
+
+- 105 ordinary tables in24 business schemas, including30 SRM tables. The catalog
+ comparison's107 relation objects additionally include two sequences.
+- 846 columns,730 constraints,172 indexes,454 RLS policies,208 public/business
+ functions (including owner/ACL/body/search-path attributes),161 user triggers,
+ schema owners/ACLs, default ACLs, sequence definitions, extensions and all23
+ role memberships match between original and restored endpoints.
+- The existing application roles have identical flags. The copy additionally has
+ unreferenced NOLOGIN token_roles with zero memberships and zero pg_shdepend
+ dependencies. Its creation provenance was not independently attributed. Therefore
+ the full role catalogs are explicitly **not identical**; no application authority
+ difference was found and no role was removed or altered.
+- Counts and SHA256 fingerprints of authorised visible contents match for **79
+ tables**. This includes all12 access-directory tables,2499 access audit events,
+ exact product/permission grants, six application rows with five ACTIVE, seven
+ bindings, access revision109, installation receipts,150 intents/dispatches,
+ request policies and phase-effect state. The companion JSON preserves every
+ compared table/count/hash plus exact query algorithms.
+- SQL019/SQL013 remain absent. Queue remains139 PENDING /11 CONFIRMED, with zero
+ unexpired leases and zero non-accepted phase effects at this observation.
+- No query over five minutes was present on the recovery compute.
+- The copied immutable descriptor intentionally retains the original branch ID.
+ Physical copy lineage is separately proved by provider metadata. Rewriting that
+ receipt or attaching an application to the copy is excluded.
+
+Coverage limits are explicit. **Full physical-content parity is NOT VERIFIED**:
+
+- 19 Source-owner tables require an accepted profitia_ingestion_owner inspection
+ channel; the present session cannot assume that owner. This includes authoritative
+ external-call/uncertain-effect state. No role membership was broadened.
+- Seven further table measurements were refused by existing RLS/runtime admission:
+ sg_runtime_benchmarks.BusinessBenchmark; srm.users; srm.user_supplier_interest;
+ srm.organization_supplier_interest; srm.catalog_companies;
+ srm.catalog_financial_facts; srm.catalog_financial_indicators.
+- The initial broad aggregate read was rejected and its read-only transaction
+ aborted. Bounded read-only subdivision established the79 successful results and
+ exact seven refusals; no fence, function or data was changed to make a read pass.
+- Visible-content equality is not evidence of unseen rows. No write test, SQL019/
+ SQL013 installation, traffic cutover, second restore, Finalize Restore, connection
+ migration or database rollback occurred. Restore/cutover RTO remains unmeasured.
+
+**Recovery resource/lineage/expiry: PASS. Schema and application ACL parity: PASS.
+Permitted isolated read validation: PASS with documented coverage.
+Full recovery acceptance and combined LKG: PARTIAL / NOT YET ACCEPTED.**
+Render independently still reports the same live SRM and Maps deployment IDs and
+SHAs as the already measured artifacts above. No deploy or rollback was triggered.
+
+## Current identity dependency and consolidated remaining decisions
+
+A fresh GitHub/Architecture PMOS check found [Draft PR598](https://github.com/profitia/SG-dev/pull/598),
+**feat(identity-runtime): B2 session compatibility and bounded navigation**,
+head ed9e64cc19bb52a673160e92f981eb7767a454ac, open/unmerged.
+Its task ARCHITECTURE-IDENTITY-B2-SESSION-COMPAT-20261022 is running; B1-I Stage2
+remains completed. Its28 changed files are Identity Runtime/CI/evidence/runbook,
+without overlap with this task's declared files or a product SQL migration.
+This is scope evidence, not an exclusive shared-environment reservation.
+
+The candidate session-boundary code and consumer adoption runbook were inspected
+at that exact head. B2 resolves existing bindings per protected request and
+explicitly excludes implicit renewal, automatic organisation/member/product
+provisioning and live consumer adoption. It therefore does **not** close the UAT
+admission gate. Main still has no Identity Runtime implementation. Current E1
+still has one ACTIVE genuine account/membership and five DISABLED B1 fixtures;
+no user, binding, organisation or membership was created here. The earlier Clerk
+user-count observation is historical; this continuation rechecked E1, not Clerk.
+
+The same owner-gate-v1 package is updated. It is **prepared but not ready for a
+window approval request**. No additional resource creation is currently requested.
+The remaining decisions are consolidated in the JSON and here:
+
+| Gate / responsible owner | Exact unresolved acceptance |
+| --- | --- |
+| Recovery coverage / authorised Source + Architecture operator | Lawful readback of the26 excluded table contents and Source in-flight/uncertain effects; no audit privilege expansion |
+| KYS / SRM Runtime + Architecture Platform | Named periodic controlled-retention execution with physical-expiry/audit/missed-run evidence, or reviewed implementation and verification of an independent HQ/manual KYS input and projection fence |
+| UAT / E1 Architecture + SRM owner | Genuine A1/A2/B1 Clerk subjects through accepted E1 admission, approved fixed-org A data scope, separate B membership, exact product/report/source rights and finite binding/renewal policy |
+| Dynamic CREATE / E1 producer + SRM receiver | A bounded no-wildcard authority design; current write resource is a server-derived location UUID from MANUAL plus the idempotency key, while SQL019 matches exact resource ID or NULL |
+| Installation / SRM + SG2 + Architecture authorised owners | After previous gates and final LKG: one exact <=60-minute coordinated window, immutable SQL/receipts, exact grants/config/runtime and executable rollback; fresh B2/no-conflict check |
+
+A blank resource_id would cover every resource inside the specific approved
+org/user/operation; it is still outside the owner's no-wildcard approval. This
+preparation neither adopts that blank grant nor invents a new selector. Exact
+collection READ/SYNC grants alone cannot make arbitrary later manual CREATE
+available. The current source/configuration-only release targets cannot silently
+change the shared E1 authority contract.
+
+KYS source cleanup remains request-bound; no accepted periodic operator was
+found in current main or the refreshed related PR inventory. A signature or
+installation approval cannot supply missing retention/onboarding implementation.
+The earlier window variants remain conditional, unreserved and non-executable;
+if prerequisites are late, withdraw them and propose a fresh window.
+
+The user explicitly withholds application disablement, SQL019/SQL013 and deployment.
+No new approval is requested before the preceding prerequisites close.
+Same TASK02-R remains running; PMOS closeout PARTIAL, PHR PENDING, MEMOROS disabled.
