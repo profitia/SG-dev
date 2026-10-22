@@ -5,7 +5,7 @@
   "workspace": "SG-dev Codespaces SRM",
   "targetEnvironment": "development",
   "observedAt": "2026-10-22T04:14:59Z",
-  "phase": "PREPARED_WAITING_CONSOLIDATED_OWNER_GATE",
+  "phase": "PREPARATION_UPDATED_OWNER_ACTIONS_PENDING_NO_RELEASE_GO",
   "registration": {
     "id": "cmvj0baur0000t43u7k05vcpm",
     "conversationId": "pmos-task-v2:c9d8a78c718d4c20bffceca4f4d75df78069eb89c0761ed803533930112f5102",
@@ -60,15 +60,15 @@
     "database": "platform_private",
     "runtimeRole": "srm_private_development_runtime",
     "endpoint": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
-    "descriptorRevision": 75,
+    "descriptorRevision": 109,
     "sql019Installed": false,
     "sql013Installed": false,
     "locationTablesPresent": false,
     "locationGrants": 0,
     "locationPolicies": 0,
     "locationIntents": 0,
-    "accounts": 1,
-    "organisations": 1,
+    "accounts": 6,
+    "organisations": 2,
     "activeMemberships": 1,
     "identityProfiles": 0,
     "readback": [
@@ -240,9 +240,16 @@
     },
     "longRunningQueriesOver5Minutes": 0,
     "nonAcceptedPhaseEffects": 0,
-    "backgroundRetentionOperator": "NONE_ACCEPTED",
+    "backgroundRetentionOperator": "NONE_ACCEPTED_AFTER_GITHUB_PMOS_PHR_NEON_RENDER_AUDIT",
     "pgCronInstalled": false,
-    "sourceExternalCallCounters": "NOT_VERIFIED_CONTROLLED_SOURCE_OWNER_NOT_ACCESSIBLE"
+    "sourceExternalCallCounters": "NOT_VERIFIED_CONTROLLED_SOURCE_OWNER_NOT_ACCESSIBLE",
+    "initialDescriptorRevision": 75,
+    "activeAccounts": 1,
+    "disabledSyntheticAccounts": 5,
+    "activeOrganisations": 1,
+    "suspendedSyntheticOrganisations": 1,
+    "suspendedSyntheticMemberships": 2,
+    "initialReadbackScope": "The embedded initial readback precedes B1-I Stage2; new current counts/revision supersede it."
   },
   "applications": [
     {
@@ -305,7 +312,30 @@
     "proposedSnapshotRetentionDays": 7,
     "restoreFinalizeAllowed": false,
     "pointInTimeDatabaseRollbackAllowed": false,
-    "fullDatabaseRestoreRequiresSeparateIncidentDecision": true
+    "fullDatabaseRestoreRequiresSeparateIncidentDecision": true,
+    "newSnapshotRequiredAfterB1Stage2": true,
+    "consoleUiVerified": true,
+    "multiStepConfirmationOpenedReadOnlyAndCancelled": true,
+    "consoleAutoBranchNameAccepted": true,
+    "minimumSnapshotCoverageHours": 24,
+    "preferredSevenDaysOnlyIfUiOffers": true,
+    "minimumCoverageAlsoExtendsPastApprovedWindowAndRecovery": true,
+    "ownerCreatesSeparateComputeIfRequired": {
+      "fixedCu": 0.25,
+      "autosuspendSeconds": 300,
+      "movePrimaryEndpoint": false
+    },
+    "agentMayProvisionCompute": false,
+    "otherTaskPostInstallationResource": {
+      "snapshotId": "snap-green-cake-b94au5rc",
+      "branchId": "br-dark-credit-b9a5vlsn",
+      "createdAt": "2026-10-22T04:15:47Z",
+      "expiresAt": "2026-10-23T04:15:46Z",
+      "restoreStatus": "restored_NOT_finalized",
+      "ownerTask": "ARCHITECTURE-IDENTITY-B1-I-STAGE2-20261022",
+      "adoptedForTask02R": false,
+      "reason": "Predates Stage2 audit/cleanup state and lacks Task02R recovery acceptance; owner requested a fresh snapshot."
+    }
   },
   "render": {
     "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
@@ -318,13 +348,42 @@
       "autoDeploy": false,
       "health": "PASS",
       "configurationFingerprint": "d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5",
-      "configurationFingerprintScope": "CURRENT_SERVICE_ENVIRONMENT_VALUES_NOT_PROOF_OF_HISTORICAL_DEPLOY_CONFIGURATION",
+      "configurationFingerprintScope": "All31 current service variables matched actual server startup environment; secrets withheld",
       "locationFeatureFlag": "ABSENT_DEFAULT_FALSE",
       "locationConfigurationVersion": null,
-      "artifactDigest": null,
-      "retainedArtifactAvailability": "NOT_VERIFIED",
+      "artifactDigest": "f4216032035055e8ab8ad3e387882cf2fb02a82d8daca6bc4a58e57e52f502cf",
+      "retainedArtifactAvailability": "EXISTING_SUCCESSFUL_BUILD_AND_RUNNING_FILE_PARITY_VERIFIED",
       "lkgVerified": false,
-      "readOnlySsh": "DENIED_PUBLICKEY"
+      "readOnlySsh": "DENIED_PUBLICKEY",
+      "artifactAlgorithm": "sha256-sorted-path-type-content-v1",
+      "artifactRoots": [
+        ".next",
+        "node_modules",
+        "public",
+        "package.json",
+        "package-lock.json"
+      ],
+      "artifactExcludes": [
+        ".next/cache",
+        "nested .cache content"
+      ],
+      "artifactEntryCount": 23485,
+      "artifactBytes": 636136486,
+      "buildIdDigest": "c3155dc91d9a7eb8fea77def1cd4432e9d31a3d0d5b6d88db0623ff6504f78fc",
+      "runningInstanceId": "srv-db1vu6gm7kps73d0e3r0-5ccd45459d-zxpgf",
+      "runningArtifactMeasuredAt": "2026-10-22T04:48:40.623Z",
+      "runningArtifactVerified": true,
+      "existingRetainedBuildJobId": "job-dbbo4cc9v7es73fs7u80",
+      "existingRetainedBuildMeasuredAt": "2026-10-20T15:02:39.219Z",
+      "currentFilesExactlyMatchRetainedBuild": true,
+      "readOnlyWebShell": "AVAILABLE_WITHOUT_NEW_KEY",
+      "effectiveServerPid": 72,
+      "effectiveConfigurationFingerprint": "d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5",
+      "effectiveConfigurationKeyCount": 31,
+      "effectiveConfigurationMatchesCurrentService": true,
+      "nativeRollbackExecuted": false,
+      "currentLiveRollbackPreview": "Redirects to Live details; earlier retained deploys have enabled rollback controls; recheck exact retained target before release",
+      "combinedLkgIncompleteReason": "Fresh current database recovery point, isolated restore acceptance and full schema/binding compatibility remain unaccepted."
     },
     "maps": {
       "serviceId": "srv-dbat5ulg1s2s73defcp0",
@@ -352,15 +411,100 @@
       "srv-dapa40ad0e5s73f8bjm0"
     ],
     "configurationMutated": false,
-    "deploymentsTriggered": 0
+    "deploymentsTriggered": 0,
+    "lastKnownGood": {
+      "srm": {
+        "deployId": "dep-dbbnb22fngtc73bn0i90",
+        "sourceSha": "260ade12608faaea27376c1c976db392f046f267",
+        "artifactDigest": "f4216032035055e8ab8ad3e387882cf2fb02a82d8daca6bc4a58e57e52f502cf",
+        "configurationFingerprint": "d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5",
+        "runtimeInventory": "VERIFIED"
+      },
+      "maps": {
+        "deployId": "dep-dbati9rrjlhs73akpsj0",
+        "sourceSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+        "buildManifestDigest": "357464b3948e1141e73f8877f4bc42047d2fc7fcc1299e913d8ad98c6fabb984",
+        "publicFilesVerified": 13,
+        "deploymentChanged": false
+      },
+      "database": {
+        "projectId": "spring-bread-28217539",
+        "branchId": "br-sparkling-term-b99l107x",
+        "database": "platform_private",
+        "schemaState": "SQL017_INSTALLED_SQL019_SQL013_ABSENT",
+        "recovery": "WAITING_OWNER"
+      },
+      "e1Bindings": {
+        "revision": 109,
+        "applicationStates": [
+          {
+            "application": "srm",
+            "status": "ACTIVE",
+            "roles": [
+              "srm_private_development_runtime"
+            ]
+          },
+          {
+            "application": "srm-jobs",
+            "status": "ACTIVE",
+            "roles": [
+              "srm_private_development_jobs"
+            ]
+          },
+          {
+            "application": "spendguru",
+            "status": "ACTIVE",
+            "roles": [
+              "sg2_private_development_dashboard",
+              "sg2_private_development_runtime"
+            ]
+          },
+          {
+            "application": "spendguru-benchmark-dispatch",
+            "status": "ACTIVE",
+            "roles": [
+              "sg2_benchmark_dispatch_development_runtime"
+            ]
+          },
+          {
+            "application": "spendguru-forecast-dispatch",
+            "status": "ACTIVE",
+            "roles": [
+              "sg2_forecast_dispatch_development_runtime"
+            ]
+          },
+          {
+            "application": "identity-runtime-development",
+            "status": "DISABLED",
+            "roles": [
+              "identity_b1_runtime"
+            ]
+          }
+        ],
+        "newInstallationAuthority": false
+      }
+    }
   },
   "concurrency": {
     "threadId": "01a15aed-8d94-7fe0-9cff-c54f72b5f8a8",
     "title": "Flow, rejestracja i logowanie czatem",
-    "task": "TASK B1-I Stage 2 - Ordinary Runtime & Functional Acceptance",
+    "task": "ARCHITECTURE-IDENTITY-B1-I-STAGE2-20261022",
     "sharedReceiver": true,
-    "coordinationStatus": "OWNER_SERIALISATION_REQUIRED",
-    "messageSent": false
+    "coordinationStatus": "B1_STAGE2_CLOSED_OWNER_SHARED_MAINTENANCE_APPROVAL_NOT_GRANTED",
+    "messageSent": false,
+    "stage2Status": "completed",
+    "stage2CompletedAt": "2026-10-22T04:30:11.378Z",
+    "pmosResult": "SUCCESS",
+    "pmosCloseout": "CLOSEOUT_COMPLETE",
+    "pmosArtifactId": "cmvj1lil00000p9ukn3fi81b9",
+    "phrCommit": "0b9797f0ee20821bdb257ddd8cb0baa5ce1bd7e3",
+    "phrBundle": "history/2026/10/22/2026-10-22-04-30-02Z__architecture-architecture-identity-b1-i-stage2-20261022",
+    "phrBundleHash": "2065843d9e5d20711cb260c3aafcefdf3c3e1f98a99d75b873a847552498c7e7",
+    "phrHashesVerified": 5,
+    "actualClerkBrowserUat": false,
+    "activeArchitectureExecutions": 0,
+    "activeSg2SharedReceiverOperationFound": false,
+    "historicalSg2RunningRegistration": "PPF1-PORR-DASHBOARD-LIVE-VERIFY-20260921"
   },
   "tests": {
     "locations": {
@@ -439,15 +583,57 @@
     },
     "tableDmlGrants": [],
     "ownerMaintenancePort": "srm.location_expire_controlled()",
-    "ordinaryRuntimeMayExecuteMaintenance": false
+    "ordinaryRuntimeMayExecuteMaintenance": false,
+    "preliminaryCostAndCountParametersAccepted": true,
+    "maintenanceAndInstallationAuthority": "NOT_GRANTED",
+    "resourceGrantSemantics": {
+      "application": "srm",
+      "organisation": "exact approved current internal UUID",
+      "user": "exact approved current internal account UUID",
+      "feature": "supplier_report",
+      "operations": [
+        "supplier.location.read",
+        "supplier.location.write",
+        "supplier.location.sync"
+      ],
+      "nullOrganisationOrUserAllowed": false,
+      "nullOrWildcardOperationAllowed": false,
+      "nullResourceMeaning": "Matches every resource ID within that exact org/user/operation, not only one supplier",
+      "nullResourceApproved": false,
+      "finalResourceScopeDecisionRequired": true,
+      "typedPrefixSelectorImplementedBySql019": false,
+      "manualCreateNeedsReviewedDynamicResourceScope": true
+    },
+    "windowVariants": [
+      {
+        "localStart": "2026-10-22T10:00:00+02:00",
+        "localEnd": "2026-10-22T11:00:00+02:00",
+        "status": "PROPOSED_CONDITIONAL_NOT_RESERVED"
+      },
+      {
+        "localStart": "2026-10-22T14:00:00+02:00",
+        "localEnd": "2026-10-22T15:00:00+02:00",
+        "status": "PROPOSED_CONDITIONAL_NOT_RESERVED"
+      }
+    ],
+    "windowPreconditions": [
+      "fresh verified recovery and coverage",
+      "all applicable LKG evidence accepted",
+      "lawful UAT cohort and identity lifetime",
+      "approved retention or verified independent HQ/manual KYS fence",
+      "exact bounded E1 grants",
+      "authorised Source in-flight readback",
+      "SRM/SG2/ARCHITECTURE owner approval",
+      "fresh no-conflict check immediately before start"
+    ]
   },
   "ownerActions": [
-    "After serialising the B1-I Stage2 operation, create and identify a fresh current-state Neon snapshot and a dedicated multi-step restore branch; do not finalize or migrate primary connections. Seven-day retention proposed.",
-    "Enable existing read-only running-artifact/configuration verification or supply independently verifiable Render LKG digest, exact retained deploy artifact, historical configuration version and rollback availability. Do not generate credentials in chat.",
-    "Approve one exclusive Development maintenance window covering SRM/SG2 applications, consumers, bindings and controlled SQL019/SQL013 installation; preserve all pending work and verify Source effects through its authorised owner before quiescence.",
-    "Approve bounded location EXECUTE/operation/count-policy grants for named lawful E1 users and organisations, using the exact reviewed parameter set before execution.",
-    "Identify an existing approved retention execution and its responsible owner, or keep KYS location persistence/projection blocked. No competing scheduler or owner grants to runtime.",
-    "Provide lawful authenticated UAT access for two organisation members plus a separate organisation through the existing identity process; no credential sharing, impersonation or synthetic identities in the shared cloud receiver."
+    "Create the fresh current-state Neon snapshot and dedicated Multi-step restore copy in the verified exact project; return snapshot/branch/compute IDs and actual capture/expiry. No primary finalize or endpoint migration.",
+    "Architecture owner: accept a lawful current-identity onboarding/binding lifetime/renewal and exact org/product-membership procedure for three owner-created real Clerk users; no fixture reactivation, raw manual INSERT bypass or automatic B2 activation.",
+    "SRM owner with Architecture privileged-channel review: decide controlled periodic KYS derivative retention adoption; no suitable approved existing schedule was found. Otherwise keep KYS fenced and require a verified independent HQ/manual input+projection fence before partial activation.",
+    "Approve the final per-user/per-org/per-operation/resource permission matrix; resource_id=NULL matches all resource IDs within its org/user scope and is not preapproved by the no-wildcard instruction. Limits100/100/ZERO are only provisional accepted parameters.",
+    "Authorised Source owner: supply read-only in-flight/uncertain external-call evidence through its existing controlled operator; access owner lacks that ledger channel. Do not widen ordinary runtime privileges for inspection.",
+    "After all prerequisites: approve one exact <=60-minute Development window and coordinated application/binding/worker quiescence, SQL019/SQL013 procedure and limited grant activation. No service window or persistent product mutation is currently approved."
   ],
   "verdicts": {
     "TASK_02_R_STATUS": "PARTIAL",
@@ -466,7 +652,7 @@
     "E1_LOCATION_READ": "BLOCKED",
     "E1_LOCATION_WRITE": "BLOCKED",
     "E1_LOCATION_SYNC": "BLOCKED",
-    "KYS_RETENTION_OPERATOR": "PENDING",
+    "KYS_RETENTION_OPERATOR": "BLOCKED",
     "GOOGLE_CACHE_MAINTENANCE": "NOT_REQUIRED_FOR_ZERO_BUDGET",
     "LOCATION_PERSISTENCE_LIVE": "NOT_TESTED",
     "MANUAL_LOCATION_CRUD_LIVE": "NOT_TESTED",
@@ -497,6 +683,83 @@
     "PMOS_CLOSEOUT": "PARTIAL",
     "PHR_PUBLICATION": "PENDING",
     "MEMOROS": "DISABLED_BY_PROFILE"
+  },
+  "updatedAt": "2026-10-22T04:55:43.950286+00:00",
+  "ownerResponse": {
+    "source": "Direct human async answer to consolidated gate; conditional preparation authority only",
+    "directionConfirmed": true,
+    "preliminaryLimitsAccepted": true,
+    "writesPerOrganisationPer24h": 100,
+    "syncsPerOrganisationPer24h": 100,
+    "paidBudget": 0,
+    "maintenanceApproved": false,
+    "applicationDisablementApproved": false,
+    "sql019Sql013InstallationApproved": false,
+    "activeBindingChangesApproved": false,
+    "grantActivationApproved": false,
+    "recoveryResourcesCreatedBy": "OWNER",
+    "newAccountsCreatedBy": "OWNER",
+    "agentNewResourceAuthority": false
+  },
+  "identityAcceptance": {
+    "issuer": "https://unified-drum-7191.clerk.accounts.dev",
+    "clerkDevelopmentInstanceVerified": true,
+    "clerkUsers": 1,
+    "explicitTaskUatMetadataUsers": 0,
+    "reusableApprovedBrowserTestCohort": false,
+    "b1FixtureIssuer": "https://b1i-stage2-20261022.invalid",
+    "b1FixtureAccountsReusable": false,
+    "currentSrmSignUpEnabled": false,
+    "identityRuntimeImplementedOrDeployed": false,
+    "b1ProductiveProvisioningActive": false,
+    "b1NewBindingMaximumSeconds": 300,
+    "b1RenewalImplemented": false,
+    "organisationAuthority": "PROFITIA_E1_NOT_CLERK_ORGANIZATIONS",
+    "hostProfile": "PORR_SUITE_FIXED",
+    "hostOrganisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+    "testARequiresExplicitOwnerPermissionForCurrentFixedDevelopmentOrganisation": true,
+    "newUnboundTestOrganisationACannotBeSelectedByChangingABrowserId": true,
+    "userPattern": {
+      "A1": "HUMAN member of approved SRM Development organisation A",
+      "A2": "HUMAN member of same A",
+      "B1": "HUMAN member of separate approved internal organisation B"
+    },
+    "product": "SUPPLIER_INTELLIGENCE",
+    "feature": "supplier_report",
+    "accountOrMembershipCreationPerformed": false,
+    "unresolvedArchitectureDecision": "Accepted lawful onboarding/binding/renewal path for three owner-created genuine Clerk users and exact organisation membership/product scope; no manual raw-INSERT or disabled-test-account bypass."
+  },
+  "retentionAudit": {
+    "logicalSourceOwner": "SRM Runtime",
+    "privilegedControlOwner": "Architecture Platform / controlled profitia_access_owner",
+    "namedOperationalScheduleOwner": "NOT_ESTABLISHED",
+    "githubSourcePrs": [
+      549,
+      555,
+      597
+    ],
+    "canonicalSrmPmosTask": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+    "phrSourceTask": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+    "existingNativeCleanup": "createSensitiveNativeStore.purge -> current organisation protected SRM_SENSITIVE_EXPIRE work",
+    "existingCacheCleanup": "purgeOrganisationKysCache -> current organisation payload nulling",
+    "existingCleanupPeriodic": false,
+    "existingCleanupCoversSupplierLocationDerivatives": false,
+    "candidatePort": "srm.location_expire_controlled()",
+    "candidatePortInstalled": false,
+    "candidatePortOwnerOnly": true,
+    "ordinaryHumanOrServiceMayExecute": false,
+    "suitableExistingScheduledExecutorFound": false,
+    "newSchedulerOrRoleCreated": false,
+    "requiredAcceptance": [
+      "owner-controlled approved execution",
+      "physical KYS derivative expiry",
+      "manual-row preservation",
+      "immediate source-right withholding",
+      "idempotency",
+      "bounded execution",
+      "audit receipts",
+      "missed-run monitoring/recovery"
+    ],
+    "unresolvedDecision": "SRM owner must adopt an approved periodic controlled-maintenance execution; Architecture owner must accept any privileged channel/authority change. No approved existing schedule was found. Until accepted, keep KYS input/persistence/projection fenced. Do not repurpose unrelated cron."
   }
 }
-
