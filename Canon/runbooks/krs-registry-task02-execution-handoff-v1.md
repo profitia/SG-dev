@@ -1,22 +1,22 @@
 # TASK 02 — KRS Registry Runtime & Local Catalog
 
-Status: **EXECUTION HANDOFF CANDIDATE / CONDITIONAL / DO NOT START AUTOMATICALLY**.
+Status: **G1_GRANTED / MAIN_ROUTING_ACCEPTANCE_REQUIRED / DO NOT START AUTOMATICALLY**.
 Target: **BUILD COMPLETE / ACTIVATION DEFERRED**.
-Producer profile: ARCHITECTURE, owner proposed Architecture Platform, Development.
+Producer profile: ARCHITECTURE, approved owner Architecture Platform, Development.
 Prepared by TASK01 `ARCHITECTURE-KRS-REGISTRY-FOUNDATION-20261022`,2026-10-22.
 
-This is a future execution specification, not a new task authorization. Read [the decision candidate](../v1.0-krs-registry-architecture-and-ownership-canon.md) and [actual evidence](../evidence/2026-10-22-krs-registry-foundation.md), then revalidate current main, contracts, provider state and concurrent P1/I1/Maps work. Do not copy a historical baseline or narrated approval into authority.
+This is a future execution specification, not a new task authorization. Read [the G1 decision](../v1.0-krs-registry-architecture-and-ownership-canon.md), [onboarding evidence](../evidence/2026-10-22-krs-registry-g1-onboarding.md) and [historical foundation evidence](../evidence/2026-10-22-krs-registry-foundation.md), then revalidate current main, contracts, provider state and concurrent P1/I1/Maps work. Do not copy a historical baseline or narrated approval into authority.
 
 ## Entry gates
 
-1. Obtain actual formal first-class acceptance for KRS Registry, Architecture Platform, ARCHITECTURE, proposed classification and exact runtime/package/CI routes. Register through existing governance process, with real approval provenance and no fabricated ID. Verify reviewed registry/onboarding/manifest and tests on authoritative main.
+1. G1 owner approval is granted. Verify that its reviewed routing/onboarding/manifest and passing required CI are accepted on authoritative main: KRS Registry, Architecture Platform, ARCHITECTURE, ALIGNED and the exact three runtime/package/CI routes. A branch registration or PR alone does not satisfy this gate. Preserve the actual G1 provenance; do not request the same owner decision again or invent a host conversation ID.
 2. Receive a separate human TASK02 instruction. Stage01 Full Autopilot does not grant it.
 3. Load root/nested AGENTS, current manifest ordered CORE/ARCHITECTURE/adapter and exact routing. Use isolated source/dependencies/context/PHR and fresh main. Full preflight→own canonical PMOS begin→require-begin; target Development and record the actual executor/host identity or explicit unavailable state.
 4. Resolve E1 protected registry-read/search, publication/admission and KRS-backed location producer dependency. Stage02 may complete offline buildable adapters with injected accepted contracts and fail-closed unconfigured real binding, but must label that limitation and cannot claim live E1 readiness. If acceptance requires working end-to-end real E1 integration, close the separate producer dependency first. Do not modify platform-contracts under a KRS-only app task.
 
 ## Exact intended implementation boundary
 
-Only after main registration:
+Only after authoritative main registration and a separate TASK02 instruction:
 
 - `apps/krs-registry-runtime/**`: Node package/lockfile, API entry point, canonical client, identity/normalization/catalog/search/sync modules, migrations as source, fixture tests and release documentation.
 - `packages/krs-registry-contracts/**`: minimal validated versioned registry snapshot, candidate, identity and port contracts; no networking/identity policy.
@@ -33,7 +33,7 @@ Contracts remain independent of React/Next. No app-private imports from SRM, Map
 | Transport | Reuse platform Source/external-call/native HTTPS credentialMode NONE and existing admission/settlement; unknown or absent binding DENY; fixture loopback isolated from cloud configuration |
 | Normalization | Separate current/full schemas; scalar/object/array legal-form variants; entry validity; optional NIP/REGON; explicit redaction/partial/status UNKNOWN; invalid date/identifier rejection |
 | Provenance | Separate rawDigest/contentDigest/sourceVersion/addressVersion; stable facts despite changing extract-generation/retrieval clocks; immutable provider identity; no MGBI relabeling |
-| Identity | Explicit KRS first, accepted exact mapping, optional separately admitted MF mapper; unknown/ambiguous/conflicting NIP; no name-based merge; P/S identity agreement; historical incarnations and continuity evidence |
+| Identity | Explicit KRS first, accepted exact mapping, optional separately admitted MF mapper; unknown/ambiguous/conflicting NIP; no name-based merge; P/S identity agreement; historical incarnations and continuity evidence. Before any MGBI Financial acceptance require verified KRS/NIP reconciliation against company/document identity; unresolved evidence or mismatch denies new attribution |
 | Catalog | ADR's companies/snapshots/identifiers/names/checkpoints/items; local migrations with exact source digests, restrictive roles, transactional pointer+aliases, bounded JSON, nonunique NIP history |
 | Name search | Polish Ł/diacritic/Unicode normalization, legal-form alternative tokens, prefix>=1/fragment>=3 policy, escaped parameterized patterns, stable dedup/rank/KRS ties, bounded results/cursor and explicit coverage/freshness |
 | Synchronization | Explicit CLI runner and disabled startup/schedule; bulletin padding/dedup; P/S resolution; durable finite queue/checkpoint/lease/CAS; crash/replay/late correction/missed day/uncertain outcome recovery; no range enumeration |
