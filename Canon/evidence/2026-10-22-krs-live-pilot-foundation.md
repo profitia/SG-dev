@@ -73,3 +73,12 @@ installation and consumer connection checks; no laboratory routing is replaced.
 During publication, main advanced to a0a3b0626fac16e011b57d6284ce55abcfcd3ca3
 (coordinated Supplier Locations release / SDK1.25.0). This installer branch
 merges that accepted authority without changing its SDK or Maps sources.
+
+The first cloud installation attempt was refused before execution by automatic
+approval review: the official Source budget60 was confused with the maximum20
+HTTP reads. Native Source uses separate planning/attempt/settlement transactions;
+its HTTP admission policy was already capped20. For the smallest pilot we now
+also cap this technical Source ledger at20, a stricter limit allowing at most6
+complete three-stage reads. Catalog publication remains capped20. No counter is
+increased and no schema was installed by the refused attempt. No alternative
+transport or privilege bypass is used.
