@@ -2654,8 +2654,9 @@
       "src/server/supplier-locations.ts": "7bd5de449c7e709fb10af93b6396a20c2450b4a038dacb2491f0c18f2ead9d41",
       "src/modules/xray/supplier-locations.css": "e3956d673f17818547cb6eb9cfbdac83a489563ef16369cfdafcf0f7ddf3302c",
       "../../packages/srm-xray/src/FinancialHistoryDialog.tsx": "9371cf2efd029e036db3110ca7800f149a9bb8a11caf18cf375ac3af24eb9840",
-      "app/globals.css": "59d762ce11e81f386f2e69d7e84234a63e61045181660cd3cd3eea1666d79d2c",
-      "../../packages/srm-xray/src/ui-canon.tsx": "badf0676b6ab4462388dfcfd69ed66e1884afbfd8989c7ca1db388edb12c08ad"
+      "app/globals.css": "b78d56c22f58afa84662d092e6c3fad34bc775b7cde86ccaf2711db97dfd8ae6",
+      "../../packages/srm-xray/src/ui-canon.tsx": "badf0676b6ab4462388dfcfd69ed66e1884afbfd8989c7ca1db388edb12c08ad",
+      "app/layout.tsx": "622fdf5ce716e60e64772d04f63437990c63395638e266777296e05a81f5ce2d"
     },
     "sql014Installed": false,
     "sql020Installed": false,

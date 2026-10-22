@@ -110,7 +110,19 @@
         "viewport": 1280
       }
     },
-    "liveUat": "NOT_EXECUTED_OWNER_GO_PENDING"
+    "liveUat": "NOT_EXECUTED_OWNER_GO_PENDING",
+    "serverRegression": {
+      "total": 610,
+      "passed": 603,
+      "failed": 0,
+      "skipped": 7,
+      "skipReason": "Existing optional isolated-SQL tests without their separate fixture;43/43 actual location suite ran separately"
+    },
+    "stylesheetRegression": {
+      "initialCi": "39811445532 FAILED on forbidden globals.css @import",
+      "correction": "Use existing Next layout CSS entry; preserve original prohibition",
+      "localServerTestsAfterCorrection": "603PASS0FAIL7explicitOptionalSkips"
+    }
   },
   "migrations": {
     "sql019": {
@@ -303,5 +315,16 @@
     "Advanced map controls, filters and usage analytics",
     "Non-critical styling/tooltip refinements after lawful UAT"
   ],
-  "finalVerdict": "PARTIAL"
+  "finalVerdict": "PARTIAL",
+  "sourceCandidate": {
+    "branch": "srm/task02-r-fasttrack-uat-20261022",
+    "pr": 619,
+    "exactShaAuthority": "Read current immutable PR HEAD; source is pending acceptance"
+  },
+  "architectureCloseout": {
+    "task": "ARCHITECTURE-TASK02-R-RELEASE-CI-CLOSURE-20261022",
+    "registrationId": "cmvjq16hs0000d5235zkrwydn",
+    "state": "CLOSEOUT_COMPLETE",
+    "phrCommit": "d570f3137822c14fcf25c97f258a3d3a59627346"
+  }
 }
