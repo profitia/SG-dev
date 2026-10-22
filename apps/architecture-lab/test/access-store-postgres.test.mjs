@@ -240,6 +240,67 @@ test('access schema and real transaction boundaries with ordinary runtime logins
       await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[ORG_A,USER_A])
       await assert.rejects(withRuntime(async()=>assert.fail()),accessDenied)
     })
+    for(const [name,sql,values,reason] of [
+      ['membership suspension',"UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[ORG_A,USER_A],'ACCESS_BASIS_INVALID'],
+      ['permission removal',"DELETE FROM profitia_access.permission_grants WHERE application_id='sg2-test' AND organisation_id=$1 AND user_id=$2 AND operation='benchmark.selection.write'",[ORG_A,USER_A],'PERMISSION_DENIED'],
+      ['product revocation',"UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='sg2-test' AND organisation_id=$1",[ORG_A],'PRODUCT_UNAVAILABLE'],
+    ])await scenario('B2-E '+name+' removes next-operation access while the other organisation and identity remain active',async()=>{
+      const {host,input}=privateHostFixture()
+      assert.equal((await host.execute(input,async()=> 'before')).value,'before')
+      const revision=(await owner.query('SELECT revision FROM profitia_access.installation')).rows[0].revision
+      await owner.query('BEGIN')
+      try{await owner.query(sql,values);await owner.query('COMMIT')}catch(e){await owner.query('ROLLBACK');throw e}
+      assert.notEqual((await owner.query('SELECT revision FROM profitia_access.installation')).rows[0].revision,revision)
+      await assert.rejects(host.execute(input,()=>assert.fail('stale ALLOW reached business code')),e=>isOperationDenied(e)&&e.reasonCode===reason)
+      assert.equal((await host.execute({...input,organisationId:ORG_B},async()=> 'other-organisation')).value,'other-organisation')
+      assert.equal((await owner.query('SELECT status FROM profitia_access.accounts WHERE user_id=$1',[USER_A])).rows[0].status,'ACTIVE')
+      assert.equal((await owner.query('SELECT status FROM profitia_access.external_identities WHERE user_id=$1',[USER_A])).rows[0].status,'ACTIVE')
+    })
+    await scenario('B2-E rolled-back administration preserves revision and rights; a committed permission addition is freshly usable',async()=>{
+      const {host,input}=privateHostFixture(),values=[ORG_A,USER_A]
+      const remove="DELETE FROM profitia_access.permission_grants WHERE application_id='sg2-test' AND organisation_id=$1 AND user_id=$2 AND operation='benchmark.selection.write'"
+      const revision=(await owner.query('SELECT revision FROM profitia_access.installation')).rows[0].revision
+      await owner.query('BEGIN')
+      try{await owner.query(remove,values)}finally{await owner.query('ROLLBACK')}
+      assert.equal((await owner.query('SELECT revision FROM profitia_access.installation')).rows[0].revision,revision)
+      assert.equal((await host.execute(input,async()=> 'unchanged')).value,'unchanged')
+      await owner.query(remove,values)
+      await assert.rejects(host.execute(input,()=>assert.fail()),e=>isOperationDenied(e)&&e.reasonCode==='PERMISSION_DENIED')
+      await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'sg2-test',$2,$3,'ALLOW','benchmark.selection.write','benchmark')",[randomUUID(),...values])
+      assert.equal((await host.execute(input,async()=> 'new-authority')).value,'new-authority')
+    })
+    await scenario('B2-E real overlapping operation commits before its waiting admin revocation; next operation denies',async()=>{
+      const {host,input}=privateHostFixture()
+      let entered,release,operationPid
+      const started=new Promise(resolve=>{entered=resolve}),continueOperation=new Promise(resolve=>{release=resolve})
+      const operation=host.execute(input,async(_context,c)=>{
+        operationPid=(await c.query('SELECT pg_backend_pid() pid')).rows[0].pid
+        await c.query('INSERT INTO access_product_fixture.organisation_records VALUES($1,$2,$3)',[ORG_A,'b2e-in-flight','synthetic'])
+        entered();await continueOperation;return'committed-before-revocation'
+      })
+      // A failure before the callback must reject the barrier, not hang CI.
+      await Promise.race([started,operation.then(()=>assert.fail('callback not entered'))])
+      let change
+      try{
+        const adminPid=(await owner.query('SELECT pg_backend_pid() pid')).rows[0].pid
+        await owner.query("BEGIN;SET LOCAL lock_timeout='5s'")
+        change=owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[ORG_A,USER_A])
+        change.catch(()=>{})
+        const deadline=Date.now()+4000;let blocked=false
+        while(Date.now()<deadline){
+          blocked=(await root.query('SELECT $1::int=ANY(pg_blocking_pids($2::int)) blocked',[operationPid,adminPid])).rows[0].blocked
+          if(blocked)break
+          await new Promise(resolve=>setTimeout(resolve,10))
+        }
+        assert.equal(blocked,true,'observe the actual PostgreSQL lock wait before releasing the operation')
+        release();assert.equal((await operation).value,'committed-before-revocation')
+        await change;await owner.query('COMMIT')
+      }finally{release();await operation.catch(()=>{});await change?.catch(()=>{});await owner.query('ROLLBACK')}
+      assert.equal((await owner.query("SELECT count(*)::int n FROM access_product_fixture.organisation_records WHERE id='b2e-in-flight'")).rows[0].n,1)
+      assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE phase='OUTCOME'")).rows[0].n,1)
+      await assert.rejects(host.execute(input,()=>assert.fail()),accessDenied)
+      assert.equal((await host.execute({...input,organisationId:ORG_B},async()=> 'unaffected')).value,'unaffected')
+    })
     await scenario('append-only audit denies another application and secret-bearing envelopes in SQL',async()=>{
       const base={applicationId:'sg2-test',environment:'development',decisionId:randomUUID(),phase:'DECISION',decision:'DENY',reasonCode:'PERMISSION_DENIED'}
       for(const patch of [{applicationId:'srm-test'},{payload:'private'},{resourceId:{secret:'private'}},{productEvidence:[{secret:'private'}]},{resourceId:'Bearer synthetic-sensitive'}])await assert.rejects(sgPool.query('SELECT profitia_access.append_audit($1::jsonb)',[JSON.stringify({...base,...patch})]),/Audit envelope invalid/)
