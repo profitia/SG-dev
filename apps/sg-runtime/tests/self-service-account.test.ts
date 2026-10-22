@@ -9,6 +9,7 @@ import { readSelfServiceAccountConfiguration, accountCompletionUrl, readSelfServ
 const issuer = 'https://self-service-fixture.clerk.accounts.dev', publicOrigin = 'http://localhost:3001'
 const env = () => ({ PROFITIA_AUTH_PROVIDER: 'clerk', TARGET_ENVIRONMENT: 'development',
   PROFITIA_SELF_SERVICE_ENABLED: 'true', PROFITIA_SELF_SERVICE_PUBLIC_ORIGIN: publicOrigin,
+  PROFITIA_SELF_SERVICE_SATELLITE_ENABLED: 'true',
   PROFITIA_IDENTITY_RUNTIME_ORIGIN: 'http://localhost:3600', PROFITIA_CLERK_ISSUER: issuer,
   PROFITIA_CLERK_PUBLISHABLE_KEY: 'pk_test_' + Buffer.from(new URL(issuer).host + '$').toString('base64url'),
   PROFITIA_CLERK_SECRET_KEY: 'sk_test_fixture', PROFITIA_CLERK_AUTHORIZED_PARTIES: JSON.stringify([publicOrigin]) })
@@ -28,7 +29,7 @@ test('exact locale paths always complete on central Runtime; no caller-controlle
   assert.equal(accountCompletionUrl(config, 'pl', 'registration'), 'http://localhost:3600/account/sg2/account-pl/registration')
   assert.equal(accountCompletionUrl(config, 'en', 'login'), 'http://localhost:3600/account/sg2/account-en/login')
 })
-for (const patch of [{ PROFITIA_SELF_SERVICE_ENABLED: '1' }, { PROFITIA_AUTH_PROVIDER: 'legacy_demo' }, { TARGET_ENVIRONMENT: 'staging' },
+for (const patch of [{ PROFITIA_SELF_SERVICE_ENABLED: '1' }, { PROFITIA_SELF_SERVICE_SATELLITE_ENABLED: undefined }, { PROFITIA_AUTH_PROVIDER: 'legacy_demo' }, { TARGET_ENVIRONMENT: 'staging' },
   { PROFITIA_IDENTITY_RUNTIME_ORIGIN: '//foreign.test' }, { PROFITIA_IDENTITY_RUNTIME_ORIGIN: publicOrigin }, { PROFITIA_IDENTITY_RUNTIME_ORIGIN: 'https://u:p@foreign.test' },
   { PROFITIA_SELF_SERVICE_PUBLIC_ORIGIN: 'https://foreign.test' }, { PROFITIA_CLERK_SECRET_KEY: undefined }, { PROFITIA_IDENTITY_RUNTIME_ORIGIN: 'https://foreign.test/' }]) {
   test('invalid activation configuration cannot fall back to demo: ' + JSON.stringify(patch), async () => {

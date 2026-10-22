@@ -13,7 +13,7 @@ const origin = (value: string | undefined) => {
 export function readSelfServiceAccountConfiguration(env: Environment = process.env) {
   const enabled = env.PROFITIA_SELF_SERVICE_ENABLED
   if (enabled === undefined || enabled === 'false') return null
-  if (enabled !== 'true' || env.TARGET_ENVIRONMENT !== 'development') throw Error('ACCOUNT_CONFIGURATION_UNAVAILABLE')
+  if (enabled !== 'true' || env.TARGET_ENVIRONMENT !== 'development' || env.PROFITIA_SELF_SERVICE_SATELLITE_ENABLED !== 'true') throw Error('ACCOUNT_CONFIGURATION_UNAVAILABLE')
   const identity = readSg2IdentityRuntime(env)
   if (identity.provider !== 'clerk') throw Error('ACCOUNT_CONFIGURATION_UNAVAILABLE')
   const publicOrigin = origin(env.PROFITIA_SELF_SERVICE_PUBLIC_ORIGIN), runtimeOrigin = origin(env.PROFITIA_IDENTITY_RUNTIME_ORIGIN)
