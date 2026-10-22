@@ -19,6 +19,7 @@ No controlled-package controller, privileged workflow, dependency lock, token/pr
 - Six focused executable tests PASS,0skip: actual canonical Architecture/mixed owners and one-to-one coverage; unknown/ambiguous/traversal/duplicates; actual registry conflict/LEGACY/unknown profile; denied boundary; every owner gate/failure; real disposable Git exact SHA/base/HEAD-change tests.
 - Full Identity regression124/124PASS,0skip; lint, TypeScript and executable build PASS.
 - Canonical governance/workspace regression24/24PASS,0skip; manifest validation PASS; diff whitespace check PASS.
-- Exact committed-candidate CI and producer PostgreSQL regression: pending independent readback. No green job from another candidate is attributed here.
+- Exact source candidate8c627cdc, Draft PR611: Identity session/security and unchanged producer + real isolated PostgreSQL jobs both SUCCESS in run39785620160; canonical governance SUCCESS in run39785620247. Exact full40 SHA and job/artifact evidence retained in this task archive. This corrective changes no producer bytes.
+- A local attempt against a dirty in-progress SRM checkout was correctly blocked by CODE_STATE_GATE; it is not reported as mixed-candidate PASS. Actual canonical mixed routing and negative owner coverage are tested above; full cross-owner candidate proof remains a separate integration gate.
 
 The independent SRM receiver source remains a separate SRM task. Producer PR604 remains frozen and unmerged. Publication order and owner source acceptance remain separate gates.
