@@ -4,15 +4,17 @@ import { createOfficialClient } from './official-client.js'
 import { createSessionBoundary, createDatabaseAuthority } from './session-boundary.js'
 import { createHttpHandler } from './http-handler.js'
 import { createNodeServer } from './node-server.js'
+import { readDeploymentOrigin } from './deployment-configuration.js'
 import type { SessionBoundary } from './contracts.js'
 let pool: pg.Pool | null = null
 async function start() {
 let boundary: SessionBoundary | null = null
 const port = Number(process.env.PORT ?? '3600'); if (!Number.isInteger(port) || port < 1 || port > 65535) throw Error('INVALID_PORT')
-let origin = `http://127.0.0.1:${port}`
+let origin = readDeploymentOrigin(process.env.IDENTITY_RUNTIME_PUBLIC_ORIGIN, `http://127.0.0.1:${port}`)
 if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
   // Only a later owner-authorized deployment may supply these private values.
   const config = readConfiguration(JSON.parse(process.env.IDENTITY_RUNTIME_CONFIGURATION ?? 'null'))
+  if (process.env.IDENTITY_RUNTIME_PUBLIC_ORIGIN !== undefined && config.origin !== origin) throw Error('PUBLIC_ORIGIN_BINDING')
   if (!process.env.CLERK_SECRET_KEY || !process.env.IDENTITY_DATABASE_URL || !process.env.IDENTITY_ACCESS_BINDING) throw Error('PRIVATE_CONFIGURATION_REQUIRED')
   const binding = JSON.parse(process.env.IDENTITY_ACCESS_BINDING)
   if (binding.applicationId !== config.applicationId || binding.environment !== config.environment || binding.role !== 'identity_b1_runtime') throw Error('EXACT_RUNTIME_BINDING_REQUIRED')
