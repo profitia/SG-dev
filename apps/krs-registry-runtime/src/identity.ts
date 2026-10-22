@@ -1,4 +1,4 @@
-import {identityDigest,validateIdentityEvidence,canonical,sha256,nip,regon,krs,NORMALIZER_VERSION} from '@profitia/krs-registry-contracts'
+import {identityDigest,validateIdentityEvidence,canonical,sha256,nip,regon,krs,acceptedNormalizerVersion} from '@profitia/krs-registry-contracts'
 import type {CompanySnapshot,SelectedKrsIdentityEvidenceV1,VerifiedIdentityV1,IdentityBlockCodeV1,BlockedIdentityV1} from '@profitia/krs-registry-contracts'
 export interface IdentityCatalog {
   read(krs:string,register?:'P'|'S'):Promise<CompanySnapshot|null>
@@ -35,7 +35,7 @@ export async function resolveIdentity(input:{selectedKrs?:unknown;nip?:unknown;r
   if(snapshot.regon!==null&&!regon(snapshot.regon))return blocked(selected,'INVALID_REGON',[],snapshot)
   if((input.nip!==undefined&&input.nip!==snapshot.nip)||(input.regon!==undefined&&input.regon!==snapshot.regon))return blocked(selected,'IDENTIFIER_CONFLICT',[],snapshot)
   if(!snapshot.officialName)return blocked(selected,'KRS_UNAVAILABLE',[],snapshot)
-  if(snapshot.source.normalizerVersion!==NORMALIZER_VERSION)return blocked(selected,'UNSUPPORTED_EVIDENCE_VERSION',[],snapshot)
+  if(!acceptedNormalizerVersion(snapshot.source.normalizerVersion))return blocked(selected,'UNSUPPORTED_EVIDENCE_VERSION',[],snapshot)
   const value:VerifiedIdentityV1={contract:'profitia.krs-company-identity',version:'1.0.0',status:'VERIFIED',selectedKrs:selected,identity:{entityKey:snapshot.entityKey,krs:selected,nip:snapshot.nip,regon:snapshot.regon,officialName:snapshot.officialName},source:{...snapshot.source,extract:'CURRENT',checkedAt:new Date(now).toISOString()},validity:{policy:'KRS_FINANCIAL_IDENTITY_FRESHNESS_V1',maxAgeSeconds:300,maxClockSkewSeconds:30,expiresAt:new Date(Date.parse(snapshot.source.retrievedAt)+300000).toISOString()},evidenceRef:snapshot.evidenceRef,evidenceDigest:'0'.repeat(64),historicalCandidates:snapshot.historicalCandidates}
   value.evidenceDigest=await identityDigest(value)
   try{await validateIdentityEvidence(value,now);return value}catch{return blocked(selected,'STALE_IDENTITY_EVIDENCE',[],snapshot)}
