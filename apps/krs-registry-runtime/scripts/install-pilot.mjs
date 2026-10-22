@@ -12,7 +12,7 @@ export function installationPlan({ownerLogin='architecture_sg_lab_owner',databas
  const [ingestion,external,native]=core.map(x=>digest(x.sql)),reference=quote(approvalRef+':'+sourceSha),qdb=quote(database)
  const statements=[
   `DO $$ BEGIN IF current_database()<>${qdb} OR EXISTS(SELECT 1 FROM pg_namespace WHERE nspname IN('krs_registry','profitia_ingestion','profitia_external_call','profitia_external_native')) THEN RAISE EXCEPTION 'Empty exact pilot database required';END IF;END $$`,
-  `GRANT krs_catalog_owner,profitia_ingestion_owner TO ${ownerLogin} WITH ADMIN TRUE,INHERIT FALSE,SET TRUE`,
+  `GRANT krs_catalog_owner,profitia_ingestion_owner TO ${ownerLogin} WITH INHERIT FALSE,SET TRUE`,
   'SET LOCAL ROLE krs_catalog_owner',
   `REVOKE ALL ON DATABASE ${database} FROM PUBLIC`,
   `GRANT CONNECT ON DATABASE ${database} TO krs_reader,krs_ingest`,
@@ -42,7 +42,7 @@ export function installationPlan({ownerLogin='architecture_sg_lab_owner',databas
   read('apps/krs-registry-runtime/migrations/002-native-catalog.sql'),
   'SET LOCAL ROLE krs_catalog_owner',`REVOKE CREATE ON DATABASE ${database} FROM profitia_ingestion_owner`,
   'REVOKE CREATE ON SCHEMA krs_registry FROM profitia_ingestion_owner','REVOKE TRIGGER ON ALL TABLES IN SCHEMA krs_registry FROM profitia_ingestion_owner','RESET ROLE',
-  `GRANT krs_catalog_owner,profitia_ingestion_owner TO ${ownerLogin} WITH ADMIN TRUE,INHERIT FALSE,SET FALSE`)
+  `GRANT krs_catalog_owner,profitia_ingestion_owner TO ${ownerLogin} WITH INHERIT FALSE,SET FALSE`)
  return {sourceSha,approvalRef,database,project,branch,deploymentId,schemaDigests:{ingestion,external,native},statements}
 }
 if(process.argv[1]===fileURLToPath(import.meta.url)){
