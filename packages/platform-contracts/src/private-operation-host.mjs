@@ -10,6 +10,7 @@ import {createRequestInspection,requestInspectionSourceDigest} from './request-i
 import {createRequestWorkScope,requestWorkSourceDigest} from './request-work.mjs'
 
 export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.11.0' })
+export const SUPPLIER_LOCATION_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.12.0'})
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -156,7 +157,8 @@ function createBoundOperationHost(options, serviceMode) {
   if(needsRequestLedger ? serviceMode||module?.id!==target.module||!requestBinding
     ||Object.keys(requestBinding).sort().join(',')!==requestKeys.sort().join(',')||requestKeys.some(key=>!/^[a-f0-9]{64}$/.test(requestBinding[key]??''))
     :requestBinding!==null)throw TypeError('Private request requires its explicit same-store ledger and accepted module')
-  const baseRequestLedger=needsRequestLedger?createRequestLedger({binding,...requestBinding,operation:requestOperation,now}):null
+  if(options.locationAdmission!==undefined&&(serviceMode||!target?.location||!['supplier.location.write','supplier.location.sync'].includes(requestOperation)))throw TypeError('Explicit HUMAN SQL020 admission required')
+  const baseRequestLedger=needsRequestLedger?createRequestLedger({binding,...requestBinding,operation:requestOperation,locationAdmission:options.locationAdmission,now}):null
   if(options.requestContinuation===null)throw new TypeError('Explicit continuation cannot be null')
   const continuation=options.requestContinuation===undefined?null:freeze(copy(options.requestContinuation))
   if (continuation !== null && (!baseRequestLedger || serviceMode || delegated
@@ -174,18 +176,18 @@ function createBoundOperationHost(options, serviceMode) {
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
   // Validate the unchanged policy configuration now, without authenticating,
   // reading a database or constructing request-owned state.
-  const validate = createOperationExecutor({ application, now, authenticate: async () => null, withTransaction: unavailable, recordAudit: unavailable })
+  const validate = createOperationExecutor({ application, now,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest, authenticate: async () => null, withTransaction: unavailable, recordAudit: unavailable })
   if ((prepareInputs !== undefined && typeof prepareInputs !== 'function') || (describeOutcome !== undefined && typeof describeOutcome !== 'function') || (application.operations.includes('supplier.report.export') && typeof prepareInputs !== 'function')) throw new TypeError('Export requires server-owned transactional preparation; optional outcome adapter must be a function')
 
   return Object.freeze({
     contract: validate.contract,
-    hostContract: PRIVATE_OPERATION_HOST_CONTRACT,
+    hostContract: options.locationAdmission===undefined?PRIVATE_OPERATION_HOST_CONTRACT:SUPPLIER_LOCATION_HOST_CONTRACT,
     async execute(input, action) {
       // These variables belong to exactly ONE execution, including when the
       // shared host receives overlapping requests for different users/orgs.
       let identityBinding = null
       let bindingRead = false
-      const executor = createOperationExecutor({ application, now,
+      const executor = createOperationExecutor({ application, now,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest,
         authenticate: async request => {
           if (serviceMode) return store.resolveServiceActor(independentQuery)
           const authenticate = createAuthenticator({ resolveBinding: async key => {
