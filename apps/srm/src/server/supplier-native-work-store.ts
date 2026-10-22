@@ -4,7 +4,7 @@ import { OperationDenied, operationPayloadDigest, type Json, type OperationConte
 import { bindOrganizationTransaction, withOrganization, type DatabasePool } from './db'
 import { readSupplierRequest } from './supplier-request-operation'
 import type { SupplierNativeWork, SupplierNativeWorkSelection, SupplierNativeWorkUnit } from './supplier-request-work'
-import { createLookup } from './xray-repository'
+import { createLookup, type ExistingSupplierRegistration } from './xray-repository'
 import { persistSection } from './xray-lookup'
 import { readFreshCompany, readFinancialIndicators, recordSupplierInterest } from './shared-catalog'
 import { readCompanyRegistration } from './company-activity'
@@ -86,8 +86,10 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
     }finally{captured=undefined}
   }
   return Object.freeze({
-    register(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_REGISTER_LOOKUP',null,pool=>
-      createLookup(s.organisationId,{type:'NIP',value:s.command.nip},'COMPANY',pool,s.requestId))},
+    register(input:SupplierNativeWorkSelection,existingSupplier:ExistingSupplierRegistration='TOUCH'){
+      if(!['TOUCH','KEEP'].includes(existingSupplier))return refuse()
+      const s=select(input);return run(s,'SRM_REGISTER_LOOKUP',existingSupplier==='KEEP'?{existingSupplier}:null,pool=>
+      createLookup(s.organisationId,{type:'NIP',value:s.command.nip},'COMPANY',pool,s.requestId,existingSupplier))},
     cache(input:SupplierNativeWorkSelection,now=new Date()){
       const s=select(input),at=new Date(now.getTime());if(!Number.isFinite(at.getTime()))return refuse()
       return run(s,'SRM_CACHE_READ',{at:at.toISOString()},pool=>readFreshCompany(s.organisationId,s.command.nip,at,pool))

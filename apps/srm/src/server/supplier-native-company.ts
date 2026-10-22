@@ -52,7 +52,7 @@ export function createSrmNativeCompanyLookup(options:Options){
   const apiKey=options.mgbi.apiKey.trim(),authScheme=options.mgbi.authScheme
   const headers={authorization:authScheme==='bearer'?'Bearer '+apiKey:apiKey,accept:'application/json'}
   const clock=now?()=>new Date(now()):()=>new Date()
-  async function execute<T>(input:SupplierNativeWorkSelection,engine:(ports:XrayCompanyPorts)=>Promise<T>,recheck?:()=>Promise<void>){
+  async function execute<T>(input:SupplierNativeWorkSelection,engine:(ports:XrayCompanyPorts)=>Promise<T>,recheck?:()=>Promise<void>,keepExistingSupplier=false){
     if(!input||Object.getPrototypeOf(input)!==Object.prototype||Reflect.ownKeys(input).length!==3
       ||Object.keys(input).sort().join(',')!=='command,organisationId,requestId'
       ||Object.values(Object.getOwnPropertyDescriptors(input)).some(d=>!('value'in d)||!d.enumerable))return refuse()
@@ -68,7 +68,7 @@ export function createSrmNativeCompanyLookup(options:Options){
     const ports:XrayCompanyPorts={
       createLookup:async(org,identifier)=>{
         if(lookup||org!==selection.organisationId||identifier.type!=='NIP'||identifier.value!==selection.command.nip)return refuse()
-        const admitted=await link.registerAndAdmit(selection)
+        const admitted=await link.registerAndAdmit(selection,keepExistingSupplier?'KEEP':'TOUCH')
         if(admitted.sourceStatus!=='CONFIRMED'||!admitted.sourceRequest)throw new OperationDenied('DELIVERY_UNCERTAIN')
         if(admitted.lookup.requestId!==selection.requestId)return refuse()
         lookup=Object.freeze(admitted.lookup)
@@ -140,6 +140,6 @@ export function createSrmNativeCompanyLookup(options:Options){
   return Object.freeze({
     run:(selection:SupplierNativeWorkSelection)=>execute(selection,ports=>createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}})),
     prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:()=>Promise<void>)=>execute(selection,
-      ports=>prepareKrsFinancialWork(ports,selection,identity,recheck,()=>clock().getTime()),recheck),
+      ports=>prepareKrsFinancialWork(ports,selection,identity,recheck,()=>clock().getTime()),recheck,true),
   })
 }

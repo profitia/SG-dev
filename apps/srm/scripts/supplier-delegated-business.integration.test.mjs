@@ -469,6 +469,32 @@ async function supplierBusinessFixture(t,full=false){
    const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event ? 'requestWork'")).rows.map(row=>row.event)
    assert(events.length>=16);assert(events.every(event=>event.actorKind==='SERVICE'&&event.actorId===serviceId&&event.subjectUserId===U&&Object.keys(event.requestWork).length===9))
   })
+  await t.test('KRS registration creates or reads the supplier without admitting an unrelated UPDATE policy',async()=>{
+   const s=selection(await parent(A,'5213390341'))
+   await controlled(async()=>{
+    await owner.query("CREATE FUNCTION srm.fixture_ungranted_update() RETURNS boolean LANGUAGE sql AS 'SELECT true'")
+    await owner.query('REVOKE ALL ON FUNCTION srm.fixture_ungranted_update() FROM PUBLIC')
+    await owner.query("CREATE POLICY fixture_ungranted_update ON srm.suppliers FOR UPDATE TO PUBLIC USING(current_user='profitia_access_owner' AND srm.fixture_ungranted_update()) WITH CHECK(false)")
+   })
+   try{
+    assert.equal((await rawService.query("SELECT has_function_privilege(current_user,'srm.fixture_ungranted_update()','EXECUTE') allowed")).rows[0].allowed,false)
+    const before=await counts()
+    // Existing NIP behavior still requests an UPDATE; the injected policy
+    // reproduces PostgreSQL's permission check without granting that function.
+    await assert.rejects(nativeStore.register(s),isOperationDenied)
+    assert.deepEqual(await counts(),before)
+    const created=await nativeStore.register(s,'KEEP')
+    assert.equal(created.requestId,s.requestId)
+    const at=(await controlled(()=>owner.query('SELECT updated_at::text FROM srm.suppliers WHERE organization_id=$1 AND id=$2',[A,created.supplierId]))).rows[0].updated_at
+    assert.deepEqual(await nativeStore.register(s,'KEEP'),created)
+    assert.equal((await controlled(()=>owner.query('SELECT updated_at::text FROM srm.suppliers WHERE organization_id=$1 AND id=$2',[A,created.supplierId]))).rows[0].updated_at,at)
+    await assert.rejects(nativeStore.register({...s,organisationId:B},'KEEP'),isOperationDenied)
+    assert.equal((await rawService.query("SELECT has_function_privilege(current_user,'srm.fixture_ungranted_update()','EXECUTE') allowed")).rows[0].allowed,false)
+   }finally{await controlled(async()=>{
+    await owner.query('DROP POLICY fixture_ungranted_update ON srm.suppliers')
+    await owner.query('DROP FUNCTION srm.fixture_ungranted_update()')
+   })}
+  })
   await t.test('native READ sees its real current row and cannot update, delete or insert domain rows',async()=>{
    const s=selection(nativeA),before=await counts()
    await owner.query(`GRANT DELETE ON srm.lookup_requests TO ${EXECUTOR}`)
