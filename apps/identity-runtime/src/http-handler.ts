@@ -19,7 +19,7 @@ export function createHttpHandler(boundary: SessionBoundary | null) {
       const get = ['/healthz','/readyz','/v1/session'].includes(url.pathname)
       if (request.method !== (get ? 'GET' : 'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
       if (url.pathname === '/healthz') return json(200, { service: 'identity-runtime', status: 'ok' })
-      if (url.pathname === '/readyz') return json(boundary && await boundary.ready() ? 200 : 503, { ready: Boolean(boundary && await boundary.ready()) })
+      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready()); return json(ready ? 200 : 503, { ready }) }
       if (!boundary) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
       checkRequest(request, boundary.configuration, !get)
       if (url.pathname === '/v1/session') { const result = await boundary.session(request); return json(result.status === 'authenticated' ? 200 : result.status === 'unavailable' ? 503 : 401, { authenticated: result.status === 'authenticated' }) }

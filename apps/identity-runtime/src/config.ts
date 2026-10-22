@@ -14,7 +14,7 @@ export function routePath(value: unknown): value is string {
 }
 const identifier = (v: unknown): v is string => typeof v === 'string' && /^[a-z][a-z0-9_-]{0,63}$/.test(v)
 export function readConfiguration(input: unknown): RuntimeConfiguration {
-  const fail = (): never => { throw new BoundaryError(503, 'CONFIGURATION_UNAVAILABLE') }
+  function fail(): never { throw new BoundaryError(503, 'CONFIGURATION_UNAVAILABLE') }
   if (!closed(input) || Object.keys(input).some(k => !['applicationId','environment','origin','issuer','publishableKey','targets','stateTtlMs','maxPendingFlows'].includes(k))) fail()
   if (!identifier(input.applicationId) || input.environment !== 'development' || !exactOrigin(input.origin)
     || !exactOrigin(input.issuer) || !input.issuer.startsWith('https:') || typeof input.publishableKey !== 'string' || !/^pk_test_[A-Za-z0-9_-]+$/.test(input.publishableKey)) fail()

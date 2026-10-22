@@ -5,7 +5,9 @@ import { createSessionBoundary, createDatabaseAuthority } from './session-bounda
 import { createHttpHandler } from './http-handler.js'
 import { createNodeServer } from './node-server.js'
 import type { SessionBoundary } from './contracts.js'
-let boundary: SessionBoundary | null = null, pool: pg.Pool | null = null
+let pool: pg.Pool | null = null
+async function start() {
+let boundary: SessionBoundary | null = null
 const port = Number(process.env.PORT ?? '3600'); if (!Number.isInteger(port) || port < 1 || port > 65535) throw Error('INVALID_PORT')
 let origin = `http://127.0.0.1:${port}`
 if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
@@ -23,3 +25,5 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
 }
 const server = createNodeServer(origin, createHttpHandler(boundary)); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => { server.close(() => { void pool?.end().finally(() => process.exit(0)); if (!pool) process.exit(0) }); server.closeIdleConnections() })
+}
+start().catch(async () => { console.error('identity-runtime configuration unavailable'); await pool?.end(); process.exitCode = 1 })

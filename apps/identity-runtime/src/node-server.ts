@@ -2,7 +2,12 @@ import { createServer, type IncomingMessage } from 'node:http'
 export function createNodeServer(origin: string, handler: (request: Request) => Promise<Response>) {
   const expected = new URL(origin)
   const server = createServer(async (incoming: IncomingMessage, outgoing) => {
-    const raw = incoming.url ?? '', abort = new AbortController(), timer = setTimeout(() => abort.abort(), 5000)
+    const raw = incoming.url ?? '', abort = new AbortController()
+    let timer: ReturnType<typeof setTimeout>
+    const deadline = new Promise<Response>(resolve => { timer = setTimeout(() => {
+      abort.abort(); if (!incoming.complete) incoming.destroy()
+      resolve(new Response('{"error":"IDENTITY_UNAVAILABLE"}', { status: 503, headers: { 'content-type': 'application/json', 'cache-control': 'private, no-store' } }))
+    }, 5000) })
     incoming.on('aborted', () => abort.abort())
     try {
       if (incoming.headers.host !== expected.host || !/^\/[a-z0-9/-]*$/.test(raw) || raw.includes('//') || raw.includes('..')) throw Error('REQUEST_TARGET')
@@ -10,9 +15,9 @@ export function createNodeServer(origin: string, handler: (request: Request) => 
       const method = incoming.method ?? 'GET', chunks: Buffer[] = []; let total = 0
       for await (const chunk of incoming) { total += chunk.length; if (total > 4096 || abort.signal.aborted) throw Error('BODY_LIMIT'); chunks.push(chunk) }
       const bytes = Buffer.concat(chunks), request = new Request(origin + raw, { method, headers, signal: abort.signal, ...(!['GET','HEAD'].includes(method) ? { body: bytes } : {}) })
-      const response = await handler(request); outgoing.statusCode = response.status; response.headers.forEach((value,key) => outgoing.setHeader(key,value)); outgoing.end(Buffer.from(await response.arrayBuffer()))
+      const response = await Promise.race([handler(request), deadline]); outgoing.statusCode = response.status; response.headers.forEach((value,key) => outgoing.setHeader(key,value)); outgoing.end(Buffer.from(await response.arrayBuffer()))
     } catch { outgoing.writeHead(400, { 'content-type': 'application/json', 'cache-control': 'private, no-store' }); outgoing.end('{"error":"REQUEST_REJECTED"}') }
-    finally { clearTimeout(timer) }
+    finally { clearTimeout(timer!) }
   })
   server.requestTimeout = 5000; server.headersTimeout = 5000; server.maxHeadersCount = 64
   return server

@@ -2,12 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { createClerkIdentityAuthenticator } from '@profitia/platform-contracts/identity-provider'
 import { createAccessStore, type AccessStoreBinding, type AccessQuery } from '@profitia/platform-contracts/access-store'
 import { BoundaryError, type RuntimeConfiguration, type RuntimeSdk, type IdentityAuthority, type HumanActor, type SessionDecision, type SessionBoundary, type FlowStore } from './contracts.js'
-import { closed } from './config.js'
+import { closed, readConfiguration } from './config.js'
 import { createFlowStore } from './flow-store.js'
 import { resolveReturnRoute } from './return-routes.js'
 export function createDatabaseAuthority(binding: AccessStoreBinding, query: AccessQuery, issuer: string): IdentityAuthority {
   const store = createAccessStore({ binding })
-  return Object.freeze({ resolveBinding: key => store.resolveBinding(query, key),
+  return Object.freeze({ resolveBinding: (key: Parameters<IdentityAuthority['resolveBinding']>[0]) => store.resolveBinding(query, key),
     async ready() { try { await store.resolveBinding(query, { environment: binding.environment, issuer, subject: '__b2_readiness_probe__' }); return true } catch { return false } } })
 }
 export function checkRequest(request: Request, configuration: RuntimeConfiguration, mutation = false): void {
@@ -17,9 +17,10 @@ export function checkRequest(request: Request, configuration: RuntimeConfigurati
   if (mutation && request.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() !== 'application/json') throw new BoundaryError(400, 'JSON_REQUIRED')
 }
 const sessionKey = (actor: HumanActor) => actor.issuer + ':' + actor.proofRef.split(':binding:')[0]
-export function createSessionBoundary({ configuration, client, authority, now = Date.now, flowStore }: {
+export function createSessionBoundary({ configuration: inputConfiguration, client, authority, now = Date.now, flowStore }: {
   configuration: RuntimeConfiguration; client: RuntimeSdk; authority: IdentityAuthority; now?: () => number; flowStore?: FlowStore
 }): SessionBoundary {
+  const configuration = readConfiguration(inputConfiguration)
   const store = flowStore ?? createFlowStore({ maximum: configuration.maxPendingFlows, now })
   const authenticate = createClerkIdentityAuthenticator({ client, application: { appId: configuration.applicationId, environment: configuration.environment,
     issuer: configuration.issuer, authorizedParties: [configuration.origin] }, resolveBinding: key => authority.resolveBinding(key), now })
