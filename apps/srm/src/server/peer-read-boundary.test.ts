@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
+import { posix } from 'node:path'
 import { identitySourceDigest } from '@profitia/platform-contracts/identity-provider'
 import { readSrmPrivateReportConfiguration } from './private-runtime'
 import targets from '../../deployment/private-runtime-targets.json'
@@ -48,6 +49,20 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
     assert.equal(hash(readFileSync(new URL(path, root))), digest, path)
     assert.equal(hash(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':packages/platform-contracts/' + path])), previous.publicWebTransportSourceCompatibility.sourceDigests[path])
   }
-  for (const [path, digest] of Object.entries({ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests, ...receipt.supplierLocationFullStackAdoption.sourceDigests })) assert.equal(hash(readFileSync(new URL('../../' + path, import.meta.url))), digest, path)
+  const currentDigests={ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests, ...receipt.supplierLocationFullStackAdoption.sourceDigests };
+  const amendment=receipt.krsNameSearchSourceCompatibility;
+  if(amendment){
+    assert.equal(amendment.status,'SOURCE_CANDIDATE_ONLY');assert.equal(amendment.previousApplicationAuthority,'418a2ef0f30d840ce25ca645f5ef047e35d02192');
+    assert.equal(amendment.productDeploymentPerformed,false);assert.equal(amendment.platformSdkVersion,'1.24.0');
+    const preceding=JSON.parse(execFileSync('git',['show',amendment.previousApplicationAuthority+':apps/srm/operation-integration.json'],{encoding:'utf8'}));
+    for(const [key,value]of Object.entries(preceding))assert.deepEqual(receipt[key],value,key);
+    assert(Object.keys(amendment.changedFiles).length>0);
+    for(const [path,entry]of Object.entries(amendment.changedFiles) as [string,{previousSha256:string;sourceSha256:string}][]){
+      assert.equal(entry.previousSha256,currentDigests[path],path);
+      assert.equal(hash(execFileSync('git',['show',amendment.previousApplicationAuthority+':'+posix.normalize('apps/srm/'+path)])),entry.previousSha256,path);
+      assert.match(entry.sourceSha256,/^[a-f0-9]{64}$/);currentDigests[path]=entry.sourceSha256;
+    }
+  }
+  for (const [path, digest] of Object.entries(currentDigests)) assert.equal(hash(readFileSync(new URL('../../' + path, import.meta.url))), digest, path)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

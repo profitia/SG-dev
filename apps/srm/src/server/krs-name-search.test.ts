@@ -55,9 +55,9 @@ test('missing returned NIP cannot adopt documents even with the same KRS',async(
 test('identity reconciliation retains enriched Financial data, source periods and facts when all original records are eligible',async()=>{
  const f=await fixture();
  const period={...f.result.section.data!.periods[0],accountingStandard:'IAS_IFRS' as const,
-  documentId:'right:cfy',facts:[{metricCode:'PALA_NRFS',amount:'1200',unit:'PLN' as const}]};
- f.result.sourceData={...f.result.section.data!,periods:[period]};
- f.result.section={...f.result.section,data:f.result.sourceData};
+  documentId:'right:cfy',facts:[{metricCode:'PALA_NRFS',amount:'1200',currency:'PLN',unit:'PLN' as const}]};
+ const enriched={...f.result.section.data!,periods:[period]};f.result.sourceData=enriched;
+ f.result.section={...f.result.section,data:enriched};
  const result=await reconcileKrsFinancial(f.selected.identity,f.result,time);
  assert.deepEqual(result.section.data?.periods[0].facts,period.facts);
  assert.deepEqual(result.sourceData?.periods[0].facts,period.facts);
