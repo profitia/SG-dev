@@ -66,3 +66,42 @@ Zachowane są bieżące owner/actor/triggering_actor, wewnętrzny otwarty PR do 
 Kolejność przyjęcia: osobny governance PR polityki przez opisany wyżej bootstrap `sg2/`, niezmieniony profil ARCHITECTURE i jego własny PMOS; lokalne testy bezpieczeństwa i przegląd dokładnego diff; rzeczywisty exact-SHA kontrolowany CI ze starego zaufanego main; wszystkie właściwe checki i dopiero dozwolony merge. Następnie niezależny odczyt nowego main/polityki, bieżącego HEAD PR603 i dokładnych15 plików, nowe `validate-sg2` ze zaufanego main, nowy source-bound proof i ponowienie publicznego CI. Zmiana HEAD/polityki unieważnia poprzedni proof. KRS routing staje się przyjęty dopiero po drugim dozwolonym merge i niezależnym odczycie main. Zmiana polityki nie uruchamia Stage02, deploymentu ani płatnego providera. Równoległy kandydat Identity ma osobny zakres i nie jest przyjmowany przez tę klasę.
 
 Rollback: przed przyjęciem pozostawić/odrzucić oddzielny PR; po przyjęciu zwykły przeglądany revert usuwa tylko nową klasę, zachowując historię i poprzednią klasę producenta. Ponownie wymagany jest proof zgodny z aktualnym digestem. Nie cofa się produktu ani bazy i nie zmienia sekretu/Environment w ramach tego powrotu.
+
+## Zamknięta klasa przeglądu Identity Lifecycle — propozycja B2-E-CI-01
+
+Status: propozycja źródłowa, do osobnego przyjęcia przez właściciela. Rejestracja zadania i lokalny PASS nie aktywują nowej polityki na main ani nie stanowią kontrolowanego dowodu SG2.
+
+Oprócz istniejącej klasy producenta kontroler dopuszcza jeden zamknięty zestaw **wszystkich pięciu** ścieżek, wyłącznie added/modified, bez żadnej innej ścieżki:
+
+1. `Canon/evidence/2026-10-22-identity-runtime-porr-first-decision.md`
+2. `Canon/evidence/2026-10-22-identity-runtime-lifecycle-b2-e.md`
+3. `Canon/runbooks/identity-runtime-lifecycle-and-persistent-login-v1.md`
+4. `apps/identity-runtime/test/lifecycle-resilience.test.mjs`
+5. `apps/architecture-lab/test/access-store-postgres.test.mjs`
+
+Tylko dla kompletnego zestawu nie wymaga się fikcyjnej zmiany `packages/platform-contracts/**`. Kolejność plików nie ma znaczenia; brak, dodatkowa ścieżka, deletion/rename/copy, duplikat, zły blob/SHA lub zmieniony routing powodują odmowę. Nie ma ogólnego wyjątku dla `apps/**`, rozszerzenia `.test.mjs`, innych dokumentów, przyszłych plików albo mieszania tej klasy z producentem. Zmiana zestawu wymaga kolejnego przeglądu polityki.
+
+Niezmienione pozostają owner/actor i triggering_actor, otwarty wewnętrzny PR do main, dokładny HEAD, kompletne pobranie listy GitHub z ponownym odczytem metadanych, liczność, brak rename, trusted routing ALLOWED/ALIGNED, Git diff/tree/blob, zwykły plik/realpath/limit rozmiaru oraz ponowne sprawdzenie przed instalacją i proof. Owner obu plików testowych musi być Architecture Platform; trzech dokumentów — Governance Source Layer. Kandydat nie podaje własnej allowlisty. Testy są wykonywalnym kodem i wymagają przeglądu; nazwa pliku nie dowodzi nieszkodliwości. Żaden kod kandydata nie jest importowany do admission.
+
+Workflow i GitHub Environment protection nie zmieniają się. Poświadczenie nadal trafia tylko do istniejącej instalacji `--ignore-scripts`; późniejsze wykonanie i proof pozostają bez poświadczeń. Format i weryfikacja proof nie mają wyjątku dla tej klasy. Zmiana kontrolera zmienia istniejący policy digest; stary proof nie może spełnić nowej walidacji.
+
+### Owner GO i późniejsza walidacja
+
+1. Właściciel przegląda osobny DRAFT PR korekty i dokładny source SHA z jego handoffu. Niniejsze zadanie nie wykonuje żadnego merge ani uprzywilejowanego dispatchu. PR #600 i jego źródła pozostają bez zmian.
+2. Jeżeli przed przyjęciem korekty wymagany jest kontrolowany proof jej samej, wymaga to jawnego GO. Canonical bootstrap używa namespace `sg2/` przy niezmienionym profilu ARCHITECTURE oraz wyłącznie governance targets; to nie daje prawa zapisu do SG2. Istniejący kontroler main może zweryfikować niezmienione zależności konsumenta dla exact SHA korekty. Nie kopiuje się nowej polityki do procesu z sekretami przed przyjęciem, nie poszerza Environment i nie pomija wymaganego checka. Brak tego proof pozostaje jawnym owner gate, a nie PASS.
+3. Po odrębnym zatwierdzeniu właściciel scala wyłącznie przyjęty exact source. Odczytać rzeczywisty merge SHA i aktualny main, porównać zaakceptowane pliki/digest, wymagane kontrole i politykę Environment. Merge SHA może różnić się od source SHA. Różnica kodu, sekret/polityka środowiska wymagająca zmiany lub niespójność zatrzymuje wykonanie.
+4. W osobnej autoryzowanej jednostce odświeżyć main i PR #600, właściwy preflight/BEGIN oraz cały current diff. Jeżeli synchronizacja z main/rebase zmieniła HEAD, pobrać nowy exact SHA; nie używać automatycznie historycznego `70b4b05a870f93921529319f3a1693dd345ed0af`. Aktualny zestaw musi nadal przechodzić nowe admission i Git blob validation; nie edytować metadanych lub dodawać sztucznego producenta dla obejścia odmowy.
+5. Dopiero po GO uruchomić istniejący workflow na **main**, mode=`validate-sg2`, candidate_pr=`600`, expected_sha=`<odczytany aktualny SHA>`. Wymagany jest rzeczywisty sukces testów/API/typecheck/build, istniejący ograniczony sekret bez ujawniania i nowy proof wiążący candidate SHA, control/merge SHA, run ID oraz aktualny policy digest. Brak/wygaśnięcie sekretu lub dodatkowe wymagania dostępu oznaczają STOP i działanie właściciela, bez automatycznej zmiany secrets/Environment.
+6. Po sukcesie ponowić publiczny check dla tego samego aktualnego SHA i potwierdzić niezależnie wszystkie wymagane wyniki. Zmiana HEAD lub polityki unieważnia proof i wymaga nowej walidacji. Brak proof nie jest PASS. PR #600 nadal pozostaje DRAFT do odrębnego odbioru; zgoda na walidację nie jest zgodą na jego merge, deployment ani Live Clerk Acceptance.
+
+Rollback propozycji: pozostawić/odrzucić draft, bez zmiany main. Po przyjęciu ewentualny przeglądany revert usuwa wyłącznie nową klasę; historia dowodów zostaje. Ponieważ digest się zmienia, nowe walidacje wymagają proof zgodnego z przywróconym main — bez wyjątków dla starego digestu i bez cofania produktu/bazy.
+
+## Uzgodnienie KRS i Identity — B2-E-CI-02
+
+Propozycja Identity jest uzgodniona z zaakceptowanym main `0ad9525f1397d41b965787fb487492a713ba0e54`, zawierającym PR606 i onboarding KRS. Jeden kontroler zachowuje trzy niezależne klasy: dotychczasowy producent, dokładny zestaw15 KRS oraz dokładny zestaw5 Identity. Stała KRS, jej predykat kompletności, wszystkie15 przyjętych plików i pięć testów KRS pozostają zachowane. Wspólna kontrola zamkniętych zestawów wymaga added/modified; mieszanie klas, dodatkowe i podmienione ścieżki nie korzystają z wyjątku. Nie dodaje się sztucznego producenta.
+
+Owner KRS workflow/scripts i Canon pozostaje Governance Source Layer. Jedynie dwie ścieżki aplikacyjnych testów należące do kompletnej klasy Identity wymagają Architecture Platform; producent zachowuje istniejących ownerów. Nie powstaje ogólne dopuszczenie aplikacji, testów lub workflow. Zamiana ownera na inną prawidłową nazwę, błędny profil i state nadal dają odmowę dla właściwej klasy, bez zmiany pozostałych.
+
+Historia PR605 jest łączona z aktualnym main zwykłym, przeglądalnym commitem, bez force-push. Bieżący task autoryzuje wyłącznie źródła i testy. Poprzednie GO dla `e357327f8790296a6ea0016b67218e26ac8101e5` nie obejmuje nowego SHA. Właściciel otrzymuje aktualny exact SHA i parametry istniejącego `validate-sg2` z ref main, candidate_pr605. Żaden uprzywilejowany dispatch, merge605/600 ani aktywacja nie jest wykonywana w tym tasku. Brak proof w publicznym CI pozostaje FAIL.
+
+Po osobnym GO i faktycznie zakończonej kontrolowanej walidacji trzeba odczytać proof dla tego samego SHA, sprawdzić controlSha/runId/aktualny digest i powtórzyć publiczny check. Merge wymaga kolejnej odrębnej zgody. Następnie osobny task może sprawdzić aktualne HEAD/diff PR600 i uzyskać proof z przyjętego main. Revert samego dodatku Identity zachowuje przyjętą klasę KRS oraz historię; nie zmienia workflow, secrets, Environment ani produktu.
