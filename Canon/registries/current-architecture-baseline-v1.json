@@ -580,6 +580,60 @@
         "ARCHITECTURE"
       ],
       "onboardingAuthorization": "G1 GRANTED: explicit owner instruction in Codex host 01a15aed-8d94-7fe0-9cff-c54f72b5f8a8, 2026-10-21, TASK B0 OWNER APPROVAL CONFIRMATION; Canon/v1.0-identity-runtime-architecture-and-ownership-canon.md"
+    },
+    {
+      "id": "KRS-BASE-001",
+      "capability": "KRS Registry Runtime",
+      "name": "KRS Registry Runtime",
+      "pathPatterns": [
+        "apps/krs-registry-runtime/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Official KRS source adapter, legal-company catalog, discovery and synchronization; no organisation-private supplier store or identity authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner instruction KRS REGISTRY — FORMAL OWNER APPROVAL G1, 2026-10-22; Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md"
+    },
+    {
+      "id": "KRS-BASE-002",
+      "capability": "KRS Registry Contracts",
+      "name": "KRS Registry Contracts",
+      "pathPatterns": [
+        "packages/krs-registry-contracts/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Framework-neutral versioned registry snapshot, identity evidence and candidate contracts; no provider transport or E1 authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner instruction KRS REGISTRY — FORMAL OWNER APPROVAL G1, 2026-10-22; Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md"
+    },
+    {
+      "id": "KRS-BASE-003",
+      "capability": "KRS Registry CI",
+      "name": "KRS Registry CI",
+      "pathPatterns": [
+        ".github/workflows/krs-registry-ci.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Independent offline validation/build with isolated local PostgreSQL; no deployment, live migration, secrets or provider switching.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "1922aab9788ccd191da8a2c517cae9f48ef78ed8",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner instruction KRS REGISTRY — FORMAL OWNER APPROVAL G1, 2026-10-22; Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md"
     }
   ],
   "cleanupFindings": [

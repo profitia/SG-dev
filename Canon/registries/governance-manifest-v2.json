@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.27.0",
+  "manifestVersion": "3.28.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,7 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {"id":"krs-registry-architecture-and-ownership","version":"1.0","path":"Canon/v1.0-krs-registry-architecture-and-ownership-canon.md","status":"ACTIVE","loadOrder":370,"owner":"Architecture Platform","appliesTo":["SG2","SRM","ARCHITECTURE"],"dependsOn":["repository-routing","architecture-baseline","architecture-execution-adapter","architecture-environment-topology","spendguru-srm-target-architecture-canon","operation-context-and-access-contract","architecture-resource-onboarding","shared-development-contract-integration","architecture-reporting-runbook"]},
     {"id":"identity-runtime-architecture-and-ownership","version":"1.0","path":"Canon/v1.0-identity-runtime-architecture-and-ownership-canon.md","status":"ACTIVE","loadOrder":365,"owner":"Architecture Platform","appliesTo":["SG2","SRM","ARCHITECTURE"],"dependsOn":["repository-routing","architecture-baseline","architecture-execution-adapter","architecture-environment-topology","spendguru-srm-target-architecture-canon","operation-context-and-access-contract","spendguru-srm-architecture-delivery-roadmap","architecture-resource-onboarding","architecture-reporting-runbook"]},
     {"id": "srm-maps-runtime-amendment", "version": "1.2", "path": "Canon/v1.2-srm-maps-runtime-amendment.md", "status": "ACTIVE", "loadOrder": 136, "owner": "SRM Architecture Governance", "appliesTo": ["SRM", "SG2"], "dependsOn": ["srm-architecture-component-placement", "repository-routing", "architecture-baseline"]},
     {"id": "agent-execution-canon", "version": "3.0", "path": "Canon/v3.0-profitia-agent-execution-canon.md", "status": "ACTIVE", "loadOrder": 10, "owner": "Profitia Governance", "appliesTo": ["CORE"], "dependsOn": []},
