@@ -63,3 +63,10 @@ cloud DB remains empty until the accepted exact installation is applied.
 Existing SRM regression:634 PASS,7 optional SQL tests skipped,0 failures.
 Credential transfer is separately awaiting explicit approval after automatic
 approval review rejected exporting source-service secrets. No secret copied.
+
+The catalog is registered under Development.publicKnowledgeStores, separately
+from the two immutable LAB identities. The primary laboratory and PMOS resource
+routing is preserved; the pilot does not substitute for either technical lab.
+During publication, main advanced to a0a3b0626fac16e011b57d6284ce55abcfcd3ca3
+(coordinated Supplier Locations release / SDK1.25.0). This installer branch
+merges that accepted authority without changing its SDK or Maps sources.

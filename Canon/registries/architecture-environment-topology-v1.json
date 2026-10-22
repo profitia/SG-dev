@@ -89,24 +89,29 @@
             "databaseName": "architecture_srm_lab",
             "runtimeRole": "architecture_srm_lab_runtime",
             "consumerProjectKey": "SRM"
-          },
-          {
-            "databaseId": 122089,
-            "databaseName": "krs_registry_pilot",
-            "databaseOwner": "krs_catalog_owner",
-            "runtimeRole": "krs_reader",
-            "ingestionRole": "krs_ingest",
-            "consumerProjectKey": "ARCHITECTURE",
-            "purpose": "PUBLIC_KRS_CATALOG_ISOLATED_PILOT",
-            "ownerApprovalRef": "USER-20261022-KRS-ISOLATED-PILOT",
-            "schemaStatus": "EMPTY_PENDING_CONTROLLED_INSTALLATION",
-            "additionalCompute": false
           }
         ]
       },
       "domains": [],
       "deploymentPolicy": "MANUAL_EXACT_SHA",
-      "schemaStatus": "TECHNICAL_PROBES_INITIALIZED_NO_PRODUCT_MIGRATION"
+      "schemaStatus": "TECHNICAL_PROBES_INITIALIZED_NO_PRODUCT_MIGRATION",
+      "publicKnowledgeStores": {
+        "krsRegistryPilot": {
+          "databaseId": 122089,
+          "databaseName": "krs_registry_pilot",
+          "databaseOwner": "krs_catalog_owner",
+          "runtimeRole": "krs_reader",
+          "ingestionRole": "krs_ingest",
+          "consumerProjectKey": "ARCHITECTURE",
+          "purpose": "PUBLIC_KRS_CATALOG_ISOLATED_PILOT",
+          "ownerApprovalRef": "USER-20261022-KRS-ISOLATED-PILOT",
+          "schemaStatus": "EMPTY_PENDING_CONTROLLED_INSTALLATION",
+          "additionalCompute": false,
+          "projectId": "fancy-cell-49425728",
+          "branchId": "br-divine-fog-baohc5ay",
+          "host": "ep-dry-hat-bafvyimb.c-8.eu-central-1.aws.neon.tech"
+        }
+      }
     },
     "staging": {
       "status": "RESERVED",
