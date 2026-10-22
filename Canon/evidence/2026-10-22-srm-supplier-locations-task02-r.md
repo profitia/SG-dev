@@ -1,5 +1,7 @@
 # TASK02-R — controlled Supplier Locations release preparation
 
+Current-status authority: **Owner acceptance and source reconciliation**, appended below. Earlier dated observations remain historical; the companion JSON selects `ownerAcceptedExecution`.
+
 Status: **PARTIAL — coordinated gate closure;82 tables verified,20 isolated tests PASS; installation remains NO-GO**.
 Initial checkpoint: 2026-10-22 04:14:59 UTC. The final **Coordinated Release Gate Closure** section and JSON coordinatedGateClosure are current; earlier dated observations and window variants are retained history and are superseded.
 Task: `SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022`. Profile SRM; Development only.
@@ -1408,3 +1410,40 @@ policy pending. Its health-only first-release proposal still requires a separate
 combined owner GO. Thus I1/P1/U1 and the handoff values above remain unchanged.
 The present packet neither duplicates that Identity Runtime task nor makes its
 full deployment a prerequisite for the smallest existing-auth SRM UAT route.
+
+
+## Owner acceptance and source reconciliation — 2026-10-22T08:47:59Z
+
+The owner directly accepted PR601 reference d9f96316724b5c02ea18d3c5c06f254a719b46c2
+as the two-file TASK02-R preparatory evidence package, authorising its normal
+documentation-only promotion after current-main reconciliation, full governance
+and exact-head CI. No new approval of unchanged preparation is required. The
+source attachment and digest are retained in ownerAcceptedExecution in JSON.
+This acceptance expressly excludes protected R2 execution, foreign producer
+implementation without owner authority, live identities/grants, installation,
+shutdown, deployment, costs, restore/finalize or endpoint changes.
+
+Fresh authority main is aa95c0a0a14fb2f2ba5af7338c8d83a6fb349269. **PR599 is now
+MERGED**, at that SHA on2026-10-22T08:13:56Z; its accepted source is the strict
+health-only ingress correction. Earlier Draft observations remain valid dated
+history, not current status. No productive registration, renewal or live runtime
+acceptance is inferred from this merge. PR600 remains DRAFT at
+97d2839dde880bf9ab20c605ef5eb7b736f112a4: one canonical Identity Core, PORR first,
+multiple authorised organisations per deployment and no automatic access. It is
+not live multi-organisation onboarding or SRM receiver acceptance.
+
+The old clean branch was behind main and correctly returned CODE_STATE_GATE
+BLOCKED. Its accepted d9f9631 reference remains untouched. A clean integration
+branch srm/supplier-locations-601-promotion-20261022 was bootstrapped from current
+main; full existing-registration preflight PASS preceded merging the preserved
+two-file evidence history. Product source equals current main; the final PR diff
+remains restricted to the two owner-approved evidence files. This is workspace
+reconciliation, not a bypass or retroactive PASS for edits on stale source.
+
+Documentation promotion is pending actual exact-head CI and ordinary PR merge;
+the resulting SHA will be independently read back, not guessed in this candidate.
+Existing SRM PMOS registration remains RUNNING. Strict recovery remains82/105
+with23 exact pending objects, and no protected R2 operation was executed. After
+promotion, independently prepare complete owner-routed P1/I1 execution prompts,
+the exact R2 request and concrete K1/U1 manifest/procedure. No duplicate SRM task
+or artificial final TASK02-R PHR is created.

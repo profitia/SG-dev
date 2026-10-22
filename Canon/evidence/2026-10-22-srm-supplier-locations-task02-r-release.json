@@ -5,7 +5,7 @@
   "workspace": "SG-dev Codespaces SRM",
   "targetEnvironment": "development",
   "observedAt": "2026-10-22T04:14:59Z",
-  "phase": "CONTROLLED_RECOVERY_CLOSURE_OWNER_DECISIONS_PENDING",
+  "phase": "OWNER_ACCEPTED_DOCUMENTATION_PROMOTION_AND_DEPENDENCY_PACKAGES",
   "registration": {
     "id": "cmvj0baur0000t43u7k05vcpm",
     "conversationId": "pmos-task-v2:c9d8a78c718d4c20bffceca4f4d75df78069eb89c0761ed803533930112f5102",
@@ -2109,7 +2109,7 @@
     "PMOS_TASK_STATE": "RUNNING",
     "PHR_TASK02_R_PUBLICATION": "NOT_YET_PUBLISHED"
   },
-  "updatedAt": "2026-10-22T07:45:19+00:00",
+  "updatedAt": "2026-10-22T08:47:59Z",
   "ownerResponse": {
     "source": "Direct human async answer to consolidated gate; conditional preparation authority only",
     "directionConfirmed": true,
@@ -12017,5 +12017,65 @@
     },
     "dependencyFreshnessAt": "2026-10-22T07:45:19+00:00"
   },
-  "currentEvidenceSection": "controlledRecoveryContinuation"
+  "currentEvidenceSection": "ownerAcceptedExecution",
+  "ownerAcceptedExecution": {
+    "observedAt": "2026-10-22T08:47:59Z",
+    "taskId": "SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022",
+    "ownerAcceptance": {
+      "status": "CONFIRMED",
+      "source": "Direct owner-supplied continuation task in this chat",
+      "document": "/Users/tomaszuscinski/.codex/attachments/db9bc83e-11af-470c-89b3-d70f16d45b42/Pasted text.txt",
+      "documentSha256": "865e6f0fd5470c5ca72197cc8069af3e51311fb2b345f95dd60d57f8d546149c",
+      "acceptedPr": 601,
+      "acceptedReferenceHead": "d9f96316724b5c02ea18d3c5c06f254a719b46c2",
+      "authority": "Normal documentation-only source promotion after reconciliation, full governance and exact-head CI; no repeated approval of unchanged preparatory content.",
+      "exclusions": [
+        "Privileged R2 reads",
+        "P1/I1 implementation without separate owner authority",
+        "Live grants/policies/identity provisioning",
+        "SQL019/SQL013/new producer migration",
+        "Shared shutdown/binding change/deployment",
+        "New resources/costs/finalize/endpoint migration/Stage/Prod"
+      ]
+    },
+    "currentMain": "aa95c0a0a14fb2f2ba5af7338c8d83a6fb349269",
+    "pr599": {
+      "status": "MERGED",
+      "head": "c8936471e2e295dde0a470361ab309fcd12c37f3",
+      "merge": "aa95c0a0a14fb2f2ba5af7338c8d83a6fb349269",
+      "mergedAt": "2026-10-22T08:13:56Z",
+      "scope": "Strict health-only ingress correction; merge alone proves no productive identity/onboarding/renewal or live runtime state."
+    },
+    "pr600": {
+      "status": "DRAFT_OPEN",
+      "head": "97d2839dde880bf9ab20c605ef5eb7b736f112a4",
+      "decision": "One canonical Identity Core, PORR first, multiple independently authorised organisation contexts; no automatic product access or accepted live multi-org receiver inferred."
+    },
+    "workspaceReconciliation": {
+      "oldBranch": "srm/supplier-locations-gates-20261022",
+      "oldAcceptedHeadPreserved": "d9f96316724b5c02ea18d3c5c06f254a719b46c2",
+      "newBranch": "srm/supplier-locations-601-promotion-20261022",
+      "executionEnvironment": "local",
+      "workspace": "SG-dev Codespaces SRM",
+      "initialGate": "CODE_STATE_GATE BLOCKED: old branch behind5 commits; no source edit performed there",
+      "bootstrap": "Clean isolated branch created from freshly fetched authority main, preserving original branch; full require-begin PASS before merging accepted two-file evidence history.",
+      "productDeltaFromCurrentMain": "NONE",
+      "changedPaths": [
+        "Canon/evidence/2026-10-22-srm-supplier-locations-task02-r.md",
+        "Canon/evidence/2026-10-22-srm-supplier-locations-task02-r-release.json"
+      ]
+    },
+    "documentationPromotion": "PENDING_EXACT_HEAD_CI_AND_NORMAL_MERGE",
+    "recoveryVerifiedTables": 82,
+    "recoveryPendingTables": 23,
+    "r2Authority": "NINE_SCOPES_PREPARED_NOT_APPROVED_FOR_EXECUTION",
+    "p1": "READY_FOR_OWNER_TASK_PREPARATION_NO_SOURCE_AUTHORITY_INFERRED",
+    "i1": "READY_FOR_OWNER_TASK_PREPARATION_NO_LIVE_ADMISSION_AUTHORITY",
+    "k1": "HQ_MANUAL_RECOMMENDED_BUSINESS_APPROVAL_PENDING",
+    "u1": "REAL_COHORT_AND_RESOURCES_PENDING_OWNER_SCOPE",
+    "pmosRegistrationId": "cmvj0baur0000t43u7k05vcpm",
+    "pmosStatus": "RUNNING",
+    "task02rFinalPhr": "NOT_PUBLISHED",
+    "historicalEvidenceRule": "Earlier dated statuses including PR599 Draft are preserved as historical observations; this current-status record supersedes them without rewriting execution history."
+  }
 }
