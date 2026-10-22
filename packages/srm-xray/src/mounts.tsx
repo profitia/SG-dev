@@ -64,10 +64,11 @@ export function GeneralCompanyDataMount({ section }: { section: DisplaySection<G
         <dt>KRS</dt><dd>{value(data?.krs)}</dd>
         <dt>NIP</dt><dd>{value(data?.nip)}</dd>
         <dt>REGON</dt><dd>{value(data?.regon)}</dd>
-        <dt>Adres</dt><dd>{value(data?.registeredAddress)}</dd>
+        <dt>{data?.registrySource?.provider === "KRS" ? "Adres rejestrowy (KRS)" : "Adres"}</dt><dd>{value(data?.registeredAddress)}</dd>
         <dt>Data rejestracji</dt><dd>{value(data?.registeredAt)}</dd>
         <dt>PKD</dt><dd>{value(data?.mainPkd)}{data?.mainPkd && data.mainPkdDescription ? ` — ${data.mainPkdDescription}` : ""}</dd>
       </dl>
+      {data?.registrySource?.provider === "KRS" && <p className="xray-source">Źródło danych ogólnych: KRS · pobrano <time dateTime={data.registrySource.retrievedAt}>{data.registrySource.retrievedAt}</time></p>}
     </SectionFrame>
   );
 }

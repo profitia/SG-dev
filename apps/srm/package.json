@@ -5,13 +5,13 @@
   "description": "SRM AppShell and AppShield presentation skin",
   "scripts": {
     "dev": "next dev --port 3400",
-    "build": "next build",
+    "build": "node scripts/build-krs-contract.mjs && next build",
     "postbuild": "mkdir -p .next/standalone/public && cp -R public/. .next/standalone/public/",
     "start": "next start --port 3400",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node scripts/build-krs-contract.mjs && tsc --noEmit",
     "coverage:audit": "tsx scripts/coverage/cli.ts",
     "test:coverage": "tsx --test scripts/coverage/coverage.test.ts",
-    "test": "tsx --test --test-concurrency=1 src/server/*.test.ts src/server/integrations/*.test.ts scripts/coverage/*.test.ts",
+    "test": "node scripts/build-krs-contract.mjs && tsx --test --test-concurrency=1 src/server/*.test.ts src/server/integrations/*.test.ts scripts/coverage/*.test.ts src/modules/xray/report-controller.test.ts",
     "migrate:development": "node scripts/migrate.mjs",
     "test:promotion": "node --test --test-concurrency=1 scripts/promotion.test.mjs scripts/staging-lifecycle.test.mjs scripts/runtime-permissions.test.mjs",
     "promote:staging": "node scripts/promote-staging.mjs",
@@ -19,12 +19,17 @@
     "permissions:development": "node scripts/runtime-permissions.mjs",
     "test:platform-contract": "node --test scripts/platform-contract.test.mjs",
     "test:operation-context": "node --import tsx --test --test-concurrency=1 scripts/operation-context.test.mjs scripts/operation-context.integration.test.mjs scripts/private-host.integration.test.mjs scripts/private-business-schema.test.mjs scripts/private-runtime.test.mjs scripts/provider-source.integration.test.mjs scripts/corporate-source.integration.test.mjs scripts/supplier-delegated-business.integration.test.mjs scripts/private-sensitive.integration.test.mjs scripts/supplier-locations.integration.test.mjs src/modules/xray/supplier-location-controller.test.ts src/modules/xray/supplier-locations-view.test.ts",
-    "test:locations": "node --import tsx --test --test-concurrency=1 src/server/supplier-location*.test.ts src/modules/xray/supplier-location-controller.test.ts src/modules/xray/supplier-locations-view.test.ts scripts/supplier-locations.integration.test.mjs"
+    "test:locations": "node --import tsx --test --test-concurrency=1 src/server/supplier-location*.test.ts src/modules/xray/supplier-location-controller.test.ts src/modules/xray/supplier-locations-view.test.ts scripts/supplier-locations.integration.test.mjs",
+    "test:krs-ui": "node --test scripts/krs-name-ui.test.mjs"
   },
   "dependencies": {
     "@clerk/backend": "3.25.0",
     "@clerk/localizations": "4.23.0",
     "@clerk/react": "6.17.8",
+    "@profitia/krs-registry-contracts": "file:../../packages/krs-registry-contracts",
+    "@profitia/krs-registry-runtime": "file:../krs-registry-runtime",
+    "@profitia/maps-contracts": "file:../../packages/maps-contracts",
+    "@profitia/maps-embed": "file:../../packages/maps-embed",
     "@profitia/platform-contracts": "file:../../packages/platform-contracts",
     "@profitia/srm-xray": "file:../../packages/srm-xray",
     "cheerio": "1.1.2",
@@ -35,9 +40,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "saxes": "5.0.1",
-    "sharp": "0.35.5",
-    "@profitia/maps-embed": "file:../../packages/maps-embed",
-    "@profitia/maps-contracts": "file:../../packages/maps-contracts"
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -45,6 +48,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "playwright-core": "1.62.1",
     "tsx": "^4.23.15",
     "typescript": "^5"
   }
