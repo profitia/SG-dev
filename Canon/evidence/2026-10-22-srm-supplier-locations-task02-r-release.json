@@ -1,0 +1,2155 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022",
+  "projectKey": "SRM",
+  "workspace": "SG-dev Codespaces SRM",
+  "targetEnvironment": "development",
+  "observedAt": "2026-10-22T04:14:59Z",
+  "phase": "OWNER_CREATED_RECOVERY_VERIFIED_WITH_READ_COVERAGE_AND_ADOPTION_GAPS",
+  "registration": {
+    "id": "cmvj0baur0000t43u7k05vcpm",
+    "conversationId": "pmos-task-v2:c9d8a78c718d4c20bffceca4f4d75df78069eb89c0761ed803533930112f5102",
+    "hostConversationId": "01a133ad-8739-7a21-ac6e-36f0a9bf8ed5",
+    "database": "srm_pmos",
+    "executionStatus": "running",
+    "closeout": "PENDING_RELEASE_ACCEPTANCE",
+    "phrPublication": "PENDING_RELEASE_ACCEPTANCE",
+    "memoros": "DISABLED_BY_PROFILE"
+  },
+  "authority": {
+    "repository": "profitia/SG-dev",
+    "branch": "main",
+    "sourceMainSha": "fd6b630afa37fb6f055b3291332d380b0d19e005",
+    "isolatedBranch": "srm/supplier-locations-release-task02-r-20261022",
+    "executionEnvironment": "local",
+    "governanceManifestVersion": "3.27.0",
+    "applicableDocuments": 41,
+    "governancePreflight": "PASS",
+    "routingOwners": [
+      "SRM Runtime",
+      "Maps Capability",
+      "Governance Source Layer"
+    ],
+    "codeState": "ALIGNED",
+    "sourceChanged": false
+  },
+  "source": {
+    "pr": "https://github.com/profitia/SG-dev/pull/597",
+    "candidateSha": "3c6805cbb1aa135454b6f6e1aad9308951cfea85",
+    "mainCi": "https://github.com/profitia/SG-dev/actions/runs/39674364353",
+    "srmCi": "https://github.com/profitia/SG-dev/actions/runs/39674364559",
+    "mapsCi": "https://github.com/profitia/SG-dev/actions/runs/39674364509",
+    "currentMainRequiredChecks": "PASS",
+    "platformVersion": "1.24.0",
+    "rootImplementation": "1.0.0-candidate.16",
+    "rootFileCount": 8,
+    "rootDigest": "9fe1ee707bb5510e66cbe9470ba970de177f8a6fe4533470f771af88d68bf728",
+    "sourceClosureFiles": 33,
+    "sourceClosureMismatches": [],
+    "historicalMigrationCount": 18,
+    "initializerAndHistoricalMigrationsChanged": false,
+    "sql017Digest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+    "sql019Digest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+    "srmSql013Digest": "b3f05a4c56f32bd32c0c59dcc8b60c486d4d4813823665301ce08318f793704b",
+    "sharedFunctionBodiesComparedToSql017": 5,
+    "sharedFunctionBodyMismatches": []
+  },
+  "neon": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "database": "platform_private",
+    "runtimeRole": "srm_private_development_runtime",
+    "endpoint": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+    "descriptorRevision": 109,
+    "sql019Installed": false,
+    "sql013Installed": false,
+    "locationTablesPresent": false,
+    "locationGrants": 0,
+    "locationPolicies": 0,
+    "locationIntents": 0,
+    "accounts": 6,
+    "organisations": 2,
+    "activeMemberships": 1,
+    "identityProfiles": 0,
+    "readback": [
+      [],
+      [],
+      [
+        {
+          "facts": {
+            "jobs": [
+              {
+                "count": 11,
+                "status": "CONFIRMED"
+              },
+              {
+                "count": 139,
+                "status": "PENDING"
+              }
+            ],
+            "intents": [
+              {
+                "count": 4,
+                "status": "ACCEPTED",
+                "operation": "supplier.report.refresh",
+                "application_id": "srm"
+              },
+              {
+                "count": 136,
+                "status": "ACCEPTED",
+                "operation": "benchmark.discovery.request",
+                "application_id": "spendguru"
+              },
+              {
+                "count": 6,
+                "status": "ACCEPTED",
+                "operation": "supplier.private.refresh",
+                "application_id": "srm"
+              },
+              {
+                "count": 4,
+                "status": "ACCEPTED",
+                "operation": "forecast.request",
+                "application_id": "spendguru"
+              }
+            ],
+            "sources": [
+              {
+                "source": "sg2.forecast.queue",
+                "status": "ACTIVE",
+                "expires": "2027-01-15T11:11:30.585005+00:00",
+                "executor": "spendguru-forecast-dispatch",
+                "operation": "forecast.request",
+                "application": "spendguru"
+              },
+              {
+                "source": "sg2.provider.macrobond_api",
+                "status": "ACTIVE",
+                "expires": "2027-01-15T11:11:30.585005+00:00",
+                "executor": "spendguru-benchmark-dispatch",
+                "operation": "benchmark.discovery.request",
+                "application": "spendguru"
+              },
+              {
+                "source": "srm.supplier.source-request",
+                "status": "ACTIVE",
+                "expires": "2027-01-15T11:11:30.585005+00:00",
+                "executor": "srm-jobs",
+                "operation": "supplier.report.refresh",
+                "application": "srm"
+              },
+              {
+                "source": "srm.supplier.source-request",
+                "status": "ACTIVE",
+                "expires": "2027-01-15T11:11:30.585005+00:00",
+                "executor": "srm-jobs",
+                "operation": "supplier.private.refresh",
+                "application": "srm"
+              }
+            ],
+            "receipts": {
+              "sql017": {
+                "singleton": true,
+                "source_ref": "ARCHITECTURE-E1-DEVELOPMENT-CONTROL-PREPARATION-20261020:DISABLED_DEVELOPMENT_INSTALLATION",
+                "schema_digest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+                "schema_version": "1.0.0"
+              },
+              "srm_private": {
+                "singleton": true,
+                "source_ref": "7e9def92fd367137258696aae211ac4e6554e7fd",
+                "installed_at": "2026-10-17T13:22:35.564347+00:00",
+                "installed_by": "neondb_owner",
+                "schema_digest": "3d8367474454eb15a8171c28bf99f80f51299b58746efa8dfb4f65289de57dcd",
+                "schema_version": "1.0.0",
+                "boundary_digest": "19220c7bb31365ed058bc55a99bca2aa4a9f38b7f8ca2a2ddde52ec71ed16ed4"
+              }
+            },
+            "identity_counts": {
+              "accounts": 1,
+              "organisations": 1,
+              "active_memberships": 1
+            },
+            "location_grants": 0,
+            "location_policies": null
+          }
+        }
+      ]
+    ],
+    "sharedFunctionReadback": [
+      {
+        "function": "profitia_jobs.append_audit(jsonb)",
+        "body_sha256": "d1a18518ce2e6f163c00930e1e179cc0c85e6c506756e4e357ce2817423ec86b",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_jobs.create_dispatch(uuid,uuid,text)",
+        "body_sha256": "95416ba1a0a20ad5cc692496e8c35aa1f5fcd7142bf2db3b95c6c3ff175598b2",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_jobs.current_job(uuid)",
+        "body_sha256": "59ac728a3a9b4341a52a4f2dd742c06e5a4602ce89f4ad7ae397939bdf37eabd",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_request_work.descriptor(uuid,text)",
+        "body_sha256": "52502fb7b73cd815a95595d10fce03bf61014a4087f581708faa9ca43985fc5a",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_requests.scope_allows(text,uuid,uuid,text)",
+        "body_sha256": "7b92df196cf113bf907bc14048c0ad0b2984e65a1177ba525173b85fcf27f734",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      },
+      {
+        "function": "profitia_requests.scope_allows(uuid,uuid,text)",
+        "body_sha256": "d70aad67b0480aefeedf059b52aea769128bd57d86ad82f4ea1c76b7024d7c90",
+        "owner": "profitia_access_owner",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=pg_catalog, pg_temp"
+        ]
+      }
+    ],
+    "pendingJobs": 139,
+    "confirmedJobs": 11,
+    "unexpiredJobLeases": 0,
+    "pendingSources": {
+      "sg2.provider.macrobond_api": 136,
+      "srm.supplier.source-request": 3
+    },
+    "longRunningQueriesOver5Minutes": 0,
+    "nonAcceptedPhaseEffects": 0,
+    "backgroundRetentionOperator": "NONE_ACCEPTED_AFTER_GITHUB_PMOS_PHR_NEON_RENDER_AUDIT",
+    "pgCronInstalled": false,
+    "sourceExternalCallCounters": "NOT_VERIFIED_CONTROLLED_SOURCE_OWNER_NOT_ACCESSIBLE",
+    "initialDescriptorRevision": 75,
+    "activeAccounts": 1,
+    "disabledSyntheticAccounts": 5,
+    "activeOrganisations": 1,
+    "suspendedSyntheticOrganisations": 1,
+    "suspendedSyntheticMemberships": 2,
+    "initialReadbackScope": "The embedded initial readback precedes B1-I Stage2; new current counts/revision supersede it.",
+    "readbackRecoveryAt": "2026-10-22T05:43:12Z"
+  },
+  "applications": [
+    {
+      "application": "srm",
+      "status": "ACTIVE",
+      "roles": [
+        "srm_private_development_runtime"
+      ]
+    },
+    {
+      "application": "srm-jobs",
+      "status": "ACTIVE",
+      "roles": [
+        "srm_private_development_jobs"
+      ]
+    },
+    {
+      "application": "spendguru",
+      "status": "ACTIVE",
+      "roles": [
+        "sg2_private_development_dashboard",
+        "sg2_private_development_runtime"
+      ]
+    },
+    {
+      "application": "spendguru-benchmark-dispatch",
+      "status": "ACTIVE",
+      "roles": [
+        "sg2_benchmark_dispatch_development_runtime"
+      ]
+    },
+    {
+      "application": "spendguru-forecast-dispatch",
+      "status": "ACTIVE",
+      "roles": [
+        "sg2_forecast_dispatch_development_runtime"
+      ]
+    },
+    {
+      "application": "identity-runtime-development",
+      "status": "DISABLED",
+      "roles": [
+        "identity_b1_runtime"
+      ]
+    }
+  ],
+  "recovery": {
+    "verdict": "PARTIAL",
+    "rehearsal": "PASS_READ_ONLY_RESTORED_COPY_WITH_EXPLICIT_COVERAGE_GAPS",
+    "existingBranchId": "br-square-field-b9vzels8",
+    "existingBranchName": "identity-b1-i-restore-rehearsal-20261021",
+    "existingSnapshotId": "snap-noisy-art-b9uwq5rf",
+    "existingSnapshotCreatedAt": "2026-10-21T19:34:40Z",
+    "existingSnapshotExpiresAt": "2026-10-22T19:34:39Z",
+    "existingSnapshotCoverage": "B1_PREINSTALL_NOT_ACCEPTED_FOR_CURRENT_INSTALLED_STATE",
+    "restoredBranchCurrentTaskCoverage": "LINEAGE_SCHEMA_AND_79_VISIBLE_TABLES_VERIFIED_NOT_FULL_DATA_PARITY",
+    "newResourceCreated": true,
+    "proposedSnapshotPrefix": "srm-supplier-locations-task02-r-preinstall-",
+    "proposedRestoreBranchPrefix": "srm-supplier-locations-task02-r-restore-",
+    "proposedSnapshotRetentionDays": 7,
+    "restoreFinalizeAllowed": false,
+    "pointInTimeDatabaseRollbackAllowed": false,
+    "fullDatabaseRestoreRequiresSeparateIncidentDecision": true,
+    "newSnapshotRequiredAfterB1Stage2": false,
+    "consoleUiVerified": true,
+    "multiStepConfirmationOpenedReadOnlyAndCancelled": true,
+    "consoleAutoBranchNameAccepted": true,
+    "minimumSnapshotCoverageHours": 24,
+    "preferredSevenDaysOnlyIfUiOffers": true,
+    "minimumCoverageAlsoExtendsPastApprovedWindowAndRecovery": true,
+    "ownerCreatesSeparateComputeIfRequired": {
+      "fixedCu": 0.25,
+      "autosuspendSeconds": 300,
+      "movePrimaryEndpoint": false
+    },
+    "agentMayProvisionCompute": false,
+    "otherTaskPostInstallationResource": {
+      "snapshotId": "snap-green-cake-b94au5rc",
+      "branchId": "br-dark-credit-b9a5vlsn",
+      "createdAt": "2026-10-22T04:15:47Z",
+      "expiresAt": "2026-10-23T04:15:46Z",
+      "restoreStatus": "restored_NOT_finalized",
+      "ownerTask": "ARCHITECTURE-IDENTITY-B1-I-STAGE2-20261022",
+      "adoptedForTask02R": false,
+      "reason": "Predates Stage2 audit/cleanup state and lacks Task02R recovery acceptance; owner requested a fresh snapshot."
+    },
+    "resourcesCreatedBy": "OWNER_CONSOLE",
+    "agentCreatedResources": false,
+    "ownerCreatedFreshSnapshotVerified": true,
+    "currentSnapshotId": "snap-bold-bird-b99s4c9q",
+    "currentSnapshotName": "srm-supplier-locations-task02-r-preinstall-20261022",
+    "currentSnapshotCreatedAt": "2026-10-22T05:23:04Z",
+    "currentSnapshotExpiresAt": null,
+    "currentSnapshotExpiration": "NEVER_VERIFIED_NEON_CONSOLE_Expires_on_never",
+    "snapshotExpiryEvidence": {
+      "apiExpiresAtField": "ABSENT",
+      "consoleText": "59.79 MB Expires on: never",
+      "consoleUrl": "https://console.neon.tech/app/projects/spring-bread-28217539/branches/br-sparkling-term-b99l107x/restore",
+      "officialRule": "Manual snapshots never expire unless explicitly assigned an expiration.",
+      "documentation": "https://neon.com/docs/guides/backup-restore#snapshot-retention",
+      "observedAt": "2026-10-22T05:43:12Z"
+    },
+    "currentBranchId": "br-green-glitter-b9weet99",
+    "currentComputeId": "ep-divine-mode-b9fekhdg",
+    "restoredPointTimestamp": "2026-10-22T05:22:36Z",
+    "restoredPointLsn": "0/3B8E828",
+    "currentBranchCreatedAt": "2026-10-22T05:25:09Z",
+    "currentBranchState": "ready",
+    "currentRestoreStatus": "restored",
+    "currentRestoreFinalized": false,
+    "copyBranchExpiresAt": null,
+    "copyBranchExpirationUi": "Never",
+    "originalDefaultAndPrimaryUnchanged": true,
+    "originalEndpointUnchanged": true,
+    "copyCompute": {
+      "id": "ep-divine-mode-b9fekhdg",
+      "branchId": "br-green-glitter-b9weet99",
+      "host": "ep-divine-mode-b9fekhdg.c-7.eu-central-1.aws.neon.tech",
+      "minCu": 0.25,
+      "maxCu": 0.25,
+      "autosuspendSeconds": 300
+    },
+    "noConsumerAttached": true,
+    "applicationCredentialsOrBindingsChanged": false,
+    "providerFinalReadback": [
+      {
+        "id": "br-green-glitter-b9weet99",
+        "project_id": "spring-bread-28217539",
+        "parent_lsn": "0/3B8E828",
+        "parent_timestamp": "2026-10-22T05:22:36Z",
+        "name": "branch_from_snapshot_Oct 22, 2026 7:25 AM GMT+2",
+        "slug": "br-green-glitter-b9weet99",
+        "project_slug": "spring-bread-28217539",
+        "current_state": "ready",
+        "state_changed_at": "2026-10-22T05:25:10Z",
+        "logical_size": 59842560,
+        "creation_source": "console",
+        "primary": false,
+        "default": false,
+        "protected": false,
+        "cpu_used_sec": 0,
+        "compute_time_seconds": 0,
+        "active_time_seconds": 0,
+        "written_data_bytes": 0,
+        "data_transfer_bytes": 0,
+        "created_at": "2026-10-22T05:25:09Z",
+        "updated_at": "2026-10-22T05:36:07Z",
+        "init_source": "parent-data",
+        "restore_status": "restored",
+        "restored_from": "snap-bold-bird-b99s4c9q",
+        "restored_as": "br-sparkling-term-b99l107x"
+      },
+      {
+        "id": "br-sparkling-term-b99l107x",
+        "project_id": "spring-bread-28217539",
+        "name": "development",
+        "slug": "br-sparkling-term-b99l107x",
+        "project_slug": "spring-bread-28217539",
+        "current_state": "ready",
+        "state_changed_at": "2026-10-17T06:48:24Z",
+        "logical_size": 59785216,
+        "creation_source": "console",
+        "primary": true,
+        "default": true,
+        "protected": false,
+        "cpu_used_sec": 0,
+        "compute_time_seconds": 39885,
+        "active_time_seconds": 159360,
+        "written_data_bytes": 0,
+        "data_transfer_bytes": 93903148,
+        "created_at": "2026-10-17T06:48:22Z",
+        "updated_at": "2026-10-22T05:36:07Z",
+        "created_by": {
+          "name": "",
+          "image": ""
+        },
+        "init_source": "parent-data"
+      },
+      [
+        {
+          "host": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+          "hosts": {
+            "read_write_host": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+            "read_write_pooled_host": "ep-late-heart-b9mxo8oi-pooler.c-7.eu-central-1.aws.neon.tech"
+          },
+          "id": "ep-late-heart-b9mxo8oi",
+          "slug": "ep-late-heart-b9mxo8oi",
+          "branch_slug": "br-sparkling-term-b99l107x",
+          "project_slug": "spring-bread-28217539",
+          "project_id": "spring-bread-28217539",
+          "branch_id": "br-sparkling-term-b99l107x",
+          "autoscaling_limit_min_cu": 0.25,
+          "autoscaling_limit_max_cu": 0.25,
+          "region_id": "aws-eu-central-1",
+          "type": "read_write",
+          "current_state": "active",
+          "group": {
+            "size": {
+              "min": 1,
+              "max": 1
+            },
+            "allow_readable_secondaries": false,
+            "computes": [
+              {
+                "binding_id": "x2x",
+                "current_state": "active",
+                "role": "read_write",
+                "compute_host": "ep-late-heart-b9mxo8oi-x2x.c-7.eu-central-1.aws.neon.tech",
+                "compute_pooled_host": "ep-late-heart-b9mxo8oi-x2x-pooler.c-7.eu-central-1.aws.neon.tech",
+                "created_at": "2026-10-17T06:48:22Z",
+                "updated_at": "2026-10-21T19:41:04Z",
+                "started_at": "2026-10-21T19:41:04Z"
+              }
+            ]
+          },
+          "settings": {
+            "pg_settings": {}
+          },
+          "pooler_enabled": false,
+          "pooler_mode": "transaction",
+          "disabled": false,
+          "passwordless_access": true,
+          "last_active": "2026-10-22T05:39:44Z",
+          "creation_source": "console",
+          "created_at": "2026-10-17T06:48:22Z",
+          "updated_at": "2026-10-22T05:39:45Z",
+          "started_at": "2026-10-21T19:41:04Z",
+          "proxy_host": "c-7.eu-central-1.aws.neon.tech",
+          "suspend_timeout_seconds": 300,
+          "provisioner": "k8s-neonvm",
+          "compute_release_version": "15557"
+        }
+      ],
+      [
+        {
+          "host": "ep-divine-mode-b9fekhdg.c-7.eu-central-1.aws.neon.tech",
+          "hosts": {
+            "read_write_host": "ep-divine-mode-b9fekhdg.c-7.eu-central-1.aws.neon.tech",
+            "read_write_pooled_host": "ep-divine-mode-b9fekhdg-pooler.c-7.eu-central-1.aws.neon.tech"
+          },
+          "id": "ep-divine-mode-b9fekhdg",
+          "slug": "ep-divine-mode-b9fekhdg",
+          "branch_slug": "br-green-glitter-b9weet99",
+          "project_slug": "spring-bread-28217539",
+          "project_id": "spring-bread-28217539",
+          "branch_id": "br-green-glitter-b9weet99",
+          "autoscaling_limit_min_cu": 0.25,
+          "autoscaling_limit_max_cu": 0.25,
+          "region_id": "aws-eu-central-1",
+          "type": "read_write",
+          "current_state": "active",
+          "group": {
+            "size": {
+              "min": 1,
+              "max": 1
+            },
+            "allow_readable_secondaries": false,
+            "computes": [
+              {
+                "binding_id": "nmn",
+                "current_state": "active",
+                "role": "read_write",
+                "compute_host": "ep-divine-mode-b9fekhdg-nmn.c-7.eu-central-1.aws.neon.tech",
+                "compute_pooled_host": "ep-divine-mode-b9fekhdg-nmn-pooler.c-7.eu-central-1.aws.neon.tech",
+                "created_at": "2026-10-22T05:25:09Z",
+                "updated_at": "2026-10-22T05:25:10Z",
+                "started_at": "2026-10-22T05:25:10Z"
+              }
+            ]
+          },
+          "settings": {
+            "pg_settings": {}
+          },
+          "pooler_enabled": false,
+          "pooler_mode": "transaction",
+          "disabled": false,
+          "passwordless_access": true,
+          "last_active": "2026-10-22T05:35:43Z",
+          "creation_source": "console",
+          "created_at": "2026-10-22T05:25:09Z",
+          "updated_at": "2026-10-22T05:35:45Z",
+          "started_at": "2026-10-22T05:25:10Z",
+          "proxy_host": "c-7.eu-central-1.aws.neon.tech",
+          "suspend_timeout_seconds": 300,
+          "provisioner": "k8s-neonvm",
+          "compute_release_version": "15557"
+        }
+      ]
+    ],
+    "readOnlyVerification": {
+      "observedAt": "2026-10-22T05:43:12Z",
+      "projectId": "spring-bread-28217539",
+      "databaseName": "platform_private",
+      "postgresVersion": "16.15",
+      "transactionMode": "REPEATABLE READ READ ONLY for catalog/content measurements; READ ONLY for ordinary descriptor and later status checks",
+      "principal": "neondb_owner session, SET LOCAL ROLE profitia_access_owner for authorised visible content; existing ordinary srm_private_development_runtime for read-only descriptor",
+      "sourceOwnerSetAllowed": false,
+      "rlsDisabled": false,
+      "bypassRoleUsedForProtectedContent": false,
+      "schemaObjectsCompared": [
+        {
+          "kind": "tables",
+          "copyObjects": 107,
+          "primaryObjects": 107,
+          "copySha256": "2664996b7d281e25cd6ae2f55fd7f9338ebfb261e15493a4074d86c401af63e7",
+          "primarySha256": "2664996b7d281e25cd6ae2f55fd7f9338ebfb261e15493a4074d86c401af63e7",
+          "match": true
+        },
+        {
+          "kind": "columns",
+          "copyObjects": 846,
+          "primaryObjects": 846,
+          "copySha256": "7707bc60d512c8fec8729db43f645fa2d415a617de93279434874b8eabfedd02",
+          "primarySha256": "7707bc60d512c8fec8729db43f645fa2d415a617de93279434874b8eabfedd02",
+          "match": true
+        },
+        {
+          "kind": "constraints",
+          "copyObjects": 730,
+          "primaryObjects": 730,
+          "copySha256": "1cfb9445228f8f56484fab6d88e9dab805d4bc4c042b058e5560eebfd27ad52d",
+          "primarySha256": "1cfb9445228f8f56484fab6d88e9dab805d4bc4c042b058e5560eebfd27ad52d",
+          "match": true
+        },
+        {
+          "kind": "indexes",
+          "copyObjects": 172,
+          "primaryObjects": 172,
+          "copySha256": "9563051f35cd9ec6f34c240ae21124aa7714485c8567c47a44acdec3601be106",
+          "primarySha256": "9563051f35cd9ec6f34c240ae21124aa7714485c8567c47a44acdec3601be106",
+          "match": true
+        },
+        {
+          "kind": "policies",
+          "copyObjects": 454,
+          "primaryObjects": 454,
+          "copySha256": "5f16956dc2608f54f1a15992b09860834ca4e283def0e09979c362db40cc0c5a",
+          "primarySha256": "5f16956dc2608f54f1a15992b09860834ca4e283def0e09979c362db40cc0c5a",
+          "match": true
+        },
+        {
+          "kind": "functions",
+          "copyObjects": 208,
+          "primaryObjects": 208,
+          "copySha256": "cf2b0fed161b67f7faf76776dcf29aa676665029f16d97da5c5b271629ca8cb1",
+          "primarySha256": "cf2b0fed161b67f7faf76776dcf29aa676665029f16d97da5c5b271629ca8cb1",
+          "match": true
+        },
+        {
+          "kind": "triggers",
+          "copyObjects": 161,
+          "primaryObjects": 161,
+          "copySha256": "17e685579c08cdf2717eae31d7a8c7602efc8cf401ce7b60adf850bd7d8098be",
+          "primarySha256": "17e685579c08cdf2717eae31d7a8c7602efc8cf401ce7b60adf850bd7d8098be",
+          "match": true
+        },
+        {
+          "kind": "namespaces",
+          "copyObjects": 25,
+          "primaryObjects": 25,
+          "copySha256": "20886704c531989b69d9276b4f9bac02e1e907e26f806c3e123964c86e9a368d",
+          "primarySha256": "20886704c531989b69d9276b4f9bac02e1e907e26f806c3e123964c86e9a368d",
+          "match": true
+        },
+        {
+          "kind": "roles",
+          "copyObjects": 31,
+          "primaryObjects": 30,
+          "copySha256": "e869804ceb55790540fe987aae2c67763a973111b796267f03cb1e4e73f6389c",
+          "primarySha256": "0d2a44387d50133cccfe57e5e513563ef89d935ce2e5b4c40b382ae847f86169",
+          "match": false
+        },
+        {
+          "kind": "memberships",
+          "copyObjects": 23,
+          "primaryObjects": 23,
+          "copySha256": "08281d6c24222a232eebf123ab014a3e1905e90e94281d725116b4f42750bee3",
+          "primarySha256": "08281d6c24222a232eebf123ab014a3e1905e90e94281d725116b4f42750bee3",
+          "match": true
+        },
+        {
+          "kind": "acls",
+          "copyObjects": 4,
+          "primaryObjects": 4,
+          "copySha256": "160348a88f9254e91c3f331574b39df9584360af84f4653d5941a20895c6f8d0",
+          "primarySha256": "160348a88f9254e91c3f331574b39df9584360af84f4653d5941a20895c6f8d0",
+          "match": true
+        },
+        {
+          "kind": "sequences",
+          "copyObjects": 2,
+          "primaryObjects": 2,
+          "copySha256": "a51e8e803fc177d0c0ab62c0c4e6ebf623fbe9925882510d338db5d5c7688f4c",
+          "primarySha256": "a51e8e803fc177d0c0ab62c0c4e6ebf623fbe9925882510d338db5d5c7688f4c",
+          "match": true
+        },
+        {
+          "kind": "extensions",
+          "copyObjects": 2,
+          "primaryObjects": 2,
+          "copySha256": "3b2de18ca1f446c0e4d410c28c546214095007895ade66bff248dcc8e3e3c31b",
+          "primarySha256": "3b2de18ca1f446c0e4d410c28c546214095007895ade66bff248dcc8e3e3c31b",
+          "match": true
+        }
+      ],
+      "tableInventoryCount": 105,
+      "srmTableCount": 30,
+      "applicationRolesAndMembershipsMatch": true,
+      "fullRoleInventoryExactMatch": false,
+      "extraCopyRole": {
+        "rolname": "token_roles",
+        "rolsuper": false,
+        "rolinherit": true,
+        "rolcreaterole": false,
+        "rolcreatedb": false,
+        "rolcanlogin": false,
+        "rolreplication": false,
+        "rolbypassrls": false,
+        "rolconnlimit": -1,
+        "rolvaliduntil": null,
+        "rolconfig": null,
+        "memberships": 0,
+        "dependencies": 0,
+        "existingRolesChanged": false,
+        "explanation": "Observed unreferenced NOLOGIN token_roles exists only in restored copy. No ordinary login/membership or object dependency gives it application authority; provenance of creation not independently attributed."
+      },
+      "visibleContentsMeasured": 79,
+      "visibleContentsMatched": 79,
+      "visibleContentsDrift": [],
+      "visibleDataAlgorithm": "sha256_jsonb_text_rows_then_sorted_row_hash_aggregation_v1_exact_SQL_below",
+      "visibleDataSql": "WITH tables AS (SELECT n.nspname,c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind='r' AND n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND pg_get_userbyid(c.relowner)=current_user AND has_table_privilege(current_user,c.oid,'SELECT')), measured AS (SELECT nspname,relname,query_to_xml(format('SELECT count(*)::text AS row_count, encode(sha256(convert_to(coalesce(string_agg(h,E''\\\\n'' ORDER BY h),''''),''UTF8'')),''hex'') AS data_hash FROM (SELECT encode(sha256(convert_to(to_jsonb(t)::text,''UTF8'')),''hex'') AS h FROM %I.%I t) rows',nspname,relname),true,false,'') AS x FROM tables) SELECT nspname AS schema,relname AS table_name,(xpath('/table/row/row_count/text()',x))[1]::text AS row_count,(xpath('/table/row/data_hash/text()',x))[1]::text AS sha256 FROM measured ORDER BY 1,2",
+      "catalogSql": [
+        "SELECT 'tables' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT n.nspname,c.relname,c.relkind,c.relpersistence,c.relrowsecurity,c.relforcerowsecurity,pg_get_userbyid(c.relowner) AS owner,c.relacl::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','v','m','p','S')) x",
+        "SELECT 'columns' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT n.nspname,c.relname,a.attnum,a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,a.attidentity,a.attgenerated,pg_get_expr(d.adbin,d.adrelid) AS default_expr,a.attacl::text FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace LEFT JOIN pg_attrdef d ON d.adrelid=c.oid AND d.adnum=a.attnum WHERE a.attnum>0 AND NOT a.attisdropped AND n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r','v','m','p','S')) x",
+        "SELECT 'constraints' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT n.nspname,c.relname,k.conname,k.contype,k.convalidated,pg_get_constraintdef(k.oid,true) AS definition FROM pg_constraint k JOIN pg_class c ON c.oid=k.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%') x",
+        "SELECT 'indexes' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT schemaname,tablename,indexname,indexdef FROM pg_indexes WHERE schemaname NOT IN ('pg_catalog','information_schema')) x",
+        "SELECT 'policies' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT schemaname,tablename,policyname,permissive,roles,cmd,qual,with_check FROM pg_policies) x",
+        "SELECT 'functions' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid) AS args,p.prokind,p.prosecdef,p.provolatile,p.proparallel,p.proconfig,p.proacl::text,pg_get_userbyid(p.proowner) AS owner,p.prosrc,p.probin,pg_get_function_result(p.oid) AS result FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname NOT IN ('pg_catalog','information_schema')) x",
+        "SELECT 'triggers' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT n.nspname,c.relname,t.tgname,t.tgenabled,pg_get_triggerdef(t.oid,true) AS definition FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname NOT IN ('pg_catalog','information_schema')) x",
+        "SELECT 'namespaces' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT nspname,pg_get_userbyid(nspowner) AS owner,nspacl::text FROM pg_namespace WHERE nspname NOT IN ('pg_catalog','information_schema') AND nspname NOT LIKE 'pg_toast%' AND nspname NOT LIKE 'pg_temp%') x",
+        "SELECT 'roles' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT rolname,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolcanlogin,rolreplication,rolbypassrls,rolconnlimit,rolvaliduntil,rolconfig FROM pg_roles) x",
+        "SELECT 'memberships' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT pg_get_userbyid(roleid) AS role_name,pg_get_userbyid(member) AS member_name,pg_get_userbyid(grantor) AS grantor_name,admin_option,inherit_option,set_option FROM pg_auth_members) x",
+        "SELECT 'acls' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT pg_get_userbyid(defaclrole) AS owner,coalesce(n.nspname,'') AS schema,d.defaclobjtype,d.defaclacl::text FROM pg_default_acl d LEFT JOIN pg_namespace n ON n.oid=d.defaclnamespace) x",
+        "SELECT 'sequences' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT schemaname,sequencename,sequenceowner,data_type,start_value,min_value,max_value,increment_by,cycle,cache_size FROM pg_sequences) x",
+        "SELECT 'extensions' AS kind,count(*)::int AS objects,encode(sha256(convert_to(coalesce(string_agg(to_jsonb(x)::text,E'\\n' ORDER BY to_jsonb(x)::text),''),'UTF8')),'hex') AS sha256 FROM (SELECT extname,extversion,pg_get_userbyid(extowner) AS owner,extnamespace::regnamespace::text AS schema FROM pg_extension) x"
+      ],
+      "visibleTableComparisons": [
+        {
+          "schema": "profitia_access",
+          "table_name": "accounts",
+          "row_count": "6",
+          "sha256": "3bdf1a01575f8259f586f183195f76596d59a0d2f464d4c3f8ad8a56aa665a81",
+          "primaryRowCount": "6",
+          "primarySha256": "3bdf1a01575f8259f586f183195f76596d59a0d2f464d4c3f8ad8a56aa665a81",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "applications",
+          "row_count": "6",
+          "sha256": "a91ca9de3de93d6750fc1c7f5da8cac60882401b5eee314b3f47bbabd38f4b2f",
+          "primaryRowCount": "6",
+          "primarySha256": "a91ca9de3de93d6750fc1c7f5da8cac60882401b5eee314b3f47bbabd38f4b2f",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "bootstrap_receipts",
+          "row_count": "1",
+          "sha256": "ff76e12cfb849c1f901860e59b5d9ee36e764c0a717b591e8c2fa7f380e68c2f",
+          "primaryRowCount": "1",
+          "primarySha256": "ff76e12cfb849c1f901860e59b5d9ee36e764c0a717b591e8c2fa7f380e68c2f",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "directory_installation",
+          "row_count": "1",
+          "sha256": "20b9dc0eee70482f71f20ecd0636ee318d57a20955d6ddf0c6b9f4ebe3937160",
+          "primaryRowCount": "1",
+          "primarySha256": "20b9dc0eee70482f71f20ecd0636ee318d57a20955d6ddf0c6b9f4ebe3937160",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "external_identities",
+          "row_count": "6",
+          "sha256": "6b1e2ce5fe94b540cdcb7c4bc2f8b96faa4640c5712f5f09734d56f86a9aad7a",
+          "primaryRowCount": "6",
+          "primarySha256": "6b1e2ce5fe94b540cdcb7c4bc2f8b96faa4640c5712f5f09734d56f86a9aad7a",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "3f176332656d4d30b16222d5f65a4daac5550c3a3ad38328c50687d698236579",
+          "primaryRowCount": "1",
+          "primarySha256": "3f176332656d4d30b16222d5f65a4daac5550c3a3ad38328c50687d698236579",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "memberships",
+          "row_count": "3",
+          "sha256": "5060578b4be5b0ce2818c303eb76714bf3f093180c5d679d92eab24f9bd0d1c2",
+          "primaryRowCount": "3",
+          "primarySha256": "5060578b4be5b0ce2818c303eb76714bf3f093180c5d679d92eab24f9bd0d1c2",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "organisations",
+          "row_count": "2",
+          "sha256": "a32120d174e9ff44b5ddbb18d8cd3325cae35bcd7f8e8f034d6189614536d2e7",
+          "primaryRowCount": "2",
+          "primarySha256": "a32120d174e9ff44b5ddbb18d8cd3325cae35bcd7f8e8f034d6189614536d2e7",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "permission_grants",
+          "row_count": "18",
+          "sha256": "943740f1ae782973b59ce047b75a050d6ae0620fdd09094956e4c8d5e7fc2bdb",
+          "primaryRowCount": "18",
+          "primarySha256": "943740f1ae782973b59ce047b75a050d6ae0620fdd09094956e4c8d5e7fc2bdb",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "product_grants",
+          "row_count": "3",
+          "sha256": "4e576c5b5f9f8dd247abfe8582d242e3326024bed5e439cc6505259d4e6d4777",
+          "primaryRowCount": "3",
+          "primarySha256": "4e576c5b5f9f8dd247abfe8582d242e3326024bed5e439cc6505259d4e6d4777",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "runtime_bindings",
+          "row_count": "7",
+          "sha256": "b70a836f7acc714c650913d45a8b67b1f44cd242c5f7d8567ad8faaf56f5de07",
+          "primaryRowCount": "7",
+          "primarySha256": "b70a836f7acc714c650913d45a8b67b1f44cd242c5f7d8567ad8faaf56f5de07",
+          "match": true
+        },
+        {
+          "schema": "profitia_access",
+          "table_name": "security_events",
+          "row_count": "2499",
+          "sha256": "5270759883a4eaca931cf5f7b063e5cb8fcbc722ff6937ce5d7e50f8a9548ca1",
+          "primaryRowCount": "2499",
+          "primarySha256": "5270759883a4eaca931cf5f7b063e5cb8fcbc722ff6937ce5d7e50f8a9548ca1",
+          "match": true
+        },
+        {
+          "schema": "profitia_benchmark_discovery",
+          "table_name": "commands",
+          "row_count": "136",
+          "sha256": "bc7c9413fe34764f2937a826da1ab8bf54a09f1b6e02b07cbaea43a7578462b0",
+          "primaryRowCount": "136",
+          "primarySha256": "bc7c9413fe34764f2937a826da1ab8bf54a09f1b6e02b07cbaea43a7578462b0",
+          "match": true
+        },
+        {
+          "schema": "profitia_benchmark_discovery",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "cd937f6f416373d00fc06b23d6af265f9c3d3cc0be65de8385dc490897f2ca64",
+          "primaryRowCount": "1",
+          "primarySha256": "cd937f6f416373d00fc06b23d6af265f9c3d3cc0be65de8385dc490897f2ca64",
+          "match": true
+        },
+        {
+          "schema": "profitia_benchmark_discovery",
+          "table_name": "results",
+          "row_count": "136",
+          "sha256": "7077e2d4b8d9ebe95a67b766b89867b347bb8424cd647040f6c4692055ffba2e",
+          "primaryRowCount": "136",
+          "primarySha256": "7077e2d4b8d9ebe95a67b766b89867b347bb8424cd647040f6c4692055ffba2e",
+          "match": true
+        },
+        {
+          "schema": "profitia_category",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "42296903a48e9c25187bb79da4ad1b332bca956cb80ef355654d5bf4b1992cb3",
+          "primaryRowCount": "1",
+          "primarySha256": "42296903a48e9c25187bb79da4ad1b332bca956cb80ef355654d5bf4b1992cb3",
+          "match": true
+        },
+        {
+          "schema": "profitia_delegated_phases",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "6c7479a7bd6fb2057ee0d5c0a9bacde93e4f42e69b0629c875023ff422c8e16c",
+          "primaryRowCount": "1",
+          "primarySha256": "6c7479a7bd6fb2057ee0d5c0a9bacde93e4f42e69b0629c875023ff422c8e16c",
+          "match": true
+        },
+        {
+          "schema": "profitia_forecast_dispatch",
+          "table_name": "discovery_installation",
+          "row_count": "1",
+          "sha256": "471c07e69cf9dae212759bd3d925d7d79d1eeea62bab207e6b6077b2e86b85eb",
+          "primaryRowCount": "1",
+          "primarySha256": "471c07e69cf9dae212759bd3d925d7d79d1eeea62bab207e6b6077b2e86b85eb",
+          "match": true
+        },
+        {
+          "schema": "profitia_forecast_dispatch",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "aaa1e60337274cf464097c311ea769c74a10298480e7f4a157bf9a780d06dce0",
+          "primaryRowCount": "1",
+          "primarySha256": "aaa1e60337274cf464097c311ea769c74a10298480e7f4a157bf9a780d06dce0",
+          "match": true
+        },
+        {
+          "schema": "profitia_forecast_requests",
+          "table_name": "commands",
+          "row_count": "4",
+          "sha256": "bffb54e217d601cbd09d84c657a3f703b26ec8b3a93b278577059fee85b43a1b",
+          "primaryRowCount": "4",
+          "primarySha256": "bffb54e217d601cbd09d84c657a3f703b26ec8b3a93b278577059fee85b43a1b",
+          "match": true
+        },
+        {
+          "schema": "profitia_forecast_requests",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "209450fdf5dbcf26b5fb2eeb7479325366901414d0569ef19ec89dd23a912d48",
+          "primaryRowCount": "1",
+          "primarySha256": "209450fdf5dbcf26b5fb2eeb7479325366901414d0569ef19ec89dd23a912d48",
+          "match": true
+        },
+        {
+          "schema": "profitia_jobs",
+          "table_name": "delegations",
+          "row_count": "150",
+          "sha256": "259a5afb46ff526ab94cc15f94c7e3f0d9f46230cbc32fccd888fe1d5df29db6",
+          "primaryRowCount": "150",
+          "primarySha256": "259a5afb46ff526ab94cc15f94c7e3f0d9f46230cbc32fccd888fe1d5df29db6",
+          "match": true
+        },
+        {
+          "schema": "profitia_jobs",
+          "table_name": "delivery_observations",
+          "row_count": "11",
+          "sha256": "e209d5c3104403d1daf30f5be6399f94dd4ffb8bda04aec7b135a057f6346e92",
+          "primaryRowCount": "11",
+          "primarySha256": "e209d5c3104403d1daf30f5be6399f94dd4ffb8bda04aec7b135a057f6346e92",
+          "match": true
+        },
+        {
+          "schema": "profitia_jobs",
+          "table_name": "dispatches",
+          "row_count": "150",
+          "sha256": "e4479d6b28a2074a834d7d010523fbe8472b165cff2d3dfeeec0beb8333b5a65",
+          "primaryRowCount": "150",
+          "primarySha256": "e4479d6b28a2074a834d7d010523fbe8472b165cff2d3dfeeec0beb8333b5a65",
+          "match": true
+        },
+        {
+          "schema": "profitia_jobs",
+          "table_name": "execution_grants",
+          "row_count": "4",
+          "sha256": "d60c2d992899c751f10765310c575fff7cb28f137863e46ae5552afc20d4e607",
+          "primaryRowCount": "4",
+          "primarySha256": "d60c2d992899c751f10765310c575fff7cb28f137863e46ae5552afc20d4e607",
+          "match": true
+        },
+        {
+          "schema": "profitia_jobs",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "ca0f0f29f168fb501c5177d06db9012d363cd3647b794aa7abecc514f51a7ec8",
+          "primaryRowCount": "1",
+          "primarySha256": "ca0f0f29f168fb501c5177d06db9012d363cd3647b794aa7abecc514f51a7ec8",
+          "match": true
+        },
+        {
+          "schema": "profitia_jobs",
+          "table_name": "operation_bindings",
+          "row_count": "4",
+          "sha256": "a361cf4b574bbfd06d896228e928e84dd65ac4e46a27e7cc66d21d464f408c60",
+          "primaryRowCount": "4",
+          "primarySha256": "a361cf4b574bbfd06d896228e928e84dd65ac4e46a27e7cc66d21d464f408c60",
+          "match": true
+        },
+        {
+          "schema": "profitia_modules",
+          "table_name": "application_bindings",
+          "row_count": "4",
+          "sha256": "473ba232d26dace2ac0cf20baddd06291630ba2ceec944c43f5c73a79ce34c07",
+          "primaryRowCount": "4",
+          "primarySha256": "473ba232d26dace2ac0cf20baddd06291630ba2ceec944c43f5c73a79ce34c07",
+          "match": true
+        },
+        {
+          "schema": "profitia_modules",
+          "table_name": "audit_installation",
+          "row_count": "1",
+          "sha256": "a49bf0be44954370666b5bf42d522e0424da41af1b71bd4e615caf849703f9a2",
+          "primaryRowCount": "1",
+          "primarySha256": "a49bf0be44954370666b5bf42d522e0424da41af1b71bd4e615caf849703f9a2",
+          "match": true
+        },
+        {
+          "schema": "profitia_modules",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "374364f87688ce21c795e874509a9db71fb63062b68841882dd7413537bfac93",
+          "primaryRowCount": "1",
+          "primarySha256": "374364f87688ce21c795e874509a9db71fb63062b68841882dd7413537bfac93",
+          "match": true
+        },
+        {
+          "schema": "profitia_profile",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "3d2d5f62a4adae3de7a18b56a16c2a5237191393a9d16476c32a6ec7659f83c2",
+          "primaryRowCount": "1",
+          "primarySha256": "3d2d5f62a4adae3de7a18b56a16c2a5237191393a9d16476c32a6ec7659f83c2",
+          "match": true
+        },
+        {
+          "schema": "profitia_profile",
+          "table_name": "runtime_policies",
+          "row_count": "0",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "primaryRowCount": "0",
+          "primarySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "match": true
+        },
+        {
+          "schema": "profitia_profile",
+          "table_name": "user_profiles",
+          "row_count": "0",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "primaryRowCount": "0",
+          "primarySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "match": true
+        },
+        {
+          "schema": "profitia_request_inspection",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "3662fbb7d9d77e61891fefa1cb072b9119d89c77410071d1dc9f7d3ba96c1aa3",
+          "primaryRowCount": "1",
+          "primarySha256": "3662fbb7d9d77e61891fefa1cb072b9119d89c77410071d1dc9f7d3ba96c1aa3",
+          "match": true
+        },
+        {
+          "schema": "profitia_request_phases",
+          "table_name": "effects",
+          "row_count": "0",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "primaryRowCount": "0",
+          "primarySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "match": true
+        },
+        {
+          "schema": "profitia_request_phases",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "e28a6274637ce9c2a65c2c90f29eeb54fb70439fc6df5f8d5e07c0982f74a067",
+          "primaryRowCount": "1",
+          "primarySha256": "e28a6274637ce9c2a65c2c90f29eeb54fb70439fc6df5f8d5e07c0982f74a067",
+          "match": true
+        },
+        {
+          "schema": "profitia_request_phases",
+          "table_name": "policies",
+          "row_count": "0",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "primaryRowCount": "0",
+          "primarySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "match": true
+        },
+        {
+          "schema": "profitia_request_work",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "45e70d8d60b21931460929f852d5656eaee7cc4a25b7870bb0c81b406c41ce54",
+          "primaryRowCount": "1",
+          "primarySha256": "45e70d8d60b21931460929f852d5656eaee7cc4a25b7870bb0c81b406c41ce54",
+          "match": true
+        },
+        {
+          "schema": "profitia_request_work",
+          "table_name": "policies",
+          "row_count": "37",
+          "sha256": "4dd97d3215ef48a1f3c5d5969dd577e8a8822ec3c7dc1116e2bd203675d4a62c",
+          "primaryRowCount": "37",
+          "primarySha256": "4dd97d3215ef48a1f3c5d5969dd577e8a8822ec3c7dc1116e2bd203675d4a62c",
+          "match": true
+        },
+        {
+          "schema": "profitia_requests",
+          "table_name": "external_installation",
+          "row_count": "1",
+          "sha256": "748d9610bc8523bf3079f9e4bc9a3695d7a61ac3d8bda615a336ae825e8cb35b",
+          "primaryRowCount": "1",
+          "primarySha256": "748d9610bc8523bf3079f9e4bc9a3695d7a61ac3d8bda615a336ae825e8cb35b",
+          "match": true
+        },
+        {
+          "schema": "profitia_requests",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "0dde8adcdb6594fe7633560a59901c384638a79bd678e3c8009d0e7c9a112fa9",
+          "primaryRowCount": "1",
+          "primarySha256": "0dde8adcdb6594fe7633560a59901c384638a79bd678e3c8009d0e7c9a112fa9",
+          "match": true
+        },
+        {
+          "schema": "profitia_requests",
+          "table_name": "intents",
+          "row_count": "150",
+          "sha256": "4aa69c37256b7cf9ed3dca76f605cbca6bb8fef8d0ef7b5e3afe5262454cd11c",
+          "primaryRowCount": "150",
+          "primarySha256": "4aa69c37256b7cf9ed3dca76f605cbca6bb8fef8d0ef7b5e3afe5262454cd11c",
+          "match": true
+        },
+        {
+          "schema": "profitia_requests",
+          "table_name": "operation_installation",
+          "row_count": "1",
+          "sha256": "89daefe02c8aba8495d4a17f62aee687aa0488ff7f6fb87bea3c55b635afb5d3",
+          "primaryRowCount": "1",
+          "primarySha256": "89daefe02c8aba8495d4a17f62aee687aa0488ff7f6fb87bea3c55b635afb5d3",
+          "match": true
+        },
+        {
+          "schema": "profitia_requests",
+          "table_name": "policies",
+          "row_count": "5",
+          "sha256": "4912d09c084969eb5e7a7bbbf8161834b8e388f82bde9793666ce80937a5bad2",
+          "primaryRowCount": "5",
+          "primarySha256": "4912d09c084969eb5e7a7bbbf8161834b8e388f82bde9793666ce80937a5bad2",
+          "match": true
+        },
+        {
+          "schema": "profitia_services",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "eddeb3e9b733756387fc7a5a2bff3f85755da655c9e318a12eb7af53679f37f1",
+          "primaryRowCount": "1",
+          "primarySha256": "eddeb3e9b733756387fc7a5a2bff3f85755da655c9e318a12eb7af53679f37f1",
+          "match": true
+        },
+        {
+          "schema": "profitia_services",
+          "table_name": "read_grants",
+          "row_count": "0",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "primaryRowCount": "0",
+          "primarySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "match": true
+        },
+        {
+          "schema": "profitia_services",
+          "table_name": "runtime_bindings",
+          "row_count": "3",
+          "sha256": "13639f888b9b06ee20735581567b110b9762d459b38a752d21ceb56e00bdd945",
+          "primaryRowCount": "3",
+          "primarySha256": "13639f888b9b06ee20735581567b110b9762d459b38a752d21ceb56e00bdd945",
+          "match": true
+        },
+        {
+          "schema": "profitia_supplier_jobs",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "691c09911d2b77444fc01d327cdfd426f0865a8960c374a44d1bc5083650b7e6",
+          "primaryRowCount": "1",
+          "primarySha256": "691c09911d2b77444fc01d327cdfd426f0865a8960c374a44d1bc5083650b7e6",
+          "match": true
+        },
+        {
+          "schema": "profitia_supplier_requests",
+          "table_name": "commands",
+          "row_count": "10",
+          "sha256": "1bc4dff9592ed17e65e32c5bbf39b2ec64eddbfc1ffcf05bfe7fa9508fc93f0b",
+          "primaryRowCount": "10",
+          "primarySha256": "1bc4dff9592ed17e65e32c5bbf39b2ec64eddbfc1ffcf05bfe7fa9508fc93f0b",
+          "match": true
+        },
+        {
+          "schema": "profitia_supplier_requests",
+          "table_name": "installation",
+          "row_count": "1",
+          "sha256": "f9ddc573444a357de596b1f45a367c401256f4d28ddd3cb8071862d8be175b56",
+          "primaryRowCount": "1",
+          "primarySha256": "f9ddc573444a357de596b1f45a367c401256f4d28ddd3cb8071862d8be175b56",
+          "match": true
+        },
+        {
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "BenchmarkProviderMapping",
+          "row_count": "1",
+          "sha256": "22722a0e5d412e0a102b718008eb0ddad18734feffe8820af4ae49a64a78ebca",
+          "primaryRowCount": "1",
+          "primarySha256": "22722a0e5d412e0a102b718008eb0ddad18734feffe8820af4ae49a64a78ebca",
+          "match": true
+        },
+        {
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "Category",
+          "row_count": "1",
+          "sha256": "3124cb47fceb7323bc5ddf90581deed0c9a8b939581b023cf571d9600c0a0112",
+          "primaryRowCount": "1",
+          "primarySha256": "3124cb47fceb7323bc5ddf90581deed0c9a8b939581b023cf571d9600c0a0112",
+          "match": true
+        },
+        {
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "CategoryCostComponent",
+          "row_count": "1",
+          "sha256": "e61b28872a7155452625d5a6884a5ca96ec3ea5f063a11414365937e4c8ed070",
+          "primaryRowCount": "1",
+          "primarySha256": "e61b28872a7155452625d5a6884a5ca96ec3ea5f063a11414365937e4c8ed070",
+          "match": true
+        },
+        {
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "OrganizationBenchmarkSelection",
+          "row_count": "1",
+          "sha256": "613886f2d8d73fe701733a4b6e18fb7d30379ab20bba19e0116c49c2fadfde53",
+          "primaryRowCount": "1",
+          "primarySha256": "613886f2d8d73fe701733a4b6e18fb7d30379ab20bba19e0116c49c2fadfde53",
+          "match": true
+        },
+        {
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "private_installation",
+          "row_count": "1",
+          "sha256": "eb709c032d6712cf3de354e9264ec43e0117c823dfd01fcde450e9896b7285ee",
+          "primaryRowCount": "1",
+          "primarySha256": "eb709c032d6712cf3de354e9264ec43e0117c823dfd01fcde450e9896b7285ee",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "catalog_kys_reports",
+          "row_count": "0",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "primaryRowCount": "0",
+          "primarySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "delegated_supplier_installation",
+          "row_count": "1",
+          "sha256": "c5ed22e94f933256a3a1706dbfd199b9c32acae84a88d7d2ddfa0fe7efd880fa",
+          "primaryRowCount": "1",
+          "primarySha256": "c5ed22e94f933256a3a1706dbfd199b9c32acae84a88d7d2ddfa0fe7efd880fa",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "financial_facts",
+          "row_count": "111",
+          "sha256": "9496dabe0357cd030561b2de789517cd7281fe4a8bd501f67f342823ef337b20",
+          "primaryRowCount": "111",
+          "primarySha256": "9496dabe0357cd030561b2de789517cd7281fe4a8bd501f67f342823ef337b20",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "financial_scanner_frames",
+          "row_count": "0",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "primaryRowCount": "0",
+          "primarySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "financial_source_documents",
+          "row_count": "19",
+          "sha256": "9068d671f1d9f3ea0806287f50c1ab3b17e77dd99088c6d776abb55da9d9d292",
+          "primaryRowCount": "19",
+          "primarySha256": "9068d671f1d9f3ea0806287f50c1ab3b17e77dd99088c6d776abb55da9d9d292",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "lookup_requests",
+          "row_count": "7",
+          "sha256": "d5fe3892b8e0022cb87a13b73dbbf9bd6f8631530d3f30b7060aa1dbc78e8591",
+          "primaryRowCount": "7",
+          "primarySha256": "d5fe3892b8e0022cb87a13b73dbbf9bd6f8631530d3f30b7060aa1dbc78e8591",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "mgbi_source_archives",
+          "row_count": "4",
+          "sha256": "eff3106243b169f757c3ce74d0822d81c8e3a12c345f0f2149761cc158ae3635",
+          "primaryRowCount": "4",
+          "primarySha256": "eff3106243b169f757c3ce74d0822d81c8e3a12c345f0f2149761cc158ae3635",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "msr_projections",
+          "row_count": "0",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "primaryRowCount": "0",
+          "primarySha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "msr_sources",
+          "row_count": "3",
+          "sha256": "23f562b2be3e34be67bb562f52f12ff9037cee06c7ec88a8399df2d9d45862ce",
+          "primaryRowCount": "3",
+          "primarySha256": "23f562b2be3e34be67bb562f52f12ff9037cee06c7ec88a8399df2d9d45862ce",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "named_interest_installation",
+          "row_count": "1",
+          "sha256": "af26be232468489ce9ee1f70e9e66372b07a0982f69d622eef4338824adcf245",
+          "primaryRowCount": "1",
+          "primarySha256": "af26be232468489ce9ee1f70e9e66372b07a0982f69d622eef4338824adcf245",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "organizations",
+          "row_count": "1",
+          "sha256": "7eabb5716f0f62165b7a7292f6365f26e8160b985b54e4cf5519655b05910bdc",
+          "primaryRowCount": "1",
+          "primarySha256": "7eabb5716f0f62165b7a7292f6365f26e8160b985b54e4cf5519655b05910bdc",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "private_installation",
+          "row_count": "1",
+          "sha256": "bfc6fca743ad30f89c64723cc2ae81a24e29c8e491fa208e16c5b89aba6fcd9e",
+          "primaryRowCount": "1",
+          "primarySha256": "bfc6fca743ad30f89c64723cc2ae81a24e29c8e491fa208e16c5b89aba6fcd9e",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "provider_attempts",
+          "row_count": "11",
+          "sha256": "61dbc99a27ce683cfb3c269bd42f44d98755eb31034dd179f0883731cec56166",
+          "primaryRowCount": "11",
+          "primarySha256": "61dbc99a27ce683cfb3c269bd42f44d98755eb31034dd179f0883731cec56166",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "schema_migrations",
+          "row_count": "18",
+          "sha256": "d77e622e5a547ab09c6070bcc99096a7716c0ee1d1cb1599630343434968474c",
+          "primaryRowCount": "18",
+          "primarySha256": "d77e622e5a547ab09c6070bcc99096a7716c0ee1d1cb1599630343434968474c",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "section_projections",
+          "row_count": "6",
+          "sha256": "708e80af7c915eaf565cc0edcf07e37c009cb6df3253e2de08420157c313d7b5",
+          "primaryRowCount": "6",
+          "primarySha256": "708e80af7c915eaf565cc0edcf07e37c009cb6df3253e2de08420157c313d7b5",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "source_snapshots",
+          "row_count": "6",
+          "sha256": "25aa52040519fa7a958b007800ede2e5a75c3d43f115ddea27ac1445af9268d6",
+          "primaryRowCount": "6",
+          "primarySha256": "25aa52040519fa7a958b007800ede2e5a75c3d43f115ddea27ac1445af9268d6",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "supplier_business_installation",
+          "row_count": "1",
+          "sha256": "9a22e1f94e578a2be1c4348b646a07f37e65b055945a4350d77ea99ce6e2d30b",
+          "primaryRowCount": "1",
+          "primarySha256": "9a22e1f94e578a2be1c4348b646a07f37e65b055945a4350d77ea99ce6e2d30b",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "supplier_inspection_installation",
+          "row_count": "1",
+          "sha256": "6caeeb88cfb0eae6b3f1689873535a89657272ceba89ff05b167fdf754ff0520",
+          "primaryRowCount": "1",
+          "primarySha256": "6caeeb88cfb0eae6b3f1689873535a89657272ceba89ff05b167fdf754ff0520",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "supplier_private_acquisition_installation",
+          "row_count": "1",
+          "sha256": "db433fe8900b7f22c70597e7193ae66c0a209dd5f1f828de62e2379cc0fa7954",
+          "primaryRowCount": "1",
+          "primarySha256": "db433fe8900b7f22c70597e7193ae66c0a209dd5f1f828de62e2379cc0fa7954",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "supplier_sensitive_installation",
+          "row_count": "1",
+          "sha256": "20b4d4a3ebbc136d283cce91bc0c697cc958f48ac363724b6a7d6aa20537dcf2",
+          "primaryRowCount": "1",
+          "primarySha256": "20b4d4a3ebbc136d283cce91bc0c697cc958f48ac363724b6a7d6aa20537dcf2",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "supplier_web_identity",
+          "row_count": "2",
+          "sha256": "2ee7c13dc7b109ad4cc7215f949562dfff08557c01d491ea75a50e96305468d2",
+          "primaryRowCount": "2",
+          "primarySha256": "2ee7c13dc7b109ad4cc7215f949562dfff08557c01d491ea75a50e96305468d2",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "supplier_web_installation",
+          "row_count": "1",
+          "sha256": "ea898697e5c0d115b36770941ec351296bdee0f982ae2b3cfc903e8cc90ccdc2",
+          "primaryRowCount": "1",
+          "primarySha256": "ea898697e5c0d115b36770941ec351296bdee0f982ae2b3cfc903e8cc90ccdc2",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "supplier_work_installation",
+          "row_count": "1",
+          "sha256": "00d3c69472e96eb2d17950fb8343fd8332ac4a932ac9ca8abe91a5293c908916",
+          "primaryRowCount": "1",
+          "primarySha256": "00d3c69472e96eb2d17950fb8343fd8332ac4a932ac9ca8abe91a5293c908916",
+          "match": true
+        },
+        {
+          "schema": "srm",
+          "table_name": "suppliers",
+          "row_count": "2",
+          "sha256": "7929c748a357b79b96b29077ae003bb60799518cf6ca0e94ac44ed2c32322471",
+          "primaryRowCount": "2",
+          "primarySha256": "7929c748a357b79b96b29077ae003bb60799518cf6ca0e94ac44ed2c32322471",
+          "match": true
+        }
+      ],
+      "fullPhysicalDataParityVerified": false,
+      "rlsRefusedTables": [
+        {
+          "schema": "srm",
+          "table_name": "users",
+          "error": "NeonDbError: Ordinary isolated runtime required"
+        },
+        {
+          "schema": "srm",
+          "table_name": "user_supplier_interest",
+          "error": "NeonDbError: Ordinary isolated runtime required"
+        },
+        {
+          "schema": "sg_runtime_benchmarks",
+          "table_name": "BusinessBenchmark",
+          "error": "NeonDbError: Ordinary isolated runtime required"
+        },
+        {
+          "schema": "srm",
+          "table_name": "catalog_companies",
+          "error": "NeonDbError: Ordinary source runtime required"
+        },
+        {
+          "schema": "srm",
+          "table_name": "catalog_financial_facts",
+          "error": "NeonDbError: Ordinary source runtime required"
+        },
+        {
+          "schema": "srm",
+          "table_name": "catalog_financial_indicators",
+          "error": "NeonDbError: Ordinary source runtime required"
+        },
+        {
+          "schema": "srm",
+          "table_name": "organization_supplier_interest",
+          "error": "NeonDbError: Ordinary isolated runtime required"
+        }
+      ],
+      "sourceOwnerOnlyTables": [
+        {
+          "schema": "profitia_external_call",
+          "table_name": "calls",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_external_call",
+          "table_name": "installation",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_external_call",
+          "table_name": "policies",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_external_native",
+          "table_name": "installation",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_external_native",
+          "table_name": "policies",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table_name": "budgets",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table_name": "effects",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table_name": "grants",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table_name": "installation",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table_name": "runtime_bindings",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table_name": "security_events",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table_name": "sources",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_public_web",
+          "table_name": "installation",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_public_web",
+          "table_name": "policies",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_srm_acquisition",
+          "table_name": "installation",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_srm_acquisition",
+          "table_name": "outcome_witnesses",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_srm_catalog",
+          "table_name": "installation",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_srm_catalog",
+          "table_name": "outcome_witnesses",
+          "owner": "profitia_ingestion_owner"
+        },
+        {
+          "schema": "profitia_srm_catalog",
+          "table_name": "publications",
+          "owner": "profitia_ingestion_owner"
+        }
+      ],
+      "coverageGapTableCount": 26,
+      "coverageReason": "19 Source-owner tables have no accepted controlled inspection channel; seven access-owner table reads are refused by existing RLS/runtime admission. No privilege expansion or RLS bypass attempted.",
+      "ordinarySrmDescriptorCopy": {
+        "current_user": "srm_private_development_runtime",
+        "read_only": "on",
+        "descriptor": {
+          "role": "srm_private_development_runtime",
+          "branchId": "br-sparkling-term-b99l107x",
+          "revision": 109,
+          "projectId": "spring-bread-28217539",
+          "environment": "development",
+          "databaseName": "platform_private",
+          "schemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+          "applicationId": "srm",
+          "schemaVersion": "1.0.0",
+          "businessSourceRef": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+          "fixedOrganisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+          "businessSchemaVersion": "1.0.0",
+          "businessBoundaryDigest": "1d234a4b271e7647415efea4ea9013d8cab074ed89f2920589f08fe0e6730dcb"
+        }
+      },
+      "ordinarySrmDescriptorPrimary": {
+        "current_user": "srm_private_development_runtime",
+        "read_only": "on",
+        "descriptor": {
+          "role": "srm_private_development_runtime",
+          "branchId": "br-sparkling-term-b99l107x",
+          "revision": 109,
+          "projectId": "spring-bread-28217539",
+          "environment": "development",
+          "databaseName": "platform_private",
+          "schemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+          "applicationId": "srm",
+          "schemaVersion": "1.0.0",
+          "businessSourceRef": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+          "fixedOrganisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+          "businessSchemaVersion": "1.0.0",
+          "businessBoundaryDigest": "1d234a4b271e7647415efea4ea9013d8cab074ed89f2920589f08fe0e6730dcb"
+        }
+      },
+      "copiedDescriptorBranchIdExplanation": "Immutable original branch identity is intentionally preserved in the recovered data. Physical isolated copy identity is attested separately by provider branch/compute metadata; no descriptor rewrite or consumer activation.",
+      "accessRevision": 109,
+      "activeApplications": 5,
+      "accessBindings": 7,
+      "identityApplicationAndBinding": "DISABLED",
+      "sql019Installed": false,
+      "sql013Installed": false,
+      "queue": {
+        "pending": 139,
+        "confirmed": 11,
+        "unexpiredLeases": 0
+      },
+      "nonAcceptedPhaseEffects": 0,
+      "recoveryLongRunningQueriesOver5Minutes": 0,
+      "sourceExternalInFlightEvidence": "NOT_VERIFIED_NO_ACCEPTED_SOURCE_OPERATOR_CHANNEL",
+      "originalFinalizedOrRestored": false,
+      "writesToRecoveryCopy": false,
+      "scopeOfRecoverabilityProof": "Owner already restored the snapshot to an isolated usable branch. Agent proved connection, schema/ACL/receipt parity, visible-content parity and ordinary descriptor reads without writes. No whole-database equality or incident cutover/RTO promise.",
+      "remainingAcceptance": [
+        "lawful readback of 26 excluded tables including Source in-flight/uncertain effects",
+        "final exact artifact/configuration/schema compatibility and owner recovery acceptance before window",
+        "fresh pre-window snapshot/LSN drift and resource-retention recheck"
+      ]
+    }
+  },
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "environmentId": "evm-dapbd70ae00c73cgrup0",
+    "srm": {
+      "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+      "deployId": "dep-dbbnb22fngtc73bn0i90",
+      "sourceSha": "260ade12608faaea27376c1c976db392f046f267",
+      "status": "live",
+      "autoDeploy": false,
+      "health": "PASS",
+      "configurationFingerprint": "d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5",
+      "configurationFingerprintScope": "All31 current service variables matched actual server startup environment; secrets withheld",
+      "locationFeatureFlag": "ABSENT_DEFAULT_FALSE",
+      "locationConfigurationVersion": null,
+      "artifactDigest": "f4216032035055e8ab8ad3e387882cf2fb02a82d8daca6bc4a58e57e52f502cf",
+      "retainedArtifactAvailability": "EXISTING_SUCCESSFUL_BUILD_AND_RUNNING_FILE_PARITY_VERIFIED",
+      "lkgVerified": false,
+      "readOnlySsh": "DENIED_PUBLICKEY",
+      "artifactAlgorithm": "sha256-sorted-path-type-content-v1",
+      "artifactRoots": [
+        ".next",
+        "node_modules",
+        "public",
+        "package.json",
+        "package-lock.json"
+      ],
+      "artifactExcludes": [
+        ".next/cache",
+        "nested .cache content"
+      ],
+      "artifactEntryCount": 23485,
+      "artifactBytes": 636136486,
+      "buildIdDigest": "c3155dc91d9a7eb8fea77def1cd4432e9d31a3d0d5b6d88db0623ff6504f78fc",
+      "runningInstanceId": "srv-db1vu6gm7kps73d0e3r0-5ccd45459d-zxpgf",
+      "runningArtifactMeasuredAt": "2026-10-22T04:48:40.623Z",
+      "runningArtifactVerified": true,
+      "existingRetainedBuildJobId": "job-dbbo4cc9v7es73fs7u80",
+      "existingRetainedBuildMeasuredAt": "2026-10-20T15:02:39.219Z",
+      "currentFilesExactlyMatchRetainedBuild": true,
+      "readOnlyWebShell": "AVAILABLE_WITHOUT_NEW_KEY",
+      "effectiveServerPid": 72,
+      "effectiveConfigurationFingerprint": "d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5",
+      "effectiveConfigurationKeyCount": 31,
+      "effectiveConfigurationMatchesCurrentService": true,
+      "nativeRollbackExecuted": false,
+      "currentLiveRollbackPreview": "Redirects to Live details; earlier retained deploys have enabled rollback controls; recheck exact retained target before release",
+      "combinedLkgIncompleteReason": "Fresh current database recovery point, isolated restore acceptance and full schema/binding compatibility remain unaccepted.",
+      "recoveryContinuationDeployReadback": {
+        "observedAt": "2026-10-22T05:43:12Z",
+        "deployId": "dep-dbbnb22fngtc73bn0i90",
+        "commit": "260ade12608faaea27376c1c976db392f046f267",
+        "status": "live",
+        "unchanged": true
+      }
+    },
+    "maps": {
+      "serviceId": "srv-dbat5ulg1s2s73defcp0",
+      "deployId": "dep-dbati9rrjlhs73akpsj0",
+      "sourceSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+      "status": "live",
+      "autoDeploy": false,
+      "health": "PASS",
+      "publicConfigurationFingerprint": "b158ce539500f912cbe215b28526a3a699f434fa29abb44e46a5922aa4d81e56",
+      "serviceEnvironmentFingerprint": "8b843de82c8c56d0fa02702e42746906e99e329392ca8da84048867a65f66cf3",
+      "secretFile": "maps-development.env",
+      "secretFileFingerprint": "NOT_VERIFIED",
+      "buildManifestDigest": "357464b3948e1141e73f8877f4bc42047d2fc7fcc1299e913d8ad98c6fabb984",
+      "publicFilesVerified": 13,
+      "publicFilesMatchCurrentMain": true,
+      "privateRuntimeBytesVerified": false,
+      "deploymentRequiredForZeroBudgetCore": false,
+      "newLocalBuildDigest": "d036e19eb963f956d866add4296fcd0d318402be394547a62344cca017ef2bb1",
+      "googleBrowserSdkExecuted": false,
+      "recoveryContinuationDeployReadback": {
+        "observedAt": "2026-10-22T05:43:12Z",
+        "deployId": "dep-dbati9rrjlhs73akpsj0",
+        "commit": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+        "status": "live",
+        "unchanged": true
+      }
+    },
+    "sharedDevelopmentServiceIds": [
+      "srv-dapa3ujm8hqs73a9t2og",
+      "srv-dapa3tid0e5s73f8bc5g",
+      "srv-dapa3vlg1s2s739vp7dg",
+      "srv-dapa40ad0e5s73f8bjm0"
+    ],
+    "configurationMutated": false,
+    "deploymentsTriggered": 0,
+    "lastKnownGood": {
+      "srm": {
+        "deployId": "dep-dbbnb22fngtc73bn0i90",
+        "sourceSha": "260ade12608faaea27376c1c976db392f046f267",
+        "artifactDigest": "f4216032035055e8ab8ad3e387882cf2fb02a82d8daca6bc4a58e57e52f502cf",
+        "configurationFingerprint": "d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5",
+        "runtimeInventory": "VERIFIED"
+      },
+      "maps": {
+        "deployId": "dep-dbati9rrjlhs73akpsj0",
+        "sourceSha": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+        "buildManifestDigest": "357464b3948e1141e73f8877f4bc42047d2fc7fcc1299e913d8ad98c6fabb984",
+        "publicFilesVerified": 13,
+        "deploymentChanged": false
+      },
+      "database": {
+        "projectId": "spring-bread-28217539",
+        "branchId": "br-sparkling-term-b99l107x",
+        "database": "platform_private",
+        "schemaState": "SQL017_INSTALLED_SQL019_SQL013_ABSENT",
+        "recovery": "WAITING_OWNER"
+      },
+      "e1Bindings": {
+        "revision": 109,
+        "applicationStates": [
+          {
+            "application": "srm",
+            "status": "ACTIVE",
+            "roles": [
+              "srm_private_development_runtime"
+            ]
+          },
+          {
+            "application": "srm-jobs",
+            "status": "ACTIVE",
+            "roles": [
+              "srm_private_development_jobs"
+            ]
+          },
+          {
+            "application": "spendguru",
+            "status": "ACTIVE",
+            "roles": [
+              "sg2_private_development_dashboard",
+              "sg2_private_development_runtime"
+            ]
+          },
+          {
+            "application": "spendguru-benchmark-dispatch",
+            "status": "ACTIVE",
+            "roles": [
+              "sg2_benchmark_dispatch_development_runtime"
+            ]
+          },
+          {
+            "application": "spendguru-forecast-dispatch",
+            "status": "ACTIVE",
+            "roles": [
+              "sg2_forecast_dispatch_development_runtime"
+            ]
+          },
+          {
+            "application": "identity-runtime-development",
+            "status": "DISABLED",
+            "roles": [
+              "identity_b1_runtime"
+            ]
+          }
+        ],
+        "newInstallationAuthority": false
+      }
+    }
+  },
+  "concurrency": {
+    "threadId": "01a15aed-8d94-7fe0-9cff-c54f72b5f8a8",
+    "title": "Flow, rejestracja i logowanie czatem",
+    "task": "ARCHITECTURE-IDENTITY-B1-I-STAGE2-20261022",
+    "sharedReceiver": true,
+    "coordinationStatus": "B1_STAGE2_CLOSED_B2_SOURCE_TASK_RUNNING_NO_SHARED_MAINTENANCE_AUTHORITY",
+    "messageSent": false,
+    "stage2Status": "completed",
+    "stage2CompletedAt": "2026-10-22T04:30:11.378Z",
+    "pmosResult": "SUCCESS",
+    "pmosCloseout": "CLOSEOUT_COMPLETE",
+    "pmosArtifactId": "cmvj1lil00000p9ukn3fi81b9",
+    "phrCommit": "0b9797f0ee20821bdb257ddd8cb0baa5ce1bd7e3",
+    "phrBundle": "history/2026/10/22/2026-10-22-04-30-02Z__architecture-architecture-identity-b1-i-stage2-20261022",
+    "phrBundleHash": "2065843d9e5d20711cb260c3aafcefdf3c3e1f98a99d75b873a847552498c7e7",
+    "phrHashesVerified": 5,
+    "actualClerkBrowserUat": false,
+    "activeArchitectureExecutions": 1,
+    "activeSg2SharedReceiverOperationFound": false,
+    "historicalSg2RunningRegistration": "PPF1-PORR-DASHBOARD-LIVE-VERIFY-20260921",
+    "observedAt": "2026-10-22T05:43:12Z",
+    "b2": {
+      "taskId": "ARCHITECTURE-IDENTITY-B2-SESSION-COMPAT-20261022",
+      "status": "running",
+      "startedAt": "2026-10-22T05:03:48.650Z",
+      "pr": 598,
+      "headSha": "ed9e64cc19bb52a673160e92f981eb7767a454ac",
+      "draft": true,
+      "merged": false,
+      "changedFiles": 28,
+      "actualProductDatabaseWriteObserved": false,
+      "sharedWindowReserved": false,
+      "declaredScope": "Source-only identity-runtime/CI/evidence; no current target-path overlap",
+      "independentLiveCoordinationStillRequired": true
+    }
+  },
+  "tests": {
+    "locations": {
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "OWN_LOCAL_POSTGRES_SYNTHETIC"
+    },
+    "maps": {
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0
+    },
+    "sourceAcceptance": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    "mapsBuild": "PASS",
+    "localPostgresStopped": true,
+    "liveAuthenticatedUat": "NOT_TESTED",
+    "sourceCiReverified": true,
+    "initialMapsSandboxSocketAttempt": "EPERM_RETRIED_SUCCESSFULLY_WITH_LOCAL_SOCKET_PERMISSION",
+    "invalidWorkingDirectoryInvocation": "CORRECTED_NO_SOURCE_OR_CLOUD_EFFECT"
+  },
+  "effects": {
+    "cloudProductWrites": 0,
+    "newCloudResources": 0,
+    "googleApiChanges": 0,
+    "googleRequestsFromThisExecution": 0,
+    "paidGeocodingBudget": 0,
+    "sharedApplicationsChanged": false,
+    "stagingChanged": false,
+    "productionChanged": false
+  },
+  "approvalPackage": {
+    "version": "srm-locations-task02-r-owner-gate-v1",
+    "accepted": false,
+    "windowProposed": "OWNER_SELECTS_SINGLE_EXCLUSIVE_60_MINUTE_DEVELOPMENT_WINDOW_AFTER_B1_I_STAGE2",
+    "windowTimeoutMinutes": 60,
+    "sqlPlan": "ONE_OUTER_TRANSACTION_UNCHANGED_SQL019_THEN_SRM_SQL013_WITH_EXACT_IMMUTABLE_RECEIPTS",
+    "applicationRuntimeRole": "srm_private_development_runtime",
+    "paidOrServiceGeocodingGrants": [],
+    "humanSql013ExecuteGrants": [
+      "srm.location_installation_descriptor()",
+      "srm.location_metadata(uuid,uuid,text,uuid)",
+      "srm.location_page(uuid,uuid,text,integer,integer)",
+      "srm.location_manual_write(uuid,uuid,uuid,text,bigint,uuid,text,text,text)",
+      "srm.location_sync_target(uuid,uuid,text)",
+      "srm.location_sync_write(uuid,uuid,bigint,uuid,text,text,jsonb)",
+      "srm.location_expire(uuid,uuid)",
+      "srm.location_sources_admitted(uuid,uuid,jsonb)",
+      "srm.location_work_catalog_row(text,text)"
+    ],
+    "humanSql019ExecuteGrants": [
+      "profitia_requests.location_runtime_descriptor()",
+      "profitia_requests.location_permission(text,uuid,uuid,text,text)",
+      "profitia_requests.location_evidence_current(jsonb,text,uuid,uuid)",
+      "profitia_requests.bind_location_scope(text,uuid,uuid,text,text,jsonb)"
+    ],
+    "permissionOperations": [
+      "supplier.location.read",
+      "supplier.location.write",
+      "supplier.location.sync"
+    ],
+    "permissionFeature": "supplier_report",
+    "permissionScope": "ONLY_OWNER_APPROVED_CURRENT_E1_ORGANISATION_AND_ACCOUNTS_NO_WILDCARD_OR_MIGRATION_OF_IDENTITIES",
+    "proposedRequestCountPolicy": {
+      "operations": [
+        "supplier.location.write",
+        "supplier.location.sync"
+      ],
+      "capacityPerOperationPerOrganisation": 100,
+      "windowHours": 24,
+      "paidAllowance": 0
+    },
+    "tableDmlGrants": [],
+    "ownerMaintenancePort": "srm.location_expire_controlled()",
+    "ordinaryRuntimeMayExecuteMaintenance": false,
+    "preliminaryCostAndCountParametersAccepted": true,
+    "maintenanceAndInstallationAuthority": "NOT_GRANTED",
+    "resourceGrantSemantics": {
+      "application": "srm",
+      "organisation": "exact approved current internal UUID",
+      "user": "exact approved current internal account UUID",
+      "feature": "supplier_report",
+      "operations": [
+        "supplier.location.read",
+        "supplier.location.write",
+        "supplier.location.sync"
+      ],
+      "nullOrganisationOrUserAllowed": false,
+      "nullOrWildcardOperationAllowed": false,
+      "nullResourceMeaning": "Matches every resource ID within that exact org/user/operation, not only one supplier",
+      "nullResourceApproved": false,
+      "finalResourceScopeDecisionRequired": true,
+      "typedPrefixSelectorImplementedBySql019": false,
+      "manualCreateNeedsReviewedDynamicResourceScope": true
+    },
+    "windowVariants": [
+      {
+        "localStart": "2026-10-22T10:00:00+02:00",
+        "localEnd": "2026-10-22T11:00:00+02:00",
+        "status": "PROPOSED_CONDITIONAL_NOT_RESERVED"
+      },
+      {
+        "localStart": "2026-10-22T14:00:00+02:00",
+        "localEnd": "2026-10-22T15:00:00+02:00",
+        "status": "PROPOSED_CONDITIONAL_NOT_RESERVED"
+      }
+    ],
+    "windowPreconditions": [
+      "fresh verified recovery and coverage",
+      "all applicable LKG evidence accepted",
+      "lawful UAT cohort and identity lifetime",
+      "approved retention or verified independent HQ/manual KYS fence",
+      "exact bounded E1 grants",
+      "authorised Source in-flight readback",
+      "SRM/SG2/ARCHITECTURE owner approval",
+      "fresh no-conflict check immediately before start"
+    ],
+    "readiness": "NOT_READY_FOR_WINDOW_APPROVAL",
+    "recoveryResourceCreationAction": "COMPLETED_BY_OWNER_AND_VERIFIED",
+    "remainingPrerequisiteDecisions": [
+      {
+        "gate": "RECOVERY_DATA_AND_SOURCE_VISIBILITY",
+        "owner": "Architecture Platform / authorised Source operator",
+        "decision": "Provide an accepted read-only controlled inspection path/readback for the 19 Source-owned and seven RLS-refused tables, and in-flight/uncertain external-call state. Preserve ordinary runtime grants.",
+        "go": false
+      },
+      {
+        "gate": "KYS_RETENTION",
+        "owner": "SRM Runtime + Architecture Platform",
+        "decision": "Accept a concrete privileged periodic retention executor and named operator, or authorise reviewed implementation of an independent HQ/manual KYS input-and-projection fence. No suitable accepted existing executor exists.",
+        "go": false
+      },
+      {
+        "gate": "UAT_IDENTITY_ADMISSION",
+        "owner": "Architecture Platform + SRM owner; owner creates genuine Clerk users",
+        "decision": "Accept lawful admission and finite binding/renewal for A1/A2 in the explicitly approved current fixed SRM org and B1 in a separate org; exact report/source/product rights. Draft B2 source alone does not provide this.",
+        "go": false
+      },
+      {
+        "gate": "EXACT_LOCATION_RESOURCE_SCOPE",
+        "owner": "Architecture Platform / E1 producer + SRM receiver",
+        "decision": "Resolve dynamic CREATE authorisation under strict no-wildcard requirements through an accepted bounded authority design. Current write resource is server-derived MANUAL+idempotency-key location UUID; SQL019 grants match exact ID or NULL. No new selector or NULL grant is adopted here.",
+        "go": false
+      },
+      {
+        "gate": "COORDINATED_INSTALLATION_WINDOW",
+        "owner": "SRM/SG2/Architecture authorised owners",
+        "decision": "Only after preceding gates and final LKG verification, approve one <=60min window, exact SQL/receipts/grants/runtime/configuration and rollback; recheck B2 and all consumers immediately before start.",
+        "go": false
+      }
+    ],
+    "ownerApprovalRequestedInThisContinuation": false,
+    "preApprovedResourceWildcard": false,
+    "finalDecisionToBePresentedOncePrerequisitesClosed": true
+  },
+  "ownerActions": [
+    "Accept the owner-created Task02-R recovery copy only after the remaining controlled content/Source read coverage is resolved. Snapshot snap-bold-bird-b99s4c9q is manual, expires never; isolated br-green-glitter-b9weet99 / ep-divine-mode-b9fekhdg verified. No further owner resource creation is currently requested; no Finalize Restore.",
+    "Architecture owner: accept a lawful current-identity onboarding/binding lifetime/renewal and exact org/product-membership procedure for three owner-created real Clerk users; no fixture reactivation, raw manual INSERT bypass or automatic B2 activation.",
+    "SRM owner with Architecture privileged-channel review: decide controlled periodic KYS derivative retention adoption; no suitable approved existing schedule was found. Otherwise keep KYS fenced and require a verified independent HQ/manual input+projection fence before partial activation.",
+    "Approve the final per-user/per-org/per-operation/resource permission matrix; resource_id=NULL matches all resource IDs within its org/user scope and is not preapproved by the no-wildcard instruction. Limits100/100/ZERO are only provisional accepted parameters.",
+    "Authorised Source owner: supply read-only in-flight/uncertain external-call evidence through its existing controlled operator; access owner lacks that ledger channel. Do not widen ordinary runtime privileges for inspection.",
+    "After all prerequisites: approve one exact <=60-minute Development window and coordinated application/binding/worker quiescence, SQL019/SQL013 procedure and limited grant activation. No service window or persistent product mutation is currently approved."
+  ],
+  "verdicts": {
+    "TASK_02_R_STATUS": "PARTIAL",
+    "PROJECT_PROFILE": "SRM",
+    "TARGET_ENVIRONMENT": "development",
+    "SOURCE_BASELINE": "VERIFIED",
+    "RECOVERY_GATE": "PARTIAL",
+    "RESTORE_REHEARSAL": "PARTIAL_READ_ONLY_COPY_VERIFIED",
+    "LKG_VERIFIED": "NO",
+    "MAINTENANCE_WINDOW": "NOT_APPROVED",
+    "SHARED_E1_APPLICATIONS_RESTORED": "NOT_CHANGED",
+    "SQL019_INSTALLATION": "NOT_INSTALLED",
+    "SQL013_INSTALLATION": "NOT_INSTALLED",
+    "SQL_RECEIPT_READBACK": "NOT_APPLICABLE",
+    "ORDINARY_ROLE_SECURITY": "PARTIAL",
+    "E1_LOCATION_READ": "BLOCKED",
+    "E1_LOCATION_WRITE": "BLOCKED",
+    "E1_LOCATION_SYNC": "BLOCKED",
+    "KYS_RETENTION_OPERATOR": "BLOCKED",
+    "GOOGLE_CACHE_MAINTENANCE": "NOT_REQUIRED_FOR_ZERO_BUDGET",
+    "LOCATION_PERSISTENCE_LIVE": "NOT_TESTED",
+    "MANUAL_LOCATION_CRUD_LIVE": "NOT_TESTED",
+    "ORGANISATION_SHARING_LIVE": "NOT_TESTED",
+    "CROSS_ORGANISATION_ISOLATION": "NOT_TESTED",
+    "MGBI_HEADQUARTERS_LIVE": "NOT_TESTED",
+    "MGBI_BRANCHES": "NOT_CONFIRMED",
+    "KYS_RELATED_ENTITIES_LIVE": "NOT_TESTED",
+    "THREE_GROUP_UI_LIVE": "NOT_TESTED",
+    "MAPS_EMBED_LIVE": "NOT_TESTED",
+    "AUTHENTICATED_BROWSER_UAT": "NOT_TESTED",
+    "PAID_GEOCODING_ENABLED": "NO",
+    "PAID_GEOCODING_BUDGET": "ZERO",
+    "UNAPPROVED_PAID_EFFECTS": "NONE",
+    "SG2_SHARED_E1_REGRESSION": "PARTIAL",
+    "SRM_REGRESSION": "PARTIAL",
+    "MAPS_REGRESSION": "PASS",
+    "SRM_DEPLOYMENT": "PENDING",
+    "MAPS_DEPLOYMENT": "NOT_REQUIRED",
+    "DEPLOYED_SRM_SHA": "260ade12608faaea27376c1c976db392f046f267",
+    "DEPLOYED_MAPS_SHA": "db2df0a6cccb994ea4654ae0eb5b3af4b46867ff",
+    "SOURCE_MAIN_SHA": "fd6b630afa37fb6f055b3291332d380b0d19e005",
+    "CONFIGURATION_VERSION": "NONE",
+    "STAGING_CHANGED": "NO",
+    "PRODUCTION_CHANGED": "NO",
+    "OWNER_ACTION_REQUIRED": "YES",
+    "TASK_03_MAGICPATH_READY": "CONDITIONAL",
+    "PMOS_CLOSEOUT": "PARTIAL",
+    "PHR_PUBLICATION": "PENDING",
+    "MEMOROS": "DISABLED_BY_PROFILE",
+    "RECOVERY_SNAPSHOT_LINEAGE": "PASS",
+    "RECOVERY_SNAPSHOT_EXPIRATION": "NEVER_VERIFIED",
+    "RECOVERY_SCHEMA_AND_APPLICATION_ACL_PARITY": "PASS",
+    "RECOVERY_VISIBLE_DATA_PARITY": "PASS_79_TABLES",
+    "RECOVERY_FULL_DATA_PARITY": "NOT_VERIFIED_26_TABLE_COVERAGE_GAPS",
+    "RECOVERY_FINALIZE_EXECUTED": "NO",
+    "INSTALLATION_OWNER_PACKAGE": "PREPARED_NOT_READY_FOR_APPROVAL",
+    "AUTHENTICATED_UAT_IDENTITY_ADMISSION": "BLOCKED"
+  },
+  "updatedAt": "2026-10-22T05:43:12Z",
+  "ownerResponse": {
+    "source": "Direct human async answer to consolidated gate; conditional preparation authority only",
+    "directionConfirmed": true,
+    "preliminaryLimitsAccepted": true,
+    "writesPerOrganisationPer24h": 100,
+    "syncsPerOrganisationPer24h": 100,
+    "paidBudget": 0,
+    "maintenanceApproved": false,
+    "applicationDisablementApproved": false,
+    "sql019Sql013InstallationApproved": false,
+    "activeBindingChangesApproved": false,
+    "grantActivationApproved": false,
+    "recoveryResourcesCreatedBy": "OWNER",
+    "newAccountsCreatedBy": "OWNER",
+    "agentNewResourceAuthority": false
+  },
+  "identityAcceptance": {
+    "issuer": "https://unified-drum-7191.clerk.accounts.dev",
+    "clerkDevelopmentInstanceVerified": true,
+    "clerkUsers": 1,
+    "explicitTaskUatMetadataUsers": 0,
+    "reusableApprovedBrowserTestCohort": false,
+    "b1FixtureIssuer": "https://b1i-stage2-20261022.invalid",
+    "b1FixtureAccountsReusable": false,
+    "currentSrmSignUpEnabled": false,
+    "identityRuntimeImplementedOrDeployed": false,
+    "b1ProductiveProvisioningActive": false,
+    "b1NewBindingMaximumSeconds": 300,
+    "b1RenewalImplemented": false,
+    "organisationAuthority": "PROFITIA_E1_NOT_CLERK_ORGANIZATIONS",
+    "hostProfile": "PORR_SUITE_FIXED",
+    "hostOrganisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+    "testARequiresExplicitOwnerPermissionForCurrentFixedDevelopmentOrganisation": true,
+    "newUnboundTestOrganisationACannotBeSelectedByChangingABrowserId": true,
+    "userPattern": {
+      "A1": "HUMAN member of approved SRM Development organisation A",
+      "A2": "HUMAN member of same A",
+      "B1": "HUMAN member of separate approved internal organisation B"
+    },
+    "product": "SUPPLIER_INTELLIGENCE",
+    "feature": "supplier_report",
+    "accountOrMembershipCreationPerformed": false,
+    "unresolvedArchitectureDecision": "Accepted lawful onboarding/binding/renewal path for three owner-created genuine Clerk users and exact organisation membership/product scope; no manual raw-INSERT or disabled-test-account bypass.",
+    "mainIdentityRuntimeImplemented": false,
+    "identityRuntimeSourceCandidate": {
+      "pr": 598,
+      "url": "https://github.com/profitia/SG-dev/pull/598",
+      "headSha": "ed9e64cc19bb52a673160e92f981eb7767a454ac",
+      "draft": true,
+      "merged": false,
+      "state": "open",
+      "pmosTaskId": "ARCHITECTURE-IDENTITY-B2-SESSION-COMPAT-20261022",
+      "pmosStatus": "running",
+      "mainSourcePresent": false,
+      "reviewedFiles": [
+        "apps/identity-runtime/src/session-boundary.ts",
+        "Canon/runbooks/identity-runtime-b2-consumer-adoption-v1.md"
+      ],
+      "scope": "Source-only session/navigation compatibility; registration and org/member/product onboarding excluded; no implicit binding renewal.",
+      "closesUatOnboardingGate": false,
+      "consumerAdoptionAccepted": false,
+      "liveActivationObserved": false,
+      "scopeOverlapWithTask02R": false
+    },
+    "e1DirectoryRecheckedAt": "2026-10-22T05:43:12Z",
+    "clerkInventoryObservation": "Earlier read-only Clerk count remains historical, not recounted in this continuation; current authoritative E1 still has only one ACTIVE account/membership."
+  },
+  "retentionAudit": {
+    "logicalSourceOwner": "SRM Runtime",
+    "privilegedControlOwner": "Architecture Platform / controlled profitia_access_owner",
+    "namedOperationalScheduleOwner": "NOT_ESTABLISHED",
+    "githubSourcePrs": [
+      549,
+      555,
+      597
+    ],
+    "canonicalSrmPmosTask": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+    "phrSourceTask": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+    "existingNativeCleanup": "createSensitiveNativeStore.purge -> current organisation protected SRM_SENSITIVE_EXPIRE work",
+    "existingCacheCleanup": "purgeOrganisationKysCache -> current organisation payload nulling",
+    "existingCleanupPeriodic": false,
+    "existingCleanupCoversSupplierLocationDerivatives": false,
+    "candidatePort": "srm.location_expire_controlled()",
+    "candidatePortInstalled": false,
+    "candidatePortOwnerOnly": true,
+    "ordinaryHumanOrServiceMayExecute": false,
+    "suitableExistingScheduledExecutorFound": false,
+    "newSchedulerOrRoleCreated": false,
+    "requiredAcceptance": [
+      "owner-controlled approved execution",
+      "physical KYS derivative expiry",
+      "manual-row preservation",
+      "immediate source-right withholding",
+      "idempotency",
+      "bounded execution",
+      "audit receipts",
+      "missed-run monitoring/recovery"
+    ],
+    "unresolvedDecision": "SRM owner must adopt an approved periodic controlled-maintenance execution; Architecture owner must accept any privileged channel/authority change. No approved existing schedule was found. Until accepted, keep KYS input/persistence/projection fenced. Do not repurpose unrelated cron.",
+    "refreshedSourceAuthority": "fd6b630afa37fb6f055b3291332d380b0d19e005",
+    "acceptedNewPeriodicExecutorSincePriorCheckpoint": false,
+    "relatedOpenB2PrDoesNotSupplyRetention": true
+  },
+  "ownerRecoveryResponse": {
+    "receivedResourceIds": true,
+    "verifiedProjectId": "spring-bread-28217539",
+    "snapshotId": "snap-bold-bird-b99s4c9q",
+    "recoveryBranchId": "br-green-glitter-b9weet99",
+    "recoveryComputeId": "ep-divine-mode-b9fekhdg",
+    "authorised": "Continue same TASK02-R Full Autopilot read-only recovery verification, permitted recoverability checks and release-package preparation.",
+    "withheld": [
+      "application disablement",
+      "SQL019/SQL013 installation",
+      "grant activation",
+      "active binding changes",
+      "deployment",
+      "Finalize Restore",
+      "connection migration"
+    ]
+  }
+}
