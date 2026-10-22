@@ -5,6 +5,8 @@ export declare const IDENTITY_PROVISIONING_CONTRACT: Readonly<{ id: 'profitia.id
 export interface IdentityProvisioningOptions<Transaction> {
   client: ClerkIdentityClient; identityApplication: IdentityApplication; binding: AccessStoreBinding
   schemaDigest: string
+  /** Explicit opt-in to separately installed renewal; absent preserves B1. */
+  renewalSchemaDigest?: string
   /** Separate server-held database attestation key, never a browser credential. */
   proofKey: Uint8Array
   now?: () => number
