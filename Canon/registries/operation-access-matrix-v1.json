@@ -114,7 +114,8 @@
     "SUPPLIER_LOCATION_SCOPE": "Serwer rozstrzyga organisationId, supplierId, locationId i aktualny zasób. Zapisane lokalizacje są ORGANISATION_PRIVATE, ownerUserId=null; autor/edytor to oddzielne atrybuty. Źródła wymagają jawnych aktualnych praw i retencji; osoba/JDG nie jest lokalizacją spółki powiązanej. Brak kontekstu, audytu albo potwierdzenia SQL019 kończy się odmową.",
     "SUPPLIER_LOCATION_MANUAL_WRITE": "Wyłącznie ręczny CREATE/UPDATE/DEACTIVATE. Tożsamość nowego zasobu nadaje serwer. Istniejący rejestr żądań rezerwuje skończoną lokalną politykę liczby poleceń; klucz i digest zapobiegają duplikacji. NEW wymaga właściwej wersji, REPLAY nadal aktualnego dostępu. Zapis i OUTCOME atomowo; brak prawa do zmiany źródła, delegacji lub geokodowania.",
     "SUPPLIER_LOCATION_SOURCE_SYNC": "Intencja HUMAN dotyczy dokładnych zaakceptowanych wersji MGBI/KYS. Ograniczona delegacja zachowuje SERVICE oraz inicjatora. Wersje, aktualne prawa i retencja są sprawdzane ponownie przed pracą. Operacja nie zamawia nowych raportów i nie nadaje prawa do sieci.",
-    "SUPPLIER_LOCATION_GEOCODING": "Dokładna lokalizacja, wersja adresu i jawny executor. Skończona rezerwacja Root poprzedza intencję. Niezależna, aktualna polityka Source/dostawcy i atomowy budżet poprzedzają rzeczywistą sieć. Domyślnie zero płatnych wywołań; brak polityki, audytu lub praw odmawia. Niepewne dostarczenie nie jest automatycznie powtarzane. Wynik wymaga ponownej kontroli adresu/źródła u konsumenta."
+    "SUPPLIER_LOCATION_GEOCODING": "Dokładna lokalizacja, wersja adresu i jawny executor. Skończona rezerwacja Root poprzedza intencję. Niezależna, aktualna polityka Source/dostawcy i atomowy budżet poprzedzają rzeczywistą sieć. Domyślnie zero płatnych wywołań; brak polityki, audytu lub praw odmawia. Niepewne dostarczenie nie jest automatycznie powtarzane. Wynik wymaga ponownej kontroli adresu/źródła u konsumenta.",
+    "REGISTRY_BOUNDED_READ": "Wyłącznie HUMAN z aktualnym modułem supplier_report, członkostwem, produktem SUPPLIER_INTELLIGENCE i jawnym grantem dokładnej operacji. Osobny zatwierdzony publiczny katalog KRS, bez danych osobowych, prywatnych dostawców i historii zainteresowań. Zamknięta selekcja query/limit/cursor albo selectedKrs; serwer wiąże generację i aktualny snapshot z rzeczywistym katalogiem. Odczyt nie uruchamia Source, publikacji, synchronizacji ani MGBI. DTO tożsamości nie jest uprawnieniem."
   },
   "dataClasses": [
     {
@@ -1368,6 +1369,75 @@
       "effect": "REQUEST_EXTERNAL",
       "audit": "SECURITY_REQUIRED",
       "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-41",
+      "operation": "supplier.registry.search",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.registry.search",
+      "resourceType": "supplier_registry_catalog",
+      "dataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "conditionIds": [
+        "PURE_SHARED_READ",
+        "REGISTRY_BOUNDED_READ"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-42",
+      "operation": "supplier.registry.read",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.registry.read",
+      "resourceType": "supplier_registry_company",
+      "dataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "conditionIds": [
+        "PURE_SHARED_READ",
+        "REGISTRY_BOUNDED_READ"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
+    },
+    {
+      "id": "AM-43",
+      "operation": "supplier.registry.resolve",
+      "feature": "supplier_report",
+      "requiredProduct": "SUPPLIER_INTELLIGENCE",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.registry.resolve",
+      "resourceType": "supplier_registry_company",
+      "dataClasses": [
+        "SHARED_KNOWLEDGE"
+      ],
+      "conditionIds": [
+        "PURE_SHARED_READ",
+        "REGISTRY_BOUNDED_READ"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "NOT_IMPLEMENTED_BY_THIS_CONTRACT"
     }
   ],
   "acceptanceCases": [
@@ -2155,5 +2225,5 @@
     "unknownPolicyDecision": "DENY"
   },
   "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń.",
-  "catalogueRevision": "1.3.0"
+  "catalogueRevision": "1.4.0"
 }

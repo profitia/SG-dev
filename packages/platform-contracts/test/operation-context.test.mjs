@@ -146,7 +146,7 @@ test('payload is canonically bound and snapshotted before asynchronous authentic
 })
 test('candidate rules match exact normative rows and never imply the whole catalogue is implemented', async () => {
   const matrix = JSON.parse(fs.readFileSync(new URL('../../../Canon/registries/operation-access-matrix-v1.json', import.meta.url)))
-  assert.equal(IMPLEMENTED_OPERATIONS.length, 29); assert.equal(matrix.rules.length, 40)
+  assert.equal(IMPLEMENTED_OPERATIONS.length, 32); assert.equal(matrix.rules.length, 43)
   for (const operation of IMPLEMENTED_OPERATIONS) assert.equal(matrix.rules.filter(r => r.operation === operation && r.usagePolicy === (['forecast.request','supplier.report.refresh','supplier.private.refresh','benchmark.discovery.request','supplier.location.write','supplier.location.sync','supplier.location.geocode'].includes(operation) ? 'PRODUCT_POLICY' : operation==='knowledge.ingest'?'PLATFORM_BUDGET':'NOT_APPLICABLE')).length, 1)
   assert.match(await operationSourceDigest(), /^[a-f0-9]{64}$/)
 })
