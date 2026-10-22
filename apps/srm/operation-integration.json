@@ -2997,10 +2997,6 @@
       "src/server/supplier-source-link.ts": {
         "previousSha256": "a759c52c60262c4bea239408b9bb220459b9f4fa5aaf915dfd769651797fa4e9",
         "sourceSha256": "86691c8e8dbf936c66fa9413825828d5677b2468329ea9c4070f05d9f5382619"
-      },
-      "scripts/supplier-delegated-business.integration.test.mjs": {
-        "previousSha256": "fd56e85788efce2978ded4ed92b442edb9f3ce89fa136468a64b4381f7a7e997",
-        "sourceSha256": "9bf3c0501b3232760d86bd7791a73c6183ba316fb7bef396c0a04bb2d8c402e0"
       }
     }
   }
