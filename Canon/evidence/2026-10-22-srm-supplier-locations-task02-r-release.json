@@ -5,7 +5,7 @@
   "workspace": "SG-dev Codespaces SRM",
   "targetEnvironment": "development",
   "observedAt": "2026-10-22T04:14:59Z",
-  "phase": "OWNER_CREATED_RECOVERY_VERIFIED_WITH_READ_COVERAGE_AND_ADOPTION_GAPS",
+  "phase": "COORDINATED_GATE_CLOSURE_PARTIAL_82_TABLES_20_ISOLATED_TESTS",
   "registration": {
     "id": "cmvj0baur0000t43u7k05vcpm",
     "conversationId": "pmos-task-v2:c9d8a78c718d4c20bffceca4f4d75df78069eb89c0761ed803533930112f5102",
@@ -19,8 +19,8 @@
   "authority": {
     "repository": "profitia/SG-dev",
     "branch": "main",
-    "sourceMainSha": "fd6b630afa37fb6f055b3291332d380b0d19e005",
-    "isolatedBranch": "srm/supplier-locations-release-task02-r-20261022",
+    "sourceMainSha": "4115d539501bfd73c4467129caacbadd6c94b8a4",
+    "isolatedBranch": "srm/supplier-locations-gates-20261022",
     "executionEnvironment": "local",
     "governanceManifestVersion": "3.27.0",
     "applicableDocuments": 41,
@@ -31,7 +31,8 @@
       "Governance Source Layer"
     ],
     "codeState": "ALIGNED",
-    "sourceChanged": false
+    "sourceChanged": false,
+    "historicalSourceMainSha": "fd6b630afa37fb6f055b3291332d380b0d19e005"
   },
   "source": {
     "pr": "https://github.com/profitia/SG-dev/pull/597",
@@ -39,7 +40,7 @@
     "mainCi": "https://github.com/profitia/SG-dev/actions/runs/39674364353",
     "srmCi": "https://github.com/profitia/SG-dev/actions/runs/39674364559",
     "mapsCi": "https://github.com/profitia/SG-dev/actions/runs/39674364509",
-    "currentMainRequiredChecks": "PASS",
+    "currentMainRequiredChecks": "OBSERVED_CURRENT_MAIN_GOVERNANCE_AND_IDENTITY_CI_PASS_SRM_MAPS_SOURCE_UNCHANGED",
     "platformVersion": "1.24.0",
     "rootImplementation": "1.0.0-candidate.16",
     "rootFileCount": 8,
@@ -52,7 +53,27 @@
     "sql019Digest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
     "srmSql013Digest": "b3f05a4c56f32bd32c0c59dcc8b60c486d4d4813823665301ce08318f793704b",
     "sharedFunctionBodiesComparedToSql017": 5,
-    "sharedFunctionBodyMismatches": []
+    "sharedFunctionBodyMismatches": [],
+    "historicalSupplierLocationsCi": {
+      "sourceSha": "fd6b630afa37fb6f055b3291332d380b0d19e005",
+      "status": "PASS"
+    },
+    "currentMainCi": [
+      {
+        "id": 39730633424,
+        "name": "Governance preflight",
+        "headSha": "4115d539501bfd73c4467129caacbadd6c94b8a4",
+        "conclusion": "success",
+        "url": "https://github.com/profitia/SG-dev/actions/runs/39730633424"
+      },
+      {
+        "id": 39730633408,
+        "name": "Identity Runtime B2 source",
+        "headSha": "4115d539501bfd73c4467129caacbadd6c94b8a4",
+        "conclusion": "success",
+        "url": "https://github.com/profitia/SG-dev/actions/runs/39730633408"
+      }
+    ]
   },
   "neon": {
     "projectId": "spring-bread-28217539",
@@ -298,7 +319,7 @@
     }
   ],
   "recovery": {
-    "verdict": "PARTIAL",
+    "verdict": "READY_FOR_OWNER_APPROVAL",
     "rehearsal": "PASS_READ_ONLY_RESTORED_COPY_WITH_EXPLICIT_COVERAGE_GAPS",
     "existingBranchId": "br-square-field-b9vzels8",
     "existingBranchName": "identity-b1-i-restore-rehearsal-20261021",
@@ -306,7 +327,7 @@
     "existingSnapshotCreatedAt": "2026-10-21T19:34:40Z",
     "existingSnapshotExpiresAt": "2026-10-22T19:34:39Z",
     "existingSnapshotCoverage": "B1_PREINSTALL_NOT_ACCEPTED_FOR_CURRENT_INSTALLED_STATE",
-    "restoredBranchCurrentTaskCoverage": "LINEAGE_SCHEMA_AND_79_VISIBLE_TABLES_VERIFIED_NOT_FULL_DATA_PARITY",
+    "restoredBranchCurrentTaskCoverage": "82_TABLES_VERIFIED_23_CONTENT_PROOFS_RESERVED",
     "newResourceCreated": true,
     "proposedSnapshotPrefix": "srm-supplier-locations-task02-r-preinstall-",
     "proposedRestoreBranchPrefix": "srm-supplier-locations-task02-r-restore-",
@@ -1608,7 +1629,10 @@
         "final exact artifact/configuration/schema compatibility and owner recovery acceptance before window",
         "fresh pre-window snapshot/LSN drift and resource-retention recheck"
       ]
-    }
+    },
+    "currentCheckedTableCount": 82,
+    "currentUnverifiedTableCount": 23,
+    "boundedReadApprovalProposal": "srm-task02-r-protected-recovery-readback-v1"
   },
   "render": {
     "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
@@ -1777,7 +1801,7 @@
     "title": "Flow, rejestracja i logowanie czatem",
     "task": "ARCHITECTURE-IDENTITY-B1-I-STAGE2-20261022",
     "sharedReceiver": true,
-    "coordinationStatus": "B1_STAGE2_CLOSED_B2_SOURCE_TASK_RUNNING_NO_SHARED_MAINTENANCE_AUTHORITY",
+    "coordinationStatus": "B1_AND_B2_SOURCE_CLOSEOUT_COMPLETE_NO_INSTALLATION_WINDOW_AUTHORITY",
     "messageSent": false,
     "stage2Status": "completed",
     "stage2CompletedAt": "2026-10-22T04:30:11.378Z",
@@ -1789,23 +1813,28 @@
     "phrBundleHash": "2065843d9e5d20711cb260c3aafcefdf3c3e1f98a99d75b873a847552498c7e7",
     "phrHashesVerified": 5,
     "actualClerkBrowserUat": false,
-    "activeArchitectureExecutions": 1,
+    "activeArchitectureExecutions": "NOT_RECOUNTED_AFTER_B2_CLOSEOUT",
     "activeSg2SharedReceiverOperationFound": false,
     "historicalSg2RunningRegistration": "PPF1-PORR-DASHBOARD-LIVE-VERIFY-20260921",
     "observedAt": "2026-10-22T05:43:12Z",
     "b2": {
       "taskId": "ARCHITECTURE-IDENTITY-B2-SESSION-COMPAT-20261022",
-      "status": "running",
+      "status": "completed",
       "startedAt": "2026-10-22T05:03:48.650Z",
       "pr": 598,
       "headSha": "ed9e64cc19bb52a673160e92f981eb7767a454ac",
-      "draft": true,
-      "merged": false,
+      "draft": false,
+      "merged": true,
       "changedFiles": 28,
       "actualProductDatabaseWriteObserved": false,
       "sharedWindowReserved": false,
       "declaredScope": "Source-only identity-runtime/CI/evidence; no current target-path overlap",
-      "independentLiveCoordinationStillRequired": true
+      "independentLiveCoordinationStillRequired": true,
+      "completedAt": "2026-10-22T05:40:54.196Z",
+      "mergeCommitSha": "4115d539501bfd73c4467129caacbadd6c94b8a4",
+      "phrCommit": "70f61db0629fd2015c1411d4556283202e046130",
+      "phrBundleHash": "09067e899c018d490b8c515c1315e5c631d33f38ffaee831db2811ffe1ef803c",
+      "phrFileHashesVerified": 5
     }
   },
   "tests": {
@@ -1881,7 +1910,9 @@
       ],
       "capacityPerOperationPerOrganisation": 100,
       "windowHours": 24,
-      "paidAllowance": 0
+      "paidAllowance": 0,
+      "rolling24hRequired": true,
+      "engineCompatibility": "PARTIAL_FIXED_WINDOW_ONLY"
     },
     "tableDmlGrants": [],
     "ownerMaintenancePort": "srm.location_expire_controlled()",
@@ -1906,18 +1937,7 @@
       "typedPrefixSelectorImplementedBySql019": false,
       "manualCreateNeedsReviewedDynamicResourceScope": true
     },
-    "windowVariants": [
-      {
-        "localStart": "2026-10-22T10:00:00+02:00",
-        "localEnd": "2026-10-22T11:00:00+02:00",
-        "status": "PROPOSED_CONDITIONAL_NOT_RESERVED"
-      },
-      {
-        "localStart": "2026-10-22T14:00:00+02:00",
-        "localEnd": "2026-10-22T15:00:00+02:00",
-        "status": "PROPOSED_CONDITIONAL_NOT_RESERVED"
-      }
-    ],
+    "windowVariants": [],
     "windowPreconditions": [
       "fresh verified recovery and coverage",
       "all applicable LKG evidence accepted",
@@ -1928,58 +1948,60 @@
       "SRM/SG2/ARCHITECTURE owner approval",
       "fresh no-conflict check immediately before start"
     ],
-    "readiness": "NOT_READY_FOR_WINDOW_APPROVAL",
+    "readiness": "PARTIAL_NOT_READY_FOR_INSTALLATION_APPROVAL",
     "recoveryResourceCreationAction": "COMPLETED_BY_OWNER_AND_VERIFIED",
     "remainingPrerequisiteDecisions": [
       {
-        "gate": "RECOVERY_DATA_AND_SOURCE_VISIBILITY",
-        "owner": "Architecture Platform / authorised Source operator",
-        "decision": "Provide an accepted read-only controlled inspection path/readback for the 19 Source-owned and seven RLS-refused tables, and in-flight/uncertain external-call state. Preserve ordinary runtime grants.",
-        "go": false
+        "gate": "RECOVERY_PROTECTED_READBACK",
+        "owner": "Architecture Platform + SRM Runtime / SG Runtime table owners",
+        "decision": "Approve exact existing-operator bounded23-table count/hash and Source-state read; proposal srm-task02-r-protected-recovery-readback-v1. Three singleton descriptors already closed.",
+        "status": "READY_FOR_OWNER_APPROVAL"
       },
       {
         "gate": "KYS_RETENTION",
-        "owner": "SRM Runtime + Architecture Platform",
-        "decision": "Accept a concrete privileged periodic retention executor and named operator, or authorise reviewed implementation of an independent HQ/manual KYS input-and-projection fence. No suitable accepted existing executor exists.",
-        "go": false
+        "owner": "SRM Runtime + Architecture Platform privileged execution",
+        "decision": "Assign/adopt approved periodic operator or explicitly accept restricted HQ/manual cohort using existing tested default-deny private rights; no new schedule or credentials yet.",
+        "status": "BLOCKED"
       },
       {
         "gate": "UAT_IDENTITY_ADMISSION",
-        "owner": "Architecture Platform + SRM owner; owner creates genuine Clerk users",
-        "decision": "Accept lawful admission and finite binding/renewal for A1/A2 in the explicitly approved current fixed SRM org and B1 in a separate org; exact report/source/product rights. Draft B2 source alone does not provide this.",
-        "go": false
+        "owner": "Architecture Platform + SRM owner",
+        "decision": "Lawful three genuine subjects, current B1 admission/finite renewal and exact memberships/product/supplier scope. Existing Clerk/SRM auth may be reused; whole B2 deployment not required.",
+        "status": "BLOCKED"
       },
       {
-        "gate": "EXACT_LOCATION_RESOURCE_SCOPE",
-        "owner": "Architecture Platform / E1 producer + SRM receiver",
-        "decision": "Resolve dynamic CREATE authorisation under strict no-wildcard requirements through an accepted bounded authority design. Current write resource is server-derived MANUAL+idempotency-key location UUID; SQL019 grants match exact ID or NULL. No new selector or NULL grant is adopted here.",
-        "go": false
+        "gate": "EXACT_GRANTS_AND_ROLLING_QUOTA",
+        "owner": "Architecture Platform E1 producer + SRM receiver",
+        "decision": "Resolve bounded dynamic child-location CREATE authority and moving24h100/100 using existing ledger; no wildcard/local limiter.",
+        "status": "BLOCKED"
       },
       {
-        "gate": "COORDINATED_INSTALLATION_WINDOW",
+        "gate": "INSTALLATION_WINDOW",
         "owner": "SRM/SG2/Architecture authorised owners",
-        "decision": "Only after preceding gates and final LKG verification, approve one <=60min window, exact SQL/receipts/grants/runtime/configuration and rollback; recheck B2 and all consumers immediately before start.",
-        "go": false
+        "decision": "Only after preceding gate receipts and final LKG/rollback feasibility, approve one exact <=60min window and immutable install/deploy/grant plan.",
+        "status": "NOT_REQUESTED"
       }
     ],
     "ownerApprovalRequestedInThisContinuation": false,
     "preApprovedResourceWildcard": false,
-    "finalDecisionToBePresentedOncePrerequisitesClosed": true
+    "finalDecisionToBePresentedOncePrerequisitesClosed": true,
+    "previousWindowVariantsDisposition": "WITHDRAWN_AS_EXECUTABLE_OPTIONS_PENDING_MANDATORY_GATE_CLOSURE",
+    "boundedReadProposal": "srm-task02-r-protected-recovery-readback-v1",
+    "finalInstallationApprovalRequested": false,
+    "coordinatedGateClosureReference": "coordinatedGateClosure"
   },
   "ownerActions": [
-    "Accept the owner-created Task02-R recovery copy only after the remaining controlled content/Source read coverage is resolved. Snapshot snap-bold-bird-b99s4c9q is manual, expires never; isolated br-green-glitter-b9weet99 / ep-divine-mode-b9fekhdg verified. No further owner resource creation is currently requested; no Finalize Restore.",
-    "Architecture owner: accept a lawful current-identity onboarding/binding lifetime/renewal and exact org/product-membership procedure for three owner-created real Clerk users; no fixture reactivation, raw manual INSERT bypass or automatic B2 activation.",
-    "SRM owner with Architecture privileged-channel review: decide controlled periodic KYS derivative retention adoption; no suitable approved existing schedule was found. Otherwise keep KYS fenced and require a verified independent HQ/manual input+projection fence before partial activation.",
-    "Approve the final per-user/per-org/per-operation/resource permission matrix; resource_id=NULL matches all resource IDs within its org/user scope and is not preapproved by the no-wildcard instruction. Limits100/100/ZERO are only provisional accepted parameters.",
-    "Authorised Source owner: supply read-only in-flight/uncertain external-call evidence through its existing controlled operator; access owner lacks that ledger channel. Do not widen ordinary runtime privileges for inspection.",
-    "After all prerequisites: approve one exact <=60-minute Development window and coordinated application/binding/worker quiescence, SQL019/SQL013 procedure and limited grant activation. No service window or persistent product mutation is currently approved."
+    "Owning-project approval for the attached exact read-only recovery operation; no new snapshot/compute is requested",
+    "Owner-controlled creation/invitation of three genuine Clerk Development users after exact identifier/allowlist approval; use no customer accounts",
+    "Approve finite E1 onboarding/renewal and exact organisation/product/supplier scope and the retention operator proposal through the responsible owners",
+    "Approve final <=60min shared window only after gate receipts, current LKG and feasibility are accepted"
   ],
   "verdicts": {
     "TASK_02_R_STATUS": "PARTIAL",
     "PROJECT_PROFILE": "SRM",
     "TARGET_ENVIRONMENT": "development",
     "SOURCE_BASELINE": "VERIFIED",
-    "RECOVERY_GATE": "PARTIAL",
+    "RECOVERY_GATE": "READY_FOR_OWNER_APPROVAL",
     "RESTORE_REHEARSAL": "PARTIAL_READ_ONLY_COPY_VERIFIED",
     "LKG_VERIFIED": "NO",
     "MAINTENANCE_WINDOW": "NOT_APPROVED",
@@ -2026,12 +2048,67 @@
     "RECOVERY_SNAPSHOT_EXPIRATION": "NEVER_VERIFIED",
     "RECOVERY_SCHEMA_AND_APPLICATION_ACL_PARITY": "PASS",
     "RECOVERY_VISIBLE_DATA_PARITY": "PASS_79_TABLES",
-    "RECOVERY_FULL_DATA_PARITY": "NOT_VERIFIED_26_TABLE_COVERAGE_GAPS",
+    "RECOVERY_FULL_DATA_PARITY": "NOT_VERIFIED_23_TABLES_REMAIN_AFTER_THREE_PROTECTED_DESCRIPTOR_PROOFS",
     "RECOVERY_FINALIZE_EXECUTED": "NO",
-    "INSTALLATION_OWNER_PACKAGE": "PREPARED_NOT_READY_FOR_APPROVAL",
-    "AUTHENTICATED_UAT_IDENTITY_ADMISSION": "BLOCKED"
+    "INSTALLATION_OWNER_PACKAGE": "PARTIAL_NOT_READY_FOR_INSTALLATION_APPROVAL",
+    "AUTHENTICATED_UAT_IDENTITY_ADMISSION": "BLOCKED",
+    "TASK_ID": "SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022",
+    "TASK_STATUS": "PARTIAL",
+    "RECOVERY_SNAPSHOT": "snap-bold-bird-b99s4c9q",
+    "RECOVERY_BRANCH": "br-green-glitter-b9weet99",
+    "ORIGINAL_DEVELOPMENT": "br-sparkling-term-b99l107x",
+    "RECOVERY_CHECKED_TABLES": 82,
+    "RECOVERY_UNVERIFIED_TABLES": 23,
+    "RECOVERY_PROTECTED_READBACK": "PARTIAL",
+    "RECOVERY_RESTORE_PROOF": "PARTIAL",
+    "SNAPSHOT_RETENTION_VERIFIED": "YES",
+    "KYS_RETENTION_OWNER": "SRM Runtime (verified source/domain routing); periodic operational owner NOT_ASSIGNED; Architecture Platform controls privileged execution",
+    "KYS_RETENTION_GATE": "BLOCKED",
+    "KYS_OPERATOR_ADOPTION": "BLOCKED",
+    "KYS_PHYSICAL_EXPIRY": "PARTIAL",
+    "IDENTITY_B2_PR598": "MERGED",
+    "E1_ONBOARDING_ROUTE": "BLOCKED",
+    "E1_ONBOARDING_GATE": "BLOCKED",
+    "E1_BINDING_RENEWAL_POLICY": "PENDING",
+    "LIVE_UAT_IDENTITIES": "PENDING",
+    "LOCATION_PERMISSION_GATE": "BLOCKED",
+    "READ_GRANTS": "PROPOSED",
+    "WRITE_GRANTS": "BLOCKED",
+    "SYNC_GRANTS": "PROPOSED",
+    "LIVE_PERMISSION_ACTIVATION": "NOT_PERFORMED",
+    "LOCATION_WRITE_LIMIT": "100_PER_ORG_24H",
+    "LOCATION_SYNC_LIMIT": "100_PER_ORG_24H",
+    "LIMIT_ENGINE_COMPATIBILITY": "PARTIAL",
+    "GOOGLE_GEOCODING_ACTIVATION": "DISABLED",
+    "SQL019_INSTALLED": "NO",
+    "SQL013_INSTALLED": "NO",
+    "SRM_DEPLOYMENT_PERFORMED": "NO",
+    "MAPS_DEPLOYMENT_PERFORMED": "NO",
+    "DEVELOPMENT_CHANGED": "NO",
+    "ARCHITECTURE_OWNER_DEPENDENCIES": [
+      "Approve bounded 15-minute read-only backup/integrity operation for exact 23 tables on original/recovery endpoints using existing privileged operator; no grant or RLS change",
+      "Accept existing-auth/B1 UAT admission and finite renewal procedure with exact memberships/entitlements, no dependency on deployment of full B2",
+      "Accept additive bounded supplier/location grant scope and actual rolling-24h semantics in existing request ledger; preserve immutable historical migrations",
+      "Review privileged KYS retention execution binding; separate ARCHITECTURE PMOS/PHR for actual producer corrective"
+    ],
+    "SRM_OWNER_DEPENDENCIES": [
+      "Assign/adopt lawful periodic KYS operator and receipts; preserve default-disabled KYS persistence pending adoption",
+      "Accept bounded HQ/manual UAT variant using existing E1 default-deny KYS rights only if complete actor/service grant fence is approved",
+      "Approve UAT cohort and exact report/supplier resource within fixed Development organisation; preserve unrelated users' existing rights",
+      "Receive any separately accepted E1 producer change and refresh exact SQL/source receipts before installation"
+    ],
+    "USER_ACTIONS_REMAINING": [
+      "Owning-project approval for the attached exact read-only recovery operation; no new snapshot/compute is requested",
+      "Owner-controlled creation/invitation of three genuine Clerk Development users after exact identifier/allowlist approval; use no customer accounts",
+      "Approve finite E1 onboarding/renewal and exact organisation/product/supplier scope and the retention operator proposal through the responsible owners",
+      "Approve final <=60min shared window only after gate receipts, current LKG and feasibility are accepted"
+    ],
+    "INSTALLATION_APPROVAL_PACKAGE": "PARTIAL",
+    "MAINTENANCE_WINDOW_APPROVAL": "NOT_REQUESTED",
+    "PMOS_TASK_STATE": "RUNNING",
+    "PHR_TASK02_R_PUBLICATION": "NOT_YET_PUBLISHED"
   },
-  "updatedAt": "2026-10-22T05:43:12Z",
+  "updatedAt": "2026-10-22T06:32:55Z",
   "ownerResponse": {
     "source": "Direct human async answer to consolidated gate; conditional preparation authority only",
     "directionConfirmed": true,
@@ -2057,7 +2134,7 @@
     "b1FixtureIssuer": "https://b1i-stage2-20261022.invalid",
     "b1FixtureAccountsReusable": false,
     "currentSrmSignUpEnabled": false,
-    "identityRuntimeImplementedOrDeployed": false,
+    "identityRuntimeImplementedOrDeployed": true,
     "b1ProductiveProvisioningActive": false,
     "b1NewBindingMaximumSeconds": 300,
     "b1RenewalImplemented": false,
@@ -2075,17 +2152,17 @@
     "feature": "supplier_report",
     "accountOrMembershipCreationPerformed": false,
     "unresolvedArchitectureDecision": "Accepted lawful onboarding/binding/renewal path for three owner-created genuine Clerk users and exact organisation membership/product scope; no manual raw-INSERT or disabled-test-account bypass.",
-    "mainIdentityRuntimeImplemented": false,
+    "mainIdentityRuntimeImplemented": true,
     "identityRuntimeSourceCandidate": {
       "pr": 598,
       "url": "https://github.com/profitia/SG-dev/pull/598",
       "headSha": "ed9e64cc19bb52a673160e92f981eb7767a454ac",
-      "draft": true,
-      "merged": false,
-      "state": "open",
+      "draft": false,
+      "merged": true,
+      "state": "closed",
       "pmosTaskId": "ARCHITECTURE-IDENTITY-B2-SESSION-COMPAT-20261022",
-      "pmosStatus": "running",
-      "mainSourcePresent": false,
+      "pmosStatus": "completed",
+      "mainSourcePresent": true,
       "reviewedFiles": [
         "apps/identity-runtime/src/session-boundary.ts",
         "Canon/runbooks/identity-runtime-b2-consumer-adoption-v1.md"
@@ -2094,10 +2171,14 @@
       "closesUatOnboardingGate": false,
       "consumerAdoptionAccepted": false,
       "liveActivationObserved": false,
-      "scopeOverlapWithTask02R": false
+      "scopeOverlapWithTask02R": false,
+      "mergeCommitSha": "4115d539501bfd73c4467129caacbadd6c94b8a4",
+      "mergedAt": "2026-10-22T05:53:38Z"
     },
     "e1DirectoryRecheckedAt": "2026-10-22T05:43:12Z",
-    "clerkInventoryObservation": "Earlier read-only Clerk count remains historical, not recounted in this continuation; current authoritative E1 still has only one ACTIVE account/membership."
+    "clerkInventoryObservation": "Earlier read-only Clerk count remains historical, not recounted in this continuation; current authoritative E1 still has only one ACTIVE account/membership.",
+    "identityRuntimeImplementationState": "MERGED_SOURCE_ONLY_NOT_DEPLOYED",
+    "identityRuntimeDeployed": false
   },
   "retentionAudit": {
     "logicalSourceOwner": "SRM Runtime",
@@ -2133,7 +2214,20 @@
     "unresolvedDecision": "SRM owner must adopt an approved periodic controlled-maintenance execution; Architecture owner must accept any privileged channel/authority change. No approved existing schedule was found. Until accepted, keep KYS input/persistence/projection fenced. Do not repurpose unrelated cron.",
     "refreshedSourceAuthority": "fd6b630afa37fb6f055b3291332d380b0d19e005",
     "acceptedNewPeriodicExecutorSincePriorCheckpoint": false,
-    "relatedOpenB2PrDoesNotSupplyRetention": true
+    "relatedOpenB2PrDoesNotSupplyRetention": true,
+    "independentHqManualGrantFence": {
+      "isolatedProof": "PASS",
+      "sourceChanged": false,
+      "conditions": [
+        "No location-capable HUMAN/SERVICE has current KYS/private-source READ",
+        "No existing KYS location derivatives at initial SQL013 installation, independently verify",
+        "Only exact approved UAT cohort receives location rights; unrelated existing users keep rights and no location activation",
+        "Exact source/product/collection permissions remain current"
+      ],
+      "scope": "Conditional bounded HQ/manual acceptance variant only; full KYS gate remains BLOCKED",
+      "liveActivationPerformed": false,
+      "operatorAdoptionReplaced": false
+    }
   },
   "ownerRecoveryResponse": {
     "receivedResourceIds": true,
@@ -2151,5 +2245,1502 @@
       "Finalize Restore",
       "connection migration"
     ]
+  },
+  "coordinatedGateClosure": {
+    "observedAt": "2026-10-22T06:32:55Z",
+    "taskDocument": "TASK02-R Coordinated Release Gate Closure",
+    "noNewSrmRegistration": true,
+    "continuationRegistrationId": "cmvj0baur0000t43u7k05vcpm",
+    "workspaceReconciliation": {
+      "oldBranch": "srm/supplier-locations-release-task02-r-20261022",
+      "preservedHead": "2cc22086fac2d5b6760aef87cc1b4eff4bf352bb",
+      "initialGate": "CODE_STATE_GATE_BLOCKED_STALE_BRANCH",
+      "productMutationWhileBlocked": false,
+      "newIsolatedBranch": "srm/supplier-locations-gates-20261022",
+      "base": "4115d539501bfd73c4467129caacbadd6c94b8a4",
+      "freshBranchPreflight": "PASS_BEFORE_MERGING_PRESERVED_TASK_HISTORY",
+      "mergedTaskHistory": true,
+      "reconciledPreflight": "PASS",
+      "currentCodeState": "ALIGNED",
+      "newProductSourceEdits": false
+    },
+    "recovery": {
+      "checkedTables": 82,
+      "unverifiedTables": 23,
+      "countHashCompared": 79,
+      "protectedFullRecordDescriptors": 3,
+      "tableLevelCoverage26": [
+        {
+          "schema": "profitia_external_call",
+          "table": "calls",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_external_call.calls",
+          "subsystem": "profitia_external_call",
+          "dataClassification": "CONTROL_AUDIT_EFFECT_OR_BILLING_STATE",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_external_call",
+          "table": "installation",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_external_call.installation",
+          "subsystem": "profitia_external_call",
+          "dataClassification": "CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_external_call",
+          "table": "policies",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_external_call.policies",
+          "subsystem": "profitia_external_call",
+          "dataClassification": "CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_external_native",
+          "table": "installation",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_external_native.installation",
+          "subsystem": "profitia_external_native",
+          "dataClassification": "CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_external_native",
+          "table": "policies",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_external_native.policies",
+          "subsystem": "profitia_external_native",
+          "dataClassification": "CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table": "budgets",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_ingestion.budgets",
+          "subsystem": "profitia_ingestion",
+          "dataClassification": "CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table": "effects",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_ingestion.effects",
+          "subsystem": "profitia_ingestion",
+          "dataClassification": "CONTROL_AUDIT_EFFECT_OR_BILLING_STATE",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table": "grants",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_ingestion.grants",
+          "subsystem": "profitia_ingestion",
+          "dataClassification": "CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table": "installation",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_ingestion.installation",
+          "subsystem": "profitia_ingestion",
+          "dataClassification": "CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "srm_provider_development_source through SELECT profitia_ingestion.runtime_descriptor()",
+          "ordinaryAccessLimitation": "Resolved through existing accepted non-mutating descriptor, complete field mapping and validated singleton constraints",
+          "status": "PASS_PROTECTED_DESCRIPTOR_SINGLETON",
+          "currentApprovedEquivalent": "Accepted existing descriptor contract plus complete field/cardinality proof",
+          "alternativeVerification": "Not required",
+          "proofReference": "coordinatedGateClosure.recovery.newProtectedTableProofs"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table": "runtime_bindings",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_ingestion.runtime_bindings",
+          "subsystem": "profitia_ingestion",
+          "dataClassification": "CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table": "security_events",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_ingestion.security_events",
+          "subsystem": "profitia_ingestion",
+          "dataClassification": "CONTROL_AUDIT_EFFECT_OR_BILLING_STATE",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_ingestion",
+          "table": "sources",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_ingestion.sources",
+          "subsystem": "profitia_ingestion",
+          "dataClassification": "CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_public_web",
+          "table": "installation",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_public_web.installation",
+          "subsystem": "profitia_public_web",
+          "dataClassification": "CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_public_web",
+          "table": "policies",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_public_web.policies",
+          "subsystem": "profitia_public_web",
+          "dataClassification": "CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_srm_acquisition",
+          "table": "installation",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_srm_acquisition.installation",
+          "subsystem": "profitia_srm_acquisition",
+          "dataClassification": "CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "srm_provider_development_source through SELECT profitia_srm_acquisition.runtime_descriptor()",
+          "ordinaryAccessLimitation": "Resolved through existing accepted non-mutating descriptor, complete field mapping and validated singleton constraints",
+          "status": "PASS_PROTECTED_DESCRIPTOR_SINGLETON",
+          "currentApprovedEquivalent": "Accepted existing descriptor contract plus complete field/cardinality proof",
+          "alternativeVerification": "Not required",
+          "proofReference": "coordinatedGateClosure.recovery.newProtectedTableProofs"
+        },
+        {
+          "schema": "profitia_srm_acquisition",
+          "table": "outcome_witnesses",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_srm_acquisition.outcome_witnesses",
+          "subsystem": "profitia_srm_acquisition",
+          "dataClassification": "CONTROL_AUDIT_EFFECT_OR_BILLING_STATE",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_srm_catalog",
+          "table": "installation",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_srm_catalog.installation",
+          "subsystem": "profitia_srm_catalog",
+          "dataClassification": "CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "srm_corporate_development_source through SELECT profitia_srm_catalog.runtime_descriptor()",
+          "ordinaryAccessLimitation": "Resolved through existing accepted non-mutating descriptor, complete field mapping and validated singleton constraints",
+          "status": "PASS_PROTECTED_DESCRIPTOR_SINGLETON",
+          "currentApprovedEquivalent": "Accepted existing descriptor contract plus complete field/cardinality proof",
+          "alternativeVerification": "Not required",
+          "proofReference": "coordinatedGateClosure.recovery.newProtectedTableProofs"
+        },
+        {
+          "schema": "profitia_srm_catalog",
+          "table": "outcome_witnesses",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_srm_catalog.outcome_witnesses",
+          "subsystem": "profitia_srm_catalog",
+          "dataClassification": "CONTROL_AUDIT_EFFECT_OR_BILLING_STATE",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "profitia_srm_catalog",
+          "table": "publications",
+          "databaseOwner": "profitia_ingestion_owner",
+          "identifier": "profitia_srm_catalog.publications",
+          "subsystem": "profitia_srm_catalog",
+          "dataClassification": "MIXED_SOURCE_PACKET_NOT_AUTOMATICALLY_SHARED",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "Architecture Platform",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Source-owned FORCE RLS; current access-owner channel cannot inspect full rows",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "srm",
+          "table": "users",
+          "databaseOwner": "profitia_access_owner",
+          "identifier": "srm.users",
+          "subsystem": "srm",
+          "dataClassification": "PERSONAL_ACCOUNT_PROJECTION",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "SRM Runtime",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Existing RLS/session/source admission refuses bulk controlled read",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "srm",
+          "table": "user_supplier_interest",
+          "databaseOwner": "profitia_access_owner",
+          "identifier": "srm.user_supplier_interest",
+          "subsystem": "srm",
+          "dataClassification": "ORGANISATION_PRIVATE_SUPPLIER_ASSIGNMENT",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "SRM Runtime",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Existing RLS/session/source admission refuses bulk controlled read",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "sg_runtime_benchmarks",
+          "table": "BusinessBenchmark",
+          "databaseOwner": "profitia_access_owner",
+          "identifier": "sg_runtime_benchmarks.BusinessBenchmark",
+          "subsystem": "sg_runtime_benchmarks",
+          "dataClassification": "BENCHMARK_BUSINESS_DATA",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "SG Runtime / SG2",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Existing RLS/session/source admission refuses bulk controlled read",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "srm",
+          "table": "catalog_companies",
+          "databaseOwner": "profitia_access_owner",
+          "identifier": "srm.catalog_companies",
+          "subsystem": "srm",
+          "dataClassification": "SUPPLIER_CATALOGUE_PROJECTION_WITH_SOURCE_RIGHTS",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "SRM Runtime",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Existing RLS/session/source admission refuses bulk controlled read",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "srm",
+          "table": "catalog_financial_facts",
+          "databaseOwner": "profitia_access_owner",
+          "identifier": "srm.catalog_financial_facts",
+          "subsystem": "srm",
+          "dataClassification": "SUPPLIER_CATALOGUE_PROJECTION_WITH_SOURCE_RIGHTS",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "SRM Runtime",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Existing RLS/session/source admission refuses bulk controlled read",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "srm",
+          "table": "catalog_financial_indicators",
+          "databaseOwner": "profitia_access_owner",
+          "identifier": "srm.catalog_financial_indicators",
+          "subsystem": "srm",
+          "dataClassification": "SUPPLIER_CATALOGUE_PROJECTION_WITH_SOURCE_RIGHTS",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "SRM Runtime",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Existing RLS/session/source admission refuses bulk controlled read",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        },
+        {
+          "schema": "srm",
+          "table": "organization_supplier_interest",
+          "databaseOwner": "profitia_access_owner",
+          "identifier": "srm.organization_supplier_interest",
+          "subsystem": "srm",
+          "dataClassification": "ORGANISATION_PRIVATE_SUPPLIER_ASSIGNMENT",
+          "classificationBasis": "Descriptive recovery classification from schema/purpose; no new formal E1 DataClass enum is introduced and raw provider packets are not assumed shared.",
+          "governanceOwner": "SRM Runtime",
+          "criticalRecoverableState": true,
+          "mustVerifyBeforeRelease": true,
+          "existingLawfulReader": "Owning-project approved backup/integrity operator; ordinary SRM/Source business scope cannot prove complete table contents",
+          "ordinaryAccessLimitation": "Existing RLS/session/source admission refuses bulk controlled read",
+          "status": "READY_FOR_OWNER_APPROVAL_BOUNDED_AGGREGATE",
+          "currentApprovedEquivalent": "NONE",
+          "alternativeVerification": "Prepared exact read-only aggregate using existing administrative backup connection, separately approved by owning project for these objects; no new grants or RLS changes",
+          "proofReference": "coordinatedGateClosure.recovery.boundedInspectionProposal"
+        }
+      ],
+      "newProtectedTableProofs": [
+        {
+          "table": "profitia_ingestion.installation",
+          "role": "srm_provider_development_source",
+          "query": "SELECT profitia_ingestion.runtime_descriptor()",
+          "copy": {
+            "singleton": true,
+            "schema_version": "1.0.0",
+            "schema_digest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+            "environment": "development",
+            "project_id": "spring-bread-28217539",
+            "branch_id": "br-sparkling-term-b99l107x",
+            "database_name": "platform_private",
+            "revision": 27
+          },
+          "primary": {
+            "singleton": true,
+            "schema_version": "1.0.0",
+            "schema_digest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+            "environment": "development",
+            "project_id": "spring-bread-28217539",
+            "branch_id": "br-sparkling-term-b99l107x",
+            "database_name": "platform_private",
+            "revision": 27
+          },
+          "match": true,
+          "columnsCompletelyCovered": true,
+          "rowCardinalityProof": "Validated PRIMARY KEY(singleton), NOT NULL from PK, CHECK(singleton), non-null accepted descriptor ensure exactly one possible record; all table fields reconstructed from existing descriptor."
+        },
+        {
+          "table": "profitia_srm_acquisition.installation",
+          "role": "srm_provider_development_source",
+          "query": "SELECT profitia_srm_acquisition.runtime_descriptor()",
+          "copy": {
+            "singleton": true,
+            "version": "srm-supplier-source-request-v1",
+            "schema_digest": "2ab955fa5890132f3363e5d340971ce1c1a7d490f1bd89f04cd58b7ddfa9b077",
+            "root_schema_digest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+            "source_ref": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06"
+          },
+          "primary": {
+            "singleton": true,
+            "version": "srm-supplier-source-request-v1",
+            "schema_digest": "2ab955fa5890132f3363e5d340971ce1c1a7d490f1bd89f04cd58b7ddfa9b077",
+            "root_schema_digest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+            "source_ref": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06"
+          },
+          "match": true,
+          "columnsCompletelyCovered": true,
+          "rowCardinalityProof": "Validated PRIMARY KEY(singleton), NOT NULL from PK, CHECK(singleton), non-null accepted descriptor ensure exactly one possible record; all table fields reconstructed from existing descriptor."
+        },
+        {
+          "table": "profitia_srm_catalog.installation",
+          "role": "srm_corporate_development_source",
+          "query": "SELECT profitia_srm_catalog.runtime_descriptor()",
+          "copy": {
+            "singleton": true,
+            "version": "srm-corporate-publication-v1",
+            "schema_digest": "1e1d5b3c170eb4e97a6114d2f628c192ad6385480f563a2e9b27c2a97effcb1b",
+            "field_schema": {
+              "fact": {
+                "unit": "$text",
+                "amount": "$amount",
+                "currency": "$text",
+                "metricCode": "$text"
+              },
+              "packet": {
+                "nip": "$nip",
+                "facts": [
+                  "@sourceFact"
+                ],
+                "general": {
+                  "data": "@general",
+                  "source": {
+                    "model": "=pl-krs-wp-record",
+                    "provider": "=MGBI",
+                    "recordId": {
+                      "$nullable": "$record"
+                    }
+                  },
+                  "status": "$text",
+                  "warnings": [
+                    "$text"
+                  ],
+                  "effectiveAt": {
+                    "$nullable": "$dateTime"
+                  },
+                  "retrievedAt": {
+                    "$nullable": "$timestamp"
+                  }
+                },
+                "version": "=srm-corporate-publication-v1",
+                "financial": {
+                  "data": {
+                    "$nullable": "@financial"
+                  },
+                  "source": {
+                    "model": "=pl-krs-rdf-record",
+                    "provider": "=MGBI",
+                    "recordId": {
+                      "$nullable": "$record"
+                    }
+                  },
+                  "status": "$text",
+                  "warnings": [
+                    "$text"
+                  ],
+                  "effectiveAt": {
+                    "$nullable": "$dateTime"
+                  },
+                  "retrievedAt": {
+                    "$nullable": "$timestamp"
+                  }
+                },
+                "preserveGeneral": "$bool"
+              },
+              "period": {
+                "to": "$date",
+                "from": "$date",
+                "facts": [
+                  "@fact"
+                ],
+                "scope": "$text",
+                "msrRows?": [
+                  {
+                    "key": "$text",
+                    "unit": "$text",
+                    "label": "$text",
+                    "amount": {
+                      "$nullable": "$amount"
+                    },
+                    "section": "$text",
+                    "currency": {
+                      "$nullable": "$text"
+                    },
+                    "dimensions": [
+                      "$text"
+                    ],
+                    "validation": "$text"
+                  }
+                ],
+                "documentId": "$text",
+                "xmlSchema?": {
+                  "name": {
+                    "$nullable": "$text"
+                  },
+                  "version": {
+                    "$nullable": "$text"
+                  }
+                },
+                "isIasCompliant?": {
+                  "$nullable": "$bool"
+                },
+                "revisionStatus?": "$text",
+                "comparativeData?": {
+                  "original": [
+                    "@fact"
+                  ],
+                  "restated": [
+                    "@fact"
+                  ],
+                  "selected": "$text",
+                  "dateBasis": "$text"
+                },
+                "accountingStandard?": "$text",
+                "sourceRegistration?": {
+                  "krs": "$nip",
+                  "legalName": {
+                    "$nullable": "$text"
+                  },
+                  "relationship": "$text"
+                },
+                "effectiveRevisionId?": "$text",
+                "accountingStandardBasis?": "$text"
+              },
+              "general": {
+                "krs": "$nip",
+                "nip": "$nip",
+                "regon": {
+                  "$nullable": "$text"
+                },
+                "mainPkd": {
+                  "$nullable": "$text"
+                },
+                "website?": {
+                  "$nullable": "$text"
+                },
+                "legalForm": {
+                  "$nullable": "$text"
+                },
+                "legalName": {
+                  "$nullable": "$text"
+                },
+                "registeredAt": {
+                  "$nullable": "$date"
+                },
+                "deregisteredAt?": {
+                  "$nullable": "$date"
+                },
+                "registryHistory?": {
+                  "links": [
+                    {
+                      "basis": "=KRS_FORMATION_TRANSFORMATION",
+                      "successorKrs": "$nip",
+                      "predecessorKrs": "$nip"
+                    }
+                  ],
+                  "members": [
+                    {
+                      "krs": "$nip",
+                      "status": "$text",
+                      "legalForm": {
+                        "$nullable": "$text"
+                      },
+                      "legalName": {
+                        "$nullable": "$text"
+                      },
+                      "registeredAt": {
+                        "$nullable": "$date"
+                      },
+                      "deregisteredAt": {
+                        "$nullable": "$date"
+                      }
+                    }
+                  ],
+                  "version": "=KRS_CONTINUITY_V1",
+                  "currentKrs": "$nip",
+                  "unlinkedKrs": [
+                    "$nip"
+                  ]
+                },
+                "registeredAddress": {
+                  "$nullable": "$text"
+                },
+                "mainPkdDescription?": {
+                  "$nullable": "$text"
+                },
+                "registrationStatus?": "$text"
+              },
+              "financial": {
+                "periods": [
+                  "@period"
+                ],
+                "indicators?": [
+                  "@indicator"
+                ],
+                "qualityRule?": "$text",
+                "revisionRule?": "$text",
+                "registryHistoryVersion?": "=KRS_CONTINUITY_V1"
+              },
+              "indicator": {
+                "code": "$text",
+                "unit": "$text",
+                "scope": "$text",
+                "value": {
+                  "$nullable": "$amount"
+                },
+                "status": "$text",
+                "periodEnd": "$date",
+                "importance": "$number",
+                "reasonCode": {
+                  "$nullable": "$text"
+                },
+                "periodStart": "$date",
+                "formulaVersion": "$text"
+              },
+              "sourceFact": {
+                "amount": "$amount",
+                "unitCode": "$text",
+                "periodEnd": "$date",
+                "metricCode": "$text",
+                "periodType": "$text",
+                "sourcePath": "$text",
+                "periodStart": "$date",
+                "currencyCode": "$text",
+                "sourceAmount": "$amount",
+                "statementScope": "$text",
+                "validationStatus": "$text",
+                "normalizationRule": "$text"
+              }
+            },
+            "source_ref": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06"
+          },
+          "primary": {
+            "singleton": true,
+            "version": "srm-corporate-publication-v1",
+            "schema_digest": "1e1d5b3c170eb4e97a6114d2f628c192ad6385480f563a2e9b27c2a97effcb1b",
+            "field_schema": {
+              "fact": {
+                "unit": "$text",
+                "amount": "$amount",
+                "currency": "$text",
+                "metricCode": "$text"
+              },
+              "packet": {
+                "nip": "$nip",
+                "facts": [
+                  "@sourceFact"
+                ],
+                "general": {
+                  "data": "@general",
+                  "source": {
+                    "model": "=pl-krs-wp-record",
+                    "provider": "=MGBI",
+                    "recordId": {
+                      "$nullable": "$record"
+                    }
+                  },
+                  "status": "$text",
+                  "warnings": [
+                    "$text"
+                  ],
+                  "effectiveAt": {
+                    "$nullable": "$dateTime"
+                  },
+                  "retrievedAt": {
+                    "$nullable": "$timestamp"
+                  }
+                },
+                "version": "=srm-corporate-publication-v1",
+                "financial": {
+                  "data": {
+                    "$nullable": "@financial"
+                  },
+                  "source": {
+                    "model": "=pl-krs-rdf-record",
+                    "provider": "=MGBI",
+                    "recordId": {
+                      "$nullable": "$record"
+                    }
+                  },
+                  "status": "$text",
+                  "warnings": [
+                    "$text"
+                  ],
+                  "effectiveAt": {
+                    "$nullable": "$dateTime"
+                  },
+                  "retrievedAt": {
+                    "$nullable": "$timestamp"
+                  }
+                },
+                "preserveGeneral": "$bool"
+              },
+              "period": {
+                "to": "$date",
+                "from": "$date",
+                "facts": [
+                  "@fact"
+                ],
+                "scope": "$text",
+                "msrRows?": [
+                  {
+                    "key": "$text",
+                    "unit": "$text",
+                    "label": "$text",
+                    "amount": {
+                      "$nullable": "$amount"
+                    },
+                    "section": "$text",
+                    "currency": {
+                      "$nullable": "$text"
+                    },
+                    "dimensions": [
+                      "$text"
+                    ],
+                    "validation": "$text"
+                  }
+                ],
+                "documentId": "$text",
+                "xmlSchema?": {
+                  "name": {
+                    "$nullable": "$text"
+                  },
+                  "version": {
+                    "$nullable": "$text"
+                  }
+                },
+                "isIasCompliant?": {
+                  "$nullable": "$bool"
+                },
+                "revisionStatus?": "$text",
+                "comparativeData?": {
+                  "original": [
+                    "@fact"
+                  ],
+                  "restated": [
+                    "@fact"
+                  ],
+                  "selected": "$text",
+                  "dateBasis": "$text"
+                },
+                "accountingStandard?": "$text",
+                "sourceRegistration?": {
+                  "krs": "$nip",
+                  "legalName": {
+                    "$nullable": "$text"
+                  },
+                  "relationship": "$text"
+                },
+                "effectiveRevisionId?": "$text",
+                "accountingStandardBasis?": "$text"
+              },
+              "general": {
+                "krs": "$nip",
+                "nip": "$nip",
+                "regon": {
+                  "$nullable": "$text"
+                },
+                "mainPkd": {
+                  "$nullable": "$text"
+                },
+                "website?": {
+                  "$nullable": "$text"
+                },
+                "legalForm": {
+                  "$nullable": "$text"
+                },
+                "legalName": {
+                  "$nullable": "$text"
+                },
+                "registeredAt": {
+                  "$nullable": "$date"
+                },
+                "deregisteredAt?": {
+                  "$nullable": "$date"
+                },
+                "registryHistory?": {
+                  "links": [
+                    {
+                      "basis": "=KRS_FORMATION_TRANSFORMATION",
+                      "successorKrs": "$nip",
+                      "predecessorKrs": "$nip"
+                    }
+                  ],
+                  "members": [
+                    {
+                      "krs": "$nip",
+                      "status": "$text",
+                      "legalForm": {
+                        "$nullable": "$text"
+                      },
+                      "legalName": {
+                        "$nullable": "$text"
+                      },
+                      "registeredAt": {
+                        "$nullable": "$date"
+                      },
+                      "deregisteredAt": {
+                        "$nullable": "$date"
+                      }
+                    }
+                  ],
+                  "version": "=KRS_CONTINUITY_V1",
+                  "currentKrs": "$nip",
+                  "unlinkedKrs": [
+                    "$nip"
+                  ]
+                },
+                "registeredAddress": {
+                  "$nullable": "$text"
+                },
+                "mainPkdDescription?": {
+                  "$nullable": "$text"
+                },
+                "registrationStatus?": "$text"
+              },
+              "financial": {
+                "periods": [
+                  "@period"
+                ],
+                "indicators?": [
+                  "@indicator"
+                ],
+                "qualityRule?": "$text",
+                "revisionRule?": "$text",
+                "registryHistoryVersion?": "=KRS_CONTINUITY_V1"
+              },
+              "indicator": {
+                "code": "$text",
+                "unit": "$text",
+                "scope": "$text",
+                "value": {
+                  "$nullable": "$amount"
+                },
+                "status": "$text",
+                "periodEnd": "$date",
+                "importance": "$number",
+                "reasonCode": {
+                  "$nullable": "$text"
+                },
+                "periodStart": "$date",
+                "formulaVersion": "$text"
+              },
+              "sourceFact": {
+                "amount": "$amount",
+                "unitCode": "$text",
+                "periodEnd": "$date",
+                "metricCode": "$text",
+                "periodType": "$text",
+                "sourcePath": "$text",
+                "periodStart": "$date",
+                "currencyCode": "$text",
+                "sourceAmount": "$amount",
+                "statementScope": "$text",
+                "validationStatus": "$text",
+                "normalizationRule": "$text"
+              }
+            },
+            "source_ref": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06"
+          },
+          "match": true,
+          "columnsCompletelyCovered": true,
+          "rowCardinalityProof": "Validated PRIMARY KEY(singleton), NOT NULL from PK, CHECK(singleton), non-null accepted descriptor ensure exactly one possible record; all table fields reconstructed from existing descriptor."
+        }
+      ],
+      "singletonConstraints": [
+        {
+          "nspname": "profitia_ingestion",
+          "relname": "installation",
+          "conname": "installation_environment_check",
+          "definition": "CHECK ((environment = ANY (ARRAY['development'::text, 'staging'::text, 'production'::text])))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_ingestion",
+          "relname": "installation",
+          "conname": "installation_pkey",
+          "definition": "PRIMARY KEY (singleton)",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_ingestion",
+          "relname": "installation",
+          "conname": "installation_revision_check",
+          "definition": "CHECK ((revision > 0))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_ingestion",
+          "relname": "installation",
+          "conname": "installation_schema_digest_check",
+          "definition": "CHECK ((schema_digest ~ '^[a-f0-9]{64}$'::text))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_ingestion",
+          "relname": "installation",
+          "conname": "installation_schema_version_check",
+          "definition": "CHECK ((schema_version = '1.0.0'::text))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_ingestion",
+          "relname": "installation",
+          "conname": "installation_singleton_check",
+          "definition": "CHECK (singleton)",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_acquisition",
+          "relname": "installation",
+          "conname": "installation_pkey",
+          "definition": "PRIMARY KEY (singleton)",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_acquisition",
+          "relname": "installation",
+          "conname": "installation_root_schema_digest_check",
+          "definition": "CHECK ((root_schema_digest ~ '^[a-f0-9]{64}$'::text))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_acquisition",
+          "relname": "installation",
+          "conname": "installation_schema_digest_check",
+          "definition": "CHECK ((schema_digest ~ '^[a-f0-9]{64}$'::text))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_acquisition",
+          "relname": "installation",
+          "conname": "installation_singleton_check",
+          "definition": "CHECK (singleton)",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_acquisition",
+          "relname": "installation",
+          "conname": "installation_source_ref_check",
+          "definition": "CHECK ((source_ref ~ '^[a-f0-9]{40}$'::text))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_acquisition",
+          "relname": "installation",
+          "conname": "installation_version_check",
+          "definition": "CHECK ((version = 'srm-supplier-source-request-v1'::text))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_catalog",
+          "relname": "installation",
+          "conname": "installation_field_schema_check",
+          "definition": "CHECK (((jsonb_typeof(field_schema) = 'object'::text) AND (octet_length((field_schema)::text) < 65536)))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_catalog",
+          "relname": "installation",
+          "conname": "installation_pkey",
+          "definition": "PRIMARY KEY (singleton)",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_catalog",
+          "relname": "installation",
+          "conname": "installation_schema_digest_check",
+          "definition": "CHECK ((schema_digest ~ '^[a-f0-9]{64}$'::text))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_catalog",
+          "relname": "installation",
+          "conname": "installation_singleton_check",
+          "definition": "CHECK (singleton)",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_catalog",
+          "relname": "installation",
+          "conname": "installation_source_ref_check",
+          "definition": "CHECK ((source_ref ~ '^[a-f0-9]{40}$'::text))",
+          "convalidated": true
+        },
+        {
+          "nspname": "profitia_srm_catalog",
+          "relname": "installation",
+          "conname": "installation_version_check",
+          "definition": "CHECK ((version = 'srm-corporate-publication-v1'::text))",
+          "convalidated": true
+        }
+      ],
+      "freshVisibleContentParity": {
+        "result": "PASS",
+        "tables": 79,
+        "drift": [],
+        "readMode": "REPEATABLE READ READ ONLY",
+        "actualRole": "profitia_access_owner",
+        "project": "spring-bread-28217539",
+        "primaryBranch": "br-sparkling-term-b99l107x",
+        "recoveryBranch": "br-green-glitter-b9weet99"
+      },
+      "retentionUi": {
+        "observedAt": "2026-10-22T06:32:55Z",
+        "page": "https://console.neon.tech/app/projects/spring-bread-28217539/branches/br-sparkling-term-b99l107x/restore",
+        "snapshot": "snap-bold-bird-b99s4c9q",
+        "exactRowText": "59.79 MB Expires on: never",
+        "control": "AX text86",
+        "historyWindow": "1 day; separate from manual snapshot"
+      },
+      "boundedInspectionProposal": {
+        "id": "srm-task02-r-protected-recovery-readback-v1",
+        "status": "READY_FOR_OWNER_APPROVAL_NOT_EXECUTED",
+        "owningProjectApprovalRequired": true,
+        "actor": "Existing neondb_owner administrative backup connection; existing rolbypassrls=true/rolsuper=false and SELECT privileges independently verified. Its use for protected table content is NOT authorised by present SRM runtime authority.",
+        "noNewPrivileges": true,
+        "noRoleMembershipChanges": true,
+        "noRlsChanges": true,
+        "purpose": "Backup integrity and external-effect quiescence proof only; never ordinary product access",
+        "durationMinutes": 15,
+        "projectId": "spring-bread-28217539",
+        "database": "platform_private",
+        "targets": [
+          {
+            "branchId": "br-sparkling-term-b99l107x",
+            "computeId": "ep-late-heart-b9mxo8oi"
+          },
+          {
+            "branchId": "br-green-glitter-b9weet99",
+            "computeId": "ep-divine-mode-b9fekhdg"
+          }
+        ],
+        "exactTables": [
+          "profitia_external_call.calls",
+          "profitia_external_call.installation",
+          "profitia_external_call.policies",
+          "profitia_external_native.installation",
+          "profitia_external_native.policies",
+          "profitia_ingestion.budgets",
+          "profitia_ingestion.effects",
+          "profitia_ingestion.grants",
+          "profitia_ingestion.runtime_bindings",
+          "profitia_ingestion.security_events",
+          "profitia_ingestion.sources",
+          "profitia_public_web.installation",
+          "profitia_public_web.policies",
+          "profitia_srm_acquisition.outcome_witnesses",
+          "profitia_srm_catalog.outcome_witnesses",
+          "profitia_srm_catalog.publications",
+          "srm.users",
+          "srm.user_supplier_interest",
+          "sg_runtime_benchmarks.BusinessBenchmark",
+          "srm.catalog_companies",
+          "srm.catalog_financial_facts",
+          "srm.catalog_financial_indicators",
+          "srm.organization_supplier_interest"
+        ],
+        "transactionStatements": [
+          "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY",
+          "SET LOCAL statement_timeout='30s'",
+          "SET LOCAL lock_timeout='3s'",
+          "SET LOCAL idle_in_transaction_session_timeout='60s'",
+          "SELECT 'profitia_external_call.calls'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_external_call\".\"calls\" t\nUNION ALL\nSELECT 'profitia_external_call.installation'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_external_call\".\"installation\" t\nUNION ALL\nSELECT 'profitia_external_call.policies'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_external_call\".\"policies\" t\nUNION ALL\nSELECT 'profitia_external_native.installation'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_external_native\".\"installation\" t\nUNION ALL\nSELECT 'profitia_external_native.policies'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_external_native\".\"policies\" t\nUNION ALL\nSELECT 'profitia_ingestion.budgets'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_ingestion\".\"budgets\" t\nUNION ALL\nSELECT 'profitia_ingestion.effects'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_ingestion\".\"effects\" t\nUNION ALL\nSELECT 'profitia_ingestion.grants'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_ingestion\".\"grants\" t\nUNION ALL\nSELECT 'profitia_ingestion.runtime_bindings'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_ingestion\".\"runtime_bindings\" t\nUNION ALL\nSELECT 'profitia_ingestion.security_events'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_ingestion\".\"security_events\" t\nUNION ALL\nSELECT 'profitia_ingestion.sources'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_ingestion\".\"sources\" t\nUNION ALL\nSELECT 'profitia_public_web.installation'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_public_web\".\"installation\" t\nUNION ALL\nSELECT 'profitia_public_web.policies'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_public_web\".\"policies\" t\nUNION ALL\nSELECT 'profitia_srm_acquisition.outcome_witnesses'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_srm_acquisition\".\"outcome_witnesses\" t\nUNION ALL\nSELECT 'profitia_srm_catalog.outcome_witnesses'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_srm_catalog\".\"outcome_witnesses\" t\nUNION ALL\nSELECT 'profitia_srm_catalog.publications'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"profitia_srm_catalog\".\"publications\" t\nUNION ALL\nSELECT 'srm.users'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"srm\".\"users\" t\nUNION ALL\nSELECT 'srm.user_supplier_interest'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"srm\".\"user_supplier_interest\" t\nUNION ALL\nSELECT 'sg_runtime_benchmarks.BusinessBenchmark'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"sg_runtime_benchmarks\".\"BusinessBenchmark\" t\nUNION ALL\nSELECT 'srm.catalog_companies'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"srm\".\"catalog_companies\" t\nUNION ALL\nSELECT 'srm.catalog_financial_facts'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"srm\".\"catalog_financial_facts\" t\nUNION ALL\nSELECT 'srm.catalog_financial_indicators'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"srm\".\"catalog_financial_indicators\" t\nUNION ALL\nSELECT 'srm.organization_supplier_interest'::text AS table_name,count(*)::bigint AS row_count,encode(sha256(convert_to(coalesce(string_agg(encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex'),E'\\n' ORDER BY encode(sha256(convert_to(to_jsonb(t)::text,'UTF8')),'hex')),''),'UTF8')),'hex') AS sha256 FROM \"srm\".\"organization_supplier_interest\" t;",
+          "SELECT status,count(*)::bigint AS count FROM profitia_external_call.calls GROUP BY status ORDER BY status",
+          "SELECT status,count(*)::bigint AS count FROM profitia_ingestion.effects GROUP BY status ORDER BY status"
+        ],
+        "returnedData": "Only table identifiers, aggregate counts/hashes, role/endpoint/transaction identity and external-call/effect status counts; no raw payloads, PII, row identifiers, DSNs or keys",
+        "forbidden": [
+          "INSERT/UPDATE/DELETE/TRUNCATE",
+          "DDL/functions/role/grant changes",
+          "RLS disablement",
+          "business or provider functions",
+          "effect replay",
+          "external acquisition",
+          "Finalize Restore",
+          "connection migration",
+          "secret/row export"
+        ],
+        "mustStopFor": [
+          "unapproved operator or scope",
+          "unexpected branch/compute",
+          "permission failure",
+          "query deadline",
+          "unknown/uncertain external effect state",
+          "new writes or incompatible capture drift"
+        ],
+        "newResourceRequired": false
+      },
+      "fullPhysicalDataParity": false,
+      "restoreProof": "Owner-restored copy operational; schema, 79 visible tables and three complete constrained singleton records match. No production cutover or full-data acceptance.",
+      "originalDefaultUnchanged": true,
+      "originalEndpointUnchanged": true,
+      "finalizePerformed": false
+    },
+    "localAcceptance": {
+      "testTranscript": "TASK02R_HARNESS {\"original\":\"/Users/tomaszuscinski/Documents/Visual%20Code%20Studio/profitia-development/supplier-locations-task02-20261021/srm/apps/srm/scripts/supplier-locations.integration.test.mjs\",\"sha256\":\"ef6bf187e295870bb79465cc8f05f21857ebc071667347bda49acbb5f61586d9\",\"kind\":\"TEMPORARY_ISOLATED_TEST_ONLY\"}\n▶ TASK02 actual SQL019 + SRM persistence through native E1, ordinary role and HTTP\n  ✔ installer must be controlled, exact and disabled; interrupted SQL leaves no receipt (26.395792ms)\n  ✔ ordinary login is non-owner/no-bypass; missing count policy prevents all business effects (43.452459ms)\n  ✔ manual create/retry/reload commits once, shares across users and preserves attribution (49.186667ms)\n  ✔ another member edits with CAS, stale write fails, source fields and caller identity are rejected (45.283916ms)\n  ✔ permission revocation, changed-payload replay and concurrent edits fail before an extra effect (84.3245ms)\n  ✔ direct SQL remains denied even with forged GUCs and accidental table ACLs (1.977125ms)\n  ✔ accepted MGBI backfill and repeated sync use stable source IDs and never overwrite manual data (132.444167ms)\n  ✔ new accepted MGBI address version updates one stable HQ and preserves manual locations (63.810333ms)\n  ✔ TASK02R HQ/manual uses current default-deny KYS rights without B2 or a new source fence (38.910083ms)\n  ✔ current KYS legal entities reconcile, exact source revocation withholds them and retention physically removes derivatives (176.47025ms)\n  ✔ expired Google cache is physically cleared while source address survives (9.907333ms)\n  ✔ an OUTCOME audit failure rolls back the entire manual record and Root reservation (15.297917ms)\n  ✔ actual geocode SERVICE preserves the initiating user, zero allowance, address CAS, cache reuse and revocation (634.463125ms)\n  ✔ more than 500 eligible related companies persist and remain paged, with no provider acquisition (1341.294542ms)\nTASK02R_RETENTION_RECEIPT {\"scope\":\"ISOLATED_ONLY\",\"expiredCoordinates\":0,\"expiredDerivedLocations\":1,\"manualUnchanged\":true,\"nonexpiredUnchanged\":true,\"rollback\":true,\"idempotent\":true}\n  ✔ TASK02R controlled retention deletes expired derivatives, preserves lawful/manual rows, rolls back and repeats safely (4.561375ms)\nTASK02R_PERMISSION_RECEIPT {\"scope\":\"ISOLATED_ONLY\",\"a2Read\":200,\"a2Write\":403,\"ungrantedCreate\":403,\"exactExistingUpdate\":202,\"expiredMembership\":403}\n  ✔ TASK02R A2 read-only, exact existing-location grants, dynamic CREATE refusal and membership expiry (412.346167ms)\n  ✔ cross-org supplier, absent session and current revocation deny list and writes (498.856209ms)\n  ✔ deactivation keeps audit/history, malformed inputs and pagination are bounded (980.299291ms)\nTASK02R_QUOTA_RECEIPT {\"scope\":\"ISOLATED_ONLY\",\"newAdmission\":1,\"replayExtraUnits\":0,\"excessStatus\":429,\"windowMode\":\"FIXED_NOT_ROLLING\"}\n  ✔ TASK02R existing count engine enforces cap and does not charge an accepted replay (34.982ms)\n✔ TASK02 actual SQL019 + SRM persistence through native E1, ordinary role and HTTP (5106.018958ms)\nℹ tests 20\nℹ suites 0\nℹ pass 20\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 5108.002375\n",
+      "temporaryReproductionHarness": "import fs from 'node:fs';\nimport {pathToFileURL} from 'node:url';\nimport {createHash} from 'node:crypto';\nconst original=new URL('./scripts/supplier-locations.integration.test.mjs',pathToFileURL(process.cwd()+'/'));\nlet code=fs.readFileSync(original,'utf8');\nconst hq=`\n  await t.test('TASK02R HQ/manual uses current default-deny KYS rights without B2 or a new source fence',async()=>{\n   const before=(await owner.query(\"SELECT * FROM profitia_access.permission_grants WHERE operation='supplier.private.read' AND user_id=ANY($1::uuid[])\",[[U,V]])).rows\n   const manualBefore=(await owner.query(\"SELECT count(*)::int n FROM srm.supplier_locations WHERE origin='MANUAL'\")).rows[0].n\n   try{\n    await controlled(()=>owner.query(\"DELETE FROM profitia_access.permission_grants WHERE operation='supplier.private.read' AND user_id=ANY($1::uuid[])\",[[U,V]]))\n    const result=await call({action:'SYNC',supplierId:S});assert.equal(result.status,200,await result.clone().text())\n    assert.equal((await owner.query(\"SELECT count(*)::int n FROM srm.supplier_locations WHERE location_group='RELATED_ENTITIES'\")).rows[0].n,0)\n    assert.equal((await owner.query(\"SELECT count(*)::int n FROM srm.supplier_locations WHERE origin='MANUAL'\")).rows[0].n,manualBefore)\n    assert((await(await page()).json()).items.some(x=>x.kind==='HEADQUARTERS'))\n   }finally{if(before.length)await controlled(()=>owner.query(\"INSERT INTO profitia_access.permission_grants SELECT * FROM jsonb_populate_recordset(NULL::profitia_access.permission_grants,$1::jsonb)\",[JSON.stringify(before)]))}\n  })\n`;\nconst retention=`\n  await t.test('TASK02R controlled retention deletes expired derivatives, preserves lawful/manual rows, rolls back and repeats safely',async()=>{\n   const manualBefore=hash(JSON.stringify((await owner.query(\"SELECT to_jsonb(t) body FROM srm.supplier_locations t WHERE origin='MANUAL' ORDER BY location_id\")).rows))\n   const selected=(await owner.query(\"SELECT location_id FROM srm.supplier_locations WHERE location_group='RELATED_ENTITIES' ORDER BY location_id LIMIT 1\")).rows[0]\n   assert(selected)\n   const unexpiredBefore=(await owner.query(\"SELECT count(*)::int n FROM srm.supplier_locations WHERE location_group='RELATED_ENTITIES'\")).rows[0].n\n   await owner.query(\"UPDATE srm.supplier_locations SET retention_until=now()-interval '1 second' WHERE location_id=$1\",[selected.location_id])\n   await assert.rejects(pool.query('SELECT srm.location_expire_controlled()'),e=>e.code==='42501')\n   await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner')\n   try{const r=await owner.query('SELECT srm.location_expire_controlled() value');assert.equal(r.rows[0].value.expiredDerivedLocations,1)}\n   finally{await owner.query('ROLLBACK')}\n   assert.equal((await owner.query('SELECT count(*)::int n FROM srm.supplier_locations WHERE location_id=$1',[selected.location_id])).rows[0].n,1)\n   const receipt=(await controlled(()=>owner.query('SELECT srm.location_expire_controlled() value'))).rows[0].value\n   assert.deepEqual(receipt,{expiredCoordinates:0,expiredDerivedLocations:1})\n   assert.deepEqual((await controlled(()=>owner.query('SELECT srm.location_expire_controlled() value'))).rows[0].value,{expiredCoordinates:0,expiredDerivedLocations:0})\n   assert.equal((await owner.query(\"SELECT count(*)::int n FROM srm.supplier_locations WHERE location_group='RELATED_ENTITIES'\")).rows[0].n,unexpiredBefore-1)\n   assert.equal(hash(JSON.stringify((await owner.query(\"SELECT to_jsonb(t) body FROM srm.supplier_locations t WHERE origin='MANUAL' ORDER BY location_id\")).rows)),manualBefore)\n   console.log('TASK02R_RETENTION_RECEIPT '+JSON.stringify({scope:'ISOLATED_ONLY',...receipt,manualUnchanged:true,nonexpiredUnchanged:true,rollback:true,idempotent:true}))\n  })\n`;\nconst quota=`\n  await t.test('TASK02R existing count engine enforces cap and does not charge an accepted replay',async()=>{\n   await controlled(()=>owner.query(\"UPDATE profitia_requests.policies SET status='REVOKED' WHERE operation='supplier.location.write' AND status='ACTIVE'\"))\n   const policy=randomUUID()\n   await controlled(()=>owner.query(\"INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity)VALUES($1,'srm',$2,'supplier.location.write','ACTIVE','TASK02R_ISOLATED_COUNT',now()-interval '1 minute',now()+interval '1 hour',now()+interval '1 hour',1)\",[policy,A]))\n   const k='quota_probe_'+randomUUID(),request={action:'CREATE',supplierId:S,locationId:null,expectedVersion:null,command:manual}\n   let result=await call(request,U,k);assert.equal(result.status,202,await result.clone().text())\n   const used=async()=>(await owner.query('SELECT accepted_count FROM profitia_requests.policies WHERE policy_id=$1',[policy])).rows[0].accepted_count\n   assert.equal(await used(),1)\n   result=await call(request,U,k);assert.equal(result.status,202,await result.clone().text());assert.equal(await used(),1)\n   result=await call(request,U,'quota_denied_'+randomUUID());assert.equal(result.status,429);assert.equal(await used(),1)\n   console.log('TASK02R_QUOTA_RECEIPT '+JSON.stringify({scope:'ISOLATED_ONLY',newAdmission:1,replayExtraUnits:0,excessStatus:429,windowMode:'FIXED_NOT_ROLLING'}))\n  })\n`;\ncode=code.replace(\"  await t.test('current KYS legal entities\",hq+\"  await t.test('current KYS legal entities\");\ncode=code.replace(\"  await t.test('cross-org supplier\",retention+\"  await t.test('cross-org supplier\");\ncode=code.replace(\" }finally{\\n  await workPool\",quota+\" }finally{\\n  await workPool\");\n\nconst negatives=`\n  await t.test('TASK02R A2 read-only, exact existing-location grants, dynamic CREATE refusal and membership expiry',async()=>{\n   const saved=(await owner.query(\"SELECT * FROM profitia_access.permission_grants WHERE operation='supplier.location.write' AND user_id=ANY($1::uuid[])\",[[U,V]])).rows\n   const exact=randomUUID()\n   try{\n    await controlled(()=>owner.query(\"DELETE FROM profitia_access.permission_grants WHERE operation='supplier.location.write' AND user_id=ANY($1::uuid[])\",[[U,V]]))\n    assert.equal((await page(V)).status,200)\n    assert.equal((await call(command,V,'readonly_denied_'+randomUUID())).status,403)\n    assert.equal((await call(command,U,'new_ungranted_'+randomUUID())).status,403)\n    const loc=(await owner.query(\"SELECT location_id,version FROM srm.supplier_locations WHERE origin='MANUAL' AND lifecycle='ACTIVE' LIMIT 1\")).rows[0]\n    assert(loc)\n    await controlled(()=>owner.query(\"INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id)VALUES($1,'srm',$2,$3,'ALLOW','supplier.location.write','supplier_report',$4)\",[exact,A,U,loc.location_id]))\n    const result=await call({action:'UPDATE',supplierId:S,locationId:loc.location_id,expectedVersion:String(loc.version),command:{...manual,label:'Exact grant accepted'}},U,'exact_update_'+randomUUID())\n    assert.equal(result.status,202,await result.clone().text())\n   }finally{\n    await controlled(()=>owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[exact]))\n    if(saved.length)await controlled(()=>owner.query(\"INSERT INTO profitia_access.permission_grants SELECT * FROM jsonb_populate_recordset(NULL::profitia_access.permission_grants,$1::jsonb)\",[JSON.stringify(saved)]))\n   }\n   const old=(await owner.query('SELECT expires_at FROM profitia_access.memberships WHERE organisation_id=$1 AND user_id=$2',[A,U])).rows[0].expires_at\n   try{await controlled(()=>owner.query(\"UPDATE profitia_access.memberships SET expires_at=clock_timestamp()-interval '1 second' WHERE organisation_id=$1 AND user_id=$2\",[A,U]))\n    assert.equal((await page()).status,403);assert.equal((await call(command,U,'expired_member_'+randomUUID())).status,403)\n   }finally{await controlled(()=>owner.query('UPDATE profitia_access.memberships SET expires_at=$3 WHERE organisation_id=$1 AND user_id=$2',[A,U,old]))}\n   console.log('TASK02R_PERMISSION_RECEIPT '+JSON.stringify({scope:'ISOLATED_ONLY',a2Read:200,a2Write:403,ungrantedCreate:403,exactExistingUpdate:202,expiredMembership:403}))\n  })\n`;\ncode=code.replace(\"  await t.test('cross-org supplier\",negatives+\"  await t.test('cross-org supplier\");\n\nif(!code.includes('TASK02R_QUOTA_RECEIPT'))throw Error('Harness insertion failed');\nconst sourceHash=createHash('sha256').update(code).digest('hex');\ncode=code.replace(/from\\s+(['\"])([^'\"]+)\\1/g,(all,quote,spec)=>{\n if(spec.startsWith('node:'))return all;\n const resolved=spec.startsWith('.')?new URL(spec,original).href:import.meta.resolve(spec);\n return 'from '+JSON.stringify(resolved)\n}).replaceAll('import.meta.url',JSON.stringify(original.href));\nconsole.log('TASK02R_HARNESS '+JSON.stringify({original:original.pathname,sha256:sourceHash,kind:'TEMPORARY_ISOLATED_TEST_ONLY'}));\nawait import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));\n\n",
+      "sourceSha": "4115d539501bfd73c4467129caacbadd6c94b8a4",
+      "sourceFilesUnchangedSinceSupplierLocationsBaseline": true,
+      "environment": "Isolated loopback PostgreSQL16.14; no Neon/customer data or provider access",
+      "role": "architecture_test_owner fixture setup; srm_locations_human ordinary business checks; profitia_access_owner controlled maintenance",
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "skipped": 0,
+      "extendedFixtureHash": "ef6bf187e295870bb79465cc8f05f21857ebc071667347bda49acbb5f61586d9",
+      "logSha256": "6de3bcf04db5a5b655b432a06441b4e06652bf7a36efc2a65a3e7f7d3d78b774",
+      "logPath": "/private/tmp/srm-task02-r-gates-validation.log",
+      "retention": {
+        "expiredDerivedLocationsDeleted": 1,
+        "manualRowsUnchanged": true,
+        "nonexpiredRowsUnchanged": true,
+        "rollback": true,
+        "repeatedRunDeletesZero": true,
+        "ordinaryExecuteDenied": true,
+        "liveScheduledRun": false
+      },
+      "permissions": {
+        "readOnlyA2Read": 200,
+        "readOnlyA2Write": 403,
+        "ungrantedDynamicCreate": 403,
+        "exactExistingUpdate": 202,
+        "expiredMembership": 403,
+        "crossOrganisationRefusal": true,
+        "sourceRevocation": true,
+        "directSqlDmlDenied": true
+      },
+      "quota": {
+        "newAdmissionUnits": 1,
+        "replayExtraUnits": 0,
+        "overCapacityHttp": 429,
+        "engineWindow": "FIXED_NOT_ROLLING",
+        "paidProviderAttempts": 0
+      },
+      "testDatabaseRemoved": true,
+      "localClusterStopped": true,
+      "productFilesEdited": false
+    },
+    "identity": {
+      "route1": {
+        "existingClerkAndSrmAuthentication": "ACCEPTED_BASELINE_REUSABLE",
+        "endToEndTestAdmission": "NOT_CURRENTLY_ACTIVE",
+        "missing": [
+          "owner-created genuine Clerk subjects",
+          "lawful B1 admission activation/operator",
+          "exact time-bounded memberships/product grants",
+          "renewal/expiry policy",
+          "approved UAT supplier resource"
+        ],
+        "requiresEntireB2Deployment": false
+      },
+      "route2": {
+        "b2SourceMerged": true,
+        "b2PmosPhrComplete": true,
+        "runtimeDeployed": false,
+        "consumerAdoptionAccepted": false,
+        "onboardingOrRenewalImplemented": false,
+        "notSelectedAsMandatoryDependency": true
+      },
+      "actualIssuer": "https://unified-drum-7191.clerk.accounts.dev",
+      "clerkApplication": "app_3KoJk9FmKeTC4hhlQwTgX6PMZmD",
+      "clerkInstance": "ins_3KoJk8us60Ywqei67JBwUx6R5pi",
+      "providerObservationSource": "Verified B2 handoff/source; no provider settings changed here",
+      "directoryCurrentGenuineActiveAccounts": 1,
+      "syntheticFixturesReusable": false,
+      "clerkAllowlist": "B2 handoff records enabled allowlist with one existing identifier; exact test identifiers need owner review. No setting/user changed.",
+      "uatMatrix": [
+        {
+          "user": "A1",
+          "internalUserId": null,
+          "clerkSubject": null,
+          "organisation": "A",
+          "organisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+          "reuseApproval": "PENDING",
+          "permissions": [
+            "supplier.location.read",
+            "supplier.location.write",
+            "supplier.location.sync"
+          ],
+          "kysPrivateRead": false
+        },
+        {
+          "user": "A2",
+          "internalUserId": null,
+          "clerkSubject": null,
+          "organisation": "A",
+          "organisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+          "reuseApproval": "PENDING",
+          "permissions": [
+            "supplier.location.read"
+          ],
+          "write": "DENY_BY_ABSENCE",
+          "sync": "DENY_BY_ABSENCE",
+          "kysPrivateRead": false
+        },
+        {
+          "user": "B1",
+          "internalUserId": null,
+          "clerkSubject": null,
+          "organisation": "B",
+          "organisationId": null,
+          "permissions": "Only separately approved B rights; no A membership/grants"
+        }
+      ],
+      "fixedHostScenario": "B1 may authenticate with a genuine current E1 binding in B then must receive denial from fixed-A SRM. Serving positive B data is not required for that negative test and the fixed-org guard is not bypassed.",
+      "validityProposal": {
+        "providerProof": "Existing official SDK current user/session, exact issuer/receiver",
+        "newBindingMaxSeconds": 300,
+        "actualExpiry": "Bounded by actual verified token/session expiry; do not assume 300s are always available",
+        "membershipAndGrantExpiry": "Exact UAT end; proposed <=60min, subject to owner policy and actual binding/renewal capability",
+        "renewal": "No current accepted renewal; expired/revoked remains denied. Separate owner-approved current-proof/audit policy required.",
+        "cleanup": "Revoke UAT rights/memberships/bindings via accepted owner lifecycle; source/manual data retention follows approved policy, no automatic hard delete of audit"
+      },
+      "existingSuppliersObserved": 2,
+      "existingPrivateSnapshotsObserved": 6,
+      "approvedUatSupplierIds": [],
+      "liveBrowserUat": false
+    },
+    "permissions": {
+      "read": {
+        "resource": "supplier-locations:<approved supplier UUID>",
+        "status": "PROPOSED",
+        "actors": [
+          "A1",
+          "A2"
+        ],
+        "organisation": "Exact approved A"
+      },
+      "sync": {
+        "resource": "same exact supplier collection",
+        "status": "PROPOSED",
+        "actors": [
+          "A1"
+        ],
+        "sourceRights": "current accepted MGBI supplier-report resource only; KYS default-denied for independent variant",
+        "serviceGrants": []
+      },
+      "write": {
+        "existingResourceId": "Exact location UUID works in isolated E1",
+        "newResourceId": "Server-derived from organisation/supplier/MANUAL:idempotency-key",
+        "status": "BLOCKED_DYNAMIC_CREATE_SCOPE_NOT_APPROVED",
+        "nullResourceGrantApproved": false,
+        "proposedOwnerDecision": "Use a bounded verified supplier/child-location authority through the E1 producer; no SRM-local selector, NULL or wildcard grant."
+      },
+      "rollingQuota": {
+        "capacity": 100,
+        "operations": [
+          "supplier.location.write",
+          "supplier.location.sync"
+        ],
+        "durationHours": 24,
+        "requiredMode": "ROLLING",
+        "actualExistingMode": "IMMUTABLE_FIXED_WINDOW_WITH_ACCEPTED_COUNT",
+        "newLedgerCreated": false,
+        "replay": "Accepted same-key replay does not consume another unit; verified",
+        "noOpSync": "Stable accepted source-sync key is read/replayed without new admission; a new accepted source version is a new synchronisation even if physical writes are zero",
+        "physicalWrites": "Not the quota unit; transaction reservation/admission is the unit",
+        "serviceAllowance": "No new service permissions; paid geocoding disabled",
+        "boundedUatAlternative": "A single non-renewed <=24h capacity100 policy caps the entire finite test interval at100 but is NOT a complete rolling/replenishing policy; requires explicit owner acceptance and is not silently substituted",
+        "correctiveOwner": "Architecture Platform; existing request ledger only, no second limiter/table"
+      }
+    },
+    "crossGateClasses": {
+      "R": "C: separately approved existing privileged backup read, with B verification pending",
+      "K": "A/C: controlled operator adoption and owner assignment; no accepted periodic execution exists",
+      "I": "A/C: existing authentication/provisioner reuse with reserved activation, real users and lifecycle policy; B2 deployment not inherently required",
+      "P": "D/C: actual dynamic-resource and rolling-window semantic gaps need E1 producer acceptance; no fabricated SRM bypass"
+    },
+    "release": {
+      "installationApprovalPackage": "PARTIAL",
+      "maintenanceWindowApproval": "NOT_REQUESTED",
+      "currentProposedWindow": null,
+      "oldVariantsNotExecutable": true,
+      "windowFeasibility": "NOT_VERIFIED_UNTIL_MANDATORY_GATES_AND_RECOVERY_RTO_CLOSE",
+      "maximumMinutes": 60,
+      "conditionalBudgetMinutes": {
+        "quiesce": 5,
+        "sqlAndReceipts": 10,
+        "deploymentAndHealth": 15,
+        "uat": 10,
+        "rollbackReserve": 20
+      },
+      "noWindowReserved": true,
+      "stageProductionExcluded": true
+    },
+    "verdict": {
+      "TASK_ID": "SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022",
+      "TASK_STATUS": "PARTIAL",
+      "RECOVERY_SNAPSHOT": "snap-bold-bird-b99s4c9q",
+      "RECOVERY_BRANCH": "br-green-glitter-b9weet99",
+      "ORIGINAL_DEVELOPMENT": "br-sparkling-term-b99l107x",
+      "RECOVERY_GATE": "READY_FOR_OWNER_APPROVAL",
+      "RECOVERY_CHECKED_TABLES": 82,
+      "RECOVERY_UNVERIFIED_TABLES": 23,
+      "RECOVERY_PROTECTED_READBACK": "PARTIAL",
+      "RECOVERY_RESTORE_PROOF": "PARTIAL",
+      "SNAPSHOT_RETENTION_VERIFIED": "YES",
+      "KYS_RETENTION_OWNER": "SRM Runtime (verified source/domain routing); periodic operational owner NOT_ASSIGNED; Architecture Platform controls privileged execution",
+      "KYS_RETENTION_GATE": "BLOCKED",
+      "KYS_OPERATOR_ADOPTION": "BLOCKED",
+      "KYS_PHYSICAL_EXPIRY": "PARTIAL",
+      "IDENTITY_B2_PR598": "MERGED",
+      "E1_ONBOARDING_ROUTE": "BLOCKED",
+      "E1_ONBOARDING_GATE": "BLOCKED",
+      "E1_BINDING_RENEWAL_POLICY": "PENDING",
+      "LIVE_UAT_IDENTITIES": "PENDING",
+      "LOCATION_PERMISSION_GATE": "BLOCKED",
+      "READ_GRANTS": "PROPOSED",
+      "WRITE_GRANTS": "BLOCKED",
+      "SYNC_GRANTS": "PROPOSED",
+      "LIVE_PERMISSION_ACTIVATION": "NOT_PERFORMED",
+      "LOCATION_WRITE_LIMIT": "100_PER_ORG_24H",
+      "LOCATION_SYNC_LIMIT": "100_PER_ORG_24H",
+      "LIMIT_ENGINE_COMPATIBILITY": "PARTIAL",
+      "PAID_GEOCODING_BUDGET": "ZERO",
+      "GOOGLE_GEOCODING_ACTIVATION": "DISABLED",
+      "SQL019_INSTALLED": "NO",
+      "SQL013_INSTALLED": "NO",
+      "SRM_DEPLOYMENT_PERFORMED": "NO",
+      "MAPS_DEPLOYMENT_PERFORMED": "NO",
+      "DEVELOPMENT_CHANGED": "NO",
+      "STAGING_CHANGED": "NO",
+      "PRODUCTION_CHANGED": "NO",
+      "ARCHITECTURE_OWNER_DEPENDENCIES": [
+        "Approve bounded 15-minute read-only backup/integrity operation for exact 23 tables on original/recovery endpoints using existing privileged operator; no grant or RLS change",
+        "Accept existing-auth/B1 UAT admission and finite renewal procedure with exact memberships/entitlements, no dependency on deployment of full B2",
+        "Accept additive bounded supplier/location grant scope and actual rolling-24h semantics in existing request ledger; preserve immutable historical migrations",
+        "Review privileged KYS retention execution binding; separate ARCHITECTURE PMOS/PHR for actual producer corrective"
+      ],
+      "SRM_OWNER_DEPENDENCIES": [
+        "Assign/adopt lawful periodic KYS operator and receipts; preserve default-disabled KYS persistence pending adoption",
+        "Accept bounded HQ/manual UAT variant using existing E1 default-deny KYS rights only if complete actor/service grant fence is approved",
+        "Approve UAT cohort and exact report/supplier resource within fixed Development organisation; preserve unrelated users' existing rights",
+        "Receive any separately accepted E1 producer change and refresh exact SQL/source receipts before installation"
+      ],
+      "USER_ACTIONS_REMAINING": [
+        "Owning-project approval for the attached exact read-only recovery operation; no new snapshot/compute is requested",
+        "Owner-controlled creation/invitation of three genuine Clerk Development users after exact identifier/allowlist approval; use no customer accounts",
+        "Approve finite E1 onboarding/renewal and exact organisation/product/supplier scope and the retention operator proposal through the responsible owners",
+        "Approve final <=60min shared window only after gate receipts, current LKG and feasibility are accepted"
+      ],
+      "INSTALLATION_APPROVAL_PACKAGE": "PARTIAL",
+      "MAINTENANCE_WINDOW_APPROVAL": "NOT_REQUESTED",
+      "PMOS_TASK_STATE": "RUNNING",
+      "PHR_TASK02_R_PUBLICATION": "NOT_YET_PUBLISHED"
+    },
+    "ownerSpecificCorrectiveBriefs": {
+      "protectedReadback": "PROPOSED OWNER DECISION — NOT APPROVED OR EXECUTED.\nOwner: ARCHITECTURE / Architecture Platform, with SRM Runtime and SG Runtime consent for their seven tables.\nDependency: existing SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022; do not create another SRM registration.\nApprove ONLY proposal srm-task02-r-protected-recovery-readback-v1 in this JSON: <=15min, project spring-bread-28217539/platform_private, original br-sparkling-term-b99l107x/ep-late-heart-b9mxo8oi and copy br-green-glitter-b9weet99/ep-divine-mode-b9fekhdg, exact23 listed tables.\nUse the existing administrative backup connection neondb_owner only for the precompiled REPEATABLE READ READ ONLY aggregate SELECTs. Existing BYPASSRLS and SELECT are observed privileges, not new grants; present SRM authority has NOT authorised their use to bypass protected-content fences.\nNo new role, membership, ACL, function, policy, DDL, DML, raw-row export, business/provider execution, replay, restore, finalize or endpoint migration.\nReturn only actor/physical-target/read-only identity, timestamps, per-table counts/SHA256 and aggregate Source call/effect statuses. Identify changed live data rather than hiding snapshot drift. Do not accept partial/RLS-filtered rows as full coverage.\nExecute only after the owning project's explicit bounded approval and applicable preflight/PMOS. If that administrative integrity mode is refused by Canon/owner, use an already approved owner integrity receipt; otherwise return the exact unresolved objects. Return an immutable independent receipt (task, source SHA, digest), never foreign closeout writes through srm_pmos.",
+      "architectureProducer": "READY-TO-USE ARCHITECTURE EXECUTION BRIEF — no task has been registered by SRM and this brief is not approval to change live state.\nReference active SRM TASK02-R; current accepted main4115d539501bfd73c4467129caacbadd6c94b8a4, Root1.24.0/candidate.16. Refresh main and check for an existing matching corrective before registering a separate narrowly scoped ARCHITECTURE task in architecture_pmos.\nKeep B2 source merged; do not require or deploy the entire Identity Runtime for three UAT users. Reuse existing Clerk/SRM authentication and accepted B1 ensureAccount/Access Store. Deliver a lawful controlled admission path for three owner-created genuine Clerk subjects, internal UUIDs, A1/A2 same owner-approved fixed A, B1 separate B, exact product/feature/source rights, finite membership/binding lifetime and audited current-proof renewal decision. Expired/revoked authority must still deny. No manual privileged user inserts, fixture reactivation, impersonation or Clerk-org identity substitution.\nResolve only two demonstrated permission gaps through the E1 producer: bounded authority for dynamic manual CREATE (existing write resource is a server-derived child-location UUID, SQL019 accepts exact ID or NULL), and genuine rolling100 per org/operation/24h on the existing Root request ledger. No NULL/wildcard grant, SRM-local selector, second limiter, new request ledger or universal SERVICE permission.\nUse exact approved supplier/child-location evidence and preserve the organisation boundary. Preserve all historical migrations/receipts; any actual correction is additive, backward compatible and separately accepted by the SRM receiver before installation.\nAcceptance: concurrent100/101 admission; exact24h boundary; same-key replay zero extra units; new source-version admission vs unchanged sync; transactional rollback/audit; A1 allowed; A2 READ with WRITE denied; B1 denied A; expired membership/binding; revoked grants; wrong supplier/location; zero paid effects; actual ordinary-role PostgreSQL. Source tests are not live Clerk UAT.\nDeclare exact owner-routed paths and pass full governance before code. Publish own Draft PR/CI and canonical PMOS/PHR receipt. No live users/roles/keys/policies, SQL019/SQL013, B2/SRM/Maps deployment, shared disablement, cross-profile merge or maintenance window is authorised by this brief. Return exact candidate/source digest and pending reserved owner actions.",
+      "srmRetention": "READY-TO-USE SRM RETENTION ADOPTION BRIEF — continue existing TASK02-R; no new SRM task or schedule is created.\nVerified logical source owner: SRM Runtime. Privileged-channel owner: Architecture Platform. No named/accepted periodic operational executor exists in the refreshed SRM/Render/Neon evidence. Foreign profitia/KYS web service is a separate repository with autoDeploy=yes, not an accepted SRM private-store operator; the contact-email cron must not be reused.\nAssign a named operational owner and approve a concrete binding to an existing accepted controlled-maintenance execution, with its existing secret-delivery model and permitted cadence/maximum lag derived from actual KYS rights. Do not silently create a scheduler, publish an administrative DB password to a normal runtime, or grant owner/maintenance access to HUMAN/SERVICE.\nAfter SQL013 is installed in the separately approved window, execute only srm.location_expire_controlled() as current_user=profitia_access_owner via the accepted controlled operator. Capture source/config/run ID/timestamps/counts/status and failures without payloads; prove missed-run detection, safe retry/idempotency, expiry, revocation withholding and preservation of manual/nonexpired/unrelated data. Local20/20 acceptance already proves the function behavior, rollback and ordinary-role denial; live scheduling is not yet verified.\nIf no lawful existing periodic executor can be adopted, keep KYS-derived persistence inactive. A bounded HQ/manual variant may use the existing tested default-deny KYS rights only if every location-capable actor/service lacks KYS/private-source READ and the initially empty location store is independently verified; do not alter unrelated users' existing rights or claim full KYS release. Any new privileged execution channel requires an explicit Architecture-owned proposal/approval; do not invent a parallel deletion framework."
+    }
   }
 }

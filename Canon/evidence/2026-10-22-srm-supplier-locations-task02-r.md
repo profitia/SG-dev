@@ -1,7 +1,7 @@
 # TASK02-R — controlled Supplier Locations release preparation
 
-Status: **PARTIAL — owner-created recovery copy inspected; installation remains NO-GO**.
-Initial checkpoint: 2026-10-22 04:14:59 UTC; subsequent read-only evidence below supersedes its time-sensitive observations.
+Status: **PARTIAL — coordinated gate closure;82 tables verified,20 isolated tests PASS; installation remains NO-GO**.
+Initial checkpoint: 2026-10-22 04:14:59 UTC. The final **Coordinated Release Gate Closure** section and JSON coordinatedGateClosure are current; earlier dated observations and window variants are retained history and are superseded.
 Task: `SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022`. Profile SRM; Development only.
 This is a prepared installation and acceptance package, not installation, activation or release evidence.
 
@@ -14,11 +14,12 @@ owner-created. No release GO or agent resource-creation authority is inferred.
 
 ## Authority and verified source
 
-Repository [profitia/SG-dev](https://github.com/profitia/SG-dev), authority main
-`fd6b630afa37fb6f055b3291332d380b0d19e005`.
+Repository [profitia/SG-dev](https://github.com/profitia/SG-dev), current authority main
+`4115d539501bfd73c4467129caacbadd6c94b8a4` after PR598. Supplier Locations'
+accepted feature baseline remains `fd6b630afa37fb6f055b3291332d380b0d19e005`.
 TASK02 [PR597](https://github.com/profitia/SG-dev/pull/597) merged candidate
 `3c6805cbb1aa135454b6f6e1aad9308951cfea85`.
-Current required [main CI](https://github.com/profitia/SG-dev/actions/runs/39674364353),
+Historical Supplier Locations [main CI](https://github.com/profitia/SG-dev/actions/runs/39674364353),
 [SRM CI](https://github.com/profitia/SG-dev/actions/runs/39674364559) and
 [Maps CI](https://github.com/profitia/SG-dev/actions/runs/39674364509) passed.
 The SRM Staging promotion jobs were skipped; no promotion was performed.
@@ -572,3 +573,384 @@ if prerequisites are late, withdraw them and propose a fresh window.
 The user explicitly withholds application disablement, SQL019/SQL013 and deployment.
 No new approval is requested before the preceding prerequisites close.
 Same TASK02-R remains running; PMOS closeout PARTIAL, PHR PENDING, MEMOROS disabled.
+
+## Coordinated Release Gate Closure — 2026-10-22T06:32:55Z
+
+### Business result and current verdict
+
+The existing TASK02-R continues under the same running SRM registration.
+The installation package remains **PARTIAL**, not READY_FOR_INSTALLATION_APPROVAL.
+No maintenance approval is requested while mandatory dependencies remain open.
+
+| Gate | Current result | Executed resolution / exact remaining decision |
+| --- | --- | --- |
+| R Recovery | READY_FOR_OWNER_APPROVAL | Fresh79-table count/hash parity plus three complete protected singleton records verified. Exact23-table administrative aggregate-read proposal prepared, not executed. |
+| K KYS retention | BLOCKED | Actual local physical expiry, manual/nonexpired preservation, rollback, repeat and maintenance denial pass. No accepted named periodic operator/schedule exists. |
+| I Identity/UAT | BLOCKED | B2 is merged and independently closed in PMOS/PHR. Existing Clerk/SRM authentication can be reused; a lawful active three-user admission/renewal path is still absent. Full B2 deployment is not a prerequisite invented by SRM. |
+| P Permissions/quota | BLOCKED | Exact existing-location update and read-only member behavior pass. Dynamic CREATE grant scope and true rolling24h semantics need E1 producer acceptance. |
+
+### Current authority and independent handoffs
+
+Current main4115d539501bfd73c4467129caacbadd6c94b8a4 contains merged PR598
+(head ed9e64cc19bb52a673160e92f981eb7767a454ac; merged22Oct07:53:38 Europe/Warsaw).
+[Current-main governance](https://github.com/profitia/SG-dev/actions/runs/39730633424)
+and [Identity Runtime CI](https://github.com/profitia/SG-dev/actions/runs/39730633408)
+are SUCCESS for that exact main SHA. Git comparison proves apps/srm, Maps and
+platform-contracts sources are byte-unchanged from Supplier Locations' accepted
+fd6b630 baseline. Existing source tests/receipts remain valid historical evidence.
+
+The old isolated branch and2cc22086 checkpoint were preserved. Its stale
+CODE_STATE_GATE was BLOCKED, so no product edits ran on it. A clean isolated
+srm/supplier-locations-gates-20261022 branch was prepared from fresh main; full
+preflight passed before merging the preserved task history. Reconciled full
+require-begin preflight also passed. Only the two declared evidence files differ
+from current main; no product source/configuration target was edited.
+
+B2's independent Architecture registration is completed at05:40:54.196 UTC,
+artifact cmvj44g6i000010z9y7bj44nx, CLOSEOUT_COMPLETE with required publication PASS.
+PHR commit70f61db0629fd2015c1411d4556283202e046130 contains the exact
+history/2026/10/22/2026-10-22-05-40-45Z__architecture-architecture-identity-b2-session-compat-20261022
+bundle. All five recorded file hashes were independently verified; recorded
+bundleHash09067e899c018d490b8c515c1315e5c631d33f38ffaee831db2811ffe1ef803c.
+That source closeout supplies neither active productive onboarding nor consumer UAT.
+
+### R — precise recovery coverage and bounded owner action
+
+Fresh read-only original/copy comparison again matches all79 earlier accessible
+table counts and SHA256 fingerprints, including the access directory/audit,
+policies, receipts and queue. No legitimate live-content drift was observed.
+
+Three previously unverified Source tables are now fully compared through **existing
+accepted non-mutating descriptor functions**, using ordinary existing roles:
+srm_provider_development_source for profitia_ingestion.runtime_descriptor() and
+profitia_srm_acquisition.runtime_descriptor(); srm_corporate_development_source for
+profitia_srm_catalog.runtime_descriptor(). No credential was exposed or changed.
+Every stored field is mapped back from the descriptors. Validated
+PRIMARY KEY(singleton), its non-nullability and CHECK(singleton) prove that a
+non-null descriptor covers the only possible row. These are full singleton-record
+proofs, not empty RLS-filtered SELECTs or new owner exemptions. The JSON retains
+the field maps, actual values, constraints, query identities and equality proof.
+
+Therefore: **79 full count/hash comparisons +3 complete singleton descriptors =
+82 verified tables;23 remain unverified.** Overall105-table physical integrity,
+external in-flight state and final recovery acceptance remain incomplete.
+
+All26 originally unverified tables are accounted for below. Each is critical to
+recovery and must receive complete readback or an explicitly accepted owner
+equivalent before full release. Descriptive classifications identify the recovery
+purpose and do not invent new formal E1 DataClass enums.
+
+| Original uncovered table | Governance owner | Descriptive data classification | Current proof |
+| --- | --- | --- | --- |
+| profitia_external_call.calls | Architecture Platform | CONTROL_AUDIT_EFFECT_OR_BILLING_STATE | Pending exact bounded owner read |
+| profitia_external_call.installation | Architecture Platform | CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT | Pending exact bounded owner read |
+| profitia_external_call.policies | Architecture Platform | CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA | Pending exact bounded owner read |
+| profitia_external_native.installation | Architecture Platform | CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT | Pending exact bounded owner read |
+| profitia_external_native.policies | Architecture Platform | CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA | Pending exact bounded owner read |
+| profitia_ingestion.budgets | Architecture Platform | CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA | Pending exact bounded owner read |
+| profitia_ingestion.effects | Architecture Platform | CONTROL_AUDIT_EFFECT_OR_BILLING_STATE | Pending exact bounded owner read |
+| profitia_ingestion.grants | Architecture Platform | CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA | Pending exact bounded owner read |
+| profitia_ingestion.installation | Architecture Platform | CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT | PASS: complete singleton descriptor |
+| profitia_ingestion.runtime_bindings | Architecture Platform | CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA | Pending exact bounded owner read |
+| profitia_ingestion.security_events | Architecture Platform | CONTROL_AUDIT_EFFECT_OR_BILLING_STATE | Pending exact bounded owner read |
+| profitia_ingestion.sources | Architecture Platform | CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA | Pending exact bounded owner read |
+| profitia_public_web.installation | Architecture Platform | CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT | Pending exact bounded owner read |
+| profitia_public_web.policies | Architecture Platform | CONTROL_CONFIGURATION_RIGHTS_AND_QUOTA | Pending exact bounded owner read |
+| profitia_srm_acquisition.installation | Architecture Platform | CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT | PASS: complete singleton descriptor |
+| profitia_srm_acquisition.outcome_witnesses | Architecture Platform | CONTROL_AUDIT_EFFECT_OR_BILLING_STATE | Pending exact bounded owner read |
+| profitia_srm_catalog.installation | Architecture Platform | CONTROL_CONFIGURATION_AND_INSTALL_RECEIPT | PASS: complete singleton descriptor |
+| profitia_srm_catalog.outcome_witnesses | Architecture Platform | CONTROL_AUDIT_EFFECT_OR_BILLING_STATE | Pending exact bounded owner read |
+| profitia_srm_catalog.publications | Architecture Platform | MIXED_SOURCE_PACKET_NOT_AUTOMATICALLY_SHARED | Pending exact bounded owner read |
+| srm.users | SRM Runtime | PERSONAL_ACCOUNT_PROJECTION | Pending exact bounded owner read |
+| srm.user_supplier_interest | SRM Runtime | ORGANISATION_PRIVATE_SUPPLIER_ASSIGNMENT | Pending exact bounded owner read |
+| sg_runtime_benchmarks.BusinessBenchmark | SG Runtime / SG2 | BENCHMARK_BUSINESS_DATA | Pending exact bounded owner read |
+| srm.catalog_companies | SRM Runtime | SUPPLIER_CATALOGUE_PROJECTION_WITH_SOURCE_RIGHTS | Pending exact bounded owner read |
+| srm.catalog_financial_facts | SRM Runtime | SUPPLIER_CATALOGUE_PROJECTION_WITH_SOURCE_RIGHTS | Pending exact bounded owner read |
+| srm.catalog_financial_indicators | SRM Runtime | SUPPLIER_CATALOGUE_PROJECTION_WITH_SOURCE_RIGHTS | Pending exact bounded owner read |
+| srm.organization_supplier_interest | SRM Runtime | ORGANISATION_PRIVATE_SUPPLIER_ASSIGNMENT | Pending exact bounded owner read |
+
+The detailed JSON matrix additionally records owning subsystem/database owner,
+why ordinary access is insufficient, existing reader/descriptor, criticality,
+required owner evidence and whether independent proof remains mandatory.
+
+A15-minute, exact23-table aggregate-read proposal is ready:
+**srm-task02-r-protected-recovery-readback-v1**. The current existing administrative
+backup connection neondb_owner has SELECT on these tables and BYPASSRLS=true,
+superuser=false. **No protected business content was queried with that bypass
+authority.** Using it for these checks is expressly reserved for separate owning
+project approval under task3.3. No new privileges, role inheritance, function,
+policy or standing account is proposed. Precompiled REPEATABLE READ READ ONLY
+queries,30s statement/3s lock deadlines, two exact branch/compute identities,
+count/hash-only output, aggregate Source states and stop criteria are in JSON.
+
+Current console read again shows snapshot snap-bold-bird-b99s4c9q with
+**59.79 MB Expires on: never**. The one-day history window is separate.
+The copy remains ready/restored, non-default/non-primary, from LSN0/3B8E828 at
+05:22:36 UTC; original br-sparkling-term-b99l107x remains default with its original
+endpoint. No new snapshot/compute, Finalize Restore or connection migration occurred.
+Capture freshness still needs the final pre-window drift check.
+
+### K — executed retention acceptance and independent HQ/manual option
+
+A temporary extended harness reuses the unchanged real SRM/E1 integration fixture.
+It ran on disposable local PostgreSQL16.14/127.0.0.1:57435 only, with no Neon data
+or provider network. **20 tests PASS;0 fail;0 skipped.**
+Log SHA2566de3bcf04db5a5b655b432a06441b4e06652bf7a36efc2a65a3e7f7d3d78b774;
+generated harness SHA256ef6bf187e295870bb79465cc8f05f21857ebc071667347bda49acbb5f61586d9.
+The disposable test database was removed and the local cluster stopped.
+No test/helper was added to deployed product source.
+The full transcript and temporary reproduction harness are embedded in the JSON
+localAcceptance evidence so the proof does not depend on later /private/tmp retention.
+
+The controlled expiry port removed exactly one expired derivative and preserved
+manual-row fingerprints and all nonexpired rows. A deliberately rolled-back run
+left the expired row intact; its later controlled run removed it; repetition
+removed zero. An ordinary runtime call was refused. Existing fixture cases also
+verify immediate source-right withholding, read-time expiry, sharing, CAS,
+protected audit rollback, Source paging and zero paid geocoding effects.
+
+The owner routing lookup independently resolves KYS cache/native cleanup and
+SQL013 to **SRM Runtime**, and shared authority to **Architecture Platform**.
+This verifies logical responsibility; it does not invent a named operational
+owner. Refreshed Render inventory contains no SRM retention cron. The separately
+hosted KYS service belongs to profitia/KYS and auto-deploys; it has no accepted
+SRM private-store maintenance binding and was not repurposed. The email cron
+remains unrelated. No live scheduled cleanup is claimed.
+
+**Correction to the earlier overly broad HQ/manual dependency conclusion:**
+for a deliberately bounded cohort, the existing E1 default-deny private/KYS rights
+can provide the input/projection fence without a new runtime switch. The isolated
+test removed KYS/private READ for every location-capable test user, then proved
+HQ sync/manual preservation and zero KYS-derived persistence. A release adopting
+this variant must also prove no location-capable SERVICE has KYS access, an empty
+initial derivative store and no location grants for unrelated already-entitled
+users. Their existing KYS rights are preserved. This conditional option does not
+approve a general rollout or replace full KYS periodic-retention adoption.
+
+### I — concrete existing-auth UAT design
+
+Reuse the accepted Clerk/SRM authentication receiver and B1 provisioner/Access Store
+when an owner-accepted admission operation is available. B2's merged source does
+not implement renewal or organisation/product onboarding and is not deployed.
+Deploying the whole B2 stack solely to create three users is not selected.
+
+Actual known Development issuer is unified-drum-7191.clerk.accounts.dev,
+application app_3KoJk9FmKeTC4hhlQwTgX6PMZmD, instance
+ins_3KoJk8us60Ywqei67JBwUx6R5pi, verified by the independent B2 handoff.
+Its observed allowlist is enabled with one identifier; approval of the exact test
+identifiers is reserved to the owner. No Clerk configuration or account was changed.
+Fresh E1 content still has one ACTIVE genuine account/membership. The five
+disabled/revoked B1 fixtures are not reusable live users.
+
+| Test user | Actual provisioning | Organisation / intended rights |
+| --- | --- | --- |
+| A1 | Owner-created genuine subject; internal UUID pending | Explicitly approved fixed A; exact location READ/WRITE/SYNC plus lawful report source; no KYS/private READ in the independent variant |
+| A2 | Owner-created genuine subject; internal UUID pending | Same A; exact READ, no WRITE/SYNC |
+| B1 | Owner-created genuine subject; internal UUID pending | Separate internal B; no membership/grants in A; signed-in request to fixed-A SRM must deny |
+
+The fixed A is225e465b-8b89-467d-92d1-7fef61b555fe, requiring explicit cohort/data
+consent. B1's valid B identity can be tested negatively at that accepted fixed-A
+boundary; serving positive B data in this host is not required and no guard is
+bypassed. The two existing supplier rows and six private snapshots were counted,
+but no customer/supplier resource was silently adopted as a UAT fixture.
+
+Binding proposal: follow actual verified SDK token/session expiry, max300s for
+new B1 bindings, not an assumed guaranteed300s. Membership/product/operation
+rights end at the approved UAT deadline. Current renewal is unimplemented; no
+expired/revoked binding is automatically extended. An explicit current-proof
+renewal/admission decision, auditable revocation/logout and post-UAT lifecycle
+are required before a longer authenticated acceptance. No passwords, tokens,
+email identifiers or fabricated internal IDs are part of this report.
+
+### P — exact grants and quota semantics
+
+Local actual E1/SQL acceptance additionally proves: A2 READ200/WRITE403; ungranted
+dynamic CREATE403; exact existing-location UPDATE202; expired membership403;
+accepted replay zero extra quota units; over-capacity429. The original sharing,
+cross-organisation denial, direct SQL fences, changed payload/CAS, Source and
+audit/revocation tests remain intact. Fixture broad grants are synthetic setup,
+not proposed live grants.
+
+READ and SYNC may name exact collection supplier-locations:<approved supplier UUID>.
+WRITE currently names the server-derived child-location UUID. SQL019 matches that
+exact ID or resource_id=NULL. The latter is an unapproved resource wildcard.
+Arbitrary future CREATE cannot be made available by granting only known existing
+location IDs. No SRM-local authorisation selector or null grant is implemented.
+The owner-routed E1 brief below addresses a bounded, verified supplier/child scope.
+
+The accepted policies store immutable window_start/window_end plus accepted_count.
+reserve increments only a NEW reservation; an accepted same-key replay does not
+increment it. Failed transactions roll back admission. A stable unchanged Source
+sync key is read/replayed; a newly accepted Source version is a new sync even when
+physical writes are zero. The units are admitted operations, not SQL row changes
+or billable provider calls.
+
+**A fixed24-hour policy is not a replenishing rolling24-hour quota.**
+No current SQL read counts admitted intents over the moving last24h. A finite,
+single, never-renewed capacity100 UAT policy can conservatively cap its whole
+interval at100, but is not silently substituted for the required rolling policy.
+True rolling100/operation/org/24h is a producer-owned compatibility gap. No second
+quota table/limiter/ledger or unlimited SERVICE allowance is introduced.
+
+### Cross-project graph, owner decisions and immediately usable briefs
+
+```mermaid
+flowchart LR
+  AP["Architecture Platform"] --> R["R: bounded protected recovery read"]
+  AP --> I["I: existing-auth E1 admission / renewal"]
+  AP --> P["P: exact child scope + rolling quota"]
+  SR["SRM Runtime"] --> K["K: periodic retention adoption"]
+  AP --> K
+  R --> L["Accepted recovery + retained LKG"]
+  I --> U["Genuine A1 / A2 / B1 UAT fixture"]
+  P --> U
+  K --> G["Consolidated installation package"]
+  U --> G
+  L --> G
+  SG["SG2 / shared E1 owner"] --> W["One coordinated window <=60min"]
+  G --> W
+  O["Owner reserved approvals"] --> R
+  O --> I
+  O --> K
+  W --> X["Later approved installation / deployment"]
+```
+
+Classification: R is a reserved bounded privileged verification (C) with missing
+operational proof (B); K is adoption/owner assignment (A/C); I is accepted component
+reuse plus reserved real-user/lifecycle admission (A/C); P has genuine producer
+resource-scope/rolling-window semantics to resolve (D/C), with no local workaround.
+
+Each following brief is **a proposal, not an approval or a registered foreign task**.
+It can be supplied directly to the responsible owner. No other chat was messaged.
+
+**ARCHITECTURE protected recovery decision**
+
+```text
+PROPOSED OWNER DECISION — NOT APPROVED OR EXECUTED.
+Owner: ARCHITECTURE / Architecture Platform, with SRM Runtime and SG Runtime consent for their seven tables.
+Dependency: existing SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022; do not create another SRM registration.
+Approve ONLY proposal srm-task02-r-protected-recovery-readback-v1 in this JSON: <=15min, project spring-bread-28217539/platform_private, original br-sparkling-term-b99l107x/ep-late-heart-b9mxo8oi and copy br-green-glitter-b9weet99/ep-divine-mode-b9fekhdg, exact23 listed tables.
+Use the existing administrative backup connection neondb_owner only for the precompiled REPEATABLE READ READ ONLY aggregate SELECTs. Existing BYPASSRLS and SELECT are observed privileges, not new grants; present SRM authority has NOT authorised their use to bypass protected-content fences.
+No new role, membership, ACL, function, policy, DDL, DML, raw-row export, business/provider execution, replay, restore, finalize or endpoint migration.
+Return only actor/physical-target/read-only identity, timestamps, per-table counts/SHA256 and aggregate Source call/effect statuses. Identify changed live data rather than hiding snapshot drift. Do not accept partial/RLS-filtered rows as full coverage.
+Execute only after the owning project's explicit bounded approval and applicable preflight/PMOS. If that administrative integrity mode is refused by Canon/owner, use an already approved owner integrity receipt; otherwise return the exact unresolved objects. Return an immutable independent receipt (task, source SHA, digest), never foreign closeout writes through srm_pmos.
+```
+
+**ARCHITECTURE identity/permission producer corrective**
+
+```text
+READY-TO-USE ARCHITECTURE EXECUTION BRIEF — no task has been registered by SRM and this brief is not approval to change live state.
+Reference active SRM TASK02-R; current accepted main4115d539501bfd73c4467129caacbadd6c94b8a4, Root1.24.0/candidate.16. Refresh main and check for an existing matching corrective before registering a separate narrowly scoped ARCHITECTURE task in architecture_pmos.
+Keep B2 source merged; do not require or deploy the entire Identity Runtime for three UAT users. Reuse existing Clerk/SRM authentication and accepted B1 ensureAccount/Access Store. Deliver a lawful controlled admission path for three owner-created genuine Clerk subjects, internal UUIDs, A1/A2 same owner-approved fixed A, B1 separate B, exact product/feature/source rights, finite membership/binding lifetime and audited current-proof renewal decision. Expired/revoked authority must still deny. No manual privileged user inserts, fixture reactivation, impersonation or Clerk-org identity substitution.
+Resolve only two demonstrated permission gaps through the E1 producer: bounded authority for dynamic manual CREATE (existing write resource is a server-derived child-location UUID, SQL019 accepts exact ID or NULL), and genuine rolling100 per org/operation/24h on the existing Root request ledger. No NULL/wildcard grant, SRM-local selector, second limiter, new request ledger or universal SERVICE permission.
+Use exact approved supplier/child-location evidence and preserve the organisation boundary. Preserve all historical migrations/receipts; any actual correction is additive, backward compatible and separately accepted by the SRM receiver before installation.
+Acceptance: concurrent100/101 admission; exact24h boundary; same-key replay zero extra units; new source-version admission vs unchanged sync; transactional rollback/audit; A1 allowed; A2 READ with WRITE denied; B1 denied A; expired membership/binding; revoked grants; wrong supplier/location; zero paid effects; actual ordinary-role PostgreSQL. Source tests are not live Clerk UAT.
+Declare exact owner-routed paths and pass full governance before code. Publish own Draft PR/CI and canonical PMOS/PHR receipt. No live users/roles/keys/policies, SQL019/SQL013, B2/SRM/Maps deployment, shared disablement, cross-profile merge or maintenance window is authorised by this brief. Return exact candidate/source digest and pending reserved owner actions.
+```
+
+**SRM controlled KYS retention adoption**
+
+```text
+READY-TO-USE SRM RETENTION ADOPTION BRIEF — continue existing TASK02-R; no new SRM task or schedule is created.
+Verified logical source owner: SRM Runtime. Privileged-channel owner: Architecture Platform. No named/accepted periodic operational executor exists in the refreshed SRM/Render/Neon evidence. Foreign profitia/KYS web service is a separate repository with autoDeploy=yes, not an accepted SRM private-store operator; the contact-email cron must not be reused.
+Assign a named operational owner and approve a concrete binding to an existing accepted controlled-maintenance execution, with its existing secret-delivery model and permitted cadence/maximum lag derived from actual KYS rights. Do not silently create a scheduler, publish an administrative DB password to a normal runtime, or grant owner/maintenance access to HUMAN/SERVICE.
+After SQL013 is installed in the separately approved window, execute only srm.location_expire_controlled() as current_user=profitia_access_owner via the accepted controlled operator. Capture source/config/run ID/timestamps/counts/status and failures without payloads; prove missed-run detection, safe retry/idempotency, expiry, revocation withholding and preservation of manual/nonexpired/unrelated data. Local20/20 acceptance already proves the function behavior, rollback and ordinary-role denial; live scheduling is not yet verified.
+If no lawful existing periodic executor can be adopted, keep KYS-derived persistence inactive. A bounded HQ/manual variant may use the existing tested default-deny KYS rights only if every location-capable actor/service lacks KYS/private-source READ and the initially empty location store is independently verified; do not alter unrelated users' existing rights or claim full KYS release. Any new privileged execution channel requires an explicit Architecture-owned proposal/approval; do not invent a parallel deletion framework.
+```
+
+The only user-reserved actions are the exact bounded backup-read authorisation,
+appointment/approval of the controlled periodic operator, genuine test-user
+creation and accepted E1 lifetime/cohort/data scope. Technical findings, actual
+resource identities and prepared query scope are supplied here; no technical
+resource hunting is delegated to the user. Actual producer corrections retain
+their own ARCHITECTURE task/PMOS/PHR and return immutable receipts to TASK02-R.
+
+### Installation package, Development safety and continuation
+
+Owner-gate srm-locations-task02-r-owner-gate-v1 remains PARTIAL.
+Earlier conditional clock-time variants are withdrawn as executable options.
+No feasible/reserved window is claimed until gate evidence, binding lifetime and
+recovery RTO are accepted. Conditional60-minute budget: quiesce5, SQL/receipts10,
+deploy/health15, UAT10, rollback reserve20; feasibility is NOT VERIFIED.
+
+Current SRM live dep-dbbnb22fngtc73bn0i90 /260ade12608faaea27376c1c976db392f046f267
+and Maps dep-dbati9rrjlhs73akpsj0 /db2df0a6cccb994ea4654ae0eb5b3af4b46867ff
+remain unchanged. The prior full SRM artifact
+f4216032035055e8ab8ad3e387882cf2fb02a82d8daca6bc4a58e57e52f502cf and configuration
+d86ce81c0d4207d51c9200c86474e4acb30fdfa51b26a2205b74f385740069b5
+are retained historical byte measurements, now linked to unchanged deploy IDs;
+they were not remeasured or rebuilt in this continuation. Maps' earlier manifest
+and configuration evidence remain separately scoped. Combined LKG is not promoted
+to PASS while full recovery/compatibility and rollback execution are unaccepted.
+
+SQL019/SQL013 digests were reread and remain34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5 /
+b3f05a4c56f32bd32c0c59dcc8b60c486d4d4813823665301ce08318f793704b.
+Neither is installed. Actual receiver has **five ACTIVE shared applications and
+seven bindings**, not five bindings; the Identity application/binding stays disabled.
+There are139 pending and11 confirmed requests in the preserved queue.
+Source in-flight/uncertain state remains pending the exact authorised readback.
+
+Before later disablement require all gates, original-state snapshot/drift and
+retained artifacts/config compatibility, lawful UAT, exact grants and Source
+quiescence. Do not drain by replaying/cancelling pending work. Unknown paid-effect
+state stops maintenance. SQL hash/owner/receipt/audit/tenant errors abort. An
+uncertain commit is inspected before retry; no blind installation replay.
+Keep20minutes for validated rollback or abort before change; first contain through
+approved feature-off runtime/config and restore exact pre-window statuses.
+Do not automatically down-migrate, delete populated tables or restore a whole
+database over newer shared writes. Maps need not redeploy for this scope.
+
+The same SRM registration remains running; no duplicate begin, final closeout or
+premature PHR publication was created. MEMOROS remains disabled. Local evidence
+and canonical trail retain this continuation. The smallest lawful next step is
+the reserved bounded recovery approval plus execution of the precise owner briefs;
+installation still requires its later explicit consolidated decision.
+
+### Mandatory consolidated output
+
+```text
+TASK_ID = SRM-SUPPLIER-LOCATIONS-TASK02-R-20261022
+TASK_STATUS = PARTIAL
+RECOVERY_SNAPSHOT = snap-bold-bird-b99s4c9q
+RECOVERY_BRANCH = br-green-glitter-b9weet99
+ORIGINAL_DEVELOPMENT = br-sparkling-term-b99l107x
+RECOVERY_GATE = READY_FOR_OWNER_APPROVAL
+RECOVERY_CHECKED_TABLES = 82
+RECOVERY_UNVERIFIED_TABLES = 23
+RECOVERY_PROTECTED_READBACK = PARTIAL
+RECOVERY_RESTORE_PROOF = PARTIAL
+SNAPSHOT_RETENTION_VERIFIED = YES
+KYS_RETENTION_OWNER = SRM Runtime (verified source/domain routing); periodic operational owner NOT_ASSIGNED; Architecture Platform controls privileged execution
+KYS_RETENTION_GATE = BLOCKED
+KYS_OPERATOR_ADOPTION = BLOCKED
+KYS_PHYSICAL_EXPIRY = PARTIAL
+IDENTITY_B2_PR598 = MERGED
+E1_ONBOARDING_ROUTE = BLOCKED
+E1_ONBOARDING_GATE = BLOCKED
+E1_BINDING_RENEWAL_POLICY = PENDING
+LIVE_UAT_IDENTITIES = PENDING
+LOCATION_PERMISSION_GATE = BLOCKED
+READ_GRANTS = PROPOSED
+WRITE_GRANTS = BLOCKED
+SYNC_GRANTS = PROPOSED
+LIVE_PERMISSION_ACTIVATION = NOT_PERFORMED
+LOCATION_WRITE_LIMIT = 100_PER_ORG_24H
+LOCATION_SYNC_LIMIT = 100_PER_ORG_24H
+LIMIT_ENGINE_COMPATIBILITY = PARTIAL
+PAID_GEOCODING_BUDGET = ZERO
+GOOGLE_GEOCODING_ACTIVATION = DISABLED
+SQL019_INSTALLED = NO
+SQL013_INSTALLED = NO
+SRM_DEPLOYMENT_PERFORMED = NO
+MAPS_DEPLOYMENT_PERFORMED = NO
+DEVELOPMENT_CHANGED = NO
+STAGING_CHANGED = NO
+PRODUCTION_CHANGED = NO
+ARCHITECTURE_OWNER_DEPENDENCIES = Approve bounded 15-minute read-only backup/integrity operation for exact 23 tables on original/recovery endpoints using existing privileged operator; no grant or RLS change; Accept existing-auth/B1 UAT admission and finite renewal procedure with exact memberships/entitlements, no dependency on deployment of full B2; Accept additive bounded supplier/location grant scope and actual rolling-24h semantics in existing request ledger; preserve immutable historical migrations; Review privileged KYS retention execution binding; separate ARCHITECTURE PMOS/PHR for actual producer corrective
+SRM_OWNER_DEPENDENCIES = Assign/adopt lawful periodic KYS operator and receipts; preserve default-disabled KYS persistence pending adoption; Accept bounded HQ/manual UAT variant using existing E1 default-deny KYS rights only if complete actor/service grant fence is approved; Approve UAT cohort and exact report/supplier resource within fixed Development organisation; preserve unrelated users' existing rights; Receive any separately accepted E1 producer change and refresh exact SQL/source receipts before installation
+USER_ACTIONS_REMAINING = Owning-project approval for the attached exact read-only recovery operation; no new snapshot/compute is requested; Owner-controlled creation/invitation of three genuine Clerk Development users after exact identifier/allowlist approval; use no customer accounts; Approve finite E1 onboarding/renewal and exact organisation/product/supplier scope and the retention operator proposal through the responsible owners; Approve final <=60min shared window only after gate receipts, current LKG and feasibility are accepted
+INSTALLATION_APPROVAL_PACKAGE = PARTIAL
+MAINTENANCE_WINDOW_APPROVAL = NOT_REQUESTED
+PMOS_TASK_STATE = RUNNING
+PHR_TASK02_R_PUBLICATION = NOT_YET_PUBLISHED
+```
