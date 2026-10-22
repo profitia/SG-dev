@@ -555,3 +555,11 @@ rotation/downgrade, exact microsecond boundary, aged-out101st lifetime operation
 old reservation/new acceptance, unknown history, actual OUTCOME failure rollback
 and legacy FIXED. Full producer/lab regressions run without Neon or paid providers.
 Live consumer adoption, installation, user UAT and deployment are separate evidence.
+
+## Optional binding renewal source — accepted aggregate 1.25.0
+
+`identity-renewal`1.0.0 and additive profile SQL002 leave SQL001 and both accepted installation digests unchanged. The existing provisioner opts in only with an explicit `renewalSchemaDigest`; otherwise its original expired-binding denial remains. SQL002 installs no role, key, policy activation or identity. Its separate installation digest and three API grants require owner-controlled installation after verified recovery. All new policy columns default off.
+
+The proposed Development policy renews an ACTIVE binding on demand only within30 seconds of expiry. Separately enabled recovery admits an expired, still ACTIVE binding only within an owner-selected window of at most7 days. The new expiry never exceeds the currently verified provider proof or the existing1–300 second policy cap. Neither path restores revoked bindings or disabled accounts, matches email, creates profiles for an existing mapping, nor grants organisation/product access.
+
+Both paths reuse the official verifier, existing Access Store, real transaction, ordinary role and transaction-bound HMAC. The locked authority revision and binding/account versions fence changes; provider identity/session checks repeat before commit. Mutation and canonical audit commit together. Far-from-expiry reads make no change. Failure rolls back without account confirmation; there is no background refresh, permission cache or alternative session engine. Installation and policy activation remain owner gates, not consequences of source tests.

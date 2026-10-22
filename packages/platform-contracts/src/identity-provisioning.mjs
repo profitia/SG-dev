@@ -1,18 +1,20 @@
 import { createAccessStore } from './access-store.mjs'
 import { createClerkIdentityAuthenticator } from './identity-provider.mjs'
 import { createProfileSql, deny, unavailable } from './identity-profile-sql.mjs'
+import { createIdentityRenewalSql } from './identity-renewal.mjs'
 
 export const IDENTITY_PROVISIONING_CONTRACT = Object.freeze({ id: 'profitia.identity-provisioning', version: '1.0.0' })
 
 /** Uses the EXISTING authenticator. Its binding callback is reached only after
  * official SDK/session/user checks. A real transaction cannot commit before the
  * authenticator's final proof/binding/expiry checks have also succeeded. */
-export function createIdentityProvisioner({ client, identityApplication, binding, schemaDigest, proofKey, transact, now = Date.now }) {
+export function createIdentityProvisioner({ client, identityApplication, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, now = Date.now }) {
   if (typeof transact !== 'function' || identityApplication?.appId !== binding?.applicationId || identityApplication?.environment !== binding?.environment
     || identityApplication?.bearerPeerReads?.length) throw new TypeError('Explicit same-receiver identity application, existing store and real transaction required')
   const application = structuredClone(identityApplication)
   const store = createAccessStore({ binding, now })
   const sql = createProfileSql({ binding, issuer: application.issuer, schemaDigest, proofKey, now })
+  const renewal = renewalSchemaDigest === undefined ? null : createIdentityRenewalSql({ binding, issuer: application.issuer, schemaDigest, renewalSchemaDigest, proofKey, now })
   // Validate configuration now without running provider calls or provisioning.
   createClerkIdentityAuthenticator({ client, application, resolveBinding: async () => null, now })
   return Object.freeze({ contract: IDENTITY_PROVISIONING_CONTRACT,
@@ -47,13 +49,24 @@ export function createIdentityProvisioner({ client, identityApplication, binding
             resolveBinding: async identity => {
               const identityUntil = Math.min(tokenUntil, sessionUntil)
               if (!Number.isSafeInteger(identityUntil) || identityUntil <= now()) deny()
-              const proof = await sql.attest(query, { operation: 'identity.provision', principal: identity.subject, issuer: identity.issuer, identityUntil, expiresAt: identityUntil })
-              await sql.queryOne(query, 'SELECT profitia_profile.provision_account($1,$2,$3::bigint,$4::bigint,$5) AS user_id', [identity.issuer, identity.subject, identityUntil, proof.until, proof.signature])
+              const existing = renewal && await renewal.revalidate(query, identity, identityUntil)
+              if (!existing) {
+                const proof = await sql.attest(query, { operation: 'identity.provision', principal: identity.subject, issuer: identity.issuer, identityUntil, expiresAt: identityUntil })
+                await sql.queryOne(query, 'SELECT profitia_profile.provision_account($1,$2,$3::bigint,$4::bigint,$5) AS user_id', [identity.issuer, identity.subject, identityUntil, proof.until, proof.signature])
+              }
               return store.resolveBinding(query, identity)
             },
           })
           const actor = await authenticate(request)
           if (!actor || !(Date.parse(actor.expiresAt) > now())) deny()
+          if (renewal) {
+            // Reuse the verifier again before COMMIT. Revocation, disablement or
+            // account switching after the mutation rolls the entire write back.
+            const verifyCurrent = createClerkIdentityAuthenticator({ client: observedClient, application, now,
+              resolveBinding: identity => store.resolveBinding(query, identity) })
+            const current = await verifyCurrent(request)
+            if (!current || current.userId !== actor.userId || current.proofRef !== actor.proofRef || !(Date.parse(current.expiresAt) > now())) deny()
+          }
           finished = true
           ownedResult = Object.freeze({ userId: actor.userId })
           return ownedResult
