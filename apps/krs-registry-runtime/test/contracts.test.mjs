@@ -53,3 +53,16 @@ test('snapshot closed wire rejects private data and content tampering',async()=>
  const s=await snapshot();for(const field of ['organisationId','userId','supplierId','query'])await assert.rejects(validateCompanySnapshot({...s,[field]:'private'}))
  await assert.rejects(validateCompanySnapshot({...s,officialName:'tampered'}));const copy=structuredClone(s);copy.address.owner='private';await assert.rejects(validateCompanySnapshot(copy))
 })
+
+test('official padded REGON stays invalid evidence without blocking independent KRS/NIP verification',async()=>{
+ const s=await snapshot({regon:'61018820100000'}),c=memoryCatalog(s)
+ assert.equal(s.regon,null)
+ assert.ok(s.warnings.includes('UNVERIFIED_PADDED_REGON_WITHHELD'))
+ assert.ok(s.missingFields.includes('regon'))
+ assert.deepEqual({...s.identifiers.find(i=>i.kind==='REGON')},{kind:'REGON',value:'61018820100000',valid:false,introducedEntry:null,removedEntry:null})
+ const v=await resolveIdentity({selectedKrs:KRS},c,NOW)
+ assert.equal(v.status,'VERIFIED');assert.equal(v.identity.regon,null)
+ assert.equal(v.source.normalizerVersion,'krs-normalizer/1.0.1')
+ assert.equal((await resolveIdentity({selectedKrs:KRS,regon:'610188201'},c,NOW)).code,'IDENTIFIER_CONFLICT')
+ assert.equal((await resolveIdentity({selectedKrs:KRS},memoryCatalog(await snapshot({regon:'123456789'})),NOW)).code,'INVALID_REGON')
+})

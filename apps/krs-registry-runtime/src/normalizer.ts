@@ -53,7 +53,14 @@ export async function normalizeExtract(bytes:Uint8Array, options:{krs:string;reg
     }
   }
   const currentId=(kind:'NIP'|'REGON')=>{const values=[...new Set(identifiers.filter(i=>i.kind===kind&&i.removedEntry===null).map(i=>i.value))];if(values.length>1)warnings.push('CONFLICTING_'+kind);return values.length===1?values[0]!:null}
-  const currentNip=currentId('NIP'),currentRegon=currentId('REGON')
+  const currentNip=currentId('NIP'),observedRegon=currentId('REGON')
+  // Some official records contain REGON9 followed by five padding zeroes.
+  // Preserve that invalid observation; neither truncate it nor assert REGON equivalence.
+  const validObservedRegon=Boolean(regon(observedRegon))
+  const paddedRegon=observedRegon!==null&&/^\d{9}00000$/.test(observedRegon)
+    &&!validObservedRegon&&regon(observedRegon.slice(0,9))
+  const currentRegon=paddedRegon?null:observedRegon
+  if(paddedRegon)warnings.push('UNVERIFIED_PADDED_REGON_WITHHELD')
   let legalForm:string|null=null
   const forms=versions(entity.formaPrawna,'formaPrawna').filter(v=>v.removedEntry===null);if(forms.length===1)legalForm=str(forms[0]!.value)
   const known=/SPÓŁKA|FUNDACJA|STOWARZYSZENIE|SPÓŁDZIELNIA|PRZEDSIĘBIORSTWO|ZWIĄZEK|IZBA|KOŁO|TOWARZYSTWO|ORGANIZACJA|CECH|WSPÓLNOTA|INSTYTUT/iu

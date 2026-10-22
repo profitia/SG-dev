@@ -113,6 +113,9 @@ export function createNativeCatalogPublication(options:{host:Omit<Ingestion,'val
     if(!proof||proof.source.sourceId!==options.acceptedSourceId||proof.source.environment!==options.host.application.environment
       ||proof.rawDigest!==snapshot.source.rawDigest||proof.rawDigest!==await sha256(input.response.bytes)
       ||proof.retrievedAt!==snapshot.source.retrievedAt||proof.url!==buildRequest({operation:snapshot.source.extract==='CURRENT'?'CURRENT':'FULL',krs:snapshot.canonicalKrs,register:snapshot.source.register}).url)return deny()
+    const rebuilt=await normalizeExtract(input.response.bytes,{krs:snapshot.canonicalKrs,register:snapshot.source.register,
+      extract:snapshot.source.extract,retrievedAt:proof.retrievedAt})
+    if(canonical(rebuilt)!==canonical(snapshot))return deny()
     const digest=operationPayloadDigest(snapshot as unknown as Json)
     const manifest={version:REGISTRY_REPORT_PROJECTION,krs:snapshot.canonicalKrs,evidenceRef:snapshot.evidenceRef,digest}
     if(pending.has(digest))throw new OperationDenied('POLICY_UNAVAILABLE')
