@@ -1,11 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import vm from 'node:vm'
+import { request as httpRequest } from 'node:http'
 import { randomBytes } from 'node:crypto'
 import { fixture, ids, issuer, origin } from './fixtures.mjs'
 import { createAccountSurface, accountTransactions } from '../dist/src/account-provisioning.js'
 import { accountPage, accountBrowserScript } from '../dist/src/account-page.js'
 import { createHttpHandler } from '../dist/src/http-handler.js'
+import { createNodeServer } from '../dist/src/node-server.js'
 
 function accountFixture(patch = {}) {
   const f = fixture(patch), baseGetUser = f.client.users.getUser
@@ -102,11 +104,12 @@ test('account page uses official pinned SDK, closed destination and a parseable 
 const browserAccount = (userId = ids.a) => ({ authenticated: true, userId, expiresAt: new Date(Date.now() + 60000).toISOString() })
 function browserFixture({ signedIn = true, response = () => new Response(JSON.stringify(browserAccount())), loadFailure = false, logoutFailure = false } = {}) {
   const elements = Object.fromEntries(['account-config', 'status', 'retry', 'logout', 'sign-in'].map(id => [id, { textContent: '', hidden: true, replaceChildren() {} }]))
-  elements['account-config'].textContent = JSON.stringify({ en: false, returnTo: 'https://sg2.example.test/account' })
+  elements['account-config'].textContent = JSON.stringify({ en: false, flow: 'registration', returnTo: 'https://sg2.example.test/account',
+    signInUrl: origin + '/account/sg2/account/login', signUpUrl: origin + '/account/sg2/account/registration', allowedRedirectOrigins: [origin, 'https://sg2.example.test'], localization: {} })
   const f = { elements, calls: [], redirects: [], mounted: 0, reloaded: 0 }
   f.clerk = { session: signedIn ? { id: 'sess_a', getToken: async () => 'synthetic_fixture_only' } : null,
     load: async () => { if (loadFailure) throw Error('synthetic SDK unavailable') }, addListener: fn => { f.listener = fn },
-    mountSignIn: () => { f.mounted++ }, unmountSignIn() {}, signOut: async () => { if (logoutFailure) throw Error('synthetic outage'); f.clerk.session = null } }
+    mountSignIn: () => { f.mounted++ }, mountSignUp: () => { f.mounted++ }, unmountSignUp() {}, unmountSignIn() {}, signOut: async () => { if (logoutFailure) throw Error('synthetic outage'); f.clerk.session = null } }
   const window = { Clerk: f.clerk, __internal_ClerkUICtor: {}, addEventListener: (_name, fn) => { f.start = fn },
     location: { origin, pathname: '/account/sg2/account/registration', replace: url => f.redirects.push(url), reload: () => { f.reloaded++ } } }
   vm.runInNewContext(accountBrowserScript, { window, document: { getElementById: id => elements[id] }, AbortController,
@@ -141,4 +144,17 @@ test('synthetic SDK failure retries a clean page; provider logout failure is not
   const failed = browserFixture({ loadFailure: true }); await failed.start(); failed.elements.retry.onclick(); assert.equal(failed.reloaded, 1); assert.equal(failed.calls.length, 0)
   const f = browserFixture({ logoutFailure: true, response: () => new Response('{}', { status: 503 }) }); await f.start(); await f.elements.logout.onclick()
   assert(f.elements.status.textContent.includes('Wylogowanie nie zostało potwierdzone')); assert.deepEqual(f.redirects, [])
+})
+test('real HTTP primary entry permits opaque SDK navigation only on bounded public GET, without projecting it or changing protected API policy', async t => {
+  const f = accountFixture(), server = createNodeServer(origin, f.handler)
+  await new Promise(r => server.listen(0, '127.0.0.1', r)); t.after(() => { server.closeAllConnections(); server.close() })
+  const send = path => new Promise((resolve, reject) => {
+    const req = httpRequest({ host: '127.0.0.1', port: server.address().port, path, headers: { host: 'localhost:3600', 'sec-fetch-site': 'cross-site' } }, r => {
+      let body = ''; r.setEncoding('utf8'); r.on('data', chunk => { body += chunk }); r.once('end', () => resolve({ status: r.statusCode, body }))
+    }); req.on('error', reject); req.end()
+  })
+  const page = await send('/account/sg2/account/registration?__clerk_synced=true&redirect_url=https%3A%2F%2Fforeign.invalid')
+  assert.equal(page.status, 200); assert(!page.body.includes('foreign.invalid')); assert(page.body.includes('allowedRedirectOrigins'))
+  assert.equal(f.sql.length, 0); assert.equal(f.calls.length, 0)
+  for (const path of ['/healthz?x=1', '/v1/account?__clerk_synced=true', '/account/sg2/account/registration?x=' + 'a'.repeat(8200)]) assert.equal((await send(path)).status, 400)
 })

@@ -18,11 +18,13 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
     try {
       const url = new URL(request.url)
       if (url.pathname === '/v1/account' || url.pathname === '/account-client' || url.pathname.startsWith('/account/')) {
-        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        if (url.hash || url.pathname === '/v1/account' && url.search) return json(404, { error: 'NOT_FOUND' })
         if (!boundary || !account) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
         if (url.pathname !== '/v1/account') {
           if (request.method !== 'GET') return json(405, { error: 'METHOD_NOT_ALLOWED' })
-          checkRequest(request, boundary.configuration)
+          // Public navigation can come from the satellite. Opaque bounded SDK
+          // handshake query stays in the browser, never an identity/return input.
+          if (url.origin !== boundary.configuration.origin || url.username || url.password || url.search.length > 8192) return json(403, { error: 'REQUEST_ORIGIN_REJECTED' })
           const page = /^\/account\/([a-z0-9-]+)\/([a-z0-9-]+)\/(registration|login|recovery)$/.exec(url.pathname)
           if (url.pathname !== '/account-client' && !page) return json(404, { error: 'NOT_FOUND' })
           return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!) : accountBrowserScript,
