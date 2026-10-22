@@ -4,7 +4,8 @@ import {OPERATION_CONTRACT,OperationDenied,isOperationDenied,type Json,type Oper
 import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-ledger'
 import {readPresentationJson} from '@profitia/platform-contracts/embedded-read-channel'
 import {parseManualLocation,type LocationSource,type SupplierLocationGroup} from '@profitia/srm-xray'
-import {createSrmPrivateOperationHost} from './private-operation-host'
+import {createSrmPrivateOperationHost,resolveSrmPrivateIdentity} from './private-operation-host'
+import {createSupplierLocationAdmission} from '@profitia/platform-contracts/supplier-location'
 import {isSameOriginRequest} from './request-origin'
 import {locationCollectionId,locationCommandDigest,assignedLocationId,manualAddressVersion,readLocationPage,writeManualLocation,reconcileLocations,locationSourceEvidence,type LocationPayload} from './supplier-location-store'
 import {projectSupplierHeadquarters,projectRelatedCompanyLocations,sourceAddressVersion,sourceSyncIdentity,type LocationProjection} from './supplier-location-sync'
@@ -12,7 +13,7 @@ import {readLocationCompany,acceptedKysLocations,type AcceptedKysLocations} from
 
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
 export type SupplierLocationRuntimeOptions=Omit<DriverOptions,'readResources'|'projectOutput'|'prepareInputs'|'describeOutcome'|'requestLedger'>&{
- businessDigest:string;ledger:NonNullable<DriverOptions['requestLedger']>;
+ businessDigest:string;parentSchemaDigest?:string;ledger:NonNullable<DriverOptions['requestLedger']>;
  readAcceptedKys?:(request:Request,org:string,nip:string)=>Promise<Response>
 }
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
@@ -21,11 +22,12 @@ const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
 const closed=(v:unknown,keys:string[]):v is Record<string,unknown>=>!!v&&Object.getPrototypeOf(v)===Object.prototype&&Object.keys(v).sort().join(',')===[...keys].sort().join(',')
 const payload=(supplierId:string):LocationPayload=>({action:'READ',supplierId,locationId:null,addressVersion:null,expectedVersion:null,command:null})
 export function createSupplierLocationHost(options:SupplierLocationRuntimeOptions,operation:'supplier.location.read'|'supplier.location.write'|'supplier.location.sync',sources:readonly ReturnType<typeof locationSourceEvidence>[]=[]){
- const {businessDigest,ledger,readAcceptedKys:__,...driver}=options
+ const {businessDigest,parentSchemaDigest,locationAdmission,ledger,readAcceptedKys:__,...driver}=options
  if(!/^[a-f0-9]{64}$/.test(businessDigest)||sources.length>64)throw TypeError('Exact SRM location boundary required')
+ if(locationAdmission&&!/^[a-f0-9]{64}$/.test(parentSchemaDigest??''))throw TypeError('Exact P1 receiver digest required')
  return createSrmPrivateOperationHost({...driver,
   application:{...driver.application,operations:[operation,'supplier.report.read','supplier.private.read'] as OperationId[]},
-  ...(operation==='supplier.location.read'?{}:{requestLedger:ledger}),
+  ...(operation==='supplier.location.read'?{}:{requestLedger:ledger,...(locationAdmission?{locationAdmission}:{})}),
   readResources:async({actor,scope,request,query})=>{
    const p=request.payload as unknown as LocationPayload
    if(actor.kind!=='HUMAN'||scope.userId!==actor.actorId||!scope.organisationId||!p||!uuid.test(p.supplierId)
@@ -33,7 +35,14 @@ export function createSupplierLocationHost(options:SupplierLocationRuntimeOption
    const descriptor=(await query('SELECT srm.location_installation_descriptor() AS value')).rows[0]?.value
    if(!descriptor||typeof descriptor!=='object'||(descriptor as Record<string,unknown>).locationBusinessSchemaDigest!==businessDigest)throw new OperationDenied('POLICY_UNAVAILABLE')
    await query("SELECT set_config('srm.organization_id',$1,true)",[scope.organisationId])
-   const row=(await query('SELECT srm.location_metadata($1::uuid,$2::uuid,$3,$4::uuid) AS value',[scope.organisationId,p.supplierId,operation,p.locationId])).rows[0]?.value as {collectionVersion:string;exists:boolean;origin:string|null;version:string|null;addressVersion:string|null}|undefined
+   if(locationAdmission&&operation!=='supplier.location.read'){
+    const parentDescriptor=(await query('SELECT srm.location_admission_installation_descriptor() AS value')).rows[0]?.value as {parentSchemaDigest?:string}|undefined
+    if(parentDescriptor?.parentSchemaDigest!==parentSchemaDigest)throw new OperationDenied('POLICY_UNAVAILABLE')
+   }
+   const row=(await query(locationAdmission&&operation!=='supplier.location.read'
+    ?'SELECT srm.location_admission_metadata($1::uuid,$2::uuid,$3,$5,$4::uuid) AS value'
+    :'SELECT srm.location_metadata($1::uuid,$2::uuid,$3,$4::uuid) AS value',
+    [scope.organisationId,p.supplierId,operation,p.locationId,...(locationAdmission&&operation!=='supplier.location.read'?[p.action]:[])])).rows[0]?.value as {collectionVersion:string;exists:boolean;origin:string|null;version:string|null;addressVersion:string|null}|undefined
    if(!row)throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
    const write=operation==='supplier.location.write',sync=operation==='supplier.location.sync'
    if(sync){
@@ -52,6 +61,7 @@ export function createSupplierLocationHost(options:SupplierLocationRuntimeOption
 }
 type Input={request:Request;organisationId:string;supplierId:string}
 export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOptions){
+ const admission=options.locationAdmission?createSupplierLocationAdmission({...options.locationAdmission,binding:options.binding}):null
  const reader=createSupplierLocationHost(options,'supplier.location.read'),writer=createSupplierLocationHost(options,'supplier.location.write')
  const execute=<T>(host:typeof reader,input:Input,p:LocationPayload,run:Parameters<typeof reader.execute<T>>[1],key?:string)=>
   host.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:p.action==='READ'?'supplier.location.read':p.action==='SYNC'?'supplier.location.sync':'supplier.location.write',
@@ -62,7 +72,9 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
   async write(input:Input,action:'CREATE'|'UPDATE'|'DEACTIVATE',locationId:string|null,expectedVersion:string|null,command:unknown,key:string){
    if(!validRequestIdempotencyKey(key))return refuse()
    const selected=action==='DEACTIVATE'?null:parseManualLocation(command)
-   const id=action==='CREATE'?assignedLocationId(input.organisationId,input.supplierId,'MANUAL:'+key):locationId
+   const identity=action==='CREATE'&&admission?await resolveSrmPrivateIdentity({...options,readResources:async()=>refuse(),projectOutput:v=>v},input.request,input.organisationId):null
+   const id=action==='CREATE'?(admission&&identity&&identity.organisationId?admission.locationId({organisationId:identity.organisationId,userId:identity.actor.actorId,supplierId:input.supplierId,idempotencyKey:key})
+    :assignedLocationId(input.organisationId,input.supplierId,'MANUAL:'+key)):locationId
    if(!id||!uuid.test(id)||action!=='CREATE'&&(!expectedVersion||!/^\d{1,18}$/.test(expectedVersion)))return refuse()
    const p:LocationPayload={action,supplierId:input.supplierId,locationId:id,expectedVersion:action==='CREATE'?null:expectedVersion,
     addressVersion:selected?manualAddressVersion(selected):locationCommandDigest(['deactivated',id,expectedVersion]),command:selected as unknown as Json}

@@ -13,6 +13,8 @@ import {createDelegatedNativeWorkHost} from '@profitia/platform-contracts/privat
 import {createClerkAccountStatusReader} from '@profitia/platform-contracts/identity-provider'
 import {OPERATION_CONTRACT,operationPayloadDigest,isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {mapMgbiGeneralRecord} from '../src/server/mgbi-general.ts'
+import {createSrmLocationAdmission} from '../src/server/supplier-location-admission.ts'
+import './supplier-location-admission.integration.test.mjs'
 const hash=v=>createHash('sha256').update(v).digest('hex'),future=()=>new Date(Date.now()+3600000).toISOString()
 const core=n=>fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/'+n,import.meta.url),'utf8')
 const own=n=>fs.readFileSync(new URL('../db/private-store/'+n,import.meta.url),'utf8')
@@ -22,7 +24,7 @@ const NIP='8650004194',ISSUER='https://identity.fixture.test',ORIGIN='https://sr
 const pairs=[['001-internal-access.sql','profitia_access.installation'],['002-module-scope.sql','profitia_modules.installation'],['003-module-audit.sql','profitia_modules.audit_installation'],['005-service-read.sql','profitia_services.installation'],['006-request-reservation.sql','profitia_requests.installation'],['007-delegated-jobs.sql','profitia_jobs.installation'],['010-external-request-admission.sql','profitia_requests.external_installation'],['011-request-continuation.sql','profitia_request_phases.installation'],['013-supplier-delegation.sql','profitia_supplier_jobs.installation'],['014-delegated-private-phases.sql','profitia_delegated_phases.installation'],['015-delegated-private-inspection.sql','profitia_request_inspection.installation'],['016-delegated-native-work.sql','profitia_request_work.installation'],['017-additional-request-operations.sql','profitia_requests.operation_installation'],['019-supplier-location-operations.sql','profitia_requests.location_installation']]
 const manual={label:'Budowa',description:'Shared with organisation',address:{line1:'Prosta 1',postalCode:'00-001',locality:'Warszawa',country:'Polska'},position:{lat:52,lng:21}}
 
-test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role and HTTP',async t=>{
+for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual SRM persistence through native E1, ordinary role and HTTP',async t=>{
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();const url=new URL(rootUrl);url.pathname='/'+DATABASE
  let owner,pool,auditPool,workPool,workAudit
@@ -35,6 +37,7 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
   }
   await root.query(`ALTER ROLE ${ROLE} CONNECTION LIMIT 4;ALTER ROLE ${WORKER} CONNECTION LIMIT 4;COMMIT`)
   owner=new pg.Client({connectionString:url.toString()});await owner.connect()
+  if(p1)await owner.query('CREATE EXTENSION pgcrypto')
   await owner.query(`REVOKE ALL ON DATABASE ${DATABASE} FROM PUBLIC;GRANT CONNECT ON DATABASE ${DATABASE} TO ${ROLE},${WORKER};GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
   const controlled=async action=>{await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner');try{const result=await action();await owner.query('COMMIT');return result}catch(e){await owner.query('ROLLBACK');throw e}}
   await controlled(async()=>{
@@ -63,6 +66,7 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
    }
   })
   const extension=own('013-supplier-locations.sql')
+  const parentExtension=own('014-supplier-location-admission-parent.sql'),proofKey=Buffer.alloc(32,37)
   await t.test('installer must be controlled, exact and disabled; interrupted SQL leaves no receipt',async()=>{
    await assert.rejects(owner.query(extension),e=>e.code==='42501')
    await assert.rejects(controlled(async()=>{await owner.query(extension);throw Error('synthetic interruption')}))
@@ -72,13 +76,31 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
    await controlled(()=>owner.query("UPDATE profitia_access.applications SET status='DISABLED'"))
    await controlled(async()=>{await owner.query(extension);await owner.query("INSERT INTO srm.supplier_location_installation VALUES(true,'1.0.0',$1,$2)",[hash(extension),'b'.repeat(40)])})
   })
+  if(p1)await t.test('SQL020/014 controlled installation is additive, transactional and requires disabled apps',async()=>{
+   const fences=(await owner.query("SELECT policyname,with_check FROM pg_policies WHERE schemaname='srm' AND tablename='suppliers' AND policyname IN('private_operation_fence','inspected_update_fence') ORDER BY policyname")).rows
+   await assert.rejects(owner.query(parentExtension),e=>e.code==='42501')
+   await controlled(async()=>{
+    await owner.query(core('020-supplier-location-admission.sql'))
+    await owner.query("INSERT INTO profitia_requests.location_admission_installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(core('020-supplier-location-admission.sql'))])
+   })
+   await assert.rejects(controlled(async()=>{await owner.query(parentExtension);throw Error('interrupted014')}))
+   assert.equal((await owner.query("SELECT to_regclass('srm.supplier_location_admission_installation') AS value")).rows[0].value,null)
+   await controlled(async()=>{
+    await owner.query(parentExtension)
+    await owner.query("INSERT INTO srm.supplier_location_admission_installation(singleton,schema_version,schema_digest,source_ref)VALUES(true,'1.0.0',$1,$2)",[hash(parentExtension),'e'.repeat(40)])
+    await owner.query('INSERT INTO profitia_requests.location_admission_receivers VALUES($1,true,$2)',[ROLE,proofKey])
+   })
+   assert.deepEqual((await owner.query("SELECT policyname,with_check FROM pg_policies WHERE schemaname='srm' AND tablename='suppliers' AND policyname IN('private_operation_fence','inspected_update_fence') ORDER BY policyname")).rows,fences,'both original restrictive DML checks remain byte-identical')
+   await assert.rejects(controlled(()=>owner.query("UPDATE srm.supplier_location_admission_installation SET source_ref=$1",['f'.repeat(40)])),e=>e.code==='42501')
+  })
   await controlled(async()=>{
    // Function ACLs only: no direct read/write ACL for a business location table.
    await owner.query(`GRANT USAGE ON SCHEMA profitia_access,profitia_modules,profitia_requests,srm TO ${ROLE};GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_access,profitia_modules,profitia_requests TO ${ROLE}`)
    await owner.query(`GRANT EXECUTE ON FUNCTION srm.delegated_supplier_row(text,uuid,uuid,uuid,uuid,text,text),srm.inspected_supplier_row(text,uuid,uuid,uuid,uuid,text,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text),srm.current_supplier_work(uuid,uuid,text),srm.current_supplier_inspection(uuid,uuid,text) TO ${ROLE}`)
    await owner.query(`GRANT EXECUTE ON FUNCTION srm.sensitive_installation_descriptor(),srm.private_supplier_metadata(uuid,text,text,text,uuid),srm.sensitive_human_snapshot(uuid,uuid),srm.sensitive_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text),srm.sensitive_cache_scope(uuid,text,text,timestamptz,timestamptz,text) TO ${ROLE}`)
    await owner.query(`GRANT EXECUTE ON FUNCTION srm.location_geocode_metadata(uuid,uuid,uuid,text),srm.location_work_catalog_row(text,text),srm.location_sources_admitted(uuid,uuid,jsonb),srm.location_installation_descriptor(),srm.location_metadata(uuid,uuid,text,uuid),srm.location_page(uuid,uuid,text,integer,integer),srm.location_manual_write(uuid,uuid,uuid,text,bigint,uuid,text,text,text),srm.location_sync_target(uuid,uuid,text),srm.location_sync_write(uuid,uuid,bigint,uuid,text,text,jsonb),srm.location_expire(uuid,uuid) TO ${ROLE}`)
-   for(const user of[U,V])for(const operation of['supplier.location.read','supplier.location.write','supplier.location.sync','supplier.report.read','supplier.private.read'])await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature)VALUES($1,'srm',$2,$3,'ALLOW',$4,'supplier_report')",[randomUUID(),A,user,operation])
+   if(p1)await owner.query(`GRANT EXECUTE ON FUNCTION srm.location_admission_installation_descriptor(),srm.location_admission_parent(uuid,uuid,text,text,uuid),srm.location_admission_metadata(uuid,uuid,text,text,uuid) TO ${ROLE}`)
+   for(const user of[U,V])for(const operation of['supplier.location.read','supplier.location.write','supplier.location.sync','supplier.report.read','supplier.private.read'])await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id)VALUES($1,'srm',$2,$3,'ALLOW',$4,'supplier_report',$5)",[randomUUID(),A,user,operation,p1&&operation.startsWith('supplier.location.')?'supplier-locations:'+S:null])
    await owner.query(`GRANT USAGE ON SCHEMA profitia_jobs TO ${ROLE};GRANT EXECUTE ON FUNCTION profitia_jobs.runtime_descriptor(),profitia_jobs.supplier_runtime_descriptor(),profitia_jobs.create_dispatch(uuid,uuid,text) TO ${ROLE}`)
    await owner.query(`GRANT USAGE ON SCHEMA profitia_access,profitia_services,profitia_requests,profitia_jobs,profitia_request_work,srm TO ${WORKER};GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_services.runtime_descriptor(),profitia_requests.operation_runtime_descriptor(),profitia_requests.location_runtime_descriptor(),profitia_requests.location_evidence_current(jsonb,text,uuid,uuid),profitia_requests.location_permission(text,uuid,uuid,text,text),profitia_jobs.runtime_descriptor(),profitia_jobs.supplier_runtime_descriptor(),profitia_jobs.current_job(uuid),profitia_jobs.lock_job(uuid,text),profitia_jobs.scope_allows(uuid),profitia_jobs.append_audit(jsonb),profitia_request_work.descriptor(uuid,text),profitia_request_work.bind_scope(uuid,text,text,uuid,uuid),profitia_request_work.scope_allows(uuid,text,uuid,uuid,text),srm.location_geocode_target(uuid),srm.location_geocode_store(uuid,uuid,text,bigint,jsonb) TO ${WORKER}`)
    await owner.query("UPDATE profitia_access.applications SET status='ACTIVE'")
@@ -92,7 +114,21 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
 
   const clerk={async authenticateRequest(request){const user=request.headers.get('authorization')?.replace(/^Bearer external-/,'');const auth={isAuthenticated:true,tokenType:'session_token',userId:'external-'+user,sessionId:'session-'+user,actor:null,sessionClaims:{iss:ISSUER,sub:'external-'+user,sid:'session-'+user,azp:ORIGIN,exp:Math.floor(Date.now()/1000)+3600}};return{status:[U,V].includes(user)?'signed-in':'signed-out',isAuthenticated:[U,V].includes(user),toAuth:()=>auth}},sessions:{async getSession(id){return{id,userId:id.replace('session-','external-'),status:'active',expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000,actor:null}}},users:{async getUser(id){return{id,banned:false,locked:false,deprovisioned:false}}}}
   const options={pool,auditPool,clerk,application:{appId:'srm',profileId:'SUPPLIER_INTELLIGENCE_STANDALONE',environment:'development',deploymentId:'isolated-locations',configurationVersion:'locations-test-v1',identityIssuer:ISSUER,organisationId:null,features:['supplier_report'],operations:['supplier.location.read']},identity:{appId:'srm',environment:'development',issuer:ISSUER,authorizedParties:[ORIGIN]},binding:{applicationId:'srm',environment:'development',projectId:'locations-project',branchId:'locations-branch',databaseName:DATABASE,role:ROLE,schemaDigest:hash(core('001-internal-access.sql'))},module:{id:'supplier_report',schemaDigest:hash(core('002-module-scope.sql')),auditSchemaDigest:hash(core('003-module-audit.sql'))},businessDigest:hash(extension),secret:'synthetic-local-secret-'.repeat(3),ledger:{schemaDigest:hash(core('006-request-reservation.sql')),externalSchemaDigest:hash(core('010-external-request-admission.sql')),operationSchemaDigest:hash(core('017-additional-request-operations.sql')),locationSchemaDigest:hash(core('019-supplier-location-operations.sql'))}}
-  const privateHost=createSrmSensitiveOperationHost({...options,application:{...options.application,operations:['supplier.private.read','supplier.private.reveal','supplier.private.export']},sensitiveBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))})
+  let parentLockProbed=false,laterParentLockProbed=false
+  if(p1){
+   options.parentSchemaDigest=hash(parentExtension)
+   const port=createSrmLocationAdmission({schemaDigest:hash(core('020-supplier-location-admission.sql')),parentSchemaDigest:hash(parentExtension),proofKey})
+   options.locationAdmission={...port,async readParent(input){
+    const parent=await port.readParent(input)
+    if(!parentLockProbed||parent.version!=='0'&&!laterParentLockProbed){
+     const probe=new pg.Client({connectionString:url.toString()});await probe.connect()
+     try{await probe.query('BEGIN');await assert.rejects(probe.query('SELECT 1 FROM srm.suppliers WHERE organization_id=$1 AND id=$2 FOR UPDATE NOWAIT',[A,S]),e=>e.code==='55P03');await probe.query('ROLLBACK');parentLockProbed=true;if(parent.version!=='0')laterParentLockProbed=true}finally{await probe.end()}
+    }
+    return parent
+   }}
+  }
+  const {locationAdmission:_,parentSchemaDigest:__,...sensitiveOptions}=options
+  const privateHost=createSrmSensitiveOperationHost({...sensitiveOptions,application:{...options.application,operations:['supplier.private.read','supplier.private.reveal','supplier.private.export']},sensitiveBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))})
   options.readAcceptedKys=async(request,organisationId,nip)=>{
    const selection={nip,entityType:'COMPANY',section:'kys'}
    return (await privateHost.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.private.read',organisationId,resourceId:privateSupplierReportId(selection),payload:selection,request},(context,client)=>readPrivateSupplier(context,client,options.secret))).value
@@ -103,12 +139,23 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
   const command={action:'CREATE',supplierId:S,locationId:null,expectedVersion:null,command:manual},key='manual_create_'+randomUUID()
   await t.test('ordinary login is non-owner/no-bypass; missing count policy prevents all business effects',async()=>{
    assert.deepEqual((await pool.query('SELECT rolsuper,rolbypassrls,rolcanlogin FROM pg_roles WHERE rolname=current_user')).rows[0],{rolsuper:false,rolbypassrls:false,rolcanlogin:true})
+   if(p1)await assert.rejects(runtime.write({request:new Request(ORIGIN+'/api/supplier-locations',{method:'POST',headers:{Origin:ORIGIN,Authorization:'Bearer external-'+U}}),organisationId:A,supplierId:S},'CREATE',null,null,manual,key),error=>{
+    assert.equal(error.reasonCode,'LIMIT_POLICY_UNAVAILABLE',error.stack);return true
+   })
    assert.equal((await call(command,U,key)).status,503);assert.equal((await owner.query('SELECT count(*)::int n FROM srm.supplier_locations')).rows[0].n,0)
-   for(const operation of['supplier.location.write','supplier.location.sync'])await controlled(()=>owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity)VALUES($1,'srm',$2,$3,'ACTIVE','SYNTHETIC_REQUEST_COUNT',now()-interval '1 hour',now()+interval '2 hours',$4,100)",[randomUUID(),A,operation,future()]))
+   for(const operation of['supplier.location.write','supplier.location.sync'])await controlled(()=>owner.query(`INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity${p1?',quota_mode':''})VALUES($1,'srm',$2,$3,'ACTIVE','SYNTHETIC_REQUEST_COUNT',now()-interval '1 hour',now()+interval '2 hours',$4,100${p1?",'ROLLING_24H'":''})`,[randomUUID(),A,operation,future()]))
   })
   await t.test('manual create/retry/reload commits once, shares across users and preserves attribution',async()=>{
    const created=await call(command,U,key);assert.equal(created.status,202,await created.clone().text());const receipt=await created.json()
+   if(p1){
+    assert.equal(parentLockProbed,true,'real supplier lock held before first collection exists')
+    const location=(await owner.query('SELECT location_id FROM srm.supplier_locations WHERE organization_id=$1 AND supplier_id=$2 AND origin=\'MANUAL\'',[A,S])).rows[0].location_id
+    assert.equal((await call({action:'UPDATE',supplierId:S,locationId:location,expectedVersion:'1',command:manual},V,'parent_not_child_'+randomUUID())).status,403,'parent grant does not edit a child')
+    // Explicit controlled test operator grants. Creation itself grants nothing.
+    for(const user of[U,V])await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id)VALUES($1,'srm',$2,$3,'ALLOW','supplier.location.write','supplier_report',$4)",[randomUUID(),A,user,location]))
+   }
    assert.deepEqual(await(await call(command,U,key)).json(),receipt)
+   if(p1)assert.equal(laterParentLockProbed,true,'same actual parent lock also held after collection creation')
    const r=await page(V);assert.equal(r.status,200,await r.clone().text());const result=await r.json();assert.equal(result.total,1);assert.equal(result.items[0].createdByUserId,U);assert.equal(result.items[0].updatedByUserId,U);assert.equal(result.items[0].origin,'MANUAL')
    assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_requests.intents WHERE status=\'ACCEPTED\'')).rows[0].n,1)
   })
@@ -178,7 +225,7 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
    assert.equal((await owner.query("SELECT count(*)::int n FROM srm.supplier_locations WHERE location_group='RELATED_ENTITIES'")).rows[0].n,0)
   })
   await t.test('expired Google cache is physically cleared while source address survives',async()=>{
-   const coords={position:{lat:52,lng:21},origin:'GOOGLE_GEOCODING',fetchedAt:new Date(Date.now()-31*86400000).toISOString(),expiresAt:new Date(Date.now()-86400000).toISOString()}
+   const clock=Date.now(),coords={position:{lat:52,lng:21},origin:'GOOGLE_GEOCODING',fetchedAt:new Date(clock-31*86400000).toISOString(),expiresAt:new Date(clock-86400000).toISOString()}
    await owner.query("UPDATE srm.supplier_locations SET body=jsonb_set(body,'{coordinates}',$1::jsonb) WHERE kind='HEADQUARTERS'",[JSON.stringify(coords)])
    const current=(await(await page()).json()).items.find(v=>v.kind==='HEADQUARTERS');assert.equal(current.coordinates,null);assert(current.address.line1)
    assert.equal((await owner.query("SELECT body->'coordinates' AS c FROM srm.supplier_locations WHERE kind='HEADQUARTERS'")).rows[0].c,null)
@@ -191,9 +238,9 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
   })
   await t.test('actual geocode SERVICE preserves the initiating user, zero allowance, address CAS, cache reuse and revocation',async st=>{
    const request=new Request(ORIGIN,{headers:{Authorization:'Bearer external-'+U,Origin:ORIGIN}})
-   assert.deepEqual(await createSrmLocationGeocodingRequest(options).request(),{status:'WAITING_OWNER',paidCalls:0})
+   assert.deepEqual(await createSrmLocationGeocodingRequest(sensitiveOptions).request(),{status:'WAITING_OWNER',paidCalls:0})
    const job={schemaDigest:hash(core('007-delegated-jobs.sql')),targetOperation:'supplier.location.geocode',supplierSchemaDigest:hash(core('013-supplier-delegation.sql')),operationSchemaDigest:hash(core('017-additional-request-operations.sql')),locationSchemaDigest:hash(core('019-supplier-location-operations.sql'))}
-   const geo=createSrmLocationGeocodingRequest(options,{executorApplicationId:WORKER_APP,job})
+   const geo=createSrmLocationGeocodingRequest(sensitiveOptions,{executorApplicationId:WORKER_APP,job})
    const grant=randomUUID(),binding=randomUUID(),execution=randomUUID()
    await controlled(async()=>{
     await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature)VALUES($1,'srm',$2,$3,'ALLOW','supplier.location.geocode','supplier_report')",[grant,A,U])
@@ -203,10 +250,11 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
    })
    const row=await call({...command,command:{...manual,label:'Geo target',position:null}},U,'geo_manual_'+randomUUID());assert.equal(row.status,202)
    const location=(await(await page()).json()).items.find(v=>v.label==='Geo target'),input={request,organisationId:A,supplierId:S,locationId:location.id}
+   if(p1)await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id)VALUES($1,'srm',$2,$3,'ALLOW','supplier.location.write','supplier_report',$4)",[randomUUID(),A,U,location.id]))
    await assert.rejects(geo.request(input),e=>isOperationDenied(e)&&e.reasonCode==='LIMIT_POLICY_UNAVAILABLE')
    assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_requests.intents WHERE operation='supplier.location.geocode'")).rows[0].n,0)
    await controlled(()=>owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity)VALUES($1,'srm',$2,'supplier.location.geocode','ACTIVE','SYNTHETIC_FINITE_REQUESTS_NOT_GOOGLE_BUDGET',now()-interval '1 hour',now()+interval '2 hours',$3,10)",[randomUUID(),A,future()]))
-   const wrong=createSrmLocationGeocodingRequest(options,{executorApplicationId:'incorrect-executor',job});await assert.rejects(wrong.request(input),isOperationDenied)
+   const wrong=createSrmLocationGeocodingRequest(sensitiveOptions,{executorApplicationId:'incorrect-executor',job});await assert.rejects(wrong.request(input),isOperationDenied)
    const admitted=await geo.request(input);assert.equal(admitted.status,'ACCEPTED');assert.deepEqual((await geo.request(input)).receipt,admitted.receipt)
    const workerUrl=new URL(url);workerUrl.username=WORKER;workerUrl.password='isolated_ci_only';workPool=new pg.Pool({connectionString:workerUrl.toString(),max:3});workAudit=new pg.Pool({connectionString:workerUrl.toString(),max:1})
    const worker=createDelegatedNativeWorkHost({application:{appId:WORKER_APP,profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId:'geo-fixture',configurationVersion:'geo-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['job_execution'],operations:['job.execute']},
@@ -234,7 +282,7 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
    try{await assert.rejects(worker.runSqlWork(sourceInput,{unitId:'MAPS_GEOCODE_SAVE',accessMode:'WRITE',inputDigest:operationPayloadDigest({requestId:sourceInput.resourceId,result})},async(context,client)=>domain.storeCurrent(context,client,sourceSelection,result)),isOperationDenied)}
    finally{await owner.query('UPDATE srm.catalog_companies SET general_sha256=$2 WHERE nip=$1',[NIP,original])}
    assert.equal((await owner.query("SELECT body->'coordinates' AS c FROM srm.supplier_locations WHERE location_id=$1",[hq.id])).rows[0].c,null)
-   const oldSelection=selection;await call({action:'UPDATE',supplierId:S,locationId:location.id,expectedVersion:cached.version,command:{...manual,label:'Geo target changed',address:{...manual.address,line1:'Different 20'},position:null}},U,'geo_changed_'+randomUUID())
+   const oldSelection=selection,currentEditVersion=(await(await page()).json()).items.find(v=>v.id===location.id).version,editKey='geo_changed_'+randomUUID(),editCommand={...manual,label:'Geo target changed',address:{...manual.address,line1:'Different 20'},position:null};await runtime.write({request:new Request(ORIGIN+'/api/supplier-locations',{method:'POST',headers:{Origin:ORIGIN,Authorization:'Bearer external-'+U}}),organisationId:A,supplierId:S},'UPDATE',location.id,currentEditVersion,editCommand,editKey)
    selection=oldSelection;await assert.rejects(save(),isOperationDenied)
    const current=(await(await page()).json()).items.find(v=>v.id===location.id);assert.equal(current.coordinates,null);assert.equal(current.address.line1,'Different 20')
   })
@@ -269,6 +317,51 @@ test('TASK02 actual SQL019 + SRM persistence through native E1, ordinary role an
    assert.equal((await call({action:'READ',supplierId:S,group:'ALL',offset:0,limit:501})).status,400)
    assert.equal((await call({action:'SYNC',supplierId:S,url:'https://attacker.test'})).status,400)
   })
+  if(p1){
+   await controlled(()=>owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,V]))
+   const accepted=async operation=>Number((await owner.query("SELECT count(*)::int AS n FROM profitia_requests.intents WHERE organisation_id=$1 AND operation=$2 AND status='ACCEPTED'",[A,operation])).rows[0].n)
+   await t.test('real SRM WRITE100/101 shares a rolling organisation quota across actors; rotation/replay cannot reset it',async()=>{
+    let winner
+    for(let i=await accepted('supplier.location.write');i<100;i++){
+     const actor=i%2?U:V,key='srm_quota_write_'+randomUUID(),r=await call(command,actor,key)
+     assert.equal(r.status,202,await r.clone().text());winner={actor,key}
+    }
+    assert.equal(await accepted('supplier.location.write'),100)
+    assert.equal((await call(command,U,'srm_write_101_'+randomUUID())).status,429)
+    assert.equal((await call(command,winner.actor,winner.key)).status,202)
+    await controlled(async()=>{
+     await owner.query("UPDATE profitia_requests.policies SET status='REVOKED' WHERE organisation_id=$1 AND operation='supplier.location.write' AND status='ACTIVE'",[A])
+     await owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity,quota_mode)VALUES($1,'srm',$2,'supplier.location.write','ACTIVE','SYNTHETIC_ROTATION',now()-interval '1 hour',now()+interval '2 hours',$3,100,'ROLLING_24H')",[randomUUID(),A,future()])
+    })
+    assert.equal((await call(command,V,'rotation_no_reset_'+randomUUID())).status,429)
+    assert.equal((await call(command,winner.actor,winner.key)).status,202)
+    assert.equal(await accepted('supplier.location.write'),100)
+   })
+   await t.test('real SRM SYNC100/101 shares the organisation quota; stable source replay costs0 and a new version costs1',async()=>{
+    const syncRuntime=createSupplierLocationRuntime({...options,readAcceptedKys:undefined}),syncHandler=createSupplierLocationHandler(syncRuntime,A)
+    const sync=actor=>syncHandler(new Request(ORIGIN+'/api/supplier-locations?organisationId='+A,{method:'POST',headers:{Origin:ORIGIN,Authorization:'Bearer external-'+actor,'Content-Type':'application/json'},body:JSON.stringify({action:'SYNC',supplierId:S})}))
+    const section=(await owner.query('SELECT general_json FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows[0].general_json
+    const save=()=>owner.query('UPDATE srm.catalog_companies SET general_json=$2::jsonb,general_sha256=$3,general_checked_at=now() WHERE nip=$1',[NIP,JSON.stringify(section),hash(JSON.stringify(section))])
+    let winner,last
+    for(let i=await accepted('supplier.location.sync');i<100;i++){
+     section.retrievedAt=new Date().toISOString();section.data.registeredAddress='Quota '+i+', 00-001, Warszawa, Polska';await save()
+     winner=i%2?U:V;try{await syncRuntime.sync({request:new Request(ORIGIN+'/api/supplier-locations',{method:'POST',headers:{Origin:ORIGIN,Authorization:'Bearer external-'+winner}}),organisationId:A,supplierId:S})}catch(error){assert.fail(error.stack)};const response=await sync(winner);assert.equal(response.status,200,await response.clone().text());last=structuredClone(section)
+     assert.equal(await accepted('supplier.location.sync'),i+1)
+     assert.equal((await sync(winner)).status,200);assert.equal(await accepted('supplier.location.sync'),i+1)
+    }
+    section.data.registeredAddress='Denied101, 00-001, Warszawa, Polska';await save();assert.equal((await sync(U)).status,429)
+    Object.assign(section,last);await save();assert.equal((await sync(winner)).status,200);assert.equal(await accepted('supplier.location.sync'),100)
+   })
+   await t.test('actual SQL rolling boundary excludes exactly24h and allows the next SRM write after aging',async()=>{
+    const boundary=(await owner.query("SELECT (min(accepted_at)+interval '24 hours')::text AS value FROM profitia_requests.intents WHERE organisation_id=$1 AND operation='supplier.location.write' AND status='ACCEPTED'",[A])).rows[0].value
+    const result=(await owner.query("SELECT profitia_requests.location_rolling_used($1::uuid,'supplier.location.write',$2::timestamptz) AS used,(SELECT count(*) FROM profitia_requests.intents WHERE organisation_id=$1 AND operation='supplier.location.write' AND status='ACCEPTED' AND accepted_at>$2::timestamptz-interval '24 hours' AND accepted_at<=$2::timestamptz) AS expected",[A,boundary])).rows[0]
+    assert.equal(result.used,result.expected);assert(Number(result.used)<100)
+    // Only this isolated fixture owner ages synthetic timestamps. No live data.
+    await controlled(async()=>{await owner.query('ALTER TABLE profitia_requests.intents DISABLE TRIGGER USER');try{await owner.query("UPDATE profitia_requests.intents SET accepted_at=clock_timestamp()-interval '24 hours' WHERE organisation_id=$1 AND operation='supplier.location.write'",[A])}finally{await owner.query('ALTER TABLE profitia_requests.intents ENABLE TRIGGER USER')}})
+    assert.equal((await call(command,V,'aged_window_'+randomUUID())).status,202);assert.equal(await accepted('supplier.location.write'),101)
+    assert.equal((await owner.query("SELECT count(*)::int AS n FROM pg_trigger WHERE NOT tgisinternal AND tgenabled<>'O'")).rows[0].n,0)
+   })
+  }
  }finally{
   await workPool?.end();await workAudit?.end();await pool?.end();await auditPool?.end();await owner?.end();await root.query(`DROP DATABASE IF EXISTS ${DATABASE} WITH(FORCE)`);await root.end()
  }
