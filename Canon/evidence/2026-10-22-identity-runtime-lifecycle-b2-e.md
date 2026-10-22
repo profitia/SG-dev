@@ -4,7 +4,7 @@
 
 ## Authority, routing and continuity
 
-Fresh base `1cf170fa7180445877d980de4e6b8df37bbd7d49` contains accepted B2-D promotion `aa95c0a0a14fb2f2ba5af7338c8d83a6fb349269`. The intervening SRM evidence is unrelated; B1/B2/B2-D acceptance is reused. All 33 active CORE/ARCHITECTURE document hashes are unchanged; manifest validates all 47 active documents. Root AGENTS, Architecture adapter and supplied wrapper apply with explicit ARCHITECTURE selection. Own clean isolated checkout, own PMOS environment/context and dedicated PHR clone; no SG2/SRM continuity.
+Initial fresh base `1cf170fa7180445877d980de4e6b8df37bbd7d49` contains accepted B2-D promotion `aa95c0a0a14fb2f2ba5af7338c8d83a6fb349269`. During first-candidate CI, parallel PR602 advanced main to `1922aab9788ccd191da8a2c517cae9f48ef78ed8`, changing only two unrelated SRM evidence documents. The current-main ancestry check correctly blocked the older candidate; that BLOCKED result is retained. Reconcile both histories, repeat the full preflight (PASS) and rerun exact-candidate CI. No bypass or governance logic change. B1/B2/B2-D acceptance is reused. All 33 active CORE/ARCHITECTURE document hashes are unchanged; manifest validates all 47 active documents. Root AGENTS, Architecture adapter and supplied wrapper apply with explicit ARCHITECTURE selection. Own clean isolated checkout, own PMOS environment/context and dedicated PHR clone; no SG2/SRM continuity.
 
 Own registration `cmvjc49kl0000qcjg6ucg7bjh`, conversation `pmos-task-v2:a4712b781cdb993de59eb0691d48df29fa4e698689b38448e9ae513e3bd21969`, DB `architecture_pmos`, ordinary role `architecture_pmos_runtime`. Canonical BEGIN and full require-begin preflight PASS before edits. MEMOROS is DISABLED_BY_PROFILE.
 
@@ -32,7 +32,7 @@ Preserve original [PR600](https://github.com/profitia/SG-dev/pull/600) source `9
 | SRM adoption contract | 2 PASS | Unchanged consumer source |
 | Governance manifest | PASS | No active manifest, routing registry or installed migration change |
 
-Initial sandbox runs could not bind loopback/shared memory. The final complete runs used authorised local execution with the same test files and no product/provider credentials. New Access Store tests were corrected to assert the accepted executor result envelope's `value`; no production code was changed to satisfy tests.
+Initial sandbox runs could not bind loopback/shared memory. The final complete runs used authorised local execution with the same test files and no product/provider credentials. No production code was changed to satisfy tests.
 
 New identity tests launch two actual Node processes, lose navigation state, require a new nonce/fresh authentication and deny replay, substitution, wrong destinations, revoked/expired/incomplete/outage state. They confirm provider-revoked logout survives store replacement. They intentionally expose that **failed** provider revocation is not durable through process replacement; no successful logout is claimed. Fixed binding deadlines demonstrate near-expiry proof capping and denial after days even with a fresh synthetic provider proof; DB outage cannot reuse ALLOW. Existing B1/SDK suites cover issuer/subject, disabled/revoked accounts, audit/version rollback, parallel provisioning and no organisation auto-grants.
 
