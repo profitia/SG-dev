@@ -1,0 +1,83 @@
+import type pg from 'pg'
+import type {PrivateConfiguration,SrmReportRuntime} from './private-runtime'
+import type {ClerkIdentityClient} from '@profitia/platform-contracts/identity-provider'
+import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider'
+import {bindPublicIdentityAuthenticator} from '@profitia/platform-contracts/public-request'
+import {createSrmNativePgDriver} from './native-pg-driver'
+import {createKrsNameHttpRuntime} from './krs-name-runtime'
+import type {MgbiFinancialResult} from './mgbi-financial'
+import {createOperationReportDataHandler} from './operation-report-data'
+import type {SupplierReportData} from '@profitia/srm-xray'
+import pilot from '../../deployment/krs-live-pilot.json'
+import {OperationDenied} from '@profitia/platform-contracts/operation-context'
+import {randomUUID} from 'node:crypto'
+const deny=():never=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
+type Env=Readonly<Record<string,string|undefined>>
+/** Immutable deployment target selection, never a request-selected profile. */
+export function srmKrsPilotTarget(env:Env){
+ if(env.RENDER_SERVICE_ID!==pilot.render.serviceId)return null
+ if(!pilot.render.serviceId||env.TARGET_ENVIRONMENT!=='development'
+  ||pilot.state!=='ACCEPTED_RUNTIME_BINDINGS'||pilot.ownerApprovalRef!=='USER-20261022-KRS-ISOLATED-PILOT')return deny()
+ return pilot
+}
+export function krsPilotDatabaseUrl(value:string|undefined,role:'krs_reader'|'krs_ingest'){
+ if(!value||value!==value.trim())return deny()
+ let url:URL;try{url=new URL(value);decodeURIComponent(url.password)}catch{return deny()}
+ if(!['postgres:','postgresql:'].includes(url.protocol)||url.hostname!=='ep-dry-hat-bafvyimb.c-8.eu-central-1.aws.neon.tech'
+  ||url.username!==role||!url.password||url.pathname!=='/krs_registry_pilot'||url.hash||url.port&&url.port!=='5432'
+  ||[...url.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k))
+  ||url.searchParams.getAll('sslmode').length!==1||url.searchParams.get('sslmode')!=='require'
+  ||url.searchParams.getAll('channel_binding').length>1||url.searchParams.has('channel_binding')&&url.searchParams.get('channel_binding')!=='require')return deny()
+ return url.href
+}
+type Pools={pool:pg.Pool;auditPool:pg.Pool;catalog:pg.Pool;source:pg.Pool;sourceAudit:pg.Pool;clerk:ClerkIdentityClient}
+/** All adapters are built here from real native pools and the existing Clerk
+ * client. No JSON authority, injected HTTP ports or alternative Financial client. */
+export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pools:Pools,
+ runtime:Extract<SrmReportRuntime,{provider:'clerk'}>,environment:Env){
+ const target=srmKrsPilotTarget(environment)
+ if(!target||!runtime.supplierApi||config.application.organisationId!==runtime.defaultOrganisationId)return deny()
+ const [{createNativeRegistryAccess,createNativeRegistrySource},{Catalog}]=await Promise.all([
+  import('@profitia/krs-registry-runtime/native'),import('@profitia/krs-registry-runtime/catalog')])
+ const registry=createNativeRegistryAccess({catalog:new Catalog(pools.catalog),organisationId:runtime.defaultOrganisationId,
+  host:{application:{...config.application,operations:['supplier.report.read']},binding:config.binding,module:config.module,
+   ...createSrmNativePgDriver(pools.pool,pools.auditPool),createAuthenticator:({resolveBinding})=>{
+    const authenticate=createClerkIdentityAuthenticator({client:pools.clerk,application:config.identity,resolveBinding})
+    return config.identity.requestBoundary?bindPublicIdentityAuthenticator(authenticate,config.identity.requestBoundary):authenticate
+   }}})
+ const sourceVersion='krs-native-pilot-v1',deploymentId=config.application.deploymentId+':krs-registry-source'
+ const seed=await createNativeRegistrySource({host:{...createSrmNativePgDriver(pools.source,pools.sourceAudit),
+  application:{appId:'krs-registry-source',profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId,
+   configurationVersion:sourceVersion,identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,
+   features:['knowledge_ingestion'],operations:['knowledge.ingest']},
+  binding:{applicationId:'krs-registry-source',environment:'development',projectId:target.catalog.projectId,branchId:target.catalog.branchId,
+   databaseName:target.catalog.databaseName,role:'krs_ingest',deploymentId,configurationVersion:sourceVersion,
+   schemaDigest:'14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b'}},
+  externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206',approvedKrs:['0000028860'],approvalRef:target.ownerApprovalRef})
+ const pending=new WeakMap<Request,{reference:string;prepared:Awaited<ReturnType<NonNullable<typeof runtime.supplierApi>['prepareKrsFinancial']>>}>()
+ return createKrsNameHttpRuntime({registry:{
+  search:async(request,query)=>(await registry.search(request,query)).candidates.map(c=>({krs:c.krs,name:c.officialName??'',nip:c.nip,locality:c.locality})),
+  verify:async(request,krs)=>{await registry.snapshot(request,krs);await seed.acquire(krs,'P',randomUUID());return registry.selected(request,krs)},
+  readSelection:(request,reference)=>registry.accepted(request,reference),
+ },financial:{
+  acquire:async(request,identity,key)=>{
+   if(pending.has(request))return deny()
+   const recheck=async()=>{const current=await registry.accepted(request,identity.evidenceRef)
+    if(current.identity.identity.nip!==identity.identity.nip||current.identity.source.rawDigest!==identity.source.rawDigest)return deny()}
+   const prepared=await runtime.supplierApi!.prepareKrsFinancial({request,organisationId:runtime.defaultOrganisationId,
+    command:{kind:'SUPPLIER_REPORT',nip:identity.identity.nip},idempotencyKey:key},identity,recheck)
+   pending.set(request,{reference:identity.evidenceRef,prepared});return prepared.result
+  },
+  publishEligible:async(request,identity,result:MgbiFinancialResult)=>{
+   const state=pending.get(request);if(!state||state.reference!==identity.evidenceRef)return deny()
+   try{
+    await registry.accepted(request,identity.evidenceRef);await state.prepared.publish(result)
+    const reportRequest=new Request(new URL('/api/xray/report-data',request.url),{method:'POST',headers:request.headers,
+     body:JSON.stringify({nip:identity.identity.nip,entityType:'COMPANY'}),signal:request.signal})
+    const response=await createOperationReportDataHandler(runtime.executor,environment,{defaultOrganisationId:runtime.defaultOrganisationId})(reportRequest)
+    if(!response.ok)return deny()
+    return await response.json() as SupplierReportData
+   }finally{pending.delete(request)}
+  },
+ }},async request=>{await registry.search(request,'__');return true})
+}

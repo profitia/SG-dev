@@ -5,6 +5,8 @@ import { OperationDenied, isOperationDenied, operationPayloadDigest } from '@pro
 import { createSrmSupplierNativeWork, type SupplierNativeWorkOptions, type SupplierNativeWorkSelection } from './supplier-request-work'
 import { createSrmSupplierNativeWorkStore } from './supplier-native-work-store'
 import { createSrmSupplierSourceLink } from './supplier-source-link'
+import {prepareKrsFinancialWork} from './krs-native-financial'
+import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import type { createSrmSupplierSourceRequest } from './supplier-source-request'
 import { createSrmProviderSourceTransport, createSrmMsrSourceTransport, guardOriginalProviderCall as originalCall } from './provider-source-transport'
 import { createSrmCorporateSourceStore, CORPORATE_PUBLICATION_VERSION, readCorporatePacket } from './corporate-source-store'
@@ -50,7 +52,7 @@ export function createSrmNativeCompanyLookup(options:Options){
   const apiKey=options.mgbi.apiKey.trim(),authScheme=options.mgbi.authScheme
   const headers={authorization:authScheme==='bearer'?'Bearer '+apiKey:apiKey,accept:'application/json'}
   const clock=now?()=>new Date(now()):()=>new Date()
-  return Object.freeze({async run(input:SupplierNativeWorkSelection){
+  async function execute<T>(input:SupplierNativeWorkSelection,engine:(ports:XrayCompanyPorts)=>Promise<T>,recheck?:()=>Promise<void>){
     if(!input||Object.getPrototypeOf(input)!==Object.prototype||Reflect.ownKeys(input).length!==3
       ||Object.keys(input).sort().join(',')!=='command,organisationId,requestId'
       ||Object.values(Object.getOwnPropertyDescriptors(input)).some(d=>!('value'in d)||!d.enumerable))return refuse()
@@ -83,6 +85,7 @@ export function createSrmNativeCompanyLookup(options:Options){
       },
       fetchMgbiFinancial:async(identifier,metadata)=>{
         scope(selection.organisationId,identifier.value);if(identifier.type!=='NIP')return refuse()
+        await recheck?.()
         return originalCall(transport().fetcher,fetcher=>fetchMgbiFinancial(identifier,{...clientOptions(fetcher),companyHistory:metadata?.companyHistory}))
       },
       saveMgbiArchive:async(org,nip,model,pages,count,at,requestId)=>{
@@ -94,6 +97,7 @@ export function createSrmNativeCompanyLookup(options:Options){
       enrichMsrFinancial:async(org,nip,base,metadata)=>{
         scope(org,nip);if(metadata?.requestId!==selection.requestId||metadata.store||metadata.download||metadata.parse)return refuse()
         return enrichMsrFinancial(org,nip,base,{...metadata,store:store.msr(selection,metadata.allowedKrs),download:async recordId=>{
+          await recheck?.()
           const source=createSrmMsrSourceTransport({...sourceOptions(),external:fixed.msrExternal,recordId,
             operationKey:hash(operationKey+':msr:'+recordId),syntheticStorageOrigin:fixed.syntheticStorageOrigin})
           try{return await originalCall(source.fetcher,fetcher=>downloadMsrOriginal(recordId,{apiKey,authScheme,fetcher,now:clock}))}
@@ -131,6 +135,11 @@ export function createSrmNativeCompanyLookup(options:Options){
         return providerExceptionCode(error)
       },
     }
-    return createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}})
-  }})
+    return engine(ports)
+  }
+  return Object.freeze({
+    run:(selection:SupplierNativeWorkSelection)=>execute(selection,ports=>createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}})),
+    prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:()=>Promise<void>)=>execute(selection,
+      ports=>prepareKrsFinancialWork(ports,selection,identity,recheck,()=>clock().getTime()),recheck),
+  })
 }

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
+import {posix} from 'node:path'
 import {createSrmLocationAdmission,readSrmLocationAdmissionConfiguration} from '../src/server/supplier-location-admission.ts'
 import {operationSourceDigest,OPERATION_CONTRACT} from '@profitia/platform-contracts/operation-context'
 import {createSupplierLocationAdmission} from '@profitia/platform-contracts/supplier-location'
@@ -44,7 +45,14 @@ test('new P1 receipt preserves every historical record and verifies exact curren
   assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
   assert.equal(hash(execFileSync('git',['show',accepted.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
  }
- for(const[file,digest]of Object.entries(accepted.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(accepted.applicationSourceDigests)){
+  const change=receipt.krsLivePilotSourceCompatibility?.changedFiles[file];
+  if(change){
+   assert.equal(change.previousSha256,digest,file);
+   assert.equal(hash(execFileSync('git',['show',receipt.krsLivePilotSourceCompatibility.previousApplicationAuthority+':'+posix.normalize('apps/srm/'+file)])),digest,file);
+  }
+  assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),change?.sourceSha256??digest,file)
+ }
  for(const flag of ['sql014Installed','sql020Installed','runtimeGrantsAdded','attestationKeyProvisioned','productDeploymentPerformed','paidGeocodingEnabled'])assert.equal(accepted[flag],false,flag)
 })
 

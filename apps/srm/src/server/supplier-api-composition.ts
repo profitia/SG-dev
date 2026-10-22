@@ -1,3 +1,4 @@
+import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {createHash} from 'node:crypto'
 import type {PoolClient} from 'pg'
 import {OPERATION_CONTRACT,OperationDenied} from '@profitia/platform-contracts/operation-context'
@@ -110,6 +111,13 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
  return Object.freeze({
   readAcceptedKys:(request:Request,organisationId:string,nip:string)=>read({request,organisationId},nip,'COMPANY','kys'),
   known:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>known.read(input.request,input.organisationId,nip),
+  async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:()=>Promise<void>){
+   if(input.command.nip!==identity.identity.nip)return refuse()
+   await recheck()
+   const selected=await admitCompany(input,'COMPANY:KRS-FINANCIAL:'+identity.selectedKrs+':'+identity.evidenceRef)
+   input.request.signal.throwIfAborted()
+   return company.prepareFinancial(selected,identity,recheck)
+  },
   async company(input:SupplierHttpInput){
    const selected=await admitCompany(input,'COMPANY:report')
    input.request.signal.throwIfAborted()
