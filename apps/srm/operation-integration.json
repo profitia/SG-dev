@@ -2837,5 +2837,143 @@
         "previousFullStackSourceSha": "3c6805cbb1aa135454b6f6e1aad9308951cfea85"
       }
     }
-  ]
+  ],
+  "krsHistoricalBranchReceipts": {
+    "sourceSha": "d5bd5858",
+    "name": {
+      "taskId": "SRM-KRS-NAME-SEARCH-INTEGRATION-20261022",
+      "status": "SOURCE_CANDIDATE_ONLY",
+      "previousApplicationAuthority": "418a2ef0f30d840ce25ca645f5ef047e35d02192",
+      "platformSdkVersion": "1.24.0",
+      "productDeploymentPerformed": false,
+      "changedFiles": {
+        "package-lock.json": {
+          "previousSha256": "7b4f7fe791c2bc96b0e64fd56ac0ff770ba6dd0facc6d028077e6cda72b4bcfa",
+          "sourceSha256": "8a9252b1c75de3bf3a3c2d533aecee1f4a99cb71904eef89c2a46b5053f8d0fa"
+        },
+        "package.json": {
+          "previousSha256": "ffe3083be25375d3c848578ae204f205da832bbd5c19d16c49894939170c9d1a",
+          "sourceSha256": "03bc760575a6cc3249c818fd6c7518e32da62215d1821c86a279246db54acbe8"
+        },
+        "src/modules/xray/report-controller.ts": {
+          "previousSha256": "a449d4f30fc76bac6342dbe405ad8a00e8c7c72b9fc05e168413c1f1cc18e0a0",
+          "sourceSha256": "69588c77731dca7d85be5216378904c7145cbe53fa75ea0f9bd749497fca4b46"
+        },
+        "src/server/peer-read-boundary.test.ts": {
+          "previousSha256": "f118de89c1eac2c09f5289c83e2002683b97189a54dbfa71be9f4999373e3325",
+          "sourceSha256": "92f6257b1207e34582a475dc9df622aff083c323416558856d2d17338479a6e9"
+        },
+        "scripts/operation-context.test.mjs": {
+          "previousSha256": "0e2c6fb25ba195db94eadc1c0924951804b4cf293a6243fe02e9619e664b78ee",
+          "sourceSha256": "3703aa822b749cb6073ef8635abf483883aa8a6b9dc1edcea17390b8a0a832ff"
+        },
+        "../../packages/srm-xray/src/contracts.ts": {
+          "previousSha256": "d41eaf50a6ad1356b4da02f4911d763aacc37527b06b204254d5943b7c73e6d5",
+          "sourceSha256": "a4f332e98a699dc8ccd3f8e70c928e72dd0034952d1cf85cc8f7d121fb145a07"
+        },
+        "../../packages/srm-xray/src/index.ts": {
+          "previousSha256": "312059dcf40ec36f6d6626f431474700c806a27c17e9d65c27dc1899286cf918",
+          "sourceSha256": "6e9bf34c49e579a6178cf28de6e0a6cc549cc7b4d87ec1f38d26141ecaa8c11a"
+        }
+      }
+    },
+    "live": {
+      "taskId": "SRM-KRS-LIVE-DEVELOPMENT-PILOT-20261022",
+      "status": "SOURCE_CANDIDATE_ONLY",
+      "previousApplicationAuthority": "32062cda1be390c1d535a672922d3ee1e04dbde8",
+      "platformSdkVersion": "1.24.0",
+      "productDeploymentPerformed": false,
+      "changedFiles": {
+        "src/server/supplier-native-company.ts": {
+          "previousSha256": "ec94312ccab9aa0f8eea1cf709d97b6891edc768c3eb43a6fa3a4d3bfad7f69c",
+          "sourceSha256": "b97c66df3eacd643d9636dbc40d5457ea2e3e12e09f308dec8486e9126119c0b"
+        },
+        "src/server/supplier-api-composition.ts": {
+          "previousSha256": "080b28e29e4f1d7e6aef117012fbcbfcb2ec45bb195779053478b67fd55f69e5",
+          "sourceSha256": "036b1ee43a3dbe7dd2a47ef3f1d6a02e570df48e96a456a5cd9ed22f873e8a12"
+        },
+        "src/server/peer-read-boundary.test.ts": {
+          "previousSha256": "92f6257b1207e34582a475dc9df622aff083c323416558856d2d17338479a6e9",
+          "sourceSha256": "4f08cf4d3ec166675d1e672d99e205110e7900837c2cd0b49cb6708bc93f0efa"
+        },
+        "scripts/operation-context.test.mjs": {
+          "previousSha256": "3703aa822b749cb6073ef8635abf483883aa8a6b9dc1edcea17390b8a0a832ff",
+          "sourceSha256": "13ad18778b2a57655ce65c4049ae24e771003ca65c8010a2a8ac7dbedf47b8b4"
+        },
+        "package.json": {
+          "previousSha256": "03bc760575a6cc3249c818fd6c7518e32da62215d1821c86a279246db54acbe8",
+          "sourceSha256": "8b87a8b14c3f939bbc86ac163dc5f64cf3ef613079d488d010f052522cc3b470"
+        },
+        "package-lock.json": {
+          "previousSha256": "8a9252b1c75de3bf3a3c2d533aecee1f4a99cb71904eef89c2a46b5053f8d0fa",
+          "sourceSha256": "2db8697ef180c9dcc85ee637441bcfdf1658891e54c0ffc3570fdd6a17866e49"
+        },
+        "src/server/private-runtime.ts": {
+          "previousSha256": "95c10fbc61981c7351075a6df4f4dd9cf9156a69a7d0836e82394c9835144783",
+          "sourceSha256": "c9220f14360b6f2d80b46e61a7cd4fe0365927636f11fdeb1bbaa6cbd33ad0ad"
+        },
+        "src/server/supplier-native-runtime.ts": {
+          "previousSha256": "fb06cf47fa70fdfa7957d4f25722c984a23e2e47eeb9688ecf5d916889312093",
+          "sourceSha256": "ebb6bff410e6da30bb528b8dfda8d72f97e55b177d187b197379af79fbb2c46d"
+        }
+      }
+    }
+  },
+  "krsLivePilotSourceCompatibility": {
+    "taskId": "SRM-KRS-LIVE-DEVELOPMENT-PILOT-20261022",
+    "status": "SOURCE_CANDIDATE_ONLY",
+    "previousApplicationAuthority": "a0a3b0626fac16e011b57d6284ce55abcfcd3ca3",
+    "platformSdkVersion": "1.25.0",
+    "productDeploymentPerformed": false,
+    "changedFiles": {
+      "package-lock.json": {
+        "previousSha256": "45e91c682ac6a1e6acb21f2dc6a034e5c4751b87be206080553723e39fadfbe5",
+        "sourceSha256": "fddcaffbfcc2a1d6a881a8d35ec8ecd48ff5d9734e29c8480ffe01925b4a7719"
+      },
+      "package.json": {
+        "previousSha256": "ffe3083be25375d3c848578ae204f205da832bbd5c19d16c49894939170c9d1a",
+        "sourceSha256": "8b87a8b14c3f939bbc86ac163dc5f64cf3ef613079d488d010f052522cc3b470"
+      },
+      "src/modules/xray/report-controller.ts": {
+        "previousSha256": "a449d4f30fc76bac6342dbe405ad8a00e8c7c72b9fc05e168413c1f1cc18e0a0",
+        "sourceSha256": "69588c77731dca7d85be5216378904c7145cbe53fa75ea0f9bd749497fca4b46"
+      },
+      "src/server/peer-read-boundary.test.ts": {
+        "previousSha256": "c73896751325f89cbedfd5f4f52bb6fbd380ce1a71569d57f170b46a22cb9b3b",
+        "sourceSha256": "906a163d6fe83fae9877eb6f633ec5a9eacaf55f8a50c9333b367eba085b8f33"
+      },
+      "src/server/private-runtime.ts": {
+        "previousSha256": "cec2518cda7aefc52ab3e8f5484afde52052f0921ed37d5b2004969dfe59b026",
+        "sourceSha256": "954115349581ffe1baf0f17254207609bd4c11e20639f79423cfd7a85fd03bee"
+      },
+      "src/server/supplier-api-composition.ts": {
+        "previousSha256": "080b28e29e4f1d7e6aef117012fbcbfcb2ec45bb195779053478b67fd55f69e5",
+        "sourceSha256": "036b1ee43a3dbe7dd2a47ef3f1d6a02e570df48e96a456a5cd9ed22f873e8a12"
+      },
+      "src/server/supplier-native-company.ts": {
+        "previousSha256": "ec94312ccab9aa0f8eea1cf709d97b6891edc768c3eb43a6fa3a4d3bfad7f69c",
+        "sourceSha256": "b97c66df3eacd643d9636dbc40d5457ea2e3e12e09f308dec8486e9126119c0b"
+      },
+      "src/server/supplier-native-runtime.ts": {
+        "previousSha256": "fb06cf47fa70fdfa7957d4f25722c984a23e2e47eeb9688ecf5d916889312093",
+        "sourceSha256": "ebb6bff410e6da30bb528b8dfda8d72f97e55b177d187b197379af79fbb2c46d"
+      },
+      "scripts/operation-context.test.mjs": {
+        "previousSha256": "a0dd503728c6fd4a04051050d4132bf2bbfae985a0a04d9f952643a09aa136db",
+        "sourceSha256": "a0dd503728c6fd4a04051050d4132bf2bbfae985a0a04d9f952643a09aa136db"
+      },
+      "../../packages/srm-xray/src/contracts.ts": {
+        "previousSha256": "d41eaf50a6ad1356b4da02f4911d763aacc37527b06b204254d5943b7c73e6d5",
+        "sourceSha256": "a4f332e98a699dc8ccd3f8e70c928e72dd0034952d1cf85cc8f7d121fb145a07"
+      },
+      "../../packages/srm-xray/src/index.ts": {
+        "previousSha256": "7bc395bab52aa42cde84af542af774fec8c0a91021b7ac53176bc2b93179b1e0",
+        "sourceSha256": "aa78210510f0f5272bc1f023bb10ad7dbf9503dbbd65a31b8c87fd988ccb5f6e"
+      },
+      "scripts/supplier-location-admission.integration.test.mjs": {
+        "previousSha256": "1ba84220274309eba05aa45d46abf2c424b64c5d9c4cd2d24d42e28f677240b4",
+        "sourceSha256": "ebdf0dc0049091e4c00f448d8746e3a54887875edd047bc3223af8ac21f49030"
+      }
+    }
+  }
 }

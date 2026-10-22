@@ -158,6 +158,13 @@ jobs:
         working-directory: .
         run: node --test scripts/governance/srm-release-lifecycle.test.mjs
       - run: npm run build
+      - name: Approved KRS search interaction and responsive regression
+        run: npm run test:krs-ui
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: krs-name-search-ui-proof
+          path: apps/srm/.next/krs-name-ui-proof/
+          if-no-files-found: error
 
   srm-staging-guard:
     if: github.event_name == 'workflow_dispatch' && inputs.staging_deployment_authorized == 'YES'

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SRM-KRS-LIVE-DEVELOPMENT-PILOT-20261022",
+  "state": "ACCEPTED_SOURCE_PENDING_INSTALLATION",
+  "environment": "development",
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "serviceName": "srm-krs-pilot-development",
+    "plan": "free",
+    "paidUpgradeAllowed": false,
+    "autoDeploy": false,
+    "serviceId": "srv-dbd5hlcipgvc73d98ukg",
+    "url": "https://srm-krs-pilot-development.onrender.com"
+  },
+  "privateStore": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "databaseName": "platform_private",
+    "newBusinessSchema": false,
+    "technicalRuntimeBindings": "Separate ordinary pilot logins; same existing operations and fixed authorised organisation; no new user entitlement"
+  },
+  "catalog": {
+    "projectId": "fancy-cell-49425728",
+    "branchId": "br-divine-fog-baohc5ay",
+    "databaseName": "krs_registry_pilot"
+  },
+  "cohort": "Only existing currently authorised HUMAN accounts; no identity manufacture or permission expansion",
+  "financial": {
+    "provider": "MGBI",
+    "existingBudgetOnly": true,
+    "newBudgetAllowed": false,
+    "generalCallsInNameMode": 0
+  },
+  "googleMapsChanges": false,
+  "productionOrStagingAllowed": false,
+  "ownerApprovalRef": "USER-20261022-KRS-ISOLATED-PILOT",
+  "runtimeRoles": {
+    "jobs": "srm_krs_pilot_jobs",
+    "providerSource": "srm_krs_pilot_source",
+    "corporateSource": "srm_krs_pilot_corporate"
+  }
+}
