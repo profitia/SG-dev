@@ -72,6 +72,8 @@ The later **Stage03 SRM acceptance** must prove the whole sequence `name search 
 
 Stage02 supplies fixtures suitable for that consumer adoption, without pretending a simulated MGBI boundary is deployed integration. Stage03 separately verifies XML/XHTML/iXBRL, periods, Financial Scanner, existing cost/idempotency/retry/admission, Locations/Maps and registry-provider rollback. WERK remains outside this task. No implementation here starts Stage02 or Stage03.
 
+The KRS DTO gates govern KRS-selected General. Explicit MGBI_PRIMARY/rollback preserves the existing verified MGBI identity/continuity route and cannot depend on a fresh response from an unavailable KRS service or fabricate KRS evidence. Stage03 must test this backup during KRS outage, alongside company/document identity checks and unchanged E1/cost controls. It cannot silently change providers or use the backup to attach Financial to conflicting KRS General.
+
 ## Required test matrix
 
 Use synthetic fixtures and disposable local/CI PostgreSQL, ordinary roles and explicit loopback origins. No live provider calls in normal CI.
