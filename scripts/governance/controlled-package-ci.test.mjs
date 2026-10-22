@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -265,6 +265,85 @@ const authorityRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 const architecturePr = (count = 2) => ({...pr(), changed_files: count, base: {...pr().base, sha}, head: {...pr().head, ref: 'architecture/profile'}})
 const producerFile = (filename = 'packages/platform-contracts/src/user-profile.mjs') => ({filename, status: 'modified', sha: 'c'.repeat(40)})
 const architectureFiles = () => [producerFile(), producerFile('Canon/evidence/2026-10-21-identity-profile-b1-handoff.md')]
+const krsReviewFiles = () => KRS_GOVERNANCE_REVIEW_FILES.map(producerFile)
+
+test('KRS governance admission is one immutable complete fifteen-file review bundle without a dummy producer', () => {
+  assert(Object.isFrozen(KRS_GOVERNANCE_REVIEW_FILES))
+  assert.equal(KRS_GOVERNANCE_REVIEW_FILES.length, 15)
+  assert.equal(new Set(KRS_GOVERNANCE_REVIEW_FILES).size, 15)
+  assert(!KRS_GOVERNANCE_REVIEW_FILES.some(p => p.startsWith('apps/') || p.startsWith('packages/')))
+  const files = krsReviewFiles(), p = architecturePr(files.length)
+  assert.equal(selectCandidate(context(), p, other, {files}), other)
+  assert.equal(selectCandidate(context(), p, other, {files: [...files].reverse()}), other)
+  assert.equal(selectCandidate(context(), p, other, {files: files.map(f => ({...f, status: 'added'}))}), other)
+  for (let i = 0; i < files.length; i++) {
+    const incomplete = files.filter((_, at) => at !== i)
+    rejection(() => selectCandidate(context(), architecturePr(incomplete.length), other, {files: incomplete}))
+    for (const patch of [{status:'removed'}, {status:'renamed', previous_filename:'Canon/other.md'}, {status:'copied'}, {previous_filename:files[i].filename}, {sha:'forged'}]) {
+      const changed = files.map((f, at) => at === i ? {...f,...patch} : f)
+      rejection(() => selectCandidate(context(), p, other, {files: changed}))
+    }
+    const duplicates = files.map((f, at) => at === i ? files[(i + 1) % files.length] : f)
+    rejection(() => selectCandidate(context(), p, other, {files: duplicates}))
+  }
+})
+
+test('KRS class cannot mix a producer, another review, runtime, workflow, secret policy or extra governance path', () => {
+  for (const name of ['packages/platform-contracts/src/operation-context.mjs', 'apps/krs-registry-runtime/index.mjs',
+    'apps/srm/src/server/mgbi-financial.ts', 'apps/maps-runtime/package.json', '.github/workflows/krs-registry-ci.yml',
+    WORKFLOW, 'scripts/governance/controlled-package-ci.mjs', 'Canon/registries/profitia-projects-v1.json',
+    'Canon/registries/architecture-environment-topology-v1.json', 'Canon/evidence/2026-10-23-krs-extra.md',
+    'Canon/evidence/2026-10-22-identity-runtime-lifecycle-b2-e.md', 'AGENTS.md', '.npmrc']) {
+    const files = [...krsReviewFiles(),producerFile(name)]
+    rejection(() => selectCandidate(context(), architecturePr(files.length), other, {files}))
+    const replaced = krsReviewFiles(); replaced[0] = producerFile(name)
+    rejection(() => selectCandidate(context(), architecturePr(replaced.length), other, {files:replaced}))
+  }
+})
+
+test('KRS review preserves trusted actor, repository, main, head and current authority routing checks', () => {
+  const files = krsReviewFiles()
+  for (const edit of [p=>p.user.login='other', p=>p.head.repo.full_name='other/fork', p=>p.base.ref='staging', p=>p.head.sha=sha, p=>p.state='closed']) {
+    const p = architecturePr(files.length);edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))
+  }
+  rejection(()=>selectCandidate({...context(),triggeringActor:'other'},architecturePr(files.length),other,{files}))
+  const root = routingFixture(), file = path.join(root,'Canon/registries/current-architecture-baseline-v1.json'), original = fs.readFileSync(file,'utf8')
+  try {
+    assertArchitectureFiles(architecturePr(files.length),files,root)
+    for (const patch of [{currentOwner:'Other owner'}, {allowedProjectKeys:['SG2']}, {baselineClassification:'LEGACY'}]) {
+      const registry = JSON.parse(original), surface = registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'))
+      assert(surface);Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry))
+      rejection(()=>assertArchitectureFiles(architecturePr(files.length),files,root))
+    }
+  } finally {fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('KRS complete API list and metadata race fence precede the unchanged exact Git checkout checks', async () => {
+  const files=krsReviewFiles(), candidate=architecturePr(files.length), api=apiFixture(candidate,files)
+  const result=await resolveCandidateAdmission(context(),'603',other,api.request)
+  assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
+  const after={...candidate,head:{...candidate.head,sha}}
+  await assert.rejects(resolveCandidateAdmission(context(),'603',other,apiFixture(candidate,files,after).request))
+  await assert.rejects(resolveCandidateAdmission(context(),'603',other,apiFixture(candidate,files.slice(1)).request))
+})
+
+test('KRS full review uses actual Git diff/blob/regular-file validation, rejecting hidden source and symlinks', () => {
+  const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'krs-review-checkout-')))
+  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',env:{...process.env,GIT_AUTHOR_NAME:'Synthetic CI',GIT_AUTHOR_EMAIL:'ci@example.invalid',GIT_COMMITTER_NAME:'Synthetic CI',GIT_COMMITTER_EMAIL:'ci@example.invalid'}}).trim()
+  try {
+    fs.writeFileSync(path.join(root,'baseline.txt'),'synthetic baseline');git('init','-q');git('add','.');git('commit','-qm','baseline');const baseSha=git('rev-parse','HEAD')
+    for(const p of KRS_GOVERNANCE_REVIEW_FILES){fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});fs.writeFileSync(path.join(root,p),'synthetic bytes; never executed\n')}
+    git('add','.');git('commit','-qm','complete KRS review');const candidateSha=git('rev-parse','HEAD')
+    const files=KRS_GOVERNANCE_REVIEW_FILES.map(filename=>({filename,status:'added',sha:git('rev-parse',`${candidateSha}:${filename}`)})),admission={kind:'ARCHITECTURE',baseSha,files}
+    assertArchitectureCheckout(root,candidateSha,admission)
+    const target=path.join(root,files[0].filename);fs.appendFileSync(target,'tampered')
+    rejection(()=>assertArchitectureCheckout(root,candidateSha,admission));git('checkout','--',files[0].filename)
+    fs.unlinkSync(target);fs.symlinkSync('/synthetic-outside-never-read',target)
+    rejection(()=>assertArchitectureCheckout(root,candidateSha,admission));git('checkout','--',files[0].filename)
+    fs.mkdirSync(path.join(root,'apps/srm'),{recursive:true});fs.writeFileSync(path.join(root,'apps/srm/hidden.mjs'),'hidden mutation');git('add','.');git('commit','-qm','hidden consumer mutation')
+    assert.throws(()=>assertArchitectureCheckout(root,git('rev-parse','HEAD'),admission),/ARCHITECTURE_DIFF_MISMATCH/)
+  } finally {fs.rmSync(root,{recursive:true,force:true})}
+})
 
 test('Architecture admission requires complete source files, exact SHA and actual trusted ownership', () => {
   assert.equal(selectCandidate(context(), architecturePr(), other, {files: architectureFiles()}), other)
