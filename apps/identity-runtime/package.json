@@ -9,7 +9,7 @@
     "lint": "node scripts/check.mjs",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "test": "node --test test/*.test.mjs",
+    "test": "node --test --test-timeout=30000 test/*.test.mjs",
     "start": "node dist/src/main.js",
     "ci:proof": "node scripts/ci-proof.mjs"
   },
