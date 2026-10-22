@@ -63,6 +63,18 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
       assert.match(entry.sourceSha256,/^[a-f0-9]{64}$/);currentDigests[path]=entry.sourceSha256;
     }
   }
+  const live=receipt.krsLivePilotSourceCompatibility;
+  if(live){
+    assert.equal(live.status,'SOURCE_CANDIDATE_ONLY');assert.equal(live.previousApplicationAuthority,'32062cda1be390c1d535a672922d3ee1e04dbde8');
+    assert.equal(live.productDeploymentPerformed,false);assert.equal(live.platformSdkVersion,'1.24.0');
+    const preceding=JSON.parse(execFileSync('git',['show',live.previousApplicationAuthority+':apps/srm/operation-integration.json'],{encoding:'utf8'}));
+    for(const [key,value]of Object.entries(preceding))assert.deepEqual(receipt[key],value,key);
+    for(const [path,entry]of Object.entries(live.changedFiles) as [string,{previousSha256:string;sourceSha256:string}][]){
+      assert.equal(entry.previousSha256,currentDigests[path],path);
+      assert.equal(hash(execFileSync('git',['show',live.previousApplicationAuthority+':'+posix.normalize('apps/srm/'+path)])),entry.previousSha256,path);
+      assert.match(entry.sourceSha256,/^[a-f0-9]{64}$/);currentDigests[path]=entry.sourceSha256;
+    }
+  }
   for (const [path, digest] of Object.entries(currentDigests)) assert.equal(hash(readFileSync(new URL('../../' + path, import.meta.url))), digest, path)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

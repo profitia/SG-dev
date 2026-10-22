@@ -2540,5 +2540,30 @@
         "sourceSha256": "6e9bf34c49e579a6178cf28de6e0a6cc549cc7b4d87ec1f38d26141ecaa8c11a"
       }
     }
+  },
+  "krsLivePilotSourceCompatibility": {
+    "taskId": "SRM-KRS-LIVE-DEVELOPMENT-PILOT-20261022",
+    "status": "SOURCE_CANDIDATE_ONLY",
+    "previousApplicationAuthority": "32062cda1be390c1d535a672922d3ee1e04dbde8",
+    "platformSdkVersion": "1.24.0",
+    "productDeploymentPerformed": false,
+    "changedFiles": {
+      "src/server/supplier-native-company.ts": {
+        "previousSha256": "ec94312ccab9aa0f8eea1cf709d97b6891edc768c3eb43a6fa3a4d3bfad7f69c",
+        "sourceSha256": "b97c66df3eacd643d9636dbc40d5457ea2e3e12e09f308dec8486e9126119c0b"
+      },
+      "src/server/supplier-api-composition.ts": {
+        "previousSha256": "080b28e29e4f1d7e6aef117012fbcbfcb2ec45bb195779053478b67fd55f69e5",
+        "sourceSha256": "036b1ee43a3dbe7dd2a47ef3f1d6a02e570df48e96a456a5cd9ed22f873e8a12"
+      },
+      "src/server/peer-read-boundary.test.ts": {
+        "previousSha256": "92f6257b1207e34582a475dc9df622aff083c323416558856d2d17338479a6e9",
+        "sourceSha256": "4f08cf4d3ec166675d1e672d99e205110e7900837c2cd0b49cb6708bc93f0efa"
+      },
+      "scripts/operation-context.test.mjs": {
+        "previousSha256": "3703aa822b749cb6073ef8635abf483883aa8a6b9dc1edcea17390b8a0a832ff",
+        "sourceSha256": "13ad18778b2a57655ce65c4049ae24e771003ca65c8010a2a8ac7dbedf47b8b4"
+      }
+    }
   }
 }

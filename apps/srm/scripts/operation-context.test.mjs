@@ -65,6 +65,13 @@ test('TASK02 has a separate current source receipt and keeps live activation clo
    assert.equal(createHash('sha256').update(execFileSync('git',['show',amendment.previousApplicationAuthority+':'+posix.normalize('apps/srm/'+path)])).digest('hex'),digest,path);
    expected=changed.sourceSha256;
   }
+  const live=receipt.krsLivePilotSourceCompatibility,next=live?.changedFiles[path];
+  if(next){
+   assert.equal(live.previousApplicationAuthority,'32062cda1be390c1d535a672922d3ee1e04dbde8');assert.equal(live.status,'SOURCE_CANDIDATE_ONLY');
+   assert.equal(live.productDeploymentPerformed,false);assert.equal(next.previousSha256,expected,path);
+   assert.equal(createHash('sha256').update(execFileSync('git',['show',live.previousApplicationAuthority+':'+posix.normalize('apps/srm/'+path)])).digest('hex'),expected,path);
+   expected=next.sourceSha256;
+  }
   assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),expected,path);
  }
  const before=JSON.parse(execFileSync('git',['show',current.previousAuthority+':apps/srm/operation-integration.json'],{encoding:'utf8'}))
