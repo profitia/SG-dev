@@ -7,7 +7,7 @@ import {createPrivateOperationHost} from '@profitia/platform-contracts/private-o
 import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider'
 import {accessSchemaUrl,moduleAuditSchemaUrl} from '@profitia/platform-contracts/access-store'
 import {moduleSchemaUrl} from '@profitia/platform-contracts/module-scope'
-import {createNativeRegistryAccess,createNativeCatalogPublication,createOfficialSeed} from '../dist/native.js'
+import {createNativeRegistryAccess,createNativeCatalogPublication,createOfficialSeed,createNativeRegistrySource} from '../dist/native.js'
 import {createKrsClient,krsResponseEvidence,buildRequest} from '../dist/client.js'
 import {normalizeExtract} from '../dist/normalizer.js'
 import {storeSnapshot} from '../dist/catalog.js'
@@ -118,6 +118,24 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
    try{await assert.rejects(host.ingest({...input,idempotencyKey:'synthetic-native-source-publication-002'},async(_p,tx,c)=>{await tx.query('UPDATE krs_registry.metadata SET generation=999');assert.ok(c.platformReservation.effectId)}))}finally{await owner.query('DROP TRIGGER fail_catalog_outcome ON profitia_ingestion.security_events;DROP FUNCTION profitia_ingestion.fail_catalog_outcome()')}
    assert.notEqual((await owner.query('SELECT generation FROM krs_registry.metadata')).rows[0].generation,'999')
    assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_ingestion.effects')).rows[0].n,1)
+  })
+  await t.test('complete native producer publishes the validated null-prototype DTO through actual SQL; upstream is synthetic',async()=>{
+   const originalFetch=globalThis.fetch;let calls=0
+   try{
+    globalThis.fetch=async url=>{assert.equal(String(url),buildRequest({operation:'CURRENT',krs:id,register:'P'}).url);calls++
+     const response=new Response(bytes(extract({id,name:'Synthetic native complete SA'})),{headers:{'content-type':'application/json'}})
+     Object.defineProperty(response,'url',{value:String(url)});return response}
+    const source=await createNativeRegistrySource({host:{...driver,
+     application:{appId:'krs-registry-source',profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId,configurationVersion:'krs-native-pilot-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
+     binding:{applicationId:'krs-registry-source',environment:'development',projectId:'isolated-project',branchId:'isolated-branch',databaseName:'krs_registry_test',role:'krs_ingest',deploymentId,configurationVersion:'krs-native-pilot-v1',schemaDigest:plan.schemaDigests.ingestion}},
+     externalSchemaDigest:plan.schemaDigests.external,approvedKrs:[id],approvalRef:'SYNTHETIC_ONLY'})
+    const result=await source.acquire(id,'P','synthetic-complete-producer-001')
+    assert.equal(calls,1);assert.equal(Object.getPrototypeOf(result.snapshot),null)
+    assert.equal(result.receipt.evidenceRef,result.snapshot.evidenceRef)
+    const saved=(await owner.query('SELECT payload FROM krs_registry.snapshots WHERE evidence_ref=$1',[result.receipt.evidenceRef])).rows[0]
+    assert.equal(saved.payload.officialName,'Synthetic native complete SA')
+    assert.equal((await owner.query('SELECT admitted_count FROM profitia_external_call.policies')).rows[0].admitted_count,1)
+   }finally{globalThis.fetch=originalFetch}
   })
  }finally{
   await auditPool?.end();await owner.query('ALTER DATABASE krs_registry_test OWNER TO krs_test_owner;DROP SCHEMA IF EXISTS krs_registry CASCADE;DROP SCHEMA IF EXISTS profitia_external_native CASCADE;DROP SCHEMA IF EXISTS profitia_external_call CASCADE;DROP SCHEMA IF EXISTS profitia_ingestion CASCADE;DROP OWNED BY krs_catalog_owner,profitia_ingestion_owner;DROP ROLE krs_catalog_owner,profitia_ingestion_owner')

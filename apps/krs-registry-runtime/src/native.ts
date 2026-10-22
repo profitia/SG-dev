@@ -122,7 +122,10 @@ export function createNativeCatalogPublication(options:{host:Omit<Ingestion,'val
     const rebuilt=await normalizeExtract(input.response.bytes,{krs:snapshot.canonicalKrs,register:snapshot.source.register,
       extract:snapshot.source.extract,retrievedAt:proof.retrievedAt})
     if(canonical(rebuilt)!==canonical(snapshot))return deny()
-    const digest=operationPayloadDigest(snapshot as unknown as Json)
+    // The validated DTO deliberately uses null-prototype records. Its bounded
+    // canonical JSON has the same bytes as Root JSON, without weakening Root's
+    // plain-record boundary or changing the admitted snapshot.
+    const digest=await sha256(canonical(snapshot))
     const manifest={version:REGISTRY_REPORT_PROJECTION,krs:snapshot.canonicalKrs,evidenceRef:snapshot.evidenceRef,digest}
     if(pending.has(digest))throw new OperationDenied('POLICY_UNAVAILABLE')
     pending.set(digest,snapshot)
