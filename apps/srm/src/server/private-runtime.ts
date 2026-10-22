@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 import {createSupplierLocationRuntime,type SupplierLocationRuntime} from './supplier-locations'
+import {createSrmLocationAdmission,readSrmLocationAdmissionConfiguration} from './supplier-location-admission'
+import operationAcceptance from '../../operation-integration.json'
 import locationTargets from '../../deployment/supplier-location-targets.json'
 import nativeTargets from '../../deployment/supplier-native-targets.json'
 import type {SrmSupplierApi} from './supplier-api-composition'
@@ -174,7 +176,8 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   const native=readSrmNativeSupplierConfiguration(config,env)
   const locationEnabled=env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED??'false'
   if(!['true','false'].includes(locationEnabled)||locationEnabled==='true' && (env.PROFITIA_SUPPLIER_LOCATIONS_CONFIGURATION_VERSION!==locationTargets.configurationVersion || config.binding.projectId!==locationTargets.projectId || config.binding.branchId!==locationTargets.branchId || config.binding.databaseName!==locationTargets.databaseName || config.binding.role!==locationTargets.runtimeRole))unavailable()
-  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
+  const admission=locationEnabled==='true'?readSrmLocationAdmissionConfiguration(env,operationAcceptance.p1ReceiverSourceCompatibility):null
+  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,admission,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
   const cached = globalThis.__srmPrivateReportRuntime__
   if (cached) { if (cached.key !== key) unavailable(); return cached.runtime }
   const clerk = createSrmClerkClient(env)
@@ -204,9 +207,10 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   }
   const core=nativeTargets.coreSchemaDigests
   const locations=locationEnabled==='true'?createSupplierLocationRuntime({pool,auditPool,clerk,identity:config.identity,binding:config.binding,module:config.module,
-    application:{...config.application,configurationVersion:locationTargets.configurationVersion},businessDigest:locationTargets.businessSchemaDigest,
+    application:{...config.application,configurationVersion:locationTargets.configurationVersion},businessDigest:locationTargets.businessSchemaDigest,sourceScope:'HEADQUARTERS_MANUAL',
+    locationAdmission:createSrmLocationAdmission(admission!),parentSchemaDigest:admission!.parentSchemaDigest,
     ledger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],operationSchemaDigest:core['017-additional-request-operations.sql'],locationSchemaDigest:locationTargets.sql019Digest},
-    ...(supplierApi?{readAcceptedKys:supplierApi.readAcceptedKys}:{}),
+    // Limited UAT never receives a KYS reader, even when the host has one.
   }):undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
     ...(supplierApi?{supplierApi}:{}),

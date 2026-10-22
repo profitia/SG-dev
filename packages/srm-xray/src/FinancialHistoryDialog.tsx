@@ -7,6 +7,7 @@ export function FinancialHistoryDialog({
   children,
   onClose,
   actions,
+  className = "",
   compact = false
 }: {
   title: string;
@@ -15,10 +16,12 @@ export function FinancialHistoryDialog({
   onClose: () => void;
   actions?: React.ReactNode;
   compact?: boolean;
+  className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null),
     id = useId();
   useLayoutEffect(() => {
+    const node = dialog.current;
     const previous = document.activeElement as HTMLElement | null,
       overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -50,7 +53,8 @@ export function FinancialHistoryDialog({
     });
     if (window.self !== window.top) observer.observe(document.querySelector('.srm-ui') ?? document.body);
     center();
-    dialog.current?.showModal();
+    node?.showModal();
+    node?.querySelector<HTMLButtonElement>(".srm-close-window")?.focus();
     window.addEventListener('resize', center);
     window.visualViewport?.addEventListener('resize', center);
     window.visualViewport?.addEventListener('scroll', center);
@@ -60,12 +64,20 @@ export function FinancialHistoryDialog({
       window.removeEventListener('resize', center);
       window.visualViewport?.removeEventListener('resize', center);
       window.visualViewport?.removeEventListener('scroll', center);
-      previous?.focus({
+      node?.close();
+      if (previous?.isConnected) previous.focus({
         preventScroll: true
       });
     };
   }, [compact]);
-  return <CanonElement as="dialog" canonId="SRM-C27" usage="FinancialHistoryDialog:01" ref={dialog} aria-labelledby={id} className={'srm-ui srm-history srm-history-detail srm-statement-dialog' + (compact ? ' is-picker' : '')} onCancel={e => {
+  return <CanonElement as="dialog" canonId="SRM-C27" usage="FinancialHistoryDialog:01" ref={dialog} aria-labelledby={id} className={'srm-ui srm-history srm-history-detail srm-statement-dialog' + (compact ? ' is-picker' : '') + ' ' + className } onKeyDown={event => {
+    if (event.key !== 'Tab') return;
+    const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], summary, iframe, [tabindex="0"]'))
+      .filter(element => element.getClientRects().length > 0 && !element.closest('[inert]'));
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }} onCancel={e => {
     e.preventDefault();
     onClose();
   }} onClick={e => {
@@ -74,5 +86,5 @@ export function FinancialHistoryDialog({
       if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) onClose();
     }
   }}>
- <header className="srm-history-detail-head"><div><h2 id={id}>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><div className="srm-history-head-actions">{actions}<CanonCloseButton canonId="SRM-C60" usage="FinancialHistoryDialog:02" onClick={onClose} autoFocus /></div></header>{children}</CanonElement>;
+ <header className="srm-history-detail-head"><div><h2 id={id}>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><div className="srm-history-head-actions">{actions}<CanonCloseButton canonId="SRM-C60" usage="FinancialHistoryDialog:02" onClick={onClose} /></div></header>{children}</CanonElement>;
 }

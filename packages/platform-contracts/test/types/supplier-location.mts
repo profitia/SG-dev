@@ -13,3 +13,11 @@ createDelegatedJobStore({binding,targetOperation:'supplier.location.write',schem
 createDelegatedJobStore({binding,targetOperation:'supplier.location.sync',schemaDigest:'base',supplierSchemaDigest:'supplier',operationSchemaDigest:'operations',locationSchemaDigest:'location'})
 declare const options:DelegatedJobHostOptions<object>&{job:{schemaDigest:string;targetOperation:'supplier.location.geocode';supplierSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest:string};privateWork:{schemaDigest:string}}
 void createDelegatedNativeWorkHost(options)
+
+import {createSupplierLocationAdmission,type SupplierLocationAdmissionOptions} from '../../src/supplier-location.mjs'
+declare const admission:SupplierLocationAdmissionOptions
+const port=createSupplierLocationAdmission({binding,...admission})
+const id:string=port.locationId({organisationId:'a',userId:'u',supplierId:'s',idempotencyKey:'key'});void id
+createRequestLedger({binding,operation:'supplier.location.write',schemaDigest:'base',externalSchemaDigest:'external',operationSchemaDigest:'operations',locationSchemaDigest:'location',locationAdmission:admission})
+// @ts-expect-error Current parent selection is a required server adapter.
+createSupplierLocationAdmission({binding,schemaDigest:'base',proofKey:new Uint8Array(32)})
