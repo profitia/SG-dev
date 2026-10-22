@@ -69,6 +69,6 @@ test('P1B accepts exact1.25 source while preserving all1.24 history and legacy d
   assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
   assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,path)
  }
- for(const[path,digest]of Object.entries(accepted.applicationSourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries({...accepted.applicationSourceDigests,...receipt.selfServiceAccountSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
  for(const flag of['supplierLocationBusinessAdopted','locationAdmissionOptedIn','sql020Installed','liveGrantsChanged','productDeploymentPerformed'])assert.equal(accepted[flag],false,flag)
 })

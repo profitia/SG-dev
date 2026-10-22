@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, Fragment, useContext, type ReactNode } from 'react'
+import React, { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from 'react'
 import { ClerkProvider, ClerkFailed, SignOutButton, useAuth } from '@clerk/react'
 import { enUS, plPL } from '@clerk/localizations'
 import type { BrowserPersistencePolicy } from '@/lib/platform/browser-session-storage'
@@ -17,14 +17,21 @@ export function useSg2IdentityMode(): 'legacy_demo' | 'clerk' | 'unavailable' {
 
 /** Only public, server-selected presentation configuration. No browser state
  * is an internal tenant/user identity or a permission to a backend operation. */
-export function Sg2IdentityProvider({ mode, publishableKey, locale, children }: {
+export function Sg2IdentityProvider({ mode, publishableKey, locale, children, satellite }: {
   mode: 'legacy_demo' | 'clerk' | 'unavailable'; publishableKey?: string; locale: 'pl' | 'en'; children: ReactNode
+  satellite?: { domain: string; signInUrl: string; signUpUrl: string }
 }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   if (mode === 'legacy_demo') return <ProviderMode.Provider value="legacy_demo">{children}</ProviderMode.Provider>
   if (mode !== 'clerk' || !publishableKey) return unavailable
+  // Generic React satellite integration is client-only: no Clerk SSR/hydration.
+  if (satellite && !mounted) return <p role="status">{locale === 'en' ? 'Checking your session…' : 'Sprawdzamy Twoją sesję…'}</p>
   return <ProviderMode.Provider value="clerk">
     <ClerkProvider publishableKey={publishableKey} localization={locale === 'en' ? enUS : plPL}
-      telemetry={{ disabled: true }} signInUrl={`/${locale}`} afterSignOutUrl={`/${locale}`}>
+      telemetry={{ disabled: true }} afterSignOutUrl={`/${locale}`}
+      {...(satellite ? { isSatellite: true, domain: satellite.domain, satelliteAutoSync: true, signInUrl: satellite.signInUrl, signUpUrl: satellite.signUpUrl }
+        : { signInUrl: `/${locale}` })}>
       {children}<ClerkFailed>{unavailable}</ClerkFailed>
     </ClerkProvider>
   </ProviderMode.Provider>
