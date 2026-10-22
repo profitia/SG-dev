@@ -13,7 +13,7 @@ export type KrsNamePorts=Readonly<{
   registry:{search(request:Request,query:string):Promise<readonly SupplierCandidate[]>;
     verify(request:Request,krs:string):Promise<AcceptedKrsSelection>;
     readSelection(request:Request,evidenceRef:string):Promise<AcceptedKrsSelection>};
-  financial:{acquire(request:Request,identity:VerifiedIdentityV1,key:string):Promise<MgbiFinancialResult>;
+  financial:{acquire(request:Request,identity:VerifiedIdentityV1,key:string):Promise<MgbiFinancialResult & {workPending?:true}>;
     publishEligible(request:Request,identity:VerifiedIdentityV1,result:MgbiFinancialResult):Promise<SupplierReportData|null>};
   now?:()=>number;
 }>;
@@ -46,7 +46,7 @@ export function createKrsNameSearch(ports:KrsNamePorts){
     async lookup(request:Request,selectionRef:string,key:string){
       if(!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(selectionRef)||!validRequestIdempotencyKey(key))throw Error('INVALID_REQUEST');
       const selected=await checked(request,selectionRef),general=await krsGeneral(selected.snapshot,selected.identity,now());
-      let section=unavailableFinancial(new Date(now()).toISOString(),'MGBI_FINANCIAL_UNAVAILABLE'),metadata:SupplierReportData|null=null;
+      let section=unavailableFinancial(new Date(now()).toISOString(),'MGBI_FINANCIAL_UNAVAILABLE'),metadata:SupplierReportData|null=null,workPending=false;
       try{
         // Fresh accepted identity at dispatch; the native port must admit current
         // Request/Source/Work, budget and this exact logical selection once.
@@ -56,17 +56,18 @@ export function createKrsNameSearch(ports:KrsNamePorts){
           ||current.identity.source.rawDigest!==selected.identity.source.rawDigest||current.identity.source.contentDigest!==selected.identity.source.contentDigest
           ||current.identity.source.sourceVersion!==selected.identity.source.sourceVersion||current.identity.source.retrievedAt!==selected.identity.source.retrievedAt)throw Error('KRS_SELECTION_SUPERSEDED');
         const eligible=await reconcileKrsFinancial(current.identity,acquired,now());
+        workPending=acquired.workPending===true&&!eligible.errorCode;
         // Only filtered records/facts enter the existing native financial writer.
-        if(!eligible.errorCode){
+        if(!eligible.errorCode&&!workPending){
           const published=await financial.publishEligible(request,current.identity,eligible);
           if(published&&(published.nip!==current.identity.identity.nip||published.entityType!=='COMPANY'))throw Error('FINANCIAL_METADATA_MISMATCH');
           metadata=published;
         }
-        section=eligible.section;
+        section=workPending?{...eligible.section,status:'PENDING',data:null,warnings:['MSR_PROCESSING_PENDING']}:eligible.section;
       }catch{metadata=null;/* A failed Financial acquisition never purchases General or reveals a failed projection. */}
       // Current protected read also fences publication after a revoked membership.
       await checked(request,selectionRef);
-      return {result:{entityType:'COMPANY' as const,card:{identity:{krs:selected.identity.selectedKrs,nip:selected.identity.identity.nip,name:selected.identity.identity.officialName},
+      return {...(workPending?{pending:true as const}:{}),result:{entityType:'COMPANY' as const,card:{identity:{krs:selected.identity.selectedKrs,nip:selected.identity.identity.nip,name:selected.identity.identity.officialName},
         general:publicSection(general),financial:publicSection(section),kys:{status:'NOT_REQUESTED' as const,retrievedAt:null,effectiveAt:null,data:null,warnings:[]}}},metadata};
     },
   });

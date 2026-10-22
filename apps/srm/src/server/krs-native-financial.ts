@@ -6,11 +6,12 @@ import type {MgbiFinancialResult} from './mgbi-financial'
 import {reconcileKrsFinancial} from './krs-financial'
 import {applyFinancialDocumentMetadata} from './financial-documents'
 import {emptyCard} from '../demo/fixture'
+import {isFreshCatalogEntry} from './shared-catalog'
 
 // This composition has no General acquisition port. All effects use the same
 // original native Request/Source/Work/archive/MSR/Financial helpers as NIP mode.
 type Ports=Pick<XrayCompanyPorts,'createLookup'|'fetchMgbiFinancial'|'saveMgbiArchive'|'saveFinancialDocuments'|
- 'readFinancialDocuments'|'enrichMsrFinancial'|'persistSection'|'saveSharedCompany'|'refreshFinancialIndicators'|'recordInterest'>
+ 'readFinancialDocuments'|'enrichMsrFinancial'|'persistSection'|'saveSharedCompany'|'refreshFinancialIndicators'|'recordInterest'|'reprojectFinancialArchive'>
 export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,
  recheck:()=>Promise<void>,now:()=>number=Date.now){
  const {validateIdentityEvidence}=await import('@profitia/krs-registry-contracts')
@@ -22,26 +23,36 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
  const lookup=await ports.createLookup(org,{type:'NIP',value:nip},'COMPANY')
  if(lookup.requestId!==selection.requestId)return deny()
  await check()
- let result=await reconcileKrsFinancial(identity,await ports.fetchMgbiFinancial({type:'NIP',value:nip}),now())
+ const restored=await ports.reprojectFinancialArchive(org,nip,undefined,undefined,true)
+ const cached=restored&&isFreshCatalogEntry(restored.section.retrievedAt,new Date(now()))?restored:null
+ let result=await reconcileKrsFinancial(identity,cached??await ports.fetchMgbiFinancial({type:'NIP',value:nip}),now())
  await check()
+ let pending=false
  if(result.rawResponse&&!result.errorCode&&result.section.retrievedAt){
+  if(!cached){
   await ports.saveMgbiArchive(org,nip,'pl-krs-rdf-record',result.rawResponse.pages,result.rawResponse.recordCount,result.section.retrievedAt,selection.requestId)
   await ports.saveFinancialDocuments(org,nip,result.rawResponse.pages)
   await check()
-  result=await ports.enrichMsrFinancial(org,nip,result,{requestId:selection.requestId,allowedKrs:[identity.selectedKrs]})
+  // The funded inventory is durable before a new browser request continues
+  // licensed originals with a fresh session token. Never buy the inventory twice.
+  pending=true
+  }else{
+  result=await ports.enrichMsrFinancial(org,nip,result,{requestId:selection.requestId,allowedKrs:[identity.selectedKrs],maximumNewDownloads:1})
   await check()
   result=await reconcileKrsFinancial(identity,result,now())
+  pending=result.section.warnings.includes('MSR_PROCESSING_PENDING')&&!result.section.warnings.some(w=>['MSR_BUDGET_UNAVAILABLE','MSR_FILE_BUDGET_EXHAUSTED','MSR_PROVIDER_NOT_CONFIGURED'].includes(w))
   if(result.section.data){
    const documents=await ports.readFinancialDocuments(org,nip)
    result.section=applyFinancialDocumentMetadata(result.section,documents)
    if(result.sourceData)result.sourceData=applyFinancialDocumentMetadata({...result.section,data:result.sourceData},documents).data??undefined
   }
+  }
  }
  const accepted=result
  let published=false
- return Object.freeze({result:accepted,async publish(eligible:MgbiFinancialResult){
+ return Object.freeze({result:accepted,pending,async publish(eligible:MgbiFinancialResult){
   await check()
-  if(published||eligible.errorCode||JSON.stringify(eligible.rawResponse)!==JSON.stringify(accepted.rawResponse)
+  if(pending||published||eligible.errorCode||JSON.stringify(eligible.rawResponse)!==JSON.stringify(accepted.rawResponse)
    ||JSON.stringify(eligible.facts)!==JSON.stringify(accepted.facts))return deny()
   const audited=await reconcileKrsFinancial(identity,accepted,now())
   if(audited.errorCode||JSON.stringify(audited.section)!==JSON.stringify(eligible.section))return deny()

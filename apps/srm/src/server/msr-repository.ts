@@ -104,13 +104,14 @@ export function msrStore(organizationId:string,nip:string,requestId:string,allow
 /** One download per record for the lifetime of its receipt, including ambiguous failures.
  * A blocked receipt needs explicit evidence-based operator reconciliation, never cache deletion. */
 export async function enrichMsrFinancial(organizationId:string,nip:string,base:MgbiFinancialResult,
-  options:{requestId?:string;store?:MsrStore;download?:typeof downloadMsrOriginal;parse?:typeof parseMsrOriginal;refreshMetadata?:()=>Promise<void>;allowedKrs?:readonly string[]} = {}):Promise<MgbiFinancialResult & {msrChanged:boolean}> {
+  options:{requestId?:string;store?:MsrStore;download?:typeof downloadMsrOriginal;parse?:typeof parseMsrOriginal;refreshMetadata?:()=>Promise<void>;allowedKrs?:readonly string[];maximumNewDownloads?:number} = {}):Promise<MgbiFinancialResult & {msrChanged:boolean}> {
   if(!options.store && !options.requestId)throw new Error("MSR_LOOKUP_CONTEXT_REQUIRED");
   const store = options.store ?? msrStore(organizationId,nip,options.requestId!,options.allowedKrs);let archive = await store.candidates();
   if(archive?.metadataMissing && options.refreshMetadata){await options.refreshMetadata();archive=await store.candidates();}
   if (!archive?.candidates.length) return {...base,msrChanged:false};
   const projections:MsrProjection[] = [], warnings:string[] = [], resolvedWarnings:string[] = [];
-  let changed = false;
+  if(options.maximumNewDownloads!==undefined&&(!Number.isSafeInteger(options.maximumNewDownloads)||options.maximumNewDownloads<1||options.maximumNewDownloads>100))throw Error('MSR_INVALID_WORK_BOUND');
+  let changed = false,newDownloads=0;
   for (const candidate of archive.candidates) {
     const existing = await store.read(candidate);
     if (existing && existing.state !== "RECEIVED" && existing.state !== "DEFERRED") {
@@ -139,12 +140,14 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
       } else { warnings.push(existing.state === "REQUESTED" ? "MSR_DOWNLOAD_RECONCILIATION_REQUIRED" : existing.error_code ?? "MSR_SOURCE_BLOCKED"); }
       continue;
     }
+    if(existing?.state!=='RECEIVED'&&options.maximumNewDownloads!==undefined&&newDownloads>=options.maximumNewDownloads){warnings.push('MSR_PROCESSING_PENDING');continue;}
     const claimId = existing?.claim_id ?? randomUUID();
     if ((!existing || existing.state === "DEFERRED") && !await store.claim(candidate,claimId)) {warnings.push("MSR_DOWNLOAD_IN_PROGRESS");continue;}
     try {
       const received=existing?.state === "RECEIVED" ? existing : null;
       if (received && (received.identity_sha256 !== identity(candidate) || !received.original_bytes
           || hash(received.original_bytes) !== received.original_sha256 || !received.retrieved_at)) throw new Error("MSR_SOURCE_IDENTITY_MISMATCH");
+      if(!received)newDownloads++;
       const original = received ? decodeMsrOriginal(candidate.recordId,received.original_bytes!,"application/zip",new Date(received.retrieved_at!).toISOString())
         : await (options.download ?? downloadMsrOriginal)(candidate.recordId);
       // Keep the successfully received licensed original even if parsing or projection fails.

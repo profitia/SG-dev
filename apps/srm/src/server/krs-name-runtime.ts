@@ -47,7 +47,8 @@ export function createKrsNameHttpHandler(action:'status'|'search'|'verify'|'look
       }
       const key=request.headers.get('idempotency-key');
       if(!closed(body,'selectionRef')||!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(body.selectionRef)||!validRequestIdempotencyKey(key))return unavailable(400);
-      return Response.json(await runtime.api.lookup(request,body.selectionRef,key!),{headers});
+      const result=await runtime.api.lookup(request,body.selectionRef,key!);
+      return Response.json(result,{status:result.pending?202:200,headers});
     }catch(error){
       const reason=isOperationDenied(error)?error.reasonCode:'POLICY_UNAVAILABLE';
       return unavailable(reason==='UNVERIFIED_IDENTITY'?401:['POLICY_UNAVAILABLE','AUDIT_UNAVAILABLE','LIMIT_POLICY_UNAVAILABLE','DELIVERY_UNCERTAIN'].includes(reason)?503:403);

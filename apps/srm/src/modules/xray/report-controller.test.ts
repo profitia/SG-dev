@@ -4,9 +4,21 @@ import {SupplierReportController} from './report-controller'
 import {sampleCard} from '../../demo/fixture'
 import {projectReportData} from '../../server/report-data'
 import {createSupplierWebRequest} from './supplier-web-request'
+import {createKrsSessionTransport} from './krs-session-transport'
 const nip='8650004194',other='5272443955',now=new Date('2026-10-20T00:00:00Z'),retrievedAt='2026-10-19T23:00:00Z'
 const privateRef={snapshotId:'11111111-1111-4111-8111-111111111111',nip,entityType:'COMPANY',retentionUntil:'2026-10-21T00:00:00Z',exportRef:'b'.repeat(64)}
 const metadata=(selected=nip)=>projectReportData({nip:selected,entityType:'COMPANY'},{nip:selected,financial_json:null,financial_sha256:null,financial_checked_at:null,facts:[],indicators:[],kys:null},now,{})
+
+test('KRS requests refresh the existing session and attach its token only to the four relative protected routes',async()=>{
+ let tokens=0;const seen:{path:string;authorization:string|null}[]=[]
+ const transport=createKrsSessionTransport(async options=>{assert.deepEqual(options,{skipCache:true});return 'synthetic-session-'+ ++tokens},async(path,init)=>{
+  seen.push({path:String(path),authorization:new Headers(init?.headers).get('authorization')});return Response.json({})
+ })
+ await transport('/api/xray/krs/status');await transport('/api/xray/krs/lookup',{method:'POST'});
+ await transport('/api/xray/search');await transport('https://foreign.example/api/xray/krs/lookup');
+ assert.equal(tokens,2);assert.deepEqual(seen.map(x=>x.authorization),['Bearer synthetic-session-1','Bearer synthetic-session-2',null,null])
+ let calls=0;await assert.rejects(createKrsSessionTransport(async()=>null,async()=>{calls++;return Response.json({})})('/api/xray/krs/lookup'),/Sesja wygasła/);assert.equal(calls,0)
+})
 
 test('website client keeps one logical key across uncertain delivery and pending work, then rotates after success',async()=>{
  let call=0,keys=0
@@ -112,3 +124,16 @@ test('name report keeps eligible Financial metadata while applying only its curr
  await c.fetchKys();assert.deepEqual(calls,['/api/xray/krs/lookup','/api/xray/kys']);
  assert.equal(c.getSnapshot().metadata?.kys.exportRef,privateRef.exportRef);assert.deepEqual(c.getSnapshot().metadata?.financial,financial);
 });
+
+test('bounded KRS document continuation keeps the same logical key and publishes only the completed Financial metadata',async()=>{
+ let calls=0;const keys:string[]=[],states:boolean[]=[]
+ const c=new SupplierReportController(async(path,init)=>{
+  assert.equal(path,'/api/xray/krs/lookup');keys.push(new Headers(init?.headers).get('Idempotency-Key')!);calls++
+  const payload=nameResult()
+  if(calls===1)return Response.json({...payload,pending:true,metadata:null},{status:202})
+  return Response.json(payload)
+ })
+ c.subscribe(()=>states.push(c.getSnapshot().busy));await c.searchKrs(selection)
+ assert.equal(calls,2);assert.equal(new Set(keys).size,1);assert.equal(c.getSnapshot().busy,false)
+ assert.equal(c.getSnapshot().error,null);assert(c.getSnapshot().metadata);assert(states.includes(true))
+})

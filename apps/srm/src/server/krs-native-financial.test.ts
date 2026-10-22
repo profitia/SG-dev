@@ -18,6 +18,7 @@ async function fixture(foreign=false){
  const ports={
   createLookup:async()=>{events.push('register');return{requestId:selection.requestId,supplierId:'33333333-3333-4333-8333-333333333333'}},
   fetchMgbiFinancial:async()=>{events.push('financial');return result},
+  reprojectFinancialArchive:async()=>null,
   saveMgbiArchive:async()=>{events.push('archive')},saveFinancialDocuments:async()=>{events.push('documents')},
   readFinancialDocuments:async()=>[],enrichMsrFinancial:async(_org:string,_nip:string,base:typeof result,options:{allowedKrs:string[]})=>{assert.deepEqual(options.allowedKrs,[krs]);events.push('msr');return{...base,msrChanged:false}},
   persistSection:async(_org:string,_lookup:unknown,section:string)=>{assert.equal(section,'financial');events.push('persist');return 'snapshot'},
@@ -27,7 +28,11 @@ async function fixture(foreign=false){
  return{events,selection,identity,result,ports,check,revoke:()=>{revoked=true}}
 }
 test('native Financial composition keeps the original RDF/MSR/archive path and persists only after current reconciliation',async()=>{
- const f=await fixture(),work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ const f=await fixture(),first=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ assert.equal(first.pending,true);assert.ok(!f.events.includes('msr'));await assert.rejects(first.publish(first.result))
+ f.ports.reprojectFinancialArchive=async()=>f.result
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ assert.equal(work.pending,false)
  assert.equal(f.events.filter(x=>x==='financial').length,1);assert.ok(f.events.includes('archive'));assert.ok(f.events.includes('msr'));assert.ok(!f.events.includes('persist'))
  assert.equal(work.result.section.data?.periods[0].facts[0].amount,'1000')
  await work.publish(work.result);assert.ok(f.events.includes('persist'));assert.ok(f.events.includes('public'))

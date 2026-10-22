@@ -66,7 +66,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
     if(current.identity.identity.nip!==identity.identity.nip||current.identity.source.rawDigest!==identity.source.rawDigest)return deny()}
    const prepared=await runtime.supplierApi!.prepareKrsFinancial({request,organisationId:runtime.defaultOrganisationId,
     command:{kind:'SUPPLIER_REPORT',nip:identity.identity.nip},idempotencyKey:key},identity,recheck)
-   pending.set(request,{reference:identity.evidenceRef,prepared});return prepared.result
+   pending.set(request,{reference:identity.evidenceRef,prepared});return {...prepared.result,...(prepared.pending?{workPending:true as const}:{})}
   },
   publishEligible:async(request,identity,result:MgbiFinancialResult)=>{
    const state=pending.get(request);if(!state||state.reference!==identity.evidenceRef)return deny()

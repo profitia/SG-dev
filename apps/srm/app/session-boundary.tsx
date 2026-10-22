@@ -1,10 +1,13 @@
 "use client";
 
-import { createContext, Fragment, useContext, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useMemo, type ReactNode } from "react";
+import {createKrsSessionTransport} from '../src/modules/xray/krs-session-transport';
 import { ClerkProvider, ClerkFailed, SignOutButton, useAuth } from "@clerk/react";
 import { plPL } from "@clerk/localizations";
 
 const ProviderMode = createContext<"legacy_demo" | "clerk" | null>(null);
+const SessionTransport=createContext<typeof fetch>((input,init)=>fetch(input,init));
+export const useSrmSessionTransport=()=>useContext(SessionTransport);
 const unavailable = <p role="alert">Logowanie jest chwilowo niedostępne.</p>;
 
 /** Public presentation configuration only. Provider state is never membership,
@@ -32,10 +35,11 @@ export function SrmSessionContent({ session, children }: { session: SessionPrese
   return <Fragment key={JSON.stringify([session.userId, session.sessionId])}>{children}</Fragment>;
 }
 function ClerkSessionContent({ children }: { children: ReactNode }) {
-  const { isLoaded, isSignedIn, userId, sessionId } = useAuth();
+  const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth();
+  const transport=useMemo(()=>createKrsSessionTransport(getToken),[getToken]);
   const session: SessionPresentation = !isLoaded ? { status: "loading" }
     : isSignedIn && userId && sessionId ? { status: "signed-in", userId, sessionId } : { status: "signed-out" };
-  return <SrmSessionContent session={session}>{children}</SrmSessionContent>;
+  return <SrmSessionContent session={session}><SessionTransport.Provider value={transport}>{children}</SessionTransport.Provider></SrmSessionContent>;
 }
 export function SrmAuthenticatedView({ children }: { children: ReactNode }) {
   const mode = useContext(ProviderMode);

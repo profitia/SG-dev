@@ -109,3 +109,18 @@ test('verified historical parser version remains readable without overwriting st
   assert.equal(verifyMsrReceipt(c,legacy)!.parsed.mappingVersion,'2026-10-15-ixbrl-v1');
   assert.throws(()=>verifyMsrReceipt(c,{...legacy,mapping_version:'unreviewed'}),/INTEGRITY/);
 });
+
+test('bounded MSR work preserves stored originals and continues remaining documents without another download',async()=>{
+ const second={...c,recordId:'b'.repeat(24)},a=fixture(),b=fixture(),get=(candidate:MsrCandidate)=>candidate.recordId===c.recordId?a.store:b.store
+ const store:MsrStore={candidates:async()=>({candidates:[c,second],archiveChecksum:'b'.repeat(64)}),
+  read:async candidate=>get(candidate).read(candidate),claim:async(candidate,id)=>get(candidate).claim(candidate,id),
+  receive:async(candidate,id,value)=>get(candidate).receive(candidate,id,value),save:async(candidate,id,original,parsed,projection,checksum)=>get(candidate).save(candidate,id,original,parsed,projection,checksum),
+  block:async(candidate,id,code)=>get(candidate).block(candidate,id,code)}
+ let downloads=0
+ const download=async(id:string)=>{downloads++;return decodeMsrOriginal(id,source().bytes,'application/xhtml+xml','2026-10-15T00:00:00Z')}
+ const first=await enrichMsrFinancial('org',c.nip,base(),{store,download,maximumNewDownloads:1})
+ assert.equal(downloads,1);assert(first.section.warnings.includes('MSR_PROCESSING_PENDING'));assert.equal(b.claims(),0)
+ const next=await enrichMsrFinancial('org',c.nip,base(),{store,download,maximumNewDownloads:1})
+ assert.equal(downloads,2);assert(!next.section.warnings.includes('MSR_PROCESSING_PENDING'));assert.equal(a.get().state,'READY');assert.equal(b.get().state,'READY')
+ await enrichMsrFinancial('org',c.nip,base(),{store,download,maximumNewDownloads:1});assert.equal(downloads,2)
+})
