@@ -1,0 +1,30 @@
+{
+  "name": "@profitia/krs-registry-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "scripts": {
+    "lint": "node scripts/check.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "node --test --test-timeout=60000 test/contracts.test.mjs test/registry.test.mjs test/api.test.mjs",
+    "test:postgres": "node scripts/local-postgres.mjs",
+    "start": "node dist/main.js",
+    "sync": "node dist/cli.js",
+    "artifact": "node scripts/artifact.mjs",
+    "ci:proof": "node scripts/ci-proof.mjs"
+  },
+  "dependencies": {
+    "@profitia/krs-registry-contracts": "file:../../packages/krs-registry-contracts",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.5",
+    "typescript": "5.9.3"
+  }
+}
