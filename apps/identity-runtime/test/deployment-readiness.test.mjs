@@ -3,6 +3,10 @@ import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
 import { createServer, request as httpRequest } from 'node:http'
 import { once } from 'node:events'
+import { createServer as createTlsServer, request as tlsRequest } from 'node:https'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { readDeploymentOrigin } from '../dist/src/deployment-configuration.js'
 
 test('deployment origin is exact server configuration with a local default', () => {
@@ -94,6 +98,38 @@ test('restart keeps State A nonoperational and SIGTERM closes the one Node proce
     assert.equal((await send(child.port, { host, path: '/v1/session' })).status, 503)
     await child.stop()
   }
+})
+
+test('TLS edge forwards HTTP with exact public Host, without trusting forwarded identity or aliases', async t => {
+  const host = 'identity-fixture.onrender.com', origin = 'https://' + host
+  const child = await start(t, origin)
+  const directory = mkdtempSync(path.join(tmpdir(), 'identity-tls-fixture-'))
+  let key, cert
+  try {
+    const generated = spawnSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=' + host, '-addext', 'subjectAltName=DNS:' + host, '-keyout', path.join(directory, 'key.pem'), '-out', path.join(directory, 'cert.pem')], { stdio: 'ignore' })
+    assert.equal(generated.status, 0, 'Disposable local TLS fixture must be generated')
+    key = readFileSync(path.join(directory, 'key.pem')); cert = readFileSync(path.join(directory, 'cert.pem'))
+  } finally { rmSync(directory, { recursive: true, force: true }) }
+  const edge = createTlsServer({ key, cert }, (incoming, outgoing) => {
+    const upstream = httpRequest({ hostname: '127.0.0.1', port: child.port, method: incoming.method, path: incoming.url, headers: { ...incoming.headers, 'x-forwarded-proto': 'https' } }, response => {
+      outgoing.writeHead(response.statusCode, response.headers); response.pipe(outgoing)
+    })
+    upstream.once('error', () => { outgoing.writeHead(502); outgoing.end() }); incoming.pipe(upstream)
+  })
+  t.after(() => { edge.closeAllConnections(); edge.close() })
+  await new Promise((resolve, reject) => { edge.once('error', reject); edge.listen(0, '127.0.0.1', resolve) })
+  const throughEdge = ({ path = '/healthz', authority = host, method = 'GET', body } = {}) => new Promise((resolve, reject) => {
+    const request = tlsRequest({ hostname: '127.0.0.1', servername: host, port: edge.address().port, ca: cert, method, path, headers: { host: authority, 'x-forwarded-host': host, origin, 'content-type': 'application/json' } }, response => {
+      response.resume(); response.once('end', () => resolve(response.statusCode))
+    })
+    request.once('error', reject); request.end(body)
+  })
+  assert.equal(await throughEdge(), 200)
+  assert.equal(await throughEdge({ path: '/readyz' }), 503)
+  assert.equal(await throughEdge({ path: '/v1/session' }), 503)
+  assert.equal(await throughEdge({ authority: 'forged.example.test' }), 400)
+  assert.equal(await throughEdge({ path: '/v1/flows', method: 'POST', body: 'x'.repeat(4097) }), 400)
+  assert.equal(await throughEdge({ path: '/v1/flows', method: 'POST', body: '{}' }), 503)
 })
 
 test('malformed public deployment origin fails startup without logging its value', () => {
