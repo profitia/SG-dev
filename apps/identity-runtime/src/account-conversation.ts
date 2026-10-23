@@ -1,8 +1,10 @@
 /** Scripted presentation over the official Clerk resource; no local authentication authority. */
 export function createClerkConversation(sdk: any, registration: boolean) {
-  const state = { step: 'avatar', firstName: '', lastName: '', email: '', method: 'email_code', complete: false, busy: false }
+  const state = { step: 'avatar', avatarSex: null as 'male' | 'female' | null, firstName: '', lastName: '', email: '', method: 'email_code', complete: false, busy: false }
+  let completedUserId: string | null = null
   async function finish(result: any) {
     if (result.status !== 'complete' || !result.createdSessionId) { state.step = 'challenge'; return }
+    if (registration && typeof result.createdUserId === 'string') completedUserId = result.createdUserId
     await sdk.setActive({ session: result.createdSessionId })
     state.complete = true; state.step = 'done'
   }
@@ -15,7 +17,13 @@ export function createClerkConversation(sdk: any, registration: boolean) {
     }
     state.step = 'code'
   }
-  return { state, async resend() { if (state.busy || state.step !== 'code') return; state.busy = true; try { await sendCode() } finally { state.busy = false } },
+  return { state,
+    registrationAvatar(userId: string) {
+      const signUp = sdk.client.signUp
+      const subject = completedUserId ?? (signUp?.status === 'complete' ? signUp.createdUserId : null)
+      return registration && subject === userId && ['male', 'female'].includes(state.avatarSex ?? '') ? state.avatarSex : null
+    },
+    async resend() { if (state.busy || state.step !== 'code') return; state.busy = true; try { await sendCode() } finally { state.busy = false } },
     async submit(value: string) {
       if (state.busy || state.complete) return
       const step = state.step, input = step === 'password' ? value : value.trim()
@@ -23,7 +31,7 @@ export function createClerkConversation(sdk: any, registration: boolean) {
       if (step === 'code' && !/^\d{6}$/.test(input)) throw Error('INVALID_CODE')
       state.busy = true
       try {
-        if (step === 'avatar') { if (!['male', 'female'].includes(input)) throw Error('INVALID_INPUT'); state.step = registration ? 'name' : 'method' }
+        if (step === 'avatar') { if (!['male', 'female'].includes(input)) throw Error('INVALID_INPUT'); state.avatarSex = input as 'male' | 'female'; state.step = registration ? 'name' : 'method' }
         else if (step === 'name') { state.firstName = input; state.step = 'surname' }
         else if (step === 'surname') { state.lastName = input; state.step = 'email' }
         else if (step === 'method') { if (!['email_code', 'password'].includes(input)) throw Error('INVALID_INPUT'); state.method = input; state.step = 'email' }
@@ -31,7 +39,9 @@ export function createClerkConversation(sdk: any, registration: boolean) {
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)) throw Error('INVALID_EMAIL')
           state.email = input
           if (registration) {
-            const result = await sdk.client.signUp.create({ firstName: state.firstName, lastName: state.lastName, emailAddress: input })
+            // Presentation preference only. Clerk signup metadata is a temporary
+            // carrier until the verified account writes its own private profile.
+            const result = await sdk.client.signUp.create({ firstName: state.firstName, lastName: state.lastName, emailAddress: input, unsafeMetadata: { assistantAvatar: state.avatarSex } })
             // Required provider fields, legal acceptance and challenges are never skipped.
             if (result.status === 'complete') await finish(result)
             else if (result.missingFields?.length) state.step = 'challenge'
@@ -71,7 +81,9 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
   const tr = (pl, english) => en ? english : pl;
   const scroll = () => { history.scrollTo({ top: history.scrollHeight, behavior: reduced ? 'instant' : 'smooth' }); };
   const avatarNode = (size, dynamic = true) => { const wrap = document.createElement('span'); wrap.className = 'sg-v2-avatar'; wrap.style.width = wrap.style.height = size + 'px'; const image = document.createElement('img'); image.src = cfg.avatars[avatar]; image.alt = ''; if (dynamic) image.setAttribute('data-avatar', ''); image.referrerPolicy = 'no-referrer'; wrap.append(image); return wrap; };
-  const setAvatar = value => { avatar = value; document.querySelectorAll('[data-avatar]').forEach(image => { image.src = cfg.avatars[avatar]; }); };
+  const setAvatar = value => { if (!['male','female'].includes(value)) return; avatar = value; model.state.avatarSex = value; document.querySelectorAll('[data-avatar]').forEach(image => { image.src = cfg.avatars[avatar]; }); };
+  window.spendGuruRestoreAvatar = value => { setAvatar(value); };
+  window.spendGuruRegistrationAvatar = userId => model.registrationAvatar(userId);
   function bubble(text, user) {
     const row = document.createElement('div'); row.className = 'sg-v2-message ' + (user ? 'is-user' : 'is-bot');
     if (!user) row.append(avatarNode(34)); const box = document.createElement('div'); box.className = 'sg-v2-bubble ' + (user ? 'is-user' : 'is-bot'); box.textContent = text; row.append(box); history.insertBefore(row, dots);

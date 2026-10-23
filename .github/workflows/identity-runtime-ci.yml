@@ -25,6 +25,8 @@ jobs:
           node-version: '24'
       - name: Deterministic public dependencies without credentials or lifecycle scripts
         run: npm --prefix apps/identity-runtime ci --ignore-scripts --no-audit --no-fund
+      - name: Install isolated PostgreSQL profile fixture dependencies
+        run: npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund && npm --prefix packages/platform-contracts ci --ignore-scripts --no-audit --no-fund
       - name: Lint, types, executable build, session and request tests
         working-directory: apps/identity-runtime
         run: npm run lint && npm run typecheck && npm run build && npm test

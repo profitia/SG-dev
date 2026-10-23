@@ -1,4 +1,6 @@
 import pg from 'pg'
+import { createHash } from 'node:crypto'
+import { createAssistantAvatarSurface, type AssistantAvatarSurface } from './assistant-avatar.js'
 import { readConfiguration } from './config.js'
 import { createOfficialClient } from './official-client.js'
 import { createSessionBoundary, createDatabaseAuthority } from './session-boundary.js'
@@ -11,6 +13,7 @@ let pool: pg.Pool | null = null
 async function start() {
 let boundary: SessionBoundary | null = null
 let account: AccountSurface | null = null
+let avatar: AssistantAvatarSurface | null = null
 if (process.env.IDENTITY_SELF_SERVICE_ENABLED !== undefined && !['true', 'false'].includes(process.env.IDENTITY_SELF_SERVICE_ENABLED)) throw Error('INVALID_SELF_SERVICE_FLAG')
 if (process.env.IDENTITY_SELF_SERVICE_ENABLED === 'true' && process.env.IDENTITY_RUNTIME_ENABLED !== 'true') throw Error('RUNTIME_REQUIRED')
 if (process.env.IDENTITY_BINDING_RENEWAL_ENABLED !== undefined && !['true', 'false'].includes(process.env.IDENTITY_BINDING_RENEWAL_ENABLED)) throw Error('INVALID_RENEWAL_FLAG')
@@ -38,9 +41,12 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     if (process.env.IDENTITY_BINDING_RENEWAL_ENABLED === 'true' && !/^[a-f0-9]{64}$/.test(renewalDigest ?? '')) throw Error('RENEWAL_CONFIGURATION_REQUIRED')
     account = createAccountSurface({ configuration: config, client, authority, binding, schemaDigest: digest!, ...(renewalDigest === undefined ? {} : { renewalSchemaDigest: renewalDigest }),
       proofKey: Buffer.from(key!, 'hex'), transact: accountTransactions(pool) })
+    avatar = createAssistantAvatarSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
+      transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
+      deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account)); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar)); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => { server.close(() => { void pool?.end().finally(() => process.exit(0)); if (!pool) process.exit(0) }); server.closeIdleConnections() })
 }
 start().catch(async () => { console.error('identity-runtime configuration unavailable'); await pool?.end(); process.exitCode = 1 })

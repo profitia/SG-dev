@@ -39,3 +39,15 @@ The companion SG2 source is a separate owner/task/PR. See `Canon/runbooks/identi
 `IDENTITY_BINDING_RENEWAL_ENABLED` defaults off and requires enabled self-service plus an explicit64-character `IDENTITY_RENEWAL_SCHEMA_DIGEST`. It opts the same-origin account POST into accepted aggregate package1.25.0 with independently versioned API1.0.0's additive SQL002 contract. The official primary SDK requests a fresh token (`skipCache`) before the POST. Account reads and peer GETs remain read-only; an expired or revoked identity still fails those reads. A returning user completes the central native account/login step to request renewal, then the consumer independently verifies the account again.
 
 The proposed policy permits ACTIVE near-expiry renewal within30s and separately enabled recovery of an expired ACTIVE binding for at most7 days. Each lease is bounded by fresh provider proof and the configured maximum300s. Revoked/disabled authority is never repaired. The operator must approve/install SQL002, register its digest, grant its narrow APIs and explicitly enable the policy before activation. This source changes none of those deployed settings.
+# Assistant avatar preference
+
+The self-service surface persists the verified user's selected assistant avatar
+using the existing E1 account-private profile. GET/POST
+`/v1/account/assistant-avatar` expose only the current user's preference and
+version. Configured satellite applications have bounded GET-only admission;
+all writes remain on the central origin. Registration metadata is a temporary
+presentation hint, never identity or access authority. Existing preferences are
+restored on login rather than overwritten by the form default.
+
+See `Canon/runbooks/assistant-avatar-development-v1.md` for ownership, concurrency,
+email limitations, tests and required Development release evidence.

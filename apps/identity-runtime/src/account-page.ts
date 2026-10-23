@@ -46,6 +46,28 @@ window.addEventListener('load', async () => {
       const result = await response.json();
       if (current !== generation || window.Clerk.session?.id !== key) return;
       if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(result.userId) || !(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_UNAVAILABLE');
+      const avatarRequest = async (method, body) => {
+        const response = await fetch('/v1/account/assistant-avatar', { method, credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + credential }, ...(body ? { body: JSON.stringify(body) } : {}) });
+        const value = await response.json();
+        if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed', 'AbortError');
+        if (response.status === 409 && method === 'POST') return null;
+        if (response.ok && method === 'GET' && value === null) return null;
+        if (!response.ok || !value || value.userId !== result.userId || ![null,'male','female'].includes(value.avatarSex)
+          || !/^[1-9][0-9]{0,18}$/.test(value.version)) throw Error('PROFILE_UNAVAILABLE');
+        return value;
+      };
+      let preference = await avatarRequest('GET');
+      // A verified user's registration metadata is a bounded presentation hint,
+      // never an owner/access claim. A login form's temporary choice is ignored.
+      const initialAvatar = window.spendGuruRegistrationAvatar?.(window.Clerk.user?.id) ?? window.Clerk.user?.unsafeMetadata?.assistantAvatar;
+      if ((!preference || preference.avatarSex === null) && ['male','female'].includes(initialAvatar)) {
+        preference = await avatarRequest('POST', { expectedVersion: preference?.version ?? null, avatarSex: initialAvatar });
+        if (!preference) preference = await avatarRequest('GET');
+      }
+      if (current !== generation || window.Clerk.session?.id !== key) return;
+      if (window.spendGuruRestoreAvatar && preference?.avatarSex) window.spendGuruRestoreAvatar(preference.avatarSex);
+      if (!(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_EXPIRED');
       status.textContent = cfg.en ? 'Your account is ready.' : 'Konto gotowe.';
       if (window.spendGuruAccountReady) await window.spendGuruAccountReady();
       if (current !== generation || window.Clerk.session?.id !== key) return;

@@ -132,23 +132,26 @@ test('account page uses official pinned SDK, closed destination and a parseable 
 })
 
 const browserAccount = (userId = ids.a) => ({ authenticated: true, userId, expiresAt: new Date(Date.now() + 60000).toISOString() })
-function browserFixture({ signedIn = true, response = () => new Response(JSON.stringify(browserAccount())), loadFailure = false, logoutFailure = false } = {}) {
+function browserFixture({ signedIn = true, response = () => new Response(JSON.stringify(browserAccount())), avatarResponse, loadFailure = false, logoutFailure = false } = {}) {
   const elements = Object.fromEntries(['account-config', 'status', 'retry', 'logout', 'sign-in'].map(id => [id, { textContent: '', hidden: true, replaceChildren() {} }]))
   elements['account-config'].textContent = JSON.stringify({ en: false, flow: 'registration', returnTo: 'https://sg2.example.test/account',
     signInUrl: origin + '/account/sg2/account/login', signUpUrl: origin + '/account/sg2/account/registration', allowedRedirectOrigins: [origin, 'https://sg2.example.test'], localization: {} })
-  const f = { elements, calls: [], redirects: [], mounted: 0, reloaded: 0 }
+  const f = { elements, calls: [], redirects: [], restored: [], mounted: 0, reloaded: 0 }
   f.clerk = { session: signedIn ? { id: 'sess_a', getToken: async () => 'synthetic_fixture_only' } : null,
     load: async () => { if (loadFailure) throw Error('synthetic SDK unavailable') }, addListener: fn => { f.listener = fn },
     mountSignIn: () => { f.mounted++ }, mountSignUp: () => { f.mounted++ }, unmountSignUp() {}, unmountSignIn() {}, signOut: async () => { if (logoutFailure) throw Error('synthetic outage'); f.clerk.session = null } }
   const window = { Clerk: f.clerk, __internal_ClerkUICtor: {}, addEventListener: (_name, fn) => { f.start = fn },
+    spendGuruRestoreAvatar: value => f.restored.push(value),
     location: { origin, pathname: '/account/sg2/account/registration', replace: url => f.redirects.push(url), reload: () => { f.reloaded++ } } }
-  vm.runInNewContext(accountBrowserScript, { window, document: { getElementById: id => elements[id] }, AbortController,
-    fetch: async (url, options) => { f.calls.push({ url, options }); return response(f.calls.length) } })
+  vm.runInNewContext(accountBrowserScript, { window, document: { getElementById: id => elements[id] }, AbortController, DOMException,
+    fetch: async (url, options) => { f.calls.push({ url, options });
+      if (url === '/v1/account/assistant-avatar') return avatarResponse ? avatarResponse(options, f) : new Response(JSON.stringify({userId:f.clerk.session?.id==='sess_b'?ids.b:ids.a,avatarSex:null,version:'1'}));
+      return response(f.calls.filter(call=>call.url==='/v1/account').length) } })
   return f
 }
 test('synthetic browser flow redirects only after confirmed B1 success; native signed-out state mounts the official widget', async () => {
   const f = browserFixture(); await f.start()
-  assert.equal(f.calls.length, 1); assert.equal(f.calls[0].url, '/v1/account'); assert.equal(f.calls[0].options.method, 'POST')
+  assert.equal(f.calls.length, 2); assert.equal(f.calls[0].url, '/v1/account'); assert.equal(f.calls[0].options.method, 'POST')
   assert.deepEqual(f.redirects, ['https://sg2.example.test/account']); assert.equal(f.elements.status.textContent, 'Konto gotowe.')
   const signedOut = browserFixture({ signedIn: false }); await signedOut.start(); assert.equal(signedOut.calls.length, 0); assert.equal(signedOut.mounted, 1)
 })
@@ -168,7 +171,7 @@ test('synthetic account switching discards a late result from the previous sessi
 })
 test('synthetic browser reload/native session restoration performs a new backend confirmation, without a saved-account shortcut', async () => {
   const first = browserFixture(), reopened = browserFixture(); await first.start(); await reopened.start()
-  assert.equal(first.calls.length, 1); assert.equal(reopened.calls.length, 1)
+  assert.equal(first.calls.length, 2); assert.equal(reopened.calls.length, 2)
 })
 test('synthetic SDK failure retries a clean page; provider logout failure is not reported as successful logout', async () => {
   const failed = browserFixture({ loadFailure: true }); await failed.start(); failed.elements.retry.onclick(); assert.equal(failed.reloaded, 1); assert.equal(failed.calls.length, 0)
@@ -187,4 +190,40 @@ test('real HTTP primary entry permits opaque SDK navigation only on bounded publ
   assert.equal(page.status, 200); assert(!page.body.includes('foreign.invalid')); assert(page.body.includes('allowedRedirectOrigins'))
   assert.equal(f.sql.length, 0); assert.equal(f.calls.length, 0)
   for (const path of ['/healthz?x=1', '/v1/account?__clerk_synced=true', '/account/sg2/account/registration?x=' + 'a'.repeat(8200)]) assert.equal((await send(path)).status, 400)
+})
+
+for(const avatarSex of ['male','female'])test('verified registration persists '+avatarSex+' and restores it before navigation',async()=>{
+ let saved=null
+ const f=browserFixture({avatarResponse:options=>{
+  if(options.method==='POST'){saved=JSON.parse(options.body);return new Response(JSON.stringify({userId:ids.a,avatarSex:saved.avatarSex,version:'2'}))}
+  return new Response(JSON.stringify({userId:ids.a,avatarSex:null,version:'1'}))
+ }})
+ f.clerk.user={id:'provider_a',unsafeMetadata:{assistantAvatar:avatarSex}}
+ await f.start();assert.deepEqual(saved,{expectedVersion:'1',avatarSex});assert.deepEqual(f.restored,[avatarSex]);assert.equal(f.redirects.length,1)
+})
+test('saved preference wins over registration metadata and login form defaults',async()=>{
+ const f=browserFixture({avatarResponse:()=>new Response(JSON.stringify({userId:ids.a,avatarSex:'female',version:'9'}))})
+ f.clerk.user={id:'provider_a',unsafeMetadata:{assistantAvatar:'male'}}
+ await f.start();assert.deepEqual(f.restored,['female']);assert.equal(f.calls.filter(c=>c.url.includes('assistant-avatar')&&c.options.method==='POST').length,0)
+})
+test('missing legacy profile does not block login or manufacture a default preference',async()=>{
+ const f=browserFixture({avatarResponse:()=>new Response('null')});await f.start()
+ assert.equal(f.redirects.length,1);assert.deepEqual(f.restored,[]);assert.equal(f.calls.length,2)
+})
+test('concurrent update is reread without overwriting the winner',async()=>{
+ let reads=0,writes=0
+ const f=browserFixture({avatarResponse:options=>{
+  if(options.method==='POST'){writes++;return new Response('{}',{status:409})}
+  reads++;return new Response(JSON.stringify({userId:ids.a,avatarSex:reads===1?null:'female',version:String(reads)}))
+ }})
+ f.clerk.user={id:'provider_a',unsafeMetadata:{assistantAvatar:'male'}}
+ await f.start();assert.equal(writes,1);assert.deepEqual(f.restored,['female']);assert.equal(f.redirects.length,1)
+})
+test('late avatar response is discarded on account switch, including pending registration choice',async()=>{
+ let release
+ const f=browserFixture({response:()=>new Response(JSON.stringify(browserAccount(f.clerk.session.id==='sess_b'?ids.b:ids.a))),avatarResponse:()=>f.clerk.session.id==='sess_a'?new Promise(r=>release=r):new Response(JSON.stringify({userId:ids.b,avatarSex:'female',version:'1'}))})
+ const first=f.start();while(!release)await new Promise(r=>setImmediate(r))
+ f.clerk.session={id:'sess_b',getToken:async()=> 'synthetic_other'};f.clerk.user={id:'provider_b',unsafeMetadata:{}};f.listener()
+ await new Promise(r=>setImmediate(r));release(new Response(JSON.stringify({userId:ids.a,avatarSex:'male',version:'1'})));await first
+ assert.deepEqual(f.restored,['female']);assert.equal(f.redirects.length,1)
 })
