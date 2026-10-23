@@ -1,6 +1,7 @@
 import { BoundaryError, type SessionBoundary } from './contracts.js'
 import { checkRequest } from './session-boundary.js'
 import type { AccountSurface } from './account-provisioning.js'
+import type { AssistantAvatarSurface } from './assistant-avatar.js'
 import { accountPage, accountBrowserScript } from './account-page.js'
 const headers = { 'cache-control': 'private, no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', vary: 'Cookie, Authorization, Origin', 'content-type': 'application/json' }
 function json(status: number, body: unknown) { return new Response(JSON.stringify(body), { status, headers }) }
@@ -13,10 +14,18 @@ async function body(request: Request): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
+      if (url.pathname === '/v1/account/assistant-avatar') {
+        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        if (!boundary || !account || !avatar) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
+        if (request.method === 'GET') return json(200, await avatar.read(request))
+        if (request.method !== 'POST') return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        checkRequest(request, boundary.configuration, true)
+        return json(200, await avatar.update(request, await body(request)))
+      }
       if (url.pathname === '/v1/account' || url.pathname === '/account-client' || url.pathname.startsWith('/account/')) {
         if (url.hash || url.pathname === '/v1/account' && url.search) return json(404, { error: 'NOT_FOUND' })
         if (!boundary || !account) return json(503, { error: 'IDENTITY_UNAVAILABLE' })

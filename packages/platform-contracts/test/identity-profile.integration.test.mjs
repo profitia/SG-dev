@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { randomBytes } from 'node:crypto'
 import { createIdentityProvisioner } from '../src/identity-provisioning.mjs'
-import { createUserProfileBackend, ProfileConflict, profileSchemaDigest } from '../src/user-profile.mjs'
+import { createUserProfileBackend, createAssistantAvatarBackend, ProfileConflict, profileSchemaDigest } from '../src/user-profile.mjs'
 import { createAccessStore } from '../src/access-store.mjs'
 import { createClerkIdentityAuthenticator } from '../src/identity-provider.mjs'
 import { clerkFixture, postgresFixture } from './fixtures/identity-profile-postgres.mjs'
@@ -53,6 +53,28 @@ test('real ordinary PostgreSQL identity/profile acceptance',async t=>{
     assert.throws(()=>api.updateCurrentUserProfile(a.request('PATCH'),{expectedVersion:'4',patch:{user_id:userB}}))
     assert.equal((await backend(b).getCurrentUserProfile(b.request('GET'))).user_id,userB)
     assert.equal((await backend(b).getCurrentUserProfile(b.request('GET'))).job,null)
+  })
+  await t.test('avatar peer projection preserves E1, excludes other profile fields and cannot write',async()=>{
+    const central=a.origin,peer='https://satellite.example.test',endpoint=central+'/v1/account/assistant-avatar'
+    const options=db.options(a);options.identityApplication.authorizedParties.push(peer)
+    options.identityApplication.bearerPeerReads=[{sourceOrigin:peer,targetOrigin:central,path:'/v1/account/assistant-avatar'}]
+    assert.throws(()=>createUserProfileBackend(options))
+    assert.throws(()=>createAssistantAvatarBackend({...options,identityApplication:{...options.identityApplication,bearerPeerReads:[{sourceOrigin:peer,targetOrigin:central,path:'/v1/account'}]}}))
+    const api=createAssistantAvatarBackend(options),own=method=>new Request(endpoint,{method,headers:{origin:central}})
+    const initial=await api.getAssistantAvatar(own('GET'))
+    const saved=await api.updateAssistantAvatar(own('PATCH'),{expectedVersion:initial.version,avatarSex:'male'})
+    assert.deepEqual(Object.keys(saved).sort(),['avatarSex','userId','version']);assert.equal(saved.avatarSex,'male')
+    assert.equal((await backend(b).getCurrentUserProfile(b.request('GET'))).avatar_sex,null)
+    a.origin=peer
+    const request=new Request(endpoint,{headers:{authorization:'Bearer synthetic-fixture'}})
+    assert.deepEqual(await api.getAssistantAvatar(request),saved)
+    for(const method of ['PATCH','POST']) await assert.rejects(api.updateAssistantAvatar(new Request(endpoint,{method,headers:{origin:central,authorization:'Bearer synthetic-fixture'}}),{expectedVersion:saved.version,avatarSex:'female'}))
+    for(const headers of [{authorization:'Bearer synthetic-fixture',origin:peer},{authorization:'Bearer synthetic-fixture',cookie:'untrusted=1'},{}])await assert.rejects(api.getAssistantAvatar(new Request(endpoint,{headers})))
+    await assert.rejects(api.getAssistantAvatar(new Request(endpoint+'?userId='+userB,{headers:{authorization:'Bearer synthetic-fixture'}})))
+    a.active=false;await assert.rejects(api.getAssistantAvatar(request));a.active=true;a.origin=central
+    assert.equal((await api.getAssistantAvatar(own('GET'))).avatarSex,'male')
+    await assert.rejects(api.updateAssistantAvatar(own('PATCH'),{expectedVersion:saved.version,avatarSex:'female',userId:userB}))
+    await assert.rejects(api.updateAssistantAvatar(own('PATCH'),{expectedVersion:saved.version,avatarSex:'female',phone:'+12025550123'}))
   })
   await t.test('same organisation does not confer profile visibility',async()=>{
     const org='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'

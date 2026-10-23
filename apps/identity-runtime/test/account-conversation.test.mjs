@@ -14,7 +14,7 @@ function fixture(registration=true, overrides={}) {
 async function registrationToCode(f) { for(const x of ['male','Adam','Testowy','synthetic@example.test']) await f.model.submit(x) }
 test('short registration uses official create, email prepare, actual verification and setActive in order',async()=>{
  const f=fixture();await registrationToCode(f);assert.equal(f.model.state.step,'code');assert.equal(f.model.state.complete,false)
- assert.deepEqual(f.calls,[['createUp',{firstName:'Adam',lastName:'Testowy',emailAddress:'synthetic@example.test'}],['prepareUp',{strategy:'email_code'}]])
+ assert.deepEqual(f.calls,[['createUp',{firstName:'Adam',lastName:'Testowy',emailAddress:'synthetic@example.test',unsafeMetadata:{assistantAvatar:'male'}}],['prepareUp',{strategy:'email_code'}]])
  await f.model.submit('123456');assert.equal(f.model.state.complete,true);assert.deepEqual(f.calls.at(-2),['verifyUp',{code:'123456'}]);assert.deepEqual(f.calls.at(-1),['activate',{session:'sess_fixture'}])
 })
 test('wrong or expired provider code never activates and permits retry',async()=>{
@@ -46,4 +46,13 @@ test('resend remains provider-owned and contains no user supplied verification a
 })
 test('V2 keeps six secure code inputs, submit/Enter semantics, accessible send and avatar controls',()=>{
  const html=conversationMarkup(false,true,'https://identity.example/login','https://identity.example/registration');assert.equal((html.match(/class="sg-v2-code-input"/g)||[]).length,6);assert(html.includes('type="submit"'));assert(html.includes('aria-label="Wyślij"'));assert(html.includes('id="clerk-captcha"'));assert(html.includes('Zmień awatara'));assert(!/firma|branża|Organisation ID|Symulacja|dowolny kod/.test(html));assert(!/innerHTML|insertAdjacentHTML|localStorage|sessionStorage|console\./.test(conversationClientScript));assert(conversationClientScript.includes('row.animate'));assert(conversationClientScript.includes('prefers-reduced-motion'))
+})
+
+test('registration choice remains presentation-only until provider completion for the same subject',async()=>{
+ const f=fixture(true,{verifyUp:()=>({status:'complete',createdSessionId:'sess_fixture',createdUserId:'user_registered'})})
+ await registrationToCode(f);assert.equal(f.model.registrationAvatar('user_registered'),null)
+ f.model.state.avatarSex='female';await f.model.submit('123456')
+ assert.equal(f.model.registrationAvatar('user_registered'),'female');assert.equal(f.model.registrationAvatar('user_other'),null)
+ const login=fixture(false);login.model.state.avatarSex='male';login.sdk.client.signUp={status:'complete',createdUserId:'user_registered'}
+ assert.equal(login.model.registrationAvatar('user_registered'),null)
 })
