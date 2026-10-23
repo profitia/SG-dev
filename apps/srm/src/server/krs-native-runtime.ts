@@ -58,9 +58,10 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
    schemaDigest:'14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b'}},
   externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206',approvedKrs:['0000028860'],approvalRef:target.ownerApprovalRef})
  const pending=new WeakMap<Request,{reference:string;prepared:Awaited<ReturnType<NonNullable<typeof runtime.supplierApi>['prepareKrsFinancial']>>}>()
+ let verifyCompany=async(request:Request,krs:string)=>{await registry.snapshot(request,krs);await seed.acquire(krs,'P',randomUUID());return registry.selected(request,krs)}
  const nameRuntime=createKrsNameHttpRuntime({registry:{
   search:async(request,query)=>(await registry.search(request,query)).candidates.map(c=>({krs:c.krs,name:c.officialName??'',nip:c.nip,locality:c.locality})),
-  verify:async(request,krs)=>{await registry.snapshot(request,krs);await seed.acquire(krs,'P',randomUUID());return registry.selected(request,krs)},
+  verify:(request,krs)=>verifyCompany(request,krs),
   readSelection:(request,reference)=>registry.accepted(request,reference),
  },financial:{
   acquire:async(request,identity,key)=>{
@@ -125,6 +126,16 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
     throw error
    }finally{observe({event:'KRS_CURRENT',durationMs:Date.now()-at})}
   },telemetry:observe,timeoutMs:3000})
+ // Newly discovered catalog companies remain selectable by name. Refresh only
+ // after explicit selection, through the same GUS/KRS identity proof and deadline.
+ const verifySeed=verifyCompany
+ verifyCompany=async(request,krs)=>{
+  if(krs==='0000028860')return verifySeed(request,krs)
+  const selected=await registry.selected(request,krs)
+  const result=await resolver.resolve(selected.identity.identity.nip,createHash('sha256').update(randomUUID()).digest('hex'),request.signal)
+  if(result.status!=='PRIMARY'||result.value.snapshot.canonicalKrs!==krs)return deny()
+  return registry.selected(request,krs)
+ }
  const nip=createKrsNipCompany({api:runtime.supplierApi,observe,resolve:async input=>{
   if(input.organisationId!==runtime.defaultOrganisationId)return deny()
   await registry.search(input.request,'__')

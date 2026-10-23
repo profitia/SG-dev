@@ -3216,7 +3216,7 @@
       "src/modules/xray/supplier-report.tsx": "f9d3168709572866762183e39aa0691014a83cbede8d0fe8e36e7f34e93f879f",
       "src/server/account-recheck-adoption.test.ts": "b1d41e9f3983b8eb4f340967c86a6c5c18cd0d539c27e6888f6e72e83d25addb",
       "src/server/krs-native-financial.ts": "a6eb94afaaf00c917ec0f50847cefecee857bde36ff6b63181b822b031855928",
-      "src/server/krs-native-runtime.ts": "9cd7b520241c1fe34750d72d3d8fc4d8575ee94064a8d724560bdfd01be823cd",
+      "src/server/krs-native-runtime.ts": "69377b2675e66a168cf353882794fa9ecd5398d1188a425220c80933d5510e0a",
       "src/server/krs-nip-runtime.test.ts": "67aed9ebac04b8ec3ce47fbd19d6deb3b6e659241d1bdac4af56ae7c34b11ba2",
       "src/server/krs-nip-runtime.ts": "df865afaf73e3c88bfc9ce7bf6e50c790561c667b99927279520af91dd6e12f9",
       "src/server/peer-read-boundary.test.ts": "be6d3ff877082b3e225586d1534114a300328ae5f4e3d7d15d1098da014d84bf",
