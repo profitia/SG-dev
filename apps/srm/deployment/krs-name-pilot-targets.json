@@ -20,8 +20,8 @@
   },
   "acceptedRuntime": {
     "version": "1.2.0",
-    "sourceSha": "f0b584187250bb0e550e29f93c281e977f521a27",
-    "sourceDigest": "29c9000d095b824678cbebba9df61a2eb9f08c795a37265bb5a9afb4de04078b"
+    "sourceSha": "842d96e255ca69207bb82afd524a1c271774428a",
+    "sourceDigest": "d29fed30c92d61e5d23c98cf68d6192a1567e6ad8791e929ef7c6890231663a7"
   },
   "nipIntegrationActivation": "DEFERRED_PENDING_SOURCE_ACCEPTANCE_AND_LIVE_BUDGET"
 }

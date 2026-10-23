@@ -3182,7 +3182,7 @@
     "taskId": "SRM-GUS-KRS-NIP-20261023",
     "producerTaskId": "ARCHITECTURE-GUS-KRS-NIP-20261023",
     "producerPr": 642,
-    "producerSourceSha": "f0b584187250bb0e550e29f93c281e977f521a27",
+    "producerSourceSha": "842d96e255ca69207bb82afd524a1c271774428a",
     "status": "CANDIDATE_ONLY_NOT_ACTIVATED",
     "preservedHistoricalAccountRecheck": true,
     "sourceDigests": {
@@ -3207,9 +3207,8 @@
       "supplierLocationAdmissionSchemaDigest": "90ac1d28103f689edc8d11979210ce83cd6218e9f3549f37150fd307d165e9cc"
     },
     "applicationSourceDigests": {
-      "deployment/krs-name-pilot-targets.json": "e42cc31a4098e29c1477b101af0fd7453f41bc1ff58df91c60200982f1067a58",
-      "deployment/krs-nip-development.json": "505261793eac29181aef36a595b2f9edc30b34c4cd5980747ce37fa58faf697d",
-      "next-env.d.ts": "1862ac4bbbc5192d4bf562161df66ea547ed3e67173100656ab606ae9797db2b",
+      "deployment/krs-name-pilot-targets.json": "f527356273054d9840b5433fab7f8852437080fbfd80e29d744582f26859ee5c",
+      "deployment/krs-nip-development.json": "e93bd03a6a5edb1aaa0c19bedda3062cc1d630393ab67277f8cb28d80aee3ad7",
       "package-lock.json": "281428a73590d21165f70dbc6f8cd3dfaff3a419ecd83b004bdc186c0fc92016",
       "scripts/operation-context.test.mjs": "8e1d7e401efd6a5a4fa5b21cea9171d8c370614eb1240e4e7bfe083ca5b9bc42",
       "src/modules/xray/report-controller.test.ts": "ba198c09cf8ee8cb060dabed4f2aa23d43176276fededc45dd43ac3d0e2cffe3",
@@ -3220,13 +3219,15 @@
       "src/server/krs-native-runtime.ts": "1b20981f93375b92141a6339b78b5350fce40450905e5c682a6508c4ca063f49",
       "src/server/krs-nip-runtime.test.ts": "67aed9ebac04b8ec3ce47fbd19d6deb3b6e659241d1bdac4af56ae7c34b11ba2",
       "src/server/krs-nip-runtime.ts": "df865afaf73e3c88bfc9ce7bf6e50c790561c667b99927279520af91dd6e12f9",
-      "src/server/private-runtime.ts": "e8d03dad8b39521b19ec8a56e9ea3537ed8226e5e95c814e23a1957707cd3a19",
+      "src/server/peer-read-boundary.test.ts": "1be83df01482d0f4be628bb84a45d30ddd33b68cd937c73fc149d9500f149922",
+      "src/server/private-runtime.ts": "c54fee8780dc3fb979ab049d1904621aadbb8077fb2c53ead8df3e47fa6aa0c4",
       "src/server/registry-search.test.ts": "bf715e9f6529d2fffd5467dccd9f4b8e8d242fa6affa84b4d524a1952300ea51",
       "src/server/registry-search.ts": "1628893e48727b1ff2d7a757c79f977968766b6fd7226968c498735c3f637afb",
       "src/server/supplier-acquisition-http.test.ts": "692a7d3e9b86e0a8e2ca6d9714e983177b59e9c737e5661f5564cc3b63d101b5",
-      "src/server/supplier-acquisition-http.ts": "7c53d001a1f99886a51a1b46cb5b1f34e3d249c27ccc44468ee05cebec0c136e",
+      "src/server/supplier-acquisition-http.ts": "293f7e4d947eac0a1904c9c2e35a1e88f929dc3c614382a4ce579cded6cdd970",
       "src/server/supplier-api-composition.ts": "9f1b941048f985c02f699873318bcc0b27195969d32283f5a2d0442b0a248ab5",
-      "src/server/supplier-native-company.ts": "ef3659011e6ac521d6d262d0358447eb17986546449f438f57f5730f79280956"
+      "src/server/supplier-native-company.ts": "ef3659011e6ac521d6d262d0358447eb17986546449f438f57f5730f79280956",
+      "src/server/xray-repository.test.ts": "d52204f2994fa25666322a10eb745f429293bee4f1afe7c7698f688590c41978"
     },
     "ceidgFirst": true,
     "primaryTimeoutMs": 3000,

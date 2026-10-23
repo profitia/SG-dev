@@ -80,7 +80,7 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
    const value=async(r:Response)=>{if(!r.ok){problem=r;throw Error('Supplier API refused')}return r.json()}
    const result=await searchRegistryByNip(organisationId,{identifier:{type:'NIP',value:command.nip}},{
     catalog:async(org,nip)=>{if(org!==organisationId||nip!==command.nip)throw Error('Wrong routing scope');return api.known(scope,nip)},
-    jdg:async(org,nip)=>{if(org!==organisationId||nip!==command.nip)throw Error('Wrong routing scope');return (await value(await api.jdg(input))).section},
+    jdg:async(org,nip)=>{if(org!==organisationId||nip!==command.nip)throw Error('Wrong routing scope');const at=performance.now();try{return (await value(await api.jdg(input))).section}finally{console.info('SRM registry telemetry',{event:'CEIDG_LOOKUP',durationMs:performance.now()-at})}},
     company:async(org,selected)=>{if(org!==organisationId||selected.identifier.value!==command.nip)throw Error('Wrong routing scope');const r=await value(companyOverride?await companyOverride(input,true):await api.company(input));const {krsSelection,registryRoute:route,...card}=r;selection=krsSelection;registryRoute=route;return card},
    }).catch(error=>{if(problem)return {entityType:'HTTP_FAILURE' as const,response:problem};throw error})
    if(result.entityType==='HTTP_FAILURE')return result.response
