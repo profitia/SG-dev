@@ -47,7 +47,7 @@ function beforePrivateAcquisitionApplicationSource(path){
  return execFileSync('git',['show','8c5e14b0fc4815021231f6752c1073f1c191465b:apps/srm/'+path])
 }
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
-const currentSdkDigests=sdkReceipt.krsNipSourceCompatibility?.sdkDigests??sdkReceipt.accountRecheckSourceCompatibility.sdkDigests
+const currentSdkDigests=sdkReceipt.unmeteredSourceCompatibility.sdkDigests
 const currentPlatformSourceDigests=manifest=>({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests})
 
 test('SRM imports the exact optional external control source without adopting a product operation', async () => {

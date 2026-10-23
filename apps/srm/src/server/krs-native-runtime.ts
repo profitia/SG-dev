@@ -59,7 +59,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
    features:['knowledge_ingestion'],operations:['knowledge.ingest' as const]},
   binding:{applicationId:'krs-registry-source',environment:'development',projectId:target.catalog.projectId,branchId:target.catalog.branchId,
    databaseName:target.catalog.databaseName,role:'krs_ingest',deploymentId,configurationVersion:sourceVersion,
-   schemaDigest:'14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b'}},
+   schemaDigest:'14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b',unmeteredSchemaDigest:target.unmeteredSource.schemaDigest}},
   externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206',approvedKrs:['0000028860'],approvalRef:target.ownerApprovalRef})
  let historyFor:((request:Request,identity:VerifiedIdentityV1)=>Promise<RegistryHistory|undefined>)=async()=>undefined
  const pending=new WeakMap<Request,{reference:string;prepared:Awaited<ReturnType<NonNullable<typeof runtime.supplierApi>['prepareKrsFinancial']>>}>()
@@ -101,7 +101,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
    features:['knowledge_ingestion'],operations:['knowledge.ingest' as const]},
   binding:{applicationId:'krs-registry-source',environment:'development' as const,projectId:target.catalog.projectId,branchId:target.catalog.branchId,
    databaseName:target.catalog.databaseName,role:'krs_ingest',deploymentId,configurationVersion:sourceVersion,
-   schemaDigest:'14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b'}}
+   schemaDigest:'14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b',unmeteredSchemaDigest:target.unmeteredSource.schemaDigest}}
  let sid:string|null=null
  const gusHost=createPlatformIngestionHost({...sourceHostOptions,
   source:{id:'krs.registry.gus',payloadSchema:'external-call-control-v1',qualityVersion:'gus-bir12-source-v1',classificationVersion:'technical-source-control-v1'},

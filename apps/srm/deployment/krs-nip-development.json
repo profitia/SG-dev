@@ -26,7 +26,7 @@
     "SOAP SQL021 installed in isolated catalog",
     "Independent GUS Source admission and existing provider bindings",
     "Verified secrets and shared database GUS rate gate",
-    "Sufficient existing Source/HTTP budgets",
+    "Explicitly accepted unmetered GUS/KRS Source and HTTP policies; existing MGBI paid policy remains metered",
     "Current private-store account recheck and financial guard compatibility",
     "Retained LKG and tested recovery",
     "Real authenticated user journey",
@@ -76,5 +76,16 @@
     "existingAuthorityPredicatesRetained": true,
     "newRuntimeGrantsRequired": false,
     "transactionTimeoutMs": 15000
+  },
+  "publicRegistryUsagePolicy": {
+    "mode": "UNMETERED",
+    "schemaDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
+    "ownerApprovalRef": "USER-20261023-PERMANENT-GUS-KRS-NO-INTERNAL-BUDGET",
+    "supersedes": "approvedBudget GUS/KRS capacities only; historical approval retained",
+    "capacity": null,
+    "windowStart": null,
+    "windowEnd": null,
+    "paidMgbiBudgetsUnchanged": true,
+    "rateSchedulingAndCircuitProtectionRetained": true
   }
 }
