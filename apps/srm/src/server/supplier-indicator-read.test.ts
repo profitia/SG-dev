@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import type {PoolClient} from 'pg'
 import type {FinancialData} from '@profitia/srm-xray'
-import {OperationDenied,operationPayloadDigest,type OperationContext} from '@profitia/platform-contracts/operation-context'
+import {OperationDenied,operationPayloadDigest,type Json,type OperationContext} from '@profitia/platform-contracts/operation-context'
 import {createSrmSupplierNativeWorkStore} from './supplier-native-work-store'
 import type {SupplierNativeWork} from './supplier-request-work'
 import {FINANCIAL_INDICATOR_INPUT_CODES,type CatalogIndicatorFact} from './financial-indicators'
@@ -17,7 +17,7 @@ function fixture(changeAtRevisionRead=Infinity,denyUnit=Infinity){
   units++;if(units===denyUnit)throw new OperationDenied('POLICY_UNAVAILABLE')
   assert.deepEqual(s,selection);assert.equal(unit,'SRM_CACHE_READ')
   const payloadDigest=operationPayloadDigest(s.command),ctx={actorKind:'SERVICE',actorId:service,actor:{kind:'SERVICE',actorId:service,serviceId:service},operation:'job.execute',applicationId:'srm-jobs',subjectUserId:user,organisationId:org,resourceId:requestId,payloadDigest,
-  requestWork:{requestId,unitId:unit,accessMode:'READ',inputDigest:operationPayloadDigest(input),schemaDigest:'b'.repeat(64),transactionId:String(100+units),policyVersion:'1',policySourceRef:'SYNTHETIC_ONLY',policyExpiresAt:new Date(Date.now()+60000).toISOString()},
+  requestWork:{requestId,unitId:unit,accessMode:'READ',inputDigest:operationPayloadDigest(input as Json),schemaDigest:'b'.repeat(64),transactionId:String(100+units),policyVersion:'1',policySourceRef:'SYNTHETIC_ONLY',policyExpiresAt:new Date(Date.now()+60000).toISOString()},
   delegation:{requestId,subjectUserId:user,organisationId:org,payloadDigest,target:{operation:'supplier.report.refresh',resourceId:'supplier-request:'+payloadDigest,application:{appId:'srm'}}}} as unknown as OperationContext
   const client={query:async(sql:string,parameters:unknown[])=>{sqlCalls++;assert.equal(parameters[0],selection.command.nip)
    if(sql.startsWith('SELECT xmin')){revisions++;return{rows:[{revision:revisions>=changeAtRevisionRead?'102':'101'}]}}

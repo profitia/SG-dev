@@ -102,7 +102,7 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       try{
         for(let offset=0;offset<FINANCIAL_INDICATOR_INPUT_CODES.length;offset+=4){
           const metrics=FINANCIAL_INDICATOR_INPUT_CODES.slice(offset,offset+4)
-          const part=await run(s,'SRM_CACHE_READ',{indicatorInputDigest:digest(body),metrics,publication},async(_pool,client)=>{
+          const part:{revision:string;facts:CatalogIndicatorFact[]}=await run(s,'SRM_CACHE_READ',{indicatorInputDigest:digest(body),metrics,publication},async(_pool,client)=>{
             const revision=await readIndicatorPublication(client,s.command.nip)
             if(publication!==null&&publication!==revision)throw Error('Indicator publication changed')
             const selected=await readStoredIndicatorFacts(client,s.command.nip,metrics)

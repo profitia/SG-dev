@@ -3192,13 +3192,14 @@
     "productDeploymentPerformed": false,
     "applicationSourceDigests": {
       "src/server/shared-catalog.ts": "f966da03004239110094ee72e14768005b26efe5ccd8f29f32c02a948604431b",
-      "src/server/supplier-native-work-store.ts": "6d77b9097598e555b1084d5c0afaafc724e53291c0a202f7b9b1d105d2cab665",
-      "src/server/supplier-indicator-read.test.ts": "27c8860c3da34970a59dfbfef8a0814d3412cbc07e73271d87c109895eb9bcb9",
+      "src/server/supplier-native-work-store.ts": "40e741afbef4a384151623ef530163e69b124759f0d967aa3dbaa4ca773ef1cd",
+      "src/server/supplier-indicator-read.test.ts": "426bef4d74840e008a653386af8b31022b493d137d8191d5987f5baf39e8c038",
       "src/server/account-recheck-adoption.test.ts": "7b3fb4b3757d90ea55cf12a9561cfe5f12c7aa32363940e1a71bdc4313d1d6aa",
       "src/server/peer-read-boundary.test.ts": "439215910c2795777fa27bef378e2c1a91e9911da7d1d5ffc4d2e59df8dfc179",
       "scripts/task02r-build-release.mjs": "ca3cd26218685a3a98c45c1b75bed32b870b7f9ccce9f54f3d101d5da134b3f3",
       "scripts/task02r-release-source.test.mjs": "c421250d87c457d733feb64c268f8a1d1617c9fc7cf2435c37fcd4e4758896de",
-      "deployment/task02r-release-source.json": "dec055cd03934d429fc57795281cd7dbb270e51bb581ae3022f653c129adf85f"
+      "deployment/task02r-release-source.json": "25ee6b5c2e50a846a5c7d761150ac213d557194fde157f2e2bf71788af3615fd",
+      "scripts/corporate-source.integration.test.mjs": "9c94e1dbd2790086a6424333aea2bc7c2fd84920273f16534d2cab375c10132d"
     }
   }
 }
