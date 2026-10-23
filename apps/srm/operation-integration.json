@@ -4091,5 +4091,22 @@
       "../maps-runtime/test/embed.test.mjs": "03e11535baa4d23e43e0c5505b1ff6b536a35fd8d2a7fd0c3dc7545a5d973c21"
     },
     "mapsCompatibilityOnly": true
+  },
+  "krsCatalogRefreshCompatibility": {
+    "taskId": "SRM-KRS-PILOT-LOOKUP-CORRECTION-20261023",
+    "previousSourceSha": "7991e502df9da663c840989226e29369e361f10c",
+    "previousReceiptSha256": "48009c3443065b021ca56d286581dc5343723e1e023f84ddbb737110e6c6f1c3",
+    "scope": "AUTHORIZED_CATALOG_HINT_REFRESH_BEFORE_FRESH_IDENTITY_SELECTION",
+    "identityFreshnessPolicyChanged": false,
+    "liveGrantsChanged": false,
+    "paidProviderPoliciesChanged": false,
+    "productDeploymentPerformed": false,
+    "applicationSourceDigests": {
+      "src/server/krs-native-runtime.ts": "3a676dad5042a55761fcd5d312d834bcbed212c8e836b9670f1188ca6f1f86b3",
+      "src/server/krs-name-search.ts": "f14c057be91587733e6507f4721253aaeb5eb82ba91f9d608784e671e3fd51c1",
+      "src/server/krs-name-search.test.ts": "a7723bf9981c449dc5f760fea1634246f917b865e9c4af05f64fd92a782398c5",
+      "src/server/account-recheck-adoption.test.ts": "93ac4cce5c178d1929a6304b28efd531ad7c704ec467042a0495c675ee6d4ec0",
+      "src/server/peer-read-boundary.test.ts": "f4b73d7aadad954d1a6b183845119a4a538a90cd4f00bbcf470799397d483f3e"
+    }
   }
 }

@@ -6,11 +6,25 @@ import type {RegistryHistory} from './company-continuity';
 import {krsGeneral} from './krs-general';
 import {reconcileKrsFinancial} from './krs-financial';
 import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-ledger';
-import {isOperationDenied} from '@profitia/platform-contracts/operation-context';
+import {isOperationDenied,OperationDenied} from '@profitia/platform-contracts/operation-context';
 import {sanitizedLookupFailure} from './lookup-diagnostics';
 import {measureSupplierStage} from './supplier-telemetry';
 
 export type AcceptedKrsSelection=Readonly<{snapshot:CompanySnapshot;identity:VerifiedIdentityV1}>;
+/** An authorized catalog snapshot is only a discovery hint. Refresh it before
+ * asking the existing identity boundary for a fresh, verified selection. */
+export async function refreshCatalogSelection(request:Request,krs:string,ports:{
+  snapshot(request:Request,krs:string):Promise<CompanySnapshot>;
+  resolve(nip:string,request:Request):Promise<{status:'PRIMARY';value:{snapshot:CompanySnapshot}}|{status:'FALLBACK'}>;
+  selected(request:Request,krs:string):Promise<AcceptedKrsSelection>;
+}):Promise<AcceptedKrsSelection>{
+  const hint=await ports.snapshot(request,krs);
+  if(hint.canonicalKrs!==krs||!hint.nip)throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
+  const result=await ports.resolve(hint.nip,request);
+  if(result.status!=='PRIMARY'||result.value.snapshot.canonicalKrs!==krs||result.value.snapshot.nip!==hint.nip)
+    throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
+  return ports.selected(request,krs);
+}
 /** These ports are supplied by accepted native E1 hosts, never HTTP/body authority.
  * Reads require current identity/membership/product, protected projection and outcome audit.
  * verify performs a real admitted CURRENT retrieval/publication, not a timestamp rewrite. */

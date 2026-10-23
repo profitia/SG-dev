@@ -62,6 +62,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
     currentDigests[file]=entry.sourceSha256;
   }
   Object.assign(currentDigests,receipt.accountRecheckSourceCompatibility.applicationSourceDigests,receipt.boundedIndicatorReadAdoption.applicationSourceDigests,receipt.krsNipSourceCompatibility?.applicationSourceDigests,receipt.krsNipActivationCompatibility?.applicationSourceDigests,receipt.organisationLocationAuthorityAdoption?.applicationSourceDigests,receipt.organisationLocationBuildRecovery?.applicationSourceDigests,receipt.krsFinancialTelemetryCompatibility?.applicationSourceDigests,receipt.organisationLocationEntryAdoption?.applicationSourceDigests,receipt.organisationLocationRefreshAdoption?.applicationSourceDigests,receipt.krsGusFirstPublicationCompatibility.applicationSourceDigests,receipt.krsRegonReconciliationCompatibility.applicationSourceDigests,receipt.krsContinuityCompatibility.applicationSourceDigests,receipt.unmeteredSourceCompatibility.applicationSourceDigests);
+  Object.assign(currentDigests,receipt.krsCatalogRefreshCompatibility.applicationSourceDigests);
   for(const [file,digest]of Object.entries(currentDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

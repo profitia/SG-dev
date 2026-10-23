@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {CompanySnapshot,VerifiedIdentityV1} from '@profitia/krs-registry-contracts';
-import {createKrsNameSearch,type AcceptedKrsSelection,type KrsNamePorts} from './krs-name-search';
+import {createKrsNameSearch,refreshCatalogSelection,type AcceptedKrsSelection,type KrsNamePorts} from './krs-name-search';
 import {mapMgbiFinancialRecords} from './mgbi-financial';
 import {reconcileKrsFinancial} from './krs-financial';
 import {createSupplierSearchGateway} from '../modules/xray/supplier-search-gateway';
@@ -29,6 +29,31 @@ test('typing and verifying are independent pure operations with zero Financial e
   assert.equal((await api.search(f.request,'Fi')).coverage,'PROGRESSIVE');
   const choice=await api.verify(f.request,krs);assert.equal(choice.selectionRef,f.selected.snapshot.evidenceRef);
   assert.deepEqual(f.calls,{acquire:0,publish:0,verify:1,search:1});
+});
+test('a catalog candidate older than the financial identity lifetime is refreshed before selection',async()=>{
+ const f=await fixture(),calls:string[]=[];let refreshed=false;
+ const stale={...f.selected.snapshot,source:{...f.selected.snapshot.source,retrievedAt:new Date(time-3600000).toISOString()}};
+ const ports={snapshot:async()=>{calls.push('authorized-snapshot');return stale},
+  resolve:async(n:string)=>{assert.equal(n,nip);calls.push('gus-krs-refresh');refreshed=true;return {status:'PRIMARY' as const,value:{snapshot:f.selected.snapshot}}},
+  selected:async()=>{calls.push('fresh-identity');assert.ok(refreshed);return f.selected}};
+ f.ports.registry.verify=(request,id)=>refreshCatalogSelection(request,id,ports);
+ const selected=await createKrsNameSearch(f.ports).verify(f.request,krs);
+ assert.equal(selected.selectionRef,f.selected.snapshot.evidenceRef);
+ assert.deepEqual(calls,['authorized-snapshot','gus-krs-refresh','fresh-identity']);
+ assert.equal(f.calls.acquire,0);assert.equal(f.calls.publish,0);
+});
+for(const mode of ['denied-read','denied-final-read','fallback','different-krs','different-nip','missing-nip'] as const)
+test('catalog refresh refuses '+mode+' without financial effects',async()=>{
+ const f=await fixture();let refreshes=0,selected=0;
+ const ports={snapshot:async()=>{if(mode==='denied-read')throw Error('ACCESS_REVOKED');return {...f.selected.snapshot,...(mode==='missing-nip'?{nip:null}:{})}},
+  resolve:async()=>{refreshes++;return mode==='fallback'?{status:'FALLBACK' as const}:{status:'PRIMARY' as const,value:{snapshot:{...f.selected.snapshot,
+   ...(mode==='different-krs'?{canonicalKrs:'0000000002'}:{}),...(mode==='different-nip'?{nip:'5850205607'}:{})}}}},
+  selected:async()=>{selected++;throw Error('ACCESS_REVOKED')}};
+ f.ports.registry.verify=(request,id)=>refreshCatalogSelection(request,id,ports);
+ await assert.rejects(()=>createKrsNameSearch(f.ports).verify(f.request,krs));
+ assert.equal(refreshes,['denied-read','missing-nip'].includes(mode)?0:1);
+ assert.equal(selected,mode==='denied-final-read'?1:0);
+ assert.equal(f.calls.acquire,0);assert.equal(f.calls.publish,0);
 });
 test('bounded licensed-document work returns only protected General and pending Financial without publication',async()=>{
  const f=await fixture();f.ports.financial.acquire=async()=>({...f.result,workPending:true});

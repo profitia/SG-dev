@@ -1,4 +1,5 @@
 import {createKrsNipCompany} from './krs-nip-runtime'
+import {refreshCatalogSelection} from './krs-name-search'
 import {krsContinuity} from './krs-continuity'
 import type {RegistryHistory} from './company-continuity'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
@@ -143,10 +144,11 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
  const verifySeed=verifyCompany
  verifyCompany=async(request,krs)=>{
   if(krs==='0000028860')return verifySeed(request,krs)
-  const selected=await registry.selected(request,krs)
-  const result=await resolver.resolve(selected.identity.identity.nip,createHash('sha256').update(randomUUID()).digest('hex'),request.signal)
-  if(result.status!=='PRIMARY'||result.value.snapshot.canonicalKrs!==krs)return deny()
-  return registry.selected(request,krs)
+  return refreshCatalogSelection(request,krs,{
+   snapshot:(request,krs)=>registry.snapshot(request,krs),
+   resolve:(nip,request)=>resolver.resolve(nip,createHash('sha256').update(randomUUID()).digest('hex'),request.signal),
+   selected:(request,krs)=>registry.selected(request,krs),
+  })
  }
  const nip=createKrsNipCompany({api:runtime.supplierApi,observe,resolve:async input=>{
   if(input.organisationId!==runtime.defaultOrganisationId)return deny()
