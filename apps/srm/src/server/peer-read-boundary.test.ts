@@ -61,7 +61,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
     assert.equal(hash(execFileSync('git',['show',live.previousApplicationAuthority+':'+requirePath(file)])),entry.previousSha256,file);
     currentDigests[file]=entry.sourceSha256;
   }
-  Object.assign(currentDigests,receipt.accountRecheckSourceCompatibility.applicationSourceDigests,receipt.krsNipSourceCompatibility?.applicationSourceDigests);
+  Object.assign(currentDigests,receipt.accountRecheckSourceCompatibility.applicationSourceDigests,receipt.boundedIndicatorReadAdoption.applicationSourceDigests,receipt.krsNipSourceCompatibility?.applicationSourceDigests);
   for(const [file,digest]of Object.entries(currentDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

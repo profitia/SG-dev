@@ -3214,12 +3214,12 @@
       "src/modules/xray/report-controller.test.ts": "ba198c09cf8ee8cb060dabed4f2aa23d43176276fededc45dd43ac3d0e2cffe3",
       "src/modules/xray/report-controller.ts": "13e9bda3c5605229cd423488a5a17588aa031b5fec307a1cd24940a14fbf26e4",
       "src/modules/xray/supplier-report.tsx": "f9d3168709572866762183e39aa0691014a83cbede8d0fe8e36e7f34e93f879f",
-      "src/server/account-recheck-adoption.test.ts": "3737e67ee7cf7c912c655a847d19b1b11a1ced294260ccc25a6c42dfdbc12d56",
+      "src/server/account-recheck-adoption.test.ts": "b1d41e9f3983b8eb4f340967c86a6c5c18cd0d539c27e6888f6e72e83d25addb",
       "src/server/krs-native-financial.ts": "a6eb94afaaf00c917ec0f50847cefecee857bde36ff6b63181b822b031855928",
       "src/server/krs-native-runtime.ts": "9cd7b520241c1fe34750d72d3d8fc4d8575ee94064a8d724560bdfd01be823cd",
       "src/server/krs-nip-runtime.test.ts": "67aed9ebac04b8ec3ce47fbd19d6deb3b6e659241d1bdac4af56ae7c34b11ba2",
       "src/server/krs-nip-runtime.ts": "df865afaf73e3c88bfc9ce7bf6e50c790561c667b99927279520af91dd6e12f9",
-      "src/server/peer-read-boundary.test.ts": "1be83df01482d0f4be628bb84a45d30ddd33b68cd937c73fc149d9500f149922",
+      "src/server/peer-read-boundary.test.ts": "be6d3ff877082b3e225586d1534114a300328ae5f4e3d7d15d1098da014d84bf",
       "src/server/private-runtime.ts": "c54fee8780dc3fb979ab049d1904621aadbb8077fb2c53ead8df3e47fa6aa0c4",
       "src/server/registry-search.test.ts": "bf715e9f6529d2fffd5467dccd9f4b8e8d242fa6affa84b4d524a1952300ea51",
       "src/server/registry-search.ts": "1628893e48727b1ff2d7a757c79f977968766b6fd7226968c498735c3f637afb",
@@ -3233,6 +3233,31 @@
     "primaryTimeoutMs": 3000,
     "liveGrantsChanged": false,
     "productDeploymentPerformed": false,
-    "previousSourceSha": "1514ad205141762ae8f0407f20ee395c0cd254bf"
+    "previousSourceSha": "1514ad205141762ae8f0407f20ee395c0cd254bf",
+    "preservedBoundedIndicatorSourceSha": "7833cbfff7cea55cbc2c92be8fff71650167b22d"
+  },
+  "boundedIndicatorReadAdoption": {
+    "taskId": "SRM-TASK02R-ACTIVATE-20261023",
+    "previousReceiptSourceSha": "1514ad205141762ae8f0407f20ee395c0cd254bf",
+    "previousReceiptSha256": "87859e23e3c31096c958a2a93ef4ec659ca2cf662fbb20c812e6bda07917f0d4",
+    "unitId": "SRM_CACHE_READ",
+    "accessMode": "READ",
+    "maximumMetricsPerUnit": 4,
+    "totalTransactionTimeoutMs": 15000,
+    "publicationGuard": "CATALOG_ROW_XMIN_BEFORE_AND_AFTER_EACH_UNIT",
+    "newOperations": [],
+    "liveGrantsChanged": false,
+    "productDeploymentPerformed": false,
+    "applicationSourceDigests": {
+      "src/server/shared-catalog.ts": "f966da03004239110094ee72e14768005b26efe5ccd8f29f32c02a948604431b",
+      "src/server/supplier-native-work-store.ts": "40e741afbef4a384151623ef530163e69b124759f0d967aa3dbaa4ca773ef1cd",
+      "src/server/supplier-indicator-read.test.ts": "426bef4d74840e008a653386af8b31022b493d137d8191d5987f5baf39e8c038",
+      "src/server/account-recheck-adoption.test.ts": "7b3fb4b3757d90ea55cf12a9561cfe5f12c7aa32363940e1a71bdc4313d1d6aa",
+      "src/server/peer-read-boundary.test.ts": "439215910c2795777fa27bef378e2c1a91e9911da7d1d5ffc4d2e59df8dfc179",
+      "scripts/task02r-build-release.mjs": "1a1010dcbe50cf3b081f0df49a0ef933b1ae8b97873adcf98b6a356c275daabf",
+      "scripts/task02r-release-source.test.mjs": "21e082cb92b727258f532051df38ff82abfba4d50c2fb14a51836fc9f794567a",
+      "deployment/task02r-release-source.json": "de27d2e5bfde61edd4779c79a2bf8209a8df327b2d68c793ffd60d5e641665dc",
+      "scripts/corporate-source.integration.test.mjs": "9c94e1dbd2790086a6424333aea2bc7c2fd84920273f16534d2cab375c10132d"
+    }
   }
 }

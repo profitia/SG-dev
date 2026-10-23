@@ -27,7 +27,8 @@ function updateJson(output,name,change){
 export function assembleTask02rSource(repositoryRoot,outputRoot){
  const manifest=JSON.parse(fs.readFileSync(path.join(repositoryRoot,manifestPath),'utf8'))
  const expectedBase='a0a3b0626fac16e011b57d6284ce55abcfcd3ca3'
- const expectedPaths=['apps/srm/src/server/native-pg-driver.ts','apps/srm/src/server/supplier-request-work.ts',
+ const expectedPaths=['apps/srm/src/server/native-pg-driver.ts','apps/srm/src/server/shared-catalog.ts',
+  'apps/srm/src/server/supplier-native-work-store.ts','apps/srm/src/server/supplier-request-work.ts',
   'packages/maps-embed/package.json','packages/platform-contracts/src/operation-context.d.mts',
   'packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/src/private-operation-host.d.mts',
   'packages/platform-contracts/src/private-operation-host.mjs']
@@ -35,20 +36,48 @@ export function assembleTask02rSource(repositoryRoot,outputRoot){
   ||manifest.serviceId!=='srv-db1vu6gm7kps73d0e3r0'||manifest.platformVersion!=='1.26.0'
   ||JSON.stringify(Object.keys(manifest.overrides).sort())!==JSON.stringify(expectedPaths))fail('RELEASE_SCOPE_MISMATCH')
  if(!path.isAbsolute(outputRoot)||fs.existsSync(outputRoot))fail('FRESH_RELEASE_DIRECTORY_REQUIRED')
- const origin=run('git',['remote','get-url','origin'],repositoryRoot).trim()
+ const canonical='https://github.com/profitia/SG-dev.git'
+ let origin
+ try{origin=run('git',['remote','get-url','origin'],repositoryRoot,{stdio:'pipe'}).trim()}
+ catch{
+  // Render intentionally removes remotes from its checkout. Its actual scoped
+  // provider identity and exact checkout must independently establish authority.
+  if(process.env.TARGET_ENVIRONMENT!=='development'||process.env.RENDER_SERVICE_ID!=='srv-db1vu6gm7kps73d0e3r0'
+   ||process.env.RENDER_GIT_REPO_SLUG!=='profitia/SG-dev'||process.env.RENDER_GIT_BRANCH!=='main'
+   ||!/^[a-f0-9]{40}$/.test(process.env.RENDER_GIT_COMMIT??'')
+   ||run('git',['rev-parse','HEAD'],repositoryRoot).trim()!==process.env.RENDER_GIT_COMMIT)fail('REPOSITORY_AUTHORITY_MISMATCH')
+  origin=canonical
+ }
  if(!['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git','git@github.com:profitia/SG-dev.git'].includes(origin))fail('REPOSITORY_AUTHORITY_MISMATCH')
  for(const [name,digest]of Object.entries(manifest.overrides))if(hash(fs.readFileSync(regular(repositoryRoot,name)))!==digest)fail('RELEASE_OVERRIDE_DIGEST_MISMATCH')
  // A shallow provider checkout may need the explicitly pinned ancestor only.
  try{run('git',['cat-file','-e',expectedBase+'^{commit}'],repositoryRoot,{stdio:'pipe'})}
- catch{run('git',['fetch','--no-tags','--depth=1','origin',expectedBase],repositoryRoot,{stdio:'pipe'})}
+ catch{run('git',['fetch','--no-tags','--depth=1',origin,expectedBase],repositoryRoot,{stdio:'pipe'})}
  fs.mkdirSync(outputRoot)
  const sourceRoots=['apps/srm','packages/platform-contracts','packages/srm-xray','packages/maps-contracts','packages/maps-embed']
  const archive=run('git',['archive','--format=tar',expectedBase,...sourceRoots],repositoryRoot,{encoding:null})
  run('tar',['-xf','-','-C',outputRoot],repositoryRoot,{input:archive})
+ const storePath='apps/srm/src/server/supplier-native-work-store.ts'
+ const historicalStore=fs.readFileSync(regular(outputRoot,storePath),'utf8')
  for(const name of Object.keys(manifest.overrides)){
   const target=regular(outputRoot,name)
   fs.copyFileSync(regular(repositoryRoot,name),target)
  }
+ // This release adopts only the bounded indicator method from the newer
+ // receiver. All other store methods retain their deployed baseline bytes,
+ // including register/reproject signatures used by the parallel KRS work.
+ const currentStore=fs.readFileSync(regular(repositoryRoot,storePath),'utf8')
+ const region=(text,start)=>{
+  const first=text.indexOf(start),end=text.indexOf('\n    registration(',first+start.length)
+  if(first<0||end<0||text.indexOf(start,first+start.length)!==-1)fail('NATIVE_STORE_RELEASE_REGION_MISMATCH')
+  return {first,end,value:text.slice(first,end)}
+ }
+ const before=region(historicalStore,'    indicators('),after=region(currentStore,'    async indicators(')
+ const oldImport="import { readFreshCompany, readFinancialIndicators, recordSupplierInterest } from './shared-catalog'"
+ const newImport="import { readFreshCompany, readIndicatorPublication, readStoredIndicatorFacts, projectStoredIndicators, recordSupplierInterest } from './shared-catalog'\nimport { FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from './financial-indicators'"
+ if(!historicalStore.includes(oldImport)||!currentStore.includes(newImport))fail('NATIVE_STORE_RELEASE_IMPORT_MISMATCH')
+ const frozenStore=(historicalStore.slice(0,before.first)+after.value+historicalStore.slice(before.end)).replace(oldImport,newImport)
+ fs.writeFileSync(regular(outputRoot,storePath),frozenStore)
  const version=value=>{if(value.version!=='1.25.0')fail('BASE_PLATFORM_VERSION_MISMATCH');value.version=manifest.platformVersion}
  updateJson(outputRoot,'packages/platform-contracts/package.json',version)
  updateJson(outputRoot,'packages/platform-contracts/package-lock.json',value=>{version(value);version(value.packages[''])})
@@ -64,11 +93,36 @@ export function assembleTask02rSource(repositoryRoot,outputRoot){
   }
   if(!found)fail('BASE_PLATFORM_LOCK_MISSING')
  })
- const receipt={...manifest,sourceRepositoryHead:run('git',['rev-parse','HEAD'],repositoryRoot).trim(),
+ const receipt={...manifest,assembledOverrideDigests:Object.fromEntries(Object.keys(manifest.overrides).map(name=>[name,hash(fs.readFileSync(regular(outputRoot,name)))])),sourceRepositoryHead:run('git',['rev-parse','HEAD'],repositoryRoot).trim(),
   manifestSha256:hash(fs.readFileSync(path.join(repositoryRoot,manifestPath))),
   sourceRoots,sourceSelection:'ACCEPTED_BASELINE_PLUS_EXACT_OVERRIDES',identityOrKrsSourceAdopted:false}
  fs.writeFileSync(path.join(outputRoot,'task02r-release-source.json'),JSON.stringify(receipt,null,2)+'\n')
  return receipt
+}
+
+/** The framework's external aliases must resolve inside the retained artifact,
+ * including after the isolated build source and its dependencies are removed. */
+export function copyTask02rArtifact(next,destination){
+ const aliases=path.join(next,'node_modules'),standalone=path.join(next,'standalone')
+ const lock=JSON.parse(fs.readFileSync(path.join(path.dirname(next),'package-lock.json'),'utf8'))
+ const names=fs.existsSync(aliases)?fs.readdirSync(aliases).sort():[]
+ const selected=names.map(alias=>{
+  const name=alias.replace(/-[a-f0-9]{16}$/,'')
+  if(name===alias||!['pdfkit','pg','rimraf','sharp'].includes(name)||!fs.lstatSync(path.join(aliases,alias)).isSymbolicLink())fail('UNACCEPTED_EXTERNAL_ALIAS')
+  const pkg=JSON.parse(fs.readFileSync(path.join(standalone,'node_modules',name,'package.json'),'utf8'))
+  if(pkg.name!==name||pkg.version!==lock.packages['node_modules/'+name]?.version)fail('DEPENDENCY_LOCK_MISMATCH')
+  return {alias,name,version:pkg.version}
+ })
+ if(fs.existsSync(destination)&&fs.lstatSync(destination).isSymbolicLink())fail('BUILD_DESTINATION_SYMLINK_REFUSED')
+ fs.rmSync(destination,{recursive:true,force:true})
+ fs.cpSync(next,destination,{recursive:true,verbatimSymlinks:true})
+ for(const {alias,name}of selected){
+  const modules=path.join(destination,'standalone/node_modules'),inner=path.join(modules,alias),outer=path.join(destination,'node_modules',alias)
+  try{if(!fs.lstatSync(inner).isSymbolicLink())fail('EXISTING_NON_ALIAS');fs.unlinkSync(inner)}catch(e){if(e.code!=='ENOENT')throw e}
+  fs.symlinkSync('./'+name,inner,'dir');fs.unlinkSync(outer);fs.symlinkSync('../standalone/node_modules/'+name,outer,'dir')
+  if(fs.realpathSync(inner)!==fs.realpathSync(path.join(modules,name))||fs.realpathSync(outer)!==fs.realpathSync(inner))fail('ALIAS_RELOCATION_FAILED')
+ }
+ fs.writeFileSync(path.join(destination,'standalone/task02r-artifact-finalization.json'),JSON.stringify({kind:'TASK02R_STANDALONE_ALIAS_RELOCATION',packages:selected,sourceModified:false,allTargetsWithinArtifact:true},null,2)+'\n')
 }
 
 function build(){
@@ -87,9 +141,7 @@ function build(){
   fs.writeFileSync(path.join(standalone,'task02r-release-source.json'),JSON.stringify(receipt,null,2)+'\n')
   // This is the isolated provider BUILD workspace; never the running instance.
   const destination=path.join(root,'apps/srm/.next')
-  if(fs.existsSync(destination)&&fs.lstatSync(destination).isSymbolicLink())fail('BUILD_DESTINATION_SYMLINK_REFUSED')
-  fs.rmSync(destination,{recursive:true,force:true})
-  fs.cpSync(next,destination,{recursive:true})
+  copyTask02rArtifact(next,destination)
   console.log(JSON.stringify({kind:'TASK02R_NARROW_BUILD',status:'PASS',...receipt}))
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 }
