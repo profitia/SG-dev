@@ -173,7 +173,7 @@ async function nativeSourceParts(options:{host:Omit<Ingestion,'source'|'validate
    origin:'https://api-krs.ms.gov.pl',transport:'HTTPS',pathRules:[{method:'GET',path:'/api/krs/OdpisAktualny'}]},
   independentQuery:options.host.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows}),now:options.host.now??Date.now,
  })
- const client=createKrsClient({source,externalEnabled:true,maximumCalls:20,now:options.host.now??Date.now})
+ const client=createKrsClient({source,externalEnabled:true,maximumCalls:options.host.binding.unmeteredSchemaDigest?null:20,now:options.host.now??Date.now})
  const publication=createNativeCatalogPublication({acceptedSourceId:NATIVE_KRS_SOURCES.official,host:{...options.host,
   source:{id:NATIVE_KRS_SOURCES.catalog,payloadSchema:REGISTRY_REPORT_PROJECTION,qualityVersion:'krs-normalizer/1.0.1',classificationVersion:'krs-public-company-v1'}}})
  return {client,publication}

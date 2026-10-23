@@ -30,10 +30,10 @@ export function buildRequest(value:unknown):{method:'GET';url:string;body:null}{
   return {method:'GET',url:url.href,body:null}
 }
 export type AdmittedSourcePort={execute(input:{command:unknown;intentKey:string},options?:{signal?:AbortSignal}):Promise<Readonly<NativeExternalResult>>}
-export function createKrsClient(options:{source?:AdmittedSourcePort;externalEnabled?:boolean;now?:()=>number;maximumCalls?:number;timeoutMs?:number;maximumBytes?:number}={}){
+export function createKrsClient(options:{source?:AdmittedSourcePort;externalEnabled?:boolean;now?:()=>number;maximumCalls?:number|null;timeoutMs?:number;maximumBytes?:number}={}){
   let calls=0,inFlight=false,failures=0,openUntil=0
-  const now=options.now??Date.now,limit=options.maximumCalls??20,timeout=options.timeoutMs??20000,cap=options.maximumBytes??4*1024*1024
-  demand(Number.isInteger(limit)&&limit>0&&limit<=1000&&timeout>0&&timeout<=20000&&cap>0&&cap<=4*1024*1024)
+  const now=options.now??Date.now,limit=options.maximumCalls===null?null:options.maximumCalls??20,timeout=options.timeoutMs??20000,cap=options.maximumBytes??4*1024*1024
+  demand((limit===null||Number.isInteger(limit)&&limit>0&&limit<=1000)&&timeout>0&&timeout<=20000&&cap>0&&cap<=4*1024*1024)
   return Object.freeze({
     async get(value:unknown,intentKey:string):Promise<KrsResponse>{
       const command=parseCommand(value);demand(typeof intentKey==='string'&&intentKey.length>0&&intentKey.length<=256)
@@ -41,7 +41,7 @@ export function createKrsClient(options:{source?:AdmittedSourcePort;externalEnab
       // The shared native Source accepts an opaque 256-bit intent, whereas
       // callers use bounded logical retry keys. Preserve their stable identity.
       const sourceIntent=await sha256(intentKey)
-      if(inFlight||calls>=limit||now()<openUntil)throw new RegistryError('SOURCE_BUDGET_OR_CIRCUIT_DENIED')
+      if(inFlight||limit!==null&&calls>=limit||now()<openUntil)throw new RegistryError('SOURCE_BUDGET_OR_CIRCUIT_DENIED')
       const signal=AbortSignal.timeout(timeout);calls++;inFlight=true;let dispatched=false
       try{
         let onAbort:()=>void=()=>{}
@@ -63,7 +63,7 @@ export function createKrsClient(options:{source?:AdmittedSourcePort;externalEnab
         if(error instanceof RegistryError)throw error
         throw new RegistryError('KRS_UNAVAILABLE',null,(error as {certainty?:string})?.certainty==='NOT_SENT'?'NOT_SENT':'UNVERIFIED')
       }finally{if(!dispatched)inFlight=false}
-    },diagnostics:()=>({attempts:calls,remaining:limit-calls,circuitOpen:now()<openUntil})
+    },diagnostics:()=>({attempts:calls,remaining:limit===null?null:limit-calls,circuitOpen:now()<openUntil})
   })
 }
 export function bulletinIds(bytes:Uint8Array):string[]{
