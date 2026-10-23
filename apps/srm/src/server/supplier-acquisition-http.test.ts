@@ -28,11 +28,21 @@ function fixture(){
 function request(body:unknown={identifier:nip},changes:Record<string,string>={},query=''){
  return new Request(origin+'/api/xray/test'+query,{method:'POST',headers:{origin,'content-type':'application/json','idempotency-key':key,...changes},body:JSON.stringify(body)})
 }
-test('all NIP searches check CEIDG first including known companies',async()=>{
+test('the unchanged MGBI-only route checks CEIDG first including known companies',async()=>{
  const f=fixture(),handler=createSrmSupplierOperationHandler('search',f.api,A)
  assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['jdg','company'])
  f.calls.length=0;f.setKnown(true)
  assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['jdg','company'])
+})
+test('server-selected KRS routing runs only after existing HTTP fences and preserves the logical command',async()=>{
+ const f=fixture();let overrides=0
+ const handler=createSrmSupplierOperationHandler('search',f.api,A,undefined,async input=>{
+  overrides++;assert.equal(input.organisationId,A);assert.equal(input.command.nip,nip);assert.equal(input.idempotencyKey,key)
+  return Response.json({entityType:'COMPANY',card:{identity:{nip}}})
+ })
+ assert.equal((await handler(request({identifier:nip,provider:'KRS'}))).status,400)
+ assert.equal((await handler(request(undefined,{origin:'https://foreign.example'}))).status,403)
+ assert.equal(overrides,0);assert.equal((await handler(request())).status,200);assert.equal(overrides,1);assert.deepEqual(f.calls,[])
 })
 test('all fixed private entry selections preserve organisation and logical retry key',async()=>{
  for(const [route,kind]of [['company-kys','kys:COMPANY'],['jdg-kys','kys:JDG'],['jdg','jdg']] as const){

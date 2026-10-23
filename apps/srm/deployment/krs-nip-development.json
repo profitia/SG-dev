@@ -10,7 +10,7 @@
   "flag": "SRM_KRS_NIP_ENABLED",
   "default": "false",
   "activationState": "ACCEPTED",
-  "ceidgFirst": true,
+  "ceidgFirst": false,
   "ceidgFailureIsAbsence": false,
   "gusKrsCombinedTimeoutMs": 3000,
   "financialProvider": "MGBI",
@@ -61,5 +61,20 @@
     "sqlSha256": "fa12583aa6820e71b5259991b63b7e5d150e2d353a8f29e7afb37b7ccf125433",
     "originalCorporateSchemaUnchanged": true,
     "candidateOnly": true
+  },
+  "primaryOrder": [
+    "GUS",
+    "KRS"
+  ],
+  "ceidgOnRegistryAbsence": true,
+  "technicalFailureIsRegistryAbsence": false,
+  "gusFirstCorrection": {
+    "taskId": "SRM-GUS-KRS-NIP-ACTIVATION-20261023",
+    "candidateOnly": true,
+    "migration": "db/private-store/019-corporate-scope-projection.sql",
+    "sqlSha256": "0f02c0595e12230f3cd2ea1394c082f5ea062b5ac7c9e7153edab7ba0aed07ac",
+    "existingAuthorityPredicatesRetained": true,
+    "newRuntimeGrantsRequired": false,
+    "transactionTimeoutMs": 15000
   }
 }

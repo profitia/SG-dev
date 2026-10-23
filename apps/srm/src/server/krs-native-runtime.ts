@@ -14,6 +14,7 @@ import type {SupplierReportData} from '@profitia/srm-xray'
 import pilot from '../../deployment/krs-live-pilot.json'
 import {OperationDenied} from '@profitia/platform-contracts/operation-context'
 import {randomUUID,createHash} from 'node:crypto'
+import {measureSupplierStage} from './supplier-telemetry'
 const deny=():never=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
 type Env=Readonly<Record<string,string|undefined>>
 /** Immutable deployment target selection, never a request-selected profile. */
@@ -84,7 +85,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
    }finally{pending.delete(request)}
   },
  }},async request=>{await registry.search(request,'__');return true})
- const disabledNip={async company():Promise<Response>{return deny()}}
+ const disabledNip={async company():Promise<Response>{return deny()},async search():Promise<Response>{return deny()}}
  if(environment.SRM_KRS_NIP_ENABLED!=='true')return Object.freeze({...nameRuntime,nip:disabledNip})
  if(!/^[A-Za-z0-9]{20}$/.test(environment.GUS_BIR_API_KEY??''))return deny()
  const [{createAdmittedGusSource,createGusMapper,GusError,GUS_ORIGIN,GUS_PATH},{createNipResolver},{createNativeNipRegistrySource}]=await Promise.all([
@@ -116,10 +117,10 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
  const mapper=createGusMapper({source:gusSource,readSid:()=>sid,writeSid:value=>{sid=value}})
  const official=await createNativeNipRegistrySource({host:sourceHostOptions,externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206'})
  const observe=(event:unknown)=>console.info('SRM registry telemetry',event)
- const resolver=createNipResolver({gus:(n,key,signal)=>mapper.resolve(n,key,signal),
+ const resolver=createNipResolver({gus:(n,key,signal)=>measureSupplierStage('GUS_RESOLUTION',()=>mapper.resolve(n,key,signal)),
   krs:async(mapping,key,signal)=>{
    const at=Date.now()
-   try{return await official.acquire(mapping,key,signal)}catch(error){
+   try{return await measureSupplierStage('KRS_CURRENT',()=>official.acquire(mapping,key,signal))}catch(error){
     // Classified provider responses qualify; E1/identity/budget refusals do not.
     const code=(error as {code?:string})?.code
     if(code&&/^KRS_HTTP_(404|429|5[0-9]{2})$/.test(code))throw new GusError(code)

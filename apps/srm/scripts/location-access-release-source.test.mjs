@@ -39,6 +39,13 @@ test('provider shallow clone retains the fetch-only accepted artifact in the iso
   for(const file of ['apps/srm/deployment/location-access-release-source.json','apps/srm/middleware.ts','apps/srm/src/modules/xray/supplier-location-controller.ts','apps/srm/scripts/location-access-build-release.mjs'])fs.copyFileSync(path.join(root,file),path.join(shallow,file))
   run(['fetch','--no-tags','--depth=1',root,accepted],shallow)
   run(['cat-file','-e',accepted+'^{commit}'],shallow)
+  // Retain the independently pinned base and middleware through local refs.
+  // The accepted artifact itself remains fetch-only and unreachable: the
+  // assertions below still prove the assembler must retain it explicitly.
+  // Avoid nested shallow-boundary rewrites for unrelated fixtures in CI Git.
+  run(['fetch','--no-tags','--depth=1',root,
+   'a0a3b0626fac16e011b57d6284ce55abcfcd3ca3:refs/heads/fixture-base',
+   '69c09959ceaa73d3e8836127a029f7caeb30c204:refs/heads/fixture-middleware'],shallow)
   const proof=path.join(temp,'shared-clone')
   run(['clone','--quiet','--shared','--no-checkout',shallow,proof],root)
   assert.throws(()=>run(['cat-file','-e',accepted+'^{commit}'],proof),'shared clone drops an unreachable fetched ancestor from a shallow provider')

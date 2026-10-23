@@ -28,7 +28,7 @@ export function supplierHttpFailure(error:unknown){
 
 /** The existing business URLs use this same bounded dispatcher in real tests.
  * Query/body never choose an identity, provider, role, transport or work host. */
-export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi,defaultOrganisationId:string,companyOverride?:(input:SupplierHttpInput,afterCeidg:boolean)=>Promise<Response>){
+export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi,defaultOrganisationId:string,companyOverride?:(input:SupplierHttpInput,afterCeidg:boolean)=>Promise<Response>,searchOverride?:(input:SupplierHttpInput)=>Promise<Response>){
  if(!uuid.test(defaultOrganisationId)||!['search','company','jdg','company-kys','jdg-kys','reveal','pdf','krs','web'].includes(route))throw TypeError('Explicit supplier HTTP route required')
  return async(request:Request):Promise<Response>=>{
   if(request.method!=='POST'){const r=response(405);r.headers.set('Allow','POST');return r}
@@ -73,6 +73,7 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
     return Response.json({nip:command.nip,...await r.json()},{status:r.status,headers:r.headers})
    }
    if(route==='company-kys'||route==='jdg-kys')return await api.kys(input,route==='company-kys'?'COMPANY':'JDG')
+   if(searchOverride)return await searchOverride(input)
    // The routing algorithm reads only status/data/nip. Its native ports here
    // provide already authorized public DTOs, without reintroducing provenance
    // or unmasked personal data to satisfy a legacy TypeScript interface.
@@ -101,7 +102,7 @@ export function createRuntimeSupplierOperationHandler(route:Route,legacy:(reques
    if(runtime.provider!=='clerk')return response(503)
    if(!runtime.supplierApi)return response(503)
    const nip=(route==='search'||route==='company')&&runtime.krsNip?await runtime.krsNip:undefined
-   return await createSrmSupplierOperationHandler(route,runtime.supplierApi,runtime.defaultOrganisationId,nip?.company)(request)
+   return await createSrmSupplierOperationHandler(route,runtime.supplierApi,runtime.defaultOrganisationId,nip?.company,nip?.search)(request)
   }catch{return response(503)}
  })
 }
