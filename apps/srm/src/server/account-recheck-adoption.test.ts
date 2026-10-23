@@ -99,5 +99,18 @@ test('GUS-first correction preserves every accepted receipt and existing E1 limi
  assert.equal(a.identityDecisionCacheIntroduced,false);assert.equal(a.transactionTimeoutMs,15000)
  assert.equal(a.indicatorBatchLimitChanged,false);assert.equal(a.newRuntimeGrantsRequired,false)
  assert.equal(a.optionalScopeProjectionIsAuthorityCache,false);assert.equal(a.productDeploymentPerformed,false)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(receipt.krsRegonReconciliationCompatibility?execFileSync('git',['show',receipt.krsRegonReconciliationCompatibility.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.join(root,file))),digest,file)
+})
+
+
+test('REGON producer patch preserves all prior receipts and pins the complete SRM adoption',()=>{
+ const a=receipt.krsRegonReconciliationCompatibility,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ const before=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(before),a.previousReceiptSha256)
+ for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'))
+ assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);assert.equal(a.producerPr,655)
+ assert.equal(a.originalKrsRegonPreserved,true);assert.equal(a.exactNipAndKrsRequired,true);assert.equal(a.processOwnedGusProofRequired,true)
+ assert.equal(a.financialReconciliationChanged,false);assert.equal(a.fallbackChanged,false);assert.equal(a.e1Changed,false);assert.equal(a.newRuntimeGrantsRequired,false)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
 })
