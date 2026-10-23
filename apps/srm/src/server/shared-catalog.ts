@@ -197,20 +197,39 @@ export async function saveSharedCompany(organizationId: string, nip: string, inp
 
 /** One stored-fact query and calculator shared by the pure reader and writer. */
 async function calculateStoredFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData) {
+  return calculateFinancialIndicators(nip, data, await readStoredIndicatorFacts(client, nip, FINANCIAL_INDICATOR_INPUT_CODES));
+}
+
+/** Each native read remains under the existing row policies. The catalog row
+ * changes in the same publication transaction as its facts; xmin detects even
+ * an otherwise identical republish between independently admitted reads. */
+export async function readIndicatorPublication(client: Pick<PoolClient, "query">, nip: string): Promise<string> {
+  const result = await client.query<{ revision: string }>("SELECT xmin::text AS revision FROM srm.catalog_companies WHERE nip = $1", [nip]);
+  if (result.rows.length !== 1 || !/^[0-9]+$/.test(result.rows[0].revision)) throw new Error("Indicator publication unavailable");
+  return result.rows[0].revision;
+}
+
+export async function readStoredIndicatorFacts(client: Pick<PoolClient, "query">, nip: string, metrics: readonly string[]): Promise<CatalogIndicatorFact[]> {
+  if (!metrics.length || new Set(metrics).size !== metrics.length || metrics.some(code => !FINANCIAL_INDICATOR_INPUT_CODES.includes(code)))
+    throw new TypeError("Explicit existing indicator metrics required");
   const found = await client.query<CatalogIndicatorFact>(
     `SELECT metric_code AS "metricCode", period_start::text AS "periodStart", period_end::text AS "periodEnd",
        statement_scope AS "statementScope", amount::text AS amount, currency_code AS "currencyCode",
        unit_code AS "unitCode", source_path AS "sourcePath", validation_status AS "validationStatus",
        normalization_rule AS "normalizationRule", source_snapshot_id::text AS "sourceSnapshotId"
      FROM srm.catalog_financial_facts WHERE nip = $1 AND metric_code = ANY($2::text[])`,
-    [nip, FINANCIAL_INDICATOR_INPUT_CODES],
+    [nip, [...metrics]],
   );
-  return calculateFinancialIndicators(nip, data, found.rows);
+  return found.rows;
 }
 
 function publicFinancialIndicators(calculated: ReturnType<typeof calculateFinancialIndicators>): NonNullable<FinancialData["indicators"]> {
   return calculated.map(({ inputFacts: _inputFacts, sourceSnapshotIds: _sourceSnapshotIds,
     sourceDocumentIds: _sourceDocumentIds, nip: _nip, ...publicResult }) => publicResult);
+}
+
+export function projectStoredIndicators(nip: string, data: FinancialData, facts: CatalogIndicatorFact[]): NonNullable<FinancialData["indicators"]> {
+  return publicFinancialIndicators(calculateFinancialIndicators(nip, data, facts));
 }
 
 /** Stored knowledge only: no provider request, row lock or business write. */

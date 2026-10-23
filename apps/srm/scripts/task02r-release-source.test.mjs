@@ -6,7 +6,8 @@ import path from 'node:path'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {fileURLToPath} from 'node:url'
-import {assembleTask02rSource} from './task02r-build-release.mjs'
+import {createRequire} from 'node:module'
+import {assembleTask02rSource,copyTask02rArtifact} from './task02r-build-release.mjs'
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../..')
 const hash=b=>createHash('sha256').update(b).digest('hex')
 test('the narrow build retains deployed Identity/KRS bytes and only accepts the exact repair closure',()=>{
@@ -44,5 +45,28 @@ test('the narrow build retains deployed Identity/KRS bytes and only accepts the 
   execFileSync('git',['remote','set-url','origin','https://github.com/profitia/SG-dev.git'],{cwd:candidate})
   fs.unlinkSync(entry);fs.symlinkSync(path.join(root,'apps/srm/src/server/supplier-request-work.ts'),entry)
   assert.throws(()=>assembleTask02rSource(candidate,path.join(temp,'refused')),/RELEASE_SYMLINK_REFUSED/)
+ }finally{fs.rmSync(temp,{recursive:true,force:true})}
+})
+
+test('standalone external packages remain loadable after the complete isolated source is removed',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'task02r-alias-test-')),source=path.join(temp,'source'),next=path.join(source,'.next'),destination=path.join(temp,'retained/.next')
+ try{
+  const packages={}
+  for(const name of ['pdfkit','pg','rimraf','sharp']){
+   const pkg={name,version:'1.0.0',main:'index.cjs'};packages['node_modules/'+name]={version:pkg.version}
+   for(const folder of [path.join(source,'node_modules',name),path.join(next,'standalone/node_modules',name)]){
+    fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,'package.json'),JSON.stringify(pkg));fs.writeFileSync(path.join(folder,'index.cjs'),'module.exports='+JSON.stringify({name})+';')
+   }
+   fs.mkdirSync(path.join(next,'node_modules'),{recursive:true});fs.symlinkSync('../../node_modules/'+name,path.join(next,'node_modules',name+'-'+'a'.repeat(16)))
+  }
+  fs.writeFileSync(path.join(source,'package-lock.json'),JSON.stringify({packages}))
+  copyTask02rArtifact(next,destination)
+  fs.rmSync(source,{recursive:true,force:true})
+  const require=createRequire(path.join(destination,'standalone/.next/server/chunks/probe.cjs'))
+  for(const name of ['pdfkit','pg','rimraf','sharp']){
+   const alias=name+'-'+'a'.repeat(16)
+   assert.equal(require(alias).name,name)
+   assert(fs.realpathSync(path.join(destination,'node_modules',alias)).startsWith(fs.realpathSync(path.join(destination,'standalone/node_modules'))+'/'))
+  }
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
 })

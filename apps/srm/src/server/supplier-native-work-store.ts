@@ -6,7 +6,8 @@ import { readSupplierRequest } from './supplier-request-operation'
 import type { SupplierNativeWork, SupplierNativeWorkSelection, SupplierNativeWorkUnit } from './supplier-request-work'
 import { createLookup, type ExistingSupplierRegistration } from './xray-repository'
 import { persistSection } from './xray-lookup'
-import { readFreshCompany, readFinancialIndicators, recordSupplierInterest } from './shared-catalog'
+import { readFreshCompany, readIndicatorPublication, readStoredIndicatorFacts, projectStoredIndicators, recordSupplierInterest } from './shared-catalog'
+import { FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from './financial-indicators'
 import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
 import { reprojectFinancialArchive, type FinancialSourceFact } from './mgbi-financial'
@@ -94,9 +95,25 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       const s=select(input),at=new Date(now.getTime());if(!Number.isFinite(at.getTime()))return refuse()
       return run(s,'SRM_CACHE_READ',{at:at.toISOString()},pool=>readFreshCompany(s.organisationId,s.command.nip,at,pool))
     },
-    indicators(input:SupplierNativeWorkSelection,data:FinancialData){
+    async indicators(input:SupplierNativeWorkSelection,data:FinancialData){
       const s=select(input),body=json(data)
-      return run(s,'SRM_CACHE_READ',{indicatorInputDigest:digest(body)},(_pool,client)=>readFinancialIndicators(client,s.command.nip,body))
+      const facts:CatalogIndicatorFact[]=[]
+      let publication:string|null=null
+      try{
+        for(let offset=0;offset<FINANCIAL_INDICATOR_INPUT_CODES.length;offset+=4){
+          const metrics=FINANCIAL_INDICATOR_INPUT_CODES.slice(offset,offset+4)
+          const part=await run(s,'SRM_CACHE_READ',{indicatorInputDigest:digest(body),metrics,publication},async(_pool,client)=>{
+            const revision=await readIndicatorPublication(client,s.command.nip)
+            if(publication!==null&&publication!==revision)throw Error('Indicator publication changed')
+            const selected=await readStoredIndicatorFacts(client,s.command.nip,metrics)
+            if(await readIndicatorPublication(client,s.command.nip)!==revision)throw Error('Indicator publication changed')
+            return {revision,facts:selected}
+          })
+          publication=part.revision
+          facts.push(...part.facts)
+        }
+        return json(projectStoredIndicators(s.command.nip,body,facts))
+      }finally{facts.length=0;publication=null}
     },
     registration(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_GENERAL_METADATA_READ',null,pool=>readCompanyRegistration(s.organisationId,s.command.nip,pool))},
     pkd(input:SupplierNativeWorkSelection,general:SectionEnvelope<GeneralCompanyData>){const s=select(input),body=json(general);return run(s,'SRM_GENERAL_METADATA_READ',{bodyDigest:digest(body)},pool=>enrichCompanyPkd(s.organisationId,s.command.nip,body,pool))},

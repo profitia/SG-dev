@@ -14,5 +14,15 @@ test('native account revalidation preserves historical acceptance and pins the e
  for(const [key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual(['contract','producer'].includes(key)?a.previousRootAcceptance[key as 'contract'|'producer']:(receipt as Record<string,unknown>)[key],value,key)
  assert.equal(a.accountRevalidationOptedIn,true);assert.equal(a.totalTransactionTimeoutMs,15000);assert.equal(a.maximumAccountObservationMs,5000)
  assert.equal(a.liveGrantsChanged,false);assert.equal(a.productDeploymentPerformed,false)
- for(const [file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ for(const [file,digest]of Object.entries({...a.applicationSourceDigests,...receipt.boundedIndicatorReadAdoption.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+})
+
+test('bounded indicator reads retain the entire accepted receipt and add no new operation or grant',()=>{
+ const a=receipt.boundedIndicatorReadAdoption
+ const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(previous),a.previousReceiptSha256)
+ for(const [key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ assert.equal(a.unitId,'SRM_CACHE_READ');assert.equal(a.accessMode,'READ');assert.equal(a.maximumMetricsPerUnit,4)
+ assert.equal(a.totalTransactionTimeoutMs,15000);assert.equal(a.publicationGuard,'CATALOG_ROW_XMIN_BEFORE_AND_AFTER_EACH_UNIT')
+ assert.equal(a.liveGrantsChanged,false);assert.equal(a.productDeploymentPerformed,false)
 })
