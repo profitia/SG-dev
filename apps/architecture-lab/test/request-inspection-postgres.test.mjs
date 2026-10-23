@@ -174,6 +174,9 @@ test('private inspection reuses accepted phases and canonical physical audit wit
     })
     await controlled(async()=>{
       await owner.query(workSql);await owner.query("INSERT INTO profitia_request_work.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(workSql)])
+      // Exercise the unchanged real Native Work/inspection guards with the
+      // additive physical lookup index; no receipt or SDK digest is replaced.
+      await owner.query(source('023-current-work-audit-index.sql'))
       for(const[id,mode]of[['NATIVE_READ','READ'],['NATIVE_WRITE','WRITE']])await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_ONLY',$3)",[id,mode,future()])
       await owner.query(`GRANT USAGE ON SCHEMA profitia_request_work TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_request_work.descriptor(uuid,text),profitia_request_work.bind_scope(uuid,text,text,uuid,uuid),profitia_request_work.scope_allows(uuid,text,uuid,uuid,text) TO ${EXECUTOR}`)
       await owner.query(`GRANT SELECT,INSERT,UPDATE,DELETE ON phase_business.results TO ${EXECUTOR};CREATE POLICY native_unit_read ON phase_business.results FOR SELECT TO ${EXECUTOR} USING(profitia_request_work.scope_allows(request_id,'NATIVE_READ',organisation_id,user_id,'READ') OR profitia_request_work.scope_allows(request_id,'NATIVE_WRITE',organisation_id,user_id,'READ'));CREATE POLICY native_unit_write ON phase_business.results FOR ALL TO ${EXECUTOR} USING(profitia_request_work.scope_allows(request_id,'NATIVE_WRITE',organisation_id,user_id,'WRITE')) WITH CHECK(profitia_request_work.scope_allows(request_id,'NATIVE_WRITE',organisation_id,user_id,'WRITE'))`)

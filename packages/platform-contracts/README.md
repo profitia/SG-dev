@@ -603,3 +603,14 @@ Installation requires controlled owner, exact SQL020 and a stored SQL022 digest.
 Keep pre-install function definitions/metadata for rollback. Runtime roles receive
 no access to the new policy/identity tables or helper. No runtime SDK, Identity,
 SG2, KRS or Maps deployment follows from source publication.
+
+### Optional current-work audit lookup index
+
+`migrations/access/023-current-work-audit-index.sql` adds one physical B-tree
+index for the unchanged current-transaction Native Work audit lookup. SQL016's
+existing partial index requires an event-key predicate that this query does
+not contain. Explicitly install as the existing controlled access owner with
+bounded lock/statement timeouts. Existing indexes, function/SDK bytes, receipt
+digests, RLS, grants, roles, budgets and data remain unchanged. A conflicting
+same-name object fails closed; a matching index is idempotent. No authority
+decision cache or transaction timeout increase is introduced.
