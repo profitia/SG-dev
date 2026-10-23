@@ -58,5 +58,18 @@
     "retainedBootstrapDeployment": "dep-dbd5hm4ipgvc73d98vdg",
     "stop": "Suspend only this Free pilot; disable name flag; do not drop or reset catalogs or Source counters",
     "rollbackTest": "PENDING_LIVE_UAT"
+  },
+  "unmeteredSource": {
+    "mode": "UNMETERED",
+    "sources": [
+      "krs.registry.gus",
+      "krs.registry.official",
+      "krs.registry.catalog"
+    ],
+    "schemaDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
+    "ownerApprovalRef": "USER-20261023-PERMANENT-GUS-KRS-NO-INTERNAL-BUDGET",
+    "historicalCountersPreserved": true,
+    "paidMgbiBudgetsUnchanged": true,
+    "installationPerformed": false
   }
 }

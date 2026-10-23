@@ -1,6 +1,6 @@
 {
   "name": "@profitia/maps-embed",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "exports": {
@@ -15,6 +15,6 @@
   ],
   "peerDependencies": {
     "@profitia/maps-contracts": "0.1.0",
-    "@profitia/platform-contracts": "1.18.0 || 1.19.0 || 1.20.0 || 1.21.0 || 1.22.0 || 1.23.0 || 1.24.0 || 1.25.0 || 1.26.0"
+    "@profitia/platform-contracts": "1.18.0 || 1.19.0 || 1.20.0 || 1.21.0 || 1.22.0 || 1.23.0 || 1.24.0 || 1.25.0 || 1.26.0 || 1.27.0"
   }
 }

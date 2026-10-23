@@ -78,3 +78,10 @@ test('logical retry keys cross native Source as stable opaque 256-bit intents',a
  await client.get(command,'logical-retry-key');await client.get(command,'logical-retry-key');await client.get(command,'changed-logical-key');
  assert.equal(seen[0],seen[1]);assert.notEqual(seen[0],seen[2]);
 })
+
+test('explicit unmetered on-demand KRS client keeps Source admission beyond twenty calls',async()=>{
+ let hits=0;const command={operation:'DAILY',day:'2026-10-21'}
+ const client=createKrsClient({externalEnabled:true,maximumCalls:null,source:fixtureSource(async()=>{hits++;return {status:200,url:buildRequest(command).url,headers:{},bytes:bytes([])}})})
+ for(let i=0;i<25;i++)await client.get(command,'unique-unmetered-'+i)
+ assert.equal(hits,25);assert.deepEqual(client.diagnostics(),{attempts:25,remaining:null,circuitOpen:false})
+})

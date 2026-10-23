@@ -105,7 +105,7 @@ test('new source receipt preserves every previous acceptance and pins the comple
   for (const record of ['storedReadSourceAdoption', 'categoryShellAdoption', 'categoryTransportAdoption', 'categoryIngressAdoption'])
     for (const path of Object.keys(before[record].sourceDigests)) assert(path in current.applicationSourceDigests, path)
   for (const path of Object.keys({...before.supplierLocationSourceCompatibility.applicationSourceDigests,...before.platform125SourceCompatibility.applicationSourceDigests})) assert(path in current.applicationSourceDigests, path)
-  for (const [path, expected] of Object.entries({ ...current.applicationSourceDigests, ...receipt.accountRecheckSourceCompatibility.applicationSourceDigests, ...receipt.krsSoapSourceCompatibility?.applicationSourceDigests, ...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests })) {
+  for (const [path, expected] of Object.entries({ ...current.applicationSourceDigests, ...receipt.accountRecheckSourceCompatibility.applicationSourceDigests, ...receipt.krsSoapSourceCompatibility?.applicationSourceDigests, ...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests, ...receipt.unmeteredSourceCompatibility.applicationSourceDigests })) {
     const observed = createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex')
     assert.equal(observed, expected, path)
     assert.notEqual(createHash('sha256').update('mutated-source').digest('hex'), expected, 'Mutation must not pass: ' + path)
@@ -160,7 +160,7 @@ test('avatar receipt preserves all previous evidence and pins the separate produ
   const current = receipt.assistantAvatarSourceCompatibility
   const previous = execFileSync('git', ['show', current.previousReceiptSourceSha + ':apps/sg-runtime/operation-integration.json'])
   assert.equal(createHash('sha256').update(previous).digest('hex'), current.previousReceiptSha256)
-  for (const [key, value] of Object.entries(JSON.parse(previous.toString()))) assert.deepEqual(receipt[key], value, key)
+  for (const [key, value] of Object.entries(JSON.parse(previous.toString()))) assert.deepEqual(['contract','producer'].includes(key) ? receipt.unmeteredSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   for (const [file, digest] of Object.entries(current.producerSourceDigests)) {
     const bytes = execFileSync('git', ['show', current.producerSourceSha + ':packages/platform-contracts/' + file])
     assert.equal(createHash('sha256').update(bytes).digest('hex'), digest, file)

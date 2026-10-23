@@ -2,6 +2,8 @@ import {createHash} from 'node:crypto'
 import {createOperationExecutor,OperationDenied,OPERATION_CONTRACT,operationPayloadDigest,isOperationDenied} from './operation-context.mjs'
 
 export const PLATFORM_INGESTION_CONTRACT=Object.freeze({id:'profitia.platform-ingestion',version:'1.0.0'})
+export const unmeteredSourceSchemaUrl=new URL('../migrations/access/024-unmetered-public-sources.sql',import.meta.url).href
+export async function unmeteredSourceSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(unmeteredSourceSchemaUrl))).digest('hex')}
 export const platformIngestionSchemaUrl=new URL('../migrations/access/008-platform-ingestion.sql',import.meta.url).href
 const proofs=new WeakMap(),hosts=new WeakMap(),ports=new WeakMap(),uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 const text=v=>typeof v==='string'&&v.length>0&&v.length<=256&&!/gh[pousr]_|sk_(?:live|test)_|postgres(?:ql)?:\/\/|Bearer\s/i.test(v)
@@ -39,7 +41,7 @@ export function createPlatformIngestionHost(options){
     ||!b||b.applicationId!==a.appId||b.environment!==a.environment
     ||!['applicationId','projectId','branchId','databaseName','role','deploymentId','configurationVersion'].every(k=>text(b[k]))
     ||b.deploymentId!==a.deploymentId||b.configurationVersion!==a.configurationVersion||!/^[a-z][a-z0-9_]*$/.test(b.role)
-    ||!/^[a-f0-9]{64}$/.test(b.schemaDigest??'')||!s||Object.keys(s).sort().join(',')!=='classificationVersion,id,payloadSchema,qualityVersion'
+    ||!/^[a-f0-9]{64}$/.test(b.schemaDigest??'')||b.unmeteredSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(b.unmeteredSchemaDigest)||!s||Object.keys(s).sort().join(',')!=='classificationVersion,id,payloadSchema,qualityVersion'
     ||!Object.values(s).every(text)||[independentQuery,transact,validateSharedPayload,now].some(v=>typeof v!=='function')
     ||!Number.isInteger(transactionTimeoutMs)||transactionTimeoutMs<100||transactionTimeoutMs>15000)throw TypeError('Explicit native stored-source authority required')
   const one=async(query,sql,values=[])=>{
@@ -91,6 +93,8 @@ export function createPlatformIngestionHost(options){
                 ||state.access?.actorId!==actor.actorId||state.access.organisationId!==null||state.resource?.id!==request.resourceId
                 ||!/^source-v1:[1-9][0-9]*$/.test(state.policyVersion??'')||!/^[0-9]+$/.test(state.transactionId??''))fail()
               const policy=state.ingestion
+              if(policy?.quotaMode==='UNMETERED'&&(!b.unmeteredSchemaDigest||d.unmeteredSchemaDigest!==b.unmeteredSchemaDigest
+                ||policy.unmeteredSchemaDigest!==b.unmeteredSchemaDigest))fail()
               if(policy?.sourceId!==s.id||policy.payloadSchema!==s.payloadSchema||policy.qualityVersion!==s.qualityVersion
                 ||policy.classificationVersion!==s.classificationVersion||request.payload.sourceId!==s.id
                 ||await validateSharedPayload(request.payload.content,{query,transaction})!==true)throw new OperationDenied('DATA_CLASSIFICATION_UNKNOWN')
@@ -142,10 +146,10 @@ export function createPlatformIngestionHost(options){
     },
   })
   hosts.set(host,freeze({sourceId:s.id,applicationId:a.appId,environment:a.environment,projectId:b.projectId,branchId:b.branchId,databaseName:b.databaseName,
-    schemaDigest:b.schemaDigest,payloadSchema:s.payloadSchema,qualityVersion:s.qualityVersion,classificationVersion:s.classificationVersion}))
+    schemaDigest:b.schemaDigest,...(b.unmeteredSchemaDigest?{unmeteredSchemaDigest:b.unmeteredSchemaDigest}:{}),payloadSchema:s.payloadSchema,qualityVersion:s.qualityVersion,classificationVersion:s.classificationVersion}))
   return host
 }
 export async function platformIngestionSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(platformIngestionSchemaUrl))).digest('hex')}
 export async function platformIngestionSourceDigest(){const fs=await import('node:fs');return createHash('sha256')
   .update(fs.readFileSync(new URL('./platform-ingestion.mjs',import.meta.url))).update(fs.readFileSync(new URL('./platform-ingestion.d.mts',import.meta.url)))
-  .update(await platformIngestionSchemaDigest()).digest('hex')}
+  .update(await platformIngestionSchemaDigest()).update(await unmeteredSourceSchemaDigest()).digest('hex')}
