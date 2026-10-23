@@ -43,7 +43,8 @@ export interface OperationState {
 export interface IngestionPolicy {
   sourceId:string;effectKind:'STORED_SQL_TRANSACTION';sourceVersion:string;sourceRef:string;payloadSchema:string
   qualityVersion:string;classificationVersion:string;expiresAt:string;policyId:string;policyVersion:string
-  unit:'SOURCE_TRANSACTION';capacity:number;used:number;windowStart:string;windowEnd:string;policySourceRef:string
+  unit:'SOURCE_TRANSACTION';quotaMode?:'METERED'|'UNMETERED';unmeteredSchemaDigest?:string
+  capacity:number|null;used:number;windowStart:string|null;windowEnd:string|null;policySourceRef:string
 }
 export interface DelegatedJob {
   delegationId: string; jobId: string; requestId: string; sourceId: string; deliveryKey: string

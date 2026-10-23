@@ -257,12 +257,15 @@ function delegatedJob(state, identity, request, config, time) {
 
 function ingestionPolicy(value,context,request,time){
   let p;try{p=freeze(structuredClone(value))}catch{deny('LIMIT_POLICY_UNAVAILABLE')}
+  const unmetered=p?.quotaMode==='UNMETERED'
+  const quotaValid=!!p&&(unmetered
+    ?p.capacity===null&&p.windowStart===null&&p.windowEnd===null&&/^[a-f0-9]{64}$/.test(p.unmeteredSchemaDigest??'')
+    :(p?.quotaMode===undefined||p.quotaMode==='METERED')&&Number.isSafeInteger(p.capacity)&&p.capacity>=1&&p.capacity<=1000000
+      &&p.used<=p.capacity&&Date.parse(p.windowStart)<=time&&validUntil(p.windowEnd,time)&&Date.parse(p.expiresAt)<=Date.parse(p.windowEnd))
   if(!p||p.effectKind!=='STORED_SQL_TRANSACTION'||!nonempty(p.sourceId)||p.sourceId!==request.payload?.sourceId
     ||!/^[1-9][0-9]*$/.test(p.sourceVersion??'')||!nonempty(p.sourceRef)||!nonempty(p.payloadSchema)||!nonempty(p.qualityVersion)
     ||!nonempty(p.classificationVersion)||!computeUuid.test(p.policyId??'')||!/^[1-9][0-9]*$/.test(p.policyVersion??'')||!nonempty(p.policySourceRef)
-    ||p.unit!=='SOURCE_TRANSACTION'||!Number.isSafeInteger(p.capacity)||p.capacity<1||p.capacity>1000000
-    ||!Number.isSafeInteger(p.used)||p.used<0||p.used>p.capacity||!(Date.parse(p.windowStart)<=time)
-    ||!validUntil(p.windowEnd,time)||!validUntil(p.expiresAt,time)||Date.parse(p.expiresAt)>Date.parse(p.windowEnd)
+    ||p.unit!=='SOURCE_TRANSACTION'||!quotaValid||!Number.isSafeInteger(p.used)||p.used<0||!validUntil(p.expiresAt,time)
     ||Date.parse(p.expiresAt)>time+30000||context.organisationId!==null
     ||!request.payload||Object.getPrototypeOf(request.payload)!==Object.prototype
     ||Object.keys(request.payload).sort().join(',')!=='content,sourceId')deny('LIMIT_POLICY_UNAVAILABLE')

@@ -61,14 +61,17 @@ export function createExternalCallHost(options){
   const descriptor=async()=>{
     let result;try{result=await independentQuery(`SELECT current_database() AS database_name,current_user AS role,session_user AS login,${publicWeb?'profitia_public_web':native?'profitia_external_native':'profitia_external_call'}.descriptor($1,$2) AS descriptor`,[sourceId,resourceId])}catch{throw new ExternalCallUnavailable('NOT_SENT')}
     const row=result?.rows?.length===1?result.rows[0]:null,d=row?.descriptor
+    const quotaValid=d?.quotaMode==='UNMETERED'
+      ?d.capacity===null&&!!source.unmeteredSchemaDigest&&d.unmeteredSchemaDigest===source.unmeteredSchemaDigest
+      :(d?.quotaMode===undefined||d.quotaMode==='METERED')&&Number.isSafeInteger(d?.capacity)&&d.capacity>=1&&d.capacity<=1000000&&d.admittedCount<=d.capacity
     if(!d||row.database_name!==source.databaseName||row.role!==b.role||row.login!==b.role||d.schemaVersion!=='1.0.0'
       ||d.schemaDigest!==b.schemaDigest||d.sourceSchemaDigest!==source.schemaDigest||d.role!==b.role
       ||!['applicationId','environment','projectId','branchId','databaseName','sourceId'].every(k=>d[k]===source[k])
       ||d.resourceId!==resourceId||d.configurationVersion!==b.configurationVersion||d.origin!==b.origin||d.transport!==b.transport
       ||operationPayloadDigest(d.pathRules)!==operationPayloadDigest(b.pathRules)||d.unit!==EXTERNAL_CALL_CONTRACT.unit
       ||!uuid.test(d.policyId??'')||!uuid.test(d.serviceId??'')||!/^database-service:[a-f0-9-]{36}:[1-9][0-9]*$/i.test(d.serviceBindingVersion??'')
-      ||!/^source-v1:[1-9][0-9]*$/.test(d.sourcePolicyVersion??'')||!Number.isSafeInteger(d.capacity)||d.capacity<1||d.capacity>1000000
-      ||!Number.isSafeInteger(d.admittedCount)||d.admittedCount<0||d.admittedCount>d.capacity||!/^[1-9][0-9]*$/.test(d.policyVersion??'')
+      ||!/^source-v1:[1-9][0-9]*$/.test(d.sourcePolicyVersion??'')||!quotaValid
+      ||!Number.isSafeInteger(d.admittedCount)||d.admittedCount<0||!/^[1-9][0-9]*$/.test(d.policyVersion??'')
       ||!Number.isSafeInteger(d.maximumRequestBytes)||d.maximumRequestBytes<1||d.maximumRequestBytes>1048576
       ||!Number.isSafeInteger(d.maximumResponseBytes)||d.maximumResponseBytes<1||d.maximumResponseBytes>8388608
       ||!Number.isSafeInteger(d.timeoutMs)||d.timeoutMs<100||d.timeoutMs>120000
@@ -84,7 +87,7 @@ export function createExternalCallHost(options){
        ||d.nativeSourceRef!=='SYNTHETIC_ONLY'||d.publicWebSourceRef!=='SYNTHETIC_ONLY')))throw new ExternalCallUnavailable('NOT_SENT')
     return freeze(d)
   }
-  const same=(a,b)=>['policyId','policyVersion','configurationVersion','serviceId','serviceBindingVersion','sourcePolicyVersion','origin','transport',
+  const same=(a,b)=>['quotaMode','unmeteredSchemaDigest','policyId','policyVersion','configurationVersion','serviceId','serviceBindingVersion','sourcePolicyVersion','origin','transport',
     'maximumRequestBytes','maximumResponseBytes','timeoutMs'].every(k=>a[k]===b[k])&&operationPayloadDigest(a.pathRules)===operationPayloadDigest(b.pathRules)
     &&(!native||['nativeSchemaDigest','nativePolicyVersion','nativeCompletionMode','nativeCredentialMode','nativeMaximumResponseBytes','nativeExpiresAt'].every(k=>a[k]===b[k])
       &&operationPayloadDigest(a.nativePathRules)===operationPayloadDigest(b.nativePathRules)&&operationPayloadDigest(a.nativeRedirectOrigins)===operationPayloadDigest(b.nativeRedirectOrigins))

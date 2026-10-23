@@ -61,3 +61,13 @@ test('source OUTCOME failure withholds receipt and rolls back the one source tra
   const f=fixture();f.failOutcome=true;await assert.rejects(f.execute(),e=>e.reasonCode==='AUDIT_UNAVAILABLE')
   assert.deepEqual(f.commits,[]);assert.deepEqual(f.events.map(e=>e.phase),['INTENT','FAILURE'])
 })
+
+test('explicit unmetered Source admits real counted transactions without a capacity or budget window',async()=>{
+ const f=fixture();Object.assign(f.state.ingestion,{quotaMode:'UNMETERED',capacity:null,used:1234567,windowStart:null,windowEnd:null,unmeteredSchemaDigest:'a'.repeat(64)})
+ const result=await f.execute();assert.equal(result.value.status,'COMMITTED');assert.equal(f.admissions,1);assert.equal(f.actions,1)
+})
+for(const [name,patch]of [
+ ['unknown mode',{quotaMode:'UNLIMITED'}],['implicit missing limit',{capacity:null,windowStart:null,windowEnd:null}],
+ ['unmetered with a numeric capacity',{quotaMode:'UNMETERED',capacity:100}],
+ ['unmetered without schema acceptance',{quotaMode:'UNMETERED',capacity:null,windowStart:null,windowEnd:null}],
+])test('Source refuses '+name,async()=>{const f=fixture();Object.assign(f.state.ingestion,patch);await assert.rejects(f.execute(),isOperationDenied);assert.equal(f.admissions,0)})

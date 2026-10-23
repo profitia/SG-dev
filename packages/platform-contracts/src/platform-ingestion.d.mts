@@ -3,12 +3,12 @@ import type {AccessQuery} from './access-store.mjs'
 import type {PrivateTransactionOptions} from './private-operation-host.mjs'
 export interface PlatformIngestionBinding {
   applicationId:string;environment:Environment;projectId:string;branchId:string;databaseName:string;role:string
-  deploymentId:string;configurationVersion:string;schemaDigest:string
+  deploymentId:string;configurationVersion:string;schemaDigest:string;unmeteredSchemaDigest?:string
 }
 export interface PlatformReceipt {readonly effectId:string;readonly status:'COMMITTED'}
 export interface PlatformSourceBinding {
   readonly sourceId:string;readonly applicationId:string;readonly environment:Environment;readonly projectId:string;readonly branchId:string;readonly databaseName:string
-  readonly schemaDigest:string;readonly payloadSchema:string;readonly qualityVersion:string;readonly classificationVersion:string
+  readonly schemaDigest:string;readonly unmeteredSchemaDigest?:string;readonly payloadSchema:string;readonly qualityVersion:string;readonly classificationVersion:string
 }
 export interface PlatformReceiptEvidence extends PlatformSourceBinding {
   readonly sourceId:string;readonly resourceId:string;readonly contentDigest:string;readonly idempotencyKeyDigest:string
@@ -21,6 +21,8 @@ export declare function createPlatformDeliveryPort<Transaction>(options:{
   write:(payload:Json,transaction:Transaction,context:Readonly<OperationContext>)=>void|Promise<void>
 }):Readonly<PlatformDeliveryPort>
 export declare const PLATFORM_INGESTION_CONTRACT:Readonly<{id:'profitia.platform-ingestion';version:'1.0.0'}>
+export declare const unmeteredSourceSchemaUrl:string
+export declare function unmeteredSourceSchemaDigest():Promise<string>
 export declare const platformIngestionSchemaUrl:string
 export declare function platformIngestionSchemaDigest():Promise<string>
 export declare function platformIngestionSourceDigest():Promise<string>
