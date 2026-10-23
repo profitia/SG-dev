@@ -32,13 +32,16 @@ test('the narrow build retains deployed Identity/KRS bytes and only accepts the 
   // A pinned repair changed in the input fails before fetching or writing.
   const candidate=path.join(temp,'candidate');fs.mkdirSync(candidate)
   execFileSync('git',['init','--quiet'],{cwd:candidate})
-  execFileSync('git',['remote','add','origin','https://github.com/profitia/SG-dev.git'],{cwd:candidate})
+  execFileSync('git',['remote','add','origin','https://github.com/profitia/SG-dev'],{cwd:candidate})
   for(const name of [...Object.keys(receipt.overrides),'apps/srm/deployment/task02r-release-source.json']){
    fs.mkdirSync(path.dirname(path.join(candidate,name)),{recursive:true});fs.copyFileSync(path.join(root,name),path.join(candidate,name))
   }
   const entry=path.join(candidate,'apps/srm/src/server/supplier-request-work.ts');fs.appendFileSync(entry,'\n// unaccepted source\n')
   assert.throws(()=>assembleTask02rSource(candidate,path.join(temp,'refused')),/RELEASE_OVERRIDE_DIGEST_MISMATCH/)
   assert(!fs.existsSync(path.join(temp,'refused')))
+  execFileSync('git',['remote','set-url','origin','https://github.com/profitia/unapproved-repository.git'],{cwd:candidate})
+  assert.throws(()=>assembleTask02rSource(candidate,path.join(temp,'refused')),/REPOSITORY_AUTHORITY_MISMATCH/)
+  execFileSync('git',['remote','set-url','origin','https://github.com/profitia/SG-dev.git'],{cwd:candidate})
   fs.unlinkSync(entry);fs.symlinkSync(path.join(root,'apps/srm/src/server/supplier-request-work.ts'),entry)
   assert.throws(()=>assembleTask02rSource(candidate,path.join(temp,'refused')),/RELEASE_SYMLINK_REFUSED/)
  }finally{fs.rmSync(temp,{recursive:true,force:true})}

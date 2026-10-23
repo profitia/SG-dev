@@ -36,7 +36,7 @@ export function assembleTask02rSource(repositoryRoot,outputRoot){
   ||JSON.stringify(Object.keys(manifest.overrides).sort())!==JSON.stringify(expectedPaths))fail('RELEASE_SCOPE_MISMATCH')
  if(!path.isAbsolute(outputRoot)||fs.existsSync(outputRoot))fail('FRESH_RELEASE_DIRECTORY_REQUIRED')
  const origin=run('git',['remote','get-url','origin'],repositoryRoot).trim()
- if(!['https://github.com/profitia/SG-dev.git','git@github.com:profitia/SG-dev.git'].includes(origin))fail('REPOSITORY_AUTHORITY_MISMATCH')
+ if(!['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git','git@github.com:profitia/SG-dev.git'].includes(origin))fail('REPOSITORY_AUTHORITY_MISMATCH')
  for(const [name,digest]of Object.entries(manifest.overrides))if(hash(fs.readFileSync(regular(repositoryRoot,name)))!==digest)fail('RELEASE_OVERRIDE_DIGEST_MISMATCH')
  // A shallow provider checkout may need the explicitly pinned ancestor only.
  try{run('git',['cat-file','-e',expectedBase+'^{commit}'],repositoryRoot,{stdio:'pipe'})}
