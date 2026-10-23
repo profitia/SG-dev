@@ -9,8 +9,23 @@ import { readConfiguration } from './config.js'
  * may still be running. PostgreSQL rolls back on disconnect. No automatic retry. */
 export function accountTransactions(pool: Pick<pg.Pool, 'connect'>) {
   return async function transact<T>(action: (session: { query: import('@profitia/platform-contracts/access-store').AccessQuery; transaction: pg.PoolClient }) => Promise<T>, limits: { timeoutMs: number; maxWaitMs: number }, signal?: AbortSignal): Promise<T> {
-    if (limits.timeoutMs !== 15000 || limits.maxWaitMs !== 5000 || signal?.aborted) throw new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')
-    const connection = await pool.connect()
+    // Provisioning allows 5s acquisition; the private profile host allows 3s.
+    // Both use the same 15s transaction deadline and ordinary runtime role.
+    if (limits.timeoutMs !== 15000 || ![3000, 5000].includes(limits.maxWaitMs) || signal?.aborted) throw new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')
+    const connection = await new Promise<pg.PoolClient>((resolve, reject) => {
+      let pending = true
+      const cleanup = () => { clearTimeout(waitTimer); signal?.removeEventListener('abort', cancel) }
+      const cancel = () => { if (!pending) return; pending = false; cleanup(); reject(new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')) }
+      const waitTimer = setTimeout(cancel, limits.maxWaitMs)
+      signal?.addEventListener('abort', cancel, { once: true })
+      if (signal?.aborted) { cancel(); return }
+      void pool.connect().then(client => {
+        // pg acquisition cannot be cancelled; destroy a late connection so
+        // timed-out or aborted work can never begin on a pooled connection.
+        if (!pending) { client.release(true); return }
+        pending = false; cleanup(); resolve(client)
+      }, cancel)
+    })
     let open = true, released = false, timer: ReturnType<typeof setTimeout>, abort: () => void = () => {}
     const deadline = new Promise<never>((_resolve, reject) => {
       abort = () => { if (!open) return; open = false; released = true; connection.release(true); reject(new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')) }
