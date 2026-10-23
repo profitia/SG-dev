@@ -565,14 +565,15 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     assert.equal(body.kys.status,'NOT_REQUESTED');assert.equal(body.kys.data,null);assert.equal(body.general.source,undefined);assert(!JSON.stringify(body).includes('12345678901'))
     assert.equal(networkHits,before+2);assert(networkObservations.every(x=>x.openTransactions===0))
    })
-   await t.test('actual unknown search preserves empty CEIDG fallback; a fresh known company skips CEIDG',async()=>{
+   await t.test('actual search preserves confirmed empty CEIDG fallback and checks CEIDG before a cached company',async()=>{
     const before=networkHits;emptyCeidg=true
     let result
     try{result=await http('search',{identifier:'5210087493'})}finally{emptyCeidg=false}
     assert.equal(result.status,200);assert.equal((await result.json()).entityType,'COMPANY');assert.equal(networkHits,before+3)
     const paths=networkObservations.slice(-3).map(x=>x.path);assert(paths[0].startsWith('/api/ceidg/'));assert(paths[1].includes('wp-record'));assert(paths[2].includes('rdf-record'))
     const freshBefore=networkHits,known=await http('search',{identifier:'5260250274'})
-    assert.equal(known.status,200);assert.equal((await known.json()).entityType,'COMPANY');assert.equal(networkHits,freshBefore)
+    assert.equal(known.status,200);assert.equal((await known.json()).entityType,'JDG');assert.equal(networkHits,freshBefore+1)
+    assert(networkObservations.at(-1).path.startsWith('/api/ceidg/'))
    })
    await t.test('actual protected KYS HTTP composes current HUMAN admission, native original engine and current masked read, and retries do not purchase',async()=>{
     const key='synthetic-http-repeat-'+randomUUID(),before=networkHits

@@ -3227,7 +3227,10 @@
       "src/server/supplier-acquisition-http.ts": "293f7e4d947eac0a1904c9c2e35a1e88f929dc3c614382a4ce579cded6cdd970",
       "src/server/supplier-api-composition.ts": "9f1b941048f985c02f699873318bcc0b27195969d32283f5a2d0442b0a248ab5",
       "src/server/supplier-native-company.ts": "ef3659011e6ac521d6d262d0358447eb17986546449f438f57f5730f79280956",
-      "src/server/xray-repository.test.ts": "d52204f2994fa25666322a10eb745f429293bee4f1afe7c7698f688590c41978"
+      "src/server/xray-repository.test.ts": "d52204f2994fa25666322a10eb745f429293bee4f1afe7c7698f688590c41978",
+      "scripts/private-host.integration.test.mjs": "e3dcbcd26f1de555f8e3c0ffe981f763c22b51b131f4bc5cbf0421c119cb569a",
+      "scripts/private-sensitive.integration.test.mjs": "dfa9711805b2500db8dde8157b84603539ff979e1ab559582a8f98c740467581",
+      "scripts/supplier-location-admission.integration.test.mjs": "d611f867fc7ec15fd496bfdc858cd4b13578d9fc3bd3eca298b5922cc867fa34"
     },
     "ceidgFirst": true,
     "primaryTimeoutMs": 3000,
