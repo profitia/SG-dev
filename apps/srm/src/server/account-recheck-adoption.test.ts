@@ -5,6 +5,7 @@ import path from 'node:path'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import receipt from '../../operation-integration.json'
+import '../../scripts/task02r-release-source.test.mjs'
 const hash=(value:Buffer)=>createHash('sha256').update(value).digest('hex')
 test('native account revalidation preserves historical acceptance and pins the entire current receiver',()=>{
  const a=receipt.accountRecheckSourceCompatibility,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'': 'apps/srm')

@@ -3167,7 +3167,10 @@
       "src/server/supplier-source-link.ts": "86691c8e8dbf936c66fa9413825828d5677b2468329ea9c4070f05d9f5382619",
       "src/server/mgbi-financial.ts": "7ae4eff0d786e765fd5b8bcf7f4645d2c3b019c497b2acb46065358a5d3183d7",
       "src/server/msr-repository.ts": "e9867a257f2842326561488e37fd5b01a0d2906fc47717f7a7a45b314170fc5e",
-      "src/server/account-recheck-adoption.test.ts": "3fb6d4f97ece9153d513f20859a76b3471c7013bdc0d75519a2f2a8a6f5c474a"
+      "src/server/account-recheck-adoption.test.ts": "54d150a66ce55986dc9a8d21ae4c2158c98ec7b6af27e8a54ddc4a4392130849",
+      "scripts/task02r-build-release.mjs": "6a1f277d3bb95ce9c844389261d4b0de82eef19403cafaf3be72a67562016673",
+      "scripts/task02r-release-source.test.mjs": "0f8708cc0883e5397a0eee896cfd415a7ec8dc832dce081bc8da94f8e6556557",
+      "deployment/task02r-release-source.json": "b6e6b79ab466fbc562549d66ac28d50e260418367eb8233327c2f8072234af7e"
     },
     "accountRevalidationOptedIn": true,
     "totalTransactionTimeoutMs": 15000,
