@@ -1,7 +1,7 @@
 import {AsyncLocalStorage} from 'node:async_hooks'
 import {randomUUID} from 'node:crypto'
 
-const stages=['CLERK_AUTHENTICATE','CLERK_SESSION_READ','CLERK_ACCOUNT_READ','E1_SQL','POOL_WAIT','DOMAIN_ACTION','FINANCIAL_FACTS_INSERT','FINANCIAL_ACQUIRE','FINANCIAL_PUBLICATION'] as const
+const stages=['CLERK_AUTHENTICATE','CLERK_SESSION_READ','CLERK_ACCOUNT_READ','E1_SQL','POOL_WAIT','DOMAIN_ACTION','FINANCIAL_FACTS_INSERT','FINANCIAL_ACQUIRE','FINANCIAL_PUBLICATION','CEIDG_LOOKUP','GUS_RESOLUTION','KRS_CURRENT','CORPORATE_ADMISSION','CORPORATE_WRITE','CORPORATE_INDICATORS','CORPORATE_PUBLICATION'] as const
 type Stage=typeof stages[number]
 type Metric={count:number;totalMs:number;maximumMs:number;failed:number}
 type Work={unit:string;totalMs:number;status:'SUCCESS'|'ERROR';stages:Partial<Record<Stage,Metric>>}

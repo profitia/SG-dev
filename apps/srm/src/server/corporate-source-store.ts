@@ -9,6 +9,7 @@ import { readCorporateCompanyData, readCorporateFinancialData, MAX_CORPORATE_KNO
 import { writeSharedCompany, writeFinancialIndicators } from './shared-catalog'
 import type { FinancialSourceFact } from './mgbi-financial'
 import shape from './corporate-source-shape.json'
+import {measureSupplierStage} from './supplier-telemetry'
 
 export const CORPORATE_PUBLICATION_VERSION = 'srm-corporate-publication-v1'
 export const CORPORATE_SOURCE = Object.freeze({ id: 'srm.catalog.corporate', payloadSchema: CORPORATE_PUBLICATION_VERSION,
@@ -143,17 +144,27 @@ export function createSrmCorporateSourceStore(options: {
       // evidence IDs, write callbacks or a mutable body after admission.
       const packet = readCorporatePacket(input), body = JSON.stringify(packet)
       const manifest = { bodyDigest: hash(body), nip: packet.nip, version: CORPORATE_PUBLICATION_VERSION }
-      const result = await host.ingest({ resourceId: 'srm-corporate:' + packet.nip, payload: manifest, idempotencyKey }, async (_manifest, client, context) => {
+      const result = await measureSupplierStage('CORPORATE_PUBLICATION',()=>host.ingest({ resourceId: 'srm-corporate:' + packet.nip, payload: manifest, idempotencyKey }, async (_manifest, client, context) => {
         await verify(client)
         const effectId = context.platformReservation?.effectId
         if (!effectId) return unavailable()
         // The additive optional port validates only Financial. Its absence
         // fails closed; it never fetches or relabels another General provider.
         const port=financialOnlyCandidate(packet)?'open_financial_publication':'open_publication'
-        const admitted = await client.query(`SELECT profitia_srm_catalog.${port}($1::uuid,$2::uuid,$3) AS admitted`, [effectId, context.decisionId, body])
+        const admitted = await measureSupplierStage('CORPORATE_ADMISSION',()=>client.query(`SELECT profitia_srm_catalog.${port}($1::uuid,$2::uuid,$3) AS admitted`, [effectId, context.decisionId, body]))
         if (admitted.rows[0]?.admitted !== true) return unavailable()
-        await writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId })
-        if (packet.financial.data) await writeFinancialIndicators(client, packet.nip, packet.financial.data)
+        await measureSupplierStage('CORPORATE_WRITE',()=>writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId }))
+        if (packet.financial.data) await measureSupplierStage('CORPORATE_INDICATORS',()=>writeFinancialIndicators(client, packet.nip, packet.financial.data!))
+      })).catch(error=>{
+        let cause:unknown=error,timeout=false
+        for(let depth=0;depth<8&&cause instanceof Error;depth++){
+          if(cause.message==='Private transaction timed out')timeout=true
+          cause=cause.cause
+        }
+        // Exact reviewed driver message only; never SQL, parameters or the raw
+        // provider/database error. Preserve the original exception unchanged.
+        console.error(JSON.stringify({event:'srm_corporate_publication_failure',reason:timeout?'NATIVE_TRANSACTION_TIMEOUT':'PUBLICATION_REFUSED'}))
+        throw error
       })
       if (!platformReceiptEvidence(result.value)) return unavailable()
       return result.value

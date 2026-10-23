@@ -16,6 +16,7 @@ const common = name => read('../../../packages/platform-contracts/migrations/acc
 const sourceSql = common('008-platform-ingestion.sql'), sourceDigest = hash(sourceSql)
 const publicationSql = read('../db/private-store/004-corporate-source.sql'), bridgeSql = read('../db/private-store/005-corporate-source-access.sql')
 const financialPublicationSql=read('../db/private-store/018-financial-only-publication.sql')
+const scopeProjectionSql=read('../db/private-store/019-corporate-scope-projection.sql')
 const shapeText = read('../src/server/corporate-source-shape.json'), shape = JSON.parse(shapeText), publicationDigest = hash(publicationSql + bridgeSql + shapeText)
 const DATABASE = 'srm_corporate_' + randomUUID().replaceAll('-', ''), ROLE = 'srm_corporate_source_fixture'
 const NIP = '5272443955', KRS = '0000217580'
@@ -44,7 +45,7 @@ test('corporate source candidate pins its exact native sources without claiming 
  for(const[path,digest]of Object.entries(current.sourceDigests)){
   const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
   assert.equal(hash(execFileSync('git',['show',manifest.boundedIndicatorReadAdoption.previousReceiptSourceSha+':apps/srm/'+path])),expected,'historical '+path)
-  assert.equal(hash(read('../'+path)),manifest.krsFinancialTelemetryCompatibility.applicationSourceDigests[path]??manifest.boundedIndicatorReadAdoption.applicationSourceDigests[path]??expected,path)
+  assert.equal(hash(read('../'+path)),manifest.krsGusFirstPublicationCompatibility.applicationSourceDigests[path]??manifest.krsFinancialTelemetryCompatibility.applicationSourceDigests[path]??manifest.boundedIndicatorReadAdoption.applicationSourceDigests[path]??expected,path)
  }
  for(const name of ['singleExistingCatalogWriter','singleExistingIndicatorCalculator','storedSourceOnly','sameTransactionOutcomeWitness','noTenantOwnerInNewSharedFacts','humanWriteCeilingRetained'])assert.equal(current[name],true,name)
  for(const name of ['providerAcquisitionProvedByThisUnit','fullNativeWorkflowAdopted','liveSqlInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)
@@ -88,6 +89,16 @@ test('corporate SOURCE uses ordinary native pg, one original writer/calculator a
    await owner.query(sourceSql);await owner.query(publicationSql)
    const original=(await owner.query("SELECT pg_get_functiondef(oid) definition,proacl::text acl FROM pg_proc WHERE oid='profitia_srm_catalog.open_publication(uuid,uuid,text)'::regprocedure")).rows
    await owner.query(financialPublicationSql)
+   const predicates=async()=>(await owner.query("SELECT oid,pg_get_functiondef(oid) definition,proacl::text acl FROM pg_proc WHERE oid IN('profitia_srm_catalog.current_packet(text,boolean)'::regprocedure,'profitia_srm_catalog.scope_allows(text,boolean)'::regprocedure) ORDER BY oid")).rows
+   const beforeProjection=await predicates()
+   await owner.query('SAVEPOINT projection_rollback')
+   await owner.query(scopeProjectionSql)
+   await owner.query('ROLLBACK TO SAVEPOINT projection_rollback')
+   assert.deepEqual(await predicates(),beforeProjection)
+   assert.equal((await owner.query("SELECT to_regprocedure('profitia_srm_catalog.current_publication_effect(text,boolean)') helper")).rows[0].helper,null)
+   await owner.query(scopeProjectionSql);const installedProjection=await predicates()
+   await owner.query(scopeProjectionSql);assert.deepEqual(await predicates(),installedProjection)
+   assert.deepEqual(installedProjection.map(p=>p.acl),beforeProjection.map(p=>p.acl))
    assert.deepEqual((await owner.query("SELECT pg_get_functiondef(oid) definition,proacl::text acl FROM pg_proc WHERE oid='profitia_srm_catalog.open_publication(uuid,uuid,text)'::regprocedure")).rows,original)
    await owner.query("INSERT INTO profitia_ingestion.installation(schema_version,schema_digest,environment,project_id,branch_id,database_name) VALUES('1.0.0',$1,'development','synthetic-corporate-project','synthetic-corporate-branch',$2)",[sourceDigest,DATABASE])
    await owner.query("INSERT INTO profitia_ingestion.runtime_bindings(login_role,binding_id,service_id,application_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'srm-corporate-source','PLATFORM_INTERNAL','synthetic-corporate','corporate-v1','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[ROLE,randomUUID(),randomUUID()])
@@ -114,6 +125,11 @@ test('corporate SOURCE uses ordinary native pg, one original writer/calculator a
   const settings={application,binding,publicationSchemaDigest:publicationDigest,pool,auditPool},store=createSrmCorporateSourceStore(settings)
   const counts=async()=>(await owner.query('SELECT (SELECT count(*)::int FROM profitia_srm_catalog.publications)publications,(SELECT count(*)::int FROM profitia_ingestion.effects)effects,(SELECT sum(consumed_count)::int FROM profitia_ingestion.budgets)consumed')).rows[0]
   let first
+  await t.test('optional packet projection is controlled and its private helper is not a runtime authority',async()=>{
+   await assert.rejects(pool.query(scopeProjectionSql))
+   await assert.rejects(pool.query("SELECT profitia_srm_catalog.current_publication_effect($1,true)",[NIP]),e=>e.code==='42501')
+   assert.equal((await pool.query("SELECT profitia_srm_catalog.scope_allows($1,true) allowed",[NIP]).catch(()=>({rows:[{allowed:false}]}))).rows[0].allowed,false)
+  })
   await t.test('real publisher stores shared company/facts, real global lineage and original CURRENT_RATIO',async()=>{
    first=await store.publish(packet(),key('synthetic-corporate-initial'))
    assert.equal(first.status,'COMMITTED')
@@ -239,6 +255,25 @@ test('corporate SOURCE uses ordinary native pg, one original writer/calculator a
     }));assert.equal(admitted,false)
    }
    assert.deepEqual(await counts(),before)
+  })
+  await t.test('395 synthetic facts over9years publish within the unchanged deadline and preserve General and global provenance',async()=>{
+   const sample=packet(),period=sample.financial.data.periods[0],template=sample.facts[0],periods=[],facts=[]
+   const generalColumns='general_json,general_sha256,general_checked_at,general_source_organization_id,general_source_snapshot_id'
+   const before=(await owner.query('SELECT '+generalColumns+' FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows
+   for(let year=2017;year<=2025;year++){
+    const selected=[]
+    for(let metric=0;metric<44;metric++){
+     if(year===2025&&metric===43)continue
+     const metricCode=metric===0?'BS_A_CA':metric===1?'BS_LAE_LAPFL_STL':'SYNTHETIC_'+metric
+     const fact={...template,metricCode,periodStart:year+'-01-01',periodEnd:year+'-12-31',amount:'100',sourceAmount:'100',sourcePath:'content.standardized_fields.synthetic_'+metric}
+     facts.push(fact);selected.push({metricCode,amount:'100',currency:'PLN',unit:'PLN'})
+    }
+    periods.push({...period,from:year+'-01-01',to:year+'-12-31',documentId:year.toString(16).padStart(24,'0'),facts:selected})
+   }
+   const result=await store.publish({...sample,preserveGeneral:true,general:unrequestedCorporateGeneral(),financial:{...sample.financial,data:{periods}},facts},key('synthetic-financial-only-395-scale'))
+   assert.equal(result.status,'COMMITTED');assert.equal(facts.length,395)
+   assert.deepEqual((await owner.query('SELECT '+generalColumns+' FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows,before)
+   assert.equal((await owner.query('SELECT count(*)::int n FROM srm.catalog_financial_facts WHERE nip=$1 AND source_snapshot_id=$2 AND source_organization_id IS NULL',[NIP,result.effectId])).rows[0].n,395)
   })
  }finally{await pool?.end();await auditPool?.end();await owner?.end();await root.end()}
 })
