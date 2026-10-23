@@ -15,7 +15,7 @@ test('native account revalidation preserves historical acceptance and pins the e
  assert.equal(a.accountRevalidationOptedIn,true);assert.equal(a.totalTransactionTimeoutMs,15000);assert.equal(a.maximumAccountObservationMs,5000)
  assert.equal(a.liveGrantsChanged,false);assert.equal(a.productDeploymentPerformed,false)
  for(const [file,digest]of Object.entries(a.applicationSourceDigests)){
-  const content=receipt.krsNipSourceCompatibility?execFileSync('git',['show','1514ad205141762ae8f0407f20ee395c0cd254bf:'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.join(root,file));assert.equal(hash(content),digest,file)
+  const content=receipt.krsNipSourceCompatibility?execFileSync('git',['show',receipt.krsNipSourceCompatibility.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.join(root,file));assert.equal(hash(content),digest,file)
  }
 })
 
