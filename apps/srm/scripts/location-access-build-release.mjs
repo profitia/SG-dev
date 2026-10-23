@@ -34,6 +34,8 @@ export function assembleLocationAccessSource(repository,output){
   const input=path.join(temp,'input')
   run(['git','clone','--quiet','--shared','--no-checkout',repository,input],repository)
   run(['git','sparse-checkout','set','apps/srm','packages/platform-contracts','packages/srm-xray','packages/maps-contracts','packages/maps-embed'],input)
+  // Shallow local clones omit fetched ancestors that are not reachable from HEAD.
+  run(['git','fetch','--no-tags','--depth=1',canonical,accepted],input,{stdio:'pipe'})
   run(['git','checkout','--quiet','--detach',accepted],input)
   run(['git','remote','set-url','origin',canonical],input)
   const base=assembleTask02rSource(input,output),old=fs.readFileSync(path.join(output,target),'utf8')
