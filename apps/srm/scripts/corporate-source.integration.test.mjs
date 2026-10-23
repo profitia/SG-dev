@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createHash, randomUUID } from 'node:crypto'
+import { execFileSync } from 'node:child_process'
 import pg from 'pg'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import { createSrmCorporateSourceStore, CORPORATE_SOURCE, CORPORATE_PUBLICATION_VERSION } from '../src/server/corporate-source-store.ts'
@@ -41,7 +42,8 @@ test('corporate source candidate pins its exact native sources without claiming 
  assert.equal(adoption.corporateClassification.version,CORPORATE_SOURCE.classificationVersion)
  for(const[path,digest]of Object.entries(current.sourceDigests)){
   const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
-  assert.equal(hash(read('../'+path)),expected,path)
+  assert.equal(hash(execFileSync('git',['show',manifest.boundedIndicatorReadAdoption.previousReceiptSourceSha+':apps/srm/'+path])),expected,'historical '+path)
+  assert.equal(hash(read('../'+path)),manifest.boundedIndicatorReadAdoption.applicationSourceDigests[path]??expected,path)
  }
  for(const name of ['singleExistingCatalogWriter','singleExistingIndicatorCalculator','storedSourceOnly','sameTransactionOutcomeWitness','noTenantOwnerInNewSharedFacts','humanWriteCeilingRetained'])assert.equal(current[name],true,name)
  for(const name of ['providerAcquisitionProvedByThisUnit','fullNativeWorkflowAdopted','liveSqlInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)

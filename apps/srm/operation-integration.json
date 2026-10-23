@@ -3177,5 +3177,29 @@
     "maximumAccountObservationMs": 5000,
     "liveGrantsChanged": false,
     "productDeploymentPerformed": false
+  },
+  "boundedIndicatorReadAdoption": {
+    "taskId": "SRM-TASK02R-ACTIVATE-20261023",
+    "previousReceiptSourceSha": "1514ad205141762ae8f0407f20ee395c0cd254bf",
+    "previousReceiptSha256": "87859e23e3c31096c958a2a93ef4ec659ca2cf662fbb20c812e6bda07917f0d4",
+    "unitId": "SRM_CACHE_READ",
+    "accessMode": "READ",
+    "maximumMetricsPerUnit": 4,
+    "totalTransactionTimeoutMs": 15000,
+    "publicationGuard": "CATALOG_ROW_XMIN_BEFORE_AND_AFTER_EACH_UNIT",
+    "newOperations": [],
+    "liveGrantsChanged": false,
+    "productDeploymentPerformed": false,
+    "applicationSourceDigests": {
+      "src/server/shared-catalog.ts": "f966da03004239110094ee72e14768005b26efe5ccd8f29f32c02a948604431b",
+      "src/server/supplier-native-work-store.ts": "40e741afbef4a384151623ef530163e69b124759f0d967aa3dbaa4ca773ef1cd",
+      "src/server/supplier-indicator-read.test.ts": "426bef4d74840e008a653386af8b31022b493d137d8191d5987f5baf39e8c038",
+      "src/server/account-recheck-adoption.test.ts": "7b3fb4b3757d90ea55cf12a9561cfe5f12c7aa32363940e1a71bdc4313d1d6aa",
+      "src/server/peer-read-boundary.test.ts": "439215910c2795777fa27bef378e2c1a91e9911da7d1d5ffc4d2e59df8dfc179",
+      "scripts/task02r-build-release.mjs": "1a1010dcbe50cf3b081f0df49a0ef933b1ae8b97873adcf98b6a356c275daabf",
+      "scripts/task02r-release-source.test.mjs": "21e082cb92b727258f532051df38ff82abfba4d50c2fb14a51836fc9f794567a",
+      "deployment/task02r-release-source.json": "de27d2e5bfde61edd4779c79a2bf8209a8df327b2d68c793ffd60d5e641665dc",
+      "scripts/corporate-source.integration.test.mjs": "9c94e1dbd2790086a6424333aea2bc7c2fd84920273f16534d2cab375c10132d"
+    }
   }
 }
