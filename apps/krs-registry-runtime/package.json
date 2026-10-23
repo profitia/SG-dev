@@ -1,6 +1,6 @@
 {
   "name": "@profitia/krs-registry-runtime",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,7 +10,7 @@
     "lint": "node scripts/check.mjs",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "test": "node --test --test-timeout=60000 test/contracts.test.mjs test/registry.test.mjs test/api.test.mjs",
+    "test": "node --test --test-timeout=60000 test/contracts.test.mjs test/registry.test.mjs test/api.test.mjs test/gus-bir.test.mjs test/nip-resolver.test.mjs",
     "test:postgres": "node scripts/local-postgres.mjs",
     "start": "node dist/main.js",
     "sync": "node dist/cli.js",
@@ -20,7 +20,8 @@
   "dependencies": {
     "@profitia/krs-registry-contracts": "file:../../packages/krs-registry-contracts",
     "@profitia/platform-contracts": "file:../../packages/platform-contracts",
-    "pg": "8.23.1"
+    "pg": "8.23.1",
+    "saxes": "^5.0.1"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
@@ -35,6 +36,14 @@
     "./catalog": {
       "types": "./dist/catalog.d.ts",
       "import": "./dist/catalog.js"
+    },
+    "./gus": {
+      "types": "./dist/gus-bir.d.ts",
+      "import": "./dist/gus-bir.js"
+    },
+    "./nip-resolver": {
+      "types": "./dist/nip-resolver.d.ts",
+      "import": "./dist/nip-resolver.js"
     }
   },
   "files": [
