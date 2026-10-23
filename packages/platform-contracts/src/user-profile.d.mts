@@ -27,3 +27,15 @@ export declare function createUserProfileBackend<Transaction>(options: IdentityP
   ensureInitialUserProfile(request: Request): Promise<UserProfile>
   updateCurrentUserProfile(request: Request, input: { expectedVersion: string; patch: UserProfilePatch }): Promise<UserProfile>
 }>
+export interface AssistantAvatarPreference {
+  readonly userId: string
+  readonly avatarSex: 'male' | 'female' | null
+  readonly version: string
+}
+export declare function createAssistantAvatarBackend<Transaction>(options: IdentityProvisioningOptions<Transaction> & {
+  application: Application; independentQuery: AccessQuery
+}): Readonly<{
+  getAssistantAvatar(request: Request): Promise<AssistantAvatarPreference | null>
+  ensureAssistantAvatar(request: Request): Promise<AssistantAvatarPreference>
+  updateAssistantAvatar(request: Request, input: { expectedVersion: string; avatarSex: 'male' | 'female' }): Promise<AssistantAvatarPreference>
+}>

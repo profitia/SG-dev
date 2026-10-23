@@ -34,11 +34,32 @@ export function normalizeProfilePatch(value, phoneParser) {
 }
 
 export function createUserProfileBackend(options) {
+  return profileBackend(options, false)
+}
+
+/** Bounded account-self preference projection. Peer consumers never receive
+ * job/phone and cannot use their peer session to mutate the central profile. */
+export function createAssistantAvatarBackend(options) {
+  const backend = profileBackend({ ...options, phoneParser: () => { throw new TypeError('Avatar-only projection') } }, true)
+  const project = profile => profile === null ? null : Object.freeze({ userId: profile.user_id, avatarSex: profile.avatar_sex, version: profile.version })
+  return Object.freeze({
+    getAssistantAvatar: async request => project(await backend.getCurrentUserProfile(request)),
+    ensureAssistantAvatar: async request => project(await backend.ensureInitialUserProfile(request)),
+    async updateAssistantAvatar(request, input) {
+      if (!closedObject(input) || Object.keys(input).sort().join(',') !== 'avatarSex,expectedVersion'
+        || !['male', 'female'].includes(input.avatarSex)) throw new TypeError('Closed assistant avatar preference required')
+      return project(await backend.updateCurrentUserProfile(request, { expectedVersion: input.expectedVersion, patch: { avatar_sex: input.avatarSex } }))
+    },
+  })
+}
+
+function profileBackend(options, avatarOnly) {
   const { client, identityApplication, application, binding, independentQuery, transact, schemaDigest, proofKey, phoneParser, now = Date.now } = options
   if (identityApplication?.appId !== application?.appId || identityApplication?.issuer !== application?.identityIssuer
     || identityApplication?.environment !== application?.environment || application?.organisationId !== null
     || application?.operations?.join(',') !== 'account.settings.read,account.settings.write'
-    || application?.features?.join(',') !== 'account' || identityApplication?.bearerPeerReads?.length
+    || application?.features?.join(',') !== 'account'
+    || (identityApplication?.bearerPeerReads?.length && (!avatarOnly || identityApplication.bearerPeerReads.some(rule => rule.path !== '/v1/account/assistant-avatar')))
     || typeof phoneParser !== 'function') throw new TypeError('Explicit same-receiver account-self application and trusted phone parser required')
   const sql = createProfileSql({ binding, issuer: identityApplication.issuer, schemaDigest, proofKey, now })
   const queries = new WeakMap()
@@ -59,6 +80,11 @@ export function createUserProfileBackend(options) {
   })
   async function execute(request, kind, patch, version) {
     if (!(request instanceof Request) || (kind === 'read' ? request.method !== 'GET' : !['POST', 'PATCH'].includes(request.method))) deny()
+    if (avatarOnly) {
+      const url = new URL(request.url)
+      if (url.pathname !== '/v1/account/assistant-avatar' || url.search || url.hash
+        || (kind !== 'read' && request.headers.get('origin') !== url.origin)) deny()
+    }
     const operation = kind === 'read' ? 'account.settings.read' : 'account.settings.write'
     // PII remains in this immutable closure. The canonical audit sees only a
     // random change reference, field names and expected version, never a phone
