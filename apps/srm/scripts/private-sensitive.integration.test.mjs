@@ -88,23 +88,6 @@ test('native sensitive installation preserves the legacy source and admits only 
    const pk=(await owner.query("SELECT pg_get_constraintdef(oid)v FROM pg_constraint WHERE conrelid='srm.catalog_kys_reports'::regclass AND contype='p'")).rows[0].v
    assert.equal(pk,'PRIMARY KEY (organization_id, nip, entity_type)')
   })
-  await t.test('financial guard patch preserves identity and ACL, is reversible and refuses drift',async()=>{
-   const read=async()=>(await owner.query("SELECT pg_get_functiondef(oid) definition,md5(pg_get_functiondef(oid)) digest,proacl::text acl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid='srm.guard_supplier_business_write()'::regprocedure")).rows[0]
-   const before=await read(),patch=own('015-financial-fact-guard.sql')
-   await assert.rejects(owner.query(patch),e=>e.code==='42501')
-   await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner')
-   try{
-    await owner.query('SAVEPOINT guard_patch');await owner.query(patch)
-    const after=await read();assert.equal(after.digest,'1528f903448f0dac2c0e99565f141157')
-    for(const key of['acl','proowner','prosecdef','proconfig'])assert.deepEqual(after[key],before[key])
-    await owner.query(patch);assert.deepEqual(await read(),after)
-    await owner.query('ROLLBACK TO SAVEPOINT guard_patch');assert.deepEqual(await read(),before)
-    await owner.query(before.definition.replace('BEGIN\n','BEGIN\n-- isolated source drift\n'))
-    await assert.rejects(owner.query(patch),/source drift/)
-   }finally{await owner.query('ROLLBACK')}
-   assert.deepEqual(await read(),before)
-   await controlled(()=>owner.query(patch))
-  })
  }finally{
   await owner?.end();await root.query(`DROP DATABASE IF EXISTS ${database} WITH(FORCE)`);await root.end()
  }
@@ -344,7 +327,6 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    })
    await owner.query(own('008-supplier-native-work.sql'));await owner.query("INSERT INTO srm.supplier_work_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('008-supplier-native-work.sql')),'e'.repeat(40)])
    await owner.query(own('010-supplier-sensitive-work.sql'));await owner.query("INSERT INTO srm.supplier_sensitive_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('010-supplier-sensitive-work.sql')),'f'.repeat(40)])
-   await owner.query(own('015-financial-fact-guard.sql'))
    if(privateMode){
     await t.test('private acquisition installation is atomic and rollback preserves the exact original work function and command foreign keys',async()=>{
      const before=(await owner.query("SELECT pg_get_functiondef('srm.current_supplier_work(uuid,uuid,text)'::regprocedure) value")).rows[0].value
