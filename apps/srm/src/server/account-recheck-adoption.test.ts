@@ -32,7 +32,7 @@ test('KRS activation preserves accepted receipts and pins registration with no s
  assert.equal(hash(previous),a.previousReceiptSha256)
  for(const [key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
  assert.equal(a.existingSupplierRegistration,'KEEP');assert.equal(a.newRoleOrMapsPermissionsRequired,false)
- const next=receipt.organisationLocationAuthorityAdoption,nextDigests:Record<string,string>=next.applicationSourceDigests
+ const next=receipt.organisationLocationAuthorityAdoption,nextDigests:Record<string,string>={...next.applicationSourceDigests,...receipt.organisationLocationBuildRecovery.applicationSourceDigests}
  const final=receipt.krsFinancialTelemetryCompatibility
  for(const [file,digest]of Object.entries(a.applicationSourceDigests)){
   if(nextDigests[file])assert.equal(hash(execFileSync('git',['show',next.previousReceiptSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,'historical '+file)
@@ -59,4 +59,15 @@ test('bounded indicator reads retain the entire accepted receipt and add no new 
  assert.equal(a.totalTransactionTimeoutMs,15000);assert.equal(a.publicationGuard,'CATALOG_ROW_XMIN_BEFORE_AND_AFTER_EACH_UNIT')
  assert.equal(a.liveGrantsChanged,false);assert.equal(a.productDeploymentPerformed,false)
  for(const [file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.krsNipSourceCompatibility.preservedBoundedIndicatorSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file)
+})
+
+test('location build recovery preserves accepted access and changes no product runtime source',()=>{
+ const a=receipt.organisationLocationBuildRecovery,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(previous),a.previousReceiptDigest)
+ for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.krsFinancialTelemetryCompatibility.previousSourceSha+':apps/srm/'+file])),digest,file)
+ assert.equal(a.productRuntimeChanged,false);assert.equal(a.databaseChanged,false)
+ const file='src/server/supplier-locations.ts'
+ assert.equal(hash(fs.readFileSync(path.join(root,file))),hash(execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/'+file])))
 })
