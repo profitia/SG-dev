@@ -23,7 +23,15 @@ test('the narrow build retains deployed Identity/KRS bytes and only accepts the 
    const expected=metadata.split(' ')[2],file=path.join(out,name),bytes=fs.lstatSync(file).isSymbolicLink()?Buffer.from(fs.readlinkSync(file)):fs.readFileSync(file)
    assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),expected,name)
   }
-  for(const [name,digest]of Object.entries(receipt.overrides))assert.equal(hash(fs.readFileSync(path.join(out,name))),digest,name)
+  for(const [name,digest]of Object.entries(receipt.assembledOverrideDigests))assert.equal(hash(fs.readFileSync(path.join(out,name))),digest,name)
+  const store='apps/srm/src/server/supplier-native-work-store.ts',selected=fs.readFileSync(path.join(out,store),'utf8')
+  const baseline=execFileSync('git',['show',base+':'+store],{cwd:root,encoding:'utf8'})
+  for(const [start,end]of [['    register(','\n    cache('],['    reproject(','\n    archive(']]){
+   const part=text=>text.slice(text.indexOf(start),text.indexOf(end,text.indexOf(start)))
+   assert.equal(part(selected),part(baseline),'Parallel KRS method must retain deployed bytes: '+start)
+  }
+  assert(!selected.includes('ExistingSupplierRegistration'));assert(!selected.includes('includeOriginalResponse'))
+  assert(selected.includes('async indicators('));assert(selected.includes('readIndicatorPublication'))
   for(const name of ['apps/srm/app/page.tsx','apps/srm/app/session-boundary.tsx','apps/srm/src/server/private-runtime.ts','apps/srm/package.json'])assert.deepEqual(fs.readFileSync(path.join(out,name)),execFileSync('git',['show',base+':'+name],{cwd:root}))
   assert.equal(JSON.parse(fs.readFileSync(path.join(out,'packages/platform-contracts/package.json'))).version,'1.26.0')
   assert.equal(receipt.identityOrKrsSourceAdopted,false)

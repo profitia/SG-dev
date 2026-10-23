@@ -57,10 +57,27 @@ export function assembleTask02rSource(repositoryRoot,outputRoot){
  const sourceRoots=['apps/srm','packages/platform-contracts','packages/srm-xray','packages/maps-contracts','packages/maps-embed']
  const archive=run('git',['archive','--format=tar',expectedBase,...sourceRoots],repositoryRoot,{encoding:null})
  run('tar',['-xf','-','-C',outputRoot],repositoryRoot,{input:archive})
+ const storePath='apps/srm/src/server/supplier-native-work-store.ts'
+ const historicalStore=fs.readFileSync(regular(outputRoot,storePath),'utf8')
  for(const name of Object.keys(manifest.overrides)){
   const target=regular(outputRoot,name)
   fs.copyFileSync(regular(repositoryRoot,name),target)
  }
+ // This release adopts only the bounded indicator method from the newer
+ // receiver. All other store methods retain their deployed baseline bytes,
+ // including register/reproject signatures used by the parallel KRS work.
+ const currentStore=fs.readFileSync(regular(repositoryRoot,storePath),'utf8')
+ const region=(text,start)=>{
+  const first=text.indexOf(start),end=text.indexOf('\n    registration(',first+start.length)
+  if(first<0||end<0||text.indexOf(start,first+start.length)!==-1)fail('NATIVE_STORE_RELEASE_REGION_MISMATCH')
+  return {first,end,value:text.slice(first,end)}
+ }
+ const before=region(historicalStore,'    indicators('),after=region(currentStore,'    async indicators(')
+ const oldImport="import { readFreshCompany, readFinancialIndicators, recordSupplierInterest } from './shared-catalog'"
+ const newImport="import { readFreshCompany, readIndicatorPublication, readStoredIndicatorFacts, projectStoredIndicators, recordSupplierInterest } from './shared-catalog'\nimport { FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from './financial-indicators'"
+ if(!historicalStore.includes(oldImport)||!currentStore.includes(newImport))fail('NATIVE_STORE_RELEASE_IMPORT_MISMATCH')
+ const frozenStore=(historicalStore.slice(0,before.first)+after.value+historicalStore.slice(before.end)).replace(oldImport,newImport)
+ fs.writeFileSync(regular(outputRoot,storePath),frozenStore)
  const version=value=>{if(value.version!=='1.25.0')fail('BASE_PLATFORM_VERSION_MISMATCH');value.version=manifest.platformVersion}
  updateJson(outputRoot,'packages/platform-contracts/package.json',version)
  updateJson(outputRoot,'packages/platform-contracts/package-lock.json',value=>{version(value);version(value.packages[''])})
@@ -76,7 +93,7 @@ export function assembleTask02rSource(repositoryRoot,outputRoot){
   }
   if(!found)fail('BASE_PLATFORM_LOCK_MISSING')
  })
- const receipt={...manifest,sourceRepositoryHead:run('git',['rev-parse','HEAD'],repositoryRoot).trim(),
+ const receipt={...manifest,assembledOverrideDigests:Object.fromEntries(Object.keys(manifest.overrides).map(name=>[name,hash(fs.readFileSync(regular(outputRoot,name)))])),sourceRepositoryHead:run('git',['rev-parse','HEAD'],repositoryRoot).trim(),
   manifestSha256:hash(fs.readFileSync(path.join(repositoryRoot,manifestPath))),
   sourceRoots,sourceSelection:'ACCEPTED_BASELINE_PLUS_EXACT_OVERRIDES',identityOrKrsSourceAdopted:false}
  fs.writeFileSync(path.join(outputRoot,'task02r-release-source.json'),JSON.stringify(receipt,null,2)+'\n')

@@ -18,7 +18,8 @@
   },
   "metadataTransforms": [
     "platform package and lock version 1.25.0 to 1.26.0",
-    "SRM local platform lock version and Maps peer compatibility only"
+    "SRM local platform lock version and Maps peer compatibility only",
+    "native work store retains baseline register/reproject and adopts only bounded indicator reads"
   ],
   "newIdentityOrKrsSourceAllowed": false,
   "otherRuntimeDeploymentAllowed": false
