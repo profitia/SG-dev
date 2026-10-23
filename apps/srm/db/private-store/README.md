@@ -180,3 +180,28 @@ the verified prior runtime/configuration and approved database recovery where
 needed. Do not automatically reverse data migrations, drop populated tables or
 overwrite newer shared work. Recovery authority and executable proof remain
 mandatory before deployment.
+
+# Financial fact guard performance (explicit adoption)
+
+`015-financial-fact-guard.sql` is an optional, controlled operator patch after
+SQL010. It skips only the sensitive KYS/JDG dispatch check for `financial_facts`,
+which cannot be written by a sensitive purpose. Every row still passes the
+original corporate provenance/phase guard and unchanged restrictive E1 and
+tenant RLS. It does not change grants, financial values, transaction boundaries,
+policy expiry, audit or the 15-second E1 deadline.
+
+Apply only the reviewed file in one transaction as the existing
+`profitia_access_owner`, after saving and verifying the exact original function.
+The file refuses unknown function bytes, owner or configuration, preserves its
+ACL and accepts an already applied identical patch. Restore the saved original
+definition only when the current function still matches the patch digest; stop
+on later source drift. Historical migration bytes and installation receipts are
+unchanged. No automatic runtime migration is introduced.
+
+When adopting Supplier Locations, the ordinary jobs role also needs EXECUTE on
+`srm.location_admission_installation_descriptor()` and
+`profitia_access.scope_allows(text,uuid,uuid)` used by existing restrictive RLS.
+Both the ordinary jobs and corporate Source roles need EXECUTE on
+`srm.location_work_catalog_row(text,text)`. Bind these exact functions to the
+existing, verified environment roles; these boolean/descriptor helpers do not
+grant a location operation, table access or Google geocoding permission.
