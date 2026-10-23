@@ -2478,7 +2478,7 @@
       "tests/benchmark-discovery-request.test.ts": "4ed9c4a3d197769c7dd43471675dfdaee66f9ef40406845c621c55f8c596ca8c",
       "tests/fixtures/benchmark-discovery-hosts.mjs": "69e66aa4d0af9b2410488a0a878d41c2c05471594800f585948f96b08bcf839a",
       "tests/rolling-daily-verification.test.ts": "1937c4661f3fa0c6cf3f044c0a2bcf11eac13ad5941c810874fc622dbf5c3e64",
-      "tests/self-service-account.test.ts": "433b08f5c7e494ce4fa12f7bde1f7b93ca70bf0d3c9a1a68c19af7ec40fa3417"
+      "tests/self-service-account.test.ts": "039057e933d7be24f7e821591d9132c38e72cae723117f93be9fd7946face19d"
     },
     "accountRevalidationOptedIn": false,
     "liveGrantsChanged": false,
