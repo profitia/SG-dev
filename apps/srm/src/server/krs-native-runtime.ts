@@ -86,7 +86,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
  const disabledNip={async company():Promise<Response>{return deny()}}
  if(environment.SRM_KRS_NIP_ENABLED!=='true')return Object.freeze({...nameRuntime,nip:disabledNip})
  if(!/^[A-Za-z0-9]{20}$/.test(environment.GUS_BIR_API_KEY??''))return deny()
- const [{createAdmittedGusSource,createGusMapper,createGusRateGate,GusError,GUS_ORIGIN,GUS_PATH},{createNipResolver},{createNativeNipRegistrySource}]=await Promise.all([
+ const [{createAdmittedGusSource,createGusMapper,GusError,GUS_ORIGIN,GUS_PATH},{createNipResolver},{createNativeNipRegistrySource}]=await Promise.all([
   import('@profitia/krs-registry-runtime/gus'),import('@profitia/krs-registry-runtime/nip-resolver'),import('@profitia/krs-registry-runtime/native')])
  const sourceHostOptions={...createSrmNativePgDriver(pools.source,pools.sourceAudit),
   application:{appId:'krs-registry-source',profileId:'PLATFORM_INTERNAL' as const,environment:'development' as const,deploymentId,
@@ -100,10 +100,19 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
   source:{id:'krs.registry.gus',payloadSchema:'external-call-control-v1',qualityVersion:'gus-bir12-source-v1',classificationVersion:'technical-source-control-v1'},
   validateSharedPayload:value=>!!value&&typeof value==='object'&&!Array.isArray(value)
    &&Object.keys(value).sort().join(',')==='action,callId,configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status'})
- const gusSource=await createAdmittedGusSource<pg.PoolClient>({sourceHost:gusHost,sourceId:'krs.registry.gus',resourceId:'krs-gus:nip-map',apiKey:environment.GUS_BIR_API_KEY!,readSid:()=>sid,
+ async function permit(signal:AbortSignal){
+  for(;;){
+   signal.throwIfAborted()
+   const row=(await pools.source.query<{wait_ms:number}>('SELECT profitia_external_native.reserve_gus_slot() AS wait_ms')).rows[0]
+   if(!row||!Number.isInteger(row.wait_ms)||row.wait_ms<0||row.wait_ms>3600001)return deny()
+   if(row.wait_ms===0)return
+   await new Promise<void>((resolve,reject)=>{const timer=setTimeout(done,row.wait_ms);function done(){signal.removeEventListener('abort',abort);resolve()}function abort(){clearTimeout(timer);signal.removeEventListener('abort',abort);reject(signal.reason)}signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort()})
+  }
+ }
+ const gusSource=await createAdmittedGusSource<pg.PoolClient>({sourceHost:gusHost,sourceId:'krs.registry.gus',resourceId:'krs-gus:nip-map',apiKey:environment.GUS_BIR_API_KEY!,readSid:()=>sid,permit,
   binding:{role:'krs_ingest',configurationVersion:sourceVersion,schemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206',origin:GUS_ORIGIN,transport:'HTTPS',pathRules:[{method:'POST',path:GUS_PATH}]},
   independentQuery:sourceHostOptions.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows})})
- const mapper=createGusMapper({source:gusSource,permit:createGusRateGate(),readSid:()=>sid,writeSid:value=>{sid=value}})
+ const mapper=createGusMapper({source:gusSource,readSid:()=>sid,writeSid:value=>{sid=value}})
  const official=await createNativeNipRegistrySource({host:sourceHostOptions,externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206'})
  const observe=(event:unknown)=>console.info('SRM registry telemetry',event)
  const resolver=createNipResolver({gus:(n,key,signal)=>mapper.resolve(n,key,signal),

@@ -9,7 +9,7 @@
   "maximumInstances": 1,
   "flag": "SRM_KRS_NIP_ENABLED",
   "default": "false",
-  "activationState": "DEFERRED_PENDING_ACCEPTANCE_AND_LIVE_BUDGET",
+  "activationState": "ACCEPTED",
   "ceidgFirst": true,
   "ceidgFailureIsAbsence": false,
   "gusKrsCombinedTimeoutMs": 3000,
@@ -18,33 +18,38 @@
   "secretKeyName": "GUS_BIR_API_KEY",
   "secretValuesStoredHere": false,
   "newPaidResourcesAllowed": false,
-  "financialBudgetIncreaseAllowed": false,
+  "financialBudgetIncreaseAllowed": true,
   "sharedSrmOrMapsChangesAllowed": false,
   "stagingOrProductionAllowed": false,
   "requirements": [
     "Accepted producer and consumer exact source",
     "SOAP SQL021 installed in isolated catalog",
     "Independent GUS Source admission and existing provider bindings",
-    "Verified secrets and one-instance rate gate",
+    "Verified secrets and shared database GUS rate gate",
     "Sufficient existing Source/HTTP budgets",
     "Current private-store account recheck and financial guard compatibility",
     "Retained LKG and tested recovery",
     "Real authenticated user journey"
   ],
-  "observedLiveBlockers": [
-    "KRS Source budget consumed18/capacity20; one official read requires3 technical Source transactions",
-    "Pilot MGBI inventory/general policy admitted1/capacity1"
-  ],
+  "observedLiveBlockers": [],
   "rollback": "Disable SRM_KRS_NIP_ENABLED and restore retained prior deploy; never reset counters, delete accepted history or roll back product data automatically",
   "sourceIntegration": {
     "method": "OWNER_PARTITIONED_CANDIDATE",
     "producerPr": 642,
-    "producerSourceSha": "842d96e255ca69207bb82afd524a1c271774428a",
+    "producerSourceSha": "57e6cbf67ea7a3b7f453d1a98511e1798ddc286f",
     "producerTaskId": "ARCHITECTURE-GUS-KRS-NIP-20261023",
     "consumerTaskId": "SRM-GUS-KRS-NIP-20261023",
     "consumerImplementationCommit": "333aa7c4",
     "privilegedCiControllerChanged": false,
     "sourceAcceptance": "PENDING_EXACT_COMPOSITE_CI",
-    "liveActivation": "BLOCKED_EXISTING_PILOT_LIMITS"
+    "liveActivation": "NOT_PERFORMED_REQUIRES_EXACT_CI_INSTALLATION_AND_FLAG"
+  },
+  "approvedBudget": {
+    "krsSourceCapacity": 60,
+    "officialKrsHttpCapacity": 20,
+    "additionalMgbiGeneralFinancialAttempts": 4,
+    "fileBudgetsChanged": false,
+    "counterResetsAllowed": false,
+    "paidUpgradeAllowed": false
   }
 }

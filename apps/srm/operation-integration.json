@@ -3182,13 +3182,13 @@
     "taskId": "SRM-GUS-KRS-NIP-20261023",
     "producerTaskId": "ARCHITECTURE-GUS-KRS-NIP-20261023",
     "producerPr": 642,
-    "producerSourceSha": "842d96e255ca69207bb82afd524a1c271774428a",
+    "producerSourceSha": "57e6cbf67ea7a3b7f453d1a98511e1798ddc286f",
     "status": "CANDIDATE_ONLY_NOT_ACTIVATED",
     "preservedHistoricalAccountRecheck": true,
     "sourceDigests": {
       "src/native-external-transport.mjs": "377c3062f4297a3a376c07d880a4293ded29c0de118c7e72fc08875fbf861849",
       "src/native-external-transport.d.mts": "185209c68a76bd2b67fc2f95733a3096988ec124f010532552ffebd0c7575659",
-      "migrations/access/021-native-soap-transport.sql": "6c3f91da17b32d2c3e72fab10b2f85c8fad7e3ef01888aded076ac9f28fa42a6"
+      "migrations/access/021-native-soap-transport.sql": "f80ae5a06cfc621e92847f0c197b5b8adfca1b261fbea168488742e85adc2bc2"
     },
     "sdkDigests": {
       "operationSourceDigest": "e3fe184df1b615fdbeff3117985bdbb904176ec298e5f66a0289a745a245e39a",
@@ -3207,8 +3207,8 @@
       "supplierLocationAdmissionSchemaDigest": "90ac1d28103f689edc8d11979210ce83cd6218e9f3549f37150fd307d165e9cc"
     },
     "applicationSourceDigests": {
-      "deployment/krs-name-pilot-targets.json": "f527356273054d9840b5433fab7f8852437080fbfd80e29d744582f26859ee5c",
-      "deployment/krs-nip-development.json": "e93bd03a6a5edb1aaa0c19bedda3062cc1d630393ab67277f8cb28d80aee3ad7",
+      "deployment/krs-name-pilot-targets.json": "8d0e72207dc655391bba57b59eba0f78ab57f3470d70f84660833e21b505d486",
+      "deployment/krs-nip-development.json": "3b235f2dbabddd63f595fb4375ce1f2ef237d7b66608534613c15b84b9458a30",
       "package-lock.json": "281428a73590d21165f70dbc6f8cd3dfaff3a419ecd83b004bdc186c0fc92016",
       "scripts/operation-context.test.mjs": "8e1d7e401efd6a5a4fa5b21cea9171d8c370614eb1240e4e7bfe083ca5b9bc42",
       "src/modules/xray/report-controller.test.ts": "ba198c09cf8ee8cb060dabed4f2aa23d43176276fededc45dd43ac3d0e2cffe3",
@@ -3216,7 +3216,7 @@
       "src/modules/xray/supplier-report.tsx": "f9d3168709572866762183e39aa0691014a83cbede8d0fe8e36e7f34e93f879f",
       "src/server/account-recheck-adoption.test.ts": "3737e67ee7cf7c912c655a847d19b1b11a1ced294260ccc25a6c42dfdbc12d56",
       "src/server/krs-native-financial.ts": "a6eb94afaaf00c917ec0f50847cefecee857bde36ff6b63181b822b031855928",
-      "src/server/krs-native-runtime.ts": "1b20981f93375b92141a6339b78b5350fce40450905e5c682a6508c4ca063f49",
+      "src/server/krs-native-runtime.ts": "9cd7b520241c1fe34750d72d3d8fc4d8575ee94064a8d724560bdfd01be823cd",
       "src/server/krs-nip-runtime.test.ts": "67aed9ebac04b8ec3ce47fbd19d6deb3b6e659241d1bdac4af56ae7c34b11ba2",
       "src/server/krs-nip-runtime.ts": "df865afaf73e3c88bfc9ce7bf6e50c790561c667b99927279520af91dd6e12f9",
       "src/server/peer-read-boundary.test.ts": "1be83df01482d0f4be628bb84a45d30ddd33b68cd937c73fc149d9500f149922",
