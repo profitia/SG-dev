@@ -1,6 +1,8 @@
 import type {CompanySnapshot,VerifiedIdentityV1} from '@profitia/krs-registry-contracts';
 import type {SupplierCandidate,SupplierSelection,SupplierReportData,SupplierXRayCard} from '@profitia/srm-xray';
 import type {MgbiFinancialResult} from './mgbi-financial';
+import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray';
+import type {RegistryHistory} from './company-continuity';
 import {krsGeneral} from './krs-general';
 import {reconcileKrsFinancial} from './krs-financial';
 import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-ledger';
@@ -14,9 +16,10 @@ export type AcceptedKrsSelection=Readonly<{snapshot:CompanySnapshot;identity:Ver
  * verify performs a real admitted CURRENT retrieval/publication, not a timestamp rewrite. */
 export type KrsNamePorts=Readonly<{
   registry:{search(request:Request,query:string):Promise<readonly SupplierCandidate[]>;
+    history?(request:Request,identity:VerifiedIdentityV1):Promise<RegistryHistory|undefined>;
     verify(request:Request,krs:string):Promise<AcceptedKrsSelection>;
     readSelection(request:Request,evidenceRef:string):Promise<AcceptedKrsSelection>};
-  financial:{acquire(request:Request,identity:VerifiedIdentityV1,key:string):Promise<MgbiFinancialResult & {workPending?:true}>;
+  financial:{acquire(request:Request,identity:VerifiedIdentityV1,key:string,general?:SectionEnvelope<GeneralCompanyData>):Promise<MgbiFinancialResult & {workPending?:true}>;
     publishEligible(request:Request,identity:VerifiedIdentityV1,result:MgbiFinancialResult):Promise<SupplierReportData|null>};
   now?:()=>number;
 }>;
@@ -48,17 +51,20 @@ export function createKrsNameSearch(ports:KrsNamePorts){
     },
     async lookup(request:Request,selectionRef:string,key:string){
       if(!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(selectionRef)||!validRequestIdempotencyKey(key))throw Error('INVALID_REQUEST');
-      const selected=await checked(request,selectionRef),general=await krsGeneral(selected.snapshot,selected.identity,now());
+      const selected=await checked(request,selectionRef),baseGeneral=await krsGeneral(selected.snapshot,selected.identity,now());
+      let history:RegistryHistory|undefined,general=baseGeneral;
       let section=unavailableFinancial(new Date(now()).toISOString(),'MGBI_FINANCIAL_UNAVAILABLE'),metadata:SupplierReportData|null=null,workPending=false;
       try{
+        history=await registry.history?.(request,selected.identity);
+        if(history&&baseGeneral.data)general={...baseGeneral,data:{...baseGeneral.data,registryHistory:history}};
         // Fresh accepted identity at dispatch; the native port must admit current
         // Request/Source/Work, budget and this exact logical selection once.
-        const acquired=await measureSupplierStage('FINANCIAL_ACQUIRE',()=>financial.acquire(request,selected.identity,key));
+        const acquired=await measureSupplierStage('FINANCIAL_ACQUIRE',()=>financial.acquire(request,selected.identity,key,general));
         const current=await checked(request,selectionRef);
         if(current.identity.selectedKrs!==selected.identity.selectedKrs||current.identity.identity.nip!==selected.identity.identity.nip
           ||current.identity.source.rawDigest!==selected.identity.source.rawDigest||current.identity.source.contentDigest!==selected.identity.source.contentDigest
           ||current.identity.source.sourceVersion!==selected.identity.source.sourceVersion||current.identity.source.retrievedAt!==selected.identity.source.retrievedAt)throw Error('KRS_SELECTION_SUPERSEDED');
-        const eligible=await reconcileKrsFinancial(current.identity,acquired,now());
+        const eligible=await reconcileKrsFinancial(current.identity,acquired,now(),history);
         workPending=acquired.workPending===true&&!eligible.errorCode;
         // Only filtered records/facts enter the existing native financial writer.
         if(!eligible.errorCode&&!workPending){
