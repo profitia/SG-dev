@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {gusRequest,gusResult,gusSearchRecord,gusFullRecord,gusMappingEvidence,createGusRateGate} from '../dist/gus-bir.js'
+import {gusRequest,gusResult,gusSearchRecord,gusFullRecord,gusMappingEvidence} from '../dist/gus-bir.js'
 const nip='5213415549',regon='140790901',key='a'.repeat(64)
 const report=(patch={})=>'<root><dane>'+Object.entries({praw_nip:nip,praw_regon9:regon,praw_rodzajRejestruEwidencji_Symbol:'138',praw_rodzajRejestruEwidencji_Nazwa:'REJESTR PRZEDSIĘBIORCÓW',praw_numerWRejestrzeEwidencji:'271457',...patch}).map(([k,v])=>`<${k}>${v}</${k}>`).join('')+'</dane></root>'
 test('GUS mapping preserves exact legal identity and explicitly checks register',()=>{
@@ -26,8 +26,4 @@ test('SOAP has closed commands and server credentials only; DTD, faults, invalid
  assert.throws(()=>gusResult(wrap('<!DOCTYPE a><ZalogujResult>x</ZalogujResult>'),'Zaloguj'),/GUS_XML_REFUSED/)
  assert.throws(()=>gusResult(wrap('<ZalogujResult>'),'Zaloguj'),/GUS_XML_INVALID/)
  assert.throws(()=>gusResult(wrap(''),'Zaloguj'),/GUS_RESULT_INVALID/)
-})
-test('rate admission respects cancellation before consuming a new slot',async()=>{
- const permit=createGusRateGate(),signal=new AbortController();signal.abort()
- await assert.rejects(permit(signal.signal));await permit(new AbortController().signal)
 })

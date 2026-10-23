@@ -66,8 +66,9 @@ REGON and only register138/REJESTR PRZEDSIĘBIORCÓW to a candidate KRS. It is n
 national catalog or browser search. GUS requests require the additive SOAP policy
 SQL021, their own ordinary Source binding/budget and server-only key/session.
 Every HTTP session/search/report/logout operation is admitted by the existing
-Source host. The current pilot remains one instance, with one serialized mapper
-per key and a conservative 3/s,120/min,6000/h gate; scaling requires a shared gate.
+Source host. The current pilot remains one instance. Its mapper receives the SQL021 shared
+rate gate, serialized across processes with conservative3/s,120/min,6000/h slots.
+A slot is scheduling only and never substitutes for current Source admission.
 No grants or budgets are installed by this package.
 
 After confirmed CEIDG absence, a consumer may use the combined3000ms mapper/KRS
