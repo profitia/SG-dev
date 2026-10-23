@@ -7,7 +7,7 @@ import {createPrivateOperationHost} from '@profitia/platform-contracts/private-o
 import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider'
 import {accessSchemaUrl,moduleAuditSchemaUrl} from '@profitia/platform-contracts/access-store'
 import {moduleSchemaUrl} from '@profitia/platform-contracts/module-scope'
-import {createNativeRegistryAccess,createNativeCatalogPublication,createOfficialSeed,createNativeRegistrySource,createNativeNipRegistrySource} from '../dist/native.js'
+import {createNativeRegistryAccess,createNativeCatalogPublication,createOfficialSeed,createNativeRegistrySource,createNativeNipRegistrySource,nativeContinuityEvidence} from '../dist/native.js'
 import {createKrsClient,krsResponseEvidence,buildRequest} from '../dist/client.js'
 import {normalizeExtract} from '../dist/normalizer.js'
 import {storeSnapshot} from '../dist/catalog.js'
@@ -143,8 +143,9 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
    await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
    try{
     await owner.query(patch)
-    // Six synthetic identity cases need three native control effects each.
+    // Synthetic current and predecessor effects; loopback database only.
     await owner.query("UPDATE profitia_ingestion.budgets SET capacity=60 WHERE source_id='krs.registry.official'")
+    await owner.query("UPDATE profitia_ingestion.grants SET resource_id=NULL WHERE source_id='krs.registry.catalog'")
     await owner.query(`INSERT INTO profitia_ingestion.sources SELECT (jsonb_populate_record(NULL::profitia_ingestion.sources,to_jsonb(s)||jsonb_build_object('source_id','krs.registry.gus','quality_version','gus-bir12-source-v1'))).* FROM profitia_ingestion.sources s WHERE source_id='krs.registry.official'`)
     await owner.query(`INSERT INTO profitia_ingestion.grants SELECT (jsonb_populate_record(NULL::profitia_ingestion.grants,to_jsonb(g)||jsonb_build_object('grant_id',$1::text,'source_id','krs.registry.gus','resource_id','krs-gus:nip-map'))).* FROM profitia_ingestion.grants g WHERE source_id='krs.registry.official'`,[randomUUID()])
     await owner.query(`INSERT INTO profitia_ingestion.budgets SELECT (jsonb_populate_record(NULL::profitia_ingestion.budgets,to_jsonb(b)||jsonb_build_object('policy_id',$1::text,'source_id','krs.registry.gus','capacity',120,'consumed_count',0))).* FROM profitia_ingestion.budgets b WHERE source_id='krs.registry.official'`,[randomUUID()])
@@ -174,14 +175,31 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
        const action=String(init.body).match(/<a:Action[^>]*>([^<]+)/)[1].split('/').at(-1)
        const result=action==='Zaloguj'?'B'.repeat(20):action==='Wyloguj'?'true':action==='DaneSzukajPodmioty'?`<root><Nip>${nip}</Nip><Regon>${regon}</Regon><Typ>P</Typ></root>`:`<root><praw_nip>${nip}</praw_nip><praw_regon9>${regon}</praw_regon9><praw_rodzajRejestruEwidencji_Symbol>138</praw_rodzajRejestruEwidencji_Symbol><praw_rodzajRejestruEwidencji_Nazwa>REJESTR PRZEDSIĘBIORCÓW</praw_rodzajRejestruEwidencji_Nazwa><praw_numerWRejestrzeEwidencji>${id}</praw_numerWRejestrzeEwidencji></root>`
        body=wrap(action,result)
-      }else{assert.equal(String(url),buildRequest({operation:'CURRENT',krs:id,register:'P'}).url);body=bytes(extract({id,nip:variant.nip??nip,regon:variant.regon,name:'Synthetic '+variant.label}))}
+      }else{const target=String(url).split('/').at(-1).split('?')[0],full=String(url).includes('/OdpisPelny/');assert.equal(String(url),buildRequest({operation:full?'FULL':'CURRENT',krs:target,register:'P'}).url)
+       const raw=extract({id:target,nip:variant.nip??nip,regon:variant.regon,name:'Synthetic '+variant.label,full});
+       if(variant.label==='history'){
+        const old='0000065856',middle='0001102066',next=target===id?middle:target===middle?old:null;
+        if(next)raw.odpis.dane.dzial1.sposobPowstaniaPodmiotu={okolicznosciPowstania:full?[{okolicznosciPowstania:'PRZEKSZTAŁCENIE'}]:'PRZEKSZTAŁCENIE',podmioty:[{krs:{krs:next}}]};
+        if(full){raw.odpis.dane.dzial1.danePodmiotu.identyfikatory=[{identyfikatory:{nip,regon},nrWpisuWprow:'1'}];raw.odpis.naglowekP.stanPozycji=2;raw.odpis.naglowekP.wpis.at(-1).opis='WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO'}
+       }
+       body=bytes(raw)}
       const response=new Response(body,{headers:{'content-type':'application/json'}});Object.defineProperty(response,'url',{value:String(url)});return response
      }
-     for(variant of [{label:'exact9',regon},{label:'zero14',regon:regon+'00000'},{label:'absent',regon:null},{label:'foreign-parent',regon:'61018820100003',deny:true},{label:'local-unit',regon:regon+'00018',deny:true},{label:'foreign-nip',regon:regon+'00000',nip:'7740001454',deny:true}]){
+     for(variant of [{label:'history',regon},{label:'exact9',regon},{label:'zero14',regon:regon+'00000'},{label:'absent',regon:null},{label:'foreign-parent',regon:'61018820100003',deny:true},{label:'local-unit',regon:regon+'00018',deny:true},{label:'foreign-nip',regon:regon+'00000',nip:'7740001454',deny:true}]){
       const key=createHash('sha256').update(variant.label).digest('hex'),mapping=await mapper.resolve(nip,key,AbortSignal.timeout(10000)),before=(await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots')).rows[0].n
       assert.equal(mapping.status,'MATCH')
       if(variant.deny){await assert.rejects(source.acquire(mapping,key,AbortSignal.timeout(10000)),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH');assert.equal((await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots')).rows[0].n,before)}
-      else{const result=await source.acquire(mapping,key,AbortSignal.timeout(10000));assert.equal(result.snapshot.regon,variant.regon);assert.equal(result.snapshot.nip,nip);assert.equal(result.snapshot.canonicalKrs,id);assert.equal(result.receipt.evidenceRef,result.snapshot.evidenceRef);if(variant.regon)assert(result.snapshot.identifiers.some(v=>v.kind==='REGON'&&v.value===variant.regon))}
+      else{const result=await source.acquire(mapping,key,AbortSignal.timeout(10000));assert.equal(result.snapshot.regon,variant.regon);assert.equal(result.snapshot.nip,nip);assert.equal(result.snapshot.canonicalKrs,id);assert.equal(result.receipt.evidenceRef,result.snapshot.evidenceRef);
+       if(variant.label==='history'){
+        const beforeHistory=upstream;
+        assert.equal(await source.continuity('KRS:'+id+':'+'f'.repeat(64),AbortSignal.timeout(10000)),null);assert.equal(upstream,beforeHistory);
+        const history=await source.continuity(result.snapshot.evidenceRef,AbortSignal.timeout(10000));
+        assert(nativeContinuityEvidence(history));assert(Object.isFrozen(history.records[0].excerpt));assert(Object.isFrozen(history.records[0].snapshot));assert(!nativeContinuityEvidence({...history}));assert(!nativeContinuityEvidence(JSON.parse(JSON.stringify(history))));
+        assert.deepEqual(history.records.map(r=>r.snapshot.canonicalKrs),[id,'0001102066','0000065856']);assert.equal(upstream-beforeHistory,2);
+        assert.equal(await source.continuity(result.snapshot.evidenceRef,AbortSignal.timeout(10000)),history);assert.equal(upstream-beforeHistory,2);
+        for(const r of history.records)assert.equal((await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots WHERE evidence_ref=$1',[r.snapshot.evidenceRef])).rows[0].n,1);
+       }
+       if(variant.regon)assert(result.snapshot.identifiers.some(v=>v.kind==='REGON'&&v.value===variant.regon))}
       const calls=upstream;await assert.rejects(source.acquire({...mapping},key,AbortSignal.timeout(10000)));await assert.rejects(source.acquire(mapping,'e'.repeat(64),AbortSignal.timeout(10000)));assert.equal(upstream,calls)
      }
     }finally{globalThis.fetch=originalFetch}
