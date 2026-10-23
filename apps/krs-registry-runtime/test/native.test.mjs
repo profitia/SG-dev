@@ -192,9 +192,9 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
       else{const result=await source.acquire(mapping,key,AbortSignal.timeout(10000));assert.equal(result.snapshot.regon,variant.regon);assert.equal(result.snapshot.nip,nip);assert.equal(result.snapshot.canonicalKrs,id);assert.equal(result.receipt.evidenceRef,result.snapshot.evidenceRef);
        if(variant.label==='history'){
         const beforeHistory=upstream;
-        await assert.rejects(source.continuity('KRS:'+id+':'+'f'.repeat(64),AbortSignal.timeout(10000)));assert.equal(upstream,beforeHistory);
+        assert.equal(await source.continuity('KRS:'+id+':'+'f'.repeat(64),AbortSignal.timeout(10000)),null);assert.equal(upstream,beforeHistory);
         const history=await source.continuity(result.snapshot.evidenceRef,AbortSignal.timeout(10000));
-        assert(nativeContinuityEvidence(history));assert(!nativeContinuityEvidence({...history}));assert(!nativeContinuityEvidence(JSON.parse(JSON.stringify(history))));
+        assert(nativeContinuityEvidence(history));assert(Object.isFrozen(history.records[0].excerpt));assert(Object.isFrozen(history.records[0].snapshot));assert(!nativeContinuityEvidence({...history}));assert(!nativeContinuityEvidence(JSON.parse(JSON.stringify(history))));
         assert.deepEqual(history.records.map(r=>r.snapshot.canonicalKrs),[id,'0001102066','0000065856']);assert.equal(upstream-beforeHistory,2);
         assert.equal(await source.continuity(result.snapshot.evidenceRef,AbortSignal.timeout(10000)),history);assert.equal(upstream-beforeHistory,2);
         for(const r of history.records)assert.equal((await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots WHERE evidence_ref=$1',[r.snapshot.evidenceRef])).rows[0].n,1);

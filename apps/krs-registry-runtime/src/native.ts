@@ -191,6 +191,7 @@ const continuityProofs=new WeakSet<object>()
 export const nativeContinuityEvidence=(value:unknown):value is NativeContinuity=>!!value&&typeof value==='object'&&continuityProofs.has(value)
 const rec=(v:unknown):Record<string,unknown>=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{}
 const items=(v:unknown):unknown[]=>Array.isArray(v)?v:v==null?[]:[v]
+function freeze<T>(v:T):T{if(v&&typeof v==='object'){for(const x of Object.values(v))freeze(x);Object.freeze(v)}return v}
 function formationExcerpt(response:KrsResponse,snapshot:CompanySnapshot){
  const raw=rec(rec(parseJson(new TextDecoder().decode(response.bytes),4*1024*1024)).odpis),section=rec(rec(raw.dane).dzial1)
  const formation=rec(section.sposobPowstaniaPodmiotu),kinds=items(formation.okolicznosciPowstania).map(v=>typeof v==='string'?v:rec(v).okolicznosciPowstania)
@@ -231,9 +232,10 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
   for(const [ref,value] of acquired)if(now()-Date.parse(value.snapshot.source.retrievedAt)>300000)acquired.delete(ref)
   if(acquired.size>=100)return deny()
   acquired.set(snapshot.evidenceRef,{snapshot,response});return {snapshot,receipt}
- },async continuity(reference:string,signal:AbortSignal):Promise<NativeContinuity>{
+ },async continuity(reference:string,signal:AbortSignal):Promise<NativeContinuity|null>{
   const current=acquired.get(reference)
-  if(!current||now()-Date.parse(current.snapshot.source.retrievedAt)>300000)return deny()
+  if(!current)return null
+  if(now()-Date.parse(current.snapshot.source.retrievedAt)>300000)return deny()
   signal.throwIfAborted()
   // Public Source evidence cache, never an account/access decision cache.
   // Consumers must recheck HUMAN authorization before every read/publication.
@@ -243,7 +245,7 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
    for(;;){
     signal.throwIfAborted()
     const {ids,excerpt}=formationExcerpt(value.response,value.snapshot)
-    records.push(Object.freeze({snapshot:value.snapshot,excerpt:JSON.parse(JSON.stringify(excerpt))}))
+    records.push(freeze({snapshot:value.snapshot,excerpt:JSON.parse(JSON.stringify(excerpt))}))
     if(!ids.length)break
     if(records.length>=5||records.some(r=>r.snapshot.canonicalKrs===ids[0]))return deny()
     const id=ids[0]!,key=await sha256(canonical({reference,krs:id,operation:'FULL'}))
