@@ -59,5 +59,11 @@ test('one physical audit index accelerates the unchanged query without authority
    })
    assert.deepEqual(await snapshot(),before)
   })
+  await t.test('actual protected E1 user effect and membership revocation retain their original decisions',async()=>{
+   await f.policy('supplier.location.write');await f.grant('supplier.location.write')
+   assert.equal((await f.execute(f.host(),f.input())).decision,'ALLOW')
+   await f.controlled(c=>c.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[f.A,f.U]))
+   await assert.rejects(f.execute(f.host(),f.input()))
+  })
  }finally{await f.close()}
 })
