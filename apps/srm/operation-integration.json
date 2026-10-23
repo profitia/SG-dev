@@ -3516,7 +3516,7 @@
       "package.json": "0556858ce27cafe1b2a5e111f08e6d48e0dab27fee330b949cc7131e751c7c39",
       "scripts/corporate-source.integration.test.mjs": "9c6d0eb3cfc7d9a0c5dbe4ed6b3ddc7befcd72233f351f0f530a0b6fbe407e81",
       "scripts/location-access-build-release.mjs": "fae69a007b455ae5d2eb6597f4a9cc8a5aad81051200e3f9795b793f7beb6c66",
-      "scripts/location-access-release-source.test.mjs": "1cae0ab539944fd4d327e4c67b234e905e2c8590c8d2fb51cd431ba308d2d7cb",
+      "scripts/location-access-release-source.test.mjs": "d655db00b34488a81c163274c09c8c47af140f901526a5552f0ccdee5efb07d6",
       "scripts/operation-context.test.mjs": "8e1d7e401efd6a5a4fa5b21cea9171d8c370614eb1240e4e7bfe083ca5b9bc42",
       "scripts/organisation-location-grants.integration.test.mjs": "db6b4ecc4fa4fe643f8e2b7eb5ad0e88bbbde37491d6b3f1c2ec7cdf3f670694",
       "scripts/private-host.integration.test.mjs": "e3dcbcd26f1de555f8e3c0ffe981f763c22b51b131f4bc5cbf0421c119cb569a",
