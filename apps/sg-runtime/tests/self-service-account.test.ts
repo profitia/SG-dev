@@ -17,6 +17,8 @@ const userA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', userB = 'bbbbbbbb-bbbb-4bb
 const result = (userId = userA) => ({ authenticated: true, userId, expiresAt: new Date(Date.now() + 60000).toISOString() })
 const request = (headers: HeadersInit = {}, url = publicOrigin + '/api/account', signal?: AbortSignal) => new Request(url, { headers: { authorization: 'Bearer synthetic_fixture_only', ...headers }, signal })
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status })
+const preference = (userId = userA, avatarSex: 'male' | 'female' | null = 'female') => ({ userId, avatarSex, version: '2' })
+const avatarPath = (url: unknown) => String(url).endsWith('/v1/account/assistant-avatar')
 
 test('self-service default remains disabled, including existing legacy demo deployment', async () => {
   assert.equal(readSelfServiceAccountConfiguration({}), null)
@@ -40,19 +42,19 @@ for (const patch of [{ PROFITIA_SELF_SERVICE_ENABLED: '1' }, { PROFITIA_SELF_SER
 test('successful account read forwards only the bearer to the fixed GET; no cookies, origin, IDs or grants', async () => {
   let calls = 0
   const transport: typeof fetch = async (url, options) => {
-    calls++; assert.equal(url, 'http://localhost:3600/v1/account'); assert.equal(options?.method, 'GET')
+    calls++; assert.equal(url, 'http://localhost:3600/v1/account' + (calls === 2 ? '/assistant-avatar' : '')); assert.equal(options?.method, 'GET')
     assert.deepEqual(options?.headers, { authorization: 'Bearer synthetic_fixture_only' }); assert.equal(options?.credentials, 'omit')
     assert.equal(options?.redirect, 'error'); assert.equal(options?.cache, 'no-store'); assert.equal(options?.body, undefined)
-    return json(result())
+    return json(avatarPath(url) ? preference() : result())
   }
   const response = await readSelfServiceAccount(request({ cookie: 'private_cookie_must_not_leave_receiver', 'x-user-id': userB, 'x-role': 'ADMIN' }), { env: env(), transport })
-  assert.equal(response.status, 200); assert.equal((await response.json()).userId, userA); assert.equal(calls, 1)
+  assert.equal(response.status, 200); assert.equal((await response.json()).userId, userA); assert.equal(calls, 2)
   assert.equal(response.headers.get('cache-control'), 'private, no-store'); assert.equal(response.headers.get('set-cookie'), null)
   assert.equal(response.headers.get('access-control-allow-origin'), null)
 })
 test('cross-account, revoked session and backend outage are independently observed; no stale account cache', async () => {
   let state = 0
-  const transport: typeof fetch = async () => state === 2 ? json({}, 401) : state === 3 ? json({}, 503) : json(result(state ? userB : userA))
+  const transport: typeof fetch = async url => state === 2 ? json({}, 401) : state === 3 ? json({}, 503) : json(avatarPath(url) ? preference(state ? userB : userA, state ? 'male' : 'female') : result(state ? userB : userA))
   for (const [n, expected] of [[0, userA], [1, userB]] as const) { state = n; assert.equal((await (await readSelfServiceAccount(request(), { env: env(), transport })).json()).userId, expected) }
   state = 2; assert.equal((await readSelfServiceAccount(request(), { env: env(), transport })).status, 401)
   state = 3; assert.equal((await readSelfServiceAccount(request(), { env: env(), transport })).status, 503)
@@ -73,7 +75,7 @@ test('untrusted origins/hosts/query/body identity cannot become a peer read or a
 })
 test('shared accepted ingress normalizer validates actual Host and removes forged forwarded identity', async () => {
   const response = await readSelfServiceAccount(request({ host: 'localhost:3001', 'x-forwarded-host': 'evil.test', 'x-forwarded-proto': 'https' }, 'http://0.0.0.0:10000/api/account'),
-    { env: env(), transport: async (_url, options) => { assert.deepEqual(options?.headers, { authorization: 'Bearer synthetic_fixture_only' }); return json(result()) } })
+    { env: env(), transport: async (_url, options) => { assert.deepEqual(options?.headers, { authorization: 'Bearer synthetic_fixture_only' }); return json(avatarPath(_url) ? preference() : result()) } })
   assert.equal(response.status, 200)
 })
 test('oversized, malformed, aborted and failed transports never expose an authenticated account', async () => {
@@ -84,8 +86,8 @@ test('oversized, malformed, aborted and failed transports never expose an authen
   assert.equal((await readSelfServiceAccount(request({}, undefined, abort.signal), { env: env(), transport: () => { assert.fail() } })).status, 403)
 })
 test('actual HTTP peer request uses no database or mutation and preserves the explicit account response', async t => {
-  const server = createServer((req, res) => { assert.equal(req.method, 'GET'); assert.equal(req.url, '/v1/account'); assert.equal(req.headers.cookie, undefined); assert.equal(req.headers.origin, undefined)
-    res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(result())) })
+  const server = createServer((req, res) => { assert.equal(req.method, 'GET'); assert(['/v1/account','/v1/account/assistant-avatar'].includes(req.url!)); assert.equal(req.headers.cookie, undefined); assert.equal(req.headers.origin, undefined)
+    res.setHeader('content-type', 'application/json'); res.end(JSON.stringify(avatarPath(req.url) ? preference() : result())) })
   await new Promise<void>(r => server.listen(0, '127.0.0.1', r)); t.after(() => { server.closeAllConnections(); server.close() })
   const address = server.address(); assert(address && typeof address === 'object')
   const response = await readSelfServiceAccount(request(), { env: { ...env(), PROFITIA_IDENTITY_RUNTIME_ORIGIN: 'http://127.0.0.1:' + address.port } })
@@ -103,7 +105,7 @@ test('new source receipt preserves every previous acceptance and pins the comple
   for (const record of ['storedReadSourceAdoption', 'categoryShellAdoption', 'categoryTransportAdoption', 'categoryIngressAdoption'])
     for (const path of Object.keys(before[record].sourceDigests)) assert(path in current.applicationSourceDigests, path)
   for (const path of Object.keys({...before.supplierLocationSourceCompatibility.applicationSourceDigests,...before.platform125SourceCompatibility.applicationSourceDigests})) assert(path in current.applicationSourceDigests, path)
-  for (const [path, expected] of Object.entries({ ...current.applicationSourceDigests, ...receipt.accountRecheckSourceCompatibility.applicationSourceDigests, ...receipt.krsSoapSourceCompatibility?.applicationSourceDigests })) {
+  for (const [path, expected] of Object.entries({ ...current.applicationSourceDigests, ...receipt.accountRecheckSourceCompatibility.applicationSourceDigests, ...receipt.krsSoapSourceCompatibility?.applicationSourceDigests, ...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests })) {
     const observed = createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex')
     assert.equal(observed, expected, path)
     assert.notEqual(createHash('sha256').update('mutated-source').digest('hex'), expected, 'Mutation must not pass: ' + path)
@@ -112,4 +114,56 @@ test('new source receipt preserves every previous acceptance and pins the comple
   assert.equal(current.organisationOrProductGrantsAdded, false); assert.equal(current.accountReadUsesExistingPeerGetOnly, true)
   assert.equal(current.producerSourceStatus, 'PROPOSED_NOT_PROMOTED')
   assert.deepEqual(receipt.operations, before.operations)
+})
+
+for (const choice of ['male', 'female', null] as const) test('canonical preference is restored without inventing a choice: ' + choice, async () => {
+  const response = await readSelfServiceAccount(request(), { env: env(), transport: async url => json(avatarPath(url) ? preference(userA, choice) : result()) })
+  assert.equal(response.status, 200)
+  assert.equal((await response.json()).assistantAvatar, choice)
+})
+test('missing legacy profile returns neutral preference and performs no write', async () => {
+  const response = await readSelfServiceAccount(request(), { env: env(), transport: async (url, options) => {
+    assert.equal(options?.method, 'GET'); return json(avatarPath(url) ? null : result())
+  } })
+  assert.equal(response.status, 200); assert.equal((await response.json()).assistantAvatar, null)
+})
+for (const invalid of [preference(userB), { ...preference(), phone: 'must-not-expose' }, { ...preference(), avatarSex: 'ADMIN' },
+  { ...preference(), version: '0' }, { ...preference(), version: '9223372036854775808' }, { ...preference(), version: 1 }, {}, [], true]) {
+  test('foreign or malformed preference fails closed: ' + JSON.stringify(invalid), async () => {
+    const response = await readSelfServiceAccount(request(), { env: env(), transport: async url => json(avatarPath(url) ? invalid : result()) })
+    assert.equal(response.status, 503); assert.deepEqual(await response.json(), { authenticated: false })
+  })
+}
+for (const status of [401, 403, 500]) test('revocation or failure during preference read does not reuse account success: ' + status, async () => {
+  const response = await readSelfServiceAccount(request(), { env: env(), transport: async url => avatarPath(url) ? json({}, status) : json(result()) })
+  assert.equal(response.status, status === 500 ? 503 : status)
+  assert.deepEqual(await response.json(), { authenticated: false })
+})
+test('account expiry or account switch during preference read discards the late result', async () => {
+  for (const abortRequest of [false, true]) {
+    const controller = new AbortController(); let expired = false
+    const response = await readSelfServiceAccount(request({}, undefined, controller.signal), { env: env(), now: () => expired ? Date.now() + 120000 : Date.now(), transport: async url => {
+      if (avatarPath(url)) { expired = true; if (abortRequest) controller.abort(); return json(preference()) }
+      return json(result())
+    } })
+    assert.equal(response.status, 503); assert.deepEqual(await response.json(), { authenticated: false })
+  }
+})
+test('oversized or malformed preference is not rendered', async () => {
+  for (const body of ['x'.repeat(5000), '{']) {
+    const response = await readSelfServiceAccount(request(), { env: env(), transport: async url => avatarPath(url) ? new Response(body) : json(result()) })
+    assert.equal(response.status, 503)
+  }
+})
+test('avatar receipt preserves all previous evidence and pins the separate producer', () => {
+  const receipt = JSON.parse(readFileSync(new URL('../operation-integration.json', import.meta.url), 'utf8'))
+  const current = receipt.assistantAvatarSourceCompatibility
+  const previous = execFileSync('git', ['show', current.previousReceiptSourceSha + ':apps/sg-runtime/operation-integration.json'])
+  assert.equal(createHash('sha256').update(previous).digest('hex'), current.previousReceiptSha256)
+  for (const [key, value] of Object.entries(JSON.parse(previous.toString()))) assert.deepEqual(receipt[key], value, key)
+  for (const [file, digest] of Object.entries(current.producerSourceDigests)) {
+    const bytes = execFileSync('git', ['show', current.producerSourceSha + ':packages/platform-contracts/' + file])
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), digest, file)
+  }
+  assert.equal(current.liveGrantsChanged, false); assert.equal(current.productDeploymentPerformed, false)
 })

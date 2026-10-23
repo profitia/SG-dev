@@ -1,8 +1,9 @@
 'use client'
 import React, { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { useAuth, useClerk } from '@clerk/react'
 
-type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string }
+type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string; assistantAvatar?: 'male' | 'female' | null }
 export function AccountLanding({ locale, completionUrl }: { locale: 'pl' | 'en'; completionUrl: string }) {
   const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth(), clerk = useClerk()
   const key = JSON.stringify([userId, sessionId]), current = useRef<AbortController | null>(null)
@@ -16,8 +17,9 @@ export function AccountLanding({ locale, completionUrl }: { locale: 'pl' | 'en';
         const response = await fetch('/api/account', { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal,
           headers: { Authorization: `Bearer ${credential}` } })
         const result = await response.json()
-        if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_UNAVAILABLE')
-        if (!controller.signal.aborted) setState({ key, status: 'ready', userId: result.userId, expiresAt: result.expiresAt })
+        if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !(Date.parse(result.expiresAt) > Date.now())
+          || ![null, 'male', 'female'].includes(result.assistantAvatar)) throw Error('ACCOUNT_UNAVAILABLE')
+        if (!controller.signal.aborted) setState({ key, status: 'ready', userId: result.userId, expiresAt: result.expiresAt, assistantAvatar: result.assistantAvatar })
       } catch { if (!controller.signal.aborted) setState({ key, status: 'failed' }) }
     })()
     return () => controller.abort()
@@ -41,6 +43,11 @@ export function AccountLanding({ locale, completionUrl }: { locale: 'pl' | 'en';
   return <section className="space-y-5" key={key}>
     {status === 'ready' ? <><h1 className="text-3xl font-semibold">{en ? 'Your account is ready' : 'Konto gotowe'}</h1>
       <p>{en ? 'You are signed in to your Profitia account.' : 'Jesteś zalogowany do swojego konta Profitia.'}</p>
+      {state.assistantAvatar && <div className="flex items-center gap-3">
+        <Image src={`/advisory/${state.assistantAvatar === 'female' ? 'anna' : 'adam'}-128.webp`} width={48} height={48}
+          className="rounded-full" alt={en ? 'Your selected assistant avatar' : 'Wybrany awatar Twojego asystenta'} />
+        <span>{en ? 'Your assistant' : 'Twój asystent'}</span>
+      </div>}
       <p className="break-all text-xs text-slate-500">{en ? 'Account ID' : 'Identyfikator konta'}: {state.userId}</p>
       <p className="text-sm text-slate-600">{en ? 'Organisation setup will be available in a later step.' : 'Konfiguracja organizacji będzie dostępna w kolejnym etapie.'}</p></>
       : status === 'failed' || status === 'expired' ? <><p role="alert">{status === 'expired'

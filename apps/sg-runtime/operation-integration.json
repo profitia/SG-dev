@@ -2525,5 +2525,34 @@
     "krsOrGusAdopted": false,
     "liveGrantsChanged": false,
     "productDeploymentPerformed": false
+  },
+  "assistantAvatarSourceCompatibility": {
+    "taskId": "SG2-ASSISTANT-AVATAR-20261023",
+    "producerTaskId": "ARCHITECTURE-ASSISTANT-AVATAR-20261023",
+    "producerPr": 657,
+    "producerSourceSha": "4c297156a82d7d1ede10d34115da2115f2053102",
+    "previousReceiptSourceSha": "b1d9400c841c801c26517858fe6a6358b8869a4c",
+    "previousReceiptSha256": "dca52a89fa8a30ca717e742fbf35d29032ea4dbb27d6c1ca928ebc1c4cc49d7d",
+    "producerSourceDigests": {
+      "src/user-profile.mjs": "9933887cbfabaa5c709e00d013274eb0ad344e56192456d5e9c622c461202347",
+      "src/user-profile.d.mts": "ece7aaa04d9100fd4379038995454e3a2b46da9d21b7def98ac2bb5817b6b94a"
+    },
+    "applicationSourceDigests": {
+      "lib/platform/account-session.ts": "6ad77003ab28ddd993ffa9b8dc0d5c94a3300f1b626a15f17ae945b24d5b10a2",
+      "components/auth/account-landing.tsx": "054d193fb050293a2219a508774ebc94f9daf46f8de425e8e85f2dec6886a9bf",
+      "tests/self-service-account.test.ts": "d637ec41d3438444988fae3d7cd894bbeb0b77e197c8b55af9d9aec66d228a5d",
+      "tests/category-operation.test.ts": "5fcde2e76a368e01d92ca4b41c31b721a7b00302cc21bb9061d16238f5eaba30",
+      "tests/identity-runtime.test.ts": "dc7decc97ea2da68f3025bc321d237b441986655d129ecf1d53eda95873f58c3",
+      "tests/porr-demo-middleware.test.ts": "c52a5d8f8bdcbef9da6498bd76c8110771a03815e21d21f38ead3a6bd4068908",
+      "tests/operation-context.test.mjs": "0328420871a61dfb09ed145392dab06ef112f4a8d9b19346097166c6ce4b67e8"
+    },
+    "preferenceClass": "ACCOUNT_PRIVATE",
+    "organisationId": null,
+    "peerMethod": "GET",
+    "peerPath": "/v1/account/assistant-avatar",
+    "canonicalPreferenceOverridesMetadata": true,
+    "missingPreferenceIsNeutral": true,
+    "liveGrantsChanged": false,
+    "productDeploymentPerformed": false
   }
 }

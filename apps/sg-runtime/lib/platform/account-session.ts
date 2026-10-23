@@ -25,6 +25,14 @@ export function accountCompletionUrl(config: NonNullable<ReturnType<typeof readS
 }
 const headers = { 'cache-control': 'private, no-store', vary: 'Cookie, Authorization, Origin', 'content-type': 'application/json', 'x-content-type-options': 'nosniff' }
 export function accountUnavailable(status = 503) { return new Response(JSON.stringify({ authenticated: false }), { status, headers }) }
+async function boundedJson(response: Response): Promise<unknown> {
+  const reader = response.body?.getReader(); if (!reader) throw Error('ACCOUNT_UNAVAILABLE')
+  const chunks: Uint8Array[] = []; let size = 0
+  try { for (;;) { const item = await reader.read(); if (item.done) break; size += item.value.byteLength
+    if (size > 4096) { await reader.cancel(); throw Error('ACCOUNT_UNAVAILABLE') } chunks.push(item.value) } }
+  finally { reader.releaseLock() }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'))
+}
 /** Existing accepted bearer-only peer READ. Never proxies browser cookies,
  * mutations, user/organisation IDs, return URLs or caller-selected endpoints. */
 export async function readSelfServiceAccount(request: Request, { env = process.env, transport = fetch, now = Date.now }: {
@@ -41,19 +49,22 @@ export async function readSelfServiceAccount(request: Request, { env = process.e
     const u = new URL(current.url), credential = current.headers.get('authorization')
     if (u.pathname !== '/api/account' || u.search || u.hash || current.headers.has('origin') && current.headers.get('origin') !== config.publicOrigin) return accountUnavailable(403)
     if (!/^Bearer [\x21-\x7e]{1,16384}$/i.test(credential ?? '')) return accountUnavailable(401)
-    const response = await transport(config.runtimeOrigin + '/v1/account', { method: 'GET',
+    const read = (path: '/v1/account' | '/v1/account/assistant-avatar') => transport(config.runtimeOrigin + path, { method: 'GET',
       headers: { authorization: credential! }, credentials: 'omit', cache: 'no-store', redirect: 'error',
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(4000)]) })
+    const response = await read('/v1/account')
     if (!response.ok) { await response.body?.cancel(); return accountUnavailable(response.status === 401 ? 401 : response.status === 403 ? 403 : 503) }
-    const reader = response.body?.getReader(); if (!reader) return accountUnavailable()
-    const chunks: Uint8Array[] = []; let size = 0
-    try { for (;;) { const item = await reader.read(); if (item.done) break; size += item.value.byteLength
-      if (size > 4096) { await reader.cancel(); return accountUnavailable() } chunks.push(item.value) } }
-    finally { reader.releaseLock() }
-    const result = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+    const result = await boundedJson(response) as { authenticated: boolean; userId: string; expiresAt: string }
     if (!result || Object.keys(result).sort().join(',') !== 'authenticated,expiresAt,userId' || result.authenticated !== true
       || typeof result.userId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(result.userId)
       || typeof result.expiresAt !== 'string' || !(Date.parse(result.expiresAt) > now()) || request.signal.aborted) return accountUnavailable()
-    return new Response(JSON.stringify(result), { status: 200, headers })
+    const avatarResponse = await read('/v1/account/assistant-avatar')
+    if (!avatarResponse.ok) { await avatarResponse.body?.cancel(); return accountUnavailable(avatarResponse.status === 401 ? 401 : avatarResponse.status === 403 ? 403 : 503) }
+    const avatar = await boundedJson(avatarResponse) as { userId: string; avatarSex: 'male' | 'female' | null; version: string } | null
+    if (avatar !== null && (!avatar || Array.isArray(avatar) || Object.keys(avatar).sort().join(',') !== 'avatarSex,userId,version'
+      || avatar.userId !== result.userId || ![null, 'male', 'female'].includes(avatar.avatarSex)
+      || typeof avatar.version !== 'string' || !/^[1-9][0-9]{0,18}$/.test(avatar.version) || BigInt(avatar.version) > 9223372036854775807n)) return accountUnavailable()
+    if (request.signal.aborted || !(Date.parse(result.expiresAt) > now())) return accountUnavailable()
+    return new Response(JSON.stringify({ ...result, assistantAvatar: avatar?.avatarSex ?? null }), { status: 200, headers })
   } catch { return accountUnavailable() }
 }
