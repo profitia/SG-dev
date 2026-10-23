@@ -85,7 +85,7 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
   async sync(input:Input){
    const selected=await read(input,async(_context,client)=>{
     const row=(await client.query('SELECT nip,krs FROM srm.suppliers WHERE organization_id=$1 AND id=$2',[input.organisationId,input.supplierId])).rows[0]
-    if(!row?.nip||!row.krs)return refuse()
+    if(!row?.nip)return refuse()
     return {nip:row.nip as string,company:await readLocationCompany(client,input.organisationId,input.supplierId,row.nip)}
    })
    let kys:AcceptedKysLocations|null=null

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-TASK02R-ACTIVATE-20261023",
+  "targetEnvironment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "baseArtifactSourceSha": "7833cbfff7cea55cbc2c92be8fff71650167b22d",
+  "baseAssemblerDigest": "1a1010dcbe50cf3b081f0df49a0ef933b1ae8b97873adcf98b6a356c275daabf",
+  "baseFileDigest": "7bd5de449c7e709fb10af93b6396a20c2450b4a038dacb2491f0c18f2ead9d41",
+  "overrides": {
+    "apps/srm/src/server/supplier-locations.ts": "394da387f55f72b60ce6a8e58a8c91df955e574e65ff0df9109b4690cb9b9057"
+  },
+  "newIdentityOrKrsSourceAllowed": false,
+  "paidGeocodingBudget": 0
+}
