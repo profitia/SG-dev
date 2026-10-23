@@ -1974,7 +1974,7 @@ function buildHandoffFinalizationContext(params: {
 }
 
 function getStablePhrOnlyPublicationTimestamp(artifact: FlightRecordV1): string {
-  return artifact.metadata.timestamp
+  return new Date(artifact.metadata.timestamp).toISOString()
 }
 
 function buildDeterministicPhrOnlyStateHistory(): CloseoutState[] {
