@@ -32,7 +32,11 @@ test('KRS activation preserves accepted receipts and pins registration with no s
  assert.equal(hash(previous),a.previousReceiptSha256)
  for(const [key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
  assert.equal(a.existingSupplierRegistration,'KEEP');assert.equal(a.newRoleOrMapsPermissionsRequired,false)
- for(const [file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ const next=receipt.organisationLocationAuthorityAdoption
+ for(const [file,digest]of Object.entries(a.applicationSourceDigests)){
+  if(next?.applicationSourceDigests[file])assert.equal(hash(execFileSync('git',['show',next.previousReceiptSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,'historical '+file)
+  assert.equal(hash(fs.readFileSync(path.join(root,file))),next?.applicationSourceDigests[file]??digest,file)
+ }
 })
 
 test('bounded indicator reads retain the entire accepted receipt and add no new operation or grant',()=>{
