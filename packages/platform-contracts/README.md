@@ -581,3 +581,25 @@ Live consumer adoption, installation, user UAT and deployment are separate evide
 The proposed Development policy renews an ACTIVE binding on demand only within30 seconds of expiry. Separately enabled recovery admits an expired, still ACTIVE binding only within an owner-selected window of at most7 days. The new expiry never exceeds the currently verified provider proof or the existing1–300 second policy cap. Neither path restores revoked bindings or disabled accounts, matches email, creates profiles for an existing mapping, nor grants organisation/product access.
 
 Both paths reuse the official verifier, existing Access Store, real transaction, ordinary role and transaction-bound HMAC. The locked authority revision and binding/account versions fence changes; provider identity/session checks repeat before commit. Mutation and canonical audit commit together. Far-from-expiry reads make no change. Failure rolls back without account confirmation; there is no background refresh, permission cache or alternative session engine. Installation and policy activation remain owner gates, not consequences of source tests.
+# Optional organization location authority (SQL022)
+
+Operator-installed SQL022 adds exact, expiring organization/collection policies for
+the three existing location READ/WRITE/SYNC operations. Current and future verified
+members consume them through the existing E1 authority snapshot. It creates no
+accounts, membership, product/module access, user grant, provider budget or policy.
+All previous SQL001–021 and SDK contracts remain byte-identical. Empty tables are
+inert. Explicit individual DENY, membership/account/product/module revocation, RLS,
+audits, idempotency and the existing rolling quota remain authoritative.
+
+A consumer separately adopts a protected writer that records immutable identities
+of its actual manual children. The E1 snapshot then projects only those exact child
+UUIDs under the explicitly allowed collection; no NULL, wildcard, unverified HTTP
+parent or foreign organization is admitted. Child registration changes no authority
+revision inside the business transaction; policy changes use the existing shared
+installation fence. Policy expiry bounds the access lease. Revoke the exact policy
+to withdraw inherited access. Existing independent individual grants are preserved.
+
+Installation requires controlled owner, exact SQL020 and a stored SQL022 digest.
+Keep pre-install function definitions/metadata for rollback. Runtime roles receive
+no access to the new policy/identity tables or helper. No runtime SDK, Identity,
+SG2, KRS or Maps deployment follows from source publication.
