@@ -2700,7 +2700,11 @@
       "tests/operation-context.test.mjs": "9ad72b2a86963c328a5e8f0a2ef3d4e9891742e83f3d298cb68d824639c72052",
       "package-lock.json": "b7e8b1d0b1ba4e0784f7d0f309ab48aadfe1bc89350989d6b9d04c7edc5c6ade",
       "tests/private-host.integration.test.mjs": "82eb294b0e178d2cb17e1f6ffba243821f766cf4fd8914464f7c72b8f54551f3",
-      "../dashboard-preview/package-lock.json": "530e9e732e29dbfb7a919bdbebe76de989308a39a7471b13385414c7d9acf9ff"
+      "../dashboard-preview/package-lock.json": "530e9e732e29dbfb7a919bdbebe76de989308a39a7471b13385414c7d9acf9ff",
+      "tests/category-operation.test.ts": "4b6c1d08f5ab0433caceda19dfc06bfa2f9a09c4ac512efec87b3ec48706da54",
+      "tests/identity-runtime.test.ts": "0e2aca066b374e51d3b9891631fb61588ad572987d6bf54933448d0823cde67a",
+      "tests/porr-demo-middleware.test.ts": "0ffcd5a1a92dc8bcb5be9b13f73ee480f057c9ab6e484ee4b300e0da3247e9be",
+      "tests/self-service-account.test.ts": "2e550dc6becd82203140045e24eabc6167af9d79c61050808b2f81e71058c403"
     },
     "unmeteredSourceOptedIn": false,
     "sql024Installed": false,
