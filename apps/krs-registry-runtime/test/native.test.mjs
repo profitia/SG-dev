@@ -7,10 +7,11 @@ import {createPrivateOperationHost} from '@profitia/platform-contracts/private-o
 import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider'
 import {accessSchemaUrl,moduleAuditSchemaUrl} from '@profitia/platform-contracts/access-store'
 import {moduleSchemaUrl} from '@profitia/platform-contracts/module-scope'
-import {createNativeRegistryAccess,createNativeCatalogPublication,createOfficialSeed,createNativeRegistrySource} from '../dist/native.js'
+import {createNativeRegistryAccess,createNativeCatalogPublication,createOfficialSeed,createNativeRegistrySource,createNativeNipRegistrySource} from '../dist/native.js'
 import {createKrsClient,krsResponseEvidence,buildRequest} from '../dist/client.js'
 import {normalizeExtract} from '../dist/normalizer.js'
 import {storeSnapshot} from '../dist/catalog.js'
+import {createAdmittedGusSource,createGusMapper,GUS_ORIGIN,GUS_PATH} from '../dist/gus-bir.js'
 import {extract,bytes,fixtureSource} from './fixtures.mjs'
 
 // Called only from the guarded disposable loopback PostgreSQL suite. Real Root,
@@ -137,15 +138,17 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
     assert.equal((await owner.query('SELECT admitted_count FROM profitia_external_call.policies')).rows[0].admitted_count,1)
    }finally{globalThis.fetch=originalFetch}
   })
-  await t.test('GUS scheduler shares actual E1 admission across connections without granting Source effects',async()=>{
+  await t.test('GUS scheduler shares actual E1 admission across connections without granting Source effects',async t=>{
    const policy=randomUUID(),patch=await fs.readFile(new URL('../../../packages/platform-contracts/migrations/access/021-native-soap-transport.sql',import.meta.url),'utf8')
    await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
    try{
     await owner.query(patch)
+    // Six synthetic identity cases need three native control effects each.
+    await owner.query("UPDATE profitia_ingestion.budgets SET capacity=60 WHERE source_id='krs.registry.official'")
     await owner.query(`INSERT INTO profitia_ingestion.sources SELECT (jsonb_populate_record(NULL::profitia_ingestion.sources,to_jsonb(s)||jsonb_build_object('source_id','krs.registry.gus','quality_version','gus-bir12-source-v1'))).* FROM profitia_ingestion.sources s WHERE source_id='krs.registry.official'`)
     await owner.query(`INSERT INTO profitia_ingestion.grants SELECT (jsonb_populate_record(NULL::profitia_ingestion.grants,to_jsonb(g)||jsonb_build_object('grant_id',$1::text,'source_id','krs.registry.gus','resource_id','krs-gus:nip-map'))).* FROM profitia_ingestion.grants g WHERE source_id='krs.registry.official'`,[randomUUID()])
-    await owner.query(`INSERT INTO profitia_ingestion.budgets SELECT (jsonb_populate_record(NULL::profitia_ingestion.budgets,to_jsonb(b)||jsonb_build_object('policy_id',$1::text,'source_id','krs.registry.gus','capacity',60,'consumed_count',0))).* FROM profitia_ingestion.budgets b WHERE source_id='krs.registry.official'`,[randomUUID()])
-    await owner.query(`INSERT INTO profitia_external_call.policies SELECT (jsonb_populate_record(NULL::profitia_external_call.policies,to_jsonb(p)||jsonb_build_object('policy_id',$1::text,'source_id','krs.registry.gus','resource_id','krs-gus:nip-map','origin','https://wyszukiwarkaregon.stat.gov.pl','path_rules','[{"method":"POST","path":"/wsBIR/UslugaBIRzewnPubl.svc"}]'::jsonb,'maximum_response_bytes',1048576,'timeout_ms',3000,'admitted_count',0))).* FROM profitia_external_call.policies p WHERE source_id='krs.registry.official'`,[policy])
+    await owner.query(`INSERT INTO profitia_ingestion.budgets SELECT (jsonb_populate_record(NULL::profitia_ingestion.budgets,to_jsonb(b)||jsonb_build_object('policy_id',$1::text,'source_id','krs.registry.gus','capacity',120,'consumed_count',0))).* FROM profitia_ingestion.budgets b WHERE source_id='krs.registry.official'`,[randomUUID()])
+    await owner.query(`INSERT INTO profitia_external_call.policies SELECT (jsonb_populate_record(NULL::profitia_external_call.policies,to_jsonb(p)||jsonb_build_object('policy_id',$1::text,'source_id','krs.registry.gus','resource_id','krs-gus:nip-map','origin','https://wyszukiwarkaregon.stat.gov.pl','path_rules','[{"method":"POST","path":"/wsBIR/UslugaBIRzewnPubl.svc"}]'::jsonb,'maximum_response_bytes',1048576,'timeout_ms',3000,'capacity',40,'admitted_count',0))).* FROM profitia_external_call.policies p WHERE source_id='krs.registry.official'`,[policy])
     await owner.query(`INSERT INTO profitia_external_native.policies SELECT (jsonb_populate_record(NULL::profitia_external_native.policies,to_jsonb(n)||jsonb_build_object('policy_id',$1::text,'path_rules','[{"method":"POST","path":"/wsBIR/UslugaBIRzewnPubl.svc","requestFormat":"SOAP"}]'::jsonb,'maximum_response_bytes',1048576,'credential_mode','SERVER_HEADERS'))).* FROM profitia_external_native.policies n JOIN profitia_external_call.policies p USING(policy_id) WHERE p.source_id='krs.registry.official'`,[policy])
     await owner.query('GRANT EXECUTE ON FUNCTION profitia_external_native.reserve_gus_slot() TO krs_ingest;COMMIT')
    }catch(e){await owner.query('ROLLBACK');throw e}
@@ -155,6 +158,34 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
    assert.equal(slots.filter(x=>x.rows[0].wait_ms>0).length,3)
    assert.equal((await owner.query("SELECT consumed_count FROM profitia_ingestion.budgets WHERE source_id='krs.registry.gus'")).rows[0].consumed_count,0)
    assert.equal((await owner.query("SELECT admitted_count FROM profitia_external_call.policies WHERE source_id='krs.registry.gus'")).rows[0].admitted_count,0)
+   await t.test('proved GUS legal unit reconciles KRS zero suffix; real conflicts and forged mappings stay closed',async()=>{
+    const originalFetch=globalThis.fetch,nip='7772776017',regon='634591881';let variant,upstream=0,sid=null
+    const base={...driver,application:{appId:'krs-registry-source',profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId,configurationVersion:'krs-native-pilot-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},binding:{applicationId:'krs-registry-source',environment:'development',projectId:'isolated-project',branchId:'isolated-branch',databaseName:'krs_registry_test',role:'krs_ingest',deploymentId,configurationVersion:'krs-native-pilot-v1',schemaDigest:plan.schemaDigests.ingestion}}
+    const control=value=>!!value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')==='action,callId,configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status'
+    const gusHost=createPlatformIngestionHost({...base,source:{id:'krs.registry.gus',payloadSchema:'external-call-control-v1',qualityVersion:'gus-bir12-source-v1',classificationVersion:'technical-source-control-v1'},validateSharedPayload:control})
+    const gusSource=await createAdmittedGusSource({sourceHost:gusHost,sourceId:'krs.registry.gus',resourceId:'krs-gus:nip-map',apiKey:'A'.repeat(20),readSid:()=>sid,permit:async()=>{},binding:{role:'krs_ingest',configurationVersion:'krs-native-pilot-v1',schemaDigest:plan.schemaDigests.external,origin:GUS_ORIGIN,transport:'HTTPS',pathRules:[{method:'POST',path:GUS_PATH}]},independentQuery:driver.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows})})
+    const mapper=createGusMapper({source:gusSource,readSid:()=>sid,writeSid:value=>{sid=value}})
+    const source=await createNativeNipRegistrySource({host:base,externalSchemaDigest:plan.schemaDigests.external})
+    const wrap=(action,value)=>'<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><'+action+'Result>'+value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')+'</'+action+'Result></s:Body></s:Envelope>'
+    try{
+     globalThis.fetch=async(url,init)=>{
+      upstream++;let body
+      if(String(url)===GUS_ORIGIN+GUS_PATH){
+       const action=String(init.body).match(/<a:Action[^>]*>([^<]+)/)[1].split('/').at(-1)
+       const result=action==='Zaloguj'?'B'.repeat(20):action==='Wyloguj'?'true':action==='DaneSzukajPodmioty'?`<root><Nip>${nip}</Nip><Regon>${regon}</Regon><Typ>P</Typ></root>`:`<root><praw_nip>${nip}</praw_nip><praw_regon9>${regon}</praw_regon9><praw_rodzajRejestruEwidencji_Symbol>138</praw_rodzajRejestruEwidencji_Symbol><praw_rodzajRejestruEwidencji_Nazwa>REJESTR PRZEDSIĘBIORCÓW</praw_rodzajRejestruEwidencji_Nazwa><praw_numerWRejestrzeEwidencji>${id}</praw_numerWRejestrzeEwidencji></root>`
+       body=wrap(action,result)
+      }else{assert.equal(String(url),buildRequest({operation:'CURRENT',krs:id,register:'P'}).url);body=bytes(extract({id,nip:variant.nip??nip,regon:variant.regon,name:'Synthetic '+variant.label}))}
+      const response=new Response(body,{headers:{'content-type':'application/json'}});Object.defineProperty(response,'url',{value:String(url)});return response
+     }
+     for(variant of [{label:'exact9',regon},{label:'zero14',regon:regon+'00000'},{label:'absent',regon:null},{label:'foreign-parent',regon:'61018820100003',deny:true},{label:'local-unit',regon:regon+'00018',deny:true},{label:'foreign-nip',regon:regon+'00000',nip:'7740001454',deny:true}]){
+      const key=createHash('sha256').update(variant.label).digest('hex'),mapping=await mapper.resolve(nip,key,AbortSignal.timeout(10000)),before=(await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots')).rows[0].n
+      assert.equal(mapping.status,'MATCH')
+      if(variant.deny){await assert.rejects(source.acquire(mapping,key,AbortSignal.timeout(10000)),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH');assert.equal((await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots')).rows[0].n,before)}
+      else{const result=await source.acquire(mapping,key,AbortSignal.timeout(10000));assert.equal(result.snapshot.regon,variant.regon);assert.equal(result.snapshot.nip,nip);assert.equal(result.snapshot.canonicalKrs,id);assert.equal(result.receipt.evidenceRef,result.snapshot.evidenceRef);if(variant.regon)assert(result.snapshot.identifiers.some(v=>v.kind==='REGON'&&v.value===variant.regon))}
+      const calls=upstream;await assert.rejects(source.acquire({...mapping},key,AbortSignal.timeout(10000)));await assert.rejects(source.acquire(mapping,'e'.repeat(64),AbortSignal.timeout(10000)));assert.equal(upstream,calls)
+     }
+    }finally{globalThis.fetch=originalFetch}
+   })
    await owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED' WHERE source_id='krs.registry.gus'")
    await assert.rejects(ingest.query('SELECT profitia_external_native.reserve_gus_slot()'),e=>e.code==='42501')
   })
