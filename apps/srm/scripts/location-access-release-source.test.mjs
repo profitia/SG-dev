@@ -22,3 +22,22 @@ test('location source adopts exactly one HQ check, retaining prior narrow artifa
   assert.throws(()=>assembleLocationAccessSource(root,out),/FRESH_RELEASE_DIRECTORY_REQUIRED/)
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
 })
+test('provider shallow clone retains the fetch-only accepted artifact in the isolated build input',()=>{
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'location-access-shallow-test-'))
+ const run=(args,cwd)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:'pipe'})
+ const accepted='7833cbfff7cea55cbc2c92be8fff71650167b22d',shallow=path.join(temp,'provider')
+ try{
+  run(['clone','--quiet','--no-local','--depth=1','--no-checkout',root,shallow],root)
+  run(['sparse-checkout','set','apps/srm','packages/platform-contracts','packages/srm-xray','packages/maps-contracts','packages/maps-embed'],shallow)
+  run(['checkout','--quiet','--detach','HEAD'],shallow)
+  run(['remote','set-url','origin','https://github.com/profitia/SG-dev.git'],shallow)
+  run(['fetch','--no-tags','--depth=1',root,accepted],shallow)
+  run(['cat-file','-e',accepted+'^{commit}'],shallow)
+  const proof=path.join(temp,'shared-clone')
+  run(['clone','--quiet','--shared','--no-checkout',shallow,proof],root)
+  assert.throws(()=>run(['cat-file','-e',accepted+'^{commit}'],proof),'shared clone drops an unreachable fetched ancestor from a shallow provider')
+  const out=path.join(temp,'source'),r=assembleLocationAccessSource(shallow,out)
+  assert.equal(r.baseArtifactSourceSha,accepted);assert.equal(r.identityOrKrsSourceAdopted,false)
+  assert.deepEqual(r.changedPaths,['apps/srm/src/server/supplier-locations.ts'])
+ }finally{fs.rmSync(temp,{recursive:true,force:true})}
+})

@@ -3341,5 +3341,19 @@
     "paidGeocodingBudget": 0,
     "runtimeDeploymentPerformed": false,
     "identityOrKrsSourceAdopted": false
+  },
+  "organisationLocationBuildRecovery": {
+    "taskId": "SRM-TASK02R-ACTIVATE-20261023",
+    "previousReceiptSourceSha": "e574efef2bcf8597d249a17dc90b001119a52556",
+    "previousReceiptDigest": "2b40294bbe8923946f3956aee6c0502cf23763d9002bf99198d23dbaf903b8a4",
+    "cause": "SHALLOW_CLONE_OMITS_FETCH_ONLY_ACCEPTED_ANCESTOR",
+    "productRuntimeChanged": false,
+    "databaseChanged": false,
+    "applicationSourceDigests": {
+      "scripts/location-access-build-release.mjs": "b478c85dbe1d5f03af2fae01f612c2c0c6634cab2a24a8d777507d190275d256",
+      "scripts/location-access-release-source.test.mjs": "10abeebc582f972ed8a41d98a13865a6042e468c237a3db2ce8af19a4fd7d7c4",
+      "src/server/peer-read-boundary.test.ts": "ab63e346d732d5f87f675f827d6f7e43a0bbc2d5f20a8fb2ddc529e4bbaf4969",
+      "src/server/account-recheck-adoption.test.ts": "b4c97dc1a743d209fc6389994e5ee29e32f1133e94543acf47d0690db2950d39"
+    }
   }
 }
