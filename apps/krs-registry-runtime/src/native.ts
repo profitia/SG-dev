@@ -196,8 +196,14 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
   const snapshot=await normalizeExtract(response.bytes,{krs:mapping.krs,register:'P',extract:'CURRENT',retrievedAt:response.retrievedAt})
   if(snapshot.nip!==mapping.nip||snapshot.canonicalKrs!==mapping.krs)return deny()
   // Missing/withheld KRS REGON is not evidence of REGON equality. Valid
-  // differing identifiers remain a conflict; no REGON14 truncation is allowed.
-  if(snapshot.regon!==null&&snapshot.regon!==mapping.regon)return deny()
+  // differing parents/local units remain conflicts; no REGON14 truncation.
+  // BIR12OsPrawna proves the legal unit's REGON9, NIP and KRS. KRS can
+  // retain REGON9 + five zeroes even when REGON14 passes checksum. Only
+  // reconcile that exact suffix after the independent NIP/KRS checks and
+  // process-owned GUS proof above. Preserve the original REGON14; never
+  // truncate it or equate a different parent/nonzero local-unit suffix.
+  if(snapshot.regon!==null&&snapshot.regon!==mapping.regon
+    &&snapshot.regon!==mapping.regon+'00000')return deny()
   signal.throwIfAborted()
   const receipt=await publication.publish({snapshot,response},'krs-nip-publication-'+requestKey)
   signal.throwIfAborted();return {snapshot,receipt}
