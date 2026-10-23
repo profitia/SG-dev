@@ -34,7 +34,10 @@ export class SupplierLocationController{
   try{const page=await this.request({action:'READ',supplierId:this.supplierId,group,offset,limit:50}) as SupplierLocationPage
    if(seq!==this.sequence||g!==this.generation)return
    if(page.supplierId!==this.supplierId||!Array.isArray(page.items)||page.offset!==offset||!Number.isInteger(page.total)||page.total<page.items.length)throw Error('Nieprawidłowa odpowiedź lokalizacji.')
-   this.update({page,busy:false})
+   const previous=this.state.page
+   // Each poll still reauthorizes. Keep the projection mounted only when the
+   // fresh protected response is identical; errors/revocation still clear it.
+   this.update({page:previous&&JSON.stringify(previous)===JSON.stringify(page)?previous:page,busy:false})
   }catch(e){if(g===this.generation&&seq===this.sequence)this.update({page:null,busy:false,error:e instanceof Error?e.message:'Lokalizacje niedostępne.'});else if(this.state.blocked)this.update({busy:false})}
  }
  async mapPage(group:SupplierLocationGroup,offset:number,signal:AbortSignal):Promise<SupplierLocationPage>{

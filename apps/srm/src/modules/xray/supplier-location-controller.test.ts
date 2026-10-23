@@ -48,3 +48,12 @@ test('a denied sync followed by current read revocation clears the map and block
  assert.equal(controller.getSnapshot().page,null);assert.equal(controller.getSnapshot().blocked,true)
  assert.deepEqual(actions,['READ','SYNC','READ']);await assert.rejects(controller.save('CREATE',null,null,command),/dostępu/)
 })
+
+test('identical protected polls retain the map projection without caching authorization',async()=>{
+ let calls=0,version='0',failure=false
+ const controller=new SupplierLocationController(supplier,async()=>{calls++;return failure?Response.json({error:'unavailable'},{status:503}):Response.json({...page,collectionVersion:version})})
+ await controller.load();const first=controller.getSnapshot().page
+ await controller.load();assert.equal(controller.getSnapshot().page,first);assert.equal(calls,2)
+ version='1';await controller.load();assert.notEqual(controller.getSnapshot().page,first);assert.equal(controller.getSnapshot().page?.collectionVersion,'1');assert.equal(calls,3)
+ failure=true;await controller.load();assert.equal(controller.getSnapshot().page,null);assert.equal(calls,4)
+})

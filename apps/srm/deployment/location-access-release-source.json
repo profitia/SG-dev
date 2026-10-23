@@ -16,5 +16,10 @@
     "sourceBaselineDigest": "7a28cd449075e24877f36e8ba98ab016d62e9b2766b6480a5dba7c0fceb2ee40",
     "sourceDigest": "6f2e36bb7436d5643d483e846598b558075c3f6c197dd68a32af83b706008378",
     "artifactBaselineDigest": "efdff1e69ae04cfb309bc1b591015f37527e9e94fa3bf340ab290f74947eda25"
+  },
+  "pageRefreshPatch": {
+    "path": "apps/srm/src/modules/xray/supplier-location-controller.ts",
+    "baselineDigest": "e4907711cbf16981ef48035385c643c90e1e3543be4e9050c497f46975a829ad",
+    "sourceDigest": "789e25e9023c1f214fb118476197278c70977bcabbdb63b3a7afc67cfd61dcac"
   }
 }
