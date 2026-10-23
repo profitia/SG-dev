@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import {createHash,randomUUID} from 'node:crypto'
 import test from 'node:test'
 import pg from 'pg'
+import {NextRequest} from 'next/server'
+import {middleware} from '../middleware.ts'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {privateBusinessPlan} from '../db/private-store/initialize.mjs'
 import {createSupplierLocationRuntime,createSupplierLocationHandler} from '../src/server/supplier-locations.ts'
@@ -28,6 +30,8 @@ for(const p1 of[true])test('organization location authority in actual SRM native
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();const url=new URL(rootUrl);url.pathname='/'+DATABASE
  let owner,pool,auditPool,workPool,workAudit
+ const previousProvider=process.env.PROFITIA_AUTH_PROVIDER
+ process.env.PROFITIA_AUTH_PROVIDER='clerk'
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0);await root.query(`CREATE DATABASE ${DATABASE}`)
   await root.query('BEGIN;SELECT pg_advisory_xact_lock(170001,20261017)')
@@ -147,10 +151,17 @@ for(const p1 of[true])test('organization location authority in actual SRM native
   })
   const limited={...options,sourceScope:'HEADQUARTERS_MANUAL',readAcceptedKys:async()=>{throw Error('KYS is excluded')}}
   const runtime=createSupplierLocationRuntime(limited),handler=createSupplierLocationHandler(runtime,A)
-  const call=(body,user=U,key,org=A)=>handler(new Request(ORIGIN+'/api/supplier-locations?organisationId='+org,{method:'POST',headers:{Origin:ORIGIN,'Content-Type':'application/json',Authorization:'Bearer external-'+user,...(key?{'Idempotency-Key':key}:{})},body:JSON.stringify(body)}))
+  const call=async(body,user=U,key,org=A)=>{
+   const request=new NextRequest(ORIGIN+'/api/supplier-locations?organisationId='+org,{method:'POST',headers:{Origin:ORIGIN,'Content-Type':'application/json',Authorization:'Bearer external-'+user,...(key?{'Idempotency-Key':key}:{})},body:JSON.stringify(body)})
+   const gate=await middleware(request)
+   return gate.headers.get('x-middleware-next')==='1'?handler(request):gate
+  }
   const page=(user=U,org=A,supplierId=S)=>call({action:'READ',supplierId,group:'USER_LOCATIONS',offset:0,limit:50},user,undefined,org)
   const key='org_manual_'+randomUUID(),command={action:'CREATE',supplierId:S,locationId:null,expectedVersion:null,command:manual}
   let location
+  await t.test('admitted Clerk entry still rejects unverified identity in its actual E1 backend',async()=>{
+   const r=await page('unverified-fixture-user');assert.equal(r.status,401);assert.equal(r.headers.get('cache-control'),'private, no-store')
+  })
   await t.test('CREATE and idempotent retry work with no individual location grants',async()=>{
    assert.equal((await owner.query("SELECT count(*)::int AS n FROM profitia_access.permission_grants WHERE operation LIKE 'supplier.location.%'")).rows[0].n,0)
    for(let i=0;i<2;i++){const r=await call(command,U,key);assert.equal(r.status,202,await r.clone().text())}
@@ -187,6 +198,7 @@ for(const p1 of[true])test('organization location authority in actual SRM native
    assert.equal((await page()).status,403)
   })
  }finally{
+  if(previousProvider===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=previousProvider
   await workPool?.end();await workAudit?.end();await pool?.end();await auditPool?.end();await owner?.end();await root.query(`DROP DATABASE IF EXISTS ${DATABASE} WITH(FORCE)`);await root.end()
  }
 })
