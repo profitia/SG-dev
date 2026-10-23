@@ -1,0 +1,54 @@
+{
+  "version": "1.0.0-prepared",
+  "status": "PREPARED_NOT_ACTIVATED",
+  "sourceProject": { "id": "460980331948945408", "name": "Logowanie PORR" },
+  "tokens": { "brand": "#005A9C", "ink": "#003366", "text": "#294D70", "muted": "#526A82", "background": "#F8F9FA", "bubble": "#EAF3FF", "border": "#D6E0E9", "sand": "#D2B48C" },
+  "assets": {
+    "logo": "https://storage.googleapis.com/storage.magicpath.ai/component-assets/464300252657258496/464300252657258497/afb9683d055c12646577d38072041bb4a19daa9faf56c9d93a4e129d05bc183b.png",
+    "partner": "https://storage.googleapis.com/storage.magicpath.ai/component-assets/464300252657258496/464300252657258497/bc8eacde8abec8ccafe8db4696f8f78b5a312dd52967e283437622675dacb25d.png",
+    "male": "https://storage.googleapis.com/storage.magicpath.ai/component-assets/463396794605387776/463396794605387777/99e778fca02acce64867601fb90ecd89aaa24f5e2b38a0122c2e71fe9e173061.png",
+    "female": "https://storage.googleapis.com/storage.magicpath.ai/component-assets/463396794605387776/463396794605387777/b93261787c7db70b45d08c310109a1a8878b324f7a75c76043b6e5523d647798.png"
+  },
+  "footer": {
+    "company": ["Profitia Management Consultants", "Mazurowski i Wspólnicy Sp. J."],
+    "services": "Inteligencja negocjacyjna · Zakupy oparte na danych · Certyfikowany Partner CIPS w Polsce · Doradztwo · Szkolenia · Analityka zakupowa",
+    "address": ["02-715 Warszawa, Villa Metro", "ul. Puławska 145, V p."]
+  },
+  "messages": {
+    "sign-in": {
+      "clerkSlug": "verification_code", "activation": "PROCESS_SPECIFIC_COPY_REQUIRES_VERIFIED_PROCESS_CONTEXT",
+      "title": "Zaloguj się do SpendGuru", "subject": "Twój kod do logowania w SpendGuru",
+      "greeting": "Cześć! Dobrze Cię widzieć ponownie.", "message": "Oto Twój jednorazowy kod do logowania:",
+      "instruction": "Wpisz go w oknie logowania, aby wrócić do aplikacji.",
+      "designs": { "male": ["464300252657258496", "464433014601052160"], "female": ["464434937047691264", "464434937047691265"] }
+    },
+    "sign-up": {
+      "clerkSlug": "verification_code", "activation": "PROCESS_SPECIFIC_COPY_REQUIRES_VERIFIED_PROCESS_CONTEXT",
+      "title": "Dokończ rejestrację", "subject": "Twój kod do rejestracji w SpendGuru",
+      "greeting": "Cześć! Cieszę się, że dołączasz do SpendGuru.", "message": "Oto Twój jednorazowy kod do rejestracji:",
+      "instruction": "Wpisz go w oknie rejestracji, aby potwierdzić Twój adres e-mail.",
+      "designs": { "male": ["464300259384918016", "464433023199354880"], "female": ["464434944484184064", "464434944484184065"] }
+    },
+    "verify-email": {
+      "clerkSlug": "verification_code", "activation": "PROCESS_SPECIFIC_COPY_REQUIRES_VERIFIED_PROCESS_CONTEXT",
+      "title": "Potwierdź adres e-mail", "subject": "Potwierdź Twój adres e-mail w SpendGuru",
+      "greeting": "Cześć! Potwierdźmy Twój adres e-mail.",
+      "message": { "male": "Przygotowałem dla Ciebie jednorazowy kod:", "female": "Przygotowałam dla Ciebie jednorazowy kod:", "neutral": "Oto Twój jednorazowy kod:" },
+      "instruction": "Wpisz go w oknie potwierdzania adresu e-mail w aplikacji.",
+      "designs": { "male": ["464300266297126912", "464433392851750912"], "female": ["464435352862593024", "464435352862593025"] }
+    },
+    "verification-code": {
+      "clerkSlug": "verification_code", "activation": "SHARED_OTP_TEMPLATE_CANDIDATE",
+      "title": "Twój kod weryfikacyjny", "subject": "Twój kod weryfikacyjny w {{app.name}}",
+      "greeting": "Cześć!", "message": "Oto Twój jednorazowy kod:",
+      "instruction": "Wpisz go w oknie aplikacji, w którym poproszono o potwierdzenie."
+    },
+    "invitation": {
+      "clerkSlug": "invitation", "activation": "APPLICATION_INVITATION_TEMPLATE_CANDIDATE",
+      "title": "Twoje zaproszenie do {{app.name}}", "subject": "Twoje zaproszenie do {{app.name}}",
+      "greeting": "Cześć! Mam dla Ciebie zaproszenie.", "message": "Zapraszam Cię do {{app.name}}. Przyjmij zaproszenie, aby przejść do aplikacji.",
+      "instruction": "Zaproszenie wygaśnie za {{invitation.expires_in_days}} dni.",
+      "designs": { "male": ["464427902897889280", "464433400938401792"], "female": ["464435360387190784", "464435360387190785"] }
+    }
+  }
+}
