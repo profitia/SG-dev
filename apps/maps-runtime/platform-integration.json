@@ -2,16 +2,16 @@
   "schemaVersion": "1.0",
   "projectKey": "SRM",
   "logicalOwner": "Maps Capability",
-  "taskId": "SRM-TASK02R-ACTIVATE-20261023",
+  "taskId": "SRM-KRS-PILOT-LOOKUP-CORRECTION-20261023",
   "targetEnvironment": "development",
   "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
   "producer": {
     "projectKey": "ARCHITECTURE",
-    "taskId": "ARCHITECTURE-TASK02R-ACCOUNT-RECHECK-20261023",
-    "pullRequest": 639,
-    "sourceSha": "687d750776f6c8cf37d3592be721cbab1b6c9424"
+    "taskId": "ARCHITECTURE-KRS-PILOT-LOOKUP-CORRECTION-20261023",
+    "pullRequest": 662,
+    "sourceSha": "6b60f78b3253c67e3732eb34b36661f076954bdf"
   },
-  "platformVersion": "1.26.0",
+  "platformVersion": "1.27.0",
   "allowedPeerVersions": [
     "1.18.0",
     "1.19.0",
@@ -21,7 +21,8 @@
     "1.23.0",
     "1.24.0",
     "1.25.0",
-    "1.26.0"
+    "1.26.0",
+    "1.27.0"
   ],
   "readWireContract": "profitia.embedded-read@1.0.0",
   "sourceDigests": {
@@ -36,317 +37,6 @@
   "runtimeRoleOrGrantChanged": false,
   "productDeploymentPerformed": false,
   "nativeSqlWorkAdopted": false,
-  "previousAcceptance": {
-    "schemaVersion": "1.0",
-    "projectKey": "SRM",
-    "logicalOwner": "Maps Capability",
-    "taskId": "SRM-E1-P1B-MAPS-PLATFORM125-ADOPTION-20261022",
-    "targetEnvironment": "development",
-    "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
-    "producer": {
-      "projectKey": "ARCHITECTURE",
-      "taskId": "ARCHITECTURE-E1-SUPPLIER-LOCATION-ADMISSION-20261022",
-      "repository": "profitia/SG-dev",
-      "pullRequest": 604,
-      "sourceSha": "f35c82b6d9d39720c04b4df2c6f0042f5379982a",
-      "referencePrHead": "f35c82b6d9d39720c04b4df2c6f0042f5379982a"
-    },
-    "platformVersion": "1.25.0",
-    "allowedPeerVersions": [
-      "1.18.0",
-      "1.19.0",
-      "1.20.0",
-      "1.21.0",
-      "1.22.0",
-      "1.23.0",
-      "1.24.0",
-      "1.25.0"
-    ],
-    "readWireContract": "profitia.embedded-read@1.0.0",
-    "sourceDigests": {
-      "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
-      "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
-      "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
-    },
-    "privateInspectionAdopted": false,
-    "organizationLocationPersistenceAdopted": false,
-    "srmFeatureMounted": false,
-    "providerConfigurationChanged": false,
-    "runtimeRoleOrGrantChanged": false,
-    "productDeploymentPerformed": false,
-    "nativeSqlWorkAdopted": false,
-    "previousAcceptance": {
-      "schemaVersion": "1.0",
-      "projectKey": "SRM",
-      "logicalOwner": "Maps Capability",
-      "taskId": "SRM-E1-SUPPLIER-LOCATION-MAPS-C16-ADOPTION-20261021",
-      "targetEnvironment": "development",
-      "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
-      "producer": {
-        "projectKey": "ARCHITECTURE",
-        "taskId": "ARCHITECTURE-SUPPLIER-LOCATIONS-E1-CI-20261021",
-        "repository": "profitia/SG-dev",
-        "pullRequest": 594,
-        "sourceSha": "88c3337d943fa3893f2f357bb11b78c565e50047",
-        "referencePrHead": "311dc5b087340c5ff14b3ce672bc42a82f4bd6df"
-      },
-      "platformVersion": "1.24.0",
-      "allowedPeerVersions": [
-        "1.18.0",
-        "1.19.0",
-        "1.20.0",
-        "1.21.0",
-        "1.22.0",
-        "1.23.0",
-        "1.24.0"
-      ],
-      "readWireContract": "profitia.embedded-read@1.0.0",
-      "sourceDigests": {
-        "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
-        "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
-        "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
-      },
-      "privateInspectionAdopted": false,
-      "organizationLocationPersistenceAdopted": false,
-      "srmFeatureMounted": false,
-      "providerConfigurationChanged": false,
-      "runtimeRoleOrGrantChanged": false,
-      "productDeploymentPerformed": false,
-      "nativeSqlWorkAdopted": false,
-      "previousAcceptance": {
-        "schemaVersion": "1.0",
-        "projectKey": "SRM",
-        "logicalOwner": "Maps Capability",
-        "taskId": "SRM-E1-MAPS-PLATFORM-123-COMPATIBILITY-20261020",
-        "targetEnvironment": "development",
-        "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
-        "producer": {
-          "projectKey": "ARCHITECTURE",
-          "taskId": "ARCHITECTURE-E1-PUBLIC-WEB-TRANSPORT-20261020",
-          "repository": "profitia/SG-dev",
-          "pullRequest": 560,
-          "sourceSha": "403255c88bbf81a67e384c269e38cae848b018f1"
-        },
-        "platformVersion": "1.23.0",
-        "allowedPeerVersions": [
-          "1.18.0",
-          "1.19.0",
-          "1.20.0",
-          "1.21.0",
-          "1.22.0",
-          "1.23.0"
-        ],
-        "readWireContract": "profitia.embedded-read@1.0.0",
-        "sourceDigests": {
-          "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
-          "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
-          "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
-        },
-        "privateInspectionAdopted": false,
-        "organizationLocationPersistenceAdopted": false,
-        "srmFeatureMounted": false,
-        "providerConfigurationChanged": false,
-        "runtimeRoleOrGrantChanged": false,
-        "productDeploymentPerformed": false,
-        "nativeSqlWorkAdopted": false,
-        "previousAcceptance": {
-          "schemaVersion": "1.0",
-          "projectKey": "SRM",
-          "logicalOwner": "Maps Capability",
-          "taskId": "SRM-E1-MAPS-PLATFORM-122-COMPATIBILITY-20261020",
-          "targetEnvironment": "development",
-          "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
-          "producer": {
-            "projectKey": "ARCHITECTURE",
-            "taskId": "ARCHITECTURE-E1-PRIVATE-ACQUISITION-CONTRACT-20261019",
-            "repository": "profitia/SG-dev",
-            "sourceSha": "e71f9953d74f683e447f315e633db3696ec365ba",
-            "initialSourceSha": "626f30a625b24902beffd12f4169ce807ad2fdee"
-          },
-          "platformVersion": "1.22.0",
-          "allowedPeerVersions": [
-            "1.18.0",
-            "1.19.0",
-            "1.20.0",
-            "1.21.0",
-            "1.22.0"
-          ],
-          "readWireContract": "profitia.embedded-read@1.0.0",
-          "sourceDigests": {
-            "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
-            "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
-            "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
-          },
-          "privateInspectionAdopted": false,
-          "organizationLocationPersistenceAdopted": false,
-          "srmFeatureMounted": false,
-          "providerConfigurationChanged": false,
-          "runtimeRoleOrGrantChanged": false,
-          "productDeploymentPerformed": false,
-          "nativeSqlWorkAdopted": false,
-          "previousAcceptance": {
-            "schemaVersion": "1.0",
-            "projectKey": "SRM",
-            "logicalOwner": "Maps Capability",
-            "taskId": "SRM-E1-MAPS-PLATFORM-121-COMPATIBILITY-20261019",
-            "targetEnvironment": "development",
-            "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
-            "producer": {
-              "projectKey": "ARCHITECTURE",
-              "taskId": "ARCHITECTURE-E1-SUPPLIER-PRIVATE-ACCESS-CONTRACT-20261019",
-              "repository": "profitia/SG-dev",
-              "pullRequest": 551,
-              "sourceSha": "fe5b31f1390d2a9b12f7d16df7e35249c1a75402"
-            },
-            "platformVersion": "1.21.0",
-            "allowedPeerVersions": [
-              "1.18.0",
-              "1.19.0",
-              "1.20.0",
-              "1.21.0"
-            ],
-            "readWireContract": "profitia.embedded-read@1.0.0",
-            "sourceDigests": {
-              "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
-              "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
-              "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
-            },
-            "privateInspectionAdopted": false,
-            "organizationLocationPersistenceAdopted": false,
-            "srmFeatureMounted": false,
-            "providerConfigurationChanged": false,
-            "runtimeRoleOrGrantChanged": false,
-            "productDeploymentPerformed": false,
-            "nativeSqlWorkAdopted": false,
-            "previousAcceptance": {
-              "schemaVersion": "1.0",
-              "projectKey": "SRM",
-              "logicalOwner": "Maps Capability",
-              "taskId": "SRM-E1-MAPS-PLATFORM-120-COMPATIBILITY-20261019",
-              "targetEnvironment": "development",
-              "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
-              "producer": {
-                "projectKey": "ARCHITECTURE",
-                "taskId": "ARCHITECTURE-E1-DELEGATED-NATIVE-WORK-20261019",
-                "repository": "profitia/SG-dev",
-                "pullRequest": 534,
-                "sourceSha": "025146034b42381c6e1eb812ed1c159c69d05bb1"
-              },
-              "platformVersion": "1.20.0",
-              "allowedPeerVersions": [
-                "1.18.0",
-                "1.19.0",
-                "1.20.0"
-              ],
-              "readWireContract": "profitia.embedded-read@1.0.0",
-              "sourceDigests": {
-                "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
-                "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
-                "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
-              },
-              "privateInspectionAdopted": false,
-              "organizationLocationPersistenceAdopted": false,
-              "srmFeatureMounted": false,
-              "providerConfigurationChanged": false,
-              "runtimeRoleOrGrantChanged": false,
-              "productDeploymentPerformed": false,
-              "previousAcceptance": {
-                "schemaVersion": "1.0",
-                "projectKey": "SRM",
-                "logicalOwner": "Maps Capability",
-                "taskId": "SRM-E1-MAPS-PLATFORM-119-COMPATIBILITY-20261019",
-                "targetEnvironment": "development",
-                "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
-                "producer": {
-                  "projectKey": "ARCHITECTURE",
-                  "taskId": "ARCHITECTURE-E1-DELEGATED-PRIVATE-INSPECTION-20261019",
-                  "repository": "profitia/SG-dev",
-                  "pullRequest": 528,
-                  "sourceSha": "6260afa8771fbb427bd0b8e359557ab8f70dd9b5"
-                },
-                "platformVersion": "1.19.0",
-                "allowedPeerVersions": [
-                  "1.18.0",
-                  "1.19.0"
-                ],
-                "readWireContract": "profitia.embedded-read@1.0.0",
-                "sourceDigests": {
-                  "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
-                  "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
-                  "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
-                },
-                "privateInspectionAdopted": false,
-                "organizationLocationPersistenceAdopted": false,
-                "srmFeatureMounted": false,
-                "providerConfigurationChanged": false,
-                "runtimeRoleOrGrantChanged": false,
-                "productDeploymentPerformed": false
-              },
-              "nativeSqlWorkAdopted": false
-            },
-            "privateSupplierAccessAdopted": false
-          },
-          "privateSupplierAccessAdopted": false,
-          "privateAcquisitionAdopted": false
-        },
-        "privateSupplierAccessAdopted": false,
-        "privateAcquisitionAdopted": false,
-        "publicWebTransportAdopted": false
-      },
-      "privateSupplierAccessAdopted": false,
-      "privateAcquisitionAdopted": false,
-      "publicWebTransportAdopted": false,
-      "producerContract": {
-        "id": "profitia.operation-context",
-        "version": "1.0.0",
-        "implementation": "1.0.0-candidate.16",
-        "sourceDigest": "9fe1ee707bb5510e66cbe9470ba970de177f8a6fe4533470f771af88d68bf728"
-      },
-      "supplierLocationPrivateOperationsAdopted": false,
-      "paidGeocodingEnabled": false,
-      "supplierLocationsTask02": {
-        "taskId": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
-        "environment": "development",
-        "scope": "SOURCE_ONLY_NOT_DEPLOYED",
-        "sourceCommand": "src/server/geocoding-command.mjs",
-        "publicGeocodingRoute": false,
-        "defaultPaidAllowance": 0,
-        "nativeE1ServiceAndSourceRequired": true,
-        "currentDomainVersionsRequired": true,
-        "sharedGoogleCacheMaximumDays": 29,
-        "liveGeocoding": "WAITING_OWNER",
-        "providerConfigurationChanged": false,
-        "runtimeRoleOrGrantChanged": false
-      }
-    },
-    "privateSupplierAccessAdopted": false,
-    "privateAcquisitionAdopted": false,
-    "publicWebTransportAdopted": false,
-    "producerContract": {
-      "id": "profitia.operation-context",
-      "version": "1.0.0",
-      "implementation": "1.0.0-candidate.16",
-      "sourceDigest": "567f8f29e1812ca8ab3c104a72dc17a76e59b54e0e6021678c640d0bdc198cfb"
-    },
-    "supplierLocationPrivateOperationsAdopted": false,
-    "paidGeocodingEnabled": false,
-    "supplierLocationsTask02": {
-      "taskId": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
-      "environment": "development",
-      "scope": "SOURCE_ONLY_NOT_DEPLOYED",
-      "sourceCommand": "src/server/geocoding-command.mjs",
-      "publicGeocodingRoute": false,
-      "defaultPaidAllowance": 0,
-      "nativeE1ServiceAndSourceRequired": true,
-      "currentDomainVersionsRequired": true,
-      "sharedGoogleCacheMaximumDays": 29,
-      "liveGeocoding": "WAITING_OWNER",
-      "providerConfigurationChanged": false,
-      "runtimeRoleOrGrantChanged": false
-    },
-    "sourceAcceptanceStatus": "SOURCE_CANDIDATE_NO_LIVE_ACTIVATION",
-    "locationAdmissionOptedIn": false
-  },
   "privateSupplierAccessAdopted": false,
   "privateAcquisitionAdopted": false,
   "publicWebTransportAdopted": false,
@@ -374,5 +64,387 @@
   },
   "sourceAcceptanceStatus": "SOURCE_CANDIDATE_NO_LIVE_ACTIVATION",
   "locationAdmissionOptedIn": false,
-  "accountRevalidationOptedIn": false
+  "accountRevalidationOptedIn": false,
+  "unmeteredSourceOptedIn": false,
+  "sql024Installed": false,
+  "previousAcceptance": {
+    "schemaVersion": "1.0",
+    "projectKey": "SRM",
+    "logicalOwner": "Maps Capability",
+    "taskId": "SRM-TASK02R-ACTIVATE-20261023",
+    "targetEnvironment": "development",
+    "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-TASK02R-ACCOUNT-RECHECK-20261023",
+      "pullRequest": 639,
+      "sourceSha": "687d750776f6c8cf37d3592be721cbab1b6c9424"
+    },
+    "platformVersion": "1.26.0",
+    "allowedPeerVersions": [
+      "1.18.0",
+      "1.19.0",
+      "1.20.0",
+      "1.21.0",
+      "1.22.0",
+      "1.23.0",
+      "1.24.0",
+      "1.25.0",
+      "1.26.0"
+    ],
+    "readWireContract": "profitia.embedded-read@1.0.0",
+    "sourceDigests": {
+      "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+      "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+      "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
+    },
+    "privateInspectionAdopted": false,
+    "organizationLocationPersistenceAdopted": false,
+    "srmFeatureMounted": false,
+    "providerConfigurationChanged": false,
+    "runtimeRoleOrGrantChanged": false,
+    "productDeploymentPerformed": false,
+    "nativeSqlWorkAdopted": false,
+    "previousAcceptance": {
+      "schemaVersion": "1.0",
+      "projectKey": "SRM",
+      "logicalOwner": "Maps Capability",
+      "taskId": "SRM-E1-P1B-MAPS-PLATFORM125-ADOPTION-20261022",
+      "targetEnvironment": "development",
+      "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
+      "producer": {
+        "projectKey": "ARCHITECTURE",
+        "taskId": "ARCHITECTURE-E1-SUPPLIER-LOCATION-ADMISSION-20261022",
+        "repository": "profitia/SG-dev",
+        "pullRequest": 604,
+        "sourceSha": "f35c82b6d9d39720c04b4df2c6f0042f5379982a",
+        "referencePrHead": "f35c82b6d9d39720c04b4df2c6f0042f5379982a"
+      },
+      "platformVersion": "1.25.0",
+      "allowedPeerVersions": [
+        "1.18.0",
+        "1.19.0",
+        "1.20.0",
+        "1.21.0",
+        "1.22.0",
+        "1.23.0",
+        "1.24.0",
+        "1.25.0"
+      ],
+      "readWireContract": "profitia.embedded-read@1.0.0",
+      "sourceDigests": {
+        "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+        "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+        "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
+      },
+      "privateInspectionAdopted": false,
+      "organizationLocationPersistenceAdopted": false,
+      "srmFeatureMounted": false,
+      "providerConfigurationChanged": false,
+      "runtimeRoleOrGrantChanged": false,
+      "productDeploymentPerformed": false,
+      "nativeSqlWorkAdopted": false,
+      "previousAcceptance": {
+        "schemaVersion": "1.0",
+        "projectKey": "SRM",
+        "logicalOwner": "Maps Capability",
+        "taskId": "SRM-E1-SUPPLIER-LOCATION-MAPS-C16-ADOPTION-20261021",
+        "targetEnvironment": "development",
+        "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
+        "producer": {
+          "projectKey": "ARCHITECTURE",
+          "taskId": "ARCHITECTURE-SUPPLIER-LOCATIONS-E1-CI-20261021",
+          "repository": "profitia/SG-dev",
+          "pullRequest": 594,
+          "sourceSha": "88c3337d943fa3893f2f357bb11b78c565e50047",
+          "referencePrHead": "311dc5b087340c5ff14b3ce672bc42a82f4bd6df"
+        },
+        "platformVersion": "1.24.0",
+        "allowedPeerVersions": [
+          "1.18.0",
+          "1.19.0",
+          "1.20.0",
+          "1.21.0",
+          "1.22.0",
+          "1.23.0",
+          "1.24.0"
+        ],
+        "readWireContract": "profitia.embedded-read@1.0.0",
+        "sourceDigests": {
+          "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+          "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+          "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
+        },
+        "privateInspectionAdopted": false,
+        "organizationLocationPersistenceAdopted": false,
+        "srmFeatureMounted": false,
+        "providerConfigurationChanged": false,
+        "runtimeRoleOrGrantChanged": false,
+        "productDeploymentPerformed": false,
+        "nativeSqlWorkAdopted": false,
+        "previousAcceptance": {
+          "schemaVersion": "1.0",
+          "projectKey": "SRM",
+          "logicalOwner": "Maps Capability",
+          "taskId": "SRM-E1-MAPS-PLATFORM-123-COMPATIBILITY-20261020",
+          "targetEnvironment": "development",
+          "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
+          "producer": {
+            "projectKey": "ARCHITECTURE",
+            "taskId": "ARCHITECTURE-E1-PUBLIC-WEB-TRANSPORT-20261020",
+            "repository": "profitia/SG-dev",
+            "pullRequest": 560,
+            "sourceSha": "403255c88bbf81a67e384c269e38cae848b018f1"
+          },
+          "platformVersion": "1.23.0",
+          "allowedPeerVersions": [
+            "1.18.0",
+            "1.19.0",
+            "1.20.0",
+            "1.21.0",
+            "1.22.0",
+            "1.23.0"
+          ],
+          "readWireContract": "profitia.embedded-read@1.0.0",
+          "sourceDigests": {
+            "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+            "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+            "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
+          },
+          "privateInspectionAdopted": false,
+          "organizationLocationPersistenceAdopted": false,
+          "srmFeatureMounted": false,
+          "providerConfigurationChanged": false,
+          "runtimeRoleOrGrantChanged": false,
+          "productDeploymentPerformed": false,
+          "nativeSqlWorkAdopted": false,
+          "previousAcceptance": {
+            "schemaVersion": "1.0",
+            "projectKey": "SRM",
+            "logicalOwner": "Maps Capability",
+            "taskId": "SRM-E1-MAPS-PLATFORM-122-COMPATIBILITY-20261020",
+            "targetEnvironment": "development",
+            "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
+            "producer": {
+              "projectKey": "ARCHITECTURE",
+              "taskId": "ARCHITECTURE-E1-PRIVATE-ACQUISITION-CONTRACT-20261019",
+              "repository": "profitia/SG-dev",
+              "sourceSha": "e71f9953d74f683e447f315e633db3696ec365ba",
+              "initialSourceSha": "626f30a625b24902beffd12f4169ce807ad2fdee"
+            },
+            "platformVersion": "1.22.0",
+            "allowedPeerVersions": [
+              "1.18.0",
+              "1.19.0",
+              "1.20.0",
+              "1.21.0",
+              "1.22.0"
+            ],
+            "readWireContract": "profitia.embedded-read@1.0.0",
+            "sourceDigests": {
+              "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+              "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+              "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
+            },
+            "privateInspectionAdopted": false,
+            "organizationLocationPersistenceAdopted": false,
+            "srmFeatureMounted": false,
+            "providerConfigurationChanged": false,
+            "runtimeRoleOrGrantChanged": false,
+            "productDeploymentPerformed": false,
+            "nativeSqlWorkAdopted": false,
+            "previousAcceptance": {
+              "schemaVersion": "1.0",
+              "projectKey": "SRM",
+              "logicalOwner": "Maps Capability",
+              "taskId": "SRM-E1-MAPS-PLATFORM-121-COMPATIBILITY-20261019",
+              "targetEnvironment": "development",
+              "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
+              "producer": {
+                "projectKey": "ARCHITECTURE",
+                "taskId": "ARCHITECTURE-E1-SUPPLIER-PRIVATE-ACCESS-CONTRACT-20261019",
+                "repository": "profitia/SG-dev",
+                "pullRequest": 551,
+                "sourceSha": "fe5b31f1390d2a9b12f7d16df7e35249c1a75402"
+              },
+              "platformVersion": "1.21.0",
+              "allowedPeerVersions": [
+                "1.18.0",
+                "1.19.0",
+                "1.20.0",
+                "1.21.0"
+              ],
+              "readWireContract": "profitia.embedded-read@1.0.0",
+              "sourceDigests": {
+                "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+                "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+                "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
+              },
+              "privateInspectionAdopted": false,
+              "organizationLocationPersistenceAdopted": false,
+              "srmFeatureMounted": false,
+              "providerConfigurationChanged": false,
+              "runtimeRoleOrGrantChanged": false,
+              "productDeploymentPerformed": false,
+              "nativeSqlWorkAdopted": false,
+              "previousAcceptance": {
+                "schemaVersion": "1.0",
+                "projectKey": "SRM",
+                "logicalOwner": "Maps Capability",
+                "taskId": "SRM-E1-MAPS-PLATFORM-120-COMPATIBILITY-20261019",
+                "targetEnvironment": "development",
+                "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
+                "producer": {
+                  "projectKey": "ARCHITECTURE",
+                  "taskId": "ARCHITECTURE-E1-DELEGATED-NATIVE-WORK-20261019",
+                  "repository": "profitia/SG-dev",
+                  "pullRequest": 534,
+                  "sourceSha": "025146034b42381c6e1eb812ed1c159c69d05bb1"
+                },
+                "platformVersion": "1.20.0",
+                "allowedPeerVersions": [
+                  "1.18.0",
+                  "1.19.0",
+                  "1.20.0"
+                ],
+                "readWireContract": "profitia.embedded-read@1.0.0",
+                "sourceDigests": {
+                  "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+                  "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+                  "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
+                },
+                "privateInspectionAdopted": false,
+                "organizationLocationPersistenceAdopted": false,
+                "srmFeatureMounted": false,
+                "providerConfigurationChanged": false,
+                "runtimeRoleOrGrantChanged": false,
+                "productDeploymentPerformed": false,
+                "previousAcceptance": {
+                  "schemaVersion": "1.0",
+                  "projectKey": "SRM",
+                  "logicalOwner": "Maps Capability",
+                  "taskId": "SRM-E1-MAPS-PLATFORM-119-COMPATIBILITY-20261019",
+                  "targetEnvironment": "development",
+                  "scope": "EXISTING_PUBLIC_READ_CHANNEL_COMPATIBILITY_ONLY",
+                  "producer": {
+                    "projectKey": "ARCHITECTURE",
+                    "taskId": "ARCHITECTURE-E1-DELEGATED-PRIVATE-INSPECTION-20261019",
+                    "repository": "profitia/SG-dev",
+                    "pullRequest": 528,
+                    "sourceSha": "6260afa8771fbb427bd0b8e359557ab8f70dd9b5"
+                  },
+                  "platformVersion": "1.19.0",
+                  "allowedPeerVersions": [
+                    "1.18.0",
+                    "1.19.0"
+                  ],
+                  "readWireContract": "profitia.embedded-read@1.0.0",
+                  "sourceDigests": {
+                    "src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+                    "src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+                    "src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a"
+                  },
+                  "privateInspectionAdopted": false,
+                  "organizationLocationPersistenceAdopted": false,
+                  "srmFeatureMounted": false,
+                  "providerConfigurationChanged": false,
+                  "runtimeRoleOrGrantChanged": false,
+                  "productDeploymentPerformed": false
+                },
+                "nativeSqlWorkAdopted": false
+              },
+              "privateSupplierAccessAdopted": false
+            },
+            "privateSupplierAccessAdopted": false,
+            "privateAcquisitionAdopted": false
+          },
+          "privateSupplierAccessAdopted": false,
+          "privateAcquisitionAdopted": false,
+          "publicWebTransportAdopted": false
+        },
+        "privateSupplierAccessAdopted": false,
+        "privateAcquisitionAdopted": false,
+        "publicWebTransportAdopted": false,
+        "producerContract": {
+          "id": "profitia.operation-context",
+          "version": "1.0.0",
+          "implementation": "1.0.0-candidate.16",
+          "sourceDigest": "9fe1ee707bb5510e66cbe9470ba970de177f8a6fe4533470f771af88d68bf728"
+        },
+        "supplierLocationPrivateOperationsAdopted": false,
+        "paidGeocodingEnabled": false,
+        "supplierLocationsTask02": {
+          "taskId": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+          "environment": "development",
+          "scope": "SOURCE_ONLY_NOT_DEPLOYED",
+          "sourceCommand": "src/server/geocoding-command.mjs",
+          "publicGeocodingRoute": false,
+          "defaultPaidAllowance": 0,
+          "nativeE1ServiceAndSourceRequired": true,
+          "currentDomainVersionsRequired": true,
+          "sharedGoogleCacheMaximumDays": 29,
+          "liveGeocoding": "WAITING_OWNER",
+          "providerConfigurationChanged": false,
+          "runtimeRoleOrGrantChanged": false
+        }
+      },
+      "privateSupplierAccessAdopted": false,
+      "privateAcquisitionAdopted": false,
+      "publicWebTransportAdopted": false,
+      "producerContract": {
+        "id": "profitia.operation-context",
+        "version": "1.0.0",
+        "implementation": "1.0.0-candidate.16",
+        "sourceDigest": "567f8f29e1812ca8ab3c104a72dc17a76e59b54e0e6021678c640d0bdc198cfb"
+      },
+      "supplierLocationPrivateOperationsAdopted": false,
+      "paidGeocodingEnabled": false,
+      "supplierLocationsTask02": {
+        "taskId": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+        "environment": "development",
+        "scope": "SOURCE_ONLY_NOT_DEPLOYED",
+        "sourceCommand": "src/server/geocoding-command.mjs",
+        "publicGeocodingRoute": false,
+        "defaultPaidAllowance": 0,
+        "nativeE1ServiceAndSourceRequired": true,
+        "currentDomainVersionsRequired": true,
+        "sharedGoogleCacheMaximumDays": 29,
+        "liveGeocoding": "WAITING_OWNER",
+        "providerConfigurationChanged": false,
+        "runtimeRoleOrGrantChanged": false
+      },
+      "sourceAcceptanceStatus": "SOURCE_CANDIDATE_NO_LIVE_ACTIVATION",
+      "locationAdmissionOptedIn": false
+    },
+    "privateSupplierAccessAdopted": false,
+    "privateAcquisitionAdopted": false,
+    "publicWebTransportAdopted": false,
+    "producerContract": {
+      "id": "profitia.operation-context",
+      "version": "1.0.0",
+      "implementation": "1.0.0-candidate.16",
+      "sourceDigest": "567f8f29e1812ca8ab3c104a72dc17a76e59b54e0e6021678c640d0bdc198cfb"
+    },
+    "supplierLocationPrivateOperationsAdopted": false,
+    "paidGeocodingEnabled": false,
+    "supplierLocationsTask02": {
+      "taskId": "SRM-SUPPLIER-LOCATIONS-FULLSTACK-TASK02-20261021",
+      "environment": "development",
+      "scope": "SOURCE_ONLY_NOT_DEPLOYED",
+      "sourceCommand": "src/server/geocoding-command.mjs",
+      "publicGeocodingRoute": false,
+      "defaultPaidAllowance": 0,
+      "nativeE1ServiceAndSourceRequired": true,
+      "currentDomainVersionsRequired": true,
+      "sharedGoogleCacheMaximumDays": 29,
+      "liveGeocoding": "WAITING_OWNER",
+      "providerConfigurationChanged": false,
+      "runtimeRoleOrGrantChanged": false
+    },
+    "sourceAcceptanceStatus": "SOURCE_CANDIDATE_NO_LIVE_ACTIVATION",
+    "locationAdmissionOptedIn": false,
+    "accountRevalidationOptedIn": false
+  },
+  "previousReceiptSourceSha": "f39359c4f4ab5cd611285909e6dba256d22a0eac",
+  "previousReceiptSha256": "f3e3086e1d17006c101e5ab27b5659f0998df8474c945638fd8c273e6c611e37"
 }

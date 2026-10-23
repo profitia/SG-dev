@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {MessageChannel} from 'node:worker_threads'
 import {webcrypto,createHash} from 'node:crypto'
 import fs from 'node:fs'
+import {execFileSync} from 'node:child_process'
 import {setTimeout as delay} from 'node:timers/promises'
 import {mountMaps} from '@profitia/maps-embed'
 import {mapsMessage} from '@profitia/maps-contracts'
@@ -56,15 +57,15 @@ test('current host access denial prevents a private projection from reaching the
 })
 
 test('explicit platform1.24 receipt accepts only tested peers and the unchanged current public channel', async () => {
-  const latest=JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url))),current=latest.previousAcceptance,accepted=current.previousAcceptance
+  const publication=JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url))),latest=publication.previousAcceptance,current=latest.previousAcceptance,accepted=current.previousAcceptance
   const entry=import.meta.resolve('@profitia/platform-contracts/embedded-read-channel'),root=new URL('../',entry)
   const installed=JSON.parse(fs.readFileSync(new URL('package.json',root)))
   assert.equal(accepted.taskId,'SRM-E1-SUPPLIER-LOCATION-MAPS-C16-ADOPTION-20261021')
   assert.equal(accepted.producer.sourceSha,'88c3337d943fa3893f2f357bb11b78c565e50047');assert.equal(accepted.producer.taskId,'ARCHITECTURE-SUPPLIER-LOCATIONS-E1-CI-20261021')
-  assert.equal(installed.version,'1.26.0');assert.equal(latest.platformVersion,installed.version);assert.equal(latest.accountRevalidationOptedIn,false);assert.deepEqual(latest.sourceDigests,current.sourceDigests);assert.deepEqual(latest.allowedPeerVersions,[...current.allowedPeerVersions,'1.26.0']);assert.equal(accepted.platformVersion,'1.24.0')
+  assert.equal(installed.version,'1.27.0');assert.equal(publication.platformVersion,installed.version);assert.equal(latest.platformVersion,'1.26.0');assert.deepEqual(publication.allowedPeerVersions,[...latest.allowedPeerVersions,'1.27.0']);assert.equal(publication.unmeteredSourceOptedIn,false);assert.equal(publication.sql024Installed,false);assert.equal(latest.accountRevalidationOptedIn,false);assert.deepEqual(latest.sourceDigests,current.sourceDigests);assert.deepEqual(latest.allowedPeerVersions,[...current.allowedPeerVersions,'1.26.0']);assert.equal(accepted.platformVersion,'1.24.0')
   assert.deepEqual(accepted.allowedPeerVersions,['1.18.0','1.19.0','1.20.0','1.21.0','1.22.0','1.23.0','1.24.0'])
   const peer=JSON.parse(fs.readFileSync(new URL('./package.json',import.meta.resolve('@profitia/maps-embed'))))
-  assert.equal(peer.peerDependencies['@profitia/platform-contracts'],'1.18.0 || 1.19.0 || 1.20.0 || 1.21.0 || 1.22.0 || 1.23.0 || 1.24.0 || 1.25.0 || 1.26.0')
+  assert.equal(peer.peerDependencies['@profitia/platform-contracts'],'1.18.0 || 1.19.0 || 1.20.0 || 1.21.0 || 1.22.0 || 1.23.0 || 1.24.0 || 1.25.0 || 1.26.0 || 1.27.0')
   assert.deepEqual(current.allowedPeerVersions,[...accepted.allowedPeerVersions,'1.25.0']);assert.deepEqual(current.sourceDigests,accepted.sourceDigests)
   assert.equal(current.producer.sourceSha,'f35c82b6d9d39720c04b4df2c6f0042f5379982a');assert.equal(current.locationAdmissionOptedIn,false)
   const sdk=await import('@profitia/platform-contracts/embedded-read-channel')
@@ -78,4 +79,13 @@ test('explicit platform1.24 receipt accepts only tested peers and the unchanged 
   assert.deepEqual(Object.keys(accepted.sourceDigests).sort(),['src/embedded-channel-core.mjs','src/embedded-read-channel.d.mts','src/embedded-read-channel.mjs'])
   for(const[path,digest]of Object.entries(accepted.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
   for(const key of['supplierLocationPrivateOperationsAdopted','paidGeocodingEnabled','privateInspectionAdopted','organizationLocationPersistenceAdopted','srmFeatureMounted','providerConfigurationChanged','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(accepted[key],false,key)
+})
+
+
+test('SDK1.27 recognition retains the entire Maps receipt and enables no provider or unmetered Source',()=>{
+ const a=JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url)))
+ const bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json'])
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptSha256)
+ assert.deepEqual(a.previousAcceptance,JSON.parse(bytes));assert.deepEqual(a.sourceDigests,a.previousAcceptance.sourceDigests)
+ for(const flag of ['unmeteredSourceOptedIn','sql024Installed','srmFeatureMounted','providerConfigurationChanged','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(a[flag],false,flag)
 })

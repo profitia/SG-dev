@@ -47,8 +47,8 @@ function beforePrivateAcquisitionApplicationSource(path){
  return execFileSync('git',['show','8c5e14b0fc4815021231f6752c1073f1c191465b:apps/srm/'+path])
 }
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
-const currentSdkDigests=sdkReceipt.krsNipSourceCompatibility?.sdkDigests??sdkReceipt.accountRecheckSourceCompatibility.sdkDigests
-const currentPlatformSourceDigests=manifest=>({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests})
+const currentSdkDigests=sdkReceipt.unmeteredSourceCompatibility.sdkDigests
+const currentPlatformSourceDigests=manifest=>({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests})
 
 test('SRM imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
@@ -1501,7 +1501,7 @@ test('public web source receipt preserves historical records and verifies every 
  assert.equal(current.taskId,'SRM-E1-SUPPLIER-EXTERNAL-ADOPTION-20261020');assert.equal(current.platformVersion,'1.23.0');assert.equal(current.rootImplementation,receipt.supplierLocationSourceCompatibility.previousRootAcceptance.contract.implementation)
  assert.equal(current.producer.projectKey,'ARCHITECTURE');assert.equal(current.producer.sourceSha,'403255c88bbf81a67e384c269e38cae848b018f1')
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.accountRecheckSourceCompatibility.platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.unmeteredSourceCompatibility.platformVersion)
  assert.equal(await sdk.externalCallSourceDigest(),currentSdkDigests.externalCallSourceDigest)
  assert.equal(await sdk.publicWebTransportSchemaDigest(),current.sdkDigests.publicWebTransportSchemaDigest)
  assert.equal(Object.keys(current.sourceDigests).length,57)

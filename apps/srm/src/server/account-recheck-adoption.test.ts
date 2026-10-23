@@ -4,7 +4,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
-import receipt from '../../operation-integration.json'
+import acceptedReceipt from '../../operation-integration.json'
+// Historical tests retain their original Root receipt; current acceptance is verified separately below.
+const receipt={...acceptedReceipt,...acceptedReceipt.unmeteredSourceCompatibility.previousRootAcceptance}
 import '../../scripts/task02r-release-source.test.mjs'
 const hash=(value:Buffer)=>createHash('sha256').update(value).digest('hex')
 test('native account revalidation preserves historical acceptance and pins the entire current receiver',()=>{
@@ -121,9 +123,19 @@ test('official predecessor continuity preserves historical receipts and pins the
  const before=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(before),a.previousReceiptSha256)
  for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
- const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'))
+ const target=JSON.parse(execFileSync('git',['show',acceptedReceipt.unmeteredSourceCompatibility.previousReceiptSourceSha+':apps/srm/deployment/krs-name-pilot-targets.json'],{encoding:'utf8'}))
  assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);assert.equal(a.producerPr,658)
  assert.equal(a.existingContinuityVersion,'KRS_CONTINUITY_V1');assert.equal(a.explicitTransformationProofRequired,true);assert.equal(a.originalDocumentIssuerPreserved,true)
  assert.equal(a.newRuntimeGrantsRequired,false);assert.equal(a.authorizationDecisionCacheIntroduced,false);assert.equal(a.primaryDeadlineChanged,false)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.unmeteredSourceCompatibility.previousReceiptSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file)
+})
+
+
+test('explicit unmetered GUS/KRS acceptance retains every historical receipt and paid limits',()=>{
+ const a=acceptedReceipt.unmeteredSourceCompatibility,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ for(const[k,v]of Object.entries(JSON.parse(bytes.toString())))assert.deepEqual(['contract','producer'].includes(k)?a.previousRootAcceptance[k as 'contract'|'producer']:(acceptedReceipt as Record<string,unknown>)[k],v,k)
+ assert.equal(a.platformVersion,'1.27.0');assert.equal(a.unmeteredSourceOptedIn,true);assert.equal(a.liveGrantsChanged,false);assert.equal(a.mgbiPaidPoliciesChanged,false);assert.equal(a.productDeploymentPerformed,false)
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
 })
