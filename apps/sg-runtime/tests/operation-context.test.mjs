@@ -49,7 +49,7 @@ test('candidate16 acceptance preserves the exact previous receipts and has no ru
     assert.equal(createHash('sha256').update(previousBytes).digest('hex'),digest,record+':'+path)
   }
   const sdkModules={'operation-context':['operationSourceDigest'],'private-operation-host':['privateOperationHostSourceDigest'],'request-ledger':['requestLedgerSourceDigest','externalRequestSchemaDigest'],'delegated-job':['delegatedJobSourceDigest'],'request-continuation':['requestContinuationSourceDigest'],'request-inspection':['requestInspectionSourceDigest'],'request-work':['requestWorkSourceDigest'],'request-operations':['requestOperationsSourceDigest','additionalRequestSchemaDigest'],'external-call':['externalCallSourceDigest','publicWebTransportSchemaDigest'],'supplier-location':['supplierLocationSchemaDigest']}
-  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(receipt.krsSoapSourceCompatibility??receipt.accountRecheckSourceCompatibility).sdkDigests[name],name)}
+  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),receipt.unmeteredSourceCompatibility.sdkDigests[name],name)}
   assert.equal(accepted.sdkDigests.supplierLocationSchemaDigest,'34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5')
 })
 
@@ -63,13 +63,13 @@ test('P1B accepts exact1.25 source while preserving all1.24 history and legacy d
  const previous=JSON.parse(previousBytes)
  for(const[key,value]of Object.entries(previous))assert.deepEqual(['contract','producer'].includes(key)?accepted.previousRootAcceptance[key]:receipt[key],value,key)
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.accountRecheckSourceCompatibility.platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.unmeteredSourceCompatibility.platformVersion)
  const host=await import('@profitia/platform-contracts/private-operation-host')
  assert.equal(host.PRIVATE_OPERATION_HOST_CONTRACT.version,'1.11.0');assert.equal(host.SUPPLIER_LOCATION_HOST_CONTRACT.version,'1.12.0')
- for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,'historical producer '+path)
- for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsSoapSourceCompatibility.sourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,'historical producer '+path)
+ for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsSoapSourceCompatibility.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
  for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.applicationSourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.krsSoapSourceCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])).digest('hex'),digest,'historical receiver '+path)
- for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.applicationSourceDigests,...receipt.krsSoapSourceCompatibility.applicationSourceDigests,...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.applicationSourceDigests,...receipt.krsSoapSourceCompatibility.applicationSourceDigests,...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests,...receipt.unmeteredSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
  for(const flag of['supplierLocationBusinessAdopted','locationAdmissionOptedIn','sql020Installed','liveGrantsChanged','productDeploymentPerformed'])assert.equal(accepted[flag],false,flag)
 })
 
@@ -85,7 +85,17 @@ test('account revalidation compatibility preserves the complete historical recei
 test('optional SOAP source compatibility preserves all prior acceptance and activates no SG2 feature',()=>{
  const c=receipt.krsSoapSourceCompatibility,bytes=execFileSync('git',['show',c.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'])
  assert.equal(createHash('sha256').update(bytes).digest('hex'),c.previousReceiptSha256)
- for(const[k,v]of Object.entries(JSON.parse(bytes)))assert.deepEqual(receipt[k],v,k)
+ for(const[k,v]of Object.entries(JSON.parse(bytes)))assert.deepEqual(['contract','producer'].includes(k)?receipt.unmeteredSourceCompatibility.previousRootAcceptance[k]:receipt[k],v,k)
  for(const[file,digest]of Object.entries(c.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',c.producerSourceSha+':packages/platform-contracts/'+file])).digest('hex'),digest,file)
  for(const key of ['soapTransportAdopted','sql021Installed','krsOrGusAdopted','liveGrantsChanged','productDeploymentPerformed'])assert.equal(c[key],false,key)
+})
+
+
+test('explicit1.27 source compatibility preserves complete history and activates no SG2 unmetered provider',async()=>{
+ const a=receipt.unmeteredSourceCompatibility,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'])
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptSha256)
+ for(const[k,v]of Object.entries(JSON.parse(bytes)))assert.deepEqual(['contract','producer'].includes(k)?a.previousRootAcceptance[k]:receipt[k],v,k)
+ assert.equal(a.platformVersion,'1.27.0');assert.equal(a.unmeteredSourceOptedIn,false);assert.equal(a.sql024Installed,false);assert.equal(a.liveGrantsChanged,false);assert.equal(a.productDeploymentPerformed,false)
+ for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])).digest('hex'),digest,file)
+ const m=await import('@profitia/platform-contracts/platform-ingestion');assert.equal(await m.unmeteredSourceSchemaDigest(),a.sdkDigests.unmeteredSourceSchemaDigest)
 })
