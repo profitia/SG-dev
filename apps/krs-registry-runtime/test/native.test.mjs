@@ -143,6 +143,8 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
    await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
    try{
     await owner.query(patch)
+    // Six synthetic identity cases need three native control effects each.
+    await owner.query("UPDATE profitia_ingestion.budgets SET capacity=60 WHERE source_id='krs.registry.official'")
     await owner.query(`INSERT INTO profitia_ingestion.sources SELECT (jsonb_populate_record(NULL::profitia_ingestion.sources,to_jsonb(s)||jsonb_build_object('source_id','krs.registry.gus','quality_version','gus-bir12-source-v1'))).* FROM profitia_ingestion.sources s WHERE source_id='krs.registry.official'`)
     await owner.query(`INSERT INTO profitia_ingestion.grants SELECT (jsonb_populate_record(NULL::profitia_ingestion.grants,to_jsonb(g)||jsonb_build_object('grant_id',$1::text,'source_id','krs.registry.gus','resource_id','krs-gus:nip-map'))).* FROM profitia_ingestion.grants g WHERE source_id='krs.registry.official'`,[randomUUID()])
     await owner.query(`INSERT INTO profitia_ingestion.budgets SELECT (jsonb_populate_record(NULL::profitia_ingestion.budgets,to_jsonb(b)||jsonb_build_object('policy_id',$1::text,'source_id','krs.registry.gus','capacity',120,'consumed_count',0))).* FROM profitia_ingestion.budgets b WHERE source_id='krs.registry.official'`,[randomUUID()])
