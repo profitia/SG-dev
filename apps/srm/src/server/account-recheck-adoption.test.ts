@@ -137,5 +137,14 @@ test('explicit unmetered GUS/KRS acceptance retains every historical receipt and
  for(const[k,v]of Object.entries(JSON.parse(bytes.toString())))assert.deepEqual(['contract','producer'].includes(k)?a.previousRootAcceptance[k as 'contract'|'producer']:(acceptedReceipt as Record<string,unknown>)[k],v,k)
  assert.equal(a.platformVersion,'1.27.0');assert.equal(a.unmeteredSourceOptedIn,true);assert.equal(a.liveGrantsChanged,false);assert.equal(a.mgbiPaidPoliciesChanged,false);assert.equal(a.productDeploymentPerformed,false)
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.krsCatalogRefreshCompatibility.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file)
+})
+
+test('catalog refresh adoption preserves unmetered acceptance and records the exact corrected caller',()=>{
+ const a=acceptedReceipt.krsCatalogRefreshCompatibility,bytes=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ for(const[k,v]of Object.entries(JSON.parse(bytes.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k)
+ assert.equal(a.identityFreshnessPolicyChanged,false);assert.equal(a.liveGrantsChanged,false);assert.equal(a.paidProviderPoliciesChanged,false)
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
 })
