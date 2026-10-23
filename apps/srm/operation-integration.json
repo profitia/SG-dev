@@ -3448,5 +3448,23 @@
       "src/server/peer-read-boundary.test.ts": "5aa80b3d02b162d98837b7e8f51ca53563bdc84f20bd939834d8458b090963df",
       "package.json": "0556858ce27cafe1b2a5e111f08e6d48e0dab27fee330b949cc7131e751c7c39"
     }
+  },
+  "organisationLocationRefreshAdoption": {
+    "taskId": "SRM-TASK02R-ACTIVATE-20261023",
+    "previousReceiptSourceSha": "841fd8a180041b4a43fd269dbc6fb490ab4af6cd",
+    "previousReceiptDigest": "3aaddb46ed96b6f840470177b5a56ac09d0ab9c63a20f2298dd42c5d2e313b0a",
+    "authorizationReadCached": false,
+    "revocationClearsProjection": true,
+    "databaseChanged": false,
+    "newGrantRequired": false,
+    "applicationSourceDigests": {
+      "src/modules/xray/supplier-location-controller.ts": "789e25e9023c1f214fb118476197278c70977bcabbdb63b3a7afc67cfd61dcac",
+      "src/modules/xray/supplier-location-controller.test.ts": "f9e539052d9160d9145715c12fc55d77b49ed0226fde1494e42676a946522bda",
+      "scripts/location-access-build-release.mjs": "fae69a007b455ae5d2eb6597f4a9cc8a5aad81051200e3f9795b793f7beb6c66",
+      "scripts/location-access-release-source.test.mjs": "1cae0ab539944fd4d327e4c67b234e905e2c8590c8d2fb51cd431ba308d2d7cb",
+      "deployment/location-access-release-source.json": "b3ab228a095eeab7a21556b7187682acc0fd3459216f57a6b02874bcb1c6a287",
+      "src/server/account-recheck-adoption.test.ts": "cbc79af843a1964db8512e574919573c722bc0fdd4e2f34dd1e23d7e3c2e970f",
+      "src/server/peer-read-boundary.test.ts": "f5c4551870db4b58db19cb2fdbe5d71605b8d08ed915575b70e59eb29c0158a3"
+    }
   }
 }

@@ -77,6 +77,15 @@ test('location Clerk entry preserves all accepted receipts and keeps existing E1
  const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(previous),a.previousReceiptDigest)
  for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.organisationLocationRefreshAdoption.previousReceiptSourceSha+':apps/srm/'+file])),digest,file)
  assert.equal(a.databaseChanged,false);assert.equal(a.newGrantRequired,false);assert.equal(a.existingBackendE1BoundaryRetained,true)
+})
+
+test('map refresh preserves historical acceptance and keeps fresh E1 authorization on every poll',()=>{
+ const a=receipt.organisationLocationRefreshAdoption,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(previous),a.previousReceiptDigest)
+ for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ assert.equal(a.authorizationReadCached,false);assert.equal(a.revocationClearsProjection,true);assert.equal(a.databaseChanged,false);assert.equal(a.newGrantRequired,false)
 })

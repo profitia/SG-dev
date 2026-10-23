@@ -53,9 +53,17 @@ export function assembleLocationAccessSource(repository,output){
   if(hash(priorSource)!==patch.sourceBaselineDigest||hash(frozen)!==patch.artifactBaselineDigest
    ||priorSource.split(gate).length!==2||frozen.split(gate).length!==2||priorSource.replace(gate,admitted)!==fs.readFileSync(entry,'utf8'))fail('MIDDLEWARE_CHANGE_NOT_EXACT')
   fs.writeFileSync(path.join(output,middleware),frozen.replace(gate,admitted))
+  const refresh=manifest.pageRefreshPatch,controller='apps/srm/src/modules/xray/supplier-location-controller.ts',controllerPath=path.join(repository,controller)
+  if(refresh?.path!==controller||!fs.lstatSync(controllerPath).isFile()||fs.lstatSync(controllerPath).isSymbolicLink()
+   ||hash(fs.readFileSync(controllerPath))!==refresh.sourceDigest)fail('MAP_REFRESH_SOURCE_DIGEST_MISMATCH')
+  const frozenController=fs.readFileSync(path.join(output,controller),'utf8')
+  const refreshNeedle='this.update({page,busy:false})',refreshReplacement="const previous=this.state.page\n   // Each poll still reauthorizes. Keep the projection mounted only when the\n   // fresh protected response is identical; errors/revocation still clear it.\n   this.update({page:previous&&JSON.stringify(previous)===JSON.stringify(page)?previous:page,busy:false})"
+  if(hash(frozenController)!==refresh.baselineDigest||frozenController.split(refreshNeedle).length!==2
+   ||frozenController.replace(refreshNeedle,refreshReplacement)!==fs.readFileSync(controllerPath,'utf8'))fail('MAP_REFRESH_CHANGE_NOT_EXACT')
+  fs.copyFileSync(controllerPath,path.join(output,controller))
   const receipt={...base,sourceRepositoryHead:head,baseArtifactSourceSha:accepted,locationAccessManifest:manifest,
    locationAccessManifestDigest:hash(fs.readFileSync(path.join(repository,manifestPath))),
-   changedPaths:[target,middleware],middlewareDigest:hash(fs.readFileSync(path.join(output,middleware))),identityOrKrsSourceAdopted:false}
+   changedPaths:[target,middleware,controller],middlewareDigest:hash(fs.readFileSync(path.join(output,middleware))),identityOrKrsSourceAdopted:false}
   fs.writeFileSync(path.join(output,'task02r-release-source.json'),JSON.stringify(receipt,null,2)+'\n')
   return receipt
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
