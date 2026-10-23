@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {prepareKrsFinancialWork} from './krs-native-financial'
 import {mapMgbiFinancialRecords} from './mgbi-financial'
+import {readCorporatePacket,CORPORATE_PUBLICATION_VERSION} from './corporate-source-store'
 const at='2026-10-22T15:00:00.000Z',now=Date.parse(at),nip='7740001454',krs='0000028860'
 async function fixture(foreign=false){
  const {identityDigest}=await import('@profitia/krs-registry-contracts')
@@ -11,7 +12,7 @@ async function fixture(foreign=false){
   source:{provider:'KRS',register:'P',extract:'CURRENT',sourceRecordId:krs,sourceVersion:'fixture',normalizerVersion:'krs-normalizer/1.0.0',rawDigest:'a'.repeat(64),contentDigest:'b'.repeat(64),sourceAsOfDate:null,entryNumber:null,retrievedAt:at,checkedAt:at},
   validity:{policy:'KRS_FINANCIAL_IDENTITY_FRESHNESS_V1',maxAgeSeconds:300,maxClockSkewSeconds:30,expiresAt:new Date(now+300000).toISOString()},evidenceRef:'KRS:'+krs+':'+'a'.repeat(64),evidenceDigest:'0'.repeat(64),historicalCandidates:[]}
  identity.evidenceDigest=await identityDigest(identity)
- const record={id:'fixture',identifiers:{pl_nip:nip,pl_krs:foreign?'0000000001':krs},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31'},content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ta_cfy:'1000'}}}}
+ const record={id:'b'.repeat(24),identifiers:{pl_nip:nip,pl_krs:foreign?'0000000001':krs},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31'},content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ta_cfy:'1000'}}}}
  const result=mapMgbiFinancialRecords([record],{type:'NIP',value:nip},at);result.rawResponse={pages:[{results:[record]}],recordCount:1}
  let revoked=false
  const check=async()=>{events.push('check');if(revoked)throw Error('REVOKED')}
@@ -22,7 +23,7 @@ async function fixture(foreign=false){
   saveMgbiArchive:async()=>{events.push('archive')},saveFinancialDocuments:async()=>{events.push('documents')},
   readFinancialDocuments:async()=>[],enrichMsrFinancial:async(_org:string,_nip:string,base:typeof result,options:{allowedKrs:string[]})=>{assert.deepEqual(options.allowedKrs,[krs]);events.push('msr');return{...base,msrChanged:false}},
   persistSection:async(_org:string,_lookup:unknown,section:string)=>{assert.equal(section,'financial');events.push('persist');return 'snapshot'},
-  saveSharedCompany:async(_org:string,_nip:string,value:{preserveGeneral:boolean;generalSnapshotId:unknown;general:{data:unknown}})=>{assert.equal(value.preserveGeneral,true);assert.equal(value.generalSnapshotId,null);assert.equal(value.general.data,null);events.push('public')},
+  saveSharedCompany:async(_org:string,_nip:string,value:Parameters<Parameters<typeof prepareKrsFinancialWork>[0]['saveSharedCompany']>[2])=>{assert.equal(value.preserveGeneral,true);assert.equal(value.generalSnapshotId,null);assert.equal(value.general.data,null);readCorporatePacket({version:CORPORATE_PUBLICATION_VERSION,nip,preserveGeneral:value.preserveGeneral,general:value.general,financial:value.financial,facts:value.facts});events.push('public')},
   refreshFinancialIndicators:async()=>[],recordInterest:async()=>{events.push('interest')},
  } as unknown as Parameters<typeof prepareKrsFinancialWork>[0]
  return{events,selection,identity,result,ports,check,revoke:()=>{revoked=true}}

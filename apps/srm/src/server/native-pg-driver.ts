@@ -1,6 +1,7 @@
 import type pg from "pg";
 import type { PoolClient } from "pg";
 import type { createPrivateOperationHost } from "@profitia/platform-contracts/private-operation-host";
+import {measureSupplierStage} from './supplier-telemetry';
 type NativeDriver = Pick<Parameters<typeof createPrivateOperationHost<PoolClient>>[0], "independentQuery" | "transact">;
 
 /** Diagnostics never include SQL text, parameters, credentials or error messages.
@@ -10,7 +11,7 @@ async function queryNative(target: pg.Pool | PoolClient, sql: string, values: re
     : sql.includes('profitia_jobs.lock_job(') ? 'DELEGATED_JOB_LOCK'
     : sql.includes('.append_audit(') ? 'AUDIT_APPEND' : 'NATIVE_SQL';
   try {
-    const result = await target.query(sql, [...values]);
+    const result = await measureSupplierStage('E1_SQL',()=>target.query(sql, [...values]));
     if (kind === 'SERVICE_DESCRIPTOR') {
       const remainingMs = Date.parse(result.rows[0]?.descriptor?.expiresAt) - Date.now();
       if (remainingMs > 30000) console.warn('E1 service proof starts outside local clock window', { remainingMs });
@@ -45,7 +46,7 @@ export function createSrmNativePgDriver(pool: pg.Pool, auditPool: pg.Pool): Nati
   return {
     independentQuery: async (sql, values = []) => queryNative(auditPool, sql, values),
     transact: async (work, limits) => {
-      const client = await acquire(pool, limits.maxWaitMs);
+      const client = await measureSupplierStage('POOL_WAIT',()=>acquire(pool, limits.maxWaitMs));
       let expired = false, released = false, discard = false;
       const release = (destroy: boolean) => { if (!released) { released = true; client.release(destroy); } };
       let timer: ReturnType<typeof setTimeout>;

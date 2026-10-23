@@ -5,7 +5,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import pg from 'pg'
 import { assertIsolatedTestConnection } from '../../architecture-lab/src/operation-postgres-fixture.mjs'
-import { createSrmCorporateSourceStore, CORPORATE_SOURCE, CORPORATE_PUBLICATION_VERSION } from '../src/server/corporate-source-store.ts'
+import { createSrmCorporateSourceStore, unrequestedCorporateGeneral, CORPORATE_SOURCE, CORPORATE_PUBLICATION_VERSION } from '../src/server/corporate-source-store.ts'
 import { mapMgbiFinancialRecords } from '../src/server/mgbi-financial.ts'
 import { createPlatformIngestionHost } from '@profitia/platform-contracts/platform-ingestion'
 import { createSrmNativePgDriver } from '../src/server/native-pg-driver.ts'
@@ -15,6 +15,7 @@ const read = path => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 const common = name => read('../../../packages/platform-contracts/migrations/access/' + name)
 const sourceSql = common('008-platform-ingestion.sql'), sourceDigest = hash(sourceSql)
 const publicationSql = read('../db/private-store/004-corporate-source.sql'), bridgeSql = read('../db/private-store/005-corporate-source-access.sql')
+const financialPublicationSql=read('../db/private-store/018-financial-only-publication.sql')
 const shapeText = read('../src/server/corporate-source-shape.json'), shape = JSON.parse(shapeText), publicationDigest = hash(publicationSql + bridgeSql + shapeText)
 const DATABASE = 'srm_corporate_' + randomUUID().replaceAll('-', ''), ROLE = 'srm_corporate_source_fixture'
 const NIP = '5272443955', KRS = '0000217580'
@@ -43,7 +44,7 @@ test('corporate source candidate pins its exact native sources without claiming 
  for(const[path,digest]of Object.entries(current.sourceDigests)){
   const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
   assert.equal(hash(execFileSync('git',['show',manifest.boundedIndicatorReadAdoption.previousReceiptSourceSha+':apps/srm/'+path])),expected,'historical '+path)
-  assert.equal(hash(read('../'+path)),manifest.boundedIndicatorReadAdoption.applicationSourceDigests[path]??expected,path)
+  assert.equal(hash(read('../'+path)),manifest.krsFinancialTelemetryCompatibility.applicationSourceDigests[path]??manifest.boundedIndicatorReadAdoption.applicationSourceDigests[path]??expected,path)
  }
  for(const name of ['singleExistingCatalogWriter','singleExistingIndicatorCalculator','storedSourceOnly','sameTransactionOutcomeWitness','noTenantOwnerInNewSharedFacts','humanWriteCeilingRetained'])assert.equal(current[name],true,name)
  for(const name of ['providerAcquisitionProvedByThisUnit','fullNativeWorkflowAdopted','liveSqlInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)
@@ -85,6 +86,9 @@ test('corporate SOURCE uses ordinary native pg, one original writer/calculator a
   })
   await controlled('profitia_ingestion_owner',async()=>{
    await owner.query(sourceSql);await owner.query(publicationSql)
+   const original=(await owner.query("SELECT pg_get_functiondef(oid) definition,proacl::text acl FROM pg_proc WHERE oid='profitia_srm_catalog.open_publication(uuid,uuid,text)'::regprocedure")).rows
+   await owner.query(financialPublicationSql)
+   assert.deepEqual((await owner.query("SELECT pg_get_functiondef(oid) definition,proacl::text acl FROM pg_proc WHERE oid='profitia_srm_catalog.open_publication(uuid,uuid,text)'::regprocedure")).rows,original)
    await owner.query("INSERT INTO profitia_ingestion.installation(schema_version,schema_digest,environment,project_id,branch_id,database_name) VALUES('1.0.0',$1,'development','synthetic-corporate-project','synthetic-corporate-branch',$2)",[sourceDigest,DATABASE])
    await owner.query("INSERT INTO profitia_ingestion.runtime_bindings(login_role,binding_id,service_id,application_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'srm-corporate-source','PLATFORM_INTERNAL','synthetic-corporate','corporate-v1','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[ROLE,randomUUID(),randomUUID()])
    await owner.query("INSERT INTO profitia_ingestion.sources(source_id,effect_kind,data_class,payload_schema,quality_version,classification_version,projection_version,status,source_ref,expires_at) VALUES($1,'STORED_SQL_TRANSACTION','SHARED_KNOWLEDGE',$2,$3,$4,'source-receipt-v1','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",Object.values(CORPORATE_SOURCE))
@@ -93,7 +97,7 @@ test('corporate SOURCE uses ordinary native pg, one original writer/calculator a
    await owner.query('INSERT INTO profitia_srm_catalog.installation(version,schema_digest,field_schema,source_ref) VALUES($1,$2,$3::jsonb,$4)',[CORPORATE_PUBLICATION_VERSION,publicationDigest,JSON.stringify(shape),'a'.repeat(40)])
    await owner.query(`GRANT USAGE ON SCHEMA profitia_srm_catalog TO profitia_access_owner,${ROLE};GRANT USAGE ON SCHEMA profitia_ingestion TO ${ROLE};
     GRANT EXECUTE ON FUNCTION profitia_srm_catalog.scope_allows(text,boolean),profitia_srm_catalog.current_packet(text,boolean),profitia_srm_catalog.known_proof(text,uuid),profitia_srm_catalog.valid_stored_section(text,text,jsonb) TO profitia_access_owner;
-    GRANT EXECUTE ON FUNCTION profitia_srm_catalog.runtime_descriptor(),profitia_srm_catalog.open_publication(uuid,uuid,text) TO ${ROLE};
+    GRANT EXECUTE ON FUNCTION profitia_srm_catalog.runtime_descriptor(),profitia_srm_catalog.open_publication(uuid,uuid,text),profitia_srm_catalog.open_financial_publication(uuid,uuid,text) TO ${ROLE};
     GRANT EXECUTE ON FUNCTION profitia_ingestion.runtime_descriptor(),profitia_ingestion.current_state(text,text),profitia_ingestion.lock_ingestion(text,text,text),profitia_ingestion.scope_allows(text,text),profitia_ingestion.reserve(text,text,text,text,uuid),profitia_ingestion.complete(uuid,uuid),profitia_ingestion.append_audit(jsonb) TO ${ROLE}`)
   })
   await controlled('profitia_access_owner',async()=>{
@@ -208,6 +212,33 @@ test('corporate SOURCE uses ordinary native pg, one original writer/calculator a
     admitted=(await c.query('SELECT profitia_srm_catalog.open_publication($1::uuid,$2::uuid,$3) ok',[context.platformReservation.effectId,context.decisionId,body])).rows[0].ok
     await writeSharedCompany(c,null,NIP,{...packet(),generalSnapshotId:context.platformReservation.effectId,financialSnapshotId:context.platformReservation.effectId})
    }));assert.equal(admitted,false);assert.deepEqual(await counts(),before)
+  })
+  await t.test('Financial-only publication preserves existing General and works for a new company without General acquisition',async()=>{
+   const generalColumns='general_json,general_sha256,general_checked_at,general_source_organization_id,general_source_snapshot_id'
+   const before=(await owner.query('SELECT '+generalColumns+' FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows
+   const financialOnly={...packet(),preserveGeneral:true,general:unrequestedCorporateGeneral()}
+   financialOnly.financial.data.periods[0].facts.find(f=>f.metricCode==='BS_A_CA').amount='400'
+   const changedFact=financialOnly.facts.find(f=>f.metricCode==='BS_A_CA');changedFact.amount='400';changedFact.sourceAmount='400'
+   const published=await store.publish(financialOnly,key('synthetic-financial-only-existing'))
+   assert.equal(published.status,'COMMITTED')
+   assert.deepEqual((await owner.query('SELECT '+generalColumns+' FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows,before)
+   assert.equal((await owner.query('SELECT financial_source_snapshot_id FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows[0].financial_source_snapshot_id,published.effectId)
+   const freshNip='5260250274'
+   await controlled('profitia_ingestion_owner',()=>owner.query("INSERT INTO profitia_ingestion.grants(grant_id,login_role,source_id,resource_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,$4,'ALLOW','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[randomUUID(),ROLE,CORPORATE_SOURCE.id,'srm-corporate:'+freshNip]))
+   await store.publish({...financialOnly,nip:freshNip},key('synthetic-financial-only-new'))
+   const fresh=(await owner.query('SELECT general_json,general_source_snapshot_id,financial_json FROM srm.catalog_companies WHERE nip=$1',[freshNip])).rows[0]
+   assert.equal(fresh.general_json,null);assert.equal(fresh.general_source_snapshot_id,null);assert.equal(fresh.financial_json.status,'SUCCESS')
+  })
+  await t.test('Financial-only SQL refuses General content and the original port still refuses empty General',async()=>{
+   const before=await counts(),source=createPlatformIngestionHost({application,binding,source:CORPORATE_SOURCE,...createSrmNativePgDriver(pool,auditPool),validateSharedPayload:()=>true})
+   for(const [port,p] of [['open_financial_publication',{...packet(),preserveGeneral:true}],['open_publication',{...packet(),preserveGeneral:true,general:unrequestedCorporateGeneral()}]]){
+    const body=JSON.stringify(p);let admitted=null
+    await assert.rejects(source.ingest({resourceId:'srm-corporate:'+NIP,payload:{bodyDigest:hash(body),nip:NIP,version:CORPORATE_PUBLICATION_VERSION},idempotencyKey:randomUUID()},async(_payload,c,context)=>{
+     admitted=(await c.query(`SELECT profitia_srm_catalog.${port}($1::uuid,$2::uuid,$3) ok`,[context.platformReservation.effectId,context.decisionId,body])).rows[0].ok
+     throw Error('Expected closed port refusal')
+    }));assert.equal(admitted,false)
+   }
+   assert.deepEqual(await counts(),before)
   })
  }finally{await pool?.end();await auditPool?.end();await owner?.end();await root.end()}
 })

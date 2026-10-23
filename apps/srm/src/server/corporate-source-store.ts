@@ -19,6 +19,16 @@ export type CorporatePacket = { version: typeof CORPORATE_PUBLICATION_VERSION; n
 type Spec = string | Spec[] | { [key: string]: Spec }
 const unavailable = (): never => { throw new TypeError('Classified corporate publication required') }
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
+/** Explicit absence of a General acquisition, never fabricated KRS/MGBI data. */
+export const unrequestedCorporateGeneral=():SectionEnvelope<GeneralCompanyData>=>({status:'NOT_REQUESTED',
+ source:{provider:'MGBI',model:'pl-krs-wp-record',recordId:null},data:null,retrievedAt:null,effectiveAt:null,warnings:[]})
+const financialOnlySpec={...shape.packet,general:{...shape.packet.general,data:{$nullable:'@general'}}}
+function financialOnlyCandidate(value:unknown):boolean{
+ if(!value||typeof value!=='object')return false
+ const general=Object.getOwnPropertyDescriptor(value,'general')?.value
+ return Object.getOwnPropertyDescriptor(value,'preserveGeneral')?.value===true&&general&&typeof general==='object'
+  &&Object.getOwnPropertyDescriptor(general,'data')?.value===null
+}
 const msrBasis = Object.freeze({iXBRL:'MGBI_IAS_FLAG_AND_IXBRL_CONTEXTS_V1',XHTML:'MGBI_IAS_FLAG_AND_XHTML_PRIMARY_CELLS_V1'})
 function factProvenance(path:string,fact:FinancialSourceFact,periods:FinancialData['periods']):boolean {
   // Structured provider paths retain their existing class, but cannot relabel
@@ -75,11 +85,15 @@ export function readCorporatePacket(input: unknown): CorporatePacket {
       }
     } finally { seen.delete(value) }
   }
-  read(input, shape.packet, 0)
+  const financialOnly=financialOnlyCandidate(input)
+  read(input, financialOnly?financialOnlySpec:shape.packet, 0)
   const encoded = JSON.stringify(input)
   if (Buffer.byteLength(encoded) > MAX_CORPORATE_KNOWLEDGE_BYTES) return unavailable()
   const packet = JSON.parse(encoded) as CorporatePacket
-  readCorporateCompanyData(packet.general.data, packet.nip)
+  if(financialOnly){
+    if(packet.general.status!=='NOT_REQUESTED'||packet.general.source.recordId!==null||packet.general.retrievedAt!==null
+      ||packet.general.effectiveAt!==null||packet.general.warnings.length)return unavailable()
+  }else readCorporateCompanyData(packet.general.data, packet.nip)
   readCorporateFinancialData(packet.financial.data)
   for (const section of [packet.general, packet.financial]) {
     if (!['SUCCESS', 'PARTIAL', 'EMPTY', 'NOT_REQUESTED', 'ERROR'].includes(section.status)) return unavailable()
@@ -133,7 +147,10 @@ export function createSrmCorporateSourceStore(options: {
         await verify(client)
         const effectId = context.platformReservation?.effectId
         if (!effectId) return unavailable()
-        const admitted = await client.query('SELECT profitia_srm_catalog.open_publication($1::uuid,$2::uuid,$3) AS admitted', [effectId, context.decisionId, body])
+        // The additive optional port validates only Financial. Its absence
+        // fails closed; it never fetches or relabels another General provider.
+        const port=financialOnlyCandidate(packet)?'open_financial_publication':'open_publication'
+        const admitted = await client.query(`SELECT profitia_srm_catalog.${port}($1::uuid,$2::uuid,$3) AS admitted`, [effectId, context.decisionId, body])
         if (admitted.rows[0]?.admitted !== true) return unavailable()
         await writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId })
         if (packet.financial.data) await writeFinancialIndicators(client, packet.nip, packet.financial.data)

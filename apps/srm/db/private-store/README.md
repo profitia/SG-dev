@@ -205,3 +205,18 @@ Both the ordinary jobs and corporate Source roles need EXECUTE on
 `srm.location_work_catalog_row(text,text)`. Bind these exact functions to the
 existing, verified environment roles; these boolean/descriptor helpers do not
 grant a location operation, table access or Google geocoding permission.
+
+## Optional Financial-only corporate publication
+
+`018-financial-only-publication.sql` adds one controlled Source port for the
+existing `preserveGeneral` writer. It requires a strictly empty `NOT_REQUESTED`
+General envelope and preserves the unchanged MGBI Financial field allowlist,
+current Source admission, immutable publication and same-transaction OUTCOME.
+It neither fetches MGBI Registry nor labels KRS data as MGBI General.
+
+Install atomically as the existing `profitia_ingestion_owner`; grant EXECUTE only
+to the explicitly reviewed existing corporate Source role. SQL004/005, their
+installation/digests, existing function definitions/ACLs and old runtime packets
+remain unchanged. The application fails closed when this optional port is
+absent. Artifact rollback can leave the unused additive port installed; never
+erase accepted publications, financial history or counters to roll back code.

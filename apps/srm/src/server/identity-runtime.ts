@@ -1,6 +1,7 @@
 import { createClerkClient } from '@clerk/backend'
 import { readClerkConfiguration, IdentityConfigurationUnavailable } from '@profitia/platform-contracts/clerk-configuration'
 import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
+import {instrumentSupplierIdentity} from './supplier-telemetry'
 
 export { IdentityConfigurationUnavailable }
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
@@ -25,6 +26,6 @@ export function readSrmIdentityRuntime(env: EnvironmentInput = process.env): Srm
 export function createSrmClerkClient(env: EnvironmentInput = process.env) {
   const config = readSrmIdentityRuntime(env)
   if (config.provider !== 'clerk') throw new IdentityConfigurationUnavailable()
-  try { return createClerkClient({ publishableKey: config.publishableKey, secretKey: env.PROFITIA_CLERK_SECRET_KEY, telemetry: { disabled: true } }) }
+  try { return instrumentSupplierIdentity(createClerkClient({ publishableKey: config.publishableKey, secretKey: env.PROFITIA_CLERK_SECRET_KEY, telemetry: { disabled: true } })) }
   catch { throw new IdentityConfigurationUnavailable() }
 }
