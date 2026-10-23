@@ -20,8 +20,8 @@
   },
   "acceptedRuntime": {
     "version": "1.4.0",
-    "sourceSha": "82d5779de6227df6228330d9a902a1a69e6e6c53",
-    "sourceDigest": "67cf3fb078fecf2596e89425269b4d7d823b38430572a7d565b70085ec015840"
+    "sourceSha": "f92c7376bd444a904247725f6f33c197c64fda97",
+    "sourceDigest": "4174319ab30aefb7d3d11288a3247f8755b61c9c720e5c37bfde3314f5795aa1"
   },
   "nipIntegrationActivation": "OWNER_AUTHORIZED_CONDITIONAL_DEVELOPMENT_ONLY"
 }
