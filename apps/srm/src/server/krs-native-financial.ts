@@ -1,3 +1,4 @@
+import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {OperationDenied} from '@profitia/platform-contracts/operation-context'
 import type {XrayCompanyPorts} from './xray-lookup'
@@ -13,7 +14,7 @@ import {isFreshCatalogEntry} from './shared-catalog'
 type Ports=Pick<XrayCompanyPorts,'createLookup'|'fetchMgbiFinancial'|'saveMgbiArchive'|'saveFinancialDocuments'|
  'readFinancialDocuments'|'enrichMsrFinancial'|'persistSection'|'saveSharedCompany'|'refreshFinancialIndicators'|'recordInterest'|'reprojectFinancialArchive'>
 export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,
- recheck:()=>Promise<void>,now:()=>number=Date.now){
+ recheck:()=>Promise<void>,now:()=>number=Date.now,general?:SectionEnvelope<GeneralCompanyData>){
  const {validateIdentityEvidence}=await import('@profitia/krs-registry-contracts')
  const deny=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
  const check=async()=>{const current=await validateIdentityEvidence(identity,now());
@@ -23,6 +24,11 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
  const lookup=await ports.createLookup(org,{type:'NIP',value:nip},'COMPANY')
  if(lookup.requestId!==selection.requestId)return deny()
  await check()
+ if(general){
+  if(general.source.provider!=='KRS'||general.data?.nip!==identity.identity.nip||general.data.krs!==identity.selectedKrs)return deny()
+  await ports.persistSection(org,lookup,'general',general,null,[])
+  await check()
+ }
  const restored=await ports.reprojectFinancialArchive(org,nip,undefined,undefined,true)
  const cached=restored&&isFreshCatalogEntry(restored.section.retrievedAt,new Date(now()))?restored:null
  let result=await reconcileKrsFinancial(identity,cached??await ports.fetchMgbiFinancial({type:'NIP',value:nip}),now())

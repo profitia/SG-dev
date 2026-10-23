@@ -30,7 +30,7 @@ import {createSrmSupplierSourceRequest,SUPPLIER_SOURCE_REQUEST} from '../src/ser
 import {createSrmSupplierSourceLink} from '../src/server/supplier-source-link.ts'
 import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion'
 import {createSrmNativePgDriver} from '../src/server/native-pg-driver.ts'
-const FOREGROUND='srm_service_business_human',EXECUTOR='srm_service_business_executor'
+const FOREGROUND='srm_service_business_human',EXECUTOR='srm_krs_pilot_jobs'
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const ISSUER='https://identity.fixture.test',ORIGIN='http://localhost:3400',NIP='8650004194',OTHER_NIP='5272443955'
 const SOURCE='srm_supplier_source_runtime'
@@ -212,6 +212,7 @@ async function supplierBusinessFixture(t,full=false){
   }catch(e){await owner.query('ROLLBACK');throw e}
   await assert.rejects(owner.query(own('006-delegated-supplier-business.sql')),e=>e.code==='42501')
   await assert.rejects(owner.query(own('007-supplier-private-inspection.sql')),e=>e.code==='42501')
+  await controlled(async()=>{await owner.query(own('016-krs-general-provenance.sql'))})
   await owner.query('INSERT INTO srm.organizations(id,slug) VALUES($1,$2)',[B,'synthetic-service-org-1'])
   await owner.query("UPDATE profitia_access.applications SET status='ACTIVE'")
   if(!full)await installSource()
@@ -626,6 +627,20 @@ async function supplierBusinessFixture(t,full=false){
    const projected=await nativeStore.reproject(s);assert(projected,'Existing current archive must be visible to pure reprojection');assert(projected.section.data.periods.length>0)
    const units=(await owner.query("SELECT DISTINCT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE phase='OUTCOME' AND event ? 'requestWork'")).rows.map(row=>row.unit)
    assert.deepEqual(units.sort(),Object.keys(SUPPLIER_NATIVE_WORK_UNITS).sort())
+  })
+  await t.test('KRS General retains actual provider/evidence, rejects Financial and unscoped writes, and preserves MGBI history',async()=>{
+   const s=selection(await parent(A,NIP)),g=mapMgbiGeneralRecords([{id:'synthetic-krs-general',identifiers:{pl_nip:NIP,pl_krs:'0000028860'},content:{current_excerpt:{dane:{dzial1:{danePodmiotu:{nazwa:'SYNTHETIC_KRS_GENERAL'}}}}}}],{type:'NIP',value:NIP},new Date().toISOString()).section
+   g.source={provider:'KRS',model:'OdpisAktualny',recordId:'KRS:0000028860:'+hash('synthetic-krs-source')}
+   g.data.registrySource={provider:'KRS',evidenceRef:g.source.recordId,retrievedAt:g.retrievedAt,coverage:'PROGRESSIVE'}
+   await nativeStore.register(s)
+   const id=await nativeStore.section(s,'general',g,null);assert(id)
+   const row=(await owner.query('SELECT a.provider,s.source_record_id,s.payload_json FROM srm.provider_attempts a JOIN srm.source_snapshots s ON s.organization_id=a.organization_id AND s.attempt_id=a.id WHERE a.request_id=$1',[s.requestId])).rows[0]
+   assert.equal(row.provider,'KRS');assert.equal(row.source_record_id,g.source.recordId);assert.equal(row.payload_json.registrySource.provider,'KRS')
+   assert.equal(await nativeStore.section(s,'general',g,null),id)
+   await assert.rejects(async()=>nativeStore.section(s,'general',{...g,source:{...g.source,provider:'MGBI'}},null))
+   await assert.rejects(owner.query("UPDATE srm.provider_attempts SET provider='KRS' WHERE provider='MGBI'"),e=>e.code==='42501')
+   assert((await owner.query("SELECT count(*)::int n FROM srm.provider_attempts WHERE provider='MGBI'")).rows[0].n>0)
+   const financialSelection=selection(await parent(A,NIP));await assert.rejects(async()=>nativeStore.section(financialSelection,'financial',{...g,data:null},null))
   })
   await t.test('native restoration is an explicit WRITE and retains original licensed bytes',async()=>{
    const record=financial(OTHER_NIP).rawResponse.pages[0].results[0]

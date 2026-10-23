@@ -28,11 +28,11 @@ function fixture(){
 function request(body:unknown={identifier:nip},changes:Record<string,string>={},query=''){
  return new Request(origin+'/api/xray/test'+query,{method:'POST',headers:{origin,'content-type':'application/json','idempotency-key':key,...changes},body:JSON.stringify(body)})
 }
-test('existing search routing retains unknown CEIDG-first and known company-first behavior',async()=>{
+test('all NIP searches check CEIDG first including known companies',async()=>{
  const f=fixture(),handler=createSrmSupplierOperationHandler('search',f.api,A)
- assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['known','jdg','company'])
+ assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['jdg','company'])
  f.calls.length=0;f.setKnown(true)
- assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['known','company','jdg','company'])
+ assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['jdg','company'])
 })
 test('all fixed private entry selections preserve organisation and logical retry key',async()=>{
  for(const [route,kind]of [['company-kys','kys:COMPANY'],['jdg-kys','kys:JDG'],['jdg','jdg']] as const){

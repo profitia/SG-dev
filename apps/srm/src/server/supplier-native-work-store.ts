@@ -143,6 +143,13 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       facts:FinancialSourceFact[]=[],correlationId?:string|null,sourceData?:FinancialData,cacheStatus:'CACHE'|'PROVIDER'='PROVIDER'){
       const s=select(input),body=json({envelope,errorCode,facts,...(correlationId===undefined?{}:{correlationId}),...(sourceData===undefined?{}:{sourceData}),cacheStatus})
       if(!['general','financial'].includes(section))return refuse()
+      if(section==='financial'?body.envelope.source.provider!=='MGBI':!['MGBI','KRS'].includes(body.envelope.source.provider))return refuse()
+      if(section==='general'&&body.envelope.source.provider==='MGBI'&&(body.envelope.data as GeneralCompanyData|null)?.registrySource)return refuse()
+      if(section==='general'&&body.envelope.source.provider==='KRS'){
+        const g=body.envelope.data as GeneralCompanyData|null,ref=body.envelope.source.recordId
+        if(!g||!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(ref??'')||ref?.split(':')[1]!==g.krs
+          ||g.registrySource?.provider!=='KRS'||g.registrySource.evidenceRef!==ref)return refuse()
+      }
       if(section==='general'&&body.envelope.data&&'nip'in body.envelope.data&&body.envelope.data.nip!==s.command.nip)return refuse()
       return run(s,section==='general'?'SRM_STORE_GENERAL':'SRM_STORE_FINANCIAL',{bodyDigest:digest(body)},async(pool,client)=>{
         const rows=(await client.query<{supplier_id:string}>("SELECT supplier_id FROM srm.lookup_requests WHERE organization_id=$1::uuid AND id=$2::uuid AND identifier=$3 AND entity_type='COMPANY'",[s.organisationId,s.requestId,s.command.nip])).rows
@@ -152,7 +159,7 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
         // no receipt cache, second writer or domain ledger is introduced.
         const previous=(await client.query<{snapshot_id:string|null;matches:boolean}>(
           `SELECT snapshot.id snapshot_id,
-             (a.completed_at IS NOT NULL AND a.error_code IS NOT DISTINCT FROM $4::text
+             (a.completed_at IS NOT NULL AND a.provider=$11::text AND a.error_code IS NOT DISTINCT FROM $4::text
               AND ((a.status='NO_DATA' AND $5::jsonb='null'::jsonb AND snapshot.id IS NULL)
                 OR (a.status='SUCCESS' AND snapshot.id IS NOT NULL AND projection.id IS NOT NULL
                   AND snapshot.supplier_id=$6::uuid AND snapshot.source_record_id IS NOT DISTINCT FROM $7::text
@@ -167,7 +174,7 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
           [s.organisationId,s.requestId,section,body.errorCode,JSON.stringify(body.envelope.data),rows[0].supplier_id,
             body.envelope.source.recordId??null,body.envelope.retrievedAt,
             body.envelope.effectiveAt&&!Number.isNaN(Date.parse(body.envelope.effectiveAt))?new Date(body.envelope.effectiveAt):null,
-            JSON.stringify(body.sourceData??body.envelope.data)])).rows
+            JSON.stringify(body.sourceData??body.envelope.data),body.envelope.source.provider])).rows
         if(previous.length){
           // A conflicting payload, unfinished/failed attempt or replacement
           // financial provenance requires a new operation or reconciliation.

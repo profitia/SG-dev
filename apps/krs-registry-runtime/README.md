@@ -58,3 +58,24 @@ REGON9 and REGON14 use applicable checksums and preserve their observed lengths.
 The injected synchronizer implements daily acquisition, bulletin padding/deduplication, P/S resolution, atomic queue/checkpoint publication, finite lease claims with SKIP LOCKED, expiry/recovery, audit/transaction rollback, same-intent conflict, replay, late revised lists and explicit approved same-list revisit reference. Its source/publication bindings and enabled state must be supplied server-side. COMPLETE requires every current-revision item DONE. Failed items require explicit bounded replay. UNCERTAIN is excluded: reconcile existing E1 outcome first; no local raw retry/reset command. Prior revisions/snapshots/aliases remain. Hourly client exists, but hourly synchronization is deliberately not selected until inclusivity/DST/provider semantics are accepted.
 
 See [producer dependencies](docs/producer-dependencies.md), [Stage03 handoff](docs/stage03-handoff.md) and [task evidence](docs/task02-evidence.json). Activation remains conditional on those independent gates.
+
+## NIP mapping producer 1.2.0
+
+The optional GUS BIR1.2 source maps an explicitly requested NIP to a legal-unit
+REGON and only register138/REJESTR PRZEDSIĘBIORCÓW to a candidate KRS. It is not a
+national catalog or browser search. GUS requests require the additive SOAP policy
+SQL021, their own ordinary Source binding/budget and server-only key/session.
+Every HTTP session/search/report/logout operation is admitted by the existing
+Source host. The current pilot remains one instance. Its mapper receives the SQL021 shared
+rate gate, serialized across processes with conservative3/s,120/min,6000/h slots.
+A slot is scheduling only and never substitutes for current Source admission.
+No grants or budgets are installed by this package.
+
+After confirmed CEIDG absence, a consumer may use the combined3000ms mapper/KRS
+deadline. Missing mappings and explicit provider failures may select the bounded,
+visible MGBI Registry fallback under current authority/budget. Identity ambiguity,
+conflicts and E1 denials never select a paid provider. Financial remains MGBI.
+Native on-demand KRS acquisition requires process-owned evidence of the settled
+GUS mapping and validates current KRS/NIP before publishing the existing catalog.
+No arbitrary KRS allowlist removal, numeric enumeration or private supplier
+assignment is introduced. Source code and offline tests do not prove activation.

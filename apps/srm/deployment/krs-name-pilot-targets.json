@@ -19,8 +19,9 @@
     "sourceDigest": "383d39d4a533bd1ff1a49a9587b2ad5fd23de5d3d9934ee9656a1b99be0861b6"
   },
   "acceptedRuntime": {
-    "version": "1.1.2",
-    "sourceSha": "26c5df097bf914f658d6688d6db7ee020b4881bb",
-    "sourceDigest": "a94121c2b6b3d01b25415c46538440d5a43172d8e887f9117ab2705373cd7187"
-  }
+    "version": "1.2.0",
+    "sourceSha": "57e6cbf67ea7a3b7f453d1a98511e1798ddc286f",
+    "sourceDigest": "9aa7df2acf098762d3d57404b658e4aee9419556916ebaf081d2f9e78daa5675"
+  },
+  "nipIntegrationActivation": "OWNER_AUTHORIZED_CONDITIONAL_DEVELOPMENT_ONLY"
 }

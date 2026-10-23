@@ -14,7 +14,7 @@ const exact=(v,keys)=>record(v)&&Object.keys(v).sort().join(',')===keys
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
 const invalid=()=>{throw new TypeError('Explicit native external protocol required')}
 const pathPart=v=>typeof v==='string'&&v.length<=255&&/^[A-Za-z0-9/._-]*$/.test(v)&&!v.includes('..')&&!v.includes('//')
-const formats=['NONE','JSON','FORM'],parameters=['HEX24','UUID','OPAQUE','STORAGE_PATH']
+const formats=['NONE','JSON','FORM','SOAP'],parameters=['HEX24','UUID','OPAQUE','STORAGE_PATH']
 
 export function validNativePathRules(rules,publicWeb=false){
  return Array.isArray(rules)&&rules.length>0&&rules.length<=32&&rules.every(r=>{
@@ -72,6 +72,15 @@ export async function validateNativeRequestBody(request,rule,max){
  if(rule.requestFormat==='JSON'){
   await readPresentationJson(new Response(request.body,{headers:{'content-type':'application/json'}}),max)
   return 'application/json'
+ }
+ // SOAP is an explicitly admitted bounded wire format. The provider adapter
+ // owns operation/namespace parsing; neither XML nor credentials enter control payloads.
+ if(rule.requestFormat==='SOAP'){
+  if(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(request.body)
+    ||/<!DOCTYPE|<!ENTITY/i.test(request.body)
+    ||!/^\s*(?:<\?xml[^?]*\?>\s*)?<([A-Za-z_][\w.-]*:)?Envelope(?:\s|>)/.test(request.body)
+    ||!request.body.includes('http://www.w3.org/2003/05/soap-envelope'))invalid()
+  return 'application/soap+xml; charset=utf-8'
  }
  // Preserve native OAuth form encoding. No raw secret enters the control
  // payload; the existing host binds the request through its private HMAC.

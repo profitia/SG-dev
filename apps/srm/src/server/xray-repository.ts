@@ -48,8 +48,9 @@ export async function createLookup(organizationId: string, identifier: Identifie
 }
 
 export async function startAttempt(organizationId: string, requestId: string, section: PersistedSection, attemptNo = 1,
-  retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER", pool?: DatabasePool): Promise<string> {
-  const provider = section === "kys" ? "VERCLY" : section === "jdg" ? "CEIDG" : "MGBI";
+  retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER", pool?: DatabasePool, generalProvider?: "KRS"): Promise<string> {
+  if (generalProvider !== undefined && (generalProvider !== "KRS" || section !== "general")) throw new TypeError("KRS is a General-only provider");
+  const provider = generalProvider ?? (section === "kys" ? "VERCLY" : section === "jdg" ? "CEIDG" : "MGBI");
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ id: string }>(
       "INSERT INTO srm.provider_attempts(organization_id, request_id, section, provider, attempt_no, status, retrieval_method) VALUES ($1, $2, $3, $4, $5, 'PENDING', $6) RETURNING id",

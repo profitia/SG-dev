@@ -117,7 +117,7 @@ function companyCard() {
 }
 
 for (const status of ["EMPTY", "ERROR"] as const) {
-  test("CEIDG " + status + " registers company fallback separately within one HTTP diagnostic context", async () => {
+  test("CEIDG " + status + " preserves confirmed classification in one HTTP diagnostic context", async () => {
     const registrations: RegisteredLookup[] = [];
     const fake = fakePool("srm_app", undefined, registrations);
     await withLookupDiagnostics(async () => {
@@ -126,16 +126,16 @@ for (const status of ["EMPTY", "ERROR"] as const) {
         jdg: async () => { await createLookup(organizationId, identifier, "JDG", fake.pool); return registrySection(status); },
         company: async () => { await createLookup(organizationId, identifier, "COMPANY", fake.pool); return companyCard(); },
       });
-      assert.equal(result.entityType, "COMPANY");
+      assert.equal(result.entityType, status === "EMPTY" ? "COMPANY" : "UNAVAILABLE");
       assert.equal(lookupRequestId(), correlationId);
-      assert.deepEqual(registrations.map((row) => row.entityType), ["JDG", "COMPANY"]);
-      assert.equal(new Set(registrations.map((row) => row.id)).size, 2);
+      assert.deepEqual(registrations.map((row) => row.entityType), status === "EMPTY" ? ["JDG", "COMPANY"] : ["JDG"]);
+      assert.equal(new Set(registrations.map((row) => row.id)).size, status === "EMPTY" ? 2 : 1);
       assert.equal(registrations.every((row) => row.id !== correlationId && row.organizationId === organizationId && row.identifier === identifier.value), true);
     });
   });
 }
 
-test("fresh company catalog and successful JDG preserve their single-registration paths", async () => {
+test("successful JDG remains the sole registration even with a cached company", async () => {
   for (const catalog of [true, false]) {
     const registrations: RegisteredLookup[] = [];
     const fake = fakePool("srm_app", undefined, registrations);
@@ -143,10 +143,10 @@ test("fresh company catalog and successful JDG preserve their single-registratio
       const correlationId = lookupRequestId();
       const result = await searchRegistryByNip(organizationId, { identifier }, {
         catalog: async () => catalog,
-        jdg: async () => { assert.equal(catalog, false); await createLookup(organizationId, identifier, "JDG", fake.pool); return registrySection("SUCCESS"); },
-        company: async () => { assert.equal(catalog, true); await createLookup(organizationId, identifier, "COMPANY", fake.pool); return companyCard(); },
+        jdg: async () => { await createLookup(organizationId, identifier, "JDG", fake.pool); return registrySection("SUCCESS"); },
+        company: async () => { throw Error("CEIDG match must not call a company provider"); },
       });
-      assert.equal(result.entityType, catalog ? "COMPANY" : "JDG");
+      assert.equal(result.entityType, "JDG");
       assert.equal(registrations.length, 1);
       assert.equal(registrations[0].entityType, result.entityType);
       assert.notEqual(registrations[0].id, correlationId);

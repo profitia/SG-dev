@@ -1,3 +1,4 @@
+import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {createHash} from 'node:crypto'
 import type {PoolClient} from 'pg'
@@ -111,7 +112,7 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
  return Object.freeze({
   readAcceptedKys:(request:Request,organisationId:string,nip:string)=>read({request,organisationId},nip,'COMPANY','kys'),
   known:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>known.read(input.request,input.organisationId,nip),
-  async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:()=>Promise<void>){
+  async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:()=>Promise<void>,general?:SectionEnvelope<GeneralCompanyData>){
    if(input.command.nip!==identity.identity.nip)return refuse()
    let stage='IDENTITY_RECHECK'
    try{
@@ -120,7 +121,7 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
     const selected=await admitCompany(input,'COMPANY:KRS-FINANCIAL:'+identity.selectedKrs+':'+identity.evidenceRef)
     input.request.signal.throwIfAborted()
     stage='NATIVE_FINANCIAL_WORK'
-    return await company.prepareFinancial(selected,identity,recheck)
+    return await company.prepareFinancial(selected,identity,recheck,general)
    }catch(error){
     console.error('KRS Financial preparation failed',{stage,reason:isOperationDenied(error)?error.reasonCode:'INTERNAL_FAILURE'})
     throw error

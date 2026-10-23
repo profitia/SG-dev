@@ -40,10 +40,10 @@ test('new P1 receipt preserves every historical record and verifies exact curren
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  const installed=new URL('../',import.meta.resolve('@profitia/platform-contracts/supplier-location'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,receipt.accountRecheckSourceCompatibility.platformVersion)
- for(const[file,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests)){
+ for(const[file,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'historical producer '+file)
+ for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests})){
   assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file)
   assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
-  assert.equal(hash(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
  }
  for(const[file,digest]of Object.entries(accepted.applicationSourceDigests)){
   const change=receipt.krsLivePilotSourceCompatibility?.changedFiles[file];

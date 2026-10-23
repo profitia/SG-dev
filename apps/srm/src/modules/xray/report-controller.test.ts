@@ -137,3 +137,17 @@ test('bounded KRS document continuation keeps the same logical key and publishes
  assert.equal(calls,2);assert.equal(new Set(keys).size,1);assert.equal(c.getSnapshot().busy,false)
  assert.equal(c.getSnapshot().error,null);assert(c.getSnapshot().metadata);assert(states.includes(true))
 })
+
+test('NIP KRS selection continues only through the existing Financial BFF and retains source status',async()=>{
+ const paths:string[]=[],krs='0000028860',selection={nip,krs,name:'SYNTHETIC',locality:null,selectionRef:'KRS:'+krs+':'+'a'.repeat(64)}
+ const result={entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip,krs},general:{...sampleCard.general,data:{...sampleCard.general.data,nip,krs}}}}
+ const transport:typeof fetch=async(path,init)=>{
+  paths.push(String(path))
+  if(String(path).endsWith('/search'))return Response.json({...result,krsSelection:selection,registryRoute:{provider:'KRS'}})
+  assert.equal(path,'/api/xray/krs/lookup');assert.deepEqual(JSON.parse(String(init?.body)),{selectionRef:selection.selectionRef})
+  return Response.json({result,metadata:null})
+ }
+ const controller=new SupplierReportController(transport,()=>now,()=> 'synthetic-ui-nip-krs-key')
+ await controller.search(nip)
+ assert.deepEqual(paths,['/api/xray/search','/api/xray/krs/lookup']);assert.equal(controller.getSnapshot().registryRoute?.provider,'KRS');assert.equal(controller.getSnapshot().result?.entityType,'COMPANY');assert.equal(controller.getSnapshot().error,null)
+})

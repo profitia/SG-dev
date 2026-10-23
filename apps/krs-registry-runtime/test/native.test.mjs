@@ -137,6 +137,27 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
     assert.equal((await owner.query('SELECT admitted_count FROM profitia_external_call.policies')).rows[0].admitted_count,1)
    }finally{globalThis.fetch=originalFetch}
   })
+  await t.test('GUS scheduler shares actual E1 admission across connections without granting Source effects',async()=>{
+   const policy=randomUUID(),patch=await fs.readFile(new URL('../../../packages/platform-contracts/migrations/access/021-native-soap-transport.sql',import.meta.url),'utf8')
+   await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
+   try{
+    await owner.query(patch)
+    await owner.query(`INSERT INTO profitia_ingestion.sources SELECT (jsonb_populate_record(NULL::profitia_ingestion.sources,to_jsonb(s)||jsonb_build_object('source_id','krs.registry.gus','quality_version','gus-bir12-source-v1'))).* FROM profitia_ingestion.sources s WHERE source_id='krs.registry.official'`)
+    await owner.query(`INSERT INTO profitia_ingestion.grants SELECT (jsonb_populate_record(NULL::profitia_ingestion.grants,to_jsonb(g)||jsonb_build_object('grant_id',$1::text,'source_id','krs.registry.gus','resource_id','krs-gus:nip-map'))).* FROM profitia_ingestion.grants g WHERE source_id='krs.registry.official'`,[randomUUID()])
+    await owner.query(`INSERT INTO profitia_ingestion.budgets SELECT (jsonb_populate_record(NULL::profitia_ingestion.budgets,to_jsonb(b)||jsonb_build_object('policy_id',$1::text,'source_id','krs.registry.gus','capacity',60,'consumed_count',0))).* FROM profitia_ingestion.budgets b WHERE source_id='krs.registry.official'`,[randomUUID()])
+    await owner.query(`INSERT INTO profitia_external_call.policies SELECT (jsonb_populate_record(NULL::profitia_external_call.policies,to_jsonb(p)||jsonb_build_object('policy_id',$1::text,'source_id','krs.registry.gus','resource_id','krs-gus:nip-map','origin','https://wyszukiwarkaregon.stat.gov.pl','path_rules','[{"method":"POST","path":"/wsBIR/UslugaBIRzewnPubl.svc"}]'::jsonb,'maximum_response_bytes',1048576,'timeout_ms',3000,'admitted_count',0))).* FROM profitia_external_call.policies p WHERE source_id='krs.registry.official'`,[policy])
+    await owner.query(`INSERT INTO profitia_external_native.policies SELECT (jsonb_populate_record(NULL::profitia_external_native.policies,to_jsonb(n)||jsonb_build_object('policy_id',$1::text,'path_rules','[{"method":"POST","path":"/wsBIR/UslugaBIRzewnPubl.svc","requestFormat":"SOAP"}]'::jsonb,'maximum_response_bytes',1048576,'credential_mode','SERVER_HEADERS'))).* FROM profitia_external_native.policies n JOIN profitia_external_call.policies p USING(policy_id) WHERE p.source_id='krs.registry.official'`,[policy])
+    await owner.query('GRANT EXECUTE ON FUNCTION profitia_external_native.reserve_gus_slot() TO krs_ingest;COMMIT')
+   }catch(e){await owner.query('ROLLBACK');throw e}
+   await assert.rejects(ingest.query('SELECT * FROM profitia_external_native.gus_slots'),e=>e.code==='42501')
+   const slots=await Promise.all(Array.from({length:6},()=>ingest.query('SELECT profitia_external_native.reserve_gus_slot() wait_ms')))
+   assert.equal(slots.filter(x=>x.rows[0].wait_ms===0).length,3)
+   assert.equal(slots.filter(x=>x.rows[0].wait_ms>0).length,3)
+   assert.equal((await owner.query("SELECT consumed_count FROM profitia_ingestion.budgets WHERE source_id='krs.registry.gus'")).rows[0].consumed_count,0)
+   assert.equal((await owner.query("SELECT admitted_count FROM profitia_external_call.policies WHERE source_id='krs.registry.gus'")).rows[0].admitted_count,0)
+   await owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED' WHERE source_id='krs.registry.gus'")
+   await assert.rejects(ingest.query('SELECT profitia_external_native.reserve_gus_slot()'),e=>e.code==='42501')
+  })
  }finally{
   await auditPool?.end();await owner.query('ALTER DATABASE krs_registry_test OWNER TO krs_test_owner;DROP SCHEMA IF EXISTS krs_registry CASCADE;DROP SCHEMA IF EXISTS profitia_external_native CASCADE;DROP SCHEMA IF EXISTS profitia_external_call CASCADE;DROP SCHEMA IF EXISTS profitia_ingestion CASCADE;DROP OWNED BY krs_catalog_owner,profitia_ingestion_owner;DROP ROLE krs_catalog_owner,profitia_ingestion_owner')
  }

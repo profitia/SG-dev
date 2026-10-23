@@ -38,7 +38,7 @@ test("CEIDG empty falls through to a verified company", async () => {
   assert.equal(result.entityType, "COMPANY");
 });
 
-test("a fresh company in the shared catalog bypasses CEIDG", async () => {
+test("a fresh company cannot bypass CEIDG classification", async () => {
   let jdgCalls = 0;
   let companyCalls = 0;
   const result = await searchRegistryByNip("org", request, {
@@ -47,7 +47,7 @@ test("a fresh company in the shared catalog bypasses CEIDG", async () => {
     company: async () => { companyCalls += 1; return company("SUCCESS", nip); },
   });
   assert.equal(result.entityType, "COMPANY");
-  assert.equal(jdgCalls, 0);
+  assert.equal(jdgCalls, 1);
   assert.equal(companyCalls, 1);
 });
 
@@ -69,11 +69,11 @@ test("a company provider failure is not reported as CEIDG unavailability", async
   assert.deepEqual(result, { entityType: "UNAVAILABLE", unavailableProvider: null });
 });
 
-test("company report can resolve a NIP when CEIDG is unavailable", async () => {
+test("CEIDG failure never classifies a NIP or buys company data", async () => {
   const result = await searchRegistryByNip("org", request, {
-    jdg: async () => jdg("ERROR"), company: async () => company("SUCCESS", nip),
+    jdg: async () => jdg("ERROR"), company: async () => { throw Error("No company call after CEIDG failure"); },
   });
-  assert.equal(result.entityType, "COMPANY");
+  assert.deepEqual(result, { entityType: "UNAVAILABLE", unavailableProvider: "CEIDG" });
 });
 
 test("a mismatched company identifier cannot select a company", async () => {

@@ -158,6 +158,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
         refreshKey={[supplier.card.general.retrievedAt,state.kys?.retrievedAt,state.metadata.kys.lastAttemptAt].join(':')} />}</div></div></ReportWebIdentity>
         {!scanner && availability.code === "AVAILABLE" && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
       </CanonElement>
+      {state.registryRoute && <p className="report-metadata-note" role="status">Dane rejestrowe: {state.registryRoute.provider==='KRS'?'KRS':'MGBI — źródło zapasowe'}. Dane finansowe: MGBI.</p>}
       {primaryPkd?.registryHistory && primaryPkd.registryHistory.members.length>1 && <p className="report-metadata-note" data-company-continuity="true">Firma kontynuuje działalność po przekształceniu. Aktualny KRS: {primaryPkd.registryHistory.currentKrs}. Historia finansowa obejmuje potwierdzonych poprzedników, z oznaczeniem podmiotu składającego sprawozdanie.</p>}
 
     </section>
