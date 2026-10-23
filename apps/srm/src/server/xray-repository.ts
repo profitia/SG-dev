@@ -198,6 +198,9 @@ export async function appendFinancialFacts(organizationId: string, facts: Financ
     source_path: fact.sourcePath, validation_status: fact.validationStatus,
   }));
   await withOrganization(organizationId, async (client) => {
+    // SQL authenticates this snapshot against the current protected Native
+    // Work on every INSERT. A forged/stale selector grants no row access.
+    await client.query("SELECT set_config('profitia.srm.financial.snapshot',$1,true)", [snapshotId]);
     await measureSupplierStage('FINANCIAL_FACTS_INSERT',()=>client.query(
       "INSERT INTO srm.financial_facts(organization_id, supplier_id, snapshot_id, metric_code, " +
       "period_start, period_end, period_type, statement_scope, amount, source_amount, normalization_rule, currency_code, unit_code, source_path, validation_status) " +

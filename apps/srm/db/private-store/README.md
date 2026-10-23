@@ -220,3 +220,44 @@ installation/digests, existing function definitions/ACLs and old runtime packets
 remain unchanged. The application fails closed when this optional port is
 absent. Artifact rollback can leave the unused additive port installed; never
 erase accepted publications, financial history or counters to roll back code.
+
+## Financial batch checks and identical-revision replay
+
+`020-corporate-batch-guards.sql` and `021-financial-batch-guard.sql` are explicit
+SRM adoptions, installed atomically by the existing `profitia_access_owner`.
+They retain the original shared E1 Source/Native Work hosts and all revocation,
+classification, ordinary-role, tenant, transaction and OUTCOME requirements.
+No shared platform contract or historical installation digest is rewritten.
+
+The application supplies transaction-local NIP/snapshot selectors. They are not
+proofs: an uncorrelated policy subquery invokes the existing current E1 verifier
+for each SQL statement. Its result admits only that exact NIP or organization,
+supplier and financial snapshot. Legacy paths retain their original policy arm.
+Transition-table triggers validate the actual inserted/updated rows as a set;
+DELETE/TRUNCATE and private fact UPDATE remain prohibited. Packet values,
+provenance, indicator input lineage and final publication completeness remain
+checked. There is no request/session permission TTL or cross-statement ALLOW.
+
+The Source publication key identifies the entire classified packet, including
+source/issuer, periods and observation metadata. An identical accepted packet
+uses the existing checked, audited idempotent Source receipt. Each customer's
+lookup, private attempt and snapshot retain their own history. New evidence or
+observation metadata produces a different publication; no financial history is
+removed or relabelled.
+
+Before installation capture exact affected policies, triggers, function
+identities and ACLs, compare them to the accepted release, and retain a recovery
+script. The two selector helpers copy only the existing corresponding scope
+functions' EXECUTE callers; they grant no new table access or business operation.
+The application remains compatible before SQL adoption (original policy arms)
+and the previous runtime remains compatible afterward. Runtime rollback leaves
+these equivalent SQL checks installed; restoring SQL requires the captured exact
+boundary and a fresh drift check. Never drop product tables, receipts, history,
+limits or counters to roll back performance code.
+
+Local performance probes use disposable PostgreSQL, synthetic data and ordinary
+runtime roles. They preserve E1/RLS/OUTCOME checks. Function profiling is enabled
+only in that disposable cluster, never as an implicit live configuration change.
+Identity optimization joins only concurrently outstanding same-client reads in
+one HTTP trace. Settled observations, sequential checkpoints and other requests
+always perform a new official SDK read, including errors and revoked accounts.

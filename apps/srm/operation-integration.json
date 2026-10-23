@@ -4108,5 +4108,34 @@
       "src/server/account-recheck-adoption.test.ts": "93ac4cce5c178d1929a6304b28efd531ad7c704ec467042a0495c675ee6d4ec0",
       "src/server/peer-read-boundary.test.ts": "f4b73d7aadad954d1a6b183845119a4a538a90cd4f00bbcf470799397d483f3e"
     }
+  },
+  "financialPerformanceAdoption": {
+    "taskId": "SRM-E1-FINANCIAL-PERFORMANCE-20261024",
+    "sourceAuthority": "profitia/SG-dev/main",
+    "previousSourceSha": "c33b2f4122d87428c9b95af65803fdfd989dc7cd",
+    "applicationSourceDigests": {
+      "src/server/corporate-source-store.ts": "a762d4663d396ec5cbffda31b14f042f4c207afb7538ff6e38b61b16eb8299ec",
+      "src/server/supplier-native-company.ts": "76441812899b77b679f7958cbc5d333ca572c382e64956c83ecbf416cceacfa1",
+      "src/server/xray-repository.ts": "0af00763c9ee992817ce16079efba6a10952faf767b528976028cf4b3f4f283d",
+      "src/server/supplier-telemetry.ts": "8f98fa0c53044037c24b7891f0464f717a75b4ec3b80a8a3a0b6ce67a38a2012",
+      "scripts/corporate-source.integration.test.mjs": "58e017d25c111376154da8420ba6e5d19952a9874f6a153b6730ecefb20c89f2",
+      "scripts/supplier-delegated-business.integration.test.mjs": "8e2633f8907ae11c07ad97e3c79609936135e243305d24b5486e6d665f8ca705",
+      "src/server/corporate-source-store.test.ts": "5498681196abf5c26bfbfcc3e432874899962ec99a460a8eb2b6c45b7dfe5a4e",
+      "src/server/peer-read-boundary.test.ts": "f2032741818f394269c52a59763136c51390944232edc98bb4d84fee45cfe1ed",
+      "src/server/supplier-telemetry.test.ts": "27a6ff07722fda13cf9f7ee097b1ebbfa8732c6fca93781f7cbe4de9153062b8",
+      "db/private-store/README.md": "6a41a935bafe604ca829a0f6c5f714da42bbf4dd5ea1234605ff6e1157cf7b9a",
+      "src/server/account-recheck-adoption.test.ts": "355bccdfc6ff05c2a505829da7575d4702d71a6b6f138e022a590435eb39ecc0"
+    },
+    "optionalSqlDigests": {
+      "020-corporate-batch-guards.sql": "fc93a20feddd5d251fe8255117e154b0800223d0eb43e70c4779880a478216d4",
+      "021-financial-batch-guard.sql": "7062198f350b1911471f996b248bf0c90b66b690e91bcf6a8c316062ae63961e"
+    },
+    "perStatementCurrentAuthority": true,
+    "setBasedExactPacketValidation": true,
+    "identicalRevisionReceiptReplay": true,
+    "noPermissionTtlCache": true,
+    "liveSqlInstalled": false,
+    "pilotDeployed": false,
+    "requestLocalInflightIdentityCoalescing": true
   }
 }

@@ -9,7 +9,7 @@ import {prepareKrsFinancialWork} from './krs-native-financial'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import type { createSrmSupplierSourceRequest } from './supplier-source-request'
 import { createSrmProviderSourceTransport, createSrmMsrSourceTransport, guardOriginalProviderCall as originalCall } from './provider-source-transport'
-import { createSrmCorporateSourceStore, CORPORATE_PUBLICATION_VERSION, readCorporatePacket } from './corporate-source-store'
+import { createSrmCorporateSourceStore,corporateRevisionKey, CORPORATE_PUBLICATION_VERSION, readCorporatePacket } from './corporate-source-store'
 import { projectPublicFinancialData } from './corporate-knowledge'
 import { createXrayCompanyLookup, type XrayCompanyPorts } from './xray-lookup'
 import { fetchMgbiGeneral } from './mgbi-general'
@@ -124,9 +124,12 @@ export function createSrmNativeCompanyLookup(options:Options){
           retrievedAt:v.retrievedAt,effectiveAt:v.effectiveAt,warnings:v.warnings,data:v.data})
         const packet=readCorporatePacket({version:CORPORATE_PUBLICATION_VERSION,nip,preserveGeneral:value.preserveGeneral??false,
           general:section(value.general),financial:{...section(value.financial),data:projectPublicFinancialData(value.financial.data)},facts:value.facts})
-        // Shared publication is content-addressed under this real admitted
-        // Source request. Private lookup/snapshot/organisation IDs are absent.
-        await corporate.publish(packet,hash(operationKey+':corporate:'+JSON.stringify(packet)))
+        // An identical accepted corporate revision reuses its immutable Source
+        // receipt. Each lookup retains its separate private request/history;
+        // Source still checks current service authority and audits every replay.
+        // The complete packet includes issuer/source, periods and observation
+        // metadata: changed evidence cannot reuse an old publication.
+        await corporate.publish(packet,corporateRevisionKey(packet,options.corporate.publicationSchemaDigest))
       },
       refreshFinancialIndicators:async(org,nip,data)=>{scope(org,nip);return store.indicators(selection,data)},
       recordInterest:async(org,nip)=>{scope(org,nip);await store.interest(selection)},

@@ -146,5 +146,17 @@ test('catalog refresh adoption preserves unmetered acceptance and records the ex
  for(const[k,v]of Object.entries(JSON.parse(bytes.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k)
  assert.equal(a.identityFreshnessPolicyChanged,false);assert.equal(a.liveGrantsChanged,false);assert.equal(a.paidProviderPoliciesChanged,false)
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.financialPerformanceAdoption.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file)
+})
+
+test('financial performance adoption preserves history and pins exact batch guards without claiming live activation',()=>{
+ const a=acceptedReceipt.financialPerformanceAdoption
+ assert.equal(a.taskId,'SRM-E1-FINANCIAL-PERFORMANCE-20261024')
+ const previous=JSON.parse(execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'],{encoding:'utf8'}))
+ for(const[k,v]of Object.entries(previous))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k)
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ for(const[file,digest]of Object.entries(a.optionalSqlDigests))assert.equal(hash(fs.readFileSync(path.join(root,'db/private-store',file))),digest,file)
+ for(const key of ['perStatementCurrentAuthority','setBasedExactPacketValidation','identicalRevisionReceiptReplay','noPermissionTtlCache','requestLocalInflightIdentityCoalescing'] as const)assert.equal(a[key],true,key)
+ assert.equal(a.liveSqlInstalled,false);assert.equal(a.pilotDeployed,false)
 })
