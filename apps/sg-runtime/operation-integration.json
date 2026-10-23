@@ -2698,7 +2698,9 @@
     },
     "applicationSourceDigests": {
       "tests/operation-context.test.mjs": "9ad72b2a86963c328a5e8f0a2ef3d4e9891742e83f3d298cb68d824639c72052",
-      "package-lock.json": "b7e8b1d0b1ba4e0784f7d0f309ab48aadfe1bc89350989d6b9d04c7edc5c6ade"
+      "package-lock.json": "b7e8b1d0b1ba4e0784f7d0f309ab48aadfe1bc89350989d6b9d04c7edc5c6ade",
+      "tests/private-host.integration.test.mjs": "82eb294b0e178d2cb17e1f6ffba243821f766cf4fd8914464f7c72b8f54551f3",
+      "../dashboard-preview/package-lock.json": "530e9e732e29dbfb7a919bdbebe76de989308a39a7471b13385414c7d9acf9ff"
     },
     "unmeteredSourceOptedIn": false,
     "sql024Installed": false,
