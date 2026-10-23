@@ -115,6 +115,13 @@ export function readCorporatePacket(input: unknown): CorporatePacket {
   return packet
 }
 
+/** Complete classified evidence, independent of a private lookup identity. */
+export function corporateRevisionKey(input:unknown,publicationSchemaDigest:string):string {
+  if(!/^[a-f0-9]{64}$/.test(publicationSchemaDigest))return unavailable()
+  return hash(JSON.stringify({version:'srm-corporate-revision-v1',source:CORPORATE_SOURCE,
+    publicationSchemaDigest,packet:readCorporatePacket(input)}))
+}
+
 export function createSrmCorporateSourceStore(options: {
   application: Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]['application']
   binding: Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]['binding']
@@ -153,6 +160,9 @@ export function createSrmCorporateSourceStore(options: {
         const port=financialOnlyCandidate(packet)?'open_financial_publication':'open_publication'
         const admitted = await measureSupplierStage('CORPORATE_ADMISSION',()=>client.query(`SELECT profitia_srm_catalog.${port}($1::uuid,$2::uuid,$3) AS admitted`, [effectId, context.decisionId, body]))
         if (admitted.rows[0]?.admitted !== true) return unavailable()
+        // Selector only: SQL still authenticates the actual protected Source
+        // publication for each statement. It grants no authority by itself.
+        await client.query("SELECT set_config('profitia.srm.catalog.nip',$1,true)",[packet.nip])
         await measureSupplierStage('CORPORATE_WRITE',()=>writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId }))
         if (packet.financial.data) await measureSupplierStage('CORPORATE_INDICATORS',()=>writeFinancialIndicators(client, packet.nip, packet.financial.data!))
       })).catch(error=>{

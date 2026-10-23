@@ -42,7 +42,7 @@ async function supplierBusinessFixture(t,full=false){
  const DATABASE='srm_service_business_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
- const CORPORATE='srm_company_publication_runtime';let networkHits=0;const networkObservations=[]
+ const CORPORATE='srm_company_publication_runtime';let networkHits=0;const networkObservations=[];let financialBoundary
  let syntheticOrigin
  let fileMode=false,failFile=false,fileHits=0,limitsHits=0
  const licensedXml='<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:x="http://www.xbrl.org/2003/instance" xmlns:f="https://xbrl.ifrs.org/taxonomy/2022-03-24/ifrs-full" xmlns:iso="http://www.xbrl.org/2003/iso4217"><body><ix:resources><x:context id="c"><x:entity><x:identifier scheme="lei">ISSUER</x:identifier></x:entity><x:period><x:startDate>2025-01-01</x:startDate><x:endDate>2025-12-31</x:endDate></x:period></x:context><x:unit id="u"><x:measure>iso:PLN</x:measure></x:unit></ix:resources><ix:nonFraction name="f:Revenue" contextRef="c" unitRef="u">123</ix:nonFraction></body></html>'
@@ -208,6 +208,14 @@ async function supplierBusinessFixture(t,full=false){
    await owner.query(`GRANT USAGE ON SCHEMA profitia_access,profitia_modules,profitia_requests,profitia_supplier_requests,profitia_jobs,profitia_request_phases TO ${FOREGROUND};GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_access.identity_binding(text,text),profitia_access.lock_access(uuid,uuid,text,text,text),profitia_access.scope_allows(text,uuid,uuid),profitia_access.append_audit(jsonb),profitia_modules.runtime_descriptor(),profitia_modules.bind_scope(text),profitia_modules.scope_allows(text,uuid,uuid),profitia_modules.audit_descriptor(),profitia_requests.runtime_descriptor(),profitia_requests.external_runtime_descriptor(),profitia_requests.scope_allows(text,uuid,uuid,text),profitia_requests.policy(text,uuid,uuid,text),profitia_requests.reserve(text,uuid,uuid,text,text,text,text,uuid,uuid,bigint),profitia_requests.accept(text,uuid,uuid) TO ${FOREGROUND};GRANT EXECUTE ON FUNCTION profitia_jobs.runtime_descriptor(),profitia_jobs.supplier_runtime_descriptor(),profitia_jobs.create_dispatch(uuid,uuid,text),profitia_request_phases.descriptor(text),profitia_request_phases.parent_available(uuid,uuid,uuid,text,text),profitia_request_phases.reserve(uuid,text,text,uuid,bigint),profitia_request_phases.accept(uuid,text,text,uuid,bigint) TO ${FOREGROUND};GRANT SELECT ON profitia_supplier_requests.installation,profitia_requests.intents TO ${FOREGROUND};GRANT SELECT,INSERT ON profitia_supplier_requests.commands TO ${FOREGROUND};GRANT INSERT,UPDATE ON srm.lookup_requests,srm.provider_attempts,srm.source_snapshots,srm.section_projections,srm.financial_facts,srm.mgbi_source_archives TO ${FOREGROUND}`)
    for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION srm.supplier_business_descriptor(),srm.named_interest_descriptor(),srm.named_interest_actor(uuid),srm.named_interest_phase(uuid,text),srm.supplier_business_phase(uuid,text,uuid,text[]),srm.delegated_supplier_descriptor(uuid,text),srm.current_delegated_supplier(uuid,uuid,text,text[]),srm.delegated_supplier_row(text,uuid,uuid,uuid,uuid,text,text) TO ${role};GRANT SELECT,INSERT,UPDATE ON srm.users,srm.organization_supplier_interest,srm.user_supplier_interest TO ${role}`)
    await owner.query(`GRANT USAGE ON SCHEMA srm,profitia_access,profitia_services,profitia_jobs,profitia_request_phases,profitia_supplier_requests,profitia_modules,profitia_requests TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_modules.scope_allows(text,uuid,uuid),profitia_requests.scope_allows(text,uuid,uuid,text) TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_services.runtime_descriptor(),profitia_jobs.runtime_descriptor(),profitia_jobs.supplier_runtime_descriptor(),profitia_jobs.current_job(uuid),profitia_jobs.lock_job(uuid,text),profitia_jobs.scope_allows(uuid),profitia_jobs.append_audit(jsonb),profitia_request_phases.delegated_descriptor(uuid,text),profitia_request_phases.delegated_scope_allows(uuid,text,text,uuid,uuid),profitia_request_phases.reserve(uuid,text,text,uuid,bigint),profitia_request_phases.accept(uuid,text,text,uuid,bigint) TO ${EXECUTOR};GRANT SELECT ON profitia_supplier_requests.commands TO ${EXECUTOR};GRANT SELECT,INSERT,UPDATE ON srm.organizations,srm.suppliers,srm.lookup_requests,srm.provider_attempts,srm.source_snapshots,srm.section_projections,srm.financial_facts,srm.mgbi_source_archives,srm.financial_source_documents TO ${EXECUTOR}`)
+   // Exact deployed financial guard, with the already-adopted SQL015 fix.
+   // Its sensitive branches remain covered by the separate sensitive suite.
+   await owner.query(own('010-supplier-sensitive-work.sql').match(/CREATE OR REPLACE FUNCTION srm\.guard_supplier_business_write\(\)[\s\S]*?END \$fn\$;/)[0])
+   await owner.query(own('015-financial-fact-guard.sql'))
+   financialBoundary={policies:(await owner.query("SELECT policyname,with_check FROM pg_policies WHERE schemaname='srm' AND tablename='financial_facts' AND cmd IN('INSERT','ALL') AND with_check IS NOT NULL")).rows,
+    trigger:(await owner.query("SELECT pg_get_triggerdef(oid) definition FROM pg_trigger WHERE tgrelid='srm.financial_facts'::regclass AND tgname='supplier_business_phase'")).rows[0].definition}
+   await owner.query(own('021-financial-batch-guard.sql'))
+   if(full)await owner.query(own('020-corporate-batch-guards.sql'))
    await owner.query('RESET ROLE;COMMIT')
   }catch(e){await owner.query('ROLLBACK');throw e}
   await assert.rejects(owner.query(own('006-delegated-supplier-business.sql')),e=>e.code==='42501')
@@ -934,6 +942,56 @@ async function supplierBusinessFixture(t,full=false){
     }finally{fileMode=false;failFile=false}
    })
   }
+
+  if(full)await t.test('395 private facts profile real Native Work before/after statement guards with the same ordinary role',async()=>{
+   const profiling=(await owner.query('SHOW track_functions')).rows[0].track_functions==='all'
+   const profile=async()=>{
+    if((await owner.query('SHOW track_functions')).rows[0].track_functions!=='all')return null
+    const c=await servicePool.connect();try{await c.query('SELECT pg_stat_force_next_flush()')}finally{c.release()}
+    await serviceAudit.query('SELECT pg_stat_force_next_flush()');await owner.query('SELECT pg_stat_clear_snapshot()')
+    return (await owner.query("SELECT coalesce(sum(calls),0)::int n FROM pg_stat_user_functions WHERE schemaname='srm' AND funcname='current_supplier_work'")).rows[0].n
+   }
+   const prepare=async org=>{
+    const s=selection(await parent(org)),f=financial(),template=f.facts[0],period=f.section.data.periods[0],periods=[],facts=[]
+    for(let year=2017;year<=2025;year++){
+     const selected=[]
+     for(let m=0;m<44;m++){
+      if(year===2025&&m===43)continue
+      const metricCode='SYNTHETIC_'+m
+      facts.push({...template,metricCode,periodStart:year+'-01-01',periodEnd:year+'-12-31',amount:'100',sourceAmount:'100',sourcePath:'content.synthetic_'+m})
+      selected.push({metricCode,amount:'100',currency:'PLN',unit:'PLN'})
+     }
+     periods.push({...period,from:year+'-01-01',to:year+'-12-31',facts:selected})
+    }
+    f.section.data={periods};f.facts=facts;await nativeStore.register(s);return{s,f}
+   }
+   // Restore only this isolated fixture's captured baseline, never a live DB.
+   if(profiling)await controlled(async()=>{
+    for(const p of financialBoundary.policies)await owner.query(`ALTER POLICY ${p.policyname} ON srm.financial_facts WITH CHECK(${p.with_check})`)
+    await owner.query('DROP TRIGGER financial_batch_insert ON srm.financial_facts;DROP TRIGGER supplier_business_phase ON srm.financial_facts')
+    await owner.query(financialBoundary.trigger)
+   })
+   const samples=[]
+   for(const [label,org]of [...(profiling?[['before',A]]:[]),['after',B]]){
+    if(label==='after')await controlled(()=>owner.query(own('021-financial-batch-guard.sql')))
+    const {s,f}=await prepare(org),before=await profile(),start=performance.now()
+    const snapshot=await nativeStore.section(s,'financial',f.section,f.errorCode,f.facts,undefined,f.sourceData)
+    const elapsedMs=performance.now()-start,after=await profile()
+    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.financial_facts WHERE organization_id=$1 AND snapshot_id=$2',[org,snapshot])).rows[0].n,395)
+    samples.push({label,facts:395,elapsedMs:Number(elapsedMs.toFixed(2)),currentSupplierWorkCalls:after===null?null:after-before})
+    const c=await servicePool.connect();await c.query('BEGIN')
+    try{await c.query("SELECT set_config('profitia.srm.financial.snapshot',$1,true)",[snapshot]);assert.equal((await c.query('SELECT srm.financial_statement_target() target')).rows[0].target,null)}finally{await c.query('ROLLBACK');c.release()}
+    if(label==='after'){
+     await assert.rejects(nativeWork.run(s,'SRM_STORE_FINANCIAL',{probe:'foreign-batch'},async(_context,c)=>{
+      await c.query("SELECT set_config('profitia.srm.financial.snapshot',$1,true)",[snapshot])
+      await c.query("INSERT INTO srm.financial_facts(organization_id,supplier_id,snapshot_id,metric_code,period_start,period_end,period_type,statement_scope,amount,source_amount,normalization_rule,currency_code,unit_code,source_path,validation_status) SELECT $1,supplier_id,snapshot_id,metric_code,period_start,period_end,period_type,statement_scope,amount,source_amount,normalization_rule,currency_code,unit_code,source_path,validation_status FROM srm.financial_facts WHERE organization_id=$2 AND snapshot_id=$3 LIMIT 1",[A,B,snapshot])
+     }),isOperationDenied)
+    }
+   }
+   if(profiling)assert(samples[1].currentSupplierWorkCalls<samples[0].currentSupplierWorkCalls/10)
+   t.diagnostic(JSON.stringify({event:'srm_private_financial_batch_profile',scope:'isolated_synthetic_full_native_work',samples}))
+   if(process.env.SRM_FINANCIAL_PERFORMANCE_OUTPUT)fs.writeFileSync(process.env.SRM_FINANCIAL_PERFORMANCE_OUTPUT,JSON.stringify({scope:'isolated_synthetic_full_native_work',samples},null,2))
+  })
  }finally{if(server)await new Promise(resolve=>server.close(resolve));await corporatePool?.end();await corporateAudit?.end();await pool?.end();await auditPool?.end();await servicePool?.end();await serviceAudit?.end();await rawService?.end();await sourcePool?.end();await sourceAudit?.end();await rawSource?.end();await owner?.end();await root.end()}
 }
 

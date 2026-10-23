@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readCorporatePacket, unrequestedCorporateGeneral, CORPORATE_PUBLICATION_VERSION, CORPORATE_SOURCE } from './corporate-source-store'
+import { readCorporatePacket, corporateRevisionKey, unrequestedCorporateGeneral, CORPORATE_PUBLICATION_VERSION, CORPORATE_SOURCE } from './corporate-source-store'
 import { mapMgbiFinancialRecords } from './mgbi-financial'
 import { decodeMsrOriginal } from './msr-source'
 import { parseMsrOriginal } from './msr-parser'
@@ -142,4 +142,20 @@ test('original MSR facts refuse foreign documents, false format or basis, unveri
     const p = originalMsrPacket(); mutate(p)
     assert.throws(() => readCorporatePacket(p), TypeError)
   }
+})
+
+
+test('an identical accepted corporate revision is independent of private lookup identity but changed evidence has a different key',()=>{
+ const original=packet(),schema='a'.repeat(64),key=corporateRevisionKey(original,schema)
+ assert.equal(corporateRevisionKey(structuredClone(original),schema),key)
+ assert.notEqual(corporateRevisionKey(original,'b'.repeat(64)),key)
+ assert.throws(()=>corporateRevisionKey(original,'unverified-schema'))
+ for(const change of [
+  (p:ReturnType<typeof packet>)=>{p.financial.retrievedAt='2026-10-19T00:01:00.000Z'},
+  (p:ReturnType<typeof packet>)=>{p.financial.source.recordId='c'.repeat(24)},
+  (p:ReturnType<typeof packet>)=>{p.general.data.krs='0000000001'},
+  (p:ReturnType<typeof packet>)=>{p.facts[0].amount='400';p.facts[0].sourceAmount='400';p.financial.data!.periods[0].facts.find(f=>f.metricCode===p.facts[0].metricCode)!.amount='400'},
+ ]){const changed=packet();change(changed);assert.notEqual(corporateRevisionKey(changed,schema),key)}
+ const privatePacket={...original,organisationId:'11111111-1111-4111-8111-111111111111'}
+ assert.throws(()=>corporateRevisionKey(privatePacket,schema))
 })
