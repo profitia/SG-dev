@@ -309,6 +309,30 @@ test('scalar date parity rejects an invalid date rather than masking it', () => 
   assert.throws(() => projectCanonicalFlightRecordScalarParity(artifact as never, 'conversation.md', 'summary'), RangeError)
 })
 
+test('PHR publication dates satisfy the UTC contract without rewriting source timestamps', () => {
+  for (const timestamp of ['2026-10-22T20:43:36.784682+00:00', '2026-10-22T22:43:36.784682+02:00']) {
+    const artifact = makeArtifact()
+    artifact.metadata.timestamp = timestamp
+    const before = JSON.stringify(artifact)
+    const lock = createArtifactLock(artifact)
+    const candidate = buildSrmPhrPublicationCandidate({
+      artifact: artifact as never, closeout: makeEvidence(), closeoutRef: 'closeout.json',
+    })
+    const publication = buildPhrPublicationInput({
+      artifact: artifact as never, handoff: candidate.handoff, closeout: candidate.closeout,
+      closeoutRef: 'closeout.json', conversationArtifactPath: 'conversation.json',
+    })
+    assert.equal(publication.publishedAt, '2026-10-22T20:43:36.784Z')
+    assert.equal(candidate.handoff.createdAt, publication.publishedAt)
+    assert.equal(publication.createdAt, timestamp)
+    for (const item of publication.artifacts.filter(item => ['flight-record.json', 'conversation-artifact.json'].includes(item.type))) {
+      assert.equal((item.content as typeof artifact).metadata.timestamp, timestamp)
+    }
+    assert.equal(JSON.stringify(artifact), before)
+    assert.equal(verifyArtifactLock(artifact, lock).valid, true)
+  }
+})
+
 test('scalar parity omits absent legacy ETAP metadata', () => {
   const projected = projectCanonicalFlightRecordScalarParity(
     makeSpendGuruArtifact(),
