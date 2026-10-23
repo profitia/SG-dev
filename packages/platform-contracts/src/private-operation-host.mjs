@@ -11,6 +11,7 @@ import {createRequestWorkScope,requestWorkSourceDigest} from './request-work.mjs
 
 export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.11.0' })
 export const SUPPLIER_LOCATION_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.12.0'})
+export const NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.13.0'})
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -20,6 +21,7 @@ const freeze = value => { if (value && typeof value === 'object') { Object.value
  * No request identity, lease or transaction is retained on the shared instance.
  */
 export function createPrivateOperationHost(options) {
+  if (options.revalidateExternalAccountBeforeOutcome !== undefined) throw TypeError('Account revalidation requires the explicit native work host')
   if (options.privateContinuation!==undefined||options.delegatedContinuation!==undefined||options.privateInspection!==undefined||options.delegatedInspection!==undefined||options.privateWork!==undefined||options.delegatedWork!==undefined)throw new TypeError('Delegated phases require the explicit service host')
   if (options.binding?.service !== undefined) throw new TypeError('Human host cannot use a database service binding')
   return createBoundOperationHost(options, false)
@@ -29,6 +31,7 @@ export function createPrivateOperationHost(options) {
  * No HTTP token, claimed service ID, membership or user impersonation adapter.
  * Only approved prepared-data reads; no provider acquisition, writes or jobs. */
 export function createServiceReadHost(options) {
+  if (options.revalidateExternalAccountBeforeOutcome !== undefined) throw TypeError('Account revalidation requires the explicit native work host')
   const a = options.application, s = options.binding?.service
   if (!a || !s || a.identityIssuer !== DATABASE_SERVICE_ISSUER
     || s.profileId !== a.profileId || s.deploymentId !== a.deploymentId
@@ -66,6 +69,7 @@ function delegatedConfiguration(options){
 }
 
 export function createDelegatedJobHost(options){
+  if (options.revalidateExternalAccountBeforeOutcome !== undefined) throw TypeError('Account revalidation requires the explicit native work host')
   if(options.privateInspection!==undefined||options.privateWork!==undefined)throw TypeError('Inspection/work requires its explicit host')
   const base=delegatedConfiguration(options),j=base.job
   const privateContinuation=options.privateContinuation
@@ -94,6 +98,7 @@ export function createDelegatedJobHost(options){
 /** Inspection never reserves/replays a write or claims a dispatch. Only the
  * installed accepted-phase anchor and current original authority may be read. */
 export function createDelegatedPrivateInspectionHost(options){
+ if (options.revalidateExternalAccountBeforeOutcome !== undefined) throw TypeError('Account revalidation requires the explicit native work host')
  const base=delegatedConfiguration(options),c=options.privateInspection
  if(!c||Object.getPrototypeOf(c)!==Object.prototype||Reflect.ownKeys(c).sort().join(',')!=='continuationSchemaDigest,delegatedSchemaDigest,schemaDigest'
   ||Object.values(Object.getOwnPropertyDescriptors(c)).some(d=>!('value'in d)||!d.enumerable)
@@ -116,13 +121,14 @@ export function createDelegatedPrivateInspectionHost(options){
 /** A short reviewed native SQL unit. No dispatch claim, effect reservation or
  * provider call; the receiving domain owns durable replay/uncertainty. */
 export function createDelegatedNativeWorkHost(options){
+ if (options.revalidateExternalAccountBeforeOutcome !== undefined && options.revalidateExternalAccountBeforeOutcome !== true) throw TypeError('Explicit native account revalidation must be true')
  const base=delegatedConfiguration(options),c=options.privateWork
  if(!c||Object.getPrototypeOf(c)!==Object.prototype||Reflect.ownKeys(c).join(',')!=='schemaDigest'
   ||Object.values(Object.getOwnPropertyDescriptors(c)).some(d=>!('value'in d)||!d.enumerable)
   ||!/^[a-f0-9]{64}$/.test(c.schemaDigest??'')||!requestOperationPolicy(base.job.targetOperation)?.nativeWork
   ||options.privateContinuation!==undefined||options.privateInspection!==undefined||options.sourceDelivery!==undefined)throw TypeError('Explicit native SQL work source required')
  const captured=freeze(copy(c))
- return Object.freeze({contract:OPERATION_CONTRACT,hostContract:PRIVATE_OPERATION_HOST_CONTRACT,
+ return Object.freeze({contract:OPERATION_CONTRACT,hostContract:base.revalidateExternalAccountBeforeOutcome===true?NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:PRIVATE_OPERATION_HOST_CONTRACT,
   runSqlWork(input,unit,action){
    if(!unit||Object.getPrototypeOf(unit)!==Object.prototype||Reflect.ownKeys(unit).length!==3
     ||Object.keys(unit).sort().join(',')!=='accessMode,inputDigest,unitId'
@@ -181,7 +187,7 @@ function createBoundOperationHost(options, serviceMode) {
 
   return Object.freeze({
     contract: validate.contract,
-    hostContract: options.locationAdmission===undefined?PRIVATE_OPERATION_HOST_CONTRACT:SUPPLIER_LOCATION_HOST_CONTRACT,
+    hostContract: options.revalidateExternalAccountBeforeOutcome===true?NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:options.locationAdmission===undefined?PRIVATE_OPERATION_HOST_CONTRACT:SUPPLIER_LOCATION_HOST_CONTRACT,
     async execute(input, action) {
       // These variables belong to exactly ONE execution, including when the
       // shared host receives overlapping requests for different users/orgs.
@@ -245,6 +251,14 @@ function createBoundOperationHost(options, serviceMode) {
                   ...(inspectionPolicy?{requestInspection:inspectionStore.evidence(inspectionPolicy)}:{}),
                   ...(nativeWorkPolicy?{requestWork:workStore.evidence(nativeWorkPolicy)}:{}),
                   ...(requestPolicy ? { usagePolicy: 'PRODUCT_POLICY', requestPolicy, ...(continuation === null ? {} : {requestContinuation:requestLedger.evidence(requestPolicy)}) } : {}) },
+                ...(delegated && workStore && options.revalidateExternalAccountBeforeOutcome===true ? {
+                  revalidateExternalAccount: async () => {
+                    if (closed) unavailable()
+                    const fresh = await readExternalAccount(freeze(copy(lease.state.delegation.identityKey)))
+                    if (closed) unavailable()
+                    return freeze(copy(fresh))
+                  },
+                } : {}),
                 ...(requestPolicy ? {
                   reserveUsage: async context => {
                     if (closed || reserveStarted) unavailable()

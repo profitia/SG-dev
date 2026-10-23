@@ -66,6 +66,7 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
     commandBoundaryDigest:options.commandBoundaryDigest,workSchemaDigest:options.workSchemaDigest,
     workBusinessBoundaryDigest:options.workBusinessBoundaryDigest}))
   const host=createDelegatedNativeWorkHost<PoolClient>({application:fixed.application,binding:fixed.binding,job:fixed.job,
+    revalidateExternalAccountBeforeOutcome:true,
     privateWork:{schemaDigest:fixed.workSchemaDigest},now:options.now,transactionTimeoutMs:options.transactionTimeoutMs,
     readExternalAccount:createClerkAccountStatusReader({client:options.clerk,...options.accountIdentity,now:options.now}),
     ...createSrmNativePgDriver(options.pool,options.auditPool)})

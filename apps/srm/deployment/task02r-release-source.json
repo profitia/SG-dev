@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-TASK02R-ACTIVATE-20261023",
+  "targetEnvironment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "baselineSha": "a0a3b0626fac16e011b57d6284ce55abcfcd3ca3",
+  "platformVersion": "1.26.0",
+  "overrides": {
+    "apps/srm/src/server/native-pg-driver.ts": "727be0afe732ef1e583a5d418b8e6a464a98584b6239d60219d760c435b9762a",
+    "apps/srm/src/server/supplier-request-work.ts": "8340c1fd172eaef14d4267ac141ce9f8a9ca2bfb87454e2690b4e2b172332258",
+    "packages/maps-embed/package.json": "853dc2fce066a07c09853d2ee670daa47dda703b2722e8d074978bea0934cb40",
+    "packages/platform-contracts/src/operation-context.d.mts": "be3857af0ee1a6491c33006e47f00a228ede0893f31594e83c39fed87f64c5d8",
+    "packages/platform-contracts/src/operation-context.mjs": "26f13e7948d5270f41ce70b408fdf6e1393e8efe58d13c5f760a1f594c497738",
+    "packages/platform-contracts/src/private-operation-host.d.mts": "60756ec9c814732c4e9de0c3c0cde772b2e46988fe6e5d42540e34beb917e7fb",
+    "packages/platform-contracts/src/private-operation-host.mjs": "fbcef360b781e1caca3446d7ff26c24caf51358b5ec8374a8523a39492c6f3d4"
+  },
+  "metadataTransforms": [
+    "platform package and lock version 1.25.0 to 1.26.0",
+    "SRM local platform lock version and Maps peer compatibility only"
+  ],
+  "newIdentityOrKrsSourceAllowed": false,
+  "otherRuntimeDeploymentAllowed": false
+}

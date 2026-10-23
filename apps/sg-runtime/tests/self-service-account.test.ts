@@ -99,11 +99,11 @@ test('new source receipt preserves every previous acceptance and pins the comple
   const beforeBytes = execFileSync('git', ['show', current.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'])
   assert.equal(createHash('sha256').update(beforeBytes).digest('hex'), current.previousReceiptSha256)
   const before = JSON.parse(beforeBytes.toString('utf8'))
-  for (const [key, value] of Object.entries(before)) assert.deepEqual(receipt[key], value, key)
+  for (const [key, value] of Object.entries(before)) assert.deepEqual(['contract', 'producer'].includes(key) ? receipt.accountRecheckSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   for (const record of ['storedReadSourceAdoption', 'categoryShellAdoption', 'categoryTransportAdoption', 'categoryIngressAdoption'])
     for (const path of Object.keys(before[record].sourceDigests)) assert(path in current.applicationSourceDigests, path)
   for (const path of Object.keys({...before.supplierLocationSourceCompatibility.applicationSourceDigests,...before.platform125SourceCompatibility.applicationSourceDigests})) assert(path in current.applicationSourceDigests, path)
-  for (const [path, expected] of Object.entries(current.applicationSourceDigests)) {
+  for (const [path, expected] of Object.entries({ ...current.applicationSourceDigests, ...receipt.accountRecheckSourceCompatibility.applicationSourceDigests })) {
     const observed = createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex')
     assert.equal(observed, expected, path)
     assert.notEqual(createHash('sha256').update('mutated-source').digest('hex'), expected, 'Mutation must not pass: ' + path)

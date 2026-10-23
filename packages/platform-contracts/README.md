@@ -1,5 +1,23 @@
 # Platform contracts
 
+## Native SQL account revalidation (1.26.0)
+
+An adopting native-work receiver may explicitly set
+`revalidateExternalAccountBeforeOutcome: true` (host contract 1.13.0). The host
+reads the actual provider account again for the original, locked delegation's
+identity key, after its SQL work and projection, before final authorization and
+OUTCOME. This permits bounded SQL work lasting longer than the admission account
+observation. The original admission evidence remains immutable. The new proof
+must still match that same environment, issuer and subject, have ACTIVE status,
+and satisfy the unchanged five-second freshness bound. Missing, expired,
+malformed, revoked or unavailable provider evidence rolls back the transaction
+and withholds output; there is no stale fallback. Original delegation, identity,
+membership, product, module, permission and current SQL scope checks still apply.
+The real driver must still enforce the total 15-second transaction limit,
+including this second provider call. This option adds no SQL migration, grant,
+tenant identifier or new operation. Other host families reject it; existing
+receivers retain their accepted behavior until separate adoption and deployment.
+
 Owner: ARCHITECTURE. The Development contract identifies a governance track; `projectKey` does not replace Organisation ID or User ID. SG2 and SRM retain separate governed adoption tasks, versions and source digests. Source merge and product deployment remain separate. Run `npm test` and `npm run build` here; see `Canon/runbooks/shared-development-contract-integration-v1.md` for the existing adoption protocol.
 
 `development-context` retains contract 1.0.0 and its existing source digest. Package 1.11.0 retains the separate `operation-context` export: contract `profitia.operation-context` 1.0.0, implementation `1.0.0-candidate.7`. The Node24 import and require conditions point to the same implementation; hosts use `isOperationDenied` to transport errors safely across bundler/module copies. Audit events bind UTC time, identity proof reference, resource classification/owner/version, access basis and exact product-grant source/version without credentials or payload contents. No network service or framework upgrade is required.
