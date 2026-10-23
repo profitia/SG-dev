@@ -98,28 +98,10 @@ export function gusFullRecord(xml:string,requestedNip:string,requestedRegon:stri
  if(!krs(id))return error('GUS_KRS_INVALID','IDENTITY')
  return {status:'MATCH',nip:requestedNip,regon:requestedRegon,krs:id,register:'P',registerSymbol:'138',checkedAt:new Date(now).toISOString()}
 }
-/** Single admitted instance owns this key in the current one-instance pilot.
- * Every session/search/report/logout counts against the same conservative limit.
- * Callers scaling that deployment must supply a shared scheduler instead. */
-export function createGusRateGate(now=Date.now){
- const history:number[]=[];let queue=Promise.resolve()
- return async function permit(signal:AbortSignal){
-  let release!:()=>void;const predecessor=queue;queue=new Promise<void>(resolve=>{release=resolve})
-  await predecessor
-  try{
-   signal.throwIfAborted();let t=now();while(history.length&&history[0]!<=t-3600000)history.shift()
-   let wait=history.length>=6000?history[history.length-6000]!+3600000-t:0
-   const minute=history.filter(v=>v>t-60000);if(minute.length>=120)wait=Math.max(wait,minute[minute.length-120]!+60000-t)
-   const second=history.filter(v=>v>t-1000);if(second.length>=3)wait=Math.max(wait,second[second.length-3]!+1000-t)
-   if(wait>0)await new Promise<void>((resolve,reject)=>{const timer=setTimeout(done,wait+1);function done(){signal.removeEventListener('abort',abort);resolve()}function abort(){clearTimeout(timer);signal.removeEventListener('abort',abort);reject(signal.reason)}signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort()})
-   signal.throwIfAborted();history.push(now())
-  }finally{release()}
- }
-}
-export function createGusMapper(options:{source:AdmittedSourcePort;now?:()=>number;permit:(signal:AbortSignal)=>Promise<void>;readSid:()=>string|null;writeSid:(value:string|null)=>void}){
+export function createGusMapper(options:{source:AdmittedSourcePort;now?:()=>number;readSid:()=>string|null;writeSid:(value:string|null)=>void}){
  const clock=options.now??Date.now
  async function invoke(action:GusAction,n:string,r:string|null,key:string,signal:AbortSignal){
-  await options.permit(signal);signal.throwIfAborted()
+  signal.throwIfAborted()
   const result=await options.source.execute({command:{action,nip:n,regon:r,requestKey:key},intentKey:await sha256(key+':'+action)},{signal})
   const evidence=externalCallEvidence(result)
   if(evidence?.transportProtocol!=='profitia.external-native-http'||evidence.status!=='RESPONSE'||evidence.sourceId!=='krs.registry.gus'||evidence.resourceId!=='krs-gus:nip-map')return error('GUS_SOURCE_UNVERIFIED','AUTHORITY')
@@ -153,11 +135,11 @@ export function createGusMapper(options:{source:AdmittedSourcePort;now?:()=>numb
 }
 
 /** Credentials are late server-owned values, never Source control payloads. */
-export async function createAdmittedGusSource<T>(options:Omit<ExternalCallOptions<T,GusCommand>,'parseCommand'|'buildRequest'|'getHeaders'|'nativeTransport'|'publicWebTransport'> & {apiKey:string;readSid:()=>string|null}){
+export async function createAdmittedGusSource<T>(options:Omit<ExternalCallOptions<T,GusCommand>,'parseCommand'|'buildRequest'|'getHeaders'|'nativeTransport'|'publicWebTransport'> & {apiKey:string;readSid:()=>string|null;permit:(signal:AbortSignal)=>Promise<void>}){
  if(options.binding.origin!==GUS_ORIGIN||options.binding.transport!=='HTTPS')return error('GUS_SOURCE_ORIGIN_REFUSED','AUTHORITY')
- const {apiKey,readSid,...hostOptions}=options
+ const {apiKey,readSid,permit,...hostOptions}=options
  const host=createExternalCallHost({...hostOptions,parseCommand:gusCommand,buildRequest:command=>gusRequest(command,apiKey,readSid()),
-  getHeaders:command=>{const sid=readSid();if(command.action!=='Zaloguj'&&!sid)return error('GUS_SESSION_MISSING','AUTHORITY');return sid?{sid}:{}},
+  getHeaders:async(command,{signal})=>{await permit(signal);signal.throwIfAborted();const sid=readSid();if(command.action!=='Zaloguj'&&!sid)return error('GUS_SESSION_MISSING','AUTHORITY');return sid?{sid}:{}},
   nativeTransport:{schemaDigest:await nativeExternalTransportSchemaDigest(),credentialMode:'SERVER_HEADERS',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT',
    maximumResponseBytes:cap,redirectOrigins:[],pathRules:[{method:'POST',path:GUS_PATH,requestFormat:'SOAP'}]}})
  return Object.freeze({execute:host.execute})
