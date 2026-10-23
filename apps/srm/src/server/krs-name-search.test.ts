@@ -101,3 +101,28 @@ test('client gateway never sends actor, organisation or identity DTO and refuses
   await assert.rejects(()=>gateway.verify(krs,new AbortController().signal));
   assert.deepEqual(calls.map(c=>c.body),[{query:'Fixture'},{krs}]);
 });
+
+
+test('verified transformation chain keeps the current company and each original financial issuer',async()=>{
+ const old='0000065856',middle='0001102066',history={version:'KRS_CONTINUITY_V1' as const,currentKrs:krs,
+  members:[{krs,legalName:'Synthetic current',legalForm:null,status:'ACTIVE' as const,registeredAt:'2026-04-01',deregisteredAt:null},
+   {krs:middle,legalName:'Synthetic predecessor SA',legalForm:null,status:'DEREGISTERED' as const,registeredAt:'2024-05-02',deregisteredAt:'2026-05-12'},
+   {krs:old,legalName:'Synthetic oldest',legalForm:null,status:'DEREGISTERED' as const,registeredAt:'2001-12-03',deregisteredAt:'2024-06-04'}],
+  links:[{predecessorKrs:middle,successorKrs:krs,basis:'KRS_FORMATION_TRANSFORMATION' as const},{predecessorKrs:old,successorKrs:middle,basis:'KRS_FORMATION_TRANSFORMATION' as const}],unlinkedKrs:[]};
+ const older=record('old',old,nip,'500');older.document.period_from_date='2022-01-01';older.document.period_to_date='2022-12-31';
+ const rows=[record('middle',middle),older],f=await fixture(rows);
+ f.result=mapMgbiFinancialRecords(rows,{type:'NIP',value:nip},at,rows.length,history);f.result.rawResponse={pages:[{results:rows}],recordCount:rows.length};
+ f.ports.registry.history=async()=>history;f.ports.financial.acquire=async(_request,_identity,_key,general)=>{assert.equal(general?.data?.registryHistory,history);return f.result};
+ const r=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-history-request-001');
+ assert.equal(r.result.card.identity.krs,krs);assert.equal(r.result.card.general.data?.registryHistory?.currentKrs,krs);
+ assert.deepEqual(r.result.card.financial.data?.periods.map(p=>[p.to,p.sourceRegistration?.krs,p.sourceRegistration?.relationship]),[['2025-12-31',middle,'PREDECESSOR'],['2022-12-31',old,'PREDECESSOR']]);
+ const foreign=record('foreign','0000099999',nip,'999999'),mixed={...f.result,rawResponse:{pages:[{results:[...rows,foreign]}],recordCount:3}};
+ const reconciled=await reconcileKrsFinancial(f.selected.identity,mixed,time,history);
+ assert.doesNotMatch(JSON.stringify(reconciled),/999999/);assert.equal(reconciled.section.data?.periods.length,2);
+ assert.equal((await reconcileKrsFinancial(f.selected.identity,f.result,time)).errorCode,'FINANCIAL_COMPANY_MISMATCH');
+});
+test('unavailable or revoked continuity makes zero paid Financial calls and preserves registry General',async()=>{
+ const f=await fixture();f.ports.registry.history=async()=>{throw Error('KRS_CONTINUITY_UNVERIFIED')};
+ const r=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-history-denied-001');
+ assert.equal(f.calls.acquire,0);assert.equal(f.calls.publish,0);assert.ok(r.result.card.general.data);assert.equal(r.result.card.financial.data,null);
+});
