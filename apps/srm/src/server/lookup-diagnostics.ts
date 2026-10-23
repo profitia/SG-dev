@@ -89,9 +89,24 @@ export function sanitizedLookupFailure(error: unknown) {
     ? safeProviderCode(cause.message) : undefined;
   const code = sqlstate ?? identityCode ?? (cause instanceof SyntaxError || cause instanceof TypeError ? "SERIALIZATION_ERROR" : "PERSISTENCE_ERROR");
   // PostgreSQL detail, message, query and values can contain personal/provider data.
-  // Only known schema constraint names and the SQLSTATE cross the logging boundary.
+  // Only finite reviewed labels cross the logging boundary. The raw PostgreSQL
+  // message/routine are never logged, even when they resemble a known value.
+  const databaseHint = sqlstate === "42501" ? new Map([
+    ['new row violates row-level security policy for table "suppliers"', 'SUPPLIER_ROW_POLICY'],
+    ['new row violates row-level security policy (USING expression) for table "suppliers"', 'SUPPLIER_ROW_POLICY'],
+    ['new row violates row-level security policy for table "lookup_requests"', 'LOOKUP_ROW_POLICY'],
+    ['Current exact sensitive Supplier write required', 'SENSITIVE_WRITE_GUARD'],
+    ['Current private supplier phase required', 'SUPPLIER_PHASE_GUARD'],
+    ['Supplier identity is immutable', 'SUPPLIER_IDENTITY_GUARD'],
+    ['Bound supplier lookup required', 'LOOKUP_IDENTITY_GUARD'],
+    ['permission denied for table suppliers', 'SUPPLIER_TABLE_PRIVILEGE'],
+    ['permission denied for table lookup_requests', 'LOOKUP_TABLE_PRIVILEGE'],
+  ]).get(typeof record.message === "string" ? record.message : "") ?? new Map([
+    ['ExecWithCheckOptions', 'ROW_POLICY'], ['aclcheck_error', 'DATABASE_PRIVILEGE'],
+    ['exec_stmt_raise', 'DATABASE_GUARD'],
+  ]).get(typeof record.routine === "string" ? record.routine : "") : undefined;
   const constraint = typeof record.constraint === "string" && ["financial_facts_verified_cost_magnitude_check", "catalog_financial_facts_verified_cost_magnitude_check"].includes(record.constraint) ? record.constraint : undefined;
-  return { stage: staged?.stage ?? "search", section: staged?.section, code, category: category(code, constraint), sqlstate, constraint };
+  return { stage: staged?.stage ?? "search", section: staged?.section, code, category: category(code, constraint), sqlstate, constraint, ...(databaseHint ? { databaseHint } : {}) };
 }
 
 function base() {

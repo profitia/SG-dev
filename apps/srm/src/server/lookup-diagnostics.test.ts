@@ -2,6 +2,23 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { atLookupStage, logLookupFailure, logProviderOutcome, sanitizedLookupFailure, withLookupDiagnostics, withKysDiagnostics, lookupRequestId, kysMode } from "./lookup-diagnostics";
 
+test("database refusal hints use finite labels and reject message or routine suffixes", () => {
+  for (const [message, routine, expected] of [
+    ['Current exact sensitive Supplier write required', 'exec_stmt_raise', 'SENSITIVE_WRITE_GUARD'],
+    ['new row violates row-level security policy for table "suppliers"', 'ExecWithCheckOptions', 'SUPPLIER_ROW_POLICY'],
+    ['private statement and value 12345678901', 'ExecWithCheckOptions', 'ROW_POLICY'],
+  ]) {
+    const result = sanitizedLookupFailure({ code: '42501', message, routine });
+    assert.equal(result.databaseHint, expected);
+    assert.doesNotMatch(JSON.stringify(result), /12345678901|private statement|exec_stmt_raise|ExecWithCheckOptions/);
+  }
+  for (const code of ['42501', '23514']) {
+    const result = sanitizedLookupFailure({ code, message: 'Current exact sensitive Supplier write required secret', routine: 'exec_stmt_raise secret' });
+    assert.equal(result.databaseHint, undefined);
+    assert.doesNotMatch(JSON.stringify(result), /secret|sensitive Supplier/);
+  }
+});
+
 test("unresolved registry identity is a safe mapping diagnostic rather than a database failure",()=>{
   for(const code of ["COMPANY_IDENTITY_AMBIGUOUS","COMPANY_IDENTITY_UNRESOLVED"]){
     const result=sanitizedLookupFailure(new Error("MGBI_"+code));assert.equal(result.code,code);assert.equal(result.category,"SERIALIZATION_OR_MAPPING");
