@@ -72,7 +72,7 @@ export async function persistSection(
   privateEnvelope = false,
 ): Promise<string | null> {
   if (privateEnvelope && sectionName !== "kys") throw new TypeError("Private KYS projection required");
-  const attemptId = await atLookupStage("attempt_persistence", () => startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod, pool), sectionName);
+  const attemptId = await atLookupStage("attempt_persistence", () => startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod, pool, section.source.provider === "KRS" && sectionName === "general" ? "KRS" : undefined), sectionName);
   if (sectionName === "kys") logProviderOutcome("VERCLY", "kys", section.status, errorCode, retrievalMethod);
   try {
     let storedSnapshotId: string | null = null;

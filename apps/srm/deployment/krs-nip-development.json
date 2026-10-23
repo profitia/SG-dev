@@ -29,7 +29,8 @@
     "Sufficient existing Source/HTTP budgets",
     "Current private-store account recheck and financial guard compatibility",
     "Retained LKG and tested recovery",
-    "Real authenticated user journey"
+    "Real authenticated user journey",
+    "Explicit private SQL016 pilot-only KRS General provenance; retain during artifact rollback"
   ],
   "observedLiveBlockers": [],
   "rollback": "Disable SRM_KRS_NIP_ENABLED and restore retained prior deploy; never reset counters, delete accepted history or roll back product data automatically",

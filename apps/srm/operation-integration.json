@@ -3208,7 +3208,7 @@
     },
     "applicationSourceDigests": {
       "deployment/krs-name-pilot-targets.json": "8d0e72207dc655391bba57b59eba0f78ab57f3470d70f84660833e21b505d486",
-      "deployment/krs-nip-development.json": "3b235f2dbabddd63f595fb4375ce1f2ef237d7b66608534613c15b84b9458a30",
+      "deployment/krs-nip-development.json": "39389299beb3404d272d55ca52ab464c78fbbbff8e2b37d11f5ad91669f78c62",
       "package-lock.json": "281428a73590d21165f70dbc6f8cd3dfaff3a419ecd83b004bdc186c0fc92016",
       "scripts/operation-context.test.mjs": "8e1d7e401efd6a5a4fa5b21cea9171d8c370614eb1240e4e7bfe083ca5b9bc42",
       "src/modules/xray/report-controller.test.ts": "ba198c09cf8ee8cb060dabed4f2aa23d43176276fededc45dd43ac3d0e2cffe3",
@@ -3230,7 +3230,13 @@
       "src/server/xray-repository.test.ts": "d52204f2994fa25666322a10eb745f429293bee4f1afe7c7698f688590c41978",
       "scripts/private-host.integration.test.mjs": "e3dcbcd26f1de555f8e3c0ffe981f763c22b51b131f4bc5cbf0421c119cb569a",
       "scripts/private-sensitive.integration.test.mjs": "dfa9711805b2500db8dde8157b84603539ff979e1ab559582a8f98c740467581",
-      "scripts/supplier-location-admission.integration.test.mjs": "d611f867fc7ec15fd496bfdc858cd4b13578d9fc3bd3eca298b5922cc867fa34"
+      "scripts/supplier-location-admission.integration.test.mjs": "d611f867fc7ec15fd496bfdc858cd4b13578d9fc3bd3eca298b5922cc867fa34",
+      "src/server/xray-repository.ts": "3afecd4011d4a8b0e759d243b6bcb802286491817027fde1c03db4548dec162e",
+      "src/server/xray-lookup.ts": "aa3361ebd37b06a6c11b06f56e003dd928fe4a247accbc91a6715897d40c9e84",
+      "src/server/supplier-native-work-store.ts": "11a7fc8de9aefe7856964ab12207438e8fca118f8798d487ae7b0f26afa7b6e8",
+      "db/private-store/016-krs-general-provenance.sql": "34eb8a48ef0cc969a589ee6421c494d8dc859609924948e92afb4e6f4969b93e",
+      "scripts/supplier-delegated-business.integration.test.mjs": "916bb8b231b3847ea1521442d043608df05e471b8b947c2868ddfa68b5e47030",
+      "scripts/task02r-release-source.test.mjs": "711f5bc6bf119ecd9b67b36abc87e31e967ccc7020b0723e01c7d2a65280281a"
     },
     "ceidgFirst": true,
     "primaryTimeoutMs": 3000,

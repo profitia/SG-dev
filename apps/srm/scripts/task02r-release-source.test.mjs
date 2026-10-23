@@ -13,7 +13,20 @@ const hash=b=>createHash('sha256').update(b).digest('hex')
 test('the narrow build retains deployed Identity/KRS bytes and only accepts the exact repair closure',()=>{
  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'task02r-source-test-')),out=path.join(temp,'source')
  try{
-  const receipt=assembleTask02rSource(root,out),base=receipt.baselineSha
+  let inputRoot=root
+  const manifest=JSON.parse(fs.readFileSync(path.join(root,'apps/srm/deployment/task02r-release-source.json')))
+  const acceptance=JSON.parse(fs.readFileSync(path.join(root,'apps/srm/operation-integration.json'))).krsNipSourceCompatibility
+  if(acceptance&&Object.entries(manifest.overrides).some(([name,digest])=>hash(fs.readFileSync(path.join(root,name)))!==digest)){
+   // The parallel KRS candidate must remain refused by the frozen narrow
+   // builder. Exercise its accepted historical input separately, without
+   // widening its manifest, changing its code or activating another service.
+   assert.throws(()=>assembleTask02rSource(root,out),/RELEASE_OVERRIDE_DIGEST_MISMATCH/)
+   inputRoot=path.join(temp,'accepted-source')
+   execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,inputRoot])
+   execFileSync('git',['checkout','--quiet','--detach',acceptance.preservedBoundedIndicatorSourceSha],{cwd:inputRoot})
+   execFileSync('git',['remote','set-url','origin','https://github.com/profitia/SG-dev.git'],{cwd:inputRoot})
+  }
+  const receipt=assembleTask02rSource(inputRoot,out),base=receipt.baselineSha
   const changed=new Set([...Object.keys(receipt.overrides),'packages/platform-contracts/package.json',
    'packages/platform-contracts/package-lock.json','apps/srm/package-lock.json','task02r-release-source.json'])
   const files=execFileSync('git',['ls-tree','-r','--name-only',base],{cwd:root,encoding:'utf8'}).trim().split('\n')
@@ -43,7 +56,7 @@ test('the narrow build retains deployed Identity/KRS bytes and only accepts the 
   execFileSync('git',['init','--quiet'],{cwd:candidate})
   execFileSync('git',['remote','add','origin','https://github.com/profitia/SG-dev'],{cwd:candidate})
   for(const name of [...Object.keys(receipt.overrides),'apps/srm/deployment/task02r-release-source.json']){
-   fs.mkdirSync(path.dirname(path.join(candidate,name)),{recursive:true});fs.copyFileSync(path.join(root,name),path.join(candidate,name))
+   fs.mkdirSync(path.dirname(path.join(candidate,name)),{recursive:true});fs.copyFileSync(path.join(inputRoot,name),path.join(candidate,name))
   }
   const entry=path.join(candidate,'apps/srm/src/server/supplier-request-work.ts');fs.appendFileSync(entry,'\n// unaccepted source\n')
   assert.throws(()=>assembleTask02rSource(candidate,path.join(temp,'refused')),/RELEASE_OVERRIDE_DIGEST_MISMATCH/)
