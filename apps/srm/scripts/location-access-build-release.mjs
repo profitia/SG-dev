@@ -42,9 +42,19 @@ export function assembleLocationAccessSource(repository,output){
   const needle='if(!row?.nip||!row.krs)return refuse()',replacement='if(!row?.nip)return refuse()'
   if(hash(old)!==manifest.baseFileDigest||old.split(needle).length!==2||old.replace(needle,replacement)!==fs.readFileSync(sourcePath,'utf8'))fail('LOCATION_CHANGE_NOT_EXACT')
   fs.copyFileSync(sourcePath,path.join(output,target))
+  const patch=manifest.middlewarePatch,middleware='apps/srm/middleware.ts',prior='69c09959ceaa73d3e8836127a029f7caeb30c204'
+  if(patch?.sourceBaselineSha!==prior||!['sourceBaselineDigest','sourceDigest','artifactBaselineDigest'].every(k=>/^[a-f0-9]{64}$/.test(patch[k]??'')))fail('MIDDLEWARE_PATCH_IDENTITY_REQUIRED')
+  const entry=path.join(repository,middleware)
+  if(!fs.lstatSync(entry).isFile()||fs.lstatSync(entry).isSymbolicLink()||hash(fs.readFileSync(entry))!==patch.sourceDigest)fail('MIDDLEWARE_SOURCE_DIGEST_MISMATCH')
+  try{run(['git','cat-file','-e',prior+'^{commit}'],repository,{stdio:'pipe'})}catch{run(['git','fetch','--no-tags','--depth=1',canonical,prior],repository,{stdio:'pipe'})}
+  const priorSource=run(['git','show',prior+':'+middleware],repository),frozen=fs.readFileSync(path.join(output,middleware),'utf8')
+  const gate='"/api/xray/web-identity"',admitted=gate+', "/api/supplier-locations"'
+  if(hash(priorSource)!==patch.sourceBaselineDigest||hash(frozen)!==patch.artifactBaselineDigest
+   ||priorSource.split(gate).length!==2||frozen.split(gate).length!==2||priorSource.replace(gate,admitted)!==fs.readFileSync(entry,'utf8'))fail('MIDDLEWARE_CHANGE_NOT_EXACT')
+  fs.writeFileSync(path.join(output,middleware),frozen.replace(gate,admitted))
   const receipt={...base,sourceRepositoryHead:head,baseArtifactSourceSha:accepted,locationAccessManifest:manifest,
    locationAccessManifestDigest:hash(fs.readFileSync(path.join(repository,manifestPath))),
-   changedPaths:[target],identityOrKrsSourceAdopted:false}
+   changedPaths:[target,middleware],middlewareDigest:hash(fs.readFileSync(path.join(output,middleware))),identityOrKrsSourceAdopted:false}
   fs.writeFileSync(path.join(output,'task02r-release-source.json'),JSON.stringify(receipt,null,2)+'\n')
   return receipt
  }finally{fs.rmSync(temp,{recursive:true,force:true})}

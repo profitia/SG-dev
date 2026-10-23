@@ -47,7 +47,7 @@ test('Financial-only correction preserves every preceding acceptance and pins th
  for(const [key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
  assert.equal(a.identityDecisionCacheIntroduced,false);assert.equal(a.transactionTimeoutMs,15000)
  assert.equal(a.originalCorporateSchemaChanged,false);assert.equal(a.financialOnlyPort,'profitia_srm_catalog.open_financial_publication(uuid,uuid,text)')
- for(const [file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ for(const [file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.organisationLocationEntryAdoption.previousReceiptSourceSha+':apps/srm/'+file])),digest,file)
 })
 
 test('bounded indicator reads retain the entire accepted receipt and add no new operation or grant',()=>{
@@ -70,4 +70,13 @@ test('location build recovery preserves accepted access and changes no product r
  assert.equal(a.productRuntimeChanged,false);assert.equal(a.databaseChanged,false)
  const file='src/server/supplier-locations.ts'
  assert.equal(hash(fs.readFileSync(path.join(root,file))),hash(execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/'+file])))
+})
+
+test('location Clerk entry preserves all accepted receipts and keeps existing E1 authority',()=>{
+ const a=receipt.organisationLocationEntryAdoption,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(previous),a.previousReceiptDigest)
+ for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ assert.equal(a.databaseChanged,false);assert.equal(a.newGrantRequired,false);assert.equal(a.existingBackendE1BoundaryRetained,true)
 })

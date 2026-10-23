@@ -10,5 +10,11 @@
     "apps/srm/src/server/supplier-locations.ts": "394da387f55f72b60ce6a8e58a8c91df955e574e65ff0df9109b4690cb9b9057"
   },
   "newIdentityOrKrsSourceAllowed": false,
-  "paidGeocodingBudget": 0
+  "paidGeocodingBudget": 0,
+  "middlewarePatch": {
+    "sourceBaselineSha": "69c09959ceaa73d3e8836127a029f7caeb30c204",
+    "sourceBaselineDigest": "7a28cd449075e24877f36e8ba98ab016d62e9b2766b6480a5dba7c0fceb2ee40",
+    "sourceDigest": "6f2e36bb7436d5643d483e846598b558075c3f6c197dd68a32af83b706008378",
+    "artifactBaselineDigest": "efdff1e69ae04cfb309bc1b591015f37527e9e94fa3bf340ab290f74947eda25"
+  }
 }
