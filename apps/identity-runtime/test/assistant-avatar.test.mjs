@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { configuration } from './fixtures.mjs'
 import { createAssistantAvatarSurface } from '../dist/src/assistant-avatar.js'
+import { accountTransactions } from '../dist/src/account-provisioning.js'
 import { createHttpHandler } from '../dist/src/http-handler.js'
 import { createNodeServer } from '../dist/src/node-server.js'
 import { createIdentityProvisioner } from '../../../packages/platform-contracts/src/identity-provisioning.mjs'
@@ -15,10 +16,13 @@ test('avatar HTTP surface uses verified E1 account, ordinary SQL and closed proj
   a.client.users.getUser=async id=>({...await raw(id),primaryEmailAddressId:'primary',emailAddresses:[{id:'primary',verification:{status:a.unverified?'unverified':'verified'}}]})
   await createIdentityProvisioner(db.options(a)).ensureAccount(a.request('POST'))
   await createIdentityProvisioner(db.options(b)).ensureAccount(b.request('POST'))
-  const surface=createAssistantAvatarSurface({...db.options(a),configuration:cfg,deploymentId:'fixture',configurationVersion:'fixture'})
+  // Exercise the production pg transaction adapter, not the fixture shortcut.
+  const surface=createAssistantAvatarSurface({...db.options(a),transact:accountTransactions(db.pool),configuration:cfg,deploymentId:'fixture',configurationVersion:'fixture'})
   const handler=createHttpHandler({configuration:cfg},{},surface)
   const request=(method='GET',body,headers={})=>new Request(cfg.origin+'/v1/account/assistant-avatar',{method,headers:{authorization:'Bearer synthetic-fixture',...(method==='POST'?{origin:cfg.origin,'content-type':'application/json'}:{}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)})})
-  const initial=await (await handler(request())).json()
+  const initialResponse=await handler(request())
+  assert.equal(initialResponse.status,200)
+  const initial=await initialResponse.json()
   assert.equal(initial.avatarSex,null)
   const response=await handler(request('POST',{expectedVersion:initial.version,avatarSex:'male'}))
   assert.equal(response.status,200);const saved=await response.json()
