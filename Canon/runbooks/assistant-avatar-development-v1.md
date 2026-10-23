@@ -70,3 +70,26 @@ CI target expansion: `.github/workflows/identity-runtime-ci.yml` is an additiona
 Architecture-owned ALIGNED path, separately preflighted under the same task
 before editing, to install existing public dependencies for the real HTTP/SQL
 acceptance test. It adds no live credentials or cloud database access.
+
+## Release hold — 2026-10-23
+
+The owner authorized up to USD1 solely for a temporary paid-plan configuration
+and a read-only retained-artifact measurement, explicitly without deployment in
+that step. Render's Update Service API rejected Free-to-Starter with HTTP400:
+`cannot change between free and paid plans`. The subsequent Free restoration
+and independent service/deployment reads confirmed the original Free setting,
+auto-deploy off and live deployment `dep-dbd7dp2fngtc73fsf0t0`, source
+`68f4784d32ab77f77fd9b90d4bbd410171159aea`. No measurement job or deployment was
+created by this attempt. No product data, credentials or grants were changed.
+
+The retained deployment ID is known, but its artifact digest remains unmeasured.
+This is an unresolved release gate, not a source/test failure and not a reason
+to substitute a rebuild or source SHA for the artifact digest. Identity and SG2
+deployment, live registration/login acceptance and product rollback rehearsal
+remain pending until an authorized, verifiable recovery path is available.
+Clerk email-template selection remains outside this persistence implementation.
+
+Source acceptance is ordered: shared profile contract PR661, Identity wiring
+PR657, then SG2 consumer PR659. The initial shared CI detected an unrelated KRS
+runtime/consumer version mismatch; main PR660 supplies the accepted SRM fix.
+The isolated branches incorporate it without editing or deploying KRS/SRM.
