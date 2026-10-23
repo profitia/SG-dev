@@ -543,13 +543,21 @@ export function createOperationExecutor(options) {
           if(location)locationEvidence(state,request,context,identity,config,moduleEvidence,now())
           const outcome = session.describeOutcome === undefined ? 'SUCCEEDED' : await session.describeOutcome(output, bound)
           if (!['SUCCEEDED', 'NO_DATA', 'SELECTION_UNAVAILABLE'].includes(outcome)) deny('POLICY_UNAVAILABLE')
+          // An explicitly adopted host obtains a new provider observation for
+          // the original subject. Never extend or mutate the admission proof.
+          let outcomeState = state
+          if (delegated && session.revalidateExternalAccount !== undefined) {
+            if (typeof session.revalidateExternalAccount !== 'function') deny('POLICY_UNAVAILABLE')
+            const observation = await session.revalidateExternalAccount()
+            outcomeState = { ...state, delegation: { ...state.delegation, externalAccountObservation: observation } }
+          }
           if (!validUntil(identity.expiresAt, now()) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
           if (selected.product) productAvailable(state, selected.product, selected.feature, config, ceiling, now())
           if (selected.feature === 'supplier_workspace') productAvailable(state, productEvidence[0].product, selected.feature, config, ceiling, now())
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
           if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
           if (compute) computePolicy(requestPolicy, context, now())
-          if (delegated) delegatedJob(state,identity,request,config,now())
+          if (delegated) delegatedJob(outcomeState,identity,request,config,now())
           if(platform)ingestionPolicy(platformPolicy,context,request,now())
           try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: outcome })) }
           catch (error) {
