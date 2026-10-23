@@ -119,6 +119,18 @@ test('transaction abort destroys connection once; late callbacks cannot query or
   controller.abort(); await assert.rejects(work); finish(); await new Promise(r => setImmediate(r))
   assert.deepEqual(releases, [true]); assert.deepEqual(calls, ['BEGIN']); await assert.rejects(query('LATER'))
 })
+for (const cause of ['deadline', 'abort']) test('profile connection acquisition ' + cause + ' never starts late work', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const calls = [], releases = [], controller = new AbortController(); let connect
+  const pool = { connect: () => new Promise(resolve => { connect = resolve }) }
+  const work = accountTransactions(pool)(async () => { calls.push('WORK') }, { timeoutMs: 15000, maxWaitMs: 3000 }, controller.signal)
+  const rejected = assert.rejects(work, { code: 'ACCOUNT_UNAVAILABLE' })
+  if (cause === 'deadline') t.mock.timers.tick(3000); else controller.abort()
+  await rejected
+  connect({ query: async sql => { calls.push(sql); return { rows: [] } }, release: destroy => releases.push(destroy) })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.deepEqual(calls, []); assert.deepEqual(releases, [true])
+})
 test('account page uses official pinned SDK, closed destination and a parseable script without persistent secrets', () => {
   const f = fixture(), html = accountPage(f.config, 'sg2', 'account', 'registration')
   assert(html.includes('@clerk/clerk-js@6.40.0')); assert(html.includes('@clerk/ui@1.41.1'))
