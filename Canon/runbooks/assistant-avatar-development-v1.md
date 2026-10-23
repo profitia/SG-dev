@@ -93,3 +93,23 @@ Source acceptance is ordered: shared profile contract PR661, Identity wiring
 PR657, then SG2 consumer PR659. The initial shared CI detected an unrelated KRS
 runtime/consumer version mismatch; main PR660 supplies the accepted SRM fix.
 The isolated branches incorporate it without editing or deploying KRS/SRM.
+
+## Release continuation and correction — 2026-10-23
+
+The owner subsequently authorized permanent USD7/month Identity compute and
+deployment before the plan upgrade. Identity is now on `0.5c-512mb`; the
+retained baseline artifact and configuration have been measured. The historical
+hold above is superseded by the evidence in
+`Canon/evidence/2026-10-23-assistant-avatar-development-release.md`.
+
+Live login acceptance exposed a transaction-adapter mismatch: provisioning
+requests a 5000ms acquisition limit, while the private profile host requests
+3000ms. Both use a 15000ms transaction deadline. The shared runtime adapter must
+accept and enforce both bounded acquisition policies, discard late connections,
+and preserve abort handling. Avatar HTTP/SQL acceptance must use
+`accountTransactions(db.pool)`, the production adapter, rather than a fixture
+transaction shortcut. Successful fixture-only tests are insufficient evidence.
+
+The first candidate was rolled back using retained Render artifacts. The
+correction requires fresh exact-candidate CI and new live browser acceptance;
+neither the permanent plan nor passing source tests alone establish completion.
