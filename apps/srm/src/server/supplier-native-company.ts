@@ -112,7 +112,7 @@ export function createSrmNativeCompanyLookup(options:Options){
       persistSection:async(org,actual,section,envelope,errorCode,facts,correlation,sourceData,method)=>{
         scope(org,selection.command.nip)
         if(actual.requestId!==lookup!.requestId||actual.supplierId!==lookup!.supplierId||!['general','financial'].includes(section)
-          ||envelope.source.provider!=='MGBI')return refuse()
+          ||(envelope.source.provider!=='MGBI'&&!(section==='general'&&envelope.source.provider==='KRS')))return refuse()
         // The legacy port also accepts KYS; this closed original company
         // engine supplies only its MGBI general/financial sections.
         return store.section(selection,section as 'general'|'financial',envelope as Parameters<typeof store.section>[2],errorCode,facts,correlation,
@@ -139,7 +139,7 @@ export function createSrmNativeCompanyLookup(options:Options){
   }
   return Object.freeze({
     run:(selection:SupplierNativeWorkSelection)=>execute(selection,ports=>createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}}),undefined,true),
-    prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:()=>Promise<void>)=>execute(selection,
-      ports=>prepareKrsFinancialWork(ports,selection,identity,recheck,()=>clock().getTime()),recheck,true),
+    prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:()=>Promise<void>,general?:Parameters<typeof prepareKrsFinancialWork>[5])=>execute(selection,
+      ports=>prepareKrsFinancialWork(ports,selection,identity,recheck,()=>clock().getTime(),general),recheck,true),
   })
 }

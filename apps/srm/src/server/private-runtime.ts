@@ -1,3 +1,4 @@
+import type {KrsNipCompany} from './krs-nip-runtime'
 import {createSrmKrsNativeRuntime,srmKrsPilotTarget,krsPilotDatabaseUrl} from './krs-native-runtime'
 import type {KrsNameHttpRuntime} from './krs-name-runtime'
 import { createHash } from 'node:crypto'
@@ -29,6 +30,7 @@ export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
   supplierRequest?: Readonly<{ executor: OperationExecutor<PoolClient> }>
   supplierApi?: SrmSupplierApi
   krsName?:Promise<KrsNameHttpRuntime>
+  krsNip?:Promise<KrsNipCompany>
   locations?: SupplierLocationRuntime
 }>
 export type PrivateConfiguration = Readonly<{
@@ -224,14 +226,17 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     ...(locations?{locations}:{}),
     ...(supplierRequest ? { supplierRequest } : {}) }
   let krsName:Promise<KrsNameHttpRuntime>|undefined
+  let krsNip:Promise<KrsNipCompany>|undefined
   if(krsConfig){
     const catalog=new pg.Pool(srmPrivatePoolConfiguration({...config,databaseUrl:krsConfig.reader},3))
     const source=new pg.Pool(srmPrivatePoolConfiguration({...config,databaseUrl:krsConfig.source},3))
     const sourceAudit=new pg.Pool(srmPrivatePoolConfiguration({...config,databaseUrl:krsConfig.source},1))
     for(const p of [catalog,source,sourceAudit])p.on('error',()=>console.error('KRS pilot database unavailable'))
-    krsName=createSrmKrsNativeRuntime(config,{pool,auditPool,clerk,catalog,source,sourceAudit},baseRuntime,env)
+    const bundle=createSrmKrsNativeRuntime(config,{pool,auditPool,clerk,catalog,source,sourceAudit},baseRuntime,env)
+    krsName=bundle
+    if(env.SRM_KRS_NIP_ENABLED==='true')krsNip=bundle.then(value=>value.nip)
   }
-  const runtime=Object.freeze({...baseRuntime,...(krsName?{krsName}:{})})
+  const runtime=Object.freeze({...baseRuntime,...(krsName?{krsName}:{}),...(krsNip?{krsNip}:{})})
   globalThis.__srmPrivateReportRuntime__ = { key, runtime }
   return runtime
 }

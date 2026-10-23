@@ -3177,5 +3177,39 @@
     "maximumAccountObservationMs": 5000,
     "liveGrantsChanged": false,
     "productDeploymentPerformed": false
+  },
+  "krsNipSourceCompatibility": {
+    "taskId": "SRM-GUS-KRS-NIP-20261023",
+    "producerTaskId": "ARCHITECTURE-GUS-KRS-NIP-20261023",
+    "producerPr": 642,
+    "producerSourceSha": "f0b584187250bb0e550e29f93c281e977f521a27",
+    "status": "CANDIDATE_ONLY_NOT_ACTIVATED",
+    "preservedHistoricalAccountRecheck": true,
+    "sourceDigests": {
+      "src/native-external-transport.mjs": "377c3062f4297a3a376c07d880a4293ded29c0de118c7e72fc08875fbf861849",
+      "src/native-external-transport.d.mts": "185209c68a76bd2b67fc2f95733a3096988ec124f010532552ffebd0c7575659",
+      "migrations/access/021-native-soap-transport.sql": "6c3f91da17b32d2c3e72fab10b2f85c8fad7e3ef01888aded076ac9f28fa42a6"
+    },
+    "sdkDigests": {
+      "operationSourceDigest": "e3fe184df1b615fdbeff3117985bdbb904176ec298e5f66a0289a745a245e39a",
+      "privateOperationHostSourceDigest": "2eed5c4fab0e0b8983cc60350b7c2c9a00cf1a4fbeb6f41d6881d463e2766b8d",
+      "requestLedgerSourceDigest": "5ba7ab739fae5057e6439088978b5ed83064316267667c96fac3108ef280c414",
+      "externalRequestSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "delegatedJobSourceDigest": "b548463464a8277ba8ac8560d7a8c0f5309cde6e39fdf48532baf7d5d71fef1b",
+      "requestContinuationSourceDigest": "d49673ecec3a85dad478b4e8d3e38aa30241cf04b61b6a7dfbb99e7af33c3c53",
+      "requestInspectionSourceDigest": "772f1f5a58e8e544d275c4b8bb0ab09774317a6673c1f6bd8563f96fc6a19811",
+      "requestWorkSourceDigest": "0b8c6566c87c468461c681ec442f55ec391b2cfd2e75d4c306616ec1ae90b8cc",
+      "requestOperationsSourceDigest": "65e1d46269df57ccd7f3f1637e9ac6a73171ecbdad02b35677d23469d73e7237",
+      "additionalRequestSchemaDigest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "externalCallSourceDigest": "06aba37d2c780f1f734f62526e56967b9618b05208ee230f1c39996268145b16",
+      "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "supplierLocationAdmissionSchemaDigest": "90ac1d28103f689edc8d11979210ce83cd6218e9f3549f37150fd307d165e9cc"
+    },
+    "applicationSourceDigests": {},
+    "ceidgFirst": true,
+    "primaryTimeoutMs": 3000,
+    "liveGrantsChanged": false,
+    "productDeploymentPerformed": false
   }
 }

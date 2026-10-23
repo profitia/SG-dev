@@ -12,6 +12,7 @@ class ReportRequestError extends Error {
 export type ReportState = {
   /** Time the user requested the displayed KYS; never source freshness or export identity. */
   kysRequestedAt?: string;
+  registryRoute?: {provider:"KRS"|"MGBI";fallbackReason?:string};
   kysTiming?: KysRenderTiming; result: SearchResult | null; busy: boolean; error: string | null;
   kys: DisplayCard["kys"]; kysBusy: boolean; kysError: string | null;
   metadata: SupplierReportData | null; metadataBusy: boolean; metadataError: string | null };
@@ -74,21 +75,29 @@ export class SupplierReportController {
     this.reset(); const generation = this.generation;
     this.update({ busy: true });
     try {
-      const payload = await this.json("/api/xray/search", { identifier }, new AbortController()) as SearchResult;
+      const payload = await this.json("/api/xray/search", { identifier }, new AbortController()) as SearchResult & {krsSelection?:SupplierSelection;registryRoute?:ReportState["registryRoute"]};
       if (generation !== this.generation) return;
       if ((payload?.entityType !== "JDG" && payload?.entityType !== "COMPANY") || supplierNip(payload) !== identifier) throw new Error("Dane dostawcy nie zgadzają się z wyszukiwanym numerem NIP.");
-      this.update({ result: payload, busy: false }); if (!inactiveSupplier(payload)) await this.refreshMetadata();
+      const route=payload.registryRoute
+      if(route&&!['KRS','MGBI'].includes(route.provider))throw Error('Nieprawidłowe źródło danych rejestrowych.')
+      this.update({ result: payload, busy: false,registryRoute:route });
+      if(payload.krsSelection){
+       const selection=payload.krsSelection
+       if(payload.entityType!=='COMPANY'||route?.provider!=='KRS'||selection.nip!==identifier||selection.krs!==payload.card.identity.krs)throw Error('Dane wyboru spółki są niezgodne.')
+       await this.searchKrs(selection,payload,route);return
+      }
+      if (!inactiveSupplier(payload)) await this.refreshMetadata();
     } catch (error) { if (generation === this.generation) this.update({ error: message(error, "Nie udało się pobrać raportu.") }); }
     finally { if (generation === this.generation) this.update({ busy: false }); }
   };
   /** Name selections use only their protected BFF path. Never classify by NIP or invoke the NIP lookup. */
-  searchKrs = async (selection:SupplierSelection) => {
+  searchKrs = async (selection:SupplierSelection,initial?:SearchResult,registryRoute:ReportState["registryRoute"]={provider:"KRS"}) => {
     if(this.state.busy)return;
     const path='/api/xray/krs/lookup',body={selectionRef:selection.selectionRef},logical=path+':'+JSON.stringify(body);
     const retryKey=this.logicalKeys.get(logical);
     this.reset();this.nameSelection=selection;
     const requestKey=retryKey??this.newRequestKey();this.logicalKeys.set(logical,requestKey);
-    const generation=this.generation;this.update({busy:true});
+    const generation=this.generation;this.update({busy:true,...(initial?{result:initial}:{}),registryRoute});
     try{
       for(let step=0;step<20;step++){
       const response=await this.json(path,body,new AbortController()) as {pending?:true;result:SearchResult;metadata:SupplierReportData|null};
