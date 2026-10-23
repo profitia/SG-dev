@@ -94,9 +94,13 @@ export declare function createDelegatedPrivateInspectionHost<Transaction>(option
 export declare function createDelegatedNativeWorkHost<Transaction>(options:DelegatedJobHostOptions<Transaction>&{
  job:{schemaDigest:string}&({targetOperation:'supplier.report.refresh';supplierSchemaDigest:string;operationSchemaDigest?:never}|{targetOperation:import('./request-operations.mjs').AdditionalRequestOperation;supplierSchemaDigest:string;operationSchemaDigest:string}|{targetOperation:import('./request-operations.mjs').LocationDelegatedOperation;supplierSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest:string})
  privateWork:{schemaDigest:string};privateContinuation?:never;privateInspection?:never;sourceDelivery?:never
+ /** Explicit adoption of host 1.13.0; fresh provider proof before the final
+  * outcome. The 5s proof bound and 15s total driver timeout remain unchanged. */
+ revalidateExternalAccountBeforeOutcome?:true
 }):Readonly<{
- contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT
+ contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT
  runSqlWork(input:import('./operation-context.mjs').OperationInput,unit:Readonly<{unitId:string;accessMode:import('./request-work.mjs').NativeWorkAccessMode;inputDigest:string}>,action:(context:Readonly<OperationContext>,transaction:Transaction)=>void|Promise<void>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./request-ledger.mjs').RequestReceipt}>>
 }>
 
 export declare const SUPPLIER_LOCATION_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.12.0'}>
+export declare const NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.13.0'}>

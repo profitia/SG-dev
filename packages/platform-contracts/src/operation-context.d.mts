@@ -99,6 +99,9 @@ export interface BoundRequest {
 }
 export interface OperationSession<Transaction> {
   state: OperationState; transaction: Transaction; transactionalEffects: true; outputBoundaryVersion: string
+  /** Trusted host only: fresh provider proof for the admission subject, before
+   * final authorization. No authority, clock, expiry or delegation replacement. */
+  revalidateExternalAccount?(): Promise<Readonly<import('./identity-provider.mjs').ExternalAccountObservation> | null>
   recordOutcome(event: AuditEvent): Promise<void>
   /** Required for bounded AM20/AM23; same private transaction, no external execution. */
   reserveUsage?(context: Readonly<OperationContext>): Promise<RequestReservation>
