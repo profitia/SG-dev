@@ -57,3 +57,15 @@ test('NONE forbids credentials and any protocol forbids fabricated hosts',()=>{
  assert.throws(()=>createExternalCallHost({...base,nativeTransport:config,projectResponse:v=>v}))
  assert.throws(()=>createExternalCallHost({...base,nativeTransport:config}))
 })
+
+test('SOAP is explicit, bounded and never a FORM or JSON escape',async()=>{
+ const body='<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body/></s:Envelope>'
+ const request={method:'POST',url:'https://source.example/soap',body}
+ assert(validNativePathRules([{method:'POST',path:'/soap',requestFormat:'SOAP'}]))
+ assert.equal(await validateNativeRequestBody(request,{requestFormat:'SOAP'},1024),'application/soap+xml; charset=utf-8')
+ for(const candidate of ['{}','<Envelope/>',body.replace('<s:Body/>','<!DOCTYPE x><s:Body/>'),body.replace('<s:Body/>','<!ENTITY x SYSTEM "file:///x"><s:Body/>'),body+'\0'])
+  await assert.rejects(validateNativeRequestBody({...request,body:candidate},{requestFormat:'SOAP'},1024))
+ await assert.rejects(validateNativeRequestBody(request,{requestFormat:'SOAP'},10))
+ await assert.rejects(validateNativeRequestBody(request,{requestFormat:'JSON'},1024))
+ assert(!validNativePathRules([{method:'GET',path:'/soap',requestFormat:'SOAP'}]))
+})

@@ -11,6 +11,8 @@ import {createKrsClient,krsResponseEvidence,buildRequest} from './client.js'
 import type {KrsResponse} from './client.js'
 import {createAdmittedKrsSource} from './e1.js'
 import {normalizeExtract} from './normalizer.js'
+import {gusMappingEvidence} from './gus-bir.js'
+import type {GusMapping} from './gus-bir.js'
 
 export const REGISTRY_REPORT_PROJECTION='profitia.krs-report-projection/1.0.0'
 const deny=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
@@ -160,8 +162,7 @@ export function createOfficialSeed(options:{client:ReturnType<typeof createKrsCl
 export const NATIVE_KRS_SOURCES=Object.freeze({official:'krs.registry.official',catalog:'krs.registry.catalog',resource:'krs-official:current'})
 /** Complete native Source wiring. SQL008/009/012 and its ordinary-role bindings
  * remain installation prerequisites. No fixture network or alternate fetch. */
-export async function createNativeRegistrySource(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;
- externalSchemaDigest:string;approvedKrs:readonly string[];approvalRef:string}){
+async function nativeSourceParts(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;externalSchemaDigest:string}){
  const sourceHost=createPlatformIngestionHost<PoolClient>({...options.host,
   source:{id:NATIVE_KRS_SOURCES.official,payloadSchema:'external-call-control-v1',qualityVersion:'krs-source-control-v1',classificationVersion:'technical-source-control-v1'},
   validateSharedPayload:value=>!!value&&typeof value==='object'&&!Array.isArray(value)
@@ -175,5 +176,30 @@ export async function createNativeRegistrySource(options:{host:Omit<Ingestion,'s
  const client=createKrsClient({source,externalEnabled:true,maximumCalls:20,now:options.host.now??Date.now})
  const publication=createNativeCatalogPublication({acceptedSourceId:NATIVE_KRS_SOURCES.official,host:{...options.host,
   source:{id:NATIVE_KRS_SOURCES.catalog,payloadSchema:REGISTRY_REPORT_PROJECTION,qualityVersion:'krs-normalizer/1.0.1',classificationVersion:'krs-public-company-v1'}}})
- return createOfficialSeed({client,publication,approvedKrs:options.approvedKrs,approvalRef:options.approvalRef})
+ return {client,publication}
+}
+
+export async function createNativeRegistrySource(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;externalSchemaDigest:string;approvedKrs:readonly string[];approvalRef:string}){
+ const parts=await nativeSourceParts(options)
+ return createOfficialSeed({...parts,approvedKrs:options.approvedKrs,approvalRef:options.approvalRef})
+}
+/** On-demand acquisition requires process-owned proof of a settled GUS mapping.
+ * It is not a numeric scanner, arbitrary KRS endpoint or replacement identity engine. */
+export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;externalSchemaDigest:string}){
+ const {client,publication}=await nativeSourceParts(options)
+ return Object.freeze({async acquire(mapping:GusMapping,requestKey:string,signal:AbortSignal){
+  const proof=gusMappingEvidence(mapping)
+  if(mapping.status!=='MATCH'||!proof||proof.requestKey!==requestKey||proof.nip!==mapping.nip||mapping.register!=='P')return deny()
+  signal.throwIfAborted()
+  const response=await client.get({operation:'CURRENT',krs:mapping.krs,register:'P'},'krs-nip-'+requestKey)
+  signal.throwIfAborted()
+  const snapshot=await normalizeExtract(response.bytes,{krs:mapping.krs,register:'P',extract:'CURRENT',retrievedAt:response.retrievedAt})
+  if(snapshot.nip!==mapping.nip||snapshot.canonicalKrs!==mapping.krs)return deny()
+  // Missing/withheld KRS REGON is not evidence of REGON equality. Valid
+  // differing identifiers remain a conflict; no REGON14 truncation is allowed.
+  if(snapshot.regon!==null&&snapshot.regon!==mapping.regon)return deny()
+  signal.throwIfAborted()
+  const receipt=await publication.publish({snapshot,response},'krs-nip-publication-'+requestKey)
+  signal.throwIfAborted();return {snapshot,receipt}
+ }})
 }
