@@ -53,3 +53,23 @@ test('revocation after acquisition prevents Financial publication and source pro
  const f=await fixture(),work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
  f.revoke();await assert.rejects(work.publish(work.result),/REVOKED/);assert.ok(!f.events.includes('persist'));assert.ok(!f.events.includes('public'))
 })
+
+test('native KRS Financial threads the same verified history through acquisition, archive replay, MSR and publication',async()=>{
+ const f=await fixture(true),previous='0000000001';
+ const history={version:'KRS_CONTINUITY_V1' as const,currentKrs:krs,members:[
+  {krs,legalName:'Synthetic current',legalForm:null,status:'ACTIVE' as const,registeredAt:'2026-01-01',deregisteredAt:null},
+  {krs:previous,legalName:'Synthetic predecessor',legalForm:null,status:'DEREGISTERED' as const,registeredAt:'2001-01-01',deregisteredAt:'2026-01-02'}],
+  links:[{predecessorKrs:previous,successorKrs:krs,basis:'KRS_FORMATION_TRANSFORMATION' as const}],unlinkedKrs:[]};
+ const general={status:'SUCCESS' as const,source:{provider:'KRS' as const,model:'OdpisAktualny',recordId:'fixture'},retrievedAt:at,effectiveAt:null,warnings:[],
+  data:{legalName:'Synthetic current',legalForm:null,krs,nip,regon:null,registeredAddress:null,registeredAt:null,mainPkd:null,registryHistory:history}};
+ f.ports.fetchMgbiFinancial=async(_id,options)=>{assert.equal(options?.companyHistory,history);f.events.push('financial');return f.result};
+ f.ports.persistSection=async(_org,_lookup,section)=>{f.events.push('persist-'+section);return 'snapshot'};
+ f.ports.reprojectFinancialArchive=async(_org,_nip,actual)=>{assert.equal(actual,history);return null};
+ const first=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,general);
+ assert.equal(first.pending,true);assert.equal(first.result.section.data?.periods[0].sourceRegistration?.krs,previous);
+ f.ports.reprojectFinancialArchive=async(_org,_nip,actual)=>{assert.equal(actual,history);return f.result};
+ f.ports.enrichMsrFinancial=async(_org,_nip,base,options)=>{assert.deepEqual(options?.allowedKrs,[krs,previous]);return {...base,msrChanged:false}};
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,general);
+ assert.equal(work.pending,false);assert.equal(work.result.section.data?.periods[0].sourceRegistration?.relationship,'PREDECESSOR');
+ await work.publish(work.result);assert.ok(f.events.includes('persist-financial'));assert.equal(f.events.filter(x=>x==='financial').length,1);
+});

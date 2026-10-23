@@ -1,4 +1,7 @@
 import {createKrsNipCompany} from './krs-nip-runtime'
+import {krsContinuity} from './krs-continuity'
+import type {RegistryHistory} from './company-continuity'
+import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {krsGeneral} from './krs-general'
 import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion'
 import type pg from 'pg'
@@ -58,19 +61,21 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
    databaseName:target.catalog.databaseName,role:'krs_ingest',deploymentId,configurationVersion:sourceVersion,
    schemaDigest:'14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b'}},
   externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206',approvedKrs:['0000028860'],approvalRef:target.ownerApprovalRef})
+ let historyFor:((request:Request,identity:VerifiedIdentityV1)=>Promise<RegistryHistory|undefined>)=async()=>undefined
  const pending=new WeakMap<Request,{reference:string;prepared:Awaited<ReturnType<NonNullable<typeof runtime.supplierApi>['prepareKrsFinancial']>>}>()
  let verifyCompany=async(request:Request,krs:string)=>{await registry.snapshot(request,krs);await seed.acquire(krs,'P',randomUUID());return registry.selected(request,krs)}
  const nameRuntime=createKrsNameHttpRuntime({registry:{
   search:async(request,query)=>(await registry.search(request,query)).candidates.map(c=>({krs:c.krs,name:c.officialName??'',nip:c.nip,locality:c.locality})),
   verify:(request,krs)=>verifyCompany(request,krs),
   readSelection:(request,reference)=>registry.accepted(request,reference),
+  history:(request,identity)=>historyFor(request,identity),
  },financial:{
-  acquire:async(request,identity,key)=>{
+  acquire:async(request,identity,key,general)=>{
    if(pending.has(request))return deny()
    const recheck=async()=>{const current=await registry.accepted(request,identity.evidenceRef)
     if(current.identity.identity.nip!==identity.identity.nip||current.identity.source.rawDigest!==identity.source.rawDigest)return deny()}
    const prepared=await runtime.supplierApi!.prepareKrsFinancial({request,organisationId:runtime.defaultOrganisationId,
-    command:{kind:'SUPPLIER_REPORT',nip:identity.identity.nip},idempotencyKey:key},identity,recheck,await krsGeneral((await registry.accepted(request,identity.evidenceRef)).snapshot,identity,Date.now()))
+    command:{kind:'SUPPLIER_REPORT',nip:identity.identity.nip},idempotencyKey:key},identity,recheck,general??await krsGeneral((await registry.accepted(request,identity.evidenceRef)).snapshot,identity,Date.now()))
    pending.set(request,{reference:identity.evidenceRef,prepared});return {...prepared.result,...(prepared.pending?{workPending:true as const}:{})}
   },
   publishEligible:async(request,identity,result:MgbiFinancialResult)=>{
@@ -116,6 +121,12 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
   independentQuery:sourceHostOptions.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows})})
  const mapper=createGusMapper({source:gusSource,readSid:()=>sid,writeSid:value=>{sid=value}})
  const official=await createNativeNipRegistrySource({host:sourceHostOptions,externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206'})
+ historyFor=async(request,identity)=>{
+  await registry.accepted(request,identity.evidenceRef)
+  const evidence=await measureSupplierStage('KRS_CONTINUITY',()=>official.continuity(identity.evidenceRef,request.signal))
+  await registry.accepted(request,identity.evidenceRef)
+  return evidence?krsContinuity(evidence,identity,Date.now()):undefined
+ }
  const observe=(event:unknown)=>console.info('SRM registry telemetry',event)
  const resolver=createNipResolver({gus:(n,key,signal)=>measureSupplierStage('GUS_RESOLUTION',()=>mapper.resolve(n,key,signal)),
   krs:async(mapping,key,signal)=>{

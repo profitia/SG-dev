@@ -108,9 +108,22 @@ test('REGON producer patch preserves all prior receipts and pins the complete SR
  const before=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(before),a.previousReceiptSha256)
  for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
- const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'))
+ const target=JSON.parse(receipt.krsContinuityCompatibility?execFileSync('git',['show',receipt.krsContinuityCompatibility.previousSourceSha+':apps/srm/deployment/krs-name-pilot-targets.json'],{encoding:'utf8'}):fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'))
  assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);assert.equal(a.producerPr,655)
  assert.equal(a.originalKrsRegonPreserved,true);assert.equal(a.exactNipAndKrsRequired,true);assert.equal(a.processOwnedGusProofRequired,true)
  assert.equal(a.financialReconciliationChanged,false);assert.equal(a.fallbackChanged,false);assert.equal(a.e1Changed,false);assert.equal(a.newRuntimeGrantsRequired,false)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(receipt.krsContinuityCompatibility?execFileSync('git',['show',receipt.krsContinuityCompatibility.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.join(root,file))),digest,file)
+})
+
+
+test('official predecessor continuity preserves historical receipts and pins the complete receiver',()=>{
+ const a=receipt.krsContinuityCompatibility,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ const before=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(before),a.previousReceiptSha256)
+ for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'))
+ assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);assert.equal(a.producerPr,658)
+ assert.equal(a.existingContinuityVersion,'KRS_CONTINUITY_V1');assert.equal(a.explicitTransformationProofRequired,true);assert.equal(a.originalDocumentIssuerPreserved,true)
+ assert.equal(a.newRuntimeGrantsRequired,false);assert.equal(a.authorizationDecisionCacheIntroduced,false);assert.equal(a.primaryDeadlineChanged,false)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
 })
