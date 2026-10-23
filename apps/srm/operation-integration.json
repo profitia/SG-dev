@@ -4019,7 +4019,7 @@
       "scripts/location-access-release-source.test.mjs": "d655db00b34488a81c163274c09c8c47af140f901526a5552f0ccdee5efb07d6",
       "scripts/operation-context.test.mjs": "513aabd4a606f45d331908fb02a4cd897fcf0151788f2dcb28766b363e43539c",
       "scripts/organisation-location-grants.integration.test.mjs": "db6b4ecc4fa4fe643f8e2b7eb5ad0e88bbbde37491d6b3f1c2ec7cdf3f670694",
-      "scripts/private-host.integration.test.mjs": "7cf4dcf593d8d2aec3dc427614ce6f24e4f0e8bfa64c0a9f3dfb3b315a7dbf5b",
+      "scripts/private-host.integration.test.mjs": "0e1aa4702be9a0ba6a08ee478844792ccfbc22555d732f2849e766d93c45e0da",
       "scripts/private-sensitive.integration.test.mjs": "ae230b4cac31b0f851983800f697c48bc20281646c3a8707733e457d62a14f11",
       "scripts/supplier-delegated-business.integration.test.mjs": "916bb8b231b3847ea1521442d043608df05e471b8b947c2868ddfa68b5e47030",
       "scripts/supplier-location-admission.integration.test.mjs": "b49d8a772f2376c509da3f6a0ccb55c0fe19fb7fa413bc3aeea406182cc9f953",
