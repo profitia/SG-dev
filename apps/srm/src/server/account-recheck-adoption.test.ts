@@ -23,7 +23,16 @@ test('KRS NIP candidate accepts current owned sources without claiming live inst
  const current=receipt.krsNipSourceCompatibility,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
  assert.equal(current.status,'CANDIDATE_ONLY_NOT_ACTIVATED');assert.equal(current.ceidgFirst,true);assert.equal(current.primaryTimeoutMs,3000)
  assert.equal(current.liveGrantsChanged,false);assert.equal(current.productDeploymentPerformed,false)
- for(const [file,digest]of Object.entries(current.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ for(const [file,digest]of Object.entries(current.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.krsNipActivationCompatibility.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file)
+})
+
+test('KRS activation preserves accepted receipts and pins registration with no supplier UPDATE',()=>{
+ const a=receipt.krsNipActivationCompatibility,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ const previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(previous),a.previousReceiptSha256)
+ for(const [key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ assert.equal(a.existingSupplierRegistration,'KEEP');assert.equal(a.newRoleOrMapsPermissionsRequired,false)
+ for(const [file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
 })
 
 test('bounded indicator reads retain the entire accepted receipt and add no new operation or grant',()=>{

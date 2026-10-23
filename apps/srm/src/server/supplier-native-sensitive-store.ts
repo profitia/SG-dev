@@ -47,8 +47,10 @@ export function createSrmSensitiveNativeStore(options:{work:Readonly<SupplierNat
   }finally{value=undefined}
  }
  return Object.freeze({
+  // Register this exact accepted lookup without touching an existing supplier.
+  // UPDATE has independent RLS purposes and is not needed for CEIDG or KYS.
   register(input:SupplierNativeWorkSelection){const s=selection(input);return run(s,'SRM_SENSITIVE_REGISTER',null,pool=>
-   createLookup(s.organisationId,{type:'NIP',value:s.command.nip},entityType,pool,s.requestId))},
+   createLookup(s.organisationId,{type:'NIP',value:s.command.nip},entityType,pool,s.requestId,'KEEP'))},
   status(input:SupplierNativeWorkSelection){const s=selection(input);return run(s,'SRM_SENSITIVE_STATUS',null,async(pool,client)=>{
    if(entityType==='COMPANY')return readSupplierRegistrationStatus(s.organisationId,s.command.nip,entityType,pool)
    const data=(await client.query<{data:JdgRegistryData|null}>('SELECT srm.private_jdg_activity_metadata($1::uuid,$2) AS data',[s.organisationId,s.command.nip])).rows[0]?.data

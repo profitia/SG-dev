@@ -547,6 +547,29 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    assert.equal(view.privateReport.snapshotId,result.snapshotId);assert(!JSON.stringify(view).includes('12345678901'));assert(JSON.stringify(view).includes('TEST_CITY'))
    assert.equal((await native('JDG','jdg').run(selected)).replayed,true);assert.equal(networkHits,before+1)
   })
+  if(privateMode)await t.test('CEIDG registration retains supplier identity without requiring unrelated UPDATE policy privileges',async()=>{
+   const work=createSrmSupplierNativeWork({...workOptions,privateAcquisition:privateTarget('JDG','jdg'),workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('010-supplier-sensitive-work.sql'))})
+   const store=createSrmSensitiveNativeStore({work,entityType:'JDG',section:'jdg'})
+   let before
+   await controlled(async()=>{
+    before=(await owner.query('SELECT id,updated_at FROM srm.suppliers WHERE organization_id=$1 AND nip=$2',[A,OTHER_NIP])).rows[0]
+    await owner.query("CREATE FUNCTION srm.registration_update_permission() RETURNS boolean LANGUAGE sql STABLE AS 'SELECT true'; REVOKE ALL ON FUNCTION srm.registration_update_permission() FROM PUBLIC")
+    await owner.query(`CREATE POLICY registration_update_permission ON srm.suppliers AS RESTRICTIVE FOR UPDATE TO ${EXECUTOR} USING(srm.registration_update_permission()) WITH CHECK(srm.registration_update_permission())`)
+   })
+   try{
+    assert.equal((await owner.query("SELECT has_function_privilege($1,'srm.registration_update_permission()','EXECUTE') allowed",[EXECUTOR])).rows[0].allowed,false)
+    const hits=networkHits
+    for(const nip of[OTHER_NIP,'5260250274']){
+     const selected=selection(await parent(A,nip,'JDG','jdg')),lookup=await store.register(selected)
+     assert.equal(lookup.requestId,selected.requestId)
+    }
+    await controlled(async()=>{
+     const after=(await owner.query('SELECT id,updated_at FROM srm.suppliers WHERE organization_id=$1 AND nip=$2',[A,OTHER_NIP])).rows[0]
+     assert.deepEqual(after,before)
+    })
+    assert.equal(networkHits,hits)
+   }finally{await controlled(()=>owner.query('DROP POLICY registration_update_permission ON srm.suppliers; DROP FUNCTION srm.registration_update_permission()'))}
+  })
   await t.test('original no-data KYS persistence keeps NO_DATA without creating a false snapshot or export authority',async()=>{
    const selected=selection(await parent(A,'5250009335')),store=createSrmSensitiveNativeStore({work:nativeWork,entityType:'COMPANY',section:'kys'})
    const lookup=await store.register(selected),now=new Date().toISOString()
