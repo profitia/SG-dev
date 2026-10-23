@@ -3,7 +3,7 @@ import {createPrivateOperationHost} from '@profitia/platform-contracts/private-o
 import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
 import type {Json,OperationContext} from '@profitia/platform-contracts/operation-context'
 import {createPlatformIngestionHost,platformReceiptEvidence} from '@profitia/platform-contracts/platform-ingestion'
-import {canonical,sha256,validateCompanySnapshot,validateIdentityEvidence,krs} from '@profitia/krs-registry-contracts'
+import {canonical,sha256,validateCompanySnapshot,validateIdentityEvidence,krs,parseJson} from '@profitia/krs-registry-contracts'
 import type {CompanySnapshot,VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {Catalog,storeSnapshot} from './catalog.js'
 import {resolveIdentity} from './identity.js'
@@ -185,8 +185,30 @@ export async function createNativeRegistrySource(options:{host:Omit<Ingestion,'s
 }
 /** On-demand acquisition requires process-owned proof of a settled GUS mapping.
  * It is not a numeric scanner, arbitrary KRS endpoint or replacement identity engine. */
+export type NativeContinuity=Readonly<{currentEvidenceRef:string;records:readonly Readonly<{snapshot:CompanySnapshot;excerpt:unknown}>[]}>
+const continuityProofs=new WeakSet<object>()
+/** Copied or serialized evidence cannot substitute for settled native Source. */
+export const nativeContinuityEvidence=(value:unknown):value is NativeContinuity=>!!value&&typeof value==='object'&&continuityProofs.has(value)
+const rec=(v:unknown):Record<string,unknown>=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{}
+const items=(v:unknown):unknown[]=>Array.isArray(v)?v:v==null?[]:[v]
+function freeze<T>(v:T):T{if(v&&typeof v==='object'){for(const x of Object.values(v))freeze(x);Object.freeze(v)}return v}
+function formationExcerpt(response:KrsResponse,snapshot:CompanySnapshot){
+ const raw=rec(rec(parseJson(new TextDecoder().decode(response.bytes),4*1024*1024)).odpis),section=rec(rec(raw.dane).dzial1)
+ const formation=rec(section.sposobPowstaniaPodmiotu),kinds=items(formation.okolicznosciPowstania).map(v=>typeof v==='string'?v:rec(v).okolicznosciPowstania)
+ const transformation=kinds.length>0&&kinds.every(v=>v==='PRZEKSZTAŁCENIE')
+ const ids=transformation?[...new Set(items(formation.podmioty).flatMap(v=>{const p=rec(v);return [...items(p.krs).map(k=>typeof k==='string'?k:rec(k).krs),...items(p.numerWRejestrzeAlboEwidencji).map(k=>typeof k==='string'?k:rec(k).numerWRejestrzeAlboEwidencji)].filter(krs)}))]:[]
+ if(ids.length>1||ids.includes(snapshot.canonicalKrs))return deny()
+ const header=rec(raw[snapshot.source.extract==='CURRENT'?'naglowekA':'naglowekP'])
+ const entries=items(header.wpis).map(v=>{const e=rec(v);return {numerWpisu:e.numerWpisu,dataWpisu:e.dataWpisu,opis:typeof e.opis==='string'&&e.opis.normalize('NFD').replace(/\p{Diacritic}/gu,'').trim().replace(/\s+/g,' ').toUpperCase()==='WYKRESLENIE Z KRAJOWEGO REJESTRU SADOWEGO'?'WYKRESLENIE Z KRAJOWEGO REJESTRU SADOWEGO':''}})
+ // Company-only projection for the existing consumer continuity resolver.
+ const excerpt={ [snapshot.source.extract==='CURRENT'?'naglowekA':'naglowekP']:{numerKRS:snapshot.canonicalKrs,stanPozycji:header.stanPozycji,dataRejestracjiWKRS:header.dataRejestracjiWKRS,wpis:entries},
+  dane:{dzial1:{danePodmiotu:{nazwa:snapshot.source.extract==='CURRENT'?snapshot.officialName:snapshot.names.map(v=>({nazwa:v.name})),formaPrawna:snapshot.source.extract==='CURRENT'?snapshot.legalForm:snapshot.history.legalForms.map(v=>({formaPrawna:v.name})),identyfikatory:{nip:snapshot.nip,regon:snapshot.regon}},
+   sposobPowstaniaPodmiotu:{okolicznosciPowstania:transformation?'PRZEKSZTAŁCENIE':'',podmioty:ids.map(id=>({krs:{krs:id}}))}}}}
+ return {ids,excerpt}
+}
 export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;externalSchemaDigest:string}){
  const {client,publication}=await nativeSourceParts(options)
+ const acquired=new Map<string,{snapshot:CompanySnapshot;response:KrsResponse;history?:Promise<NativeContinuity>}>(),now=options.host.now??Date.now
  return Object.freeze({async acquire(mapping:GusMapping,requestKey:string,signal:AbortSignal){
   const proof=gusMappingEvidence(mapping)
   if(mapping.status!=='MATCH'||!proof||proof.requestKey!==requestKey||proof.nip!==mapping.nip||mapping.register!=='P')return deny()
@@ -206,6 +228,37 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
     &&snapshot.regon!==mapping.regon+'00000')return deny()
   signal.throwIfAborted()
   const receipt=await publication.publish({snapshot,response},'krs-nip-publication-'+requestKey)
-  signal.throwIfAborted();return {snapshot,receipt}
+  signal.throwIfAborted()
+  for(const [ref,value] of acquired)if(now()-Date.parse(value.snapshot.source.retrievedAt)>300000)acquired.delete(ref)
+  if(acquired.size>=100)return deny()
+  acquired.set(snapshot.evidenceRef,{snapshot,response});return {snapshot,receipt}
+ },async continuity(reference:string,signal:AbortSignal):Promise<NativeContinuity|null>{
+  const current=acquired.get(reference)
+  if(!current)return null
+  if(now()-Date.parse(current.snapshot.source.retrievedAt)>300000)return deny()
+  signal.throwIfAborted()
+  // Public Source evidence cache, never an account/access decision cache.
+  // Consumers must recheck HUMAN authorization before every read/publication.
+  return current.history??=(async()=>{
+   const records:Array<{snapshot:CompanySnapshot;excerpt:unknown}>=[]
+   let value={snapshot:current.snapshot,response:current.response}
+   for(;;){
+    signal.throwIfAborted()
+    const {ids,excerpt}=formationExcerpt(value.response,value.snapshot)
+    records.push(freeze({snapshot:value.snapshot,excerpt:JSON.parse(JSON.stringify(excerpt))}))
+    if(!ids.length)break
+    if(records.length>=5||records.some(r=>r.snapshot.canonicalKrs===ids[0]))return deny()
+    const id=ids[0]!,key=await sha256(canonical({reference,krs:id,operation:'FULL'}))
+    const response=await client.get({operation:'FULL',krs:id,register:'P'},'krs-continuity-'+key)
+    signal.throwIfAborted()
+    const snapshot=await normalizeExtract(response.bytes,{krs:id,register:'P',extract:'FULL',retrievedAt:response.retrievedAt})
+    const nips=[...new Set(snapshot.identifiers.filter(i=>i.kind==='NIP').map(i=>i.value))]
+    if(nips.length!==1||nips[0]!==current.snapshot.nip||snapshot.identifiers.some(i=>i.kind==='NIP'&&!i.valid))return deny()
+    await publication.publish({snapshot,response},'krs-continuity-publication-'+key)
+    value={snapshot,response}
+   }
+   const result=Object.freeze({currentEvidenceRef:reference,records:Object.freeze(records)})
+   continuityProofs.add(result);return result
+  })()
  }})
 }
