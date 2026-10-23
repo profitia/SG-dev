@@ -32,7 +32,8 @@ export function assembleLocationAccessSource(repository,output){
  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'srm-location-input-'))
  try{
   const input=path.join(temp,'input')
-  run(['git','clone','--quiet','--shared','--no-checkout',repository,input],repository)
+  run(['git','clone','--quiet','--no-local','--no-checkout',repository,input],repository)
+  if(fs.existsSync(path.join(input,'.git/objects/info/alternates')))fail('SHARED_BUILD_GIT_OBJECTS_REFUSED')
   run(['git','sparse-checkout','set','apps/srm','packages/platform-contracts','packages/srm-xray','packages/maps-contracts','packages/maps-embed'],input)
   // Shallow local clones omit fetched ancestors that are not reachable from HEAD.
   run(['git','fetch','--no-tags','--depth=1',canonical,accepted],input,{stdio:'pipe'})
