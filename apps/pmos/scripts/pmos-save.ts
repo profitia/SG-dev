@@ -1361,7 +1361,8 @@ export function projectCanonicalFlightRecordScalarParity(
     project: artifact.metadata.project,
     taskId: artifact.metadata.taskId,
     scope: artifact.metadata.scope,
-    timestamp: artifact.metadata.timestamp,
+    // Prisma persists the scalar through Date; retain full precision in the immutable JSON snapshot.
+    timestamp: new Date(artifact.metadata.timestamp).toISOString(),
     ...(artifact.metadata.etap != null ? { etap: artifact.metadata.etap } : {}),
     ...(artifact.metadata.subetap != null ? { subetap: artifact.metadata.subetap } : {}),
     ...(artifact.metadata.conversationType != null ? { conversationType: artifact.metadata.conversationType } : {}),

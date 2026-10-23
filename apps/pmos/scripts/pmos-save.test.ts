@@ -285,6 +285,30 @@ function makeSpendGuruFinalizationContext(params?: {
   } as never
 }
 
+test('scalar date parity uses the Prisma Date representation while preserving immutable source bytes', () => {
+  for (const [timestamp, expected] of [
+    ['2026-10-22T20:43:36.784682+00:00', '2026-10-22T20:43:36.784Z'],
+    ['2026-10-22T22:43:36.784682+02:00', '2026-10-22T20:43:36.784Z'],
+    ['2026-10-22T20:43:36Z', '2026-10-22T20:43:36.000Z'],
+    ['2026-10-22T20:43:36.784Z', '2026-10-22T20:43:36.784Z'],
+  ]) {
+    const artifact = makeArtifact()
+    artifact.metadata.timestamp = timestamp
+    const before = JSON.stringify(artifact)
+    const lock = createArtifactLock(artifact)
+    const projected = projectCanonicalFlightRecordScalarParity(artifact as never, 'conversation.md', 'summary') as { metadata: Record<string, unknown> }
+    assert.equal(projected.metadata.timestamp, expected)
+    assert.equal(JSON.stringify(artifact), before)
+    assert.equal(verifyArtifactLock(artifact, lock).valid, true)
+  }
+})
+
+test('scalar date parity rejects an invalid date rather than masking it', () => {
+  const artifact = makeArtifact()
+  artifact.metadata.timestamp = 'not-a-date'
+  assert.throws(() => projectCanonicalFlightRecordScalarParity(artifact as never, 'conversation.md', 'summary'), RangeError)
+})
+
 test('scalar parity omits absent legacy ETAP metadata', () => {
   const projected = projectCanonicalFlightRecordScalarParity(
     makeSpendGuruArtifact(),
