@@ -6,8 +6,8 @@ import type {SupplierNativeWorkSelection} from './supplier-request-work'
 import type {MgbiFinancialResult} from './mgbi-financial'
 import {reconcileKrsFinancial} from './krs-financial'
 import {applyFinancialDocumentMetadata} from './financial-documents'
-import {emptyCard} from '../demo/fixture'
 import {isFreshCatalogEntry} from './shared-catalog'
+import {unrequestedCorporateGeneral} from './corporate-source-store'
 
 // This composition has no General acquisition port. All effects use the same
 // original native Request/Source/Work/archive/MSR/Financial helpers as NIP mode.
@@ -62,9 +62,9 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
    ||JSON.stringify(eligible.facts)!==JSON.stringify(accepted.facts))return deny()
   const audited=await reconcileKrsFinancial(identity,accepted,now())
   if(audited.errorCode||JSON.stringify(audited.section)!==JSON.stringify(eligible.section))return deny()
-  const snapshotId=await ports.persistSection(org,lookup,'financial',eligible.section,eligible.errorCode,eligible.facts,undefined,eligible.sourceData)
+  const snapshotId=await ports.persistSection(org,lookup,'financial',eligible.section,eligible.errorCode,eligible.facts,undefined,eligible.sourceData,cached?'CACHE':'PROVIDER')
   await check()
-  await ports.saveSharedCompany(org,nip,{general:emptyCard.general,financial:eligible.section,
+  await ports.saveSharedCompany(org,nip,{general:unrequestedCorporateGeneral(),financial:eligible.section,
    generalSnapshotId:null,financialSnapshotId:snapshotId,facts:eligible.facts,preserveGeneral:true})
   await check();await ports.recordInterest(org,nip);published=true
  }})

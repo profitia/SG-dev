@@ -4,6 +4,9 @@ import type {MgbiFinancialResult} from './mgbi-financial';
 import {krsGeneral} from './krs-general';
 import {reconcileKrsFinancial} from './krs-financial';
 import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-ledger';
+import {isOperationDenied} from '@profitia/platform-contracts/operation-context';
+import {sanitizedLookupFailure} from './lookup-diagnostics';
+import {measureSupplierStage} from './supplier-telemetry';
 
 export type AcceptedKrsSelection=Readonly<{snapshot:CompanySnapshot;identity:VerifiedIdentityV1}>;
 /** These ports are supplied by accepted native E1 hosts, never HTTP/body authority.
@@ -50,7 +53,7 @@ export function createKrsNameSearch(ports:KrsNamePorts){
       try{
         // Fresh accepted identity at dispatch; the native port must admit current
         // Request/Source/Work, budget and this exact logical selection once.
-        const acquired=await financial.acquire(request,selected.identity,key);
+        const acquired=await measureSupplierStage('FINANCIAL_ACQUIRE',()=>financial.acquire(request,selected.identity,key));
         const current=await checked(request,selectionRef);
         if(current.identity.selectedKrs!==selected.identity.selectedKrs||current.identity.identity.nip!==selected.identity.identity.nip
           ||current.identity.source.rawDigest!==selected.identity.source.rawDigest||current.identity.source.contentDigest!==selected.identity.source.contentDigest
@@ -59,12 +62,16 @@ export function createKrsNameSearch(ports:KrsNamePorts){
         workPending=acquired.workPending===true&&!eligible.errorCode;
         // Only filtered records/facts enter the existing native financial writer.
         if(!eligible.errorCode&&!workPending){
-          const published=await financial.publishEligible(request,current.identity,eligible);
+          const published=await measureSupplierStage('FINANCIAL_PUBLICATION',()=>financial.publishEligible(request,current.identity,eligible));
           if(published&&(published.nip!==current.identity.identity.nip||published.entityType!=='COMPANY'))throw Error('FINANCIAL_METADATA_MISMATCH');
           metadata=published;
         }
         section=workPending?{...eligible.section,status:'PENDING',data:null,warnings:['MSR_PROCESSING_PENDING']}:eligible.section;
-      }catch{metadata=null;/* A failed Financial acquisition never purchases General or reveals a failed projection. */}
+      }catch(error){
+        metadata=null;
+        console.error(JSON.stringify({event:'srm_financial_failure',reason:isOperationDenied(error)?error.reasonCode:'FINANCIAL_FAILED',...sanitizedLookupFailure(error)}));
+        /* A failed Financial acquisition never purchases General or reveals a failed projection. */
+      }
       // Current protected read also fences publication after a revoked membership.
       await checked(request,selectionRef);
       return {...(workPending?{pending:true as const}:{}),result:{entityType:'COMPANY' as const,card:{identity:{krs:selected.identity.selectedKrs,nip:selected.identity.identity.nip,name:selected.identity.identity.officialName},

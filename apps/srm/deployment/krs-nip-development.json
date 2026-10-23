@@ -5,7 +5,7 @@
   "environment": "development",
   "serviceId": "srv-dbd5hlcipgvc73d98ukg",
   "serviceName": "srm-krs-pilot-development",
-  "plan": "free",
+  "plan": "0.5c-512mb",
   "maximumInstances": 1,
   "flag": "SRM_KRS_NIP_ENABLED",
   "default": "false",
@@ -51,6 +51,15 @@
     "additionalMgbiGeneralFinancialAttempts": 4,
     "fileBudgetsChanged": false,
     "counterResetsAllowed": false,
-    "paidUpgradeAllowed": false
+    "paidUpgradeAllowed": true,
+    "paidUpgradeScope": "existing srm-krs-pilot-development only, monthly compute maximum7USD"
+  },
+  "approvedMonthlyComputeUSD": 7,
+  "computeOwnerApprovalRef": "USER-20261023-PERMANENT-PILOT-7USD",
+  "financialOnlyPublication": {
+    "migration": "db/private-store/018-financial-only-publication.sql",
+    "sqlSha256": "fa12583aa6820e71b5259991b63b7e5d150e2d353a8f29e7afb37b7ccf125433",
+    "originalCorporateSchemaUnchanged": true,
+    "candidateOnly": true
   }
 }

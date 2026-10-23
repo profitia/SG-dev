@@ -33,10 +33,21 @@ test('KRS activation preserves accepted receipts and pins registration with no s
  for(const [key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
  assert.equal(a.existingSupplierRegistration,'KEEP');assert.equal(a.newRoleOrMapsPermissionsRequired,false)
  const next=receipt.organisationLocationAuthorityAdoption,nextDigests:Record<string,string>=next.applicationSourceDigests
+ const final=receipt.krsFinancialTelemetryCompatibility
  for(const [file,digest]of Object.entries(a.applicationSourceDigests)){
   if(nextDigests[file])assert.equal(hash(execFileSync('git',['show',next.previousReceiptSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,'historical '+file)
-  assert.equal(hash(fs.readFileSync(path.join(root,file))),nextDigests[file]??digest,file)
+  assert.equal(hash(execFileSync('git',['show',final.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),nextDigests[file]??digest,file)
  }
+})
+
+test('Financial-only correction preserves every preceding acceptance and pins the complete telemetry receiver',()=>{
+ const a=receipt.krsFinancialTelemetryCompatibility,root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
+ const previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(previous),a.previousReceiptSha256)
+ for(const [key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ assert.equal(a.identityDecisionCacheIntroduced,false);assert.equal(a.transactionTimeoutMs,15000)
+ assert.equal(a.originalCorporateSchemaChanged,false);assert.equal(a.financialOnlyPort,'profitia_srm_catalog.open_financial_publication(uuid,uuid,text)')
+ for(const [file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
 })
 
 test('bounded indicator reads retain the entire accepted receipt and add no new operation or grant',()=>{

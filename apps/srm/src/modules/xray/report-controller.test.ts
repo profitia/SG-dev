@@ -9,14 +9,14 @@ const nip='8650004194',other='5272443955',now=new Date('2026-10-20T00:00:00Z'),r
 const privateRef={snapshotId:'11111111-1111-4111-8111-111111111111',nip,entityType:'COMPANY',retentionUntil:'2026-10-21T00:00:00Z',exportRef:'b'.repeat(64)}
 const metadata=(selected=nip)=>projectReportData({nip:selected,entityType:'COMPANY'},{nip:selected,financial_json:null,financial_sha256:null,financial_checked_at:null,facts:[],indicators:[],kys:null},now,{})
 
-test('KRS requests refresh the existing session and attach its token only to the four relative protected routes',async()=>{
+test('KRS and NIP requests refresh the session without forwarding tokens to other destinations',async()=>{
  let tokens=0;const seen:{path:string;authorization:string|null}[]=[]
  const transport=createKrsSessionTransport(async options=>{assert.deepEqual(options,{skipCache:true});return 'synthetic-session-'+ ++tokens},async(path,init)=>{
   seen.push({path:String(path),authorization:new Headers(init?.headers).get('authorization')});return Response.json({})
  })
  await transport('/api/xray/krs/status');await transport('/api/xray/krs/lookup',{method:'POST'});
  await transport('/api/xray/search');await transport('https://foreign.example/api/xray/krs/lookup');
- assert.equal(tokens,2);assert.deepEqual(seen.map(x=>x.authorization),['Bearer synthetic-session-1','Bearer synthetic-session-2',null,null])
+ assert.equal(tokens,3);assert.deepEqual(seen.map(x=>x.authorization),['Bearer synthetic-session-1','Bearer synthetic-session-2','Bearer synthetic-session-3',null])
  let calls=0;await assert.rejects(createKrsSessionTransport(async()=>null,async()=>{calls++;return Response.json({})})('/api/xray/krs/lookup'),/Sesja wygasła/);assert.equal(calls,0)
 })
 

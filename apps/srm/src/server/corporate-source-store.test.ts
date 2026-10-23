@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readCorporatePacket, CORPORATE_PUBLICATION_VERSION, CORPORATE_SOURCE } from './corporate-source-store'
+import { readCorporatePacket, unrequestedCorporateGeneral, CORPORATE_PUBLICATION_VERSION, CORPORATE_SOURCE } from './corporate-source-store'
 import { mapMgbiFinancialRecords } from './mgbi-financial'
 import { decodeMsrOriginal } from './msr-source'
 import { parseMsrOriginal } from './msr-parser'
@@ -25,6 +25,17 @@ test('closed SOURCE packet preserves original financial mapping and detached dat
   assert.deepEqual(result, input); assert.notEqual(result, input)
   assert.equal(result.facts.find(f => f.metricCode === 'BS_A_CA')!.amount, '300')
   input.general.data.legalName = 'changed'; assert.equal(result.general.data!.legalName, 'Synthetic Company')
+})
+
+test('Financial-only publication requires General absence and cannot invent its provenance',()=>{
+ const input={...packet(),preserveGeneral:true,general:unrequestedCorporateGeneral()}
+ assert.deepEqual(readCorporatePacket(input),input)
+ for(const change of [
+  (p:typeof input)=>{p.preserveGeneral=false},(p:typeof input)=>{p.general.status='SUCCESS'},
+  (p:typeof input)=>{p.general.retrievedAt='2026-10-19T00:00:00.000Z'},
+  (p:typeof input)=>{p.general.source.recordId='a'.repeat(24)},(p:typeof input)=>{p.general.warnings=['invented General']},
+  (p:typeof input)=>{p.financial.source.provider='VERCLY'},
+ ]){const changed=structuredClone(input);change(changed);assert.throws(()=>readCorporatePacket(changed))}
 })
 
 test('native Polish KRS dates cross the unchanged classified corporate boundary after provider mapping', () => {

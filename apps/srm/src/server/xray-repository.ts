@@ -3,6 +3,7 @@ import { operationPayloadDigest, type Json } from "@profitia/platform-contracts/
 import type { PoolClient } from "pg";
 import { withOrganization, type DatabasePool } from "./db";
 import { kysCacheTtlMs } from "./kys-cache";
+import {measureSupplierStage} from './supplier-telemetry';
 
 export type Identifier = { type: "NIP" | "KRS"; value: string };
 export type Section = "general" | "financial" | "kys";
@@ -197,7 +198,7 @@ export async function appendFinancialFacts(organizationId: string, facts: Financ
     source_path: fact.sourcePath, validation_status: fact.validationStatus,
   }));
   await withOrganization(organizationId, async (client) => {
-    await client.query(
+    await measureSupplierStage('FINANCIAL_FACTS_INSERT',()=>client.query(
       "INSERT INTO srm.financial_facts(organization_id, supplier_id, snapshot_id, metric_code, " +
       "period_start, period_end, period_type, statement_scope, amount, source_amount, normalization_rule, currency_code, unit_code, source_path, validation_status) " +
       "SELECT $1, $2, $3, f.metric_code, f.period_start, f.period_end, f.period_type, f.statement_scope, " +
@@ -206,6 +207,6 @@ export async function appendFinancialFacts(organizationId: string, facts: Financ
       "period_type text, statement_scope text, amount numeric, source_amount numeric, normalization_rule text, currency_code text, unit_code text, " +
       "source_path text, validation_status text)",
       [organizationId, supplierId, snapshotId, JSON.stringify(rows)],
-    );
+    ));
   }, pool);
 }

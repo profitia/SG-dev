@@ -8,6 +8,7 @@ import {isSameOriginRequest} from './request-origin'
 import type {SrmSupplierApi,SupplierHttpInput} from './supplier-api-composition'
 import type {SrmReportRuntime} from './private-runtime'
 import {getSrmReportRuntime} from './private-runtime'
+import {withSupplierTelemetry} from './supplier-telemetry'
 import {KysPdfError} from './kys-pdf-access'
 import {validateKysPdfSelection} from './kys-pdf'
 type Route='search'|'company'|'jdg'|'company-kys'|'jdg-kys'|'reveal'|'pdf'|'krs'|'web'
@@ -93,7 +94,7 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
 /** Explicit Clerk failure never invokes legacy. Default deployed legacy
  * remains the original complete handler until controlled activation. */
 export function createRuntimeSupplierOperationHandler(route:Route,legacy:(request:Request)=>Promise<Response>,resolve:()=>SrmReportRuntime=getSrmReportRuntime){
- return async(request:Request):Promise<Response>=>{
+ return async(request:Request):Promise<Response>=>withSupplierTelemetry(route,async()=>{
   try{
    const runtime=resolve()
    if(runtime.provider==='legacy_demo')return await legacy(request)
@@ -102,5 +103,5 @@ export function createRuntimeSupplierOperationHandler(route:Route,legacy:(reques
    const nip=(route==='search'||route==='company')&&runtime.krsNip?await runtime.krsNip:undefined
    return await createSrmSupplierOperationHandler(route,runtime.supplierApi,runtime.defaultOrganisationId,nip?.company)(request)
   }catch{return response(503)}
- }
+ })
 }

@@ -4,6 +4,7 @@ import { createClerkAccountStatusReader } from '@profitia/platform-contracts/ide
 import { OPERATION_CONTRACT, OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
 import { createSrmNativePgDriver } from './native-pg-driver'
 import {LookupStageError,sanitizedLookupFailure} from './lookup-diagnostics'
+import {measureSupplierStage,measureSupplierWork} from './supplier-telemetry'
 import { readSupplierRequest, supplierRequestResourceId, privateSupplierRequestResourceId, readSupplierPrivateAcquisition, type SupplierPrivateAcquisition, type SupplierRequestCommand } from './supplier-request-operation'
 import type { SupplierServiceContinuationOptions } from './supplier-request-continuation'
 
@@ -83,7 +84,7 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
       // captured by the domain adapter, not replayed as a second common body.
       const inputDigest=operationPayloadDigest(input as Json),accessMode=allNativeUnits[unitId]
       let performed=false
-      const receipt=await host.runSqlWork({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
+      const receipt=await measureSupplierWork(unitId,()=>host.runSqlWork({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
         operation:'job.execute',organisationId:selected.organisationId,resourceId:selected.requestId,payload:selected.command,request:null},
       {unitId,accessMode,inputDigest},async(context,client)=>{
        let phase='BUSINESS_DESCRIPTOR'
@@ -111,7 +112,7 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
         if(commands.rows.length!==1||operationPayloadDigest(readSupplierRequest(commands.rows[0].command_json))!==context.payloadDigest)return refuse()
         await client.query("SELECT set_config('srm.organization_id',$1,true)",[selected.organisationId])
         phase='DOMAIN_ACTION'
-        if(await action(context,client)!==undefined)return refuse()
+        if(await measureSupplierStage('DOMAIN_ACTION',()=>Promise.resolve(action(context,client)))!==undefined)return refuse()
         performed=true
        }catch(error){
         const cause=error instanceof LookupStageError?error.cause:error
@@ -119,7 +120,7 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
         console.error('Native Supplier work failed',{unitId,phase,...sanitizedLookupFailure(error),...(invariant?{invariant}:{})})
         throw error
        }
-      })
+      }))
       if(!performed||receipt.value.requestId!==selected.requestId||receipt.value.status!=='ACCEPTED')return refuse()
       return Object.freeze({requestId:selected.requestId,unitId,status:'ACCEPTED' as const})
     },
