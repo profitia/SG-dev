@@ -2514,7 +2514,11 @@
     },
     "applicationSourceDigests": {
       "tests/operation-context.test.mjs": "8dca7e1ef3d10afb3828f57f24c9be489b6c893b39791418fa811834fd907353",
-      "tests/private-host.integration.test.mjs": "29bbff64787514f9398aedbd2cf625ac66561b402f61c5fe5d66d10ae120e91b"
+      "tests/private-host.integration.test.mjs": "29bbff64787514f9398aedbd2cf625ac66561b402f61c5fe5d66d10ae120e91b",
+      "tests/category-operation.test.ts": "192347808e08668cca8bff742f26a0d3c1f963bdbf85d4eb57be7d4634099b4e",
+      "tests/self-service-account.test.ts": "f4e16b57c1dd30fe1b338bcd76b15fe48ec4cfcc770fd64e69f9a3b4dbe1cca0",
+      "tests/porr-demo-middleware.test.ts": "068c7b83a1ec5fa5967116aeb24cf7c873323568b4ac177dd6bd45c6a54dc3d5",
+      "tests/identity-runtime.test.ts": "1f4e4fb8585ef70bca75499b5840c41374cf85a53a86719324b115b748f784be"
     },
     "soapTransportAdopted": false,
     "sql021Installed": false,
