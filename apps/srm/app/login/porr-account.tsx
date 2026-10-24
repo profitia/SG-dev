@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { SignIn, useAuth, useClerk } from '@clerk/react';
 import { createClerkConversation } from '@profitia/identity-runtime/conversation';
+import { createPasswordRecovery } from './porr-password-recovery';
 import './porr-account.css';
 
 type Mode = 'registration' | 'login';
@@ -15,6 +16,9 @@ const prompts: Record<string, string> = {
   method: 'Jak chcesz się zalogować — jednorazowym kodem e-mail czy hasłem?',
   email: 'Podaj swój adres e-mail.', code: 'Sprawdź swoją skrzynkę. Wpisz sześciocyfrowy kod z wiadomości.',
   password: 'Wpisz hasło do swojego konta.', existing: 'Ten adres ma już ukończone konto. Przejdź do logowania.',
+  password_unavailable: 'To konto nie ma ustawionego hasła. Możesz zalogować się jednorazowym kodem wysłanym na Twój adres e-mail.',
+  reset_code: 'Wysłaliśmy kod do zmiany hasła na Twój adres e-mail. Wpisz sześciocyfrowy kod z wiadomości.',
+  new_password: 'Adres e-mail potwierdzony. Ustaw nowe, unikalne hasło. Po zmianie wylogujemy pozostałe sesje Twojego konta.',
   challenge: 'Potrzebne jest dodatkowe potwierdzenie. Dokończ je w bezpiecznym formularzu logowania.',
 };
 function Avatar({ sex = 'female', size = 34 }: { sex?: string; size?: number }) {
@@ -26,10 +30,11 @@ function Icon({ name }: { name: 'sun' | 'moon' | 'restart' | 'send' }) {
 function friendlyError(error: unknown): string {
   const e = error as { message?: string; errors?: { code?: string }[] };
   const code = e?.errors?.[0]?.code ?? e?.message ?? '';
+  if (/rate|too_many|cooldown/i.test(code)) return 'Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.';
+  if (/password_pwned|password_not_strong|password_length|password_size|password_validation/i.test(code)) return 'To hasło nie spełnia wymagań bezpieczeństwa. Wybierz dłuższe, unikalne hasło, którego nie używasz w innych serwisach.';
   if (/code|verification|otp/i.test(code)) return 'Kod jest nieprawidłowy lub wygasł. Sprawdź go albo wyślij nowy kod.';
   if (/email|identifier/i.test(code)) return 'Sprawdź adres e-mail i spróbuj ponownie.';
-  if (/password/i.test(code)) return 'Sprawdź hasło albo skorzystaj z odzyskiwania dostępu.';
-  if (/rate|too_many|cooldown/i.test(code)) return 'Zbyt wiele prób. Odczekaj chwilę i spróbuj ponownie.';
+  if (/password/i.test(code)) return 'Sprawdź hasło. Możesz też zalogować się kodem e-mail lub ustawić nowe hasło.';
   return 'Nie udało się dokończyć tej czynności. Spróbuj ponownie.';
 }
 
@@ -43,6 +48,8 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
   const busy = submitting || finalizing;
   const [step, setStep] = useState('avatar'), [avatar, setAvatar] = useState<'male'|'female'>('female');
   const [native, setNative] = useState(false), [ready, setReady] = useState(false), [retry, setRetry] = useState(0), [resendLocked, setResendLocked] = useState(false);
+  const [recovery] = useState(() => createPasswordRecovery(clerk));
+  const [confirmation, setConfirmation] = useState(''), [passwordChanged, setPasswordChanged] = useState(false);
   const request = useCallback(async (path: string, body: unknown, headers: Record<string,string> = {}, signal?: AbortSignal) => {
     const result = await fetch(`${identityOrigin}/v1/embedded/srm/${path}`, { method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'error',
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000), headers: { 'Content-Type':'application/json', ...headers }, body: JSON.stringify(body) });
@@ -53,7 +60,7 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
       receipt.current = result.status === 'code' ? { attemptId: result.attemptId, token: result.token } : null; return result; },
     verify: code => { if (!receipt.current) throw Error('REGISTRATION_REQUIRED'); return request('registration/verify', { ...receipt.current, code }); }
   }));
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; receipt.current = null; }; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; receipt.current = null; recovery.clear(); }; }, [recovery]);
   useEffect(() => { onBusy(busy); }, [busy, onBusy]);
   useEffect(() => { if (!resendLocked) return; const timer = setTimeout(() => setResendLocked(false), 30000); return () => clearTimeout(timer); }, [resendLocked]);
   useEffect(() => { history.current?.scrollTo({ top: history.current.scrollHeight, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); if (!busy) input.current?.focus(); }, [messages, busy, step]);
@@ -79,14 +86,26 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
   async function submit(value: string) {
     if (operation.current || busy || !isLoaded || isSignedIn) return;
     operation.current = true; setBusy(true); setError('');
-    const previous = model.state.step;
+    const previous = step;
     try {
-      await model.submit(value);
+      let next: string;
+      if (previous === 'reset_code') next = await recovery.verify(value);
+      else if (previous === 'new_password') {
+        if (value !== confirmation) { setError('Hasła muszą być identyczne. Wpisz je ponownie.'); return; }
+        next = await recovery.finish(value);
+        setPasswordChanged(true); setConfirmation('');
+      } else { await model.submit(value); next = model.state.step; }
+      // An account without a password is not a security challenge. Preserve every
+      // other provider status (MFA, device trust, Protect) for the official UI.
+      if (previous === 'email' && mode === 'login' && model.state.method === 'password' && next === 'challenge'
+        && clerk.client.signIn.status === 'needs_first_factor'
+        && !clerk.client.signIn.supportedFirstFactors?.some(f => f.strategy === 'password')
+        && clerk.client.signIn.supportedFirstFactors?.some(f => f.strategy === 'email_code')) next = 'password_unavailable';
       if (!mounted.current) return;
       if (previous === 'avatar') setAvatar(value as 'male'|'female');
-      const shown = previous === 'code' ? '••••••' : previous === 'password' ? '••••••••' : previous === 'avatar' ? (value === 'male' ? 'Awatar męski' : 'Awatar żeński') : previous === 'method' ? (value === 'password' ? 'Hasło' : 'Kod e-mail') : value;
-      setMessages(current => [...current, { text: shown, user: true }, ...(prompts[model.state.step] ? [{ text: prompts[model.state.step] }] : [])]);
-      setAnswer(''); setStep(model.state.step); if (model.state.step === 'code') setResendLocked(true);
+      const shown = ['code','reset_code'].includes(previous) ? '••••••' : ['password','new_password'].includes(previous) ? '••••••••' : previous === 'avatar' ? (value === 'male' ? 'Awatar męski' : 'Awatar żeński') : previous === 'method' ? (value === 'password' ? 'Hasło' : 'Kod e-mail') : value;
+      setMessages(current => [...current, { text: shown, user: true }, ...(prompts[next] ? [{ text: prompts[next] }] : [])]);
+      setAnswer(''); setStep(next); if (next === 'code') setResendLocked(true);
     } catch (e) { if (mounted.current) setError(friendlyError(e)); }
     finally { operation.current = false; if (mounted.current) setBusy(false); }
   }
@@ -96,8 +115,31 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
     try { await model.resend(); setStep(model.state.step); setResendLocked(true); setMessages(current => [...current,{text: prompts[model.state.step] ?? 'Nowy kod został wysłany.'}]); }
     catch(e) { setError(friendlyError(e)); } finally { operation.current = false; setBusy(false); }
   }
-  const formStep = ['name','surname','email','code','password'].includes(step) && !isSignedIn;
-  const progress = step === 'avatar' ? 0 : ['code','challenge','done'].includes(step) ? 2 : 1;
+  async function startRecovery() {
+    if (operation.current || busy || !isLoaded || isSignedIn || !['password','reset_code'].includes(step) || (step === 'reset_code' && resendLocked)) return;
+    operation.current = true; setBusy(true); setError(''); setAnswer(''); setConfirmation('');
+    try {
+      const next = await recovery.start(model.state.email);
+      if (!mounted.current) return;
+      setStep(next); setResendLocked(true); setMessages(current => [...current,{text:prompts[next]}]);
+    } catch(e) { if (mounted.current) setError(friendlyError(e)); }
+    finally { operation.current = false; if (mounted.current) setBusy(false); }
+  }
+  async function switchMethod(code = false) {
+    if (operation.current || busy || !isLoaded || isSignedIn) return;
+    operation.current = true; setBusy(true); setError(''); setAnswer(''); setConfirmation(''); recovery.clear();
+    model.state.step = 'method'; setStep('method');
+    try {
+      if (code) { await model.submit('email_code'); await model.submit(model.state.email); }
+      if (!mounted.current) return;
+      setStep(model.state.step); if (model.state.step === 'code') setResendLocked(true);
+      setMessages(current => [...current,{text:prompts[model.state.step]}]);
+    } catch(e) { if (mounted.current) { setStep(model.state.step); setError(friendlyError(e)); } }
+    finally { operation.current = false; if (mounted.current) setBusy(false); }
+  }
+  const isCode = ['code','reset_code'].includes(step), isPassword = ['password','new_password'].includes(step);
+  const formStep = ['name','surname','email','code','password','reset_code','new_password'].includes(step) && !isSignedIn;
+  const progress = step === 'avatar' ? 0 : ['code','challenge','done','reset_code','new_password'].includes(step) ? 2 : 1;
   return <div className="porr-auth-slot">
     <ol className="porr-progress" aria-label="Etapy">{['Twój rozmówca', mode === 'registration' ? 'Podstawowe dane' : 'Dane logowania', 'Potwierdzenie e-maila'].map((label,i)=><li key={label} aria-current={i === progress ? 'step' : undefined} className={i <= progress ? 'reached' : ''}><span>{i+1}</span><b>{label}</b></li>)}</ol>
     <section className="porr-chat" aria-label={mode === 'registration' ? 'Rejestracja konta' : 'Logowanie'}>
@@ -105,11 +147,12 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
         {!isSignedIn && <button className="porr-icon" title="Zacznij od nowa" aria-label="Zacznij od nowa" disabled={busy} onClick={()=>window.location.reload()}><Icon name="restart"/></button>}
       </header>
       <div className="porr-chat-history" ref={history}>
-        {ready ? <div className="porr-success"><Avatar sex={avatar} size={60}/><h2>{mode === 'registration' ? 'Konto jest gotowe' : 'Zalogowano'}</h2><p>Dostęp do danych dostawców zależy od przypisania konta do organizacji i nadanych uprawnień.</p><a className="porr-primary" href="/">Przejdź do aplikacji</a></div>
-          : native ? <><button className="porr-text-button" onClick={()=>setNative(false)}>Wróć do rozmowy</button><SignIn routing="hash" forceRedirectUrl="/login" signUpUrl="/login" withSignUp={false}/></>
+        {ready ? <div className="porr-success"><Avatar sex={avatar} size={60}/><h2>{passwordChanged ? 'Hasło zmienione. Zalogowano' : mode === 'registration' ? 'Konto jest gotowe' : 'Zalogowano'}</h2><p>Dostęp do danych dostawców zależy od przypisania konta do organizacji i nadanych uprawnień.</p><a className="porr-primary" href="/">Przejdź do aplikacji</a></div>
+          : native ? <><button className="porr-text-button" onClick={()=>setNative(false)}>Wróć do rozmowy</button><SignIn routing="hash" forceRedirectUrl="/login" signUpUrl="/login" withSignUp={false} appearance={{variables:{colorPrimary:'var(--brand)',colorBackground:'var(--surface)',colorForeground:'var(--text)',fontFamily:'Inter, Arial, sans-serif',fontSize:'14px',borderRadius:'12px'},elements:{rootBox:'porr-provider-root',cardBox:'porr-provider-card',card:'porr-provider-card',headerTitle:'porr-provider-title',formButtonPrimary:'porr-provider-button'}}}/></>
           : <><div role="log" aria-live="polite" aria-relevant="additions">{messages.map((message,i)=><div key={i} className={`porr-message ${message.user?'is-user':''}`}>{!message.user && <Avatar sex={avatar} size={28}/>}<div className="porr-bubble">{message.text}</div></div>)}</div>
             {step === 'avatar' && !isSignedIn && <div className="porr-choices avatars">{(['female','male'] as const).map(sex=><button disabled={busy || !isLoaded} key={sex} onClick={()=>void submit(sex)}><Avatar sex={sex} size={60}/><span>Awatar {sex === 'male' ? 'męski' : 'żeński'}</span></button>)}</div>}
             {step === 'method' && <div className="porr-choices"><button disabled={busy} onClick={()=>void submit('email_code')}>Kod e-mail</button><button disabled={busy} onClick={()=>void submit('password')}>Hasło</button></div>}
+            {step === 'password_unavailable' && <button className="porr-primary" disabled={busy} onClick={()=>void switchMethod(true)}>Zaloguj się kodem e-mail</button>}
             {step === 'existing' && <button className="porr-primary" disabled={busy} onClick={onLogin}>Przejdź do logowania</button>}
             {step === 'challenge' && <button className="porr-primary" disabled={busy} onClick={()=>setNative(true)}>Dokończ potwierdzenie</button>}
           </>}
@@ -118,12 +161,18 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
       </div>
       {!ready && !native && <footer className="porr-composer">
         {formStep ? <form onSubmit={(e: FormEvent)=>{e.preventDefault();void submit(answer);}}>
-          <label className="porr-sr-only" htmlFor="porr-answer">{step === 'code' ? 'Kod weryfikacyjny' : step === 'password' ? 'Hasło' : step === 'email' ? 'Adres e-mail' : step === 'name' ? 'Imię' : 'Nazwisko'}</label>
-          <input ref={input} id="porr-answer" name={step} type={step==='password'?'password':step==='email'?'email':'text'} inputMode={step==='code'?'numeric':undefined} autoComplete={step==='code'?'one-time-code':step==='name'?'given-name':step==='surname'?'family-name':step==='password'?'current-password':'email'} className={step==='code'?'porr-otp':''} maxLength={step==='code'?6:step==='password'?1024:320} pattern={step==='code'?'[0-9]{6}':undefined} placeholder={step==='code'?'0 0 0 0 0 0':step==='password'?'Wpisz hasło…':'Wpisz odpowiedź…'} value={answer} onChange={e=>setAnswer(step==='code'?e.target.value.replace(/\D/g,''):e.target.value)} disabled={busy} required/>
-          <button className="porr-send" disabled={busy || !answer.trim()} aria-label={step==='code'?'Potwierdź kod':'Wyślij odpowiedź'}><Icon name="send"/></button>
+          <label className="porr-sr-only" htmlFor="porr-answer">{isCode ? 'Kod weryfikacyjny' : step==='new_password' ? 'Nowe hasło' : step === 'password' ? 'Hasło' : step === 'email' ? 'Adres e-mail' : step === 'name' ? 'Imię' : 'Nazwisko'}</label>
+          <div className="porr-inputs"><input ref={input} id="porr-answer" name={step} type={isPassword?'password':step==='email'?'email':'text'} inputMode={isCode?'numeric':undefined} autoComplete={isCode?'one-time-code':step==='name'?'given-name':step==='surname'?'family-name':step==='new_password'?'new-password':step==='password'?'current-password':'email'} className={isCode?'porr-otp':''} maxLength={isCode?6:isPassword?1024:320} pattern={isCode?'[0-9]{6}':undefined} placeholder={isCode?'0 0 0 0 0 0':isPassword?'Wpisz hasło…':'Wpisz odpowiedź…'} value={answer} onChange={e=>setAnswer(isCode?e.target.value.replace(/\D/g,''):e.target.value)} disabled={busy} required/>
+          {step==='new_password' && <><label className="porr-sr-only" htmlFor="porr-confirm">Powtórz nowe hasło</label><input id="porr-confirm" type="password" autoComplete="new-password" maxLength={1024} placeholder="Powtórz nowe hasło…" value={confirmation} onChange={e=>setConfirmation(e.target.value)} disabled={busy} required/></>}</div>
+          <button className="porr-send" disabled={busy || !answer.trim()} aria-label={isCode?'Potwierdź kod':step==='new_password'?'Zmień hasło':'Wyślij odpowiedź'}><Icon name="send"/></button>
         </form> : <p className="porr-idle">{!isLoaded?'Ładowanie bezpiecznego formularza…':isSignedIn?'Potwierdzanie konta…':'Wybierz odpowiedź powyżej.'}</p>}
         {step==='code' && !isSignedIn && <button className="porr-text-button" disabled={busy || resendLocked} onClick={()=>void resend()}>{resendLocked?'Ponowna wysyłka za chwilę':'Wyślij kod ponownie'}</button>}
-        {['password','method','email','challenge'].includes(step) && mode==='login' && <button className="porr-text-button" disabled={busy} onClick={()=>setNative(true)}>Odzyskaj dostęp lub użyj innej metody</button>}
+        {mode==='login' && !isSignedIn && <>
+          {step==='password' && <div className="porr-recovery-actions"><button className="porr-text-button" disabled={busy} onClick={()=>void startRecovery()}>Nie pamiętam hasła</button><button className="porr-text-button" disabled={busy} onClick={()=>void switchMethod(true)}>Zaloguj się kodem e-mail</button></div>}
+          {step==='reset_code' && <button className="porr-text-button" disabled={busy || resendLocked} onClick={()=>void startRecovery()}>{resendLocked?'Ponowna wysyłka za chwilę':'Wyślij kod ponownie'}</button>}
+          {['reset_code','new_password'].includes(step) && <button className="porr-text-button" disabled={busy} onClick={()=>void switchMethod()}>Wróć do wyboru metody</button>}
+          {['password','reset_code','new_password'].includes(step) && <details className="porr-mailbox-help"><summary>Nie masz dostępu do skrzynki?</summary><p>Zmiana hasła wymaga kodu z Twojego e-maila. Jeśli nie masz dostępu do skrzynki, skontaktuj się z administratorem aplikacji — ten formularz nie zmienia adresu e-mail konta.</p></details>}
+        </>}
       </footer>}
     </section>
   </div>;
