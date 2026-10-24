@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": { "node": ">=24.15.0 <25" },
-  "exports": { "./session-boundary": { "types": "./dist/src/session-boundary.d.ts", "import": "./dist/src/session-boundary.js" }, "./contracts": { "types": "./dist/src/contracts.d.ts", "import": "./dist/src/contracts.js" } },
+  "exports": { "./conversation": "./src/account-conversation.ts", "./session-boundary": { "types": "./dist/src/session-boundary.d.ts", "import": "./dist/src/session-boundary.js" }, "./contracts": { "types": "./dist/src/contracts.d.ts", "import": "./dist/src/contracts.js" } },
   "scripts": {
     "lint": "node scripts/check.mjs",
     "typecheck": "tsc --noEmit",

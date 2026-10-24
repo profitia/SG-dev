@@ -17,6 +17,7 @@ import { createHttpHandler } from './http-handler.js'
 import { createNodeServer } from './node-server.js'
 import { readDeploymentOrigin } from './deployment-configuration.js'
 import type { SessionBoundary } from './contracts.js'
+import { embeddedTargets, createEmbeddedAccountHandler, type EmbeddedAccountSurface } from './embedded-account.js'
 import { createAccountSurface, accountTransactions, type AccountSurface } from './account-provisioning.js'
 let email: EmailSurface | null = null
 let pool: pg.Pool | null = null
@@ -27,6 +28,9 @@ let avatar: AssistantAvatarSurface | null = null
 let language: CommunicationLanguageSurface | null = null
 let registration: RegistrationSurface | null = null
 let registrationStore: RegistrationStore | null = null
+let embedded: ReturnType<typeof createEmbeddedAccountHandler> | null = null
+const embeddedInput: unknown = JSON.parse(process.env.IDENTITY_EMBEDDED_TARGETS ?? '[]')
+if (!Array.isArray(embeddedInput) || embeddedInput.length && process.env.IDENTITY_SELF_SERVICE_ENABLED !== 'true') throw Error('EMBEDDED_ACCOUNT_DEPENDENCIES')
 if (process.env.IDENTITY_REGISTRATION_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_REGISTRATION_ENABLED)) throw Error('INVALID_REGISTRATION_FLAG')
 if (process.env.IDENTITY_REGISTRATION_ENABLED === 'true' && (process.env.IDENTITY_EMAIL_ENABLED !== 'true' || process.env.IDENTITY_SELF_SERVICE_ENABLED !== 'true')) throw Error('REGISTRATION_DEPENDENCIES')
 if (process.env.IDENTITY_EMAIL_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_EMAIL_ENABLED)) throw Error('INVALID_EMAIL_FLAG')
@@ -93,9 +97,21 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
     await language.ready()
+    const consumers = new Map<string, EmbeddedAccountSurface>()
+    for (const targetId of embeddedTargets(config, embeddedInput)) {
+      if (!registration || !registrationStore) throw Error('EMBEDDED_REGISTRATION_REQUIRED')
+      const consumerConfig = readConfiguration({ ...config, origin: config.targets[targetId]!.origin })
+      const common = { configuration: consumerConfig, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
+        transact: accountTransactions(pool), independentQuery: (sql: string, values: readonly unknown[] = []) => pool!.query(sql, values as unknown[]),
+        deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(consumerConfig)).digest('hex') }
+      consumers.set(targetId, { registration,
+        account: createAccountSurface({ ...common, authority, ...(renewalDigest === undefined ? {} : { renewalSchemaDigest: renewalDigest }), finalizeRegistration: registrationStore.finish }),
+        avatar: createAssistantAvatarSurface(common), language: createCommunicationLanguageSurface(common) })
+    }
+    embedded = createEmbeddedAccountHandler(config, consumers)
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 let shuttingDown = false
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   if (shuttingDown) return
