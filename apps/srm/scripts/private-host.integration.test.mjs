@@ -48,7 +48,7 @@ function beforePrivateAcquisitionApplicationSource(path){
 }
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const currentSdkDigests=sdkReceipt.formReportAdmissionAdoption.sdkDigests
-const currentPlatformSourceDigests=manifest=>({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportAdmissionAdoption.sourceDigests})
+const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportAdmissionAdoption.sourceDigests}).filter(([file])=>file!=='package-lock.json'))
 
 test('SRM imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')

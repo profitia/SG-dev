@@ -181,5 +181,6 @@ test('form report admission preserves historical receipts and confines the admit
  assert.equal(a.reportAdmissionOptedIn,true);assert.equal(a.privateJdgKysExportsExcluded,true);assert.equal(a.postClickClerkReads,0);assert.equal(a.humanAuthority,'AT_FORM_ADMISSION');
  for(const flag of ['sql025Installed','liveGrantsChanged','productDeploymentPerformed'])assert.equal(a[flag as 'sql025Installed'],false,flag);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,'../../packages/platform-contracts',file))),digest,file);
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file);
 });

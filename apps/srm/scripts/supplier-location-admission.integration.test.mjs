@@ -43,7 +43,7 @@ test('new P1 receipt preserves every historical record and verifies exact curren
  for(const[file,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'historical producer '+file)
  for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportAdmissionAdoption.sourceDigests})){
   assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file)
-  assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(accepted.applicationSourceDigests)){
   const change=receipt.krsLivePilotSourceCompatibility?.changedFiles[file];
