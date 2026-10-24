@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import {pilot2SourceInstallationPlan,pilot2SourceBootstrapPlan,validatePilot2RegistryTarget} from './pilot2-source-installation.mjs'
+import {pilot2SourceInstallationPlan,pilot2SourceBootstrapPlan,validatePilot2RegistryTarget,applyPilot2SourceBootstrap} from './pilot2-source-installation.mjs'
 const target=JSON.parse(fs.readFileSync(new URL('../deployment/pilot2-registry-targets.json',import.meta.url)))
 const sourceSha='a'.repeat(40)
 test('Source target cannot select Staging, Pilot1, another database or broader role',()=>{
@@ -25,9 +25,31 @@ test('immutable producer SQL and catalog fences survive; only free exact transpo
 test('bootstrap contains no credential and cleans every new operator membership in the same transaction',()=>{
  const p=pilot2SourceBootstrapPlan(target,sourceSha),sql=p.statements.join('\n')
  assert.equal(p.requiresOneOuterTransaction,true);assert.equal(p.newHumanAccountsOrGrants,false)
+ assert.equal(p.requiresInitialCredentials,true)
+ assert(p.initialCredentialIndex< p.statements.findIndex(v=>v.startsWith('DROP ROLE')))
  assert.equal(p.statements.filter(v=>v.startsWith('CREATE ROLE')).length,5)
  assert.doesNotMatch(sql,/PASSWORD|NOSUPERUSER[^\n]*INHERIT TRUE/)
  assert.match(sql,/REVOKE krs_catalog_owner,profitia_ingestion_owner FROM neondb_owner/)
  assert.match(sql,/DROP ROLE pilot2_source_bootstrap/)
  assert(sql.lastIndexOf('RESET ROLE')<sql.lastIndexOf('Temporary PILOT2 membership remains'))
+})
+test('a native installer initializes both credentials before cleanup and never returns them',async()=>{
+ const credentials={krs_reader:'FixtureReaderOnly09_0123456789abcdef0123456789abcdef',krs_ingest:'FixtureSourceOnly09_0123456789abcdef0123456789abcdef'}
+ const statements=[],client={query:async sql=>{statements.push(sql);return {rows:[]}}}
+ const result=await applyPilot2SourceBootstrap(client,target,sourceSha,credentials)
+ assert.equal(result.credentialsInitializedBeforeCleanup,true);assert.equal(result.transaction,'COMMITTED')
+ assert(statements.indexOf("SELECT set_config('profitia.install.initial_credentials_ready','true',true)")<statements.findIndex(v=>v.startsWith('DROP ROLE')))
+ assert(statements.findIndex(v=>v.startsWith('ALTER ROLE krs_reader PASSWORD'))>statements.indexOf('SET ROLE pilot2_source_bootstrap'))
+ assert.equal(statements.at(-1),'COMMIT')
+ for(const password of Object.values(credentials))assert(!JSON.stringify(result).includes(password))
+})
+test('credential initialization failure rolls back and discards SQL/error context',async()=>{
+ const credentials={krs_reader:'FixtureReaderOnly09_0123456789abcdef0123456789abcdef',krs_ingest:'FixtureSourceOnly09_0123456789abcdef0123456789abcdef'},statements=[]
+ const client={query:async sql=>{statements.push(sql);if(sql.startsWith('ALTER ROLE krs_ingest PASSWORD'))throw Object.assign(Error(credentials.krs_ingest),{code:'42501',where:sql});return {rows:[]}}}
+ await assert.rejects(applyPilot2SourceBootstrap(client,target,sourceSha,credentials),error=>{
+  assert.equal(error.message,'PILOT2_SOURCE_BOOTSTRAP_FAILED');assert.equal(error.sqlState,'42501')
+  for(const password of Object.values(credentials))assert(!JSON.stringify(error).includes(password))
+  return true
+ })
+ assert.equal(statements.at(-1),'ROLLBACK');assert(!statements.includes('COMMIT'))
 })

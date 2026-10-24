@@ -4454,5 +4454,27 @@
     "primaryRouteActivated": false,
     "clerkAndFullE1Delivered": false,
     "cachedKnowledgeCannotAcquireFinancial": true
+  },
+  "pilot2CredentialInitializationCorrection": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "previousSourceSha": "aec9872a0936c38263ee31cf354f6d9925c5fa6e",
+    "previousReceiptSha256": "a64fdb6f42befbcec5d1f47c2934a5bfec7fd4203421f65c4c54444ff9786ba9",
+    "scope": "ISOLATED_PILOT2_SOURCE_INITIAL_CREDENTIAL_CORRECTION",
+    "initialCredentialsBeforeCreatorCleanup": true,
+    "providerRotationBeforeRuntimeUse": true,
+    "temporaryOwnerMembershipRemoved": true,
+    "permanentOwnerMembershipOrSetRole": false,
+    "recoveryDeletionApproved": false,
+    "recoveryExecuted": false,
+    "runtimeActivated": false,
+    "recoveryPlan": "deployment/pilot2-source-recovery.json",
+    "applicationSourceDigests": {
+      "deployment/pilot2-source-recovery.json": "c5bff4cbb6daa5ccc39a52983240511d36d7b4de3c00ff409cf2b53a522b926b",
+      "scripts/pilot2-source-installation.mjs": "44256a39fde8bcf6234fcf085a2ed1875ae5b054d9ca9094ee6c6a55cefecd37",
+      "scripts/pilot2-source-installation.test.mjs": "86b3ef420c7e86ad2dcc6be7b5837d9af31c65cc0b8ab5dcbcba0d9687530d1e",
+      "scripts/pilot2-source-postgres.test.mjs": "34d3cf1b33696ac550c835b29143b27cd0897690ab54c9777be60e2675ad254a",
+      "src/server/account-recheck-adoption.test.ts": "900d56a2f7a00097c0e44d461d780090d7edf2b7ff23fa1ae4d501649b47523f",
+      "src/server/peer-read-boundary.test.ts": "07f7a606d1172d4b565f84b6e374311b7a77fb065920cb41ac49dc4e2a6b5536"
+    }
   }
 }
