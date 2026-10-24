@@ -6,7 +6,7 @@ import {createPlatformIngestionHost,platformReceiptEvidence} from '@profitia/pla
 import {canonical,sha256,validateCompanySnapshot,validateIdentityEvidence,krs,parseJson} from '@profitia/krs-registry-contracts'
 import type {CompanySnapshot,VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {Catalog,storeSnapshot} from './catalog.js'
-import {resolveIdentity} from './identity.js'
+import {resolveIdentity,revalidateAcceptedIdentity} from './identity.js'
 import {createKrsClient,krsResponseEvidence,buildRequest} from './client.js'
 import type {KrsResponse} from './client.js'
 import {createAdmittedKrsSource} from './e1.js'
@@ -74,8 +74,11 @@ export function createNativeRegistryAccess(options:{
       operation:'supplier.report.read',organisationId,resourceId:resourceId(s),payload:s as unknown as Json,request},read)
     return result.value as T
   }
+  // This ledger attests only which company proof this host returned after a
+  // successful protected OUTCOME. It stores no Actor, session or ALLOW result.
+  const issued=new WeakMap<object,{request:unknown;fingerprint:string}>()
   async function selected(request:unknown,id:string,reference:string|null=null):Promise<AcceptedCompany>{
-    return execute(request,selector({action:'SELECTED',krs:id,reference}),async()=>{
+    const result=await execute<AcceptedCompany>(request,selector({action:'SELECTED',krs:id,reference}),async()=>{
       const snapshot=await catalog.read(id)
       if(!snapshot||reference!==null&&snapshot.evidenceRef!==reference)return deny()
       const identity=await resolveIdentity({selectedKrs:id},catalog,now())
@@ -84,8 +87,21 @@ export function createNativeRegistryAccess(options:{
       if(snapshot.evidenceRef!==identity.evidenceRef)return deny()
       return {snapshot,identity}
     })
+    issued.set(result.identity,{request,fingerprint:canonical(result.identity)})
+    return result
   }
   return Object.freeze({
+    /** Internal company-freshness assertion only, never access authority or a
+     * projection. The same request must have obtained this exact identity through
+     * selected/accepted. Consumers retain current E1 gates for every effect and
+     * HUMAN boundaries before acquisition/publication/disclosure. No HTTP route
+     * exposes this method; copied JSON cannot mint the process-owned proof. */
+    async recheckEvidence(request:unknown,identity:VerifiedIdentityV1):Promise<void>{
+      const proof=issued.get(identity)
+      if(!proof||proof.request!==request||canonical(identity)!==proof.fingerprint)return deny()
+      if(request instanceof Request)request.signal.throwIfAborted()
+      await revalidateAcceptedIdentity(identity,identity.selectedKrs,catalog,now())
+    },
     async search(request:unknown,query:string){
       const s=selector({action:'SEARCH',query:query.trim(),limit:10})
       if(s.action!=='SEARCH')return deny()

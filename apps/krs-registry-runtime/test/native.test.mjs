@@ -21,7 +21,7 @@ export async function nativeReadTests(t,{owner,reader,catalog,url,Pool}){
  const issuer='https://identity.fixture.test',role='krs_human_test',id='0000099999',expiry=()=>new Date(Date.now()+3600000).toISOString()
  const hash=v=>createHash('sha256').update(v).digest('hex')
  const source=await fs.readFile(new URL(accessSchemaUrl),'utf8'),mod=await fs.readFile(new URL(moduleSchemaUrl),'utf8'),audit=await fs.readFile(new URL(moduleAuditSchemaUrl),'utf8')
- let pool,auditPool,revoked=false
+ let pool,auditPool,revoked=false,sessionReads=0,userReads=0
  try{
   await owner.query(`CREATE ROLE profitia_access_owner NOLOGIN NOINHERIT; CREATE ROLE ${role} LOGIN PASSWORD 'isolated_ci_only' NOINHERIT; GRANT CREATE ON DATABASE krs_registry_test TO profitia_access_owner`)
   await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner')
@@ -46,7 +46,7 @@ export async function nativeReadTests(t,{owner,reader,catalog,url,Pool}){
   const u=new URL(url);u.username=role
   pool=new Pool({connectionString:u.href,max:3});auditPool=new Pool({connectionString:u.href,max:1})
   assert.equal((await pool.query('SELECT current_user')).rows[0].current_user,role)
-  const clerk={async authenticateRequest(request){const ok=request.headers.get('authorization')==='Bearer fixture-user';return{status:ok?'signed-in':'signed-out',isAuthenticated:ok,toAuth:()=>({isAuthenticated:ok,tokenType:'session_token',userId:'fixture-user',sessionId:'fixture-session',actor:null,sessionClaims:{iss:issuer,sub:'fixture-user',sid:'fixture-session',azp:'http://localhost:3501',exp:Math.floor(Date.now()/1000)+3600}})}},sessions:{async getSession(){return{id:'fixture-session',userId:'fixture-user',status:revoked?'revoked':'active',expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000,actor:null}}},users:{async getUser(){return{id:'fixture-user',banned:false,locked:false,deprovisioned:false}}}}
+  const clerk={async authenticateRequest(request){const ok=request.headers.get('authorization')==='Bearer fixture-user';return{status:ok?'signed-in':'signed-out',isAuthenticated:ok,toAuth:()=>({isAuthenticated:ok,tokenType:'session_token',userId:'fixture-user',sessionId:'fixture-session',actor:null,sessionClaims:{iss:issuer,sub:'fixture-user',sid:'fixture-session',azp:'http://localhost:3501',exp:Math.floor(Date.now()/1000)+3600}})}},sessions:{async getSession(){sessionReads++;return{id:'fixture-session',userId:'fixture-user',status:revoked?'revoked':'active',expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000,actor:null}}},users:{async getUser(){userReads++;return{id:'fixture-user',banned:false,locked:false,deprovisioned:false}}}}
   const host={application:{appId:'srm',profileId:'PORR_SUITE',environment:'development',deploymentId:'isolated-krs',configurationVersion:'1',identityIssuer:issuer,organisationId:A,features:['supplier_report'],operations:['supplier.report.read']},binding:{applicationId:'srm',environment:'development',projectId:'isolated-project',branchId:'isolated-branch',databaseName:'krs_registry_test',role,schemaDigest:hash(source)},module:{id:'supplier_report',schemaDigest:hash(mod),auditSchemaDigest:hash(audit)},createAuthenticator:({resolveBinding})=>createClerkIdentityAuthenticator({client:clerk,application:{appId:'srm',environment:'development',issuer,authorizedParties:['http://localhost:3501']},resolveBinding}),independentQuery:async(sql,args)=>({rows:(await auditPool.query(sql,args)).rows}),transact:async(work)=>{const c=await pool.connect();try{await c.query('BEGIN');const value=await work({transaction:c,query:async(sql,args)=>({rows:(await c.query(sql,args)).rows})});await c.query('COMMIT');return value}catch(e){await c.query('ROLLBACK');throw e}finally{c.release()}}}
   const access=createNativeRegistryAccess({host,catalog,organisationId:A}),request=()=>new Request('http://localhost:3501/',{headers:{authorization:'Bearer fixture-user'}})
   const snapshot=await normalizeExtract(bytes(extract({id,name:'Native Synthetic SA'})),{krs:id,register:'P',extract:'CURRENT',retrievedAt:new Date().toISOString()})
@@ -67,6 +67,37 @@ export async function nativeReadTests(t,{owner,reader,catalog,url,Pool}){
    await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1",[A])
    await assert.rejects(access.accepted(request(),snapshot.evidenceRef))
    await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1",[A])
+  })
+  await t.test('company proof rechecks preserve freshness without reauthenticating or issuing authority',async()=>{
+   const req=request(),accepted=await access.accepted(req,snapshot.evidenceRef)
+   const before=(await owner.query('SELECT count(*)::int n FROM profitia_access.security_events')).rows[0].n
+   const counts={sessionReads,userReads}
+   await access.recheckEvidence(req,accepted.identity)
+   assert.deepEqual({sessionReads,userReads},counts)
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_access.security_events')).rows[0].n,before)
+   await assert.rejects(access.recheckEvidence(request(),accepted.identity))
+   await assert.rejects(access.recheckEvidence(req,structuredClone(accepted.identity)))
+   const other=createNativeRegistryAccess({host,catalog,organisationId:A})
+   await assert.rejects(other.recheckEvidence(req,accepted.identity))
+   // Freshness success grants no access: the unchanged full HUMAN gate still
+   // denies a revoked session and suspended membership, including same request.
+   revoked=true;await access.recheckEvidence(req,accepted.identity)
+   await assert.rejects(access.accepted(req,snapshot.evidenceRef));revoked=false
+   await owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1",[A])
+   await access.recheckEvidence(req,accepted.identity)
+   await assert.rejects(access.accepted(req,snapshot.evidenceRef))
+   await owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1",[A])
+   const controller=new AbortController(),aborted=new Request('http://localhost:3501/',{signal:controller.signal,headers:{authorization:'Bearer fixture-user'}})
+   const abortedSelection=await access.accepted(aborted,snapshot.evidenceRef);controller.abort()
+   await assert.rejects(access.recheckEvidence(aborted,abortedSelection.identity))
+   const corrupt=await access.accepted(req,snapshot.evidenceRef)
+   corrupt.identity.identity.nip='7772776017'
+   await assert.rejects(access.recheckEvidence(req,corrupt.identity))
+   let time=Date.now();const timed=createNativeRegistryAccess({host,catalog,organisationId:A,now:()=>time}),finite=await timed.accepted(req,snapshot.evidenceRef)
+   time+=300001;await assert.rejects(timed.recheckEvidence(req,finite.identity))
+   const changed=await normalizeExtract(bytes(extract({id,name:'Superseding Native Synthetic SA'})),{krs:id,register:'P',extract:'CURRENT',retrievedAt:new Date().toISOString()})
+   await owner.query('BEGIN');await storeSnapshot(owner,changed,'synthetic-supersession');await owner.query('COMMIT')
+   await assert.rejects(access.recheckEvidence(req,accepted.identity))
   })
   await t.test('OUTCOME outage releases no accepted result',async()=>{
    await owner.query("CREATE FUNCTION profitia_access.fail_native_outcome() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.phase='OUTCOME' THEN RAISE EXCEPTION 'fixture outage'; END IF; RETURN NEW; END $$;CREATE TRIGGER fail_native_outcome BEFORE INSERT ON profitia_access.security_events FOR EACH ROW EXECUTE FUNCTION profitia_access.fail_native_outcome()")
