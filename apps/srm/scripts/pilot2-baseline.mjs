@@ -5,6 +5,7 @@ import {execFileSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 import {gunzipSync} from 'node:zlib'
 import {instrumentPilot2} from './pilot2-instrumentation.mjs'
+import {registryPilot2} from './pilot2-registry-overlay.mjs'
 
 export const BUSINESS_BASELINE='6eede5cd19fd3a4519d66298effe9ef94633757a'
 const HASH=/^[a-f0-9]{40}$/
@@ -65,7 +66,7 @@ export function verifyBaselineArchive(repo){
 }
 export function prepareBaseline(repo,t,output,stage='BASELINE'){
  validateTarget(t)
- if(!['BASELINE','TELEMETRY'].includes(stage))deny('Only explicitly accepted experimental stages may be built')
+ if(!['BASELINE','TELEMETRY','REGISTRY'].includes(stage))deny('Only explicitly accepted experimental stages may be built')
  if(!HASH.test(BUSINESS_BASELINE))deny('Exact baseline required')
  const {archive,original,historicalGitVerified,tarSha256}=verifyBaselineArchive(repo)
  output=path.resolve(output)
@@ -82,7 +83,8 @@ export function prepareBaseline(repo,t,output,stage='BASELINE'){
   environment:'development',serviceId:t.render.serviceId,branchId:t.neon.branchId,
   originalFiles:original,changedFiles:changed,sourceArchive:{tarSha256,historicalGitVerified},nodeVersion:process.version,adapter:{path:guard,originalSha256:original[guard],adaptedSha256:sha(fs.readFileSync(path.join(output,guard)))},
   installedDependencies:false,built:false}
- if(stage==='TELEMETRY')instrumentPilot2(repo,output,proof)
+ if(stage==='TELEMETRY'||stage==='REGISTRY')instrumentPilot2(repo,output,proof)
+ if(stage==='REGISTRY')registryPilot2(repo,output,proof)
  fs.writeFileSync(path.join(output,'baseline-proof.json'),JSON.stringify(proof,null,2)+'\n')
  return proof
 }
