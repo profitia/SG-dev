@@ -191,7 +191,17 @@ test('OCHNIK correction preserves verified attribution, metering capability and 
  assert.equal(hash(previous),a.previousReceiptSha256);for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
  assert.equal(a.mode,'UNMETERED');assert.equal(a.historicalCountersPreserved,true);assert.equal(a.unverifiedHistoryExcluded,true);assert.equal(a.otherRuntimePoliciesUnchanged,true);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(acceptedReceipt.mgbiInventoryResponseCompatibility?execFileSync('git',['show',acceptedReceipt.mgbiInventoryResponseCompatibility.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.resolve(root,file))),digest,file);
  for(const[file,digest]of Object.entries(a.optionalSqlDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,'../../packages/platform-contracts/migrations/access',file))),digest,file);
  const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'));assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);
+});
+
+test('bounded MGBI inventory adoption preserves the prior accepted OCHNIK correction',()=>{
+ const a=acceptedReceipt.mgbiInventoryResponseCompatibility,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.maximumInventoryResponseBytes,8*1024*1024);assert.equal(a.otherRuntimePoliciesUnchanged,true);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
+ const source=fs.readFileSync(path.join(root,'src/server/supplier-native-runtime.ts'),'utf8');
+ assert(source.includes('maximumResponseBytes:config.runtimeRoles?mgbiPolicy.maximumInventoryResponseBytes:external.maximumResponseBytes'));
 });

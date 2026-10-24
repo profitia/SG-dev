@@ -4327,5 +4327,21 @@
       "src/server/supplier-native-runtime.ts": "5abbd4473eed47ec9d83b6f72813b1b61d6a76452771a4dd7a0c6b25c9b48d78",
       "../../packages/srm-xray/src/kys-content.ts": "383a4ecdb3b99d4872510534e13737baeb60e25757a181a747bcc2295fb6940f"
     }
+  },
+  "mgbiInventoryResponseCompatibility": {
+    "taskId": "SRM-OCHNIK-FINANCIAL-MGBI-UNMETERED-20261024",
+    "previousSourceSha": "fae37f2ddf7ba5ba34caf92514f889c4c493ebb0",
+    "previousReceiptSha256": "4377c1d8f1d5bd0950651f8de897b3b5bb175062cc6fdafc54e7b37f237907ed",
+    "maximumInventoryResponseBytes": 8388608,
+    "scope": "EXISTING_KRS_DEVELOPMENT_PILOT",
+    "priorReceiptsPreserved": true,
+    "otherRuntimePoliciesUnchanged": true,
+    "applicationSourceDigests": {
+      "deployment/mgbi-unmetered-policy.json": "2be9c222bef7968b4283cce3c020dd777b73c31bd938fc21f7470998303dacdb",
+      "scripts/provider-source.integration.test.mjs": "edbf038f4573edaf5e66123a70312b4e68bd0616385efafc5ac06bc5237bcf39",
+      "src/server/account-recheck-adoption.test.ts": "984192d885f0ebfaa92f4bd458bd5a8d4daf00133f999a66e60a7a27a52e5b84",
+      "src/server/peer-read-boundary.test.ts": "cd8d201c24197e19a010bec2ad99a2dbd0a2fd15c76dc7b94cff29bcada4e112",
+      "src/server/supplier-native-runtime.ts": "39364bc9310b4e0a3b559833911b1f68f60e5b3738003b1617039fbc7d24d72e"
+    }
   }
 }

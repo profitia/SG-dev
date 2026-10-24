@@ -92,6 +92,10 @@ test('original SRM clients use ordinary-role native source controls without a se
         const bytes=Buffer.from(prefix+'x'.repeat(size-prefix.length-suffix.length)+suffix)
         res.setHeader('content-type','application/xhtml+xml');res.setHeader('content-length',mode==='MSR_OVERSIZE'?20*1024*1024+1:bytes.length);res.end(bytes);return
       }
+      if (mode === 'MGBI_LARGE' || mode === 'MGBI_OVERSIZE') {
+        const body=JSON.stringify({count:1,results:[{...generalRecord,padding:'x'.repeat(1220641)}]})
+        res.setHeader('content-length',mode==='MGBI_OVERSIZE'?8*1024*1024+1:Buffer.byteLength(body));res.end(body);return
+      }
       if (url.pathname.startsWith('/v1/models/')) {
         if (mode === 'TWO_PAGES') res.end(JSON.stringify({ count: 2, pages: 2, results: [{ id: 'page-' + url.searchParams.get('page') }] }))
         else if (mode === 'INCOMPLETE') res.end(JSON.stringify({ count: 2, pages: 2, results: url.searchParams.get('page') === '1' ? [generalRecord] : [] }))
@@ -356,6 +360,35 @@ test('original SRM clients use ordinary-role native source controls without a se
       await assert.rejects(transport('CEIDG').fetcher('https://dane.biznes.gov.pl/api/ceidg/v3/firma?nip='+NIP),unavailable)
       mode='MSR_BUDGET'
       try{const before=hits;const selected=msrTransport({binding});await assert.rejects(downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:selected.fetcher}),error=>error.code==='MSR_FILE_BUDGET_EXHAUSTED');assert.equal(hits,before+1)}finally{mode='NORMAL'}
+    })
+    await t.test('pilot Financial accepts a complete inventory above one MiB and still refuses its bounded maximum',async()=>{
+      const policy=JSON.parse(fs.readFileSync(new URL('../deployment/mgbi-unmetered-policy.json',import.meta.url)))
+      const maximum=policy.maximumInventoryResponseBytes
+      assert.equal(maximum,8*1024*1024)
+      const extensionDigest=hash(readSql('024-unmetered-public-sources.sql'))
+      const binding={...settings('MGBI').binding,unmeteredSchemaDigest:extensionDigest}
+      mode='MGBI_LARGE'
+      try{
+        const before=hits
+        await assert.rejects(transport('MGBI',{binding}).fetcher(mgbiUrl()),unavailable)
+        assert.equal(hits,before+1)
+        await controlled(async()=>{
+          const p=(await owner.query("SELECT p.*,to_jsonb(n) native FROM profitia_external_call.policies p JOIN profitia_external_native.policies n USING(policy_id) WHERE p.resource_id='srm-provider:mgbi' AND p.status='ACTIVE'")).rows[0]
+          await owner.query("UPDATE profitia_external_native.policies SET status='REVOKED' WHERE policy_id=$1",[p.policy_id])
+          await owner.query("UPDATE profitia_external_call.policies SET status='REVOKED' WHERE policy_id=$1",[p.policy_id])
+          const id=randomUUID()
+          await owner.query("INSERT INTO profitia_external_call.policies SELECT (jsonb_populate_record(NULL::profitia_external_call.policies,$1::jsonb)).*",[JSON.stringify({...p,native:undefined,policy_id:id,version:1,admitted_count:0,status:'ACTIVE',maximum_response_bytes:maximum})])
+          await owner.query("INSERT INTO profitia_external_native.policies SELECT (jsonb_populate_record(NULL::profitia_external_native.policies,$1::jsonb)).*",[JSON.stringify({...p.native,policy_id:id,base_policy_version:1,version:1,status:'ACTIVE',maximum_response_bytes:maximum})])
+        })
+        const external={...settings('MGBI').external,maximumResponseBytes:maximum}
+        const result=await fetchMgbiFinancial({type:'NIP',value:NIP},{apiKey:CREDENTIAL,fetcher:transport('MGBI',{binding,external}).fetcher})
+        assert.equal(result.errorCode,null);assert.equal(result.rawResponse.recordCount,1)
+        assert(Buffer.byteLength(JSON.stringify(result.rawResponse.pages))>1024*1024)
+        assert.equal(hits,before+2)
+        mode='MGBI_OVERSIZE'
+        await assert.rejects(transport('MGBI',{binding,external}).fetcher(mgbiUrl()),unavailable)
+        assert.equal(hits,before+3)
+      }finally{mode='NORMAL'}
     })
     await t.test('source records contain neither raw provider bodies, credentials, private keys nor invented human owners', async () => {
       const dump = JSON.stringify((await owner.query('SELECT event FROM profitia_ingestion.security_events')).rows)
