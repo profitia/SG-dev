@@ -1,3 +1,5 @@
+import {registrationSchemaDigest} from '../dist/src/registration-store.js'
+import {installVocativeDictionary} from '../../../packages/platform-contracts/src/vocative-dictionary.mjs'
 import {languageSchemaDigest} from '../dist/src/communication-language.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -26,7 +28,13 @@ test('ordinary PostgreSQL role: encrypted durable queue, service scope, avatar p
   await f.admin.query('INSERT INTO profitia_profile.language_installation VALUES(true,$1)',[languageSchemaDigest()])
   await f.admin.query('GRANT EXECUTE ON FUNCTION profitia_profile.language_descriptor() TO identity_b1_runtime')
   await f.admin.query('UPDATE profitia_profile.email_policies SET allow_language_projection=true')
-  await f.admin.query('COMMIT')
+    await f.admin.query(fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/profile/005-registration.sql',import.meta.url),'utf8'))
+  await f.admin.query('INSERT INTO profitia_profile.registration_installation VALUES(true,$1)',[registrationSchemaDigest()])
+  await f.admin.query(fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/profile/006-vocative.sql',import.meta.url),'utf8'))
+  await installVocativeDictionary(f.admin.query.bind(f.admin))
+  await f.admin.query('UPDATE profitia_profile.email_policies SET allow_salutation_projection=true')
+  await f.admin.query('GRANT EXECUTE ON FUNCTION profitia_profile.vocative_descriptor(),profitia_profile.registration_command(text,bigint,text),profitia_profile.email_command(text,bigint,text) TO identity_b1_runtime')
+ await f.admin.query('COMMIT')
   const cfg={binding:f.binding,issuer:'https://synthetic.clerk.accounts.dev',instanceId:'ins_test1234',serviceId:'identity-email-test',schemaDigest:emailSchemaDigest(),proofKey:proof,encryptionKey:encryption,keyId:'test-key-1'}
   const store=createEmailStore(cfg,f.transact), event=(id='test0001',subject=null)=>({emailId:'ema_'+id,eventId:'msg_'+id,instanceId:cfg.instanceId,
     createdAt:Date.now(),expiresAt:Date.now()+240000,recipient:'synthetic@example.test',providerUserId:subject,emailAddressId:'idn_test1234',kind:'verification-code',otpCode:'654321'})

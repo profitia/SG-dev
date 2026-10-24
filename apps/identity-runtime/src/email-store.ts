@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes }
 import { readFileSync } from 'node:fs'
 import type { EmailInstruction } from './email-webhook.js'
 import type { AssistantAvatar } from './email-avatar.js'
+import {requireVocative,type Salutation} from './vocative.js'
 
 export const emailSchemaDigest = () => createHash('sha256').update(readFileSync(new URL('../migrations/profile/003-email-delivery.sql', import.meta.resolve('@profitia/platform-contracts/user-profile')))).digest('hex')
 export type EmailClaim = { emailId: string; token: string; instruction: EmailInstruction }
@@ -10,7 +11,7 @@ export interface EmailStore {
   ready(): Promise<void>
   enqueue(instruction: EmailInstruction): Promise<'queued' | 'duplicate'>
   claim(): Promise<EmailClaim | null>
-  begin(claim: EmailClaim): Promise<{avatar:AssistantAvatar; language:CommunicationLanguage}>
+  begin(claim: EmailClaim): Promise<{avatar:AssistantAvatar; language:CommunicationLanguage}&Salutation>
   release(claim: EmailClaim): Promise<void>
   settle(claim: EmailClaim, status: 'accepted' | 'rejected' | 'unknown', providerId?: string): Promise<void>
 }
@@ -27,6 +28,7 @@ export function createEmailStore(config: EmailStoreConfig, transact: Transact, n
     || proof.equals(encryption) || !/^[a-z0-9-]{1,64}$/.test(c.keyId) || !/^ins_[A-Za-z0-9]{4,120}$/.test(c.instanceId)
     || !/^[a-z0-9-]{3,100}$/.test(c.serviceId)) throw Error('EMAIL_STORE_CONFIGURATION')
   const descriptor = async (query: Query) => {
+    await requireVocative(query)
     const d = (await query('SELECT profitia_profile.email_descriptor() AS d')).rows[0]?.d as Record<string, unknown> | undefined
     const language = (await query('SELECT profitia_profile.language_descriptor() AS d')).rows[0]?.d as Record<string,unknown> | undefined
     if (!language || language.languageSchemaDigest !== languageSchemaDigest()) throw Error('EMAIL_LANGUAGE_UNAVAILABLE')
@@ -78,7 +80,8 @@ export function createEmailStore(config: EmailStoreConfig, transact: Transact, n
     async begin(claim: EmailClaim) {
       const r = await command({ op: 'begin', emailId: claim.emailId, token: claim.token })
       if (r.status !== 'sending' || !['male','female','neutral'].includes(String(r.avatar)) || !['pl','en'].includes(String(r.language))) throw Error('EMAIL_STORE_UNAVAILABLE')
-      return {avatar:r.avatar as AssistantAvatar,language:r.language as CommunicationLanguage}
+      if ([r.firstName,r.vocative].some(v=>v!==null && v!==undefined && (typeof v!=='string'||v.length>160))) throw Error('EMAIL_STORE_UNAVAILABLE')
+      return {avatar:r.avatar as AssistantAvatar,language:r.language as CommunicationLanguage,firstName:r.firstName as string|null,vocative:r.vocative as string|null}
     },
     async release(claim: EmailClaim) { await command({ op: 'release', emailId: claim.emailId, token: claim.token }) },
     async settle(claim: EmailClaim, status: 'accepted' | 'rejected' | 'unknown', providerId?: string) { await command({ op: 'settle', emailId: claim.emailId, token: claim.token, status, providerId: providerId ?? null }) },

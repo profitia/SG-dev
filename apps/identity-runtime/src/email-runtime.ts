@@ -5,6 +5,7 @@ import { EmailEventRejected } from './email-webhook.js'
 import type { EmailStore, EmailClaim } from './email-store.js'
 import type { AssistantAvatar } from './email-avatar.js'
 import type { EmailContent, InlineImage, Submission } from './mailgun-delivery.js'
+import type {Salutation} from './vocative.js'
 
 export interface EmailSurface { ready(): Promise<void>; handle(request: Request): Promise<Response>; stop(): Promise<void>; tick(): Promise<void> }
 type Asset = { filename: string; url: string; sha256: string }
@@ -34,9 +35,9 @@ export async function loadEmailRenderer(appName: string, origins: readonly strin
     finally { reader.releaseLock() }
     images.set(asset.filename, verifyEmailAsset(Buffer.concat(chunks), asset))
   }
-  return async (instruction: EmailInstruction, avatar: AssistantAvatar, language:CommunicationLanguage): Promise<EmailContent> => {
+  return async (instruction: EmailInstruction, avatar: AssistantAvatar, language:CommunicationLanguage, salutation:Salutation = {}): Promise<EmailContent> => {
     const content = renderer.renderMailgunResolved({kind:instruction.kind, avatar, language, allowedActionOrigins:origins, data:{appName,
-      currentYear:new Date(instruction.createdAt).getUTCFullYear(), requestedFrom:appName, requestedAt:new Date(instruction.createdAt).toISOString(),
+      currentYear:new Date(instruction.createdAt).getUTCFullYear(), requestedFrom:appName, requestedAt:new Date(instruction.createdAt).toISOString(),...salutation,
       ...(instruction.kind === 'verification-code' ? {otpCode:instruction.otpCode} : {actionUrl:instruction.actionUrl,expiresInDays:instruction.expiresInDays})}})
     const inline = renderer.inlineAssetsForAvatar(avatar).map(asset => { content.html = content.html.replaceAll(asset.url, 'cid:'+asset.filename); return images.get(asset.filename)! })
     return {...content, inline}
@@ -49,7 +50,7 @@ export async function loadEmailRenderer(appName: string, origins: readonly strin
 export function createEmailRuntime(options: {
   verify(request: Request): Promise<EmailEventDecision>; store: EmailStore
   recipient(instruction: EmailInstruction): Promise<'bound'|'unbound'|'rejected'>
-  render(instruction: EmailInstruction, avatar: AssistantAvatar, language:CommunicationLanguage): Promise<EmailContent>
+  render(instruction: EmailInstruction, avatar: AssistantAvatar, language:CommunicationLanguage, salutation?:Salutation): Promise<EmailContent>
   send(message: EmailContent & {recipient: string}): Promise<Submission>
   diagnostic?(code: 'intake-unavailable'|'worker-unavailable'|'submission-unknown'): void
   now?: () => number; pollMs?: number; autoStart?: boolean
@@ -71,7 +72,7 @@ export function createEmailRuntime(options: {
       if (recipient === 'rejected') { await options.store.settle(claim,'rejected'); return }
       const preference = await options.store.begin(claim); started = true
       let message: EmailContent
-      try { message = await options.render(claim.instruction, recipient === 'bound' ? preference.avatar : 'neutral', recipient === 'bound' ? preference.language : 'en') }
+      try { message = await options.render(claim.instruction, recipient === 'bound' ? preference.avatar : 'neutral', recipient === 'bound' ? preference.language : 'en', recipient === 'bound' ? {firstName:preference.firstName??null,vocative:preference.vocative??null} : {}) }
       catch { await options.store.settle(claim,'rejected'); return }
       // Once begin is durable, finish this attempt during graceful shutdown.
       // Releasing it would risk a duplicate; rejecting it would discard a valid code.

@@ -1,3 +1,4 @@
+import {installVocativeDictionary} from '../../../packages/platform-contracts/src/vocative-dictionary.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -23,6 +24,10 @@ test('registration SQL: reserved identity, personalisation snapshot, resumable p
  await f.admin.query('INSERT INTO profitia_profile.registration_installation VALUES(true,$1)',[registrationSchemaDigest()])
  await f.admin.query("INSERT INTO profitia_profile.registration_policies(login_role,enabled) VALUES('identity_b1_runtime',true)")
  await f.admin.query('GRANT EXECUTE ON FUNCTION profitia_profile.email_descriptor(),profitia_profile.email_command(text,bigint,text),profitia_profile.language_descriptor(),profitia_profile.registration_descriptor(),profitia_profile.registration_command(text,bigint,text) TO identity_b1_runtime')
+   await f.admin.query(fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/profile/006-vocative.sql',import.meta.url),'utf8'))
+  await installVocativeDictionary(f.admin.query.bind(f.admin))
+  await f.admin.query('UPDATE profitia_profile.email_policies SET allow_salutation_projection=true')
+  await f.admin.query('GRANT EXECUTE ON FUNCTION profitia_profile.vocative_descriptor(),profitia_profile.registration_command(text,bigint,text),profitia_profile.email_command(text,bigint,text) TO identity_b1_runtime')
  await f.admin.query('COMMIT')
  const cfg={binding:f.binding,issuer,instanceId,serviceId:'identity-email-test',schemaDigest:emailSchemaDigest(),proofKey:proof,encryptionKey:key,keyId:'test-key'}
  const store=createRegistrationStore(cfg,f.transact),mail=createEmailStore(cfg,f.transact),draft={email:'synthetic@example.test',firstName:'Ada',lastName:'Testowa',avatar:'female',language:'en'}
@@ -56,15 +61,15 @@ test('registration SQL: reserved identity, personalisation snapshot, resumable p
  await t.test('resume uses same record and subject; each email freezes its own avatar/language, including delayed events',async()=>{
   const variants=[['male','pl'],['male','en'],['female','pl'],['female','en']]
   for(const [i,[avatar,language]]of variants.entries()){
-   await age();const a=await start({avatar,language});assert.equal(a.registrationId,first.registrationId);assert.equal(a.subject,'user_pending1234');await ready(a);latest=a
+   await age();const a=await start({avatar,language,firstName:'Ada',vocative:language==='pl'?'Ado':null});assert.equal(a.registrationId,first.registrationId);assert.equal(a.subject,'user_pending1234');await ready(a);latest=a
    const e={emailId:'ema_snapshot'+i,eventId:'msg_snapshot'+i,instanceId,createdAt:Date.now(),expiresAt:Date.now()+240000,recipient:draft.email,providerUserId:'user_pending1234',emailAddressId:'idn_pending1234',kind:'verification-code',otpCode:'654321',registrationAttemptId:a.attemptId}
    await mail.enqueue(e)
   }
   // A later selection must not change any already enqueued snapshot.
   await assert.rejects(store.command('verify',receipt(first)))
-  for(const [avatar,language]of variants){const c=await mail.claim();assert.deepEqual(await mail.begin(c),{avatar,language});await mail.settle(c,'accepted','<synthetic@example.test>')}
+  for(const [avatar,language]of variants){const c=await mail.claim();assert.deepEqual(await mail.begin(c),{avatar,language,firstName:'Ada',vocative:language==='pl'?'Ado':null});await mail.settle(c,'accepted','<synthetic@example.test>')}
   const delayed={emailId:'ema_delayed1234',eventId:'msg_delayed1234',instanceId,createdAt:Date.now(),expiresAt:Date.now()+240000,recipient:draft.email,providerUserId:'user_pending1234',emailAddressId:'idn_pending1234',kind:'verification-code',otpCode:'654321',registrationAttemptId:first.attemptId}
-  await mail.enqueue(delayed);const c=await mail.claim();assert.deepEqual(await mail.begin(c),{avatar:'female',language:'en'});await mail.settle(c,'accepted','<delayed@example.test>')
+  await mail.enqueue(delayed);const c=await mail.claim();assert.deepEqual(await mail.begin(c),{avatar:'female',language:'en',firstName:'Ada',vocative:null});await mail.settle(c,'accepted','<delayed@example.test>')
   await assert.rejects(mail.enqueue({...delayed,emailId:'ema_wrong1234',eventId:'msg_wrong1234',providerUserId:'user_foreign1234'}))
   await assert.rejects(mail.enqueue({...delayed,emailId:'ema_wrong5678',eventId:'msg_wrong5678',emailAddressId:'idn_foreign1234'}))
  })

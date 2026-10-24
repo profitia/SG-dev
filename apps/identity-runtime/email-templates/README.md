@@ -121,3 +121,7 @@ with two delivered kinds (verification-code/invitation), two languages and
 three avatar variants. Other process-specific copy remains authored only until
 Clerk provides a verified process discriminator. Variables use t:variables and
 are never Mailgun event metadata. An unmapped pre-account event uses EN/neutral.
+
+## Persisted salutation (Development SQL006)
+
+Mailgun HTML and plain-text templates use a bounded `greeting` variable. For PL it is `Cześć, <persisted vocative or original first name>!`; EN always uses `Hello, <original first name>!`. Missing/unsafe names produce a generic greeting. `firstName` and `vocative` are trusted private queue snapshots, never caller-selected provider event metadata. Assistant avatar remains independent. Native Clerk Revolvapp export retains a generic greeting because Clerk does not receive these private variables. Retain old Mailgun version tags for rollback.
