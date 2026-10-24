@@ -2225,6 +2225,16 @@
         "status": "PREPARED_NOT_INSTALLED",
         "snapshot": "enqueue",
         "fallback": "en"
+      },
+      "salutationExtension": {
+        "implementation": "packages/platform-contracts/migrations/profile/006-vocative.sql",
+        "status": "PREPARED_NOT_INSTALLED",
+        "grant": "Separate disabled-by-default allow_salutation_projection; existing exact signed SERVICE boundary; no raw reads or organisational grant.",
+        "dataClass": "ACCOUNT_PRIVATE",
+        "language": "Persisted pl only permits reviewed vocative; en uses original name. Missing mapping keeps original and Unknown.",
+        "avatar": "Independent explicit assistant choice; lexical name gender never determines avatar or user identity.",
+        "retention": "Queue name snapshot erased with ciphertext; attempt name cleared after 30 days; completed profile persists.",
+        "dictionary": "Full supplied source quarantined; only explicit versioned reviewed entries active; no runtime guessing."
       }
     },
     {
@@ -2299,7 +2309,17 @@
         "audit": "30 days",
         "reservation": "Minimal pseudonymous resumable registry; controlled cleanup only."
       },
-      "acceptance": "Reserved identity, first-code PL/EN male/female delivery, same-address resume, wrong/foreign proof rejection, official browser completion and Finished/Unassigned persistence verified. Evidence: Canon/evidence/2026-10-24-registration-model.md."
+      "acceptance": "Reserved identity, first-code PL/EN male/female delivery, same-address resume, wrong/foreign proof rejection, official browser completion and Finished/Unassigned persistence verified. Evidence: Canon/evidence/2026-10-24-registration-model.md.",
+      "salutationExtension": {
+        "implementation": "packages/platform-contracts/migrations/profile/006-vocative.sql",
+        "status": "PREPARED_NOT_INSTALLED",
+        "grant": "Separate disabled-by-default allow_salutation_projection; existing exact signed SERVICE boundary; no raw reads or organisational grant.",
+        "dataClass": "ACCOUNT_PRIVATE",
+        "language": "Persisted pl only permits reviewed vocative; en uses original name. Missing mapping keeps original and Unknown.",
+        "avatar": "Independent explicit assistant choice; lexical name gender never determines avatar or user identity.",
+        "retention": "Queue name snapshot erased with ciphertext; attempt name cleared after 30 days; completed profile persists.",
+        "dictionary": "Full supplied source quarantined; only explicit versioned reviewed entries active; no runtime guessing."
+      }
     },
     {
       "id": "FORM-REPORT-ADMISSION-1",

@@ -98,7 +98,7 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
       const t=message.template, keys=Object.keys(t.variables).sort().join(',');
       if (!transactional || !/^identity-(verification-code|invitation)-(pl|en)-(male|female|neutral)$/.test(t.name)
         || !/^v-[a-f0-9]{24}$/.test(t.version)
-        || !['app_name,current_year,otp_code,requested_at,requested_from','action_url,app_name,current_year,expires_in_days'].includes(keys)
+        || !['app_name,current_year,greeting,otp_code,requested_at,requested_from','action_url,app_name,current_year,expires_in_days,greeting'].includes(keys)
         || Object.values(t.variables).some(v=>typeof v!=='string'||v.length>2000||/[\x00-\x1f\x7f]|\{\{|\}\}/.test(v))) throw Error('Invalid stored template');
       form.delete('html'); form.set('template',t.name); form.set('t:version',t.version);
       // Template values must never be placed in provider event/user variables.

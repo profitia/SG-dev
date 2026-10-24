@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto'
 import {createEmailRuntime,verifyEmailAsset} from '../dist/src/email-runtime.js'
 import {createHttpHandler} from '../dist/src/http-handler.js'
 import {EmailEventRejected} from '../dist/src/email-webhook.js'
+import {renderMailgunResolved} from '../email-templates/render.mjs'
 function fixture(overrides={}){
   const effects=[],instruction={emailId:'ema_test1234',recipient:'synthetic@example.test',expiresAt:Date.now()+60000},claim={emailId:instruction.emailId,token:'test',instruction}
   const options={autoStart:false,verify:async()=>({status:'ready',instruction}),store:{ready:async()=>{},enqueue:async()=>{effects.push('enqueue');return 'queued'},claim:async()=>{effects.push('claim');return claim},begin:async()=>{effects.push('begin');return {avatar:'female',language:'pl'}},release:async()=>effects.push('release'),settle:async(_,status)=>effects.push(status)},
@@ -73,4 +74,18 @@ test('inline assets are digest-pinned and size-bounded',()=>{
   const bytes=Buffer.from([137,80,78,71,13,10,26,10]),asset={filename:'assistant-male.png',sha256:createHash('sha256').update(bytes).digest('hex')}
   assert.deepEqual(verifyEmailAsset(bytes,asset),{filename:asset.filename,bytes})
   assert.throws(()=>verifyEmailAsset(Buffer.from('not png'),asset));assert.throws(()=>verifyEmailAsset(bytes,{...asset,sha256:'0'.repeat(64)}))
+})
+test('worker carries the persisted greeting through Mailgun and strips it for an unbound recipient',async()=>{
+ for(const bound of [true,false]) {
+  let delivered
+  const f=fixture({recipient:async()=>bound?'bound':'unbound',
+   render:async(_,avatar,language,salutation)=>renderMailgunResolved({kind:'verification-code',avatar,language,data:{...salutation,appName:'SpendGuru',currentYear:2026,otpCode:'123456',requestedFrom:'SpendGuru',requestedAt:'2026-10-24'}}),
+   send:async message=>{delivered=message;return {status:'accepted',providerId:'<synthetic@test>'}}})
+  f.options.store.begin=async()=>({avatar:'female',language:'pl',firstName:'Marek',vocative:'Marku'})
+  await f.runtime.tick()
+  assert.equal(delivered.template.variables.greeting,bound?'Cześć, Marku!':'Hello!')
+  assert.equal(delivered.html.includes('Marku'),bound)
+  assert.equal(delivered.text.includes('Marku'),bound)
+  assert.equal(delivered.html.includes('cid:assistant-female.png'),bound)
+ }
 })

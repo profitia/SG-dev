@@ -43,7 +43,7 @@ function contentParts(kind, avatar, language = 'pl') {
     ? labels?.unexpectedInvitation ?? '<b>Nie oczekiwano tego zaproszenia?</b><br />Jeśli ta wiadomość trafiła do Ciebie omyłkowo, możesz ją zignorować.'
     : labels?.unexpectedCode ?? '<b>Nie proszono o ten kod?</b><br />Jeśli to nie Ty, możesz zignorować tę wiadomość.<br /><br />Prośba z: {{requested_from}}<br />Data prośby: {{requested_at}}';
   const footer = `<b>${catalog.footer.company.map(escapeHtml).join('<br />')}</b><br /><br />${escapeHtml(labels?.services ?? catalog.footer.services)}<br /><br />${(labels?.address ?? catalog.footer.address).map(escapeHtml).join('<br />')}<br /><br />© {{current_year}} {{app.name}}`;
-  return {m, bubble: p(m.greeting) + p(m.message) + action, note, request, footer};
+  return {m, bubble: p('{{greeting}}') + p(m.message) + action, note, request, footer};
 }
 
 /** Portable table-based HTML, still containing Clerk's dynamic placeholders. */
@@ -88,10 +88,20 @@ export function renderRevolvapp(kind, avatar = 'neutral', language = 'pl') {
 export function renderPlain(kind, avatar = 'neutral', language = 'pl') {
   const {m,note,request}=contentParts(kind,avatar,language), labels=labelsFor(language),invite=kind==='invitation';
   const plain = html => html.replace(/<br\s*\/?\s*>/gi,'\n').replace(/<[^>]+>/g,'');
-  return [m.title,m.greeting,m.message,invite?m.instruction:'{{otp_code}}',
+  return [m.title,'{{greeting}}',m.message,invite?m.instruction:'{{otp_code}}',
     invite?(labels?.accept ?? 'Przyjmij zaproszenie')+': {{action_url}}':m.instruction,plain(note),plain(request),
     catalog.footer.company.join('\n'),labels?.services ?? catalog.footer.services,(labels?.address ?? catalog.footer.address).join('\n'),
     '© {{current_year}} {{app.name}}'].filter(Boolean).join('\n\n')+'\n';
+}
+
+/** Language gates grammar; name metadata never selects the assistant avatar. */
+export function greetingFor(language, data = {}) {
+  languageCheck(language);
+  const original = typeof data.firstName === 'string' ? data.firstName.trim() : '';
+  const name = language === 'pl' && original && typeof data.vocative === 'string' && data.vocative.trim() ? data.vocative.trim() : original;
+  // A malformed optional name must not prevent delivery of an authentication code.
+  const safe = name && name.length <= 160 && !/[\x00-\x1f\x7f]|\{\{|\}\}/.test(name) ? name : '';
+  return (language === 'pl' ? 'Cześć' : 'Hello') + (safe ? ', ' + safe : '') + '!';
 }
 
 /** Resolve trusted message data once; never evaluate user-provided template syntax. */
@@ -103,6 +113,7 @@ export function renderResolved({kind, avatar = 'neutral', language = 'pl', data,
   };
   const values = {
     'app.name': scalar(data?.appName, 80),
+    greeting: greetingFor(language, data),
     current_year: scalar(String(data?.currentYear), 4),
   };
   if (!/^20\d{2}$/.test(values.current_year)) throw new Error('Invalid email year');
@@ -193,7 +204,7 @@ export function renderMailgunResolved(options) {
   const content=renderResolved(options), spec=mailgunTemplate(options.kind,options.avatar,options.language);
   for(const asset of inlineAssetsForAvatar(options.avatar)) content.html=content.html.replaceAll(asset.url,'cid:'+asset.filename);
   const d=options.data;
-  const variables={app_name:d.appName,current_year:String(d.currentYear),...(options.kind==='invitation'
+  const variables={greeting:greetingFor(options.language,d),app_name:d.appName,current_year:String(d.currentYear),...(options.kind==='invitation'
     ?{action_url:d.actionUrl,expires_in_days:String(d.expiresInDays)}
     :{otp_code:d.otpCode,requested_from:d.requestedFrom,requested_at:d.requestedAt})};
   return {...content,template:{name:spec.name,version:spec.version,variables}};
