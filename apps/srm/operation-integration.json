@@ -4244,6 +4244,9 @@
     "financialHistoryReconciliationPreserved": true,
     "activationScope": "EXISTING_KRS_DEVELOPMENT_PILOT_ONLY",
     "applicationSourceDigests": {
+      "../maps-runtime/package-lock.json": "ee7e8c772b0cb9f516569b1bce940c1cc6557adb7c743d7cf740886c8176809c",
+      "../maps-runtime/platform-integration.json": "e9eb841cf18463918091e0885a5ff33f61c8d8a65fa10525bbc84465fe5bcbb8",
+      "../maps-runtime/test/embed.test.mjs": "daff3324a06b2f3d7174c11cc9de90df35de111aaa10619f7ce04d4e9489ac84",
       "app/api/xray/admission/route.ts": "7d491c9d36b0efe46ee323f69685110fd304730241c77d2022c18facfbe5ccac",
       "app/session-boundary.tsx": "37ef23835b2ae6577306e843e73c35199a1dac161ed9e3adff44739bcaa994d3",
       "deployment/krs-name-pilot-targets.json": "09920319613158760c46bd564d8324212a789245d6e9a08ccd02b821c541e92a",
@@ -4279,7 +4282,9 @@
       "src/server/supplier-native-work-store.ts": "86cc03a8e133a388d2c8ed3484b9bc2c4f321cfff6f986c059c988d960d34e04",
       "src/server/supplier-request-work.ts": "50cfc5b1374acf11cee1e124077281c48fc1a977c4dd2228115e41a698fa1da4",
       "src/server/supplier-source-link.ts": "8d53b98cd1d7daf46fa8ca9bf32bcc57a4bdb14a03f6924b1f1e92f70965e338",
-      "src/server/supplier-telemetry.ts": "2a940a41761c918d40d130fbcdecf4063d39e58ed9e8d1545e6e6d97eaf3dd6b"
+      "src/server/supplier-telemetry.ts": "2a940a41761c918d40d130fbcdecf4063d39e58ed9e8d1545e6e6d97eaf3dd6b",
+      "../../packages/maps-embed/package.json": "5f45fe00948d117af80c4fe215b23462d53e69aa39453aabd2617c0a1746def2",
+      "../../packages/srm-xray/src/supplier-search.tsx": "5a261843a39269ff5d7197d42efe5d56b41a97170da029bf66dea3c1a097aba9"
     },
     "sharedUiSourceDigests": {
       "packages/srm-xray/src/supplier-search.tsx": "5a261843a39269ff5d7197d42efe5d56b41a97170da029bf66dea3c1a097aba9"
