@@ -67,7 +67,7 @@ export function readyPilot2RegistryReport(value:{general:SectionEnvelope<General
   ||h.currentKrs!==d.krs||h.unlinkedKrs.length||h.members[0]?.krs!==d.krs
   ||!['SUCCESS','PARTIAL'].includes(g.status)||f.source.provider!=='MGBI'||!['SUCCESS','PARTIAL','EMPTY'].includes(f.status))return false
  if(f.data&&(f.data.revisionRule!==FINANCIAL_REVISION_RULE||f.data.qualityRule!==FINANCIAL_QUALITY_RULE
-  ||f.data.registryHistoryVersion!==COMPANY_IDENTITY_VERSION||f.warnings.some(w=>w.startsWith('MSR_'))))return false
+  ||f.data.registryHistoryVersion!==COMPANY_IDENTITY_VERSION))return false
  const allowed=new Set(h.members.map(m=>m.krs))
  return !f.data||Array.isArray(f.data.periods)&&f.data.periods.every(p=>!!p.sourceRegistration&&allowed.has(p.sourceRegistration.krs))
 }

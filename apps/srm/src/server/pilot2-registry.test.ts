@@ -16,8 +16,9 @@ test('accepted cached report requires the selected NIP, source evidence and veri
   (v:ReturnType<typeof report>)=>{v.general.data.registryHistory.unlinkedKrs=['0000000999'] as never},
   (v:ReturnType<typeof report>)=>{v.financial.data.periods[1].sourceRegistration.krs='0000000999'},
   (v:ReturnType<typeof report>)=>{v.financial.status='ERROR'},
-  (v:ReturnType<typeof report>)=>{v.financial.warnings=['MSR_PROCESSING_PENDING']},
+  (v:ReturnType<typeof report>)=>{v.financial.data.revisionRule='obsolete' as never},
  ]){const changed=report();mutate(changed);assert.equal(readyPilot2RegistryReport(changed as never,nip),false)}
+ const unchangedWarning=report();unchangedWarning.financial.warnings=['MSR_XML_DTD_EXCLUDED'];assert.equal(readyPilot2RegistryReport(unchangedWarning as never,nip),true)
 })
 test('a cached report cannot initiate a new paid effect; ready scope does not leak into another request',async()=>{
  await assert.rejects(withPilot2ReadyReport(async()=>{requirePilot2FinancialAcquisition()}),/Fresh company evidence required/)
