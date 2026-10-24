@@ -1,7 +1,9 @@
 import { CanonButton, CanonInput, CanonLink, CanonSummary, CanonElement } from "@profitia/srm-xray";
 import "@profitia/srm-xray/financial-scanner.css";
 import { ClerkSignIn } from "./clerk-sign-in";
-import { readSrmIdentityRuntime, type SrmIdentityRuntime } from "../../src/server/identity-runtime";
+import { readPorrAccountOrigin, readSrmIdentityRuntime, type SrmIdentityRuntime } from "../../src/server/identity-runtime";
+
+import { PorrAccount } from "./porr-account";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +21,12 @@ const currentVersionFeatures = [
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   const environment = process.env.TARGET_ENVIRONMENT === "staging" ? "Staging" : "Development";
+  let accountOrigin: string | null = null;
   let identity: SrmIdentityRuntime | null = null;
-  try { identity = readSrmIdentityRuntime(); }
-  catch { /* A configuration error is public unavailability, never a demo fallback. */ }
+  try { identity = readSrmIdentityRuntime(); accountOrigin = readPorrAccountOrigin(); }
+  catch { identity = null; /* A configuration error is public unavailability, never a demo fallback. */ }
+
+  if (identity?.provider === "clerk" && accountOrigin) return <PorrAccount identityOrigin={accountOrigin} features={currentVersionFeatures} />;
 
   return <main className="srm-login srm-ui">
     <div className="srm-login-layout">

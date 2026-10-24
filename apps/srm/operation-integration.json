@@ -4343,5 +4343,35 @@
       "src/server/peer-read-boundary.test.ts": "cd8d201c24197e19a010bec2ad99a2dbd0a2fd15c76dc7b94cff29bcada4e112",
       "src/server/supplier-native-runtime.ts": "39364bc9310b4e0a3b559833911b1f68f60e5b3738003b1617039fbc7d24d72e"
     }
+  },
+  "porrAccountCompatibility": {
+    "taskId": "SRM-PORR-ACCOUNT-20261024",
+    "compatibilityTask": "SRM-PORR-ACCOUNT-COMPAT-20261024",
+    "previousSourceSha": "503782cc812b08a60d3ed75c1d0cd67a0f74de6a",
+    "previousReceiptSha256": "fe948e62bc4468880665a77f9c3cb5ffa5f80e1303d5407f780f466d7c5c5e15",
+    "producerPr": 695,
+    "producerSourceSha": "6e173035ac1780b82d128c306be98542e1c0aa0b",
+    "producerMergeSha": "503782cc812b08a60d3ed75c1d0cd67a0f74de6a",
+    "defaultEnabled": false,
+    "targetEnvironment": "development",
+    "automaticOrganisationAssignment": false,
+    "grantsChanged": false,
+    "sqlChanged": false,
+    "priorReceiptsPreserved": true,
+    "applicationSourceDigests": {
+      "app/login/page.tsx": "16c9d8b01cb6bfe5f8e823613a4b99b3476068d6f1e4d6cf89f27022fdecb25e",
+      "app/login/porr-account.tsx": "3a9f0969e80d42363f3260fa9c677bdd72115bee15c3424c4452538ddcced8ae",
+      "app/login/porr-account.css": "38f8a7ee33cb7a59fb6f029b5df2322238e08483f5396a0b18bf61e866bdb822",
+      "app/session-boundary.tsx": "784b00cc19ce3bd18cb6348bcc7a4b4b474b9dd84039737706c5f62abe6368ae",
+      "src/server/identity-runtime.ts": "0cbd432a279e9b1e3ee4d9acd0450190d66f642132670d3cbaffc70d1364913a",
+      "src/server/porr-account.test.ts": "cb0fef797599a6c05f24de0611e6a6f6d23eccfa3d52a69f48d47c70d04e1372",
+      "src/server/peer-read-boundary.test.ts": "f8be7f12e49590ac818006697d508058500e142d1b67520e49f19eb7e65cbe12",
+      "src/server/account-recheck-adoption.test.ts": "e7925349afd7f6ce3b4fc9e0b32639e4ddcf84f971c461c0fe00297b299de9b8",
+      "scripts/porr-account-ui.test.mjs": "cfed503371d7d2c39ec12cc69ef3316afd6edf74f28935bc2033e6ae53ee7ada",
+      "package.json": "362b525b9bd4b70b8ed5ce7e78fd62c5e641fd300e9c61b6ca8e4864df08f5f5",
+      "package-lock.json": "52b7eaf4b68757df7c7ec4f92836669faf887119b64a7282ffda94f8e3fdb3e8",
+      "next.config.ts": "fecfda484a4f964e42ec35eab5b5658deff9f35da0ac0a69e3a5b4777fa3cc61",
+      "deployment/identity-account-v1.json": "f89fb98a291d46af19a411d35873711aa74a5ec8a0fd3e8dc19d833c32757b1b"
+    }
   }
 }

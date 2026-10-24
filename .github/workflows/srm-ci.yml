@@ -159,7 +159,13 @@ jobs:
         run: node --test scripts/governance/srm-release-lifecycle.test.mjs
       - run: npm run build
       - name: Approved KRS search interaction and responsive regression
-        run: npm run test:krs-ui
+        run: npm run test:krs-ui && npm run test:porr-ui
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: srm-porr-account-ui
+          path: apps/srm/.next/porr-account-ui-proof
+          retention-days: 14
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: krs-name-search-ui-proof
