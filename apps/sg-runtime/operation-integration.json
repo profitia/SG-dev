@@ -9,13 +9,13 @@
     "id": "profitia.operation-context",
     "version": "1.0.0",
     "implementation": "1.0.0-candidate.16",
-    "sourceDigest": "39cad3ce94319bf76d7a83a128e3588ec18322aa1f8d188fef05f57252925a20"
+    "sourceDigest": "742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160"
   },
   "producer": {
     "projectKey": "ARCHITECTURE",
-    "taskId": "ARCHITECTURE-KRS-PILOT-LOOKUP-CORRECTION-20261023",
-    "pullRequest": 662,
-    "sourceSha": "6b60f78b3253c67e3732eb34b36661f076954bdf"
+    "taskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
+    "pullRequest": 685,
+    "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
   },
   "hostAdapter": "lib/benchmark/operation-context.ts",
   "operations": [
@@ -2710,5 +2710,75 @@
     "sql024Installed": false,
     "liveGrantsChanged": false,
     "productDeploymentPerformed": false
+  },
+  "formReportSourceCompatibility": {
+    "taskId": "SG2-FORM-REPORT-SOURCE-COMPATIBILITY-20261024",
+    "producerTaskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
+    "platformVersion": "1.28.0",
+    "previousReceiptSourceSha": "0c55054b880059e473bac9d52f4c21b183ba1e38",
+    "previousReceiptSha256": "83cbfe85807bd54d81571b5c353227679257dd2e7280d4d01a74e0ec19b14ceb",
+    "previousRootAcceptance": {
+      "contract": {
+        "id": "profitia.operation-context",
+        "version": "1.0.0",
+        "implementation": "1.0.0-candidate.16",
+        "sourceDigest": "39cad3ce94319bf76d7a83a128e3588ec18322aa1f8d188fef05f57252925a20"
+      },
+      "producer": {
+        "projectKey": "ARCHITECTURE",
+        "taskId": "ARCHITECTURE-KRS-PILOT-LOOKUP-CORRECTION-20261023",
+        "pullRequest": 662,
+        "sourceSha": "6b60f78b3253c67e3732eb34b36661f076954bdf"
+      }
+    },
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
+      "pullRequest": 685,
+      "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
+    },
+    "sourceDigests": {
+      "migrations/access/025-form-report-admission.sql": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+      "package-lock.json": "cc43559881fde0d1d00065892875531845eb9cb5183e9c87d971c62b9f530eac",
+      "package.json": "6ed37e0a9f63c6908ab42a42f687f63f37798b2c1d7703ab9c28f307424af46c",
+      "src/access-store.d.mts": "90cb7cfb0aa6413382a7936cd9001d533b44de70e622c7e50fbaabee3ea54cd1",
+      "src/access-store.mjs": "498f2a26fbadb26619d8fdbfe5c655b3a28b8b5eba2ca85ec6fc02732215e9fb",
+      "src/operation-context.d.mts": "dfb5e82f7c7acbfbda115d65cd371052304da93a33a54d4dd0eb05eb12e128ed",
+      "src/operation-context.mjs": "203c4ce1664cadabc42342c418fb3da8dfd5e442997620f5c3d11191d49f0107",
+      "src/private-operation-host.d.mts": "5b9bd9185e951ebdac12b8abe94ddabc9a34c2fe8fe976336f0d19ccbb1a4f84",
+      "src/private-operation-host.mjs": "21903235654bc6b40c6f874989c2e4ed34618d01873e7b487428c6d0ba27ec4c",
+      "src/report-admission.d.mts": "397f8c861e85215587c4bc88e696908ec0d4f50ca6917cd2e74f6df9163100c5",
+      "src/report-admission.mjs": "60752635661a60fb1fc18f44656cff3a3052b6488d4ce9be94e277966e6d10a7",
+      "test/private-operation-host.test.mjs": "73c5e7d1f240faacc8e128fc59b42e4949530d354bb76393189f2f5f122ed1dd",
+      "test/report-admission.test.mjs": "0e5c4e4805afae0c56719ebd45153f0c0dcdfe521f65c83b443f5d2150480c5a"
+    },
+    "sdkDigests": {
+      "operationSourceDigest": "742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160",
+      "privateOperationHostSourceDigest": "48c101b2f1a3703a179a47992365fff6ca3cb4434934d0e72f0b1b8b60a04969",
+      "accessStoreSourceDigest": "7b3cde4aaf86af8fb0d7630adaa52553eabd486aebfa6031742fdd5eccb912f8",
+      "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "requestLedgerSourceDigest": "5ba7ab739fae5057e6439088978b5ed83064316267667c96fac3108ef280c414",
+      "externalRequestSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "delegatedJobSourceDigest": "cb08e7c0b2968505a31f27c15a33e0bee80a58bfac965d08c0fdb8d59abc7cc1",
+      "requestContinuationSourceDigest": "d49673ecec3a85dad478b4e8d3e38aa30241cf04b61b6a7dfbb99e7af33c3c53",
+      "requestInspectionSourceDigest": "772f1f5a58e8e544d275c4b8bb0ab09774317a6673c1f6bd8563f96fc6a19811",
+      "requestWorkSourceDigest": "0b8c6566c87c468461c681ec442f55ec391b2cfd2e75d4c306616ec1ae90b8cc",
+      "requestOperationsSourceDigest": "65e1d46269df57ccd7f3f1637e9ac6a73171ecbdad02b35677d23469d73e7237",
+      "additionalRequestSchemaDigest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "externalCallSourceDigest": "ca6bb601cbb7c7eab58f726f133557fe1b1cae17a1606e0f4c070c6d2f803ad2",
+      "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "reportAdmissionSourceDigest": "f24e3f71ef76fdb1e8935d0ddc935ea96c146d93b7ecbc9d6a4a4e2d7879f794",
+      "reportAdmissionSchemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e"
+    },
+    "reportAdmissionOptedIn": false,
+    "sql025Installed": false,
+    "liveGrantsChanged": false,
+    "productDeploymentPerformed": false,
+    "defaultHumanReauthorizationPreserved": true,
+    "applicationSourceDigests": {
+      "tests/operation-context.test.mjs": "6f9b19321c15ff4259b11cd32e5f11fd156d60cfedec013f160756a0ef3e2e65",
+      "package-lock.json": "26d90ac3191425f011859a034be4f5bd086cafa75068dc370e6a1310a9f6caac"
+    }
   }
 }
