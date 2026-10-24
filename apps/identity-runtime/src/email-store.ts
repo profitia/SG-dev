@@ -1,3 +1,4 @@
+import { languageSchemaDigest, type CommunicationLanguage } from './communication-language.js'
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import type { EmailInstruction } from './email-webhook.js'
@@ -9,7 +10,7 @@ export interface EmailStore {
   ready(): Promise<void>
   enqueue(instruction: EmailInstruction): Promise<'queued' | 'duplicate'>
   claim(): Promise<EmailClaim | null>
-  begin(claim: EmailClaim): Promise<AssistantAvatar>
+  begin(claim: EmailClaim): Promise<{avatar:AssistantAvatar; language:CommunicationLanguage}>
   release(claim: EmailClaim): Promise<void>
   settle(claim: EmailClaim, status: 'accepted' | 'rejected' | 'unknown', providerId?: string): Promise<void>
 }
@@ -27,6 +28,8 @@ export function createEmailStore(config: EmailStoreConfig, transact: Transact, n
     || !/^[a-z0-9-]{3,100}$/.test(c.serviceId)) throw Error('EMAIL_STORE_CONFIGURATION')
   const descriptor = async (query: Query) => {
     const d = (await query('SELECT profitia_profile.email_descriptor() AS d')).rows[0]?.d as Record<string, unknown> | undefined
+    const language = (await query('SELECT profitia_profile.language_descriptor() AS d')).rows[0]?.d as Record<string,unknown> | undefined
+    if (!language || language.languageSchemaDigest !== languageSchemaDigest()) throw Error('EMAIL_LANGUAGE_UNAVAILABLE')
     if (!d || d.enabled !== true || d.emailSchemaDigest !== c.schemaDigest || d.issuer !== c.issuer || d.instanceId !== c.instanceId || d.serviceId !== c.serviceId
       || Object.entries(c.binding).some(([key, value]) => d[key] !== value)) throw Error('EMAIL_STORE_UNAVAILABLE')
   }
@@ -73,8 +76,8 @@ export function createEmailStore(config: EmailStoreConfig, transact: Transact, n
     },
     async begin(claim: EmailClaim) {
       const r = await command({ op: 'begin', emailId: claim.emailId, token: claim.token })
-      if (r.status !== 'sending' || !['male','female','neutral'].includes(String(r.avatar))) throw Error('EMAIL_STORE_UNAVAILABLE')
-      return r.avatar as AssistantAvatar
+      if (r.status !== 'sending' || !['male','female','neutral'].includes(String(r.avatar)) || !['pl','en'].includes(String(r.language))) throw Error('EMAIL_STORE_UNAVAILABLE')
+      return {avatar:r.avatar as AssistantAvatar,language:r.language as CommunicationLanguage}
     },
     async release(claim: EmailClaim) { await command({ op: 'release', emailId: claim.emailId, token: claim.token }) },
     async settle(claim: EmailClaim, status: 'accepted' | 'rejected' | 'unknown', providerId?: string) { await command({ op: 'settle', emailId: claim.emailId, token: claim.token, status, providerId: providerId ?? null }) },

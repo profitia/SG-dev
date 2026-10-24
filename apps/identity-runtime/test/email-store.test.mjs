@@ -1,3 +1,4 @@
+import {languageSchemaDigest} from '../dist/src/communication-language.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -21,6 +22,10 @@ test('ordinary PostgreSQL role: encrypted durable queue, service scope, avatar p
   await f.admin.query(`INSERT INTO profitia_profile.email_policies(login_role,issuer,instance_id,service_id,enabled,allow_avatar_projection,proof_key)
     VALUES('identity_b1_runtime','https://synthetic.clerk.accounts.dev','ins_test1234','identity-email-test',true,true,$1)`,[proof])
   await f.admin.query('GRANT EXECUTE ON FUNCTION profitia_profile.email_descriptor(),profitia_profile.email_command(text,bigint,text) TO identity_b1_runtime')
+  await f.admin.query(fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/profile/004-communication-language.sql',import.meta.url),'utf8'))
+  await f.admin.query('INSERT INTO profitia_profile.language_installation VALUES(true,$1)',[languageSchemaDigest()])
+  await f.admin.query('GRANT EXECUTE ON FUNCTION profitia_profile.language_descriptor() TO identity_b1_runtime')
+  await f.admin.query('UPDATE profitia_profile.email_policies SET allow_language_projection=true')
   await f.admin.query('COMMIT')
   const cfg={binding:f.binding,issuer:'https://synthetic.clerk.accounts.dev',instanceId:'ins_test1234',serviceId:'identity-email-test',schemaDigest:emailSchemaDigest(),proofKey:proof,encryptionKey:encryption,keyId:'test-key-1'}
   const store=createEmailStore(cfg,f.transact), event=(id='test0001',subject=null)=>({emailId:'ema_'+id,eventId:'msg_'+id,instanceId:cfg.instanceId,
@@ -51,7 +56,7 @@ test('ordinary PostgreSQL role: encrypted durable queue, service scope, avatar p
     const restarted=createEmailStore(cfg,f.transact), claims=await Promise.all([restarted.claim(),store.claim()])
     assert.equal(claims.filter(Boolean).length,1)
     const claim=claims.find(Boolean);assert.equal(claim.instruction.otpCode,e.otpCode)
-    assert.equal(await restarted.begin(claim),'neutral')
+    assert.equal((await restarted.begin(claim)).avatar,'neutral')
     await restarted.settle(claim,'accepted','<synthetic@mailgun.test>')
     await assert.rejects(()=>store.begin(claim))
     assert.equal((await f.admin.query('SELECT ciphertext FROM profitia_profile.email_outbox')).rows[0].ciphertext,null)
@@ -63,17 +68,17 @@ test('ordinary PostgreSQL role: encrypted durable queue, service scope, avatar p
       await f.admin.query("INSERT INTO profitia_access.external_identities VALUES(gen_random_uuid(),$1,$2,$3,'ACTIVE',1,'synthetic',now()-interval '1 minute')",[cfg.issuer,'user_'+sex+'1234',uid])
       await f.admin.query('INSERT INTO profitia_profile.user_profiles(user_id,avatar_sex) VALUES($1,$2)',[uid,sex])
       const e=event(sex+'0001','user_'+sex+'1234');await store.enqueue(e);const c=await store.claim()
-      assert.equal(await store.begin(c),sex);await store.settle(c,'accepted','<test@mailgun.test>')
+      assert.equal((await store.begin(c)).avatar,sex);await store.settle(c,'accepted','<test@mailgun.test>')
       // The service projection never renews the expired human binding.
       assert.equal((await f.admin.query('SELECT expires_at<now() AS expired FROM profitia_access.external_identities WHERE user_id=$1',[uid])).rows[0].expired,true)
     }
     for(const [id,sql] of [['disabled',"UPDATE profitia_access.accounts SET status='DISABLED' WHERE user_id=$1"],['revoked',"UPDATE profitia_access.external_identities SET status='REVOKED' WHERE user_id=$1"]]){
       await f.admin.query(sql,[male]);await store.enqueue(event(id+'1234','user_male1234'));const c=await store.claim()
-      assert.equal(await store.begin(c),'neutral');await store.settle(c,'rejected')
+      assert.equal((await store.begin(c)).avatar,'neutral');await store.settle(c,'rejected')
     }
     await f.admin.query('UPDATE profitia_profile.email_policies SET allow_avatar_projection=false')
     await store.enqueue(event('nogrant1','user_female1234'));const c=await store.claim()
-    assert.equal(await store.begin(c),'neutral');await store.settle(c,'rejected')
+    assert.equal((await store.begin(c)).avatar,'neutral');await store.settle(c,'rejected')
   })
   await t.test('lease recovery before sending is safe; crash after begin is unknown and never retried',async()=>{
     await store.enqueue(event('crash001'));const original=await store.claim()

@@ -6,8 +6,8 @@ import {createHttpHandler} from '../dist/src/http-handler.js'
 import {EmailEventRejected} from '../dist/src/email-webhook.js'
 function fixture(overrides={}){
   const effects=[],instruction={emailId:'ema_test1234',recipient:'synthetic@example.test',expiresAt:Date.now()+60000},claim={emailId:instruction.emailId,token:'test',instruction}
-  const options={autoStart:false,verify:async()=>({status:'ready',instruction}),store:{ready:async()=>{},enqueue:async()=>{effects.push('enqueue');return 'queued'},claim:async()=>{effects.push('claim');return claim},begin:async()=>{effects.push('begin');return 'female'},release:async()=>effects.push('release'),settle:async(_,status)=>effects.push(status)},
-    recipient:async()=> 'bound', render:async(_,avatar)=>{effects.push(avatar);return {subject:'test',html:'test',text:'test'}},
+  const options={autoStart:false,verify:async()=>({status:'ready',instruction}),store:{ready:async()=>{},enqueue:async()=>{effects.push('enqueue');return 'queued'},claim:async()=>{effects.push('claim');return claim},begin:async()=>{effects.push('begin');return {avatar:'female',language:'pl'}},release:async()=>effects.push('release'),settle:async(_,status)=>effects.push(status)},
+    recipient:async()=> 'bound', render:async(_,avatar,language)=>{effects.push(avatar);assert.equal(language,avatar==='neutral'?'en':'pl');return {subject:'test',html:'test',text:'test'}},
     send:async()=>{effects.push('send');return {status:'accepted',providerId:'<synthetic@test>'}},diagnostic:code=>effects.push(code),...overrides}
   return {effects,options,runtime:createEmailRuntime(options)}
 }

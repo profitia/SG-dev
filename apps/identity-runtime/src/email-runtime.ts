@@ -1,3 +1,4 @@
+import type { CommunicationLanguage } from './communication-language.js'
 import { createHash } from 'node:crypto'
 import type { EmailInstruction, EmailEventDecision } from './email-webhook.js'
 import { EmailEventRejected } from './email-webhook.js'
@@ -9,7 +10,7 @@ export interface EmailSurface { ready(): Promise<void>; handle(request: Request)
 type Asset = { filename: string; url: string; sha256: string }
 type Renderer = {
   inlineAssetsForAvatar(avatar: AssistantAvatar): Asset[]
-  renderResolved(options: {kind: string; avatar: AssistantAvatar; data: Record<string, unknown>; allowedActionOrigins: readonly string[]}): {subject: string; html: string; text: string}
+  renderMailgunResolved(options: {kind: string; avatar: AssistantAvatar; language:CommunicationLanguage; data: Record<string, unknown>; allowedActionOrigins: readonly string[]}): EmailContent
 }
 export function verifyEmailAsset(bytes: Uint8Array, asset: Asset): InlineImage {
   if (bytes.length > 2000000 || !Buffer.from(bytes.subarray(0,8)).equals(Buffer.from([137,80,78,71,13,10,26,10]))
@@ -33,8 +34,8 @@ export async function loadEmailRenderer(appName: string, origins: readonly strin
     finally { reader.releaseLock() }
     images.set(asset.filename, verifyEmailAsset(Buffer.concat(chunks), asset))
   }
-  return async (instruction: EmailInstruction, avatar: AssistantAvatar): Promise<EmailContent> => {
-    const content = renderer.renderResolved({kind:instruction.kind, avatar, allowedActionOrigins:origins, data:{appName,
+  return async (instruction: EmailInstruction, avatar: AssistantAvatar, language:CommunicationLanguage): Promise<EmailContent> => {
+    const content = renderer.renderMailgunResolved({kind:instruction.kind, avatar, language, allowedActionOrigins:origins, data:{appName,
       currentYear:new Date(instruction.createdAt).getUTCFullYear(), requestedFrom:appName, requestedAt:new Date(instruction.createdAt).toISOString(),
       ...(instruction.kind === 'verification-code' ? {otpCode:instruction.otpCode} : {actionUrl:instruction.actionUrl,expiresInDays:instruction.expiresInDays})}})
     const inline = renderer.inlineAssetsForAvatar(avatar).map(asset => { content.html = content.html.replaceAll(asset.url, 'cid:'+asset.filename); return images.get(asset.filename)! })
@@ -48,7 +49,7 @@ export async function loadEmailRenderer(appName: string, origins: readonly strin
 export function createEmailRuntime(options: {
   verify(request: Request): Promise<EmailEventDecision>; store: EmailStore
   recipient(instruction: EmailInstruction): Promise<'bound'|'unbound'|'rejected'>
-  render(instruction: EmailInstruction, avatar: AssistantAvatar): Promise<EmailContent>
+  render(instruction: EmailInstruction, avatar: AssistantAvatar, language:CommunicationLanguage): Promise<EmailContent>
   send(message: EmailContent & {recipient: string}): Promise<Submission>
   diagnostic?(code: 'intake-unavailable'|'worker-unavailable'|'submission-unknown'): void
   now?: () => number; pollMs?: number; autoStart?: boolean
@@ -66,9 +67,9 @@ export function createEmailRuntime(options: {
       try { recipient = await options.recipient(claim.instruction) }
       catch { await options.store.release(claim); return }
       if (recipient === 'rejected') { await options.store.settle(claim,'rejected'); return }
-      const avatar = await options.store.begin(claim); started = true
+      const preference = await options.store.begin(claim); started = true
       let message: EmailContent
-      try { message = await options.render(claim.instruction, recipient === 'bound' ? avatar : 'neutral') }
+      try { message = await options.render(claim.instruction, recipient === 'bound' ? preference.avatar : 'neutral', recipient === 'bound' ? preference.language : 'en') }
       catch { await options.store.settle(claim,'rejected'); return }
       if (stopped || claim.instruction.expiresAt <= now()) { await options.store.settle(claim,'rejected'); return }
       // Every throw after entering send is uncertain, including transport timeouts.

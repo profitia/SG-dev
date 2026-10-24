@@ -90,3 +90,12 @@ Pliki `.re.html` przeznaczone są do edytora źródła Clerk. `.html` są osobny
 Wspólny slug `verification_code` otrzymuje neutralny procesowo tekst „Twój kod weryfikacyjny”; nie udaje rozpoznania rejestracji albo logowania. Awatar istniejącego konta może być male/female. Brak udowodnionego subjectu, w tym pierwszy mail rejestracyjny, daje SG. Szablon `invitation` jest osobno dopuszczany dokładnymi originami linku i wymaga odbioru rzeczywistego payloadu. Organizacyjne zaproszenia i pozostałe slugi nie są przejmowane.
 
 Uruchomienie, klucze, polityka SQL i przełączenie dostarczania pozostają wyłączone; procedura i otwarte bramki są w `Canon/runbooks/mailgun-avatar-delivery-development-v1.md`. Starszy rozdział o natywnej projekcji metadanych jest historyczną alternatywą, nie bieżącym planem aktywacji.
+
+## Communication language
+
+PL source copy and EN catalog share the same graphic canon and CID attachments.
+Runtime uses domain-scoped Mailgun templates pinned by SHA256-derived version,
+with two delivered kinds (verification-code/invitation), two languages and
+three avatar variants. Other process-specific copy remains authored only until
+Clerk provides a verified process discriminator. Variables use t:variables and
+are never Mailgun event metadata. An unmapped pre-account event uses EN/neutral.

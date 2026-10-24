@@ -108,3 +108,13 @@ test('missing CID files, remote images, unreferenced files, SVG and duplicate na
   ]) await assert.rejects(()=>send({...message,...override}));
   assert.equal(calls,0);
 });
+
+test('stored template pins exact language/avatar version; codes are template-only variables',async()=>{
+ const {renderMailgunResolved,inlineAssetsForAvatar}=await import('../email-templates/render.mjs')
+ const out=renderMailgunResolved({kind:'verification-code',avatar:'female',language:'en',inlineImages:true,data:{appName:'SpendGuru PORR',currentYear:2026,otpCode:'012345',requestedFrom:'Chrome',requestedAt:'2026-10-24'}})
+ const cfg={...config,domain:'mail.example.test',region:'eu',from:'notifications@mail.example.test',senderName:'SpendGuru'}
+ let calls=0;const send=createMailgunTransactionalSender(cfg,async(_url,init)=>{calls++;assert.equal(init.body.get('template'),'identity-verification-code-en-female');assert.equal(init.body.get('t:version'),out.template.version);assert.equal(JSON.parse(init.body.get('t:variables')).otp_code,'012345');assert.equal(init.body.has('html'),false);assert.ok([...init.body.keys()].every(k=>!k.startsWith('v:')));assert.equal(init.body.getAll('inline').length,3);return Response.json({id:'<stored@mail.example.test>'})})
+ const msg={...out,recipient:'one@example.com',inline:inlineAssetsForAvatar('female').map(a=>({...a,bytes:new Uint8Array([137,80,78,71,13,10,26,10])}))};assert.equal((await send(msg)).status,'accepted')
+ for(const template of [{...out.template,name:'foreign'},{...out.template,version:'latest'},{...out.template,variables:{...out.template.variables,secret:'x'}}])await assert.rejects(()=>send({...msg,template}))
+ assert.equal(calls,1)
+})

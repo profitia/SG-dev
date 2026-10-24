@@ -1,3 +1,4 @@
+import type { CommunicationLanguageSurface } from './communication-language.js'
 import type { EmailSurface } from './email-runtime.js'
 import { BoundaryError, type SessionBoundary } from './contracts.js'
 import { checkRequest } from './session-boundary.js'
@@ -15,7 +16,7 @@ async function body(request: Request): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
@@ -23,6 +24,14 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         if (!email || url.search || url.hash) return json(404, {error:'NOT_FOUND'})
         if (request.method !== 'POST') return json(405, {error:'METHOD_NOT_ALLOWED'})
         return email.handle(request)
+      }
+      if (url.pathname === '/v1/account/communication-language') {
+        if (url.search || url.hash) return json(404, {error:'NOT_FOUND'})
+        if (!boundary || !account || !language) return json(503, {error:'IDENTITY_UNAVAILABLE'})
+        if (request.method === 'GET') return json(200, await language.read(request))
+        if (request.method !== 'POST') return json(405, {error:'METHOD_NOT_ALLOWED'})
+        checkRequest(request, boundary.configuration, true)
+        return json(200, await language.update(request, await body(request)))
       }
       if (url.pathname === '/v1/account/assistant-avatar') {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
@@ -57,7 +66,7 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
       const get = ['/healthz','/readyz','/v1/session'].includes(url.pathname)
       if (request.method !== (get ? 'GET' : 'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
       if (url.pathname === '/healthz') return json(200, { service: 'identity-runtime', status: 'ok' })
-      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready() && (!email || await email.ready().then(() => true, () => false))); return json(ready ? 200 : 503, { ready }) }
+      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready() && (!email || await email.ready().then(() => true, () => false)) && (!language || await language.ready().then(() => true, () => false))); return json(ready ? 200 : 503, { ready }) }
       if (!boundary) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
       checkRequest(request, boundary.configuration, !get)
       if (url.pathname === '/v1/session') { const result = await boundary.session(request); return json(result.status === 'authenticated' ? 200 : result.status === 'unavailable' ? 503 : 401, { authenticated: result.status === 'authenticated' }) }
