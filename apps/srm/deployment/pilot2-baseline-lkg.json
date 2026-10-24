@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "PILOT2_BASELINE_CHECKPOINT",
+  "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+  "capturedAt": "2026-10-24T20:59:53.546609+00:00",
+  "phase": "STAGING_BUSINESS_BASELINE",
+  "acceptance": "BASELINE_HTTP_SEARCH_AND_FINANCIAL_REPORT_PASS",
+  "fullTaskComplete": false,
+  "humanClerkAndFullE1Active": false,
+  "serviceId": "srv-dbeh6srrjlhs73fmikrg",
+  "renderDeployId": "dep-dbehl7ivcj2c73d0261g",
+  "harnessSourceSha": "59e98dc72a93e670aa18704e157034da88a581a1",
+  "businessSourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+  "nodeVersion": "24.21.0",
+  "configurationDigest": "20b47bf13564203096baaabda6f855d2bb9f536d2c211889bc2dac5998813bc7",
+  "artifact": {
+    "algorithm": "sorted-relative-type-sha256-json-v1",
+    "digest": "b6532b8cc5ab053ae597c69cb773b7d799dec200e6ba5d83a7fa5ed8953bc8bb",
+    "entries": 1672,
+    "buildId": "DU764ReiNWF7oQJSZ_haq",
+    "entry": "apps/srm/.next/standalone/server.js",
+    "proofSidecarExcludedFromContentDigest": true,
+    "evidence": "Render build log2026-10-24T20:53:18.450029735Z"
+  },
+  "neon": {
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-summer-rain-b1nwbcbr",
+    "databaseName": "srm_app",
+    "originalCloneLsn": "0/7E95958",
+    "postBenchmarkLsn": "0/7ED6878",
+    "schemaColumnsDigest": "ace742ad506b8b94819e4d5913dbd946",
+    "rlsPolicyDigest": "54027e5cc126741d4fc8221178751265",
+    "schemaChangesSinceClone": false,
+    "runtimeRole": "srm_app_runtime",
+    "superuser": false,
+    "bypassRls": false
+  },
+  "functionalProof": {
+    "nip": "7820021192",
+    "searchHttpStatuses": [
+      200,
+      200,
+      200
+    ],
+    "reportHttpStatuses": [
+      200,
+      200,
+      200
+    ],
+    "financialStatus": "SUCCESS",
+    "periods": 11,
+    "years": [
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "storedFacts": 451,
+    "storedIndicators": 144,
+    "financialValuesDigest": "38f3b149606c5ba6b5347a7a2f2a73110e28a869998d03083970989fc833b054",
+    "allSamplesEqual": true,
+    "generalMethod": "CACHE",
+    "financialMethod": "CACHE",
+    "generalCheckedAtBeforeAndAfter": "2026-10-24T19:40:31.068Z",
+    "financialCheckedAtBeforeAndAfter": "2026-10-24T19:40:31.810Z",
+    "financialStoredSha256Unchanged": "388c88e7d626a1e14410ad264efc6a7acbbc13234d8542d3d1098d044b369f8b",
+    "freshnessNotExtended": true,
+    "browserRenderingMeasured": false
+  },
+  "timings": {
+    "clientCombinedMs": [
+      2859.6,
+      723.29,
+      873.4
+    ],
+    "renderSearchMs": [
+      2210,
+      342,
+      499
+    ],
+    "renderReportMs": [
+      425,
+      179,
+      201
+    ],
+    "renderCombinedMs": [
+      2635,
+      521,
+      700
+    ],
+    "firstCallAfterDeployRecordedSeparately": true,
+    "stagingObservedCombinedMs": 3556,
+    "stagingReferenceMode": "PROVIDER",
+    "pilot2Mode": "CACHE",
+    "controlledLikeForLikeCacheComparisonClaimed": false,
+    "limitation": "Staging reference uses an existing user request; Staging was read-only. It is not a paired warm-cache benchmark."
+  },
+  "rollback": {
+    "method": "Render retained baseline artifact plus exact baseline configuration",
+    "deploymentId": "dep-dbehl7ivcj2c73d0261g",
+    "schemaRollbackRequired": false,
+    "destructiveDatabaseRollbackAllowed": false,
+    "testStatus": "PENDING_SECOND_BUILD_THEN_RETAINED_BASELINE_ROLLBACK",
+    "neverUseClosedBootstrapAsWorkingLkg": true
+  },
+  "stagingOrSharedEnvironmentMutation": false,
+  "nextPhase": "TELEMETRY_OVERHEAD_MEASUREMENT_BEFORE_GUS_KRS"
+}

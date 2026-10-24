@@ -1,8 +1,10 @@
 import {AsyncLocalStorage} from 'node:async_hooks'
 import {randomUUID} from 'node:crypto'
 
-const stages=['CLERK_AUTHENTICATE','CLERK_SESSION_READ','CLERK_ACCOUNT_READ','CLERK_INFLIGHT_JOIN','E1_SQL','POOL_WAIT','DOMAIN_ACTION','FINANCIAL_FACTS_INSERT','FINANCIAL_ACQUIRE','FINANCIAL_PUBLICATION','CEIDG_LOOKUP','GUS_RESOLUTION','KRS_CURRENT','KRS_CONTINUITY','KRS_EVIDENCE_CHECK','KRS_AUTHORITY_CHECK','CORPORATE_ADMISSION','CORPORATE_WRITE','CORPORATE_INDICATORS','CORPORATE_PUBLICATION'] as const
+const stages=['CLERK_AUTHENTICATE','CLERK_SESSION_READ','CLERK_ACCOUNT_READ','CLERK_INFLIGHT_JOIN','E1_SQL','POOL_WAIT','DOMAIN_ACTION','FINANCIAL_FACTS_INSERT','FINANCIAL_ACQUIRE','FINANCIAL_PUBLICATION','CEIDG_LOOKUP','GUS_RESOLUTION','KRS_CURRENT','KRS_CONTINUITY','KRS_EVIDENCE_CHECK','KRS_AUTHORITY_CHECK','CORPORATE_ADMISSION','CORPORATE_WRITE','CORPORATE_INDICATORS','CORPORATE_PUBLICATION',
+ 'DOMAIN_SQL','SEARCH','ORGANIZATION_CONTEXT','LOOKUP_REGISTRATION','CACHE_READ','PROVIDER_RETRIEVAL','SOURCE_ARCHIVE','SNAPSHOT_PERSISTENCE','PROJECTION_PERSISTENCE','FINANCIAL_PERSISTENCE','ATTEMPT_PERSISTENCE','CATALOG_PERSISTENCE','REPORT_ASSEMBLY','RETENTION_CLEANUP','LEASE_ACQUISITION','TENANT_PERSISTENCE','CACHE_PERSISTENCE','RESPONSE_PREPARATION','VERCLY_POST','VERCLY_GET','POLL_WAIT','MAPPING'] as const
 type Stage=typeof stages[number]
+export type SupplierTelemetryStage=Stage
 type Metric={count:number;totalMs:number;maximumMs:number;failed:number}
 type Work={unit:string;totalMs:number;status:'SUCCESS'|'ERROR';stages:Partial<Record<Stage,Metric>>}
 type Trace={traceId:string;route:string;stages:Partial<Record<Stage,Metric>>;work:Work[]}
@@ -10,7 +12,7 @@ const traces=new AsyncLocalStorage<Trace>(),units=new AsyncLocalStorage<Work>()
 // Separate from the serializable trace: neither subjects nor SDK observations
 // enter logs. Only an outstanding call in this exact HTTP trace can be joined.
 const identityReads=new WeakMap<Trace,WeakMap<object,Map<string,Promise<unknown>>>>()
-const allowedRoutes=new Set(['form_admission','search','company','jdg','company-kys','jdg-kys','reveal','pdf','krs','web','krs_status','krs_search','krs_verify','krs_lookup'])
+const allowedRoutes=new Set(['form_admission','search','report_data','company','jdg','company-kys','jdg-kys','reveal','pdf','krs','web','krs_status','krs_search','krs_verify','krs_lookup'])
 const allowedUnits=new Set(['FORM_REPORT_ADMISSION','SRM_REGISTER_LOOKUP','SRM_CACHE_READ','SRM_GENERAL_METADATA_READ','SRM_FINANCIAL_REPROJECT_READ','SRM_STORE_GENERAL','SRM_STORE_FINANCIAL','SRM_ARCHIVE_GENERAL','SRM_ARCHIVE_FINANCIAL','SRM_PREPARE_DOCUMENTS','SRM_READ_DOCUMENTS','SRM_MSR_CANDIDATES','SRM_MSR_READ','SRM_MSR_CLAIM','SRM_MSR_RECEIVE','SRM_MSR_SAVE','SRM_MSR_PROJECT','SRM_MSR_BLOCK','SRM_RECORD_INTEREST','SRM_SENSITIVE_REGISTER','SRM_SENSITIVE_STATUS','SRM_SENSITIVE_REPLAY','SRM_SENSITIVE_PURGE','SRM_JDG_START','SRM_JDG_STORE','SRM_JDG_FINISH','SRM_KYS_STORE','SRM_KYS_CACHE_READ','SRM_KYS_CACHE_CLAIM','SRM_KYS_CACHE_SAVE','SRM_KYS_CACHE_HOLD','SRM_KYS_CACHE_RENEW','SRM_KYS_CACHE_RELEASE','SRM_WEB_SUBJECT_READ','SRM_WEB_CLAIM','SRM_WEB_SAVE'])
 const rounded=(n:number)=>Math.round(n*100)/100
 function add(target:Partial<Record<Stage,Metric>>,stage:Stage,ms:number,failed:boolean){

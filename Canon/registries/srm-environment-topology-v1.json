@@ -101,7 +101,7 @@
             "logicalOwner": "SRM Platform",
             "sourcePath": "apps/srm",
             "ownerApprovalRef": "SRM-PILOT2-STAGING-BASELINE-20261024",
-            "acceptanceStatus": "ISOLATED_RESOURCES_CREATED_BUSINESS_BASELINE_NOT_DEPLOYED",
+            "acceptanceStatus": "ISOLATED_STAGING_BUSINESS_BASELINE_MEASURED",
             "googleMapsEnabled": false,
             "resourceBinding": "apps/srm/deployment/pilot2-runtime-targets.json",
             "businessBaselineSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
@@ -117,7 +117,11 @@
             },
             "scope": "DEVELOPMENT_PERFORMANCE_EXPERIMENT_ONLY",
             "priorPilot2Lkg": "NONE_FIRST_BOOTSTRAP",
-            "rollback": "Suspend only PILOT2; preserve its database and source evidence. Other environments remain unchanged."
+            "rollback": "Suspend only PILOT2; preserve its database and source evidence. Other environments remain unchanged.",
+            "baselineLkgReference": "apps/srm/deployment/pilot2-baseline-lkg.json",
+            "currentDeployId": "dep-dbehl7ivcj2c73d0261g",
+            "deployedHarnessSha": "59e98dc72a93e670aa18704e157034da88a581a1",
+            "humanClerkAndFullE1Active": false
           }
         }
       },

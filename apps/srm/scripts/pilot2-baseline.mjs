@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 import {gunzipSync} from 'node:zlib'
+import {instrumentPilot2} from './pilot2-instrumentation.mjs'
 
 export const BUSINESS_BASELINE='6eede5cd19fd3a4519d66298effe9ef94633757a'
 const HASH=/^[a-f0-9]{40}$/
@@ -62,8 +63,9 @@ export function verifyBaselineArchive(repo){
   ||expected.some(name=>!/^[a-f0-9]{64}$/.test(manifest.files[name])))deny('Exact historical file manifest required')
  return {archive,original:manifest.files,historicalGitVerified:historicalObject,tarSha256:SOURCE_TAR_SHA256}
 }
-export function prepareBaseline(repo,t,output){
+export function prepareBaseline(repo,t,output,stage='BASELINE'){
  validateTarget(t)
+ if(!['BASELINE','TELEMETRY'].includes(stage))deny('Only explicitly accepted experimental stages may be built')
  if(!HASH.test(BUSINESS_BASELINE))deny('Exact baseline required')
  const {archive,original,historicalGitVerified,tarSha256}=verifyBaselineArchive(repo)
  output=path.resolve(output)
@@ -76,10 +78,11 @@ export function prepareBaseline(repo,t,output){
  fs.writeFileSync(path.join(output,guard),rebindEnvironment(fs.readFileSync(path.join(output,guard),'utf8'),t))
  const changed=sourceFiles.filter(name=>sha(fs.readFileSync(path.join(output,name)))!==original[name])
  if(changed.length!==1||changed[0]!==guard)deny('Only the explicit environment binding may differ')
- const proof={schemaVersion:'1.0',businessSourceSha:BUSINESS_BASELINE,exactBusinessSource:true,byteIdenticalToStaging:false,
+ const proof={schemaVersion:'1.0',stage,businessSourceSha:BUSINESS_BASELINE,exactBusinessSource:true,byteIdenticalToStaging:false,
   environment:'development',serviceId:t.render.serviceId,branchId:t.neon.branchId,
   originalFiles:original,changedFiles:changed,sourceArchive:{tarSha256,historicalGitVerified},nodeVersion:process.version,adapter:{path:guard,originalSha256:original[guard],adaptedSha256:sha(fs.readFileSync(path.join(output,guard)))},
   installedDependencies:false,built:false}
+ if(stage==='TELEMETRY')instrumentPilot2(repo,output,proof)
  fs.writeFileSync(path.join(output,'baseline-proof.json'),JSON.stringify(proof,null,2)+'\n')
  return proof
 }
@@ -91,8 +94,9 @@ function files(dir,prefix=''){
   return [{path:rel,type:'file',sha256:sha(fs.readFileSync(full))}]
  })
 }
-export function buildBaseline(repo,t,output){
- const proof=prepareBaseline(repo,t,output),app=path.join(output,'apps/srm')
+export function buildBaseline(repo,t,output,stage='BASELINE'){
+ if(process.version!=='v'+t.source.nodeVersion)deny('Actual Node runtime must match the accepted Staging version')
+ const proof=prepareBaseline(repo,t,output,stage),app=path.join(output,'apps/srm')
  const npm=(args)=>execFileSync('npm',['--prefix',app,...args],{cwd:repo,stdio:'inherit'})
  npm(['ci','--install-links'])
  npm(['run','build'])
@@ -118,8 +122,9 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
  const repo=path.resolve(fileURLToPath(new URL('../../..',import.meta.url))),command=process.argv[2]
  const t=JSON.parse(fs.readFileSync(path.join(repo,'apps/srm/deployment/pilot2-runtime-targets.json'),'utf8'))
  const output=path.resolve(process.argv[3]??path.join(repo,'.pilot2-baseline'))
+ const stage=process.argv[4]??'BASELINE'
  if(!['prepare','build'].includes(command))deny('Use prepare or build; no cloud mutation is performed by this builder')
- const proof=command==='prepare'?prepareBaseline(repo,t,output):buildBaseline(repo,t,output)
- console.log(JSON.stringify({businessSourceSha:proof.businessSourceSha,changedFiles:proof.changedFiles,built:proof.built,artifact:proof.artifact??null}))
+ const proof=command==='prepare'?prepareBaseline(repo,t,output,stage):buildBaseline(repo,t,output,stage)
+ console.log(JSON.stringify({stage:proof.stage,businessSourceSha:proof.businessSourceSha,changedFiles:proof.changedFiles,built:proof.built,artifact:proof.artifact??null}))
 }
 

@@ -213,5 +213,17 @@ test('PORR embedded account adoption preserves accepted receipts and exact Devel
  assert.equal(a.producerPr,695);assert.equal(a.producerSourceSha,'6e173035ac1780b82d128c306be98542e1c0aa0b');
  assert.equal(a.defaultEnabled,false);assert.equal(a.targetEnvironment,'development');assert.equal(a.automaticOrganisationAssignment,false);assert.equal(a.grantsChanged,false);assert.equal(a.sqlChanged,false);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(acceptedReceipt.pilot2TelemetryCompatibility?execFileSync('git',['show',acceptedReceipt.pilot2TelemetryCompatibility.previousApplicationAuthority+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.resolve(root,file))),digest,file);
+});
+
+
+test('PILOT2 telemetry preserves the complete accepted receiver and changes no authority',()=>{
+ const a=acceptedReceipt.pilot2TelemetryCompatibility;
+ const previous=execFileSync('git',['show',a.previousApplicationAuthority+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.scope,'ISOLATED_PILOT2_STAGE_TELEMETRY_ONLY');assert.equal(a.targetEnvironment,'development');
+ for(const flag of ['identityAuthorityChanged','sqlChanged','grantsChanged','providerRoutingChanged','productDeploymentPerformed'] as const)assert.equal(a[flag],false,flag);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });

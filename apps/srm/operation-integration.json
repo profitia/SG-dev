@@ -4373,5 +4373,23 @@
       "next.config.ts": "fecfda484a4f964e42ec35eab5b5658deff9f35da0ac0a69e3a5b4777fa3cc61",
       "deployment/identity-account-v1.json": "f89fb98a291d46af19a411d35873711aa74a5ec8a0fd3e8dc19d833c32757b1b"
     }
+  },
+  "pilot2TelemetryCompatibility": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "previousApplicationAuthority": "fc9dc7413f042333c1f43ab58af807f32ae2fb65",
+    "previousReceiptSha256": "e20cd7b61d94f9ef8cc453e757edd53a88c5caf62875bd1e927ba34ffc4df18f",
+    "scope": "ISOLATED_PILOT2_STAGE_TELEMETRY_ONLY",
+    "targetEnvironment": "development",
+    "priorReceiptsPreserved": true,
+    "identityAuthorityChanged": false,
+    "sqlChanged": false,
+    "grantsChanged": false,
+    "providerRoutingChanged": false,
+    "productDeploymentPerformed": false,
+    "applicationSourceDigests": {
+      "src/server/supplier-telemetry.ts": "b2aaf721aa0ab7d6c8f17ce9e518af44e67b3d395c27d1998df75f60d00ff3aa",
+      "src/server/peer-read-boundary.test.ts": "9afef2e9b0185f4c173fd9f910e757255eaf6b9cf7c0aafb26e0dc8dd4770b13",
+      "src/server/account-recheck-adoption.test.ts": "c14ec259aedc5e27eccb837d620ebeff010b4c9a9e35cad30aa3c83021873d64"
+    }
   }
 }
