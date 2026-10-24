@@ -96,6 +96,8 @@ export function pilot2SourceBootstrapPlan(target,sourceSha){
   `GRANT ${installer} TO ${t.catalog.operatorRole} WITH INHERIT FALSE,SET TRUE`,
   `SET ROLE ${installer}`,
   ...roles.map(role=>`CREATE ROLE ${role} ${role.endsWith('_owner')?'NOLOGIN':'LOGIN CONNECTION LIMIT 4'} NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`),
+  `DO $credentials$ BEGIN IF current_user<>${q(installer)} OR current_setting('profitia.install.initial_credentials_ready',true) IS DISTINCT FROM 'true' THEN
+    RAISE EXCEPTION 'Initial runtime credentials must be initialized before creator cleanup';END IF;END $credentials$`,
   `GRANT krs_catalog_owner,profitia_ingestion_owner TO ${t.catalog.operatorRole} WITH INHERIT FALSE,SET TRUE GRANTED BY ${installer}`,
   `RESET ROLE`,
   `ALTER DATABASE ${p.databaseName} OWNER TO krs_catalog_owner`,
@@ -115,5 +117,42 @@ export function pilot2SourceBootstrapPlan(target,sourceSha){
     OR EXISTS(SELECT 1 FROM pg_auth_members WHERE member=${q(t.catalog.operatorRole)}::regrole
     AND roleid IN(${roles.map(name=>q(name)+'::regrole').join(',')})) THEN
     RAISE EXCEPTION 'Temporary PILOT2 membership remains';END IF;END $closed$`)
- return {...p,requiresOneOuterTransaction:true,newRoles:roles,statements}
+ return {...p,requiresOneOuterTransaction:true,requiresInitialCredentials:true,
+  initialCredentialIndex:statements.findIndex(sql=>sql.startsWith('DO $credentials$')),newRoles:roles,statements}
+}
+
+/** Native pg execution is required: accepted migrations contain multiple SQL
+ * commands. Never emit, log, return or persist the password-bearing commands.
+ * The first password must exist while the disposable creator still has ADMIN.
+ * Rotate these bootstrap credentials through Neon's API before runtime use. */
+export async function applyPilot2SourceBootstrap(client,target,sourceSha,passwords){
+ const roles=['krs_ingest','krs_reader']
+ if(!passwords||Object.keys(passwords).sort().join(',')!==roles.join(',')
+  ||roles.some(role=>typeof passwords[role]!=='string'||!/^[A-Za-z0-9_-]{40,128}$/.test(passwords[role])))
+  throw Error('Two in-memory generated initial runtime credentials required')
+ const plan=pilot2SourceBootstrapPlan(target,sourceSha)
+ if(plan.initialCredentialIndex<0)throw Error('Initial credential boundary required')
+ let index=-1
+ await client.query('BEGIN')
+ try{
+  for(const [i,sql]of plan.statements.entries()){
+   index=i
+   if(i===plan.initialCredentialIndex){
+    for(const role of roles)await client.query(`ALTER ROLE ${role} PASSWORD ${q(passwords[role])}`)
+    await client.query("SELECT set_config('profitia.install.initial_credentials_ready','true',true)")
+   }
+   await client.query(sql)
+  }
+  await client.query('COMMIT')
+  return {sourceSha:plan.sourceSha,projectId:plan.projectId,branchId:plan.branchId,databaseName:plan.databaseName,
+   transaction:'COMMITTED',credentialsInitializedBeforeCleanup:true,temporaryMembershipsRemoved:true}
+ }catch(error){
+  await client.query('ROLLBACK').catch(()=>{})
+  // A PostgreSQL error can carry SQL context. Discard it instead of allowing
+  // a password-bearing statement to reach diagnostics or PMOS.
+  const failure=Error('PILOT2_SOURCE_BOOTSTRAP_FAILED')
+  failure.sqlState=typeof error?.code==='string'&&/^[A-Z0-9]{5}$/.test(error.code)?error.code:'UNAVAILABLE'
+  failure.statementIndex=index
+  throw failure
+ }
 }

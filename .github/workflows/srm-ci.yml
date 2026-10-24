@@ -228,7 +228,7 @@ jobs:
           (async()=>{const db=new Client({host:'127.0.0.1',port:Number(process.env.PGPORT),user:'pilot2_fixture_admin',password:'isolated_fixture_only',database:'postgres'});await db.connect();
           try{await db.query("CREATE ROLE neondb_owner LOGIN PASSWORD 'fixture_only' NOINHERIT CREATEDB CREATEROLE NOSUPERUSER NOBYPASSRLS");await db.query('CREATE DATABASE krs_registry_pilot OWNER neondb_owner')}finally{await db.end()}})().catch(e=>{console.error(e);process.exit(1)});
           JS
-          PILOT2_SOURCE_FIXTURE_ADMIN_URL="postgresql://pilot2_fixture_admin:isolated_fixture_only@127.0.0.1:$PGPORT/postgres" PILOT2_SOURCE_FIXTURE_URL="postgresql://neondb_owner:fixture_only@127.0.0.1:$PGPORT/krs_registry_pilot" node --test apps/srm/scripts/pilot2-source-postgres.test.mjs
+          PILOT2_SOURCE_FIXTURE_URL="postgresql://neondb_owner:fixture_only@127.0.0.1:$PGPORT/krs_registry_pilot" node --test apps/srm/scripts/pilot2-source-postgres.test.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: steps.changes.outputs.build == 'true'
         with:

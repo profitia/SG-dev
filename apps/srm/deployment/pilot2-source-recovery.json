@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+  "state": "PREPARED_PENDING_EXPLICIT_OWNER_DELETION_APPROVAL",
+  "reason": "Initial role passwords were omitted before the temporary creator was removed. Neon reset_password cannot initialize a first password. Runtime roles cannot authenticate.",
+  "targetEnvironment": "development",
+  "projectId": "snowy-breeze-40315151",
+  "branchId": "br-summer-rain-b1nwbcbr",
+  "endpointId": "ep-fragrant-cloud-b1y6i4v8",
+  "databaseName": "krs_registry_pilot",
+  "databaseId": 636566,
+  "roles": ["krs_catalog_owner", "profitia_ingestion_owner", "krs_reader", "krs_ingest"],
+  "observedState": {
+    "companyRows": 0,
+    "snapshotRows": 0,
+    "providerCalls": 0,
+    "sourceEffects": 0,
+    "gusSlots": 0,
+    "containsOnlyUnusedTechnicalConfiguration": true,
+    "runtimePasswordsConfigured": false,
+    "temporaryCreatorPresent": false,
+    "operatorOwnerMembershipOrSetRole": false,
+    "renderRegistryStageActivated": false
+  },
+  "proposedSequence": [
+    "Obtain explicit owner approval before deletion; this document is not approval.",
+    "Independently reverify zero company/snapshot/call/effect rows, role dependencies and unchanged live PILOT2 telemetry LKG.",
+    "Back up non-secret technical configuration and schema evidence.",
+    "Delete only the new krs_registry_pilot database in this branch, then its four unused roles.",
+    "Recreate this same database without a new branch or compute.",
+    "Run the corrected accepted native pg installer in one transaction: create ordinary roles, initialize two in-memory generated bootstrap credentials while the creator still has ADMIN, install the immutable schemas, RESET ROLE and remove the creator and every temporary membership.",
+    "Independently verify zero operator membership/SET ROLE and ordinary reader/source ACLs.",
+    "Rotate the bootstrap credentials through the Neon API before runtime use; place final credentials only in the existing PILOT2 Render configuration.",
+    "Verify role authentication, denied privileges, exact Source bindings and retained-artifact rollback; continue the approved staged deployment and live measurements."
+  ],
+  "preserved": ["srm_app and all financial/private application data", "existing PILOT2 Render service and LKG", "Staging", "Pilot1", "shared SRM/Maps", "Production", "user entitlements"],
+  "newCompute": false,
+  "additionalCostOrBudgetIncrease": false,
+  "permanentOwnerMembershipOrSetRole": false,
+  "newHumanAccountsOrGrants": false
+}

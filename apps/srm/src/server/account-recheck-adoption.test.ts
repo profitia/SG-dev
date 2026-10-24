@@ -248,5 +248,20 @@ test('PILOT2 explicitly adopts the unchanged company validator through its versi
  assert.equal(hash(execFileSync('git',['show',a.previousApplicationAuthority+':'+validator])),hash(execFileSync('git',['show',a.acceptedRuntime.sourceSha+':'+validator])));
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8')).acceptedRuntime,a.acceptedRuntime);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.pilot2CredentialInitializationCorrection.previousSourceSha+':apps/srm/'+file])),digest,file);
+});
+
+
+test('PILOT2 credential correction preserves prior acceptance and waits for explicit empty-catalog recovery approval',()=>{
+ const a=acceptedReceipt.pilot2CredentialInitializationCorrection;
+ const previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.initialCredentialsBeforeCreatorCleanup,true);assert.equal(a.permanentOwnerMembershipOrSetRole,false);
+ assert.equal(a.recoveryDeletionApproved,false);assert.equal(a.recoveryExecuted,false);assert.equal(a.runtimeActivated,false);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
+ const plan=JSON.parse(fs.readFileSync(path.join(root,a.recoveryPlan),'utf8'));
+ assert.equal(plan.state,'PREPARED_PENDING_EXPLICIT_OWNER_DELETION_APPROVAL');assert.equal(plan.newCompute,false);
+ assert.equal(plan.databaseName,'krs_registry_pilot');assert.equal(plan.branchId,'br-summer-rain-b1nwbcbr');
 });
