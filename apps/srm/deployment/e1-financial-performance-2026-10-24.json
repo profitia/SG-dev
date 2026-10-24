@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-E1-FINANCIAL-PERFORMANCE-20261024",
+  "status": "SOURCE_CANDIDATE_ONLY",
+  "targetEnvironment": "development",
+  "renderServiceId": "srv-dbd5hlcipgvc73d98ukg",
+  "renderServiceName": "srm-krs-pilot-development",
+  "database": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "databaseName": "platform_private"
+  },
+  "baselineSourceSha": "c33b2f4122d87428c9b95af65803fdfd989dc7cd",
+  "runtimeSourceDigests": {
+    "src/server/corporate-source-store.ts": "a762d4663d396ec5cbffda31b14f042f4c207afb7538ff6e38b61b16eb8299ec",
+    "src/server/supplier-native-company.ts": "76441812899b77b679f7958cbc5d333ca572c382e64956c83ecbf416cceacfa1",
+    "src/server/xray-repository.ts": "0af00763c9ee992817ce16079efba6a10952faf767b528976028cf4b3f4f283d",
+    "src/server/supplier-telemetry.ts": "8f98fa0c53044037c24b7891f0464f717a75b4ec3b80a8a3a0b6ce67a38a2012"
+  },
+  "optionalSqlDigests": {
+    "020-corporate-batch-guards.sql": "fc93a20feddd5d251fe8255117e154b0800223d0eb43e70c4779880a478216d4",
+    "021-financial-batch-guard.sql": "7062198f350b1911471f996b248bf0c90b66b690e91bcf6a8c316062ae63961e"
+  },
+  "measuredScope": "disposable local PostgreSQL16, synthetic data, ordinary roles, full existing E1/RLS/OUTCOME",
+  "sourcePublication": {
+    "facts": 395,
+    "before": [
+      {
+        "label": "new_data",
+        "elapsedMs": 3717.96
+      },
+      {
+        "label": "same_intent_replay",
+        "elapsedMs": 14.93
+      },
+      {
+        "label": "same_data_new_intent",
+        "elapsedMs": 5414.47
+      }
+    ],
+    "after": [
+      {
+        "label": "new_data",
+        "elapsedMs": 226.21
+      },
+      {
+        "label": "same_intent_replay",
+        "elapsedMs": 15.05
+      },
+      {
+        "label": "same_data_new_intent",
+        "elapsedMs": 222.66
+      }
+    ],
+    "ingestionDescriptorCallsBefore": 25919,
+    "ingestionDescriptorCallsAfter": 221
+  },
+  "privateNativeWork": [
+    {
+      "label": "before",
+      "facts": 395,
+      "elapsedMs": 6819.26,
+      "currentSupplierWorkCalls": 818
+    },
+    {
+      "label": "after",
+      "facts": 395,
+      "elapsedMs": 336.67,
+      "currentSupplierWorkCalls": 30
+    }
+  ],
+  "identity": "request-local outstanding-only coalescing; no settled observation or permission cache",
+  "sharedPlatformContractChanged": false,
+  "dataOrHistoryRemoved": false,
+  "liveSqlInstalled": false,
+  "pilotDeployed": false,
+  "livePerformanceAcceptance": "NOT_YET_EXECUTED",
+  "rollback": "Previous runtime is compatible with new SQL; capture exact SQL boundary/ACLs before optional installation, restore only after drift verification. Preserve all facts, proofs and counters."
+}

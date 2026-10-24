@@ -45,7 +45,7 @@ test('corporate source candidate pins its exact native sources without claiming 
  for(const[path,digest]of Object.entries(current.sourceDigests)){
   const expected=Object.hasOwn(adoption.sourceDigests,path)?adoption.sourceDigests[path]:digest
   assert.equal(hash(execFileSync('git',['show',manifest.boundedIndicatorReadAdoption.previousReceiptSourceSha+':apps/srm/'+path])),expected,'historical '+path)
-  assert.equal(hash(read('../'+path)),manifest.krsGusFirstPublicationCompatibility.applicationSourceDigests[path]??manifest.krsFinancialTelemetryCompatibility.applicationSourceDigests[path]??manifest.boundedIndicatorReadAdoption.applicationSourceDigests[path]??expected,path)
+  assert.equal(hash(read('../'+path)),manifest.financialPerformanceAdoption?.applicationSourceDigests[path]??manifest.krsGusFirstPublicationCompatibility.applicationSourceDigests[path]??manifest.krsFinancialTelemetryCompatibility.applicationSourceDigests[path]??manifest.boundedIndicatorReadAdoption.applicationSourceDigests[path]??expected,path)
  }
  for(const name of ['singleExistingCatalogWriter','singleExistingIndicatorCalculator','storedSourceOnly','sameTransactionOutcomeWitness','noTenantOwnerInNewSharedFacts','humanWriteCeilingRetained'])assert.equal(current[name],true,name)
  for(const name of ['providerAcquisitionProvedByThisUnit','fullNativeWorkflowAdopted','liveSqlInstalled','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(current[name],false,name)
@@ -116,6 +116,7 @@ test('corporate SOURCE uses ordinary native pg, one original writer/calculator a
    await owner.query(`GRANT USAGE ON SCHEMA srm TO ${ROLE},profitia_ingestion_owner;
     GRANT SELECT,INSERT,UPDATE ON srm.catalog_companies,srm.catalog_financial_facts,srm.catalog_financial_indicators TO ${ROLE};
     GRANT EXECUTE ON FUNCTION srm.corporate_catalog_scope(text,boolean) TO ${ROLE};GRANT EXECUTE ON FUNCTION srm.corporate_publication_complete(text,uuid) TO profitia_ingestion_owner`)
+   await owner.query(read('../db/private-store/020-corporate-batch-guards.sql'))
   })
   await owner.query(`REVOKE CREATE ON DATABASE ${DATABASE} FROM profitia_access_owner,profitia_ingestion_owner`)
   const runtimeUrl=new URL(dbUrl);runtimeUrl.username=ROLE;runtimeUrl.password='isolated_ci_only'
@@ -274,6 +275,48 @@ test('corporate SOURCE uses ordinary native pg, one original writer/calculator a
    assert.equal(result.status,'COMMITTED');assert.equal(facts.length,395)
    assert.deepEqual((await owner.query('SELECT '+generalColumns+' FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows,before)
    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.catalog_financial_facts WHERE nip=$1 AND source_snapshot_id=$2 AND source_organization_id IS NULL',[NIP,result.effectId])).rows[0].n,395)
+  })
+
+  await t.test('batch admission rejects changed values, paths, periods and global proof after the actual fast RLS scope',async()=>{
+   const before=await counts(),source=createPlatformIngestionHost({application,binding,source:CORPORATE_SOURCE,...createSrmNativePgDriver(pool,auditPool),validateSharedPayload:()=>true})
+   for(const change of [p=>{p.facts[0].amount='999'},p=>{p.facts[0].sourcePath='content.unaccepted'},p=>{p.facts[0].periodStart='2024-01-01'},p=>{p.facts[0].currencyCode='EUR'}]){
+    const accepted=packet(),body=JSON.stringify(accepted),written=structuredClone(accepted);change(written)
+    await assert.rejects(source.ingest({resourceId:'srm-corporate:'+NIP,payload:{bodyDigest:hash(body),nip:NIP,version:CORPORATE_PUBLICATION_VERSION},idempotencyKey:randomUUID()},async(_payload,c,context)=>{
+     assert.equal((await c.query('SELECT profitia_srm_catalog.open_publication($1,$2,$3) ok',[context.platformReservation.effectId,context.decisionId,body])).rows[0].ok,true)
+     await c.query("SELECT set_config('profitia.srm.catalog.nip',$1,true)",[NIP])
+     assert.equal((await c.query('SELECT srm.corporate_statement_subject(true) nip')).rows[0].nip,NIP)
+     await writeSharedCompany(c,null,NIP,{...written,generalSnapshotId:context.platformReservation.effectId,financialSnapshotId:context.platformReservation.effectId})
+    }))
+   }
+   assert.deepEqual(await counts(),before)
+  })
+
+  await t.test('temporary tables cannot replace the actual transition rows checked by the batch trigger',async()=>{
+   const before=await counts(),p=packet(),body=JSON.stringify(p),source=createPlatformIngestionHost({application,binding,source:CORPORATE_SOURCE,...createSrmNativePgDriver(pool,auditPool),validateSharedPayload:()=>true})
+   await owner.query(`GRANT TEMPORARY ON DATABASE ${DATABASE} TO ${ROLE}`)
+   try{await assert.rejects(source.ingest({resourceId:'srm-corporate:'+NIP,payload:{bodyDigest:hash(body),nip:NIP,version:CORPORATE_PUBLICATION_VERSION},idempotencyKey:randomUUID()},async(_payload,c,context)=>{
+    assert.equal((await c.query('SELECT profitia_srm_catalog.open_publication($1,$2,$3) ok',[context.platformReservation.effectId,context.decisionId,body])).rows[0].ok,true)
+    await c.query("SELECT set_config('profitia.srm.catalog.nip',$1,true)",[NIP])
+    await c.query('CREATE TEMP TABLE corporate_written AS SELECT * FROM srm.catalog_financial_facts LIMIT 0')
+    const altered=structuredClone(p);altered.facts[0].amount='999'
+    await writeSharedCompany(c,null,NIP,{...altered,generalSnapshotId:context.platformReservation.effectId,financialSnapshotId:context.platformReservation.effectId})
+   }))}finally{await owner.query(`REVOKE TEMPORARY ON DATABASE ${DATABASE} FROM ${ROLE}`)}
+   assert.deepEqual(await counts(),before)
+  })
+  await t.test('forged selectors and expired Source binding never reuse a previous statement authority',async()=>{
+   const c=await pool.connect();await c.query('BEGIN')
+   try{await c.query("SELECT set_config('profitia.srm.catalog.nip',$1,true)",[NIP]);assert.equal((await c.query('SELECT srm.corporate_statement_subject(true) nip')).rows[0].nip,null)}
+   finally{await c.query('ROLLBACK');c.release()}
+   const before=await counts(),p=packet(),body=JSON.stringify(p),source=createPlatformIngestionHost({application,binding,source:CORPORATE_SOURCE,...createSrmNativePgDriver(pool,auditPool),validateSharedPayload:()=>true})
+   let first,last
+   await owner.query("UPDATE profitia_ingestion.runtime_bindings SET expires_at=clock_timestamp()+interval '800 milliseconds' WHERE login_role=$1",[ROLE])
+   try{await assert.rejects(source.ingest({resourceId:'srm-corporate:'+NIP,payload:{bodyDigest:hash(body),nip:NIP,version:CORPORATE_PUBLICATION_VERSION},idempotencyKey:randomUUID()},async(_payload,c,context)=>{
+    assert.equal((await c.query('SELECT profitia_srm_catalog.open_publication($1,$2,$3) ok',[context.platformReservation.effectId,context.decisionId,body])).rows[0].ok,true)
+    await c.query("SELECT set_config('profitia.srm.catalog.nip',$1,true)",[NIP]);first=(await c.query('SELECT srm.corporate_statement_subject(true) nip')).rows[0].nip
+    await writeSharedCompany(c,null,NIP,{...p,generalSnapshotId:context.platformReservation.effectId,financialSnapshotId:context.platformReservation.effectId})
+    await new Promise(r=>setTimeout(r,850));last=(await c.query('SELECT srm.corporate_statement_subject(true) nip')).rows[0].nip
+   }))}finally{await owner.query("UPDATE profitia_ingestion.runtime_bindings SET expires_at=now()+interval '1 hour' WHERE login_role=$1",[ROLE])}
+   assert.equal(first,NIP);assert.equal(last,null);assert.deepEqual(await counts(),before)
   })
  }finally{await pool?.end();await auditPool?.end();await owner?.end();await root.end()}
 })

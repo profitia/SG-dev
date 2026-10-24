@@ -38,3 +38,30 @@ test('metrics preserve original failures and failed logging cannot invalidate a 
   const response=Response.json({accepted:true});assert.equal(await withSupplierTelemetry('search',async()=>response),response)
  }finally{console.info=previous}
 })
+
+test('only outstanding same-request identity reads join; settled/revoked status, failures and other traces stay fresh',async()=>{
+ const logs:string[]=[],previous=console.info;console.info=x=>logs.push(String(x))
+ const secret='synthetic-subject-never-log';let calls=0,active=true,fail=false
+ let release:()=>void=()=>{};let gate:Promise<void>|undefined
+ const failure=new Error('synthetic-private-sdk-detail')
+ const client=instrumentSupplierIdentity({authenticateRequest:async()=>null,sessions:{getSession:async()=>null},users:{getUser:async(id:string)=>{
+  calls++;if(gate)await gate;if(fail)throw failure;return{id,banned:!active}
+ }}})
+ try{
+  await withSupplierTelemetry('krs_lookup',async()=>{
+   gate=new Promise<void>(r=>{release=r})
+   const first=client.users.getUser(secret),second=client.users.getUser(secret);assert.equal(calls,1)
+   release();const values=await Promise.all([first,second]);assert.equal(values[0],values[1]);gate=undefined
+   active=false;assert.equal((await client.users.getUser(secret)).banned,true);assert.equal(calls,2)
+   fail=true;gate=new Promise<void>(r=>{release=r});const a=client.users.getUser(secret),b=client.users.getUser(secret);release()
+   const errors=await Promise.allSettled([a,b]);assert(errors.every(r=>r.status==='rejected'&&r.reason===failure));assert.equal(calls,3)
+   gate=undefined;fail=false;await client.users.getUser(secret);assert.equal(calls,4)
+   return new Response()
+  })
+  gate=new Promise<void>(r=>{release=r})
+  const requests=Promise.all(['search','krs_lookup'].map(route=>withSupplierTelemetry(route,async()=>{await client.users.getUser(secret);return new Response()})))
+  assert.equal(calls,6);release();await requests
+  const trace=JSON.parse(logs[0]);assert.equal(trace.stages.CLERK_ACCOUNT_READ.count,4);assert.equal(trace.stages.CLERK_INFLIGHT_JOIN.count,2)
+  assert(!logs.join().includes(secret));assert(!logs.join().includes(failure.message))
+ }finally{console.info=previous}
+})
