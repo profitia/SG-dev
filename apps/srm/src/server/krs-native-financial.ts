@@ -67,7 +67,8 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
   const audited=await reconcileKrsFinancial(identity,accepted,now(),history)
   if(audited.errorCode||JSON.stringify(audited.section)!==JSON.stringify(eligible.section))return deny()
   const snapshotId=await ports.persistSection(org,lookup,'financial',eligible.section,eligible.errorCode,eligible.facts,undefined,eligible.sourceData,cached?'CACHE':'PROVIDER')
-  await check()
+  // Corporate Source is a separate publication boundary after private Work.
+  await check('PUBLICATION')
   await ports.saveSharedCompany(org,nip,{general:unrequestedCorporateGeneral(),financial:eligible.section,
    generalSnapshotId:null,financialSnapshotId:snapshotId,facts:eligible.facts,preserveGeneral:true})
   await check();await ports.recordInterest(org,nip);published=true

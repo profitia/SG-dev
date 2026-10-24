@@ -133,7 +133,9 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
   // lookup has just admitted this exact identity through protected selected.
   await measureSupplierStage('KRS_EVIDENCE_CHECK',()=>registry.recheckEvidence(request,identity))
   const evidence=await measureSupplierStage('KRS_CONTINUITY',()=>official.continuity(identity.evidenceRef,request.signal))
-  await registry.accepted(request,identity.evidenceRef)
+  // Source history is public company evidence. The following Financial
+  // request admission rechecks full current HUMAN authority before any effect.
+  await measureSupplierStage('KRS_EVIDENCE_CHECK',()=>registry.recheckEvidence(request,identity))
   return evidence?krsContinuity(evidence,identity,Date.now()):undefined
  }
  const observe=(event:unknown)=>console.info('SRM registry telemetry',event)
