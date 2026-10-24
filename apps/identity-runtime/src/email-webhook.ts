@@ -1,0 +1,103 @@
+import { verifyWebhook } from '@clerk/backend/webhooks'
+import { mailbox } from './mailgun-delivery.js'
+
+/** Signed boundary. A verified event is a delivery instruction, never a
+ * login session, organisation grant or proof of a sign-up avatar preference. */
+export type EmailInstruction = Readonly<{
+  eventId: string; emailId: string; instanceId: string; createdAt: number
+  recipient: string; emailAddressId: string | null; providerUserId: string | null
+  expiresAt: number
+} & ({ kind: 'verification-code'; otpCode: string } | { kind: 'invitation'; actionUrl: string; expiresInDays: number })>
+export type EmailEventDecision = Readonly<
+  { status: 'ignored'; reason: 'clerk-delivery' | 'unsupported-template' | 'expired' }
+  | { status: 'ready'; instruction: EmailInstruction }
+>
+export class EmailEventRejected extends Error {
+  constructor() { super('EMAIL_EVENT_REJECTED'); this.name = 'EmailEventRejected' }
+}
+const reject = (): never => { throw new EmailEventRejected() }
+const object = (value: unknown): Record<string, unknown> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return reject()
+  return value as Record<string, unknown>
+}
+const id = (value: unknown, prefix: string): string => {
+  if (typeof value !== 'string' || !new RegExp(`^${prefix}_[A-Za-z0-9]{4,120}$`).test(value)) return reject()
+  return value
+}
+const optionalId = (value: unknown, prefix: string) => value === null || value === undefined ? null : id(value, prefix)
+
+export function createClerkEmailVerifier(config: {
+  environment: 'development'; instanceId: string; signingSecret: string; allowedInvitationOrigins?: readonly string[]
+}, now: () => number = Date.now) {
+  if (config.environment !== 'development' || !/^whsec_[A-Za-z0-9+/]{24,}={0,2}$/.test(config.signingSecret)) throw new TypeError('Explicit Development webhook configuration required')
+  const instanceId = id(config.instanceId, 'ins'), signingSecret = config.signingSecret
+  const origins = [...(config.allowedInvitationOrigins ?? [])]
+  if (origins.some(origin => { try { const u = new URL(origin); return u.protocol !== 'https:' || u.origin !== origin } catch { return true } })) throw Error('INVITATION_ORIGIN_CONFIGURATION')
+  return async (request: Request): Promise<EmailEventDecision> => {
+    try {
+      if (request.method !== 'POST' || request.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase() !== 'application/json'
+        || request.headers.has('content-encoding')) return reject()
+      const eventId = id(request.headers.get('svix-id'), 'msg')
+      // Header lists/duplicates and malformed timestamps must not be normalized
+      // into a valid request. The SDK checks the signature and timestamp window.
+      if (!/^\d{10}$/.test(request.headers.get('svix-timestamp') ?? '')
+        || (request.headers.get('svix-signature')?.length ?? 0) > 2048) return reject()
+      const declaredLength = request.headers.get('content-length')
+      if (declaredLength !== null && (!/^\d{1,6}$/.test(declaredLength) || Number(declaredLength) > 131072)) return reject()
+      if (!request.body) return reject()
+      const reader = request.body.getReader(), chunks: Uint8Array[] = []
+      let size = 0
+      try {
+        while (true) {
+          const chunk = await reader.read()
+          if (chunk.done) break
+          size += chunk.value.byteLength
+          if (size > 131072 || request.signal.aborted) { await reader.cancel(); return reject() }
+          chunks.push(chunk.value)
+        }
+      } finally { reader.releaseLock() }
+      if (size === 0 || declaredLength !== null && Number(declaredLength) !== size) return reject()
+      // Preserve exact bytes for signature verification; never re-serialize JSON.
+      const verified = await verifyWebhook(new Request(request.url, { method: 'POST', headers: request.headers,
+        body: Buffer.concat(chunks), signal: request.signal }), { signingSecret })
+      const event = object(verified)
+      if (event.type !== 'email.created' || event.instance_id !== instanceId) return reject()
+      const data = object(event.data)
+      if (data.object !== 'email' || typeof data.delivered_by_clerk !== 'boolean') return reject()
+      id(data.id, 'ema')
+      if (data.delivered_by_clerk) return Object.freeze({ status: 'ignored', reason: 'clerk-delivery' })
+      if (data.slug !== 'verification_code' && !(data.slug === 'invitation' && origins.length > 0)) return Object.freeze({ status: 'ignored', reason: 'unsupported-template' })
+      const timestamp = event.timestamp
+      if (typeof timestamp !== 'number' || !Number.isSafeInteger(timestamp) || timestamp <= 0) return reject()
+      // Clerk's catalog sample uses seconds; current event envelopes use ms.
+      // Accept either explicitly, while the independent Svix timestamp remains
+      // strictly seconds and cryptographically verified by the official SDK.
+      const createdAt = timestamp < 100000000000 ? timestamp * 1000 : timestamp
+      const clock = now()
+      if (!Number.isSafeInteger(clock) || createdAt > clock + 30000) return reject()
+      // Local maximum forwarding age is conservative; it is not a promise that
+      // Clerk will still accept a code. Resends/revocation stay owned by Clerk.
+      if (createdAt + 300000 <= clock) return Object.freeze({ status: 'ignored', reason: 'expired' })
+      const recipient = mailbox(data.to_email_address)
+      const vars = object(data.data)
+      let content: {kind: 'verification-code'; otpCode: string} | {kind: 'invitation'; actionUrl: string; expiresInDays: number}
+      if (data.slug === 'verification_code') {
+        if (typeof vars.otp_code !== 'string' || !/^\d{6}$/.test(vars.otp_code)) return reject()
+        content = {kind: 'verification-code', otpCode: vars.otp_code}
+      } else {
+        const invitation = object(vars.invitation)
+        if (typeof vars.action_url !== 'string' || vars.action_url.length > 2000 || /[\x00-\x20\x7f]/.test(vars.action_url)) return reject()
+        const url = new URL(vars.action_url), days = invitation.expires_in_days
+        if (url.protocol !== 'https:' || url.username || url.password || !origins.includes(url.origin)
+          || typeof days !== 'number' || !Number.isInteger(days) || days < 1 || days > 365) return reject()
+        content = {kind: 'invitation', actionUrl: url.href, expiresInDays: days}
+      }
+      if (data.suppression_reason !== undefined && data.suppression_reason !== null) return reject()
+      return Object.freeze({ status: 'ready', instruction: Object.freeze({
+        eventId, emailId: id(data.id, 'ema'), instanceId, createdAt, recipient,
+        emailAddressId: optionalId(data.email_address_id, 'idn'), providerUserId: optionalId(data.user_id, 'user'),
+        ...content, expiresAt: createdAt + 300000,
+      }) })
+    } catch { return reject() }
+  }
+}

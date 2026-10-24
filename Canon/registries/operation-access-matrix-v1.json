@@ -2155,5 +2155,62 @@
     "unknownPolicyDecision": "DENY"
   },
   "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń.",
-  "catalogueRevision": "1.3.0"
+  "catalogueRevision": "1.3.0",
+  "boundedServiceProtocols": [
+    {
+      "id": "IDENTITY-EMAIL-1",
+      "version": "1.0.0-candidate",
+      "status": "PREPARED_NOT_INSTALLED",
+      "environment": "development",
+      "actorKind": "SERVICE",
+      "contextMode": "PLATFORM",
+      "genericOperationResolverAdoption": "NOT_REGISTERED_DEFAULT_DENY",
+      "implementation": "packages/platform-contracts/migrations/profile/003-email-delivery.sql",
+      "runtime": "apps/identity-runtime/src/email-store.ts",
+      "grant": "Exact login role + application + environment + Clerk issuer + instance + service ID; disabled by default; bounded queue and hourly attempt budget; no organisation grant or human session.",
+      "rules": [
+        {
+          "id": "IE-01",
+          "operation": "identity.email.deliver",
+          "resourceType": "clerk_transactional_email",
+          "dataClasses": [
+            "TECHNICAL_CONTROL",
+            "OPERATION_AUDIT"
+          ],
+          "condition": "Verified fresh email.created for exact instance; Clerk delivery off for supported slug; immutable recipient and original token; encrypted durable outbox; one automatic external attempt; current service policy and audit mandatory."
+        },
+        {
+          "id": "IE-02",
+          "operation": "identity.email.avatar.project",
+          "resourceType": "assistant_avatar_preference",
+          "dataClasses": [
+            "ACCOUNT_PRIVATE"
+          ],
+          "condition": "Separate explicit allow_avatar_projection grant; live Clerk subject/email-address ownership; current unrevoked subject to active internal account mapping; projection is only male/female/neutral. No read by recipient or client ID, no human session renewal, profile writes or membership grant."
+        }
+      ],
+      "guards": {
+        "G01": "Svix SDK signature and exact instance; private service command attestation, transaction, role and payload bound.",
+        "G02": "Exact Development installation, database, project and branch descriptor.",
+        "G03": "Active runtime/application binding; explicit disabled-by-default email policy.",
+        "G04": "Own bounded PLATFORM service protocol only; organisationId null; never HUMAN impersonation.",
+        "G05": "Current email policy is an explicit service grant.",
+        "G06": "Closed queue commands; separate avatar projection opt-in; unknown commands denied.",
+        "G07": "Core authentication transport, no product entitlement granted.",
+        "G08": "Only signed recipient and matched provider subject; exact account projection; no organisation data.",
+        "G09": "Descriptor/proof/expiry/signature/policy errors deny. Unknown avatar evidence yields neutral, never another account.",
+        "G10": "Transactional service audit before send and safe outcome afterwards; no OTP/link/address/body.",
+        "G11": "Atomic max_pending and max_per_hour budgets; allowlisted Development recipients.",
+        "G12": "Own transport grant, no user delegation or product operation.",
+        "G13": "Policy rechecked on every command and projection at begin; active provider user checked before begin.",
+        "G14": "Encrypted short-lived tokens; redacted diagnostics; CID assets; no tracking; terminal payload erasure."
+      },
+      "retention": {
+        "encryptedPayload": "Until outcome or maximum 5-minute forwarding age; abandoned send erased as unknown.",
+        "terminalMetadata": "7 days",
+        "audit": "30 days"
+      },
+      "acceptance": "Synthetic signed events and local PostgreSQL tests; live-provider contract, LKG and mailbox acceptance still required before enabling."
+    }
+  ]
 }
