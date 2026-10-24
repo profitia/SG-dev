@@ -205,7 +205,7 @@ export async function createNativeRegistrySource(options:{host:Omit<Ingestion,'s
 }
 /** On-demand acquisition requires process-owned proof of a settled GUS mapping.
  * It is not a numeric scanner, arbitrary KRS endpoint or replacement identity engine. */
-export type NativeContinuity=Readonly<{currentEvidenceRef:string;records:readonly Readonly<{snapshot:CompanySnapshot;excerpt:unknown}>[]}>
+export type NativeContinuity=Readonly<{currentEvidenceRef:string;records:readonly Readonly<{snapshot:CompanySnapshot;excerpt:unknown}>[];excluded:readonly Readonly<{krs:string;reason:'MISSING_NIP'}>[]}>
 const continuityProofs=new WeakSet<object>()
 /** Copied or serialized evidence cannot substitute for settled native Source. */
 export const nativeContinuityEvidence=(value:unknown):value is NativeContinuity=>!!value&&typeof value==='object'&&continuityProofs.has(value)
@@ -260,7 +260,7 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
   // Public Source evidence cache, never an account/access decision cache.
   // Consumers must recheck HUMAN authorization before every read/publication.
   return current.history??=(async()=>{
-   const records:Array<{snapshot:CompanySnapshot;excerpt:unknown}>=[]
+   const records:Array<{snapshot:CompanySnapshot;excerpt:unknown}>=[],excluded:Array<{krs:string;reason:'MISSING_NIP'}>=[]
    let value={snapshot:current.snapshot,response:current.response}
    for(;;){
     signal.throwIfAborted()
@@ -273,11 +273,16 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
     signal.throwIfAborted()
     const snapshot=await normalizeExtract(response.bytes,{krs:id,register:'P',extract:'FULL',retrievedAt:response.retrievedAt})
     const nips=[...new Set(snapshot.identifiers.filter(i=>i.kind==='NIP').map(i=>i.value))]
+    // An explicitly linked old register without any NIP cannot authorize its
+    // finances. End the verified prefix here, retaining the already proved
+    // current entity/predecessors. A different, invalid or ambiguous NIP is a
+    // conflict and still denies the whole chain; it is never treated as absent.
+    if(nips.length===0){excluded.push(Object.freeze({krs:id,reason:'MISSING_NIP'}));break}
     if(nips.length!==1||nips[0]!==current.snapshot.nip||snapshot.identifiers.some(i=>i.kind==='NIP'&&!i.valid))return deny()
     await publication.publish({snapshot,response},'krs-continuity-publication-'+key)
     value={snapshot,response}
    }
-   const result=Object.freeze({currentEvidenceRef:reference,records:Object.freeze(records)})
+   const result=Object.freeze({currentEvidenceRef:reference,records:Object.freeze(records),excluded:Object.freeze(excluded)})
    continuityProofs.add(result);return result
   })()
  }})

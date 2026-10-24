@@ -147,6 +147,33 @@ test('explicit unmetered Source keeps current E1, audit, history and independent
    await controlled(()=>owner.query("UPDATE profitia_ingestion.sources SET expires_at=now()+interval '1 hour'"))
    assert.equal((await accepted.execute(input())).status,200)
   })
+  await t.test('login-scoped unmetered policy leaves another runtime default and counters intact',async()=>{
+   const roleSql=fs.readFileSync(new URL('../migrations/access/026-role-source-quotas.sql',import.meta.url),'utf8'),roleDigest=hash(roleSql)
+   await assert.rejects(owner.query(roleSql),e=>e.code==='42501')
+   await assert.rejects(controlled(async()=>{await owner.query("SELECT set_config('profitia.install.role_source_quota_digest',$1,true)",[roleDigest]);await owner.query(roleSql)}),e=>e.code==='42501')
+   const before=await counts()
+   await controlled(async()=>{
+    await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='REVOKED'")
+    await owner.query("SELECT set_config('profitia.install.role_source_quota_digest',$1,true)",[roleDigest]);await owner.query(roleSql)
+    await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='ACTIVE'")
+    await owner.query("UPDATE profitia_ingestion.budgets SET quota_mode='METERED',capacity=consumed_count,window_start=now()-interval '1 hour',window_end=now()+interval '1 hour',expires_at=now()+interval '1 hour'")
+   })
+   await assert.rejects(accepted.execute(input()),unavailable)
+   const scopedId=randomUUID()
+   await controlled(()=>owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,login_role,unit,quota_mode,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,'external-source',$2,$3,'SOURCE_TRANSACTION','UNMETERED',NULL,NULL,NULL,NULL,'ACTIVE','SYNTHETIC_ONLY')",[scopedId,SOURCE,ROLE]))
+   for(let i=0;i<3;i++)assert.equal((await accepted.execute(input())).status,200)
+   const policies=(await owner.query('SELECT login_role,quota_mode,consumed_count FROM profitia_ingestion.budgets ORDER BY login_role NULLS FIRST')).rows
+   assert.deepEqual(policies,[{login_role:null,quota_mode:'METERED',consumed_count:String(before.source)},{login_role:ROLE,quota_mode:'UNMETERED',consumed_count:'9'}])
+   // An unrelated login override is never selected by this runtime.
+   await controlled(()=>owner.query("UPDATE profitia_ingestion.budgets SET login_role='unrelated_runtime' WHERE policy_id=$1",[scopedId]))
+   const n=hits;await assert.rejects(accepted.execute(input()),unavailable);assert.equal(hits,n)
+   await controlled(()=>owner.query('UPDATE profitia_ingestion.budgets SET login_role=$1 WHERE policy_id=$2',[ROLE,scopedId]))
+   // Explicit metering can be restored for future packages without a code edit.
+   await controlled(()=>owner.query("UPDATE profitia_ingestion.budgets SET quota_mode='METERED',capacity=consumed_count,window_start=now()-interval '1 hour',window_end=now()+interval '1 hour',expires_at=now()+interval '1 hour' WHERE policy_id=$1",[scopedId]))
+   await assert.rejects(accepted.execute(input()),unavailable);assert.equal(hits,n)
+   await controlled(()=>owner.query("UPDATE profitia_ingestion.budgets SET quota_mode='UNMETERED',capacity=NULL,window_start=NULL,window_end=NULL,expires_at=NULL WHERE policy_id=$1",[scopedId]))
+   assert.equal((await accepted.execute(input())).status,200)
+  })
   await t.test('an unmetered intent is not a retry token',async()=>{
    const i=input();await accepted.execute(i);const n=hits;await assert.rejects(accepted.execute(i),unavailable);assert.equal(hits,n)
   })
