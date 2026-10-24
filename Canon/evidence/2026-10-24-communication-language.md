@@ -65,7 +65,7 @@ no automatic database snapshot restore or irreversible down-migration.
 Twelve stored Mailgun templates (verification-code/invitation × pl/en ×
 male/female/neutral) published on spendguru.app and exact version contents read
 back; provider CRLF normalization accounted for. Runtime pins content-hash versions.
-Clerk remains issuer/verifier; verification_code/invitation delivery_by_clerk=false.
+Clerk remains issuer/verifier; verification_code/invitation delivered_by_clerk=false.
 No local code generation. Codes/links are encrypted in queue and purged at settlement.
 
 | Variant | Clerk email ID | Mailgun delivered event, SMTP250 | Template version |
