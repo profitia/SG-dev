@@ -13,3 +13,31 @@ test('provider failure and disabled authority are unavailable/readiness503',asyn
 test('real Node HTTP adapter ignores forwarded identity and rejects wrong Host/raw path',async t=>{const server=createNodeServer('http://localhost:3600',createHttpHandler(null));server.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));t.after(()=>{server.closeAllConnections();server.close()});const port=server.address().port;const send=(path,host='localhost:3600')=>new Promise((resolve,reject)=>{const req=httpRequest({host:'127.0.0.1',port,path,headers:{host,'x-forwarded-host':'evil.test','x-user-id':'forged'}},res=>{res.resume();res.once('end',()=>resolve(res.statusCode))});req.on('error',reject);req.end()});assert.equal(await send('/healthz'),200);assert.equal(await send('/v1/session'),503);for(const path of ['/%2fhealthz','/a/../healthz','//healthz','/healthz?x=1'])assert.equal(await send(path),400);assert.equal(await send('/healthz','evil.test'),400)})
 test('native request deadline aborts pending provider work and returns unavailable',async t=>{let signal;const server=createNodeServer('http://localhost:3600',async request=>{signal=request.signal;return new Promise(()=>{})});t.after(()=>{server.closeAllConnections();server.close()});await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)});const result=await new Promise((resolve,reject)=>{const req=httpRequest({host:'127.0.0.1',port:server.address().port,path:'/v1/session',headers:{host:'localhost:3600'}},r=>{r.resume();r.once('end',()=>resolve(r.statusCode))});req.on('error',reject);req.end()});assert.equal(result,503);assert.equal(signal.aborted,true)})
 test('startup error never echoes malformed private configuration values',()=>{const marker='synthetic_private_marker_never_log',r=spawnSync(process.execPath,['dist/src/main.js'],{encoding:'utf8',env:{PATH:process.env.PATH,IDENTITY_RUNTIME_ENABLED:'true',IDENTITY_RUNTIME_CONFIGURATION:marker}});assert.equal(r.status,1);assert(!r.stdout.includes(marker));assert(!r.stderr.includes(marker));assert(r.stderr.includes('configuration unavailable'))})
+test('larger signed-event allowance is isolated to the enabled exact POST webhook', async t => {
+  for (const enabled of [false, true]) {
+    const calls = [], server = createNodeServer('http://localhost:3600', async request => {
+      calls.push({path:new URL(request.url).pathname,body:await request.text()}); return new Response(null,{status:204})
+    }, enabled)
+    await new Promise(resolve => server.listen(0,'127.0.0.1',resolve))
+    t.after(()=>{server.closeAllConnections();server.close()})
+    const send = (path, method, size) => new Promise((resolve,reject) => {
+      const req = httpRequest({host:'127.0.0.1',port:server.address().port,path,method,
+        headers:{host:'localhost:3600','content-type':'application/json','content-length':size}}, response => {
+        response.resume(); response.once('end',()=>resolve(response.statusCode))
+      })
+      req.on('error', error => error.code==='ECONNRESET' ? resolve('closed') : reject(error));req.end('x'.repeat(size))
+    })
+    for (const [path,method,size,allowed] of [
+      ['/v1/webhooks/clerk-email','POST',131072,enabled],
+      ['/v1/webhooks/clerk-email','POST',131073,false],
+      ['/v1/webhooks/clerk-email','PUT',5000,false],
+      ['/v1/webhooks/clerk-email?x=1','POST',5000,false],
+      ['/v1/account/profile','POST',5000,false],
+    ]) {
+      const before=calls.length, status=await send(path,method,size)
+      assert(allowed ? status===204 : status===400 || status==='closed')
+      assert.equal(calls.length,before+Number(allowed))
+      if (allowed) assert.equal(calls.at(-1).body.length,size)
+    }
+  }
+})
