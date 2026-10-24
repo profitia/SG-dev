@@ -2,14 +2,14 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createClerkConversation, conversationClientScript } from '../dist/src/account-conversation.js'
 import { conversationMarkup } from '../dist/src/account-visuals.js'
-function fixture(registration=true, overrides={}) {
+function fixture(registration=true, overrides={}, ticket=null) {
  const calls=[], factors=[{strategy:'email_code',emailAddressId:'email_fixture'},{strategy:'password'}]
  const wrap=(name,result)=>async input=>{calls.push([name,input]); if (overrides[name]) return overrides[name](input); return result}
  const complete={status:'complete',createdSessionId:'sess_fixture'}
  const signup={create:wrap('createUp',{status:'missing_requirements',missingFields:[]}),prepareEmailAddressVerification:wrap('prepareUp',{}),attemptEmailAddressVerification:wrap('verifyUp',complete)}
  const signin={supportedFirstFactors:factors,create:wrap('createIn',{status:'needs_first_factor',supportedFirstFactors:factors}),prepareFirstFactor:wrap('prepareIn',{}),attemptFirstFactor:wrap('verifyIn',complete)}
  const sdk={client:{signUp:signup,signIn:signin},setActive:wrap('activate',{})}
- return {model:createClerkConversation(sdk,registration),calls,sdk}
+ return {model:createClerkConversation(sdk,registration,ticket),calls,sdk}
 }
 async function registrationToCode(f) { for(const x of ['male','Adam','Testowy','synthetic@example.test']) await f.model.submit(x) }
 test('short registration uses official create, email prepare, actual verification and setActive in order',async()=>{
@@ -55,4 +55,22 @@ test('registration choice remains presentation-only until provider completion fo
  assert.equal(f.model.registrationAvatar('user_registered'),'female');assert.equal(f.model.registrationAvatar('user_other'),null)
  const login=fixture(false);login.model.state.avatarSex='male';login.sdk.client.signUp={status:'complete',createdUserId:'user_registered'}
  assert.equal(login.model.registrationAvatar('user_registered'),null)
+})
+
+test('invitation delegates opaque ticket to Clerk, keeps avatar and does not send another code',async()=>{
+ const ticket='synthetic_invitation_fixture_12345'
+ const f=fixture(true,{createUp:()=>({status:'complete',createdSessionId:'sess_invited',createdUserId:'user_invited'})},ticket)
+ for(const value of ['female','Ada','Testowa'])await f.model.submit(value)
+ assert.equal(f.model.state.complete,true)
+ assert.deepEqual(f.calls,[['createUp',{strategy:'ticket',ticket,firstName:'Ada',lastName:'Testowa',unsafeMetadata:{assistantAvatar:'female'}}],['activate',{session:'sess_invited'}]])
+ assert.equal(f.model.registrationAvatar('user_invited'),'female');assert(!JSON.stringify(f.model.state).includes(ticket))
+})
+test('invalid, revoked or incomplete invitations cannot create a local session',async()=>{
+ assert.throws(()=>fixture(true,{},'bad ticket'));assert.throws(()=>fixture(false,{},'synthetic_invitation_fixture_12345'))
+ for(const result of ['reject',{status:'missing_requirements',missingFields:['legal_accepted']}]){
+  const f=fixture(true,{createUp:()=>{if(result==='reject')throw Error('revoked');return result}},'synthetic_invitation_fixture_12345')
+  await f.model.submit('male');await f.model.submit('Adam')
+  if(result==='reject')await assert.rejects(f.model.submit('Testowy'));else{await f.model.submit('Testowy');assert.equal(f.model.state.step,'challenge')}
+  assert.equal(f.model.state.complete,false);assert(!f.calls.some(c=>c[0]==='activate'||c[0]==='prepareUp'))
+ }
 })
