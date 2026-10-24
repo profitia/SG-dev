@@ -2230,14 +2230,14 @@
     {
       "id": "IDENTITY-REGISTRATION-1",
       "version": "1.0.0",
-      "status": "PREPARED_NOT_INSTALLED",
+      "status": "DEPLOYED_DEVELOPMENT_VERIFIED",
       "environment": "development",
       "actorKind": "SERVICE",
       "contextMode": "PLATFORM",
       "genericOperationResolverAdoption": "NOT_REGISTERED_DEFAULT_DENY",
       "implementation": "packages/platform-contracts/migrations/profile/005-registration.sql",
       "runtime": "apps/identity-runtime/src/registration-store.ts",
-      "grant": "Exact Development installation, role, application, issuer, instance and service; separate disabled registration policy; domain-separated transaction HMAC; no organisation rights.",
+      "grant": "Exact Development installation, role, application, issuer, instance and service; separately enabled registration policy; domain-separated transaction HMAC; no organisation rights.",
       "rules": [
         {
           "id": "IR-01",
@@ -2299,7 +2299,7 @@
         "audit": "30 days",
         "reservation": "Minimal pseudonymous resumable registry; controlled cleanup only."
       },
-      "acceptance": "Provider reserved/OTP/session proof completed; isolated tests and runtime release acceptance recorded separately in Canon/evidence/2026-10-24-registration-model.md."
+      "acceptance": "Reserved identity, first-code PL/EN male/female delivery, same-address resume, wrong/foreign proof rejection, official browser completion and Finished/Unassigned persistence verified. Evidence: Canon/evidence/2026-10-24-registration-model.md."
     }
   ]
 }
