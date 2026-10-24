@@ -7,6 +7,7 @@
     "repository": "profitia/SG-dev",
     "authorityBranch": "main",
     "businessBaselineSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+    "nodeVersion": "24.21.0",
     "stagingServiceId": "srv-db496b3tqb8s73eh5sfg",
     "stagingDeployId": "dep-db97qcjl550s73d2f170"
   },

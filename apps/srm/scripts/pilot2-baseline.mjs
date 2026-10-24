@@ -3,6 +3,7 @@ import path from 'node:path'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
+import {gunzipSync} from 'node:zlib'
 
 export const BUSINESS_BASELINE='6eede5cd19fd3a4519d66298effe9ef94633757a'
 const HASH=/^[a-f0-9]{40}$/
@@ -11,9 +12,10 @@ const originalHost='ep-red-smoke-b16ih64d.c-5.eu-central-1.aws.neon.tech'
 const stagingHost='ep-autumn-wildflower-b1mv0vda.c-5.eu-central-1.aws.neon.tech'
 const sha=value=>createHash('sha256').update(value).digest('hex')
 const deny=message=>{throw new Error(message)}
+const SOURCE_TAR_SHA256='7c58f6d5275a5d0c63a291b86f8a8053c99469f9a8012ae2adc9c2ab5950e067'
 export function validateTarget(t){
  if(!t||t.schemaVersion!=='1.0'||t.projectKey!=='SRM'||t.targetEnvironment!=='development'
-  ||t.purpose!=='STAGED_PERFORMANCE_EXPERIMENT_ONLY'||t.source?.businessBaselineSha!==BUSINESS_BASELINE
+  ||t.purpose!=='STAGED_PERFORMANCE_EXPERIMENT_ONLY'||t.source?.businessBaselineSha!==BUSINESS_BASELINE||t.source.nodeVersion!=='24.21.0'
   ||t.render?.serviceId!=='srv-dbeh6srrjlhs73fmikrg'||t.render.environmentId!=='evm-dapbd70ae00c73cgrup0'
   ||t.render.plan!=='0.5c-512mb'||t.render.instances!==1||t.render.autoDeploy!==false
   ||t.neon?.projectId!=='snowy-breeze-40315151'||t.neon.parentBranchId!=='br-broad-butterfly-b11t4v01'
@@ -34,25 +36,49 @@ export function rebindEnvironment(source,t){
   deny('PILOT2 cannot remove source environment or ordinary-role validation')
  return result
 }
+/** Render provides a shallow checkout. Carry the reviewed historical source as
+ * a bounded immutable archive, verified against Git in full-history CI. No
+ * additional repository credentials or mutable remote download are required. */
+export function verifyBaselineArchive(repo){
+ const manifest=JSON.parse(fs.readFileSync(path.join(repo,'apps/srm/deployment/pilot2-staging-source.json'),'utf8'))
+ if(manifest.schemaVersion!=='1.0'||manifest.businessSourceSha!==BUSINESS_BASELINE
+  ||manifest.archive!=='apps/srm/deployment/pilot2-staging-source.tar.gz'||manifest.tarSha256!==SOURCE_TAR_SHA256)deny('Accepted historical archive manifest required')
+ const compressed=fs.readFileSync(path.join(repo,manifest.archive))
+ if(compressed.length!==manifest.archiveBytes||compressed.length>4*1024*1024||sha(compressed)!==manifest.archiveSha256)deny('Historical archive integrity mismatch')
+ const archive=gunzipSync(compressed,{maxOutputLength:16*1024*1024})
+ if(sha(archive)!==SOURCE_TAR_SHA256)deny('Historical source bytes differ from the accepted Staging source')
+ const git=args=>execFileSync('git',args,{cwd:repo,maxBuffer:32*1024*1024,stdio:['pipe','pipe','pipe']})
+ let historicalObject=false
+ try{git(['cat-file','-e',BUSINESS_BASELINE+'^{commit}']);historicalObject=true}catch{}
+ if(historicalObject){
+  git(['merge-base','--is-ancestor',BUSINESS_BASELINE,'HEAD'])
+  if(sha(git(['archive','--format=tar',BUSINESS_BASELINE,'apps/srm','packages/srm-xray']))!==SOURCE_TAR_SHA256)deny('Historical Git source provenance mismatch')
+ }else if(git(['rev-parse','--is-shallow-repository']).toString().trim()!=='true')deny('Full history must contain the accepted Staging source')
+ const names=execFileSync('tar',['-tf','-'],{input:archive}).toString().trim().split('\n')
+ for(const name of names)if(name.startsWith('/')||name.split('/').includes('..')
+  ||!['apps/','packages/'].includes(name)&&!name.startsWith('apps/srm/')&&!name.startsWith('packages/srm-xray/'))deny('Historical archive path rejected')
+ const expected=Object.keys(manifest.files??{}).sort()
+ if(expected.length!==257||JSON.stringify(names.filter(n=>!n.endsWith('/')).sort())!==JSON.stringify(expected)
+  ||expected.some(name=>!/^[a-f0-9]{64}$/.test(manifest.files[name])))deny('Exact historical file manifest required')
+ return {archive,original:manifest.files,historicalGitVerified:historicalObject,tarSha256:SOURCE_TAR_SHA256}
+}
 export function prepareBaseline(repo,t,output){
  validateTarget(t)
- const git=args=>execFileSync('git',args,{cwd:repo,maxBuffer:256*1024*1024})
  if(!HASH.test(BUSINESS_BASELINE))deny('Exact baseline required')
- git(['merge-base','--is-ancestor',BUSINESS_BASELINE,'origin/main'])
+ const {archive,original,historicalGitVerified,tarSha256}=verifyBaselineArchive(repo)
  output=path.resolve(output)
  if(fs.existsSync(output))deny('Refusing to overwrite an existing baseline checkout')
  fs.mkdirSync(output,{recursive:true})
- const archive=git(['archive','--format=tar',BUSINESS_BASELINE,'apps/srm','packages/srm-xray'])
  execFileSync('tar',['-xf','-','-C',output],{input:archive})
- const sourceFiles=git(['ls-tree','-r','--name-only',BUSINESS_BASELINE,'apps/srm','packages/srm-xray']).toString().trim().split('\n')
- const original=Object.fromEntries(sourceFiles.map(name=>[name,sha(fs.readFileSync(path.join(output,name)))]))
+ const sourceFiles=Object.keys(original)
+ for(const name of sourceFiles)if(!fs.lstatSync(path.join(output,name)).isFile()||sha(fs.readFileSync(path.join(output,name)))!==original[name])deny('Extracted historical file integrity mismatch')
  const guard='apps/srm/src/server/runtime-environment.ts'
  fs.writeFileSync(path.join(output,guard),rebindEnvironment(fs.readFileSync(path.join(output,guard),'utf8'),t))
  const changed=sourceFiles.filter(name=>sha(fs.readFileSync(path.join(output,name)))!==original[name])
  if(changed.length!==1||changed[0]!==guard)deny('Only the explicit environment binding may differ')
  const proof={schemaVersion:'1.0',businessSourceSha:BUSINESS_BASELINE,exactBusinessSource:true,byteIdenticalToStaging:false,
   environment:'development',serviceId:t.render.serviceId,branchId:t.neon.branchId,
-  originalFiles:original,changedFiles:changed,adapter:{path:guard,originalSha256:original[guard],adaptedSha256:sha(fs.readFileSync(path.join(output,guard)))},
+  originalFiles:original,changedFiles:changed,sourceArchive:{tarSha256,historicalGitVerified},nodeVersion:process.version,adapter:{path:guard,originalSha256:original[guard],adaptedSha256:sha(fs.readFileSync(path.join(output,guard)))},
   installedDependencies:false,built:false}
  fs.writeFileSync(path.join(output,'baseline-proof.json'),JSON.stringify(proof,null,2)+'\n')
  return proof

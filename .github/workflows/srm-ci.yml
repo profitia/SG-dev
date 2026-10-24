@@ -178,26 +178,29 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '24.21.0'
       - name: Select PILOT2 preparation changes
         id: changes
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- apps/srm/scripts/pilot2-baseline.mjs apps/srm/scripts/pilot2-baseline.test.mjs apps/srm/deployment/pilot2-runtime-targets.json; then
+          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- apps/srm/scripts/pilot2-baseline.mjs apps/srm/scripts/pilot2-baseline.test.mjs apps/srm/deployment/pilot2-runtime-targets.json apps/srm/deployment/pilot2-staging-source.json apps/srm/deployment/pilot2-staging-source.tar.gz; then
             echo 'build=false' >> "$GITHUB_OUTPUT"
           else
             echo 'build=true' >> "$GITHUB_OUTPUT"
           fi
-      - name: Build the accepted Staging business source without live credentials
+      - name: Verify historical source then build with Render-compatible shallow history
         if: steps.changes.outputs.build == 'true'
-        run: node apps/srm/scripts/pilot2-baseline.mjs build
+        run: |
+          node --test apps/srm/scripts/pilot2-baseline.test.mjs
+          git clone --depth 1 --no-local "$GITHUB_WORKSPACE" "$RUNNER_TEMP/pilot2-shallow"
+          node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: steps.changes.outputs.build == 'true'
         with:
           name: pilot2-baseline-build-proof
-          path: .pilot2-baseline/baseline-proof.json
+          path: ${{ runner.temp }}/pilot2-shallow/.pilot2-baseline/baseline-proof.json
           if-no-files-found: error
 
   srm-staging-guard:
