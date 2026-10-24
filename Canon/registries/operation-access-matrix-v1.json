@@ -2226,6 +2226,80 @@
         "snapshot": "enqueue",
         "fallback": "en"
       }
+    },
+    {
+      "id": "IDENTITY-REGISTRATION-1",
+      "version": "1.0.0",
+      "status": "PREPARED_NOT_INSTALLED",
+      "environment": "development",
+      "actorKind": "SERVICE",
+      "contextMode": "PLATFORM",
+      "genericOperationResolverAdoption": "NOT_REGISTERED_DEFAULT_DENY",
+      "implementation": "packages/platform-contracts/migrations/profile/005-registration.sql",
+      "runtime": "apps/identity-runtime/src/registration-store.ts",
+      "grant": "Exact Development installation, role, application, issuer, instance and service; separate disabled registration policy; domain-separated transaction HMAC; no organisation rights.",
+      "rules": [
+        {
+          "id": "IR-01",
+          "operation": "identity.registration.reserve",
+          "resourceType": "pending_registration",
+          "dataClasses": [
+            "ACCOUNT_PRIVATE",
+            "TECHNICAL_CONTROL"
+          ],
+          "condition": "Reserved unverified Clerk identity; exact recoverable external id; encrypted draft and immutable per-attempt preference; no account or membership."
+        },
+        {
+          "id": "IR-02",
+          "operation": "identity.registration.verify",
+          "resourceType": "registration_attempt",
+          "dataClasses": [
+            "TECHNICAL_CONTROL"
+          ],
+          "condition": "Opaque proof, bounded attempts and lease; exact Clerk verification; verified primary mailbox and current provider policy before 60-second single-use ticket. Official session required."
+        },
+        {
+          "id": "IR-03",
+          "operation": "identity.registration.complete",
+          "resourceType": "user_profile",
+          "dataClasses": [
+            "ACCOUNT_PRIVATE",
+            "OPERATION_AUDIT"
+          ],
+          "condition": "Existing official session verifier and provisioner; exact issuer+subject; verified attempt; account/profile/status/audit in one transaction; no overwrite after Finished and no organisation grant."
+        },
+        {
+          "id": "IR-04",
+          "operation": "identity.registration.email.project",
+          "resourceType": "registration_email_snapshot",
+          "dataClasses": [
+            "ACCOUNT_PRIVATE"
+          ],
+          "condition": "Signed event exact user/address/attempt ids; server-stored immutable male/female and pl/en; explicit avatar/language and registration policy; snapshot at enqueue, current policy and mailbox recheck before send."
+        }
+      ],
+      "guards": {
+        "G01": "Official Clerk reserved identity, OTP and session; domain-separated transaction proof.",
+        "G02": "Exact Development database/project/branch descriptor and SQL005 digest.",
+        "G03": "Enabled runtime, account and provider policy; disabled-by-default registration grant.",
+        "G04": "Bounded PLATFORM service, organisationId null; no HUMAN impersonation.",
+        "G05": "Explicit registration and separate email projection policies.",
+        "G06": "Closed commands and exact attempt receipt, no arbitrary profile patches.",
+        "G07": "Identity lifecycle only, no product entitlement.",
+        "G08": "Exact registration/attempt/provider binding; no email-based account adoption or draft read before proof.",
+        "G09": "Unknown state, policy, proof, provider outcome or schema fails closed.",
+        "G10": "Durable attempt before provider call; atomic completion audit, no codes/addresses/tokens in audit.",
+        "G11": "Atomic global/address limits, verification budget, leases and queue budget.",
+        "G12": "No delegation or organisation permission granted.",
+        "G13": "Current provider policy before create/verify/ticket; SQL policy each command; identity recheck before provisioning commit.",
+        "G14": "AES-GCM drafts, hash-only attempt tokens, volatile browser state, bounded retention and no diagnostic secrets."
+      },
+      "retention": {
+        "draft": "Erase on completion or after30 days during next start; no automatic provider identity deletion.",
+        "audit": "30 days",
+        "reservation": "Minimal pseudonymous resumable registry; controlled cleanup only."
+      },
+      "acceptance": "Provider reserved/OTP/session proof completed; isolated tests and runtime release acceptance recorded separately in Canon/evidence/2026-10-24-registration-model.md."
     }
   ]
 }

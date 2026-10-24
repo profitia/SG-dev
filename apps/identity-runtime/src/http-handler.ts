@@ -1,3 +1,4 @@
+import type { RegistrationSurface } from './registration.js'
 import type { CommunicationLanguageSurface } from './communication-language.js'
 import type { EmailSurface } from './email-runtime.js'
 import { BoundaryError, type SessionBoundary } from './contracts.js'
@@ -16,10 +17,18 @@ async function body(request: Request): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
+      if (url.pathname === '/v1/registration/start' || url.pathname === '/v1/registration/verify') {
+        if (url.search || url.hash) return json(404, {error:'NOT_FOUND'})
+        if (!registration || !boundary) return json(503, {error:'REGISTRATION_UNAVAILABLE'})
+        if (request.method !== 'POST') return json(405, {error:'METHOD_NOT_ALLOWED'})
+        checkRequest(request, boundary.configuration, true)
+        const input = await body(request)
+        return json(200, await (url.pathname.endsWith('/start') ? registration.start(input) : registration.verify(input)))
+      }
       if (url.pathname === '/v1/webhooks/clerk-email') {
         if (!email || url.search || url.hash) return json(404, {error:'NOT_FOUND'})
         if (request.method !== 'POST') return json(405, {error:'METHOD_NOT_ALLOWED'})
@@ -51,7 +60,7 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
           if (url.origin !== boundary.configuration.origin || url.username || url.password || url.search.length > 8192) return json(403, { error: 'REQUEST_ORIGIN_REJECTED' })
           const page = /^\/account\/([a-z0-9-]+)\/([a-z0-9-]+)\/(registration|login|recovery)$/.exec(url.pathname)
           if (url.pathname !== '/account-client' && !page) return json(404, { error: 'NOT_FOUND' })
-          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!) : accountBrowserScript,
+          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!, registration !== null) : accountBrowserScript,
             { headers: { ...headers, 'content-type': page ? 'text/html; charset=utf-8' : 'text/javascript; charset=utf-8',
               'content-security-policy': "frame-ancestors 'none'; base-uri 'none'", 'x-frame-options': 'DENY' } })
         }
@@ -66,7 +75,7 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
       const get = ['/healthz','/readyz','/v1/session'].includes(url.pathname)
       if (request.method !== (get ? 'GET' : 'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
       if (url.pathname === '/healthz') return json(200, { service: 'identity-runtime', status: 'ok' })
-      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready() && (!email || await email.ready().then(() => true, () => false)) && (!language || await language.ready().then(() => true, () => false))); return json(ready ? 200 : 503, { ready }) }
+      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready() && (!email || await email.ready().then(() => true, () => false)) && (!language || await language.ready().then(() => true, () => false)) && (!registration || await registration.ready().then(() => true, () => false))); return json(ready ? 200 : 503, { ready }) }
       if (!boundary) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
       checkRequest(request, boundary.configuration, !get)
       if (url.pathname === '/v1/session') { const result = await boundary.session(request); return json(result.status === 'authenticated' ? 200 : result.status === 'unavailable' ? 503 : 401, { authenticated: result.status === 'authenticated' }) }

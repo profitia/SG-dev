@@ -54,6 +54,7 @@ export function createEmailStore(config: EmailStoreConfig, transact: Transact, n
       const encrypted = Buffer.concat([cipher.update(JSON.stringify(instruction), 'utf8'), cipher.final()])
       const ciphertext = [c.keyId, nonce.toString('base64url'), cipher.getAuthTag().toString('base64url'), encrypted.toString('base64url')].join('.')
       const result = await command({ op: 'enqueue', emailId: instruction.emailId, eventId, providerSubject: instruction.providerUserId,
+        ...(instruction.registrationAttemptId ? {registrationAttemptId:instruction.registrationAttemptId,emailAddressId:instruction.emailAddressId} : {}),
         fingerprint: createHmac('sha256', encryption).update(plaintext).digest('hex'), ciphertext, expiresAt: instruction.expiresAt })
       if (result.status !== 'queued' && result.status !== 'duplicate') throw Error('EMAIL_STORE_UNAVAILABLE')
       return result.status

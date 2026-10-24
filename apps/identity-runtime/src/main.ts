@@ -1,3 +1,6 @@
+import { createRegistrationStore, registrationSchemaDigest, type RegistrationStore } from './registration-store.js'
+import { createRegistrationProvider } from './registration-provider.js'
+import { createRegistrationSurface, type RegistrationSurface } from './registration.js'
 import { createCommunicationLanguageSurface, type CommunicationLanguageSurface } from './communication-language.js'
 import { createEmailRuntime, loadEmailRenderer, type EmailSurface } from './email-runtime.js'
 import { createClerkEmailVerifier } from './email-webhook.js'
@@ -22,6 +25,10 @@ let boundary: SessionBoundary | null = null
 let account: AccountSurface | null = null
 let avatar: AssistantAvatarSurface | null = null
 let language: CommunicationLanguageSurface | null = null
+let registration: RegistrationSurface | null = null
+let registrationStore: RegistrationStore | null = null
+if (process.env.IDENTITY_REGISTRATION_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_REGISTRATION_ENABLED)) throw Error('INVALID_REGISTRATION_FLAG')
+if (process.env.IDENTITY_REGISTRATION_ENABLED === 'true' && (process.env.IDENTITY_EMAIL_ENABLED !== 'true' || process.env.IDENTITY_SELF_SERVICE_ENABLED !== 'true')) throw Error('REGISTRATION_DEPENDENCIES')
 if (process.env.IDENTITY_EMAIL_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_EMAIL_ENABLED)) throw Error('INVALID_EMAIL_FLAG')
 if (process.env.IDENTITY_EMAIL_ENABLED === 'true' && process.env.IDENTITY_RUNTIME_ENABLED !== 'true') throw Error('EMAIL_RUNTIME_REQUIRED')
 if (process.env.IDENTITY_SELF_SERVICE_ENABLED !== undefined && !['true', 'false'].includes(process.env.IDENTITY_SELF_SERVICE_ENABLED)) throw Error('INVALID_SELF_SERVICE_FLAG')
@@ -54,6 +61,15 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     const store = createEmailStore({binding, issuer:config.issuer, instanceId:e.instanceId, serviceId:e.serviceId, schemaDigest:e.schemaDigest,
       proofKey:Buffer.from(proof!, 'hex'), encryptionKey:Buffer.from(encryption!, 'hex'), keyId:e.keyId},
       run => transaction(tx => run({query:tx.query}), {timeoutMs:15000,maxWaitMs:3000}))
+    if (process.env.IDENTITY_REGISTRATION_ENABLED === 'true') {
+      if (process.env.IDENTITY_REGISTRATION_SCHEMA_DIGEST !== registrationSchemaDigest()) throw Error('REGISTRATION_SCHEMA_REQUIRED')
+      registrationStore = createRegistrationStore({binding,issuer:config.issuer,instanceId:e.instanceId,serviceId:e.serviceId,schemaDigest:e.schemaDigest,
+        proofKey:Buffer.from(proof!, 'hex'),encryptionKey:Buffer.from(encryption!, 'hex'),keyId:e.keyId},
+        run => transaction(tx => run({query:tx.query}), {timeoutMs:15000,maxWaitMs:3000}))
+      const provider = createRegistrationProvider({secret:process.env.CLERK_SECRET_KEY,issuer:config.issuer,instanceId:e.instanceId,environment:config.environment})
+      await provider.guard()
+      registration = createRegistrationSurface(registrationStore, provider); await registration.ready()
+    }
     const verify = createClerkEmailVerifier({environment:'development', instanceId:e.instanceId, signingSecret:process.env.CLERK_EMAIL_SIGNING_SECRET, allowedInvitationOrigins:e.allowedInvitationOrigins})
     const send = createMailgunTransactionalSender({environment:'development',region:e.region,domain:e.domain,apiKey:process.env.MAILGUN_SENDING_KEY,
       authorizedRecipients:e.authorizedRecipients,recipientPolicy:e.recipientPolicy,from:e.from,senderName:e.senderName})
@@ -69,7 +85,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     const renewalDigest = process.env.IDENTITY_BINDING_RENEWAL_ENABLED === 'true' ? process.env.IDENTITY_RENEWAL_SCHEMA_DIGEST : undefined
     if (process.env.IDENTITY_BINDING_RENEWAL_ENABLED === 'true' && !/^[a-f0-9]{64}$/.test(renewalDigest ?? '')) throw Error('RENEWAL_CONFIGURATION_REQUIRED')
     account = createAccountSurface({ configuration: config, client, authority, binding, schemaDigest: digest!, ...(renewalDigest === undefined ? {} : { renewalSchemaDigest: renewalDigest }),
-      proofKey: Buffer.from(key!, 'hex'), transact: accountTransactions(pool) })
+      proofKey: Buffer.from(key!, 'hex'), transact: accountTransactions(pool), ...(registrationStore ? {finalizeRegistration:registrationStore.finish} : {}) })
     avatar = createAssistantAvatarSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
@@ -79,7 +95,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     await language.ready()
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 let shuttingDown = false
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   if (shuttingDown) return
