@@ -26,7 +26,11 @@ export function mailbox(value: unknown): string {
   return value.slice(0, at) + '@' + value.slice(at + 1).toLowerCase();
 }
 
-export interface TransactionalMailgunConfig extends SandboxMailgunConfig { from: string; senderName: string }
+export interface TransactionalMailgunConfig extends SandboxMailgunConfig {
+  from: string; senderName: string
+  /** Only the signed Clerk outbox may enable instance-wide transactional delivery. */
+  recipientPolicy?: 'allowlist' | 'signed-clerk'
+}
 export function createMailgunSandboxSender(config: SandboxMailgunConfig, fetcher: typeof fetch = fetch) {
   return createSender(config, fetcher, null)
 }
@@ -40,7 +44,10 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
     throw new Error('Invalid sandbox configuration');
   }
   const recipients = new Set(config.authorizedRecipients.map(mailbox));
-  if (recipients.size < 1 || recipients.size > 5) throw new Error('Invalid sandbox allowlist');
+  const policy = transactional?.recipientPolicy ?? 'allowlist';
+  if (!['allowlist','signed-clerk'].includes(policy)
+    || policy === 'allowlist' && (recipients.size < 1 || recipients.size > 5)
+    || policy === 'signed-clerk' && recipients.size !== 0) throw new Error('Invalid recipient policy');
   const timeout = config.timeoutMs ?? 15000;
   if (!Number.isInteger(timeout) || timeout < 10 || timeout > 30000) throw new Error('Invalid send timeout');
   const endpoint = `https://${config.region === 'eu' ? 'api.eu.mailgun.net' : 'api.mailgun.net'}/v3/${config.domain}/messages`;
@@ -51,7 +58,7 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
 
   return async (message: SandboxMessage): Promise<Submission> => {
     const recipient = mailbox(message.recipient);
-    if (!recipients.has(recipient)) throw new Error('Recipient not enabled for sandbox');
+    if (policy === 'allowlist' && !recipients.has(recipient)) throw new Error('Recipient not enabled for sandbox');
     if (typeof message.subject !== 'string' || (!transactional && !message.subject.startsWith('[TEST SANDBOX] ')) ||
       message.subject.length > 200 || /[\r\n\x00-\x1f\x7f]/.test(message.subject) ||
       typeof message.html !== 'string' || typeof message.text !== 'string' ||

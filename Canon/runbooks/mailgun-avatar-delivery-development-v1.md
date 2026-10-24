@@ -172,3 +172,16 @@ minimalny audyt 30 dni, sprzątanie przy pracy workera. Operacyjne ponowienie
 niepewnej wysyłki wymaga diagnozy, nie automatycznego retry.
 
 Dowody i granice: `Canon/evidence/2026-10-24-mailgun-clerk-integration.md`.
+
+## Kontynuacja 24.10.2026: pełna instancja Development
+
+Zadanie `ARCHITECTURE-CLERK-MAILGUN-ACTIVATION-20261024` rozszerza poprzedni pilot
+zgodnie z poleceniem zakończenia integracji. Transport własnej domeny ma jawne
+`recipientPolicy: "signed-clerk"` i pustą `authorizedRecipients`. Odbiorca pochodzi
+wyłącznie ze zweryfikowanego zdarzenia konkretnej instancji Clerk. Nie ma publicznego
+endpointu przyjmującego zlecenia wysyłki użytkownika. Zachowano jeden adres, brak
+CC/BCC, wymagany TLS, limit bazy 60 prób/h i idempotencję. Tryb `allowlist` pozostaje
+domyślny; sandbox nie może użyć trybu całej instancji. Ta konfiguracja obsługuje
+również nowe rejestracje, więc przełączenie wspólnego szablonu nie odcina odbiorców
+spoza historycznej listy testowej. Jest to wysyłka uwierzytelniająca, nie kampanie
+masowe ani marketing. Zapis w dokumentacji nie stanowi dowodu aktywacji runtime.

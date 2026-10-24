@@ -44,7 +44,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
   if (process.env.IDENTITY_EMAIL_ENABLED === 'true') {
     if (config.environment !== 'development') throw Error('EMAIL_DEVELOPMENT_ONLY')
     const e = JSON.parse(process.env.IDENTITY_EMAIL_CONFIGURATION ?? 'null')
-    if (!e || Object.keys(e).sort().join(',') !== ['instanceId','serviceId','schemaDigest','keyId','region','domain','from','senderName','appName','authorizedRecipients','allowedInvitationOrigins'].sort().join(',')
+    if (!e || Object.keys(e).sort().join(',') !== ['instanceId','serviceId','schemaDigest','keyId','region','domain','from','senderName','appName','recipientPolicy','authorizedRecipients','allowedInvitationOrigins'].sort().join(',')
       || !Array.isArray(e.authorizedRecipients) || !Array.isArray(e.allowedInvitationOrigins)) throw Error('EMAIL_CONFIGURATION_REQUIRED')
     const proof = process.env.IDENTITY_EMAIL_PROOF_KEY, encryption = process.env.IDENTITY_EMAIL_ENCRYPTION_KEY
     if (!/^[a-f0-9]{64}$/.test(proof ?? '') || !/^[a-f0-9]{64}$/.test(encryption ?? '') || !process.env.MAILGUN_SENDING_KEY || !process.env.CLERK_EMAIL_SIGNING_SECRET) throw Error('EMAIL_SECRETS_REQUIRED')
@@ -54,7 +54,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
       run => transaction(tx => run({query:tx.query}), {timeoutMs:15000,maxWaitMs:3000}))
     const verify = createClerkEmailVerifier({environment:'development', instanceId:e.instanceId, signingSecret:process.env.CLERK_EMAIL_SIGNING_SECRET, allowedInvitationOrigins:e.allowedInvitationOrigins})
     const send = createMailgunTransactionalSender({environment:'development',region:e.region,domain:e.domain,apiKey:process.env.MAILGUN_SENDING_KEY,
-      authorizedRecipients:e.authorizedRecipients,from:e.from,senderName:e.senderName})
+      authorizedRecipients:e.authorizedRecipients,recipientPolicy:e.recipientPolicy,from:e.from,senderName:e.senderName})
     await store.ready()
     const render = await loadEmailRenderer(e.appName, e.allowedInvitationOrigins)
     email = createEmailRuntime({verify,store,render,send,recipient:createEmailRecipientVerifier(client),

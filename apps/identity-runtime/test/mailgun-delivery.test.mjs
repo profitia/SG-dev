@@ -7,6 +7,22 @@ const key='test-key-with-at-least-twenty-chars';
 const config={environment:'development',region:'us',domain,apiKey:key,authorizedRecipients:['one@example.com']};
 const message={recipient:'one@example.com',subject:'[TEST SANDBOX] male',html:'<p>WIADOMOŚĆ TESTOWA</p>',text:'WIADOMOŚĆ TESTOWA'};
 
+test('explicit signed-Clerk mode covers new recipients on own domain without weakening sandbox guards',async()=>{
+  const cfg={...config,domain:'mail.example.test',region:'eu',from:'notifications@mail.example.test',senderName:'SpendGuru',recipientPolicy:'signed-clerk',authorizedRecipients:[]}
+  let calls=0
+  const send=createMailgunTransactionalSender(cfg,async(_url,init)=>{
+    calls++; assert.equal(init.body.getAll('to').length,1)
+    assert.equal(init.body.has('cc'),false); assert.equal(init.body.has('bcc'),false)
+    return Response.json({id:'<test@mail.example.test>'})
+  })
+  for(const recipient of ['new@example.test','Another@EXAMPLE.TEST']) assert.equal((await send({...message,recipient})).status,'accepted')
+  for(const recipient of ['a@example.test,b@example.test','Name <a@example.test>','a@example.test\r\nBcc:x']) await assert.rejects(()=>send({...message,recipient}))
+  assert.equal(calls,2)
+  assert.throws(()=>createMailgunTransactionalSender({...cfg,authorizedRecipients:['one@example.test']}))
+  assert.throws(()=>createMailgunTransactionalSender({...cfg,recipientPolicy:'all'}))
+  assert.throws(()=>createMailgunSandboxSender({...config,authorizedRecipients:[],recipientPolicy:'signed-clerk'}))
+})
+
 test('transactional Development sender uses own domain, exact From and allowlist without sandbox sample code',async()=>{
   const cfg={...config,domain:'mail.example.test',region:'eu',from:'notifications@mail.example.test',senderName:'SpendGuru'}
   let calls=0
