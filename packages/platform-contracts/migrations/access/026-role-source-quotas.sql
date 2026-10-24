@@ -17,6 +17,37 @@ ALTER TABLE profitia_ingestion.budgets ADD COLUMN login_role name;
 DROP INDEX profitia_ingestion.one_active_source_budget;
 CREATE UNIQUE INDEX one_active_source_budget ON profitia_ingestion.budgets(application_id,source_id,login_role) NULLS NOT DISTINCT WHERE status='ACTIVE';
 
+-- Recompile trigger plans after SQL024 changed counters from integer to bigint.
+-- Definitions and authority semantics are identical to SQL008/009.
+CREATE OR REPLACE FUNCTION profitia_ingestion.control_change() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,pg_temp AS $fn$
+BEGIN
+  IF TG_TABLE_NAME='budgets' AND TG_OP='UPDATE' THEN
+    IF NEW.consumed_count<OLD.consumed_count THEN RAISE EXCEPTION 'Budget history cannot decrease' USING ERRCODE='42501'; END IF;
+    IF (to_jsonb(NEW)-ARRAY['consumed_count','version'])=(to_jsonb(OLD)-ARRAY['consumed_count','version']) THEN
+      NEW.version:=OLD.version;RETURN NEW;
+    END IF;
+  END IF;
+  UPDATE profitia_ingestion.installation SET revision=revision+1 WHERE singleton;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Source installation required' USING ERRCODE='42501'; END IF;
+  IF TG_OP='UPDATE' THEN NEW.version:=OLD.version+1;END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD;END IF;RETURN NEW;
+END $fn$;
+
+CREATE OR REPLACE FUNCTION profitia_external_call.policy_change() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog,pg_temp AS $fn$
+BEGIN
+ IF TG_OP='INSERT' THEN
+  IF NEW.admitted_count<>0 THEN RAISE EXCEPTION 'Fresh external policy requires zero admissions' USING ERRCODE='42501';END IF;RETURN NEW;
+ END IF;
+ IF NEW.admitted_count<OLD.admitted_count THEN RAISE EXCEPTION 'External admissions cannot be refunded' USING ERRCODE='42501';END IF;
+ IF NEW.admitted_count<>OLD.admitted_count THEN
+  IF NEW.admitted_count<>OLD.admitted_count+1 OR NOT profitia_ingestion.scope_allows(OLD.source_id,OLD.resource_id)
+    OR (to_jsonb(NEW)-ARRAY['admitted_count','version']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['admitted_count','version']) THEN
+   RAISE EXCEPTION 'Current source admission required' USING ERRCODE='42501';END IF;NEW.version:=OLD.version;
+ ELSE NEW.version:=OLD.version+1;END IF;RETURN NEW;
+END $fn$;
+
 CREATE OR REPLACE FUNCTION profitia_ingestion.current_state(p_source text,p_resource text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
 DECLARE d jsonb;s profitia_ingestion.sources%ROWTYPE;b profitia_ingestion.budgets%ROWTYPE;deadline timestamptz;grant_expiry timestamptz;
