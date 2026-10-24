@@ -2187,6 +2187,15 @@
             "ACCOUNT_PRIVATE"
           ],
           "condition": "Separate explicit allow_avatar_projection grant; live Clerk subject/email-address ownership; current unrevoked subject to active internal account mapping; projection is only male/female/neutral. No read by recipient or client ID, no human session renewal, profile writes or membership grant."
+        },
+        {
+          "id": "IE-03",
+          "operation": "identity.email.language.project",
+          "resourceType": "communication_language_preference",
+          "dataClasses": [
+            "ACCOUNT_PRIVATE"
+          ],
+          "condition": "Separate explicit allow_language_projection grant; exact signed issuer+subject and active internal account; immutable pl/en snapshot at enqueue; current grant/account rechecked at begin and live Clerk mailbox ownership checked before send. Unknown identity uses public EN fallback. No lookup by email, profile writes or human session renewal."
         }
       ],
       "guards": {
@@ -2210,7 +2219,13 @@
         "terminalMetadata": "7 days",
         "audit": "30 days"
       },
-      "acceptance": "Synthetic signed events and local PostgreSQL tests; live-provider contract, LKG and mailbox acceptance still required before enabling."
+      "acceptance": "Synthetic signed events and local PostgreSQL tests; live-provider contract, LKG and mailbox acceptance still required before enabling.",
+      "languageExtension": {
+        "implementation": "packages/platform-contracts/migrations/profile/004-communication-language.sql",
+        "status": "PREPARED_NOT_INSTALLED",
+        "snapshot": "enqueue",
+        "fallback": "en"
+      }
     }
   ]
 }

@@ -1,0 +1,54 @@
+{
+  "en": {
+    "labels": {
+      "accept": "Accept invitation",
+      "fallback": "If the button does not work,",
+      "openLink": "open the invitation link",
+      "note": "This code is only for you.<br />Do not share it with anyone.",
+      "unexpectedInvitation": "<b>Not expecting an invitation?</b><br />If this message reached you by mistake, you can ignore it.",
+      "unexpectedCode": "<b>Did not request this code?</b><br />If this was not you, you can ignore this message.<br /><br />Request from: {{requested_from}}<br />Requested at: {{requested_at}}",
+      "services": "Negotiation intelligence · Data-driven procurement · Certified CIPS Partner in Poland · Consulting · Training · Procurement analytics",
+      "address": [
+        "Villa Metro, 02-715 Warsaw, Poland",
+        "145 Puławska Street, 5th floor"
+      ]
+    },
+    "messages": {
+      "verification-code": {
+        "title": "Your verification code",
+        "subject": "Your verification code for {{app.name}}",
+        "greeting": "Hello!",
+        "message": "Here is your one-time code:",
+        "instruction": "Enter it in the application window that asked for verification."
+      },
+      "sign-in": {
+        "title": "Sign in to SpendGuru",
+        "subject": "Your SpendGuru sign-in code",
+        "greeting": "Hello! It is good to see you again.",
+        "message": "Here is your one-time sign-in code:",
+        "instruction": "Enter it in the sign-in window to return to the application."
+      },
+      "sign-up": {
+        "title": "Complete your registration",
+        "subject": "Your SpendGuru registration code",
+        "greeting": "Hello! Welcome to SpendGuru.",
+        "message": "Here is your one-time registration code:",
+        "instruction": "Enter it in the registration window to verify your email address."
+      },
+      "verify-email": {
+        "title": "Verify your email address",
+        "subject": "Verify your email address in SpendGuru",
+        "greeting": "Hello! Let us verify your email address.",
+        "message": "Here is your one-time code:",
+        "instruction": "Enter it in the email verification window in the application."
+      },
+      "invitation": {
+        "title": "Your invitation to {{app.name}}",
+        "subject": "Your invitation to {{app.name}}",
+        "greeting": "Hello! I have an invitation for you.",
+        "message": "You are invited to join {{app.name}}. Accept the invitation to continue to the application.",
+        "instruction": "This invitation expires in {{invitation.expires_in_days}} days."
+      }
+    }
+  }
+}

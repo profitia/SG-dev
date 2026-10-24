@@ -8,7 +8,8 @@ export interface SandboxMailgunConfig {
   timeoutMs?: number;
 }
 export interface InlineImage { filename: string; bytes: Uint8Array }
-export interface EmailContent { subject: string; html: string; text: string; inline?: readonly InlineImage[] }
+export interface StoredEmailTemplate {name:string; version:string; variables:Record<string,string>}
+export interface EmailContent { template?:StoredEmailTemplate; subject: string; html: string; text: string; inline?: readonly InlineImage[] }
 export interface SandboxMessage extends EmailContent { recipient: string }
 export type Submission =
   | { status: 'accepted'; providerId: string }
@@ -93,6 +94,16 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
       'o:tracking': 'no', 'o:tracking-clicks': 'no', 'o:tracking-opens': 'no',
       'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': transactional ? 'identity-transactional-development' : 'avatar-sandbox',
     })) form.set(key, value);
+    if (message.template) {
+      const t=message.template, keys=Object.keys(t.variables).sort().join(',');
+      if (!transactional || !/^identity-(verification-code|invitation)-(pl|en)-(male|female|neutral)$/.test(t.name)
+        || !/^v-[a-f0-9]{24}$/.test(t.version)
+        || !['app_name,current_year,otp_code,requested_at,requested_from','action_url,app_name,current_year,expires_in_days'].includes(keys)
+        || Object.values(t.variables).some(v=>typeof v!=='string'||v.length>2000||/[\x00-\x1f\x7f]|\{\{|\}\}/.test(v))) throw Error('Invalid stored template');
+      form.delete('html'); form.set('template',t.name); form.set('t:version',t.version);
+      // Template values must never be placed in provider event/user variables.
+      form.set('t:variables',JSON.stringify(t.variables));
+    }
     try {
       const response = await fetcher(endpoint, {
         method: 'POST', headers: { Authorization: authorization }, body: form,

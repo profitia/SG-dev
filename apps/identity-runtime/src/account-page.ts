@@ -1,3 +1,4 @@
+import { browserCommunicationLanguage } from './communication-language.js'
 import type { RuntimeConfiguration } from './contracts.js'
 import { resolveReturnRoute } from './return-routes.js'
 import { plPL, enUS } from '@clerk/localizations'
@@ -19,7 +20,7 @@ export function accountPage(configuration: RuntimeConfiguration, targetId: strin
 }
 
 /** No passwords/codes, JWT interpretation, persistent storage or permission UI. */
-export const accountBrowserScript = 'const createClerkConversation = ' + createClerkConversation.toString() + ';\n' + conversationClientScript + String.raw`
+export const accountBrowserScript = 'const browserCommunicationLanguage = ' + browserCommunicationLanguage.toString() + ';\n' + 'const createClerkConversation = ' + createClerkConversation.toString() + ';\n' + conversationClientScript + String.raw`
 window.addEventListener('load', async () => {
   const cfg = JSON.parse(document.getElementById('account-config').textContent);
   const status = document.getElementById('status'), retry = document.getElementById('retry');
@@ -67,6 +68,23 @@ window.addEventListener('load', async () => {
       }
       if (current !== generation || window.Clerk.session?.id !== key) return;
       if (window.spendGuruRestoreAvatar && preference?.avatarSex) window.spendGuruRestoreAvatar(preference.avatarSex);
+      const languageRequest = async (method, body) => {
+        const response = await fetch('/v1/account/communication-language', {method, credentials:'omit', cache:'no-store', redirect:'error', signal:controller.signal,
+          headers:{'Content-Type':'application/json',Authorization:'Bearer '+credential}, ...(body?{body:JSON.stringify(body)}:{})});
+        const value = await response.json();
+        if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
+        if (response.status === 409 && method === 'POST') return null;
+        if (!response.ok || !value || value.userId !== result.userId || !['pl','en'].includes(value.language)
+          || !['migration','default','browser','user'].includes(value.source) || !/^[1-9][0-9]{0,18}$/.test(value.version)) throw Error('LANGUAGE_UNAVAILABLE');
+        return value;
+      };
+      let language = await languageRequest('GET');
+      if (language.source === 'default') {
+        language = await languageRequest('POST', {expectedVersion:language.version, source:'browser',
+          language:browserCommunicationLanguage(navigator.languages?.[0] || navigator.language)});
+        if (!language) language = await languageRequest('GET');
+      }
+
       if (!(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_EXPIRED');
       status.textContent = cfg.en ? 'Your account is ready.' : 'Konto gotowe.';
       if (window.spendGuruAccountReady) await window.spendGuruAccountReady();

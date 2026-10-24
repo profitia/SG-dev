@@ -144,7 +144,7 @@ test('account page uses official pinned SDK, closed destination and a parseable 
 })
 
 const browserAccount = (userId = ids.a) => ({ authenticated: true, userId, expiresAt: new Date(Date.now() + 60000).toISOString() })
-function browserFixture({ signedIn = true, response = () => new Response(JSON.stringify(browserAccount())), avatarResponse, loadFailure = false, logoutFailure = false } = {}) {
+function browserFixture({ signedIn = true, response = () => new Response(JSON.stringify(browserAccount())), avatarResponse, languageResponse, browserLanguage = 'pl-PL', loadFailure = false, logoutFailure = false } = {}) {
   const elements = Object.fromEntries(['account-config', 'status', 'retry', 'logout', 'sign-in'].map(id => [id, { textContent: '', hidden: true, replaceChildren() {} }]))
   elements['account-config'].textContent = JSON.stringify({ en: false, flow: 'registration', returnTo: 'https://sg2.example.test/account',
     signInUrl: origin + '/account/sg2/account/login', signUpUrl: origin + '/account/sg2/account/registration', allowedRedirectOrigins: [origin, 'https://sg2.example.test'], localization: {} })
@@ -155,15 +155,16 @@ function browserFixture({ signedIn = true, response = () => new Response(JSON.st
   const window = { Clerk: f.clerk, __internal_ClerkUICtor: {}, addEventListener: (_name, fn) => { f.start = fn },
     spendGuruRestoreAvatar: value => f.restored.push(value),
     location: { origin, pathname: '/account/sg2/account/registration', replace: url => f.redirects.push(url), reload: () => { f.reloaded++ } } }
-  vm.runInNewContext(accountBrowserScript, { window, document: { getElementById: id => elements[id] }, AbortController, DOMException,
+  vm.runInNewContext(accountBrowserScript, { window, navigator:{languages:[browserLanguage,'pl-PL'],language:browserLanguage}, document: { getElementById: id => elements[id] }, AbortController, DOMException,
     fetch: async (url, options) => { f.calls.push({ url, options });
+      if (url === '/v1/account/communication-language') return languageResponse ? languageResponse(options,f) : Response.json({userId:f.clerk.session?.id==='sess_b'?ids.b:ids.a,language:'pl',source:'migration',version:'1'});
       if (url === '/v1/account/assistant-avatar') return avatarResponse ? avatarResponse(options, f) : new Response(JSON.stringify({userId:f.clerk.session?.id==='sess_b'?ids.b:ids.a,avatarSex:null,version:'1'}));
       return response(f.calls.filter(call=>call.url==='/v1/account').length) } })
   return f
 }
 test('synthetic browser flow redirects only after confirmed B1 success; native signed-out state mounts the official widget', async () => {
   const f = browserFixture(); await f.start()
-  assert.equal(f.calls.length, 2); assert.equal(f.calls[0].url, '/v1/account'); assert.equal(f.calls[0].options.method, 'POST')
+  assert.equal(f.calls.length, 3); assert.equal(f.calls[0].url, '/v1/account'); assert.equal(f.calls[0].options.method, 'POST')
   assert.deepEqual(f.redirects, ['https://sg2.example.test/account']); assert.equal(f.elements.status.textContent, 'Konto gotowe.')
   const signedOut = browserFixture({ signedIn: false }); await signedOut.start(); assert.equal(signedOut.calls.length, 0); assert.equal(signedOut.mounted, 1)
 })
@@ -183,7 +184,7 @@ test('synthetic account switching discards a late result from the previous sessi
 })
 test('synthetic browser reload/native session restoration performs a new backend confirmation, without a saved-account shortcut', async () => {
   const first = browserFixture(), reopened = browserFixture(); await first.start(); await reopened.start()
-  assert.equal(first.calls.length, 2); assert.equal(reopened.calls.length, 2)
+  assert.equal(first.calls.length, 3); assert.equal(reopened.calls.length, 3)
 })
 test('synthetic SDK failure retries a clean page; provider logout failure is not reported as successful logout', async () => {
   const failed = browserFixture({ loadFailure: true }); await failed.start(); failed.elements.retry.onclick(); assert.equal(failed.reloaded, 1); assert.equal(failed.calls.length, 0)
@@ -220,7 +221,7 @@ test('saved preference wins over registration metadata and login form defaults',
 })
 test('missing legacy profile does not block login or manufacture a default preference',async()=>{
  const f=browserFixture({avatarResponse:()=>new Response('null')});await f.start()
- assert.equal(f.redirects.length,1);assert.deepEqual(f.restored,[]);assert.equal(f.calls.length,2)
+ assert.equal(f.redirects.length,1);assert.deepEqual(f.restored,[]);assert.equal(f.calls.length,3)
 })
 test('concurrent update is reread without overwriting the winner',async()=>{
  let reads=0,writes=0
@@ -238,4 +239,18 @@ test('late avatar response is discarded on account switch, including pending reg
  f.clerk.session={id:'sess_b',getToken:async()=> 'synthetic_other'};f.clerk.user={id:'provider_b',unsafeMetadata:{}};f.listener()
  await new Promise(r=>setImmediate(r));release(new Response(JSON.stringify({userId:ids.a,avatarSex:'male',version:'1'})));await first
  assert.deepEqual(f.restored,['female']);assert.equal(f.redirects.length,1)
+})
+
+for(const [browserLanguage,expected]of [['pl-PL','pl'],['en-US','en'],['de-DE','en']])test('browser language initializes only after account confirmation: '+browserLanguage,async()=>{
+ let written;const f=browserFixture({browserLanguage,languageResponse:options=>{
+  if(options.method==='POST'){written=JSON.parse(options.body);return Response.json({userId:ids.a,language:written.language,source:'browser',version:'2'})}
+  return Response.json({userId:ids.a,language:'en',source:'default',version:'1'})
+ }});await f.start();assert.deepEqual(written,{expectedVersion:'1',language:expected,source:'browser'});assert.equal(f.redirects.length,1)
+ assert.equal(f.calls.at(-1).url,'/v1/account/communication-language')
+})
+test('stored language wins; unavailable language cannot be falsely confirmed or redirected',async()=>{
+ const saved=browserFixture({browserLanguage:'en-US'});await saved.start();assert.equal(saved.calls.filter(x=>x.url.includes('communication-language')&&x.options.method==='POST').length,0)
+ for(const response of [()=>new Response('{}',{status:503}),()=>Response.json({userId:ids.b,language:'en',source:'browser',version:'1'})]){
+  const f=browserFixture({languageResponse:response});await f.start();assert.equal(f.redirects.length,0)
+ }
 })

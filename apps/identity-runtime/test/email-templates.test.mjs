@@ -91,3 +91,17 @@ test('bundle has all 15 variants and cannot replace existing reviewed directory'
     assert.equal(JSON.parse(fs.readFileSync(path.join(out,'manifest.json'))).conditionalStatus,'LOCAL_CANDIDATE_REQUIRES_CLERK_CONTEXT_ACCEPTANCE');
   } finally {fs.rmSync(parent,{recursive:true,force:true});}
 });
+
+for(const language of ['pl','en'])for(const avatar of ['male','female','neutral'])for(const kind of Object.keys(catalog.messages))test(`language matrix ${language}/${avatar}/${kind}`,async()=>{
+ const {renderMailgunResolved,mailgunTemplate}=await import('../email-templates/render.mjs')
+ const options={kind,avatar,language,inlineImages:true,data:{...data,actionUrl:'https://identity.example/accept?ticket=synthetic&x=1',expiresInDays:7},allowedActionOrigins:['https://identity.example']}
+ const out=renderResolved(options);assert.match(out.html,new RegExp('lang="'+language+'"'));assert.doesNotMatch(out.html+out.subject+out.text,/\{\{/)
+ assert.equal(out.html.includes(catalog.assets.male),avatar==='male');assert.equal(out.html.includes(catalog.assets.female),avatar==='female')
+ if(language==='en'){assert.match(out.html,/Your|your/);assert.doesNotMatch(out.subject,/Twój|Zaproszenie|Zaloguj/)}
+ if(['verification-code','invitation'].includes(kind)){
+  const stored=renderMailgunResolved(options),template=mailgunTemplate(kind,avatar,language)
+  assert.equal(stored.template.name,`identity-${kind}-${language}-${avatar}`);assert.equal(stored.template.version,template.version);assert.match(template.version,/^v-[a-f0-9]{24}$/)
+  assert.equal(Object.hasOwn(stored.template.variables,'otp_code'),kind!=='invitation');assert.equal(Object.hasOwn(stored.template.variables,'action_url'),kind==='invitation')
+  assert.match(template.html,/cid:/);assert.doesNotMatch(template.html,/src="https:/)
+ }
+})

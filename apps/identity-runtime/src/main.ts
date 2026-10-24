@@ -1,3 +1,4 @@
+import { createCommunicationLanguageSurface, type CommunicationLanguageSurface } from './communication-language.js'
 import { createEmailRuntime, loadEmailRenderer, type EmailSurface } from './email-runtime.js'
 import { createClerkEmailVerifier } from './email-webhook.js'
 import { createEmailStore } from './email-store.js'
@@ -20,6 +21,7 @@ async function start() {
 let boundary: SessionBoundary | null = null
 let account: AccountSurface | null = null
 let avatar: AssistantAvatarSurface | null = null
+let language: CommunicationLanguageSurface | null = null
 if (process.env.IDENTITY_EMAIL_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_EMAIL_ENABLED)) throw Error('INVALID_EMAIL_FLAG')
 if (process.env.IDENTITY_EMAIL_ENABLED === 'true' && process.env.IDENTITY_RUNTIME_ENABLED !== 'true') throw Error('EMAIL_RUNTIME_REQUIRED')
 if (process.env.IDENTITY_SELF_SERVICE_ENABLED !== undefined && !['true', 'false'].includes(process.env.IDENTITY_SELF_SERVICE_ENABLED)) throw Error('INVALID_SELF_SERVICE_FLAG')
@@ -71,9 +73,13 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     avatar = createAssistantAvatarSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
+    language = createCommunicationLanguageSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
+      transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
+      deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
+    await language.ready()
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => { server.close(() => { void (async () => { await email?.stop(); await pool?.end(); process.exit(0) })() }); server.closeIdleConnections() })
 }
 start().catch(async () => { console.error('identity-runtime configuration unavailable'); await email?.stop(); await pool?.end(); process.exitCode = 1 })
