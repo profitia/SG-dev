@@ -201,7 +201,17 @@ test('bounded MGBI inventory adoption preserves the prior accepted OCHNIK correc
  assert.equal(hash(previous),a.previousReceiptSha256);for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
  assert.equal(a.maximumInventoryResponseBytes,8*1024*1024);assert.equal(a.otherRuntimePoliciesUnchanged,true);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(acceptedReceipt.porrAccountCompatibility?execFileSync('git',['show',acceptedReceipt.porrAccountCompatibility.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.resolve(root,file))),digest,file);
  const source=fs.readFileSync(path.join(root,'src/server/supplier-native-runtime.ts'),'utf8');
  assert(source.includes('maximumResponseBytes:config.runtimeRoles?mgbiPolicy.maximumInventoryResponseBytes:external.maximumResponseBytes'));
+});
+
+
+test('PORR embedded account adoption preserves accepted receipts and exact Development scope',()=>{
+ const a=acceptedReceipt.porrAccountCompatibility,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.producerPr,695);assert.equal(a.producerSourceSha,'6e173035ac1780b82d128c306be98542e1c0aa0b');
+ assert.equal(a.defaultEnabled,false);assert.equal(a.targetEnvironment,'development');assert.equal(a.automaticOrganisationAssignment,false);assert.equal(a.grantsChanged,false);assert.equal(a.sqlChanged,false);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });

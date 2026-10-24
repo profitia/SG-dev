@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, Fragment, useContext, useMemo, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useEffect, useMemo, type ReactNode } from "react";
 import {createKrsSessionTransport} from '../src/modules/xray/krs-session-transport';
 import { ClerkProvider, ClerkFailed, SignOutButton, useAuth } from "@clerk/react";
 import { plPL } from "@clerk/localizations";
@@ -36,6 +36,7 @@ export function SrmSessionContent({ session, children }: { session: SessionPrese
 }
 function ClerkSessionContent({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth();
+  useEffect(() => { if (isLoaded && !isSignedIn && window.location.pathname === "/") window.location.replace("/login"); }, [isLoaded, isSignedIn]);
   const transport=useMemo(()=>createKrsSessionTransport(getToken),[getToken,userId,sessionId]);
   const session: SessionPresentation = !isLoaded ? { status: "loading" }
     : isSignedIn && userId && sessionId ? { status: "signed-in", userId, sessionId } : { status: "signed-out" };

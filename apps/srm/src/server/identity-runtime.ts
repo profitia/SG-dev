@@ -29,3 +29,14 @@ export function createSrmClerkClient(env: EnvironmentInput = process.env) {
   try { return instrumentSupplierIdentity(createClerkClient({ publishableKey: config.publishableKey, secretKey: env.PROFITIA_CLERK_SECRET_KEY, telemetry: { disabled: true } })) }
   catch { throw new IdentityConfigurationUnavailable() }
 }
+
+/** Exact, opt-in Development consumer. No browser-selected backend or callback. */
+export function readPorrAccountOrigin(env: EnvironmentInput = process.env): string | null {
+  if (env.SRM_PORR_ACCOUNT_ENABLED === undefined || env.SRM_PORR_ACCOUNT_ENABLED === 'false') return null
+  if (env.SRM_PORR_ACCOUNT_ENABLED !== 'true' || env.TARGET_ENVIRONMENT !== 'development'
+    || env.PROFITIA_AUTH_PROVIDER !== 'clerk'
+    || env.SRM_IDENTITY_ACCOUNT_ORIGIN !== 'https://identity-runtime-development.onrender.com') throw new IdentityConfigurationUnavailable()
+  const identity = readSrmIdentityRuntime(env)
+  if (identity.provider !== 'clerk' || !identity.application.authorizedParties.includes('https://srm-development-runtime.onrender.com')) throw new IdentityConfigurationUnavailable()
+  return env.SRM_IDENTITY_ACCOUNT_ORIGIN
+}

@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "targetEnvironment": "development",
+  "consumerOrigin": "https://srm-development-runtime.onrender.com",
+  "identityOrigin": "https://identity-runtime-development.onrender.com",
+  "targetId": "srm",
+  "magicPath": { "projectId": "460980331948945408", "componentId": "464295211783319552", "revisionId": "464297738012618752" },
+  "authority": "Identity ACCOUNT_SELF; registration never grants organisation membership or product access"
+}
