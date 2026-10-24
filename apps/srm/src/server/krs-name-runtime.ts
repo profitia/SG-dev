@@ -33,7 +33,8 @@ export function createKrsNameHttpHandler(action:'status'|'search'|'verify'|'look
       const runtime=await getRuntime();
       if(action==='status')return Response.json({enabled:runtime?await runtime.available(request):false},{headers});
       if(!runtime)return unavailable(503);
-      if(!await runtime.available(request))return unavailable(403);
+      // Each action enters its own current native E1 boundary below. The
+      // protected status probe is a UI capability check, not a second admission.
       if(request.headers.get('content-type')?.split(';')[0].trim().toLowerCase()!=='application/json'||!request.body)return unavailable(400);
       const stream=request.body.pipeThrough(new TransformStream<Uint8Array,Uint8Array>(),{signal:AbortSignal.any([request.signal,AbortSignal.timeout(3000)])});
       let body:unknown;

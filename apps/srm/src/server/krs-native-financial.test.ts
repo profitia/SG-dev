@@ -73,3 +73,20 @@ test('native KRS Financial threads the same verified history through acquisition
  assert.equal(work.pending,false);assert.equal(work.result.section.data?.periods[0].sourceRegistration?.relationship,'PREDECESSOR');
  await work.publish(work.result);assert.ok(f.events.includes('persist-financial'));assert.equal(f.events.filter(x=>x==='financial').length,1);
 });
+
+test('current HUMAN boundaries fence provider results and publication while intermediate checks remain evidence-only',async()=>{
+ const f=await fixture(),checkpoints:(string|undefined)[]=[];
+ f.ports.reprojectFinancialArchive=async()=>f.result;
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,async boundary=>{checkpoints.push(boundary);await f.check()},()=>now);
+ assert.deepEqual(checkpoints.filter(Boolean),['ACQUISITION']);
+ await work.publish(work.result);assert.deepEqual(checkpoints.filter(Boolean),['ACQUISITION','PUBLICATION']);
+ assert.ok(checkpoints.filter(v=>v===undefined).length>=5);
+});
+test('revocation at post-acquisition HUMAN boundary blocks archive; at publication boundary blocks every write',async()=>{
+ const f=await fixture();
+ await assert.rejects(prepareKrsFinancialWork(f.ports,f.selection,f.identity,async boundary=>{if(boundary==='ACQUISITION')throw Error('SESSION_REVOKED');await f.check()},()=>now),/SESSION_REVOKED/);
+ assert.equal(f.events.includes('archive'),false);assert.equal(f.events.includes('persist'),false);
+ const g=await fixture();g.ports.reprojectFinancialArchive=async()=>g.result;
+ const work=await prepareKrsFinancialWork(g.ports,g.selection,g.identity,async boundary=>{if(boundary==='PUBLICATION')throw Error('SESSION_REVOKED');await g.check()},()=>now);
+ await assert.rejects(work.publish(work.result),/SESSION_REVOKED/);assert.equal(g.events.includes('persist'),false);assert.equal(g.events.includes('public'),false);
+});
