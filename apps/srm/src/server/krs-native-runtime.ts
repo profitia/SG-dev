@@ -12,6 +12,7 @@ import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/ide
 import {bindPublicIdentityAuthenticator} from '@profitia/platform-contracts/public-request'
 import {createSrmNativePgDriver} from './native-pg-driver'
 import {createKrsNameHttpRuntime} from './krs-name-runtime'
+import type {KrsFinancialRecheck} from './krs-native-financial'
 import type {MgbiFinancialResult} from './mgbi-financial'
 import {createOperationReportDataHandler} from './operation-report-data'
 import type {SupplierReportData} from '@profitia/srm-xray'
@@ -68,13 +69,18 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
  const nameRuntime=createKrsNameHttpRuntime({registry:{
   search:async(request,query)=>(await registry.search(request,query)).candidates.map(c=>({krs:c.krs,name:c.officialName??'',nip:c.nip,locality:c.locality})),
   verify:(request,krs)=>verifyCompany(request,krs),
-  readSelection:(request,reference)=>registry.accepted(request,reference),
+  readSelection:(request,reference)=>measureSupplierStage('KRS_AUTHORITY_CHECK',()=>registry.accepted(request,reference)),
   history:(request,identity)=>historyFor(request,identity),
  },financial:{
   acquire:async(request,identity,key,general)=>{
    if(pending.has(request))return deny()
-   const recheck=async()=>{const current=await registry.accepted(request,identity.evidenceRef)
-    if(current.identity.identity.nip!==identity.identity.nip||current.identity.source.rawDigest!==identity.source.rawDigest)return deny()}
+   const recheck:KrsFinancialRecheck=async boundary=>measureSupplierStage(boundary?'KRS_AUTHORITY_CHECK':'KRS_EVIDENCE_CHECK',async()=>{
+    // This is company freshness only. Native Work retains its own current
+    // account/product/tenant checks before action and before OUTCOME.
+    await registry.recheckEvidence(request,identity)
+    if(boundary){const current=await registry.accepted(request,identity.evidenceRef)
+     if(current.identity.identity.nip!==identity.identity.nip||current.identity.source.rawDigest!==identity.source.rawDigest)return deny()}
+   })
    const prepared=await runtime.supplierApi!.prepareKrsFinancial({request,organisationId:runtime.defaultOrganisationId,
     command:{kind:'SUPPLIER_REPORT',nip:identity.identity.nip},idempotencyKey:key},identity,recheck,general??await krsGeneral((await registry.accepted(request,identity.evidenceRef)).snapshot,identity,Date.now()))
    pending.set(request,{reference:identity.evidenceRef,prepared});return {...prepared.result,...(prepared.pending?{workPending:true as const}:{})}
@@ -82,7 +88,8 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
   publishEligible:async(request,identity,result:MgbiFinancialResult)=>{
    const state=pending.get(request);if(!state||state.reference!==identity.evidenceRef)return deny()
    try{
-    await registry.accepted(request,identity.evidenceRef);await state.prepared.publish(result)
+    // publish starts with a fresh HUMAN authority check; no duplicate here.
+    await state.prepared.publish(result)
     const reportRequest=new Request(new URL('/api/xray/report-data',request.url),{method:'POST',headers:request.headers,
      body:JSON.stringify({nip:identity.identity.nip,entityType:'COMPANY'}),signal:request.signal})
     const response=await createOperationReportDataHandler(runtime.executor,environment,{defaultOrganisationId:runtime.defaultOrganisationId})(reportRequest)
@@ -123,9 +130,12 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
  const mapper=createGusMapper({source:gusSource,readSid:()=>sid,writeSid:value=>{sid=value}})
  const official=await createNativeNipRegistrySource({host:sourceHostOptions,externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206'})
  historyFor=async(request,identity)=>{
-  await registry.accepted(request,identity.evidenceRef)
+  // lookup has just admitted this exact identity through protected selected.
+  await measureSupplierStage('KRS_EVIDENCE_CHECK',()=>registry.recheckEvidence(request,identity))
   const evidence=await measureSupplierStage('KRS_CONTINUITY',()=>official.continuity(identity.evidenceRef,request.signal))
-  await registry.accepted(request,identity.evidenceRef)
+  // Source history is public company evidence. The following Financial
+  // request admission rechecks full current HUMAN authority before any effect.
+  await measureSupplierStage('KRS_EVIDENCE_CHECK',()=>registry.recheckEvidence(request,identity))
   return evidence?krsContinuity(evidence,identity,Date.now()):undefined
  }
  const observe=(event:unknown)=>console.info('SRM registry telemetry',event)

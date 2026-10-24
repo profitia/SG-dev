@@ -1,4 +1,5 @@
 import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray'
+import type {KrsFinancialRecheck} from './krs-native-financial'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {createHash} from 'node:crypto'
 import type {PoolClient} from 'pg'
@@ -112,12 +113,10 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
  return Object.freeze({
   readAcceptedKys:(request:Request,organisationId:string,nip:string)=>read({request,organisationId},nip,'COMPANY','kys'),
   known:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>known.read(input.request,input.organisationId,nip),
-  async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:()=>Promise<void>,general?:SectionEnvelope<GeneralCompanyData>){
+  async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:SectionEnvelope<GeneralCompanyData>){
    if(input.command.nip!==identity.identity.nip)return refuse()
-   let stage='IDENTITY_RECHECK'
+   let stage='HUMAN_REQUEST_ADMISSION'
    try{
-    await recheck()
-    stage='HUMAN_REQUEST_ADMISSION'
     const selected=await admitCompany(input,'COMPANY:KRS-FINANCIAL:'+identity.selectedKrs+':'+identity.evidenceRef)
     input.request.signal.throwIfAborted()
     stage='NATIVE_FINANCIAL_WORK'

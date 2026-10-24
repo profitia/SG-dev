@@ -4137,5 +4137,39 @@
     "liveSqlInstalled": false,
     "pilotDeployed": false,
     "requestLocalInflightIdentityCoalescing": true
+  },
+  "clerkCheckpointAdoption": {
+    "taskId": "SRM-CLERK-CHECKPOINT-CORRECTION-20261024",
+    "producerTaskId": "ARCHITECTURE-KRS-EVIDENCE-CHECKPOINT-20261024",
+    "producerPr": 672,
+    "previousSourceSha": "cbe70969051b3febb0a0015d867ba1b94b2477cd",
+    "previousReceiptSha256": "2ca54e0ac1c5e4101c7705cb11e530a19befccf835906d97c10a1f0f7f3cb9d5",
+    "acceptedRuntime": {
+      "version": "1.5.0",
+      "sourceSha": "4b44f5efa46626a46a5fac0c0556e6147bc4727b",
+      "sourceDigest": "a286d1bb40db5df8e62c2c9ea7e504102419d45b8448b4ea1876bae4fca800e6"
+    },
+    "companyEvidenceIsAuthority": false,
+    "identityDecisionCacheIntroduced": false,
+    "sharedIdentitySourceChanged": false,
+    "newUserGrantsRequired": false,
+    "paidProviderPoliciesChanged": false,
+    "liveDeployed": false,
+    "nativeAccountBeforeOutcomePreserved": true,
+    "currentHumanAcquisitionPublicationDisclosure": true,
+    "applicationSourceDigests": {
+      "deployment/krs-name-pilot-targets.json": "a176f7a025d131aead9a16085aeba926263b31773de9ed8aa45292258e988c99",
+      "package-lock.json": "ab19e98774cfeb0e838c52da75a74b95db94fe1a59d433c3d5791ea068317c2c",
+      "src/server/account-recheck-adoption.test.ts": "c0f773cfeba29a820177925dc9fa1e3993d94596a50b24a856adc65581f35159",
+      "src/server/krs-name-runtime.test.ts": "8b0258d6757f263ad75f4ff4dfea8b8d729cb530af0321e943b367e75037bcc5",
+      "src/server/krs-name-runtime.ts": "3e0cb46604b10192deff0096b245ef585a4c529800651fe25646703f9f53760b",
+      "src/server/krs-native-financial.test.ts": "820bdacdccf21dca20e160661688dd870f3c49365d53e2eaf1b4824347fa7e70",
+      "src/server/krs-native-financial.ts": "16010a868014065ad619b2f1c994a1df7f44a629c0e22fdb0a2b639ab0c608e2",
+      "src/server/krs-native-runtime.ts": "74dabbd0e3a9d1172f4cfbe05a7564a9796b85899695660bbbd1d5d42449b2e0",
+      "src/server/peer-read-boundary.test.ts": "bb15c2740b858c9c384c1c0f80073491c6d2df4ad460648d5b2477bd66b25d00",
+      "src/server/supplier-api-composition.ts": "45cf41a5c332cf8a8fb17e03c514b6b6cc26e2999446792a447f26371eda5164",
+      "src/server/supplier-native-company.ts": "3fa70b1b527f88f4c5278d3473cae3d1bcd4b9c0ab6c710670962d448e3c9190",
+      "src/server/supplier-telemetry.ts": "20a0ad34780432884020ae6e1cd29d69ff52f0ab2eefc4f15b33a8c577d44c92"
+    }
   }
 }

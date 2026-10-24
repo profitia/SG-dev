@@ -19,9 +19,22 @@
     "sourceDigest": "383d39d4a533bd1ff1a49a9587b2ad5fd23de5d3d9934ee9656a1b99be0861b6"
   },
   "acceptedRuntime": {
-    "version": "1.4.0",
-    "sourceSha": "f92c7376bd444a904247725f6f33c197c64fda97",
-    "sourceDigest": "4174319ab30aefb7d3d11288a3247f8755b61c9c720e5c37bfde3314f5795aa1"
+    "version": "1.5.0",
+    "sourceSha": "4b44f5efa46626a46a5fac0c0556e6147bc4727b",
+    "sourceDigest": "a286d1bb40db5df8e62c2c9ea7e504102419d45b8448b4ea1876bae4fca800e6"
   },
-  "nipIntegrationActivation": "OWNER_AUTHORIZED_CONDITIONAL_DEVELOPMENT_ONLY"
+  "nipIntegrationActivation": "OWNER_AUTHORIZED_CONDITIONAL_DEVELOPMENT_ONLY",
+  "clerkCheckpointAdoption": {
+    "producerTask": "ARCHITECTURE-KRS-EVIDENCE-CHECKPOINT-20261024",
+    "consumerTask": "SRM-CLERK-CHECKPOINT-CORRECTION-20261024",
+    "producerPr": 672,
+    "previousRuntime": {
+      "version": "1.4.0",
+      "sourceSha": "f92c7376bd444a904247725f6f33c197c64fda97",
+      "sourceDigest": "4174319ab30aefb7d3d11288a3247f8755b61c9c720e5c37bfde3314f5795aa1"
+    },
+    "contract": "CURRENT_COMPANY_EVIDENCE_ONLY_V1",
+    "noAuthorityCache": true,
+    "nativeBeforeOutcomeAccountChecksPreserved": true
+  }
 }
