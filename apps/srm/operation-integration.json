@@ -4289,5 +4289,43 @@
     "sharedUiSourceDigests": {
       "packages/srm-xray/src/supplier-search.tsx": "5a261843a39269ff5d7197d42efe5d56b41a97170da029bf66dea3c1a097aba9"
     }
+  },
+  "ochnikFinancialCorrection": {
+    "taskId": "SRM-OCHNIK-FINANCIAL-MGBI-UNMETERED-20261024",
+    "producerTask": "ARCHITECTURE-OCHNIK-CONTINUITY-MGBI-QUOTAS-20261024",
+    "producerPr": 689,
+    "producerSourceSha": "ce62f6f85b1c2c37eb346a7f74578ad311a6f748",
+    "previousSourceSha": "cc72cf89331af02bf7d4f0c7bb201a1c90cd33cb",
+    "previousReceiptSha256": "3697d6d29a72b199ff724b8f1b19bff6d2cfbc8f8db801751f5cc732be00beb6",
+    "acceptedRuntime": {
+      "version": "1.6.1",
+      "sourceSha": "ce62f6f85b1c2c37eb346a7f74578ad311a6f748",
+      "sourceDigest": "62dbf729b59062529a59f139b238f3ca019612cb7ea3e321b49c3956e61be412"
+    },
+    "mode": "UNMETERED",
+    "historicalCountersPreserved": true,
+    "unverifiedHistoryExcluded": true,
+    "otherRuntimePoliciesUnchanged": true,
+    "meteredMechanismRetained": true,
+    "upstreamFileEntitlementsPreserved": true,
+    "activationScope": "EXISTING_KRS_DEVELOPMENT_PILOT_ONLY",
+    "optionalSqlDigests": {
+      "024-unmetered-public-sources.sql": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
+      "026-role-source-quotas.sql": "b3e8ec02ccaff27b99d1bb961a7ae3d8df7663e5d6cd20da6bb09647c7dfa6c4"
+    },
+    "applicationSourceDigests": {
+      "deployment/krs-name-pilot-targets.json": "607c02407627774705dad83501a12e601415f83e67bdc9fcd9b09e2bb22a4e99",
+      "deployment/mgbi-unmetered-policy.json": "3bdb287082c0f4e0f13766bf36c68dd5714247e9866afe2d07c0ffbcf920ec9a",
+      "package-lock.json": "72676ab7099a0d5d1f5eae1378618457c03cf5f17b9cfe478d6607b0d9db2da6",
+      "scripts/provider-source.integration.test.mjs": "a212db4caef1ca699d429d63539930bedd9329dd4b8e31390c2455ba03de320c",
+      "src/server/account-recheck-adoption.test.ts": "265a687c4afd83152f1da948a0039f241c0b34db31935f501d8a346ae848bd91",
+      "src/server/krs-continuity.ts": "db89de7891f6cf919c5ad9864ef54b0485d05f2b783b94b74298497045327816",
+      "src/server/krs-name-search.test.ts": "f95e505e017954d8c0c00b3132feb9b719be5fb95c6d5622fa4fbd62a5eef90a",
+      "src/server/krs-name-search.ts": "b4ded0d0a043a6acbb08ce03e8adbefce5e66c945029996978d68141f49eca52",
+      "src/server/krs-native-runtime.ts": "b66b0416efc5c3d508dab475fec5384a284905d4831448a72fb0cac881112408",
+      "src/server/peer-read-boundary.test.ts": "71f080780c4c91f2556eded22ca94cb2672181fda46c234e4e84682fbc60c214",
+      "src/server/supplier-native-runtime.ts": "5abbd4473eed47ec9d83b6f72813b1b61d6a76452771a4dd7a0c6b25c9b48d78",
+      "../../packages/srm-xray/src/kys-content.ts": "383a4ecdb3b99d4872510534e13737baeb60e25757a181a747bcc2295fb6940f"
+    }
   }
 }

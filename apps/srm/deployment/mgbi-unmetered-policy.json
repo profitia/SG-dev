@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "mode": "UNMETERED",
+  "scope": "EXISTING_KRS_DEVELOPMENT_PILOT",
+  "ownerDecision": "USER-20261024-PERMANENT-MGBI-NO-INTERNAL-QUERY-QUOTAS",
+  "serviceId": "srv-dbd5hlcipgvc73d98ukg",
+  "role": "srm_krs_pilot_source",
+  "sourceId": "srm.provider.mgbi",
+  "resources": [
+    "srm-provider:mgbi",
+    "srm-provider:mgbi-files-api",
+    "srm-provider:mgbi-files-storage"
+  ],
+  "unmeteredSchemaDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
+  "historicalCountersPreserved": true,
+  "meteredMechanismRetained": true,
+  "upstreamFileEntitlementChecksPreserved": true,
+  "otherRuntimePoliciesUnchanged": true,
+  "roleQuotaSchemaDigest": "b3e8ec02ccaff27b99d1bb961a7ae3d8df7663e5d6cd20da6bb09647c7dfa6c4"
+}

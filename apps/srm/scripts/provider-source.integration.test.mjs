@@ -330,6 +330,33 @@ test('original SRM clients use ordinary-role native source controls without a se
         await assert.rejects(selected.fetcher(MSR_FILE),unavailable);assert.equal(hits,n+2)
       } finally {await controlled(()=>owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE' WHERE source_id='srm.provider.mgbi'"));onRequest=null;mode='NORMAL'}
     })
+    await t.test('pilot MGBI removes internal HTTP and Source quotas while preserving other provider controls',async()=>{
+      const extension=readSql('024-unmetered-public-sources.sql'),roleSql=readSql('026-role-source-quotas.sql'),extensionDigest=hash(extension)
+      const defaultUsed=(await owner.query("SELECT consumed_count FROM profitia_ingestion.budgets WHERE source_id='srm.provider.mgbi'")).rows[0].consumed_count
+      await controlled(async()=>{
+        await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='REVOKED'")
+        await owner.query("SELECT set_config('profitia.install.unmetered_digest',$1,true)",[extensionDigest]);await owner.query(extension)
+        await owner.query("SELECT set_config('profitia.install.role_source_quota_digest',$1,true)",[hash(roleSql)]);await owner.query(roleSql)
+        await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='ACTIVE'")
+        await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,login_role,unit,quota_mode,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,'srm-provider-source','srm.provider.mgbi',$2,'SOURCE_TRANSACTION','UNMETERED',NULL,NULL,NULL,NULL,'ACTIVE','SYNTHETIC_ONLY')",[randomUUID(),ROLE])
+        const oldPolicies=(await owner.query("SELECT p.*,to_jsonb(n) native FROM profitia_external_call.policies p JOIN profitia_external_native.policies n USING(policy_id) WHERE p.source_id='srm.provider.mgbi' AND p.status='ACTIVE'")).rows
+        for(const p of oldPolicies){
+          // Native definitions are immutable; retain historical counters.
+          await owner.query("UPDATE profitia_external_native.policies SET status='REVOKED' WHERE policy_id=$1",[p.policy_id])
+          await owner.query("UPDATE profitia_external_call.policies SET status='REVOKED' WHERE policy_id=$1",[p.policy_id])
+          const id=randomUUID()
+          await owner.query("INSERT INTO profitia_external_call.policies SELECT (jsonb_populate_record(NULL::profitia_external_call.policies,$1::jsonb)).*",[JSON.stringify({...p,native:undefined,policy_id:id,version:1,admitted_count:0,status:'ACTIVE',quota_mode:'UNMETERED',capacity:null,window_start:null,window_end:null,expires_at:null})])
+          await owner.query("INSERT INTO profitia_external_native.policies SELECT (jsonb_populate_record(NULL::profitia_external_native.policies,$1::jsonb)).*",[JSON.stringify({...p.native,policy_id:id,base_policy_version:1,version:1,status:'ACTIVE'})])
+        }
+      })
+      const binding={...settings('MGBI').binding,unmeteredSchemaDigest:extensionDigest}
+      for(let i=0;i<3;i++){const result=await fetchMgbiGeneral({type:'NIP',value:NIP},{apiKey:CREDENTIAL,fetcher:transport('MGBI',{binding}).fetcher});assert.equal(result.errorCode,null);assert.equal(result.section.data?.nip,NIP)}
+      assert.equal((await owner.query("SELECT consumed_count FROM profitia_ingestion.budgets WHERE source_id='srm.provider.mgbi' AND login_role IS NULL")).rows[0].consumed_count,String(defaultUsed))
+      assert.equal((await owner.query("SELECT consumed_count FROM profitia_ingestion.budgets WHERE login_role=$1",[ROLE])).rows[0].consumed_count,'9')
+      await assert.rejects(transport('CEIDG').fetcher('https://dane.biznes.gov.pl/api/ceidg/v3/firma?nip='+NIP),unavailable)
+      mode='MSR_BUDGET'
+      try{const before=hits;const selected=msrTransport({binding});await assert.rejects(downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:selected.fetcher}),error=>error.code==='MSR_FILE_BUDGET_EXHAUSTED');assert.equal(hits,before+1)}finally{mode='NORMAL'}
+    })
     await t.test('source records contain neither raw provider bodies, credentials, private keys nor invented human owners', async () => {
       const dump = JSON.stringify((await owner.query('SELECT event FROM profitia_ingestion.security_events')).rows)
         + JSON.stringify((await owner.query('SELECT * FROM profitia_external_call.calls')).rows)

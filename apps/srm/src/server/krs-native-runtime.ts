@@ -1,7 +1,6 @@
 import {createKrsNipCompany} from './krs-nip-runtime'
 import {refreshCatalogSelection} from './krs-name-search'
-import {krsContinuity} from './krs-continuity'
-import type {RegistryHistory} from './company-continuity'
+import {krsContinuity,type KrsContinuityResult} from './krs-continuity'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {krsGeneral} from './krs-general'
 import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion'
@@ -65,7 +64,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
    databaseName:target.catalog.databaseName,role:'krs_ingest',deploymentId,configurationVersion:sourceVersion,
    schemaDigest:'14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b',unmeteredSchemaDigest:target.unmeteredSource.schemaDigest}},
   externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206',approvedKrs:['0000028860'],approvalRef:target.ownerApprovalRef})
- let historyFor:((request:Request,identity:VerifiedIdentityV1)=>Promise<RegistryHistory|undefined>)=async()=>undefined
+ let historyFor:((request:Request,identity:VerifiedIdentityV1)=>Promise<KrsContinuityResult|undefined>)=async()=>undefined
  const pending=new WeakMap<Request,{reference:string;prepared:Awaited<ReturnType<NonNullable<typeof runtime.supplierApi>['prepareKrsFinancial']>>}>()
  let verifyCompany=async(request:Request,krs:string)=>{await registry.snapshot(request,krs);await seed.acquire(krs,'P',randomUUID());return registry.selected(request,krs)}
  const nameRuntime=createKrsNameHttpRuntime({registry:{
