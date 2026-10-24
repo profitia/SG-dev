@@ -4,7 +4,11 @@ import fs from 'node:fs'
 import {createHash,createHmac,randomBytes} from 'node:crypto'
 import {postgresFixture,clerkFixture} from './fixtures/identity-profile-postgres.mjs'
 import {createIdentityProvisioner} from '../src/identity-provisioning.mjs'
-import {createUserProfileBackend,normalizeProfilePatch} from '../src/user-profile.mjs'
+import {createUserProfileBackend} from '../src/user-profile.mjs'
+import {createPrivateOperationHost} from '../src/private-operation-host.mjs'
+import {createClerkIdentityAuthenticator} from '../src/identity-provider.mjs'
+import {createProfileSql} from '../src/identity-profile-sql.mjs'
+import {OPERATION_CONTRACT} from '../src/operation-context.mjs'
 
 test('communication language: additive PL migration, account-self ownership, first-browser write and bounded email snapshot',{timeout:60000},async t=>{
  const f=await postgresFixture();t.after(()=>f.close())
@@ -24,7 +28,13 @@ test('communication language: additive PL migration, account-self ownership, fir
  await f.admin.query("INSERT INTO profitia_profile.email_policies(login_role,issuer,instance_id,service_id,enabled,proof_key) VALUES('identity_b1_runtime','https://synthetic.clerk.accounts.dev','ins_language123','identity-language-test',true,$1)",[key])
  await f.admin.query('GRANT EXECUTE ON FUNCTION profitia_profile.email_descriptor(),profitia_profile.email_command(text,bigint,text),profitia_profile.language_descriptor() TO identity_b1_runtime')
  await f.admin.query('COMMIT')
- const patch=(x,profile,lang,source='browser')=>api(x).updateCurrentUserProfile(x.request('PATCH'),{expectedVersion:profile.version,patch:{communication_language:lang,language_source:source}})
+ const patch=async(x,profile,lang,source='browser')=>{
+  const o=f.options(x),sql=createProfileSql({...o,issuer:x.issuer}),queries=new WeakMap();let conflict=false
+  const host=createPrivateOperationHost({...o,createAuthenticator:({resolveBinding})=>createClerkIdentityAuthenticator({client:x.client,application:o.identityApplication,resolveBinding}),
+   transact:(run,limits)=>f.transact(async session=>{queries.set(session.transaction,session.query);try{return await run(session)}finally{queries.delete(session.transaction)}},limits),
+   readResources:async({actor,request,query})=>{const proof=await sql.attest(query,{operation:request.operation,principal:actor.userId,expiresAt:Date.parse(actor.expiresAt)});await query("SELECT set_config('profitia.profile.operation',$1,true),set_config('profitia.profile.expires_ms',$2,true),set_config('profitia.profile.signature',$3,true)",[request.operation,String(proof.until),proof.signature]);return{resource:{id:'current-user-profile',type:'account_settings',dataClass:'ACCOUNT_PRIVATE',ownerOrganisationId:null,ownerUserId:actor.userId,environment:'development',version:'profile-v1',projectionVersion:'profile-v1'}}},projectOutput:v=>v})
+  try{return(await host.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'account.settings.write',resourceId:'current-user-profile',organisationId:null,request:x.request('PATCH'),payload:{fields:['communication_language','language_source'],expectedVersion:profile.version}},async(_c,tx)=>{try{return(await sql.queryOne(queries.get(tx),'SELECT profitia_profile.update_current($1::bigint,$2::jsonb) AS profile',[profile.version,JSON.stringify({communication_language:lang,language_source:source})])).profile}catch(e){conflict=e.code==='PROFILE_VERSION_CONFLICT';throw e}})).value}catch(e){if(conflict)throw Object.assign(Error('Conflict'),{code:'PROFILE_VERSION_CONFLICT'});throw e}
+ }
  await t.test('all pre-cutover accounts receive PL without changing other data or memberships',async()=>{
   const rows=(await f.admin.query('SELECT user_id,avatar_sex,job,communication_language,language_source FROM profitia_profile.user_profiles ORDER BY user_id')).rows
   assert.equal(rows.length,2);assert.ok(rows.every(x=>x.communication_language==='pl'&&x.language_source==='migration'))
@@ -50,7 +60,7 @@ test('communication language: additive PL migration, account-self ownership, fir
   assert.notEqual(p.user_id,q.user_id);assert.equal(q.language_source,'default')
   assert.throws(()=>api(other).updateCurrentUserProfile(other.request('PATCH'),{expectedVersion:q.version,patch:{user_id:p.user_id,communication_language:'pl',language_source:'user'}}))
   other.active=false;await assert.rejects(()=>api(other).getCurrentUserProfile(other.request('GET')));other.active=true
-  for(const bad of [{communication_language:'en'},{communication_language:null,language_source:'user'},{communication_language:'de',language_source:'browser'},{communication_language:'pl',language_source:'migration'}])assert.throws(()=>normalizeProfilePatch(bad,()=>{}))
+  for(const bad of [{communication_language:'en',language_source:null},{communication_language:null,language_source:'user'},{communication_language:'de',language_source:'browser'},{communication_language:'pl',language_source:'migration'}])await assert.rejects(()=>patch(newUser,p,bad.communication_language,bad.language_source))
  })
  const command=body=>f.transact(async({query})=>{
   const tx=(await query('SELECT txid_current()::text AS tx')).rows[0].tx,until=Date.now()+4500,text=JSON.stringify(body)
