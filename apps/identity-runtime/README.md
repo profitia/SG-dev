@@ -51,3 +51,7 @@ restored on login rather than overwritten by the form default.
 
 See `Canon/runbooks/assistant-avatar-development-v1.md` for ownership, concurrency,
 email limitations, tests and required Development release evidence.
+
+### Embedded SRM account (opt-in)
+
+The PORR Development consumer may reuse the pure `@profitia/identity-runtime/conversation` engine and opt into the exact-origin embedded ACCOUNT_SELF adapter. `IDENTITY_EMBEDDED_TARGETS` defaults to `[]`; adding a navigation target alone does not enable it. See [the deployment and rollback runbook](../../Canon/runbooks/identity-embedded-account-development-v1.md). This is account creation/session completion only, never organisation assignment or product authorisation.

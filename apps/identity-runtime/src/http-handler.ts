@@ -17,10 +17,11 @@ async function body(request: Request): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
+      if (url.pathname.startsWith('/v1/embedded/')) return await embedded?.(request) ?? json(404, { error: 'NOT_FOUND' })
       if (url.pathname === '/v1/registration/start' || url.pathname === '/v1/registration/verify') {
         if (url.search || url.hash) return json(404, {error:'NOT_FOUND'})
         if (!registration || !boundary) return json(503, {error:'REGISTRATION_UNAVAILABLE'})
