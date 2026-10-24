@@ -18,6 +18,8 @@ import {validateKysPdfSelection} from './kys-pdf'
 import {createSrmKrsSourceTransport,guardOriginalProviderCall} from './provider-source-transport'
 import {downloadVerclyKrsPdf} from './vercly-krs'
 import {operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
+import {currentReportAdmission,reportAdmissionEvidence} from '@profitia/platform-contracts/report-admission'
+import {prepareSrmReportAdmission} from './report-admission-runtime'
 
 type RequestOptions=Parameters<typeof createSrmSupplierRequestOperationHost>[0]
 type CompanyOptions=Parameters<typeof createSrmNativeCompanyLookup>[0]
@@ -50,6 +52,11 @@ function requestFlow(request:RequestOptions,work:SupplierNativeWorkOptions,targe
   ||!target&&(request.privateAcquisition!==undefined||work.privateAcquisition!==undefined))return refuse()
  const human=createSrmSupplierRequestOperationHost(request),jobs=createDelegatedJobStore({binding:request.binding,...work.job})
  return async(input:SupplierHttpInput,purpose:string):Promise<SupplierNativeWorkSelection>=>{
+  const admission=reportAdmissionEvidence(currentReportAdmission())
+  if(admission){
+   if(target||admission.nip!==input.command.nip||admission.organisationId!==input.organisationId)return refuse()
+   return Object.freeze({requestId:admission.requestId,organisationId:admission.organisationId,command:readSupplierRequest(input.command)})
+  }
   const command=readSupplierRequest(input.command),resourceId=target?privateSupplierRequestResourceId(command,target):supplierRequestResourceId(command)
   const result=await human.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
    operation:expected,organisationId:input.organisationId,resourceId,payload:command,
@@ -69,7 +76,8 @@ function requestFlow(request:RequestOptions,work:SupplierNativeWorkOptions,targe
 
 /** Application orchestration over the original engines and actual native
  * hosts. Neither an incoming actor nor a caller-provided work callback exists.
- * Each asynchronous acquisition is followed by a fresh HUMAN read. */
+ * The admitted public report retains its accepted human command; all other
+ * acquisitions keep their existing current HUMAN read boundaries. */
 export function createSrmSupplierApi(options:SupplierApiOptions){
  const company=createSrmNativeCompanyLookup(options.company.lookup)
  const known=createSrmKnownCompanyRead(options.company.read)
@@ -111,6 +119,12 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
   return read(input,input.command.nip,entityType,section)
  }
  return Object.freeze({
+  async prepareReport(input:SupplierHttpInput){
+   if(currentReportAdmission())return refuse()
+   const selected=await admitCompany(input,'COMPANY:FORM-ADMISSION')
+   input.request.signal.throwIfAborted()
+   return prepareSrmReportAdmission(options.company.lookup.work,selected)
+  },
   readAcceptedKys:(request:Request,organisationId:string,nip:string)=>read({request,organisationId},nip,'COMPANY','kys'),
   known:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>known.read(input.request,input.organisationId,nip),
   async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:SectionEnvelope<GeneralCompanyData>){

@@ -9,6 +9,7 @@ export type SupplierSearchGateway = Readonly<{
   available(signal:AbortSignal):Promise<boolean>;
   search(query:string,signal:AbortSignal):Promise<Readonly<{candidates:readonly SupplierCandidate[]; coverage:'PROGRESSIVE'}>>;
   verify(krs:string,signal:AbortSignal):Promise<SupplierSelection>;
+  prepare?(nip:string,signal:AbortSignal):Promise<Readonly<{readyUntil:string}>>;
 }>;
 type Props={nip:string; onNipChange:(value:string)=>void; onNipSearch:()=>void;
   onNameSearch:(selection:SupplierSelection)=>void; gateway:SupplierSearchGateway; busy:boolean;
@@ -20,15 +21,32 @@ const SearchIcon=()=> <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10
 export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway,busy,inputRef}:Props){
   const id=useId(), ownInput=useRef<HTMLInputElement>(null), input=inputRef??ownInput;
   const [mode,setMode]=useState<'nip'|'name'>('nip'),[available,setAvailable]=useState(false);
+  const [availabilityReady,setAvailabilityReady]=useState(false);
   const [query,setQuery]=useState(''),[results,setResults]=useState<readonly SupplierCandidate[]>([]);
   const [selection,setSelection]=useState<SupplierSelection|null>(null),[error,setError]=useState('');
   const [state,setState]=useState<'idle'|'loading'|'ready'|'error'|'verifying'>('idle');
   const [open,setOpen]=useState(false),[active,setActive]=useState(-1),[retry,setRetry]=useState(0);
   const [layout,setLayout]=useState({above:false,height:200});
+  const [admission,setAdmission]=useState({nip:'',state:'idle',error:''}),[admissionRetry,setAdmissionRetry]=useState(0);
+  const selectedNip=mode==='nip'?nip:selection?.nip??'';
+  const preparationRequired=available&&!!gateway.prepare&&/^\d{10}$/.test(selectedNip);
+  useEffect(()=>{
+    const controller=new AbortController();let expiry:ReturnType<typeof setTimeout>|undefined;
+    setAdmission({nip:'',state:'idle',error:''});
+    if(!preparationRequired||busy)return()=>controller.abort();
+    setAdmission({nip:selectedNip,state:'loading',error:''});
+    const timer=setTimeout(()=>{gateway.prepare!(selectedNip,controller.signal).then(value=>{
+      if(controller.signal.aborted)return;
+      setAdmission({nip:selectedNip,state:'ready',error:''});
+      expiry=setTimeout(()=>setAdmission({nip:selectedNip,state:'expired',error:'Przygotowanie wyszukiwania wygasło.'}),Math.max(0,Date.parse(value.readyUntil)-Date.now()-5000));
+    }).catch(error=>{if(!controller.signal.aborted)setAdmission({nip:selectedNip,state:'error',error:error instanceof Error?error.message:'Nie udało się przygotować wyszukiwania.'})});},300);
+    return()=>{clearTimeout(timer);if(expiry)clearTimeout(expiry);controller.abort()};
+  },[selectedNip,preparationRequired,gateway,admissionRetry,busy]);
+  const admitted=!preparationRequired||admission.nip===selectedNip&&admission.state==='ready';
   const sequence=useRef(0), verification=useRef<AbortController|null>(null), list=useRef<HTMLDivElement>(null);
   const visible=mode==='name'&&available&&open&&!selection&&query.trim().length>=2&&state!=='verifying';
-  useEffect(()=>{const controller=new AbortController();setAvailable(false);
-    gateway.available(controller.signal).then(value=>{if(!controller.signal.aborted)setAvailable(value===true)}).catch(()=>{});
+  useEffect(()=>{const controller=new AbortController();setAvailable(false);setAvailabilityReady(false);
+    gateway.available(controller.signal).then(value=>{if(!controller.signal.aborted)setAvailable(value===true)}).catch(()=>{}).finally(()=>{if(!controller.signal.aborted)setAvailabilityReady(true)});
     return()=>controller.abort();},[gateway]);
   useEffect(()=>()=>verification.current?.abort(),[]);
   useEffect(()=>{
@@ -81,7 +99,7 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
           <CanonButton canonId="SRM-C08" usage="SupplierSearch:name-mode" type="button" aria-pressed={mode==='name'} disabled={busy||!available} aria-describedby={!available?id+'-unavailable':undefined} onClick={()=>changeMode('name')}>Nazwa spółki</CanonButton>
         </div>
         <form className="supplier-form" aria-label="Wyszukaj dostawcę" onSubmit={event=>{
-          event.preventDefault();if(busy)return;
+          event.preventDefault();if(busy||!admitted||gateway.prepare&&!availabilityReady)return;
           if(mode==='nip'){onNipSearch();return;}
           if(available&&selection&&state!=='verifying')onNameSearch(selection);
           else setError('Wybierz i potwierdź spółkę z listy podpowiedzi.');
@@ -106,8 +124,10 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
                 {state==='ready'&&!!results.length&&<div className="supplier-list-footer"><span>{results.length===10?'Pierwsze 10 dopasowań':'Liczba dopasowań: '+results.length}</span><span>↑ ↓ wybór · Enter zatwierdź</span></div>}
               </div>}
             </div>
-            <CanonButton canonId="SRM-C01" usage="SupplierSearch:submit" type="submit" className="supplier-submit" disabled={busy||mode==='name'&&(!selection||state==='verifying'||!available)}>{busy?'Wyszukiwanie…':'Wyszukaj'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></CanonButton>
+            <CanonButton canonId="SRM-C01" usage="SupplierSearch:submit" type="submit" className="supplier-submit" disabled={busy||!admitted||!!gateway.prepare&&!availabilityReady||mode==='name'&&(!selection||state==='verifying'||!available)}>{busy?'Wyszukiwanie…':preparationRequired&&admission.state==='loading'?'Przygotowanie…':'Wyszukaj'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></CanonButton>
           </div>
+          {preparationRequired&&admission.state==='loading'&&<p role="status">Przygotowanie wyszukiwania…</p>}
+          {preparationRequired&&['error','expired'].includes(admission.state)&&<p role="alert">{admission.error} <button type="button" onClick={()=>setAdmissionRetry(n=>n+1)}>Przygotuj ponownie</button></p>}
           <p id={id+'-hint'} className="supplier-hint">{mode==='nip'?'Wyszukiwanie po dokładnym numerze NIP dostawcy.':state==='verifying'?'Potwierdzam dane rejestrowe spółki…':selection?'Sprawdź wybraną spółkę i zatwierdź wyszukiwanie.':'Wpisz co najmniej 2 znaki, a następnie wybierz spółkę z listy.'}</p>
           {error&&<p id={id+'-error'} className="supplier-error" role="alert">{error}</p>}
           {mode==='name'&&selection&&<div className="supplier-selected" role="status"><span className="supplier-selected-mark" aria-hidden="true">✓</span><div><span className="supplier-selected-label">Wybrana spółka</span><strong>{selection.name}</strong><span>NIP {selection.nip} · KRS {selection.krs} · {selection.locality??'Brak miejscowości'}</span></div><CanonButton canonId="SRM-C03" usage="SupplierSearch:change" type="button" disabled={busy} onClick={()=>{update('');input.current?.focus({preventScroll:true})}}>Zmień</CanonButton></div>}

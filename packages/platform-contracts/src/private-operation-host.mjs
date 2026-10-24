@@ -1,17 +1,19 @@
 import {requestOperationPolicy,REQUEST_OPERATIONS} from './request-operations.mjs'
 import { createHash } from 'node:crypto'
 import { createAccessStore, DATABASE_SERVICE_ISSUER } from './access-store.mjs'
-import { createOperationExecutor, OperationDenied, OPERATION_CONTRACT } from './operation-context.mjs'
+import { createOperationExecutor, OperationDenied, OPERATION_CONTRACT,REPORT_ADMISSION_ROOT_CONTRACT } from './operation-context.mjs'
 import { createModuleScopeGuard } from './module-scope.mjs'
 import { createRequestLedger, requestLedgerSourceDigest } from './request-ledger.mjs'
 import { createRequestContinuationLedger, requestContinuationSourceDigest } from './request-continuation.mjs'
 import { createDelegatedJobStore, delegatedJobSourceDigest } from './delegated-job.mjs'
 import {createRequestInspection,requestInspectionSourceDigest} from './request-inspection.mjs'
 import {createRequestWorkScope,requestWorkSourceDigest} from './request-work.mjs'
+import {createReportAdmissionStore,currentReportAdmission,reportAdmissionSourceDigest} from './report-admission.mjs'
 
 export const PRIVATE_OPERATION_HOST_CONTRACT = Object.freeze({ id: 'profitia.private-operation-host', version: '1.11.0' })
 export const SUPPLIER_LOCATION_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.12.0'})
 export const NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.13.0'})
+export const REPORT_ADMISSION_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.14.0'})
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -128,7 +130,7 @@ export function createDelegatedNativeWorkHost(options){
   ||!/^[a-f0-9]{64}$/.test(c.schemaDigest??'')||!requestOperationPolicy(base.job.targetOperation)?.nativeWork
   ||options.privateContinuation!==undefined||options.privateInspection!==undefined||options.sourceDelivery!==undefined)throw TypeError('Explicit native SQL work source required')
  const captured=freeze(copy(c))
- return Object.freeze({contract:OPERATION_CONTRACT,hostContract:base.revalidateExternalAccountBeforeOutcome===true?NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:PRIVATE_OPERATION_HOST_CONTRACT,
+ return Object.freeze({contract:base.reportAdmission?REPORT_ADMISSION_ROOT_CONTRACT:OPERATION_CONTRACT,hostContract:base.reportAdmission?REPORT_ADMISSION_HOST_CONTRACT:base.revalidateExternalAccountBeforeOutcome===true?NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:PRIVATE_OPERATION_HOST_CONTRACT,
   runSqlWork(input,unit,action){
    if(!unit||Object.getPrototypeOf(unit)!==Object.prototype||Reflect.ownKeys(unit).length!==3
     ||Object.keys(unit).sort().join(',')!=='accessMode,inputDigest,unitId'
@@ -147,6 +149,11 @@ function createBoundOperationHost(options, serviceMode) {
   const { independentQuery, transact, createAuthenticator, readResources, projectOutput, prepareInputs, describeOutcome,readExternalAccount,sourceDelivery, now = Date.now, transactionTimeoutMs = 15000 } = options
   const application = freeze(copy(options.application))
   const binding = freeze(copy(options.binding))
+  if(options.reportAdmission!==undefined && (!options.reportAdmission || Object.keys(options.reportAdmission).join(',')!=='schemaDigest'
+    || !/^[a-f0-9]{64}$/.test(options.reportAdmission.schemaDigest??'') || serviceMode===true
+    || delegated && options.job?.targetOperation!=='supplier.report.refresh'
+    || !serviceMode && options.application.operations.some(op=>!['supplier.report.read','supplier.report.project'].includes(op)))) throw TypeError('Explicit bounded company report admission required')
+  const reportAdmission=options.reportAdmission===undefined?null:createReportAdmissionStore({binding,schemaDigest:options.reportAdmission.schemaDigest,now})
   if (!application || !binding || binding.applicationId !== application.appId || binding.environment !== application.environment || [independentQuery, transact, ...(serviceMode ? [] : [createAuthenticator]), ...(delegated?[]:[readResources]), projectOutput, now].some(f => typeof f !== 'function') || !Number.isSafeInteger(transactionTimeoutMs) || transactionTimeoutMs < 100 || transactionTimeoutMs > 15000) throw new TypeError('Explicit application, private binding, identity factory and real transaction adapters required')
   const store = createAccessStore({ binding, now })
   const jobStore=delegated?createDelegatedJobStore({binding,schemaDigest:options.job.schemaDigest,targetOperation:options.job.targetOperation,supplierSchemaDigest:options.job.supplierSchemaDigest,operationSchemaDigest:options.job.operationSchemaDigest,locationSchemaDigest:options.job.locationSchemaDigest,now}):null
@@ -182,20 +189,22 @@ function createBoundOperationHost(options, serviceMode) {
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
   // Validate the unchanged policy configuration now, without authenticating,
   // reading a database or constructing request-owned state.
-  const validate = createOperationExecutor({ application, now,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest, authenticate: async () => null, withTransaction: unavailable, recordAudit: unavailable })
+  const validate = createOperationExecutor({ application, now,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest, reportAdmissionSchemaDigest:options.reportAdmission?.schemaDigest, authenticate: async () => null, withTransaction: unavailable, recordAudit: unavailable })
   if ((prepareInputs !== undefined && typeof prepareInputs !== 'function') || (describeOutcome !== undefined && typeof describeOutcome !== 'function') || (application.operations.includes('supplier.report.export') && typeof prepareInputs !== 'function')) throw new TypeError('Export requires server-owned transactional preparation; optional outcome adapter must be a function')
 
   return Object.freeze({
     contract: validate.contract,
-    hostContract: options.revalidateExternalAccountBeforeOutcome===true?NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:options.locationAdmission===undefined?PRIVATE_OPERATION_HOST_CONTRACT:SUPPLIER_LOCATION_HOST_CONTRACT,
+    hostContract: options.reportAdmission?REPORT_ADMISSION_HOST_CONTRACT:options.revalidateExternalAccountBeforeOutcome===true?NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:options.locationAdmission===undefined?PRIVATE_OPERATION_HOST_CONTRACT:SUPPLIER_LOCATION_HOST_CONTRACT,
     async execute(input, action) {
+      const proof=reportAdmission?currentReportAdmission():null
       // These variables belong to exactly ONE execution, including when the
       // shared host receives overlapping requests for different users/orgs.
       let identityBinding = null
       let bindingRead = false
-      const executor = createOperationExecutor({ application, now,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest,
+      const executor = createOperationExecutor({ application, now,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest,reportAdmissionSchemaDigest:options.reportAdmission?.schemaDigest,
         authenticate: async request => {
           if (serviceMode) return store.resolveServiceActor(independentQuery)
+          if(proof)return reportAdmission.actor(proof)
           const authenticate = createAuthenticator({ resolveBinding: async key => {
             if (bindingRead) unavailable()
             bindingRead = true
@@ -207,9 +216,10 @@ function createBoundOperationHost(options, serviceMode) {
           if (actor && (!bindingRead || !identityBinding)) unavailable()
           return actor
         },
-        recordAudit: event => scopeStore.appendAudit(independentQuery, event),
+        recordAudit: event => delegated&&proof&&event.phase==='INTENT'&&event.decision==='ALLOW'
+          ?reportAdmission.appendJobIntent(independentQuery,proof,event):scopeStore.appendAudit(independentQuery, event),
         withTransaction: async ({ actor, request }, run) => {
-          if (!serviceMode && !identityBinding) unavailable()
+          if (!serviceMode && !identityBinding && !proof) unavailable()
           let entered = false, completed = false, closed = false, callbackResult,sourceAttempted=false
           try {
             const result = await transact(async ({ query, transaction }) => {
@@ -221,7 +231,8 @@ function createBoundOperationHost(options, serviceMode) {
               await query(`SET LOCAL lock_timeout='${transactionOptions.maxWaitMs}ms'`)
               await query(`SET LOCAL idle_in_transaction_session_timeout='${transactionTimeoutMs}ms'`)
               if (closed) unavailable()
-              const lease = delegated ? await jobStore.lockJob(query,{actor,request}) : serviceMode
+              if(delegated && proof)await reportAdmission.bindJob(query,proof,request.resourceId)
+              const lease = proof && !serviceMode?await store.lockAdmittedReport(query,{actor,request,admission:reportAdmission,proof}):delegated ? await jobStore.lockJob(query,{actor,request}) : serviceMode
                 ? await store.lockServiceRead(query, { actor, organisationId: request.organisationId, operation: request.operation, resourceId: request.resourceId })
                 : await store.lockAccess(query, { actor, identityBinding, organisationId: request.organisationId })
               const scope = Object.freeze({ applicationId: binding.applicationId, environment: binding.environment, userId: lease.userId, organisationId: lease.organisationId,
@@ -236,7 +247,8 @@ function createBoundOperationHost(options, serviceMode) {
               if (closed || !resources || Object.getPrototypeOf(resources) !== Object.prototype || Object.keys(resources).some(key => !['resource', 'inputs'].includes(key))) unavailable()
               if (serviceMode && resources.inputs !== undefined) unavailable()
               await scopeStore.verifyScope(query, lease)
-              const observation=delegated?await readExternalAccount(lease.state.delegation.identityKey):null
+              const admittedObservation=delegated&&proof?reportAdmission.jobObservation(lease.state):null
+              const observation=delegated&&!admittedObservation?await readExternalAccount(lease.state.delegation.identityKey):null
               if(closed)unavailable()
               const requestPolicy = needsRequestLedger && request.operation === requestOperation
                 ? await requestLedger.loadPolicy(query, { actor, request, resource:resources.resource }) : undefined
@@ -246,12 +258,12 @@ function createBoundOperationHost(options, serviceMode) {
               let reserveStarted = false, completeStarted = false, ownedReservation
               callbackResult = await run({
                 state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }),
-                  ...(delegated?{delegation:{...lease.state.delegation,externalAccountObservation:observation}}:{}),
+                  ...(delegated?{delegation:{...lease.state.delegation,externalAccountObservation:observation,...(admittedObservation?{admittedReportObservation:admittedObservation}:{})}}:{}),
                   ...(phasePolicy?{requestContinuation:privatePhaseLedger.evidence(phasePolicy)}:{}),
                   ...(inspectionPolicy?{requestInspection:inspectionStore.evidence(inspectionPolicy)}:{}),
                   ...(nativeWorkPolicy?{requestWork:workStore.evidence(nativeWorkPolicy)}:{}),
                   ...(requestPolicy ? { usagePolicy: 'PRODUCT_POLICY', requestPolicy, ...(continuation === null ? {} : {requestContinuation:requestLedger.evidence(requestPolicy)}) } : {}) },
-                ...(delegated && workStore && options.revalidateExternalAccountBeforeOutcome===true ? {
+                ...(delegated && !admittedObservation && workStore && options.revalidateExternalAccountBeforeOutcome===true ? {
                   revalidateExternalAccount: async () => {
                     if (closed) unavailable()
                     const fresh = await readExternalAccount(freeze(copy(lease.state.delegation.identityKey)))
@@ -345,5 +357,5 @@ export async function privateOperationHostSourceDigest() {
   const fs = await import('node:fs')
   return createHash('sha256').update(fs.readFileSync(new URL('./private-operation-host.mjs', import.meta.url)))
     .update(fs.readFileSync(new URL('./private-operation-host.d.mts', import.meta.url)))
-    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).update(await requestInspectionSourceDigest()).update(await requestWorkSourceDigest()).digest('hex')
+    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).update(await requestInspectionSourceDigest()).update(await requestWorkSourceDigest()).update(await reportAdmissionSourceDigest()).digest('hex')
 }

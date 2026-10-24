@@ -38,7 +38,7 @@ const hash=v=>createHash('sha256').update(v).digest('hex'),future=()=>new Date(D
 const core=name=>fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/'+name,import.meta.url),'utf8')
 const own=name=>fs.readFileSync(new URL('../db/private-store/'+name,import.meta.url),'utf8')
 
-async function supplierBusinessFixture(t,full=false){
+export async function supplierBusinessFixture(t,full=false,probe){
  const DATABASE='srm_service_business_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
@@ -274,6 +274,8 @@ async function supplierBusinessFixture(t,full=false){
   const financial=(nip=NIP)=>{const record={id:'synthetic-financial-'+nip,identifiers:{pl_nip:nip,pl_krs:'0000000001'},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31',filing_date:'2026-01-15',is_ias_compliant:false},content:{schema:{name:'JednostkaInnaWZlotych',version:'1-3'},extracted_fields:{'Naglowek.OkresOd':'2025-01-01','Naglowek.OkresDo':'2025-12-31','Bilans.Aktywa.KwotaA':'100','RZiS.RZiSKalk.A.KwotaA':'200'},standardized_fields:{bs:{a_ta_cfy:100},pala:{nrfs_cfy:200}}}};return{...mapMgbiFinancialRecords([record],{type:'NIP',value:nip},new Date().toISOString()),rawResponse:{pages:[{results:[record]}],recordCount:1}}}
   const counts=async()=>(await owner.query('SELECT (SELECT count(*)::int FROM srm.lookup_requests)lookups,(SELECT count(*)::int FROM profitia_request_phases.effects)phases,(SELECT count(*)::int FROM srm.source_snapshots)snapshots,(SELECT coalesce(sum(accepted_count),0)::int FROM profitia_requests.policies)quota')).rows[0]
   const sourceCounts=async()=>(await owner.query(`SELECT (SELECT count(*)::int FROM profitia_ingestion.effects)e,(SELECT coalesce(sum(consumed_count),0)::int FROM profitia_ingestion.budgets)b,(SELECT count(*)::int FROM profitia_srm_acquisition.outcome_witnesses)w`)).rows[0]
+  if(probe){await probe({owner,controlled,parent,workOptions,job,humanOptions,pool,auditPool,servicePool,serviceAudit,clerk,
+    sourceOptions,source:sourceStore,baseBinding,A,B,U,NIP,OTHER_NIP,FOREGROUND,EXECUTOR,core,own,hash,counts,sourceCounts});return}
   if(!full){
   let accepted,acceptedB,acceptedGeneral,acceptedFinancial
   await t.test('real foreground parent and four actual Service domain phases commit one private report and named interest',async()=>{

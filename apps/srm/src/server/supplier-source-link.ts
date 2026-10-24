@@ -28,6 +28,7 @@ export function createSrmSupplierSourceLink(options:{work:SupplierNativeWorkOpti
   const registerUnit=registration?.unitId??'SRM_REGISTER_LOOKUP',register=registration?.run
   const {application,binding,job,pool,auditPool,clerk,accountIdentity,now,transactionTimeoutMs}=options.work
   const dispatch=createDelegatedJobHost<PoolClient>({application,binding,job,now,transactionTimeoutMs,
+    ...(options.work.reportAdmission?{reportAdmission:options.work.reportAdmission}:{}),
     ...createSrmNativePgDriver(pool,auditPool),sourceDelivery:source.port,
     readExternalAccount:createClerkAccountStatusReader({client:clerk,...accountIdentity,now})})
   return Object.freeze({

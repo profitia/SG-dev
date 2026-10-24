@@ -1,10 +1,15 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.27.0",
+  "version": "1.28.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",
   "exports": {
+    "./report-admission": {
+      "types": "./src/report-admission.d.mts",
+      "import": "./src/report-admission.mjs",
+      "require": "./src/report-admission.mjs"
+    },
     "./development-context": {
       "types": "./src/development-context.d.mts",
       "import": "./src/development-context.mjs"

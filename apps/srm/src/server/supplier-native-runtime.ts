@@ -1,4 +1,5 @@
 import {srmKrsPilotTarget} from './krs-native-runtime'
+import {reportAdmissionConfiguration} from './report-admission-runtime'
 import type pg from 'pg'
 import type {ClerkIdentityClient} from '@profitia/platform-contracts/identity-provider'
 import type {PrivateConfiguration} from './private-runtime'
@@ -47,6 +48,7 @@ type Pools={pool:pg.Pool;auditPool:pg.Pool;jobsPool:pg.Pool;jobsAudit:pg.Pool;so
  * classified universal publication/control; it cannot stand in for a HUMAN. */
 export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools){
  const roles=config.runtimeRoles??targets.runtimeRoles
+ const reportAdmission=config.runtimeRoles?reportAdmissionConfiguration():undefined
  const c=config.base,core=targets.coreSchemaDigests,own=targets.businessBoundaryDigests,version=config.configurationVersion
  const human={pool:pools.pool,auditPool:pools.auditPool,clerk:pools.clerk,identity:c.identity,binding:c.binding,module:c.module}
  const app=(operations:typeof c.application.operations)=>({...c.application,configurationVersion:version,operations})
@@ -93,9 +95,9 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  }
  return createSrmSupplierApi({
   company:{request:{...requestBase,application:app(['supplier.report.refresh'])},
-   lookup:{work:{...workBase,job:publicJob,workBusinessBoundaryDigest:own['008-supplier-native-work.sql']},namedInterestBoundaryDigest:own['003-named-supplier-interest.sql'],source,corporate,
+   lookup:{work:{...workBase,job:publicJob,workBusinessBoundaryDigest:own['008-supplier-native-work.sql'],...(reportAdmission?{reportAdmission}:{})},namedInterestBoundaryDigest:own['003-named-supplier-interest.sql'],source,corporate,
     mgbi:{apiKey:config.mgbiKey,authScheme:config.mgbiScheme,source:provider,msrExternal:{...external,maximumResponseBytes:20*1024*1024}}},
-   read:{...human,application:app(['supplier.report.read'])}},
+   read:{...human,application:app(['supplier.report.read']),...(reportAdmission?{reportAdmission}:{})}},
   companyKys:privateFlow('COMPANY','kys'),jdgKys:privateFlow('JDG','kys'),jdgRegistry:privateFlow('JDG','jdg'),
   web:{company:webFlow('COMPANY'),jdg:webFlow('JDG'),read:{...human,application:app(['supplier.private.read']),webBoundaryDigest:own['012-supplier-web-identity.sql']}},
   privateRead:{...human,application:app(['supplier.private.read','supplier.private.reveal','supplier.private.export']),

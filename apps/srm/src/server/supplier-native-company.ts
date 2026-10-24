@@ -143,6 +143,9 @@ export function createSrmNativeCompanyLookup(options:Options){
   return Object.freeze({
     run:(selection:SupplierNativeWorkSelection)=>execute(selection,ports=>createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}}),undefined,true),
     prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:Parameters<typeof prepareKrsFinancialWork>[5])=>execute(selection,
-      ports=>prepareKrsFinancialWork(ports,selection,identity,recheck,()=>clock().getTime(),general),recheck,true),
+      ports=>prepareKrsFinancialWork({...ports,readFreshFinancial:async(org,nip,at)=>{
+        if(org!==selection.organisationId||nip!==selection.command.nip)return refuse()
+        return store.financialCache(selection,at)
+      }},selection,identity,recheck,()=>clock().getTime(),general),recheck,true),
   })
 }

@@ -10,6 +10,7 @@ export interface PrivateTransactionOptions { readonly timeoutMs: number; readonl
 export declare function createPrivateOperationHost<Transaction>(options: {
   application: Application; binding: AccessStoreBinding; now?: () => number; transactionTimeoutMs?: number
   locationAdmission?:import('./supplier-location.mjs').SupplierLocationAdmissionOptions
+  reportAdmission?:Readonly<{schemaDigest:string}>
   /** Optional, deployment-owned module boundary. Requires SQL002 + accepted SQL003 and the extra descriptor ACL. */
   module?: { id: ModuleId; schemaDigest: string; auditSchemaDigest: string }
   /** AM20 uses SQL006; bounded HUMAN AM23 additionally requires accepted SQL010. No remote dispatch. */
@@ -35,11 +36,12 @@ export declare function createPrivateOperationHost<Transaction>(options: {
    * correlated INTENT. Use this same bounded SQL transaction; no provider calls. */
   prepareInputs?(input: { context: Readonly<OperationContext>; query: AccessQuery; transaction: Transaction }): void | Promise<void>
   describeOutcome?(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): OperationOutcome | Promise<OperationOutcome>
-}): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof SUPPLIER_LOCATION_HOST_CONTRACT }>
+}): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof SUPPLIER_LOCATION_HOST_CONTRACT|typeof REPORT_ADMISSION_HOST_CONTRACT }>
 export declare function privateOperationHostSourceDigest(): Promise<string>
 
 /** The real SQL SERVICE remains distinct from the initiating account. */
 export interface DelegatedJobHostOptions<Transaction>{
+ reportAdmission?:Readonly<{schemaDigest:string}>
  application:Application;binding:AccessStoreBinding&{service:NonNullable<AccessStoreBinding['service']>}
  job:{schemaDigest:string}&import('./delegated-job.mjs').DelegatedJobTargetOptions
  now?:()=>number;transactionTimeoutMs?:number;independentQuery:AccessQuery
@@ -47,7 +49,7 @@ export interface DelegatedJobHostOptions<Transaction>{
  readExternalAccount(key:Readonly<import('./identity-provider.mjs').ExternalIdentityKey>):Promise<Readonly<import('./identity-provider.mjs').ExternalAccountObservation>|null>
 }
 export interface DelegatedJobHost {
- readonly contract:OperationExecutor['contract'];readonly hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT
+ readonly contract:OperationExecutor['contract'];readonly hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof REPORT_ADMISSION_HOST_CONTRACT
  admit(input:import('./operation-context.mjs').OperationInput):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./delegated-job.mjs').DispatchAdmission}>>
  deliver?(input:import('./operation-context.mjs').OperationInput,admission:Extract<import('./delegated-job.mjs').DispatchAdmission,{status:'READY'}>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./delegated-job.mjs').DispatchAdmission}>>
 }
@@ -98,9 +100,10 @@ export declare function createDelegatedNativeWorkHost<Transaction>(options:Deleg
   * outcome. The 5s proof bound and 15s total driver timeout remain unchanged. */
  revalidateExternalAccountBeforeOutcome?:true
 }):Readonly<{
- contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT
+ contract:OperationExecutor['contract'];hostContract:typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT|typeof REPORT_ADMISSION_HOST_CONTRACT
  runSqlWork(input:import('./operation-context.mjs').OperationInput,unit:Readonly<{unitId:string;accessMode:import('./request-work.mjs').NativeWorkAccessMode;inputDigest:string}>,action:(context:Readonly<OperationContext>,transaction:Transaction)=>void|Promise<void>):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:import('./request-ledger.mjs').RequestReceipt}>>
 }>
 
 export declare const SUPPLIER_LOCATION_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.12.0'}>
 export declare const NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.13.0'}>
+export declare const REPORT_ADMISSION_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.14.0'}>

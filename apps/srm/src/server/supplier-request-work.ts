@@ -32,6 +32,7 @@ export type SupplierNativeWorkSelection = Readonly<{requestId:string;organisatio
 export type SupplierNativeWorkOptions = Omit<SupplierServiceContinuationOptions,
   'executionMode'|'continuationSchemaDigest'|'delegatedSchemaDigest'|'delegatedBusinessBoundaryDigest'|'job'> & {
   workSchemaDigest:string;workBusinessBoundaryDigest:string;privateAcquisition?:SupplierPrivateAcquisition
+  reportAdmission?:Readonly<{schemaDigest:string}>
   job:SupplierServiceContinuationOptions['job']|{schemaDigest:string;targetOperation:'supplier.private.refresh';supplierSchemaDigest:string;operationSchemaDigest:string}
 }
 export interface SupplierNativeWork {
@@ -54,7 +55,7 @@ const freeze=<T>(v:T):T=>{if(v&&typeof v==='object'){Object.values(v).forEach(fr
  * browser proof, provider client or long-running transaction lives here. */
 export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):Readonly<SupplierNativeWork>{
   const allowed=['pool','auditPool','clerk','now','transactionTimeoutMs','application','binding','job',
-    'commandBoundaryDigest','accountIdentity','workSchemaDigest','workBusinessBoundaryDigest','privateAcquisition']
+    'commandBoundaryDigest','accountIdentity','workSchemaDigest','workBusinessBoundaryDigest','privateAcquisition','reportAdmission']
   if(typeof window!=='undefined'||!options||Object.getPrototypeOf(options)!==Object.prototype
     ||Object.keys(options).some(k=>!allowed.includes(k))||Reflect.ownKeys(options).length!==Object.keys(options).length
     ||Object.values(Object.getOwnPropertyDescriptors(options)).some(d=>!('value'in d)||!d.enumerable)
@@ -67,6 +68,7 @@ export function createSrmSupplierNativeWork(options:SupplierNativeWorkOptions):R
     commandBoundaryDigest:options.commandBoundaryDigest,workSchemaDigest:options.workSchemaDigest,
     workBusinessBoundaryDigest:options.workBusinessBoundaryDigest}))
   const host=createDelegatedNativeWorkHost<PoolClient>({application:fixed.application,binding:fixed.binding,job:fixed.job,
+    ...(options.reportAdmission?{reportAdmission:options.reportAdmission}:{}),
     revalidateExternalAccountBeforeOutcome:true,
     privateWork:{schemaDigest:fixed.workSchemaDigest},now:options.now,transactionTimeoutMs:options.transactionTimeoutMs,
     readExternalAccount:createClerkAccountStatusReader({client:options.clerk,...options.accountIdentity,now:options.now}),

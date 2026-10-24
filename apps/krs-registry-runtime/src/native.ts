@@ -1,6 +1,7 @@
 import type {PoolClient} from 'pg'
 import {createPrivateOperationHost} from '@profitia/platform-contracts/private-operation-host'
 import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
+import {currentReportAdmission,reportAdmissionEvidence} from '@profitia/platform-contracts/report-admission'
 import type {Json,OperationContext} from '@profitia/platform-contracts/operation-context'
 import {createPlatformIngestionHost,platformReceiptEvidence} from '@profitia/platform-contracts/platform-ingestion'
 import {canonical,sha256,validateCompanySnapshot,validateIdentityEvidence,krs,parseJson} from '@profitia/krs-registry-contracts'
@@ -43,12 +44,15 @@ export function createNativeRegistryAccess(options:{
     ||options.host.module.id!=='supplier_report'||!options.host.application.operations.includes('supplier.report.read')
     ||!organisationId||organisationId.length>128)return deny()
   const observe=async(s:Selector)=>{
+    const admission=reportAdmissionEvidence(currentReportAdmission())
     if(s.action==='SEARCH'){
+      if(admission&&s.query!=='__')return deny()
       const generation=(await catalog.pool.query('SELECT generation::text FROM krs_registry.metadata')).rows[0]?.generation
       if(typeof generation!=='string'||!/^\d+$/.test(generation))return deny()
       return 'catalog:'+generation
     }
     const snapshot=await catalog.read(s.krs)
+    if(admission&&snapshot?.nip!==admission.nip)return deny()
     if(!snapshot||s.reference!==null&&snapshot.evidenceRef!==s.reference)return deny()
     await validateCompanySnapshot(snapshot)
     return snapshot.evidenceRef

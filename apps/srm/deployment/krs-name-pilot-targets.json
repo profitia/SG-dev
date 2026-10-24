@@ -19,9 +19,9 @@
     "sourceDigest": "383d39d4a533bd1ff1a49a9587b2ad5fd23de5d3d9934ee9656a1b99be0861b6"
   },
   "acceptedRuntime": {
-    "version": "1.5.0",
-    "sourceSha": "4b44f5efa46626a46a5fac0c0556e6147bc4727b",
-    "sourceDigest": "a286d1bb40db5df8e62c2c9ea7e504102419d45b8448b4ea1876bae4fca800e6"
+    "version": "1.6.0",
+    "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96",
+    "sourceDigest": "b0485c39f420f5225f5877af4a710a5532f2b0d8f6a797434fcda7f6bdad4fab"
   },
   "nipIntegrationActivation": "OWNER_AUTHORIZED_CONDITIONAL_DEVELOPMENT_ONLY",
   "clerkCheckpointAdoption": {
@@ -36,5 +36,16 @@
     "contract": "CURRENT_COMPANY_EVIDENCE_ONLY_V1",
     "noAuthorityCache": true,
     "nativeBeforeOutcomeAccountChecksPreserved": true
+  },
+  "formReportAdmission": {
+    "schemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+    "scope": "ONE_PUBLIC_COMPANY_REPORT",
+    "humanAuthority": "AT_FORM_ADMISSION",
+    "readySeconds": 120,
+    "maximumLifetimeSeconds": 180,
+    "activationScope": "EXISTING_KRS_DEVELOPMENT_PILOT_ONLY",
+    "liveInstalled": false,
+    "producerPr": 685,
+    "producerSourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
   }
 }

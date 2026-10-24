@@ -32,8 +32,8 @@ const auditDigest = await moduleAuditSchemaDigest()
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
-const currentSdkDigests=sdkReceipt.unmeteredSourceCompatibility.sdkDigests
-const currentPlatformSourceDigests=manifest=>({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsSoapSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests})
+const currentSdkDigests=sdkReceipt.formReportSourceCompatibility.sdkDigests
+const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsSoapSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportSourceCompatibility.sourceDigests}).filter(([file])=>file!=='package-lock.json'))
 
 test('SG2 imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
@@ -73,7 +73,7 @@ test('SG2 imports the exact optional external control source without adopting a 
 })
 
 test('SG2 explicitly accepts the published optional producer fingerprints', async () => {
-  assert.equal(await accessStoreSourceDigest(), 'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
+  assert.equal(await accessStoreSourceDigest(), currentSdkDigests.accessStoreSourceDigest)
   assert.equal(await identitySourceDigest(), 'b7f3e09e6c62bbaf20c42752f514022c91b0dc0fef9db387f41f613a124ce0b4')
   assert.equal(await privateOperationHostSourceDigest(),currentSdkDigests.privateOperationHostSourceDigest)
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
@@ -1633,7 +1633,7 @@ test('public web source receipt preserves historical records and verifies every 
  assert.equal(current.taskId,'SG2-E1-PUBLIC-WEB-SOURCE-RECEPTION-20261020');assert.equal(current.platformVersion,'1.23.0');assert.equal(current.rootImplementation,receipt.supplierLocationSourceCompatibility.previousRootAcceptance.contract.implementation)
  assert.equal(current.producer.projectKey,'ARCHITECTURE');assert.equal(current.producer.sourceSha,'403255c88bbf81a67e384c269e38cae848b018f1')
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.unmeteredSourceCompatibility.platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.formReportSourceCompatibility.platformVersion)
  assert.equal(await sdk.externalCallSourceDigest(),currentSdkDigests.externalCallSourceDigest)
  assert.equal(await sdk.publicWebTransportSchemaDigest(),current.sdkDigests.publicWebTransportSchemaDigest)
  assert.equal(Object.keys(current.sourceDigests).length,57)

@@ -1,6 +1,6 @@
-import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray'
+import type {GeneralCompanyData,FinancialData,SectionEnvelope} from '@profitia/srm-xray'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
-import {OperationDenied} from '@profitia/platform-contracts/operation-context'
+import {OperationDenied,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
 import type {XrayCompanyPorts} from './xray-lookup'
 import type {SupplierNativeWorkSelection} from './supplier-request-work'
 import type {MgbiFinancialResult} from './mgbi-financial'
@@ -8,11 +8,14 @@ import {reconcileKrsFinancial} from './krs-financial'
 import {applyFinancialDocumentMetadata} from './financial-documents'
 import {isFreshCatalogEntry} from './shared-catalog'
 import {unrequestedCorporateGeneral} from './corporate-source-store'
+import {projectPublicFinancialData} from './corporate-knowledge'
 
 // This composition has no General acquisition port. All effects use the same
 // original native Request/Source/Work/archive/MSR/Financial helpers as NIP mode.
 type Ports=Pick<XrayCompanyPorts,'createLookup'|'fetchMgbiFinancial'|'saveMgbiArchive'|'saveFinancialDocuments'|
  'readFinancialDocuments'|'enrichMsrFinancial'|'persistSection'|'saveSharedCompany'|'refreshFinancialIndicators'|'recordInterest'|'reprojectFinancialArchive'>
+ &Partial<Pick<XrayCompanyPorts,'readFreshCompany'>>
+ &{readFreshFinancial?:(org:string,nip:string,at:Date)=>Promise<SectionEnvelope<FinancialData>|null>}
 export type KrsFinancialRecheck=(boundary?:'ACQUISITION'|'PUBLICATION')=>Promise<void>
 export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,
  recheck:KrsFinancialRecheck,now:()=>number=Date.now,general?:SectionEnvelope<GeneralCompanyData>){
@@ -31,10 +34,11 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
   await check()
  }
  const history=general?.data?.registryHistory
+ const stored=ports.readFreshFinancial?await ports.readFreshFinancial(org,nip,new Date(now())):(await ports.readFreshCompany?.(org,nip,new Date(now())))?.financial
  const restored=await ports.reprojectFinancialArchive(org,nip,history,undefined,true)
  const cached=restored&&isFreshCatalogEntry(restored.section.retrievedAt,new Date(now()))?restored:null
  let result=await reconcileKrsFinancial(identity,cached??await ports.fetchMgbiFinancial({type:'NIP',value:nip},{companyHistory:history}),now(),history)
- // Fresh HUMAN authority after a new provider acquisition, before its archive.
+ // Check the applicable current or admitted report authority before its archive.
  await check(cached?undefined:'ACQUISITION')
  let pending=false
  if(result.rawResponse&&!result.errorCode&&result.section.retrievedAt){
@@ -59,6 +63,13 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
   }
  }
  const accepted=result
+ // Same cache semantics as the original company flow: keep this lookup's
+ // snapshot/interest, but republish only a changed accepted Financial view.
+ // Compare the complete classified section, not merely a company ID or TTL.
+ const publicSection=(s:MgbiFinancialResult['section'])=>({status:s.status,source:s.source,retrievedAt:s.retrievedAt,
+  effectiveAt:s.effectiveAt,warnings:s.warnings,data:projectPublicFinancialData(s.data)})
+ const sectionDigest=(s:MgbiFinancialResult['section'])=>operationPayloadDigest(JSON.parse(JSON.stringify(publicSection(s))))
+ const unchanged=!!cached&&!!stored&&sectionDigest(stored)===sectionDigest(accepted.section)
  let published=false
  return Object.freeze({result:accepted,pending,async publish(eligible:MgbiFinancialResult){
   await check('PUBLICATION')
@@ -66,10 +77,10 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
    ||JSON.stringify(eligible.facts)!==JSON.stringify(accepted.facts))return deny()
   const audited=await reconcileKrsFinancial(identity,accepted,now(),history)
   if(audited.errorCode||JSON.stringify(audited.section)!==JSON.stringify(eligible.section))return deny()
-  const snapshotId=await ports.persistSection(org,lookup,'financial',eligible.section,eligible.errorCode,eligible.facts,undefined,eligible.sourceData,cached?'CACHE':'PROVIDER')
+  const snapshotId=await ports.persistSection(org,lookup,'financial',eligible.section,eligible.errorCode,unchanged?[]:eligible.facts,undefined,eligible.sourceData,cached?'CACHE':'PROVIDER')
   // Corporate Source is a separate publication boundary after private Work.
   await check('PUBLICATION')
-  await ports.saveSharedCompany(org,nip,{general:unrequestedCorporateGeneral(),financial:eligible.section,
+  if(!unchanged)await ports.saveSharedCompany(org,nip,{general:unrequestedCorporateGeneral(),financial:eligible.section,
    generalSnapshotId:null,financialSnapshotId:snapshotId,facts:eligible.facts,preserveGeneral:true})
   await check();await ports.recordInterest(org,nip);published=true
  }})

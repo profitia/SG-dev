@@ -1,4 +1,5 @@
 import type {SupplierCandidate, SupplierSelection, SupplierSearchGateway} from '@profitia/srm-xray';
+import {prepareReport} from './krs-session-transport'
 function object(value:unknown,keys:string[]):Record<string,unknown>{
   if(!value||Object.getPrototypeOf(value)!==Object.prototype||Object.keys(value).sort().join(',')!==[...keys].sort().join(','))throw Error('Nieprawidłowe dane katalogu.');
   return value as Record<string,unknown>;
@@ -19,6 +20,7 @@ export function createSupplierSearchGateway(transport:typeof fetch=fetch):Suppli
     return response.json() as Promise<unknown>;
   }
   return Object.freeze({
+    prepare:(nip:string,signal:AbortSignal)=>prepareReport(transport,nip,signal),
     async available(signal){
       const response=await transport('/api/xray/krs/status',{cache:'no-store',signal});
       if(!response.ok)return false;

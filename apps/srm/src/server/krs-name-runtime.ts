@@ -6,7 +6,7 @@ import {createKrsNameSearch,type KrsNamePorts} from './krs-name-search';
 import {getSrmReportRuntime} from './private-runtime';
 import targets from '../../deployment/krs-name-pilot-targets.json';
 import {withSupplierTelemetry} from './supplier-telemetry';
-export type KrsNameHttpRuntime=Readonly<{api:ReturnType<typeof createKrsNameSearch>;available(request:Request):Promise<boolean>}>;
+export type KrsNameHttpRuntime=Readonly<{api:ReturnType<typeof createKrsNameSearch>;available(request:Request):Promise<boolean>;runReport?:<T>(request:Request,action:()=>Promise<T>)=>Promise<T>}>;
 export function createKrsNameHttpRuntime(ports:KrsNamePorts,available:KrsNameHttpRuntime['available']):KrsNameHttpRuntime{
   if(typeof window!=='undefined'||typeof available!=='function')throw Error('SERVER_ONLY');
   return Object.freeze({api:createKrsNameSearch(ports),available});
@@ -49,7 +49,8 @@ export function createKrsNameHttpHandler(action:'status'|'search'|'verify'|'look
       }
       const key=request.headers.get('idempotency-key');
       if(!closed(body,'selectionRef')||!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(body.selectionRef)||!validRequestIdempotencyKey(key))return unavailable(400);
-      const result=await runtime.api.lookup(request,body.selectionRef,key!);
+      const run=()=>runtime.api.lookup(request,body.selectionRef,key!)
+      const result=runtime.runReport?await runtime.runReport(request,run):await run();
       return Response.json(result,{status:result.pending?202:200,headers});
     }catch(error){
       const reason=isOperationDenied(error)?error.reasonCode:'POLICY_UNAVAILABLE';

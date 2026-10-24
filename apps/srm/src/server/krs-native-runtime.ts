@@ -20,6 +20,7 @@ import pilot from '../../deployment/krs-live-pilot.json'
 import {OperationDenied} from '@profitia/platform-contracts/operation-context'
 import {randomUUID,createHash} from 'node:crypto'
 import {measureSupplierStage} from './supplier-telemetry'
+import {reportAdmissionConfiguration,withCurrentPrivateAuthority} from './report-admission-runtime'
 const deny=():never=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
 type Env=Readonly<Record<string,string|undefined>>
 /** Immutable deployment target selection, never a request-selected profile. */
@@ -50,6 +51,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
   import('@profitia/krs-registry-runtime/native'),import('@profitia/krs-registry-runtime/catalog')])
  const registry=createNativeRegistryAccess({catalog:new Catalog(pools.catalog),organisationId:runtime.defaultOrganisationId,
   host:{application:{...config.application,operations:['supplier.report.read']},binding:config.binding,module:config.module,
+   ...(reportAdmissionConfiguration()?{reportAdmission:reportAdmissionConfiguration()}:{}),
    ...createSrmNativePgDriver(pools.pool,pools.auditPool),createAuthenticator:({resolveBinding})=>{
     const authenticate=createClerkIdentityAuthenticator({client:pools.clerk,application:config.identity,resolveBinding})
     return config.identity.requestBoundary?bindPublicIdentityAuthenticator(authenticate,config.identity.requestBoundary):authenticate
@@ -99,7 +101,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
   },
  }},async request=>{await registry.search(request,'__');return true})
  const disabledNip={async company():Promise<Response>{return deny()},async search():Promise<Response>{return deny()}}
- if(environment.SRM_KRS_NIP_ENABLED!=='true')return Object.freeze({...nameRuntime,nip:disabledNip})
+ if(environment.SRM_KRS_NIP_ENABLED!=='true')return Object.freeze({...nameRuntime,runReport:runtime.reportAdmission?.run,nip:disabledNip})
  if(!/^[A-Za-z0-9]{20}$/.test(environment.GUS_BIR_API_KEY??''))return deny()
  const [{createAdmittedGusSource,createGusMapper,GusError,GUS_ORIGIN,GUS_PATH},{createNipResolver},{createNativeNipRegistrySource}]=await Promise.all([
   import('@profitia/krs-registry-runtime/gus'),import('@profitia/krs-registry-runtime/nip-resolver'),import('@profitia/krs-registry-runtime/native')])
@@ -160,7 +162,9 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
    selected:(request,krs)=>registry.selected(request,krs),
   })
  }
- const nip=createKrsNipCompany({api:runtime.supplierApi,observe,resolve:async input=>{
+ const api=runtime.supplierApi
+ const privateSafeApi={...api,jdg:(...args:Parameters<typeof api.jdg>)=>withCurrentPrivateAuthority(()=>api.jdg(...args))}
+ const nip=createKrsNipCompany({api:privateSafeApi,observe,resolve:async input=>{
   if(input.organisationId!==runtime.defaultOrganisationId)return deny()
   await registry.search(input.request,'__')
   const key=createHash('sha256').update('srm-nip-primary-v1:'+input.idempotencyKey+':'+input.command.nip).digest('hex')
@@ -172,5 +176,5 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
   return {status:'PRIMARY',selection:{krs:accepted.identity.selectedKrs,nip:input.command.nip,name:accepted.identity.identity.officialName,
    locality:accepted.snapshot.address?.city??null,selectionRef:accepted.identity.evidenceRef},general}
  }})
- return Object.freeze({...nameRuntime,nip})
+ return Object.freeze({...nameRuntime,runReport:runtime.reportAdmission?.run,nip})
 }

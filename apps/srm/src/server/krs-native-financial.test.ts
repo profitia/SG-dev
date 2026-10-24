@@ -97,3 +97,40 @@ test('revocation between private Work and Corporate Source prevents shared publi
  const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,async boundary=>{if(written&&boundary==='PUBLICATION')throw Error('ACCOUNT_REVOKED');await f.check()},()=>now);
  await assert.rejects(work.publish(work.result),/ACCOUNT_REVOKED/);assert.equal(written,true);assert.equal(f.events.includes('public'),false);assert.equal(f.events.includes('interest'),false);
 });
+
+test('fresh identical Financial keeps lookup history and interest without reinserting facts or republishing the catalog',async()=>{
+ const f=await fixture();f.ports.reprojectFinancialArchive=async()=>f.result
+ const previous=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ f.ports.readFreshCompany=async()=>({general:{} as never,financial:structuredClone(previous.result.section)})
+ let facts=-1
+ f.ports.persistSection=async(_org,_lookup,_section,_envelope,_error,values)=>{facts=values?.length??0;f.events.push('persist');return 'snapshot'}
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ await work.publish(work.result)
+ assert.equal(facts,0);assert.equal(f.events.includes('public'),false)
+ assert.equal(f.events.includes('persist'),true);assert.equal(f.events.includes('interest'),true)
+ assert.deepEqual(work.result.section,previous.result.section)
+})
+
+test('changed accepted Financial still publishes even when the catalog cache is fresh',async()=>{
+ const f=await fixture();f.ports.reprojectFinancialArchive=async()=>f.result
+ f.ports.readFreshCompany=async()=>({general:{} as never,financial:{...f.result.section,warnings:['OLD_VIEW']}})
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ await work.publish(work.result);assert.equal(f.events.includes('public'),true)
+})
+test('KRS Financial cache does not depend on the age or presence of MGBI General',async()=>{
+ const f=await fixture();f.ports.reprojectFinancialArchive=async()=>f.result
+ const previous=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ f.ports.readFreshFinancial=async()=>structuredClone(previous.result.section)
+ f.ports.readFreshCompany=async()=>assert.fail('KRS Financial must not require a fresh MGBI General section')
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ await work.publish(work.result);assert.equal(f.events.includes('public'),false)
+})
+test('database JSONB key ordering cannot turn an identical Financial cache hit into a republication',async()=>{
+ const f=await fixture();f.ports.reprojectFinancialArchive=async()=>f.result
+ const previous=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ const reorder=(value:unknown):unknown=>Array.isArray(value)?value.map(reorder):value&&typeof value==='object'
+  ?Object.fromEntries(Object.entries(value).reverse().map(([key,item])=>[key,reorder(item)])):value
+ f.ports.readFreshFinancial=async()=>reorder(previous.result.section) as typeof previous.result.section
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
+ await work.publish(work.result);assert.equal(f.events.includes('public'),false)
+})

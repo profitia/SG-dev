@@ -36,14 +36,14 @@ test('new P1 receipt preserves every historical record and verifies exact curren
  for(const[k,v]of Object.entries(before))assert.deepEqual(['contract','producer'].includes(k)?accepted.previousRootAcceptance[k]:receipt[k],v,k)
  assert.equal(accepted.platformVersion,'1.25.0');assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.16')
  assert.equal(accepted.optInRootImplementation,'1.0.0-candidate.17');assert.equal(accepted.optInHostVersion,'1.12.0')
- assert.equal(await operationSourceDigest(),receipt.unmeteredSourceCompatibility.sdkDigests.operationSourceDigest)
+ assert.equal(await operationSourceDigest(),receipt.formReportAdmissionAdoption.sdkDigests.operationSourceDigest)
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  const installed=new URL('../',import.meta.resolve('@profitia/platform-contracts/supplier-location'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,receipt.unmeteredSourceCompatibility.platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,receipt.formReportAdmissionAdoption.platformVersion)
  for(const[file,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'historical producer '+file)
- for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests})){
+ for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportAdmissionAdoption.sourceDigests})){
   assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file)
-  assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(accepted.applicationSourceDigests)){
   const change=receipt.krsLivePilotSourceCompatibility?.changedFiles[file];

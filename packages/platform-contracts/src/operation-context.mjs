@@ -1,9 +1,11 @@
 import { createHash, randomUUID } from 'node:crypto'
 import {requestOperationPolicy} from './request-operations.mjs'
 import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence,isSupplierLocationAdmission} from './supplier-location.mjs'
+import {admittedReportObservation} from './report-admission.mjs'
 
 export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.16' })
 export const SUPPLIER_LOCATION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.17'})
+export const REPORT_ADMISSION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.18'})
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -214,9 +216,14 @@ function computeReceipt(value, id) {
 // Closed target policies for the SAME AM27 interpreter. The store/host also
 // selects its explicit target; adding Supplier never widens a Forecast host.
 
-function delegatedJob(state, identity, request, config, time) {
+function delegatedJob(state, identity, request, config, time, admissionDigest) {
   const d=state.delegation, t=d?.target, a=t?.application, ceiling=profiles[a?.profileId]
   const subject=d?.subjectUserId, observation=d?.externalAccountObservation, key=d?.identityKey
+  const admitted=admittedReportObservation(d?.admittedReportObservation)
+  const admittedValid=admitted && admissionDigest===admitted.schemaDigest && t?.operation==='supplier.report.refresh' && admitted.id===d.reportAdmission?.id
+    && admitted.requestId===d.jobId && admitted.userId===subject && admitted.organisationId===request.organisationId
+    && admitted.payloadDigest===request.payloadDigest && validUntil(admitted.expiresAt,time)
+    && admitted.identity?.issuer===key?.issuer && admitted.identity?.subject===key?.subject
   const target=requestOperationPolicy(t?.operation)
   if (request.operation!=='job.execute' || identity.kind!=='SERVICE' || config.profileId!=='PLATFORM_INTERNAL'
     || !d || !target || !computeUuid.test(d.delegationId??'') || d.jobId!==request.resourceId || d.requestId!==d.jobId
@@ -229,10 +236,10 @@ function delegatedJob(state, identity, request, config, time) {
     || !['PENDING','READY','CONFIRMED','UNCERTAIN'].includes(d.status)
     || !validUntil(d.expiresAt,time) || Date.parse(d.expiresAt)>time+30000
     || !key || key.environment!==config.environment || !nonempty(key.issuer) || !nonempty(key.subject)
-    || !observation || observation.status!=='ACTIVE' || observation.environment!==key.environment
+    || !admittedValid && (!observation || observation.status!=='ACTIVE' || observation.environment!==key.environment
     || observation.issuer!==key.issuer || observation.subject!==key.subject
     || !(Date.parse(observation.observedAt)<=time) || !validUntil(observation.expiresAt,time)
-    || Date.parse(observation.expiresAt)>Date.parse(observation.observedAt)+5000
+    || Date.parse(observation.expiresAt)>Date.parse(observation.observedAt)+5000)
     || !a || !target.profiles.includes(a.profileId) || !ceiling
     || !nonempty(a.appId) || a.appId===config.appId || a.environment!==config.environment
     || !nonempty(a.configurationVersion) || !Array.isArray(a.operations) || !a.operations.includes(t.operation)
@@ -283,7 +290,8 @@ function ingestionReservation(value,policy){
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
-  const executionContract=options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
+  const executionContract=options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
@@ -326,7 +334,7 @@ export function createOperationExecutor(options) {
           if (!state || !nonempty(state.policyVersion) || state.environment !== config.environment || state.applicationId !== config.appId || typeof session.recordOutcome !== 'function' || typeof session.projectOutput !== 'function' || (session.describeOutcome !== undefined && typeof session.describeOutcome !== 'function')) deny('POLICY_UNAVAILABLE')
           const access = state.access
           if (!access || access.actorId !== identity.actorId || access.status !== 'ACTIVE' || !nonempty(access.version) || !nonempty(access.sourceRef) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
-          const delegated=request.operation==='job.execute' ? delegatedJob(state,identity,request,config,now()) : null
+          const delegated=request.operation==='job.execute' ? delegatedJob(state,identity,request,config,now(),options.reportAdmissionSchemaDigest) : null
           if (access.type === 'DELEGATED_USER' && !delegated) deny('DELEGATION_INVALID')
           const organisationId = request.organisationId
           if(platform){
@@ -560,7 +568,7 @@ export function createOperationExecutor(options) {
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
           if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
           if (compute) computePolicy(requestPolicy, context, now())
-          if (delegated) delegatedJob(outcomeState,identity,request,config,now())
+          if (delegated) delegatedJob(outcomeState,identity,request,config,now(),options.reportAdmissionSchemaDigest)
           if(platform)ingestionPolicy(platformPolicy,context,request,now())
           try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: outcome })) }
           catch (error) {
