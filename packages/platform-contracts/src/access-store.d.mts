@@ -32,6 +32,7 @@ export declare function createAccessStore(options: { binding: AccessStoreBinding
   contract: typeof ACCESS_STORE_CONTRACT
   resolveBinding(query: AccessQuery, key: Pick<IdentityBinding,'environment'|'issuer'|'subject'>): Promise<Readonly<IdentityBinding> | null>
   lockAccess(query: AccessQuery, input: { actor: Actor; identityBinding: IdentityBinding | null; organisationId: string | null }): Promise<LockedAccess>
+  lockAdmittedReport(query:AccessQuery,input:{actor:Actor;request:import('./operation-context.mjs').BoundRequest;proof:import('./report-admission.mjs').ReportAdmissionProof;admission:ReturnType<typeof import('./report-admission.mjs').createReportAdmissionStore>}):Promise<LockedAccess>
   /** Derived from the authenticated ordinary SQL login and current deployment binding; ignores HTTP claims. */
   resolveServiceActor(query: AccessQuery): Promise<Readonly<DatabaseServiceActor> | null>
   lockServiceRead(query: AccessQuery, input: {

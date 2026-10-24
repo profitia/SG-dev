@@ -2155,7 +2155,7 @@
     "unknownPolicyDecision": "DENY"
   },
   "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń.",
-  "catalogueRevision": "1.3.0",
+  "catalogueRevision": "1.4.0",
   "boundedServiceProtocols": [
     {
       "id": "IDENTITY-EMAIL-1",
@@ -2300,6 +2300,58 @@
         "reservation": "Minimal pseudonymous resumable registry; controlled cleanup only."
       },
       "acceptance": "Reserved identity, first-code PL/EN male/female delivery, same-address resume, wrong/foreign proof rejection, official browser completion and Finished/Unassigned persistence verified. Evidence: Canon/evidence/2026-10-24-registration-model.md."
+    },
+    {
+      "id": "FORM-REPORT-ADMISSION-1",
+      "version": "1.0.0",
+      "status": "SOURCE_CANDIDATE_NOT_INSTALLED",
+      "environment": "development",
+      "actorKind": "SERVICE",
+      "contextMode": "ORGANISATION",
+      "genericOperationResolverAdoption": "EXPLICIT_OPT_IN_ROOT_CANDIDATE_18_DEFAULTS_UNCHANGED",
+      "implementation": "packages/platform-contracts/migrations/access/025-form-report-admission.sql",
+      "runtime": "packages/platform-contracts/src/report-admission.mjs",
+      "grant": "Current HUMAN Root supplier.report.refresh and technical native FORM_REPORT_ADMISSION Work, exact request/org/user/NIP/payload; ordinary foreground/executor pair disabled by default. Opaque one-report capability: ready <=120s, total <=180s. Captured human authority, current technical receiver/service/Source, audit, RLS and paid provider policy. No private JDG/KYS/export/Maps authority.",
+      "rules": [
+        {
+          "id": "FR-01",
+          "operation": "supplier.report.refresh",
+          "resourceType": "supplier_report_request",
+          "dataClasses": [
+            "OPERATION_AUDIT",
+            "ORGANISATION_PRIVATE"
+          ],
+          "condition": "Prepare before Search: current authenticated HUMAN, membership/module/product/permission, canonical Root/Work INTENT+OUTCOME and same immutable request. No supplier/lookup business rows, Source delivery, external company or paid provider acquisition while preparing."
+        },
+        {
+          "id": "FR-02",
+          "operation": "job.execute",
+          "resourceType": "job",
+          "dataClasses": [
+            "ORGANISATION_PRIVATE",
+            "OPERATION_AUDIT"
+          ],
+          "condition": "Only the exact admitted company command; admission/technical service and receiver current, canonical Work/RLS/audit, Source idempotency and paid policy mandatory; no repeated Clerk account/session reads; later human revocation does not cancel this bounded command."
+        },
+        {
+          "id": "FR-03",
+          "operation": "supplier.report.read",
+          "resourceType": "supplier_report",
+          "dataClasses": [
+            "SHARED_KNOWLEDGE"
+          ],
+          "condition": "Exact admitted NIP only; KRS identity evidence must match. Same bounded human admission, fixed classified projection, current module installation and audit. No other report, organisation, private personal data or export."
+        },
+        {
+          "id": "FR-04",
+          "operation": "supplier.report.project",
+          "resourceType": "supplier_projection",
+          "dataClasses": [
+            "ORGANISATION_PRIVATE"
+          ],
+          "condition": "Same exact admitted NIP, organisation and classified shared Financial inputs. Original audited projection writer and tenant RLS; no KYS, personal data or export authority."
+        }
+      ]
     }
   ]
 }

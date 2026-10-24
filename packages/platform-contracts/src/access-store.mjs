@@ -145,6 +145,16 @@ export function createAccessStore({ binding, now = Date.now }) {
         proofRef:d.proofRef, issuer:DATABASE_SERVICE_ISSUER, audience:config.applicationId,
         environment:config.environment, expiresAt:d.expiresAt })
     },
+    async lockAdmittedReport(query,{actor,request,admission,proof}) {
+      if(config.service!==undefined || actor.kind!=='HUMAN')fail()
+      await descriptor(query)
+      const r=await admission.bindHuman(query,proof,request),state=r.state
+      if(state.applicationId!==config.applicationId || state.environment!==config.environment || state.access.actorId!==actor.userId
+        || state.access.organisationId!==request.organisationId || !(Date.parse(state.access.expiresAt)>now()))fail()
+      const lease=freeze({state:structuredClone(state),userId:actor.userId,organisationId:request.organisationId,
+        expiresAt:state.access.expiresAt,transactionId:state.transactionId})
+      leases.add(lease);return lease
+    },
     async lockServiceRead(query, input) {
       let actor, organisationId, operation, resourceId
       try { ({ actor, organisationId, operation, resourceId } = structuredClone(input)) } catch { fail() }

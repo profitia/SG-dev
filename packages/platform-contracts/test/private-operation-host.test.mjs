@@ -18,9 +18,9 @@ test('the versioned host pins the additive candidate and preserves the base SQL'
   assert.equal(host.contract.implementation,'1.0.0-candidate.16')
   assert.equal(host.hostContract.version,'1.11.0')
   assert.match(await privateOperationHostSourceDigest(),/^[a-f0-9]{64}$/)
-  assert.equal(await operationSourceDigest(),'39cad3ce94319bf76d7a83a128e3588ec18322aa1f8d188fef05f57252925a20')
+  assert.equal(await operationSourceDigest(),'742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160')
   assert.equal(await identitySourceDigest(),'b7f3e09e6c62bbaf20c42752f514022c91b0dc0fef9db387f41f613a124ce0b4')
-  assert.equal(await accessStoreSourceDigest(),'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
+  assert.equal(await accessStoreSourceDigest(),'7b3cde4aaf86af8fb0d7630adaa52553eabd486aebfa6031742fdd5eccb912f8')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
 })
 for(const module of [null,false,{},[],{id:'benchmark',schemaDigest:'a'.repeat(64)},{id:'unknown',schemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64)},{id:'benchmark',schemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64),extra:'untrusted'}]){

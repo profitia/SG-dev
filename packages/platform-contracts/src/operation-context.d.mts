@@ -53,7 +53,10 @@ export interface DelegatedJob {
   sourceBinding:Pick<import('./platform-ingestion.mjs').PlatformSourceBinding,'projectId'|'branchId'|'databaseName'|'applicationId'|'schemaDigest'|'payloadSchema'|'qualityVersion'|'classificationVersion'>
   bindingId: string; bindingVersion: string; expiresAt: string
   identityKey: Readonly<import('./identity-provider.mjs').ExternalIdentityKey>
-  externalAccountObservation: Readonly<import('./identity-provider.mjs').ExternalAccountObservation>
+  /** Null only for the explicitly admitted-report mode; never a renewed Clerk observation. */
+  externalAccountObservation: Readonly<import('./identity-provider.mjs').ExternalAccountObservation>|null
+  reportAdmission?:Readonly<import('./report-admission.mjs').ReportAdmissionEvidence>
+  admittedReportObservation?:Readonly<Record<string,unknown>>
   target: { application: Pick<Application,'appId'|'environment'|'profileId'|'configurationVersion'|'organisationId'|'features'|'operations'>
     operation: import('./request-operations.mjs').RequestOperation; resourceId: string; policyVersion: string; access: AccessBasis; resource: Resource; products: ProductGrant[]
     module: {id:'benchmark'|'supplier_report';bindingId:string;version:string;sourceRef:string;expiresAt:string} }
@@ -139,7 +142,7 @@ export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
 export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
-  application: Application; now?: () => number; locationAdmissionSchemaDigest?:string
+  application: Application; now?: () => number; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string
   authenticate(request: unknown): Promise<Actor | null>
   /** Locks authoritative state and commits effects + OUTCOME atomically; rollback on throw. */
   withTransaction<T>(binding: { actor: Readonly<Actor>; request: Readonly<BoundRequest> }, action: (session: OperationSession<Transaction>) => Promise<T>): Promise<T>
@@ -148,3 +151,4 @@ export declare function createOperationExecutor<Transaction>(options: {
 }): OperationExecutor<Transaction>
 
 export declare const SUPPLIER_LOCATION_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.17'}>
+export declare const REPORT_ADMISSION_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.18'}>
