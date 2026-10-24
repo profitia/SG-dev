@@ -1,5 +1,5 @@
 /** Scripted presentation over the official Clerk resource; no local authentication authority. */
-export function createClerkConversation(sdk: any, registration: boolean, invitationTicket: string | null = null) {
+export function createClerkConversation(sdk: any, registration: boolean, invitationTicket: string | null = null, backend: {start(draft: any): Promise<any>; verify(code:string):Promise<any>} | null = null) {
   // Opaque provider proof, never interpreted locally or written into chat state.
   if (invitationTicket !== null && (!registration || !/^[A-Za-z0-9_.-]{20,8000}$/.test(invitationTicket))) throw Error('INVALID_INVITATION')
   const state = { step: 'avatar', avatarSex: null as 'male' | 'female' | null, firstName: '', lastName: '', email: '', method: 'email_code', complete: false, busy: false }
@@ -11,7 +11,11 @@ export function createClerkConversation(sdk: any, registration: boolean, invitat
     state.complete = true; state.step = 'done'
   }
   async function sendCode() {
-    if (registration) await sdk.client.signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
+    if (registration && backend && !invitationTicket) {
+      const result = await backend.start({firstName:state.firstName,lastName:state.lastName,email:state.email,avatar:state.avatarSex})
+      if (result.status === 'login') { state.step='existing'; return }
+      if (result.status !== 'code') throw Error('REGISTRATION_UNAVAILABLE')
+    } else if (registration) await sdk.client.signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
     else {
       const factor = sdk.client.signIn.supportedFirstFactors?.find((f: any) => f.strategy === 'email_code')
       if (!factor?.emailAddressId) { state.step = 'challenge'; return }
@@ -48,7 +52,7 @@ export function createClerkConversation(sdk: any, registration: boolean, invitat
         else if (step === 'email') {
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)) throw Error('INVALID_EMAIL')
           state.email = input
-          if (registration) {
+          if (registration && backend) { await sendCode() } else if (registration) {
             // Presentation preference only. Clerk signup metadata is a temporary
             // carrier until the verified account writes its own private profile.
             const result = await sdk.client.signUp.create({ firstName: state.firstName, lastName: state.lastName, emailAddress: input, unsafeMetadata: { assistantAvatar: state.avatarSex } })
@@ -65,6 +69,14 @@ export function createClerkConversation(sdk: any, registration: boolean, invitat
             } else await sendCode()
           }
         } else if (step === 'code') {
+          if (registration && backend && !invitationTicket) {
+            const verified = await backend.verify(input)
+            if (verified.status !== 'verified' || typeof verified.ticket !== 'string' || typeof verified.subject !== 'string') throw Error('REGISTRATION_UNAVAILABLE')
+            const result = await sdk.client.signIn.create({strategy:'ticket',ticket:verified.ticket})
+            await finish(result)
+            if (state.complete) completedUserId=verified.subject
+            return
+          }
           const result = registration ? await sdk.client.signUp.attemptEmailAddressVerification({ code: input }) : await sdk.client.signIn.attemptFirstFactor({ strategy: 'email_code', code: input })
           await finish(result)
         } else if (step === 'password') await finish(await sdk.client.signIn.attemptFirstFactor({ strategy: 'password', password: input }))
@@ -81,7 +93,19 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
   const invitation = new URL(window.location.href).searchParams.get('__clerk_ticket');
   // Unsupported invitation states are handled by the official provider UI.
   if (invitation && (cfg.flow !== 'registration' || !/^[A-Za-z0-9_.-]{20,8000}$/.test(invitation))) { nativeChallenge(); return; }
-  const model = createClerkConversation(window.Clerk, cfg.flow === 'registration', invitation);
+  let receipt = null;
+  const registrationRequest = async (path, body) => {
+    const response = await fetch('/v1/registration/'+path, {method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',
+      signal:AbortSignal.timeout(30000),headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const result = await response.json(); if (!response.ok) throw Error(result.error || 'REGISTRATION_UNAVAILABLE'); return result;
+  };
+  const backend = cfg.backendRegistration ? {
+    start: async draft => { const result = await registrationRequest('start', {...draft,browserLanguage:navigator.languages?.[0] || navigator.language || ''});
+      receipt = result.status === 'code' ? {attemptId:result.attemptId,token:result.token} : null; return result; },
+    verify: code => { if (!receipt) throw Error('REGISTRATION_REQUIRED'); return registrationRequest('verify', {...receipt,code}); }
+  } : null;
+  window.spendGuruRegistrationReceipt = () => receipt?.token || null;
+  const model = createClerkConversation(window.Clerk, cfg.flow === 'registration', invitation, backend);
   const reg = cfg.flow === 'registration', en = cfg.en;
   const history = document.getElementById('history'), choices = document.getElementById('choices');
   const form = document.getElementById('composer-form'), input = document.getElementById('answer');
@@ -129,11 +153,13 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
       method: tr('Dobrze Cię znów widzieć. Jak chcesz się zalogować?', 'Good to see you again. How would you like to sign in?'),
       password: tr('Teraz wpisz swoje hasło. Zostanie między Tobą a Clerkiem.', 'Now enter your password. It stays between you and Clerk.'),
       code: tr('Została nam jeszcze jedna rzecz. Sprawdź pocztę i wpisz sześciocyfrowy kod, który otrzymasz w wiadomości.', 'One more thing. Check your inbox and enter the six-digit code from your email.'),
+      existing: tr('Ten adres jest już powiązany z kontem. Przejdź do logowania, aby kontynuować.', 'This email is already linked to an account. Sign in to continue.'),
       challenge: tr('Potrzebne jest dodatkowe potwierdzenie. Dokończ je w bezpiecznym oknie poniżej.', 'An extra verification is needed. Complete it in the secure panel below.')
     };
     await say(questions[step] || tr('Przygotowujemy Twoje konto…', 'Preparing your account…'));
     if (step === 'avatar') { choices.className = 'sg-v2-choices is-avatars'; choice(tr('Awatar żeński', 'Female avatar'), 'female', 'female'); choice(tr('Awatar męski', 'Male avatar'), 'male', 'male'); }
     else if (step === 'method') { choices.className = 'sg-v2-choices'; choice(tr('Kodem e-mail', 'Email code'), 'email_code'); choice(tr('Hasłem', 'Password'), 'password'); }
+    else if (step === 'existing') { const link=document.createElement('a'); link.href=cfg.signInUrl; link.className='sg-v2-choice'; link.textContent=tr('Przejdź do logowania','Go to sign in'); choices.append(link); }
     else if (step === 'challenge') nativeChallenge();
     else if (!model.state.complete) {
       form.hidden = false; const code = step === 'code'; otp.hidden = !code; input.hidden = code;

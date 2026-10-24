@@ -74,3 +74,18 @@ test('invalid, revoked or incomplete invitations cannot create a local session',
   assert.equal(f.model.state.complete,false);assert(!f.calls.some(c=>c[0]==='activate'||c[0]==='prepareUp'))
  }
 })
+
+test('backend registration collects preference before OTP, preserves receipt privately, and consumes only official ticket/session',async()=>{
+ const f=fixture(false,{createIn:()=>({status:'complete',createdSessionId:'sess_reserved'})}),calls=[]
+ const backend={start:async d=>{calls.push(['start',d]);return {status:'code'}},verify:async code=>{calls.push(['verify',code]);return {status:'verified',ticket:'private-ticket',subject:'user_reserved'}}}
+ const model=createClerkConversation(f.sdk,true,null,backend)
+ for(const v of ['female','Ada','Testowa','synthetic@example.test'])await model.submit(v)
+ assert.equal(model.state.step,'code');assert.equal(f.calls.length,0);assert.equal(calls[0][1].avatar,'female')
+ await model.submit('123456');assert.equal(model.state.complete,true);assert.deepEqual(f.calls,[['createIn',{strategy:'ticket',ticket:'private-ticket'}],['activate',{session:'sess_reserved'}]])
+ assert.equal(model.registrationAvatar('user_reserved'),'female');assert(!JSON.stringify(model.state).includes('private-ticket'))
+})
+test('existing account is directed to login; backend failure cannot fall back to an unpersonalised signup',async()=>{
+ const f=fixture();const model=createClerkConversation(f.sdk,true,null,{start:async()=>({status:'login'}),verify:async()=>{throw Error()}})
+ for(const v of ['male','Adam','Testowy','synthetic@example.test'])await model.submit(v)
+ assert.equal(model.state.step,'existing');assert.equal(model.state.complete,false);assert.equal(f.calls.length,0)
+})

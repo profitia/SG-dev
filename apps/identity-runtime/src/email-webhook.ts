@@ -6,6 +6,7 @@ import { mailbox } from './mailgun-delivery.js'
 export type EmailInstruction = Readonly<{
   eventId: string; emailId: string; instanceId: string; createdAt: number
   recipient: string; emailAddressId: string | null; providerUserId: string | null
+  registrationAttemptId?: string
   expiresAt: number
 } & ({ kind: 'verification-code'; otpCode: string } | { kind: 'invitation'; actionUrl: string; expiresInDays: number })>
 export type EmailEventDecision = Readonly<
@@ -92,10 +93,13 @@ export function createClerkEmailVerifier(config: {
           || typeof days !== 'number' || !Number.isInteger(days) || days < 1 || days > 365) return reject()
         content = {kind: 'invitation', actionUrl: url.href, expiresInDays: days}
       }
+      const marker = (vars.user as { public_metadata?: { registrationAttemptId?: unknown } } | undefined)?.public_metadata?.registrationAttemptId
+      if (marker !== null && marker !== undefined && (typeof marker !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(marker))) return reject()
       if (data.suppression_reason !== undefined && data.suppression_reason !== null) return reject()
       return Object.freeze({ status: 'ready', instruction: Object.freeze({
         eventId, emailId: id(data.id, 'ema'), instanceId, createdAt, recipient,
         emailAddressId: optionalId(data.email_address_id, 'idn'), providerUserId: optionalId(data.user_id, 'user'),
+        ...(typeof marker === 'string' && data.slug === 'verification_code' ? { registrationAttemptId: marker } : {}),
         ...content, expiresAt: createdAt + 300000,
       }) })
     } catch { return reject() }

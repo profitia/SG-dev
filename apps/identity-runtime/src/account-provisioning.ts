@@ -72,18 +72,27 @@ export interface AccountSurface {
   ensure(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
   read(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
 }
-export function createAccountSurface({ configuration: inputConfiguration, client, authority, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, now = Date.now }: {
+export function createAccountSurface({ configuration: inputConfiguration, client, authority, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, finalizeRegistration, now = Date.now }: {
   configuration: RuntimeConfiguration; client: RuntimeSdk; authority: IdentityAuthority
   binding: IdentityProvisioningOptions<pg.PoolClient>['binding']; schemaDigest: string; renewalSchemaDigest?: string; proofKey: Uint8Array
+  finalizeRegistration?: (query: import('./registration-store.js').RegistrationQuery, userId: string, token: string|null) => Promise<void>
   transact: ReturnType<typeof accountTransactions>; now?: () => number
 }): AccountSurface {
   if (!(proofKey instanceof Uint8Array) || proofKey.byteLength !== 32) throw new BoundaryError(503, 'PROFILE_CONFIGURATION_REQUIRED')
   const configuration = readConfiguration(inputConfiguration), ownBinding = structuredClone(binding), ownKey = Buffer.from(proofKey)
   const verifiedClient = verifiedEmailClient(client)
-  const provisionerFor = (signal?: AbortSignal) => createIdentityProvisioner({ client: verifiedClient,
+  const provisionerFor = (signal?: AbortSignal, receipt: string|null = null) => createIdentityProvisioner({ client: verifiedClient,
     identityApplication: { appId: configuration.applicationId, environment: configuration.environment, issuer: configuration.issuer, authorizedParties: [configuration.origin] },
     binding: ownBinding, schemaDigest, ...(renewalSchemaDigest === undefined ? {} : { renewalSchemaDigest }), proofKey: ownKey, now,
-    transact: (action, limits) => transact(action, limits, signal) })
+    transact: (action, limits) => transact(async tx => {
+      const result = await action(tx)
+      if (finalizeRegistration) {
+        const userId = (result as { userId?: string })?.userId
+        if (typeof userId !== 'string') throw new BoundaryError(503, 'REGISTRATION_FINALIZATION_REQUIRED')
+        await finalizeRegistration(tx.query, userId, receipt)
+      }
+      return result
+    }, limits, signal) })
   provisionerFor() // Validate the private binding without provider/SQL calls.
   const peers = [...new Set(Object.values(configuration.targets).map(t => t.origin))].filter(origin => origin !== configuration.origin)
   const authenticate = createClerkIdentityAuthenticator({ client: verifiedClient,
@@ -100,7 +109,9 @@ export function createAccountSurface({ configuration: inputConfiguration, client
   return Object.freeze({ configuration, read, async ensure(request: Request) {
     checkRequest(request, configuration, true)
     // Provisioning is ONLY same-origin. Peer GET admission never permits POST.
-    const provisioner = provisionerFor(request.signal)
+    const receipt = request.headers.get('x-registration-receipt')
+    if (receipt !== null && !/^[A-Za-z0-9_-]{43}$/.test(receipt)) throw new BoundaryError(400, 'INVALID_REGISTRATION')
+    const provisioner = provisionerFor(request.signal, receipt)
     const result = await provisioner.ensureAccount(request)
     const current = await read(new Request(configuration.origin + '/v1/account', { headers: request.headers, signal: request.signal }))
     if (current.userId !== result.userId) throw new BoundaryError(409, 'ACCOUNT_CHANGED')

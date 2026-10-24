@@ -8,11 +8,11 @@ import { conversationAssets, conversationStyles, conversationMarkup } from './ac
 // Official browser SDK/UI, exact public registry versions verified 2026-10-22.
 const sdkVersion = '6.40.0', uiVersion = '1.41.1'
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
-export function accountPage(configuration: RuntimeConfiguration, targetId: string, routeKey: string, flow: string): string {
+export function accountPage(configuration: RuntimeConfiguration, targetId: string, routeKey: string, flow: string, backendRegistration = false): string {
   const route = resolveReturnRoute(configuration, { targetId, routeKey, flow })
   const en = routeKey.endsWith('-en'), frontend = new URL(configuration.issuer).origin
   const base = configuration.origin + '/account/' + targetId + '/' + routeKey
-  const data = JSON.stringify({ returnTo: route.returnTo, en, flow, avatars: conversationAssets,
+  const data = JSON.stringify({ returnTo: route.returnTo, en, flow, backendRegistration, avatars: conversationAssets,
     signInUrl: base + '/login', signUpUrl: base + '/registration',
     allowedRedirectOrigins: [...new Set([configuration.origin, ...Object.values(configuration.targets).map(t => t.origin)])],
     localization: en ? enUS : plPL }).replace(/</g, '\\u003c')
@@ -43,7 +43,7 @@ window.addEventListener('load', async () => {
     try {
       const credential = await session.getToken({ skipCache: true }); if (current !== generation) return; if (!credential) throw Error('SESSION_REQUIRED');
       const response = await fetch('/v1/account', { method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal,
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + credential }, body: '{}' });
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + credential, ...(window.spendGuruRegistrationReceipt?.() ? {'X-Registration-Receipt':window.spendGuruRegistrationReceipt()} : {}) }, body: '{}' });
       const result = await response.json();
       if (current !== generation || window.Clerk.session?.id !== key) return;
       if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(result.userId) || !(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_UNAVAILABLE');
