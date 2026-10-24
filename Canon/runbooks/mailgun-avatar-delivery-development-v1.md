@@ -58,3 +58,117 @@ Nie zmieniono działającego wydania ani schematu bazy. Zatrzymanie operatora ko
 - [Clerk własna wysyłka](https://clerk.com/docs/guides/development/troubleshooting/email-deliverability)
 - [Clerk webhooks](https://clerk.com/docs/guides/development/webhooks/overview)
 - `@clerk/backend` 3.25.0: typy `EmailJSON`, `SignUpJSON`; panel Development i API Mailgun sprawdzone 23.10.2026.
+
+## Rozszerzenie 24.10.2026: przygotowany runtime Clerk → Mailgun
+
+Zadanie `ARCHITECTURE-MAILGUN-CLERK-INTEGRATION-20261024`, profil ARCHITECTURE,
+status **PREPARED_NOT_INSTALLED**. Powyższy opis sandboxa jest zapisem wcześniejszego
+etapu. Nowy kod nie został uruchomiony na Render ani zainstalowany w Neon. Nie
+przełączono szablonów Clerk. Uzgodnione punkty 2–4 obejmują kod, testy i pakiet
+uruchomienia; późniejsze rozszerzenie obejmuje potwierdzenie własnej domeny.
+
+### Przygotowane zachowanie
+
+1. Oficjalne SDK Clerk sprawdza podpis dokładnych bajtów `email.created`, instancję,
+   czas, typ szablonu i odbiorcę. Zdarzenie dostarczone przez Clerk jest ignorowane.
+   HTTP 204 następuje dopiero po trwałym zapisie albo rozpoznaniu duplikatu. Błąd
+   bazy daje 503. Endpoint jest nieobecny przy wyłączonej integracji.
+2. Zaszyfrowany outbox AES-256-GCM wiąże dane z instancją i ID wiadomości. Kolejka,
+   leasing i wynik są trwałe. Jedna wiadomość ma najwyżej jedną automatyczną próbę
+   wysłania. Awaria po rozpoczęciu próby daje `unknown`, a nie ponowną wysyłkę.
+   Ponawiana może być tylko weryfikacja przed wysłaniem. Przyjęcie przez Mailgun
+   nie jest dowodem doręczenia do skrzynki.
+3. Preferencja awatara jest odczytywana przez jawny, ograniczony grant SERVICE
+   `IDENTITY-EMAIL-1`. Wymagane są podpisane `user_id`, zgodny aktualny użytkownik
+   Clerk, jego `email_address_id` i adres oraz aktywne powiązanie z kontem w bazie.
+   Projekcja zwraca wyłącznie `male`, `female` albo `neutral`; nie tworzy sesji,
+   członkostwa ani uprawnień. Wygasła sesja człowieka nie jest odnawiana.
+4. **Pierwsze OTP rejestracji nadal wymaga dowodu korelacji z konkretną próbą.**
+   Samo `unsafeMetadata` albo adres e-mail nie wystarczą. W razie braku dowodu
+   wysyłana jest wersja neutralna. To nie jest zakończona personalizacja pierwszego
+   maila rejestracyjnego. Wspólny slug `verification_code` dostaje neutralny tytuł
+   „Kod weryfikacyjny”; nie zgadujemy, czy trwa rejestracja czy logowanie.
+5. Zaproszenia są domyślnie wyłączone. Parser `invitation` i dokładne originy HTTPS
+   są przygotowane i przetestowane syntetycznie. Przed włączeniem konieczne jest
+   potwierdzenie rzeczywistego podpisanego payloadu Clerk, w tym `action_url` i
+   `invitation.expires_in_days`. Kod/token/link pozostają własnością Clerk.
+6. Cztery zatwierdzone PNG mają kontrolę SHA-256 i limit rozmiaru. Są pobierane do
+   pamięci z zamkniętego katalogu, osadzane przez CID; nie trafiają do repo ani
+   logów. OTP, link, adres odbiorcy i treść nie trafiają do audytu/PMOS.
+
+### Ścisłe wiązanie i konfiguracja przyszłego uruchomienia
+
+Docelowe zasoby: Identity Development `srv-dbcse6jrjlhs73eib3sg`; Neon projekt
+`spring-bread-28217539`, branch `br-sparkling-term-b99l107x`, baza `platform_private`,
+zwykła rola `identity_b1_runtime`. Nie używać roli administracyjnej w runtime.
+Mailgun: własna domena `spendguru.app`, region EU. Stan domeny 24.10.2026:
+`active`, SPF/DKIM/CNAME `valid`; publiczny DMARC `p=quarantine`, `pct=100`,
+wyrównanie `adkim=r`, `aspf=r`. Zachowano delegowany łańcuch SPF GoDaddy.
+Rekordów MX Mailgun nie dodano: odbiór poczty nie jest zakresem tej integracji.
+
+Nowe ustawienia pozostają **niezainstalowane**:
+
+- `IDENTITY_EMAIL_ENABLED=false` albo brak zmiennej utrzymuje dotychczasowy proces.
+- `IDENTITY_EMAIL_CONFIGURATION`: zamknięty JSON zawierający dokładnie
+  `instanceId`, `serviceId`, `schemaDigest`, `keyId`, `region`, `domain`, `from`,
+  `senderName`, `appName`, `authorizedRecipients`, `allowedInvitationOrigins`.
+  `schemaDigest` jest SHA-256 dokładnych bajtów migracji 003. Nadawca musi należeć
+  do skonfigurowanej własnej domeny. Originy zaproszeń początkowo puste.
+- `CLERK_EMAIL_SIGNING_SECRET`: sekret jednego dedykowanego endpointu Development.
+- `MAILGUN_SENDING_KEY`: klucz wyłącznie wysyłki dla właściwej domeny, nie klucz
+  administracyjny konta przekazany do diagnozy.
+- `IDENTITY_EMAIL_PROOF_KEY` i `IDENTITY_EMAIL_ENCRYPTION_KEY`: dwa różne losowe
+  klucze po 32 bajty, zapis szesnastkowy; `keyId` wskazuje wersję. Nie rotować
+  szyfrowania nad aktywną kolejką bez kontrolowanego opróżnienia.
+
+Transport ma listę 1–5 jawnie uprawnionych odbiorców pilota i limit prób w bazie
+(domyślnie 60/h), maksymalnie 1000 oczekujących wpisów. **Nie wolno wyłączyć
+globalnego `Delivered by Clerk` na współdzielonej instancji, jeśli pozostali
+użytkownicy nie zostaliby obsłużeni.** Test takiej konfiguracji wymaga wydzielonej
+instancji lub potwierdzenia, że wszyscy użytkownicy tej instancji mieszczą się
+w uzgodnionym zakresie. Rozszerzenie odbiorców wymaga osobnego kontrolowanego
+uruchomienia, nie usunięcia blokady w ciemno.
+
+### Kolejność uruchomienia po odrębnym dopuszczeniu deploymentu
+
+1. Odświeżyć authority, powtórzyć governance/routing/code-state i PMOS begin.
+   Potwierdzić cały zestaw zasobów i brak kolizji z pracą równoległą.
+2. Utworzyć **zweryfikowany LKG**: działający SHA, deployment/artifact ID, digest
+   zachowanego artefaktu, wersja konfiguracji i stan migracji; zapisać procedurę
+   przywrócenia. Dotychczasowy odczyt Render nie zastępuje pomiaru artefaktu.
+3. Zrobić prywatny branch/snapshot Neon. Na nim wykonać migrację 003 jako istniejący
+   ograniczony `profitia_access_owner`, w transakcji z niezależną weryfikacją
+   digestów bazowych instalacji, właścicieli i FORCE RLS. Migracja nie daje grantów.
+   Zapisać dokładny digest 003 do `email_installation`. Dodać politykę dokładnej
+   roli/instancji/SERVICE z `enabled=false`, osobnym kluczem dowodu i budżetami.
+   Jawnie nadać runtime tylko EXECUTE na `email_descriptor()` i
+   `email_command(text,bigint,text)`; żadnego dostępu do tabel.
+4. Na izolowanym branchu sprawdzić readback/granty, negatywne przypadki, profil,
+   rejestrację i rollback do poprzedniego wydania przy pozostawionej migracji 003.
+   Potwierdzić odtwarzalność snapshotu. Dopiero wtedy rozważyć identyczną instalację
+   Development i deployment wyłączonego runtime. Nie kopiować połączenia z brancha
+   testowego do działającej usługi.
+5. Osobny etap aktywacji: ograniczony klucz Mailgun, właściwy webhook/signing secret,
+   polityka włączona, konfiguracja i readiness. Sprawdzić realny format zdarzeń oraz
+   zakres odbiorców przed wyłączeniem dostarczania Clerk dla obsługiwanych slugów.
+   Globalna zmiana szablonu nie jest przełącznikiem per użytkownik.
+6. Realne E2E: Clerk wydaje i weryfikuje kod; Mailgun dostarcza. Potwierdzić oba
+   awatary, neutralny brak preferencji, resend, wygaśnięcie, równoległe konta,
+   zaproszenie, awarię i odczyt grafiki w Office 365 oraz home.pl. Nie przedstawiać
+   testów syntetycznych ani przyjęcia przez API jako odbioru wiadomości.
+
+### Zatrzymanie i odzyskiwanie
+
+Wyłączyć przyjmowanie nowych zdarzeń i politykę email, zatrzymać worker, ustalić
+stan wpisów `sending/unknown` w Mailgun przed ręczną akcją. Przywrócić właściciela
+wysyłki po stronie Clerk; stare zdarzenia z `delivered_by_clerk=false` nie mogą być
+ponownie opróżnione przez Mailgun po przywróceniu Clerk. W razie potrzeby odtworzyć
+zweryfikowany LKG aplikacji/konfiguracji. Zachować addytywne tabele 003 i ślady
+deduplikacji, nie wykonywać automatycznego destrukcyjnego down-migration. Wysłanej
+wiadomości nie da się cofnąć. Szyfrogramy terminalnych wiadomości są usuwane od
+razu; wygasłe po następnym uruchomieniu sweepa. W czasie przerwy workera mogą
+pozostać zaszyfrowane dłużej niż 5 minut, bez prawa do wysłania. Tombstone 7 dni,
+minimalny audyt 30 dni, sprzątanie przy pracy workera. Operacyjne ponowienie
+niepewnej wysyłki wymaga diagnozy, nie automatycznego retry.
+
+Dowody i granice: `Canon/evidence/2026-10-24-mailgun-clerk-integration.md`.

@@ -1,4 +1,4 @@
-/** Development sandbox transport. Deliberately not mounted in the HTTP runtime. */
+/** Development transports. Sandbox and transactional modes retain separate guards. */
 export interface SandboxMailgunConfig {
   environment: 'development';
   region: 'us' | 'eu';
@@ -26,9 +26,16 @@ export function mailbox(value: unknown): string {
   return value.slice(0, at) + '@' + value.slice(at + 1).toLowerCase();
 }
 
+export interface TransactionalMailgunConfig extends SandboxMailgunConfig { from: string; senderName: string }
 export function createMailgunSandboxSender(config: SandboxMailgunConfig, fetcher: typeof fetch = fetch) {
+  return createSender(config, fetcher, null)
+}
+export function createMailgunTransactionalSender(config: TransactionalMailgunConfig, fetcher: typeof fetch = fetch) {
+  return createSender(config, fetcher, config)
+}
+function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, transactional: TransactionalMailgunConfig | null) {
   if (config.environment !== 'development' || !['us', 'eu'].includes(config.region) ||
-    !/^sandbox[a-f0-9]{32}\.mailgun\.org$/.test(config.domain) ||
+    !(transactional ? /^(?!sandbox)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(config.domain) : /^sandbox[a-f0-9]{32}\.mailgun\.org$/.test(config.domain)) ||
     typeof config.apiKey !== 'string' || !/^[A-Za-z0-9_-]{20,256}$/.test(config.apiKey)) {
     throw new Error('Invalid sandbox configuration');
   }
@@ -38,15 +45,17 @@ export function createMailgunSandboxSender(config: SandboxMailgunConfig, fetcher
   if (!Number.isInteger(timeout) || timeout < 10 || timeout > 30000) throw new Error('Invalid send timeout');
   const endpoint = `https://${config.region === 'eu' ? 'api.eu.mailgun.net' : 'api.mailgun.net'}/v3/${config.domain}/messages`;
   const authorization = 'Basic ' + Buffer.from('api:' + config.apiKey).toString('base64');
-  const from = `SpendGuru PORR — test <notifications@${config.domain}>`;
+  if (transactional && (mailbox(transactional.from).split('@')[1] !== config.domain || !transactional.senderName
+    || transactional.senderName.length > 80 || /[<>\r\n\x00-\x1f\x7f]/.test(transactional.senderName))) throw Error('Invalid transactional sender');
+  const from = transactional ? `${transactional.senderName} <${transactional.from}>` : `SpendGuru PORR — test <notifications@${config.domain}>`;
 
   return async (message: SandboxMessage): Promise<Submission> => {
     const recipient = mailbox(message.recipient);
     if (!recipients.has(recipient)) throw new Error('Recipient not enabled for sandbox');
-    if (typeof message.subject !== 'string' || !message.subject.startsWith('[TEST SANDBOX] ') ||
+    if (typeof message.subject !== 'string' || (!transactional && !message.subject.startsWith('[TEST SANDBOX] ')) ||
       message.subject.length > 200 || /[\r\n\x00-\x1f\x7f]/.test(message.subject) ||
       typeof message.html !== 'string' || typeof message.text !== 'string' ||
-      !message.html.includes('WIADOMOŚĆ TESTOWA') || !message.text.includes('WIADOMOŚĆ TESTOWA') ||
+      (!transactional && (!message.html.includes('WIADOMOŚĆ TESTOWA') || !message.text.includes('WIADOMOŚĆ TESTOWA'))) ||
       message.html.length > 100000 || message.text.length > 20000) {
       throw new Error('Only labelled sandbox samples may be sent');
     }
@@ -75,7 +84,7 @@ export function createMailgunSandboxSender(config: SandboxMailgunConfig, fetcher
     for (const [key, value] of Object.entries({
       from, to: recipient, subject: message.subject, html: message.html, text: message.text,
       'o:tracking': 'no', 'o:tracking-clicks': 'no', 'o:tracking-opens': 'no',
-      'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': 'avatar-sandbox',
+      'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': transactional ? 'identity-transactional-development' : 'avatar-sandbox',
     })) form.set(key, value);
     try {
       const response = await fetcher(endpoint, {

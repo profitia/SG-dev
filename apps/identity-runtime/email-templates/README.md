@@ -81,3 +81,12 @@ Pliki `.re.html` przeznaczone są do edytora źródła Clerk. `.html` są osobny
 - [Clerk — metadata](https://clerk.com/docs/guides/users/extending)
 - [Revolvapp — syntax](https://imperavi.com/legacy/revolvapp/docs/syntax/tags)
 - Odczyt panelu Development, projektu MagicPath i przypiętego SDK `@clerk/backend` 3.25.0 z 23.10.2026. Panel i SDK używają nazwy zdarzenia `email.created` (liczba pojedyncza).
+
+
+## Kandydat integracji Mailgun — 24.10.2026
+
+Źródłowy wariant `email-runtime.ts` wykorzystuje `renderResolved` i dokładnie ten katalog. Przy starcie pobiera cztery zatwierdzone PNG do pamięci, sprawdza SHA-256 oraz limity i wysyła je jako MIME/CID. Nie wybiera globalnie jednego szablonu: każda wiadomość ma własny wariant z ograniczonej projekcji konta. Nie kopiuje preferencji do publicznych metadanych Clerk.
+
+Wspólny slug `verification_code` otrzymuje neutralny procesowo tekst „Twój kod weryfikacyjny”; nie udaje rozpoznania rejestracji albo logowania. Awatar istniejącego konta może być male/female. Brak udowodnionego subjectu, w tym pierwszy mail rejestracyjny, daje SG. Szablon `invitation` jest osobno dopuszczany dokładnymi originami linku i wymaga odbioru rzeczywistego payloadu. Organizacyjne zaproszenia i pozostałe slugi nie są przejmowane.
+
+Uruchomienie, klucze, polityka SQL i przełączenie dostarczania pozostają wyłączone; procedura i otwarte bramki są w `Canon/runbooks/mailgun-avatar-delivery-development-v1.md`. Starszy rozdział o natywnej projekcji metadanych jest historyczną alternatywą, nie bieżącym planem aktywacji.

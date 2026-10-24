@@ -1,11 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createMailgunSandboxSender, mailbox} from '../dist/src/mailgun-delivery.js';
+import {createMailgunSandboxSender, createMailgunTransactionalSender, mailbox} from '../dist/src/mailgun-delivery.js';
 
 const domain='sandbox'+'a'.repeat(32)+'.mailgun.org';
 const key='test-key-with-at-least-twenty-chars';
 const config={environment:'development',region:'us',domain,apiKey:key,authorizedRecipients:['one@example.com']};
 const message={recipient:'one@example.com',subject:'[TEST SANDBOX] male',html:'<p>WIADOMOŚĆ TESTOWA</p>',text:'WIADOMOŚĆ TESTOWA'};
+
+test('transactional Development sender uses own domain, exact From and allowlist without sandbox sample code',async()=>{
+  const cfg={...config,domain:'mail.example.test',region:'eu',from:'notifications@mail.example.test',senderName:'SpendGuru'}
+  let calls=0
+  const send=createMailgunTransactionalSender(cfg,async(url,init)=>{
+    calls++;assert.equal(url,'https://api.eu.mailgun.net/v3/mail.example.test/messages')
+    assert.equal(init.body.get('from'),'SpendGuru <notifications@mail.example.test>')
+    assert.equal(init.body.get('text'),'Kod 123456');assert.equal(init.body.get('o:tag'),'identity-transactional-development')
+    return Response.json({id:'<test@mail.example.test>'})
+  })
+  const real={recipient:'one@example.com',subject:'Kod weryfikacyjny',text:'Kod 123456',html:'<p>Kod 123456</p>'}
+  assert.equal((await send(real)).status,'accepted')
+  await assert.rejects(()=>send({...real,recipient:'foreign@example.test'}));assert.equal(calls,1)
+  for(const override of [{domain},{from:'evil@foreign.test'},{senderName:'bad\r\nBcc:x'},{environment:'production'}]) assert.throws(()=>createMailgunTransactionalSender({...cfg,...override}))
+})
 
 test('one recipient, exact regional endpoint, tracking off, verified TLS and no API redirects', async()=>{
   for(const region of ['us','eu']) {
