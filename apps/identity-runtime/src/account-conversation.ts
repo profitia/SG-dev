@@ -1,5 +1,7 @@
 /** Scripted presentation over the official Clerk resource; no local authentication authority. */
-export function createClerkConversation(sdk: any, registration: boolean) {
+export function createClerkConversation(sdk: any, registration: boolean, invitationTicket: string | null = null) {
+  // Opaque provider proof, never interpreted locally or written into chat state.
+  if (invitationTicket !== null && (!registration || !/^[A-Za-z0-9_.-]{20,8000}$/.test(invitationTicket))) throw Error('INVALID_INVITATION')
   const state = { step: 'avatar', avatarSex: null as 'male' | 'female' | null, firstName: '', lastName: '', email: '', method: 'email_code', complete: false, busy: false }
   let completedUserId: string | null = null
   async function finish(result: any) {
@@ -33,7 +35,15 @@ export function createClerkConversation(sdk: any, registration: boolean) {
       try {
         if (step === 'avatar') { if (!['male', 'female'].includes(input)) throw Error('INVALID_INPUT'); state.avatarSex = input as 'male' | 'female'; state.step = registration ? 'name' : 'method' }
         else if (step === 'name') { state.firstName = input; state.step = 'surname' }
-        else if (step === 'surname') { state.lastName = input; state.step = 'email' }
+        else if (step === 'surname') {
+          state.lastName = input
+          if (invitationTicket) {
+            const result = await sdk.client.signUp.create({ strategy: 'ticket', ticket: invitationTicket,
+              firstName: state.firstName, lastName: state.lastName, unsafeMetadata: { assistantAvatar: state.avatarSex } })
+            // Clerk alone verifies the invitation/mailbox and required challenges.
+            await finish(result)
+          } else state.step = 'email'
+        }
         else if (step === 'method') { if (!['email_code', 'password'].includes(input)) throw Error('INVALID_INPUT'); state.method = input; state.step = 'email' }
         else if (step === 'email') {
           if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input)) throw Error('INVALID_EMAIL')
@@ -68,7 +78,10 @@ export const conversationClientScript = String.raw`
 window.startSpendGuruConversation = function(cfg, nativeChallenge) {
   const root = document.getElementById('chat-interface');
   if (!root) { nativeChallenge(); return; }
-  const model = createClerkConversation(window.Clerk, cfg.flow === 'registration');
+  const invitation = new URL(window.location.href).searchParams.get('__clerk_ticket');
+  // Unsupported invitation states are handled by the official provider UI.
+  if (invitation && (cfg.flow !== 'registration' || !/^[A-Za-z0-9_.-]{20,8000}$/.test(invitation))) { nativeChallenge(); return; }
+  const model = createClerkConversation(window.Clerk, cfg.flow === 'registration', invitation);
   const reg = cfg.flow === 'registration', en = cfg.en;
   const history = document.getElementById('history'), choices = document.getElementById('choices');
   const form = document.getElementById('composer-form'), input = document.getElementById('answer');
