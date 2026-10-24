@@ -2777,9 +2777,14 @@
     "productDeploymentPerformed": false,
     "defaultHumanReauthorizationPreserved": true,
     "applicationSourceDigests": {
-      "tests/operation-context.test.mjs": "6f9b19321c15ff4259b11cd32e5f11fd156d60cfedec013f160756a0ef3e2e65",
+      "../dashboard-preview/package-lock.json": "38d024530fec6914d2fe26a6ee58c62fd6cd839cc698872b8a97685a7fec2380",
       "package-lock.json": "26d90ac3191425f011859a034be4f5bd086cafa75068dc370e6a1310a9f6caac",
-      "../dashboard-preview/package-lock.json": "38d024530fec6914d2fe26a6ee58c62fd6cd839cc698872b8a97685a7fec2380"
+      "tests/category-operation.test.ts": "630cf5dd89ef58da9f745c63b18552aada0526419fe200a3dd9a529d03e76a67",
+      "tests/identity-runtime.test.ts": "bc178393774b5902f2843ab5cdd8acf02d44b066768c6eb6274c7c7d54d91a42",
+      "tests/operation-context.test.mjs": "6f9b19321c15ff4259b11cd32e5f11fd156d60cfedec013f160756a0ef3e2e65",
+      "tests/porr-demo-middleware.test.ts": "6df4b23045b44e3e4d224f3a3c32506bc7aaf8864490bfadc7f79bfb84818065",
+      "tests/private-host.integration.test.mjs": "b05bc26d742901334410ccabeb9a34b4d0a842c0c5b9eacbe0cbdfb4d3b91ef9",
+      "tests/self-service-account.test.ts": "d1405fe71bd3fcc4478dc9c1bbcb4b3a8ef2aca7cd57cb2ebfbfb15acd50d964"
     }
   }
 }
