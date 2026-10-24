@@ -26,7 +26,7 @@ export function instrumentPilot2(repo,output,proof){
     get(target, key, receiver) {
       const member = Reflect.get(target, key, receiver);
       if (key === 'query' && typeof member === 'function')
-        return (...args: unknown[]) => measureSupplierStage('DOMAIN_SQL', () => Reflect.apply(member, target, args));
+        return (...args: unknown[]) => measureSupplierStage('DOMAIN_SQL', async () => Reflect.apply(member, target, args));
       return typeof member === 'function' ? member.bind(target) : member;
     },
   });`)
