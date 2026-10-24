@@ -51,6 +51,12 @@ an editable latest version. Template variables use `t:variables`, not event-visi
    language on another login. SMTP250 does not itself prove inbox rendering.
 7. PMOS closeout + PHR with actual evidence and residual limitations.
 
+The Identity signal handler stops queue intake/polling before waiting for HTTP
+drain. Unstarted claims are released, one durable provider attempt is completed,
+and an in-progress webhook verification returns503 for retry after shutdown.
+When introducing a new rendering contract, still verify old-instance exit before
+acceptance: a running historical version may not contain this shutdown behavior.
+
 Code rollback restores retained deployment/configuration. Additive language data
 and updated functions remain compatible with previous avatar/queue operations;
 turning language projection off returns EN fallback. Restore a database snapshot
