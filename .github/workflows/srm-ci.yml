@@ -154,6 +154,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:promotion
+      - name: PILOT2 exact baseline and environment isolation
+        run: node --test scripts/pilot2-baseline.test.mjs
       - name: Shared first-onboarding governance tests
         working-directory: .
         run: node --test scripts/governance/srm-release-lifecycle.test.mjs
@@ -170,6 +172,38 @@ jobs:
         with:
           name: krs-name-search-ui-proof
           path: apps/srm/.next/krs-name-ui-proof/
+          if-no-files-found: error
+
+  pilot2-baseline-build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Select PILOT2 preparation changes
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- apps/srm/scripts/pilot2-baseline.mjs apps/srm/scripts/pilot2-baseline.test.mjs apps/srm/deployment/pilot2-runtime-targets.json; then
+            echo 'build=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'build=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build the accepted Staging business source without live credentials
+        if: steps.changes.outputs.build == 'true'
+        run: node apps/srm/scripts/pilot2-baseline.mjs build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: steps.changes.outputs.build == 'true'
+        with:
+          name: pilot2-baseline-build-proof
+          path: .pilot2-baseline/baseline-proof.json
           if-no-files-found: error
 
   srm-staging-guard:
