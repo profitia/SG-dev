@@ -16,7 +16,7 @@ test('registry stage retains all financial formula, parser, UI and freshness byt
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'pilot2-registry-test-')),out=path.join(dir,'out')
  try{
   const proof=prepareBaseline(repo,target,out,'REGISTRY')
-  for(const name of ['financial-indicators.ts','financial-unit.ts','financial-revisions.ts','financial-documents.ts','msr-repository.ts','msr-parser.ts','shared-catalog.ts']){
+  for(const name of ['financial-indicators.ts','financial-unit.ts','financial-revisions.ts','financial-documents.ts','msr-parser.ts','shared-catalog.ts']){
    const file='apps/srm/src/server/'+name
    if(proof.originalFiles[file])assert.equal(hash(fs.readFileSync(path.join(out,file))),proof.originalFiles[file],name)
   }
@@ -26,6 +26,9 @@ test('registry stage retains all financial formula, parser, UI and freshness byt
   assert(engine.indexOf('if(registry)financial=await reconcilePilot2Financial')<engine.indexOf('await atLookupStage("source_archive"'))
   assert(engine.indexOf('if(registry)msr={...await reconcilePilot2Financial')<engine.indexOf('const savedFinancial ='))
   assert.match(engine,/preserveGeneral:!registry/)
+  const msr=fs.readFileSync(path.join(out,'apps/srm/src/server/msr-repository.ts'),'utf8')
+  const originalMsr=execFileSync('git',['show',BUSINESS_BASELINE+':apps/srm/src/server/msr-repository.ts'],{cwd:repo,encoding:'utf8'})
+  assert.equal(msr.replace('import {requirePilot2FinancialAcquisition} from "./pilot2-registry";\n','').replace('claim:(c,id) => {requirePilot2FinancialAcquisition();return withOrganization(organizationId,client => claimMsrSource(client,organizationId,c,id,requestId));},','claim:(c,id) => withOrganization(organizationId,client => claimMsrSource(client,organizationId,c,id,requestId)),'),originalMsr)
   const original=JSON.parse(execFileSync('git',['show',BUSINESS_BASELINE+':apps/srm/package-lock.json'],{cwd:repo}))
   verifyRegistryLock(original,JSON.parse(fs.readFileSync(path.join(out,'apps/srm/package-lock.json'))))
   const changed=JSON.parse(fs.readFileSync(path.join(out,'apps/srm/package-lock.json')));changed.packages['node_modules/pg'].version='0.0.0'

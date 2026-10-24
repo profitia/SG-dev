@@ -10,7 +10,11 @@ test('PILOT2 Source installs atomically with ordinary roles and no account direc
  const u=new URL(fixture)
  if(!['127.0.0.1','localhost'].includes(u.hostname)||!u.port||u.port==='5432'
   ||u.username!=='neondb_owner'||u.pathname!=='/krs_registry_pilot')throw Error('Explicit disposable local Source fixture required')
- const operator=new Pool({connectionString:u.href,max:1})
+ const operator=new Pool({connectionString:u.href,max:1,connectionTimeoutMillis:2000})
+ const adminUrl=new URL(process.env.PILOT2_SOURCE_FIXTURE_ADMIN_URL??u.href)
+ if(!process.env.PILOT2_SOURCE_FIXTURE_ADMIN_URL){adminUrl.username='pilot2_fixture_admin';adminUrl.pathname='/postgres'}
+ if(adminUrl.hostname!==u.hostname||adminUrl.port!==u.port||adminUrl.username!=='pilot2_fixture_admin'||adminUrl.pathname!=='/postgres')throw Error('Same disposable local cluster fixture administrator required')
+ const administrator=new Pool({connectionString:adminUrl.href,max:1,connectionTimeoutMillis:2000})
  let reader,source,business
  try{
   const client=await operator.connect()
@@ -30,8 +34,11 @@ test('PILOT2 Source installs atomically with ordinary roles and no account direc
   const members=(await operator.query("SELECT rolname,pg_has_role(current_user,oid,'MEMBER') member,pg_has_role(current_user,oid,'SET') can_set FROM pg_roles WHERE rolname IN('krs_catalog_owner','profitia_ingestion_owner','krs_reader','krs_ingest') ORDER BY rolname")).rows
   assert.equal(members.length,4);assert(members.every(r=>!r.member&&!r.can_set))
   assert.equal((await operator.query("SELECT to_regnamespace('profitia_access')::text AS namespace")).rows[0].namespace,null)
-  const roleUrl=role=>{const url=new URL(u);url.username=role;url.password='';return url.href}
-  reader=new Pool({connectionString:roleUrl('krs_reader'),max:1});source=new Pool({connectionString:roleUrl('krs_ingest'),max:1})
+  // Production credentials are installed through the provider control plane.
+  // The disposable fixture alone uses its superuser to set fake test passwords.
+  await administrator.query("ALTER ROLE krs_reader PASSWORD 'fixture_only';ALTER ROLE krs_ingest PASSWORD 'fixture_only'")
+  const roleUrl=role=>{const url=new URL(u);url.username=role;url.password='fixture_only';return url.href}
+  reader=new Pool({connectionString:roleUrl('krs_reader'),max:1,connectionTimeoutMillis:2000});source=new Pool({connectionString:roleUrl('krs_ingest'),max:1,connectionTimeoutMillis:2000})
   for(const pool of [reader,source]){
    const row=(await pool.query('SELECT rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolinherit,rolconnlimit FROM pg_roles WHERE rolname=current_user')).rows[0]
    assert.deepEqual(row,{rolsuper:false,rolbypassrls:false,rolcreatedb:false,rolcreaterole:false,rolinherit:false,rolconnlimit:4})
@@ -67,5 +74,5 @@ test('PILOT2 Source installs atomically with ordinary roles and no account direc
   }catch(error){await business.query('ROLLBACK');throw error}
   await business.query("INSERT INTO srm.provider_attempts VALUES('general','KRS'),('general','MGBI'),('financial','MGBI'),('jdg','CEIDG'),('kys','VERCLY')")
   await assert.rejects(business.query("INSERT INTO srm.provider_attempts VALUES('financial','KRS')"),e=>e.code==='23514')
- }finally{await Promise.all([operator.end(),reader?.end(),source?.end(),business?.end()])}
+ }finally{await Promise.all([operator.end(),administrator.end(),reader?.end(),source?.end(),business?.end()])}
 })

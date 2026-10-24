@@ -13,6 +13,9 @@ import {reconcileKrsFinancial} from './krs-financial'
 import type {MgbiFinancialResult} from './mgbi-financial'
 import type {RegistryHistory} from './company-continuity'
 import {readFreshCompany} from './shared-catalog'
+import {FINANCIAL_QUALITY_RULE} from '@profitia/srm-xray'
+import {FINANCIAL_REVISION_RULE} from './financial-revisions'
+import {COMPANY_IDENTITY_VERSION} from './company-continuity'
 import {runXrayLookup,type XrayLookupRequest} from './xray-lookup'
 import {runJdgLookup} from './jdg-lookup'
 import type {RegistrySearchResult} from './registry-search'
@@ -22,6 +25,15 @@ type Env=Readonly<Record<string,string|undefined>>
 export type Pilot2RegistrySelection=Readonly<{general:SectionEnvelope<GeneralCompanyData>;identity:VerifiedIdentityV1;history:RegistryHistory}>
 const deny=():never=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
 const selections=new AsyncLocalStorage<Pilot2RegistrySelection>()
+const readyReport=new AsyncLocalStorage<boolean>(),skipCache=new AsyncLocalStorage<boolean>()
+class FreshFinancialIdentityRequired extends Error{}
+export const pilot2SkipCompanyCache=()=>skipCache.getStore()===true
+/** Cached knowledge cannot acquire a new RDF response or licensed original.
+ * This guard runs before a claim or provider call and changes no receipt. */
+export function requirePilot2FinancialAcquisition(){
+ if(readyReport.getStore()&&!selections.getStore())throw new FreshFinancialIdentityRequired('Fresh company evidence required')
+}
+export const withPilot2ReadyReport=<T>(action:()=>Promise<T>)=>readyReport.run(true,action)
 const issuedSelections=new WeakMap<object,string>()
 export const currentPilot2RegistrySelection=()=>selections.getStore()
 /** Request-local company evidence, never a user actor or an ALLOW decision.
@@ -54,6 +66,8 @@ export function readyPilot2RegistryReport(value:{general:SectionEnvelope<General
   ||!h||h.version!=='KRS_CONTINUITY_V1'||!Array.isArray(h.members)||!Array.isArray(h.unlinkedKrs)
   ||h.currentKrs!==d.krs||h.unlinkedKrs.length||h.members[0]?.krs!==d.krs
   ||!['SUCCESS','PARTIAL'].includes(g.status)||f.source.provider!=='MGBI'||!['SUCCESS','PARTIAL','EMPTY'].includes(f.status))return false
+ if(f.data&&(f.data.revisionRule!==FINANCIAL_REVISION_RULE||f.data.qualityRule!==FINANCIAL_QUALITY_RULE
+  ||f.data.registryHistoryVersion!==COMPANY_IDENTITY_VERSION||f.warnings.some(w=>w.startsWith('MSR_'))))return false
  const allowed=new Set(h.members.map(m=>m.krs))
  return !f.data||Array.isArray(f.data.periods)&&f.data.periods.every(p=>!!p.sourceRegistration&&allowed.has(p.sourceRegistration.krs))
 }
@@ -127,7 +141,10 @@ const registryAbsence=new Set(['GUS_NO_RECORD','GUS_NOT_LEGAL_ENTITY','GUS_LOCAL
  * It adds no lookup endpoint, paid client or company matching algorithm. */
 export async function searchPilot2RegistryByNip(organisationId:string,request:XrayLookupRequest,signal:AbortSignal):Promise<RegistrySearchResult>{
  const nip=request.identifier.value,cached=await readFreshCompany(organisationId,nip)
- if(readyPilot2RegistryReport(cached,nip))return {entityType:'COMPANY',card:await runXrayLookup(organisationId,request)}
+ if(readyPilot2RegistryReport(cached,nip)){
+  try{return {entityType:'COMPANY',card:await withPilot2ReadyReport(()=>runXrayLookup(organisationId,request))}}
+  catch(error){if(!(error instanceof FreshFinancialIdentityRequired))throw error}
+ }
  const result=await (await getPilot2Registry()).resolve(nip,signal)
  signal.throwIfAborted()
  if(result.status==='PRIMARY')return withPilot2RegistrySelection(result.selection,async()=>({entityType:'COMPANY' as const,card:await runXrayLookup(organisationId,request)}))
@@ -139,7 +156,9 @@ export async function searchPilot2RegistryByNip(organisationId:string,request:Xr
   ceidgEmpty=true;return null
  }
  if(registryAbsence.has(result.reason)){const classified=await classify();if(classified)return classified}
- const card=await runXrayLookup(organisationId,request)
+ // An unavailable primary may reuse the ordinary MGBI cache. A KRS cache that
+ // needs new Financial work must instead enter the original MGBI identity flow.
+ const card=await skipCache.run(cached?.general.source.provider==='KRS',()=>runXrayLookup(organisationId,request))
  console.info('SRM registry telemetry',{event:'REGISTRY_ROUTE',provider:'MGBI',reason:result.reason})
  if(card.general.data?.nip===nip&&['SUCCESS','PARTIAL'].includes(card.general.status))return {entityType:'COMPANY',card}
  if(card.general.status==='EMPTY'){

@@ -20,6 +20,10 @@ export function registryPilot2(repo,output,proof){
   fs.writeFileSync(file,action(source));if(!proof.changedFiles.includes(name))proof.changedFiles.push(name)
  }
  const replace=replaceRegistrySeam
+ patch('apps/srm/src/server/msr-repository.ts',source=>replace(
+  'import {requirePilot2FinancialAcquisition} from "./pilot2-registry";\n'+source,
+  'claim:(c,id) => withOrganization(organizationId,client => claimMsrSource(client,organizationId,c,id,requestId)),',
+  'claim:(c,id) => {requirePilot2FinancialAcquisition();return withOrganization(organizationId,client => claimMsrSource(client,organizationId,c,id,requestId));},'))
  patch('apps/srm/src/server/lookup-diagnostics.ts',source=>replace(source,
   'type Provider = "MGBI" | "CEIDG" | "VERCLY";',
   'type Provider = "MGBI" | "CEIDG" | "VERCLY" | "KRS";'))
@@ -37,11 +41,11 @@ export function registryPilot2(repo,output,proof){
    'const pages=JSON.parse(row.payload_text).pages;\n    const result=mapMgbiFinancialRecords(financialRecordsFromPages(pages),{type:"NIP",value:nip},new Date(row.retrieved_at).toISOString(),row.record_count,history);\n    return includeOriginalResponse?{...result,rawResponse:{pages,recordCount:row.record_count}}:result;')
  })
  patch('apps/srm/src/server/xray-lookup.ts',source=>{
-  source='import {currentPilot2RegistrySelection,reconcilePilot2Financial} from "./pilot2-registry";\n'+source
+  source='import {currentPilot2RegistrySelection,reconcilePilot2Financial,pilot2SkipCompanyCache,requirePilot2FinancialAcquisition} from "./pilot2-registry";\n'+source
   source=replace(source,'startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod)',
    'startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod, sectionName==="general" && section.source.provider==="KRS"?"KRS":undefined)')
   source=replace(source,'  const cached = await atLookupStage("cache_read", () => readFreshCompany(organizationId, request.identifier.value));',
-   '  const registry=currentPilot2RegistrySelection();\n  const cached = await atLookupStage("cache_read", () => readFreshCompany(organizationId, request.identifier.value));\n  if(cached && registry){cached.general=registry.general;cached.generalReprojected=true;}')
+   '  const registry=currentPilot2RegistrySelection();\n  const cached = pilot2SkipCompanyCache()?null:await atLookupStage("cache_read", () => readFreshCompany(organizationId, request.identifier.value));\n  if(cached && registry){cached.general=registry.general;cached.generalReprojected=true;}')
   source=replace(source,'const companyData = await enrichCompanyPkd(organizationId, request.identifier.value, cached.general);',
    'const companyData = cached.general.source.provider==="KRS"?cached.general.data:await enrichCompanyPkd(organizationId, request.identifier.value, cached.general);')
   source=replace(source,'    if (cached.generalReprojected) {','    let registrySnapshotId:string|null=null;\n    if (cached.generalReprojected) {')
@@ -55,7 +59,7 @@ export function registryPilot2(repo,output,proof){
   source=replace(source,'const msr = await atLookupStage("financial_persistence", () => enrichMsrFinancial(',
    'let msr = await atLookupStage("financial_persistence", () => enrichMsrFinancial(')
   source=replace(source,'const latest=await fetchMgbiFinancial(request.identifier,{companyHistory:history});',
-   'let latest=await fetchMgbiFinancial(request.identifier,{companyHistory:history});\n        if(registry)latest=await reconcilePilot2Financial(registry,latest);')
+   'requirePilot2FinancialAcquisition();\n        let latest=await fetchMgbiFinancial(request.identifier,{companyHistory:history});\n        if(registry)latest=await reconcilePilot2Financial(registry,latest);')
   source=replace(source,'      }}),"financial");\n    const documents=',
    '      }}),"financial");\n    if(registry)msr={...await reconcilePilot2Financial(registry,msr),msrChanged:msr.msrChanged};\n    const documents=')
   source=replace(source,'if (msr.msrChanged || reconstructed || JSON.stringify(savedFinancial)!==JSON.stringify(cached.financial)) {',

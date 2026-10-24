@@ -4435,13 +4435,13 @@
       "src/server/account-recheck-adoption.test.ts": "52710849c11e78639991b2b2624761ac7c1a61d4a29b94567b563850b0a44556",
       "scripts/pilot2-registry-package.mjs": "52a6681b5753deb934cacd5fa939019b6b5629461baa0bdfcef35da108bb8e82",
       "scripts/pilot2-source-installation.mjs": "6fbbae29448c5883ba0f1018b41a3115bed93c20e60b5ac0300c6c1abaf77349",
-      "scripts/pilot2-source-postgres.test.mjs": "b8a27fbb88ee3f9b1818480128b559a764317f9fa7d36f0f1350433e68ed4e8b",
+      "scripts/pilot2-source-postgres.test.mjs": "5d231b6b3ea696179a11989c03a611576eac22c86b18257a7aa9fe9f9c5e48bc",
       "scripts/pilot2-source-installation.test.mjs": "3e3d28aea1514d05ab8f98f0d1995a85cd30b99fc5b3d49a04568f9634fae341",
-      "scripts/pilot2-registry-overlay.test.mjs": "2b13f482ab5b4efe974f25160e6a4c91b02b402d6d478bc4210626d719e169ea",
-      "scripts/pilot2-registry-overlay.mjs": "31d09372ad3a09dc19f3c91cdaf78b7af8707f8e74bb196aa1a8e72b9409b87f",
+      "scripts/pilot2-registry-overlay.test.mjs": "33d0e564ec4ca91eba68ab78d11009112c960ffea08cfbf5f1be4afc9a1a0a80",
+      "scripts/pilot2-registry-overlay.mjs": "483a8adccf0b8d8037493c2266a371e25796d77e85b6578a33e2b2f55e3598ef",
       "scripts/pilot2-baseline.mjs": "99cc6dbae725e6e470a036f67b04f9d3d724881ac6e0b13534e63be4b19603b1",
-      "src/server/pilot2-registry.ts": "fd2d23ff1f7f339b1d45741b2d4ffdc311f3992bbe396ebbf9db49094227adc6",
-      "src/server/pilot2-registry.test.ts": "6305cbe3e94e2e77534e01e06ac50d840eb8b03ff10d6d9508bb080db817e85e",
+      "src/server/pilot2-registry.ts": "71df3ad53575f3793a15322eaea4a94a194dc90af4cbb682a19a5ea88e00dd64",
+      "src/server/pilot2-registry.test.ts": "223dea29c363777192cc557eb432a96d456649476161c45201925057af80c1a9",
       "deployment/pilot2-registry-targets.json": "867cca219099c89bd8ce51311f021de20298191d7945a5b2eeef81f81a6002b1",
       "deployment/pilot2-registry-package-lock.json": "b1bc3a1ef1c242ae42f3288331bb0321c2b0f9de0a87eb0dc633df806b940992",
       "deployment/pilot2-registry-schema.sql": "e56e2240656ceb9add293a417661f95877987492c693ba2e3d10b15df319b4ee",
@@ -4452,6 +4452,7 @@
     "schemaPlanPrepared": true,
     "schemaInstalled": false,
     "primaryRouteActivated": false,
-    "clerkAndFullE1Delivered": false
+    "clerkAndFullE1Delivered": false,
+    "cachedKnowledgeCannotAcquireFinancial": true
   }
 }
