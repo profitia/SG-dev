@@ -102,7 +102,8 @@ export function createRuntimeSupplierOperationHandler(route:Route,legacy:(reques
    if(runtime.provider!=='clerk')return response(503)
    if(!runtime.supplierApi)return response(503)
    const nip=(route==='search'||route==='company')&&runtime.krsNip?await runtime.krsNip:undefined
-   return await createSrmSupplierOperationHandler(route,runtime.supplierApi,runtime.defaultOrganisationId,nip?.company,nip?.search)(request)
+   const run=()=>createSrmSupplierOperationHandler(route,runtime.supplierApi!,runtime.defaultOrganisationId,nip?.company,nip?.search)(request)
+   return runtime.reportAdmission?await runtime.reportAdmission.run(request,run):await run()
   }catch{return response(503)}
  })
 }

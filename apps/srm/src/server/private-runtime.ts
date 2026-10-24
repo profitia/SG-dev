@@ -1,6 +1,8 @@
 import nipTargets from '../../deployment/krs-nip-development.json'
 import type {KrsNipCompany} from './krs-nip-runtime'
 import {createSrmKrsNativeRuntime,srmKrsPilotTarget,krsPilotDatabaseUrl} from './krs-native-runtime'
+import {createSrmReportAdmissionRuntime,reportAdmissionConfiguration,type SrmReportAdmissionRuntime} from './report-admission-runtime'
+import {currentReportAdmission} from '@profitia/platform-contracts/report-admission'
 import type {KrsNameHttpRuntime} from './krs-name-runtime'
 import { createHash } from 'node:crypto'
 import {createSupplierLocationRuntime,type SupplierLocationRuntime} from './supplier-locations'
@@ -11,7 +13,7 @@ import nativeTargets from '../../deployment/supplier-native-targets.json'
 import type {SrmSupplierApi} from './supplier-api-composition'
 import {readSrmNativeSupplierConfiguration,createSrmNativeSupplierRuntime} from './supplier-native-runtime'
 import pg, { type PoolClient, type PoolConfig } from 'pg'
-import type { Application, OperationExecutor } from '@profitia/platform-contracts/operation-context'
+import type { Application, OperationExecutor,OperationInput,OperationContext } from '@profitia/platform-contracts/operation-context'
 import { OperationDenied } from '@profitia/platform-contracts/operation-context'
 import type { AccessStoreBinding } from '@profitia/platform-contracts/access-store'
 import type { PublicIdentityApplication as IdentityApplication } from '@profitia/platform-contracts/public-request'
@@ -30,6 +32,7 @@ export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<PoolClient>; defaultOrganisationId: string
   supplierRequest?: Readonly<{ executor: OperationExecutor<PoolClient> }>
   supplierApi?: SrmSupplierApi
+  reportAdmission?:SrmReportAdmissionRuntime
   krsName?:Promise<KrsNameHttpRuntime>
   krsNip?:Promise<KrsNipCompany>
   locations?: SupplierLocationRuntime
@@ -196,8 +199,15 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   const pool = new pg.Pool(srmPrivatePoolConfiguration(config, 3))
   const auditPool = new pg.Pool(srmPrivatePoolConfiguration(config, 1))
   for (const p of [pool, auditPool]) p.on('error', () => console.error('Private report database connection unavailable'))
-  const executor = createSrmReportOperationHost({ pool, auditPool, clerk,
+  const ordinaryExecutor = createSrmReportOperationHost({ pool, auditPool, clerk,
     application: config.application, identity: config.identity, binding: config.binding, module: config.module })
+  const admissionConfig=srmKrsPilotTarget(env)?reportAdmissionConfiguration():undefined
+  const admittedExecutor=admissionConfig?createSrmReportOperationHost({pool,auditPool,clerk,
+   application:{...config.application,operations:['supplier.report.read','supplier.report.project']},identity:config.identity,
+   binding:config.binding,module:config.module,reportAdmission:admissionConfig}):null
+  const executor:OperationExecutor<PoolClient>=Object.freeze({contract:ordinaryExecutor.contract,
+   execute:<T>(input:OperationInput,action:(context:Readonly<OperationContext>,transaction:PoolClient)=>T|Promise<T>)=>currentReportAdmission()&&admittedExecutor&&['supplier.report.read','supplier.report.project'].includes(input.operation)
+    ?admittedExecutor.execute(input,action):ordinaryExecutor.execute(input,action)})
   const supplierRequest = config.supplierRequest ? Object.freeze({ executor: createSrmSupplierRequestOperationHost({
     pool, auditPool, clerk, identity: config.identity, binding: config.binding, module: config.module,
     application: { ...config.application, configurationVersion: config.supplierRequest.configurationVersion,
@@ -225,6 +235,7 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     // Limited UAT never receives a KYS reader, even when the host has one.
   }):undefined
   const baseRuntime = { provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
+    ...(admissionConfig&&supplierApi?{reportAdmission:createSrmReportAdmissionRuntime({config,pool,api:supplierApi})}:{}),
     ...(supplierApi?{supplierApi}:{}),
     ...(locations?{locations}:{}),
     ...(supplierRequest ? { supplierRequest } : {}) }

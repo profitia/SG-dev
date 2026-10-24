@@ -1,18 +1,46 @@
-const paths=new Set(['/api/xray/krs/status','/api/xray/krs/search','/api/xray/krs/verify','/api/xray/krs/lookup','/api/xray/search','/api/xray/lookup','/api/xray/report-data'])
-/** Refresh the existing Clerk session before each bounded KRS request. No
- * custom token, identity claim, organisation selector or authority is created. */
-export function createKrsSessionTransport(getToken:(options:{skipCache:true})=>Promise<string|null>,transport:typeof fetch=fetch):typeof fetch{
- return async(input,init)=>{
+const paths=new Set(['/api/xray/admission','/api/xray/krs/status','/api/xray/krs/search','/api/xray/krs/verify','/api/xray/krs/lookup','/api/xray/search','/api/xray/lookup','/api/xray/report-data'])
+const reportPaths=new Set(['/api/xray/krs/lookup','/api/xray/search','/api/xray/lookup','/api/xray/report-data'])
+type Grant={token:string;nip:string;readyUntil:string;expiresAt:string;bearer:string}
+const admissions=new WeakMap<typeof fetch,{grant:Grant|null;prepare:(nip:string,signal:AbortSignal)=>Promise<{readyUntil:string}>}>()
+export async function prepareReport(transport:typeof fetch,nip:string,signal:AbortSignal){
+ const entry=admissions.get(transport)
+ if(!entry)throw Error('Przygotowanie wyszukiwania jest niedostępne.')
+ return entry.prepare(nip,signal)
+}
+/** Prepare one server-authorized report before Search. Its opaque admission
+ * and existing session token remain private to this principal-scoped transport. */
+export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean})=>Promise<string|null>,transport:typeof fetch=fetch):typeof fetch{
+ const entry:{grant:Grant|null;prepare:(nip:string,signal:AbortSignal)=>Promise<{readyUntil:string}>}={grant:null,prepare:async()=>{throw Error('UNAVAILABLE')}}
+ const run:typeof fetch=async(input,init)=>{
   if(typeof input!=='string'||!paths.has(input))return transport(input,init)
   init?.signal?.throwIfAborted()
   const start=performance.now()
-  const token=await getToken({skipCache:true})
+  let grant=reportPaths.has(input)?entry.grant:null
+  if(input==='/api/xray/search'&&grant){let body;try{body=JSON.parse(String(init?.body))}catch{};if(body?.identifier!==grant.nip)grant=null}
+  if(grant&&Date.parse(grant.expiresAt)<=Date.now())throw Error('Przygotowanie wyszukiwania wygasło. Wpisz ponownie numer NIP.')
+  const token=grant?.bearer??await getToken(input==='/api/xray/admission'?{skipCache:true}:undefined)
   if(!token)throw Error('Sesja wygasła. Zaloguj się ponownie.')
   const sessionMs=performance.now()-start
   init?.signal?.throwIfAborted()
   const headers=new Headers(init?.headers);headers.set('Authorization','Bearer '+token)
+  if(grant)headers.set('X-SRM-Report-Admission',grant.token)
   const at=performance.now();let status=0
   try{const response=await transport(input,{...init,headers});status=response.status;return response}
   finally{try{console.info(JSON.stringify({event:'srm_client_request_timing',path:input,httpStatus:status,sessionMs:Math.round(sessionMs*100)/100,fetchMs:Math.round((performance.now()-at)*100)/100}))}catch{}}
  }
+ entry.prepare=async(nip,signal)=>{
+  entry.grant=null
+  if(!/^\d{10}$/.test(nip))throw Error('Podaj prawidłowy numer NIP.')
+  const start=performance.now(),token=await getToken({skipCache:true});signal.throwIfAborted()
+  if(!token)throw Error('Sesja wygasła. Zaloguj się ponownie.')
+  const at=performance.now()
+  const response=await transport('/api/xray/admission',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token,
+   'Idempotency-Key':crypto.randomUUID()},body:JSON.stringify({nip}),cache:'no-store',signal})
+  const grant=await response.json();signal.throwIfAborted()
+  if(!response.ok||!grant||grant.nip!==nip||!/^fr1\.[a-f0-9-]{36}\.[a-f0-9]{64}$/i.test(grant.token??'')||!(Date.parse(grant.readyUntil)>Date.now())||!(Date.parse(grant.expiresAt)>=Date.parse(grant.readyUntil)))throw Error('Nie udało się przygotować wyszukiwania. Spróbuj ponownie.')
+  entry.grant={...grant,bearer:token}
+  console.info(JSON.stringify({event:'srm_client_form_admission_timing',sessionMs:Math.round((at-start)*100)/100,fetchMs:Math.round((performance.now()-at)*100)/100,totalMs:Math.round((performance.now()-start)*100)/100,httpStatus:response.status}))
+  return {readyUntil:grant.readyUntil}
+ }
+ admissions.set(run,entry);return run
 }

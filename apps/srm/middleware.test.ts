@@ -21,3 +21,12 @@ test('location entry does not enable Clerk admission in another authentication m
  try{delete process.env.PROFITIA_AUTH_PROVIDER;assert.equal((await middleware(new NextRequest('https://srm.fixture.test/api/supplier-locations',{method:'POST'}))).status,401)}
  finally{if(before===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=before}
 })
+
+
+test('report preparation reaches its own current HUMAN boundary only at the exact admitted entry',async()=>{
+ const before=process.env.PROFITIA_AUTH_PROVIDER;try{
+  process.env.PROFITIA_AUTH_PROVIDER='clerk';assert.equal((await middleware(new NextRequest('https://srm.fixture.test/api/xray/admission',{method:'POST'}))).headers.get('x-middleware-next'),'1');
+  for(const path of ['/api/xray/admission/extra','/api/xray/admission-v2'])assert.equal((await middleware(new NextRequest('https://srm.fixture.test'+path,{method:'POST'}))).status,401);
+  delete process.env.PROFITIA_AUTH_PROVIDER;assert.equal((await middleware(new NextRequest('https://srm.fixture.test/api/xray/admission',{method:'POST'}))).status,401);
+ }finally{if(before===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=before}
+});

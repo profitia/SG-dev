@@ -6,7 +6,7 @@ import { readSupplierRequest } from './supplier-request-operation'
 import type { SupplierNativeWork, SupplierNativeWorkSelection, SupplierNativeWorkUnit } from './supplier-request-work'
 import { createLookup, type ExistingSupplierRegistration } from './xray-repository'
 import { persistSection } from './xray-lookup'
-import { readFreshCompany, readIndicatorPublication, readStoredIndicatorFacts, projectStoredIndicators, recordSupplierInterest } from './shared-catalog'
+import { readFreshCompany, isFreshCatalogEntry,isCurrentFinancialMapping,readIndicatorPublication, readStoredIndicatorFacts, projectStoredIndicators, recordSupplierInterest } from './shared-catalog'
 import { FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from './financial-indicators'
 import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
@@ -94,6 +94,15 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
     cache(input:SupplierNativeWorkSelection,now=new Date()){
       const s=select(input),at=new Date(now.getTime());if(!Number.isFinite(at.getTime()))return refuse()
       return run(s,'SRM_CACHE_READ',{at:at.toISOString()},pool=>readFreshCompany(s.organisationId,s.command.nip,at,pool))
+    },
+    financialCache(input:SupplierNativeWorkSelection,now=new Date()){
+      const s=select(input),at=new Date(now.getTime());if(!Number.isFinite(at.getTime()))return refuse()
+      return run(s,'SRM_CACHE_READ',{section:'financial',at:at.toISOString()},async(_pool,client)=>{
+        const row=(await client.query<{financial_json:(SectionEnvelope<FinancialData>&{catalogMappingVersion?:string})|null;financial_checked_at:Date|null}>(
+          'SELECT financial_json,financial_checked_at FROM srm.catalog_companies WHERE nip=$1',[s.command.nip])).rows[0]
+        return row?.financial_json&&isFreshCatalogEntry(row.financial_checked_at,at)&&isCurrentFinancialMapping(row.financial_json)
+          &&Array.isArray(row.financial_json.warnings)?row.financial_json:null
+      })
     },
     async indicators(input:SupplierNativeWorkSelection,data:FinancialData){
       const s=select(input),body=json(data)

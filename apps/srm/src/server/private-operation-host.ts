@@ -27,6 +27,7 @@ export function createSrmPrivateOperationHost(options: Omit<HostOptions, "indepe
   return createPrivateOperationHost<PoolClient>({
     application: options.application, binding: options.binding, module: options.module, requestLedger: options.requestLedger, requestContinuation: options.requestContinuation, locationAdmission: options.locationAdmission, now,
     transactionTimeoutMs: options.transactionTimeoutMs,
+    ...(options.reportAdmission?{reportAdmission:options.reportAdmission}:{}),
     readResources: options.readResources, projectOutput: options.projectOutput,
     prepareInputs: options.prepareInputs, describeOutcome: options.describeOutcome,
     createAuthenticator: ({ resolveBinding }) => {

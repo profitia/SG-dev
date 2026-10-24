@@ -47,8 +47,8 @@ function beforePrivateAcquisitionApplicationSource(path){
  return execFileSync('git',['show','8c5e14b0fc4815021231f6752c1073f1c191465b:apps/srm/'+path])
 }
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
-const currentSdkDigests=sdkReceipt.unmeteredSourceCompatibility.sdkDigests
-const currentPlatformSourceDigests=manifest=>({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests})
+const currentSdkDigests=sdkReceipt.formReportAdmissionAdoption.sdkDigests
+const currentPlatformSourceDigests=manifest=>({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportAdmissionAdoption.sourceDigests})
 
 test('SRM imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
@@ -196,7 +196,7 @@ test('complete JDG and KYS orchestration ports retain original engines without c
 })
 
 test('SRM accepts the published optional producer fingerprints', async () => {
-  assert.equal(await accessStoreSourceDigest(), 'fc588b2575bc6346f465faa20a7b21e8585068ed8d56db9cadd3ebca9e980f10')
+  assert.equal(await accessStoreSourceDigest(), currentSdkDigests.accessStoreSourceDigest)
   assert.equal(await identitySourceDigest(), 'b7f3e09e6c62bbaf20c42752f514022c91b0dc0fef9db387f41f613a124ce0b4')
   assert.equal(await privateOperationHostSourceDigest(),currentSdkDigests.privateOperationHostSourceDigest)
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')

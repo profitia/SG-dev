@@ -9,13 +9,13 @@
     "id": "profitia.operation-context",
     "version": "1.0.0",
     "implementation": "1.0.0-candidate.16",
-    "sourceDigest": "39cad3ce94319bf76d7a83a128e3588ec18322aa1f8d188fef05f57252925a20"
+    "sourceDigest": "742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160"
   },
   "producer": {
     "projectKey": "ARCHITECTURE",
-    "taskId": "ARCHITECTURE-KRS-PILOT-LOOKUP-CORRECTION-20261023",
-    "pullRequest": 662,
-    "sourceSha": "6b60f78b3253c67e3732eb34b36661f076954bdf"
+    "taskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
+    "pullRequest": 685,
+    "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
   },
   "hostAdapter": "src/server/operation-report-data.ts",
   "operations": [
@@ -4170,6 +4170,118 @@
       "src/server/supplier-api-composition.ts": "45cf41a5c332cf8a8fb17e03c514b6b6cc26e2999446792a447f26371eda5164",
       "src/server/supplier-native-company.ts": "3fa70b1b527f88f4c5278d3473cae3d1bcd4b9c0ab6c710670962d448e3c9190",
       "src/server/supplier-telemetry.ts": "20a0ad34780432884020ae6e1cd29d69ff52f0ab2eefc4f15b33a8c577d44c92"
+    }
+  },
+  "formReportAdmissionAdoption": {
+    "taskId": "SRM-FORM-REPORT-ADOPTION-20261024",
+    "producerTaskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
+    "platformVersion": "1.28.0",
+    "previousReceiptSourceSha": "0c55054b880059e473bac9d52f4c21b183ba1e38",
+    "previousReceiptSha256": "362ffa6b2ecdb399c54301d66086824e5c4c7d7ed61b55167a8ec897c877ce89",
+    "previousRootAcceptance": {
+      "contract": {
+        "id": "profitia.operation-context",
+        "version": "1.0.0",
+        "implementation": "1.0.0-candidate.16",
+        "sourceDigest": "39cad3ce94319bf76d7a83a128e3588ec18322aa1f8d188fef05f57252925a20"
+      },
+      "producer": {
+        "projectKey": "ARCHITECTURE",
+        "taskId": "ARCHITECTURE-KRS-PILOT-LOOKUP-CORRECTION-20261023",
+        "pullRequest": 662,
+        "sourceSha": "6b60f78b3253c67e3732eb34b36661f076954bdf"
+      }
+    },
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
+      "pullRequest": 685,
+      "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
+    },
+    "sourceDigests": {
+      "migrations/access/025-form-report-admission.sql": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+      "package-lock.json": "cc43559881fde0d1d00065892875531845eb9cb5183e9c87d971c62b9f530eac",
+      "package.json": "6ed37e0a9f63c6908ab42a42f687f63f37798b2c1d7703ab9c28f307424af46c",
+      "src/access-store.d.mts": "90cb7cfb0aa6413382a7936cd9001d533b44de70e622c7e50fbaabee3ea54cd1",
+      "src/access-store.mjs": "498f2a26fbadb26619d8fdbfe5c655b3a28b8b5eba2ca85ec6fc02732215e9fb",
+      "src/operation-context.d.mts": "dfb5e82f7c7acbfbda115d65cd371052304da93a33a54d4dd0eb05eb12e128ed",
+      "src/operation-context.mjs": "203c4ce1664cadabc42342c418fb3da8dfd5e442997620f5c3d11191d49f0107",
+      "src/private-operation-host.d.mts": "5b9bd9185e951ebdac12b8abe94ddabc9a34c2fe8fe976336f0d19ccbb1a4f84",
+      "src/private-operation-host.mjs": "21903235654bc6b40c6f874989c2e4ed34618d01873e7b487428c6d0ba27ec4c",
+      "src/report-admission.d.mts": "397f8c861e85215587c4bc88e696908ec0d4f50ca6917cd2e74f6df9163100c5",
+      "src/report-admission.mjs": "60752635661a60fb1fc18f44656cff3a3052b6488d4ce9be94e277966e6d10a7",
+      "test/private-operation-host.test.mjs": "73c5e7d1f240faacc8e128fc59b42e4949530d354bb76393189f2f5f122ed1dd",
+      "test/report-admission.test.mjs": "0e5c4e4805afae0c56719ebd45153f0c0dcdfe521f65c83b443f5d2150480c5a"
+    },
+    "sdkDigests": {
+      "operationSourceDigest": "742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160",
+      "privateOperationHostSourceDigest": "48c101b2f1a3703a179a47992365fff6ca3cb4434934d0e72f0b1b8b60a04969",
+      "accessStoreSourceDigest": "7b3cde4aaf86af8fb0d7630adaa52553eabd486aebfa6031742fdd5eccb912f8",
+      "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "requestLedgerSourceDigest": "5ba7ab739fae5057e6439088978b5ed83064316267667c96fac3108ef280c414",
+      "externalRequestSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "delegatedJobSourceDigest": "cb08e7c0b2968505a31f27c15a33e0bee80a58bfac965d08c0fdb8d59abc7cc1",
+      "requestContinuationSourceDigest": "d49673ecec3a85dad478b4e8d3e38aa30241cf04b61b6a7dfbb99e7af33c3c53",
+      "requestInspectionSourceDigest": "772f1f5a58e8e544d275c4b8bb0ab09774317a6673c1f6bd8563f96fc6a19811",
+      "requestWorkSourceDigest": "0b8c6566c87c468461c681ec442f55ec391b2cfd2e75d4c306616ec1ae90b8cc",
+      "requestOperationsSourceDigest": "65e1d46269df57ccd7f3f1637e9ac6a73171ecbdad02b35677d23469d73e7237",
+      "additionalRequestSchemaDigest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "externalCallSourceDigest": "ca6bb601cbb7c7eab58f726f133557fe1b1cae17a1606e0f4c070c6d2f803ad2",
+      "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "reportAdmissionSourceDigest": "f24e3f71ef76fdb1e8935d0ddc935ea96c146d93b7ecbc9d6a4a4e2d7879f794",
+      "reportAdmissionSchemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e"
+    },
+    "reportAdmissionOptedIn": true,
+    "sql025Installed": false,
+    "liveGrantsChanged": false,
+    "productDeploymentPerformed": false,
+    "defaultHumanReauthorizationPreserved": true,
+    "humanAuthority": "AT_FORM_ADMISSION",
+    "postClickClerkReads": 0,
+    "privateJdgKysExportsExcluded": true,
+    "financialFreshnessIndependentOfMgbiGeneral": true,
+    "financialHistoryReconciliationPreserved": true,
+    "activationScope": "EXISTING_KRS_DEVELOPMENT_PILOT_ONLY",
+    "applicationSourceDigests": {
+      "app/api/xray/admission/route.ts": "7d491c9d36b0efe46ee323f69685110fd304730241c77d2022c18facfbe5ccac",
+      "app/session-boundary.tsx": "37ef23835b2ae6577306e843e73c35199a1dac161ed9e3adff44739bcaa994d3",
+      "deployment/krs-name-pilot-targets.json": "09920319613158760c46bd564d8324212a789245d6e9a08ccd02b821c541e92a",
+      "middleware.test.ts": "2fd12eaf526e802e8187f3650754134ee681261741619346ba409c69f1f8b014",
+      "middleware.ts": "3f3b6a5c711182314909078a3b68a42d358205846e1769e22f97a7482cfe5c56",
+      "package-lock.json": "52f67072ed1ac652487c86873bac0239759966cf620f2ae890bd2cf73fb3f3d3",
+      "package.json": "4b484bd0e862b7e687a2c8d915d9d76b5af79ccc8e22297a722f275890163d26",
+      "scripts/krs-name-ui.test.mjs": "6a9ee5501e7a1541e8fd864ec344dfdbdff11aa505ab20ad4b3d4238ad93f6c5",
+      "scripts/operation-context.test.mjs": "02eb7a0d2c88c02f06e736bf918508c4725a420c2d167a6c5316f5ccaf548b92",
+      "scripts/private-host.integration.test.mjs": "33d7dda3e6bcee1b7e442118075128bdf2e5d3d6620355ed5d5ece0e9b8d211a",
+      "scripts/report-admission.integration.test.mjs": "8f65243b5da38b17156cef8dec918776ea04425d176f13a34b3083223cad2fc6",
+      "scripts/supplier-delegated-business.integration.test.mjs": "b0b182cb4eed958551069bc3d103cd813e3188f6ba887ea061aab6df2b19bc35",
+      "scripts/supplier-location-admission.integration.test.mjs": "8ed7bb1233e1da88d07ebf5e4fa14d2641edbe07c38da2bce119cec8c96cdf7c",
+      "src/modules/xray/krs-session-transport.test.ts": "f28b1fa65a91583921aceb49c7eacd3ca71b4d0b7cb9e257d4f2c2eb475c47e3",
+      "src/modules/xray/krs-session-transport.ts": "8df32e3a7ddb18a4f127dce9ef09f8dbdfefbb2c3e14abe11386b292d1e7ed9a",
+      "src/modules/xray/report-controller.test.ts": "09e18b496bceb8be4aada1d88f7279b6535540184ff155cc370bab5db8ed3961",
+      "src/modules/xray/supplier-search-gateway.ts": "e7105144c26ecd111ca0738bb78c383ce353f0a642be780de844c6035b0ad354",
+      "src/server/account-recheck-adoption.test.ts": "e162a5d9e7f004fff6d140634fbe67b181ba457e70e3944bc3bfc8c562279723",
+      "src/server/krs-name-runtime.ts": "f020bdca4718beb09ecc4e5105c4ee54a6b6c7ab74a5c37612080e865510278a",
+      "src/server/krs-native-financial.test.ts": "4a5bed263d8341b2c2b25ceb2b5c4dfc674d9e1a172ee48be17e258f2c6f8bce",
+      "src/server/krs-native-financial.ts": "d28ccf9a099c226618fa5ce90b72f404cc9b6248b6f65062e26af5d70b801694",
+      "src/server/krs-native-runtime.ts": "2d10f6aeb1a06f85928d880c15998a3266e2011cbed7cc7696009132bb1858d9",
+      "src/server/peer-read-boundary.test.ts": "f1a6295cafbe9b93d96dca46875f97b4373ea31160a61d5a9ed2b1ad4483668a",
+      "src/server/private-operation-host.ts": "0a622121b0930e121a531345ded9770a4ebcd761a9f9900596492772cddf2165",
+      "src/server/private-runtime.ts": "71f1c18e650dc24c0801bea59ad155ba0af0af045df1446be465a6667b65b594",
+      "src/server/report-admission-runtime.ts": "a5089377b15ea0ce4c9634b03575741f4f04d8b4f1848b8b363be5c393652f07",
+      "src/server/report-runtime.ts": "22d7cc0f80ee4ac64f6b56554fa7e61cfdb28c4fda67af61ddc48fd2df9235f0",
+      "src/server/supplier-acquisition-http.ts": "b3a7c7dbc3bc63d8b93ffa7d63e080f55607a48c503ff1de88377f251856d87e",
+      "src/server/supplier-api-composition.ts": "2a13605ca64e73ed38e50f13146b0768263de2b8216161d9c3c3223ef49aa459",
+      "src/server/supplier-native-company.ts": "d3a86a4c9dd57b682f03d504faa1a8c20e0dede17fff481adfa2c435745ae6d7",
+      "src/server/supplier-native-runtime.ts": "7de88e7d2d48e5d0abef780cf8436b731633eed2e6e8a23996427e289e7b9253",
+      "src/server/supplier-native-work-store.ts": "86cc03a8e133a388d2c8ed3484b9bc2c4f321cfff6f986c059c988d960d34e04",
+      "src/server/supplier-request-work.ts": "50cfc5b1374acf11cee1e124077281c48fc1a977c4dd2228115e41a698fa1da4",
+      "src/server/supplier-source-link.ts": "8d53b98cd1d7daf46fa8ca9bf32bcc57a4bdb14a03f6924b1f1e92f70965e338",
+      "src/server/supplier-telemetry.ts": "2a940a41761c918d40d130fbcdecf4063d39e58ed9e8d1545e6e6d97eaf3dd6b"
+    },
+    "sharedUiSourceDigests": {
+      "packages/srm-xray/src/supplier-search.tsx": "5a261843a39269ff5d7197d42efe5d56b41a97170da029bf66dea3c1a097aba9"
     }
   }
 }

@@ -64,7 +64,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   Object.assign(currentDigests,receipt.accountRecheckSourceCompatibility.applicationSourceDigests,receipt.boundedIndicatorReadAdoption.applicationSourceDigests,receipt.krsNipSourceCompatibility?.applicationSourceDigests,receipt.krsNipActivationCompatibility?.applicationSourceDigests,receipt.organisationLocationAuthorityAdoption?.applicationSourceDigests,receipt.organisationLocationBuildRecovery?.applicationSourceDigests,receipt.krsFinancialTelemetryCompatibility?.applicationSourceDigests,receipt.organisationLocationEntryAdoption?.applicationSourceDigests,receipt.organisationLocationRefreshAdoption?.applicationSourceDigests,receipt.krsGusFirstPublicationCompatibility.applicationSourceDigests,receipt.krsRegonReconciliationCompatibility.applicationSourceDigests,receipt.krsContinuityCompatibility.applicationSourceDigests,receipt.unmeteredSourceCompatibility.applicationSourceDigests);
   Object.assign(currentDigests,receipt.krsCatalogRefreshCompatibility.applicationSourceDigests);
   Object.assign(currentDigests,receipt.financialPerformanceAdoption?.applicationSourceDigests);
-  Object.assign(currentDigests,receipt.clerkCheckpointAdoption?.applicationSourceDigests);
+  Object.assign(currentDigests,receipt.clerkCheckpointAdoption?.applicationSourceDigests,receipt.formReportAdmissionAdoption?.applicationSourceDigests);
   for(const [file,digest]of Object.entries(currentDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

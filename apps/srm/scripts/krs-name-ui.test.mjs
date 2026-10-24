@@ -29,6 +29,10 @@ const gateway={available:async()=>!location.search.includes('disabled'),
  search:async(query,signal)=>{calls.search++;await delay(query==='slow'?800:40);if(query==='error')throw Error('Synthetic outage');
  return {coverage:'PROGRESSIVE',candidates:query==='empty'?[]:[{...candidate,krs:query==='reject'?'0000000002':candidate.krs,name:query==='slow'?'Old stale fixture':candidate.name}]};},
  verify:async(krs,signal)=>{calls.verify++;await delay(200);if(krs==='0000000002')throw Error('Synthetic identity denial');return {...candidate,selectionRef:'KRS:0000000001:'+ 'a'.repeat(64)};}};
+if(location.search.includes('admission')){window.fixtureAdmission={prepared:0,aborted:0};gateway.prepare=async(nip,signal)=>{
+ window.fixtureAdmission.prepared++;signal.addEventListener('abort',()=>window.fixtureAdmission.aborted++,{once:true});
+ await delay(450);if(signal.aborted)throw new DOMException('Aborted','AbortError');
+ return {readyUntil:new Date(Date.now()+6200).toISOString(),expiresAt:new Date(Date.now()+7000).toISOString()};};}
 function Fixture(){const [nip,setNip]=useState('');return <main className="appshield"><SupplierHeader/><SupplierSearch nip={nip} onNipChange={setNip} gateway={gateway} busy={false} onNipSearch={()=>{calls.nip++}} onNameSearch={()=>{calls.name++}}/><p data-fixture-only>Isolated synthetic UI fixture</p></main>}
 createRoot(document.getElementById('root')).render(<Fixture/>);`;
   let browser,server;
@@ -90,6 +94,18 @@ createRoot(document.getElementById('root')).render(<Fixture/>);`;
     assert.equal(await page.getByRole('button',{name:'Nazwa spółki',exact:true}).isEnabled(),false);
     await page.getByLabel('Wpisz numer NIP',{exact:true}).fill('5213390341');await page.getByRole('button',{name:'Wyszukaj',exact:true}).click();
     assert.deepEqual(await page.evaluate(()=>window.fixtureCalls),{search:0,verify:0,nip:1,name:0});
+    await page.goto(url+'/?admission');const nipInput=page.getByLabel('Wpisz numer NIP',{exact:true}),submit=page.getByRole('button',{name:'Wyszukaj',exact:true});
+    await nipInput.fill('5213390341');await page.getByText('Przygotowanie wyszukiwania…',{exact:true}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Przygotowanie…',exact:true}).isEnabled(),false);await nipInput.press('Enter');
+    assert.equal(await page.evaluate(()=>window.fixtureCalls.nip),0);
+    await page.waitForFunction(()=>window.fixtureAdmission.prepared===1);await nipInput.fill('7772776017');await page.waitForFunction(()=>window.fixtureAdmission.aborted>=1);
+    await submit.waitFor();await submit.click();assert.equal(await page.evaluate(()=>window.fixtureCalls.nip),1);
+    await page.getByRole('button',{name:'Przygotuj ponownie',exact:true}).waitFor();
+    const preparedCount=await page.evaluate(()=>window.fixtureAdmission.prepared);await page.waitForTimeout(700);
+    assert.equal(await page.evaluate(()=>window.fixtureAdmission.prepared),preparedCount,'Expired preparation must not create endless jobs');
+    assert.equal(await submit.isEnabled(),false);await page.getByRole('button',{name:'Przygotuj ponownie',exact:true}).click();
+    await page.waitForFunction(count=>window.fixtureAdmission.prepared>count,preparedCount);await submit.waitFor();
+    await page.screenshot({path:path.join(artifacts,'admitted-form.png'),fullPage:true});
     assert.deepEqual(errors,[]);
     fs.writeFileSync(path.join(artifacts,'proof.json'),JSON.stringify({scope:'ISOLATED_SYNTHETIC_UI_ONLY',browser:'Chromium',nipRegression:'PASS',keyboard:'PASS',mouse:'PASS',emptyErrorRetry:'PASS',debounceAbortRaces:'PASS',mobile:'PASS',networkProviderCalls:0,liveCatalogOrFinancialUat:false},null,2));
   }finally{await browser?.close();if(server)await new Promise(r=>server.close(r));fs.rmSync(directory,{recursive:true,force:true});}

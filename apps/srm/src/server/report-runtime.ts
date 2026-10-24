@@ -14,9 +14,10 @@ export function createRuntimeSrmReportHandler(
       const runtime = resolveRuntime()
       if (runtime.provider === 'legacy_demo') return await legacy(request)
       if (runtime.provider !== 'clerk') throw new TypeError('Unsupported server runtime')
-      const response = await createOperationReportDataHandler(runtime.executor, environment, {
+      const run = () => createOperationReportDataHandler(runtime.executor, environment, {
         defaultOrganisationId: runtime.defaultOrganisationId,
       })(request)
+      const response=runtime.reportAdmission?await runtime.reportAdmission.run(request,run):await run()
       response.headers.set('Cache-Control', 'private, no-store')
       response.headers.set('Vary', 'Cookie, Authorization')
       return response

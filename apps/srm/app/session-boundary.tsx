@@ -36,7 +36,7 @@ export function SrmSessionContent({ session, children }: { session: SessionPrese
 }
 function ClerkSessionContent({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth();
-  const transport=useMemo(()=>createKrsSessionTransport(getToken),[getToken]);
+  const transport=useMemo(()=>createKrsSessionTransport(getToken),[getToken,userId,sessionId]);
   const session: SessionPresentation = !isLoaded ? { status: "loading" }
     : isSignedIn && userId && sessionId ? { status: "signed-in", userId, sessionId } : { status: "signed-out" };
   return <SrmSessionContent session={session}><SessionTransport.Provider value={transport}>{children}</SessionTransport.Provider></SrmSessionContent>;
