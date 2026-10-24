@@ -16,6 +16,7 @@ const prompts: Record<string, string> = {
   method: 'Jak chcesz się zalogować — jednorazowym kodem e-mail czy hasłem?',
   email: 'Podaj swój adres e-mail.', code: 'Sprawdź swoją skrzynkę. Wpisz sześciocyfrowy kod z wiadomości.',
   password: 'Wpisz hasło do swojego konta.', existing: 'Ten adres ma już ukończone konto. Przejdź do logowania.',
+  password_unavailable: 'To konto nie ma ustawionego hasła. Możesz zalogować się jednorazowym kodem wysłanym na Twój adres e-mail.',
   reset_code: 'Wysłaliśmy kod do zmiany hasła na Twój adres e-mail. Wpisz sześciocyfrowy kod z wiadomości.',
   new_password: 'Adres e-mail potwierdzony. Ustaw nowe, unikalne hasło. Po zmianie wylogujemy pozostałe sesje Twojego konta.',
   challenge: 'Potrzebne jest dodatkowe potwierdzenie. Dokończ je w bezpiecznym formularzu logowania.',
@@ -94,6 +95,12 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
         next = await recovery.finish(value);
         setPasswordChanged(true); setConfirmation('');
       } else { await model.submit(value); next = model.state.step; }
+      // An account without a password is not a security challenge. Preserve every
+      // other provider status (MFA, device trust, Protect) for the official UI.
+      if (previous === 'email' && mode === 'login' && model.state.method === 'password' && next === 'challenge'
+        && clerk.client.signIn.status === 'needs_first_factor'
+        && !clerk.client.signIn.supportedFirstFactors?.some(f => f.strategy === 'password')
+        && clerk.client.signIn.supportedFirstFactors?.some(f => f.strategy === 'email_code')) next = 'password_unavailable';
       if (!mounted.current) return;
       if (previous === 'avatar') setAvatar(value as 'male'|'female');
       const shown = ['code','reset_code'].includes(previous) ? '••••••' : ['password','new_password'].includes(previous) ? '••••••••' : previous === 'avatar' ? (value === 'male' ? 'Awatar męski' : 'Awatar żeński') : previous === 'method' ? (value === 'password' ? 'Hasło' : 'Kod e-mail') : value;
@@ -145,6 +152,7 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
           : <><div role="log" aria-live="polite" aria-relevant="additions">{messages.map((message,i)=><div key={i} className={`porr-message ${message.user?'is-user':''}`}>{!message.user && <Avatar sex={avatar} size={28}/>}<div className="porr-bubble">{message.text}</div></div>)}</div>
             {step === 'avatar' && !isSignedIn && <div className="porr-choices avatars">{(['female','male'] as const).map(sex=><button disabled={busy || !isLoaded} key={sex} onClick={()=>void submit(sex)}><Avatar sex={sex} size={60}/><span>Awatar {sex === 'male' ? 'męski' : 'żeński'}</span></button>)}</div>}
             {step === 'method' && <div className="porr-choices"><button disabled={busy} onClick={()=>void submit('email_code')}>Kod e-mail</button><button disabled={busy} onClick={()=>void submit('password')}>Hasło</button></div>}
+            {step === 'password_unavailable' && <button className="porr-primary" disabled={busy} onClick={()=>void switchMethod(true)}>Zaloguj się kodem e-mail</button>}
             {step === 'existing' && <button className="porr-primary" disabled={busy} onClick={onLogin}>Przejdź do logowania</button>}
             {step === 'challenge' && <button className="porr-primary" disabled={busy} onClick={()=>setNative(true)}>Dokończ potwierdzenie</button>}
           </>}

@@ -4404,10 +4404,10 @@
     "identityAuthorityChanged": false,
     "sharedBackendChanged": false,
     "applicationSourceDigests": {
-      "app/login/porr-account.tsx": "978dc5b020a3e0e89ea2068be8c9d51e563713e0a9539daa44fb399058988bb6",
+      "app/login/porr-account.tsx": "edd4c706898c02c41c9877e849e9f36cb3d7b9e2b4dbb18aab13a4afd42e9247",
       "app/login/porr-account.css": "77c1f8f36b5707d7b840c9fba6480838bea1e4e075f03c1f9e828315b81e0ba1",
       "app/login/porr-password-recovery.ts": "e98ec00a4e52d91f46b868d3ff24d2a5bea75839d71f4a952c45f777a5d172f8",
-      "scripts/porr-account-ui.test.mjs": "05d9cb56e1b9fc4b35e2aea7b8a309f590f95597ce1588b0d7f6a70d7366e34a",
+      "scripts/porr-account-ui.test.mjs": "b72c4cba525a111ab453c5190337df1775991dd3271d0a768b3a7e3d782238e5",
       "src/server/account-recheck-adoption.test.ts": "f02b8b8a8da80755d9bc5fccda217dc7a2653dbd10daebe4e7e96b60a08325cf",
       "src/server/peer-read-boundary.test.ts": "bcc1e45ba6c4fddfb4d52c036ac288599af105d292b70f21a6db76035deedf93"
     }
