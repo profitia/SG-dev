@@ -7,7 +7,20 @@ import {execFileSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 import {assembleLocationAccessSource} from './location-access-build-release.mjs'
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../..')
-test('location source adopts exactly one HQ check, retaining prior narrow artifact and parallel KRS exclusion',()=>{
+// The Maps runtime remains on its accepted artifact. The new KRS-only entry
+// must stay outside that frozen build; test its original accepted input.
+function withRetainedLocationSource(check){
+ const receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/srm/operation-integration.json'))).formReportAdmissionAdoption;
+ if(!receipt)return check(root);
+ const temp=fs.mkdtempSync(path.join(os.tmpdir(),'location-retained-source-')),input=path.join(temp,'input');
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,input]);
+  execFileSync('git',['checkout','--quiet','--detach',receipt.previousReceiptSourceSha],{cwd:input});
+  execFileSync('git',['remote','set-url','origin','https://github.com/profitia/SG-dev.git'],{cwd:input});
+  return check(input);
+ }finally{fs.rmSync(temp,{recursive:true,force:true})}
+}
+test('location source adopts exactly one HQ check, retaining prior narrow artifact and parallel KRS exclusion',()=>withRetainedLocationSource(root=>{
  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'location-access-source-test-'))
  try{
   const out=path.join(temp,'source'),r=assembleLocationAccessSource(root,out)
@@ -25,8 +38,8 @@ test('location source adopts exactly one HQ check, retaining prior narrow artifa
   assert.equal(fs.readFileSync(path.join(out,r.changedPaths[2]),'utf8'),fs.readFileSync(path.join(root,r.changedPaths[2]),'utf8'))
   assert.throws(()=>assembleLocationAccessSource(root,out),/FRESH_RELEASE_DIRECTORY_REQUIRED/)
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
-})
-test('provider shallow clone retains the fetch-only accepted artifact in the isolated build input',()=>{
+}))
+test('provider shallow clone retains the fetch-only accepted artifact in the isolated build input',()=>withRetainedLocationSource(root=>{
  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'location-access-shallow-test-'))
  const run=(args,cwd)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:'pipe'})
  const accepted='7833cbfff7cea55cbc2c92be8fff71650167b22d',shallow=path.join(temp,'provider')
@@ -53,4 +66,4 @@ test('provider shallow clone retains the fetch-only accepted artifact in the iso
   assert.equal(r.baseArtifactSourceSha,accepted);assert.equal(r.identityOrKrsSourceAdopted,false)
   assert.deepEqual(r.changedPaths,['apps/srm/src/server/supplier-locations.ts','apps/srm/middleware.ts','apps/srm/src/modules/xray/supplier-location-controller.ts'])
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
-})
+}))
