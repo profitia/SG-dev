@@ -4244,8 +4244,7 @@
     "financialHistoryReconciliationPreserved": true,
     "activationScope": "EXISTING_KRS_DEVELOPMENT_PILOT_ONLY",
     "applicationSourceDigests": {
-      "package-lock.json": "cd453035cd5713bd1b6b1eccad1d5a0a1c60ef008f5fefa288a4d8424709d671",
-      "scripts/private-host.integration.test.mjs": "339ae7c8c23c08ae6d06d05b8f1a735666af729c3310fece457399e98164af66"
+      "scripts/location-access-release-source.test.mjs": "5144fd389ec54ef56bbfbcaf475dbe2fc6f0131f323fcb2028603ed527d707e0"
     },
     "sharedUiSourceDigests": {
       "packages/srm-xray/src/supplier-search.tsx": "5a261843a39269ff5d7197d42efe5d56b41a97170da029bf66dea3c1a097aba9"
