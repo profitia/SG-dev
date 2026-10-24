@@ -155,8 +155,20 @@ test('financial performance adoption preserves history and pins exact batch guar
  const previous=JSON.parse(execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json'],{encoding:'utf8'}))
  for(const[k,v]of Object.entries(previous))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k)
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm')
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(acceptedReceipt.clerkCheckpointAdoption?execFileSync('git',['show',acceptedReceipt.clerkCheckpointAdoption.previousSourceSha+':apps/srm/'+file]):fs.readFileSync(path.join(root,file))),digest,file)
  for(const[file,digest]of Object.entries(a.optionalSqlDigests))assert.equal(hash(fs.readFileSync(path.join(root,'db/private-store',file))),digest,file)
  for(const key of ['perStatementCurrentAuthority','setBasedExactPacketValidation','identicalRevisionReceiptReplay','noPermissionTtlCache','requestLocalInflightIdentityCoalescing'] as const)assert.equal(a[key],true,key)
  assert.equal(a.liveSqlInstalled,false);assert.equal(a.pilotDeployed,false)
 })
+
+test('Clerk checkpoint adoption preserves prior receipts and current Native Work security without an authority cache',()=>{
+ const a=acceptedReceipt.clerkCheckpointAdoption;
+ const previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.taskId,'SRM-CLERK-CHECKPOINT-CORRECTION-20261024');assert.equal(a.producerPr,672);
+ for(const key of ['companyEvidenceIsAuthority','identityDecisionCacheIntroduced','sharedIdentitySourceChanged','newUserGrantsRequired','paidProviderPoliciesChanged','liveDeployed'] as const)assert.equal(a[key],false,key);
+ assert.equal(a.nativeAccountBeforeOutcomePreserved,true);assert.equal(a.currentHumanAcquisitionPublicationDisclosure,true);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file);
+ const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'));assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);
+});

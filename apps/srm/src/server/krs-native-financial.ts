@@ -13,12 +13,13 @@ import {unrequestedCorporateGeneral} from './corporate-source-store'
 // original native Request/Source/Work/archive/MSR/Financial helpers as NIP mode.
 type Ports=Pick<XrayCompanyPorts,'createLookup'|'fetchMgbiFinancial'|'saveMgbiArchive'|'saveFinancialDocuments'|
  'readFinancialDocuments'|'enrichMsrFinancial'|'persistSection'|'saveSharedCompany'|'refreshFinancialIndicators'|'recordInterest'|'reprojectFinancialArchive'>
+export type KrsFinancialRecheck=(boundary?:'ACQUISITION'|'PUBLICATION')=>Promise<void>
 export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,
- recheck:()=>Promise<void>,now:()=>number=Date.now,general?:SectionEnvelope<GeneralCompanyData>){
+ recheck:KrsFinancialRecheck,now:()=>number=Date.now,general?:SectionEnvelope<GeneralCompanyData>){
  const {validateIdentityEvidence}=await import('@profitia/krs-registry-contracts')
  const deny=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
- const check=async()=>{const current=await validateIdentityEvidence(identity,now());
-  if(current.status!=='VERIFIED'||current.identity.nip!==selection.command.nip)return deny();await recheck()}
+ const check=async(boundary?:Parameters<KrsFinancialRecheck>[0])=>{const current=await validateIdentityEvidence(identity,now());
+  if(current.status!=='VERIFIED'||current.identity.nip!==selection.command.nip)return deny();await recheck(boundary)}
  await check()
  const org=selection.organisationId,nip=selection.command.nip
  const lookup=await ports.createLookup(org,{type:'NIP',value:nip},'COMPANY')
@@ -33,7 +34,8 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
  const restored=await ports.reprojectFinancialArchive(org,nip,history,undefined,true)
  const cached=restored&&isFreshCatalogEntry(restored.section.retrievedAt,new Date(now()))?restored:null
  let result=await reconcileKrsFinancial(identity,cached??await ports.fetchMgbiFinancial({type:'NIP',value:nip},{companyHistory:history}),now(),history)
- await check()
+ // Fresh HUMAN authority after a new provider acquisition, before its archive.
+ await check(cached?undefined:'ACQUISITION')
  let pending=false
  if(result.rawResponse&&!result.errorCode&&result.section.retrievedAt){
   if(!cached){
@@ -45,7 +47,8 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
   pending=true
   }else{
   result=await ports.enrichMsrFinancial(org,nip,result,{requestId:selection.requestId,allowedKrs:history?.members.map(m=>m.krs)??[identity.selectedKrs],maximumNewDownloads:1})
-  await check()
+  // MSR may have acquired a licensed original; recheck before publication.
+  await check('ACQUISITION')
   result=await reconcileKrsFinancial(identity,result,now(),history)
   pending=result.section.warnings.includes('MSR_PROCESSING_PENDING')&&!result.section.warnings.some(w=>['MSR_BUDGET_UNAVAILABLE','MSR_FILE_BUDGET_EXHAUSTED','MSR_PROVIDER_NOT_CONFIGURED'].includes(w))
   if(result.section.data){
@@ -58,13 +61,14 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
  const accepted=result
  let published=false
  return Object.freeze({result:accepted,pending,async publish(eligible:MgbiFinancialResult){
-  await check()
+  await check('PUBLICATION')
   if(pending||published||eligible.errorCode||JSON.stringify(eligible.rawResponse)!==JSON.stringify(accepted.rawResponse)
    ||JSON.stringify(eligible.facts)!==JSON.stringify(accepted.facts))return deny()
   const audited=await reconcileKrsFinancial(identity,accepted,now(),history)
   if(audited.errorCode||JSON.stringify(audited.section)!==JSON.stringify(eligible.section))return deny()
   const snapshotId=await ports.persistSection(org,lookup,'financial',eligible.section,eligible.errorCode,eligible.facts,undefined,eligible.sourceData,cached?'CACHE':'PROVIDER')
-  await check()
+  // Corporate Source is a separate publication boundary after private Work.
+  await check('PUBLICATION')
   await ports.saveSharedCompany(org,nip,{general:unrequestedCorporateGeneral(),financial:eligible.section,
    generalSnapshotId:null,financialSnapshotId:snapshotId,facts:eligible.facts,preserveGeneral:true})
   await check();await ports.recordInterest(org,nip);published=true
