@@ -1,6 +1,6 @@
 # Persisted vocative salutations — Identity Development
 
-Status: SOURCE_CANDIDATE_NOT_DEPLOYED. Task ARCHITECTURE-VOCATIVE-20261024; transport dependency ARCHITECTURE-VOCATIVE-TRANSPORT-20261024. Owner Architecture Platform. No SG2/SRM/KRS deployment, Staging or Production.
+Status: VERIFIED_DEVELOPMENT, 2026-10-24. Task ARCHITECTURE-VOCATIVE-20261024; transport dependency ARCHITECTURE-VOCATIVE-TRANSPORT-20261024. Owner Architecture Platform. Identity runtime SHA 13da7561edb5d9bbe42788870a63f9c22060a4d7. See [release evidence](../evidence/2026-10-24-vocative.md) for exact test boundaries, dictionary coverage and rollback. No SG2/SRM/KRS deployment, Staging or Production.
 
 ## Business contract
 
@@ -25,11 +25,11 @@ enqueue freezes name/vocative alongside existing language/avatar snapshots. Dedu
 ## Release and backfill
 
 1. Fail-closed governance, canonical PMOS begin, exact paths and clean isolated branch. Schema-only producer PR/controlled CI separately from Identity runtime PR.
-2. Capture retained live Identity deployment SHA, actual artifact digest, configuration digest and migration hashes. Save configuration privately. Snapshot the exact Identity Development Neon branch; restore into a separate rehearsal branch without moving production computes.
+2. Capture retained live Identity deployment SHA, actual artifact digest, configuration digest and migration hashes. Save configuration privately. Snapshot the exact Identity Development Neon branch; restore into a separate rehearsal branch without moving live computes. Neon restore_snapshot must explicitly use finalize:false; its default can move the source endpoint and default-branch designation.
 3. Install SQL006 + installVocativeDictionary(query) in one owner transaction; insert manifest hashes only after all rows load. Grant runtime only vocative_descriptor and the two existing wrapper command signatures. Initially leave salutation policy disabled. Verify original accounts, bindings, preferences, memberships and statuses unchanged.
 4. Rehearse retained SQL005 command compatibility, rejected raw/forged access and rollback. Existing-user backfill reads first_name only through exact active Clerk issuer/subject mappings; skip missing names, do not parse display_name/email. Set first_name_source=clerk-backfill only where first_name is NULL. No overwrite of registrations or preferences. Keep before-images privately.
 5. Publish and read back 12 immutable Mailgun versions (2 message kinds x 2 languages x 3 avatar variants), preserving old versions. greeting is a bounded template-only variable, not an event/user metadata field. HTML escapes values; plain text remains readable; images use existing CID attachments.
-6. Enable salutation projection only after rehearsal/CI; deploy only the approved Identity Development SHA. Verify health, provider version, first and later mails, DB persistence and no new runtime errors.
+6. Enable salutation projection only after rehearsal/CI; deploy only the approved Identity Development SHA. Wait until the previous instance has drained before acceptance mail tests: during rolling replacement an old worker can still use its retained template version. Verify health, provider version, first and later mails, DB persistence and no new runtime errors.
 7. PMOS/PHR closeout with exact evidence and residual dictionary coverage limitation.
 
 ## Rollback
