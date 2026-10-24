@@ -91,6 +91,33 @@
             "bootstrapDeployId": "dep-dbd5hm4ipgvc73d98vdg",
             "bootstrapSha": "2936119359f4614f7c864fa2456c4317a0ec065d",
             "googleMapsEnabled": false
+          },
+          "krsPilot2": {
+            "serviceId": "srv-dbeh6srrjlhs73fmikrg",
+            "name": "srm-krs-pilot2-development",
+            "url": "https://srm-krs-pilot2-development.onrender.com",
+            "autoDeploy": false,
+            "plan": "0.5c-512mb",
+            "logicalOwner": "SRM Platform",
+            "sourcePath": "apps/srm",
+            "ownerApprovalRef": "SRM-PILOT2-STAGING-BASELINE-20261024",
+            "acceptanceStatus": "ISOLATED_RESOURCES_CREATED_BUSINESS_BASELINE_NOT_DEPLOYED",
+            "googleMapsEnabled": false,
+            "resourceBinding": "apps/srm/deployment/pilot2-runtime-targets.json",
+            "businessBaselineSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+            "neon": {
+              "projectId": "snowy-breeze-40315151",
+              "branchId": "br-summer-rain-b1nwbcbr",
+              "parentBranchId": "br-broad-butterfly-b11t4v01",
+              "endpointId": "ep-fragrant-cloud-b1y6i4v8",
+              "databaseName": "srm_app",
+              "runtimeRole": "srm_app_runtime",
+              "suspendTimeoutSeconds": 300,
+              "additionalExperimentCostLimitUsd": 10
+            },
+            "scope": "DEVELOPMENT_PERFORMANCE_EXPERIMENT_ONLY",
+            "priorPilot2Lkg": "NONE_FIRST_BOOTSTRAP",
+            "rollback": "Suspend only PILOT2; preserve its database and source evidence. Other environments remain unchanged."
           }
         }
       },

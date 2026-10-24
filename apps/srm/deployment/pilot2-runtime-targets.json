@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "SRM",
+  "targetEnvironment": "development",
+  "purpose": "STAGED_PERFORMANCE_EXPERIMENT_ONLY",
+  "source": {
+    "repository": "profitia/SG-dev",
+    "authorityBranch": "main",
+    "businessBaselineSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+    "stagingServiceId": "srv-db496b3tqb8s73eh5sfg",
+    "stagingDeployId": "dep-db97qcjl550s73d2f170"
+  },
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "projectId": "prj-dapbd3hsrm7s73es53fg",
+    "environmentId": "evm-dapbd70ae00c73cgrup0",
+    "serviceId": "srv-dbeh6srrjlhs73fmikrg",
+    "serviceName": "srm-krs-pilot2-development",
+    "url": "https://srm-krs-pilot2-development.onrender.com",
+    "region": "frankfurt",
+    "plan": "0.5c-512mb",
+    "instances": 1,
+    "autoDeploy": false
+  },
+  "neon": {
+    "projectId": "snowy-breeze-40315151",
+    "parentBranchId": "br-broad-butterfly-b11t4v01",
+    "branchId": "br-summer-rain-b1nwbcbr",
+    "branchName": "development-srm-pilot2-20261024",
+    "sourceLsn": "0/7E95958",
+    "endpointId": "ep-fragrant-cloud-b1y6i4v8",
+    "host": "ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech",
+    "databaseName": "srm_app",
+    "runtimeRole": "srm_app_runtime",
+    "minCu": 0.25,
+    "maxCu": 8,
+    "suspendTimeoutSeconds": 300
+  },
+  "approval": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "renderMonthlyUsd": 7,
+    "neonAdditionalExperimentUsd": 10,
+    "source": "Explicit owner approvals2026-10-24",
+    "noOtherEnvironmentMutation": true
+  },
+  "baseline": {
+    "allowedSourceChanges": [
+      "apps/srm/src/server/runtime-environment.ts:Development branch and endpoint identities only"
+    ],
+    "humanAuthentication": "ORIGINAL_STAGING_DEMO_TEST_CONTEXT",
+    "clerkInstalled": false,
+    "fullE1Installed": false,
+    "sevenDayCache": "UNCHANGED",
+    "status": "PREPARED_NOT_ACCEPTED_OR_DEPLOYED"
+  }
+}
+
