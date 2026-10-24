@@ -16,5 +16,6 @@
   "meteredMechanismRetained": true,
   "upstreamFileEntitlementChecksPreserved": true,
   "otherRuntimePoliciesUnchanged": true,
-  "roleQuotaSchemaDigest": "b3e8ec02ccaff27b99d1bb961a7ae3d8df7663e5d6cd20da6bb09647c7dfa6c4"
+  "roleQuotaSchemaDigest": "b3e8ec02ccaff27b99d1bb961a7ae3d8df7663e5d6cd20da6bb09647c7dfa6c4",
+  "maximumInventoryResponseBytes": 8388608
 }
