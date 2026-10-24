@@ -31,6 +31,33 @@ test('worker marks begin before send, uses canonical avatar, awaits one concurre
   assert.deepEqual(f.effects,['claim','begin','female','send','accepted'])
   await f.runtime.stop();await f.runtime.tick();assert.equal(f.effects.length,5)
 })
+function gate(){let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
+for(const phase of ['claim','recipient']) test('shutdown during '+phase+' releases the unsent claim without beginning or losing the email',async()=>{
+  const entered=gate(),resume=gate(),f=fixture()
+  if(phase==='claim') {const claim=f.options.store.claim;f.options.store.claim=async()=>{entered.resolve();await resume.promise;return claim()}}
+  else f.options.recipient=async()=>{entered.resolve();await resume.promise;return 'bound'}
+  const tick=f.runtime.tick();await entered.promise
+  let stopped=false;const stop=f.runtime.stop().then(()=>{stopped=true})
+  await f.runtime.tick();assert.equal(stopped,false)
+  resume.resolve();await Promise.all([tick,stop]);await f.runtime.tick()
+  assert.deepEqual(f.effects,['claim','release'])
+})
+for(const phase of ['render','send']) test('shutdown during '+phase+' drains one durable attempt and never claims another',async()=>{
+  const entered=gate(),resume=gate(),f=fixture(),original=f.options[phase]
+  f.options[phase]=async(...args)=>{entered.resolve();await resume.promise;return original(...args)}
+  const tick=f.runtime.tick();await entered.promise
+  let stopped=false;const stop=f.runtime.stop().then(()=>{stopped=true})
+  await f.runtime.tick();assert.equal(stopped,false)
+  resume.resolve();await Promise.all([tick,stop]);await f.runtime.tick()
+  assert.deepEqual(f.effects,['claim','begin','female','send','accepted'])
+})
+test('webhook verification finishing after shutdown returns retryable 503 without enqueue',async()=>{
+  const entered=gate(),resume=gate(),f=fixture(),verify=f.options.verify
+  f.options.verify=async()=>{entered.resolve();await resume.promise;return verify()}
+  const response=f.runtime.handle(new Request('https://identity.test/v1/webhooks/clerk-email',{method:'POST'}))
+  await entered.promise;await f.runtime.stop();resume.resolve()
+  assert.equal((await response).status,503);assert.deepEqual(f.effects,[])
+})
 test('unbound first signup is neutral, provider errors release before sending, rejected ownership never sends',async()=>{
   for(const [recipient,expected] of [[async()=> 'unbound',['claim','begin','neutral','send','accepted']],
     [async()=>{throw Error('provider error')},['claim','release']], [async()=> 'rejected',['claim','rejected']]]){

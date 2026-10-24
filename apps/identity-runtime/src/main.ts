@@ -80,6 +80,14 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
   }
 }
 const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
-for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => { server.close(() => { void (async () => { await email?.stop(); await pool?.end(); process.exit(0) })() }); server.closeIdleConnections() })
+let shuttingDown = false
+for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
+  if (shuttingDown) return
+  shuttingDown = true
+  // Stop queue intake immediately, before waiting for existing HTTP connections.
+  const emailStopped = email?.stop()
+  server.close(() => { void (async () => { await emailStopped; await pool?.end(); process.exit(0) })() })
+  server.closeIdleConnections()
+})
 }
 start().catch(async () => { console.error('identity-runtime configuration unavailable'); await email?.stop(); await pool?.end(); process.exitCode = 1 })

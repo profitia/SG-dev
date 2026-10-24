@@ -62,16 +62,20 @@ export function createEmailRuntime(options: {
     let claim: EmailClaim | null = null, started = false
     try {
       claim = await options.store.claim(); if (!claim) return
+      if (stopped) { await options.store.release(claim); return }
       if (claim.instruction.expiresAt <= now()) { await options.store.settle(claim,'rejected'); return }
       let recipient: 'bound'|'unbound'|'rejected'
       try { recipient = await options.recipient(claim.instruction) }
       catch { await options.store.release(claim); return }
+      if (stopped) { await options.store.release(claim); return }
       if (recipient === 'rejected') { await options.store.settle(claim,'rejected'); return }
       const preference = await options.store.begin(claim); started = true
       let message: EmailContent
       try { message = await options.render(claim.instruction, recipient === 'bound' ? preference.avatar : 'neutral', recipient === 'bound' ? preference.language : 'en') }
       catch { await options.store.settle(claim,'rejected'); return }
-      if (stopped || claim.instruction.expiresAt <= now()) { await options.store.settle(claim,'rejected'); return }
+      // Once begin is durable, finish this attempt during graceful shutdown.
+      // Releasing it would risk a duplicate; rejecting it would discard a valid code.
+      if (claim.instruction.expiresAt <= now()) { await options.store.settle(claim,'rejected'); return }
       // Every throw after entering send is uncertain, including transport timeouts.
       const result = await options.send({...message, recipient:claim.instruction.recipient})
       await options.store.settle(claim, result.status, result.status === 'accepted' ? result.providerId : undefined)
@@ -95,6 +99,7 @@ export function createEmailRuntime(options: {
       if (stopped) return reply(503)
       let decision: EmailEventDecision
       try { decision = await options.verify(request) } catch (error) { return reply(error instanceof EmailEventRejected ? 400 : 503) }
+      if (stopped) return reply(503)
       if (decision.status === 'ignored') return reply(204)
       try { await options.store.enqueue(decision.instruction); return reply(204) }
       catch { options.diagnostic?.('intake-unavailable'); return reply(503) }
