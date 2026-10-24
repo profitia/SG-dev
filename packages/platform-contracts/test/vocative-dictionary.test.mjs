@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {postgresFixture} from './fixtures/identity-profile-postgres.mjs';
 import {vocativeDictionary,nameKey,installVocativeDictionary,vocativeSchemaDigest} from '../src/vocative-dictionary.mjs';
 test('versioned user source is complete; only explicit reviewed Polish entries can be active',()=>{
- const d=vocativeDictionary();assert.equal(d.rows.length,24708);assert.equal(d.entries.length,259);
+ const d=vocativeDictionary();assert.equal(d.sourceDigest,'fdea48c80c48b401b6d9613636c877d1ae46081699530017fa3ed586c7f38620');assert.equal(d.rows.length,24708);assert.equal(d.entries.length,259);
  const find=n=>d.entries.find(r=>r.key===nameKey(n));
  assert.equal(find('Marek').vocative,'Marku');assert.equal(find('Tomasz').vocative,'Tomaszu');assert.equal(find('Anna').gender,'Female');
  assert.equal(find('Franciszek').vocative,'Franciszku');assert.equal(find('Antoni').vocative,'Antoni');
