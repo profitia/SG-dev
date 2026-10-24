@@ -3,9 +3,15 @@ import assert from 'node:assert/strict'
 import {validateIdentityEvidence,identityDigest,parseJson,canonical,sha256,validateCompanySnapshot} from '@profitia/krs-registry-contracts'
 import {resolveIdentity,revalidateAcceptedIdentity} from '../dist/identity.js'
 import {snapshot,memoryCatalog,NOW,KRS,NIP,REGON} from './fixtures.mjs'
+import * as publicIdentity from '@profitia/krs-registry-runtime/identity'
 let externalAttempts=0,originalFetch
 before(()=>{originalFetch=globalThis.fetch;globalThis.fetch=async()=>{externalAttempts++;throw Error('UNAUTHORISED_NETWORK_ATTEMPT')}})
 after(()=>{globalThis.fetch=originalFetch;assert.equal(externalAttempts,0,'All identity paths, including VERIFIED, have zero external/paid attempts')})
+test('the public company evidence entry reuses the exact validators without an authority constructor',()=>{
+ assert.deepEqual(Object.keys(publicIdentity).sort(),['resolveIdentity','revalidateAcceptedIdentity'])
+ assert.equal(publicIdentity.resolveIdentity,resolveIdentity)
+ assert.equal(publicIdentity.revalidateAcceptedIdentity,revalidateAcceptedIdentity)
+})
 test('exact selected identity, authoritative source and digest revalidation; no financial port',async()=>{
  const s=await snapshot(),catalog=memoryCatalog(s),v=await resolveIdentity({selectedKrs:KRS},catalog,NOW)
  assert.equal(v.status,'VERIFIED');assert.equal(v.identity.nip,NIP);assert.equal(v.identity.regon,REGON);assert.equal(v.selectedKrs,KRS)

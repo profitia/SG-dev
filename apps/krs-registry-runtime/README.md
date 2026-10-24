@@ -1,5 +1,10 @@
 # KRS Registry Runtime 1.0.0
 
+The versioned `@profitia/krs-registry-runtime/identity` entry exposes the existing
+`resolveIdentity` and `revalidateAcceptedIdentity` validators for company evidence.
+It issues no user identity or permission and does not authorize Financial calls.
+Consumers retain their own E1 admission and explicit package-source acceptance.
+
 Source-only ARCHITECTURE implementation. **ACTIVATION DEFERRED.** No Render service, production database, E1 policy installation, automatic scheduler or SRM provider switch is part of this package. The executable server exposes minimal health and returns unavailable for protected operations until independently accepted producer/storage bindings exist. Offline fixture success does not establish live E1 acceptance.
 
 The runtime owns public-company registry facts and discovery. Organisation supplier records, identity authority, Request/Work/Source permission/cost/receipt ledgers and MGBI Financial remain with their existing owners. Financial acquisition code is absent. A name candidate has `financiallyVerified:false`; selected KRS/NIP evidence is still subject to current consumer E1 and company/document reconciliation in Stage03.
