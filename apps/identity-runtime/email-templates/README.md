@@ -1,6 +1,28 @@
-# SpendGuru PORR — przygotowane szablony e-mail
+# SpendGuru PORR — szablony e-mail
 
-Stan: **PREPARED_NOT_ACTIVATED**. Zakres obejmuje mapowanie, przygotowanie plików i rozpoznanie możliwości Clerk Development. Ten katalog nie jest importowany przez runtime, nie odczytuje profili i nie wysyła wiadomości.
+## Stan bieżący — Development, 24.10.2026
+
+**Aktywna integracja Clerk → Mailgun na Development.** Identity importuje ten
+katalog i wysyła rzeczywiste kody oraz zaproszenia Clerk przez spendguru.app.
+Opublikowano 12 przypiętych wersji szablonów: kod/zaproszenie × PL/EN ×
+male/female/neutral. Ograniczona projekcja profilu wybiera język i awatar istniejącego
+konta; pierwszy niepowiązany mail pozostaje neutralny i angielski. Clerk nadal
+generuje i weryfikuje kody. Własna wysyłka Clerk dla tych dwóch slugów jest wyłączona.
+
+Cztery kombinacje PL/EN × male/female zweryfikowano rzeczywistymi kodami w
+przeglądarce i potwierdzeniami SMTP250. Nie oznacza to sprawdzenia wyglądu w skrzynce.
+[Dowody i ograniczenia](../../../Canon/evidence/2026-10-24-communication-language.md),
+[procedura](../../../Canon/runbooks/communication-language-development-v1.md).
+
+Poniższe rozdziały opisują historyczne etapy przygotowania i sandboxu. Ich dawne
+statusy oraz status eksportu projektowego w templates.json nie są bieżącym stanem
+wdrożenia. Treści zależne od procesu rejestracja/logowanie nadal nie są aktywowane
+bez wiarygodnego rozróżnienia procesu; wspólny kod używa tekstu weryfikacyjnego.
+
+## Historia przygotowania
+
+Pierwotny stan: **PREPARED_NOT_ACTIVATED**. Zakres obejmował mapowanie, przygotowanie
+plików i rozpoznanie możliwości Clerk Development, bez importu przez runtime.
 
 ### Aktualizacja: testy Mailgun, 23–24.10.2026
 
