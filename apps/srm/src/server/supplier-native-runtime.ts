@@ -7,6 +7,7 @@ import {IdentityConfigurationUnavailable} from './identity-runtime'
 import {createSrmSupplierApi} from './supplier-api-composition'
 import {createSrmSupplierSourceRequest} from './supplier-source-request'
 import targets from '../../deployment/supplier-native-targets.json'
+import mgbiPolicy from '../../deployment/mgbi-unmetered-policy.json'
 import privateTargets from '../../deployment/private-runtime-targets.json'
 type Env=Readonly<Record<string,string|undefined>>
 type Configuration=Readonly<{base:PrivateConfiguration;configurationVersion:string;jobsUrl:string;providerSourceUrl:string;corporateSourceUrl:string;
@@ -68,7 +69,7 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  const sourceOptions={pool:pools.sourcePool,auditPool:pools.sourceAudit,application:sourceApplication,
   binding:{applicationId:sourceApplication.appId,environment:'development' as const,projectId:targets.projectId,branchId:targets.branchId,
    databaseName:targets.databaseName,role:roles.providerSource,deploymentId:sourceApplication.deploymentId,
-   configurationVersion:version,schemaDigest:core['008-platform-ingestion.sql']},requestSchemaDigest:own['009-supplier-source-request.sql']}
+   configurationVersion:version,schemaDigest:core['008-platform-ingestion.sql'],...(config.runtimeRoles?{unmeteredSchemaDigest:mgbiPolicy.unmeteredSchemaDigest}:{})},requestSchemaDigest:own['009-supplier-source-request.sql']}
  const source=createSrmSupplierSourceRequest(sourceOptions)
  const external={configurationVersion:version,schemaDigest:core['009-external-call-admission.sql'],nativeSchemaDigest:core['012-native-external-transport.sql'],maximumResponseBytes:1024*1024}
  const provider={...sourceOptions,external}

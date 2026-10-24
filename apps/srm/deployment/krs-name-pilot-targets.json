@@ -19,9 +19,9 @@
     "sourceDigest": "383d39d4a533bd1ff1a49a9587b2ad5fd23de5d3d9934ee9656a1b99be0861b6"
   },
   "acceptedRuntime": {
-    "version": "1.6.0",
-    "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96",
-    "sourceDigest": "b0485c39f420f5225f5877af4a710a5532f2b0d8f6a797434fcda7f6bdad4fab"
+    "version": "1.6.1",
+    "sourceSha": "ce62f6f85b1c2c37eb346a7f74578ad311a6f748",
+    "sourceDigest": "62dbf729b59062529a59f139b238f3ca019612cb7ea3e321b49c3956e61be412"
   },
   "nipIntegrationActivation": "OWNER_AUTHORIZED_CONDITIONAL_DEVELOPMENT_ONLY",
   "clerkCheckpointAdoption": {

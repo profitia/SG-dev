@@ -208,25 +208,28 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
        body=wrap(action,result)
       }else{const target=String(url).split('/').at(-1).split('?')[0],full=String(url).includes('/OdpisPelny/');assert.equal(String(url),buildRequest({operation:full?'FULL':'CURRENT',krs:target,register:'P'}).url)
        const raw=extract({id:target,nip:variant.nip??nip,regon:variant.regon,name:'Synthetic '+variant.label,full});
-       if(variant.label==='history'){
+       if(variant.label.startsWith('history')){
         const old='0000065856',middle='0001102066',next=target===id?middle:target===middle?old:null;
         if(next)raw.odpis.dane.dzial1.sposobPowstaniaPodmiotu={okolicznosciPowstania:full?[{okolicznosciPowstania:'PRZEKSZTAŁCENIE'}]:'PRZEKSZTAŁCENIE',podmioty:[{krs:{krs:next}}]};
-        if(full){raw.odpis.dane.dzial1.danePodmiotu.identyfikatory=[{identyfikatory:{nip,regon},nrWpisuWprow:'1'}];raw.odpis.naglowekP.stanPozycji=2;raw.odpis.naglowekP.wpis.at(-1).opis='WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO'}
+        if(full){raw.odpis.dane.dzial1.danePodmiotu.identyfikatory=[{identyfikatory:{...(target===old&&variant.label==='history-missing'?{}:{nip:target===old&&variant.historyDeny?'7740001454':nip}),regon},nrWpisuWprow:'1',nrWpisuWykr:'2'}];raw.odpis.naglowekP.stanPozycji=2;raw.odpis.naglowekP.wpis.at(-1).opis='WYKREŚLENIE Z KRAJOWEGO REJESTRU SĄDOWEGO'}
        }
        body=bytes(raw)}
       const response=new Response(body,{headers:{'content-type':'application/json'}});Object.defineProperty(response,'url',{value:String(url)});return response
      }
-     for(variant of [{label:'history',regon},{label:'exact9',regon},{label:'zero14',regon:regon+'00000'},{label:'absent',regon:null},{label:'foreign-parent',regon:'61018820100003',deny:true},{label:'local-unit',regon:regon+'00018',deny:true},{label:'foreign-nip',regon:regon+'00000',nip:'7740001454',deny:true}]){
+     for(variant of [{label:'history',regon},{label:'history-missing',regon},{label:'history-conflict',regon,historyDeny:true},{label:'exact9',regon},{label:'zero14',regon:regon+'00000'},{label:'absent',regon:null},{label:'foreign-parent',regon:'61018820100003',deny:true},{label:'local-unit',regon:regon+'00018',deny:true},{label:'foreign-nip',regon:regon+'00000',nip:'7740001454',deny:true}]){
       const key=createHash('sha256').update(variant.label).digest('hex'),mapping=await mapper.resolve(nip,key,AbortSignal.timeout(10000)),before=(await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots')).rows[0].n
       assert.equal(mapping.status,'MATCH')
       if(variant.deny){await assert.rejects(source.acquire(mapping,key,AbortSignal.timeout(10000)),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH');assert.equal((await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots')).rows[0].n,before)}
       else{const result=await source.acquire(mapping,key,AbortSignal.timeout(10000));assert.equal(result.snapshot.regon,variant.regon);assert.equal(result.snapshot.nip,nip);assert.equal(result.snapshot.canonicalKrs,id);assert.equal(result.receipt.evidenceRef,result.snapshot.evidenceRef);
-       if(variant.label==='history'){
+       if(variant.label.startsWith('history')){
         const beforeHistory=upstream;
         assert.equal(await source.continuity('KRS:'+id+':'+'f'.repeat(64),AbortSignal.timeout(10000)),null);assert.equal(upstream,beforeHistory);
+        if(variant.historyDeny){await assert.rejects(source.continuity(result.snapshot.evidenceRef,AbortSignal.timeout(10000)),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH');continue}
         const history=await source.continuity(result.snapshot.evidenceRef,AbortSignal.timeout(10000));
+        assert.deepEqual(history.excluded,variant.label==='history-missing'?[{krs:'0000065856',reason:'MISSING_NIP'}]:[]);
+        assert(Object.isFrozen(history.excluded));
         assert(nativeContinuityEvidence(history));assert(Object.isFrozen(history.records[0].excerpt));assert(Object.isFrozen(history.records[0].snapshot));assert(!nativeContinuityEvidence({...history}));assert(!nativeContinuityEvidence(JSON.parse(JSON.stringify(history))));
-        assert.deepEqual(history.records.map(r=>r.snapshot.canonicalKrs),[id,'0001102066','0000065856']);assert.equal(upstream-beforeHistory,2);
+        assert.deepEqual(history.records.map(r=>r.snapshot.canonicalKrs),variant.label==='history-missing'?[id,'0001102066']:[id,'0001102066','0000065856']);assert.equal(upstream-beforeHistory,2);
         assert.equal(await source.continuity(result.snapshot.evidenceRef,AbortSignal.timeout(10000)),history);assert.equal(upstream-beforeHistory,2);
         for(const r of history.records)assert.equal((await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots WHERE evidence_ref=$1',[r.snapshot.evidenceRef])).rows[0].n,1);
        }

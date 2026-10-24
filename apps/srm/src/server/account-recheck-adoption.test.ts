@@ -182,5 +182,16 @@ test('form report admission preserves historical receipts and confines the admit
  for(const flag of ['sql025Installed','liveGrantsChanged','productDeploymentPerformed'])assert.equal(a[flag as 'sql025Installed'],false,flag);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,'../../packages/platform-contracts',file))),digest,file);
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(root,file))),digest,file);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(acceptedReceipt.ochnikFinancialCorrection?execFileSync('git',['show',acceptedReceipt.ochnikFinancialCorrection.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.join(root,file))),digest,file);
+});
+
+
+test('OCHNIK correction preserves verified attribution, metering capability and all prior receipts',()=>{
+ const a=acceptedReceipt.ochnikFinancialCorrection,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.mode,'UNMETERED');assert.equal(a.historicalCountersPreserved,true);assert.equal(a.unverifiedHistoryExcluded,true);assert.equal(a.otherRuntimePoliciesUnchanged,true);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
+ for(const[file,digest]of Object.entries(a.optionalSqlDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,'../../packages/platform-contracts/migrations/access',file))),digest,file);
+ const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'));assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);
 });

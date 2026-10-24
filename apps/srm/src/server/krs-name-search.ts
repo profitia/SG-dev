@@ -3,6 +3,7 @@ import type {SupplierCandidate,SupplierSelection,SupplierReportData,SupplierXRay
 import type {MgbiFinancialResult} from './mgbi-financial';
 import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray';
 import type {RegistryHistory} from './company-continuity';
+import type {KrsContinuityResult} from './krs-continuity';
 import {krsGeneral} from './krs-general';
 import {reconcileKrsFinancial} from './krs-financial';
 import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-ledger';
@@ -30,7 +31,7 @@ export async function refreshCatalogSelection(request:Request,krs:string,ports:{
  * verify performs a real admitted CURRENT retrieval/publication, not a timestamp rewrite. */
 export type KrsNamePorts=Readonly<{
   registry:{search(request:Request,query:string):Promise<readonly SupplierCandidate[]>;
-    history?(request:Request,identity:VerifiedIdentityV1):Promise<RegistryHistory|undefined>;
+    history?(request:Request,identity:VerifiedIdentityV1):Promise<KrsContinuityResult|undefined>;
     verify(request:Request,krs:string):Promise<AcceptedKrsSelection>;
     readSelection(request:Request,evidenceRef:string):Promise<AcceptedKrsSelection>};
   financial:{acquire(request:Request,identity:VerifiedIdentityV1,key:string,general?:SectionEnvelope<GeneralCompanyData>):Promise<MgbiFinancialResult & {workPending?:true}>;
@@ -69,8 +70,9 @@ export function createKrsNameSearch(ports:KrsNamePorts){
       let history:RegistryHistory|undefined,general=baseGeneral;
       let section=unavailableFinancial(new Date(now()).toISOString(),'MGBI_FINANCIAL_UNAVAILABLE'),metadata:SupplierReportData|null=null,workPending=false;
       try{
-        history=await registry.history?.(request,selected.identity);
-        if(history&&baseGeneral.data)general={...baseGeneral,data:{...baseGeneral.data,registryHistory:history}};
+        const continuity=await registry.history?.(request,selected.identity);
+        history=continuity?.history;
+        if(history&&baseGeneral.data)general={...baseGeneral,warnings:[...new Set([...baseGeneral.warnings,...(continuity?.warnings??[])])],data:{...baseGeneral.data,registryHistory:history}};
         // Fresh accepted identity at dispatch; the native port must admit current
         // Request/Source/Work, budget and this exact logical selection once.
         const acquired=await measureSupplierStage('FINANCIAL_ACQUIRE',()=>financial.acquire(request,selected.identity,key,general));

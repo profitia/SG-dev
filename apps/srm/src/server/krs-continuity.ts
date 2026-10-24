@@ -1,8 +1,9 @@
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {resolveCompanyRecords,type RegistryHistory} from './company-continuity'
+export type KrsContinuityResult=Readonly<{history:RegistryHistory;warnings?:readonly string[]}>
 /** Adapt genuine settled official extracts to the existing KRS_CONTINUITY_V1 resolver.
  * No MGBI General acquisition, name matching, client history or new identity engine. */
-export async function krsContinuity(evidence:unknown,identity:VerifiedIdentityV1,now:number):Promise<RegistryHistory>{
+export async function krsContinuity(evidence:unknown,identity:VerifiedIdentityV1,now:number):Promise<KrsContinuityResult>{
  const {nativeContinuityEvidence}=await import('@profitia/krs-registry-runtime/native')
  const {validateIdentityEvidence,validateCompanySnapshot}=await import('@profitia/krs-registry-contracts')
  const deny=():never=>{throw Error('KRS_CONTINUITY_UNVERIFIED')}
@@ -21,5 +22,5 @@ export async function krsContinuity(evidence:unknown,identity:VerifiedIdentityV1
  }
  const resolved=resolveCompanyRecords(records,{type:'NIP',value:current.identity.nip})
  if(resolved.error||resolved.history.currentKrs!==current.selectedKrs||resolved.history.unlinkedKrs.length||resolved.history.members.length!==records.length)return deny()
- return resolved.history
+ return {history:resolved.history,warnings:evidence.excluded.length?['KRS_HISTORY_INCOMPLETE_MISSING_PREDECESSOR_NIP']:[]}
 }

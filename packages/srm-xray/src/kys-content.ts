@@ -7,6 +7,7 @@ export function value(text: string | null | undefined): string {
 
 
 export function warningLabel(code: string): string {
+  if (code === "KRS_HISTORY_INCOMPLETE_MISSING_PREDECESSOR_NIP") return "Starszy wpis w historii spółki nie zawiera NIP-u. Raport obejmuje wyłącznie potwierdzoną część historii.";
   if (code === "FINANCIAL_NO_STRUCTURED_DATA") return "Nie mamy obecnie kwot finansowych do wyświetlenia dla tej firmy.";
   if (code === "FINANCIAL_INTERNATIONAL_STANDARD_UNAVAILABLE") return IAS_UNAVAILABLE_MESSAGE;
   if (code === "FINANCIAL_NO_XML") return "Dla tego sprawozdania nie jest dostępny obsługiwany dokument finansowy XML. Kwoty nie są dostępne.";

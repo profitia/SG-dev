@@ -137,10 +137,20 @@ test('verified transformation chain keeps the current company and each original 
  const older=record('old',old,nip,'500');older.document.period_from_date='2022-01-01';older.document.period_to_date='2022-12-31';
  const rows=[record('middle',middle),older],f=await fixture(rows);
  f.result=mapMgbiFinancialRecords(rows,{type:'NIP',value:nip},at,rows.length,history);f.result.rawResponse={pages:[{results:rows}],recordCount:rows.length};
- f.ports.registry.history=async()=>history;f.ports.financial.acquire=async(_request,_identity,_key,general)=>{assert.equal(general?.data?.registryHistory,history);return f.result};
+ f.ports.registry.history=async()=>({history});f.ports.financial.acquire=async(_request,_identity,_key,general)=>{assert.equal(general?.data?.registryHistory,history);return f.result};
  const r=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-history-request-001');
  assert.equal(r.result.card.identity.krs,krs);assert.equal(r.result.card.general.data?.registryHistory?.currentKrs,krs);
  assert.deepEqual(r.result.card.financial.data?.periods.map(p=>[p.to,p.sourceRegistration?.krs,p.sourceRegistration?.relationship]),[['2025-12-31',middle,'PREDECESSOR'],['2022-12-31',old,'PREDECESSOR']]);
+ // OCHNIK-shaped chain: the oldest official register has no NIP. Only the
+ // verified current/predecessor prefix may contribute Financial facts.
+ const prefix={...history,members:history.members.slice(0,2),links:history.links.slice(0,1)};
+ f.ports.registry.history=async()=>({history:prefix,warnings:['KRS_HISTORY_INCOMPLETE_MISSING_PREDECESSOR_NIP']});
+ f.ports.financial.acquire=async()=>f.result;
+ const partial=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-partial-history-001');
+ assert.ok(partial.result.card.general.warnings.includes('KRS_HISTORY_INCOMPLETE_MISSING_PREDECESSOR_NIP'));
+ assert.deepEqual(partial.result.card.general.data?.registryHistory?.members.map(m=>m.krs),[krs,middle]);
+ assert.deepEqual(partial.result.card.financial.data?.periods.map(p=>p.sourceRegistration?.krs),[middle]);
+ assert.doesNotMatch(JSON.stringify(partial.result.card.financial),/500/);
  const foreign=record('foreign','0000099999',nip,'999999'),mixed={...f.result,rawResponse:{pages:[{results:[...rows,foreign]}],recordCount:3}};
  const reconciled=await reconcileKrsFinancial(f.selected.identity,mixed,time,history);
  assert.doesNotMatch(JSON.stringify(reconciled),/999999/);assert.equal(reconciled.section.data?.periods.length,2);
