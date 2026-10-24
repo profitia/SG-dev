@@ -225,5 +225,15 @@ test('PILOT2 telemetry preserves the complete accepted receiver and changes no a
  assert.equal(a.scope,'ISOLATED_PILOT2_STAGE_TELEMETRY_ONLY');assert.equal(a.targetEnvironment,'development');
  for(const flag of ['identityAuthorityChanged','sqlChanged','grantsChanged','providerRoutingChanged','productDeploymentPerformed'] as const)assert.equal(a[flag],false,flag);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.porrRecoveryCompatibility.previousSourceSha+':apps/srm/'+file])),digest,file);
+});
+
+test('PORR recovery preserves historical acceptance, provider password authority and account boundary',()=>{
+ const a=acceptedReceipt.porrRecoveryCompatibility,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.targetEnvironment,'development');assert.equal(a.passwordAuthority,'CLERK_OFFICIAL_SDK');
+ for(const flag of ['sqlChanged','grantsChanged','identityAuthorityChanged','sharedBackendChanged'] as const)assert.equal(a[flag],false);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });
