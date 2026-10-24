@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+  "targetEnvironment": "development",
+  "state": "SOURCE_PREPARATION_ONLY_NOT_INSTALLED_OR_ACTIVATED",
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "projectId": "prj-dapbd3hsrm7s73es53fg",
+    "environmentId": "evm-dapbd70ae00c73cgrup0",
+    "serviceId": "srv-dbeh6srrjlhs73fmikrg",
+    "serviceName": "srm-krs-pilot2-development",
+    "url": "https://srm-krs-pilot2-development.onrender.com",
+    "region": "frankfurt",
+    "plan": "0.5c-512mb",
+    "instances": 1,
+    "autoDeploy": false
+  },
+  "catalog": {
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-summer-rain-b1nwbcbr",
+    "host": "ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech",
+    "databaseName": "krs_registry_pilot",
+    "newCompute": false,
+    "ownerRole": "krs_catalog_owner",
+    "readerRole": "krs_reader",
+    "sourceRole": "krs_ingest",
+    "operatorRole": "neondb_owner"
+  },
+  "runtime": {
+    "applicationId": "krs-registry-source",
+    "configurationVersion": "krs-native-pilot-v1",
+    "producer": {
+      "version": "1.6.2",
+      "sourceSha": "3785e42961542a131307d2eae852c40de0af8b64",
+      "sourceDigest": "99f59848d6b07b79021ee8d6836254734131eabdc76e1dd21bbd5efa2c286b49"
+    },
+    "unmeteredSchemaDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
+    "schemaDigests": {
+      "ingestion": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+      "external": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+      "native": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde"
+    },
+    "producerPr": 701
+  },
+  "dataBoundary": {
+    "registry": "PUBLIC_SHARED_KNOWLEDGE",
+    "financialReadyProjection": "PUBLIC_CORPORATE_PROJECTION_ONLY",
+    "rawMgbiArchivesAndUserHistory": "ORGANISATION_PRIVATE_IN_EXISTING_ISOLATED_SRM_DATABASE",
+    "newHumanAccountsOrGrants": false,
+    "otherEnvironments": "NO_MUTATION"
+  },
+  "providerRouting": {
+    "primary": [
+      "GUS",
+      "KRS"
+    ],
+    "absenceClassification": "CEIDG",
+    "availabilityFallback": "EXISTING_MGBI_NIP",
+    "identityOrAuthorityDenialFallback": false,
+    "primaryTimeoutMs": 3000,
+    "financialProvider": "EXISTING_MGBI_FINANCIAL",
+    "catalogFreshnessDays": 7,
+    "openingRenewsFreshness": false,
+    "internalGusKrsQuotas": "UNMETERED",
+    "upstreamRateScheduling": "EXISTING_GUS_LIMITS_PRESERVED"
+  },
+  "activation": {
+    "humanModelUntilLaterStage": "EXISTING_ISOLATED_TEST_CONTEXT_ONLY",
+    "clerkAndFullE1Delivered": false,
+    "requiresAcceptedMainAndExactSourceBindings": true
+  },
+  "approval": {
+    "ownerResourceApproval": "USER-20261024-PILOT2-NEON-UP-TO-10USD",
+    "costCapUsd": 10,
+    "additionalCompute": false,
+    "purpose": "Existing accepted GUS/KRS Source installation within approved isolated branch; no new project"
+  }
+}

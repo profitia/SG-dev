@@ -4411,5 +4411,48 @@
       "src/server/account-recheck-adoption.test.ts": "f02b8b8a8da80755d9bc5fccda217dc7a2653dbd10daebe4e7e96b60a08325cf",
       "src/server/peer-read-boundary.test.ts": "bcc1e45ba6c4fddfb4d52c036ac288599af105d292b70f21a6db76035deedf93"
     }
+  },
+  "pilot2CompanyIdentityAdoption": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "producerTaskId": "ARCHITECTURE-PILOT2-COMPANY-IDENTITY-EXPORT-20261024",
+    "previousApplicationAuthority": "28b5d1443ab22187d13158444c90bb157c5c603e",
+    "previousReceiptSha256": "e4a9cbdaf183615c145a6bb4a07b61b2c55a09c2811d79bab2d70568be854e2d",
+    "producerPr": 701,
+    "acceptedRuntime": {
+      "version": "1.6.2",
+      "sourceSha": "3785e42961542a131307d2eae852c40de0af8b64",
+      "sourceDigest": "99f59848d6b07b79021ee8d6836254734131eabdc76e1dd21bbd5efa2c286b49"
+    },
+    "publicEntry": "@profitia/krs-registry-runtime/identity",
+    "priorReceiptsPreserved": true,
+    "userIdentityOrAuthorityChanged": false,
+    "sqlChanged": false,
+    "productDeploymentPerformed": false,
+    "applicationSourceDigests": {
+      "deployment/krs-name-pilot-targets.json": "7ec46f15d96385419420beac91ad85cf67232b96ab410ba094bbc915c59410b9",
+      "package-lock.json": "6b94a169cf0b972f745f9eeaccd70ed5e418051eb529ba4d7e8bc9bda139c330",
+      "src/server/peer-read-boundary.test.ts": "681d1aeb44373af1e4133e4aeca53285a8ecf345cdcc5af48064068918bb00af",
+      "src/server/account-recheck-adoption.test.ts": "52710849c11e78639991b2b2624761ac7c1a61d4a29b94567b563850b0a44556",
+      "scripts/pilot2-registry-package.mjs": "52a6681b5753deb934cacd5fa939019b6b5629461baa0bdfcef35da108bb8e82",
+      "scripts/pilot2-source-installation.mjs": "6fbbae29448c5883ba0f1018b41a3115bed93c20e60b5ac0300c6c1abaf77349",
+      "scripts/pilot2-source-postgres.test.mjs": "5d231b6b3ea696179a11989c03a611576eac22c86b18257a7aa9fe9f9c5e48bc",
+      "scripts/pilot2-source-installation.test.mjs": "3e3d28aea1514d05ab8f98f0d1995a85cd30b99fc5b3d49a04568f9634fae341",
+      "scripts/pilot2-registry-overlay.test.mjs": "33d0e564ec4ca91eba68ab78d11009112c960ffea08cfbf5f1be4afc9a1a0a80",
+      "scripts/pilot2-registry-overlay.mjs": "483a8adccf0b8d8037493c2266a371e25796d77e85b6578a33e2b2f55e3598ef",
+      "scripts/pilot2-baseline.mjs": "99cc6dbae725e6e470a036f67b04f9d3d724881ac6e0b13534e63be4b19603b1",
+      "src/server/pilot2-registry.ts": "df4fc9615a1fd99b1fe0786baf94ad75b7967f5b4e996bd57155f0a24da0d159",
+      "src/server/pilot2-registry.test.ts": "1a193196aa4b1bb95a27fba2d96820ed910295bc59c3e6c2dba54e6c0d894ccd",
+      "deployment/pilot2-registry-targets.json": "867cca219099c89bd8ce51311f021de20298191d7945a5b2eeef81f81a6002b1",
+      "deployment/pilot2-registry-package-lock.json": "b1bc3a1ef1c242ae42f3288331bb0321c2b0f9de0a87eb0dc633df806b940992",
+      "deployment/pilot2-registry-schema.sql": "e56e2240656ceb9add293a417661f95877987492c693ba2e3d10b15df319b4ee",
+      "deployment/pilot2-telemetry-lkg.json": "c80ba03dadaf134c54d09877389b8c76a4148b16d1fd4106ea9f1a24288b1806",
+      "deployment/pilot2-registry-package.json": "9ecbac3f2970b56460dbbcdaea5dec891f0b3e5df3c8f48936cbe64a8224288b"
+    },
+    "scope": "ISOLATED_PILOT2_REGISTRY_PREPARATION",
+    "schemaPlanPrepared": true,
+    "schemaInstalled": false,
+    "primaryRouteActivated": false,
+    "clerkAndFullE1Delivered": false,
+    "cachedKnowledgeCannotAcquireFinancial": true
   }
 }

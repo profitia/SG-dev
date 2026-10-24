@@ -193,7 +193,7 @@ test('OCHNIK correction preserves verified attribution, metering capability and 
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(acceptedReceipt.mgbiInventoryResponseCompatibility?execFileSync('git',['show',acceptedReceipt.mgbiInventoryResponseCompatibility.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.resolve(root,file))),digest,file);
  for(const[file,digest]of Object.entries(a.optionalSqlDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,'../../packages/platform-contracts/migrations/access',file))),digest,file);
- const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8'));assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);
+ const target=JSON.parse(execFileSync('git',['show',acceptedReceipt.pilot2CompanyIdentityAdoption.previousApplicationAuthority+':apps/srm/deployment/krs-name-pilot-targets.json']).toString());assert.deepEqual(target.acceptedRuntime,a.acceptedRuntime);
 });
 
 test('bounded MGBI inventory adoption preserves the prior accepted OCHNIK correction',()=>{
@@ -235,5 +235,18 @@ test('PORR recovery preserves historical acceptance, provider password authority
  assert.equal(a.targetEnvironment,'development');assert.equal(a.passwordAuthority,'CLERK_OFFICIAL_SDK');
  for(const flag of ['sqlChanged','grantsChanged','identityAuthorityChanged','sharedBackendChanged'] as const)assert.equal(a[flag],false);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.pilot2CompanyIdentityAdoption.previousApplicationAuthority+':apps/srm/'+file])),digest,file);
+});
+
+test('PILOT2 explicitly adopts the unchanged company validator through its versioned public entry',()=>{
+ const a=acceptedReceipt.pilot2CompanyIdentityAdoption;
+ const previous=execFileSync('git',['show',a.previousApplicationAuthority+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.producerPr,701);assert.equal(a.userIdentityOrAuthorityChanged,false);assert.equal(a.productDeploymentPerformed,false);
+ const validator='apps/krs-registry-runtime/src/identity.ts';
+ assert.equal(hash(execFileSync('git',['show',a.previousApplicationAuthority+':'+validator])),hash(execFileSync('git',['show',a.acceptedRuntime.sourceSha+':'+validator])));
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8')).acceptedRuntime,a.acceptedRuntime);
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });

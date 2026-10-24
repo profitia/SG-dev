@@ -155,7 +155,7 @@ jobs:
       - run: npm test
       - run: npm run test:promotion
       - name: PILOT2 exact baseline and environment isolation
-        run: node --test scripts/pilot2-baseline.test.mjs scripts/pilot2-instrumentation.test.mjs
+        run: node --test scripts/pilot2-baseline.test.mjs scripts/pilot2-instrumentation.test.mjs scripts/pilot2-registry-overlay.test.mjs scripts/pilot2-source-installation.test.mjs
       - name: Shared first-onboarding governance tests
         working-directory: .
         run: node --test scripts/governance/srm-release-lifecycle.test.mjs
@@ -177,7 +177,20 @@ jobs:
   pilot2-baseline-build:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    services:
+      source-postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: pilot2_fixture_admin
+          POSTGRES_PASSWORD: isolated_fixture_only
+          POSTGRES_DB: postgres
+        ports: [5432/tcp]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -191,7 +204,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- 'apps/srm/scripts/pilot2-*.mjs' apps/srm/src/server/supplier-telemetry.ts apps/srm/deployment/pilot2-runtime-targets.json apps/srm/deployment/pilot2-staging-source.json apps/srm/deployment/pilot2-staging-source.tar.gz; then
+          if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- 'apps/srm/scripts/pilot2-*.mjs' apps/srm/src/server/pilot2-registry.ts apps/srm/src/server/supplier-telemetry.ts 'apps/srm/deployment/pilot2-*'; then
             echo 'build=false' >> "$GITHUB_OUTPUT"
           else
             echo 'build=true' >> "$GITHUB_OUTPUT"
@@ -199,15 +212,35 @@ jobs:
       - name: Verify historical source then build with Render-compatible shallow history
         if: steps.changes.outputs.build == 'true'
         run: |
-          node --test apps/srm/scripts/pilot2-baseline.test.mjs apps/srm/scripts/pilot2-instrumentation.test.mjs
+          node --test apps/srm/scripts/pilot2-baseline.test.mjs apps/srm/scripts/pilot2-instrumentation.test.mjs apps/srm/scripts/pilot2-registry-overlay.test.mjs apps/srm/scripts/pilot2-source-installation.test.mjs
           git clone --depth 1 --no-local "$GITHUB_WORKSPACE" "$RUNNER_TEMP/pilot2-shallow"
           node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build
           node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build "$RUNNER_TEMP/pilot2-shallow/.pilot2-instrumented" TELEMETRY
+          node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build "$RUNNER_TEMP/pilot2-shallow/.pilot2-registry" REGISTRY
+      - name: Source installation and ordinary-role isolation on PostgreSQL18
+        if: steps.changes.outputs.build == 'true'
+        env:
+          PGPORT: ${{ job.services.source-postgres.ports[5432] }}
+          NODE_PATH: ${{ runner.temp }}/pilot2-shallow/.pilot2-registry/apps/srm/node_modules
+        run: |
+          node --input-type=commonjs - <<'JS'
+          const {Client}=require('pg');
+          (async()=>{const db=new Client({host:'127.0.0.1',port:Number(process.env.PGPORT),user:'pilot2_fixture_admin',password:'isolated_fixture_only',database:'postgres'});await db.connect();
+          try{await db.query("CREATE ROLE neondb_owner LOGIN PASSWORD 'fixture_only' NOINHERIT CREATEDB CREATEROLE NOSUPERUSER NOBYPASSRLS");await db.query('CREATE DATABASE krs_registry_pilot OWNER neondb_owner')}finally{await db.end()}})().catch(e=>{console.error(e);process.exit(1)});
+          JS
+          PILOT2_SOURCE_FIXTURE_ADMIN_URL="postgresql://pilot2_fixture_admin:isolated_fixture_only@127.0.0.1:$PGPORT/postgres" PILOT2_SOURCE_FIXTURE_URL="postgresql://neondb_owner:fixture_only@127.0.0.1:$PGPORT/krs_registry_pilot" node --test apps/srm/scripts/pilot2-source-postgres.test.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: steps.changes.outputs.build == 'true'
         with:
           name: pilot2-baseline-build-proof
           path: ${{ runner.temp }}/pilot2-shallow/.pilot2-baseline/baseline-proof.json
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: steps.changes.outputs.build == 'true'
+        with:
+          name: pilot2-registry-build-proof
+          path: ${{ runner.temp }}/pilot2-shallow/.pilot2-registry/baseline-proof.json
           if-no-files-found: error
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

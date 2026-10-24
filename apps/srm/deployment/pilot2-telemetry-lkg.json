@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "PILOT2_TELEMETRY_CHECKPOINT",
+  "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+  "phase": "BASELINE_AND_TELEMETRY_MEASURED",
+  "fullTaskComplete": false,
+  "humanClerkAndFullE1Active": false,
+  "sourceSha": "bf06f8a08ecfafc5c8ad36a20e1395ce34a92662",
+  "businessSourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+  "artifact": {
+    "algorithm": "sorted-relative-type-sha256-json-v1",
+    "digest": "481e09f828f9f4bddadc047b4fa4b0c27a48d732a0bd2217e3a891237e5dd8b3",
+    "entries": 1672,
+    "entry": "apps/srm/.next/standalone/server.js",
+    "buildId": "XEDTZvmpB5olGflolTStu"
+  },
+  "originalDeployId": "dep-dbei77nb9u1s739q8me0",
+  "liveRetainedArtifactDeployId": "dep-dbei99jrjlhs73fpmn0g",
+  "configurationDigest": "20b47bf13564203096baaabda6f855d2bb9f536d2c211889bc2dac5998813bc7",
+  "neon": {
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-summer-rain-b1nwbcbr",
+    "databaseName": "srm_app",
+    "schemaChangesSinceBaseline": false
+  },
+  "functionalProof": {
+    "nip": "7820021192",
+    "financialStatus": "SUCCESS",
+    "periods": 11,
+    "financialValuesDigest": "38f3b149606c5ba6b5347a7a2f2a73110e28a869998d03083970989fc833b054",
+    "financialCheckedAt": "2026-10-24T19:40:31.810Z",
+    "freshnessNotRenewed": true,
+    "providerMethods": [
+      "CACHE",
+      "CACHE"
+    ]
+  },
+  "timings": {
+    "stagingCachedClientMs": [
+      993.87,
+      1005.55,
+      720.28
+    ],
+    "telemetryClientMs": [
+      2135.03,
+      962.45,
+      805.45,
+      784.71,
+      896.41
+    ],
+    "rollbackBaselineClientMs": [
+      1196.98,
+      905.31,
+      1134.23
+    ],
+    "rollforwardTelemetryClientMs": [
+      1208.85,
+      862.49,
+      915.26
+    ],
+    "firstTelemetryConnectionWaitMs": 614.64,
+    "warmTelemetrySqlCountPerSearch": 48,
+    "warmTelemetrySqlCountPerReport": 15,
+    "nestedDurations": true,
+    "interpretation": "Warm timing ranges overlap. Small independent samples do not establish a precise instrumentation overhead. First connection/setup is separate; no multi-second steady-state instrumentation regression observed.",
+    "browserRenderingMeasured": false
+  },
+  "rollback": {
+    "baselineArtifactDeployId": "dep-dbehl7ivcj2c73d0261g",
+    "baselineRollbackDeployId": "dep-dbei8bom7kps73dvspqg",
+    "baselineSourceSha": "59e98dc72a93e670aa18704e157034da88a581a1",
+    "retainedArtifactRollbackTested": true,
+    "retainedArtifactRollforwardTested": true,
+    "financialContentPreserved": true,
+    "configurationValuesUnchanged": true,
+    "noDatabaseReversal": true,
+    "stop": "Suspend only PILOT2; preserve its database, counters and evidence."
+  },
+  "validation": {
+    "pullRequest": 699,
+    "candidateSha": "dbb40e8fbdd6ef03e979159a6967884cee251d12",
+    "srmCiRun": 40133780586,
+    "platformCiRun": 40133780656,
+    "controlledExactProofRun": 40133787195,
+    "unitTestsPassed": 734,
+    "requiredChecks": "PASS",
+    "otherEnvironmentDeployment": false,
+    "stagingException": "Exactly 3 owner-authorized ordinary cached VOX searches; no admin/configuration/deployment changes."
+  }
+}
