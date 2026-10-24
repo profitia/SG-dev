@@ -2,11 +2,14 @@ import type { IdentityProvisioningOptions } from './identity-provisioning.mjs'
 import type { AccessQuery } from './access-store.mjs'
 import type { Application } from './operation-context.mjs'
 export declare const USER_PROFILE_CONTRACT: Readonly<{ id: 'profitia.user-profile'; version: '1.0.0' }>
-export interface UserProfilePatch { avatar_sex?: 'male' | 'female' | null; job?: string | null; phone?: string | null }
+export interface UserProfilePatch { avatar_sex?: 'male' | 'female' | null; job?: string | null; phone?: string | null; communication_language?: 'pl' | 'en'; language_source?: 'browser' | 'user' }
 export interface UserProfile {
   readonly user_id: string
   /** Assistant avatar preference, never the person's sex. */
   readonly avatar_sex: 'male' | 'female' | null
+  /** Present after additive language migration; never inferred country. */
+  readonly communication_language?: 'pl' | 'en'
+  readonly language_source?: 'migration' | 'browser' | 'user' | 'default'
   readonly job: string | null
   /** E.164 contact only, no verification/authentication claim. */
   readonly phone: string | null

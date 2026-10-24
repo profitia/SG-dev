@@ -7,13 +7,18 @@ export { profileSchemaUrl, profileSchemaDigest, ProfileConflict } from './identi
 
 export const USER_PROFILE_CONTRACT = Object.freeze({ id: 'profitia.user-profile', version: '1.0.0' })
 export function normalizeProfilePatch(value, phoneParser) {
-  if (!closedObject(value) || Object.keys(value).length === 0 || Object.keys(value).some(k => !['avatar_sex', 'job', 'phone'].includes(k))) throw new OperationDenied('PERMISSION_DENIED')
+  if (!closedObject(value) || Object.keys(value).length === 0 || Object.keys(value).some(k => !['avatar_sex', 'job', 'phone', 'communication_language', 'language_source'].includes(k))) throw new OperationDenied('PERMISSION_DENIED')
+  if (Object.hasOwn(value, 'communication_language') !== Object.hasOwn(value, 'language_source')
+    || Object.hasOwn(value, 'communication_language') && (!['pl', 'en'].includes(value.communication_language)
+      || !['browser', 'user'].includes(value.language_source) || value.language_source === 'browser' && Object.keys(value).length !== 2)) throw new TypeError('Paired language and source required')
   const out = {}
   for (const [key, item] of Object.entries(value)) {
     if (item === null) { out[key] = null; continue }
     if (typeof item !== 'string') throw new TypeError('Invalid profile field')
     if (key === 'avatar_sex') {
       if (!['male', 'female'].includes(item)) throw new TypeError('Invalid avatar preference')
+      out[key] = item
+    } else if (key === 'communication_language' || key === 'language_source') {
       out[key] = item
     } else if (key === 'job') {
       const normalized = item.normalize('NFC').trim()
