@@ -2852,7 +2852,11 @@
       "package-lock.json": "01a21d679f7084d7a1256f33744aacf1206adf0e82a59ae526c7dc4b7aa97a97",
       "tests/operation-context.test.mjs": "cf377f8f603b92000b25dfc57cb074ba0dd099d9040fab3a03c4a516cc08546d",
       "tests/private-host.integration.test.mjs": "82d3d3c0ee5b36e8f5451d93e1181c1bc28037e6a7c5deab699e88b11845f4f3",
-      "../dashboard-preview/package-lock.json": "ffa446460457a9e2633dc056358f1d892a654264eda4082d26451d0f555ba1d0"
+      "../dashboard-preview/package-lock.json": "ffa446460457a9e2633dc056358f1d892a654264eda4082d26451d0f555ba1d0",
+      "tests/category-operation.test.ts": "ac12af205a367c97def2b3248844a0c9470f175f2f8efa75f0817655e2792821",
+      "tests/identity-runtime.test.ts": "78e894d44acb44c09f027952dc4202efe7e07788c465ebfb532cd9963cee97ef",
+      "tests/porr-demo-middleware.test.ts": "9110a4d3f01a04e686c8c49fbb7491caff9df8a4a9863760b3c6ef7f4c0507e8",
+      "tests/self-service-account.test.ts": "9b81ced70ddcf1067b7cab58623507960e09c9eafe713c9cb3be4962943f2f94"
     },
     "requestQuotaOptIn": false,
     "forecastQuotaChanged": false,
