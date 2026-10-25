@@ -614,3 +614,17 @@ bounded lock/statement timeouts. Existing indexes, function/SDK bytes, receipt
 digests, RLS, grants, roles, budgets and data remain unchanged. A conflicting
 same-name object fails closed; a matching index is idempotent. No authority
 decision cache or transaction timeout increase is introduced.
+
+## Optional unmetered SRM request admission (SQL027, platform 1.29)
+
+The existing E1 request ledger supports an explicit `quotaSchemaDigest` opt-in for
+`supplier.report.refresh` and `supplier.private.refresh`. `UNMETERED` has null
+capacity, quota window and quota expiry; the database still increments the real
+accepted counter once per new idempotent request. This does not waive current
+HUMAN/module/product/organisation authority, audit or replay checks. Historical
+capacity/window values and accepted intents remain intact. Controlled owner mode
+transitions are versioned and appended to a forced-RLS immutable event table.
+`FIXED` policies remain available for future organisation packages. Forecast and
+location quotas keep their existing interfaces and semantics. Old non-adopting
+SDKs fail closed on unsupported unmetered policies. This source change seeds no
+policy, runtime grant, role or activation.
