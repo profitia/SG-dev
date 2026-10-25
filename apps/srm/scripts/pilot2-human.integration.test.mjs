@@ -6,8 +6,11 @@ import {supplierBusinessFixture} from './supplier-delegated-business.integration
 import {reportAdmissionSchemaUrl} from '@profitia/platform-contracts/report-admission'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {createPilot2HumanRuntime} from '../src/server/pilot2-human-runtime.ts'
+import {pilot2PrivateReportProjection} from '../src/server/pilot2-report-projection.ts'
 import {PILOT2_PUBLIC_CARD_SQL} from '../src/server/pilot2-public-catalog.ts'
 import {mapMgbiFinancialRecords} from '../src/server/mgbi-financial.ts'
+import {projectFinancialDocuments} from '../src/server/financial-documents.ts'
+import {calculateFinancialIndicators} from '../src/server/financial-indicators.ts'
 import {FINANCIAL_MAPPING_VERSION} from '../src/server/shared-catalog.ts'
 import pg from 'pg'
 import {pilot2HumanInstallationPlan} from './pilot2-human-installation.mjs'
@@ -29,10 +32,23 @@ test('PILOT2 reuses actual Root and form Work: no Clerk or provider after click;
  await f.owner.query(`REVOKE CREATE ON DATABASE ${f.baseBinding.databaseName} FROM profitia_access_owner`)
  const at=new Date().toISOString(),krs='0000000001',reference='KRS:'+krs+':'+'a'.repeat(64)
  const history={version:'KRS_CONTINUITY_V1',currentKrs:krs,members:[{krs,legalName:'SYNTHETIC_PUBLIC_COMPANY',legalForm:'SA',registeredAt:null,deregisteredAt:null,status:'ACTIVE'}],links:[],unlinkedKrs:[]}
- const financial=mapMgbiFinancialRecords([{id:'b'.repeat(24),identifiers:{pl_nip:f.NIP,pl_krs:krs},
-  document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31'},
-  content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ca_cfy:'300',lae_lapfl_stl_cfy:'200'}}}}],
-  {type:'NIP',value:f.NIP},at,1,history).section
+ const rawRows={'RZiS.RZiSKalk.A':['200','100'],'RZiS.RZiSKalk.B':['100','60'],
+  'RZiS.RZiSKalk.C':['100','40'],'RZiS.RZiSKalk.D':['20','10'],'RZiS.RZiSKalk.E':['10','10'],
+  'RZiS.RZiSKalk.F':['70','20'],'RZiS.RZiSKalk.I':['60','15'],'RZiS.RZiSKalk.O':['40','10'],
+  'Bilans.Aktywa':['300','200'],'Bilans.Pasywa.Pasywa_B':['60','80'],
+  'Bilans.Aktywa.Aktywa_B':['200','100'],'Bilans.Pasywa.Pasywa_B.Pasywa_B_III':['50','40']}
+ const standardized={pala:{},bs:{}}
+ for(const[key,path]of Object.entries({nrfs:'RZiS.RZiSKalk.A',plfs:'RZiS.RZiSKalk.F',plfoa:'RZiS.RZiSKalk.I',npl:'RZiS.RZiSKalk.O',
+  a_ta:'Bilans.Aktywa',lae_lapfl:'Bilans.Pasywa.Pasywa_B',a_ca:'Bilans.Aktywa.Aktywa_B',lae_lapfl_stl:'Bilans.Pasywa.Pasywa_B.Pasywa_B_III'})){
+  const group=path.startsWith('Bilans')?'bs':'pala';standardized[group][key+'_cfy']=rawRows[path][0];standardized[group][key+'_pfy']=rawRows[path][1]
+ }
+ const record={id:'b'.repeat(24),identifiers:{pl_nip:f.NIP,pl_krs:krs},
+  document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31',is_ias_compliant:false,is_correction:false,filing_date:'2026-06-01'},
+  content:{schema:{name:'JednostkaInnaWZlotych',version:'1-0E'},standardized_fields:standardized,
+   extracted_fields:Object.fromEntries(Object.entries(rawRows).flatMap(([path,values])=>values.map((value,i)=>[path+'.'+(i?'KwotaB':'KwotaA'),value])))}}
+ const mapped=mapMgbiFinancialRecords([record],{type:'NIP',value:f.NIP},at,1,history),financial=mapped.section
+ const facts=mapped.facts.map(f=>({...f,sourceSnapshotId:'00000000-0000-4000-8000-000000000001'}))
+ const indicators=calculateFinancialIndicators(f.NIP,financial.data,facts)
  const row={general_checked_at:at,financial_checked_at:at,general_json:{status:'SUCCESS',source:{provider:'KRS',model:'OdpisAktualny',recordId:reference},
   retrievedAt:at,effectiveAt:null,warnings:[],data:{nip:f.NIP,krs,legalName:'SYNTHETIC_PUBLIC_COMPANY',legalForm:'SA',regon:null,
    registeredAddress:null,registeredAt:null,mainPkd:null,registrationStatus:'ACTIVE',registryHistory:history,
@@ -45,7 +61,7 @@ test('PILOT2 reuses actual Root and form Work: no Clerk or provider after click;
   if(sql===PILOT2_PUBLIC_CARD_SQL)return {rows:[structuredClone(row)]}
   if(sql==='SELECT financial_sha256 FROM srm.catalog_companies WHERE nip=$1')return {rows:[{financial_sha256:'c'.repeat(64)}]}
   assert(sql.startsWith('SELECT requested.nip,'),'Only the existing shared financial projector')
-  return {rows:[{nip:f.NIP,financial_json:row.financial_json,financial_sha256:'c'.repeat(64),financial_checked_at:at,facts:[],indicators:[],kys:null}]}
+  return {rows:[{nip:f.NIP,financial_json:row.financial_json,financial_sha256:'c'.repeat(64),financial_checked_at:at,facts,indicators,kys:null}]}
  }})}
  const human={...f.humanOptions,application:{...f.humanOptions.application,profileId:'PORR_SUITE',organisationId:f.A}}
  const {executionMode,...base}=f.workOptions
@@ -70,6 +86,29 @@ test('PILOT2 reuses actual Root and form Work: no Clerk or provider after click;
  const report=await runtime.report(request('report-data'),{nip:f.NIP,entityType:'COMPANY'})
  assert.equal(report.status,200);assert.equal((await report.json()).financial.scanner,undefined)
  assert.equal(clerk,0)
+ const document=projectFinancialDocuments([record])[0];assert.ok(document)
+ await f.owner.query('INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version) VALUES($1,$2,$3,$4::jsonb,$5,$6)',
+  [f.A,f.NIP,document.recordId,JSON.stringify(document),document.checksum,document.mappingVersion])
+ // A corrupt foreign projection must neither poison nor supply this report.
+ await f.owner.query('INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version) VALUES($1,$2,$3,$4::jsonb,$5,$6)',
+  [f.B,f.NIP,'foreign-document',JSON.stringify({recordId:'foreign-document',privateMarker:'FOREIGN_DOCUMENT_MUST_NEVER_BE_READ'}),'d'.repeat(64),'foreign-invalid'])
+ const privateRuntime=createPilot2HumanRuntime({config:{...human,provider:'clerk',databaseUrl:'synthetic-not-used'},human,work,catalog,
+  privateProjection:pilot2PrivateReportProjection('synthetic_scanner_secret_'.repeat(3))})
+ const privateReport=await privateRuntime.report(request('report-data'),{nip:f.NIP,entityType:'COMPANY'})
+ assert.equal(privateReport.status,200)
+ const privateBody=await privateReport.json()
+ assert.equal(privateBody.nip,f.NIP);assert.equal(privateBody.financial.status,'SUCCESS')
+ assert.ok(privateBody.financial.scanner,'Actual admitted HUMAN projection retains the original Scanner engine')
+ assert.match(privateBody.preferenceScope,/^[a-f0-9]{64}$/)
+ assert.equal(privateBody.financial.scanner.periods.length,2)
+ const current=privateBody.financial.scanner.periods.find(p=>p.to==='2025-12-31')
+ assert.equal(current.axes.length,6);assert.ok(current.axes.every(a=>a.qualification==='VERIFIED'))
+ assert.equal(JSON.stringify(privateBody).includes('FOREIGN_DOCUMENT_MUST_NEVER_BE_READ'),false)
+ const frames=(await f.owner.query('SELECT organization_id,count(*)::int n FROM srm.financial_scanner_frames GROUP BY organization_id')).rows
+ assert.equal(frames.length,1);assert.equal(frames[0].organization_id,f.A);assert.ok(frames[0].n>0)
+ assert.equal(clerk,0,'Private Scanner projection also uses admitted authority without Clerk')
+ await assert.rejects(privateRuntime.report(request('report-data?organisationId='+f.B),{nip:f.NIP}),isOperationDenied)
+ await assert.rejects(privateRuntime.report(request('report-data'),{nip:f.OTHER_NIP}),isOperationDenied)
  await assert.rejects(runtime.search(request('search'),f.OTHER_NIP),isOperationDenied)
  await assert.rejects(runtime.search(request('search','fr1.'+randomUUID()+'.'+'0'.repeat(64)),f.NIP),isOperationDenied)
  await assert.rejects(runtime.search(new Request('http://localhost:3400/api/xray/search',{method:'POST',headers:{origin:'http://localhost:3400'}}),f.NIP),isOperationDenied)

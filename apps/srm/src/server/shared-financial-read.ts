@@ -15,8 +15,8 @@ export const SHARED_FINANCIAL_READ_SQL = `${REPORT_SHARED_FINANCIAL_SELECT},
 FROM (VALUES ($1::text,$2::uuid)) requested(nip,organisation_id)
 LEFT JOIN srm.catalog_companies c ON c.nip=requested.nip AND $3='COMPANY'`
 
-export async function readSharedFinancialReport(client: Pick<PoolClient, 'query'>, organisationId: string,
-  selection: ReportSelection, expectedVersion: string, now = new Date(), env: Readonly<Record<string, string | undefined>> = {}) {
+export async function readSharedFinancialSource(client: Pick<PoolClient, 'query'>, organisationId: string,
+  selection: ReportSelection, expectedVersion: string): Promise<ReportReadRow> {
   const result = await client.query<ReportReadRow & { registration_status?: GeneralCompanyData['registrationStatus'] }>(
     SHARED_FINANCIAL_READ_SQL, [selection.nip, organisationId, selection.entityType, FINANCIAL_INDICATOR_FORMULA_VERSION])
   const row = result.rows[0]
@@ -29,7 +29,12 @@ export async function readSharedFinancialReport(client: Pick<PoolClient, 'query'
   const source: ReportReadRow = isRestrictedRegistrationStatus(row.registration_status)
     ? { nip: selection.nip, financial_json: null, financial_sha256: null, financial_checked_at: null, facts: [], indicators: [], kys: null }
     : { ...row, scanner_documents: [], kys: null }
-  const report = projectReportData(selection, source, now, env)
+  return source
+}
+
+export async function readSharedFinancialReport(client: Pick<PoolClient, 'query'>, organisationId: string,
+  selection: ReportSelection, expectedVersion: string, now = new Date(), env: Readonly<Record<string, string | undefined>> = {}) {
+  const report = projectReportData(selection, await readSharedFinancialSource(client, organisationId, selection, expectedVersion), now, env)
   // Scanner requires separately authorized source documents. No synthesized
   // scanner, private reference frame, export or preference scope leaves here.
   delete report.financial.scanner

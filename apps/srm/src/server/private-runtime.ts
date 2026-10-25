@@ -1,3 +1,4 @@
+import {projectSrmReportDataResponse} from './report-output'
 import nipTargets from '../../deployment/krs-nip-development.json'
 import type {KrsNipCompany} from './krs-nip-runtime'
 import {createSrmKrsNativeRuntime,srmKrsPilotTarget,krsPilotDatabaseUrl} from './krs-native-runtime'
@@ -155,22 +156,7 @@ export function createSrmReportOperationHost(options: Omit<DriverOptions, 'readR
     projectOutput: async (value, context) => {
       if (context.operation === 'supplier.report.read') return projectSharedFinancialResponse(value, context)
       if (context.operation === 'supplier.report.export') return projectPrivateFinancialExcel(value, context)
-      if (!(value instanceof Response) || !value.ok) throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
-      const body: unknown = await value.clone().json()
-      const selection = validateReportSelection(context.payload)
-      const allowed = ['schemaVersion','nip','entityType','financial','kys','preferenceScope','locationSubject']
-      if (!body || typeof body !== 'object' || Array.isArray(body)
-        || Object.keys(body).some(key => !allowed.includes(key)) || !('schemaVersion' in body) || body.schemaVersion !== '1.0'
-        || !('nip' in body) || body.nip !== selection.nip || !('entityType' in body) || body.entityType !== selection.entityType
-        || !('financial' in body) || !body.financial || typeof body.financial !== 'object'
-        || !('kys' in body) || !body.kys || typeof body.kys !== 'object'
-        || ('locationSubject' in body && (!body.locationSubject || typeof body.locationSubject!=='object' || Array.isArray(body.locationSubject) || Object.keys(body.locationSubject).join(',')!=='supplierId' || !('supplierId' in body.locationSubject) || !uuid.test(String(body.locationSubject.supplierId))))
-        || ('preferenceScope' in body && (typeof body.preferenceScope !== 'string' || !/^[a-f0-9]{64}$/.test(body.preferenceScope)))) {
-        throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
-      }
-      // projectReportData is the existing allowlisted field projection. This
-      // version/selection fence does not replace its financial/PII tests or RLS.
-      return value
+      return projectSrmReportDataResponse(value,context)
     },
   })
 }

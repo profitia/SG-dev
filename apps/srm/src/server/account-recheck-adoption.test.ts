@@ -299,5 +299,19 @@ test('PILOT2 form admission preserves all preceding receipts, the single canonic
  assert.equal(a.coldAcquisitionAdopted,false);assert.equal(a.privateReportEffectsAdopted,false);
  assert.equal(a.productDeploymentPerformed,false);assert.equal(a.sqlInstallationPerformed,false);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.pilot2ScannerAdoption.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file);
+});
+
+
+test('PILOT2 private Scanner preserves all earlier receipts and adopts the same report engine without a directory or policy change',()=>{
+ const a=acceptedReceipt.pilot2ScannerAdoption,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.privateDocumentsAuthority,'EXISTING_E1_ORGANISATION_NO_CLONED_ARCHIVE');
+ assert.equal(a.sharedCoreMigrationRequired,false);assert.equal(a.newHumanEntitlements,false);
+ assert.equal(a.postClickClerkReads,false);assert.equal(a.readsRenewFreshness,false);
+ assert.equal(a.newFinancialEngine,false);assert.equal(a.coldAcquisitionAdopted,false);
+ assert.equal(a.productDeploymentPerformed,false);assert.equal(a.sqlInstallationPerformed,false);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });

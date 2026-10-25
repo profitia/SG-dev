@@ -7,6 +7,17 @@ function replaceOnce(source,from,to){
  if(source.split(from).length!==2)throw Error('Accepted Staging instrumentation seam changed')
  return source.replace(from,to)
 }
+export function instrumentPilot2Database(source){
+  source='import { measureSupplierStage } from "./supplier-telemetry";\n'+source
+  return replaceOnce(source,'const client = await pool.connect();',`const originalClient = await measureSupplierStage('POOL_WAIT', () => pool.connect());
+  const client: pg.PoolClient = new Proxy(originalClient, {
+    get(target, key, receiver) {
+      const member = Reflect.get(target, key, receiver);
+      if (key === 'query' && typeof member === 'function')
+        return (...args: unknown[]) => measureSupplierStage('DOMAIN_SQL', async () => Reflect.apply(member, target, args));
+      return typeof member === 'function' ? member.bind(target) : member;
+    },
+  });`)}
 /** Reuse the canonical request-local collector. SQL text, arguments, tenant
  * identities, report values and credentials are never passed to the collector. */
 export function instrumentPilot2(repo,output,proof){
@@ -19,18 +30,7 @@ export function instrumentPilot2(repo,output,proof){
   source='import { measureSupplierStage, type SupplierTelemetryStage } from "./supplier-telemetry";\n'+source
   return replaceOnce(source,'try { return await action(); } finally {','try { return await measureSupplierStage(stage.toUpperCase() as SupplierTelemetryStage, action); } finally {')
  })
- patch('apps/srm/src/server/db.ts',source=>{
-  source='import { measureSupplierStage } from "./supplier-telemetry";\n'+source
-  return replaceOnce(source,'const client = await pool.connect();',`const originalClient = await measureSupplierStage('POOL_WAIT', () => pool.connect());
-  const client: pg.PoolClient = new Proxy(originalClient, {
-    get(target, key, receiver) {
-      const member = Reflect.get(target, key, receiver);
-      if (key === 'query' && typeof member === 'function')
-        return (...args: unknown[]) => measureSupplierStage('DOMAIN_SQL', async () => Reflect.apply(member, target, args));
-      return typeof member === 'function' ? member.bind(target) : member;
-    },
-  });`)
- })
+ patch('apps/srm/src/server/db.ts',instrumentPilot2Database)
  patch('apps/srm/app/api/xray/search/route.ts',source=>{
   source='import { withSupplierTelemetry } from "../../../../src/server/supplier-telemetry";\n'+source
   return replaceOnce(source,'export async function POST(request: Request)', 'async function originalPost(request: Request)')

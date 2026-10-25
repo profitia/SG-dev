@@ -240,13 +240,24 @@ LEFT JOIN LATERAL (
   ORDER BY l.requested_at DESC, a.started_at DESC, p.projection_version DESC LIMIT 1
 ) k ON true`;
 
-export async function readReportData(organizationId: string, selection: ReportSelection, now = new Date(), pool?: DatabasePool): Promise<SupplierReportData> {
+/** The same private source selection, with the public catalog supplied by an
+ * explicit server port. Only the three approved public financial tables may
+ * come from that port; documents, KYS and frames stay in the bound tenant DB. */
+const privateCatalogJoin = "\nLEFT JOIN srm.catalog_companies c ON c.nip = requested.nip AND $3 = 'COMPANY'";
+if (!REPORT_DATA_SQL.startsWith(REPORT_SHARED_FINANCIAL_SELECT + ',') || REPORT_DATA_SQL.split(privateCatalogJoin).length !== 2)
+  throw new Error("Canonical report source SQL changed");
+export const REPORT_PRIVATE_DATA_SQL = ('SELECT requested.nip' + REPORT_DATA_SQL.slice(REPORT_SHARED_FINANCIAL_SELECT.length)).replace(privateCatalogJoin, '');
+export type SharedFinancialReportPort = () => Promise<Pick<ReportReadRow, 'nip' | 'financial_json' | 'financial_sha256' | 'financial_checked_at' | 'facts' | 'indicators'>>;
+
+export async function readReportData(organizationId: string, selection: ReportSelection, now = new Date(), pool?: DatabasePool, sharedFinancial?: SharedFinancialReportPort): Promise<SupplierReportData> {
   if (isRestrictedRegistrationStatus(await readSupplierRegistrationStatus(organizationId, selection.nip, selection.entityType, pool)))
     return projectReportData(selection, { nip: selection.nip, financial_json: null, financial_sha256: null, financial_checked_at: null, facts: [], indicators: [], kys: null }, now);
   return withOrganization(organizationId, async client => {
     if (selection.entityType === "COMPANY") await restoreFinancialDocumentsFromArchive(client, organizationId, selection.nip);
-    const result = await client.query<ReportReadRow>(REPORT_DATA_SQL, [selection.nip, organizationId, selection.entityType, FINANCIAL_INDICATOR_FORMULA_VERSION]);
-    const row = result.rows[0];
+    const parameters = [selection.nip, organizationId, selection.entityType, FINANCIAL_INDICATOR_FORMULA_VERSION];
+    const row = sharedFinancial
+      ? { ...await sharedFinancial(), ...(await client.query<Pick<ReportReadRow, 'nip' | 'scanner_documents' | 'kys'>>(REPORT_PRIVATE_DATA_SQL, parameters.slice(0, 3))).rows[0] }
+      : (await client.query<ReportReadRow>(REPORT_DATA_SQL, parameters)).rows[0];
     const report = projectReportData(selection, { ...row, scannerTenantScope: organizationId }, now);
     if (report.financial.scanner?.referenceFrames?.length) {
       const scanner = report.financial.scanner;

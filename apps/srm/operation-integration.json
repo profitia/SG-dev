@@ -4595,5 +4595,42 @@
       "src/server/pilot2-human-runtime.test.ts": "1adffe16ed5f3ebfbaebb9c31776eef7bcd86f26911ca9691f908f291beaeacf",
       "src/server/pilot2-public-catalog.test.ts": "3fea1af29ba9abdd4d021478db02f09eee5fc3ebb768ec50268de142b0179d48"
     }
+  },
+  "pilot2ScannerAdoption": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "status": "SOURCE_CANDIDATE_NOT_DEPLOYED",
+    "previousSourceSha": "b41ebbdc7bfc10ad1fa91543b0ee38506f97b454",
+    "previousReceiptSha256": "c5a32c9869eaa7d6f409bc0b1d4db323f8a14e5a66ed724a80a2a7e291ef7deb",
+    "businessBaselineSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+    "stage": "SCANNER",
+    "privateDocumentsAuthority": "EXISTING_E1_ORGANISATION_NO_CLONED_ARCHIVE",
+    "transactionAdapter": "EXISTING_CANONICAL_NATIVE_BINDING_NO_NEW_AUTHORITY",
+    "sharedCoreMigrationRequired": false,
+    "newHumanEntitlements": false,
+    "postClickClerkReads": false,
+    "readsRenewFreshness": false,
+    "newFinancialEngine": false,
+    "coldAcquisitionAdopted": false,
+    "productDeploymentPerformed": false,
+    "sqlInstallationPerformed": false,
+    "applicationSourceDigests": {
+      "../../.github/workflows/srm-ci.yml": "36b17fc44f29e8647d45464b7096b6de88abfe808e94a847f3c840ff5b12f5b0",
+      "scripts/pilot2-baseline.mjs": "fa18d1bf09fadce1720b74843a92dc40be7d3f3f9eb4a0751dac0884dffa9e9a",
+      "scripts/pilot2-human.integration.test.mjs": "593a63caa25ed67ea5c5357f6f6ce09f656063c3af84153d36fed21288982c51",
+      "scripts/pilot2-instrumentation.mjs": "a03e2684d30156c9b35998fe4e568534e58fdeb66fbbf9ce58fa706a9989cd07",
+      "scripts/pilot2-registry-smoke.mjs": "1af5ffa1d524b2c978e2038e4359171b97afb6d0cde349d40f8a2c916ae0bf7b",
+      "scripts/pilot2-scanner-overlay.mjs": "aa7c7beb9ce91237ae97dc64da3bb59f65bfdea772b8620cd09feb249ffedaf8",
+      "scripts/pilot2-scanner-overlay.test.mjs": "074adcccd6a5a627216d6296c8085d95da5087876ccc4a6bad77d1e9a3ef9f8b",
+      "src/server/account-recheck-adoption.test.ts": "21d56c0b0b0e051c67c6c73d162dcf2dd660421951497eb25cdc9fcbccb6dc4f",
+      "src/server/db.ts": "dd72f52d6a502c057a63a81015fdd07e2bebba45a80848825feb31f05760e73e",
+      "src/server/peer-read-boundary.test.ts": "5f0a6c5d507a774760738618a2d8f011d739f57fe50590880f90661a4cf0051b",
+      "src/server/pilot2-human-runtime.ts": "4ddeb508f21640ec49b561c40bd86d66fd6c8ca7f691b2386b4837d0bc60d23f",
+      "src/server/pilot2-report-projection.test.ts": "1f22aab131df0ce980f45520d39bd9132bd3534c6b24e8e34c2b68faa2a425c5",
+      "src/server/pilot2-report-projection.ts": "e527dc9991c429afbd364bd88a2027bc2c695be6b345c862aade5a275023f4e6",
+      "src/server/private-runtime.ts": "50126ab5f3d609cf47454416d12c1d0ccd70477ccc9e3f8245857df587d81eaa",
+      "src/server/report-data.ts": "111a7fc8aca52685b610a3b52cc41a0498087cce84816131a54a597d429e0967",
+      "src/server/report-output.ts": "5af3cf0263e3c53f90a52f49689c94999d9fe8015b9059bcc558ec049a699d80",
+      "src/server/shared-financial-read.ts": "841bcd9979ae267ce29d701dc78ab26803696e43a07412b9538afb9dafd2c2e2"
+    }
   }
 }
