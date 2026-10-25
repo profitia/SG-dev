@@ -2,7 +2,7 @@ import pg from 'pg'
 import {createHash} from 'node:crypto'
 import {createDelegatedJobStore} from '@profitia/platform-contracts/delegated-job'
 import {currentReportAdmission,reportAdmissionEvidence} from '@profitia/platform-contracts/report-admission'
-import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest,type Json,type Application} from '@profitia/platform-contracts/operation-context'
+import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest,type Json,type Application,type OperationContext} from '@profitia/platform-contracts/operation-context'
 import type {AccessStoreBinding} from '@profitia/platform-contracts/access-store'
 import type {PublicIdentityApplication} from '@profitia/platform-contracts/public-request'
 import {createSrmSupplierRequestOperationHost} from './supplier-request-host'
@@ -11,7 +11,7 @@ import {createSrmReportAdmissionRuntime,prepareSrmReportAdmission,reportAdmissio
 import {persistSupplierRequest,readSupplierRequest,supplierRequestResourceId} from './supplier-request-operation'
 import {readPilot2PublicCard} from './pilot2-public-catalog'
 import {toPublicSection} from './xray-lookup'
-import {validateReportSelection} from './report-data'
+import {validateReportSelection,type ReportSelection} from './report-data'
 import {readSharedFinancialReport,projectSharedFinancialResponse} from './shared-financial-read'
 import {measureSupplierStage} from './supplier-telemetry'
 import {createSrmClerkClient,readSrmIdentityRuntime} from './identity-runtime'
@@ -22,7 +22,12 @@ import nativeTargets from '../../deployment/supplier-native-targets.json'
 type Human=Parameters<typeof createSrmSupplierRequestOperationHost>[0]
 type Pilot2Configuration=Readonly<{provider:'clerk';databaseUrl:string;application:Application;identity:PublicIdentityApplication;
  binding:AccessStoreBinding;module:{id:'supplier_report';schemaDigest:string;auditSchemaDigest:string}}>
-export type Pilot2HumanOptions=Readonly<{config:Pilot2Configuration;human:Human;work:ReportPreparationOptions;catalog:pg.Pool}>
+export type Pilot2PrivateProjection=Readonly<{
+ project:(context:OperationContext,privateClient:pg.PoolClient,publicClient:pg.PoolClient,selection:ReportSelection,version:string)=>Promise<Response>;
+ output:(value:unknown,context:OperationContext)=>Promise<Response>
+}>
+export type Pilot2HumanOptions=Readonly<{config:Pilot2Configuration;human:Human;work:ReportPreparationOptions;catalog:pg.Pool;
+ privateProjection?:Pilot2PrivateProjection}>
 const deny=():never=>{throw new OperationDenied('ACCESS_BASIS_INVALID')}
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
@@ -72,7 +77,7 @@ export function readPilot2HumanConfiguration(env:Env=process.env){
 
 /** Resource pool memoization only. No principal, admission, selected company,
  * authority decision or report body survives between requests here. */
-export function instantiatePilot2HumanRuntime(env:Env=process.env){
+export function instantiatePilot2HumanOptions(env:Env=process.env):Pilot2HumanOptions{
  const selected=readPilot2HumanConfiguration(env),{config}=selected
  const pair=(configuration:ReturnType<typeof pilot2HumanConnection>,foreground=false)=>{
   // The canonical application has one existing HUMAN entry. Do not rotate its
@@ -94,7 +99,7 @@ export function instantiatePilot2HumanRuntime(env:Env=process.env){
  const jobApplication={appId:'srm-jobs',profileId:'PLATFORM_INTERNAL' as const,environment:'development' as const,
   deploymentId:config.application.deploymentId+':srm-jobs',configurationVersion:nativeTargets.configurationVersion,
   identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['job_execution'],operations:['job.execute' as const]}
- return createPilot2HumanRuntime({config,catalog,
+ return {config,catalog,
   human:{pool:human.pool,auditPool:human.audit,clerk,identity:config.identity,application:config.application,binding:config.binding,module:config.module,
    requestLedger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql']},commandBoundaryDigest:own['001-supplier-requests.sql']},
   work:{pool:jobs.pool,auditPool:jobs.audit,clerk,application:jobApplication,
@@ -102,15 +107,20 @@ export function instantiatePilot2HumanRuntime(env:Env=process.env){
     deploymentId:jobApplication.deploymentId,configurationVersion:jobApplication.configurationVersion}},
    job:{schemaDigest:core['007-delegated-jobs.sql'],targetOperation:'supplier.report.refresh',supplierSchemaDigest:core['013-supplier-delegation.sql']},
    accountIdentity:{environment:'development',issuer:config.identity.issuer},
-   workSchemaDigest:core['016-delegated-native-work.sql'],reportAdmission}})
+   workSchemaDigest:core['016-delegated-native-work.sql'],reportAdmission}}
 }
 
-let runtime:ReturnType<typeof instantiatePilot2HumanRuntime>|undefined,configuration:string|undefined
-export function getPilot2HumanRuntime(env:Env=process.env){
+export function instantiatePilot2HumanRuntime(env:Env=process.env){return createPilot2HumanRuntime(instantiatePilot2HumanOptions(env))}
+let runtime:ReturnType<typeof createPilot2HumanRuntime>|undefined,resources:Pilot2HumanOptions|undefined,configuration:string|undefined
+export function getPilot2HumanOptions(env:Env=process.env){
  const key=createHash('sha256').update(JSON.stringify(readPilot2HumanConfiguration(env))).digest('hex')
  if(configuration&&configuration!==key)return deny()
  configuration=key
- return runtime??=instantiatePilot2HumanRuntime(env)
+ return resources??=instantiatePilot2HumanOptions(env)
+}
+export function getPilot2HumanRuntime(env:Env=process.env){
+ const options=getPilot2HumanOptions(env)
+ return runtime??=createPilot2HumanRuntime(options)
 }
 
 /** Composition of the accepted form admission, Root, native Work and public
@@ -151,20 +161,26 @@ export function createPilot2HumanRuntime(options:Pilot2HumanOptions){
   return proof
  }
  const read=async(request:Request,nip:string,report:boolean)=>{
-  const proof=acceptedNip(request,nip)
+  const proof=acceptedNip(request,nip),privateProjection=report?options.privateProjection:undefined
+  const operation=privateProjection?'supplier.report.project' as const:'supplier.report.read' as const
   let selected:Awaited<ReturnType<typeof readPilot2PublicCard>>=null
   const host=createSrmPrivateOperationHost({...human,requestLedger:undefined,
-   application:{...human.application,operations:['supplier.report.read']},reportAdmission:work.reportAdmission,
+   application:{...human.application,operations:privateProjection?['supplier.report.read','supplier.report.project']:[operation]},reportAdmission:work.reportAdmission,
    readResources:async({actor,scope,request:bound})=>{
     if(actor.kind!=='HUMAN'||scope.userId!==actor.actorId||scope.organisationId!==proof.organisationId
-     ||bound.operation!=='supplier.report.read'||bound.resourceId!=='supplier-report:COMPANY:'+nip)return deny()
+     ||bound.operation!==operation||bound.resourceId!=='supplier-report:COMPANY:'+nip)return deny()
     const client=await measureSupplierStage('POOL_WAIT',()=>catalog.connect())
     try{selected=await readPilot2PublicCard(client,nip)}finally{client.release()}
-    return {resource:{id:bound.resourceId,type:'supplier_report',dataClass:'SHARED_KNOWLEDGE',environment:'development',
+    const shared={id:bound.resourceId,type:'supplier_report',dataClass:'SHARED_KNOWLEDGE',environment:'development',
      ownerOrganisationId:null,ownerUserId:null,version:selected?.version??'pilot2-cache-miss-v1',
-     projectionVersion:report?'srm-shared-financial-dto-v1':'srm-pilot2-company-card-v1',approvedSharedProjection:true}}
+     projectionVersion:report?'srm-shared-financial-dto-v1':'srm-pilot2-company-card-v1',approvedSharedProjection:true}as const
+    return privateProjection?{resource:{id:bound.resourceId,type:'supplier_projection',dataClass:'ORGANISATION_PRIVATE',
+     environment:'development',ownerOrganisationId:proof.organisationId,ownerUserId:null,
+     version:'srm-private-report-collection-v1',projectionVersion:'srm-report-dto-v1'},
+     inputs:[{...shared,id:'stored-financial-view:COMPANY:'+nip,projectionVersion:'srm-stored-corporate-financial-v1'}]}:{resource:shared}
    },
    projectOutput:async(value,context)=>{
+    if(privateProjection)return privateProjection.output(value,context)
     if(context.resource.version!==(selected?.version??'pilot2-cache-miss-v1'))return deny()
     if(report)return projectSharedFinancialResponse(value,context)
     if(!selected||value!==selected.card||operationPayloadDigest(value as unknown as Json)!==selected.bodyDigest)return deny()
@@ -172,18 +188,19 @@ export function createPilot2HumanRuntime(options:Pilot2HumanOptions){
      general:toPublicSection(selected.card.general),financial:toPublicSection(selected.card.financial),kys:toPublicSection(selected.card.kys)}},{headers})
    }})
   const result=await host.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
-   operation:'supplier.report.read',organisationId:proof.organisationId,resourceId:'supplier-report:COMPANY:'+nip,
-   payload:{nip,entityType:'COMPANY'},request},async()=>{
+   operation,organisationId:proof.organisationId,resourceId:'supplier-report:COMPANY:'+nip,
+   payload:{nip,entityType:'COMPANY'},request},async(context,privateClient)=>{
     if(!selected)throw new OperationDenied('POLICY_UNAVAILABLE')
     if(!report)return selected.card
     const client=await measureSupplierStage('POOL_WAIT',()=>catalog.connect())
     try{
      const version=(await client.query<{financial_sha256:string}>('SELECT financial_sha256 FROM srm.catalog_companies WHERE nip=$1',[nip])).rows[0]?.financial_sha256
      if(!version||!/^[a-f0-9]{64}$/.test(version))return deny()
-     const body=await readSharedFinancialReport(client,proof.organisationId,{nip,entityType:'COMPANY'},version)
+     const body=privateProjection?await privateProjection.project(context,privateClient,client,{nip,entityType:'COMPANY'},version)
+      :await readSharedFinancialReport(client,proof.organisationId,{nip,entityType:'COMPANY'},version)
      const current=await readPilot2PublicCard(client,nip)
      if(current?.version!==selected.version)return deny()
-     return Response.json(body,{headers})
+     return body instanceof Response?body:Response.json(body,{headers})
     }finally{client.release()}
    })
   if(!(result.value instanceof Response))return deny()
