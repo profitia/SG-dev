@@ -9,6 +9,7 @@ import {registryPilot2} from './pilot2-registry-overlay.mjs'
 import {humanPilot2} from './pilot2-human-overlay.mjs'
 import {scannerPilot2} from './pilot2-scanner-overlay.mjs'
 import {coldPilot2} from './pilot2-cold-overlay.mjs'
+import {privatePilot2} from './pilot2-private-overlay.mjs'
 
 export const BUSINESS_BASELINE='6eede5cd19fd3a4519d66298effe9ef94633757a'
 const HASH=/^[a-f0-9]{40}$/
@@ -69,7 +70,7 @@ export function verifyBaselineArchive(repo){
 }
 export function prepareBaseline(repo,t,output,stage='BASELINE'){
  validateTarget(t)
- if(!['BASELINE','TELEMETRY','REGISTRY','FORM_ADMISSION','SCANNER','COLD_ACQUISITION'].includes(stage))deny('Only explicitly accepted experimental stages may be built')
+ if(!['BASELINE','TELEMETRY','REGISTRY','FORM_ADMISSION','SCANNER','COLD_ACQUISITION','PRIVATE_OPERATIONS'].includes(stage))deny('Only explicitly accepted experimental stages may be built')
  if(!HASH.test(BUSINESS_BASELINE))deny('Exact baseline required')
  const {archive,original,historicalGitVerified,tarSha256}=verifyBaselineArchive(repo)
  output=path.resolve(output)
@@ -87,10 +88,11 @@ export function prepareBaseline(repo,t,output,stage='BASELINE'){
   originalFiles:original,changedFiles:changed,sourceArchive:{tarSha256,historicalGitVerified},nodeVersion:process.version,adapter:{path:guard,originalSha256:original[guard],adaptedSha256:sha(fs.readFileSync(path.join(output,guard)))},
   installedDependencies:false,built:false}
  if(stage!=='BASELINE')instrumentPilot2(repo,output,proof)
- if(['REGISTRY','FORM_ADMISSION','SCANNER','COLD_ACQUISITION'].includes(stage))registryPilot2(repo,output,proof)
- if(['FORM_ADMISSION','SCANNER','COLD_ACQUISITION'].includes(stage))humanPilot2(repo,output,proof)
- if(['SCANNER','COLD_ACQUISITION'].includes(stage))scannerPilot2(repo,output,proof)
- if(stage==='COLD_ACQUISITION')coldPilot2(repo,output,proof)
+ if(['REGISTRY','FORM_ADMISSION','SCANNER','COLD_ACQUISITION','PRIVATE_OPERATIONS'].includes(stage))registryPilot2(repo,output,proof)
+ if(['FORM_ADMISSION','SCANNER','COLD_ACQUISITION','PRIVATE_OPERATIONS'].includes(stage))humanPilot2(repo,output,proof)
+ if(['SCANNER','COLD_ACQUISITION','PRIVATE_OPERATIONS'].includes(stage))scannerPilot2(repo,output,proof)
+ if(['COLD_ACQUISITION','PRIVATE_OPERATIONS'].includes(stage))coldPilot2(repo,output,proof)
+ if(stage==='PRIVATE_OPERATIONS')privatePilot2(repo,output,proof)
  fs.writeFileSync(path.join(output,'baseline-proof.json'),JSON.stringify(proof,null,2)+'\n')
  return proof
 }
@@ -116,7 +118,7 @@ export function buildBaseline(repo,t,output,stage='BASELINE'){
  const serverDirectory=path.dirname(entry)
  // Exercise the external runtime from the actual standalone closure before
  // accepting its artifact. This performs no SQL or provider HTTP requests.
- if(['REGISTRY','FORM_ADMISSION','SCANNER','COLD_ACQUISITION'].includes(stage))execFileSync(process.execPath,[path.join(repo,'apps/srm/scripts/pilot2-registry-smoke.mjs'),path.join(serverDirectory,'node_modules'),stage],{stdio:'inherit'})
+ if(['REGISTRY','FORM_ADMISSION','SCANNER','COLD_ACQUISITION','PRIVATE_OPERATIONS'].includes(stage))execFileSync(process.execPath,[path.join(repo,'apps/srm/scripts/pilot2-registry-smoke.mjs'),path.join(serverDirectory,'node_modules'),stage],{stdio:'inherit'})
  fs.mkdirSync(path.join(serverDirectory,'.next'),{recursive:true})
  fs.cpSync(path.join(app,'.next/static'),path.join(serverDirectory,'.next/static'),{recursive:true})
  fs.cpSync(path.join(app,'public'),path.join(serverDirectory,'public'),{recursive:true})

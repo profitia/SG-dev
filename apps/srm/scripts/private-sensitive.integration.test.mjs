@@ -95,6 +95,7 @@ test('native sensitive installation preserves the legacy source and admits only 
 
 import http from 'node:http'
 import {createSrmSupplierApi} from '../src/server/supplier-api-composition.ts'
+import {createPilot2PrivateRoutes} from '../src/server/pilot2-private-runtime.ts'
 import {createSrmSupplierOperationHandler} from '../src/server/supplier-acquisition-http.ts'
 import {createSrmNativeCompanyLookup} from '../src/server/supplier-native-company.ts'
 import {srmProviderSourcePolicy,SRM_MSR_STORAGE_ORIGIN,SRM_PUBLIC_WEB_SOURCE,createSrmPublicWebSourceTransport} from '../src/server/provider-source-transport.ts'
@@ -789,6 +790,17 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    assert(row.lease_owner);assert.equal(row.lease_until,'infinity')
    const next=selection(await parent(B,selected.command.nip)),store=workStore();await store.register(next)
    assert.equal(await store.cache(next).store.claim(B,selected.command.nip,'COMPANY',new Date()),null);assert.equal(networkHits,before+1)
+  })
+  if(privateMode)await t.test('PILOT2 private entrance preserves current HUMAN checks, original cached KYS and revocation without provider I/O',async()=>{
+   const route=createPilot2PrivateRoutes(api,A,()=>true),before=networkHits;
+   const request=(headers={})=>new Request(ORIGIN+'/api/xray/kys',{method:'POST',headers:{origin:ORIGIN,'content-type':'application/json','idempotency-key':randomUUID(),...headers},body:JSON.stringify({identifier:NIP})});
+   let reads=0;const original=clerk.users.getUser;clerk.users.getUser=async(...args)=>{reads++;return original(...args)};
+   try{
+    const response=await route('company-kys',request());assert.equal(response.status,200);assert.equal((await response.json()).section.status,'SUCCESS');assert(reads>0);
+    assert.throws(()=>route('company-kys',request({'X-SRM-Report-Admission':'company-only'})));
+    accountActive=false;try{assert.equal((await route('company-kys',request())).status,401)}finally{accountActive=true}
+    assert.equal(networkHits,before);
+   }finally{clerk.users.getUser=original}
   })
  }finally{if(server)await new Promise(resolve=>server.close(resolve));await corporatePool?.end();await corporateAudit?.end();await pool?.end();await auditPool?.end();await servicePool?.end();await serviceAudit?.end();await rawService?.end();await sourcePool?.end();await sourceAudit?.end();await rawSource?.end();await owner?.end();await root.query(`DROP DATABASE IF EXISTS ${DATABASE} WITH(FORCE)`);await root.end()}
 }

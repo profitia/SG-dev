@@ -4684,5 +4684,36 @@
       "src/server/xray-repository.ts": "16fcbe703f9dcbeb363df078f13624f44f132b40cb23aaf756c5e49c3bd1be7d",
       "../../.github/workflows/srm-ci.yml": "41c345f146c22e79f197a506379f52b60338a7f39ef3e4607d2d6e2170b9d215"
     }
+  },
+  "pilot2PrivateOperationsAdoption": {
+    "status": "CANDIDATE_ONLY_NOT_ACTIVATED",
+    "previousSourceSha": "d39000bfbf81879030c123d94a0aefb2b5d36c4e",
+    "previousReceiptSha256": "2e8ffb99754d71bc189cbbdf42714bd54af3f8378aab1d97e9d007626359878f",
+    "applicationSourceDigests": {
+      "../../.github/workflows/srm-ci.yml": "c6877dbb4b25425379e4de988e97308a3f24582e5f62c0a4f22e67a1cc833379",
+      "deployment/pilot2-human-targets.json": "bcba0a777c7c3ce705021c3cae10aba12eed6a578612f1d88093d1b0fd83ca7c",
+      "scripts/pilot2-baseline.mjs": "07d7ca8e832cc0b4fea9fe0712c22d80d4e33260e5470aa5423e862bd99fdf9e",
+      "scripts/pilot2-cold-overlay.mjs": "00f4179e7a765ada2ca9c70dac2d63c5c5f7c5fe67f7422fc54566d7a4a5a3e8",
+      "scripts/pilot2-private-installation.mjs": "79eadcf50825125478f8ab6dc967bedc7459be36dd0c20518d6ac86d11c5a5e3",
+      "scripts/pilot2-private-installation.test.mjs": "0b60987fd29aab73d0b9dc6449e73deab34d570a7ebe2cfab803fa66184431ff",
+      "scripts/pilot2-private-overlay.mjs": "69283a08f3a079347ff2a43feb31e4a2a699d29fc2e1594cd722c9f79cd96d69",
+      "scripts/pilot2-private-overlay.test.mjs": "7fe42f03641c13d2081dc31bd671910cc7392d03bb4caf349f1362f0bc37d75e",
+      "scripts/pilot2-registry-smoke.mjs": "fd89d093bf74ccddd0a078798de108d89765cf5ae4dbe7befdd234fbc0b0122b",
+      "scripts/private-sensitive.integration.test.mjs": "5e77e5a3448d9fa4bc331e80407121b44a6600dbd1084b2b5015c93f5a3bc3cc",
+      "src/server/account-recheck-adoption.test.ts": "fd859dc2600993673f52cb8ff70f250fbae8c9de10e8f32f134c473d0c4458cb",
+      "src/server/peer-read-boundary.test.ts": "53ef25b45ef9c5019598c983ec2b0316524424d9aae26e88ba4173b8f96123a0",
+      "src/server/pilot2-cold-runtime.ts": "d82659d54c878c5e9c2c830c8df64d036511d87d5bd2445624478b67de736a44",
+      "src/server/pilot2-private-runtime.test.ts": "630fba833d30b2ca55aff49b5827258d93788735f7b39ff25402efc9ca75fc35",
+      "src/server/pilot2-private-runtime.ts": "6c73f937876ae49269f51c648470e9805f406804a8d5d6217a610e3a38303edf"
+    },
+    "privateDataAuthority": "EXISTING_CURRENT_HUMAN_ROOT_REQUEST_WORK_AND_SOURCE",
+    "newHumanEntitlements": false,
+    "sharedCoreMigrationRequired": false,
+    "companyAdmissionAuthorizesPrivateData": false,
+    "readsRenewFreshness": false,
+    "financialFormulasChanged": false,
+    "mapsRoutesActivated": false,
+    "productDeploymentPerformed": false,
+    "sqlInstallationPerformed": false
   }
 }

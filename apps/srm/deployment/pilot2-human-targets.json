@@ -64,5 +64,20 @@
     "newCloudResources": false,
     "exports": "EXISTING_CURRENT_HUMAN_ROOT",
     "licensedFileBudget": "EXISTING_SHARED_COUNTERS_NO_RESET"
+  },
+  "privateOperations": {
+    "state": "SOURCE_PREPARATION_ONLY_NOT_INSTALLED_OR_ACTIVATED",
+    "activationFlag": "SRM_PILOT2_PRIVATE_ROUTES",
+    "authority": "EXISTING_CURRENT_HUMAN_ROOT_REQUEST_WORK_AND_SOURCE",
+    "companyAdmissionAuthorizesPrivateData": false,
+    "newHumanEntitlements": false,
+    "newCloudResources": false,
+    "globalSourceFundingChanged": false,
+    "transportAttemptCaps": {
+      "vercly": 20,
+      "verclyKrs": 5,
+      "publicWeb": 20
+    },
+    "mapsRoutesActivated": false
   }
 }
