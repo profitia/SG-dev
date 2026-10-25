@@ -4812,5 +4812,20 @@
     "sql027Installed": false,
     "policyCountersReset": false,
     "humanGrantsChanged": false
+  },
+  "pilot2PrivateTransportParentRepair": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "pullRequest": 719,
+    "previousReceiptSourceSha": "cb719097e0a5c4c907196eec6ba47a4397793e35",
+    "previousReceiptDigest": "2189a362ee4432b285f542ed4b2510c06828671e5d709fa77e9c14f0d557655e",
+    "nativePublicParentRequired": true,
+    "requestQuotaDefinitionChanged": false,
+    "humanEntitlementsChanged": false,
+    "runtimeBehaviorChanged": false,
+    "applicationSourceDigests": {
+      "scripts/pilot2-private-installation.mjs": "27cb54fd849c901337b5b8df3538fb324a9b0f4ebafb1e99a037dceea6f31d3d",
+      "scripts/request-quota-adoption.test.mjs": "18fc5621535f144e60a73617e62fe9c4b9b27c20e242c69d53bea99b82db8dec",
+      "src/server/peer-read-boundary.test.ts": "1584cfbe31bfa626e5ee1a6b9a79d6929abdaee5400ffb488ee0ef6047fe6741"
+    }
   }
 }
