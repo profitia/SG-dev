@@ -29,14 +29,15 @@ export function pilot2PrivateInstallationPlan(sourceSha){
     id:=gen_random_uuid();v:=r.value||jsonb_build_object('policy_id',id,'login_role','srm_pilot2_source','version',1,'admitted_count',0,
      'capacity',CASE r.value->>'resource_id' WHEN 'srm-provider:vercly-krs' THEN 5 ELSE 20 END,'source_ref',${ref});
     INSERT INTO profitia_external_call.policies SELECT(jsonb_populate_record(NULL::profitia_external_call.policies,v)).*;
+    -- Every transport, including credential-free PUBLIC_WEB, requires its
+    -- exact native parent before a specialised SQL018 web policy can exist.
+    SELECT to_jsonb(p) INTO STRICT v FROM profitia_external_native.policies p WHERE policy_id=r.policy_id AND status='ACTIVE' AND expires_at>clock_timestamp();
+    v:=v||jsonb_build_object('policy_id',id,'base_policy_version',1,'source_ref',${ref});
+    INSERT INTO profitia_external_native.policies SELECT(jsonb_populate_record(NULL::profitia_external_native.policies,v)).*;
     IF r.value->>'resource_id'='srm-provider:public-web' THEN
      SELECT to_jsonb(p) INTO STRICT v FROM profitia_public_web.policies p WHERE policy_id=r.policy_id AND status='ACTIVE' AND expires_at>clock_timestamp();
      v:=v||jsonb_build_object('policy_id',id,'base_policy_version',1,'source_ref',${ref});
      INSERT INTO profitia_public_web.policies SELECT(jsonb_populate_record(NULL::profitia_public_web.policies,v)).*;
-    ELSE
-     SELECT to_jsonb(p) INTO STRICT v FROM profitia_external_native.policies p WHERE policy_id=r.policy_id AND status='ACTIVE' AND expires_at>clock_timestamp();
-     v:=v||jsonb_build_object('policy_id',id,'base_policy_version',1,'source_ref',${ref});
-     INSERT INTO profitia_external_native.policies SELECT(jsonb_populate_record(NULL::profitia_external_native.policies,v)).*;
     END IF;
    END LOOP;
    IF(SELECT count(*) FROM profitia_external_call.policies WHERE login_role='srm_pilot2_source' AND resource_id IN('srm-provider:vercly','srm-provider:vercly-krs','srm-provider:public-web') AND status='ACTIVE')<>3 THEN RAISE EXCEPTION 'Three bounded current transports required';END IF;
