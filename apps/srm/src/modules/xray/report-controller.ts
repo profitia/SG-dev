@@ -33,6 +33,20 @@ function privateReference(value:unknown,nip:string,entityType:'COMPANY'|'JDG',se
   ||v.exportRef!==null&&(typeof v.exportRef!=='string'||!/^[a-f0-9]{64}$/.test(v.exportRef)))throw Error('Nie udało się potwierdzić wersji prywatnego raportu.')
  return {...v,retrievedAt:new Date(section.retrievedAt).toISOString()}
 }
+/** This expiry is issued by the current private HUMAN read after the server
+ * clamps retention to its KYS TTL. Public Financial metadata is not evidence
+ * of private availability, and cannot replace this snapshot's authority. */
+function privateKysMetadata(current:SupplierReportData['kys'],section:DisplayCard['kys'],ref:PrivateKysReference|null,
+ nip:string,entityType:'COMPANY'|'JDG',now:Date):SupplierReportData['kys']{
+ const valid=ref&&ref.nip===nip&&ref.entityType===entityType&&Date.parse(ref.retentionUntil)>now.getTime()
+  &&Date.parse(ref.retrievedAt)===Date.parse(section.retrievedAt??'')&&Date.parse(ref.retrievedAt)<=now.getTime()
+  &&section.data!==null&&['SUCCESS','PARTIAL'].includes(section.status);
+ if(!valid)return {...current,reportAvailable:false,exportRef:null};
+ return {...current,status:section.status,reportAvailable:true,exportRef:ref.exportRef,
+  completeness:section.status==='SUCCESS'&&section.data?.isComplete===true?'COMPLETE':'PARTIAL',
+  limitations:[...section.warnings],freshness:{...current.freshness,retrievedAt:ref.retrievedAt,
+   cacheExpiresAt:ref.retentionUntil,retentionUntil:ref.retentionUntil,readSource:'STORED',freshness:'FRESH'}};
+}
 
 /** Host request lifecycle only. No financial calculations, cache or provider policy. */
 export class SupplierReportController {
@@ -118,9 +132,14 @@ export class SupplierReportController {
     finally{if(generation===this.generation)this.update({busy:false});}
   };
   refreshMetadata = async () => {
-    // Selected-company Financial stays bound to its reconciled acquisition.
-    // Only an explicit private KYS action requires fresh stored KYS metadata.
-    if(this.nameSelection&&this.privateKysReference===undefined)return;
+    // The exact private read already returned snapshot-specific validity.
+    // A company admission cannot supply or renew authority for KYS.
+    if(this.nameSelection){
+      const metadata=this.state.metadata,ref=this.privateKysReference;
+      if(metadata&&ref!==undefined)this.update({metadata:{...metadata,kys:privateKysMetadata(metadata.kys,this.state.kys,ref,
+        this.nameSelection.nip,'COMPANY',this.now())}});
+      return;
+    }
     const result = this.state.result, nip = supplierNip(result); if (!result || !nip || inactiveSupplier(result)) return;
     const generation = this.generation, sequence = ++this.metadataSequence;
     this.metadataRequest?.abort(); const request = new AbortController(); this.metadataRequest = request;
@@ -130,15 +149,9 @@ export class SupplierReportController {
       if (generation !== this.generation || sequence !== this.metadataSequence) return;
       if (payload?.schemaVersion !== "1.0" || payload.nip !== nip || payload.entityType !== result.entityType) throw new Error("Nie udało się potwierdzić metadanych tego dostawcy.");
       if(this.privateKysReference!==undefined){
-        const ref=this.privateKysReference;
-        const valid=ref&&ref.nip===nip&&ref.entityType===result.entityType&&Date.parse(ref.retentionUntil)>this.now().getTime();
-        // Use the reference actually issued by the current private HUMAN read.
-        // Financial metadata cannot manufacture or replace private PDF authority.
-        payload.kys={...payload.kys,exportRef:valid?ref.exportRef:null,
-          freshness:valid?{...payload.kys.freshness,retrievedAt:ref.retrievedAt,retentionUntil:ref.retentionUntil}:payload.kys.freshness};
+        payload.kys=privateKysMetadata(payload.kys,this.state.kys,this.privateKysReference,nip,result.entityType,this.now());
       }
-      this.update({ metadata: this.nameSelection&&this.state.metadata
-        ? {...this.state.metadata,kys:payload.kys} : payload });
+      this.update({ metadata: payload });
     } catch (error) { if (generation === this.generation && sequence === this.metadataSequence) this.update({ metadata: null, metadataError: message(error, "Metadane aktualności są niedostępne.") }); }
     finally { if (generation === this.generation && sequence === this.metadataSequence) this.update({ metadataBusy: false }); }
   };

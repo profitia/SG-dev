@@ -116,26 +116,34 @@ test('selected-company mismatch cannot attach a report and a reset discards a la
  const pending=c.searchKrs(selection);c.reset();complete(Response.json(nameResult()));await pending;
  assert.equal(c.getSnapshot().result,null);assert.equal(c.getSnapshot().busy,false);
 });
-test('selected report refreshes stored KYS freshness without replacing reconciled Financial or acquiring providers',async()=>{
+test('selected report uses validity from its current private read without fetching private metadata through company admission',async()=>{
  const calls:string[]=[];
  const c=new SupplierReportController(async(path)=>{
   calls.push(String(path));
   if(String(path).endsWith('/lookup'))return Response.json(nameResult());
-  if(String(path).endsWith('/report-data')){
-   const current=metadata();current.financial.representationVersion='different-financial-source';
-   current.kys={...current.kys,reportAvailable:true,freshness:{...current.kys.freshness,freshness:'FRESH',retrievedAt,
-    cacheExpiresAt:privateRef.retentionUntil,retentionUntil:privateRef.retentionUntil}};
-   return Response.json(current);
-  }
+  assert.equal(path,'/api/xray/kys');
   return Response.json({section:{...sampleCard.kys,retrievedAt,data:{...sampleCard.kys.data,company:{nip}}},privateReport:privateRef});
  },()=>now,()=> 'synthetic-private-reference-key');
  await c.searchKrs(selection);const financial=c.getSnapshot().metadata?.financial;
- await c.fetchKys();assert.deepEqual(calls,['/api/xray/krs/lookup','/api/xray/kys','/api/xray/report-data']);
+ await c.fetchKys();assert.deepEqual(calls,['/api/xray/krs/lookup','/api/xray/kys']);
  assert.equal(c.getSnapshot().metadata?.kys.exportRef,privateRef.exportRef);assert.deepEqual(c.getSnapshot().metadata?.financial,financial);
  assert.equal(c.getSnapshot().metadata?.kys.reportAvailable,true);
  assert.equal(c.getSnapshot().metadata?.kys.freshness.cacheExpiresAt,privateRef.retentionUntil);
  assert.equal(c.getSnapshot().metadata?.kys.freshness.freshness,'FRESH');
  assert.equal(kysOverview({nip,entityType:'COMPANY',section:c.getSnapshot().kys,metadata:c.getSnapshot().metadata},now.getTime()).available,true);
+});
+test('selected private availability and export cannot survive expiry or an unavailable new private action',async()=>{
+ let clock=now,fail=false;
+ const c=new SupplierReportController(async path=>{
+  if(String(path).endsWith('/lookup'))return Response.json(nameResult());
+  if(fail)return Response.json({error:'Operation unavailable'},{status:401});
+  return Response.json({section:{...sampleCard.kys,retrievedAt,data:{...sampleCard.kys.data,company:{nip}}},privateReport:privateRef});
+ },()=>clock,()=> 'synthetic-current-private-read');
+ await c.searchKrs(selection);await c.fetchKys();assert.equal(c.getSnapshot().metadata?.kys.reportAvailable,true);
+ clock=new Date(privateRef.retentionUntil);await c.refreshMetadata();
+ assert.equal(c.getSnapshot().metadata?.kys.reportAvailable,false);assert.equal(c.getSnapshot().metadata?.kys.exportRef,null);
+ clock=now;await c.fetchKys();assert.equal(c.getSnapshot().metadata?.kys.reportAvailable,true);
+ fail=true;await c.fetchKys();assert.equal(c.getSnapshot().metadata?.kys.reportAvailable,false);assert.equal(c.getSnapshot().metadata?.kys.exportRef,null);
 });
 
 test('bounded KRS document continuation keeps the same logical key and publishes only the completed Financial metadata',async()=>{
