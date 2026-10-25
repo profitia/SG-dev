@@ -3,18 +3,18 @@ import fs from 'node:fs'
 import {createHash,randomUUID} from 'node:crypto'
 import {createRequire} from 'node:module'
 import test from 'node:test'
-import {assertIsolatedTestConnection} from '../src/operation-postgres-fixture.mjs'
-import {createPrivateOperationHost} from '../../../packages/platform-contracts/src/private-operation-host.mjs'
-import {OPERATION_CONTRACT,isOperationDenied} from '../../../packages/platform-contracts/src/operation-context.mjs'
-import {requestOperationPolicy} from '../../../packages/platform-contracts/src/request-operations.mjs'
-const {Client}=createRequire(import.meta.url)('pg')
-const source=n=>fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/'+n,import.meta.url),'utf8'),hash=s=>createHash('sha256').update(s).digest('hex')
+import {assertIsolatedTestConnection} from '../../../apps/architecture-lab/src/operation-postgres-fixture.mjs'
+import {createPrivateOperationHost} from '../src/private-operation-host.mjs'
+import {OPERATION_CONTRACT,isOperationDenied} from '../src/operation-context.mjs'
+import {requestOperationPolicy} from '../src/request-operations.mjs'
+const {Client}=createRequire(new URL('../../../apps/architecture-lab/package.json',import.meta.url))('pg')
+const source=n=>fs.readFileSync(new URL('../migrations/access/'+n,import.meta.url),'utf8'),hash=s=>createHash('sha256').update(s).digest('hex')
 const files=['001-internal-access.sql','002-module-scope.sql','003-module-audit.sql','005-service-read.sql','006-request-reservation.sql','007-delegated-jobs.sql','010-external-request-admission.sql','011-request-continuation.sql','013-supplier-delegation.sql','014-delegated-private-phases.sql','015-delegated-private-inspection.sql','016-delegated-native-work.sql','017-additional-request-operations.sql','019-supplier-location-operations.sql','020-supplier-location-admission.sql']
 const tables=['profitia_access.installation','profitia_modules.installation','profitia_modules.audit_installation','profitia_services.installation','profitia_requests.installation','profitia_jobs.installation','profitia_requests.external_installation','profitia_request_phases.installation','profitia_supplier_jobs.installation','profitia_delegated_phases.installation','profitia_request_inspection.installation','profitia_request_work.installation','profitia_requests.operation_installation','profitia_requests.location_installation','profitia_requests.location_admission_installation']
 const ROLE='request_quota_foreground_fixture',DB='request_quota_'+randomUUID().replaceAll('-',''),A=randomUUID(),B=randomUUID(),U=randomUUID(),ISSUER='https://identity.fixture.test'
 const extension=source('027-unmetered-supplier-requests.sql'),Q=hash(extension),future=()=>new Date(Date.now()+3600000).toISOString()
 
-test('SQL027 keeps actual request history and current E1 authority with explicit unmetered supplier requests',async t=>{
+test('SQL027 keeps actual request history and current E1 authority with explicit unmetered supplier requests',{skip:!process.env.OPERATION_FIXTURE_OWNER_URL},async t=>{
  const rootUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner'),root=new Client({connectionString:rootUrl})
  await root.connect();let owner,audit
  const url=new URL(rootUrl);url.pathname='/'+DB
