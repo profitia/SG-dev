@@ -1,5 +1,7 @@
 'use client'
 
+import './benchmark-finder-visual.css'
+
 import {createDiscoveryRequester} from './discovery-request'
 import { NativeAnalyticsEmbed } from './native-analytics-embed'
 
@@ -2073,12 +2075,24 @@ export function BenchmarkFinderClient({
   }, [hasSearched, previewStates, visibleResults])
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900" data-testid="benchmark-finder-page">
-      <div className="mx-auto flex max-w-[1600px] flex-col gap-8">
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+    <main className={`bf-visual min-h-screen bg-slate-50 px-6 py-10 text-slate-900${isPickerMode ? ' bf-visual-picker' : ''}`} data-testid="benchmark-finder-page">
+      <div className="bf-content mx-auto flex max-w-[1600px] flex-col gap-8">
+        {!isPickerMode && <div className="bf-brandbar">
+          <img src="/porr-demo/spendguru-logo.png" alt="SpendGuru" width={148} height={44} />
+          <span>Market Intelligence</span>
+        </div>}
+        {!isPickerMode && <header className="bf-page-heading">
+          <div>
+            <p className="bf-eyebrow">{locale === 'pl' ? 'RYNKI · CENY · PROGNOZY' : 'MARKETS · PRICES · FORECASTS'}</p>
+            <h1>Benchmark Finder<span>.</span></h1>
+            <p>{locale === 'pl' ? 'Znajdź właściwy punkt odniesienia dla Twojej kategorii.' : 'Find the right benchmark for your category.'}</p>
+          </div>
+          <span className="bf-page-index" aria-hidden="true">01 <span>/ {locale === 'pl' ? 'Odkrywanie rynku' : 'Market discovery'}</span></span>
+        </header>}
+        <section className="bf-search-panel rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h1 className="text-base font-semibold text-slate-950">{t('mode.search')}</h1>
+              <h2 className="bf-search-title text-base font-semibold text-slate-950">{t('mode.search')}</h2>
             </div>
 
             <div className="inline-flex w-fit rounded-full border border-slate-200 bg-white p-1 text-sm">
@@ -2394,7 +2408,7 @@ export function BenchmarkFinderClient({
           </section>
         ) : null}
 
-        <section className="rounded-3xl bg-slate-50 p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="bf-results-panel rounded-3xl bg-slate-50 p-6 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">{t('results.title')}</h2>
@@ -2581,7 +2595,7 @@ export function BenchmarkFinderClient({
           </div>
         </section>
 
-        <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="bf-recent-panel rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold">{t('recent.title')}</h2>

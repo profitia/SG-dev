@@ -4628,7 +4628,7 @@ export function RawDataView({
   }
 
   return (
-    <div className={`shell-grid${hideEmbeddedBenchmarkShell ? ' is-embedded' : ''}`}>
+    <div className={`shell-grid${hideEmbeddedBenchmarkShell ? ' is-embedded' : ''}${isBenchmarkMode ? ' bf-chart-workspace' : ''}`}>
       {hideEmbeddedBenchmarkShell ? null : <section className="panel filter-panel" style={{ gridColumn: 'span 12' }}>
         {embedded ? null : (
           <div className="filters-topbar">
@@ -4663,6 +4663,8 @@ export function RawDataView({
           </div>
         )}
 
+        <details className="bf-chart-controls" open>
+          <summary className="bf-chart-controls-toggle">{locale === 'pl' ? 'Sterowanie wykresem' : 'Chart controls'}<span aria-hidden="true">⌄</span></summary>
         <div className="filter-grid">
           {isForecastPortfolioVariant && isBenchmarkMode ? (
             <>
@@ -5001,6 +5003,7 @@ export function RawDataView({
           ) : null}
         </div>
 
+        </details>
         {!isBenchmarkMode && benchmarkRequired ? <p className="callout">{t('benchmarkRequired')}</p> : null}
         {errorMessage ? (
           <div className="callout callout-error" role="status" aria-live="polite">
