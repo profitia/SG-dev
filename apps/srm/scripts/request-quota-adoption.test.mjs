@@ -20,7 +20,7 @@ test('SRM explicitly adopts SQL027 and preserves all historical contracts, count
   assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),digest,path)
  }
  for(const[path,digest]of Object.entries(a.applicationSourceDigests)){
-  const repair=receipt.pilot2PrivateTransportParentRepair;
+  const repair=receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateTransportParentRepair:receipt.pilot2PrivateKysContinuityRepair;
   const bytes=repair?.applicationSourceDigests[path]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+path]):fs.readFileSync(new URL('../'+path,import.meta.url));
   assert.equal(hash(bytes),digest,path)
  }
@@ -32,6 +32,17 @@ test('private transport parent repair preserves the complete accepted quota rece
  const repair=receipt.pilot2PrivateTransportParentRepair,prior=execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),repair.previousReceiptDigest);
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
- for(const[path,digest]of Object.entries(repair.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path);
+ for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
+  const latest=receipt.pilot2PrivateKysContinuityRepair;
+  const bytes=latest?.applicationSourceDigests[path]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+path]):fs.readFileSync(new URL('../'+path,import.meta.url));
+  assert.equal(hash(bytes),digest,path);
+ }
  assert.equal(repair.nativePublicParentRequired,true);assert.equal(repair.requestQuotaDefinitionChanged,false);assert.equal(repair.humanEntitlementsChanged,false);assert.equal(repair.runtimeBehaviorChanged,false);
+});
+test('private KYS receiver correction retains all accepted contracts and pins current source without new human rights',()=>{
+ const repair=receipt.pilot2PrivateKysContinuityRepair,prior=execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(prior),repair.previousReceiptDigest);
+ for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
+ for(const[path,digest]of Object.entries(repair.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path);
+ assert.equal(repair.privateKysRetryMaximum,1);assert.equal(repair.reconciledFinancialReplaced,false);assert.equal(repair.humanEntitlementsChanged,false);
 });

@@ -4827,5 +4827,22 @@
       "scripts/request-quota-adoption.test.mjs": "18fc5621535f144e60a73617e62fe9c4b9b27c20e242c69d53bea99b82db8dec",
       "src/server/peer-read-boundary.test.ts": "1584cfbe31bfa626e5ee1a6b9a79d6929abdaee5400ffb488ee0ef6047fe6741"
     }
+  },
+  "pilot2PrivateKysContinuityRepair": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "previousReceiptSourceSha": "9c2ec79ffabaf136fa97a838254b1300dfaad4bc",
+    "previousReceiptDigest": "8e5244b0875b986f2d4e2beb529a67a44fbded8fc92a9bd2b258661100f1971d",
+    "privateKysRetryMaximum": 1,
+    "sameLogicalIntentRequired": true,
+    "reconciledFinancialReplaced": false,
+    "humanEntitlementsChanged": false,
+    "applicationSourceDigests": {
+      "src/modules/xray/report-controller.ts": "7c4f324259a0e55b8998fca04aef3dbbfee29cfbab37a7864c7fcf87676e7d02",
+      "src/modules/xray/report-controller.test.ts": "1055861ffb516afc34294659c62ae6c286fcfc08e6d85e140d237307ab6661f2",
+      "src/modules/xray/krs-session-transport.ts": "104ec00abd030cb1c6c50cc75a10787eb9b9b32f2185d41bebf5f5f9552e3e7c",
+      "src/modules/xray/krs-session-transport.test.ts": "304a4996039a02e49989e305a877863f8a6728ea440ea05524fd56433ea133d3",
+      "src/server/peer-read-boundary.test.ts": "7ce701f4032f4ef9aadc557894858671501f7125003f4f264ae2e5b2a82de9db",
+      "scripts/request-quota-adoption.test.mjs": "322782a778c18b5c2f9a3e9b6fa0a181cf990779aec693013fc58f19608e5ed5"
+    }
   }
 }
