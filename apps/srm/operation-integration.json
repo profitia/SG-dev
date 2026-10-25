@@ -4587,7 +4587,13 @@
       "deployment/pilot2-human-package-lock.json": "c6257c25f80ec5e602b0c0f521391fb55de1b879b41b150fe561b7edc1c802e1",
       "package.json": "337fd0391b9f729a82de83f6c232316ed2974b0e48210ab2d77f8e2a67b3311f",
       "../../packages/srm-xray/src/supplier-search.tsx": "6d7d48988bfae2170db8a7afa922e9b982abaff67320e1ae7813f504397934b6",
-      "../../.github/workflows/srm-ci.yml": "341b64310a7a4317098bff750d2802d6306e55937dc960422ce817263241db98"
+      "../../.github/workflows/srm-ci.yml": "341b64310a7a4317098bff750d2802d6306e55937dc960422ce817263241db98",
+      "src/server/peer-read-boundary.test.ts": "cd8be0131a726c4704edb7bde615d9cf724191ebd57ffb014a46c7100f1b19c6",
+      "src/server/account-recheck-adoption.test.ts": "22715712a473f744aff3d3ab739ba47298d4c223926180106dea5d83809aef8f",
+      "scripts/krs-name-ui.test.mjs": "6fc30bdce865b907f878fc2c7a89cfba4d5c6e0709d49a04c8091263ee5648fc",
+      "scripts/supplier-delegated-business.integration.test.mjs": "61909c05789cc7c6031409e7bfa828a251f52448a7e48d42278c27dfb076b0e3",
+      "src/server/pilot2-human-runtime.test.ts": "1adffe16ed5f3ebfbaebb9c31776eef7bcd86f26911ca9691f908f291beaeacf",
+      "src/server/pilot2-public-catalog.test.ts": "3fea1af29ba9abdd4d021478db02f09eee5fc3ebb768ec50268de142b0179d48"
     }
   }
 }
