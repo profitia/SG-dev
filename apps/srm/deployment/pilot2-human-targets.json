@@ -22,7 +22,11 @@
     "databaseName": "srm_app",
     "host": "ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech",
     "readerRole": "srm_pilot2_catalog_reader",
-    "tables": ["catalog_companies", "catalog_financial_facts", "catalog_financial_indicators"],
+    "tables": [
+      "catalog_companies",
+      "catalog_financial_facts",
+      "catalog_financial_indicators"
+    ],
     "clonedPrivateTablesReadable": false
   },
   "authority": {
@@ -46,5 +50,19 @@
     "sharedRuntimeDeployment": false,
     "productionMutation": false,
     "newCompute": false
+  },
+  "coldAcquisition": {
+    "state": "SOURCE_PREPARATION_ONLY_NOT_INSTALLED_OR_ACTIVATED",
+    "providerRole": "srm_pilot2_source",
+    "corporateRole": "srm_pilot2_corporate",
+    "registryEnvelopeMigration": "022-pilot2-registry-envelope.sql",
+    "registryEnvelopeBoundaryDigest": "73a56009b406d256070c270244d9010200e841eed23c6d4b07fe4487212084a9",
+    "privateData": "EXISTING_AUTHORITATIVE_E1_ORGANISATION",
+    "publicCorporateFinancial": "EXISTING_CLASSIFIED_CORPORATE_SOURCE",
+    "clonedPrivateDataReadable": false,
+    "newHumanEntitlements": false,
+    "newCloudResources": false,
+    "exports": "EXISTING_CURRENT_HUMAN_ROOT",
+    "licensedFileBudget": "EXISTING_SHARED_COUNTERS_NO_RESET"
   }
 }

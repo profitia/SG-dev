@@ -67,9 +67,10 @@ function receipt(value:MsrReceipt|null):MsrReceipt|null{
 
 /** Actual original domain functions under one current native unit. Network
  * acquisition and shared publication remain separate responsibilities. */
-export function createSrmSupplierNativeWorkStore(options:{work:Readonly<SupplierNativeWork>;namedInterestBoundaryDigest:string}){
-  if(typeof window!=='undefined'||!options||Object.keys(options).sort().join(',')!=='namedInterestBoundaryDigest,work'
+export function createSrmSupplierNativeWorkStore(options:{work:Readonly<SupplierNativeWork>;namedInterestBoundaryDigest:string;registryEnvelopeBoundaryDigest?:string}){
+  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>k!=='registryEnvelopeBoundaryDigest').sort().join(',')!=='namedInterestBoundaryDigest,work'
     ||typeof options.work?.run!=='function'||!/^[a-f0-9]{64}$/.test(options.namedInterestBoundaryDigest))throw TypeError('Explicit native Supplier work store required')
+  if(options.registryEnvelopeBoundaryDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.registryEnvelopeBoundaryDigest))return refuse()
   const work=options.work,namedDigest=options.namedInterestBoundaryDigest
   async function run<T>(selection:SupplierNativeWorkSelection,unitId:SupplierNativeWorkUnit,parameters:Json,
     action:(pool:DatabasePool,client:PoolClient,context:Readonly<OperationContext>)=>Promise<T>,capture:(v:T)=>T=json):Promise<T>{
@@ -214,7 +215,12 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
           }
           return previous[0].snapshot_id
         }
-        return persistSection(s.organisationId,{supplierId:rows[0].supplier_id,requestId:s.requestId},section,body.envelope,body.errorCode,body.facts,body.correlationId,body.sourceData,body.cacheStatus,pool)
+        const registryEnvelope=!!options.registryEnvelopeBoundaryDigest&&section==='general'&&body.envelope.source.provider==='KRS'
+        if(registryEnvelope){
+          const descriptor=(await client.query('SELECT srm.pilot2_registry_envelope_descriptor() AS descriptor')).rows[0]?.descriptor
+          if(descriptor?.schemaDigest!==options.registryEnvelopeBoundaryDigest||descriptor.version!=='1.0.0')return refuse()
+        }
+        return persistSection(s.organisationId,{supplierId:rows[0].supplier_id,requestId:s.requestId},section,body.envelope,body.errorCode,body.facts,body.correlationId,body.sourceData,body.cacheStatus,pool,false,registryEnvelope)
       })
     },
     interest(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_RECORD_INTEREST',null,async(_pool,client,context)=>{

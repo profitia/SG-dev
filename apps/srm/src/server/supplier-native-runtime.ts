@@ -10,7 +10,8 @@ import targets from '../../deployment/supplier-native-targets.json'
 import mgbiPolicy from '../../deployment/mgbi-unmetered-policy.json'
 import privateTargets from '../../deployment/private-runtime-targets.json'
 type Env=Readonly<Record<string,string|undefined>>
-type Configuration=Readonly<{base:PrivateConfiguration;configurationVersion:string;jobsUrl:string;providerSourceUrl:string;corporateSourceUrl:string;
+export type Configuration=Readonly<{base:PrivateConfiguration;configurationVersion:string;jobsUrl:string;providerSourceUrl:string;corporateSourceUrl:string;
+ registryEnvelopeBoundaryDigest?:string;
  runtimeRoles?:typeof targets.runtimeRoles;mgbiKey:string;mgbiScheme:'raw'|'bearer';ceidgKey:string;verclyKey:string;verclyOrigin:string;referenceSecret:string}>
 const unavailable=():never=>{throw new IdentityConfigurationUnavailable()}
 function roleUrl(value:string|undefined,role:string){
@@ -97,6 +98,7 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  return createSrmSupplierApi({
   company:{request:{...requestBase,application:app(['supplier.report.refresh'])},
    lookup:{work:{...workBase,job:publicJob,workBusinessBoundaryDigest:own['008-supplier-native-work.sql'],...(reportAdmission?{reportAdmission}:{})},namedInterestBoundaryDigest:own['003-named-supplier-interest.sql'],source,corporate,
+    ...(config.registryEnvelopeBoundaryDigest?{registryEnvelopeBoundaryDigest:config.registryEnvelopeBoundaryDigest}:{}),
     mgbi:{apiKey:config.mgbiKey,authScheme:config.mgbiScheme,source:{...provider,external:{...external,maximumResponseBytes:config.runtimeRoles?mgbiPolicy.maximumInventoryResponseBytes:external.maximumResponseBytes}},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}},
    read:{...human,application:app(['supplier.report.read']),...(reportAdmission?{reportAdmission}:{})}},
   companyKys:privateFlow('COMPANY','kys'),jdgKys:privateFlow('JDG','kys'),jdgRegistry:privateFlow('JDG','jdg'),

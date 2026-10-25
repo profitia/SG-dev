@@ -313,5 +313,16 @@ test('PILOT2 private Scanner preserves all earlier receipts and adopts the same 
  assert.equal(a.newFinancialEngine,false);assert.equal(a.coldAcquisitionAdopted,false);
  assert.equal(a.productDeploymentPerformed,false);assert.equal(a.sqlInstallationPerformed,false);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.pilot2ColdAcquisitionAdoption.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file);
+});
+
+test('PILOT2 cold adoption preserves historical acceptance and pins its complete native consumers without human privilege changes',()=>{
+ const a=acceptedReceipt.pilot2ColdAcquisitionAdoption,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.privateDataAuthority,'EXISTING_E1_ORGANISATION_NO_CLONED_ARCHIVE');
+ for(const key of['sharedCoreMigrationRequired','newHumanEntitlements','readsRenewFreshness','externalHttpInHumanTransaction','postClickClerkReads','productDeploymentPerformed','sqlInstallationPerformed'])assert.equal(a[key as keyof typeof a],false,key);
+ assert.equal(a.financialEngine,'EXISTING_NATIVE_FINANCIAL_MSR_RECONCILIATION');
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });

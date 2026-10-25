@@ -70,8 +70,10 @@ export async function persistSection(
   retrievalMethod: "PROVIDER" | "CACHE" = "PROVIDER",
   pool?: DatabasePool,
   privateEnvelope = false,
+  registryEnvelope = false,
 ): Promise<string | null> {
   if (privateEnvelope && sectionName !== "kys") throw new TypeError("Private KYS projection required");
+  if (registryEnvelope && (sectionName !== 'general' || section.source.provider !== 'KRS' || !pool)) throw new TypeError('Bound KRS General envelope required');
   const attemptId = await atLookupStage("attempt_persistence", () => startAttempt(organizationId, lookup.requestId, sectionName, 1, retrievalMethod, pool, section.source.provider === "KRS" && sectionName === "general" ? "KRS" : undefined), sectionName);
   if (sectionName === "kys") logProviderOutcome("VERCLY", "kys", section.status, errorCode, retrievalMethod);
   try {
@@ -86,6 +88,7 @@ export async function persistSection(
         sourceRecordId: section.source.recordId ?? undefined, payload: sourcePayload ?? section.data,
         retrievedAt: new Date(section.retrievedAt!),
         effectiveAt: section.effectiveAt && !Number.isNaN(Date.parse(section.effectiveAt)) ? new Date(section.effectiveAt) : undefined,
+        ...(registryEnvelope ? {registryEnvelope: section} : {}),
         ...(sectionName === "kys" ? { retentionUntil: kysExpiry(section.retrievedAt!) } : {}),
       }, pool), sectionName);
       storedSnapshotId = snapshotId;

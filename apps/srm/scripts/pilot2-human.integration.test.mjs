@@ -14,6 +14,12 @@ import {calculateFinancialIndicators} from '../src/server/financial-indicators.t
 import {FINANCIAL_MAPPING_VERSION} from '../src/server/shared-catalog.ts'
 import pg from 'pg'
 import {pilot2HumanInstallationPlan} from './pilot2-human-installation.mjs'
+import {createPilot2NativeCache} from '../src/server/pilot2-cold-runtime.ts'
+import {createSrmSupplierNativeWork} from '../src/server/supplier-request-work.ts'
+import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-work-store.ts'
+import {createSrmSupplierSourceLink} from '../src/server/supplier-source-link.ts'
+import {currentReportAdmission,reportAdmissionEvidence} from '@profitia/platform-contracts/report-admission'
+import {createSrmCorporateSourceStore} from '../src/server/corporate-source-store.ts'
 
 test('PILOT2 reuses actual Root and form Work: no Clerk or provider after click; company and organisation substitutions deny',t=>supplierBusinessFixture(t,true,async f=>{
  const sql=fs.readFileSync(new URL(reportAdmissionSchemaUrl),'utf8'),schemaDigest=f.hash(sql)
@@ -188,3 +194,87 @@ test('PILOT2 actual receiver SQL creates working ordinary logins, preserves exis
   if(oldOperator&&!oldOperator.rolbypassrls)await f.owner.query('ALTER ROLE neondb_owner NOBYPASSRLS')
  }
 },{databaseName:'platform_private'}))
+
+test('PILOT2 cold miss commits its HUMAN read before real native General Work, then reopens a scoped seven-day report with zero Clerk',t=>supplierBusinessFixture(t,true,async f=>{
+ const admissionSql=fs.readFileSync(new URL(reportAdmissionSchemaUrl),'utf8'),admissionDigest=f.hash(admissionSql)
+ const migration=f.own('022-pilot2-registry-envelope.sql'),migrationDigest=f.hash(migration)
+ const deployment='srv-dbeh6srrjlhs73fmikrg:'+ 'a'.repeat(40)+':srm-jobs'
+ await f.owner.query("DO $r$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='srm_pilot2_jobs') THEN CREATE ROLE srm_pilot2_jobs LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE CONNECTION LIMIT 4 PASSWORD 'isolated_ci_only';END IF;END $r$")
+ await f.owner.query("ALTER ROLE srm_pilot2_jobs PASSWORD 'isolated_ci_only'")
+ await f.owner.query(`GRANT CONNECT ON DATABASE ${f.baseBinding.databaseName} TO srm_pilot2_jobs;GRANT CREATE ON DATABASE ${f.baseBinding.databaseName} TO profitia_access_owner`)
+ await assert.rejects(f.owner.query(migration),e=>e.code==='42501')
+ await f.controlled(async()=>{
+  await f.owner.query('SAVEPOINT optional_envelope');await f.owner.query(migration)
+  await f.owner.query('ROLLBACK TO SAVEPOINT optional_envelope');await f.owner.query('RELEASE SAVEPOINT optional_envelope')
+  assert.equal((await f.owner.query("SELECT to_regprocedure('srm.pilot2_registry_envelope_descriptor()') x")).rows[0].x,null)
+  await f.owner.query(migration)
+  await f.owner.query("INSERT INTO srm.pilot2_registry_envelope_installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[migrationDigest])
+  await f.owner.query(admissionSql)
+  await f.owner.query("INSERT INTO profitia_report_admission.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[admissionDigest])
+  await f.owner.query("INSERT INTO profitia_access.runtime_bindings(login_role,application_id,status) VALUES('srm_pilot2_jobs','srm-jobs','ACTIVE')")
+  await f.owner.query("INSERT INTO profitia_services.runtime_bindings(login_role,binding_id,service_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) SELECT 'srm_pilot2_jobs',gen_random_uuid(),gen_random_uuid(),profile_id,$1,configuration_version,status,'SYNTHETIC_ONLY',expires_at FROM profitia_services.runtime_bindings WHERE login_role=$2",[deployment,f.EXECUTOR])
+  await f.owner.query("INSERT INTO profitia_jobs.execution_grants(grant_id,login_role,binding_id,organisation_id,resource_id,effect,status,source_ref,expires_at) SELECT gen_random_uuid(),'srm_pilot2_jobs',binding_id,organisation_id,resource_id,effect,status,'SYNTHETIC_ONLY',expires_at FROM profitia_jobs.execution_grants WHERE login_role=$1",[f.EXECUTOR])
+  await f.owner.query("INSERT INTO profitia_report_admission.receivers VALUES($1,'srm_pilot2_jobs',true)",[f.FOREGROUND])
+  await f.owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm','FORM_REPORT_ADMISSION','WRITE','ACTIVE','SYNTHETIC_ONLY',clock_timestamp()+interval '1 hour')")
+  for(const operation of['supplier.report.read','supplier.report.project'])await f.owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'ALLOW',$4,'supplier_report')",[randomUUID(),f.A,f.U,operation])
+  await f.owner.query("UPDATE profitia_jobs.operation_bindings SET profile_id='PORR_SUITE' WHERE foreground_role=$1",[f.FOREGROUND])
+  await f.owner.query("UPDATE profitia_access.applications SET fixed_organisation_id=$1 WHERE application_id='srm'",[f.A])
+  await f.owner.query(`GRANT USAGE ON SCHEMA profitia_report_admission TO ${f.FOREGROUND},${f.EXECUTOR};GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_report_admission TO ${f.FOREGROUND},${f.EXECUTOR}`)
+  await f.owner.query(`DO $acl$ DECLARE r record;BEGIN
+   FOR r IN SELECT nspname FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE a.grantee='${f.EXECUTOR}'::regrole AND a.privilege_type='USAGE' AND n.nspowner=current_user::regrole LOOP EXECUTE format('GRANT USAGE ON SCHEMA %I TO srm_pilot2_jobs',r.nspname);END LOOP;
+   FOR r IN SELECT p.oid::regprocedure signature FROM pg_proc p CROSS JOIN LATERAL aclexplode(p.proacl) a WHERE a.grantee='${f.EXECUTOR}'::regrole AND a.privilege_type='EXECUTE' AND p.proowner=current_user::regrole LOOP EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO srm_pilot2_jobs',r.signature);END LOOP;
+   FOR r IN SELECT n.nspname,c.relname,a.privilege_type FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace CROSS JOIN LATERAL aclexplode(c.relacl) a WHERE a.grantee='${f.EXECUTOR}'::regrole AND c.relowner=current_user::regrole AND n.nspname='srm' LOOP EXECUTE format('GRANT %s ON TABLE %I.%I TO srm_pilot2_jobs',r.privilege_type,r.nspname,r.relname);END LOOP;
+  END $acl$`)
+  await f.owner.query('GRANT EXECUTE ON FUNCTION srm.pilot2_registry_envelope_descriptor() TO srm_pilot2_jobs')
+  await f.owner.query('GRANT SELECT ON profitia_supplier_requests.commands TO srm_pilot2_jobs')
+ })
+ await f.owner.query(`REVOKE CREATE ON DATABASE ${f.baseBinding.databaseName} FROM profitia_access_owner`)
+ const jobUrl=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);jobUrl.pathname='/'+f.baseBinding.databaseName;jobUrl.username='srm_pilot2_jobs';jobUrl.password='isolated_ci_only'
+ const jobs=new pg.Pool({connectionString:jobUrl.toString(),max:2}),audit=new pg.Pool({connectionString:jobUrl.toString(),max:1})
+ const corporateUrl=new URL(jobUrl);corporateUrl.username='srm_company_publication_runtime'
+ const corporatePool=new pg.Pool({connectionString:corporateUrl.toString(),max:2}),corporateAudit=new pg.Pool({connectionString:corporateUrl.toString(),max:1})
+ try{
+  const human={...f.humanOptions,application:{...f.humanOptions.application,profileId:'PORR_SUITE',organisationId:f.A}}
+  const work={...f.workOptions,pool:jobs,auditPool:audit,application:{...f.workOptions.application,deploymentId:deployment},
+   binding:{...f.workOptions.binding,role:'srm_pilot2_jobs',service:{...f.workOptions.binding.service,deploymentId:deployment}},
+   workSchemaDigest:f.hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:f.hash(f.own('008-supplier-native-work.sql')),reportAdmission:{schemaDigest:admissionDigest}}
+  const base={config:{...human,provider:'clerk',databaseUrl:'synthetic-not-used'},human,work,
+   catalog:{connect:async()=>({query:async()=>({rows:[]}),release(){}})}}
+  const cache=createPilot2NativeCache(base),nativeWork=createSrmSupplierNativeWork(work)
+  const store=createSrmSupplierNativeWorkStore({work:nativeWork,namedInterestBoundaryDigest:f.hash(f.own('003-named-supplier-interest.sql')),registryEnvelopeBoundaryDigest:migrationDigest})
+  const link=createSrmSupplierSourceLink({work,namedInterestBoundaryDigest:f.hash(f.own('003-named-supplier-interest.sql')),source:f.source})
+  const at=new Date().toISOString(),krs='0000217580',reference='KRS:'+krs+':'+'a'.repeat(64)
+  const general={status:'SUCCESS',source:{provider:'KRS',model:'OdpisAktualny',recordId:reference},retrievedAt:at,effectiveAt:null,warnings:['SYNTHETIC_RETAINED_WARNING'],data:{nip:f.NIP,krs,legalName:'SYNTHETIC_NATIVE_COMPANY',legalForm:'SA',regon:null,registeredAddress:null,registeredAt:null,mainPkd:null,registrationStatus:'ACTIVE',registrySource:{provider:'KRS',evidenceRef:reference,retrievedAt:at,coverage:'PROGRESSIVE'},registryHistory:{version:'KRS_CONTINUITY_V1',currentKrs:krs,members:[{krs,legalName:'SYNTHETIC_NATIVE_COMPANY',legalForm:'SA',registeredAt:null,deregisteredAt:null,status:'ACTIVE'}],links:[],unlinkedKrs:[]}}}
+  const financial={status:'EMPTY',source:{provider:'MGBI',model:'pl-krs-rdf-record',recordId:null},data:null,retrievedAt:at,effectiveAt:null,warnings:[],catalogMappingVersion:FINANCIAL_MAPPING_VERSION}
+  const publication=createSrmCorporateSourceStore({application:{appId:'srm-corporate-source',profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId:'synthetic-company-publication',configurationVersion:'corporate-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},binding:{applicationId:'srm-corporate-source',environment:'development',projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:f.baseBinding.databaseName,role:'srm_company_publication_runtime',deploymentId:'synthetic-company-publication',configurationVersion:'corporate-v1',schemaDigest:f.hash(f.core('008-platform-ingestion.sql'))},pool:corporatePool,auditPool:corporateAudit,publicationSchemaDigest:f.hash(f.own('004-corporate-source.sql')+f.own('005-corporate-source-access.sql')+fs.readFileSync(new URL('../src/server/corporate-source-shape.json',import.meta.url),'utf8'))})
+  let acquisitions=0
+  const runtime=createPilot2HumanRuntime({...base,cacheMiss:{report:async()=>assert.fail('No report acquisition'),search:async(request,nip)=>{
+   const found=await cache(request,nip);if(found.status===200)return found
+   const open=(await f.owner.query("SELECT count(*)::int n FROM pg_stat_activity WHERE datname=$1 AND usename=$2 AND state LIKE 'idle in transaction%'",[f.baseBinding.databaseName,f.FOREGROUND])).rows[0].n
+   assert.equal(open,0,'Network/Work begins only after the HUMAN miss transaction committed')
+   const proof=reportAdmissionEvidence(currentReportAdmission());assert.ok(proof)
+   const selection={requestId:proof.requestId,organisationId:proof.organisationId,command:{kind:'SUPPLIER_REPORT',nip}}
+   await link.registerAndAdmit(selection,'KEEP')
+   await store.section(selection,'general',general,null)
+   acquisitions++
+   const {catalogMappingVersion:_,...section}=financial
+   const {registrySource:_source,registryHistory:_history,...company}=general.data
+   await publication.publish({version:'srm-corporate-publication-v1',nip,preserveGeneral:false,
+    general:{...general,data:company,source:{provider:'MGBI',model:'pl-krs-wp-record',recordId:'b'.repeat(24)}},financial:section,facts:[]},f.hash('synthetic-pilot2-cold-publication'))
+   return cache(request,nip)
+  }}})
+  const prepared=await runtime.prepare(new Request('http://localhost:3400/api/xray/admission',{method:'POST',headers:{origin:'http://localhost:3400','content-type':'application/json','idempotency-key':randomUUID()},body:JSON.stringify({nip:f.NIP})}))
+  const grant=await prepared.json();assert.match(grant.token,/^fr1\./)
+  let clerk=0;for(const [owner,key]of[[f.clerk,'authenticateRequest'],[f.clerk.users,'getUser'],[f.clerk.sessions,'getSession']])owner[key]=async()=>{clerk++;throw Error('No Clerk after form admission')}
+  const request=()=>new Request('http://localhost:3400/api/xray/search',{method:'POST',headers:{origin:'http://localhost:3400','X-SRM-Report-Admission':grant.token}})
+  const first=await runtime.search(request(),f.NIP);assert.equal(first.status,200)
+  assert.deepEqual((await first.json()).card.general.warnings,['REPORT_WARNING'])
+  const sourceCounts=await f.sourceCounts(),counts=await f.counts()
+  const second=await runtime.search(request(),f.NIP);assert.equal(second.status,200)
+  assert.equal(acquisitions,1);assert.equal(clerk,0)
+  assert.deepEqual(await f.sourceCounts(),sourceCounts);assert.deepEqual(await f.counts(),counts)
+  const stored=(await f.owner.query("SELECT pilot2_registry_envelope FROM srm.source_snapshots WHERE section='general' AND organization_id=$1",[f.A])).rows
+  assert.equal(stored.length,1);assert.deepEqual(stored[0].pilot2_registry_envelope,general)
+  assert.equal((await f.owner.query('SELECT financial_checked_at FROM srm.catalog_companies WHERE nip=$1',[f.NIP])).rows[0].financial_checked_at.toISOString(),at)
+ }finally{await jobs.end();await audit.end();await corporatePool.end();await corporateAudit.end()}
+}))

@@ -4632,5 +4632,57 @@
       "src/server/report-output.ts": "5af3cf0263e3c53f90a52f49689c94999d9fe8015b9059bcc558ec049a699d80",
       "src/server/shared-financial-read.ts": "841bcd9979ae267ce29d701dc78ab26803696e43a07412b9538afb9dafd2c2e2"
     }
+  },
+  "pilot2ColdAcquisitionAdoption": {
+    "schemaVersion": "1.0",
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "status": "SOURCE_PREPARATION_ONLY_NOT_INSTALLED_OR_ACTIVATED",
+    "previousSourceSha": "a76a3f26066547278b3a6b8fa582cc1dea0054f1",
+    "previousReceiptSha256": "2a5fb5a701688562a9d737d87e34a6426b085bf21e7aaff2a60135bb22cca2b1",
+    "privateDataAuthority": "EXISTING_E1_ORGANISATION_NO_CLONED_ARCHIVE",
+    "financialEngine": "EXISTING_NATIVE_FINANCIAL_MSR_RECONCILIATION",
+    "coldAcquisitionAdopted": true,
+    "sharedCoreMigrationRequired": false,
+    "newHumanEntitlements": false,
+    "readsRenewFreshness": false,
+    "postClickClerkReads": false,
+    "externalHttpInHumanTransaction": false,
+    "newCloudResources": false,
+    "oldBudgetsOrCountersReset": false,
+    "sqlInstallationPerformed": false,
+    "productDeploymentPerformed": false,
+    "optionalMigration": "db/private-store/022-pilot2-registry-envelope.sql",
+    "technicalReceivers": [
+      "srm_pilot2_jobs",
+      "srm_pilot2_source",
+      "srm_pilot2_corporate"
+    ],
+    "exports": "EXISTING_CURRENT_HUMAN_ROOT_FINANCIAL_XLSX",
+    "retainedLkgSourceSha": "a76a3f26066547278b3a6b8fa582cc1dea0054f1",
+    "applicationSourceDigests": {
+      "db/private-store/022-pilot2-registry-envelope.sql": "73a56009b406d256070c270244d9010200e841eed23c6d4b07fe4487212084a9",
+      "db/private-store/README.md": "35a6e948bb2345cbb43cf44b1e396617240633e718b74ba0c5cc1d8b8d7af60f",
+      "deployment/pilot2-human-targets.json": "5a48a9afeef0b6cd384cbdc8c9aa4e7bd9cf3fb59eed8c372d93775ba51f7d3e",
+      "scripts/pilot2-baseline.mjs": "ccc51e4b795773b889a561b6626bb4518684c8e941df8f28e295864a6d7ac8bf",
+      "scripts/pilot2-cold-installation.mjs": "a4e5d4a28876dd6bcaefef9cdb91af75e04f17955c162431d85371ed24610a5e",
+      "scripts/pilot2-cold-installation.test.mjs": "8779f5c8396c9efc2e3985d0624b727adc74fa2fdf78b1b9a176c36dd6a3d8d4",
+      "scripts/pilot2-cold-overlay.mjs": "97330575b0145a3518a52077bf482b2e8a6af82ea0ce2efa55c749474a3c60cc",
+      "scripts/pilot2-cold-overlay.test.mjs": "622d178265bdd11b804cddad5fb35181e018f407d20f29f2f30cb9adcf14c57e",
+      "scripts/pilot2-human.integration.test.mjs": "d1c6bfbe3adc145e91a649cfc3f6017cae4e58b5a9a83e1b18c7284a5baa6eaa",
+      "scripts/pilot2-registry-smoke.mjs": "6a53c0ba3aa68909a02101c900e007b36784313c9f5814d32b20a1a2a8e2fd03",
+      "src/server/account-recheck-adoption.test.ts": "68aadb33b2dfdb718d0cefb85709026fbc8ea395129dbaecdd9662999ead68e0",
+      "src/server/peer-read-boundary.test.ts": "9408ecb889fdd20b083936fa1486bbad587d27c337344605d4d7d71265f0b63d",
+      "src/server/pilot2-cold-runtime.test.ts": "c3f91cc7c572685009d857934dca0ce5b7154b43f6795706da3a2f92d1c0ee9e",
+      "src/server/pilot2-cold-runtime.ts": "6166d86808c15f39bae9ad4a6010476780aef3c02bff2d9a5ce0b6932bd44965",
+      "src/server/pilot2-human-runtime.ts": "efc3ae8350ea981cde783927b3c43c9b3f3c80dead0d0f1fa9692c3efd57a009",
+      "src/server/pilot2-public-catalog.ts": "f8aae38165014c916606a8c2a013cd1d699a13b99e1ebbcd188854971ee0b9f0",
+      "src/server/pilot2-registry.ts": "a38a77bc43444930ad849e9da482bf1f4cee7deb516e57db4d82c3fef8779de3",
+      "src/server/supplier-native-company.ts": "efc0b9ce6846f8dc4160cc90dd7f9a0dbd8494890b973ad2c6386cf77df539cb",
+      "src/server/supplier-native-runtime.ts": "b2fdb9b71c00830d0ec579bd7cc286ef4e588d7d03d21b34ede7d95647d09d55",
+      "src/server/supplier-native-work-store.ts": "5c3d5e94f78790fb574036a8fef3c38fe61399b3d3f72451030cf64bf24f8990",
+      "src/server/xray-lookup.ts": "8e7669edb7f7ab69996801d1cd753d92c49c162590403eace3ab4eaa39e9fb84",
+      "src/server/xray-repository.ts": "16fcbe703f9dcbeb363df078f13624f44f132b40cb23aaf756c5e49c3bd1be7d",
+      "../../.github/workflows/srm-ci.yml": "41c345f146c22e79f197a506379f52b60338a7f39ef3e4607d2d6e2170b9d215"
+    }
   }
 }

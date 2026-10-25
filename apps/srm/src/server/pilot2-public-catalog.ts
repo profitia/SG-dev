@@ -10,6 +10,8 @@ import {readSupplierRequest} from './supplier-request-operation'
 type Query=Pick<PoolClient,'query'>
 type General=SectionEnvelope<GeneralCompanyData>
 type Financial=SectionEnvelope<FinancialData>&{catalogMappingVersion?:string}
+export type Pilot2PublicCardRow={general_json:General|null;financial_json:Financial|null;
+ general_checked_at:Date|string|null;financial_checked_at:Date|string|null}
 export const PILOT2_PUBLIC_CARD_SQL=`SELECT general_json,financial_json,general_checked_at,financial_checked_at
  FROM srm.catalog_companies WHERE nip=$1`
 const deny=():never=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
@@ -20,8 +22,12 @@ const deny=():never=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
  * this reader neither authenticates nor returns an authorization decision. */
 export async function readPilot2PublicCard(client:Query,inputNip:string,now=new Date()):Promise<Readonly<{card:SupplierXRayCard;version:string;bodyDigest:string}>|null>{
  const nip=readSupplierRequest({kind:'SUPPLIER_REPORT',nip:inputNip}).nip
- const row=(await client.query<{general_json:General|null;financial_json:Financial|null;
-  general_checked_at:Date|string|null;financial_checked_at:Date|string|null}>(PILOT2_PUBLIC_CARD_SQL,[nip])).rows[0]
+ const row=(await client.query<Pilot2PublicCardRow>(PILOT2_PUBLIC_CARD_SQL,[nip])).rows[0]
+ return classifyPilot2PublicCard(row,nip,now)
+}
+/** Identical field/freshness classifier for an already scoped native row. */
+export function classifyPilot2PublicCard(row:Pilot2PublicCardRow|undefined,nip:string,now=new Date()){
+ readSupplierRequest({kind:'SUPPLIER_REPORT',nip})
  if(!row?.general_json?.data||!row.financial_json
   ||!isFreshCatalogEntry(row.general_checked_at,now)||!isFreshCatalogEntry(row.financial_checked_at,now)
   ||!isCurrentFinancialMapping(row.financial_json))return null
