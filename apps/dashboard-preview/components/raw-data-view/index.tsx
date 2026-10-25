@@ -2480,7 +2480,7 @@ function ChartPanel({
           </g>
         ))}
 
-        {benchmarkPresentation && <BenchmarkHistoryFill layers={chartScene.lineLayers} baseline={chartLayout.height - chartLayout.paddingBottom} top={chartLayout.paddingTop}/>}
+        {benchmarkPresentation && <BenchmarkHistoryFill layers={chartScene.lineLayers} baseline={chartLayout.height - chartLayout.paddingBottom} top={chartLayout.paddingTop} locale={locale}/>}
         {chartScene.lineLayers.map(({ entry, index, polylines }) => {
           return (
             <g key={entry.id} className="chart-series-layer" style={{ animationDelay: `${index * 60}ms` }}>

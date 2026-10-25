@@ -101,3 +101,7 @@
 .bf-chart-workspace.bf-chart-workspace .chart-actions{width:36px!important;top:calc(25px + var(--bf-plot-height,430px)/2);right:5px}
 .bf-chart-workspace.bf-chart-workspace .chart-actions .chart-range-buttons{gap:4px}
 .bf-chart-workspace.bf-chart-workspace .chart-actions .chart-range-button{width:36px;height:32px;min-height:32px;font-size:13px}
+
+/* C80: screen-space value labels read only the existing rendered series. */
+.bf-chart-workspace .bf-forecast-value{font:400 11px Inter,Arial,sans-serif;fill:var(--brand);paint-order:stroke;stroke:var(--surface);stroke-width:3px;stroke-linejoin:round}
+.bf-chart-workspace .bf-forecast-value.forecast-central{font-weight:600}.bf-chart-workspace .bf-forecast-value.forecast-upper{fill:var(--negative-text)}.bf-chart-workspace .bf-forecast-value.forecast-lower{fill:var(--success-text)}

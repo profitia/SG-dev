@@ -343,15 +343,17 @@ export function BenchmarkChartNavigator({ series, selection, setWindow }: {
  <input type="range" min={0} max={maximum} value={last} disabled={maximum < 1} aria-label="Koniec zakresu czasu" onChange={event => commit(first, Math.max(Number(event.target.value), first + 1))}/>
  </div>;
 }
-export function BenchmarkHistoryFill({ layers, baseline, top }: {
+export function BenchmarkHistoryFill({ layers, baseline, top, locale }: {
     layers: {
         entry: {
             kind: string;
+            points: { date: string; value: number | null }[];
         };
         polylines: string[];
     }[];
     baseline: number;
     top: number;
+    locale: string;
 }) {
     const id = useId().replace(/:/g, '');
     // C75: one blue paint through a curve-relative luminance mask. The
@@ -375,7 +377,19 @@ export function BenchmarkHistoryFill({ layers, baseline, top }: {
                 }).flat() }];
         }));
     }, [layers, top]);
-    return <g className="bf-history-fill" aria-hidden="true">{shading.map((segment,index) => <g key={index}><defs><mask id={`${id}-forecast-${index}`} maskUnits="userSpaceOnUse" style={{ maskType: 'luminance' }} colorInterpolation="sRGB">{segment.contours.map((contour,i) => <polygon key={i} points={contour.points} fill={`rgb(${contour.gray},${contour.gray},${contour.gray})`}/>)}</mask></defs><polygon points={segment.area} fill="var(--brand)" mask={`url(#${id}-forecast-${index})`}/></g>)}<defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--brand-light)" stopOpacity=".2"/><stop offset="100%" stopColor="var(--brand-light)" stopOpacity=".035"/></linearGradient></defs>{layers.filter(layer => layer.entry.kind === 'historical').flatMap(layer => layer.polylines).map((points, i) => { const parts = points.trim().split(/\s+/); const first = parts[0]?.split(',')[0], last = parts.at(-1)?.split(',')[0]; return <polygon key={i} points={`${points} ${last},${baseline} ${first},${baseline}`} fill={`url(#${id})`}/>; })}</g>;
+    const annotations = layers.filter(layer => layer.entry.kind.startsWith('forecast-')).map(layer => {
+        const point = layer.entry.points.filter(point => point.value !== null).at(-1);
+        const coordinate = layer.polylines.at(-1)?.trim().split(/\s+/).at(-1)?.split(',').map(Number);
+        return point && coordinate ? { kind: layer.entry.kind, value: new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(point.value!), x: coordinate[0], y: coordinate[1] } : null;
+    }).filter(Boolean);
+    let previousLabelY = top - 10;
+    const placedAnnotations = annotations.sort((a,b) => (a?.y ?? 0) - (b?.y ?? 0)).map(label => {
+        if (!label) return null;
+        const labelY = Math.max(previousLabelY + 16, label.y + (label.kind === 'forecast-lower' ? 16 : -9));
+        previousLabelY = labelY;
+        return { ...label, labelY };
+    });
+    return <g className="bf-history-fill" aria-hidden="true">{shading.map((segment,index) => <g key={index}><defs><mask id={`${id}-forecast-${index}`} maskUnits="userSpaceOnUse" style={{ maskType: 'luminance' }} colorInterpolation="sRGB">{segment.contours.map((contour,i) => <polygon key={i} points={contour.points} fill={`rgb(${contour.gray},${contour.gray},${contour.gray})`}/>)}</mask></defs><polygon points={segment.area} fill="var(--brand)" mask={`url(#${id}-forecast-${index})`}/></g>)}<defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--brand-light)" stopOpacity=".2"/><stop offset="100%" stopColor="var(--brand-light)" stopOpacity=".035"/></linearGradient></defs>{layers.filter(layer => layer.entry.kind === 'historical').flatMap(layer => layer.polylines).map((points, i) => { const parts = points.trim().split(/\s+/); const first = parts[0]?.split(',')[0], last = parts.at(-1)?.split(',')[0]; return <polygon key={i} points={`${points} ${last},${baseline} ${first},${baseline}`} fill={`url(#${id})`}/>; })}{placedAnnotations.map(label => label && <text key={label.kind} x={label.x - 10} y={label.labelY} textAnchor="end" className={`bf-forecast-value ${label.kind}`}>{label.value}</text>)}</g>;
 }
 /** Measures presentation only. Drawer reflow never changes data or request state. */
 export function useBenchmarkChartLayout<T extends {
