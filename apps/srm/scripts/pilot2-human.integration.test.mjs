@@ -1,3 +1,4 @@
+import {installRequestQuotaFixture} from './request-quota-fixture.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -22,6 +23,7 @@ import {currentReportAdmission,reportAdmissionEvidence} from '@profitia/platform
 import {createSrmCorporateSourceStore} from '../src/server/corporate-source-store.ts'
 
 test('PILOT2 reuses actual Root and form Work: no Clerk or provider after click; company and organisation substitutions deny',t=>supplierBusinessFixture(t,true,async f=>{
+ await installRequestQuotaFixture(f)
  const sql=fs.readFileSync(new URL(reportAdmissionSchemaUrl),'utf8'),schemaDigest=f.hash(sql)
  await f.owner.query(`GRANT CREATE ON DATABASE ${f.baseBinding.databaseName} TO profitia_access_owner`)
  await f.controlled(async()=>{
@@ -196,6 +198,7 @@ test('PILOT2 actual receiver SQL creates working ordinary logins, preserves exis
 },{databaseName:'platform_private'}))
 
 test('PILOT2 cold miss commits its HUMAN read before real native General Work, then reopens a scoped seven-day report with zero Clerk',t=>supplierBusinessFixture(t,true,async f=>{
+ await installRequestQuotaFixture(f)
  const admissionSql=fs.readFileSync(new URL(reportAdmissionSchemaUrl),'utf8'),admissionDigest=f.hash(admissionSql)
  const migration=f.own('022-pilot2-registry-envelope.sql'),migrationDigest=f.hash(migration)
  const deployment='srv-dbeh6srrjlhs73fmikrg:'+ 'a'.repeat(40)+':srm-jobs'

@@ -1,3 +1,4 @@
+import operationAcceptance from '../../operation-integration.json'
 import {srmKrsPilotTarget} from './krs-native-runtime'
 import {reportAdmissionConfiguration} from './report-admission-runtime'
 import type pg from 'pg'
@@ -54,7 +55,7 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  const c=config.base,core=targets.coreSchemaDigests,own=targets.businessBoundaryDigests,version=config.configurationVersion
  const human={pool:pools.pool,auditPool:pools.auditPool,clerk:pools.clerk,identity:c.identity,binding:c.binding,module:c.module}
  const app=(operations:typeof c.application.operations)=>({...c.application,configurationVersion:version,operations})
- const ledger={schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql']}
+ const ledger={schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],quotaSchemaDigest:operationAcceptance.requestQuotaSourceCompatibility.schemaDigest}
  const publicJob={schemaDigest:core['007-delegated-jobs.sql'],targetOperation:'supplier.report.refresh' as const,supplierSchemaDigest:core['013-supplier-delegation.sql']}
  const privateJob={...publicJob,targetOperation:'supplier.private.refresh' as const,operationSchemaDigest:core['017-additional-request-operations.sql']}
  const serviceApplication=(appId:string,configurationVersion:string,features:string[],operations:typeof c.application.operations)=>({

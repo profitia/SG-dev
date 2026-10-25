@@ -198,7 +198,7 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     pool, auditPool, clerk, identity: config.identity, binding: config.binding, module: config.module,
     application: { ...config.application, configurationVersion: config.supplierRequest.configurationVersion,
       operations: ['supplier.report.refresh'] },
-    requestLedger: { schemaDigest: config.supplierRequest.baseSchemaDigest, externalSchemaDigest: config.supplierRequest.externalSchemaDigest },
+    requestLedger: { schemaDigest: config.supplierRequest.baseSchemaDigest, externalSchemaDigest: config.supplierRequest.externalSchemaDigest, quotaSchemaDigest: operationAcceptance.requestQuotaSourceCompatibility.schemaDigest },
     commandBoundaryDigest: config.supplierRequest.commandBoundaryDigest,
   }) }) : undefined
   let supplierApi:SrmSupplierApi|undefined

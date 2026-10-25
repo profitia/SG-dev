@@ -34,6 +34,7 @@ export function humanPilot2(repo,output,proof){
  }
  const patch=(name,action)=>write(name,action(fs.readFileSync(path.join(output,name),'utf8')))
  const copy=name=>write(name,fs.readFileSync(path.join(repo,name)))
+ copy('apps/srm/operation-integration.json')
  for(const file of['pilot2-human-runtime.ts','pilot2-public-catalog.ts','report-admission-runtime.ts','supplier-request-host.ts',
   'supplier-request-operation.ts','private-operation-host.ts','identity-runtime.ts','request-origin.ts','corporate-knowledge.ts','shared-financial-read.ts'])copy('apps/srm/src/server/'+file)
  for(const file of['pilot2-human-targets.json','private-runtime-targets.json','supplier-native-targets.json'])copy('apps/srm/deployment/'+file)

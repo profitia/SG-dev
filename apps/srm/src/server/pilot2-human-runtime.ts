@@ -1,3 +1,4 @@
+import operationAcceptance from '../../operation-integration.json'
 import pg from 'pg'
 import {createHash} from 'node:crypto'
 import {createDelegatedJobStore} from '@profitia/platform-contracts/delegated-job'
@@ -102,7 +103,7 @@ export function instantiatePilot2HumanOptions(env:Env=process.env):Pilot2HumanOp
   identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['job_execution'],operations:['job.execute' as const]}
  return {config,catalog,
   human:{pool:human.pool,auditPool:human.audit,clerk,identity:config.identity,application:config.application,binding:config.binding,module:config.module,
-   requestLedger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql']},commandBoundaryDigest:own['001-supplier-requests.sql']},
+   requestLedger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],quotaSchemaDigest:operationAcceptance.requestQuotaSourceCompatibility.schemaDigest},commandBoundaryDigest:own['001-supplier-requests.sql']},
   work:{pool:jobs.pool,auditPool:jobs.audit,clerk,application:jobApplication,
    binding:{...config.binding,applicationId:'srm-jobs',role:selected.jobs.user,service:{schemaDigest:core['005-service-read.sql'],profileId:'PLATFORM_INTERNAL',
     deploymentId:jobApplication.deploymentId,configurationVersion:jobApplication.configurationVersion}},

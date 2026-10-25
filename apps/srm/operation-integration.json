@@ -9,13 +9,14 @@
     "id": "profitia.operation-context",
     "version": "1.0.0",
     "implementation": "1.0.0-candidate.16",
-    "sourceDigest": "742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160"
+    "sourceDigest": "2a7a2cbed3daed98b977259decb6b01e565dc528ce97f563b5e100ef7b52d525"
   },
   "producer": {
     "projectKey": "ARCHITECTURE",
-    "taskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
-    "pullRequest": 685,
-    "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
+    "taskId": "ARCHITECTURE-SRM-REQUEST-UNMETERED-20261025",
+    "repository": "profitia/SG-dev",
+    "pullRequest": 712,
+    "sourceSha": "47396fe1cb8aca06d11e2e712e65d53651c296c1"
   },
   "hostAdapter": "src/server/operation-report-data.ts",
   "operations": [
@@ -4715,5 +4716,97 @@
     "mapsRoutesActivated": false,
     "productDeploymentPerformed": false,
     "sqlInstallationPerformed": false
+  },
+  "requestQuotaSourceCompatibility": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "platformVersion": "1.29.0",
+    "rootImplementation": "1.0.0-candidate.19",
+    "hostVersion": "1.15.0",
+    "schemaDigest": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef",
+    "operations": [
+      "supplier.report.refresh",
+      "supplier.private.refresh"
+    ],
+    "quotaMode": "UNMETERED",
+    "previousReceiptSourceSha": "ffb6da733308ca44fc8e89640fdfe5f836481c5a",
+    "previousReceiptDigest": "cae16b86a32662bdf821f43ba32ea866e632fe2481856cfa88bd682461ea537b",
+    "previousRootAcceptance": {
+      "contract": {
+        "id": "profitia.operation-context",
+        "version": "1.0.0",
+        "implementation": "1.0.0-candidate.16",
+        "sourceDigest": "742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160"
+      },
+      "producer": {
+        "projectKey": "ARCHITECTURE",
+        "taskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
+        "pullRequest": 685,
+        "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
+      }
+    },
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-SRM-REQUEST-UNMETERED-20261025",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 712,
+      "sourceSha": "47396fe1cb8aca06d11e2e712e65d53651c296c1"
+    },
+    "sourceDigests": {
+      "migrations/access/027-unmetered-supplier-requests.sql": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef",
+      "package-lock.json": "d481e4cb6e695802b11cbca1e395522fdc89d427e61467cb928a44b068b81022",
+      "package.json": "6f9aba65bbca9569228a6013f0e1ac4f7a8ccb37237c48d2ba684b3c4ebe803a",
+      "src/operation-context.d.mts": "78e70bb5a89b881fd572c09ab8f9238780873d07c93e7d81210216a2b55fd09c",
+      "src/operation-context.mjs": "e2dd0ebf1103b0b8b2750c8844cbe3c3fc47e682b683b6e41eb203ca0f693878",
+      "src/private-operation-host.d.mts": "248a3b60f525afb102c7aaaf230c6d10fde6793dcbb71c94e1f9b9db9ee57897",
+      "src/private-operation-host.mjs": "8ecb34bd8c93049aca0b81235cd6d255a3c60291b66b1a717a0bd1eebd06f5dd",
+      "src/request-ledger.d.mts": "6bc6786ddee0e5b410959061a7bf4464f7a4eca5e8c887731693b39f15478697",
+      "src/request-ledger.mjs": "07118e6e21ae7074c7f01aca800d56e9aa0464a51c7c7562d640cb16864c0f41",
+      "test/private-operation-host.test.mjs": "81e9435b87a81e3d69d91dbfe7cf0355b5056925f47521af32b5932bed38dc0f",
+      "test/unmetered-requests.integration.test.mjs": "06a58a5b96b34c0bf2ac5faa267f1473c253692e3768de82e69bad8d30a9b826",
+      "test/unmetered-requests.test.mjs": "de4a05bd9384b18edfd77cfadcfe886609ed6073e5eba762f364f42b14ab6b2b"
+    },
+    "sdkDigests": {
+      "operationSourceDigest": "2a7a2cbed3daed98b977259decb6b01e565dc528ce97f563b5e100ef7b52d525",
+      "privateOperationHostSourceDigest": "9a3b8931fe6d83c465b46999a86e2cb671474881b89c7836c9122620b37e0603",
+      "accessStoreSourceDigest": "7b3cde4aaf86af8fb0d7630adaa52553eabd486aebfa6031742fdd5eccb912f8",
+      "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "requestLedgerSourceDigest": "d24a1c98efe2f04a2d9cd6335f75bd6a37eda4bfe0eca0ebae712a638e9e43d5",
+      "externalRequestSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "delegatedJobSourceDigest": "cb08e7c0b2968505a31f27c15a33e0bee80a58bfac965d08c0fdb8d59abc7cc1",
+      "requestContinuationSourceDigest": "d49673ecec3a85dad478b4e8d3e38aa30241cf04b61b6a7dfbb99e7af33c3c53",
+      "requestInspectionSourceDigest": "772f1f5a58e8e544d275c4b8bb0ab09774317a6673c1f6bd8563f96fc6a19811",
+      "requestWorkSourceDigest": "0b8c6566c87c468461c681ec442f55ec391b2cfd2e75d4c306616ec1ae90b8cc",
+      "requestOperationsSourceDigest": "65e1d46269df57ccd7f3f1637e9ac6a73171ecbdad02b35677d23469d73e7237",
+      "additionalRequestSchemaDigest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "externalCallSourceDigest": "ca6bb601cbb7c7eab58f726f133557fe1b1cae17a1606e0f4c070c6d2f803ad2",
+      "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "reportAdmissionSourceDigest": "f24e3f71ef76fdb1e8935d0ddc935ea96c146d93b7ecbc9d6a4a4e2d7879f794",
+      "reportAdmissionSchemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+      "requestQuotaSchemaDigest": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef"
+    },
+    "applicationSourceDigests": {
+      "deployment/pilot2-human-package-lock.json": "51fa56a798d817222f9dfee08715b1723691ec7d7f85566eacb31b630ea87bc8",
+      "deployment/pilot2-registry-package-lock.json": "d4b1573f8ad978a0f5734f1a9715c5438645693305dfaaf96fabe02d74c8ea96",
+      "package-lock.json": "3047408056f91df8c89ae62b0a462662cb06951bc7250b2e8b16695e551c61c9",
+      "package.json": "0937a316b463749f720ecbc6e10adc346e6e2d757e7f2dae54a2f7253981fa61",
+      "scripts/operation-context.test.mjs": "b55baf027dedddb8b1f4b669395c17660cdef153e044cf1aac005a4e0680c172",
+      "scripts/pilot2-human.integration.test.mjs": "04d653576313ec7dbf03702c8b01a5b284c540c7a955f4630ce8b94929ff208b",
+      "scripts/private-host.integration.test.mjs": "5a4341d741856d72746dac0b2abbef0b0923b489a214a6ba772db88f217382eb",
+      "scripts/supplier-location-admission.integration.test.mjs": "2019a54fcc63b2e0ba78399ce5f53b9477ca3bd168939a9660576feb75389382",
+      "src/server/account-recheck-adoption.test.ts": "68ad06738d431868c35d60129ea7ab2121d5f11d26625530f2437ee938e33e5b",
+      "src/server/peer-read-boundary.test.ts": "8a04d4a41d04104683b1a64c1a9682bafe41fc7583a274cfa39e4e6cac61e19b",
+      "src/server/pilot2-human-runtime.ts": "90580ab134c722583c91b6807304d261c236d25e9d50dd60cf7c60797589a6ee",
+      "src/server/private-runtime.ts": "d19b02385e98758f2f1da503ed2a4c503389c2d0c810673b2aa004b5f640fb9f",
+      "src/server/supplier-native-runtime.ts": "d639f55bc731569dbfa74cf2572a0afc5087afd4471312387fccf6209df3f03d",
+      "src/server/supplier-request-host.ts": "46daa8ab9aec7a0ffa3ce518697d7f3bdb37ed241dc3abe7a28a55be7efcfb22",
+      "scripts/request-quota-adoption.test.mjs": "ef6bbd70fc284329a2d4e71c05ce63be91950c8a53eb8950bfe8a68b47712686",
+      "scripts/request-quota-fixture.mjs": "133c248d112151ef935204bb06f56a7df7ecaf2b408170ee910a75b661b13457",
+      "scripts/pilot2-human-overlay.mjs": "1390c16e05aa70d5a14073ff9d525d016668fd800301e6c887a4e9567f9e149e"
+    },
+    "runtimeDeployment": false,
+    "sql027Installed": false,
+    "policyCountersReset": false,
+    "humanGrantsChanged": false
   }
 }
