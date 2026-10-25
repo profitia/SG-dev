@@ -151,7 +151,7 @@ function browserFixture({ signedIn = true, response = () => new Response(JSON.st
   const f = { elements, calls: [], redirects: [], restored: [], mounted: 0, reloaded: 0 }
   f.clerk = { session: signedIn ? { id: 'sess_a', getToken: async () => 'synthetic_fixture_only' } : null,
     load: async () => { if (loadFailure) throw Error('synthetic SDK unavailable') }, addListener: fn => { f.listener = fn },
-    mountSignIn: () => { f.mounted++ }, mountSignUp: () => { f.mounted++ }, unmountSignUp() {}, unmountSignIn() {}, signOut: async () => { if (logoutFailure) throw Error('synthetic outage'); f.clerk.session = null } }
+    mountSignIn: () => { f.mounted++ }, mountSignUp: () => { f.mounted++ }, unmountSignUp() {}, unmountSignIn() {}, signOut: async options => { f.signOutOptions = options; if (logoutFailure) throw Error('synthetic outage'); f.clerk.session = null } }
   const window = { Clerk: f.clerk, __internal_ClerkUICtor: {}, addEventListener: (_name, fn) => { f.start = fn },
     spendGuruRestoreAvatar: value => f.restored.push(value),
     location: { origin, pathname: '/account/sg2/account/registration', replace: url => f.redirects.push(url), reload: () => { f.reloaded++ } } }
@@ -190,6 +190,12 @@ test('synthetic SDK failure retries a clean page; provider logout failure is not
   const failed = browserFixture({ loadFailure: true }); await failed.start(); failed.elements.retry.onclick(); assert.equal(failed.reloaded, 1); assert.equal(failed.calls.length, 0)
   const f = browserFixture({ logoutFailure: true, response: () => new Response('{}', { status: 503 }) }); await f.start(); await f.elements.logout.onclick()
   assert(f.elements.status.textContent.includes('Wylogowanie nie zostało potwierdzone')); assert.deepEqual(f.redirects, [])
+})
+test('central error-screen logout returns through the closed sign-in route rather than the unhandled root', async () => {
+  const f = browserFixture({ response: () => new Response('{}', { status: 503 }) }); await f.start()
+  await f.elements.logout.onclick()
+  assert.equal(f.signOutOptions.redirectUrl, 'http://localhost:3600/account/sg2/account/login')
+  assert.equal(f.clerk.session, null); assert.equal(f.mounted, 1)
 })
 test('real HTTP primary entry permits opaque SDK navigation only on bounded public GET, without projecting it or changing protected API policy', async t => {
   const f = accountFixture(), server = createNodeServer(origin, f.handler)
