@@ -85,9 +85,9 @@ test('PILOT2 actual receiver SQL creates working ordinary logins, preserves exis
  // This fixture is strictly a disposable loopback database. These identifiers
  // model the guarded installation receipt; no cloud connection is made.
  const oldOperator=(await f.owner.query("SELECT rolbypassrls FROM pg_roles WHERE rolname='neondb_owner'")).rows[0]
- if(!oldOperator)await f.owner.query('CREATE ROLE neondb_owner LOGIN NOINHERIT CREATEDB CREATEROLE NOSUPERUSER BYPASSRLS')
- else await f.owner.query('ALTER ROLE neondb_owner BYPASSRLS')
- const operatorUrl=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);operatorUrl.pathname='/platform_private';operatorUrl.username='neondb_owner';operatorUrl.password=''
+ if(!oldOperator)await f.owner.query("CREATE ROLE neondb_owner LOGIN NOINHERIT CREATEDB CREATEROLE NOSUPERUSER BYPASSRLS PASSWORD 'isolated_pilot2_operator_only'")
+ else await f.owner.query("ALTER ROLE neondb_owner LOGIN BYPASSRLS PASSWORD 'isolated_pilot2_operator_only'")
+ const operatorUrl=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);operatorUrl.pathname='/platform_private';operatorUrl.username='neondb_owner';operatorUrl.password='isolated_pilot2_operator_only'
  await f.owner.query('GRANT profitia_access_owner TO neondb_owner WITH INHERIT FALSE,SET TRUE')
  await f.owner.query('GRANT CONNECT ON DATABASE platform_private TO neondb_owner WITH GRANT OPTION')
  await f.owner.query("CREATE ROLE srm_private_development_runtime LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS CONNECTION LIMIT 4")

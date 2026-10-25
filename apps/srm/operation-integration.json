@@ -4580,7 +4580,7 @@
       "scripts/pilot2-registry-smoke.mjs": "999a1000668d3cdfe7c01b6b18e3a311c0377e48ee282be752abadfaa88186d4",
       "scripts/pilot2-human-overlay.test.mjs": "1f7a94e2446d00ec10d534577e2955f70a37d74d3f013229b214e124a3c89dca",
       "scripts/pilot2-human-installation.test.mjs": "0292fa8668eee2e33a438004466681a62c4f6d4b525aeb78212993e8df8b1f02",
-      "scripts/pilot2-human.integration.test.mjs": "ef98b87ed45ffb05f3e89354d5005190092b40972ba7a79ffb9ce90bac3310e8",
+      "scripts/pilot2-human.integration.test.mjs": "ebcf67bc666ed60a9b6e8129ca2b58bb11a55db12637f884d8f2dc8b4d24a528",
       "scripts/pilot2-public-reader-postgres.test.mjs": "9e6f39856b9ceef233bfd9ef28b938e3dcd9ade93224e6929c81890b74d33403",
       "deployment/pilot2-human-targets.json": "56b876b1927585ba7e0c60c7187f2a0fc3869181e2b1fbb327d8909561b99b01",
       "deployment/pilot2-human-package.json": "74d110d2dfc7d6d640924f05d370c7a374791a0e392a2acbfc6ed24256b5bd34",
