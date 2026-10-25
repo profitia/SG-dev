@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
-import {renderResolved,renderMailgunResolved,mailgunTemplate,catalog} from '../email-templates/render.mjs';
+import {renderResolved,renderMailgunResolved,mailgunTemplate,catalog,inlineAssetsForAvatar} from '../email-templates/render.mjs';
 import {createClerkEmailVerifier} from '../dist/src/email-webhook.js';
 import {createEmailRecipientVerifier} from '../dist/src/email-correlation.js';
 import {createEmailRuntime} from '../dist/src/email-runtime.js';
@@ -12,6 +12,7 @@ import {installVocativeDictionary} from '../../../packages/platform-contracts/sr
 import {createEmailStore,emailSchemaDigest} from '../dist/src/email-store.js';
 import {languageSchemaDigest} from '../dist/src/communication-language.js';
 import {registrationSchemaDigest} from '../dist/src/registration-store.js';
+import {createMailgunTransactionalSender} from '../dist/src/mailgun-delivery.js';
 
 const origin='https://example.clerk.accounts.dev',url=origin+'/v1/client/sessions/sess_synthetic/revoke?token=synthetic%2Bticket&return_url=account';
 const data={appName:'SpendGuru PORR',currentYear:2026,firstName:'Anna',signInMethod:'Email code',browserName:'Chrome',operatingSystem:'macOS',location:'Example location',ipAddress:'192.0.2.10',sessionCreatedAt:'2026-10-25T16:51:00Z',revokeSessionUrl:url};
@@ -101,10 +102,18 @@ test('ordinary PostgreSQL queue encrypts real notification fields, uses persiste
     assert.equal(await store.enqueue(i),'queued');assert.equal(await store.enqueue({...i,eventId:'msg_duplicate'+language}),'duplicate');
     const raw=(await f.admin.query('SELECT ciphertext FROM profitia_profile.email_outbox WHERE email_id=$1',[i.emailId])).rows[0].ciphertext;
     for(const secret of [i.recipient,i.ipAddress,i.location,i.revokeSessionUrl])assert.ok(!raw.includes(secret));
-    const restarted=createEmailStore(cfg,f.transact),claim=await restarted.claim();assert.deepEqual(claim.instruction,i);
-    const preference=await restarted.begin(claim);assert.equal(preference.language,language);assert.equal(preference.avatar,'female');
-    const mail=renderMailgunResolved({...options,language:preference.language,avatar:preference.avatar,data:{...data,...i}});assert.equal(mail.template.name,`identity-new-device-sign-in-${language}-female`);assert.equal(mail.template.variables.revoke_session_url,url);sends++;
-    await restarted.settle(claim,'accepted','<synthetic@mailgun.test>');assert.equal(await restarted.claim(),null);
+    const restarted=createEmailStore(cfg,f.transact);
+    const send=createMailgunTransactionalSender({environment:'development',region:'eu',domain:'mail.example.test',from:'notifications@mail.example.test',senderName:'SpendGuru',recipientPolicy:'signed-clerk',authorizedRecipients:[],apiKey:'synthetic-transport-key-000000000000'},async(endpoint,init)=>{
+      sends++;assert.equal(endpoint,'https://api.eu.mailgun.net/v3/mail.example.test/messages');
+      assert.equal(init.body.get('template'),`identity-new-device-sign-in-${language}-female`);
+      assert.equal(init.body.get('t:version'),mailgunTemplate(options.kind,'female',language).version);
+      assert.equal(JSON.parse(init.body.get('t:variables')).revoke_session_url,url);
+      assert.equal(init.body.has('html'),false);assert.equal(init.body.getAll('inline').length,3);
+      return Response.json({id:'<synthetic@mailgun.test>'});
+    });
+    const worker=createEmailRuntime({autoStart:false,verify,store:{...restarted,claim:async()=>{const claim=await restarted.claim();if(claim)assert.deepEqual(claim.instruction,i);return claim}},recipient:createEmailRecipientVerifier({users:{getUser:async()=>({id:i.providerUserId,emailAddresses:[{id:i.emailAddressId,emailAddress:i.recipient}]})}}),
+      render:async(instruction,avatar,locale)=>{assert.equal(locale,language);assert.equal(avatar,'female');return {...renderMailgunResolved({...options,language:locale,avatar,data:{...data,...instruction}}),inline:inlineAssetsForAvatar(avatar).map(a=>({filename:a.filename,bytes:new Uint8Array([137,80,78,71,13,10,26,10])}))}},send});
+    await worker.tick();await worker.tick();await worker.stop();assert.equal(await restarted.claim(),null);
     assert.deepEqual((await f.admin.query('SELECT status,ciphertext FROM profitia_profile.email_outbox WHERE email_id=$1',[i.emailId])).rows[0],{status:'accepted',ciphertext:null});
   }assert.equal(sends,2);
 });

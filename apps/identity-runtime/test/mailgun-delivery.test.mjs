@@ -118,3 +118,47 @@ test('stored template pins exact language/avatar version; codes are template-onl
  for(const template of [{...out.template,name:'foreign'},{...out.template,version:'latest'},{...out.template,variables:{...out.template.variables,secret:'x'}}])await assert.rejects(()=>send({...msg,template}))
  assert.equal(calls,1)
 })
+
+for (const language of ['pl','en']) for (const avatar of ['male','female','neutral']) test(`new-device stored template reaches multipart transport once: ${language}/${avatar}`,async()=>{
+  const {renderMailgunResolved,inlineAssetsForAvatar}=await import('../email-templates/render.mjs');
+  const origin='https://synthetic.clerk.accounts.dev',action=origin+'/revoke?token=synthetic%2Bticket&next=account';
+  const out=renderMailgunResolved({kind:'new-device-sign-in',avatar,language,allowedRevocationOrigins:[origin],data:{appName:'SpendGuru',currentYear:2026,signInMethod:'Email code',browserName:'Chrome',operatingSystem:'Synthetic OS',location:'Synthetic',ipAddress:'192.0.2.10',sessionCreatedAt:'2026-10-25T19:00:00Z',revokeSessionUrl:action}});
+  const cfg={...config,domain:'mail.example.test',region:'eu',from:'notifications@mail.example.test',senderName:'SpendGuru',recipientPolicy:'signed-clerk',authorizedRecipients:[]};
+  let calls=0;const send=createMailgunTransactionalSender(cfg,async(endpoint,init)=>{
+    calls++;assert.equal(endpoint,'https://api.eu.mailgun.net/v3/mail.example.test/messages');assert.equal(init.redirect,'error');
+    assert.equal(init.body.get('template'),`identity-new-device-sign-in-${language}-${avatar}`);assert.equal(init.body.get('t:version'),out.template.version);
+    assert.equal(init.body.get('to'),'synthetic@example.test');assert.equal(init.body.has('html'),false);
+    assert.equal(JSON.parse(init.body.get('t:variables')).revoke_session_url,action);
+    assert.equal(init.body.getAll('inline').length,avatar==='neutral'?2:3);
+    for(const name of ['o:tracking','o:tracking-clicks','o:tracking-opens','o:skip-verification'])assert.equal(init.body.get(name),'no');
+    assert.equal(init.body.get('o:require-tls'),'yes');assert.ok([...init.body.keys()].every(k=>!k.startsWith('v:')&&!['cc','bcc'].includes(k)));
+    return Response.json({id:'<new-device@mail.example.test>'});
+  });
+  const msg={...out,recipient:'synthetic@example.test',inline:inlineAssetsForAvatar(avatar).map(a=>({filename:a.filename,bytes:new Uint8Array([137,80,78,71,13,10,26,10])}))};
+  assert.equal((await send(msg)).status,'accepted');assert.equal(calls,1);
+  const missing={...out.template.variables};delete missing.ip_address;
+  for(const template of [
+    {...out.template,name:'identity-new-device-sign-in-fr-neutral'}, {...out.template,version:'latest'},
+    {...out.template,variables:missing}, {...out.template,variables:{...out.template.variables,otp_code:'012345'}},
+    {...out.template,name:'identity-verification-code-en-neutral'},
+    {...out.template,variables:{...out.template.variables,location:'{{secret}}'}},
+    {...out.template,variables:{...out.template.variables,revoke_session_url:action+'\r\nBcc:other@example.test'}},
+    {...out.template,variables:{...out.template.variables,revoke_session_url:'x'.repeat(4097)}},
+    {...out.template,variables:{...out.template.variables,device:'x'.repeat(2001)}},
+  ])await assert.rejects(()=>send({...msg,template}),{message:'Invalid stored template'});
+  assert.equal(calls,1);
+});
+
+test('new-device transport accepts no action and a bounded long opaque URL without expanding other template limits',async()=>{
+  const cfg={...config,domain:'mail.example.test',region:'eu',from:'notifications@mail.example.test',senderName:'SpendGuru',recipientPolicy:'signed-clerk',authorizedRecipients:[]};let calls=0;
+  const send=createMailgunTransactionalSender(cfg,async(_endpoint,init)=>{calls++;const vars=JSON.parse(init.body.get('t:variables'));assert.ok(vars.revoke_session_url.length===0||vars.revoke_session_url.length===4096);return Response.json({id:'<bounded@mail.example.test>'})});
+  const variables={app_name:'SpendGuru',current_year:'2026',device:'Chrome',greeting:'Hello!',ip_address:'192.0.2.10',location:'Synthetic',revoke_session_url:'',session_created_at:'2026-10-25',sign_in_method:'Email code'};
+  const msg={recipient:'synthetic@example.test',subject:'Synthetic preview',html:'<p>Synthetic</p>',text:'Synthetic',template:{name:'identity-new-device-sign-in-en-neutral',version:'v-'+'a'.repeat(24),variables}};
+  assert.equal((await send(msg)).status,'accepted');
+  const prefix='https://synthetic.clerk.accounts.dev/revoke?token=';assert.equal((await send({...msg,template:{...msg.template,variables:{...variables,revoke_session_url:prefix+'a'.repeat(4096-prefix.length)}}})).status,'accepted');
+  for(const template of [
+    {name:'identity-verification-code-en-neutral',version:msg.template.version,variables:{app_name:'SpendGuru',current_year:'2026',greeting:'Hello!',otp_code:'012345',requested_at:'2026-10-25',requested_from:'x'.repeat(2001)}},
+    {name:'identity-invitation-en-neutral',version:msg.template.version,variables:{app_name:'SpendGuru',current_year:'2026',greeting:'Hello!',expires_in_days:'1',action_url:'https://example.test/'+'x'.repeat(2001)}},
+  ])await assert.rejects(()=>send({...msg,template}),{message:'Invalid stored template'});
+  assert.equal(calls,2);
+});
