@@ -6,17 +6,41 @@
   "policy": {
     "sourceAuthority": "profitia/SG-dev",
     "authorityBranch": "main",
-    "promotionFlow": ["development", "staging", "production"],
+    "promotionFlow": [
+      "development",
+      "staging",
+      "production"
+    ],
     "sameSourceRevisionMinimumRequired": true,
     "sameImmutableArtifactPromotionTarget": true,
     "artifactDigestPromotionStatus": "PLANNED_HARDENING",
     "environmentBranchesAllowed": false,
     "crossEnvironmentWritesAllowed": false,
-    "continuityControlPlaneEnvironment": "development"
+    "continuityControlPlaneEnvironment": "development",
+    "marketData": {
+      "decisionDate": "2026-10-25",
+      "owner": "SG2 Platform",
+      "sourceMode": "PRODUCTION_PROVIDER_DATA_FOR_ALL_ENVIRONMENTS",
+      "appliesTo": [
+        "development",
+        "staging",
+        "production"
+      ],
+      "provider": "MACROBOND",
+      "apiOrigin": "https://api.macrobondfinancial.com",
+      "tokenOrigin": "https://apiauth.macrobondfinancial.com",
+      "providerConnectionChangesAllowed": false,
+      "forecastMathematicsChangesAllowed": false,
+      "environmentLocalPersistenceRequired": true,
+      "crossEnvironmentJobConsumptionAllowed": false,
+      "note": "Production market data describes the real external provider source, not permission to rebind all DATABASE_URL values to the Neon branch named production. Private records, ingestion state, forecast queues and artifacts retain their own environment bindings. Production application remains RESERVED."
+    }
   },
   "continuityControlPlane": {
     "logicalEnvironment": "development",
-    "servesGovernedTasksTargeting": ["development"],
+    "servesGovernedTasksTargeting": [
+      "development"
+    ],
     "stagingOrProductionRuntimeAllowed": false,
     "stagingOrProductionContinuityAllowed": false,
     "render": {
@@ -78,8 +102,8 @@
             "customDomainStatus": "VERIFIED_CERTIFICATE_ISSUED",
             "dnsCnameTarget": "sg2-development-dashboard.onrender.com",
             "autoDeploy": false,
-            "currentDeployId": "dep-daqbksk9v7es73cjdtmg",
-            "deployedSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119"
+            "currentDeployId": "dep-dbbr34rncjis738t5phg",
+            "deployedSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff"
           },
           "runtime": {
             "serviceId": "srv-dapa3tid0e5s73f8bc5g",
@@ -89,25 +113,33 @@
             "customDomainStatus": "VERIFIED_CERTIFICATE_ISSUED",
             "dnsCnameTarget": "sg2-development-runtime.onrender.com",
             "autoDeploy": false,
-            "currentDeployId": "dep-daqbu6e7bikc73fvge2g",
-            "deployedSha": "e211657c02f2657ba12964ea432ec72508e44b21"
+            "currentDeployId": "dep-dbds2ajncjis73daf1k0",
+            "deployedSha": "a6ffcefb96d1b4182764343b349dcb092d0f891b"
           },
           "currentWorker": {
             "serviceId": "srv-dapa3vlg1s2s739vp7dg",
             "name": "sg2-development-forecast-current-worker",
             "autoDeploy": false,
             "workerMode": "CURRENT_ONLY",
-            "currentDeployId": "dep-dapu7es9v7es739uoql0",
-            "deployedSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
+            "currentDeployId": "dep-dbblross728c738srl0g",
+            "deployedSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06"
           },
           "verificationWorker": {
             "serviceId": "srv-dapa40ad0e5s73f8bjm0",
             "name": "sg2-development-forecast-verification-worker",
             "autoDeploy": false,
             "workerMode": "VERIFICATION_ONLY",
-            "currentDeployId": "dep-dapu7g1srm7s73as83bg",
-            "deployedSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b"
+            "currentDeployId": "dep-dbbkc261egvs738asnc0",
+            "deployedSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06"
           }
+        },
+        "privateNetworkIsolation": {
+          "blockCrossEnvironmentConnections": false,
+          "observedAt": "2026-10-25T18:40:17.753Z",
+          "targetBlockCrossEnvironmentConnections": true,
+          "status": "AUTHORIZED_PENDING_APPLICATION",
+          "scope": "Render private network only; public HTTPS, Neon and Macrobond remain governed separately",
+          "rollback": "Restore the previously observed false value; do not change routes, credentials, database bindings or deployments."
         }
       },
       "neon": {
@@ -177,7 +209,7 @@
             "serviceId": "srv-daclno3m8hqs73bb7rrg",
             "name": "spendguru-porr-demo",
             "autoDeploy": false,
-            "baselineDeployId": "dep-dapctolbedkc738dv8vg",
+            "baselineDeployId": "dep-db0dhbm1egvs73f70kr0",
             "baselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91"
           },
           "mainRuntime": {
@@ -186,23 +218,31 @@
             "url": "https://sg2-0-charts-preview.onrender.com",
             "role": "HISTORICAL_MAIN_RUNTIME_AND_BLUEPRINT_ENV_SOURCE",
             "autoDeploy": false,
-            "baselineDeployId": "dep-dap3876gekts73fkkaug",
+            "baselineDeployId": "dep-daumen97lnhs73em7a10",
             "baselineSha": "bd4139e727fd3f3b237cfa89afa60b7af6bec86c"
           },
           "currentWorker": {
             "serviceId": "srv-daoksvuk1f9s73cg4bk0",
             "name": "spendguru-forecast-current-worker",
             "autoDeploy": false,
-            "baselineDeployId": "dep-dapam0sja7ms73akipp0",
+            "baselineDeployId": "dep-dbaqk9p42hec73cbo3og",
             "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799"
           },
           "verificationWorker": {
             "serviceId": "srv-dansibrtqb8s73d0nn3g",
             "name": "spendguru-forecast-preparation-worker",
             "autoDeploy": false,
-            "baselineDeployId": "dep-dapam0hsrm7s73ep2v50",
+            "baselineDeployId": "dep-dbdq25u8bjmc73d3rotg",
             "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799"
           }
+        },
+        "privateNetworkIsolation": {
+          "blockCrossEnvironmentConnections": false,
+          "observedAt": "2026-10-25T18:40:17.753Z",
+          "targetBlockCrossEnvironmentConnections": true,
+          "status": "AUTHORIZED_PENDING_APPLICATION",
+          "scope": "Render private network only; public HTTPS, Neon and Macrobond remain governed separately",
+          "rollback": "Restore the previously observed false value; do not change routes, credentials, database bindings or deployments."
         }
       },
       "neon": {
@@ -232,14 +272,13 @@
         "note": "The current expected live service/deploy composition is recorded per service above; the original split snapshot is historical and is not a claim that all current services run one SHA."
       },
       "liveReconciliation": {
-        "verifiedAt": "2026-09-23T11:15:23Z",
-        "reason": "Preserve the client-facing Staging runtime while recording its later login-environment-label deployment and the pre-existing SG Runtime service in the same Render environment.",
+        "verifiedAt": "2026-10-25T18:40:17.753Z",
+        "reason": "User-authorized reconciliation of four Render-managed replacement deployments with unchanged service source SHA. Preserve historical split baseline and actual per-service revision composition.",
         "clientRuntimeHealthHttp": 200,
-        "mainRuntimeHealthHttp": 200,
-        "clientLoginVersionLabel": "Version: 1.2 Staging",
         "providerServiceInventoryComplete": true,
         "sourceRevisionComposition": "MIXED_BY_SERVICE",
-        "runtimeMutationPerformed": false
+        "runtimeMutationPerformed": false,
+        "evidence": "Canon/evidence/2026-10-25-sg2-environment-reconciliation.md"
       }
     },
     "production": {
@@ -267,5 +306,117 @@
       "domains": [],
       "deploymentPolicy": "PROMOTE_ACCEPTED_STAGING_ARTIFACT_ONLY"
     }
+  },
+  "infrastructureReconciliation": {
+    "taskId": "SG2-ENV-RECONCILIATION-20261025",
+    "verifiedAt": "2026-10-25T18:40:17.753Z",
+    "authoritySha": "ffb6da733308ca44fc8e89640fdfe5f836481c5a",
+    "evidence": "Canon/evidence/2026-10-25-sg2-environment-reconciliation.md",
+    "sourceRevisionParity": "NOT_PROMOTED_MIXED_BY_SERVICE",
+    "applicationDeploymentPerformed": false,
+    "previousAndObservedDeployments": [
+      {
+        "environment": "development",
+        "role": "dashboard",
+        "serviceId": "srv-dapa3ujm8hqs73a9t2og",
+        "previousDeployId": "dep-daqbksk9v7es73cjdtmg",
+        "previousSha": "dbd3e47196b3aeb65b77fe6d76bbf2fae2d68119",
+        "observedDeployId": "dep-dbbr34rncjis738t5phg",
+        "observedSha": "873d4655bed828b401f3b480b08cc40d46c6c8ff",
+        "providerTrigger": "rollback"
+      },
+      {
+        "environment": "development",
+        "role": "runtime",
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "previousDeployId": "dep-daqbu6e7bikc73fvge2g",
+        "previousSha": "e211657c02f2657ba12964ea432ec72508e44b21",
+        "observedDeployId": "dep-dbds2ajncjis73daf1k0",
+        "observedSha": "a6ffcefb96d1b4182764343b349dcb092d0f891b",
+        "providerTrigger": "api"
+      },
+      {
+        "environment": "development",
+        "role": "currentWorker",
+        "serviceId": "srv-dapa3vlg1s2s739vp7dg",
+        "previousDeployId": "dep-dapu7es9v7es739uoql0",
+        "previousSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b",
+        "observedDeployId": "dep-dbblross728c738srl0g",
+        "observedSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+        "providerTrigger": "api"
+      },
+      {
+        "environment": "development",
+        "role": "verificationWorker",
+        "serviceId": "srv-dapa40ad0e5s73f8bjm0",
+        "previousDeployId": "dep-dapu7g1srm7s73as83bg",
+        "previousSha": "993f539a46bd2c8d03fb2d99551535641e4efe0b",
+        "observedDeployId": "dep-dbbkc261egvs738asnc0",
+        "observedSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06",
+        "providerTrigger": "api"
+      },
+      {
+        "environment": "staging",
+        "role": "dashboard",
+        "serviceId": "srv-dacln50jo6nc738lbag0",
+        "previousDeployId": "dep-dapam17f3r2c73c11th0",
+        "previousSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+        "observedDeployId": "dep-dapam17f3r2c73c11th0",
+        "observedSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+        "providerTrigger": "api"
+      },
+      {
+        "environment": "staging",
+        "role": "runtime",
+        "serviceId": "srv-daclno3m8hqs73bb7rrg",
+        "previousDeployId": "dep-dapctolbedkc738dv8vg",
+        "previousSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+        "observedDeployId": "dep-db0dhbm1egvs73f70kr0",
+        "observedSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+        "providerTrigger": "deployed_by_render"
+      },
+      {
+        "environment": "staging",
+        "role": "mainRuntime",
+        "serviceId": "srv-d98a73btqb8s73fabp90",
+        "previousDeployId": "dep-dap3876gekts73fkkaug",
+        "previousSha": "bd4139e727fd3f3b237cfa89afa60b7af6bec86c",
+        "observedDeployId": "dep-daumen97lnhs73em7a10",
+        "observedSha": "bd4139e727fd3f3b237cfa89afa60b7af6bec86c",
+        "providerTrigger": "deployed_by_render"
+      },
+      {
+        "environment": "staging",
+        "role": "currentWorker",
+        "serviceId": "srv-daoksvuk1f9s73cg4bk0",
+        "previousDeployId": "dep-dapam0sja7ms73akipp0",
+        "previousSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+        "observedDeployId": "dep-dbaqk9p42hec73cbo3og",
+        "observedSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+        "providerTrigger": "deployed_by_render"
+      },
+      {
+        "environment": "staging",
+        "role": "verificationWorker",
+        "serviceId": "srv-dansibrtqb8s73d0nn3g",
+        "previousDeployId": "dep-dapam0hsrm7s73ep2v50",
+        "previousSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+        "observedDeployId": "dep-dbdq25u8bjmc73d3rotg",
+        "observedSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+        "providerTrigger": "deployed_by_render"
+      }
+    ],
+    "plannedServiceRenames": [
+      {
+        "serviceId": "srv-daclno3m8hqs73bb7rrg",
+        "from": "spendguru-porr-demo",
+        "to": "sg2-staging-runtime"
+      },
+      {
+        "serviceId": "srv-dacln50jo6nc738lbag0",
+        "from": "spendguru-porr-dashboard",
+        "to": "sg2-staging-dashboard"
+      }
+    ]
   }
 }
