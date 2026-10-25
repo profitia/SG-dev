@@ -4844,5 +4844,19 @@
       "src/server/peer-read-boundary.test.ts": "7ce701f4032f4ef9aadc557894858671501f7125003f4f264ae2e5b2a82de9db",
       "scripts/request-quota-adoption.test.mjs": "322782a778c18b5c2f9a3e9b6fa0a181cf990779aec693013fc58f19608e5ed5"
     }
+  },
+  "pilot2PrivateKysValidityRepair": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "previousReceiptSourceSha": "a2f2905987945558bcba7768914f833296b7e6fe",
+    "previousReceiptDigest": "90a78323515f8b60a8711dbd192781478db92f25816ddf5e43717ac9a550cd7a",
+    "companyAdmissionAuthorizesKys": false,
+    "extendsPrivateRetention": false,
+    "humanEntitlementsChanged": false,
+    "applicationSourceDigests": {
+      "src/modules/xray/report-controller.ts": "e5e3649d525dcfedd7928c3ae7ea3e167212d70b5f0e8e088593ed95b698a067",
+      "src/modules/xray/report-controller.test.ts": "31744b28a699d01f55b8f230f6b91914c5f75e741ba02fa9415a91d50fa42e72",
+      "src/server/peer-read-boundary.test.ts": "2c0c921c25bbf6db3a6815a4794cf9a54d9820f38605fc3fadce69f165f28276",
+      "scripts/request-quota-adoption.test.mjs": "0a49f75a2d2fe499c8f76bab161fb6356e44899b3980b92aebc9781747a22485"
+    }
   }
 }

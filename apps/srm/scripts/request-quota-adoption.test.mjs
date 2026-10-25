@@ -43,6 +43,17 @@ test('private KYS receiver correction retains all accepted contracts and pins cu
  const repair=receipt.pilot2PrivateKysContinuityRepair,prior=execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),repair.previousReceiptDigest);
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
- for(const[path,digest]of Object.entries(repair.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path);
+ for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
+  const next=receipt.pilot2PrivateKysValidityRepair;
+  const bytes=next?.applicationSourceDigests[path]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+path]):fs.readFileSync(new URL('../'+path,import.meta.url));
+  assert.equal(hash(bytes),digest,path);
+ }
  assert.equal(repair.privateKysRetryMaximum,1);assert.equal(repair.reconciledFinancialReplaced,false);assert.equal(repair.humanEntitlementsChanged,false);
+});
+test('private KYS validity uses the existing current-read evidence without adding an authorization or changing quota contracts',()=>{
+ const repair=receipt.pilot2PrivateKysValidityRepair,prior=execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(prior),repair.previousReceiptDigest);
+ for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
+ for(const[path,digest]of Object.entries(repair.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path);
+ assert.equal(repair.companyAdmissionAuthorizesKys,false);assert.equal(repair.extendsPrivateRetention,false);assert.equal(repair.humanEntitlementsChanged,false);
 });
