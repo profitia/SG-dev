@@ -6,6 +6,7 @@ import {admittedReportObservation} from './report-admission.mjs'
 export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.16' })
 export const SUPPLIER_LOCATION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.17'})
 export const REPORT_ADMISSION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.18'})
+export const REQUEST_QUOTA_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.19'})
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -182,18 +183,22 @@ function productAvailable(state, product, feature, config, ceiling, now) {
 }
 
 const computeUuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
-function computePolicy(value, context, now) {
+function computePolicy(value, context, now, quotaSchemaDigest) {
   let policy
   try { policy = freeze(structuredClone(value)) } catch { deny('LIMIT_POLICY_UNAVAILABLE') }
+  const unmetered=policy?.quotaMode==='UNMETERED'
+  const quotaValid=unmetered
+    ? ['supplier.report.refresh','supplier.private.refresh'].includes(context.operation)&&/^[a-f0-9]{64}$/.test(quotaSchemaDigest??'')
+      &&policy.quotaSchemaDigest===quotaSchemaDigest&&policy.capacity===null&&policy.windowStart===null&&policy.windowEnd===null&&policy.expiresAt===null
+    : (policy?.quotaMode===undefined||policy.quotaMode==='FIXED')&&Number.isSafeInteger(policy?.capacity)&&policy.capacity>=1&&policy.capacity<=1000000
+      &&policy.used<=policy.capacity&&Date.parse(policy.windowStart)<=now&&validUntil(policy.windowEnd,now)
+      &&validUntil(policy.expiresAt,now)&&Date.parse(policy.expiresAt)<=Date.parse(policy.windowEnd)
   if (!policy || policy.status !== 'AVAILABLE' || !computeUuid.test(policy.policyId ?? '')
     || !/^[1-9][0-9]*$/.test(policy.version ?? '') || !nonempty(policy.sourceRef)
     || policy.applicationId !== context.applicationId || policy.environment !== context.environment
     || policy.organisationId !== context.organisationId || policy.operation !== context.operation
     || policy.transactionId !== context.moduleEvidence?.transactionId
-    || !Number.isSafeInteger(policy.capacity) || policy.capacity < 1 || policy.capacity > 1000000
-    || !Number.isSafeInteger(policy.used) || policy.used < 0 || policy.used > policy.capacity
-    || !(Date.parse(policy.windowStart) <= now) || !validUntil(policy.windowEnd, now)
-    || !validUntil(policy.expiresAt, now) || Date.parse(policy.expiresAt) > Date.parse(policy.windowEnd)) deny('LIMIT_POLICY_UNAVAILABLE')
+    || !Number.isSafeInteger(policy.used) || policy.used < 0 || !quotaValid) deny('LIMIT_POLICY_UNAVAILABLE')
   return policy
 }
 function computeReservation(value, policy) {
@@ -289,9 +294,10 @@ function ingestionReservation(value,policy){
 
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
+  if(options.requestQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestQuotaSchemaDigest))throw TypeError('Explicit accepted SQL027 digest required')
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
   if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
-  const executionContract=options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  const executionContract=options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
@@ -429,7 +435,7 @@ export function createOperationExecutor(options) {
           // Ordinary reads/writes explicitly have NOT_APPLICABLE usage policy.
           // Export preparation is scoped private SQL, not paid refresh, global
           // ingestion or private request admission with an omitted limit.
-          const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now()) : null
+          const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now(), options.requestQuotaSchemaDigest) : null
           if (platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
@@ -544,7 +550,7 @@ export function createOperationExecutor(options) {
           if (compute) {
             if (!computeReceipt(value, reservation.requestId)) deny('POLICY_UNAVAILABLE')
             if (reservation.status === 'NEW') await session.completeRequest(bound, value)
-            computePolicy(requestPolicy, context, now())
+            computePolicy(requestPolicy, context, now(), options.requestQuotaSchemaDigest)
           }
           const output = await session.projectOutput(value, bound)
           if (privateSupplierOperations.has(request.operation)) {
@@ -567,7 +573,7 @@ export function createOperationExecutor(options) {
           if (selected.feature === 'supplier_workspace') productAvailable(state, productEvidence[0].product, selected.feature, config, ceiling, now())
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
           if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
-          if (compute) computePolicy(requestPolicy, context, now())
+          if (compute) computePolicy(requestPolicy, context, now(), options.requestQuotaSchemaDigest)
           if (delegated) delegatedJob(outcomeState,identity,request,config,now(),options.reportAdmissionSchemaDigest)
           if(platform)ingestionPolicy(platformPolicy,context,request,now())
           try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: outcome })) }

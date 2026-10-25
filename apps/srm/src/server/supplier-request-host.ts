@@ -4,7 +4,7 @@ import {readSupplierRequest,supplierRequestResourceId,projectSupplierRequest,SUP
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
 
 export function createSrmSupplierRequestOperationHost(options: Omit<DriverOptions, 'readResources' | 'projectOutput' | 'prepareInputs' | 'describeOutcome' | 'requestLedger'> & {
-  requestLedger: { schemaDigest: string; externalSchemaDigest: string; operationSchemaDigest?:string }; commandBoundaryDigest: string
+  requestLedger: { schemaDigest: string; externalSchemaDigest: string; operationSchemaDigest?:string; quotaSchemaDigest?:string }; commandBoundaryDigest: string
   privateAcquisition?:SupplierPrivateAcquisition
 }) {
   const acquisition=options.privateAcquisition===undefined?undefined:readSupplierPrivateAcquisition(options.privateAcquisition)

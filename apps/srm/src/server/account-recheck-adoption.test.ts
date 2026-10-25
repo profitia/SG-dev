@@ -4,7 +4,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
-import acceptedReceipt from '../../operation-integration.json'
+import currentAcceptedReceipt from '../../operation-integration.json'
+const acceptedReceipt={...currentAcceptedReceipt,...currentAcceptedReceipt.requestQuotaSourceCompatibility.previousRootAcceptance}
 // Historical tests retain their original Root receipt; current acceptance is verified separately below.
 const receipt={...acceptedReceipt,...acceptedReceipt.unmeteredSourceCompatibility.previousRootAcceptance}
 import '../../scripts/task02r-release-source.test.mjs'
@@ -181,7 +182,7 @@ test('form report admission preserves historical receipts and confines the admit
  assert.equal(a.reportAdmissionOptedIn,true);assert.equal(a.privateJdgKysExportsExcluded,true);assert.equal(a.postClickClerkReads,0);assert.equal(a.humanAuthority,'AT_FORM_ADMISSION');
  for(const flag of ['sql025Installed','liveGrantsChanged','productDeploymentPerformed'])assert.equal(a[flag as 'sql025Installed'],false,flag);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
- for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,'../../packages/platform-contracts',file))),digest,file);
+ for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.requestQuotaSourceCompatibility.previousReceiptSourceSha+':packages/platform-contracts/'+file])),digest,file);
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(acceptedReceipt.ochnikFinancialCorrection?execFileSync('git',['show',acceptedReceipt.ochnikFinancialCorrection.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)]):fs.readFileSync(path.join(root,file))),digest,file);
 });
 
@@ -334,5 +335,5 @@ test('PILOT2 private operations preserve prior receipts and use current HUMAN au
  for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
  for(const key of['newHumanEntitlements','sharedCoreMigrationRequired','companyAdmissionAuthorizesPrivateData','readsRenewFreshness','financialFormulasChanged','mapsRoutesActivated','productDeploymentPerformed','sqlInstallationPerformed'])assert.equal(a[key as keyof typeof a],false,key);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.requestQuotaSourceCompatibility.previousReceiptSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file);
 });

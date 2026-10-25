@@ -9,13 +9,14 @@
     "id": "profitia.operation-context",
     "version": "1.0.0",
     "implementation": "1.0.0-candidate.16",
-    "sourceDigest": "742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160"
+    "sourceDigest": "2a7a2cbed3daed98b977259decb6b01e565dc528ce97f563b5e100ef7b52d525"
   },
   "producer": {
     "projectKey": "ARCHITECTURE",
-    "taskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
-    "pullRequest": 685,
-    "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
+    "taskId": "ARCHITECTURE-SRM-REQUEST-UNMETERED-20261025",
+    "repository": "profitia/SG-dev",
+    "pullRequest": 712,
+    "sourceSha": "47396fe1cb8aca06d11e2e712e65d53651c296c1"
   },
   "hostAdapter": "lib/benchmark/operation-context.ts",
   "operations": [
@@ -2786,5 +2787,81 @@
       "tests/private-host.integration.test.mjs": "b05bc26d742901334410ccabeb9a34b4d0a842c0c5b9eacbe0cbdfb4d3b91ef9",
       "tests/self-service-account.test.ts": "d1405fe71bd3fcc4478dc9c1bbcb4b3a8ef2aca7cd57cb2ebfbfb15acd50d964"
     }
+  },
+  "requestQuotaSourceCompatibility": {
+    "taskId": "SG2-SRM-REQUEST-UNMETERED-COMPATIBILITY-20261025",
+    "platformVersion": "1.29.0",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-SRM-REQUEST-UNMETERED-20261025",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 712,
+      "sourceSha": "47396fe1cb8aca06d11e2e712e65d53651c296c1"
+    },
+    "previousReceiptSourceSha": "ffb6da733308ca44fc8e89640fdfe5f836481c5a",
+    "previousReceiptDigest": "2fca485c9c2dfcf12643529370ab29937b43b64992f45459066772cd061c50e2",
+    "previousRootAcceptance": {
+      "contract": {
+        "id": "profitia.operation-context",
+        "version": "1.0.0",
+        "implementation": "1.0.0-candidate.16",
+        "sourceDigest": "742eb3a833603d2ac52c24663e10a9bb163661bb1a2458e8e10121a6833d5160"
+      },
+      "producer": {
+        "projectKey": "ARCHITECTURE",
+        "taskId": "ARCHITECTURE-FORM-REPORT-ADMISSION-20261024",
+        "pullRequest": 685,
+        "sourceSha": "186cd8756cb8fd1bbc6419ca74988e39db59cb96"
+      }
+    },
+    "sourceDigests": {
+      "migrations/access/027-unmetered-supplier-requests.sql": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef",
+      "package-lock.json": "d481e4cb6e695802b11cbca1e395522fdc89d427e61467cb928a44b068b81022",
+      "package.json": "6f9aba65bbca9569228a6013f0e1ac4f7a8ccb37237c48d2ba684b3c4ebe803a",
+      "src/operation-context.d.mts": "78e70bb5a89b881fd572c09ab8f9238780873d07c93e7d81210216a2b55fd09c",
+      "src/operation-context.mjs": "e2dd0ebf1103b0b8b2750c8844cbe3c3fc47e682b683b6e41eb203ca0f693878",
+      "src/private-operation-host.d.mts": "248a3b60f525afb102c7aaaf230c6d10fde6793dcbb71c94e1f9b9db9ee57897",
+      "src/private-operation-host.mjs": "8ecb34bd8c93049aca0b81235cd6d255a3c60291b66b1a717a0bd1eebd06f5dd",
+      "src/request-ledger.d.mts": "6bc6786ddee0e5b410959061a7bf4464f7a4eca5e8c887731693b39f15478697",
+      "src/request-ledger.mjs": "07118e6e21ae7074c7f01aca800d56e9aa0464a51c7c7562d640cb16864c0f41",
+      "test/private-operation-host.test.mjs": "81e9435b87a81e3d69d91dbfe7cf0355b5056925f47521af32b5932bed38dc0f",
+      "test/unmetered-requests.integration.test.mjs": "06a58a5b96b34c0bf2ac5faa267f1473c253692e3768de82e69bad8d30a9b826",
+      "test/unmetered-requests.test.mjs": "de4a05bd9384b18edfd77cfadcfe886609ed6073e5eba762f364f42b14ab6b2b"
+    },
+    "sdkDigests": {
+      "operationSourceDigest": "2a7a2cbed3daed98b977259decb6b01e565dc528ce97f563b5e100ef7b52d525",
+      "privateOperationHostSourceDigest": "9a3b8931fe6d83c465b46999a86e2cb671474881b89c7836c9122620b37e0603",
+      "accessStoreSourceDigest": "7b3cde4aaf86af8fb0d7630adaa52553eabd486aebfa6031742fdd5eccb912f8",
+      "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "requestLedgerSourceDigest": "d24a1c98efe2f04a2d9cd6335f75bd6a37eda4bfe0eca0ebae712a638e9e43d5",
+      "externalRequestSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "delegatedJobSourceDigest": "cb08e7c0b2968505a31f27c15a33e0bee80a58bfac965d08c0fdb8d59abc7cc1",
+      "requestContinuationSourceDigest": "d49673ecec3a85dad478b4e8d3e38aa30241cf04b61b6a7dfbb99e7af33c3c53",
+      "requestInspectionSourceDigest": "772f1f5a58e8e544d275c4b8bb0ab09774317a6673c1f6bd8563f96fc6a19811",
+      "requestWorkSourceDigest": "0b8c6566c87c468461c681ec442f55ec391b2cfd2e75d4c306616ec1ae90b8cc",
+      "requestOperationsSourceDigest": "65e1d46269df57ccd7f3f1637e9ac6a73171ecbdad02b35677d23469d73e7237",
+      "additionalRequestSchemaDigest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "externalCallSourceDigest": "ca6bb601cbb7c7eab58f726f133557fe1b1cae17a1606e0f4c070c6d2f803ad2",
+      "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "reportAdmissionSourceDigest": "f24e3f71ef76fdb1e8935d0ddc935ea96c146d93b7ecbc9d6a4a4e2d7879f794",
+      "reportAdmissionSchemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+      "requestQuotaSchemaDigest": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef"
+    },
+    "applicationSourceDigests": {
+      "package-lock.json": "01a21d679f7084d7a1256f33744aacf1206adf0e82a59ae526c7dc4b7aa97a97",
+      "tests/operation-context.test.mjs": "cf377f8f603b92000b25dfc57cb074ba0dd099d9040fab3a03c4a516cc08546d",
+      "tests/private-host.integration.test.mjs": "82d3d3c0ee5b36e8f5451d93e1181c1bc28037e6a7c5deab699e88b11845f4f3",
+      "../dashboard-preview/package-lock.json": "ffa446460457a9e2633dc056358f1d892a654264eda4082d26451d0f555ba1d0",
+      "tests/category-operation.test.ts": "ac12af205a367c97def2b3248844a0c9470f175f2f8efa75f0817655e2792821",
+      "tests/identity-runtime.test.ts": "78e894d44acb44c09f027952dc4202efe7e07788c465ebfb532cd9963cee97ef",
+      "tests/porr-demo-middleware.test.ts": "9110a4d3f01a04e686c8c49fbb7491caff9df8a4a9863760b3c6ef7f4c0507e8",
+      "tests/self-service-account.test.ts": "9b81ced70ddcf1067b7cab58623507960e09c9eafe713c9cb3be4962943f2f94"
+    },
+    "requestQuotaOptIn": false,
+    "forecastQuotaChanged": false,
+    "sql027Installed": false,
+    "liveGrantsChanged": false,
+    "productDeploymentPerformed": false
   }
 }

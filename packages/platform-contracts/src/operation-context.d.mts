@@ -142,7 +142,7 @@ export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
 export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
-  application: Application; now?: () => number; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string
+  application: Application; now?: () => number; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string
   authenticate(request: unknown): Promise<Actor | null>
   /** Locks authoritative state and commits effects + OUTCOME atomically; rollback on throw. */
   withTransaction<T>(binding: { actor: Readonly<Actor>; request: Readonly<BoundRequest> }, action: (session: OperationSession<Transaction>) => Promise<T>): Promise<T>
@@ -152,3 +152,5 @@ export declare function createOperationExecutor<Transaction>(options: {
 
 export declare const SUPPLIER_LOCATION_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.17'}>
 export declare const REPORT_ADMISSION_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.18'}>
+
+export declare const REQUEST_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.19'}>
