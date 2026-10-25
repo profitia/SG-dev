@@ -60,4 +60,31 @@ Verified HTTPS with system-trust curl: both runtime health endpoints 200; Develo
 
 ## Execution status
 
-Baseline reconciliation prepared. Network and naming changes remain pending application and post-change verification.
+Baseline reconciliation was merged through PR #713, commit `a6fe5e3d0d22368415cde164e7146366b18dc4a4`, after both CI checks passed. Full preflight passed before the Development action, each Staging action and the final source update. PMOS registration remains the original SG2 Development governance task; no Staging registration was made.
+
+Applied and independently verified:
+- Development private cross-environment blocking: OFF → ON.
+- Staging private cross-environment blocking: OFF → ON.
+- `spendguru-porr-demo` → `sg2-staging-runtime`, immutable ID `srv-daclno3m8hqs73bb7rrg`.
+- `spendguru-porr-dashboard` → `sg2-staging-dashboard`, immutable ID `srv-dacln50jo6nc738lbag0`.
+
+At 2026-10-25T18:51:53.012Z both switches remained ON after reloading their project pages. A separate Render API inventory/deploy read at 18:50:50.320Z confirmed that, across all nine services, the only changed fields in the captured service/deploy identity set were the two intended names. All nine live deploy IDs, SHAs, environment IDs and auto-deploy settings remained unchanged. Default URLs retained their existing slugs. The private-network switch is verified through the Render UI; it is not a field returned by that service inventory API.
+
+The provider's historical project label `sg2.0-dashboard-preview` and environment label `Production` are retained and explicitly mapped to logical Staging by immutable IDs. Empty Staging/Production shells in the Development project and forecast-worker names were not renamed or repurposed.
+
+Post-change HTTPS checks at 18:51:29Z, with certificate validation enabled:
+
+| Check | Before | After |
+|---|---|---|
+| Development runtime health | 200 | 200 |
+| Staging runtime health | 200 | 200 |
+| Development Finder | 200 | 200 |
+| Staging Finder, unauthenticated | login redirect → 200 | login redirect → 200 |
+| Staging dashboard, unauthenticated | login redirect → 200 | login redirect → 200 |
+| Development dashboard root | 503 | 503 |
+
+The Development 503 (`Dashboard access is not configured.`) predates this task. It remains a separately scoped issue before full visual/forecast acceptance. No application code, forecast equations, provider API queries/routes, secrets, database bindings, schemas, data or oil-search restrictions changed. There was no application deployment, service restart, new infrastructure charge or Staging promotion. A deployment-artifact/digest measurement or database snapshot was therefore not a prerequisite for these configuration-only operations; the exact retained deployments and reversible setting values are documented above.
+
+Validation limits: availability checks and persisted isolation settings passed; no active cross-boundary socket canary, authenticated forecast calculation or new Macrobond request was executed. Existing connections are not forcibly terminated by the Render switch. Real production Macrobond source policy is recorded and its existing endpoint configuration preserved; a shared live Neon market branch is neither configured nor claimed. Future Production is policy-covered but remains reserved, without an application runtime.
+
+Local proof screenshots: `development-isolation.png` and `staging-isolation-and-names.png` in `/tmp/sg2-environment-reconciliation-20261025/`. The registry and this text are durable evidence; the local images are supplementary session artifacts.

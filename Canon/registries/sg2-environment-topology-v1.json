@@ -134,12 +134,14 @@
           }
         },
         "privateNetworkIsolation": {
-          "blockCrossEnvironmentConnections": false,
-          "observedAt": "2026-10-25T18:40:17.753Z",
+          "blockCrossEnvironmentConnections": true,
+          "observedAt": "2026-10-25T18:51:53.012Z",
           "targetBlockCrossEnvironmentConnections": true,
-          "status": "AUTHORIZED_PENDING_APPLICATION",
+          "status": "APPLIED_UI_RELOAD_VERIFIED",
           "scope": "Render private network only; public HTTPS, Neon and Macrobond remain governed separately",
-          "rollback": "Restore the previously observed false value; do not change routes, credentials, database bindings or deployments."
+          "rollback": "Restore the previously observed false value; do not change routes, credentials, database bindings or deployments.",
+          "previousBlockCrossEnvironmentConnections": false,
+          "verification": "Render console switch checked after page reload; active socket termination and cross-boundary canary not exercised."
         }
       },
       "neon": {
@@ -200,17 +202,21 @@
         "services": {
           "dashboard": {
             "serviceId": "srv-dacln50jo6nc738lbag0",
-            "name": "spendguru-porr-dashboard",
+            "name": "sg2-staging-dashboard",
             "autoDeploy": false,
             "baselineDeployId": "dep-dapam17f3r2c73c11th0",
-            "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799"
+            "baselineSha": "518f1ad9d6143748d9d5f42a084cae6135b66799",
+            "url": "https://spendguru-porr-dashboard.onrender.com",
+            "customDomain": "analytics-demo-sg-porr.spendguru.app"
           },
           "runtime": {
             "serviceId": "srv-daclno3m8hqs73bb7rrg",
-            "name": "spendguru-porr-demo",
+            "name": "sg2-staging-runtime",
             "autoDeploy": false,
             "baselineDeployId": "dep-db0dhbm1egvs73f70kr0",
-            "baselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91"
+            "baselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+            "url": "https://spendguru-porr-demo.onrender.com",
+            "customDomain": "demo-sg-porr.spendguru.app"
           },
           "mainRuntime": {
             "serviceId": "srv-d98a73btqb8s73fabp90",
@@ -237,12 +243,14 @@
           }
         },
         "privateNetworkIsolation": {
-          "blockCrossEnvironmentConnections": false,
-          "observedAt": "2026-10-25T18:40:17.753Z",
+          "blockCrossEnvironmentConnections": true,
+          "observedAt": "2026-10-25T18:51:53.012Z",
           "targetBlockCrossEnvironmentConnections": true,
-          "status": "AUTHORIZED_PENDING_APPLICATION",
+          "status": "APPLIED_UI_RELOAD_VERIFIED",
           "scope": "Render private network only; public HTTPS, Neon and Macrobond remain governed separately",
-          "rollback": "Restore the previously observed false value; do not change routes, credentials, database bindings or deployments."
+          "rollback": "Restore the previously observed false value; do not change routes, credentials, database bindings or deployments.",
+          "previousBlockCrossEnvironmentConnections": false,
+          "verification": "Render console switch checked after page reload; active socket termination and cross-boundary canary not exercised."
         }
       },
       "neon": {
@@ -309,8 +317,8 @@
   },
   "infrastructureReconciliation": {
     "taskId": "SG2-ENV-RECONCILIATION-20261025",
-    "verifiedAt": "2026-10-25T18:40:17.753Z",
-    "authoritySha": "ffb6da733308ca44fc8e89640fdfe5f836481c5a",
+    "verifiedAt": "2026-10-25T18:51:53.012Z",
+    "authoritySha": "a6fe5e3d0d22368415cde164e7146366b18dc4a4",
     "evidence": "Canon/evidence/2026-10-25-sg2-environment-reconciliation.md",
     "sourceRevisionParity": "NOT_PROMOTED_MIXED_BY_SERVICE",
     "applicationDeploymentPerformed": false,
@@ -406,17 +414,39 @@
         "providerTrigger": "deployed_by_render"
       }
     ],
-    "plannedServiceRenames": [
+    "status": "APPLIED_VERIFIED",
+    "baselineReconciliationPr": 713,
+    "providerInventoryVerifiedAt": "2026-10-25T18:50:50.320Z",
+    "serviceDeploysAndRevisionsUnchanged": true,
+    "serviceUrlsAndEnvironmentBindingsUnchanged": true,
+    "databaseMutationPerformed": false,
+    "providerApiOrForecastCodeChanged": false,
+    "appliedServiceRenames": [
       {
         "serviceId": "srv-daclno3m8hqs73bb7rrg",
         "from": "spendguru-porr-demo",
-        "to": "sg2-staging-runtime"
+        "to": "sg2-staging-runtime",
+        "status": "APPLIED_PROVIDER_API_VERIFIED"
       },
       {
         "serviceId": "srv-dacln50jo6nc738lbag0",
         "from": "spendguru-porr-dashboard",
-        "to": "sg2-staging-dashboard"
+        "to": "sg2-staging-dashboard",
+        "status": "APPLIED_PROVIDER_API_VERIFIED"
       }
-    ]
+    ],
+    "postChangeChecks": {
+      "verifiedAt": "2026-10-25T18:51:29.252217Z",
+      "tlsVerificationEnabled": true,
+      "developmentRuntimeHealthHttp": 200,
+      "stagingRuntimeHealthHttp": 200,
+      "developmentFinderHttp": 200,
+      "stagingFinderRedirectToLoginHttp": 200,
+      "stagingDashboardRedirectToLoginHttp": 200,
+      "developmentDashboardRootHttp": 503,
+      "developmentDashboard503": "PRE_EXISTING_BASELINE_UNCHANGED",
+      "forecastCalculationEndToEnd": "NOT_EXECUTED_NO_MATH_OR_API_CHANGE",
+      "crossEnvironmentPrivateCanary": "NOT_EXECUTED_UI_SETTING_VERIFIED"
+    }
   }
 }
