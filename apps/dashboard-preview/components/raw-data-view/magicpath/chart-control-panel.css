@@ -1,0 +1,60 @@
+/* CHT-09 · C81–82 · B58. Panel and plot share one fixed height budget. */
+.srm-chart-controls { position:relative; z-index:5; margin:var(--chart-panel-edge-inset); overflow-anchor:none; color:var(--brand-dark,var(--theme-ink,#003366)); filter:none; }
+/* C81:zero-offset diffused shadow, clipped to the bottom edge only.
+   The larger blur and small spread soften the corners without moving anything.
+   Checkbox state never changes this layer; the ribbon masks its join. */
+.srm-chart-controls::after {
+ clip-path:inset(100% 0 calc(-1 * var(--chart-panel-shadow-extent)) 0);
+}
+.srm-ui .srm-chart-controls > .srm-chart-controls-ribbon { z-index:1; }
+.srm-chart-controls-drawer { display:grid; grid-template-rows:0fr; transition:grid-template-rows var(--chart-controls-duration) var(--chart-controls-easing); }
+.srm-chart-controls[data-open="true"] .srm-chart-controls-drawer { grid-template-rows:1fr; }
+.srm-chart-controls-clip { min-height:0; overflow:hidden; visibility:hidden; transition:visibility 0s var(--chart-controls-duration); }
+.srm-chart-controls[data-open="true"] .srm-chart-controls-clip { visibility:visible; transition-delay:0s; }
+.srm-chart-controls-card { position:relative; padding:var(--chart-controls-pad); border:0; border-radius:var(--chart-controls-radius); background:var(--chart-panel-surface); opacity:0; transform:translateY(-.75rem); transition:transform var(--chart-controls-duration) var(--chart-controls-easing),opacity 200ms ease-out; }
+.srm-chart-controls[data-open="true"] .srm-chart-controls-card { opacity:1; transform:translateY(0); }
+/* C81:three control slots, without a heading or pin. */
+.srm-chart-controls-rows { display:grid; grid-template-rows:repeat(var(--chart-controls-rows),minmax(var(--chart-controls-row-height),auto)); gap:var(--chart-controls-row-gap); }
+.srm-chart-controls-options { display:flex; align-items:center; flex-wrap:wrap; column-gap:clamp(.75rem,2vw,1.75rem); row-gap:.5rem; min-width:0; }
+.srm-chart-controls-options .srm-forecast-toggle { font-size:.8125rem; line-height:1.5; min-height:var(--chart-controls-row-height); white-space:nowrap; }
+.srm-chart-controls-empty-row { min-height:var(--chart-controls-row-height); }
+.srm-ui .srm-chart-controls-ribbon { position:absolute; top:100%; right:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:0; box-sizing:border-box; width:var(--chart-controls-ribbon-width); min-width:0; height:var(--chart-controls-ribbon-height); min-height:0; margin:0; padding:0; border:0; border-radius:0 0 var(--chart-controls-ribbon-radius) var(--chart-controls-ribbon-radius); background:var(--chart-panel-surface); color:var(--brand,var(--theme-accent,#005A9C)); cursor:pointer; box-shadow:none; scale:1; transform:none; filter:none; transition:none; }
+.srm-chart-controls-symbol { display:grid; place-items:center; flex:none; width:var(--chart-controls-symbol-size); height:var(--chart-controls-symbol-size); box-sizing:border-box; border-radius:50%; background:var(--blue-soft,var(--theme-raised,#EDF5FC)); border:0; }
+/* C82/C85:only the circular face reacts; its rectangular join is static. */
+.srm-chart-controls-symbol { transform:scale(1); transform-origin:center top; transition:transform var(--srm-motion-time,220ms) var(--srm-motion-ease,cubic-bezier(.22,.75,.25,1)),filter 180ms ease; }
+.srm-chart-tools-ribbon .srm-chart-controls-symbol { transform-origin:left center; }
+.srm-chart-controls-symbol svg { transform:none; }
+.srm-ui .srm-chart-controls .srm-chart-controls-ribbon:focus-visible { outline:.125rem solid var(--brand-light,var(--theme-accent,#66B2FF)); outline-offset:.1875rem; }
+.srm-price-line-surface:has(.srm-chart-controls) { overflow-anchor:none; padding:var(--chart-panel-edge-inset); }
+@media(hover:hover) and (pointer:fine) {
+ .srm-ui .srm-chart-controls-ribbon:hover { scale:1; transform:none; filter:none; background:var(--chart-panel-surface); box-shadow:none; }
+ .srm-chart-controls-ribbon:hover .srm-chart-controls-symbol { transform:scale(1.07); filter:brightness(.97); }
+}
+@media(prefers-reduced-motion:reduce) {
+ .srm-chart-controls, .srm-chart-controls *, .srm-ui .srm-chart-controls button { transition:none!important; }
+ .srm-chart-controls-symbol { transform:none!important; transition:none!important; }
+}
+
+/* Panel height is exchanged for plot height, keeping the time axis and slider
+   at the same Y. The container unit tracks canvas width without fixed pixels.
+   Text and controls retain their normal sizes; only the SVG's Y scale changes. */
+.srm-chart-workspace { container-type:inline-size; --chart-plot-height:calc(max(var(--chart-controls-plot-min-height,20rem), (100cqw - 3rem) * 316 / 812 + 8rem) - var(--chart-controls-measured-height,0px)); }
+.srm-price-line-surface:has(.srm-chart-controls) .srm-price-line-plot {
+  height:var(--chart-plot-height);
+}
+.srm-price-line-surface:has(.srm-chart-controls) .srm-price-line {
+  height:100%; min-height:0;
+}
+
+/* C81/C82 share a borderless silhouette; no divider or separate ribbon shadow. */
+
+
+
+/* The neutral surface reaches the panel, including chart gutters. It is not a
+   second blue forecast fill:the curve-relative blue mask remains the only one. */
+.srm-price-line-surface[data-forecast="true"] .srm-price-line-scroll {
+ background-image:linear-gradient(to bottom,var(--chart-panel-surface) 0%,var(--surface,var(--theme-surface,#fff)) var(--chart-forecast-surface-fade));
+ background-size:100% var(--chart-plot-height); background-repeat:no-repeat;
+}
+/* Bottom-only panel shadow remains visible over history, forecast and backtest. */
+

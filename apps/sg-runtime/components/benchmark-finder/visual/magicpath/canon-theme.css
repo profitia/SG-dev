@@ -1,0 +1,77 @@
+/* FND-05 / SRM-C95. A mode of the existing canon, not a second component library.
+   --theme-* is the migration bridge: original light literals stay as fallbacks.
+   Logos and brand palette specimens keep their original colors. No inversion. */
+.bf-root {
+ --brand:var(--canon-brand,#005A9C);--brand-dark:var(--canon-brand-dark,#003366);--brand-light:var(--canon-brand-light,#66B2FF);--sand:var(--canon-sand,#D2B48C);--mist:var(--canon-mist,#F8F9FA);
+ --surface:var(--canon-surface,#FFFFFF);--ink:var(--canon-ink,var(--brand-dark));--blue:var(--canon-blue,var(--brand));--page:var(--canon-page,var(--mist));
+ --text:var(--canon-text,#294D70);--muted:var(--canon-muted,#526A82);--line:var(--canon-line,#D6E0E9);--faint-line:var(--canon-faint-line,#E7EDF2);
+ --blue-soft:var(--canon-blue-soft,#EAF3FF);--sand-soft:var(--canon-sand-soft,#F7F1E8);--neutral:var(--canon-neutral,#EDF1F4);
+ --success:var(--canon-success,#25815F);--success-text:var(--canon-success-text,#176747);--success-soft:var(--canon-success-soft,#DDEFE6);
+ --caution:var(--canon-caution,#D49A2A);--caution-text:var(--canon-caution-text,#805400);--caution-soft:var(--canon-caution-soft,#FCF0D6);
+ --negative:var(--canon-negative,#C8554C);--negative-text:var(--canon-negative-text,#A63830);--negative-soft:var(--canon-negative-soft,#F9E4E1);
+ --unknown:var(--canon-unknown,#718191);--unknown-soft:var(--canon-unknown-soft,#F0F3F5);--reference:var(--canon-reference,#465B70);
+
+--canon-actionRadius:var(--canon-canon-actionRadius,7px);--canon-cardRadius:var(--canon-canon-cardRadius,12px);--canon-actionHeight:var(--canon-canon-actionHeight,38px);--canon-actionFont:var(--canon-canon-actionFont,13px); --surface:var(--canon-surface,#FFFFFF);--page:var(--canon-page,#F8F9FA);--canvas:var(--canon-canvas,#F8F9FA);--ink:var(--canon-ink,#003366);--brand:var(--canon-brand,#005A9C);--brand-dark:var(--canon-brand-dark,#003366);--brand-light:var(--canon-brand-light,#66B2FF);--text:var(--canon-text,#294D70);--muted:var(--canon-muted,#526A82);--line:var(--canon-line,#D6E0E9);--blue-soft:var(--canon-blue-soft,#EAF3FF);--sand:var(--canon-sand,#D2B48C);--success-text:var(--canon-success-text,#176747);--negative-text:var(--canon-negative-text,#A63830); }
+:root[data-srm-theme="dark"] .bf-root {
+ --theme-canvas:var(--canon-theme-canvas,#091420);--theme-surface:var(--canon-theme-surface,#112131);--theme-raised:var(--canon-theme-raised,#172D42);--theme-chrome:var(--canon-theme-chrome,#102E49);
+ --theme-ink:var(--canon-theme-ink,#E7F0FA);--theme-muted:var(--canon-theme-muted,#A5B8CB);--theme-accent:var(--canon-theme-accent,#7CC4FF);--theme-action:var(--canon-theme-action,#126BA9);
+ --theme-line:var(--canon-theme-line,#30465A);--theme-soft-line:var(--canon-theme-soft-line,rgba(162,193,221,.13));--theme-hover:var(--canon-theme-hover,rgba(124,196,255,.09));
+ --theme-positive:var(--canon-theme-positive,#76D9B2);--theme-positive-fill:var(--canon-theme-positive-fill,#3EAA83);--theme-positive-soft:var(--canon-theme-positive-soft,#163D36);
+ --theme-negative:var(--canon-theme-negative,#FF9B94);--theme-negative-fill:var(--canon-theme-negative-fill,#C66A64);--theme-negative-soft:var(--canon-theme-negative-soft,#442C34);
+ --theme-caution:var(--canon-theme-caution,#EAC278);--theme-caution-fill:var(--canon-theme-caution-fill,#BB9349);--theme-caution-soft:var(--canon-theme-caution-soft,#3C3425);
+ --theme-sand-soft:var(--canon-theme-sand-soft,#332E2A);--theme-sand-text:var(--canon-theme-sand-text,#DCC39E);--theme-sand-line:var(--canon-theme-sand-line,#655745);
+ --theme-shadow:var(--canon-theme-shadow,rgba(0,5,12,.32));--theme-overlay:var(--canon-theme-overlay,rgba(1,7,15,.68));--theme-panel-shadow:var(--canon-theme-panel-shadow,rgba(0,5,12,.22));
+ --theme-reference:var(--canon-theme-reference,#A8BED3);--chart-year-start:var(--canon-chart-year-start,#9AC3DF);--chart-year-end:var(--canon-chart-year-end,#75BFFF);--chart-year-ink:var(--canon-chart-year-ink,#081521);
+ --action-fill:var(--canon-action-fill,#126BA9);--chrome-strong:var(--canon-chrome-strong,#102E49);
+ --background:var(--canon-background,#091420);--foreground:var(--canon-foreground,#E7F0FA);--card:var(--canon-card,#112131);--card-foreground:var(--canon-card-foreground,#E7F0FA);
+ --popover:var(--canon-popover,#172D42);--popover-foreground:var(--canon-popover-foreground,#E7F0FA);--border:var(--canon-border,#30465A);--input:var(--canon-input,#30465A);--ring:var(--canon-ring,#7CC4FF);
+}
+:root[data-srm-theme="dark"] .bf-root,
+:root[data-srm-theme="dark"] :is(.srm-ui,.srm-history,.srm-color-canon) {
+ --brand:var(--canon-brand,#7CC4FF);--brand-dark:var(--canon-brand-dark,#E7F0FA);--brand-light:var(--canon-brand-light,#7CC4FF);--sand:var(--canon-sand,#D2B48C);--mist:var(--canon-mist,#091420);
+ --surface:var(--canon-surface,#112131);--ink:var(--canon-ink,#E7F0FA);--blue:var(--canon-blue,#7CC4FF);--page:var(--canon-page,#091420);--canvas:var(--canon-canvas,#16283A);
+ --text:var(--canon-text,#C8D7E6);--muted:var(--canon-muted,#A5B8CB);--line:var(--canon-line,#30465A);--faint-line:var(--canon-faint-line,#253B4F);
+ --blue-soft:var(--canon-blue-soft,#1B3852);--sand-soft:var(--canon-sand-soft,#332E2A);--neutral:var(--canon-neutral,#1B3043);
+ --success:var(--canon-success,#3EAA83);--success-text:var(--canon-success-text,#76D9B2);--success-soft:var(--canon-success-soft,#163D36);
+ --caution:var(--canon-caution,#BB9349);--caution-text:var(--canon-caution-text,#EAC278);--caution-soft:var(--canon-caution-soft,#3C3425);
+ --negative:var(--canon-negative,#C66A64);--negative-text:var(--canon-negative-text,#FF9B94);--negative-soft:var(--canon-negative-soft,#442C34);
+ --unknown:var(--canon-unknown,#96ABBF);--unknown-soft:var(--canon-unknown-soft,#1C2F40);--reference:var(--canon-reference,#A8BED3);
+}
+
+.srm-theme-switch{display:inline-flex;align-items:center;flex:none;gap:3px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--page);font:12px/1.2 Inter,Arial,sans-serif;color:var(--muted)}
+.srm-theme-switch button,.canon-studio-bar .srm-theme-switch button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;min-height:30px;border:0;border-radius:999px;padding:0 10px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;transition:background 180ms,color 180ms;transform:none;scale:1}
+.srm-theme-switch button[aria-pressed="true"],.canon-studio-bar .srm-theme-switch button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 5px rgba(0,20,40,.08);font-weight:600}
+.srm-theme-switch button:hover,.canon-studio-bar .srm-theme-switch button:hover{color:var(--brand);background:var(--blue-soft)}
+.srm-theme-switch button:focus-visible{outline:2px solid var(--brand-light);outline-offset:3px}
+.canon-studio-bar{gap:20px}.canon-studio-bar>.srm-theme-switch{margin-left:0}
+.srm-theme-spec{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:24px;margin-bottom:24px}
+.srm-theme-spec-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:22px}
+.srm-theme-spec-heading h2{font-size:22px;font-weight:550;letter-spacing:-.6px;margin:7px 0}
+.srm-theme-spec p{font-size:12px;line-height:1.75;color:var(--muted)}
+.srm-theme-preview{display:grid;grid-template-columns:1.2fr 1fr;align-items:center;gap:24px;padding:26px 30px;border-radius:10px;background:var(--page);border:1px solid var(--faint-line);margin-bottom:22px}
+.srm-theme-preview h3{font-size:24px;font-weight:500;letter-spacing:-.7px;margin:10px 0}
+.srm-theme-preview p{max-width:340px}.srm-theme-preview-actions{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:20px}
+.srm-theme-positive{color:var(--success-text);font-size:14px;font-weight:600}.srm-theme-positive small{display:block;font-size:10px;font-weight:400;margin-top:3px}
+.srm-theme-mini-chart{min-width:0}.srm-theme-mini-chart>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:var(--muted);font-size:11px;margin-bottom:14px}.srm-theme-mini-chart strong{font-weight:500;font-size:24px;color:var(--ink);white-space:nowrap}.srm-theme-mini-chart small{font-size:11px;font-weight:400;color:var(--muted)}.srm-theme-mini-chart svg{width:100%;display:block;overflow:visible}
+.srm-theme-palette{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 14px}.srm-theme-palette>div{display:flex;align-items:center;gap:10px}.srm-theme-swatch{height:30px;width:30px;flex:none;border:1px solid var(--line);border-radius:8px}.srm-theme-palette strong{display:block;font-size:11px;font-weight:500}.srm-theme-palette small{display:block;font-size:10px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}.srm-theme-spec .srm-theme-rule{border-top:1px solid var(--faint-line);margin-top:22px;padding-top:16px;font-size:11px}
+/* Fixed brand assets retain their approved colors on a deliberate light stage. */
+[data-srm-theme="dark"] :is(.srm-header-logo,.lib-logo-stage,.lib-logo-preview,.srm-company-logo){background:#fff;border-radius:7px;padding:6px}
+[data-srm-theme="dark"] .srm-history-year-pill{color:var(--chart-year-ink)}
+[data-srm-theme="dark"] ::selection{background:#315D80;color:#fff}
+[data-srm-theme="dark"] ::placeholder{color:#8FA5BA;opacity:1}
+[data-srm-theme="dark"] :is(input,textarea,select){color-scheme:dark}
+@media(max-width:1060px){.canon-state{display:none}.canon-studio-bar>.srm-theme-switch{margin-left:auto}}
+@media(max-width:760px){.canon-studio-bar{gap:7px}.canon-studio-bar>.srm-theme-switch button span{display:none}.canon-studio-bar>.srm-theme-switch button{padding:0;width:29px}.srm-theme-preview{grid-template-columns:1fr;padding:20px}.srm-theme-palette{grid-template-columns:repeat(2,minmax(0,1fr))}.srm-theme-spec{padding:20px}.srm-theme-spec-heading{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.srm-theme-switch button{transition:none}}
+
+/* Explicit visual bindings; layouts and business state remain local. */
+.srm-theme-switch{--srm-hover-scale:1}
+.srm-theme-switch button{font-size:12px!important;min-height:30px!important;border:0!important;scale:1!important;transform:none!important}
+.v3-header nav{flex-wrap:wrap;justify-content:flex-end;max-width:400px}.v3-header nav>.srm-theme-switch{margin-left:8px}
+.bf-header-actions .srm-theme-switch{margin-left:4px}
+[data-srm-theme=dark] .v3-app{--cci-series-copper:var(--brand);--cci-series-pvc:var(--theme-reference);--cci-series-energy:var(--sand);--cci-series-labor:var(--theme-muted);--cci-series-transport:var(--theme-positive)}
+[data-srm-theme=dark] .v3-app .v3-primary{background:var(--action-fill);color:#fff;border-color:var(--action-fill)}
+[data-srm-theme=dark] .v3-app .v3-primary:hover{background:var(--chrome-strong);color:#fff}
+[data-srm-theme=dark] .bf-brand>span:first-child{background:#fff;padding:6px 8px;border-radius:7px}
+@media(max-width:760px){.bf-header-actions .srm-theme-switch button span{display:none}.bf-header-actions .srm-theme-switch button{width:30px;padding:0}.v3-header{flex-wrap:wrap}.v3-header nav{max-width:none;flex-wrap:wrap}}
+

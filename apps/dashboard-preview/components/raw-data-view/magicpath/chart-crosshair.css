@@ -1,0 +1,42 @@
+/* CHT-03:guides intersect at the point on the rendered curve; no sampled values. */
+.srm-price-line-plot { position:relative; }
+.srm-chart-crosshair {
+  --crosshair-x:50%;
+  --crosshair-y:50%;
+  --crosshair-ink:color-mix(in srgb, var(--brand, #005A9C) 55%, transparent);
+  position:absolute;
+  inset:0 2.955665%;
+  cursor:none;
+  touch-action:pan-x pan-y;
+  outline:none;
+}
+.srm-chart-crosshair:focus-visible { outline:0.125rem solid var(--brand-light); outline-offset:0.25rem; }
+.srm-chart-crosshair-guides { position:absolute; inset:0; overflow:hidden; pointer-events:none; opacity:0; transition:opacity 140ms ease-out; }
+.srm-chart-crosshair[data-visible="true"] .srm-chart-crosshair-guides { opacity:1; }
+.srm-chart-crosshair-vertical,.srm-chart-crosshair-horizontal { position:absolute; display:block; pointer-events:none; }
+.srm-chart-crosshair-vertical { top:0; bottom:0; left:var(--crosshair-x); border-left:0.0625rem dashed var(--crosshair-ink); transform:translateX(-50%); }
+.srm-chart-crosshair-horizontal { left:0; right:0; top:var(--crosshair-y); border-top:0.0625rem dashed var(--crosshair-ink); transform:translateY(-50%); }
+.srm-chart-crosshair-point {
+  position:absolute; left:var(--crosshair-x); top:var(--crosshair-y);
+  width:0.625rem; height:0.625rem; box-sizing:border-box; border-radius:50%;
+  background:var(--action-fill,var(--brand)); border:0.125rem solid var(--theme-line,#fff);
+  box-shadow:0 0 0 0.25rem color-mix(in srgb, var(--brand, var(--theme-shadow,#005A9C)) 12%, transparent);
+  transform:translate(-50%, -50%); pointer-events:none;
+  opacity:0; transition:opacity 140ms ease-out;
+}
+.srm-chart-crosshair[data-visible="true"] .srm-chart-crosshair-point { opacity:1; }
+@media(prefers-reduced-motion:reduce) { .srm-chart-crosshair-guides, .srm-chart-crosshair-point { transition:none; } }
+
+/* SRM-C73 forecast variant:same X, independent Y on each real boundary path.
+   Stable data-chart-anchor targets reserve future tooltips; no extra guide lines. */
+.srm-chart-crosshair-boundary-point { background:var(--theme-surface,#fff); border-color:var(--brand, var(--theme-accent,#005A9C)); }
+.srm-chart-crosshair-boundary-point[data-chart-anchor="upper"] { top:var(--crosshair-upper-y, 50%); border-color:var(--forecast-upper-color); box-shadow:0 0 0 .25rem color-mix(in srgb,var(--forecast-upper-color) 12%,transparent); }
+.srm-chart-crosshair-boundary-point[data-chart-anchor="lower"] { top:var(--crosshair-lower-y, 50%); border-color:var(--forecast-lower-color); box-shadow:0 0 0 .25rem color-mix(in srgb,var(--forecast-lower-color) 12%,transparent); }
+.srm-chart-crosshair[data-visible="true"] .srm-chart-crosshair-boundary-point { opacity:0; }
+.srm-chart-crosshair[data-visible="true"][data-forecast-points="true"] .srm-chart-crosshair-boundary-point { opacity:1; }
+
+/* C73 historical comparison anchor:same screen X, actual backtest path Y. */
+.srm-chart-crosshair-backtest-point { top:var(--crosshair-backtest-y,50%); background:var(--theme-surface,#fff); border-color:var(--sand); box-shadow:0 0 0 0.25rem color-mix(in srgb,var(--sand) 20%,transparent); }
+.srm-chart-crosshair[data-visible="true"] .srm-chart-crosshair-backtest-point { opacity:0; }
+.srm-chart-crosshair[data-visible="true"][data-backtest-point="true"] .srm-chart-crosshair-backtest-point { opacity:1; }
+

@@ -1,0 +1,34 @@
+/* C80 / T31 / B57:typography on the canvas, deliberately no card surface. */
+.srm-chart-values {
+  position:absolute; inset:0; pointer-events:none; z-index:3; opacity:0;
+  font-family:inherit; font-weight:400; line-height:1.4;
+  font-variant-numeric:tabular-nums; color:var(--brand-dark,var(--theme-ink,#003366));
+  transition:opacity 140ms ease-out;
+  text-shadow:0 0 .25rem var(--theme-surface,#fff),0 0 .5rem var(--theme-surface,#fff);
+}
+.srm-chart-values[data-visible="true"] { opacity:1; }
+.srm-chart-value-label,.srm-chart-value-date { position:absolute; display:flex; flex-direction:column; align-items:flex-start; gap:.1875rem; background:none; border:0; border-radius:0; box-shadow:none; padding:0; margin:0; }
+.srm-chart-value-label[data-side="left"],.srm-chart-values[data-side="left"] .srm-chart-value-date { align-items:flex-end; text-align:right; }
+.srm-chart-value-name { font-size:.75rem; line-height:1.3; font-weight:400; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--brand,var(--theme-accent,#005A9C)); }
+.srm-chart-value-number { font-size:1.125rem; line-height:1.2; font-weight:400; letter-spacing:-.02em; white-space:nowrap; }
+.srm-chart-value-unit { font-size:.6875rem; font-weight:400; letter-spacing:0; color:var(--muted,var(--theme-muted,#526d86)); }
+.srm-chart-value-meta { font-size:.6875rem; line-height:1.3; font-weight:400; color:var(--muted,var(--theme-muted,#526d86)); white-space:nowrap; }
+.srm-chart-value-label[data-tone="sand"] { color:var(--theme-sand-text,#7b613a); }
+.srm-chart-value-label[data-tone="sand"] .srm-chart-value-name { color:var(--theme-sand-text,#7b613a); }
+/* C75/C80:identity belongs to the series, never to left/right or above/below placement. */
+.srm-chart-value-label[data-value-anchor="upper"] { color:var(--forecast-upper-color); }
+.srm-chart-value-label[data-value-anchor="lower"] { color:var(--forecast-lower-color); }
+.srm-chart-value-label:is([data-value-anchor="upper"],[data-value-anchor="lower"]) :is(.srm-chart-value-name,.srm-chart-value-number,.srm-chart-value-unit,.srm-chart-value-meta) { color:inherit; }
+/* The same reserved date lane sits above all moving value labels in every mode. */
+.srm-chart-value-date { top:.5rem; }
+/* The existing cursor reaches its date lane; no extra leader is introduced. */
+.srm-chart-crosshair:has(.srm-chart-values) .srm-chart-crosshair-guides { overflow:visible; }
+.srm-chart-crosshair:has(.srm-chart-values) .srm-chart-crosshair-vertical { top:0; bottom:0; }
+.srm-chart-value-date time { font-family:inherit; font-size:.8125rem; line-height:1.4; font-weight:400; letter-spacing:0; font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--brand-dark,var(--theme-ink,#003366)); }
+.srm-price-line { min-height:20rem; }
+/* CHT-01/08:labels live inside the plot; no external hover gutters. */
+.srm-price-line-canvas { padding-top:0; }
+.srm-price-line-surface[data-forecast="true"] .srm-price-line-plot { margin-bottom:0; }
+.srm-price-line-plot:has(.srm-chart-crosshair[data-visible="true"]) .srm-forecast-annotations .srm-forecast-text { opacity:0; }
+@media(prefers-reduced-motion:reduce) { .srm-chart-values { transition:none; } }
+

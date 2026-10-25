@@ -1,0 +1,37 @@
+/* One styling contract for actual nodes in both application and library views. */
+.srm-ui [data-library-component='SRM-C01'],.srm-ui [data-library-component='SRM-C02']{min-height:var(--canon-actionHeight,32px);border-radius:var(--canon-actionRadius,7px);font-size:var(--canon-actionFont,12px);font-weight:550;padding:var(--srm-space-compact) var(--srm-space-small);line-height:1.35;display:inline-flex;justify-content:center;align-items:center;gap:var(--srm-space-compact);background:var(--theme-surface,white);border:1px solid var(--line);color:var(--brand-dark);}
+.srm-ui [data-library-component='SRM-C01']{background:var(--action-fill,var(--brand));border-color:var(--brand);color:white;}
+.srm-ui [data-library-component='SRM-C03'],.srm-ui [data-library-component='SRM-C55']{color:var(--brand);}
+.srm-ui [data-library-component='SRM-C13']{border-radius:var(--canon-cardRadius,9px);}
+.srm-ui [data-library-component='SRM-C09']{--srm-hover-scale:var(--canon-hoverPill,1.06);}
+.srm-ui [data-library-component='SRM-C01'],.srm-ui [data-library-component='SRM-C02']{--srm-hover-scale:var(--canon-hoverAction,1.03);}
+.srm-ui [data-library-component='SRM-C03'],.srm-ui [data-library-component='SRM-C55']{--srm-hover-scale:var(--canon-hoverText,1.025);}
+.srm-ui{--srm-motion-time:var(--canon-motionMs,220ms);}
+.srm-ui .srm-statement-chart-card,.srm-ui .srm-add-chart-tile{height:var(--canon-overviewHeight,300px);}
+.srm-ui .srm-statement-card-actions:is(.srm-history-view-switch button,.srm-history-copy,.srm-statement-icon){width:var(--canon-overviewControl,24px);height:var(--canon-overviewControl,24px);min-height:0;min-width:0;padding:0;border-width:var(--canon-overviewBorder,.75px);border-radius:var(--canon-overviewRadius,6px);}
+.srm-ui .srm-statement-card-actions:is(.srm-history-view-switch button,.srm-history-copy,.srm-statement-icon) svg{width:var(--canon-overviewIcon,12px);height:var(--canon-overviewIcon,12px);stroke-width:var(--canon-overviewStroke,1.4);}
+.srm-ui .srm-statement-card-actions .srm-history-view-switch{border-width:var(--canon-overviewBorder,.75px);border-radius:var(--canon-overviewRadius,6px);}
+.srm-ui .srm-card-footer{font-size:11px;line-height:24px;align-items:center;}
+.srm-ui .srm-card-footer:is(.srm-card-period,.srm-importance,.srm-text-link){font-size:inherit;line-height:inherit;}
+.srm-ui [data-canon-issue=true]{outline:2px dashed var(--theme-negative,#C8554C)!important;outline-offset:4px;}
+@media(prefers-reduced-motion:reduce){.srm-ui [data-canon-usage]{transition:none!important;animation:none!important;}}
+
+/* SRM-C18 / T06–T08:one typography and comparison tone for the full label.
+   Liquidity fill keeps its fixed scale; label tone describes period-to-period change. */
+.srm-ui { --canon-radar-label-size: 1rem; --canon-radar-label-weight: 650; --canon-radar-help-size: .875rem; }
+.srm-ui [data-comparison-tone="positive"] { color:var(--theme-positive,#176747); }
+.srm-ui [data-comparison-tone="negative"] { color:var(--theme-negative,#A63830); }
+.srm-ui [data-comparison-tone="caution"] { color:var(--theme-sand-text,#805400); }
+.srm-ui [data-comparison-tone="unknown"] { color:var(--theme-muted,#526A82); }
+.srm-ui .srm-label-motion[data-library-component="SRM-C18"] text { font-family:inherit; font-size:var(--canon-radar-label-size); font-weight:var(--canon-radar-label-weight); fill:currentColor; }
+.srm-ui .srm-radar-panel:is(.srm-chart-legend,.srm-semantic-legend) { justify-content:flex-start; text-align:left; flex-wrap:wrap; }
+.srm-ui .srm-radar-help, .srm-ui .srm-radar-help:is(summary,p,ul,li) { font-family:inherit; font-size:var(--canon-radar-help-size); line-height:1.6; }
+.srm-ui .srm-chat-comparison ul { margin:.375rem 0 0; padding-left:1.25rem; }
+.srm-ui .srm-chat-comparison li { margin-top:.25rem; }
+
+/* SRM-C34:comparison bullets are message content, not smaller metadata. */
+.srm-ui .srm-chat-message { font-size:.875rem; line-height:1.6; }
+.srm-ui .srm-chat-message:is(p,ul,li,.srm-chat-comparison) { font-family:inherit; font-size:inherit; line-height:inherit; }
+/* SRM-SP15:the larger canvas supplies clearance without clipping the 120% motion. */
+@media (min-width: 68.75rem) { .srm-ui .srm-overview[data-library-component="SRM-C43"] { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); } }
+

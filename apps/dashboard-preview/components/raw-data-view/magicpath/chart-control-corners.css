@@ -1,0 +1,24 @@
+/* CHT-12 · C71/C81/C82/C84/C85:one radius follows the circular controls.
+   Round the underlying plot fill as well as the trigger. A square neutral
+   trigger background must never reappear on hover or in forecast modes.
+   Do not clip the workspace: keyboard focus and circular hover stay visible. */
+.srm-price-line-surface {
+  border-top-left-radius:var(--chart-control-corner-radius);
+  border-top-right-radius:var(--chart-control-corner-radius);
+}
+.srm-price-line-surface .srm-chart-workspace > .srm-price-line-scroll {
+  border-radius:var(--chart-control-corner-radius) var(--chart-control-corner-radius) 0 0;
+  background-clip:padding-box;
+}
+.srm-price-line-surface .srm-chart-controls-card {
+  border-radius:var(--chart-control-corner-radius) var(--chart-control-corner-radius) 0 0;
+}
+.srm-price-line-surface .srm-chart-tools-card {
+  border-top-left-radius:var(--chart-control-corner-radius);
+}
+.srm-ui .srm-price-line-surface .srm-chart-controls-ribbon,
+.srm-ui .srm-price-line-surface .srm-chart-controls-ribbon:hover {
+  background:transparent;
+  border-radius:50%;
+}
+
