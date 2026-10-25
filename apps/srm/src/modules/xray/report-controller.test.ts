@@ -5,6 +5,7 @@ import {sampleCard} from '../../demo/fixture'
 import {projectReportData} from '../../server/report-data'
 import {createSupplierWebRequest} from './supplier-web-request'
 import {createKrsSessionTransport} from './krs-session-transport'
+import {kysOverview} from '@profitia/srm-xray'
 const nip='8650004194',other='5272443955',now=new Date('2026-10-20T00:00:00Z'),retrievedAt='2026-10-19T23:00:00Z'
 const privateRef={snapshotId:'11111111-1111-4111-8111-111111111111',nip,entityType:'COMPANY',retentionUntil:'2026-10-21T00:00:00Z',exportRef:'b'.repeat(64)}
 const metadata=(selected=nip)=>projectReportData({nip:selected,entityType:'COMPANY'},{nip:selected,financial_json:null,financial_sha256:null,financial_checked_at:null,facts:[],indicators:[],kys:null},now,{})
@@ -115,14 +116,26 @@ test('selected-company mismatch cannot attach a report and a reset discards a la
  const pending=c.searchKrs(selection);c.reset();complete(Response.json(nameResult()));await pending;
  assert.equal(c.getSnapshot().result,null);assert.equal(c.getSnapshot().busy,false);
 });
-test('name report keeps eligible Financial metadata while applying only its current private KYS PDF reference',async()=>{
+test('selected report refreshes stored KYS freshness without replacing reconciled Financial or acquiring providers',async()=>{
  const calls:string[]=[];
  const c=new SupplierReportController(async(path)=>{
-  calls.push(String(path));return String(path).endsWith('/lookup')?Response.json(nameResult()):Response.json({section:{...sampleCard.kys,retrievedAt},privateReport:privateRef});
+  calls.push(String(path));
+  if(String(path).endsWith('/lookup'))return Response.json(nameResult());
+  if(String(path).endsWith('/report-data')){
+   const current=metadata();current.financial.representationVersion='different-financial-source';
+   current.kys={...current.kys,reportAvailable:true,freshness:{...current.kys.freshness,freshness:'FRESH',retrievedAt,
+    cacheExpiresAt:privateRef.retentionUntil,retentionUntil:privateRef.retentionUntil}};
+   return Response.json(current);
+  }
+  return Response.json({section:{...sampleCard.kys,retrievedAt,data:{...sampleCard.kys.data,company:{nip}}},privateReport:privateRef});
  },()=>now,()=> 'synthetic-private-reference-key');
  await c.searchKrs(selection);const financial=c.getSnapshot().metadata?.financial;
- await c.fetchKys();assert.deepEqual(calls,['/api/xray/krs/lookup','/api/xray/kys']);
+ await c.fetchKys();assert.deepEqual(calls,['/api/xray/krs/lookup','/api/xray/kys','/api/xray/report-data']);
  assert.equal(c.getSnapshot().metadata?.kys.exportRef,privateRef.exportRef);assert.deepEqual(c.getSnapshot().metadata?.financial,financial);
+ assert.equal(c.getSnapshot().metadata?.kys.reportAvailable,true);
+ assert.equal(c.getSnapshot().metadata?.kys.freshness.cacheExpiresAt,privateRef.retentionUntil);
+ assert.equal(c.getSnapshot().metadata?.kys.freshness.freshness,'FRESH');
+ assert.equal(kysOverview({nip,entityType:'COMPANY',section:c.getSnapshot().kys,metadata:c.getSnapshot().metadata},now.getTime()).available,true);
 });
 
 test('bounded KRS document continuation keeps the same logical key and publishes only the completed Financial metadata',async()=>{

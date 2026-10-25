@@ -23,3 +23,26 @@ test('a cancelled form preparation cannot release a capability for later request
  const transport=createKrsSessionTransport(async()=>{reads++;controller.abort();return 'synthetic'},async()=>assert.fail('No HTTP after cancellation'))
  await assert.rejects(prepareReport(transport,'7772776017',controller.signal));assert.equal(reads,1)
 })
+test('a long private KYS action refreshes an expired bearer once with the exact same intent and no company grant',async()=>{
+ let reads=0;const seen:{authorization:string|null;key:string|null;grant:string|null;body:unknown}[]=[];
+ const transport=createKrsSessionTransport(async options=>{assert.deepEqual(options,{skipCache:true});return 'session-'+ ++reads},async(_path,init)=>{
+  const h=new Headers(init?.headers);seen.push({authorization:h.get('Authorization'),key:h.get('Idempotency-Key'),grant:h.get('X-SRM-Report-Admission'),body:init?.body});
+  return Response.json({}, {status:seen.length===1?401:200});
+ });
+ const response=await transport('/api/xray/kys',{method:'POST',headers:{'Idempotency-Key':'same-private-intent'},body:JSON.stringify({identifier:'7772776017'})});
+ assert.equal(response.status,200);assert.equal(reads,2);assert.equal(seen.length,2);
+ assert.deepEqual(seen.map(s=>s.authorization),['Bearer session-1','Bearer session-2']);
+ assert.equal(seen[0].key,seen[1].key);assert.equal(seen[0].body,seen[1].body);assert(seen.every(s=>s.grant===null));
+});
+test('private retry is bounded and never retries revoked access, provider failure, cancellation or a missing logical key',async()=>{
+ for(const status of [401,403,503]){
+  let calls=0;const transport=createKrsSessionTransport(async()=> 'session',async()=>{calls++;return Response.json({}, {status})});
+  assert.equal((await transport('/api/xray/kys',{method:'POST',headers:{'Idempotency-Key':'same-intent'}})).status,status);
+  assert.equal(calls,status===401?2:1);
+ }
+ let calls=0;const controller=new AbortController();
+ const transport=createKrsSessionTransport(async()=> 'session',async()=>{calls++;controller.abort();return Response.json({}, {status:401})});
+ await assert.rejects(transport('/api/xray/kys',{method:'POST',headers:{'Idempotency-Key':'same-intent'},signal:controller.signal}));assert.equal(calls,1);
+ calls=0;const missing=createKrsSessionTransport(async()=> 'session',async()=>{calls++;return Response.json({}, {status:401})});
+ await missing('/api/xray/kys',{method:'POST'});assert.equal(calls,1);
+});
