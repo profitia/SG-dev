@@ -96,10 +96,12 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
     })) form.set(key, value);
     if (message.template) {
       const t=message.template, keys=Object.keys(t.variables).sort().join(',');
-      if (!transactional || !/^identity-(verification-code|invitation)-(pl|en)-(male|female|neutral)$/.test(t.name)
+      const newDevice = /^identity-new-device-sign-in-(pl|en)-(male|female|neutral)$/.test(t.name);
+      if (!transactional || !/^identity-(verification-code|invitation|new-device-sign-in)-(pl|en)-(male|female|neutral)$/.test(t.name)
         || !/^v-[a-f0-9]{24}$/.test(t.version)
-        || !['app_name,current_year,greeting,otp_code,requested_at,requested_from','action_url,app_name,current_year,expires_in_days,greeting'].includes(keys)
-        || Object.values(t.variables).some(v=>typeof v!=='string'||v.length>2000||/[\x00-\x1f\x7f]|\{\{|\}\}/.test(v))) throw Error('Invalid stored template');
+        || !(newDevice ? keys === 'app_name,current_year,device,greeting,ip_address,location,revoke_session_url,session_created_at,sign_in_method'
+          : ['app_name,current_year,greeting,otp_code,requested_at,requested_from','action_url,app_name,current_year,expires_in_days,greeting'].includes(keys))
+        || Object.entries(t.variables).some(([key,v])=>typeof v!=='string'||v.length>(newDevice&&key==='revoke_session_url'?4096:2000)||/[\x00-\x1f\x7f]|\{\{|\}\}/.test(v))) throw Error('Invalid stored template');
       form.delete('html'); form.set('template',t.name); form.set('t:version',t.version);
       // Template values must never be placed in provider event/user variables.
       form.set('t:variables',JSON.stringify(t.variables));
