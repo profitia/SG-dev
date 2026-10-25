@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { resolveNewDevice, newDeviceMailgunTemplate } from './new-device.mjs';
 
 export const catalog = JSON.parse(fs.readFileSync(new URL('./templates.json', import.meta.url), 'utf8'));
 const locales = JSON.parse(fs.readFileSync(new URL('./locales.json', import.meta.url), 'utf8'));
@@ -105,7 +106,8 @@ export function greetingFor(language, data = {}) {
 }
 
 /** Resolve trusted message data once; never evaluate user-provided template syntax. */
-export function renderResolved({kind, avatar = 'neutral', language = 'pl', data, allowedActionOrigins = []}) {
+export function renderResolved({kind, avatar = 'neutral', language = 'pl', data, allowedActionOrigins = [], allowedRevocationOrigins = []}) {
+  if(kind==='new-device-sign-in') {const {variables,...content}=resolveNewDevice({avatar,language,data,allowedRevocationOrigins},catalog,greetingFor(language,data));return content;}
   const m = messageFor(kind, avatar, language);
   const scalar = (value, max = 160) => {
     if (typeof value !== 'string' || !value.trim() || value.length > max || /[\x00-\x1f\x7f]|\{\{|\}\}/.test(value)) throw new Error('Invalid email template data');
@@ -195,12 +197,19 @@ if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === imp
 
 /** Domain-scoped Mailgun versions are pinned to canonical HTML content. */
 export function mailgunTemplate(kind, avatar, language) {
+  if(kind==='new-device-sign-in')return newDeviceMailgunTemplate(avatar,language,catalog,inlineAssetsForAvatar(avatar));
   if (!['verification-code','invitation'].includes(kind)) throw new Error('Unsupported transport template');
   let html=renderHtml(kind,avatar,language).replaceAll('{{app.name}}','{{app_name}}').replaceAll('{{invitation.expires_in_days}}','{{expires_in_days}}');
   for(const asset of inlineAssetsForAvatar(avatar)) html=html.replaceAll(asset.url,'cid:'+asset.filename);
   return {name:`identity-${kind}-${language}-${avatar}`,version:'v-'+createHash('sha256').update(html).digest('hex').slice(0,24),html};
 }
 export function renderMailgunResolved(options) {
+  if(options.kind==='new-device-sign-in'){
+    const {variables,...content}=resolveNewDevice(options,catalog,greetingFor(options.language,options.data));
+    for(const asset of inlineAssetsForAvatar(options.avatar))content.html=content.html.replaceAll(asset.url,'cid:'+asset.filename);
+    const spec=mailgunTemplate(options.kind,options.avatar,options.language);
+    return {...content,template:{name:spec.name,version:spec.version,variables}};
+  }
   const content=renderResolved(options), spec=mailgunTemplate(options.kind,options.avatar,options.language);
   for(const asset of inlineAssetsForAvatar(options.avatar)) content.html=content.html.replaceAll(asset.url,'cid:'+asset.filename);
   const d=options.data;
