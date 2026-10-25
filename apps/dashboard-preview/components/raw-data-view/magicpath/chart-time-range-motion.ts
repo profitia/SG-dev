@@ -13,4 +13,3 @@ export function panTimeRange(range: ChartTimeRange, delta: number, max: number, 
   const shift = Math.min(upper, Math.max(lower, delta));
   return [range[0] + shift, range[1] + shift];
 }
-

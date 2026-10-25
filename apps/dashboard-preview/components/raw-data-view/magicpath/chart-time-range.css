@@ -25,4 +25,3 @@
 .srm-time-range .srm-time-range-window[data-dragging="true"] { background:color-mix(in srgb,var(--brand-light,var(--theme-raised,#66B2FF)) 14%,transparent); filter:none; scale:1; transform:none; }
 .srm-time-range .srm-time-range-window[data-dragging="true"] { cursor:grabbing; }
 .srm-time-range .srm-time-range-window:focus-visible { outline:0.125rem solid var(--brand-light); outline-offset:0.125rem; }
-

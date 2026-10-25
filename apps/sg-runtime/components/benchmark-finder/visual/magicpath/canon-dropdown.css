@@ -69,4 +69,3 @@
 .bf-sort .srm-dropdown .srm-dropdown-trigger { height:34px; font-size:12px; border-radius:8px; }
 @keyframes srm-dropdown-appear { from { opacity:0; } to { opacity:1; } }
 @media (prefers-reduced-motion:reduce) { .srm-dropdown-popup { animation:none; } .srm-dropdown .srm-dropdown-trigger, .srm-dropdown .srm-dropdown-trigger > svg, .srm-dropdown-popup .srm-dropdown-option { transition:none; } }
-

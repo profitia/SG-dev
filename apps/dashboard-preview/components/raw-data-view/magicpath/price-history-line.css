@@ -63,4 +63,3 @@
   .srm-time-interval-band,.srm-time-interval-bridge,.srm-price-time-tick .srm-history-year { transition:none; }
   .srm-price-time-tick.is-active .srm-history-year-marker i,.srm-price-time-tick:hover .srm-history-year-marker i { scale:1; }
 }
-

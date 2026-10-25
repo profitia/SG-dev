@@ -31,4 +31,3 @@
 .srm-price-line-surface[data-forecast="true"] .srm-price-line-plot { margin-bottom:0; }
 .srm-price-line-plot:has(.srm-chart-crosshair[data-visible="true"]) .srm-forecast-annotations .srm-forecast-text { opacity:0; }
 @media(prefers-reduced-motion:reduce) { .srm-chart-values { transition:none; } }
-

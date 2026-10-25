@@ -39,4 +39,3 @@
 .srm-chart-crosshair-backtest-point { top:var(--crosshair-backtest-y,50%); background:var(--theme-surface,#fff); border-color:var(--sand); box-shadow:0 0 0 0.25rem color-mix(in srgb,var(--sand) 20%,transparent); }
 .srm-chart-crosshair[data-visible="true"] .srm-chart-crosshair-backtest-point { opacity:0; }
 .srm-chart-crosshair[data-visible="true"][data-backtest-point="true"] .srm-chart-crosshair-backtest-point { opacity:1; }
-

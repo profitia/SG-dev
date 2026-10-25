@@ -37,4 +37,3 @@ export function rangeForTimePreset(dates: readonly string[], preset: ChartTimePr
   // The current navigator needs two observations. Never invent missing samples.
   return [Math.max(0, Math.min(first < 0 ? end - 1 : first, end - 1)), end];
 }
-

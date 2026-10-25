@@ -41,4 +41,3 @@
 .srm-forecast-legend .backtest { border-top:0.125rem dashed var(--sand); }
 .srm-forecast-legend .delta { height:0.625rem; background:color-mix(in srgb,var(--sand) 30%,transparent); border-block:0.0625rem solid var(--sand); }
 .srm-backtest-note { margin:0.25rem 2.955665% 1rem; font-size:0.6875rem; line-height:1.6; color:var(--muted); }
-

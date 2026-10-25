@@ -29,4 +29,3 @@
 @media(prefers-reduced-motion:reduce) {
  .srm-ui .srm-chart-time-presets .srm-chart-time-preset { transition:none; scale:1!important; }
 }
-

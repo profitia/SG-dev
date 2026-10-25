@@ -38,4 +38,3 @@
 @media(prefers-reduced-motion:reduce) { .srm-history-bar-visual,.srm-history-year-marker i { transition:none!important; transform:none!important; scale:1!important; } }
 
 .srm-history-bar-label.above-bar { transform:translate(-50%,calc(-100% - .5rem)); color:var(--brand-dark); white-space:nowrap; }
-

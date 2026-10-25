@@ -27,4 +27,3 @@
 @media(prefers-reduced-motion:reduce) {
  .srm-ui:is(button,a[href],select,input,summary,.srm-picker-group-check,.srm-period-indicator,.srm-chat-ribbon-avatar) { scale:1!important; transition:none!important; }
 }
-

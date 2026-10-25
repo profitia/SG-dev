@@ -57,4 +57,3 @@
  background-size:100% var(--chart-plot-height); background-repeat:no-repeat;
 }
 /* Bottom-only panel shadow remains visible over history, forecast and backtest. */
-

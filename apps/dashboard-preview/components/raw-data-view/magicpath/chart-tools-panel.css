@@ -28,4 +28,3 @@
  clip-path:inset(0 calc(-1 * var(--chart-panel-shadow-extent)) 0 100%);
 }
 .srm-ui .srm-chart-tools .srm-chart-tools-ribbon { z-index:1; }
-

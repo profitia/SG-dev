@@ -54,4 +54,3 @@
 @media(prefers-reduced-motion:reduce){.forecast-motion-track i,.forecast-status-symbol>i{animation:none}.forecast-motion-track i{left:20%;width:60%;opacity:.35}.forecast-status-symbol>i{opacity:.65}}
 
 .forecast-help-lead { font-size:13px; line-height:1.65; font-weight:400; }
-

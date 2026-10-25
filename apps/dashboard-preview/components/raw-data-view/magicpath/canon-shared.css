@@ -34,4 +34,3 @@
 .srm-ui .srm-chat-message:is(p,ul,li,.srm-chat-comparison) { font-family:inherit; font-size:inherit; line-height:inherit; }
 /* SRM-SP15:the larger canvas supplies clearance without clipping the 120% motion. */
 @media (min-width: 68.75rem) { .srm-ui .srm-overview[data-library-component="SRM-C43"] { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); } }
-

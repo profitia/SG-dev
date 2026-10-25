@@ -74,4 +74,3 @@ html[data-srm-theme] body {background:var(--page);color:var(--ink)}
 [data-srm-theme=dark] .v3-app .v3-primary:hover{background:var(--chrome-strong);color:#fff}
 [data-srm-theme=dark] .bf-brand>span:first-child{background:#fff;padding:6px 8px;border-radius:7px}
 @media(max-width:760px){.bf-header-actions .srm-theme-switch button span{display:none}.bf-header-actions .srm-theme-switch button{width:30px;padding:0}.v3-header{flex-wrap:wrap}.v3-header nav{max-width:none;flex-wrap:wrap}}
-

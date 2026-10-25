@@ -38,4 +38,3 @@ export const chartControlPanelVariables = {
   '--chart-controls-ribbon-radius': chartControlPanelCanon.ribbonRadius,
   '--chart-controls-symbol-size': chartControlPanelCanon.symbolSize,
 };
-

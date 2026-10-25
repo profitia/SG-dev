@@ -24,4 +24,3 @@ export function useChartPanel(onOpenChange?: (open: boolean) => void) {
   const toggle = () => setOpen(current => !current);
   return { open, root, panel, trigger, id, toggle };
 }
-
