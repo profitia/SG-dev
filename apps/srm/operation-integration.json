@@ -4802,7 +4802,11 @@
       "src/server/supplier-request-host.ts": "46daa8ab9aec7a0ffa3ce518697d7f3bdb37ed241dc3abe7a28a55be7efcfb22",
       "scripts/request-quota-adoption.test.mjs": "ef6bbd70fc284329a2d4e71c05ce63be91950c8a53eb8950bfe8a68b47712686",
       "scripts/request-quota-fixture.mjs": "133c248d112151ef935204bb06f56a7df7ecaf2b408170ee910a75b661b13457",
-      "scripts/pilot2-human-overlay.mjs": "1390c16e05aa70d5a14073ff9d525d016668fd800301e6c887a4e9567f9e149e"
+      "scripts/pilot2-human-overlay.mjs": "1390c16e05aa70d5a14073ff9d525d016668fd800301e6c887a4e9567f9e149e",
+      "../maps-runtime/platform-integration.json": "a8ab7a29086809df46ccc70448a0147f1d5ee4585dc2a165fa2cd4d1a5d35356",
+      "../maps-runtime/package-lock.json": "6160c30c8716d4cc6edc021a3b10d290c874742a9d971426626ff25150c52fbf",
+      "../maps-runtime/test/embed.test.mjs": "83ccd46fe58c5063522f8602284795d768f45d2aae2b4f4741775c9f878b7ed2",
+      "../../packages/maps-embed/package.json": "2d8471fa4355a0c48a6a0c9b3ca0c5d64d6b2fa2e8098d3402dfccade9c40d58"
     },
     "runtimeDeployment": false,
     "sql027Installed": false,
