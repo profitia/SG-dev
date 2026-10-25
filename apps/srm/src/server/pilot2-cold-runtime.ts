@@ -7,6 +7,7 @@ import {createSrmReportOperationHost,type PrivateConfiguration} from './private-
 import {createSrmPrivateOperationHost} from './private-operation-host'
 import {createOperationReportDataHandler} from './operation-report-data'
 import {createOperationFinancialExcelHandler} from './financial-excel-runtime'
+import {createPilot2PrivateRoutes} from './pilot2-private-runtime'
 import {createKrsNipCompany} from './krs-nip-runtime'
 import {createKrsNameHttpHandler,createKrsNameHttpRuntime} from './krs-name-runtime'
 import {withCurrentPrivateAuthority,createSrmReportAdmissionRuntime} from './report-admission-runtime'
@@ -164,6 +165,7 @@ function createRuntime(env:Env){
  // Reuse the same admission reader; creation has no effects or online reads.
  const reportAdmission=createSrmReportAdmissionRuntimeForContinuation(options,api)
  return Object.freeze({...runtime,
+  private:createPilot2PrivateRoutes(api,base.application.organisationId!,()=>env.SRM_PILOT2_PRIVATE_ROUTES==='true'),
   report:(request:Request,input:unknown)=>{
    const selection=validateReportSelection(input)
    // JDG remains a separately current HUMAN purpose. A public company form

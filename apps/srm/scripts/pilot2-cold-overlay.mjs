@@ -57,6 +57,8 @@ export const PILOT2_COLD_SOURCE_FILES=[
  "apps/srm/src/server/operation-report-data.ts",
  "apps/srm/src/server/pesel-reveal.ts",
  "apps/srm/src/server/pilot2-cold-runtime.ts",
+ "apps/srm/src/server/pilot2-private-runtime.ts",
+ "apps/srm/src/server/supplier-acquisition-http.ts",
  "apps/srm/src/server/pilot2-human-runtime.ts",
  "apps/srm/src/server/pilot2-public-catalog.ts",
  "apps/srm/src/server/pilot2-registry.ts",

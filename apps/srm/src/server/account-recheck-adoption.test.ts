@@ -324,5 +324,15 @@ test('PILOT2 cold adoption preserves historical acceptance and pins its complete
  for(const key of['sharedCoreMigrationRequired','newHumanEntitlements','readsRenewFreshness','externalHttpInHumanTransaction','postClickClerkReads','productDeploymentPerformed','sqlInstallationPerformed'])assert.equal(a[key as keyof typeof a],false,key);
  assert.equal(a.financialEngine,'EXISTING_NATIVE_FINANCIAL_MSR_RECONCILIATION');
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.pilot2PrivateOperationsAdoption.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file);
+});
+
+
+test('PILOT2 private operations preserve prior receipts and use current HUMAN authority independently from company admission',()=>{
+ const a=acceptedReceipt.pilot2PrivateOperationsAdoption,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ for(const key of['newHumanEntitlements','sharedCoreMigrationRequired','companyAdmissionAuthorizesPrivateData','readsRenewFreshness','financialFormulasChanged','mapsRoutesActivated','productDeploymentPerformed','sqlInstallationPerformed'])assert.equal(a[key as keyof typeof a],false,key);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });
