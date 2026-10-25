@@ -4788,7 +4788,7 @@
     "applicationSourceDigests": {
       "deployment/pilot2-human-package-lock.json": "51fa56a798d817222f9dfee08715b1723691ec7d7f85566eacb31b630ea87bc8",
       "deployment/pilot2-registry-package-lock.json": "d4b1573f8ad978a0f5734f1a9715c5438645693305dfaaf96fabe02d74c8ea96",
-      "package-lock.json": "3047408056f91df8c89ae62b0a462662cb06951bc7250b2e8b16695e551c61c9",
+      "package-lock.json": "80b6b717a9dcb192a599ba674e6d93bb5f5f193f89cc1a002924c1d6d651ed65",
       "package.json": "0937a316b463749f720ecbc6e10adc346e6e2d757e7f2dae54a2f7253981fa61",
       "scripts/operation-context.test.mjs": "b55baf027dedddb8b1f4b669395c17660cdef153e044cf1aac005a4e0680c172",
       "scripts/pilot2-human.integration.test.mjs": "04d653576313ec7dbf03702c8b01a5b284c540c7a955f4630ce8b94929ff208b",
