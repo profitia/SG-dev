@@ -10,6 +10,8 @@ import {setTimeout as delay} from 'node:timers/promises'
 /** Test the shipped external package closure, never the workspace's modules.
  * Constructors may read immutable schema bytes, but cannot touch SQL or HTTP. */
 const modules=path.resolve(process.argv[2])
+const stage=process.argv[3]??'REGISTRY'
+assert(['REGISTRY','FORM_ADMISSION'].includes(stage))
 const load=(name,file)=>import(pathToFileURL(path.join(modules,'@profitia',name,file)).href)
 const [{createPlatformIngestionHost},{createAdmittedGusSource,GUS_ORIGIN,GUS_PATH},{createNativeNipRegistrySource}]=await Promise.all([
  load('platform-contracts','src/platform-ingestion.mjs'),load('krs-registry-runtime','dist/gus-bir.js'),load('krs-registry-runtime','dist/native.js')])
@@ -33,9 +35,17 @@ const directory=path.dirname(modules)
 // Fixture credentials have no authority and health performs no database work.
 const port=await new Promise((resolve,reject)=>{const s=net.createServer();s.on('error',reject);s.listen(0,'127.0.0.1',()=>{const port=s.address().port;s.close(error=>error?reject(error):resolve(port))})})
 const connection=role=>'postgresql://'+role+':fixture@ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech/krs_registry_pilot?sslmode=require'
+const privateConnection=role=>'postgresql://'+role+':fixture@ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech/platform_private?sslmode=require'
+const human=stage==='FORM_ADMISSION'?{
+ PROFITIA_AUTH_PROVIDER:'clerk',SRM_PILOT2_FORM_ADMISSION:'true',PROFITIA_FIXED_ORGANISATION_ID:'11111111-1111-4111-8111-111111111111',
+ PROFITIA_CLERK_ISSUER:'https://fixture.clerk.accounts.dev',PROFITIA_CLERK_PUBLISHABLE_KEY:'pk_test_'+Buffer.from('fixture.clerk.accounts.dev$').toString('base64url'),
+ PROFITIA_CLERK_SECRET_KEY:'sk_test_fixture',PROFITIA_CLERK_AUTHORIZED_PARTIES:'["https://srm-krs-pilot2-development.onrender.com"]',
+ PILOT2_E1_DATABASE_URL:privateConnection('srm_private_development_runtime'),PILOT2_E1_JOBS_URL:privateConnection('srm_pilot2_jobs'),
+ PILOT2_PUBLIC_CATALOG_URL:'postgresql://srm_pilot2_catalog_reader:fixture@ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech/srm_app?sslmode=require',
+}:{}
 const child=spawn(process.execPath,[path.join(directory,'server.js')],{cwd:directory,stdio:'ignore',env:{PATH:process.env.PATH,NODE_ENV:'production',HOSTNAME:'127.0.0.1',PORT:String(port),
  TARGET_ENVIRONMENT:'development',RENDER_SERVICE_ID:'srv-dbeh6srrjlhs73fmikrg',RENDER_GIT_COMMIT:'a'.repeat(40),GUS_BIR_API_KEY:'x'.repeat(20),
- KRS_PILOT2_READER_URL:connection('krs_reader'),KRS_PILOT2_SOURCE_URL:connection('krs_ingest')}})
+ KRS_PILOT2_READER_URL:connection('krs_reader'),KRS_PILOT2_SOURCE_URL:connection('krs_ingest'),...human}})
 let exitCode,healthy=false;child.once('exit',code=>{exitCode=code})
 try{
  for(let attempt=0;attempt<80;attempt++){
@@ -46,4 +56,4 @@ try{
  }
  assert(healthy,'Standalone readiness timeout')
 }finally{child.kill('SIGTERM');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),delay(2000)]);if(exitCode===undefined)child.kill('SIGKILL')}
-console.log(JSON.stringify({pilot2StandaloneRegistryInitialization:'PASS',actualBundledHealth:'PASS',immutableNativeSchema:'PASS',sqlCalls:0,providerHttpCalls:0}))
+console.log(JSON.stringify({stage,pilot2StandaloneRegistryInitialization:'PASS',humanComposition:stage==='FORM_ADMISSION'?'INITIALIZED_WITHOUT_SQL_OR_HTTP':'NOT_APPLICABLE',actualBundledHealth:'PASS',immutableNativeSchema:'PASS',sqlCalls:0,providerHttpCalls:0}))

@@ -285,5 +285,19 @@ test('PILOT2 adopts the accepted bounded producer without widening its installed
  const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/pilot2-registry-targets.json'),'utf8'));
  assert.equal(target.runtime.transportProfile,'EXTRACTS_ONLY');assert.equal(target.runtime.producerPr,705);
  assert.deepEqual(target.runtime.producer,a.acceptedRuntime);assert.equal(a.installedPolicyExpanded,false);assert.equal(a.primaryActivationClaimed,false);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.pilot2FormAdmissionAdoption.previousSourceSha+':'+path.posix.normalize('apps/srm/'+file)])),digest,file);
+});
+
+test('PILOT2 form admission preserves all preceding receipts, the single canonical E1 entry and exact Staging cache semantics',()=>{
+ const a=acceptedReceipt.pilot2FormAdmissionAdoption,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ assert.equal(a.humanForegroundEntry,'EXISTING_SRM_APPLICATION');assert.equal(a.sharedCoreMigrationRequired,false);
+ assert.equal(a.humanEntitlementsChanged,false);assert.equal(a.existingBindingsModified,false);assert.equal(a.clonedPrivateArchivesReadable,false);
+ assert.equal(a.postClickClerkReads,false);assert.equal(a.paidAcquisitionWhileTyping,false);assert.equal(a.readsRenewFreshness,false);
+ assert.equal(a.baselineDependencyEntriesChanged,0);assert.equal(a.clerkClosurePackagesAdded,11);
+ assert.equal(a.coldAcquisitionAdopted,false);assert.equal(a.privateReportEffectsAdopted,false);
+ assert.equal(a.productDeploymentPerformed,false);assert.equal(a.sqlInstallationPerformed,false);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });
