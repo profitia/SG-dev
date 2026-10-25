@@ -25,7 +25,7 @@ import '@profitia/srm-xray/supplier-search.css';
 const calls={search:0,verify:0,nip:0,name:0};window.fixtureCalls=calls;
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 const candidate={krs:'0000000001',name:'Fixture Engineering sp. z o.o.',nip:'5213390341',locality:'Warszawa'};
-const gateway={available:async()=>!location.search.includes('disabled'),
+const gateway={available:async()=>{if(location.search.includes('status-slow'))await delay(2500);return !location.search.includes('disabled')},
  search:async(query,signal)=>{calls.search++;await delay(query==='slow'?800:40);if(query==='error')throw Error('Synthetic outage');
  return {coverage:'PROGRESSIVE',candidates:query==='empty'?[]:[{...candidate,krs:query==='reject'?'0000000002':candidate.krs,name:query==='slow'?'Old stale fixture':candidate.name}]};},
  verify:async(krs,signal)=>{calls.verify++;await delay(200);if(krs==='0000000002')throw Error('Synthetic identity denial');return {...candidate,selectionRef:'KRS:0000000001:'+ 'a'.repeat(64)};}};
@@ -33,7 +33,7 @@ if(location.search.includes('admission')){window.fixtureAdmission={prepared:0,ab
  window.fixtureAdmission.prepared++;signal.addEventListener('abort',()=>window.fixtureAdmission.aborted++,{once:true});
  await delay(450);if(signal.aborted)throw new DOMException('Aborted','AbortError');
  return {readyUntil:new Date(Date.now()+6200).toISOString(),expiresAt:new Date(Date.now()+7000).toISOString()};};}
-function Fixture(){const [nip,setNip]=useState('');return <main className="appshield"><SupplierHeader/><SupplierSearch nip={nip} onNipChange={setNip} gateway={gateway} busy={false} onNipSearch={()=>{calls.nip++}} onNameSearch={()=>{calls.name++}}/><p data-fixture-only>Isolated synthetic UI fixture</p></main>}
+function Fixture(){const [nip,setNip]=useState('');return <main className="appshield"><SupplierHeader/><SupplierSearch nip={nip} onNipChange={setNip} gateway={gateway} busy={false} requireAdmission={location.search.includes('forced')?true:undefined} onNipSearch={()=>{calls.nip++}} onNameSearch={()=>{calls.name++}}/><p data-fixture-only>Isolated synthetic UI fixture</p></main>}
 createRoot(document.getElementById('root')).render(<Fixture/>);`;
   let browser,server;
   try{
@@ -106,6 +106,15 @@ createRoot(document.getElementById('root')).render(<Fixture/>);`;
     assert.equal(await submit.isEnabled(),false);await page.getByRole('button',{name:'Przygotuj ponownie',exact:true}).click();
     await page.waitForFunction(count=>window.fixtureAdmission.prepared>count,preparedCount);await submit.waitFor();
     await page.screenshot({path:path.join(artifacts,'admitted-form.png'),fullPage:true});
+    await page.goto(url+'/?disabled&admission&forced&status-slow');
+    await page.getByLabel('Wpisz numer NIP',{exact:true}).fill('5213390341');
+    await page.getByText('Przygotowanie wyszukiwania…',{exact:true}).waitFor();
+    await page.getByLabel('Wpisz numer NIP',{exact:true}).press('Enter');
+    assert.equal(await page.evaluate(()=>window.fixtureCalls.nip),0,'Required NIP admission cannot be skipped with Enter');
+    await page.getByRole('button',{name:'Wyszukaj',exact:true}).click();
+    assert.deepEqual(await page.evaluate(()=>window.fixtureCalls),{search:0,verify:0,nip:1,name:0});
+    assert.equal(await page.getByRole('button',{name:'Nazwa spółki',exact:true}).isEnabled(),false);
+    assert.equal(await page.evaluate(()=>window.fixtureAdmission.prepared),1,'Name availability must not gate or duplicate NIP admission');
     assert.deepEqual(errors,[]);
     fs.writeFileSync(path.join(artifacts,'proof.json'),JSON.stringify({scope:'ISOLATED_SYNTHETIC_UI_ONLY',browser:'Chromium',nipRegression:'PASS',keyboard:'PASS',mouse:'PASS',emptyErrorRetry:'PASS',debounceAbortRaces:'PASS',mobile:'PASS',networkProviderCalls:0,liveCatalogOrFinancialUat:false},null,2));
   }finally{await browser?.close();if(server)await new Promise(r=>server.close(r));fs.rmSync(directory,{recursive:true,force:true});}

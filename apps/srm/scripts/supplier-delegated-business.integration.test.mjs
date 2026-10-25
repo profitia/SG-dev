@@ -38,8 +38,9 @@ const hash=v=>createHash('sha256').update(v).digest('hex'),future=()=>new Date(D
 const core=name=>fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/'+name,import.meta.url),'utf8')
 const own=name=>fs.readFileSync(new URL('../db/private-store/'+name,import.meta.url),'utf8')
 
-export async function supplierBusinessFixture(t,full=false,probe){
- const DATABASE='srm_service_business_'+randomUUID().replaceAll('-','')
+export async function supplierBusinessFixture(t,full=false,probe,options={}){
+ if(Object.keys(options).some(k=>k!=='databaseName')||options.databaseName!==undefined&&options.databaseName!=='platform_private')throw Error('Only the explicit disposable private-store installation fixture may override its database name')
+ const DATABASE=options.databaseName??'srm_service_business_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
  const CORPORATE='srm_company_publication_runtime';let networkHits=0;const networkObservations=[];let financialBoundary

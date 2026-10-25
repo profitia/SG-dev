@@ -13,12 +13,12 @@ export type SupplierSearchGateway = Readonly<{
 }>;
 type Props={nip:string; onNipChange:(value:string)=>void; onNipSearch:()=>void;
   onNameSearch:(selection:SupplierSelection)=>void; gateway:SupplierSearchGateway; busy:boolean;
-  inputRef?:RefObject<HTMLInputElement|null>};
+  inputRef?:RefObject<HTMLInputElement|null>;requireAdmission?:boolean};
 const SearchIcon=()=> <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5"/></svg>;
 
 /** MagicPath EnterPageView / ACT-09, inspected shared revision464012275896954880.
  * The host supplies protected operations; this component owns no provider, session or report. */
-export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway,busy,inputRef}:Props){
+export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway,busy,inputRef,requireAdmission}:Props){
   const id=useId(), ownInput=useRef<HTMLInputElement>(null), input=inputRef??ownInput;
   const [mode,setMode]=useState<'nip'|'name'>('nip'),[available,setAvailable]=useState(false);
   const [availabilityReady,setAvailabilityReady]=useState(false);
@@ -29,7 +29,10 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
   const [layout,setLayout]=useState({above:false,height:200});
   const [admission,setAdmission]=useState({nip:'',state:'idle',error:''}),[admissionRetry,setAdmissionRetry]=useState(0);
   const selectedNip=mode==='nip'?nip:selection?.nip??'';
-  const preparationRequired=available&&!!gateway.prepare&&/^\d{10}$/.test(selectedNip);
+  // NIP admission is independent of name catalog availability. A host that
+  // requires the existing form grant must not silently fall back to click-time
+  // authentication when name search is disabled or its status is unavailable.
+  const preparationRequired=(requireAdmission??available)&&!!gateway.prepare&&/^\d{10}$/.test(selectedNip);
   useEffect(()=>{
     const controller=new AbortController();let expiry:ReturnType<typeof setTimeout>|undefined;
     setAdmission({nip:'',state:'idle',error:''});
@@ -42,7 +45,7 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
     }).catch(error=>{if(!controller.signal.aborted)setAdmission({nip:selectedNip,state:'error',error:error instanceof Error?error.message:'Nie udało się przygotować wyszukiwania.'})});},300);
     return()=>{clearTimeout(timer);if(expiry)clearTimeout(expiry);controller.abort()};
   },[selectedNip,preparationRequired,gateway,admissionRetry,busy]);
-  const admitted=!preparationRequired||admission.nip===selectedNip&&admission.state==='ready';
+  const admitted=(!requireAdmission||!!gateway.prepare&&/^\d{10}$/.test(selectedNip))&&(!preparationRequired||admission.nip===selectedNip&&admission.state==='ready');
   const sequence=useRef(0), verification=useRef<AbortController|null>(null), list=useRef<HTMLDivElement>(null);
   const visible=mode==='name'&&available&&open&&!selection&&query.trim().length>=2&&state!=='verifying';
   useEffect(()=>{const controller=new AbortController();setAvailable(false);setAvailabilityReady(false);
@@ -99,7 +102,7 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
           <CanonButton canonId="SRM-C08" usage="SupplierSearch:name-mode" type="button" aria-pressed={mode==='name'} disabled={busy||!available} aria-describedby={!available?id+'-unavailable':undefined} onClick={()=>changeMode('name')}>Nazwa spółki</CanonButton>
         </div>
         <form className="supplier-form" aria-label="Wyszukaj dostawcę" onSubmit={event=>{
-          event.preventDefault();if(busy||!admitted||gateway.prepare&&!availabilityReady)return;
+          event.preventDefault();if(busy||!admitted||gateway.prepare&&!requireAdmission&&!availabilityReady)return;
           if(mode==='nip'){onNipSearch();return;}
           if(available&&selection&&state!=='verifying')onNameSearch(selection);
           else setError('Wybierz i potwierdź spółkę z listy podpowiedzi.');
@@ -124,7 +127,7 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
                 {state==='ready'&&!!results.length&&<div className="supplier-list-footer"><span>{results.length===10?'Pierwsze 10 dopasowań':'Liczba dopasowań: '+results.length}</span><span>↑ ↓ wybór · Enter zatwierdź</span></div>}
               </div>}
             </div>
-            <CanonButton canonId="SRM-C01" usage="SupplierSearch:submit" type="submit" className="supplier-submit" disabled={busy||!admitted||!!gateway.prepare&&!availabilityReady||mode==='name'&&(!selection||state==='verifying'||!available)}>{busy?'Wyszukiwanie…':preparationRequired&&admission.state==='loading'?'Przygotowanie…':'Wyszukaj'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></CanonButton>
+            <CanonButton canonId="SRM-C01" usage="SupplierSearch:submit" type="submit" className="supplier-submit" disabled={busy||!admitted||!!gateway.prepare&&!requireAdmission&&!availabilityReady||mode==='name'&&(!selection||state==='verifying'||!available)}>{busy?'Wyszukiwanie…':preparationRequired&&admission.state==='loading'?'Przygotowanie…':'Wyszukaj'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></CanonButton>
           </div>
           {preparationRequired&&admission.state==='loading'&&<p role="status">Przygotowanie wyszukiwania…</p>}
           {preparationRequired&&['error','expired'].includes(admission.state)&&<p role="alert">{admission.error} <button type="button" onClick={()=>setAdmissionRetry(n=>n+1)}>Przygotuj ponownie</button></p>}

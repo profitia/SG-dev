@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+  "targetEnvironment": "development",
+  "state": "SOURCE_PREPARATION_ONLY_NOT_INSTALLED_OR_ACTIVATED",
+  "renderServiceId": "srv-dbeh6srrjlhs73fmikrg",
+  "publicOrigin": "https://srm-krs-pilot2-development.onrender.com",
+  "privateAuthority": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "databaseName": "platform_private",
+    "humanRole": "srm_private_development_runtime",
+    "jobsRole": "srm_pilot2_jobs",
+    "directory": "EXISTING_AUTHORITATIVE_E1_NO_ACCOUNT_OR_MEMBERSHIP_COPY",
+    "humanEntry": "EXISTING_SINGLE_SRM_APPLICATION_FOREGROUND_BINDING",
+    "executorAndCatalogCredentials": "DISTINCT_PILOT2_LOGINS",
+    "existingHumanCredentialsRotated": false
+  },
+  "publicCatalog": {
+    "projectId": "snowy-breeze-40315151",
+    "branchId": "br-summer-rain-b1nwbcbr",
+    "databaseName": "srm_app",
+    "host": "ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech",
+    "readerRole": "srm_pilot2_catalog_reader",
+    "tables": ["catalog_companies", "catalog_financial_facts", "catalog_financial_indicators"],
+    "clonedPrivateTablesReadable": false
+  },
+  "authority": {
+    "newHumanAccountsOrGrants": false,
+    "organisationSource": "SERVER_HOST_CONTEXT_VALIDATED_BY_EXISTING_E1",
+    "formAdmission": "EXISTING_SQL025_AND_COMMON_HOSTS",
+    "postClickClerkReads": false,
+    "technicalControlsAndAudit": "REMAIN_CURRENT",
+    "privateJdgKysExports": "SEPARATE_CURRENT_AUTHORITY_REQUIRED",
+    "paidAcquisitionWhileTyping": false
+  },
+  "registryLkg": {
+    "sourceSha": "0c3925d9aae1240a60f7c74727af6fba2724a6d1",
+    "retainedArtifactDeployId": "dep-dbeqar3rjlhs738hm6n0",
+    "artifactDigest": "9eef21708eb31b1a7f42a9ad43c403eb3a0135f0f76133e8971b1f7a2f72c2af",
+    "configurationDigest": "3a407ddb04d32b6126cd5ac4bc5026fd9f5ef18e5eb5fb4cdc4ab69c1a768d07",
+    "realRollbackAndRollforwardVerified": true
+  },
+  "scope": {
+    "stagingMutation": false,
+    "sharedRuntimeDeployment": false,
+    "productionMutation": false,
+    "newCompute": false
+  }
+}
