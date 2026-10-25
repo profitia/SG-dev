@@ -1,5 +1,6 @@
 const paths=new Set(['/api/xray/admission','/api/xray/krs/status','/api/xray/krs/search','/api/xray/krs/verify','/api/xray/krs/lookup','/api/xray/search','/api/xray/lookup','/api/xray/report-data'])
 const reportPaths=new Set(['/api/xray/krs/lookup','/api/xray/search','/api/xray/lookup','/api/xray/report-data'])
+const privateKysPaths=new Set(['/api/xray/kys','/api/xray/jdg/kys'])
 type Grant={token:string;nip:string;readyUntil:string;expiresAt:string;bearer:string}
 const admissions=new WeakMap<typeof fetch,{grant:Grant|null;prepare:(nip:string,signal:AbortSignal)=>Promise<{readyUntil:string}>}>()
 export async function prepareReport(transport:typeof fetch,nip:string,signal:AbortSignal){
@@ -12,21 +13,32 @@ export async function prepareReport(transport:typeof fetch,nip:string,signal:Abo
 export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean})=>Promise<string|null>,transport:typeof fetch=fetch):typeof fetch{
  const entry:{grant:Grant|null;prepare:(nip:string,signal:AbortSignal)=>Promise<{readyUntil:string}>}={grant:null,prepare:async()=>{throw Error('UNAVAILABLE')}}
  const run:typeof fetch=async(input,init)=>{
-  if(typeof input!=='string'||!paths.has(input))return transport(input,init)
+  if(typeof input!=='string'||!paths.has(input)&&!privateKysPaths.has(input))return transport(input,init)
   init?.signal?.throwIfAborted()
   const start=performance.now()
   let grant=reportPaths.has(input)?entry.grant:null
   if(input==='/api/xray/search'&&grant){let body;try{body=JSON.parse(String(init?.body))}catch{};if(body?.identifier!==grant.nip)grant=null}
   if(grant&&Date.parse(grant.expiresAt)<=Date.now())throw Error('Przygotowanie wyszukiwania wygasło. Wpisz ponownie numer NIP.')
-  const token=grant?.bearer??await getToken(input==='/api/xray/admission'?{skipCache:true}:undefined)
+  const token=grant?.bearer??await getToken(input==='/api/xray/admission'||privateKysPaths.has(input)?{skipCache:true}:undefined)
   if(!token)throw Error('Sesja wygasła. Zaloguj się ponownie.')
   const sessionMs=performance.now()-start
   init?.signal?.throwIfAborted()
   const headers=new Headers(init?.headers);headers.set('Authorization','Bearer '+token)
   if(grant)headers.set('X-SRM-Report-Admission',grant.token)
-  const at=performance.now();let status=0
-  try{const response=await transport(input,{...init,headers});status=response.status;return response}
-  finally{try{console.info(JSON.stringify({event:'srm_client_request_timing',path:input,httpStatus:status,sessionMs:Math.round(sessionMs*100)/100,fetchMs:Math.round((performance.now()-at)*100)/100}))}catch{}}
+  const at=performance.now();let status=0,retries=0
+  try{
+   let response=await transport(input,{...init,headers});status=response.status
+   // A provider job may outlive the short Clerk bearer. Re-enter the same
+   // idempotent private intent once with current authority; never reuse the
+   // company admission or retry provider/network errors with a new command.
+   if(status===401&&privateKysPaths.has(input)&&init?.method==='POST'&&headers.has('Idempotency-Key')){
+    init.signal?.throwIfAborted();const fresh=await getToken({skipCache:true});init.signal?.throwIfAborted()
+    if(fresh){await response.body?.cancel();headers.set('Authorization','Bearer '+fresh);retries++
+     response=await transport(input,{...init,headers});status=response.status}
+   }
+   return response
+  }
+  finally{try{console.info(JSON.stringify({event:'srm_client_request_timing',path:input,httpStatus:status,sessionMs:Math.round(sessionMs*100)/100,fetchMs:Math.round((performance.now()-at)*100)/100,...(retries?{sessionRefreshRetries:retries}:{})}))}catch{}}
  }
  entry.prepare=async(nip,signal)=>{
   entry.grant=null

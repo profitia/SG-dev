@@ -118,17 +118,9 @@ export class SupplierReportController {
     finally{if(generation===this.generation)this.update({busy:false});}
   };
   refreshMetadata = async () => {
-    // Name-mode metadata was composed from the identity-eligible financial result.
-    // Do not replace it with an unrelated legacy NIP cache or start another acquisition.
-    if(this.nameSelection){
-      const metadata=this.state.metadata,ref=this.privateKysReference;
-      if(metadata&&ref!==undefined){
-        const valid=ref&&ref.nip===this.nameSelection.nip&&ref.entityType==='COMPANY'&&Date.parse(ref.retentionUntil)>this.now().getTime();
-        this.update({metadata:{...metadata,kys:{...metadata.kys,exportRef:valid?ref.exportRef:null,
-          freshness:valid?{...metadata.kys.freshness,retrievedAt:ref.retrievedAt,retentionUntil:ref.retentionUntil}:metadata.kys.freshness}}});
-      }
-      return;
-    }
+    // Selected-company Financial stays bound to its reconciled acquisition.
+    // Only an explicit private KYS action requires fresh stored KYS metadata.
+    if(this.nameSelection&&this.privateKysReference===undefined)return;
     const result = this.state.result, nip = supplierNip(result); if (!result || !nip || inactiveSupplier(result)) return;
     const generation = this.generation, sequence = ++this.metadataSequence;
     this.metadataRequest?.abort(); const request = new AbortController(); this.metadataRequest = request;
@@ -145,7 +137,8 @@ export class SupplierReportController {
         payload.kys={...payload.kys,exportRef:valid?ref.exportRef:null,
           freshness:valid?{...payload.kys.freshness,retrievedAt:ref.retrievedAt,retentionUntil:ref.retentionUntil}:payload.kys.freshness};
       }
-      this.update({ metadata: payload });
+      this.update({ metadata: this.nameSelection&&this.state.metadata
+        ? {...this.state.metadata,kys:payload.kys} : payload });
     } catch (error) { if (generation === this.generation && sequence === this.metadataSequence) this.update({ metadata: null, metadataError: message(error, "Metadane aktualności są niedostępne.") }); }
     finally { if (generation === this.generation && sequence === this.metadataSequence) this.update({ metadataBusy: false }); }
   };
