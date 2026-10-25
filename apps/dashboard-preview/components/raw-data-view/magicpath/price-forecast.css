@@ -1,0 +1,43 @@
+/* CHT-05 · SRM-C75/C76:illustrative forecast only; no implied coverage percentage. */
+/* Series identity stays stable across curves, anchors, legends and label placement. */
+.srm-price-line-surface { --forecast-upper-color:var(--negative-text,#A63830); --forecast-lower-color:var(--success-text,#176747); }
+.srm-forecast-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin:0 1.5rem 1.25rem; font-size:0.75rem; color:var(--brand-dark); }
+.srm-forecast-toggle { display:inline-flex; align-items:center; gap:0.5rem; cursor:pointer; min-height:1.5rem; }
+.srm-forecast-toggle input { width:1rem; height:1rem; margin:0; accent-color:var(--brand); cursor:pointer; }
+.srm-forecast-toggle input:focus-visible { outline:0.125rem solid var(--brand-light); outline-offset:0.1875rem; }
+.srm-forecast-demo { font-size:0.6875rem; color:var(--muted); }
+.srm-forecast-bound { fill:none; stroke:var(--brand); stroke-opacity:1; stroke-width:1.25; vector-effect:non-scaling-stroke; stroke-linecap:round; }
+.srm-forecast-bound[data-forecast-line="upper"] { stroke:var(--forecast-upper-color); }
+.srm-forecast-bound[data-forecast-line="lower"] { stroke:var(--forecast-lower-color); }
+.srm-forecast-central { fill:none; stroke:var(--brand); stroke-width:2; stroke-dasharray:5 4; vector-effect:non-scaling-stroke; stroke-linecap:round; }
+/* CHT-05/06:rigid screen-space landmarks, independent of plot aspect ratio. */
+.srm-forecast-annotations,.srm-chart-observations { position:absolute; inset:0; pointer-events:none; }
+.srm-forecast-text { position:absolute; display:block; font-family:inherit; font-size:.6875rem; font-weight:400; line-height:1.4; white-space:nowrap; color:var(--muted); text-shadow:0 0 .25rem var(--theme-surface,#fff); }
+.srm-forecast-last-date { top:.5rem; transform:translateX(-50%); }
+.srm-forecast-end-label { color:var(--brand); transform:translate(calc(-100% - .625rem),calc(-100% - .5rem)); }
+.srm-forecast-end-label.is-upper { color:var(--forecast-upper-color); }
+.srm-forecast-end-label.is-central { font-weight:600; }
+.srm-forecast-end-label.is-lower { color:var(--forecast-lower-color); transform:translate(calc(-100% - .625rem),.5rem); }
+.srm-forecast-anchor,.srm-chart-observations .srm-backtest-point { position:absolute; display:block; box-sizing:border-box; aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%); }
+.srm-forecast-anchor { width:.625rem; height:.625rem; border:.125rem solid var(--theme-surface,white); background:var(--action-fill,var(--brand)); }
+.srm-chart-observations .srm-backtest-point { width:.4375rem; height:.4375rem; border:.109375rem solid var(--sand); background:var(--theme-surface,white); }
+.srm-forecast-legend { display:flex; flex-wrap:wrap; align-items:center; gap:1.25rem; margin:0.25rem 2.955665% 0.75rem; font-size:0.6875rem; color:var(--muted); }
+.srm-forecast-legend span { display:inline-flex; align-items:center; gap:0.375rem; }
+.srm-forecast-legend i { display:block; width:1.25rem; flex:none; }
+.srm-forecast-legend .history { border-top:0.125rem solid var(--brand); }
+.srm-forecast-legend .central { border-top:0.125rem dashed var(--brand); }
+.srm-forecast-legend .corridor { height:0.625rem; border-top:0.0625rem solid var(--forecast-upper-color); border-bottom:0.0625rem solid var(--forecast-lower-color); background:color-mix(in srgb,var(--brand-light) 20%,transparent); }
+.srm-price-time-tick.is-boundary .srm-history-year { font-weight:650; color:var(--brand); }
+.srm-price-time-tick.is-boundary .srm-history-year-marker i { box-shadow:0 0 0 0.1875rem var(--blue-soft); }
+.srm-price-time-tick.is-forecast .srm-history-year-marker i { background:var(--theme-surface,white); border:0.0625rem solid var(--brand); }
+.srm-price-line-surface[data-transitioning="true"] .srm-chart-crosshair { pointer-events:none; }
+.srm-price-line-surface[data-forecast="true"] .srm-price-line-canvas { min-width:48rem; }
+.srm-price-line-surface[data-forecast="true"][data-chart-interval="monthly"] .srm-price-line-canvas { min-width:34rem; }
+.srm-price-line-surface[data-forecast="true"][data-chart-interval="yearly"] .srm-price-line-canvas { min-width:28rem; }
+
+/* CHT-06:neutral signed error; beige never implies favorable/unfavorable pricing. */
+.srm-backtest-line { fill:none; stroke:var(--sand); stroke-width:2; stroke-dasharray:4 3; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+
+.srm-forecast-legend .backtest { border-top:0.125rem dashed var(--sand); }
+.srm-forecast-legend .delta { height:0.625rem; background:color-mix(in srgb,var(--sand) 30%,transparent); border-block:0.0625rem solid var(--sand); }
+.srm-backtest-note { margin:0.25rem 2.955665% 1rem; font-size:0.6875rem; line-height:1.6; color:var(--muted); }

@@ -1,0 +1,13 @@
+/* SRM UI COLOR CANON v0.1 — prototype, 12.10.2026.
+Brand roles are stable across screens; semantic radar colors are independent.
+No financial formula, qualification or normalization is changed here. */
+.srm-ui,.srm-history,.srm-color-canon{
+ --brand:var(--canon-brand,#005A9C);--brand-dark:var(--canon-brand-dark,#003366);--brand-light:var(--canon-brand-light,#66B2FF);--sand:var(--canon-sand,#D2B48C);--mist:var(--canon-mist,#F8F9FA);
+ --surface:var(--canon-surface,#FFFFFF);--ink:var(--canon-ink,var(--brand-dark));--blue:var(--canon-blue,var(--brand));--page:var(--canon-page,var(--mist));
+ --text:var(--canon-text,#294D70);--muted:var(--canon-muted,#526A82);--line:var(--canon-line,#D6E0E9);--faint-line:var(--canon-faint-line,#E7EDF2);
+ --blue-soft:var(--canon-blue-soft,#EAF3FF);--sand-soft:var(--canon-sand-soft,#F7F1E8);--neutral:var(--canon-neutral,#EDF1F4);
+ --success:var(--canon-success,#25815F);--success-text:var(--canon-success-text,#176747);--success-soft:var(--canon-success-soft,#DDEFE6);
+ --caution:var(--canon-caution,#D49A2A);--caution-text:var(--canon-caution-text,#805400);--caution-soft:var(--canon-caution-soft,#FCF0D6);
+ --negative:var(--canon-negative,#C8554C);--negative-text:var(--canon-negative-text,#A63830);--negative-soft:var(--canon-negative-soft,#F9E4E1);
+ --unknown:var(--canon-unknown,#718191);--unknown-soft:var(--canon-unknown-soft,#F0F3F5);--reference:var(--canon-reference,#465B70);
+}

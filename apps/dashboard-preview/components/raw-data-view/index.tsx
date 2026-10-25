@@ -1,5 +1,8 @@
 'use client'
 
+import {BenchmarkChartControls, BenchmarkVisualSelect, BenchmarkForecastHelp, BenchmarkVerificationPlaceholder, BenchmarkPreparationMotion} from './benchmark-visual'
+import {MagicPathBenchmarkChart} from './magicpath-benchmark-chart'
+
 import { useEmbeddedReadPresentation } from '../native-embedded-read-provider'
 import {nativeForecastCommandFromUi,nativeForecastCompletionPlan,type NativeForecastCommandOutcome,type NativeForecastCommandSelection} from '@/lib/benchmark-forecast/native-command-presentation'
 
@@ -3351,6 +3354,18 @@ export function RawDataView({
     window.localStorage.setItem('tsiv-theme', theme)
   }, [theme])
 
+  useEffect(() => {
+    if (!isBenchmarkMode || !nativeParentOrigin || window.parent === window) return
+    const receiveTheme = (event: MessageEvent) => {
+      if (event.source !== window.parent || event.origin !== nativeParentOrigin) return
+      const message = event.data
+      if (message?.type === 'profitia.benchmark-theme' && message.version === 1 && (message.theme === 'light' || message.theme === 'dark')) setTheme(message.theme)
+    }
+    window.addEventListener('message', receiveTheme)
+    window.parent.postMessage({type: 'profitia.benchmark-theme.ready', version: 1}, nativeParentOrigin)
+    return () => window.removeEventListener('message', receiveTheme)
+  }, [isBenchmarkMode, nativeParentOrigin])
+
   function toggleTheme() {
     setTheme((current) => current === 'light' ? 'dark' : 'light')
   }
@@ -4628,7 +4643,7 @@ export function RawDataView({
   }
 
   return (
-    <div className={`shell-grid${hideEmbeddedBenchmarkShell ? ' is-embedded' : ''}`}>
+    <div className={`shell-grid${hideEmbeddedBenchmarkShell ? ' is-embedded' : ''}${isBenchmarkMode ? ' srm-ui bf-chart-workspace' : ''}`}>
       {hideEmbeddedBenchmarkShell ? null : <section className="panel filter-panel" style={{ gridColumn: 'span 12' }}>
         {embedded ? null : (
           <div className="filters-topbar">
@@ -4663,6 +4678,7 @@ export function RawDataView({
           </div>
         )}
 
+        <BenchmarkChartControls enabled={isBenchmarkMode}>
         <div className="filter-grid">
           {isForecastPortfolioVariant && isBenchmarkMode ? (
             <>
@@ -4677,20 +4693,20 @@ export function RawDataView({
                   <label className="control-check control-check-inline forecast-portfolio-toggle">
                     <input type="checkbox" checked={showForecast} onChange={(event) => setShowForecast(event.target.checked)} />
                     <span className="forecast-portfolio-toggle-copy">
-                      <strong>{t('showForecast')}</strong>
+                      <strong>{locale === 'pl' ? 'Prognozy' : 'Forecasts'}</strong>
                       <small>
                         {preparedReadsOnly && forecastCapabilityState === 'loading'
                           ? t('forecastReadinessLoading')
                           : preparedReadsOnly && forecastCapabilityState === 'error'
                             ? t('forecastReadinessUnavailable')
-                            : t('showForecastHint')}
+                            : locale === 'pl' ? 'Korytarz przyszłej ceny' : 'Future price corridor'}
                       </small>
                     </span>
                   </label>
 
                   <div className={`control-block control-mode-group forecast-portfolio-group forecast-model-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
                     <span className="control-group-label">{t('forecastModel')}</span>
-                    <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastModel')}>
+                    <BenchmarkVisualSelect className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastModel')}>
                     {FORECAST_PORTFOLIO_MODELS.map((model) => {
                       const capability = preparedReadsOnly
                         ? resolveCapabilityVariant(forecastCapabilitySnapshot, model, selectedForecastTargetBasis)
@@ -4733,7 +4749,7 @@ export function RawDataView({
                         </button>
                       )
                     })}
-                    </div>
+                    </BenchmarkVisualSelect>
                   </div>
 
                   <div className={`control-block control-mode-group forecast-portfolio-group forecast-target-basis-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
@@ -4745,7 +4761,7 @@ export function RawDataView({
                         tabIndex={showForecast ? 0 : -1}
                       />
                     </div>
-                    <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastTargetBasis')}>
+                    <BenchmarkVisualSelect className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastTargetBasis')}>
                     {FORECAST_TARGET_BASES.map((targetBasis) => {
                       const capability = preparedReadsOnly
                         ? resolveCapabilityVariant(forecastCapabilitySnapshot, forecastModel, targetBasis)
@@ -4788,7 +4804,7 @@ export function RawDataView({
                         </button>
                       )
                     })}
-                    </div>
+                    </BenchmarkVisualSelect>
                   </div>
                 </div>
 
@@ -4808,7 +4824,7 @@ export function RawDataView({
                       }}
                     />
                     <span className="forecast-portfolio-toggle-copy">
-                      <strong>{t('showForecastVerification')}</strong>
+                      <strong>{locale === 'pl' ? 'Sprawdzalność' : 'Verification'}</strong>
                       <small>{selectedVerificationPrepared ? t('showForecastVerificationHint') : t('verificationPreparationAvailableHint')}</small>
                     </span>
                   </label>
@@ -4886,10 +4902,11 @@ export function RawDataView({
                           </div>
                         </div>
                       </section>
-                    ) : null}
+                    ) : <BenchmarkVerificationPlaceholder locale={locale}/>}
                   </div>
                 </div>
 
+                <BenchmarkForecastHelp model={forecastModel} locale={locale}>
                 <details className="forecast-explanations">
                   <summary>
                     <span className="forecast-explanations-summary-copy">
@@ -4927,6 +4944,7 @@ export function RawDataView({
                     </table>
                   </div>
                 </details>
+                </BenchmarkForecastHelp>
               </div>
             </>
           ) : !isBenchmarkMode ? (
@@ -5033,7 +5051,8 @@ export function RawDataView({
           </div>
         ) : null}
         {isForecastPortfolioVariant && forecastCurrentObservedProgressState === 'PREPARING' ? (
-          <div className="callout" role="status" aria-live="polite">
+          <div className="callout bf-preparing" role="status" aria-live="polite">
+            <BenchmarkPreparationMotion/>
             <strong>{t('forecastPreparing')}</strong>
             <p>{t('forecastPreparingHint')}</p>
           </div>
@@ -5053,7 +5072,8 @@ export function RawDataView({
           </div>
         ):null}
         {isForecastPortfolioVariant && forecastCurrentObservedProgressState === 'QUEUED' ? (
-          <div className="callout" role="status" aria-live="polite">
+          <div className="callout bf-preparing" role="status" aria-live="polite">
+            <BenchmarkPreparationMotion/>
             <strong>{t('forecastQueued')}</strong>
             <p>{t('forecastQueuedHint')}</p>
           </div>
@@ -5071,7 +5091,8 @@ export function RawDataView({
           </div>
         ) : null}
         {isForecastPortfolioVariant && showForecast && showForecastVerification && forecastVerificationBannerState ? (
-          <div className="callout" role="status" aria-live="polite">
+          <div className="callout bf-preparing" role="status" aria-live="polite">
+            <BenchmarkPreparationMotion/>
             <strong>{forecastVerificationBannerState === 'PREPARING' ? t('verificationPreparing') : t('verificationQueued')}</strong>
             <p>{forecastVerificationBannerState === 'PREPARING'
               ? t('verificationPreparingHint')
@@ -5135,9 +5156,18 @@ export function RawDataView({
             <p>{forecastVerificationErrorState.message}</p>
           </div>
         ) : null}
+        </BenchmarkChartControls>
       </section>}
 
-      <ChartPanel
+      {isBenchmarkMode ? <MagicPathBenchmarkChart
+        payload={activePayload}
+        emptyMessage={benchmarkRequired ? t('chartNeedsBenchmark') : t('chartEmpty')}
+        isLoading={isChartLoading}
+        loadingTitle={t('loadingTitle')}
+        showForecastAccuracy={isForecastPortfolioVariant ? showForecast && showForecastVerification : false}
+        initialPreset={benchmarkRange}
+        onPresetChange={setBenchmarkRange}
+      /> : <ChartPanel
         locale={locale}
         payload={activePayload}
         emptyMessage={benchmarkRequired ? t('chartNeedsBenchmark') : t('chartEmpty')}
@@ -5154,7 +5184,7 @@ export function RawDataView({
         lockServerRange={isBenchmarkMode}
         onPresetChange={isBenchmarkMode ? setBenchmarkRange : undefined}
         embedded={embedded}
-      />
+      />}
     </div>
   )
 }
