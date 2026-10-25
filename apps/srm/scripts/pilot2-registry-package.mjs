@@ -36,7 +36,7 @@ export function prepareRegistryPackages(repo,output,proof){
   fs.copyFileSync(path.join(repo,'apps/srm/deployment/pilot2-registry-'+name),path.join(app,name))
   proof.changedFiles.push('apps/srm/'+name)
  }
- const copies=[['packages/platform-contracts',['src','package.json','package-lock.json']],
+ const copies=[['packages/platform-contracts',['src','migrations','package.json','package-lock.json']],
   ['packages/krs-registry-contracts',['src','package.json','package-lock.json','tsconfig.json']],
   ['apps/krs-registry-runtime',['src','package.json','package-lock.json','tsconfig.json','migrations']]]
  proof.registryPackages=[]

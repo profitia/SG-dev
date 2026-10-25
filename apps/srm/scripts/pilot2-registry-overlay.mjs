@@ -20,6 +20,10 @@ export function registryPilot2(repo,output,proof){
   fs.writeFileSync(file,action(source));if(!proof.changedFiles.includes(name))proof.changedFiles.push(name)
  }
  const replace=replaceRegistrySeam
+ patch('apps/srm/app/api/health/route.ts',source=>replace(
+  'import {getPilot2Registry} from "../../../src/server/pilot2-registry";\n'+source,
+  'export function GET() {',
+  'export async function GET() {\n  try{await getPilot2Registry()}catch{return Response.json({status:"unavailable",service:"srm"},{status:503})}'))
  patch('apps/srm/src/server/msr-repository.ts',source=>replace(
   'import {requirePilot2FinancialAcquisition} from "./pilot2-registry";\n'+source,
   'claim:(c,id) => withOrganization(organizationId,client => claimMsrSource(client,organizationId,c,id,requestId)),',
@@ -78,7 +82,7 @@ export function registryPilot2(repo,output,proof){
  })
  patch('apps/srm/next.config.ts',source=>replace(replace(source,
   'serverExternalPackages: ["pdfkit"]','serverExternalPackages: ["pdfkit","@profitia/platform-contracts","@profitia/krs-registry-contracts","@profitia/krs-registry-runtime"]'),
-  'outputFileTracingIncludes: {','outputFileTracingIncludes: { "/*": ["./node_modules/@profitia/platform-contracts/src/**/*","./node_modules/@profitia/krs-registry-contracts/dist/**/*","./node_modules/@profitia/krs-registry-runtime/dist/**/*"],'))
+  'outputFileTracingIncludes: {','outputFileTracingIncludes: { "/*": ["./node_modules/@profitia/platform-contracts/src/**/*","./node_modules/@profitia/platform-contracts/migrations/**/*","./node_modules/@profitia/krs-registry-contracts/dist/**/*","./node_modules/@profitia/krs-registry-runtime/dist/**/*"],'))
  const copy=(name,destination=name)=>{
   const to=path.join(output,destination)
   if(fs.existsSync(to))throw Error('Registry helper would overwrite baseline source: '+destination)

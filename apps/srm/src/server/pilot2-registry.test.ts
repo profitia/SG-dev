@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {pilot2RegistryConnection,readyPilot2RegistryReport,withPilot2RegistrySelection,withPilot2ReadyReport,requirePilot2FinancialAcquisition} from './pilot2-registry'
+import {getPilot2Registry,pilot2RegistryConnection,readyPilot2RegistryReport,withPilot2RegistrySelection,withPilot2ReadyReport,requirePilot2FinancialAcquisition} from './pilot2-registry'
 import {FINANCIAL_QUALITY_RULE} from '@profitia/srm-xray'
 import {FINANCIAL_REVISION_RULE} from './financial-revisions'
 import {COMPANY_IDENTITY_VERSION} from './company-continuity'
@@ -34,4 +34,10 @@ test('Source connection refuses Staging, other roles, databases and weaker TLS',
  const url='postgresql://krs_ingest:fixture@ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech/krs_registry_pilot?sslmode=require'
  assert.equal(pilot2RegistryConnection(url,'krs_ingest').ssl.rejectUnauthorized,true)
  for(const value of [url.replace('krs_ingest:','neondb_owner:'),url.replace('/krs_registry_pilot?','/srm_app?'),url.replace('sslmode=require','sslmode=disable'),url+'&options=role%3Downer',url.replace('ep-fragrant-cloud-b1y6i4v8','ep-autumn-wildflower-b1mv0vda')])assert.throws(()=>pilot2RegistryConnection(value,'krs_ingest'))
+})
+test('real Source composition initializes across the app CJS and external ESM boundary without provider calls',async()=>{
+ const host='ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech/krs_registry_pilot?sslmode=require'
+ const runtime=await getPilot2Registry({RENDER_SERVICE_ID:'srv-dbeh6srrjlhs73fmikrg',TARGET_ENVIRONMENT:'development',RENDER_GIT_COMMIT:'a'.repeat(40),
+  GUS_BIR_API_KEY:'x'.repeat(20),KRS_PILOT2_READER_URL:'postgresql://krs_reader:fixture@'+host,KRS_PILOT2_SOURCE_URL:'postgresql://krs_ingest:fixture@'+host})
+ assert.equal(typeof runtime.resolve,'function')
 })

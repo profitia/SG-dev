@@ -22,6 +22,10 @@ test('registry stage retains all financial formula, parser, UI and freshness byt
   }
   for(const [file,digest]of Object.entries(proof.originalFiles))if(file.startsWith('apps/srm/src/modules/')||file.startsWith('apps/srm/src/components/'))assert.equal(hash(fs.readFileSync(path.join(out,file))),digest,file)
   assert.equal(proof.overlay.stage,'REGISTRY');assert.equal(proof.overlay.humanAuthorizationStage,'NOT_YET_ADOPTED')
+  const nativeSchema='packages/platform-contracts/migrations/access/012-native-external-transport.sql'
+  assert.equal(hash(fs.readFileSync(path.join(out,nativeSchema))),hash(fs.readFileSync(path.join(repo,nativeSchema))))
+  assert.match(fs.readFileSync(path.join(out,'apps/srm/next.config.ts'),'utf8'),/platform-contracts\/migrations\/\*\*\/\*/)
+  assert.match(fs.readFileSync(path.join(out,'apps/srm/app/api/health/route.ts'),'utf8'),/await getPilot2Registry\(\)/)
   const engine=fs.readFileSync(path.join(out,'apps/srm/src/server/xray-lookup.ts'),'utf8')
   assert(engine.indexOf('if(registry)financial=await reconcilePilot2Financial')<engine.indexOf('await atLookupStage("source_archive"'))
   assert(engine.indexOf('if(registry)msr={...await reconcilePilot2Financial')<engine.indexOf('const savedFinancial ='))

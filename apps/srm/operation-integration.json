@@ -4476,5 +4476,27 @@
       "src/server/account-recheck-adoption.test.ts": "900d56a2f7a00097c0e44d461d780090d7edf2b7ff23fa1ae4d501649b47523f",
       "src/server/peer-read-boundary.test.ts": "07f7a606d1172d4b565f84b6e374311b7a77fb065920cb41ac49dc4e2a6b5536"
     }
+  },
+  "pilot2RuntimeClosureCorrection": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "previousSourceSha": "4fa7ce9b43e28b523485bc6d2557f40bc2e6ab4d",
+    "previousReceiptSha256": "fad854313cf209aad34f6c14bbccbe4ee90383673492eee8fa620367f1883a2a",
+    "scope": "ISOLATED_PILOT2_RUNTIME_PACKAGE_CLOSURE",
+    "immutableSchemaAssetsShipped": true,
+    "externalHostUsesSameEsmInstance": true,
+    "standaloneInitializerRequiredBeforeArtifactAcceptance": true,
+    "identityOrPolicySemanticsChanged": false,
+    "runtimeActivationClaimed": false,
+    "applicationSourceDigests": {
+      "src/server/pilot2-registry.ts": "43829e9cdeb50e941fb5617248438ae905b4c37961bc00375527e2a18d4a8a35",
+      "src/server/pilot2-registry.test.ts": "f7e3ad2d5ed60e069b30896657f7e10df14217acbc4859beb82520dea8feadf2",
+      "scripts/pilot2-registry-package.mjs": "f73796aeded60d26d389e43d8af665256b66f64983b34d18eec6a6312dde5632",
+      "scripts/pilot2-registry-overlay.mjs": "5d012a628fcd2ed231aa4072b00ec3783a3976a232eb57d7cc5133a75f9aae60",
+      "scripts/pilot2-registry-overlay.test.mjs": "60a2a209722b83683c257aec5d62a70609f75a8ca092ce05e2ce4b5cda550f54",
+      "scripts/pilot2-registry-smoke.mjs": "9addee0def55d6f3659c99b8394544ab11d8122f39baedd521292e9bc6178023",
+      "scripts/pilot2-baseline.mjs": "5ea113b10e7ec7c7de349d1e54b6061bcc75a9662eb26396dcf6f8221a59428b",
+      "src/server/account-recheck-adoption.test.ts": "59f046b8eb038e451ea2404053cb2d86190f97330d8d548d7804d36eb539af3a",
+      "src/server/peer-read-boundary.test.ts": "992153e7942ae0029255e45435c17d06c574c94dd756c63c8a86206479d77fef"
+    }
   }
 }

@@ -3,7 +3,6 @@ import {createHash,randomUUID} from 'node:crypto'
 import {AsyncLocalStorage} from 'node:async_hooks'
 import type {GeneralCompanyData,FinancialData,SectionEnvelope} from '@profitia/srm-xray'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
-import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion'
 import {OperationDenied} from '@profitia/platform-contracts/operation-context'
 import {createSrmNativePgDriver} from './native-pg-driver'
 import {measureSupplierStage} from './supplier-telemetry'
@@ -77,9 +76,11 @@ export const reconcilePilot2Financial=(selection:Pilot2RegistrySelection,result:
 async function createRuntime(env:Env){
  if(env.RENDER_SERVICE_ID!==target.render.serviceId||env.TARGET_ENVIRONMENT!=='development'
   ||!env.RENDER_GIT_COMMIT||!/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT)||!/^[A-Za-z0-9]{20}$/.test(env.GUS_BIR_API_KEY??''))return deny()
- const [{resolveIdentity},{Catalog},{createNativeNipRegistrySource},
+ // Construct the host through the same ESM package instance as its external
+ // transport. A CJS/bundled host cannot carry the ESM module's private brand.
+ const [{createPlatformIngestionHost},{resolveIdentity},{Catalog},{createNativeNipRegistrySource},
   {createAdmittedGusSource,createGusMapper,GusError,GUS_ORIGIN,GUS_PATH},{createNipResolver}]=await Promise.all([
-  import('@profitia/krs-registry-runtime/identity'),import('@profitia/krs-registry-runtime/catalog'),
+  import('@profitia/platform-contracts/platform-ingestion'),import('@profitia/krs-registry-runtime/identity'),import('@profitia/krs-registry-runtime/catalog'),
   import('@profitia/krs-registry-runtime/native'),import('@profitia/krs-registry-runtime/gus'),import('@profitia/krs-registry-runtime/nip-resolver')])
  const reader=new pg.Pool(pilot2RegistryConnection(env.KRS_PILOT2_READER_URL,'krs_reader'))
  const sourceOptions=pilot2RegistryConnection(env.KRS_PILOT2_SOURCE_URL,'krs_ingest')

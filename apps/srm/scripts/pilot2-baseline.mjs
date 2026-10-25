@@ -108,6 +108,9 @@ export function buildBaseline(repo,t,output,stage='BASELINE'){
  if(candidates.length!==1)deny('One actual Next standalone entry required')
  const entry=path.join(standalone,candidates[0].path),relative='./'+path.relative(output,entry).split(path.sep).join('/')
  const serverDirectory=path.dirname(entry)
+ // Exercise the external runtime from the actual standalone closure before
+ // accepting its artifact. This performs no SQL or provider HTTP requests.
+ if(stage==='REGISTRY')execFileSync(process.execPath,[path.join(repo,'apps/srm/scripts/pilot2-registry-smoke.mjs'),path.join(serverDirectory,'node_modules')],{stdio:'inherit'})
  fs.mkdirSync(path.join(serverDirectory,'.next'),{recursive:true})
  fs.cpSync(path.join(app,'.next/static'),path.join(serverDirectory,'.next/static'),{recursive:true})
  fs.cpSync(path.join(app,'public'),path.join(serverDirectory,'public'),{recursive:true})
