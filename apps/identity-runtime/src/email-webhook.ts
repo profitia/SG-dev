@@ -10,7 +10,7 @@ export type EmailInstruction = Readonly<{
   registrationAttemptId?: string
   expiresAt: number
 } & ({ kind: 'verification-code'; otpCode: string } | { kind: 'invitation'; actionUrl: string; expiresInDays: number }
-  | { kind:'new-device-sign-in';signInMethod:string|null;browserName:string;operatingSystem:string;location:string;ipAddress:string;sessionCreatedAt:string;revokeSessionUrl:string|null })>
+  | { kind:'new-device-sign-in';subject:string;signInMethod:string|null;browserName:string;operatingSystem:string;location:string;ipAddress:string;sessionCreatedAt:string;revokeSessionUrl:string|null })>
 export type EmailEventDecision = Readonly<
   { status: 'ignored'; reason: 'clerk-delivery' | 'unsupported-template' | 'expired' }
   | { status: 'ready'; instruction: EmailInstruction }
@@ -84,7 +84,7 @@ export function createClerkEmailVerifier(config: {
       if (createdAt + 300000 <= clock) return Object.freeze({ status: 'ignored', reason: 'expired' })
       const recipient = mailbox(data.to_email_address)
       const vars = object(data.data)
-      let content: Pick<Extract<EmailInstruction,{kind:'new-device-sign-in'}>,'kind'|'signInMethod'|'browserName'|'operatingSystem'|'location'|'ipAddress'|'sessionCreatedAt'|'revokeSessionUrl'>|{kind: 'verification-code'; otpCode: string} | {kind: 'invitation'; actionUrl: string; expiresInDays: number}
+      let content: Pick<Extract<EmailInstruction,{kind:'new-device-sign-in'}>,'kind'|'subject'|'signInMethod'|'browserName'|'operatingSystem'|'location'|'ipAddress'|'sessionCreatedAt'|'revokeSessionUrl'>|{kind: 'verification-code'; otpCode: string} | {kind: 'invitation'; actionUrl: string; expiresInDays: number}
       if (data.slug === 'verification_code') {
         if (typeof vars.otp_code !== 'string' || !/^\d{6}$/.test(vars.otp_code)) return reject()
         content = {kind: 'verification-code', otpCode: vars.otp_code}
@@ -98,7 +98,7 @@ export function createClerkEmailVerifier(config: {
           if(url.protocol!=='https:'||url.username||url.password||url.hash||/[\x00-\x20\x7f\\]/.test(raw)||!revokeOrigins.includes(url.origin))return reject()
           revokeSessionUrl=raw
         }
-        content={kind:'new-device-sign-in',signInMethod:vars.sign_in_method==null?null:field(vars.sign_in_method,100),browserName:field(vars.browser_name,100),operatingSystem:field(vars.operating_system,100),location:field(vars.location),ipAddress,sessionCreatedAt:field(vars.session_created_at),revokeSessionUrl}
+        content={kind:'new-device-sign-in',subject:field(data.subject),signInMethod:vars.sign_in_method==null?null:field(vars.sign_in_method,100),browserName:field(vars.browser_name,100),operatingSystem:field(vars.operating_system,100),location:field(vars.location),ipAddress,sessionCreatedAt:field(vars.session_created_at),revokeSessionUrl}
       } else {
         const invitation = object(vars.invitation)
         if (typeof vars.action_url !== 'string' || vars.action_url.length > 2000 || /[\x00-\x20\x7f]/.test(vars.action_url)) return reject()

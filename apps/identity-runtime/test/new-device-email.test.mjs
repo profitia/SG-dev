@@ -46,7 +46,7 @@ test('foreign, insecure, credentialed, ambiguous and fragment-bearing action URL
 const key=Buffer.alloc(32,7),clock=Date.now(),seconds=String(Math.floor(clock/1000));
 const config={environment:'development',instanceId:'ins_test1234',signingSecret:'whsec_'+key.toString('base64')};
 const variables={sign_in_method:'Email code',browser_name:'Chrome',operating_system:'macOS',location:'Example location',ip_address:'192.0.2.10',session_created_at:'2026-10-25T16:51:00Z',revoke_session_url:url};
-const event={type:'email.created',object:'event',instance_id:config.instanceId,timestamp:clock,data:{object:'email',id:'ema_security1234',slug:'new_device_sign_in',delivered_by_clerk:false,to_email_address:'synthetic@example.test',email_address_id:'idn_security1234',user_id:'user_security1234',data:variables}};
+const event={type:'email.created',object:'event',instance_id:config.instanceId,timestamp:clock,data:{object:'email',id:'ema_security1234',slug:'new_device_sign_in',subject:'[Development] New device signed in to your SpendGuru PORR account',delivered_by_clerk:false,to_email_address:'synthetic@example.test',email_address_id:'idn_security1234',user_id:'user_security1234',data:variables}};
 function signed(payload=event,signKey=key){const body=JSON.stringify(payload),id='msg_security1234';return new Request('https://identity.example/v1/webhooks/clerk-email',{method:'POST',headers:{'content-type':'application/json','svix-id':id,'svix-timestamp':seconds,'svix-signature':'v1,'+createHmac('sha256',signKey).update(`${id}.${seconds}.${body}`).digest('base64')},body});}
 const verify=createClerkEmailVerifier({...config,allowedRevocationOrigins:[origin]},()=>clock);
 test('new device intake is explicit opt-in, default/native Clerk delivery stays unchanged',async()=>{
@@ -56,7 +56,7 @@ test('new device intake is explicit opt-in, default/native Clerk delivery stays 
 });
 test('new device intake retains SDK signature, instance, subject/address pair and original action restrictions',async()=>{
   await assert.rejects(()=>verify(signed(event,Buffer.alloc(32,8))));await assert.rejects(()=>verify(signed({...event,instance_id:'ins_foreign1234'})));
-  for(const patch of [{user_id:null},{email_address_id:null},{user_id:'malformed'},{to_email_address:'one@example.test,two@example.test'},...[
+  for(const patch of [{user_id:null},{email_address_id:null},{user_id:'malformed'},{to_email_address:'one@example.test,two@example.test'},{subject:null},{subject:''},{subject:'x'.repeat(201)},{subject:'New sign-in\r\nBcc:other@example.test'},{subject:'{{app.name}}'},...[
     {revoke_session_url:'https://evil.example/revoke'},{revoke_session_url:origin+'/r#fragment'},{revoke_session_url:'http://example.clerk.accounts.dev/r'},
     {revoke_session_url:'https://u:p@example.clerk.accounts.dev/r'},{revoke_session_url:origin+'/r\n'},{revoke_session_url:origin+'\\@evil.example/r'},
     {ip_address:'not-ip'},{browser_name:'{{secret}}'},{operating_system:42},{location:'x'.repeat(201)},{session_created_at:''},
@@ -73,8 +73,8 @@ test('existing durable worker chooses persisted language/avatar and never execut
   const instruction=(await verify(signed())).instruction;let claim={instruction,emailId:instruction.emailId,token:'lease'},sent=[],settled=[];
   const runtime=createEmailRuntime({autoStart:false,now:()=>clock,verify,recipient:async()=> 'bound',
     store:{ready:async()=>{},enqueue:async()=> 'queued',claim:async()=>{const c=claim;claim=null;return c},begin:async()=>({avatar:'female',language:'en',firstName:'Anna'}),release:async()=>{},settle:async(c,s)=>settled.push(s)},
-    render:async(i,avatar,language,salutation)=>renderMailgunResolved({kind:i.kind,avatar,language,data:{...data,...i,...salutation},allowedRevocationOrigins:[origin]}),send:async m=>{sent.push(m);return{status:'accepted',providerId:'mailgun-synthetic'}}});
-  await runtime.tick();await runtime.tick();await runtime.stop();assert.equal(sent.length,1);assert.equal(sent[0].recipient,instruction.recipient);assert.match(sent[0].html,/New sign-in/);assert.equal(sent[0].template.name,'identity-new-device-sign-in-en-female');assert.equal(sent[0].template.variables.revoke_session_url,url);assert.deepEqual(settled,['accepted']);
+    render:async(i,avatar,language,salutation)=>({...renderMailgunResolved({kind:i.kind,avatar,language,data:{...data,...i,...salutation},allowedRevocationOrigins:[origin]}),subject:'Renderer must not replace the signed subject'}),send:async m=>{sent.push(m);return{status:'accepted',providerId:'mailgun-synthetic'}}});
+  await runtime.tick();await runtime.tick();await runtime.stop();assert.equal(sent.length,1);assert.equal(sent[0].recipient,instruction.recipient);assert.equal(sent[0].subject,event.data.subject);assert.match(sent[0].html,/New sign-in/);assert.equal(sent[0].template.name,'identity-new-device-sign-in-en-female');assert.equal(sent[0].template.variables.revoke_session_url,url);assert.deepEqual(settled,['accepted']);
 });
 
 test('ordinary PostgreSQL queue encrypts real notification fields, uses persisted PL/EN, deduplicates and clears sensitive payload', {timeout:60000},async t=>{
@@ -101,10 +101,11 @@ test('ordinary PostgreSQL queue encrypts real notification fields, uses persiste
     const i={...(await verify(signed())).instruction,emailId:'ema_notification'+language,eventId:'msg_notification'+language,createdAt:Date.now(),expiresAt:Date.now()+240000};
     assert.equal(await store.enqueue(i),'queued');assert.equal(await store.enqueue({...i,eventId:'msg_duplicate'+language}),'duplicate');
     const raw=(await f.admin.query('SELECT ciphertext FROM profitia_profile.email_outbox WHERE email_id=$1',[i.emailId])).rows[0].ciphertext;
-    for(const secret of [i.recipient,i.ipAddress,i.location,i.revokeSessionUrl])assert.ok(!raw.includes(secret));
+    for(const secret of [i.recipient,i.ipAddress,i.location,i.revokeSessionUrl,i.subject])assert.ok(!raw.includes(secret));
     const restarted=createEmailStore(cfg,f.transact);
     const send=createMailgunTransactionalSender({environment:'development',region:'eu',domain:'mail.example.test',from:'notifications@mail.example.test',senderName:'SpendGuru',recipientPolicy:'signed-clerk',authorizedRecipients:[],apiKey:'synthetic-transport-key-000000000000'},async(endpoint,init)=>{
       sends++;assert.equal(endpoint,'https://api.eu.mailgun.net/v3/mail.example.test/messages');
+      assert.equal(init.body.get('subject'),event.data.subject);
       assert.equal(init.body.get('template'),`identity-new-device-sign-in-${language}-female`);
       assert.equal(init.body.get('t:version'),mailgunTemplate(options.kind,'female',language).version);
       assert.equal(JSON.parse(init.body.get('t:variables')).revoke_session_url,url);
