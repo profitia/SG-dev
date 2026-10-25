@@ -2806,7 +2806,7 @@
       "components/benchmark-finder/visual/benchmark-presentation.tsx": "7d60fdd36102a5d71e9663fbacdea41f0066fa184236f6fdd60b237ed96e38f6",
       "components/benchmark-finder/visual/benchmark-chat.css": "ed9376dc1c0ddc0bfce61eb1abf5c630b1e8cc437e692a0c766c7c4975de5d06",
       "public/benchmark-visual/spendguru-avatar.png": "99e778fca02acce64867601fb90ecd89aaa24f5e2b38a0122c2e71fe9e173061",
-      "../dashboard-preview/components/raw-data-view/benchmark-visual.tsx": "1fd01384681bb525e53419d530792ff58bfe4af1c02b5087b0125ccfd9b082e4",
+      "../dashboard-preview/components/raw-data-view/benchmark-visual.tsx": "ca29e1d5353b56b9f79c85724a5e72d03f5e5b3c074541d300150529b53c7918",
       "../dashboard-preview/app/benchmark-canon.css": "f5e1619883d1f70e27be6354c2aa81c5332daf0756434646ca6f196efacd29ef",
       "tests/category-operation.test.ts": "a49786b442e5fe91eed4ef4bc6da281fa6e166c20dd324bec65b953d725d0cd6",
       "tests/identity-runtime.test.ts": "7690f5d19f4f566bf58cc9cc672fc9e54bce225eadb946224ed5c0bbea51248c",

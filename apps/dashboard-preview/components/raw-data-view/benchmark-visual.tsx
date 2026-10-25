@@ -383,6 +383,7 @@ export function useBenchmarkChartLayout<T extends {
     height: number;
     paddingLeft: number;
     paddingRight: number;
+    dateTickTarget?: number;
 }>(surfaceRef: React.RefObject<HTMLElement>, base: T): T {
     const [size, setSize] = useState<{
         width: number;
@@ -404,7 +405,7 @@ export function useBenchmarkChartLayout<T extends {
             observer.observe(controls);
         return () => observer.disconnect();
     });
-    return size ? { ...base, ...size, paddingLeft: 24, paddingRight: 24 } : base;
+    return size ? { ...base, ...size, paddingLeft: 24, paddingRight: 24, dateTickTarget: Math.max(2, Math.min(base.dateTickTarget ?? 7, Math.floor((size.width - 48) / 120))) } : base;
 }
 /** The 1M shortcut uses the same local zoom window as dragging the navigator. Server presets retain their original callbacks. */
 export function BenchmarkRangeRail({ enabled, series, selection, setWindow, children, ...props }: React.HTMLAttributes<HTMLDivElement> & {
