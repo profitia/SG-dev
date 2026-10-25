@@ -1,0 +1,29 @@
+/* SRM INTERACTION CANON v1 — same easing for all interactive groups.
+   Buttons 3%, tabs/text 2.5%, year capsules 6%, icons 7%, fields 1.5%,
+   wide disclosure rows 0.8%. Transform-only feedback never moves the layout.
+   Radar keeps its approved 20% sector/label motion; history bars use 4.5%.
+   Use individual scale so the assistant ribbon's slide transform is preserved. */
+.srm-ui { --srm-hover-scale:1.03; --srm-motion-time:220ms; --srm-motion-ease:cubic-bezier(.22,.75,.25,1); }
+.srm-ui:is(button:not(.srm-chat-ribbon):not(.srm-history-column):not(.srm-chart-controls-ribbon),a[href],select,input:not([type=checkbox]),summary,.srm-picker-group-check,.srm-period-indicator) {
+ scale:1;
+ transition:scale var(--srm-motion-time) var(--srm-motion-ease),background-color 180ms ease,color 180ms ease,border-color 180ms ease,box-shadow 180ms ease;
+}
+.srm-ui:is(.srm-category-tabs [role=tab],.srm-demo-tabs button) { --srm-hover-scale:1.025; transform-origin:center bottom; }
+.srm-ui .srm-year-pills button { --srm-hover-scale:1.06; }
+.srm-ui:is(.srm-text-link,a[href]) { --srm-hover-scale:1.025; }
+.srm-ui:is(.srm-chat-tool,.srm-chat-collapse,.srm-chat-input-wrap>button) { --srm-hover-scale:1.07; }
+.srm-ui:is(select,input:not([type=checkbox])) { --srm-hover-scale:1.015; }
+.srm-ui:is(summary,.srm-picker-group-check,.srm-period-indicator) { --srm-hover-scale:1.008; transform-origin:left center; }
+.srm-ui .srm-chat-ribbon-avatar { scale:1; transition:scale var(--srm-motion-time) var(--srm-motion-ease); }
+.srm-ui .srm-category-tabs { padding:var(--srm-space-tight) var(--srm-space-tight) 0; }
+@media(hover:hover) and (pointer:fine) {
+ .srm-ui:is(button:not(.srm-chat-ribbon):not(.srm-history-column):not(.srm-chart-controls-ribbon),a[href],select,input:not([type=checkbox]),summary,.srm-picker-group-check,.srm-period-indicator):not(:disabled):not([aria-disabled=true]):not(:has(input:disabled)):hover { scale:var(--srm-hover-scale); }
+ .srm-ui .srm-chat-ribbon:hover .srm-chat-ribbon-avatar { scale:1.07; }
+}
+.srm-ui:is(button:not(.srm-chat-ribbon):not(.srm-history-column):not(.srm-chart-controls-ribbon),a[href],select,input:not([type=checkbox]),summary):not(:disabled):focus-visible { scale:var(--srm-hover-scale); }
+.srm-ui .srm-chat-ribbon:focus-visible .srm-chat-ribbon-avatar { scale:1.07; }
+.srm-ui:is(.srm-picker-group-check,.srm-period-indicator):has(input:focus-visible) { scale:var(--srm-hover-scale); }
+.srm-ui button:disabled:hover { filter:none; }
+@media(prefers-reduced-motion:reduce) {
+ .srm-ui:is(button,a[href],select,input,summary,.srm-picker-group-check,.srm-period-indicator,.srm-chat-ribbon-avatar) { scale:1!important; transition:none!important; }
+}

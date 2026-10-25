@@ -69,7 +69,7 @@ test('P1B accepts exact1.25 source while preserving all1.24 history and legacy d
  for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,'historical producer '+path)
  for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsSoapSourceCompatibility.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportSourceCompatibility.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
  for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.applicationSourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.krsSoapSourceCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])).digest('hex'),digest,'historical receiver '+path)
- for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.applicationSourceDigests,...receipt.krsSoapSourceCompatibility.applicationSourceDigests,...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests,...receipt.unmeteredSourceCompatibility.applicationSourceDigests,...receipt.formReportSourceCompatibility.applicationSourceDigests,...receipt.requestQuotaSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.applicationSourceDigests,...receipt.krsSoapSourceCompatibility.applicationSourceDigests,...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests,...receipt.unmeteredSourceCompatibility.applicationSourceDigests,...receipt.formReportSourceCompatibility.applicationSourceDigests,...receipt.requestQuotaSourceCompatibility.applicationSourceDigests,...receipt.benchmarkPresentationSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
  for(const flag of['supplierLocationBusinessAdopted','locationAdmissionOptedIn','sql020Installed','liveGrantsChanged','productDeploymentPerformed'])assert.equal(accepted[flag],false,flag)
 })
 
@@ -119,4 +119,32 @@ test('SRM request-quota source extension preserves all SG2 history and keeps for
  const ledger=await import('@profitia/platform-contracts/request-ledger')
  assert.throws(()=>ledger.createRequestLedger({binding:{},schemaDigest:'a'.repeat(64),operation:'forecast.request',quotaSchemaDigest:a.sdkDigests.requestQuotaSchemaDigest}),TypeError)
  assert.throws(()=>ledger.createRequestLedger({binding:{},schemaDigest:'a'.repeat(64),operation:'benchmark.discovery.request',externalSchemaDigest:'a'.repeat(64),operationSchemaDigest:'b'.repeat(64),quotaSchemaDigest:a.sdkDigests.requestQuotaSchemaDigest}),TypeError)
+})
+
+
+test('Benchmark presentation renews the current receiver closure without rewriting acceptance or changing backend sources', () => {
+  const current = receipt.benchmarkPresentationSourceCompatibility
+  const beforeBytes = execFileSync('git', ['show', current.previousReceiptSourceSha + ':apps/sg-runtime/operation-integration.json'])
+  assert.equal(createHash('sha256').update(beforeBytes).digest('hex'), current.previousReceiptSha256)
+  for (const [key, value] of Object.entries(JSON.parse(beforeBytes))) assert.deepEqual(receipt[key], value, key)
+  assert.equal(current.taskId, 'SG2-BENCHMARK-MAGICPATH-1TO1-20261025')
+  assert.equal(current.scope, 'PRESENTATION_ONLY')
+  assert.equal(current.targetEnvironment, 'development')
+  for (const flag of ['apiContractChanged', 'providerRequestsChanged', 'forecastMathematicsChanged', 'operationGrantsChanged', 'schemaChanged', 'productDeploymentPerformed']) assert.equal(current[flag], false, flag)
+  assert.equal(current.oilRestrictionPreserved, true)
+  assert.equal(current.design.finderRevision, '463982323726172160')
+  assert.equal(current.design.canonRevision, '464039002702499840')
+  for (const [path, digest] of Object.entries(current.applicationSourceDigests)) {
+    const observed = createHash('sha256').update(fs.readFileSync(new URL('../' + path, import.meta.url))).digest('hex')
+    assert.equal(observed, digest, path)
+    assert.notEqual(createHash('sha256').update('changed-content').digest('hex'), digest, path)
+  }
+  const repository = new URL('../../../', import.meta.url)
+  for (const path of current.unchangedSourceBoundaries) {
+    const paths = execFileSync('git', ['ls-tree', '-r', '--name-only', current.previousReceiptSourceSha, '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean)
+    assert(paths.length > 0, path)
+    const currentPaths = execFileSync('git', ['ls-files', '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean)
+    assert.deepEqual(currentPaths, paths, 'Boundary inventory: ' + path)
+    for (const file of paths) assert.deepEqual(fs.readFileSync(new URL(file, repository)), execFileSync('git', ['show', current.previousReceiptSourceSha + ':' + file]), 'Unchanged protected source: ' + file)
+  }
 })

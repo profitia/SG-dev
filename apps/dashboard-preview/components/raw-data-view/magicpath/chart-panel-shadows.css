@@ -1,0 +1,15 @@
+/* C81/C84:one shadow for history, forecast and backtest.
+   Chart options never override this layer; only panel visibility changes it.
+   Orientation-specific clipping is defined by each panel. */
+.srm-chart-controls::after,
+.srm-chart-tools::after {
+ content:""; position:absolute; inset:0; pointer-events:none;
+ box-shadow:0 0 var(--chart-panel-shadow-blur) var(--chart-panel-shadow-spread) var(--chart-panel-shadow-color);
+ opacity:0; transition:opacity 200ms ease;
+}
+.srm-chart-controls[data-open="true"]::after,
+.srm-chart-tools[data-open="true"]::after { opacity:1; }
+@media(prefers-reduced-motion:reduce) {
+ .srm-chart-controls::after,
+ .srm-chart-tools::after { transition:none; }
+}

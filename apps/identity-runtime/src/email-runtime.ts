@@ -76,6 +76,9 @@ export function createEmailRuntime(options: {
       let message: EmailContent
       try { message = await options.render(claim.instruction, recipient === 'bound' ? preference.avatar : 'neutral', recipient === 'bound' ? preference.language : 'en', recipient === 'bound' ? {firstName:preference.firstName??null,vocative:preference.vocative??null} : {}) }
       catch { await options.store.settle(claim,'rejected'); return }
+      // The signed provider envelope owns the complete security subject,
+      // including Development markers. Localize only the message body.
+      if (claim.instruction.kind === 'new-device-sign-in') message = {...message, subject:claim.instruction.subject}
       // Once begin is durable, finish this attempt during graceful shutdown.
       // Releasing it would risk a duplicate; rejecting it would discard a valid code.
       if (claim.instruction.expiresAt <= now()) { await options.store.settle(claim,'rejected'); return }

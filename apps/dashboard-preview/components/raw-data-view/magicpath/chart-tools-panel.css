@@ -1,0 +1,30 @@
+/* CHT-10 / C84–85 / B60:one fixed-width workspace; no overlay on the plot. */
+.srm-chart-workspace { position:relative; display:flex; align-items:stretch; width:100%; min-width:0; overflow-anchor:none; }
+.srm-chart-tools { position:relative; z-index:6; flex:none; width:0; min-width:0; color:var(--brand-dark,var(--theme-ink,#003366)); filter:none; transition:width var(--chart-controls-duration) var(--chart-controls-easing); }
+.srm-chart-tools[data-open="true"] { width:var(--chart-tools-width); }
+.srm-chart-tools-clip { height:100%; overflow:hidden; visibility:hidden; transition:visibility 0s var(--chart-controls-duration); }
+.srm-chart-tools[data-open="true"] .srm-chart-tools-clip { visibility:visible; transition-delay:0s; }
+.srm-chart-tools-card { position:relative; box-sizing:border-box; display:flex; flex-direction:column; width:var(--chart-tools-width); height:100%; padding:var(--chart-tools-pad); border:0; border-radius:var(--chart-controls-radius); background:var(--chart-panel-surface); opacity:0; transform:translateX(-.75rem); transition:transform var(--chart-controls-duration) var(--chart-controls-easing),opacity 200ms ease-out; }
+.srm-chart-tools[data-open="true"] .srm-chart-tools-card { opacity:1; transform:translateX(0); }
+.srm-chart-tools-content { display:grid; grid-template-columns:repeat(2,var(--chart-tools-column)); gap:var(--chart-tools-gap); align-content:start; }
+.srm-chart-tools-content { flex:1; min-height:0; }
+.srm-ui .srm-chart-tools .srm-chart-tools-ribbon { left:100%; right:auto; top:var(--chart-tools-ribbon-top); flex-direction:row; width:var(--chart-controls-ribbon-height); height:var(--chart-controls-ribbon-width); border:0; border-radius:0 var(--chart-controls-ribbon-radius) var(--chart-controls-ribbon-radius) 0; }
+.srm-ui .srm-chart-tools .srm-chart-controls-ribbon:focus-visible { outline:.125rem solid var(--brand-light,var(--theme-accent,#66B2FF)); outline-offset:.1875rem; }
+.srm-chart-workspace > .srm-price-line-scroll { flex:1; min-width:0; width:0; }
+.srm-price-line-surface .srm-chart-workspace .srm-price-line-scroll .srm-price-line-canvas { min-width:0; container-type:normal; }
+/* Footer reserves two short rows; opening the drawer cannot push the navigator. */
+.srm-chart-workspace .srm-forecast-legend { min-height:2.625rem; align-content:flex-start; row-gap:.5rem; }
+.srm-chart-workspace .srm-backtest-note { min-height:3.2em; }
+.srm-chart-workspace .srm-price-time-tick[data-label-visible="false"] time { visibility:hidden; }
+@container(max-width:32rem) {
+ .srm-chart-workspace .srm-forecast-legend { min-height:6rem; column-gap:.5rem; }
+ .srm-chart-workspace .srm-backtest-note { min-height:6.4em; }
+}
+@media(prefers-reduced-motion:reduce) { .srm-chart-tools,.srm-chart-tools * { transition:none!important; } }
+
+/* C84:the same zero-offset soft shadow, clipped to the right edge only.
+   No top/left/bottom bleed; the opaque ribbon covers its own join. */
+.srm-chart-tools::after {
+ clip-path:inset(0 calc(-1 * var(--chart-panel-shadow-extent)) 0 100%);
+}
+.srm-ui .srm-chart-tools .srm-chart-tools-ribbon { z-index:1; }
