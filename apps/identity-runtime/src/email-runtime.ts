@@ -11,7 +11,7 @@ export interface EmailSurface { ready(): Promise<void>; handle(request: Request)
 type Asset = { filename: string; url: string; sha256: string }
 type Renderer = {
   inlineAssetsForAvatar(avatar: AssistantAvatar): Asset[]
-  renderMailgunResolved(options: {kind: string; avatar: AssistantAvatar; language:CommunicationLanguage; data: Record<string, unknown>; allowedActionOrigins: readonly string[]}): EmailContent
+  renderMailgunResolved(options: {kind: string; avatar: AssistantAvatar; language:CommunicationLanguage; data: Record<string, unknown>; allowedActionOrigins: readonly string[];allowedRevocationOrigins:readonly string[]}): EmailContent
 }
 export function verifyEmailAsset(bytes: Uint8Array, asset: Asset): InlineImage {
   if (bytes.length > 2000000 || !Buffer.from(bytes.subarray(0,8)).equals(Buffer.from([137,80,78,71,13,10,26,10]))
@@ -19,7 +19,7 @@ export function verifyEmailAsset(bytes: Uint8Array, asset: Asset): InlineImage {
   return {filename: asset.filename, bytes}
 }
 /** Fixed canonical public assets, pinned digests; no arbitrary request URLs. */
-export async function loadEmailRenderer(appName: string, origins: readonly string[], fetcher: typeof fetch = fetch) {
+export async function loadEmailRenderer(appName: string, origins: readonly string[], fetcher: typeof fetch = fetch,revocationOrigins:readonly string[]=[]) {
   if (!appName || appName.length > 80 || /[\x00-\x1f\x7f{}]/.test(appName)) throw Error('EMAIL_APP_NAME')
   const moduleUrl = new URL('../../email-templates/render.mjs', import.meta.url).href
   const renderer = await import(moduleUrl) as Renderer, images = new Map<string, InlineImage>()
@@ -36,9 +36,11 @@ export async function loadEmailRenderer(appName: string, origins: readonly strin
     images.set(asset.filename, verifyEmailAsset(Buffer.concat(chunks), asset))
   }
   return async (instruction: EmailInstruction, avatar: AssistantAvatar, language:CommunicationLanguage, salutation:Salutation = {}): Promise<EmailContent> => {
-    const content = renderer.renderMailgunResolved({kind:instruction.kind, avatar, language, allowedActionOrigins:origins, data:{appName,
+    const content = renderer.renderMailgunResolved({kind:instruction.kind, avatar, language, allowedActionOrigins:origins,allowedRevocationOrigins:revocationOrigins, data:{appName,
       currentYear:new Date(instruction.createdAt).getUTCFullYear(), requestedFrom:appName, requestedAt:new Date(instruction.createdAt).toISOString(),...salutation,
-      ...(instruction.kind === 'verification-code' ? {otpCode:instruction.otpCode} : {actionUrl:instruction.actionUrl,expiresInDays:instruction.expiresInDays})}})
+      ...(instruction.kind === 'verification-code' ? {otpCode:instruction.otpCode} : instruction.kind==='new-device-sign-in'?{
+        signInMethod:instruction.signInMethod,browserName:instruction.browserName,operatingSystem:instruction.operatingSystem,location:instruction.location,ipAddress:instruction.ipAddress,sessionCreatedAt:instruction.sessionCreatedAt,revokeSessionUrl:instruction.revokeSessionUrl
+      }:{actionUrl:instruction.actionUrl,expiresInDays:instruction.expiresInDays})}})
     const inline = renderer.inlineAssetsForAvatar(avatar).map(asset => { content.html = content.html.replaceAll(asset.url, 'cid:'+asset.filename); return images.get(asset.filename)! })
     return {...content, inline}
   }
