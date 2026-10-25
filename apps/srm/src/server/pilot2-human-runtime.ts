@@ -27,17 +27,18 @@ export type Pilot2PrivateProjection=Readonly<{
  output:(value:unknown,context:OperationContext)=>Promise<Response>
 }>
 export type Pilot2HumanOptions=Readonly<{config:Pilot2Configuration;human:Human;work:ReportPreparationOptions;catalog:pg.Pool;
- privateProjection?:Pilot2PrivateProjection}>
+ privateProjection?:Pilot2PrivateProjection;
+ cacheMiss?:Readonly<{search:(request:Request,nip:string)=>Promise<Response>;report:(request:Request,input:ReportSelection)=>Promise<Response>}>}>
 const deny=():never=>{throw new OperationDenied('ACCESS_BASIS_INVALID')}
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 type Env=Readonly<Record<string,string|undefined>>
-type Role='srm_private_development_runtime'|'srm_pilot2_jobs'|'srm_pilot2_catalog_reader'
+type Role='srm_private_development_runtime'|'srm_pilot2_jobs'|'srm_pilot2_catalog_reader'|'srm_pilot2_source'|'srm_pilot2_corporate'
 
 /** Physical isolation is server configuration, never an incoming tenant or
  * a cookie. Parsing into pg fields retains strict TLS regardless of URL flags. */
 export function pilot2HumanConnection(value:string|undefined,role:Role){
- if(!['srm_private_development_runtime','srm_pilot2_jobs','srm_pilot2_catalog_reader'].includes(role)||!value||value!==value.trim())return deny()
+ if(!['srm_private_development_runtime','srm_pilot2_jobs','srm_pilot2_catalog_reader','srm_pilot2_source','srm_pilot2_corporate'].includes(role)||!value||value!==value.trim())return deny()
  let u:URL;try{u=new URL(value);decodeURIComponent(u.password)}catch{return deny()}
  const publicRead=role===target.publicCatalog.readerRole
  const expected=publicRead?target.publicCatalog:privateTargets.environments.development
@@ -180,6 +181,11 @@ export function createPilot2HumanRuntime(options:Pilot2HumanOptions){
      inputs:[{...shared,id:'stored-financial-view:COMPANY:'+nip,projectionVersion:'srm-stored-corporate-financial-v1'}]}:{resource:shared}
    },
    projectOutput:async(value,context)=>{
+    if(!selected&&options.cacheMiss){
+     if(!(value instanceof Response)||value.status!==204||await value.clone().text()!==''
+      ||context.resourceId!=='supplier-report:COMPANY:'+nip)return deny()
+     return value
+    }
     if(privateProjection)return privateProjection.output(value,context)
     if(context.resource.version!==(selected?.version??'pilot2-cache-miss-v1'))return deny()
     if(report)return projectSharedFinancialResponse(value,context)
@@ -190,7 +196,10 @@ export function createPilot2HumanRuntime(options:Pilot2HumanOptions){
   const result=await host.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
    operation,organisationId:proof.organisationId,resourceId:'supplier-report:COMPANY:'+nip,
    payload:{nip,entityType:'COMPANY'},request},async(context,privateClient)=>{
-    if(!selected)throw new OperationDenied('POLICY_UNAVAILABLE')
+    if(!selected){
+     if(options.cacheMiss)return new Response(null,{status:204,headers})
+     throw new OperationDenied('POLICY_UNAVAILABLE')
+    }
     if(!report)return selected.card
     const client=await measureSupplierStage('POOL_WAIT',()=>catalog.connect())
     try{
@@ -208,10 +217,15 @@ export function createPilot2HumanRuntime(options:Pilot2HumanOptions){
  }
  return Object.freeze({
   prepare:admission.prepare,
-  search:(request:Request,nip:string)=>admission.run(request,()=>read(request,readSupplierRequest({kind:'SUPPLIER_REPORT',nip}).nip,false)),
-  report:(request:Request,input:unknown)=>admission.run(request,()=>{
+  search:(request:Request,nip:string)=>admission.run(request,async()=>{
+   const selected=readSupplierRequest({kind:'SUPPLIER_REPORT',nip}).nip,response=await read(request,selected,false)
+   // The neutral miss commits before network or delegated Work begins.
+   return response.status===204&&options.cacheMiss?options.cacheMiss.search(request,selected):response
+  }),
+  report:(request:Request,input:unknown)=>admission.run(request,async()=>{
    const selection=validateReportSelection(input);if(selection.entityType!=='COMPANY')return deny()
-   return read(request,selection.nip,true)
+   const response=await read(request,selection.nip,true)
+   return response.status===204&&options.cacheMiss?options.cacheMiss.report(request,selection):response
   }),
  })
 }

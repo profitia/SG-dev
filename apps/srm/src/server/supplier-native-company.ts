@@ -22,6 +22,7 @@ import { readSupplierRequest } from './supplier-request-operation'
 type ProviderOptions=Omit<Parameters<typeof createSrmProviderSourceTransport>[0],
   'provider'|'providerOrigin'|'nip'|'operationKey'|'headers'>
 type Options={work:SupplierNativeWorkOptions;namedInterestBoundaryDigest:string;
+  registryEnvelopeBoundaryDigest?:string;
   source:ReturnType<typeof createSrmSupplierSourceRequest>;
   corporate:Parameters<typeof createSrmCorporateSourceStore>[0];
   mgbi:{apiKey:string;authScheme:'raw'|'bearer';source:ProviderOptions;
@@ -33,7 +34,7 @@ const hash=(value:string)=>createHash('sha256').update(value).digest('hex')
  * publication use their existing independent native hosts. No HTTP activation,
  * caller-selected identity, alternate writer or network inside SQL is added. */
 export function createSrmNativeCompanyLookup(options:Options){
-  if(typeof window!=='undefined'||!options||Object.keys(options).sort().join(',')!=='corporate,mgbi,namedInterestBoundaryDigest,source,work'
+  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>k!=='registryEnvelopeBoundaryDigest').sort().join(',')!=='corporate,mgbi,namedInterestBoundaryDigest,source,work'
     ||typeof options.mgbi?.apiKey!=='string'||!options.mgbi.apiKey.trim()
     ||!['raw','bearer'].includes(options.mgbi.authScheme)
     ||options.work.application.environment!==options.mgbi.source.application.environment
@@ -42,7 +43,8 @@ export function createSrmNativeCompanyLookup(options:Options){
   const sourceFields=['applicationId','environment','projectId','branchId','databaseName','schemaDigest'] as const
   if(!admittedSource||sourceFields.some(key=>options.mgbi.source.binding[key]!==admittedSource[key]))return refuse()
   const work=createSrmSupplierNativeWork(options.work)
-  const store=createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest})
+  const store=createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,
+    ...(options.registryEnvelopeBoundaryDigest?{registryEnvelopeBoundaryDigest:options.registryEnvelopeBoundaryDigest}:{})})
   const link=createSrmSupplierSourceLink({work:options.work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,source:options.source})
   const corporate=createSrmCorporateSourceStore(options.corporate)
   const {pool,auditPool,now}=options.mgbi.source

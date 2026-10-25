@@ -261,3 +261,21 @@ only in that disposable cluster, never as an implicit live configuration change.
 Identity optimization joins only concurrently outstanding same-client reads in
 one HTTP trace. Settled observations, sequential checkpoints and other requests
 always perform a new official SDK read, including errors and revoked accounts.
+
+## Optional PILOT2 registry envelope
+
+`022-pilot2-registry-envelope.sql` is a separate explicit SRM adoption; the
+historical initializer, baseline migration count and their digests stay intact.
+It retains the complete accepted KRS General envelope beside its existing
+organisation-scoped snapshot, including warnings, effective date and original
+retrieval time. The field is nullable for every earlier row. Only current
+`SRM_STORE_GENERAL` Work by the named PILOT2 receiver can append it; it cannot
+be replaced. Existing tenant RLS and the original snapshot/attempt guards apply.
+The original KRS pilot receiver keeps its prior provider guard unchanged.
+
+The ordinary PILOT2 job also needs SELECT on its accepted command table;
+existing RLS still restricts that read to the actual current Work. Optional
+Source receivers reuse the original classified Corporate/Financial and HTTP
+transports, without modifying old counters, licenses, human grants or policies.
+Rollback reuses the retained Scanner artifact and prior technical binding;
+nullable envelope data and canonical audit/history remain preserved.

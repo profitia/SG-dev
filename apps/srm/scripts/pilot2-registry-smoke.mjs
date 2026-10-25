@@ -11,7 +11,7 @@ import {setTimeout as delay} from 'node:timers/promises'
  * Constructors may read immutable schema bytes, but cannot touch SQL or HTTP. */
 const modules=path.resolve(process.argv[2])
 const stage=process.argv[3]??'REGISTRY'
-assert(['REGISTRY','FORM_ADMISSION','SCANNER'].includes(stage))
+assert(['REGISTRY','FORM_ADMISSION','SCANNER','COLD_ACQUISITION'].includes(stage))
 const load=(name,file)=>import(pathToFileURL(path.join(modules,'@profitia',name,file)).href)
 const [{createPlatformIngestionHost},{createAdmittedGusSource,GUS_ORIGIN,GUS_PATH},{createNativeNipRegistrySource}]=await Promise.all([
  load('platform-contracts','src/platform-ingestion.mjs'),load('krs-registry-runtime','dist/gus-bir.js'),load('krs-registry-runtime','dist/native.js')])
@@ -37,7 +37,9 @@ const port=await new Promise((resolve,reject)=>{const s=net.createServer();s.on(
 const connection=role=>'postgresql://'+role+':fixture@ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech/krs_registry_pilot?sslmode=require'
 const privateConnection=role=>'postgresql://'+role+':fixture@ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech/platform_private?sslmode=require'
 const human=stage!=='REGISTRY'?{
- ...(stage==='SCANNER'?{SRM_PILOT2_PRIVATE_SCANNER:'true',SRM_DEMO_SESSION_SECRET:'fixture_'.repeat(8)}:{}),
+ ...(['SCANNER','COLD_ACQUISITION'].includes(stage)?{SRM_PILOT2_PRIVATE_SCANNER:'true',SRM_DEMO_SESSION_SECRET:'fixture_'.repeat(8)}:{}),
+ ...(stage==='COLD_ACQUISITION'?{SRM_PILOT2_COLD_ACQUISITION:'true',MGBI_API_KEY:'fixture',CEIDG_API_KEY:'fixture',VERCLY_API_KEY:'fixture',VERCLY_API_BASE_URL:'https://fixture.invalid',
+ PILOT2_E1_SOURCE_URL:privateConnection('srm_pilot2_source'),PILOT2_E1_CORPORATE_URL:privateConnection('srm_pilot2_corporate')}:{}),
  PROFITIA_AUTH_PROVIDER:'clerk',SRM_PILOT2_FORM_ADMISSION:'true',PROFITIA_FIXED_ORGANISATION_ID:'11111111-1111-4111-8111-111111111111',
  PROFITIA_CLERK_ISSUER:'https://fixture.clerk.accounts.dev',PROFITIA_CLERK_PUBLISHABLE_KEY:'pk_test_'+Buffer.from('fixture.clerk.accounts.dev$').toString('base64url'),
  PROFITIA_CLERK_SECRET_KEY:'sk_test_fixture',PROFITIA_CLERK_AUTHORIZED_PARTIES:'["https://srm-krs-pilot2-development.onrender.com"]',

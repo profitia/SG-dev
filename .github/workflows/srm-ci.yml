@@ -212,13 +212,14 @@ jobs:
       - name: Verify historical source then build with Render-compatible shallow history
         if: steps.changes.outputs.build == 'true'
         run: |
-          node --test apps/srm/scripts/pilot2-baseline.test.mjs apps/srm/scripts/pilot2-instrumentation.test.mjs apps/srm/scripts/pilot2-registry-overlay.test.mjs apps/srm/scripts/pilot2-source-installation.test.mjs apps/srm/scripts/pilot2-human-overlay.test.mjs apps/srm/scripts/pilot2-scanner-overlay.test.mjs apps/srm/scripts/pilot2-human-installation.test.mjs
+          node --test apps/srm/scripts/pilot2-baseline.test.mjs apps/srm/scripts/pilot2-instrumentation.test.mjs apps/srm/scripts/pilot2-registry-overlay.test.mjs apps/srm/scripts/pilot2-source-installation.test.mjs apps/srm/scripts/pilot2-human-overlay.test.mjs apps/srm/scripts/pilot2-scanner-overlay.test.mjs apps/srm/scripts/pilot2-cold-overlay.test.mjs apps/srm/scripts/pilot2-human-installation.test.mjs apps/srm/scripts/pilot2-cold-installation.test.mjs
           git clone --depth 1 --no-local "$GITHUB_WORKSPACE" "$RUNNER_TEMP/pilot2-shallow"
           node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build
           node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build "$RUNNER_TEMP/pilot2-shallow/.pilot2-instrumented" TELEMETRY
           node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build "$RUNNER_TEMP/pilot2-shallow/.pilot2-registry" REGISTRY
           node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build "$RUNNER_TEMP/pilot2-shallow/.pilot2-form-admission" FORM_ADMISSION
           node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build "$RUNNER_TEMP/pilot2-shallow/.pilot2-scanner" SCANNER
+          node "$RUNNER_TEMP/pilot2-shallow/apps/srm/scripts/pilot2-baseline.mjs" build "$RUNNER_TEMP/pilot2-shallow/.pilot2-cold" COLD_ACQUISITION
       - name: Source installation and ordinary-role isolation on PostgreSQL18
         if: steps.changes.outputs.build == 'true'
         env:

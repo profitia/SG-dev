@@ -88,6 +88,8 @@ export interface SnapshotInput {
   retrievedAt: Date;
   effectiveAt?: Date;
   retentionUntil?: Date;
+  /** Optional, versioned PILOT2 adoption. Original rows and SQL stay intact. */
+  registryEnvelope?: unknown;
 }
 
 export async function appendSnapshot(organizationId: string, input: SnapshotInput, pool?: DatabasePool): Promise<string> {
@@ -103,10 +105,13 @@ export async function appendSnapshot(organizationId: string, input: SnapshotInpu
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{ id: string }>(
       "INSERT INTO srm.source_snapshots(organization_id, attempt_id, supplier_id, section, source_record_id, " +
-      "payload_json, payload_sha256, data_class, retrieved_at, effective_at, retention_until) " +
-      "VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11) RETURNING id",
+      "payload_json, payload_sha256, data_class, retrieved_at, effective_at, retention_until" +
+      (input.registryEnvelope === undefined ? "" : ", pilot2_registry_envelope") + ") " +
+      "VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11" +
+      (input.registryEnvelope === undefined ? "" : ",$12::jsonb") + ") RETURNING id",
       [organizationId, input.attemptId, input.supplierId, input.section, input.sourceRecordId ?? null,
-        serialized, digest, input.dataClass, input.retrievedAt, input.effectiveAt ?? null, input.retentionUntil ?? null],
+        serialized, digest, input.dataClass, input.retrievedAt, input.effectiveAt ?? null, input.retentionUntil ?? null,
+        ...(input.registryEnvelope === undefined ? [] : [JSON.stringify(input.registryEnvelope)])],
     );
     return result.rows[0].id;
   }, pool);

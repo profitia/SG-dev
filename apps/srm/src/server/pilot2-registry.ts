@@ -117,18 +117,28 @@ async function createRuntime(env:Env){
   krs:async(mapping,key,signal)=>{try{return await measureSupplierStage('KRS_CURRENT',()=>official.acquire(mapping,key,signal))}
    catch(error){const code=(error as {code?:string})?.code;if(code&&/^KRS_HTTP_(404|429|5[0-9]{2})$/.test(code))throw new GusError(code);throw error}},
   timeoutMs:target.providerRouting.primaryTimeoutMs,telemetry:event=>console.info('SRM registry telemetry',event)})
+ async function selected(snapshot:Awaited<ReturnType<InstanceType<typeof Catalog>['read']>>,nip:string,signal:AbortSignal){
+  if(!snapshot||snapshot.nip!==nip)return deny()
+  const identity=await resolveIdentity({selectedKrs:snapshot.canonicalKrs},catalog,Date.now())
+  if(identity.status!=='VERIFIED'||identity.identity.nip!==nip||identity.evidenceRef!==snapshot.evidenceRef)return deny()
+  const continuity=await krsContinuity(await measureSupplierStage('KRS_CONTINUITY',()=>official.continuity(identity.evidenceRef,signal)),identity,Date.now())
+  const history=continuity.history
+  const base=await krsGeneral(snapshot,identity,Date.now());if(!base.data)return deny()
+  const selection:Pilot2RegistrySelection={identity,history,general:{...base,data:{...base.data,registryHistory:history}}}
+  issuedSelections.set(selection,JSON.stringify(selection))
+  return {snapshot,selection}
+ }
  return Object.freeze({async resolve(nip:string,signal:AbortSignal){
   const key=createHash('sha256').update('srm-pilot2-nip:'+randomUUID()+':'+nip).digest('hex')
   const result=await resolver.resolve(nip,key,signal);if(result.status==='FALLBACK')return result
   const snapshot=await catalog.read(result.value.snapshot.canonicalKrs)
   if(!snapshot||snapshot.evidenceRef!==result.value.snapshot.evidenceRef||snapshot.nip!==nip)return deny()
-  const identity=await resolveIdentity({selectedKrs:snapshot.canonicalKrs},catalog,Date.now())
-  if(identity.status!=='VERIFIED'||identity.identity.nip!==nip)return deny()
-  const history=(await krsContinuity(await measureSupplierStage('KRS_CONTINUITY',()=>official.continuity(identity.evidenceRef,signal)),identity,Date.now())).history
-  const base=await krsGeneral(snapshot,identity,Date.now());if(!base.data)return deny()
-  const selection:Pilot2RegistrySelection={identity,history,general:{...base,data:{...base.data,registryHistory:history}}}
-  issuedSelections.set(selection,JSON.stringify(selection))
-  return {status:'PRIMARY' as const,selection}
+  return {status:'PRIMARY' as const,selection:(await selected(snapshot,nip,signal)).selection}
+ },async accepted(reference:string,nip:string,signal:AbortSignal){
+  if(!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(reference)||!/^\d{10}$/.test(nip))return deny()
+  const snapshot=await catalog.read(reference.split(':')[1])
+  if(!snapshot||snapshot.evidenceRef!==reference||snapshot.nip!==nip)return deny()
+  return selected(snapshot,nip,signal)
  }})
 }
 let runtime:ReturnType<typeof createRuntime>|undefined,configuration:string|undefined
