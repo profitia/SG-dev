@@ -26,7 +26,7 @@ const sourceHost=createPlatformIngestionHost({...host,source:{id:'krs.registry.g
 const gus=await createAdmittedGusSource({sourceHost,sourceId:'krs.registry.gus',resourceId:'krs-gus:nip-map',apiKey:'x'.repeat(20),readSid:()=>null,permit:noSql,
  binding:{role:'krs_ingest',configurationVersion:'krs-native-pilot-v1',schemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206',origin:GUS_ORIGIN,transport:'HTTPS',pathRules:[{method:'POST',path:GUS_PATH}]},
  independentQuery:noSql,query:noSql})
-const krs=await createNativeNipRegistrySource({host,externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206'})
+const krs=await createNativeNipRegistrySource({host,externalSchemaDigest:'69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206',transportProfile:'EXTRACTS_ONLY'})
 assert.equal(typeof gus.execute,'function');assert.equal(typeof krs.acquire,'function');assert.equal(typeof krs.continuity,'function');assert.equal(sqlCalls,0)
 const directory=path.dirname(modules)
 // The actual compiled application must initialize the same composition, too.

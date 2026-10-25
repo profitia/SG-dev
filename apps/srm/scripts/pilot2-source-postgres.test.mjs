@@ -53,6 +53,7 @@ test('PILOT2 Source installs atomically with ordinary roles and no account direc
    assert(d,name);assert.equal(d.quotaMode,'UNMETERED');assert.equal(d.capacity,null)
    assert.equal(d.applicationId,'krs-registry-source');assert.equal(d.role,'krs_ingest')
    assert.equal(d.nativeCredentialMode,name==='krs.registry.gus'?'SERVER_HEADERS':'NONE')
+   if(name==='krs.registry.official')assert.deepEqual(d.nativePathRules,['OdpisAktualny','OdpisPelny'].map(name=>({method:'GET',prefix:'/api/krs/'+name+'/',parameter:'OPAQUE',suffix:'',requestFormat:'NONE'})))
   }
   for(let i=0;i<3;i++)assert.equal((await source.query('SELECT profitia_external_native.reserve_gus_slot() AS wait')).rows[0].wait,0)
   assert((await source.query('SELECT profitia_external_native.reserve_gus_slot() AS wait')).rows[0].wait>0)

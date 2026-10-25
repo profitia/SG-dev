@@ -247,7 +247,7 @@ test('PILOT2 explicitly adopts the unchanged company validator through its versi
  const validator='apps/krs-registry-runtime/src/identity.ts';
  assert.equal(hash(execFileSync('git',['show',a.previousApplicationAuthority+':'+validator])),hash(execFileSync('git',['show',a.acceptedRuntime.sourceSha+':'+validator])));
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
- assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root,'deployment/krs-name-pilot-targets.json'),'utf8')).acceptedRuntime,a.acceptedRuntime);
+ assert.deepEqual(JSON.parse(execFileSync('git',['show',acceptedReceipt.pilot2ExtractProfileAdoption.previousSourceSha+':apps/srm/deployment/krs-name-pilot-targets.json'],{encoding:'utf8'})).acceptedRuntime,a.acceptedRuntime);
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.pilot2CredentialInitializationCorrection.previousSourceSha+':apps/srm/'+file])),digest,file);
 });
 
@@ -273,6 +273,17 @@ test('PILOT2 runtime correction preserves prior receipts and requires the real s
  for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
  assert.equal(a.identityOrPolicySemanticsChanged,false);assert.equal(a.runtimeActivationClaimed,false);
  const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',acceptedReceipt.pilot2ExtractProfileAdoption.previousSourceSha+':apps/srm/'+file])),digest,file);
  assert.match(fs.readFileSync(path.join(root,'scripts/pilot2-baseline.mjs'),'utf8'),/pilot2-registry-smoke\.mjs/);
+});
+
+test('PILOT2 adopts the accepted bounded producer without widening its installed transport policy',()=>{
+ const a=acceptedReceipt.pilot2ExtractProfileAdoption,previous=execFileSync('git',['show',a.previousSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptSha256);
+ for(const[k,v]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((acceptedReceipt as Record<string,unknown>)[k],v,k);
+ const root=path.resolve(process.cwd(),process.cwd().endsWith('/apps/srm')?'':'apps/srm');
+ const target=JSON.parse(fs.readFileSync(path.join(root,'deployment/pilot2-registry-targets.json'),'utf8'));
+ assert.equal(target.runtime.transportProfile,'EXTRACTS_ONLY');assert.equal(target.runtime.producerPr,705);
+ assert.deepEqual(target.runtime.producer,a.acceptedRuntime);assert.equal(a.installedPolicyExpanded,false);assert.equal(a.primaryActivationClaimed,false);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(root,file))),digest,file);
 });

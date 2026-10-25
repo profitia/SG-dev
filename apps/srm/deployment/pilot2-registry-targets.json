@@ -30,9 +30,9 @@
     "applicationId": "krs-registry-source",
     "configurationVersion": "krs-native-pilot-v1",
     "producer": {
-      "version": "1.6.2",
-      "sourceSha": "3785e42961542a131307d2eae852c40de0af8b64",
-      "sourceDigest": "99f59848d6b07b79021ee8d6836254734131eabdc76e1dd21bbd5efa2c286b49"
+      "version": "1.6.3",
+      "sourceSha": "aaef2d7ca23d9f845097e28900a9a0a2783e1f8c",
+      "sourceDigest": "c9fa00d3670a78029aa0166275e2c99be48538b4878e79756646c51c76b1c62c"
     },
     "unmeteredSchemaDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
     "schemaDigests": {
@@ -40,7 +40,8 @@
       "external": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
       "native": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde"
     },
-    "producerPr": 701
+    "producerPr": 705,
+    "transportProfile": "EXTRACTS_ONLY"
   },
   "dataBoundary": {
     "registry": "PUBLIC_SHARED_KNOWLEDGE",
