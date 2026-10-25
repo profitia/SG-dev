@@ -74,7 +74,9 @@ export const reconcilePilot2Financial=(selection:Pilot2RegistrySelection,result:
  reconcileKrsFinancial(selection.identity,result,Date.now(),selection.history)
 
 async function createRuntime(env:Env){
+ const transportProfile=target.runtime.transportProfile
  if(env.RENDER_SERVICE_ID!==target.render.serviceId||env.TARGET_ENVIRONMENT!=='development'
+  ||transportProfile!=='EXTRACTS_ONLY'
   ||!env.RENDER_GIT_COMMIT||!/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT)||!/^[A-Za-z0-9]{20}$/.test(env.GUS_BIR_API_KEY??''))return deny()
  // Construct the host through the same ESM package instance as its external
  // transport. A CJS/bundled host cannot carry the ESM module's private brand.
@@ -110,7 +112,7 @@ async function createRuntime(env:Env){
   binding:{role:'krs_ingest',configurationVersion:target.runtime.configurationVersion,schemaDigest:target.runtime.schemaDigests.external,origin:GUS_ORIGIN,transport:'HTTPS',pathRules:[{method:'POST',path:GUS_PATH}]},
   independentQuery:host.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows})})
  const mapper=createGusMapper({source:gus,readSid:()=>sid,writeSid:value=>{sid=value}})
- const official=await createNativeNipRegistrySource({host,externalSchemaDigest:target.runtime.schemaDigests.external})
+ const official=await createNativeNipRegistrySource({host,externalSchemaDigest:target.runtime.schemaDigests.external,transportProfile})
  const resolver=createNipResolver({gus:(nip,key,signal)=>measureSupplierStage('GUS_RESOLUTION',()=>mapper.resolve(nip,key,signal)),
   krs:async(mapping,key,signal)=>{try{return await measureSupplierStage('KRS_CURRENT',()=>official.acquire(mapping,key,signal))}
    catch(error){const code=(error as {code?:string})?.code;if(code&&/^KRS_HTTP_(404|429|5[0-9]{2})$/.test(code))throw new GusError(code);throw error}},

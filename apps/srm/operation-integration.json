@@ -4498,5 +4498,33 @@
       "src/server/account-recheck-adoption.test.ts": "59f046b8eb038e451ea2404053cb2d86190f97330d8d548d7804d36eb539af3a",
       "src/server/peer-read-boundary.test.ts": "992153e7942ae0029255e45435c17d06c574c94dd756c63c8a86206479d77fef"
     }
+  },
+  "pilot2ExtractProfileAdoption": {
+    "taskId": "SRM-PILOT2-STAGING-BASELINE-20261024",
+    "producerTaskId": "ARCHITECTURE-PILOT2-KRS-EXTRACT-PROFILE-20261025",
+    "producerPr": 705,
+    "producerMainSha": "24e4a2a58d3cf5460a666b85302f86047cad45bb",
+    "previousSourceSha": "24e4a2a58d3cf5460a666b85302f86047cad45bb",
+    "previousReceiptSha256": "6636523df5a0cb745a16bf9ee8f14a7e619c5f648b5e6c4e11bd310d537d6a68",
+    "acceptedRuntime": {
+      "version": "1.6.3",
+      "sourceSha": "aaef2d7ca23d9f845097e28900a9a0a2783e1f8c",
+      "sourceDigest": "c9fa00d3670a78029aa0166275e2c99be48538b4878e79756646c51c76b1c62c"
+    },
+    "transportProfile": "EXTRACTS_ONLY",
+    "installedPolicyExpanded": false,
+    "identityOrPolicySemanticsChanged": false,
+    "primaryActivationClaimed": false,
+    "applicationSourceDigests": {
+      "deployment/krs-name-pilot-targets.json": "bf3e96873c4c7f45d286a73fa4cea2d0e721efbdba44e9f7c120d3ccd9b66a0e",
+      "deployment/pilot2-registry-targets.json": "5f7c6b21071a26bc83286f8addc9a897829d6fc7a6194bb80fd1d425710280d7",
+      "deployment/pilot2-registry-package-lock.json": "5566516540ddf518a7a4ffad3ace0c7d9e3e815f37e80ea5e9d220d4e2574daa",
+      "package-lock.json": "b49122140000cace5355d4bd6c172d8c53c37c7db08fbd06cbefc6084607a9b0",
+      "src/server/pilot2-registry.ts": "6e159a1ed38858674af24041712defbdf94ffabdcfd700509303c4125fe173d2",
+      "scripts/pilot2-registry-smoke.mjs": "77e04b6425a25067d94f0b62e02d17b79b49362c80b2857e495339e3c7859100",
+      "scripts/pilot2-source-postgres.test.mjs": "9defea2fc1fdac5c83cc265ab0b03179828913190617ddd6c2b045c692a1f94d",
+      "src/server/account-recheck-adoption.test.ts": "976b50d57cad59c78f721c06a7ddd98b80455296d0648e9ddbe558c6e22159b0",
+      "src/server/peer-read-boundary.test.ts": "5d303a89fa7274956fbbbc5ca3de8346b2ca9895dc632af416f45844cb59deba"
+    }
   }
 }
