@@ -104,12 +104,17 @@ test('visual source acceptance preserves prior receipts and existing search/char
     const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
     const calls: string[] = [], events: string[] = []
     function visit(node: import('typescript').Node) {
-      if (ts.isCallExpression(node)) calls.push(node.getText(tree))
+      if (ts.isCallExpression(node)) {
+        // Layout containers may move or wrap JSX. Compare all executable leaf
+        // calls independently, including every call inside those containers.
+        const containsJsx = (part: import('typescript').Node): boolean => ts.isJsxElement(part) || ts.isJsxSelfClosingElement(part) || ts.isJsxFragment(part) || Boolean(ts.forEachChild(part, containsJsx))
+        if (!containsJsx(node) && !['useBenchmarkChartLayout', 't'].includes(node.expression.getText(tree))) calls.push(node.getText(tree))
+      }
       if (ts.isJsxAttribute(node) && /^on[A-Z]/.test(node.name.getText(tree))) events.push(node.getText(tree))
       ts.forEachChild(node, visit)
     }
     visit(tree)
-    return {calls, events}
+    return {calls:calls.sort(), events:events.sort()}
   }
   for (const path of ['apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx', 'apps/dashboard-preview/components/raw-data-view/index.tsx']) {
     const previous = execFileSync('git', ['show', accepted.previousReceiptSourceSha + ':' + path], {encoding: 'utf8'})

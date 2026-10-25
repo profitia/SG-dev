@@ -1,86 +1,103 @@
-/* Scoped to benchmark consumers. Geometry, events, forecast models and request paths are unchanged. */
-.bf-chart-workspace.bf-chart-workspace {
-  --bf-brand: #005a9c;
-  --bf-ink: #073453;
-  --bf-muted: #71808d;
-  --bf-line: #e0e7ed;
-  --bf-canvas: #f8f9fa;
-  --bf-panel: #fff;
-  --text: var(--bf-ink);
-  --muted: var(--bf-muted);
-  --border: var(--bf-line);
-  --panel: var(--bf-panel);
-  --accent: var(--bf-brand);
-  gap: 1rem;
-  font-family: var(--font-inter, Inter), "Segoe UI", system-ui, -apple-system, sans-serif;
-  color: var(--bf-ink);
-}
-.bf-chart-workspace.bf-chart-workspace :is(.panel, .chart-panel-full) { border-color: var(--bf-line); border-radius: .75rem; background: var(--bf-panel); box-shadow: none; }
-.bf-chart-workspace.bf-chart-workspace .filter-panel { padding: 1.25rem; background: var(--bf-canvas); }
-.bf-chart-workspace.bf-chart-workspace .filters-topbar { border-bottom: 1px solid var(--bf-line); padding-bottom: .75rem; margin-bottom: 1rem; }
-.bf-chart-workspace.bf-chart-workspace .filter-grid { gap: 1rem; }
-.bf-chart-controls > summary { display: none; }
-.bf-chart-workspace.bf-chart-workspace .bf-chart-controls > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; list-style: none; padding: .25rem 0 1rem; color: var(--bf-brand); font-size: .8125rem; font-weight: 600; cursor: pointer; }
-.bf-chart-workspace.bf-chart-workspace .bf-chart-controls > summary::-webkit-details-marker { display: none; }
-.bf-chart-workspace.bf-chart-workspace .bf-chart-controls > summary span { display: grid; place-items: center; width: 2rem; height: 2rem; border: 1px solid var(--bf-line); border-radius: 50%; transform: rotate(-90deg); }
-.bf-chart-workspace.bf-chart-workspace .bf-chart-controls[open] > summary span { transform: rotate(0); }
-.bf-chart-workspace.bf-chart-workspace .bf-chart-controls:not([open]) > summary { padding-bottom: .25rem; }
-.bf-chart-workspace.bf-chart-workspace .control-group-label { color: var(--bf-muted); font-size: .6875rem; font-weight: 500; letter-spacing: .02em; }
-.bf-chart-workspace.bf-chart-workspace .control-block > strong { color: var(--bf-ink); font-weight: 600; letter-spacing: -.02em; }
-.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-controls { gap: 1rem; }
-.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-row { gap: 1rem; padding: .5rem 0; }
-.bf-chart-workspace.bf-chart-workspace .forecast-verification-row { border-top: 1px solid var(--bf-line); padding-top: 1rem; }
-.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle-copy strong { color: var(--bf-ink); font-size: .8125rem; font-weight: 600; }
-.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle-copy small { color: var(--bf-muted); font-size: .6875rem; }
-.bf-chart-workspace.bf-chart-workspace input[type="checkbox"] { accent-color: var(--bf-brand); width: 1rem; height: 1rem; }
-.bf-chart-workspace.bf-chart-workspace :is(button, summary, input, select):focus-visible { outline: 2px solid var(--bf-brand); outline-offset: 3px; }
-.bf-chart-workspace.bf-chart-workspace .chart-range-buttons { gap: .375rem; }
-.bf-chart-workspace.bf-chart-workspace :is(.chart-range-button, .chart-reset-button, .language-switch-button, .callout-button) { border: 1px solid var(--bf-line); border-radius: .4375rem; color: var(--bf-muted); background: var(--bf-panel); box-shadow: none; font-size: .75rem; font-weight: 500; transition: background 180ms ease, border-color 180ms ease, color 180ms ease; }
-.bf-chart-workspace.bf-chart-workspace :is(.chart-range-button, .chart-reset-button, .language-switch-button, .callout-button):hover:not(:disabled) { background: color-mix(in srgb, var(--bf-brand) 6%, var(--bf-panel)); color: var(--bf-brand); border-color: color-mix(in srgb, var(--bf-brand) 30%, var(--bf-line)); }
-.bf-chart-workspace.bf-chart-workspace :is(.chart-range-button, .language-switch-button).is-active { color: var(--bf-brand); border-color: var(--bf-brand); background: color-mix(in srgb, var(--bf-brand) 8%, var(--bf-panel)); font-weight: 600; }
-.bf-chart-workspace.bf-chart-workspace button:disabled { cursor: not-allowed; }
-.bf-chart-workspace.bf-chart-workspace .forecast-control-button { min-height: 2.75rem; padding: .5rem .75rem; }
-.bf-chart-workspace.bf-chart-workspace .forecast-control-button-label { font-size: .75rem; }
-.bf-chart-workspace.bf-chart-workspace .forecast-control-button-status { font-size: .625rem; }
-.bf-chart-workspace.bf-chart-workspace .verification-quality-panel { background: var(--bf-panel); border: 1px solid var(--bf-line); border-radius: .5rem; box-shadow: none; padding: .875rem 1rem; }
-.bf-chart-workspace.bf-chart-workspace .verification-quality-heading { color: var(--bf-muted); }
-.bf-chart-workspace.bf-chart-workspace .verification-quality-metric strong { color: var(--bf-ink); font-weight: 600; }
-.bf-chart-workspace.bf-chart-workspace .verification-confidence-dots .is-filled { background: var(--bf-brand); }
-.bf-chart-workspace.bf-chart-workspace .forecast-explanations { border: 1px solid var(--bf-line); border-radius: .5rem; background: var(--bf-panel); }
-.bf-chart-workspace.bf-chart-workspace .forecast-explanations summary { color: var(--bf-brand); font-size: .75rem; padding: .75rem 1rem; }
-.bf-chart-workspace.bf-chart-workspace .chart-panel-full { padding: 1.25rem; }
-.bf-chart-workspace.bf-chart-workspace.is-embedded .chart-panel-full { padding: 0; border: 0; background: transparent; }
-.bf-chart-workspace.bf-chart-workspace .chart-header { border-bottom: 1px solid var(--bf-line); padding-bottom: .875rem; margin-bottom: .5rem; gap: 1rem; }
-.bf-chart-workspace.bf-chart-workspace .chart-header strong { color: var(--bf-ink); font-weight: 600; font-size: 1rem; letter-spacing: -.025em; }
-.bf-chart-workspace.bf-chart-workspace .chart-subtitle { font-size: .75rem; }
-.bf-chart-workspace.bf-chart-workspace .chart-surface { background: var(--bf-panel); }
-.bf-chart-workspace.bf-chart-workspace .chart-grid { stroke: var(--bf-line); opacity: .55; }
-.bf-chart-workspace.bf-chart-workspace .chart-axis { stroke: var(--bf-line); }
-.bf-chart-workspace.bf-chart-workspace .chart-tick-label { fill: var(--bf-muted); font-size: 11px; }
-.bf-chart-workspace.bf-chart-workspace .chart-line.historical { stroke: var(--bf-brand); stroke-width: 2.75; }
-.bf-chart-workspace.bf-chart-workspace .chart-point.historical { stroke: var(--bf-brand); fill: var(--bf-panel); }
-.bf-chart-workspace.bf-chart-workspace .chart-line.forecast-central { stroke: var(--bf-brand); stroke-width: 2; }
-.bf-chart-workspace.bf-chart-workspace :is(.chart-line.forecast-upper, .chart-line.forecast-lower) { stroke: color-mix(in srgb, var(--bf-brand) 45%, var(--bf-panel)); }
-.bf-chart-workspace.bf-chart-workspace .chart-line.historical-forecast { stroke: #b3946d; }
-.bf-chart-workspace.bf-chart-workspace .chart-crosshair-line { stroke: color-mix(in srgb, var(--bf-brand) 55%, transparent); }
-.bf-chart-workspace.bf-chart-workspace .chart-tooltip { color: var(--bf-ink); background: var(--bf-panel); border: 1px solid var(--bf-line); border-radius: .625rem; box-shadow: 0 .5rem 1.5rem rgb(0 51 102 / .08); }
-.bf-chart-workspace.bf-chart-workspace .chart-tooltip-series { color: var(--bf-brand); }
-.bf-chart-workspace.bf-chart-workspace .chart-footer { border-top: 1px solid var(--bf-line); margin-top: .875rem; padding-top: .875rem; }
-.bf-chart-workspace.bf-chart-workspace .chart-legend-button { color: var(--bf-muted); font-size: .6875rem; border-radius: .375rem; }
-.bf-chart-workspace.bf-chart-workspace .chart-legend-button:hover { color: var(--bf-brand); }
-.bf-chart-workspace.bf-chart-workspace .legend-historical { background: var(--bf-brand); }
-.bf-chart-workspace.bf-chart-workspace .source-legend { color: var(--bf-muted); font-size: .6875rem; }
-.bf-chart-workspace.bf-chart-workspace .callout { border: 1px solid var(--bf-line); border-radius: .5rem; background: var(--bf-panel); color: var(--bf-muted); padding: .875rem 1rem; font-size: .8125rem; }
-.bf-chart-workspace.bf-chart-workspace .callout-error { border-color: #ead8db; background: #fff8f9; color: #9a4957; }
-:root[data-theme="dark"] .bf-chart-workspace.bf-chart-workspace { --bf-brand: #78bce8; --bf-ink: #e5eff7; --bf-muted: #a3b4c3; --bf-line: #304657; --bf-canvas: #132735; --bf-panel: #172e3e; }
-:root[data-theme="dark"] .bf-chart-workspace.bf-chart-workspace .callout-error { background: #3c2831; color: #eab7c2; border-color: #6d4252; }
-@media (max-width: 639px) {
-  .bf-chart-workspace.bf-chart-workspace .filter-panel, .bf-chart-workspace.bf-chart-workspace .chart-panel-full { padding: 1rem; }
-  .bf-chart-workspace.bf-chart-workspace .forecast-portfolio-row { gap: .75rem; }
-  .bf-chart-workspace.bf-chart-workspace .chart-header { align-items: stretch; }
-  .bf-chart-workspace.bf-chart-workspace .chart-actions { max-width: 100%; }
-  .bf-chart-workspace.bf-chart-workspace .chart-range-buttons { flex-wrap: wrap; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .bf-chart-workspace.bf-chart-workspace *, .bf-chart-workspace.bf-chart-workspace *::before, .bf-chart-workspace.bf-chart-workspace *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-}
+@import './benchmark-canon.css';
+/* Host bindings for the exact C81/C82/C84/C85 visual components. Existing series geometry and handlers are retained. */
+.bf-canon-tools{display:none}
+.bf-chart-workspace.bf-chart-workspace{--text:var(--brand-dark);--border:var(--line);--panel:var(--surface);--accent:var(--brand);font-family:Inter,var(--font-inter,Arial),sans-serif;color:var(--brand-dark);background:var(--surface);gap:0;position:relative;min-width:0;border-radius:18px}
+.bf-chart-workspace.bf-chart-workspace *{box-sizing:border-box}
+.bf-chart-workspace.bf-chart-workspace .filter-panel{padding:0;border:0;border-radius:18px 18px 0 0;background:transparent;box-shadow:none;min-width:0;z-index:8}
+.bf-chart-workspace.bf-chart-workspace .filter-grid{display:block;gap:0}
+.bf-chart-workspace.bf-chart-workspace .filter-grid>.control-block:first-child{display:none}
+.bf-chart-workspace.bf-chart-workspace .srm-chart-controls-card{padding:18px 22px 14px;background:var(--canvas)}
+.bf-chart-workspace.bf-chart-workspace .srm-chart-controls[data-open=true] .srm-chart-controls-clip{overflow:visible}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-controls{display:block;margin:0;padding:0;font-size:12px}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-row{display:grid;align-items:center;gap:20px;padding:0 0 16px;margin:0;border:0;background:none}
+.bf-chart-workspace.bf-chart-workspace .forecast-current-row{grid-template-columns:170px minmax(150px,1fr) minmax(200px,1.35fr)}
+.bf-chart-workspace.bf-chart-workspace .forecast-verification-row{grid-template-columns:170px minmax(0,1fr);padding:15px 0;border-top:1px solid var(--faint-line)}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle{display:flex;align-items:center;gap:10px;margin:0}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle input{width:15px;height:15px;margin:0;accent-color:var(--brand);flex:none}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle-copy strong{font-size:13px;font-weight:600;color:var(--brand-dark)}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle-copy small{font-size:10px;font-weight:400;color:var(--muted);margin-top:4px;line-height:1.4}
+.bf-chart-workspace.bf-chart-workspace .control-group-label{font-size:10px;color:var(--muted);font-weight:400}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-group{display:flex;flex-direction:column;gap:5px;min-width:0}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-group.is-hidden{display:flex;visibility:visible;opacity:.48}
+.bf-chart-workspace.bf-chart-workspace .forecast-verification-group{display:grid;grid-template-columns:195px minmax(0,1fr);column-gap:22px;align-items:center}
+.bf-chart-workspace.bf-chart-workspace .forecast-verification-group>.control-label-with-help{grid-column:1;grid-row:1}
+.bf-chart-workspace.bf-chart-workspace .forecast-verification-group>.control-mode-buttons{grid-column:1;grid-row:2}
+.bf-chart-workspace.bf-chart-workspace .verification-quality-panel{grid-column:2;grid-row:1/3;padding:0;border:0;background:transparent;box-shadow:none}
+.bf-chart-workspace.bf-chart-workspace .verification-quality-heading{display:none}
+.bf-chart-workspace.bf-chart-workspace .verification-quality-metrics{display:flex;gap:22px;justify-content:space-between}
+.bf-chart-workspace.bf-chart-workspace .verification-quality-metric{display:flex;flex-direction:column;gap:5px;font-size:10px;color:var(--muted)}
+.bf-chart-workspace.bf-chart-workspace .verification-quality-metric strong{font-size:15px;color:var(--brand-dark);font-weight:600}
+.bf-chart-workspace.bf-chart-workspace .control-mode-buttons{display:flex;gap:4px;flex-wrap:nowrap}
+.bf-chart-workspace.bf-chart-workspace .control-horizon-group .chart-range-button{background:none;border:0;min-height:30px;padding:6px 9px;color:var(--muted);font-size:12px;border-radius:5px}
+.bf-chart-workspace.bf-chart-workspace .control-horizon-group .chart-range-button.is-active{background:var(--blue-soft);color:var(--brand);font-weight:600}
+.bf-chart-workspace .bf-model-select{position:relative;min-width:0;width:100%;font-size:12px}
+.bf-chart-workspace .bf-model-select>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:34px;padding:6px 10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);cursor:pointer;color:var(--brand-dark)}
+.bf-chart-workspace .bf-model-select>summary::-webkit-details-marker{display:none}
+.bf-chart-workspace .bf-model-select>summary>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bf-chart-workspace .bf-model-select>summary .forecast-control-button-status{display:none}
+.bf-chart-workspace .bf-model-menu{position:absolute;z-index:40;top:calc(100% + 5px);left:0;right:0;min-width:180px;padding:7px;border:1px solid var(--line);border-radius:9px;background:var(--surface);box-shadow:0 8px 30px rgb(0 51 102 / .12)}
+.bf-chart-workspace .bf-model-menu>input{width:100%;height:30px;padding:6px 9px;border:1px solid var(--line);border-radius:5px;background:var(--canvas);color:var(--brand-dark);font:inherit;margin-bottom:6px}
+.bf-chart-workspace .bf-model-menu .control-mode-buttons{display:block;max-height:200px;overflow:auto}
+.bf-chart-workspace .bf-model-menu .forecast-control-button{width:100%;min-height:32px;display:flex;text-align:left;justify-content:start;padding:6px 9px;background:transparent;border:0;border-radius:5px;color:var(--brand-dark);font-size:12px}
+.bf-chart-workspace .bf-model-menu .forecast-control-button.is-active,.bf-chart-workspace .bf-model-menu .forecast-control-button:hover{background:var(--blue-soft);color:var(--brand)}
+.bf-chart-workspace .bf-model-menu .forecast-control-button-copy{display:flex;align-items:center;gap:8px}
+.bf-chart-workspace .bf-model-menu .forecast-control-button-status{font-size:9px;color:var(--muted)}
+.bf-chart-workspace .bf-help-control{display:flex;justify-content:end;border-top:1px solid var(--faint-line);padding-top:9px}
+.bf-help-control>button{display:flex;align-items:center;gap:8px;padding:3px 0;background:transparent;border:0;color:var(--brand,#005A9C);font:inherit;font-size:11px;cursor:pointer}
+.bf-chart-workspace.bf-chart-workspace .chart-panel-full{display:grid;grid-template-columns:auto minmax(0,1fr);position:relative;gap:0;padding:25px 0 0;border:0;background:transparent;box-shadow:none;min-width:0}
+.bf-chart-workspace .chart-panel-full>*{grid-column:2;min-width:0}
+.bf-chart-workspace .chart-panel-full>.bf-canon-tools{display:block;grid-column:1;grid-row:1/20;z-index:7}
+.bf-chart-workspace.bf-chart-workspace .chart-header{position:static;min-height:0;height:0;padding:0;border:0;margin:0}
+.bf-chart-workspace .chart-header>div:first-child:not(.chart-actions){display:none}
+.bf-chart-workspace .chart-actions{position:absolute;right:5px;top:50%;transform:translateY(-50%);z-index:6;display:flex;flex-direction:column;gap:8px}
+.bf-chart-workspace .chart-actions>.chart-range-buttons{display:flex;flex-direction:column;gap:6px}
+.bf-chart-workspace .chart-actions .chart-range-button{display:grid;place-items:center;width:32px;height:30px;padding:0;background:transparent;border:0;border-radius:5px;color:var(--muted);font-size:11px;font-weight:400;box-shadow:none}
+.bf-chart-workspace .chart-actions .chart-range-button.is-active,.bf-chart-workspace .chart-actions .chart-range-button:hover{background:var(--blue-soft);color:var(--brand);font-weight:650}
+.bf-chart-workspace.bf-chart-workspace .chart-surface{margin:0 46px 0 0;min-width:0;background:var(--surface);border:0;border-radius:18px 18px 0 0}
+.bf-chart-workspace .chart-svg{display:block;width:100%;min-height:300px;overflow:visible}
+.bf-chart-workspace .chart-grid{stroke:var(--faint-line);opacity:.4}
+.bf-chart-workspace .chart-axis{stroke:var(--line)}
+.bf-chart-workspace .chart-tick-label{fill:var(--muted);font-family:Inter,Arial,sans-serif;font-size:11px}
+.bf-chart-workspace .chart-line.historical{stroke:var(--brand);stroke-width:2;fill:none}
+.bf-chart-workspace .chart-line.forecast-central{stroke:var(--brand);stroke-width:2;stroke-dasharray:5 4}
+.bf-chart-workspace .chart-line.forecast-upper{stroke:var(--negative-text);stroke-width:1.25}
+.bf-chart-workspace .chart-line.forecast-lower{stroke:var(--success-text);stroke-width:1.25}
+.bf-chart-workspace .chart-line.historical-forecast{stroke:var(--sand);stroke-dasharray:4 3}
+.bf-chart-workspace .chart-tooltip{font-family:Inter,Arial,sans-serif;color:var(--brand-dark);background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:0 6px 24px rgb(0 51 102 / .08)}
+.bf-chart-workspace .chart-footer{border:0;margin:0;padding:0 48px 15px 25px;font-size:11px;color:var(--muted)}
+.bf-chart-workspace .chart-legend-button{font-size:11px;color:var(--muted)}
+.bf-chart-workspace .legend-historical{background:var(--brand)}
+.bf-chart-workspace .chart-reset-button{font-size:10px;border:0;background:transparent;color:var(--brand)}
+.bf-chart-workspace .callout{margin:12px 16px;padding:12px 16px;background:var(--canvas);border:1px solid var(--line);border-radius:9px;font-size:12px;color:var(--muted)}
+.bf-chart-workspace .callout-button{font:inherit;color:var(--brand);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 12px}
+.bf-chart-workspace :is(button,input,summary):focus-visible{outline:2px solid var(--brand-light);outline-offset:3px}
+.srm-forecast-help{font-family:Inter,Arial,sans-serif}
+.srm-forecast-help .srm-close-window{background:none;border:0;color:var(--muted);cursor:pointer}
+.bf-chart-workspace .srm-chart-controls-ribbon{border-radius:50%;background:transparent}
+@media(max-width:680px){.bf-chart-workspace.bf-chart-workspace .forecast-current-row{grid-template-columns:1fr 1fr;gap:14px}.bf-chart-workspace .forecast-current-row>.forecast-portfolio-toggle{grid-column:1/-1}.bf-chart-workspace.bf-chart-workspace .forecast-verification-row{grid-template-columns:1fr;gap:14px}.bf-chart-workspace.bf-chart-workspace .forecast-verification-group{grid-template-columns:1fr}.bf-chart-workspace.bf-chart-workspace .verification-quality-panel{grid-column:1;grid-row:3}.bf-chart-workspace.bf-chart-workspace .srm-chart-controls-card{padding:16px}.bf-chart-workspace .chart-surface{margin-right:36px}}
+@media(prefers-reduced-motion:reduce){.bf-chart-workspace *{transition:none!important;animation:none!important}}
+
+/* C71/C74 visual underlay and navigator use the existing viewer geometry/window. */
+.chart-panel-embedded .chart-footer{display:none}.bf-chart-workspace .chart-panel-embedded .chart-footer{display:flex;flex-direction:column;gap:8px}
+.bf-chart-workspace .bf-time-marker{fill:var(--brand);stroke:var(--surface);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.bf-chart-workspace .bf-history-fill{pointer-events:none}
+.bf-time-navigator{display:none}.bf-chart-workspace .bf-time-navigator{display:block;position:relative;height:36px;margin:8px 65px 25px 50px;border:1px solid var(--line);border-radius:22px;background:var(--surface);touch-action:none}
+.bf-time-navigator>svg{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;border-radius:22px}.bf-time-navigator>svg path{fill:none;stroke:var(--brand);stroke-width:.75;vector-effect:non-scaling-stroke;opacity:.7}
+.bf-time-window{position:absolute;inset:0;background:color-mix(in srgb,var(--brand-light) 14%,transparent);border:1px solid color-mix(in srgb,var(--brand) 35%,transparent);border-radius:22px;cursor:grab}
+.bf-time-navigator>input[type=range]{appearance:none;-webkit-appearance:none;position:absolute;inset:0;width:100%;height:34px;padding:0;margin:0;background:transparent;pointer-events:none;accent-color:var(--brand)}
+.bf-time-navigator>input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:36px;height:36px;background:var(--surface);border:1px solid var(--brand);border-radius:50%;pointer-events:auto;cursor:ew-resize;box-shadow:0 2px 5px rgb(0 51 102 / .06)}
+.bf-time-navigator>input[type=range]::-moz-range-thumb{width:34px;height:34px;background:var(--surface);border:1px solid var(--brand);border-radius:50%;pointer-events:auto;cursor:ew-resize}
+.bf-chart-workspace .chart-legend-footer{display:flex;flex-wrap:wrap;gap:16px}.bf-chart-workspace .source-legend{font-size:10px;color:var(--muted)}
+.bf-chart-workspace .chart-svg{height:auto;min-height:0}.bf-chart-workspace .chart-y-mark{display:none}.bf-chart-workspace .chart-svg>.chart-axis:nth-of-type(2){display:none}
+.bf-chart-workspace .forecast-portfolio-controls{max-height:232px;overflow:auto;scrollbar-width:thin;padding-right:2px}
+.bf-chart-workspace.bf-model-portal{font-family:Inter,Arial,sans-serif;display:block;background:transparent;border:0;overflow:visible}
+.bf-chart-workspace.bf-model-portal .bf-model-menu{position:relative;top:0;min-width:0;left:0;right:0}
+.bf-chart-workspace.bf-model-portal .forecast-control-button[aria-pressed=true]::after{content:'✓';margin-left:auto;font-size:12px}
+.bf-chart-workspace .chart-line.forecast-upper,.bf-chart-workspace .chart-line.forecast-lower{stroke-dasharray:none;opacity:1}
+.bf-chart-workspace .legend-forecast-central{background:var(--brand)}.bf-chart-workspace .legend-forecast-upper{background:var(--negative-text)}.bf-chart-workspace .legend-forecast-lower{background:var(--success-text)}
+.bf-time-marker{display:none}.bf-chart-workspace .bf-time-marker{display:block}
+.bf-chart-workspace .forecast-portfolio-controls{overflow-x:hidden}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-controls .control-block{min-width:0;max-width:100%;width:auto}
+.bf-chart-workspace.bf-chart-workspace .chart-actions{width:36px!important;top:calc(25px + var(--bf-plot-height,430px)/2);right:5px}
+.bf-chart-workspace.bf-chart-workspace .chart-actions .chart-range-buttons{gap:4px}
+.bf-chart-workspace.bf-chart-workspace .chart-actions .chart-range-button{width:36px;height:32px;min-height:32px;font-size:13px}

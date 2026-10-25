@@ -1,6 +1,8 @@
 'use client'
 
 import './benchmark-finder-visual.css'
+import {SpendGuruLogo} from './visual/SpendGuruLogo'
+import {BenchmarkPresentation, BenchmarkThemeSwitch} from './visual/benchmark-presentation'
 
 import {createDiscoveryRequester} from './discovery-request'
 import { NativeAnalyticsEmbed } from './native-analytics-embed'
@@ -2075,27 +2077,11 @@ export function BenchmarkFinderClient({
   }, [hasSearched, previewStates, visibleResults])
 
   return (
-    <main className={`bf-visual min-h-screen bg-slate-50 px-6 py-10 text-slate-900${isPickerMode ? ' bf-visual-picker' : ''}`} data-testid="benchmark-finder-page">
-      <div className="bf-content mx-auto flex max-w-[1600px] flex-col gap-8">
-        {!isPickerMode && <div className="bf-brandbar">
-          <img src="/porr-demo/spendguru-logo.png" alt="SpendGuru" width={148} height={44} />
-          <span>Market Intelligence</span>
-        </div>}
-        {!isPickerMode && <header className="bf-page-heading">
-          <div>
-            <p className="bf-eyebrow">{locale === 'pl' ? 'RYNKI · CENY · PROGNOZY' : 'MARKETS · PRICES · FORECASTS'}</p>
-            <h1>Benchmark Finder<span>.</span></h1>
-            <p>{locale === 'pl' ? 'Znajdź właściwy punkt odniesienia dla Twojej kategorii.' : 'Find the right benchmark for your category.'}</p>
-          </div>
-          <span className="bf-page-index" aria-hidden="true">01 <span>/ {locale === 'pl' ? 'Odkrywanie rynku' : 'Market discovery'}</span></span>
-        </header>}
-        <section className="bf-search-panel rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h2 className="bf-search-title text-base font-semibold text-slate-950">{t('mode.search')}</h2>
-            </div>
-
-            <div className="inline-flex w-fit rounded-full border border-slate-200 bg-white p-1 text-sm">
+    <BenchmarkPresentation compact={isPickerMode}><main className={`bf-page min-h-screen${isPickerMode ? ' bf-visual-picker' : ''}`} data-testid="benchmark-finder-page">
+      <div className="bf-content">
+        <div className={`bf-brandbar${isPickerMode ? ' is-picker' : ''}`}>
+          {!isPickerMode && <><SpendGuruLogo width={148} /><span>Market Intelligence</span></>}
+          <div className="bf-header-actions"><BenchmarkThemeSwitch/>            <div className="inline-flex w-fit rounded-full border border-slate-200 bg-white p-1 text-sm">
               <button
                 type="button"
                 className={`rounded-full px-4 py-2 transition ${locale === 'pl' ? 'bg-slate-100 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
@@ -2114,8 +2100,25 @@ export function BenchmarkFinderClient({
               </button>
             </div>
           </div>
+        </div>
+        {!isPickerMode && <header className="bf-page-heading">
+          <div>
+            <p className="bf-eyebrow">{locale === 'pl' ? 'RYNKI · CENY · PROGNOZY' : 'MARKETS · PRICES · FORECASTS'}</p>
+            <h1>Benchmark Finder<span>.</span></h1>
+            <p>{locale === 'pl' ? 'Znajdź właściwy punkt odniesienia dla Twojej kategorii.' : 'Find the right benchmark for your category.'}</p>
+          </div>
+          <span className="bf-page-index" aria-hidden="true">01 <span>/ {locale === 'pl' ? 'Odkrywanie rynku' : 'Market discovery'}</span></span>
+        </header>}
+        <section className="bf-search-panel rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="bf-search-title text-base font-semibold text-slate-950">{t('mode.search')}</h2>
+            </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 lg:gap-4">
+
+          </div>
+
+          <div className="bf-search-top mt-4 flex flex-wrap items-center gap-3 lg:gap-4">
             <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 text-sm" data-testid="benchmark-search-surface-mode">
               <button
                 type="button"
@@ -2153,7 +2156,7 @@ export function BenchmarkFinderClient({
             <>
               {searchSurfaceMode === 'simple' ? (
                 <form
-                  className="mt-6 flex flex-col gap-3 sm:flex-row"
+                  className="bf-simple-row mt-6 flex flex-col gap-3 sm:flex-row"
                   onSubmit={(event) => {
                     event.preventDefault()
                     startSearchTransition(() => {
@@ -2161,13 +2164,13 @@ export function BenchmarkFinderClient({
                     })
                   }}
                 >
-                  <input
+                  <label className="bf-query-label"><span>{locale === 'pl' ? 'Nazwa, surowiec lub słowo kluczowe' : 'Name, commodity or keyword'}</span><div className="bf-search-input"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                     placeholder={t('search.placeholder')}
                     data-testid="benchmark-search-input"
-                  />
+                  /></div></label>
                   <button
                     type="submit"
                     className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
@@ -2448,7 +2451,7 @@ export function BenchmarkFinderClient({
                   className={`rounded-2xl border p-5 transition ${isActive ? 'border-slate-300 bg-slate-50' : 'border-slate-200 bg-white'}`}
                   style={isActive ? { backgroundColor: 'rgb(248, 250, 252)' } : undefined}
                 >
-                  <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
+                  <div className="bf-card-overview grid gap-6 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
                     <div className="min-w-0">
                       <h3 className="text-xl font-semibold tracking-tight text-slate-950">{card.title}</h3>
                       {card.subtitle ? <p className="mt-1 text-base text-slate-700">{card.subtitle}</p> : null}
@@ -2459,9 +2462,9 @@ export function BenchmarkFinderClient({
                       {conciseMetadata ? <p className="mt-4 text-sm font-medium text-slate-500">{conciseMetadata}</p> : null}
                     </div>
 
-                    <div className="flex flex-col gap-4 xl:w-[260px] xl:items-end xl:text-right">
+                    <div className="bf-card-values flex flex-col gap-4 xl:w-[260px] xl:items-end xl:text-right">
                       <div className="flex items-start justify-between gap-3 xl:w-full xl:justify-end">
-                        <div className="xl:order-1">
+                        <div className="bf-latest xl:order-1">
                           {previewState.previewStatus === 'ready' && previewState.preview ? (
                             <p className="whitespace-nowrap text-2xl font-semibold leading-none tracking-tight text-slate-950 sm:text-3xl" data-testid="benchmark-preview-latest-value">{formatLatestValue(locale, previewState.preview)}</p>
                           ) : previewState.previewStatus === 'error' ? (
@@ -2476,7 +2479,7 @@ export function BenchmarkFinderClient({
                           type="button"
                           aria-label={isActive ? t('actions.collapseAnalytics') : t('actions.expandAnalytics')}
                           title={isActive ? t('actions.collapseAnalytics') : t('actions.expandAnalytics')}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 xl:order-2"
+                          className="bf-expand-control inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 xl:order-2"
                           onClick={() => togglePreviewCard(candidate)}
                         >
                           {isActive ? '⌃' : '⌄'}
@@ -2662,6 +2665,6 @@ export function BenchmarkFinderClient({
           )}
         </section>
       </div>
-    </main>
+    </main></BenchmarkPresentation>
   )
 }
