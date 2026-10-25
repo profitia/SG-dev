@@ -74,11 +74,15 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
       await provider.guard()
       registration = createRegistrationSurface(registrationStore, provider); await registration.ready()
     }
-    const verify = createClerkEmailVerifier({environment:'development', instanceId:e.instanceId, signingSecret:process.env.CLERK_EMAIL_SIGNING_SECRET, allowedInvitationOrigins:e.allowedInvitationOrigins})
+    // Opt-in: Clerk continues delivering its native security notification until
+    // a separate accepted release and provider-template cutover are verified.
+    const revocationOrigins=process.env.IDENTITY_NEW_DEVICE_EMAIL_ENABLED==='true'?
+      [...new Set([new URL(config.issuer).origin,new URL(config.issuer.replace(/\.clerk\.accounts\.dev$/,'.accounts.dev')).origin])]:[]
+    const verify = createClerkEmailVerifier({environment:'development', instanceId:e.instanceId, signingSecret:process.env.CLERK_EMAIL_SIGNING_SECRET, allowedInvitationOrigins:e.allowedInvitationOrigins,allowedRevocationOrigins:revocationOrigins})
     const send = createMailgunTransactionalSender({environment:'development',region:e.region,domain:e.domain,apiKey:process.env.MAILGUN_SENDING_KEY,
       authorizedRecipients:e.authorizedRecipients,recipientPolicy:e.recipientPolicy,from:e.from,senderName:e.senderName})
     await store.ready()
-    const render = await loadEmailRenderer(e.appName, e.allowedInvitationOrigins)
+    const render = await loadEmailRenderer(e.appName, e.allowedInvitationOrigins,fetch,revocationOrigins)
     email = createEmailRuntime({verify,store,render,send,recipient:createEmailRecipientVerifier(client),
       diagnostic:code => console.error('identity-email: '+code)})
   }
