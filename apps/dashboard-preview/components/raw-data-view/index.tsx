@@ -1,5 +1,7 @@
 'use client'
 
+import {BenchmarkChartControls, BenchmarkChartTools, BenchmarkVisualSelect, BenchmarkForecastHelp, BenchmarkChartNavigator, BenchmarkHistoryFill, useBenchmarkChartLayout, BenchmarkRangeRail, BenchmarkVerificationPlaceholder} from './benchmark-visual'
+
 import { useEmbeddedReadPresentation } from '../native-embedded-read-provider'
 import {nativeForecastCommandFromUi,nativeForecastCompletionPlan,type NativeForecastCommandOutcome,type NativeForecastCommandSelection} from '@/lib/benchmark-forecast/native-command-presentation'
 
@@ -1751,6 +1753,7 @@ function ChartPanel({
   lockServerRange = false,
   onPresetChange,
   embedded = false,
+  benchmarkPresentation = false,
 }: {
   locale: Locale
   payload: TimeSeriesViewerPayload | null
@@ -1768,6 +1771,7 @@ function ChartPanel({
   lockServerRange?: boolean
   onPresetChange?: (preset: RangePreset) => void
   embedded?: boolean
+  benchmarkPresentation?: boolean
 }) {
   const [activeDate, setActiveDate] = useState<string | null>(null)
   const [activeTooltip, setActiveTooltip] = useState<AccuracyMarker | null>(null)
@@ -1788,7 +1792,7 @@ function ChartPanel({
   const tooltipRef = useRef<HTMLDivElement | null>(null)
   const hideTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const armAccuracyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const chartLayout = resolveChartLayout(viewportWidth, isTouchInput)
+  const chartLayout = useBenchmarkChartLayout(chartSurfaceRef, resolveChartLayout(viewportWidth, isTouchInput))
   const useCompactTooltipRail = viewportWidth <= 420
   const pinnedSurfaceKey = selectedSurface?.key ?? selectedSurfaceKey ?? selectedDate
   const chartScene = useMemo(() => {
@@ -2353,6 +2357,7 @@ function ChartPanel({
 
   return (
     <section className={`${embedded ? 'chart-panel-full chart-panel-embedded' : 'panel chart-panel-full'}`} style={{ gridColumn: 'span 12', minHeight: '320px' }}>
+      {benchmarkPresentation && <BenchmarkChartTools/>}
       <div className={`chart-header${embedded ? ' is-embedded' : ''}`}>
         {embedded ? null : (
           <div>
@@ -2362,7 +2367,7 @@ function ChartPanel({
           </div>
         )}
         <div className="chart-actions">
-          <div className="chart-range-buttons">
+          <BenchmarkRangeRail className="chart-range-buttons" enabled={benchmarkPresentation} series={payload.series} selection={zoomRange} setWindow={setZoomRange}>
             {RANGE_PRESETS.map((preset) => (
               <button
                 key={preset}
@@ -2373,7 +2378,7 @@ function ChartPanel({
                 {preset}
               </button>
             ))}
-          </div>
+          </BenchmarkRangeRail>
           {zoomRange && !lockServerRange ? (
             <button type="button" className="chart-reset-button" onClick={() => setZoomRange(null)}>{resetZoomLabel}</button>
           ) : null}
@@ -2423,7 +2428,7 @@ function ChartPanel({
           const y = chartScene.pointY(typeof tick.value === 'number' ? tick.value : Number(tick.value))
 
           return (
-            <g key={`y-${tick.offset}`}>
+            <g key={`y-${tick.offset}`} className="chart-y-mark">
               <line x1={chartLayout.paddingLeft} y1={y} x2={chartLayout.width - chartLayout.paddingRight} y2={y} className="chart-grid" />
               <text x={chartLayout.paddingLeft - 14} y={y + 4} textAnchor="end" className="chart-tick-label">{tick.label}</text>
             </g>
@@ -2439,6 +2444,7 @@ function ChartPanel({
 
           return (
             <g key={`x-${tick.offset}`}>
+              <circle cx={x} cy={chartLayout.height - chartLayout.paddingBottom} r={3.5} className="bf-time-marker"/>
               <line x1={x} y1={chartLayout.height - chartLayout.paddingBottom} x2={x} y2={chartLayout.height - chartLayout.paddingBottom + 6} className="chart-axis" />
               <text x={labelX} y={chartLayout.height - chartLayout.paddingBottom + 18} textAnchor={textAnchor} className="chart-tick-label">{tick.label}</text>
             </g>
@@ -2474,6 +2480,7 @@ function ChartPanel({
           </g>
         ))}
 
+        {benchmarkPresentation && <BenchmarkHistoryFill layers={chartScene.lineLayers} baseline={chartLayout.height - chartLayout.paddingBottom} top={chartLayout.paddingTop} locale={locale}/>}
         {chartScene.lineLayers.map(({ entry, index, polylines }) => {
           return (
             <g key={entry.id} className="chart-series-layer" style={{ animationDelay: `${index * 60}ms` }}>
@@ -2741,7 +2748,7 @@ function ChartPanel({
         </div>
       ) : null}
 
-      {embedded ? null : (
+      {(
         <div className="chart-footer">
           <div className="chart-legend chart-legend-footer">
             {payload.series.map((entry) => {
@@ -2776,6 +2783,7 @@ function ChartPanel({
           </div>
         </div>
       )}
+      {benchmarkPresentation && <BenchmarkChartNavigator series={payload.series} selection={zoomRange} setWindow={setZoomRange}/>}
     </section>
   )
 }
@@ -4628,7 +4636,7 @@ export function RawDataView({
   }
 
   return (
-    <div className={`shell-grid${hideEmbeddedBenchmarkShell ? ' is-embedded' : ''}`}>
+    <div className={`shell-grid${hideEmbeddedBenchmarkShell ? ' is-embedded' : ''}${isBenchmarkMode ? ' srm-ui bf-chart-workspace' : ''}`}>
       {hideEmbeddedBenchmarkShell ? null : <section className="panel filter-panel" style={{ gridColumn: 'span 12' }}>
         {embedded ? null : (
           <div className="filters-topbar">
@@ -4663,6 +4671,7 @@ export function RawDataView({
           </div>
         )}
 
+        <BenchmarkChartControls enabled={isBenchmarkMode}>
         <div className="filter-grid">
           {isForecastPortfolioVariant && isBenchmarkMode ? (
             <>
@@ -4677,20 +4686,20 @@ export function RawDataView({
                   <label className="control-check control-check-inline forecast-portfolio-toggle">
                     <input type="checkbox" checked={showForecast} onChange={(event) => setShowForecast(event.target.checked)} />
                     <span className="forecast-portfolio-toggle-copy">
-                      <strong>{t('showForecast')}</strong>
+                      <strong>{locale === 'pl' ? 'Prognozy' : 'Forecasts'}</strong>
                       <small>
                         {preparedReadsOnly && forecastCapabilityState === 'loading'
                           ? t('forecastReadinessLoading')
                           : preparedReadsOnly && forecastCapabilityState === 'error'
                             ? t('forecastReadinessUnavailable')
-                            : t('showForecastHint')}
+                            : locale === 'pl' ? 'Korytarz przyszłej ceny' : 'Future price corridor'}
                       </small>
                     </span>
                   </label>
 
                   <div className={`control-block control-mode-group forecast-portfolio-group forecast-model-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
                     <span className="control-group-label">{t('forecastModel')}</span>
-                    <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastModel')}>
+                    <BenchmarkVisualSelect className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastModel')}>
                     {FORECAST_PORTFOLIO_MODELS.map((model) => {
                       const capability = preparedReadsOnly
                         ? resolveCapabilityVariant(forecastCapabilitySnapshot, model, selectedForecastTargetBasis)
@@ -4733,7 +4742,7 @@ export function RawDataView({
                         </button>
                       )
                     })}
-                    </div>
+                    </BenchmarkVisualSelect>
                   </div>
 
                   <div className={`control-block control-mode-group forecast-portfolio-group forecast-target-basis-group${showForecast ? '' : ' is-hidden'}`} aria-hidden={!showForecast}>
@@ -4745,7 +4754,7 @@ export function RawDataView({
                         tabIndex={showForecast ? 0 : -1}
                       />
                     </div>
-                    <div className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastTargetBasis')}>
+                    <BenchmarkVisualSelect className="chart-range-buttons control-mode-buttons" role="group" aria-label={t('forecastTargetBasis')}>
                     {FORECAST_TARGET_BASES.map((targetBasis) => {
                       const capability = preparedReadsOnly
                         ? resolveCapabilityVariant(forecastCapabilitySnapshot, forecastModel, targetBasis)
@@ -4788,7 +4797,7 @@ export function RawDataView({
                         </button>
                       )
                     })}
-                    </div>
+                    </BenchmarkVisualSelect>
                   </div>
                 </div>
 
@@ -4808,7 +4817,7 @@ export function RawDataView({
                       }}
                     />
                     <span className="forecast-portfolio-toggle-copy">
-                      <strong>{t('showForecastVerification')}</strong>
+                      <strong>{locale === 'pl' ? 'Sprawdzalność' : 'Verification'}</strong>
                       <small>{selectedVerificationPrepared ? t('showForecastVerificationHint') : t('verificationPreparationAvailableHint')}</small>
                     </span>
                   </label>
@@ -4886,10 +4895,11 @@ export function RawDataView({
                           </div>
                         </div>
                       </section>
-                    ) : null}
+                    ) : <BenchmarkVerificationPlaceholder locale={locale}/>}
                   </div>
                 </div>
 
+                <BenchmarkForecastHelp model={forecastModel}>
                 <details className="forecast-explanations">
                   <summary>
                     <span className="forecast-explanations-summary-copy">
@@ -4927,6 +4937,7 @@ export function RawDataView({
                     </table>
                   </div>
                 </details>
+                </BenchmarkForecastHelp>
               </div>
             </>
           ) : !isBenchmarkMode ? (
@@ -5001,6 +5012,7 @@ export function RawDataView({
           ) : null}
         </div>
 
+        </BenchmarkChartControls>
         {!isBenchmarkMode && benchmarkRequired ? <p className="callout">{t('benchmarkRequired')}</p> : null}
         {errorMessage ? (
           <div className="callout callout-error" role="status" aria-live="polite">
@@ -5138,6 +5150,7 @@ export function RawDataView({
       </section>}
 
       <ChartPanel
+        benchmarkPresentation={isBenchmarkMode}
         locale={locale}
         payload={activePayload}
         emptyMessage={benchmarkRequired ? t('chartNeedsBenchmark') : t('chartEmpty')}

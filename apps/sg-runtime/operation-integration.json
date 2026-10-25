@@ -2786,5 +2786,44 @@
       "tests/private-host.integration.test.mjs": "b05bc26d742901334410ccabeb9a34b4d0a842c0c5b9eacbe0cbdfb4d3b91ef9",
       "tests/self-service-account.test.ts": "d1405fe71bd3fcc4478dc9c1bbcb4b3a8ef2aca7cd57cb2ebfbfb15acd50d964"
     }
+  },
+  "benchmarkVisualSourceCompatibility": {
+    "taskId": "SG2-BENCHMARK-VISUAL-DEVELOPMENT-20261025",
+    "previousReceiptSourceSha": "0c3925d9aae1240a60f7c74727af6fba2724a6d1",
+    "previousReceiptSha256": "2fca485c9c2dfcf12643529370ab29937b43b64992f45459066772cd061c50e2",
+    "scope": "presentation-only",
+    "runtimeAuthenticationChanged": false,
+    "searchMechanismChanged": false,
+    "productDeploymentPerformed": false,
+    "applicationSourceDigests": {
+      "components/benchmark-finder/benchmark-finder-client.tsx": "c37bfdb3c87cefa163e4ace793f57c77a0066f4e0a76f2d20a9231631c9ec2c7",
+      "components/benchmark-finder/benchmark-finder-visual.css": "1c1198074a00d576b8f23b0d1fa590803b926f81978dccdaa7ef5800f6f63ac5",
+      "components/porr-demo/porr-demo-shell.tsx": "7ef569612ecd5dbe75faaf432e3626d7868aa0153855e41cfe7d419a8c40eaed",
+      "../dashboard-preview/components/raw-data-view/index.tsx": "7eb8548aca728af6593ef5a5eee304d05e187cb9c4050410dc21b7d005ebb557",
+      "../dashboard-preview/app/globals.css": "23551cac6e84a59063f3a6668b0d7facd6871ff3b20927cc47c56d72982f5c14",
+      "../dashboard-preview/app/benchmark-visual.css": "7d6efd028a142f40d5a4d9748ea3ff69809500e76a644dab9af280531be0febf",
+      "components/benchmark-finder/visual/SpendGuruLogo.tsx": "7a0a687b9bb3a956dceedf5de42e404c34954cc352e73f1955920b5f1754f288",
+      "components/benchmark-finder/visual/benchmark-presentation.tsx": "7d60fdd36102a5d71e9663fbacdea41f0066fa184236f6fdd60b237ed96e38f6",
+      "components/benchmark-finder/visual/benchmark-chat.css": "ed9376dc1c0ddc0bfce61eb1abf5c630b1e8cc437e692a0c766c7c4975de5d06",
+      "public/benchmark-visual/spendguru-avatar.png": "99e778fca02acce64867601fb90ecd89aaa24f5e2b38a0122c2e71fe9e173061",
+      "../dashboard-preview/components/raw-data-view/benchmark-visual.tsx": "5e1b2701bbbe4211f6720956e214e00c02f9796588e4dbbdb652450d08cab85d",
+      "../dashboard-preview/app/benchmark-canon.css": "f5e1619883d1f70e27be6354c2aa81c5332daf0756434646ca6f196efacd29ef",
+      "tests/category-operation.test.ts": "a49786b442e5fe91eed4ef4bc6da281fa6e166c20dd324bec65b953d725d0cd6",
+      "tests/identity-runtime.test.ts": "7690f5d19f4f566bf58cc9cc672fc9e54bce225eadb946224ed5c0bbea51248c",
+      "tests/operation-context.test.mjs": "7905f82730b5fb522bd31ba5dff47f3d6e9bc72b009a49bf6dcf84c6f4afa1e0",
+      "tests/porr-demo-middleware.test.ts": "087642cfa393fcc3c536da7f8e6bf3d98f6b5a56d3b2b45652cda3b078386b0c",
+      "tests/porr-demo-ui-polish.test.ts": "7ca3552a27346a0dfe141b332bae45b38f544c927a28132da36d21f880428bc8",
+      "tests/self-service-account.test.ts": "3f504e0906b35edd309ae55fc6fb8d1a823ff6bc7c2c2fd23c0449b58fe84813",
+      "public/benchmark-visual/inter-latin.woff2": "c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4",
+      "public/benchmark-visual/inter-latin-ext.woff2": "a28eb6d3ccb534ae0c94ca999371df024aab60b08c3c8a5720ee9e32fa0faaa2"
+    },
+    "presentationReference": {
+      "canonProject": "460628300646219776",
+      "canonRevision": "464039002702499840",
+      "librarySection": "15 Wykresy",
+      "benchmarkProject": "463019127557226496",
+      "benchmarkRevision": "463982323726172160",
+      "correctionTaskId": "SG2-BENCHMARK-VISUAL-CANON-CORRECTION-20261025"
+    }
   }
 }
