@@ -50,6 +50,7 @@ test('disabled defaults and unconfigured E1 deny before network or SQL',async()=
  for(const env of [{KRS_EXTERNAL_ENABLED:'true'},{KRS_SYNC_ENABLED:'true'},{KRS_CONSUMER_ENABLED:'true'},{KRS_DATABASE_URL:'postgres://cloud.invalid/db'}])assert.throws(()=>loadConfig(env))
  await assert.rejects(unavailablePublication().publish({},()=>{calls++}));await assert.rejects(createSynchronizer({pool:{},client,publication:unavailablePublication()}).run({}));assert.equal(calls,0)
  await assert.rejects(createAdmittedKrsSource({binding:{origin:'http://127.0.0.1',transport:'LOCAL_SYNTHETIC_HTTP'}}),/SOURCE_BINDING_DENIED/)
+ for(const transportProfile of [null,'ALL','',[],{}])await assert.rejects(createAdmittedKrsSource({transportProfile,binding:{origin:'https://api-krs.ms.gov.pl',transport:'HTTPS'}}),/SOURCE_BINDING_DENIED/)
 })
 test('timeout retains in-flight lock until the existing Source settles; circuit is bounded',async()=>{
  let settle,hits=0

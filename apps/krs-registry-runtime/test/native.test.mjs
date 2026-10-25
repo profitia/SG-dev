@@ -197,7 +197,21 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
     const gusHost=createPlatformIngestionHost({...base,source:{id:'krs.registry.gus',payloadSchema:'external-call-control-v1',qualityVersion:'gus-bir12-source-v1',classificationVersion:'technical-source-control-v1'},validateSharedPayload:control})
     const gusSource=await createAdmittedGusSource({sourceHost:gusHost,sourceId:'krs.registry.gus',resourceId:'krs-gus:nip-map',apiKey:'A'.repeat(20),readSid:()=>sid,permit:async()=>{},binding:{role:'krs_ingest',configurationVersion:'krs-native-pilot-v1',schemaDigest:plan.schemaDigests.external,origin:GUS_ORIGIN,transport:'HTTPS',pathRules:[{method:'POST',path:GUS_PATH}]},independentQuery:driver.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows})})
     const mapper=createGusMapper({source:gusSource,readSid:()=>sid,writeSid:value=>{sid=value}})
-    const source=await createNativeNipRegistrySource({host:base,externalSchemaDigest:plan.schemaDigests.external})
+    // Match the already bounded consumer policy; never widen it to bulletins.
+    const extractsOnly=[{method:'GET',prefix:'/api/krs/OdpisAktualny/',parameter:'OPAQUE',suffix:'',requestFormat:'NONE'},{method:'GET',prefix:'/api/krs/OdpisPelny/',parameter:'OPAQUE',suffix:'',requestFormat:'NONE'}]
+    // Native definitions are immutable. Retain and revoke the fixture's old
+    // policy, then install a separate bounded definition with its own ID.
+    const policy=randomUUID()
+    await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
+    try{
+     await owner.query("UPDATE profitia_external_native.policies SET status='REVOKED' WHERE policy_id IN (SELECT policy_id FROM profitia_external_call.policies WHERE source_id='krs.registry.official' AND status='ACTIVE')")
+     await owner.query("UPDATE profitia_external_call.policies SET status='REVOKED' WHERE source_id='krs.registry.official'")
+     await owner.query(`INSERT INTO profitia_external_call.policies SELECT (jsonb_populate_record(NULL::profitia_external_call.policies,to_jsonb(p)||jsonb_build_object('policy_id',$1::text,'status','ACTIVE','version',1,'admitted_count',0))).* FROM profitia_external_call.policies p WHERE source_id='krs.registry.official'`,[policy])
+     await owner.query(`INSERT INTO profitia_external_native.policies SELECT (jsonb_populate_record(NULL::profitia_external_native.policies,to_jsonb(n)||jsonb_build_object('policy_id',$1::text,'base_policy_version',1,'path_rules',$2::jsonb,'status','ACTIVE','version',1))).* FROM profitia_external_native.policies n JOIN profitia_external_call.policies p USING(policy_id) WHERE p.source_id='krs.registry.official' AND p.status='REVOKED'`,[policy,JSON.stringify(extractsOnly)])
+     await owner.query('COMMIT')
+    }catch(e){await owner.query('ROLLBACK');throw e}
+    const legacy=await createNativeNipRegistrySource({host:base,externalSchemaDigest:plan.schemaDigests.external})
+    const source=await createNativeNipRegistrySource({host:base,externalSchemaDigest:plan.schemaDigests.external,transportProfile:'EXTRACTS_ONLY'})
     const wrap=(action,value)=>'<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"><s:Body><'+action+'Result>'+value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')+'</'+action+'Result></s:Body></s:Envelope>'
     try{
      globalThis.fetch=async(url,init)=>{
@@ -219,6 +233,11 @@ export async function nativePublicationTests(t,{owner,ingest,url,Pool}){
      for(variant of [{label:'history',regon},{label:'history-missing',regon},{label:'history-conflict',regon,historyDeny:true},{label:'exact9',regon},{label:'zero14',regon:regon+'00000'},{label:'absent',regon:null},{label:'foreign-parent',regon:'61018820100003',deny:true},{label:'local-unit',regon:regon+'00018',deny:true},{label:'foreign-nip',regon:regon+'00000',nip:'7740001454',deny:true}]){
       const key=createHash('sha256').update(variant.label).digest('hex'),mapping=await mapper.resolve(nip,key,AbortSignal.timeout(10000)),before=(await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots')).rows[0].n
       assert.equal(mapping.status,'MATCH')
+      if(variant.label==='history'){
+       const calls=upstream,admitted=(await owner.query("SELECT admitted_count FROM profitia_external_call.policies WHERE source_id='krs.registry.official' AND status='ACTIVE'")).rows[0].admitted_count
+       await assert.rejects(legacy.acquire(mapping,key,AbortSignal.timeout(10000)),e=>e.code==='KRS_UNAVAILABLE'&&e.certainty==='NOT_SENT')
+       assert.equal(upstream,calls);assert.equal((await owner.query("SELECT admitted_count FROM profitia_external_call.policies WHERE source_id='krs.registry.official' AND status='ACTIVE'")).rows[0].admitted_count,admitted)
+      }
       if(variant.deny){await assert.rejects(source.acquire(mapping,key,AbortSignal.timeout(10000)),e=>e.reasonCode==='RESOURCE_SCOPE_MISMATCH');assert.equal((await owner.query('SELECT count(*)::int n FROM krs_registry.snapshots')).rows[0].n,before)}
       else{const result=await source.acquire(mapping,key,AbortSignal.timeout(10000));assert.equal(result.snapshot.regon,variant.regon);assert.equal(result.snapshot.nip,nip);assert.equal(result.snapshot.canonicalKrs,id);assert.equal(result.receipt.evidenceRef,result.snapshot.evidenceRef);
        if(variant.label.startsWith('history')){

@@ -182,13 +182,14 @@ export function createOfficialSeed(options:{client:ReturnType<typeof createKrsCl
 export const NATIVE_KRS_SOURCES=Object.freeze({official:'krs.registry.official',catalog:'krs.registry.catalog',resource:'krs-official:current'})
 /** Complete native Source wiring. SQL008/009/012 and its ordinary-role bindings
  * remain installation prerequisites. No fixture network or alternate fetch. */
-async function nativeSourceParts(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;externalSchemaDigest:string}){
+async function nativeSourceParts(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;externalSchemaDigest:string;transportProfile?:'EXTRACTS_ONLY'}){
  const sourceHost=createPlatformIngestionHost<PoolClient>({...options.host,
   source:{id:NATIVE_KRS_SOURCES.official,payloadSchema:'external-call-control-v1',qualityVersion:'krs-source-control-v1',classificationVersion:'technical-source-control-v1'},
   validateSharedPayload:value=>!!value&&typeof value==='object'&&!Array.isArray(value)
    &&Object.keys(value).sort().join(',')==='action,callId,configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status',
  })
  const source=await createAdmittedKrsSource<PoolClient>({sourceHost,sourceId:NATIVE_KRS_SOURCES.official,resourceId:NATIVE_KRS_SOURCES.resource,
+  ...(options.transportProfile!==undefined?{transportProfile:options.transportProfile}:{}),
   binding:{role:options.host.binding.role,configurationVersion:options.host.binding.configurationVersion,schemaDigest:options.externalSchemaDigest,
    origin:'https://api-krs.ms.gov.pl',transport:'HTTPS',pathRules:[{method:'GET',path:'/api/krs/OdpisAktualny'}]},
   independentQuery:options.host.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows}),now:options.host.now??Date.now,
@@ -226,7 +227,7 @@ function formationExcerpt(response:KrsResponse,snapshot:CompanySnapshot){
    sposobPowstaniaPodmiotu:{okolicznosciPowstania:transformation?'PRZEKSZTAŁCENIE':'',podmioty:ids.map(id=>({krs:{krs:id}}))}}}}
  return {ids,excerpt}
 }
-export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;externalSchemaDigest:string}){
+export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion,'source'|'validateSharedPayload'>;externalSchemaDigest:string;transportProfile?:'EXTRACTS_ONLY'}){
  const {client,publication}=await nativeSourceParts(options)
  const acquired=new Map<string,{snapshot:CompanySnapshot;response:KrsResponse;history?:Promise<NativeContinuity>}>(),now=options.host.now??Date.now
  return Object.freeze({async acquire(mapping:GusMapping,requestKey:string,signal:AbortSignal){

@@ -84,3 +84,7 @@ Native on-demand KRS acquisition requires process-owned evidence of the settled
 GUS mapping and validates current KRS/NIP before publishing the existing catalog.
 No arbitrary KRS allowlist removal, numeric enumeration or private supplier
 assignment is introduced. Source code and offline tests do not prove activation.
+
+### Bounded extract transport profile (1.6.3)
+
+`createNativeNipRegistrySource` and `createAdmittedKrsSource` accept the optional server-owned `transportProfile: "EXTRACTS_ONLY"`. It declares only the existing CURRENT and FULL extract paths, matching an already bounded native Source policy. The default retains its existing four paths. This option issues no permission and changes no SQL policy: descriptor equality, admission, settlement, company evidence and audit remain mandatory. Consumers must separately adopt the version and verify their actual installed policy.

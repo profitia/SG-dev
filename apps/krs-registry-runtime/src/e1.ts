@@ -4,15 +4,20 @@ import type {RegistryCommand} from '@profitia/krs-registry-contracts'
 import {buildRequest,parseCommand,KRS_ORIGIN} from './client.js'
 import {RegistryError} from './errors.js'
 /** Existing E1 owns Source PLAN/ATTEMPT/SETTLE, current grants, budgets, audit and durable receipts. */
-export async function createAdmittedKrsSource<T>(options:Omit<ExternalCallOptions<T,RegistryCommand>,'parseCommand'|'buildRequest'|'getHeaders'|'publicWebTransport'>){
+export async function createAdmittedKrsSource<T>(options:Omit<ExternalCallOptions<T,RegistryCommand>,'parseCommand'|'buildRequest'|'getHeaders'|'publicWebTransport'> & {transportProfile?:'EXTRACTS_ONLY'}){
   if(options.binding.origin!==KRS_ORIGIN||options.binding.transport!=='HTTPS')throw new RegistryError('SOURCE_BINDING_DENIED')
+  const {transportProfile,...sourceOptions}=options
+  if(transportProfile!==undefined&&transportProfile!=='EXTRACTS_ONLY')throw new RegistryError('SOURCE_BINDING_DENIED')
+  const extracts=[
+    {method:'GET' as const,prefix:'/api/krs/OdpisAktualny/',parameter:'OPAQUE' as const,suffix:'',requestFormat:'NONE' as const},
+    {method:'GET' as const,prefix:'/api/krs/OdpisPelny/',parameter:'OPAQUE' as const,suffix:'',requestFormat:'NONE' as const},
+  ]
   const nativeTransport:NativeExternalTransport&{credentialMode:'NONE'}={schemaDigest:await nativeExternalTransportSchemaDigest(),credentialMode:'NONE',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT',maximumResponseBytes:4*1024*1024,redirectOrigins:[],pathRules:[
-    {method:'GET',prefix:'/api/krs/OdpisAktualny/',parameter:'OPAQUE',suffix:'',requestFormat:'NONE'},
-    {method:'GET',prefix:'/api/krs/OdpisPelny/',parameter:'OPAQUE',suffix:'',requestFormat:'NONE'},
-    {method:'GET',prefix:'/api/Krs/Biuletyn/',parameter:'OPAQUE',suffix:'',requestFormat:'NONE'},
-    {method:'GET',prefix:'/api/Krs/BiuletynGodzinowy/',parameter:'OPAQUE',suffix:'',requestFormat:'NONE'}
+    ...extracts,...(transportProfile==='EXTRACTS_ONLY'?[]:[
+    {method:'GET' as const,prefix:'/api/Krs/Biuletyn/',parameter:'OPAQUE' as const,suffix:'',requestFormat:'NONE' as const},
+    {method:'GET' as const,prefix:'/api/Krs/BiuletynGodzinowy/',parameter:'OPAQUE' as const,suffix:'',requestFormat:'NONE' as const}])
   ]}
-  const host=createExternalCallHost({...options,parseCommand,buildRequest,nativeTransport})
+  const host=createExternalCallHost({...sourceOptions,parseCommand,buildRequest,nativeTransport})
   return Object.freeze({async execute(input:{command:unknown;intentKey:string},limits?:{signal?:AbortSignal}){
     const response=await host.execute(input,limits)
     const evidence=externalCallEvidence(response)
