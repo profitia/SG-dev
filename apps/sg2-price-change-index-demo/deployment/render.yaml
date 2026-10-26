@@ -19,4 +19,5 @@ services:
       - key: NODE_VERSION
         value: 24
 # Assign only to existing project prj-dap98ddg1s2s739ssatg / environment evm-dap98hm0tbcc738rro10.
-# Creation is deferred until reviewed main and first-release evidence are available. No secrets or env groups.
+# Existing service: srv-dbfnd3jrjlhs73epihvg. This recipe documents configuration; do not create a duplicate.
+# Manual releases target only this service and an accepted main SHA. No secrets or env groups.

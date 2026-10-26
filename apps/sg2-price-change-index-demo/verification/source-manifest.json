@@ -25438,6 +25438,42 @@
         "unit": "window scroll px; source body remained0",
         "sourceRevision": "465437640712400896"
       }
+    },
+    "renderResource": {
+      "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "projectId": "prj-dap98ddg1s2s739ssatg",
+      "environmentId": "evm-dap98hm0tbcc738rro10",
+      "serviceId": "srv-dbfnd3jrjlhs73epihvg",
+      "serviceName": "Price Change Index",
+      "url": "https://price-change-index.onrender.com",
+      "newProjectCreated": false,
+      "autoDeploy": false,
+      "previews": "off",
+      "region": "frankfurt",
+      "runtime": "node24",
+      "instances": 1,
+      "environmentVariableNames": [
+        "NODE_VERSION"
+      ],
+      "linkedEnvironmentGroups": [],
+      "secretFiles": [],
+      "productDatabaseCreated": false,
+      "existingServiceDeploysChecked": 21,
+      "existingServiceDeployIdsChanged": []
+    },
+    "renderCost": {
+      "computePlan": "0.5c-512mb",
+      "computeMonthlyUsd": 7,
+      "workspacePipelineTier": "Performance (pre-existing, unchanged)",
+      "workspacePipelinePrice": "USD25 per1000 minutes, shared pool",
+      "pipelineChargesObservedBeforeCreationUsd": 25,
+      "pipelineChargesObservedAfterInitialReleaseUsd": 25,
+      "workspaceSpendLimitOrPlanChanged": false,
+      "newPaidAddOns": [],
+      "bandwidthObservedGb": 21.57,
+      "includedBandwidthGb": 25,
+      "costBoundary": "The7USD approval covers the requested compute plan. Builds consume the existing shared workspace pool; future minutes/traffic follow existing workspace billing. No shared billing setting was changed.",
+      "documentation": "https://render.com/docs/build-pipeline"
     }
   },
   "fontAssets": [
