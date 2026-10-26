@@ -51,3 +51,34 @@ test('identity errors and E1 denials cannot purchase fallback or publish another
   const f=fixture(),runtime=createKrsNipCompany({api:f.api,observe:()=>{},resolve});await assert.rejects(runtime.company(input,true));assert.deepEqual(f.calls,[])
  }
 })
+test('server-selected MGBI primary uses the original company operation once without calling GUS/KRS',async()=>{
+ const f=fixture(),events:unknown[]=[],runtime=createKrsNipCompany({primary:'MGBI',api:f.api,
+  observe:event=>events.push(event),resolve:async()=>{throw Error('GUS/KRS must not run in MGBI mode')}})
+ const response=await runtime.search(input),value=await response.json()
+ assert.equal(response.status,200);assert.equal(value.entityType,'COMPANY');assert.equal(value.card.identity.nip,nip)
+ assert.deepEqual(f.calls,['mgbi']);assert.equal(value.krsSelection,undefined)
+ assert.deepEqual(value.registryRoute,{provider:'MGBI',fallbackReason:'MGBI_PRIMARY'})
+ assert.equal(events.length,1);assert.equal((events[0] as {reason:string}).reason,'MGBI_PRIMARY')
+})
+test('MGBI primary keeps native denials and company identity failures closed',async()=>{
+ for(const response of [Response.json({error:'Operation unavailable'},{status:403}),
+  Response.json({...emptyCard,identity:{nip:'7740001454',krs,name:'OTHER COMPANY'},general})]){
+  let calls=0
+  const runtime=createKrsNipCompany({primary:'MGBI',api:{...fixture().api,company:async()=>{calls++;return response}},
+   observe:()=>{},resolve:async()=>{throw Error('No registry dispatch')}})
+  if(response.status===403)assert.equal((await runtime.search(input)).status,403)
+  else await assert.rejects(runtime.search(input))
+  assert.equal(calls,1)
+ }
+})
+test('MGBI primary retains CEIDG classification when no KRS company is returned',async()=>{
+ const f=fixture('SUCCESS'),api={...f.api,company:async()=>{
+  f.calls.push('mgbi');return Response.json({...emptyCard,general:{...emptyCard.general,status:'EMPTY'},identity:{nip,krs:null,name:null}})}}
+ const runtime=createKrsNipCompany({primary:'MGBI',api,observe:()=>{},resolve:async()=>{throw Error('No GUS/KRS call')}})
+ const response=await runtime.search(input)
+ assert.equal(response.status,200);assert.equal((await response.json()).entityType,'JDG');assert.deepEqual(f.calls,['mgbi','ceidg'])
+})
+test('invalid server provider configuration fails before any provider operation',()=>{
+ assert.throws(()=>createKrsNipCompany({primary:'auto' as never,api:fixture().api,observe:()=>{},
+  resolve:async()=>({status:'PRIMARY',selection,general})}))
+})

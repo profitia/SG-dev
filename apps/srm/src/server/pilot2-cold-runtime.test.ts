@@ -1,11 +1,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {readPilot2ColdConfiguration} from './pilot2-cold-runtime'
+import {readPilot2ColdConfiguration,readPilot2RegistryProvider} from './pilot2-cold-runtime'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 const connection=(role:string)=>'postgresql://'+role+':synthetic_only@ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech/platform_private?sslmode=require'
 const fixture=()=>({SRM_PILOT2_COLD_ACQUISITION:'true',SRM_PILOT2_PRIVATE_SCANNER:'true',
  PILOT2_E1_SOURCE_URL:connection('srm_pilot2_source'),PILOT2_E1_CORPORATE_URL:connection('srm_pilot2_corporate'),
  MGBI_API_KEY:'synthetic',CEIDG_API_KEY:'synthetic',VERCLY_API_KEY:'synthetic',VERCLY_API_BASE_URL:'https://synthetic.invalid/'})
+test('PILOT2 provider selection is explicit, closed and preserves the KRS configuration when unset',()=>{
+ assert.equal(readPilot2RegistryProvider({}),'KRS')
+ for(const value of ['MGBI','KRS']as const)assert.equal(readPilot2RegistryProvider({SRM_PILOT2_REGISTRY_PROVIDER:value}),value)
+ for(const value of ['','mgbi','true','false','auto',' MGBI','MGBI '])
+  assert.throws(()=>readPilot2RegistryProvider({SRM_PILOT2_REGISTRY_PROVIDER:value}),isOperationDenied)
+})
 test('Cold composition accepts only its two ordinary technical credentials and required named provider configuration',()=>{
  const config=readPilot2ColdConfiguration(fixture())
  assert.equal(config.source.user,'srm_pilot2_source');assert.equal(config.corporate.user,'srm_pilot2_corporate')

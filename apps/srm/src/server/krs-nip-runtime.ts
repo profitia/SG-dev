@@ -11,10 +11,14 @@ const classifyAbsence=new Set(['GUS_NO_RECORD','GUS_NOT_LEGAL_ENTITY','GUS_LOCAL
 /** Only native server composition supplies the resolver. HTTP callers never
  * choose provider, CEIDG classification, identities or paid retry policy. */
 export function createKrsNipCompany(options:{api:SrmSupplierApi;resolve(input:SupplierHttpInput):Promise<Resolution>;
- observe:(event:Readonly<{event:'REGISTRY_ROUTE';provider:'KRS'|'MGBI';reason:string;durationMs:number}>)=>void;now?:()=>number}):KrsNipCompany{
- const now=options.now??Date.now
+ observe:(event:Readonly<{event:'REGISTRY_ROUTE';provider:'KRS'|'MGBI';reason:string;durationMs:number}>)=>void;now?:()=>number;primary?:RegistryRoute['provider']}):KrsNipCompany{
+ if(options.primary!==undefined&&!['KRS','MGBI'].includes(options.primary))throw new OperationDenied('POLICY_UNAVAILABLE')
+ const now=options.now??Date.now,primary=options.primary??'KRS'
  async function resolve(input:SupplierHttpInput,afterCeidg:boolean):Promise<{kind:'COMPANY'|'JDG'|'ERROR';response:Response}>{
-  const start=now(),resolved=await options.resolve(input)
+  // A server-selected MGBI primary enters the existing native company flow
+  // directly. It never spends the GUS/KRS deadline before a planned MGBI call.
+  const start=now(),resolved:Resolution=primary==='MGBI'
+   ?{status:'FALLBACK',reason:'MGBI_PRIMARY'}:await options.resolve(input)
   input.request.signal.throwIfAborted()
   if(resolved.status==='FALLBACK'){
    if(!/^[A-Z0-9_]{1,100}$/.test(resolved.reason))throw new OperationDenied('POLICY_UNAVAILABLE')

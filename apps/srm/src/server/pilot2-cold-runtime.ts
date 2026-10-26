@@ -26,6 +26,13 @@ import native from '../../deployment/supplier-native-targets.json'
 type Env=Readonly<Record<string,string|undefined>>
 const deny=():never=>{throw new OperationDenied('ACCESS_BASIS_INVALID')}
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}
+/** Operations-owned, Development-only composition setting. No browser input
+ * selects a provider. Missing configuration preserves the accepted KRS LKG. */
+export function readPilot2RegistryProvider(env:Env):'KRS'|'MGBI'{
+ const provider=env.SRM_PILOT2_REGISTRY_PROVIDER??'KRS'
+ if(provider!=='KRS'&&provider!=='MGBI')return deny()
+ return provider
+}
 export const PILOT2_NATIVE_GENERAL_SQL=`SELECT snapshot.pilot2_registry_envelope AS general_json
  FROM srm.suppliers supplier JOIN srm.source_snapshots snapshot
  ON snapshot.organization_id=supplier.organization_id AND snapshot.supplier_id=supplier.id
@@ -90,7 +97,7 @@ export function readPilot2ColdConfiguration(env:Env){
  * their common Source transport and Root project/export are reused unchanged.
  * No network is performed in the form's admission or an open HUMAN SQL txn. */
 function createRuntime(env:Env){
- const c=readPilot2ColdConfiguration(env),options=getPilot2HumanOptions(env),{human,work}=options
+ const c=readPilot2ColdConfiguration(env),options=getPilot2HumanOptions(env),{human,work}=options,registryProvider=readPilot2RegistryProvider(env)
  const base:PrivateConfiguration={...options.config,application:{...options.config.application,
   operations:['supplier.report.read','supplier.report.project','supplier.report.export']}}
  const pair=(config:pg.PoolConfig)=>{
@@ -121,7 +128,7 @@ function createRuntime(env:Env){
   const proof=expected(request);if(nip!==proof.nip)return deny()
   return {request,organisationId:proof.organisationId,command:{kind:'SUPPLIER_REPORT' as const,nip},idempotencyKey:request.headers.get('idempotency-key')??deny()}
  }
- const nip=createKrsNipCompany({api:{...api,jdg:(...args)=>withCurrentPrivateAuthority(()=>api.jdg(...args))},
+ const nip=createKrsNipCompany({primary:registryProvider,api:{...api,jdg:(...args)=>withCurrentPrivateAuthority(()=>api.jdg(...args))},
   observe:event=>console.info('SRM registry telemetry',event),resolve:async request=>{
    const proof=expected(request.request);if(request.command.nip!==proof.nip)return deny()
    const result=await (await getPilot2Registry(env)).resolve(proof.nip,request.request.signal)
@@ -153,10 +160,13 @@ function createRuntime(env:Env){
   }}},async()=>false)
  const cached=createPilot2NativeCache(options)
  const cacheMiss={async search(request:Request,nipValue:string){
+  // The native MGBI flow owns its original seven-day MGBI cache. A stored KRS
+  // General must not silently satisfy an explicitly selected MGBI operation.
+  if(registryProvider==='MGBI')return nip.search(input(request,nipValue))
   const found=await measureSupplierStage('CACHE_READ',()=>cached(request,nipValue))
   return found.status===204?nip.search(input(request,nipValue)):found
  },report:(request:Request,selection:ReportSelection)=>report(new Request(request.url,{method:'POST',headers:request.headers,body:JSON.stringify(selection),signal:request.signal}))}
- const runtime=createPilot2HumanRuntime({...options,privateProjection:pilot2PrivateReportProjection(env.SRM_DEMO_SESSION_SECRET!),cacheMiss})
+ const runtime=createPilot2HumanRuntime({...options,registryProvider,privateProjection:pilot2PrivateReportProjection(env.SRM_DEMO_SESSION_SECRET!),cacheMiss})
  const nameHandler=createKrsNameHttpHandler('lookup',()=>({...name,runReport:async(request,action)=>{
   // The single existing admission instance binds the continuation HTTP request.
   // Its report method is not used to enter the continuation recursively.
@@ -182,7 +192,7 @@ function createSrmReportAdmissionRuntimeForContinuation(options:Pilot2HumanOptio
 let runtime:ReturnType<typeof createRuntime>|undefined,key:string|undefined
 export function getPilot2ColdRuntime(env:Env=process.env){
  const options=getPilot2HumanOptions(env),c=readPilot2ColdConfiguration(env)
- const next=createHash('sha256').update(JSON.stringify([c,options.config.application.deploymentId,env.SRM_DEMO_SESSION_SECRET])).digest('hex')
+ const next=createHash('sha256').update(JSON.stringify([c,options.config.application.deploymentId,env.SRM_DEMO_SESSION_SECRET,readPilot2RegistryProvider(env)])).digest('hex')
  if(key&&key!==next)return deny();key=next
  return runtime??=createRuntime(env)
 }
