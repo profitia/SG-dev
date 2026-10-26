@@ -27,29 +27,34 @@ export function createDelegatedJobStore({binding,schemaDigest,targetOperation='f
       if(!Array.isArray(r?.rows)||r.rows.length!==1)fail();return r.rows[0]
     }catch(error){if(error?.code==='PT403')throw new OperationDenied('ACCESS_BASIS_INVALID');fail()}
   }
-  const descriptor=async query=>{
-    const r=await one(query,'SELECT current_database() AS database_name,current_user AS role,session_user AS login,profitia_jobs.runtime_descriptor() AS descriptor')
+  const authority=async(query,resourceId)=>{
+    const scoped=resourceId!==undefined
+    const r=await one(query,'SELECT current_database() AS database_name,current_user AS role,session_user AS login,profitia_jobs.runtime_descriptor() AS descriptor'+
+      (target.external||target.location?',profitia_jobs.supplier_runtime_descriptor() AS supplier_descriptor':'')+
+      (target.additional?',profitia_requests.operation_runtime_descriptor() AS operation_descriptor':'')+
+      (target.location?',profitia_requests.location_runtime_descriptor() AS location_descriptor':'')+
+      (scoped?',txid_current()::text AS transaction_id,profitia_jobs.scope_allows($1::uuid) AS allowed':''),scoped?[resourceId]:[])
     const d=r.descriptor
     if(!d||r.database_name!==b.databaseName||r.role!==b.role||r.login!==b.role||d.applicationId!==b.applicationId
       ||d.environment!==b.environment||d.projectId!==b.projectId||d.branchId!==b.branchId||d.databaseName!==b.databaseName
       ||d.role!==b.role||d.schemaDigest!==b.schemaDigest||d.jobSchemaVersion!=='1.0.0'||d.jobSchemaDigest!==schemaDigest)fail()
     if(target.external||target.location){
-      const extension=(await one(query,'SELECT profitia_jobs.supplier_runtime_descriptor() AS descriptor')).descriptor
+      const extension=r.supplier_descriptor
       if(!extension||extension.supplierSchemaVersion!=='1.0.0'||extension.supplierSchemaDigest!==supplierSchemaDigest
         ||extension.jobSchemaDigest!==schemaDigest||extension.applicationId!==b.applicationId||extension.environment!==b.environment)fail()
     }
     if(target.additional){
-      const extension=(await one(query,'SELECT profitia_requests.operation_runtime_descriptor() AS descriptor')).descriptor
+      const extension=r.operation_descriptor
       if(!extension||extension.operationSchemaVersion!=='1.0.0'||extension.operationSchemaDigest!==operationSchemaDigest||extension.applicationId!==b.applicationId||extension.environment!==b.environment)fail()
     }
-    if(target.location){const extension=(await one(query,'SELECT profitia_requests.location_runtime_descriptor() AS descriptor')).descriptor;if(!extension||extension.locationSchemaVersion!=='1.0.0'||extension.locationSchemaDigest!==locationSchemaDigest||extension.applicationId!==b.applicationId||extension.environment!==b.environment)fail()}
-    return d
+    if(target.location){const extension=r.location_descriptor;if(!extension||extension.locationSchemaVersion!=='1.0.0'||extension.locationSchemaDigest!==locationSchemaDigest||extension.applicationId!==b.applicationId||extension.environment!==b.environment)fail()}
+    return r
   }
+  const descriptor=async query=>(await authority(query)).descriptor
   const verifyScope=async(query,lease)=>{
     if(!leases.has(lease))fail()
     if(!(Date.parse(lease.expiresAt)>now()))throw new OperationDenied('ACCESS_BASIS_INVALID')
-    await descriptor(query)
-    const r=await one(query,'SELECT txid_current()::text AS transaction_id,profitia_jobs.scope_allows($1::uuid) AS allowed',[lease.resourceId])
+    const r=await authority(query,lease.resourceId)
     if(r.transaction_id!==lease.transactionId)fail()
     if(r.allowed!==true)throw new OperationDenied('ACCESS_BASIS_INVALID')
   }

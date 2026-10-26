@@ -22,6 +22,7 @@ import {measureSupplierStage} from './supplier-telemetry'
 import {validateReportSelection,type ReportSelection} from './report-data'
 import targets from '../../deployment/pilot2-human-targets.json'
 import native from '../../deployment/supplier-native-targets.json'
+import execution from '../../deployment/pilot2-native-execution.json'
 
 type Env=Readonly<Record<string,string|undefined>>
 const deny=():never=>{throw new OperationDenied('ACCESS_BASIS_INVALID')}
@@ -110,6 +111,7 @@ function createRuntime(env:Env){
   jobsUrl:env.PILOT2_E1_JOBS_URL!,providerSourceUrl:env.PILOT2_E1_SOURCE_URL!,corporateSourceUrl:env.PILOT2_E1_CORPORATE_URL!,
   runtimeRoles:{jobs:'srm_pilot2_jobs',providerSource:'srm_pilot2_source',corporateSource:'srm_pilot2_corporate'},
   registryEnvelopeBoundaryDigest:targets.coldAcquisition.registryEnvelopeBoundaryDigest,
+  financialInventoryBoundaryDigest:execution.financialInventoryBoundaryDigest,
   ...c,referenceSecret:env.SRM_DEMO_SESSION_SECRET!},
  {pool:human.pool,auditPool:human.auditPool,clerk:human.clerk,jobsPool:work.pool,jobsAudit:work.auditPool,
   sourcePool:source.pool,sourceAudit:source.audit,corporatePool:corporate.pool,corporateAudit:corporate.audit})

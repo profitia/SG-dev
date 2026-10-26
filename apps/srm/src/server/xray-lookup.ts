@@ -121,6 +121,7 @@ export async function fetchCompanyFinancial(data: SupplierXRayCard["general"]["d
  * host must bind each port to its current admitted HUMAN/SOURCE operation.
  * Partial compositions never inherit a demo database or provider credential. */
 export type XrayCompanyPorts = {
+  prepareFinancialInventory?:(org:string,nip:string,pages:unknown[],recordCount:number,retrievedAt:string,allowedKrs:readonly string[])=>Promise<void>;
   createLookup: typeof createLookup;
   readFreshCompany: typeof readFreshCompany;
   readCompanyRegistration: typeof readCompanyRegistration;
@@ -148,8 +149,8 @@ const companyPortNames = Object.freeze(Object.keys(legacyCompanyPorts).sort());
  * no mutable request, actor, lease or transaction is retained between calls. */
 export function createXrayCompanyLookup(input: XrayCompanyPorts) {
   if (typeof window !== "undefined" || !input || Object.getPrototypeOf(input) !== Object.prototype
-    || Object.keys(input).sort().join(",") !== companyPortNames.join(",")
-    || Reflect.ownKeys(input).length !== companyPortNames.length
+    || Object.keys(input).filter(key=>key!=='prepareFinancialInventory').sort().join(",") !== companyPortNames.join(",")
+    || Reflect.ownKeys(input).length !== companyPortNames.length+Number(Object.hasOwn(input,'prepareFinancialInventory'))
     || Object.values(Object.getOwnPropertyDescriptors(input)).some(d => !("value" in d) || typeof d.value !== "function")) {
     throw new TypeError("Complete explicit company report ports required");
   }
@@ -233,6 +234,7 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
     throw new Error("MGBI_COMPANY_IDENTITY_AMBIGUOUS");
   }
   let financial = await fetchCompanyFinancial(general.section.data, request.identifier, ports.fetchMgbiFinancial, ports.recoverProviderException);
+  const allowedKrs=general.section.data?.registryHistory?.members.map(m=>m.krs)??(general.section.data?.krs?[general.section.data.krs]:[]);
   logProviderOutcome("MGBI", "general", general.section.status, general.errorCode);
   if (!isCompanyReportRestricted(general.section.data)) logProviderOutcome("MGBI", "financial", financial.section.status, financial.errorCode);
   // Keep complete provider responses in a tenant-scoped store, separate from
@@ -243,7 +245,9 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
         general.rawResponse.pages, general.rawResponse.recordCount, general.section.retrievedAt, lookup.requestId)
       : Promise.resolve(),
     financial.rawResponse && financial.section.retrievedAt
-      ? ports.saveMgbiArchive(organizationId, request.identifier.value, "pl-krs-rdf-record",
+      ? ports.prepareFinancialInventory&&allowedKrs.length&&!isCompanyReportRestricted(general.section.data)
+        ? ports.prepareFinancialInventory(organizationId,request.identifier.value,financial.rawResponse.pages,financial.rawResponse.recordCount,financial.section.retrievedAt,allowedKrs)
+        : ports.saveMgbiArchive(organizationId, request.identifier.value, "pl-krs-rdf-record",
         financial.rawResponse.pages, financial.rawResponse.recordCount, financial.section.retrievedAt, lookup.requestId).then(() => ports.saveFinancialDocuments(organizationId, request.identifier.value, financial.rawResponse!.pages))
       : Promise.resolve(),
   ]));

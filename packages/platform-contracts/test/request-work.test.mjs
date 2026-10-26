@@ -12,7 +12,7 @@ function fixture(){
   effect:'PRIVATE_SQL_WORK',operation:'supplier.report.refresh',requestId:R,unitId:work.unitId,accessMode:'WRITE',payloadDigest:'1'.repeat(64),policyVersion:'1',transactionId:'20',executorServiceId:S,subjectUserId:U,organisationId:A,delegationId:D,parentApplicationId:'srm',resourceId:'supplier-request:fixture',sourceRef:'SYNTHETIC_UNIT_POLICY',policyExpiresAt:new Date(Date.now()+3600000).toISOString(),expiresAt:new Date(Date.now()+3600000).toISOString()}
  const calls=[],store=createRequestWorkScope({binding,work})
  let allowed=true
- const query=async(sql,args)=>{calls.push({sql,args});return{rows:sql.includes('.descriptor(')?[{descriptor:structuredClone(current)}]:[{allowed}]}}
+ const query=async(sql,args)=>{calls.push({sql,args});return{rows:[{...(sql.includes('.descriptor(')?{descriptor:structuredClone(current)}:{}),...(sql.includes('scope_allows(')||sql.includes('bind_scope(')?{allowed}:{})}]}}
  const load=()=>store.load(query,{request:{operation:'job.execute',resourceId:R},lease:{state:{delegation:{target:{operation:'supplier.report.refresh'}}}}})
  const context=h=>({actorKind:'SERVICE',actorId:S,applicationId:'worker',environment:'development',subjectUserId:U,organisationId:A,operation:'job.execute',resourceId:R,payloadDigest:'1'.repeat(64),decisionId:randomUUID(),correlationId:randomUUID(),delegation:{requestId:R,delegationId:D,target:{application:{appId:'srm'},operation:'supplier.report.refresh',resourceId:'supplier-request:fixture'}},requestWork:store.evidence(h)})
  return{store,query,load,context,calls,change:p=>{current={...current,...p}},refuse:()=>{allowed=false}}
@@ -23,6 +23,14 @@ test('native SQL work explicitly leaves durable replay to the existing domain st
  const f=fixture(),h=await f.load(),c=f.context(h);await f.store.bind(f.query,h,c);await f.store.verify(f.query,h,c)
  assert(Object.isFrozen(h));assert(Object.isFrozen(c.requestWork));assert.equal(c.requestWork.accessMode,'WRITE')
  assert(!f.calls.some(x=>/reserve|claim_dispatch|INSERT|UPDATE|complete/.test(x.sql)))
+ const last=f.calls.at(-1);assert(last.sql.includes('.descriptor(')&&last.sql.includes('.scope_allows('))
+ assert.equal(f.calls.length,4,'load, bind recheck, bind effect, and one fresh verification')
+})
+test('a combined observation still rejects revoked scope and a changed current descriptor',async()=>{
+ const f=fixture(),h=await f.load(),c=f.context(h);await f.store.bind(f.query,h,c)
+ f.refuse();await assert.rejects(f.store.verify(f.query,h,c),e=>e.reasonCode==='ACCESS_BASIS_INVALID')
+ const g=fixture(),next=await g.load(),other=g.context(next);await g.store.bind(g.query,next,other)
+ g.change({policyVersion:'2'});await assert.rejects(g.store.verify(g.query,next,other),e=>e.reasonCode==='ACCESS_BASIS_INVALID')
 })
 test('opaque work handles cannot move across transactions, actors, units or access modes',async()=>{
  const f=fixture(),h=await f.load(),c=f.context(h)

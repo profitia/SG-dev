@@ -48,17 +48,22 @@ export function createPlatformIngestionHost(options){
     try{const r=await query(sql,values);if(!Array.isArray(r?.rows)||r.rows.length!==1)fail();return r.rows[0]}
     catch(error){if(isOperationDenied(error))throw error;fail()}
   }
-  const descriptor=async query=>{
-    const r=await one(query,'SELECT current_database() AS database_name,current_user AS role,session_user AS login,profitia_ingestion.runtime_descriptor() AS descriptor'),d=r.descriptor
+  // Read independent current evidence in one statement. No observation survives
+  // this checkpoint, and the existing scope lock and all validators remain.
+  const authority=async(query,resourceId)=>{
+    const scoped=resourceId!==undefined
+    const r=await one(query,'SELECT current_database() AS database_name,current_user AS role,session_user AS login,profitia_ingestion.runtime_descriptor() AS descriptor'+
+      (scoped?',txid_current()::text AS transaction_id,profitia_ingestion.scope_allows($1,$2) AS allowed':''),scoped?[s.id,resourceId]:[]),d=r.descriptor
     if(r.database_name!==b.databaseName||r.role!==b.role||r.login!==b.role)fail()
-    if(d===null)return null
+    if(d===null)return {descriptor:null,row:r}
     if(!d||d.schemaVersion!=='1.0.0'||d.schemaDigest!==b.schemaDigest||d.applicationId!==b.applicationId||d.environment!==b.environment
       ||d.projectId!==b.projectId||d.branchId!==b.branchId||d.databaseName!==b.databaseName||d.role!==b.role
       ||d.profileId!=='PLATFORM_INTERNAL'||d.deploymentId!==b.deploymentId||d.configurationVersion!==b.configurationVersion
       ||!uuid.test(d.serviceId??'')||!/^database-service:[a-f0-9-]{36}:[1-9][0-9]*$/i.test(d.proofRef??'')
       ||!text(d.sourceRef)||!(Date.parse(d.expiresAt)>now())||Date.parse(d.expiresAt)>now()+30000)fail()
-    return d
+    return {descriptor:d,row:r}
   }
+  const descriptor=async query=>(await authority(query)).descriptor
   const append=async(query,event)=>{const encoded=JSON.stringify(event);if(Buffer.byteLength(encoded)>16384)fail()
     // A genuine scalar result is portable to pg and Prisma; do not decode void.
     const result=await one(query,'SELECT true AS recorded FROM profitia_ingestion.append_audit($1::jsonb)',[encoded])
@@ -82,9 +87,8 @@ export function createPlatformIngestionHost(options){
           try{
             const result=await transact(async({query,transaction})=>{
               if(entered||closed||typeof query!=='function'||query===independentQuery||transaction==null)fail();entered=true
-              await query(`SET LOCAL statement_timeout='${transactionTimeoutMs}ms'`)
-              await query(`SET LOCAL lock_timeout='${Math.min(transactionTimeoutMs,3000)}ms'`)
-              await query(`SET LOCAL idle_in_transaction_session_timeout='${transactionTimeoutMs}ms'`)
+              await query("SELECT set_config('statement_timeout',$1,true),set_config('lock_timeout',$2,true),set_config('idle_in_transaction_session_timeout',$1,true)",
+                [`${transactionTimeoutMs}ms`,`${Math.min(transactionTimeoutMs,3000)}ms`])
               const d=await descriptor(query)
               if(!d||d.serviceId!==actor.actorId||d.proofRef!==actor.proofRef)throw new OperationDenied('ACCESS_BASIS_INVALID')
               const r=await one(query,'SELECT profitia_ingestion.lock_ingestion($1,$2,$3) AS state',[s.id,request.resourceId,actor.proofRef]),state=r.state
@@ -100,8 +104,8 @@ export function createPlatformIngestionHost(options){
                 ||await validateSharedPayload(request.payload.content,{query,transaction})!==true)throw new OperationDenied('DATA_CLASSIFICATION_UNKNOWN')
               const verify=async()=>{
                 if(closed||!(Date.parse(actor.expiresAt)>now()))throw new OperationDenied('ACCESS_BASIS_INVALID')
-                const c=await descriptor(query);if(!c||c.proofRef!==actor.proofRef)throw new OperationDenied('ACCESS_BASIS_INVALID')
-                const v=await one(query,'SELECT txid_current()::text AS transaction_id,profitia_ingestion.scope_allows($1,$2) AS allowed',[s.id,request.resourceId])
+                const {descriptor:c,row:v}=await authority(query,request.resourceId)
+                if(!c||c.proofRef!==actor.proofRef)throw new OperationDenied('ACCESS_BASIS_INVALID')
                 if(v.transaction_id!==state.transactionId)fail();if(v.allowed!==true)throw new OperationDenied('ACCESS_BASIS_INVALID')
               }
               await verify()

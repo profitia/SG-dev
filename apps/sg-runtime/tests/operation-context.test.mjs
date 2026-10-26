@@ -49,7 +49,7 @@ test('candidate16 acceptance preserves the exact previous receipts and has no ru
     assert.equal(createHash('sha256').update(previousBytes).digest('hex'),digest,record+':'+path)
   }
   const sdkModules={'operation-context':['operationSourceDigest'],'private-operation-host':['privateOperationHostSourceDigest'],'request-ledger':['requestLedgerSourceDigest','externalRequestSchemaDigest'],'delegated-job':['delegatedJobSourceDigest'],'request-continuation':['requestContinuationSourceDigest'],'request-inspection':['requestInspectionSourceDigest'],'request-work':['requestWorkSourceDigest'],'request-operations':['requestOperationsSourceDigest','additionalRequestSchemaDigest'],'external-call':['externalCallSourceDigest','publicWebTransportSchemaDigest'],'supplier-location':['supplierLocationSchemaDigest']}
-  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),receipt.requestQuotaSourceCompatibility.sdkDigests[name],name)}
+  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),receipt.nativeSqlRoundtripAdoption.sdkDigests[name],name)}
   assert.equal(accepted.sdkDigests.supplierLocationSchemaDigest,'34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5')
 })
 
@@ -63,13 +63,13 @@ test('P1B accepts exact1.25 source while preserving all1.24 history and legacy d
  const previous=JSON.parse(previousBytes)
  for(const[key,value]of Object.entries(previous))assert.deepEqual(['contract','producer'].includes(key)?accepted.previousRootAcceptance[key]:receipt[key],value,key)
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.requestQuotaSourceCompatibility.platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.nativeSqlRoundtripAdoption.platformVersion)
  const host=await import('@profitia/platform-contracts/private-operation-host')
  assert.equal(host.PRIVATE_OPERATION_HOST_CONTRACT.version,'1.11.0');assert.equal(host.SUPPLIER_LOCATION_HOST_CONTRACT.version,'1.12.0')
  for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,'historical producer '+path)
- for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsSoapSourceCompatibility.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportSourceCompatibility.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsSoapSourceCompatibility.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportSourceCompatibility.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests,...receipt.nativeSqlRoundtripAdoption.sourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
  for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.applicationSourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.krsSoapSourceCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])).digest('hex'),digest,'historical receiver '+path)
- for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.applicationSourceDigests,...receipt.krsSoapSourceCompatibility.applicationSourceDigests,...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests,...receipt.unmeteredSourceCompatibility.applicationSourceDigests,...receipt.formReportSourceCompatibility.applicationSourceDigests,...receipt.requestQuotaSourceCompatibility.applicationSourceDigests,...receipt.benchmarkPresentationSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.applicationSourceDigests,...receipt.krsSoapSourceCompatibility.applicationSourceDigests,...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests,...receipt.unmeteredSourceCompatibility.applicationSourceDigests,...receipt.formReportSourceCompatibility.applicationSourceDigests,...receipt.requestQuotaSourceCompatibility.applicationSourceDigests,...receipt.benchmarkPresentationSourceCompatibility.applicationSourceDigests,...receipt.nativeSqlRoundtripAdoption.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
  for(const flag of['supplierLocationBusinessAdopted','locationAdmissionOptedIn','sql020Installed','liveGrantsChanged','productDeploymentPerformed'])assert.equal(accepted[flag],false,flag)
 })
 
@@ -135,7 +135,10 @@ test('Benchmark presentation renews the current receiver closure without rewriti
   assert.equal(current.design.finderRevision, '463982323726172160')
   assert.equal(current.design.canonRevision, '464039002702499840')
   for (const [path, digest] of Object.entries(current.applicationSourceDigests)) {
-    const observed = createHash('sha256').update(fs.readFileSync(new URL('../' + path, import.meta.url))).digest('hex')
+    const bytes=receipt.nativeSqlRoundtripAdoption.applicationSourceDigests[path]
+      ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':apps/sg-runtime/'+path])
+      :fs.readFileSync(new URL('../'+path,import.meta.url))
+    const observed = createHash('sha256').update(bytes).digest('hex')
     assert.equal(observed, digest, path)
     assert.notEqual(createHash('sha256').update('changed-content').digest('hex'), digest, path)
   }
@@ -145,6 +148,13 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     assert(paths.length > 0, path)
     const currentPaths = execFileSync('git', ['ls-files', '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean)
     assert.deepEqual(currentPaths, paths, 'Boundary inventory: ' + path)
-    for (const file of paths) assert.deepEqual(fs.readFileSync(new URL(file, repository)), execFileSync('git', ['show', current.previousReceiptSourceSha + ':' + file]), 'Unchanged protected source: ' + file)
+    for (const file of paths) {
+      // The later source-compatibility task adds only its CI test command.
+      // The presentation acceptance still pins its complete prior package.
+      const observed=['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json','apps/dashboard-preview/package-lock.json'].includes(file)
+        ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':'+file])
+        :fs.readFileSync(new URL(file,repository))
+      assert.deepEqual(observed,execFileSync('git',['show',current.previousReceiptSourceSha+':'+file]),'Unchanged protected source: '+file)
+    }
   }
 })
