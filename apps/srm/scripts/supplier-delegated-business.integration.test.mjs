@@ -975,8 +975,8 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    const profiling=(await owner.query('SHOW track_functions')).rows[0].track_functions==='all'
    const profile=async()=>{
     if((await owner.query('SHOW track_functions')).rows[0].track_functions!=='all')return null
-    const c=await servicePool.connect();try{await c.query('SELECT pg_stat_force_next_flush()')}finally{c.release()}
-    await serviceAudit.query('SELECT pg_stat_force_next_flush()');await owner.query('SELECT pg_stat_clear_snapshot()')
+    const c=await servicePool.connect();try{await c.query('SELECT pg_stat_force_next_flush()');await c.query('SELECT 1')}finally{c.release()}
+    await serviceAudit.query('SELECT pg_stat_force_next_flush()');await serviceAudit.query('SELECT 1');await owner.query('SELECT pg_stat_clear_snapshot()')
     return (await owner.query("SELECT coalesce(sum(calls),0)::int n FROM pg_stat_user_functions WHERE schemaname='srm' AND funcname='current_supplier_work'")).rows[0].n
    }
    const prepare=async org=>{
@@ -1016,7 +1016,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
      }),isOperationDenied)
     }
    }
-   if(profiling)assert(samples[1].currentSupplierWorkCalls<samples[0].currentSupplierWorkCalls/10)
+   if(profiling)assert(samples[1].currentSupplierWorkCalls<samples[0].currentSupplierWorkCalls/10,JSON.stringify(samples))
    t.diagnostic(JSON.stringify({event:'srm_private_financial_batch_profile',scope:'isolated_synthetic_full_native_work',samples}))
    if(process.env.SRM_FINANCIAL_PERFORMANCE_OUTPUT)fs.writeFileSync(process.env.SRM_FINANCIAL_PERFORMANCE_OUTPUT,JSON.stringify({scope:'isolated_synthetic_full_native_work',samples},null,2))
   })
