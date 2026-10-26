@@ -4,6 +4,13 @@ const widths=[390,560,768,900,1100,1440,1920,2560];
 const actualOrigin=process.env.PCI_BASE_URL??'http://127.0.0.1:3672';
 const compareSource=process.env.PCI_COMPARE_MAGICPATH==='1';
 async function ready(page:Page){await page.evaluate(()=>document.fonts.ready);}
+async function fontEvidence(page:Page){
+ const cdp=await page.context().newCDPSession(page);await cdp.send('DOM.enable');await cdp.send('DOM.getDocument',{depth:0});await cdp.send('CSS.enable');
+ const {result}=await cdp.send('Runtime.evaluate',{expression:`(()=>{const root=document.querySelector('[data-price-change-index]')?.shadowRoot??document;return [...root.querySelectorAll('button')].find(e=>getComputedStyle(e).fontWeight==='550')})()`});
+ if(!result.objectId){await cdp.detach();return null;}
+ const {node}=await cdp.send('DOM.describeNode',{objectId:result.objectId});const {nodeIds}=await cdp.send('DOM.pushNodesByBackendIdsToFrontend',{backendNodeIds:[node.backendNodeId]});
+ const fonts=await cdp.send('CSS.getPlatformFontsForNode',{nodeId:nodeIds[0]});await cdp.detach();return fonts;
+}
 for(const width of widths)for(const theme of ['light','dark'])test(`v3 source and approved canon geometry ${width} ${theme}`,async({browser},info)=>{
  test.skip(!compareSource,'Live-source comparison runs explicitly on a host with verified source fonts; CI runs deterministic local checks.');
  const context=await browser.newContext({viewport:{width,height:1024}});const source=await context.newPage(),actual=await context.newPage();
@@ -28,7 +35,7 @@ for(const width of widths)for(const [version,component,revision,selector]of [
  const context=await browser.newContext({viewport:{width,height:1024}});const source=await context.newPage(),actual=await context.newPage();
  await source.goto(`https://api.magicpath.ai/components/${component}/revision/${revision}`);await actual.goto(actualOrigin+'/'+version);await ready(source);await ready(actual);
  const measure=async(page:Page)=>page.locator(selector).evaluate(root=>[root,...root.querySelectorAll('h1,h2,h3,section,article,input,button,table')].map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {tag:e.tagName,className:e.className,x:r.x,y:r.y,width:r.width,height:r.height,padding:s.padding,gap:s.gap,font:s.font,borderRadius:s.borderRadius,color:s.color,background:s.backgroundColor};}));
- const original=await measure(source),received=await measure(actual);await fs.writeFile(info.outputPath('source-and-actual.json'),JSON.stringify({revision,width,original,received},null,2));await source.screenshot({path:info.outputPath('magicpath.png'),fullPage:true});await actual.screenshot({path:info.outputPath('frontend.png'),fullPage:true});expect(received).toEqual(original);await context.close();
+ const original=await measure(source),received=await measure(actual);const fonts={source:await fontEvidence(source),actual:await fontEvidence(actual)};if(width===390)console.log('Font evidence',version,JSON.stringify(fonts));await fs.writeFile(info.outputPath('source-and-actual.json'),JSON.stringify({revision,width,original,received,fonts},null,2));await source.screenshot({path:info.outputPath('magicpath.png'),fullPage:true});await actual.screenshot({path:info.outputPath('frontend.png'),fullPage:true});expect(received).toEqual(original);await context.close();
 });
 for(const width of widths)for(const theme of ['light','dark'])for(const version of ['v1','v2','v3'])test(`local responsive controls ${version} ${width} ${theme}`,async({page},info)=>{
  await page.setViewportSize({width,height:1024});await page.goto('/'+version+'?theme='+theme);await ready(page);
