@@ -25398,6 +25398,25 @@
       "result": "PASS",
       "log": "sg2-pci-expanded-local.log",
       "coverage": "Both theme interaction flows, 32 live-source geometry comparisons, 48 responsive cases"
+    },
+    "governanceChronology": {
+      "event": "A local asset-packaging patch was applied before inspecting a dirty-code-state BLOCKED result. No push, merge or deployment occurred. Only own pending edits were preserved outside the checkout and reverted. Clean require-begin then passed all applicable gates before the patches were reapplied.",
+      "blockedCandidate": "23136b769d3feebfc62c83fe1a9029c16dcae95b",
+      "result": "RECOVERED_WITH_CLEAN_PREFLIGHT",
+      "targetEnvironment": "development"
+    },
+    "assetPackaging": {
+      "result": "PASS",
+      "browserFlowsAndNetwork": 41,
+      "nodeChecks": 7,
+      "consoleErrors": 0,
+      "configuration": "All font subsets emitted as same-origin files; blank inline favicon suppresses implicit missing-resource request; CSP font-src remains self only",
+      "previousCandidateCi": {
+        "head": "23136b769d3feebfc62c83fe1a9029c16dcae95b",
+        "runId": 40349405108,
+        "browserTests": 155,
+        "result": "SUCCESS"
+      }
     }
   },
   "fontAssets": [
