@@ -1,4 +1,4 @@
-import {usePresentationScope} from '../../PresentationScope';
+import {usePresentationScope,usePresentationMedia} from '../../PresentationScope';
 
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -90,6 +90,7 @@ function Dialog({
 }
 const CCIKlIkalnyPrzepYwAnalizyKosztW = () => {
   const presentation=usePresentationScope();
+  const mobileScenarios=usePresentationMedia('(max-width:960px)');
   const [screen, setScreen] = useState<Screen>('dashboard'),
     [scenario, setScenario] = useState<Scenario>('ready');
   const [definition, setDefinition] = useState<Definition>(() => createDefinition()),
@@ -241,7 +242,7 @@ const CCIKlIkalnyPrzepYwAnalizyKosztW = () => {
             setEditing(false);
             choose(categories.find(c => c.id === definition.categoryId)!);
           } else go(s);
-        }}><small>{n}</small>{label}</CanonButton>)}</nav><label className="cci-scenario"><span>Scenariusz</span><select aria-label="Scenariusz danych makiety" value={scenario} onChange={e => showScenario(e.target.value as Scenario)}>{scenarioOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label></div>
+        }}><small>{n}</small>{label}</CanonButton>)}</nav><label className="cci-scenario"><span>Scenariusz</span>{mobileScenarios ? <CanonSelect canonId="SRM-C07" usage="PCI:scenario-mobile" className="pci-scenario-compact" aria-label="Scenariusz danych makiety" value={scenario} onChange={e => showScenario(e.target.value as Scenario)}>{scenarioOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</CanonSelect> : <select aria-label="Scenariusz danych makiety" value={scenario} onChange={e => showScenario(e.target.value as Scenario)}>{scenarioOptions.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>}</label></div>
  <CanonHeader title="Cost Analysis"><span className="cci-demo-label"><i />Dane demonstracyjne</span><span className="cci-lang">PL</span><span className="cci-user">AK</span></CanonHeader>
  <CanonSideMenu defaultActive="Price Change Index" items={['Benchmark Finder', 'Category Builder', 'Cost Scan', 'Price Change Index', 'Should Cost Analysis · Później']} onNavigate={label => {
       if (label === 'Category Builder') {

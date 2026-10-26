@@ -36,9 +36,22 @@ import pci3css9 from './revisions/pci3/srm-interaction-motion.css?inline';
 import pci3css10 from './revisions/pci3/stacked-price-chart.css?inline';
 import pci3ThemeBindings from './revisions/pci3/canon-theme.css?inline';
 import canonTheme from './canon/theme.css?inline';import {createPresentationScope,PresentationScopeProvider,ContentProvider,type PresentationScope} from './PresentationScope';import {ThemeProvider} from './Theme';import {Inspector} from './Inspector';import type {PriceChangeIndexProps} from './contracts';
+// Owner approved visible phone scenarios using the pinned C07 compact variant.
+// The immutable view CSS stays intact; these are explicit responsive adapters.
+const phoneScenarioStyles=(view:'pci1'|'pci2')=>{const bar=view==='pci1'?'.cci-prototype-bar':'.ca-prototype';const label=view==='pci1'?'.cci-scenario':'.ca-prototype>label';return `
+@media(max-width:${view==='pci1'?960:1050}px){
+ ${bar}{display:block;overflow:visible;}
+ ${bar}>nav{height:45px;width:100%;overflow-x:auto;scrollbar-width:none;}
+ ${bar}>nav::-webkit-scrollbar{display:none;}
+ ${label}{display:flex;width:100%;height:48px;min-height:48px;margin:0;padding:8px 0;box-sizing:border-box;gap:8px;font-size:12px;align-items:center;}
+ ${label}>.pci-scenario-compact{flex:1;min-width:0;width:auto;}
+ ${label} .srm-dropdown-trigger{height:32px;min-height:32px;font-size:12px;border-radius:8px;padding:0 12px;line-height:1.4;font-weight:400;}
+}
+@media(max-width:${view==='pci1'?480:760}px){${bar}>nav{height:${view==='pci1'?40:42}px;}}
+`;};
 const styles={
-pci1:[pci1css0,canonTheme,pci1css6,pci1css4,pci1css1,pci1css2,pci1css8,pci1css7,pci1css3,pci1css10,pci1css5,pci1css9].join("\n"),
-pci2:[pci2css0,canonTheme,pci2css1,pci2css2,pci2css4,pci2css7,pci2css6,pci2css3,pci2css9,pci2css8,pci2css5].join("\n"),
+pci1:[pci1css0,canonTheme,pci1css6,pci1css4,pci1css1,pci1css2,pci1css8,pci1css7,pci1css3,pci1css10,pci1css5,pci1css9,phoneScenarioStyles('pci1')].join("\n"),
+pci2:[pci2css0,canonTheme,pci2css1,pci2css2,pci2css4,pci2css7,pci2css6,pci2css3,pci2css9,pci2css8,pci2css5,phoneScenarioStyles('pci2')].join("\n"),
 pci3:[pci3css0,canonTheme,pci3ThemeBindings,pci3css1,pci3css2,pci3css3,pci3css4,pci3css6,pci3css7,pci3css8,pci3css9,pci3css10,pci3css5].join("\n")};
 export function PriceChangeIndex(props:PriceChangeIndexProps){const latestProps=useRef(props);latestProps.current=props;const mount=useRef<HTMLDivElement>(null);const [scope,setScope]=useState<PresentationScope|null>(null);useLayoutEffect(()=>{const host=mount.current!;const shadow=host.shadowRoot??host.attachShadow({mode:'open'});const surface=document.createElement('div');surface.className='pci-surface';shadow.append(surface);const context=createPresentationScope(shadow,surface,locked=>latestProps.current.onScrollLockChange?.(locked));setScope(context);return()=>{context.dispose();};},[]);
 const presentation=useMemo(()=>scope?{...scope,onNavigate:(screen:string)=>props.onNavigate?.({view:props.view,screen})}:null,[scope,props.view,props.onNavigate]);

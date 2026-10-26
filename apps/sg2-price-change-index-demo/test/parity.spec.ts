@@ -16,7 +16,7 @@ for(const width of widths)for(const theme of ['light','dark'])test(`v3 source an
  const context=await browser.newContext({viewport:{width,height:1024}});const source=await context.newPage(),actual=await context.newPage();
  await source.goto('https://api.magicpath.ai/components/463321469305384960/revision/465437653945430016');if(theme==='dark')await source.getByRole('button',{name:'Ciemny',exact:true}).click();await actual.goto(actualOrigin+'/v3?theme='+theme);await ready(source);await ready(actual);
  const measure=async(page:Page)=>page.locator('.v3-app').evaluate(root=>[root,...root.querySelectorAll('h1,h2,h3,.v3-panel,.v3-intro,.v3-demo-nav,.v3-header')].map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {tag:e.tagName,className:e.className,x:r.x,y:r.y,width:r.width,height:r.height,padding:s.padding,gap:s.gap,fontFamily:s.fontFamily,fontSize:s.fontSize,fontWeight:s.fontWeight,lineHeight:s.lineHeight,borderRadius:s.borderRadius,color:s.color,background:s.backgroundColor};}));
- const original=await measure(source),received=await measure(actual);const expected=structuredClone(original);
+ const original=await measure(source),received=await measure(actual);const expected=structuredClone(original);const viewportSchemes={source:await source.locator('html').evaluate(e=>getComputedStyle(e).colorScheme),actual:await actual.locator('html').evaluate(e=>getComputedStyle(e).colorScheme)};expect(viewportSchemes.source).toBe(theme);expect(viewportSchemes.actual).toBe(viewportSchemes.source);
  // Owner-approved exception: current library actionHeight=32, actionFont=12;
  // original v3 fallback was 38/13. Record original measurements, never alter MagicPath.
  const originalButton=await source.locator('.v3-intro>.v3-primary').evaluate(e=>e.getBoundingClientRect().height);
@@ -24,7 +24,7 @@ for(const width of widths)for(const theme of ['light','dark'])test(`v3 source an
  expect(originalButton).toBe(38);expect(canonButton).toEqual({height:34.1875,minHeight:'32px',font:'12px',padding:'8px 12px',border:'1px',lineHeight:'16.2px'});
  const delta=originalButton-canonButton.height;let card=-1;
  for(const row of expected){if(row.className==='v3-app srm-ui')row.height=Math.max(1024,row.height-(width<=900?3:2)*delta);if(row.className==='v3-intro')row.height-=delta;if(row.className==='v3-panel'){card++;row.y-=(width<=900&&card===2?2:1)*delta;if(width>900||card>0)row.height-=delta;}else if(row.tag==='H3'&&card>=0)row.y-=(width<=900&&card===2?2:1)*delta;}
- await fs.writeFile(info.outputPath('source-and-actual.json'),JSON.stringify({pin:'465437653945430016',library:'464039002702499840',approvedException:'Owner selected current library geometry 32px/12px on 2026-10-26',width,theme,original,received,expected},null,2));
+ await fs.writeFile(info.outputPath('source-and-actual.json'),JSON.stringify({pin:'465437653945430016',library:'464039002702499840',approvedException:'Owner selected current library geometry 32px/12px on 2026-10-26',width,theme,viewportSchemes,original,received,expected},null,2));
  await source.screenshot({path:info.outputPath('magicpath.png'),fullPage:true});await actual.screenshot({path:info.outputPath('frontend.png'),fullPage:true});
  expect(received).toEqual(expected);await context.close();
 });
@@ -35,7 +35,17 @@ for(const width of widths)for(const [version,component,revision,selector]of [
  const context=await browser.newContext({viewport:{width,height:1024}});const source=await context.newPage(),actual=await context.newPage();
  await source.goto(`https://api.magicpath.ai/components/${component}/revision/${revision}`);await actual.goto(actualOrigin+'/'+version);await ready(source);await ready(actual);
  const measure=async(page:Page)=>page.locator(selector).evaluate(root=>[root,...root.querySelectorAll('h1,h2,h3,section,article,input,button,table')].map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {tag:e.tagName,className:e.className,x:r.x,y:r.y,width:r.width,height:r.height,padding:s.padding,gap:s.gap,font:s.font,borderRadius:s.borderRadius,color:s.color,background:s.backgroundColor};}));
- const original=await measure(source),received=await measure(actual);const fonts={source:await fontEvidence(source),actual:await fontEvidence(actual)};if(width===390)console.log('Font evidence',version,JSON.stringify(fonts));await fs.writeFile(info.outputPath('source-and-actual.json'),JSON.stringify({revision,width,original,received,fonts},null,2));await source.screenshot({path:info.outputPath('magicpath.png'),fullPage:true});await actual.screenshot({path:info.outputPath('frontend.png'),fullPage:true});expect(received).toEqual(original);await context.close();
+ const original=await measure(source),received=await measure(actual);const expected=structuredClone(original);let approvedMobileScenario:null|{barDelta:number;trigger:unknown}=null;
+ if(width<=(version==='v1'?960:1050)){
+  const bar=version==='v1'?'.cci-prototype-bar':'.ca-prototype';
+  const sourceHeight=await source.locator(bar).evaluate(e=>e.getBoundingClientRect().height),actualHeight=await actual.locator(bar).evaluate(e=>e.getBoundingClientRect().height);
+  const trigger=await actual.locator('.pci-scenario-compact .srm-dropdown-trigger').evaluate(e=>{const s=getComputedStyle(e);return {height:e.getBoundingClientRect().height,font:s.fontSize,radius:s.borderRadius,padding:s.padding};});
+  approvedMobileScenario={barDelta:actualHeight-sourceHeight,trigger};expect(approvedMobileScenario).toEqual({barDelta:48,trigger:{height:32,font:'12px',radius:'8px',padding:'0px 12px'}});
+  // Owner explicitly approved exposing the source-hidden control. Its canonical
+  // compact 32px field plus 8px vertical insets adds exactly one 48px row.
+  for(const row of expected)row.y+=48;
+ }
+ const fonts={source:await fontEvidence(source),actual:await fontEvidence(actual)};if(width===390)console.log('Font evidence',version,JSON.stringify(fonts));await fs.writeFile(info.outputPath('source-and-actual.json'),JSON.stringify({revision,width,original,received,expected,approvedMobileScenario,fonts},null,2));await source.screenshot({path:info.outputPath('magicpath.png'),fullPage:true});await actual.screenshot({path:info.outputPath('frontend.png'),fullPage:true});expect(received).toEqual(expected);await context.close();
 });
 for(const width of widths)for(const theme of ['light','dark'])for(const version of ['v1','v2','v3'])test(`local responsive controls ${version} ${width} ${theme}`,async({page},info)=>{
  await page.setViewportSize({width,height:1024});await page.goto('/'+version+'?theme='+theme);await ready(page);

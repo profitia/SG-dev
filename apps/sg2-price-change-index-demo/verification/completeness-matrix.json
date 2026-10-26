@@ -53000,7 +53000,14 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedOverride": {
+        "ownerDecision": "Pokaż selektory także na telefonie według biblioteki",
+        "sourceRetained": true,
+        "effectiveDisplay": "flex",
+        "implementationFile": "packages/sg2-price-change-index-ui/src/PriceChangeIndex.tsx",
+        "contract": "sg2-pci-contract:mobile-scenarios"
+      }
     },
     {
       "id": "pci1:css:628",
@@ -117349,7 +117356,14 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedOverride": {
+        "ownerDecision": "Pokaż selektory także na telefonie według biblioteki",
+        "sourceRetained": true,
+        "effectiveDisplay": "flex",
+        "implementationFile": "packages/sg2-price-change-index-ui/src/PriceChangeIndex.tsx",
+        "contract": "sg2-pci-contract:mobile-scenarios"
+      }
     },
     {
       "id": "pci2:css:1587",
@@ -192831,6 +192845,56 @@
       },
       "evidence": [
         "verification/source-manifest.json"
+      ]
+    },
+    {
+      "id": "sg2-pci-contract:mobile-scenarios",
+      "kind": "approved-contract",
+      "variant": "pci1/pci2",
+      "componentId": "460628347660177408",
+      "revisionId": "464039002702499840",
+      "sourcePath": "Pinned library canon-dropdown.css compact C07 plus explicit owner decision",
+      "sourceLine": null,
+      "element": "Visible canonical compact scenario selector at original hidden thresholds",
+      "parameters": [
+        {
+          "property": "height",
+          "value": "32px"
+        },
+        {
+          "property": "font-size",
+          "value": "12px"
+        },
+        {
+          "property": "border-radius",
+          "value": "8px"
+        },
+        {
+          "property": "row-height",
+          "value": "48px"
+        }
+      ],
+      "behaviors": [
+        "All source scenario options",
+        "Filtering and empty result",
+        "ArrowDown/Escape and focus return",
+        "Resize retains selection",
+        "Phone horizontal navigation remains available"
+      ],
+      "canonicalReferences": [
+        "SRM-C07"
+      ],
+      "implementationFile": "packages/sg2-price-change-index-ui/src/PriceChangeIndex.tsx",
+      "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
+      "status": "WDROŻONE, NIEZWERYFIKOWANE",
+      "result": {
+        "local": "44 phone flows and16 strict source geometry cases PASS; full candidate suite running",
+        "render": "NOT_EXECUTED"
+      },
+      "evidence": [
+        "verification/source-manifest.json",
+        "test/parity.spec.ts",
+        "test/flows.spec.ts"
       ]
     }
   ]

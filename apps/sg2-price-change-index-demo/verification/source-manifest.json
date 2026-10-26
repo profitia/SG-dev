@@ -565,7 +565,8 @@
     "Locally bundled licensed fonts",
     "2026-10-26 owner decision: library geometry takes precedence over v3 source main actions (canon-actionHeight 32px; canon-actionFont 12px). Source measurements retain original 38px/13px values; do not hide approved differences.",
     "Legacy C95 switch floats at canonical 1rem edge clearance below the canonical 65.625rem header breakpoint to preserve all source header geometry. Desktop control stays in the action slot.",
-    "Library geometry precedence: action minimum 32px, font 12px, card-radius token 9px; original source fallbacks retained in matrix"
+    "Library geometry precedence: action minimum 32px, font 12px, card-radius token 9px; original source fallbacks retained in matrix",
+    "2026-10-26 owner decision: show scenario selectors on phones according to the library. At the original hidden thresholds960px/1050px reuse SRM-C07 compact32px/font12px/radius8px; add one48px row with8px top/bottom insets, retaining viewport navigation and all state."
   ],
   "verification": {
     "initialDiscovery": "NOT_YET_VERIFIED",
@@ -25474,6 +25475,35 @@
       "includedBandwidthGb": 25,
       "costBoundary": "The7USD approval covers the requested compute plan. Builds consume the existing shared workspace pool; future minutes/traffic follow existing workspace billing. No shared billing setting was changed.",
       "documentation": "https://render.com/docs/build-pipeline"
+    },
+    "phoneFlowAudit": {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "hasTouch": true,
+        "isMobile": true
+      },
+      "totalCases": 40,
+      "passed": 36,
+      "unavailableCases": 4,
+      "reason": "Pinned-source scenario preset selectors are intentionally hidden at max960px in v1 and max1050px in v2. The four cases stop at selectOption on the hidden preset control.",
+      "ownerDecision": "APPROVED: Pokaż selektory także na telefonie według biblioteki",
+      "implementationVisibilityChanged": true,
+      "initialResultRetained": true,
+      "correctiveVerification": {
+        "localPhoneCases": 44,
+        "localPhoneResult": "PASS",
+        "localSourceGeometryCases": 16,
+        "localSourceGeometryResult": "PASS",
+        "canonicalMetrics": {
+          "fieldHeight": 32,
+          "fontSize": 12,
+          "radius": 8,
+          "addedRowHeight": 48
+        },
+        "fullCandidateSuite": "RUNNING",
+        "render": "PENDING_CORRECTIVE_RELEASE"
+      }
     }
   },
   "fontAssets": [
@@ -27507,6 +27537,22 @@
       "change": "Optional typed onScrollLockChange event; native C27 instance locks and releases; the demo host owns and restores its outer scroll policy.",
       "localEvidence": "Four paired immutable-source modal backdrop tests passed for versions1/2 and both themes.",
       "sourceChanged": false
+    },
+    {
+      "id": "viewport-color-scheme",
+      "status": "LOCAL_FIX_VERIFIED_RENDER_PENDING",
+      "rootCause": "The scoped module theme was dark while the outer demo document retained native color-scheme normal. The pinned v3 source sets the document scheme to dark/light.",
+      "change": "The demo controls theme through existing onThemeChange and restores its own document color scheme on disposal. The portable test host remains untouched.",
+      "initialSourceDark": "dark",
+      "initialRenderDark": "normal",
+      "localEvidence": "Four strict v3 source comparisons at390/1440 in both themes include document color-scheme equality."
+    },
+    {
+      "id": "inspector-top-layer",
+      "status": "LOCAL_FIX_VERIFIED_RENDER_PENDING",
+      "rootCause": "A normal scoped inspector sibling was behind an already open native modal and could not receive focus.",
+      "change": "Native inspector dialog with scroll-lock reference counting, nested focus return, Tab containment and isolated Escape handling.",
+      "localEvidence": "Six portability cases PASS including inspector above each of the three view dialogs; original dialog stays open until the next Escape."
     }
   ]
 }
