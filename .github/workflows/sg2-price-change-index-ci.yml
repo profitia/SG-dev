@@ -1,0 +1,67 @@
+name: SG2 Price Change Index frontend
+on:
+  pull_request:
+    paths:
+      - 'packages/sg2-price-change-index-ui/**'
+      - 'apps/sg2-price-change-index-demo/**'
+      - '.github/workflows/sg2-price-change-index-ci.yml'
+      - 'Canon/registries/current-architecture-baseline-v1.json'
+      - 'Canon/registries/sg2-environment-topology-v1.json'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/sg2-price-change-index-ui/**'
+      - 'apps/sg2-price-change-index-demo/**'
+      - '.github/workflows/sg2-price-change-index-ci.yml'
+      - 'Canon/registries/current-architecture-baseline-v1.json'
+      - 'Canon/registries/sg2-environment-topology-v1.json'
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/sg2-price-change-index-demo
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --install-links --include=dev --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: Install the exact source environment font for live comparisons
+        run: |
+          mkdir -p "$HOME/.local/share/fonts/sg2-pci"
+          cp src/assets/inter-3.019/*.ttf "$HOME/.local/share/fonts/sg2-pci/"
+          mkdir -p "$HOME/.config/fontconfig/conf.d"
+          # Match the approved macOS source environment and CSS font-face lookup:
+          # CSS 550 selects SemiBold, whereas Fontconfig's midpoint tie picks Medium.
+          cat > "$HOME/.config/fontconfig/conf.d/99-sg2-pci-font-match.conf" <<'XML'
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+          <fontconfig><match target="pattern">
+            <test name="family" compare="eq"><string>Inter</string></test>
+            <test name="weight" compare="eq"><double>140</double></test>
+            <edit name="weight" mode="assign"><const>demibold</const></edit>
+          </match></fontconfig>
+          XML
+          fc-cache -f
+          test "$(fc-match -f '%{postscriptname}' 'Inter:weight=140')" = 'Inter-SemiBold'
+      - run: npm run test:browser
+        env:
+          PCI_COMPARE_MAGICPATH: '1'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: sg2-price-change-index-verification
+          path: |
+            apps/sg2-price-change-index-demo/test-results
+            apps/sg2-price-change-index-demo/playwright-report
+            apps/sg2-price-change-index-demo/verification
+          retention-days: 14

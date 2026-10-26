@@ -1,0 +1,11 @@
+/* Pinned project-specific bindings; base C95 tokens come from approved current library. */
+/* Explicit visual bindings; layouts and business state remain local. */
+.srm-theme-switch{--srm-hover-scale:1}
+.srm-theme-switch button{font-size:12px!important;min-height:30px!important;border:0!important;scale:1!important;transform:none!important}
+.v3-header nav{flex-wrap:wrap;justify-content:flex-end;max-width:400px}.v3-header nav>.srm-theme-switch{margin-left:8px}
+.bf-header-actions .srm-theme-switch{margin-left:4px}
+[data-srm-theme=dark] .v3-app{--cci-series-copper:var(--brand);--cci-series-pvc:var(--theme-reference);--cci-series-energy:var(--sand);--cci-series-labor:var(--theme-muted);--cci-series-transport:var(--theme-positive)}
+[data-srm-theme=dark] .v3-app .v3-primary{background:var(--action-fill);color:#fff;border-color:var(--action-fill)}
+[data-srm-theme=dark] .v3-app .v3-primary:hover{background:var(--chrome-strong);color:#fff}
+[data-srm-theme=dark] .bf-brand>span:first-child{background:#fff;padding:6px 8px;border-radius:7px}
+@media(max-width:760px){.bf-header-actions .srm-theme-switch button span{display:none}.bf-header-actions .srm-theme-switch button{width:30px;padding:0}.v3-header{flex-wrap:wrap}.v3-header nav{max-width:none;flex-wrap:wrap}}

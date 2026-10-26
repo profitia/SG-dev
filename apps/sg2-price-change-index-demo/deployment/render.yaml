@@ -1,0 +1,22 @@
+# Standalone reviewed recipe; never synchronize the repository root Blueprint.
+services:
+  - type: web
+    name: Price Change Index
+    runtime: node
+    repo: https://github.com/profitia/SG-dev
+    branch: main
+    rootDir: .
+    region: frankfurt
+    plan: 0.5c-512mb
+    numInstances: 1
+    autoDeployTrigger: off
+    buildCommand: npm --prefix apps/sg2-price-change-index-demo ci --install-links --include=dev --no-audit --no-fund && npm --prefix apps/sg2-price-change-index-demo run build
+    startCommand: node apps/sg2-price-change-index-demo/server.mjs
+    healthCheckPath: /
+    buildFilter:
+      paths: [apps/sg2-price-change-index-demo/**, packages/sg2-price-change-index-ui/**]
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+# Assign only to existing project prj-dap98ddg1s2s739ssatg / environment evm-dap98hm0tbcc738rro10.
+# Creation is deferred until reviewed main and first-release evidence are available. No secrets or env groups.

@@ -1,0 +1,136 @@
+export type Scenario = 'complete' | 'missing' | 'no-anchor' | 'unpublished' | 'conditions' | 'fx-missing' | 'stale';
+export type Unit = 'mb' | 'km' | 'szt.';
+export type Currency = 'PLN' | 'EUR' | 'USD';
+export type Component = {
+    id: string;
+    name: string;
+    weight: number;
+    benchmark: string;
+    seriesId: string;
+    values: number[];
+    color: string;
+    unit: string;
+    currency: string;
+    frequency: string;
+    aggregation: string;
+};
+export type Purchase = {
+    price: string;
+    currency: Currency;
+    unit: Unit;
+    month: number;
+    tax: 'netto' | 'brutto';
+    delivery: 'z dostawą' | 'bez dostawy';
+    terms: string;
+};
+export type Offer = {
+    price: string;
+    currency: Currency;
+    unit: Unit;
+    month: number;
+    tax: 'netto' | 'brutto';
+    delivery: 'z dostawą' | 'bez dostawy';
+    supplier: string;
+    converted: boolean;
+    termsConfirmed: boolean;
+};
+export type Analysis = {
+    id: string;
+    name: string;
+    categoryId: string;
+    components: Component[];
+    purchase: Purchase;
+    version: number;
+    dataRevision: string;
+};
+export type Comparison = {
+    id: string;
+    analysis: Analysis;
+    offer: Offer;
+    reference: number;
+    normalizedOffer: number;
+    created: string;
+};
+export declare const dates: string[];
+export declare const shortDates: string[];
+export declare const fromDates: string[];
+export declare const fmt: (n: number | null | undefined, d?: number) => string;
+export declare const sign: (n: number | null | undefined, d?: number) => string;
+export declare const sourceComponents: Component[];
+export declare const cloneComponents: (cs: Component[]) => {
+    values: number[];
+    id: string;
+    name: string;
+    weight: number;
+    benchmark: string;
+    seriesId: string;
+    color: string;
+    unit: string;
+    currency: string;
+    frequency: string;
+    aggregation: string;
+}[];
+export declare const categories: {
+    id: string;
+    name: string;
+    ready: boolean;
+    revision: string;
+    components: {
+        values: number[];
+        id: string;
+        name: string;
+        weight: number;
+        benchmark: string;
+        seriesId: string;
+        color: string;
+        unit: string;
+        currency: string;
+        frequency: string;
+        aggregation: string;
+    }[];
+}[];
+export declare const defaultPurchase: () => Purchase;
+export declare const defaultOffer: () => Offer;
+export declare const seedAnalysis: () => Analysis;
+export declare const snapshot: (a: Analysis) => Analysis;
+export declare const isStructureReady: (cs: Component[]) => boolean;
+export declare function observation(c: Component, m: number, s?: Scenario): number | null;
+export declare function cci(a: Analysis, m: number, s?: Scenario): number | null;
+export declare function indexedPrice(a: Analysis, m: number, s?: Scenario): number | null;
+export declare function contribution(a: Analysis, c: Component, m: number, s?: Scenario): {
+    pp: null;
+    cash: null;
+    change: null;
+} | {
+    pp: number;
+    cash: number;
+    change: number;
+};
+export declare function fx(from: Currency, to: Currency, m: number, s: Scenario): number | null;
+export declare function unitFactor(from: Unit, to: Unit): number | null;
+export declare function compare(a: Analysis, o: Offer, s?: Scenario): {
+    ref: number | null;
+    rate: number | null;
+    factor: number | null;
+    needsConversion: boolean;
+    taxMatch: boolean;
+    deliveryMatch: boolean;
+    normalized: number | null;
+    comparable: boolean;
+    valid: boolean;
+    gap: number | null;
+    gapPct: number | null;
+    supplierChange: number | null;
+    marketChange: number | null;
+};
+export declare const scenarios: [Scenario, string][];
+export declare const canonAuthority: {
+    projectId: string;
+    componentId: string;
+    revisionId: string;
+    name: string;
+    destinationProjectId: string;
+    conceptVersion: number;
+    sourceComponents: string[];
+    scope: string;
+};

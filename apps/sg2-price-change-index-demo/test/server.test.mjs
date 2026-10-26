@@ -1,0 +1,16 @@
+import test,{before,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import net from 'node:net';
+import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+let child,origin;
+before(async()=>{const probe=net.createServer();await new Promise(r=>probe.listen(0,'127.0.0.1',r));const port=probe.address().port;await new Promise(r=>probe.close(r));origin=`http://127.0.0.1:${port}`;child=spawn(process.execPath,['server.mjs'],{cwd:root,env:{...process.env,PORT:String(port)},stdio:'pipe'});for(let i=0;i<80;i++){try{if(child.exitCode!==null)throw new Error('Static server exited '+child.exitCode);const response=await fetch(origin,{signal:AbortSignal.timeout(1000)});if(response.ok)return;}catch{}await new Promise(r=>setTimeout(r,100));}throw new Error('Static server did not start');});
+after(()=>child?.kill('SIGTERM'));
+test('all demo and independent host routes support direct reload',async()=>{for(const route of ['/','/v1','/v2','/v3','/portable']){const r=await fetch(origin+route);assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/text\/html/);assert.match(await r.text(),/Price Change Index/);}});
+test('no product write endpoint exists',async()=>{for(const method of ['POST','PUT','PATCH','DELETE'])assert.equal((await fetch(origin+'/v3',{method})).status,405);});
+test('headers prohibit runtime connections, frames and third-party script',async()=>{const r=await fetch(origin);const csp=r.headers.get('content-security-policy');assert.match(csp,/connect-src 'none'/);assert.match(csp,/frame-src 'none'/);assert.match(csp,/script-src 'self'/);assert.equal(r.headers.get('x-content-type-options'),'nosniff');});
+test('HEAD returns no body and missing assets remain 404',async()=>{assert.equal(await (await fetch(origin+'/v3',{method:'HEAD'})).text(),'');assert.equal((await fetch(origin+'/assets/missing.js')).status,404);assert.equal((await fetch(origin+'/%2f..%2fpackage.json')).status,400);});
+test('module has no product transport, auth, storage or private app imports',()=>{const moduleRoot=path.resolve(root,'../../packages/sg2-price-change-index-ui/src');const visit=dir=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>e.isDirectory()?visit(path.join(dir,e.name)):[path.join(dir,e.name)]);for(const file of visit(moduleRoot).filter(f=>/\.(tsx?|css)$/.test(f))){const text=fs.readFileSync(file,'utf8');assert.doesNotMatch(text,/\b(?:fetch|XMLHttpRequest|WebSocket|EventSource)\s*\(|navigator\.sendBeacon\s*\(|localStorage\.(?:getItem|setItem)|\.postMessage\s*\(|from\s+['"][^'"]*apps\/(?:srm|sg-runtime|dashboard-preview)/,file);assert.doesNotMatch(text,/@import\s+url\(['"]?https?:/i,file);}});
