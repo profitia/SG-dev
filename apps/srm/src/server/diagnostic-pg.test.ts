@@ -66,6 +66,13 @@ test('callback connection errors preserve the exact supplied argument count',asy
  }),{enabled:true,emit:()=>{}})
  assert.equal(calls,1)
 })
+test('PostgreSQL COMMIT returning ROLLBACK cannot be reported as a committed transaction',async()=>{
+ const pool=new Pool(),query=pool.client.query
+ pool.client.query=function(sql:string,...args:unknown[]){return sql==='COMMIT'?Promise.resolve({command:'ROLLBACK',rows:[]}):Reflect.apply(query,this,[sql,...args])}
+ instrumentDiagnosticPool(pool);let packet:DiagnosticPacket|undefined
+ await withDiagnosticRequest('search',undefined,async()=>{const c=await pool.connect() as Client;await c.query('BEGIN');await c.query('COMMIT');c.release()},{enabled:true,emit:p=>{packet=p}})
+ assert(packet);assert(packet.resources.some(r=>r.kind==='TRANSACTION'&&r.outcome==='ROLLED_BACK'));assert(!packet.resources.some(r=>r.outcome==='COMMITTED'))
+})
 test('public Client.connect is distinguished from total pool acquisition',async()=>{
  class PhysicalClient extends Client{connect(callback:Function){queueMicrotask(()=>callback(null))}}
  class PhysicalPool extends Pool{Client=PhysicalClient;client=new PhysicalClient();override connect(cb?:Function):unknown{
