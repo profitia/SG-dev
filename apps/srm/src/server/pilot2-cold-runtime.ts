@@ -148,7 +148,7 @@ function createRuntime(env:Env){
    if(pending.has(request)||key!==input(request,identity.identity.nip).idempotencyKey)return deny()
    const recheck:KrsFinancialRecheck=async()=>{const current=await accepted(request,identity.evidenceRef)
     if(current.identity.identity.nip!==identity.identity.nip||current.identity.source.rawDigest!==identity.source.rawDigest)return deny()}
-   const prepared=await api.prepareKrsFinancial(input(request,identity.identity.nip),identity,recheck,general)
+   const prepared=await api.prepareKrsFinancial(input(request,identity.identity.nip),identity,recheck,general,'COMPLETE_IN_REQUEST')
    pending.set(request,prepared);return {...prepared.result,...(prepared.pending?{workPending:true as const}:{})}
   },async publishEligible(request,identity,result:MgbiFinancialResult){
    const prepared=pending.get(request);if(!prepared)return deny()

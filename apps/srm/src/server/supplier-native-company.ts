@@ -5,7 +5,7 @@ import { OperationDenied, isOperationDenied, operationPayloadDigest } from '@pro
 import { createSrmSupplierNativeWork, type SupplierNativeWorkOptions, type SupplierNativeWorkSelection } from './supplier-request-work'
 import { createSrmSupplierNativeWorkStore } from './supplier-native-work-store'
 import { createSrmSupplierSourceLink } from './supplier-source-link'
-import {prepareKrsFinancialWork,type KrsFinancialRecheck} from './krs-native-financial'
+import {prepareKrsFinancialWork,type KrsFinancialRecheck,type KrsFinancialExecution} from './krs-native-financial'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import type { createSrmSupplierSourceRequest } from './supplier-source-request'
 import { createSrmProviderSourceTransport, createSrmMsrSourceTransport, guardOriginalProviderCall as originalCall } from './provider-source-transport'
@@ -144,10 +144,10 @@ export function createSrmNativeCompanyLookup(options:Options){
   }
   return Object.freeze({
     run:(selection:SupplierNativeWorkSelection)=>execute(selection,ports=>createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}}),undefined,true),
-    prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:Parameters<typeof prepareKrsFinancialWork>[5])=>execute(selection,
+    prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:Parameters<typeof prepareKrsFinancialWork>[5],execution?:KrsFinancialExecution)=>execute(selection,
       ports=>prepareKrsFinancialWork({...ports,readFreshFinancial:async(org,nip,at)=>{
         if(org!==selection.organisationId||nip!==selection.command.nip)return refuse()
         return store.financialCache(selection,at)
-      }},selection,identity,recheck,()=>clock().getTime(),general),recheck,true),
+      }},selection,identity,recheck,()=>clock().getTime(),general,execution),recheck,true),
   })
 }
