@@ -279,3 +279,17 @@ Source receivers reuse the original classified Corporate/Financial and HTTP
 transports, without modifying old counters, licenses, human grants or policies.
 Rollback reuses the retained Scanner artifact and prior technical binding;
 nullable envelope data and canonical audit/history remain preserved.
+
+
+Optional SQL023 adopts one `SRM_FINANCIAL_INVENTORY` Work for the existing PILOT2
+executor only. It joins the existing RDF archive write, prepared document write
+and candidate/document reads in one short transaction, with no provider HTTP.
+The current E1 unit, organisation/NIP fences and physical INTENT/OUTCOME remain
+mandatory. The accepted predecessor bodies are checked before changing their
+finite purpose lists; sensitive/JDG/website branches remain byte-for-byte.
+Install atomically under the existing controlled access owner, with a source
+SHA, schema digest, exact existing executor login/service ID and active unit
+policy. No historical baseline is changed and no HUMAN grant is added.
+Missing adoption keeps the new composition closed; all existing purposes work
+without SQL023. Rollback uses the retained application artifact and original
+source pins; the additive purpose can be disabled without deleting history.

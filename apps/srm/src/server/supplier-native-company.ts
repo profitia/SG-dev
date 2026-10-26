@@ -23,6 +23,7 @@ type ProviderOptions=Omit<Parameters<typeof createSrmProviderSourceTransport>[0]
   'provider'|'providerOrigin'|'nip'|'operationKey'|'headers'>
 type Options={work:SupplierNativeWorkOptions;namedInterestBoundaryDigest:string;
   registryEnvelopeBoundaryDigest?:string;
+  financialInventoryBoundaryDigest?:string;
   source:ReturnType<typeof createSrmSupplierSourceRequest>;
   corporate:Parameters<typeof createSrmCorporateSourceStore>[0];
   mgbi:{apiKey:string;authScheme:'raw'|'bearer';source:ProviderOptions;
@@ -34,16 +35,18 @@ const hash=(value:string)=>createHash('sha256').update(value).digest('hex')
  * publication use their existing independent native hosts. No HTTP activation,
  * caller-selected identity, alternate writer or network inside SQL is added. */
 export function createSrmNativeCompanyLookup(options:Options){
-  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>k!=='registryEnvelopeBoundaryDigest').sort().join(',')!=='corporate,mgbi,namedInterestBoundaryDigest,source,work'
+  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>!['registryEnvelopeBoundaryDigest','financialInventoryBoundaryDigest'].includes(k)).sort().join(',')!=='corporate,mgbi,namedInterestBoundaryDigest,source,work'
     ||typeof options.mgbi?.apiKey!=='string'||!options.mgbi.apiKey.trim()
     ||!['raw','bearer'].includes(options.mgbi.authScheme)
     ||options.work.application.environment!==options.mgbi.source.application.environment
-    ||options.work.application.environment!==options.corporate.application.environment)return refuse()
+    ||options.work.application.environment!==options.corporate.application.environment
+    ||options.financialInventoryBoundaryDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.financialInventoryBoundaryDigest))return refuse()
   const admittedSource=platformDeliveryEvidence(options.source?.port)
   const sourceFields=['applicationId','environment','projectId','branchId','databaseName','schemaDigest'] as const
   if(!admittedSource||sourceFields.some(key=>options.mgbi.source.binding[key]!==admittedSource[key]))return refuse()
   const work=createSrmSupplierNativeWork(options.work)
   const store=createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,
+    ...(options.financialInventoryBoundaryDigest?{financialInventoryBoundaryDigest:options.financialInventoryBoundaryDigest}:{}),
     ...(options.registryEnvelopeBoundaryDigest?{registryEnvelopeBoundaryDigest:options.registryEnvelopeBoundaryDigest}:{})})
   const link=createSrmSupplierSourceLink({work:options.work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,source:options.source})
   const corporate=createSrmCorporateSourceStore(options.corporate)
@@ -61,6 +64,7 @@ export function createSrmNativeCompanyLookup(options:Options){
     const selection=Object.freeze({...input,command:Object.freeze(readSupplierRequest(input.command))})
     let operationKey:string|undefined,lookup:Readonly<{supplierId:string;requestId:string}>|undefined
     let mgbi:ReturnType<typeof createSrmProviderSourceTransport>|undefined
+    let inventory:Awaited<ReturnType<typeof store.financialInventory>>|undefined
     const scope=(org:string,nip:string)=>{if(org!==selection.organisationId||nip!==selection.command.nip||!lookup||!operationKey)return refuse()}
     const sourceOptions=()=>({application:fixed.application,binding:fixed.binding,pool,auditPool,now,
       external:fixed.external,syntheticOrigin:fixed.syntheticOrigin,headers,nip:selection.command.nip,
@@ -95,10 +99,19 @@ export function createSrmNativeCompanyLookup(options:Options){
         return store.archive(selection,model,pages,count,at)
       },
       saveFinancialDocuments:async(org,nip,pages)=>{scope(org,nip);return store.prepareDocuments(selection,pages)},
-      readFinancialDocuments:async(org,nip)=>{scope(org,nip);return store.restoreDocuments(selection)},
+      ...(options.financialInventoryBoundaryDigest?{prepareFinancialInventory:async(org:string,nip:string,pages:unknown[],count:number,at:string,allowedKrs:readonly string[])=>{
+        scope(org,nip);if(inventory)return refuse()
+        inventory=await store.financialInventory(selection,pages,count,at,allowedKrs)
+      }}:{}),
+      readFinancialDocuments:async(org,nip)=>{scope(org,nip);return inventory?inventory.documents:store.restoreDocuments(selection)},
       enrichMsrFinancial:async(org,nip,base,metadata)=>{
         scope(org,nip);if(metadata?.requestId!==selection.requestId||metadata.store||metadata.download||metadata.parse)return refuse()
-        return enrichMsrFinancial(org,nip,base,{...metadata,store:store.msr(selection,metadata.allowedKrs),download:async recordId=>{
+        const current=store.msr(selection,metadata.allowedKrs)
+        const prepared=inventory;let consumed=false,projectionChanged=false
+        const result=await enrichMsrFinancial(org,nip,base,{...metadata,store:prepared?{...current,candidates:async()=>{
+          if(consumed)return current.candidates();consumed=true;return prepared.candidates
+        },save:async(...args)=>{await current.save(...args);projectionChanged=true},
+          project:async(...args)=>{await current.project!(...args);projectionChanged=true}}:current,download:async recordId=>{
           await recheck?.('ACQUISITION')
           const source=createSrmMsrSourceTransport({...sourceOptions(),external:fixed.msrExternal,recordId,
             operationKey:hash(operationKey+':msr:'+recordId),syntheticStorageOrigin:fixed.syntheticStorageOrigin})
@@ -110,6 +123,10 @@ export function createSrmNativeCompanyLookup(options:Options){
             throw error
           }
         }})
+        // A changed MSR projection has its own committed receipt and current
+        // prepared documents. It cannot reuse the pre-enrichment projection.
+        if(prepared&&(projectionChanged||result.msrChanged))inventory={...prepared,documents:await store.preparedDocuments(selection)}
+        return result
       },
       persistSection:async(org,actual,section,envelope,errorCode,facts,correlation,sourceData,method)=>{
         scope(org,selection.command.nip)

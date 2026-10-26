@@ -67,10 +67,11 @@ function receipt(value:MsrReceipt|null):MsrReceipt|null{
 
 /** Actual original domain functions under one current native unit. Network
  * acquisition and shared publication remain separate responsibilities. */
-export function createSrmSupplierNativeWorkStore(options:{work:Readonly<SupplierNativeWork>;namedInterestBoundaryDigest:string;registryEnvelopeBoundaryDigest?:string}){
-  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>k!=='registryEnvelopeBoundaryDigest').sort().join(',')!=='namedInterestBoundaryDigest,work'
+export function createSrmSupplierNativeWorkStore(options:{work:Readonly<SupplierNativeWork>;namedInterestBoundaryDigest:string;registryEnvelopeBoundaryDigest?:string;financialInventoryBoundaryDigest?:string}){
+  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>!['registryEnvelopeBoundaryDigest','financialInventoryBoundaryDigest'].includes(k)).sort().join(',')!=='namedInterestBoundaryDigest,work'
     ||typeof options.work?.run!=='function'||!/^[a-f0-9]{64}$/.test(options.namedInterestBoundaryDigest))throw TypeError('Explicit native Supplier work store required')
   if(options.registryEnvelopeBoundaryDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.registryEnvelopeBoundaryDigest))return refuse()
+  if(options.financialInventoryBoundaryDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.financialInventoryBoundaryDigest))return refuse()
   const work=options.work,namedDigest=options.namedInterestBoundaryDigest
   async function run<T>(selection:SupplierNativeWorkSelection,unitId:SupplierNativeWorkUnit,parameters:Json,
     action:(pool:DatabasePool,client:PoolClient,context:Readonly<OperationContext>)=>Promise<T>,capture:(v:T)=>T=json):Promise<T>{
@@ -107,6 +108,12 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
     },
     async indicators(input:SupplierNativeWorkSelection,data:FinancialData){
       const s=select(input),body=json(data)
+      if(options.financialInventoryBoundaryDigest)return run(s,'SRM_CACHE_READ',{indicatorInputDigest:digest(body),metrics:FINANCIAL_INDICATOR_INPUT_CODES},async(_pool,client)=>{
+        const revision=await readIndicatorPublication(client,s.command.nip)
+        const facts=await readStoredIndicatorFacts(client,s.command.nip,FINANCIAL_INDICATOR_INPUT_CODES)
+        if(await readIndicatorPublication(client,s.command.nip)!==revision)throw Error('Indicator publication changed')
+        return projectStoredIndicators(s.command.nip,body,facts)
+      })
       const facts:CatalogIndicatorFact[]=[]
       let publication:string|null=null
       try{
@@ -147,6 +154,25 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
         saveMgbiArchive(s.organisationId,s.command.nip,model,body.pages,body.recordCount,body.retrievedAt,s.requestId,pool))
     },
     prepareDocuments(input:SupplierNativeWorkSelection,pages:unknown[]){const s=select(input),body=json(pages);return run(s,'SRM_PREPARE_DOCUMENTS',{bodyDigest:operationPayloadDigest(body as Json)},pool=>saveFinancialDocuments(s.organisationId,s.command.nip,body,pool))},
+    financialInventory(input:SupplierNativeWorkSelection,pages:unknown[],recordCount:number,retrievedAt:string,allowedKrs:readonly string[]){
+      const s=select(input),body=json({pages,recordCount,retrievedAt,allowedKrs})
+      if(!options.financialInventoryBoundaryDigest||!Array.isArray(body.pages)||body.pages.length<1
+        ||body.pages.some(page=>!page||typeof page!=='object'||!Array.isArray((page as {results?:unknown}).results))
+        ||!Number.isSafeInteger(body.recordCount)||body.recordCount<0||!Number.isFinite(Date.parse(body.retrievedAt))
+        ||!Array.isArray(body.allowedKrs)||body.allowedKrs.length<1||body.allowedKrs.some(k=>!/^[0-9]{10}$/.test(k)))return refuse()
+      const records=financialRecordsFromPages(body.pages)
+      if(records.length!==body.recordCount||records.some(record=>!record||typeof record!=='object'
+        ||(record as {identifiers?:{pl_nip?:unknown}}).identifiers?.pl_nip!==s.command.nip))return refuse()
+      return run(s,'SRM_FINANCIAL_INVENTORY',{bodyDigest:digest(body)},async(pool,client)=>{
+        const d=(await client.query('SELECT srm.financial_inventory_descriptor() AS descriptor')).rows[0]?.descriptor
+        if(d?.schemaDigest!==options.financialInventoryBoundaryDigest)return refuse()
+        await saveMgbiArchive(s.organisationId,s.command.nip,'pl-krs-rdf-record',body.pages,body.recordCount,body.retrievedAt,s.requestId,pool)
+        await saveFinancialDocuments(s.organisationId,s.command.nip,body.pages,pool)
+        const candidates=await msrStore(s.organisationId,s.command.nip,s.requestId,body.allowedKrs,pool).candidates()
+        const documents=await withOrganization(s.organisationId,c=>readPreparedFinancialDocuments(c,s.organisationId,s.command.nip),pool)
+        return {candidates,documents}
+      })
+    },
     restoreDocuments(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_PREPARE_DOCUMENTS',null,pool=>readFinancialDocuments(s.organisationId,s.command.nip,pool))},
     preparedDocuments(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_READ_DOCUMENTS',null,(pool)=>withOrganization(s.organisationId,client=>readPreparedFinancialDocuments(client,s.organisationId,s.command.nip),pool))},
     section(input:SupplierNativeWorkSelection,section:'general'|'financial',envelope:SectionEnvelope<GeneralCompanyData>|SectionEnvelope<FinancialData>,errorCode:string|null,

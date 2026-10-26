@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-PILOT2-NATIVE-EXECUTION-20261026",
+  "targetEnvironment": "development",
+  "renderServiceId": "srv-dbeh6srrjlhs73fmikrg",
+  "activation": "EXISTING_PILOT2_COMPOSITION_ONLY",
+  "financialInventoryBoundaryDigest": "c8d5ac31f2e55fb1d388af708178ca28771f66dda7b76938d6a9dc69801f6664",
+  "lastKnownGood": {
+    "sourceSha": "bc9ab111cdd792210629c10efff0ca5080e83b28",
+    "deployId": "dep-dbfg9na9lscs73a1qv4g",
+    "artifactDigest": "932c0cef9f997713c490e1df14ddb794c50bf6b4b4dc45fb471e9cf04bb1fc52",
+    "configurationDigest": "7cc190e6ae391d1e1c37ae3614c9e5814fd1d5cc11c9d0e648fd96b6e678a5fa",
+    "registryProvider": "KRS"
+  },
+  "preserved": [
+    "CURRENT_E1_AUTHORITY",
+    "IDENTITY_RECONCILIATION",
+    "PHYSICAL_AUDIT",
+    "ORGANISATION_ISOLATION",
+    "LICENSED_FILE_SAFEGUARDS",
+    "SEVEN_DAY_SOURCE_FRESHNESS"
+  ],
+  "runtimeDeploymentPerformed": false
+}

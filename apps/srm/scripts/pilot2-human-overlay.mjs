@@ -37,7 +37,7 @@ export function humanPilot2(repo,output,proof){
  copy('apps/srm/operation-integration.json')
  for(const file of['pilot2-human-runtime.ts','pilot2-public-catalog.ts','report-admission-runtime.ts','supplier-request-host.ts',
   'supplier-request-operation.ts','private-operation-host.ts','identity-runtime.ts','request-origin.ts','corporate-knowledge.ts','shared-financial-read.ts'])copy('apps/srm/src/server/'+file)
- for(const file of['pilot2-human-targets.json','private-runtime-targets.json','supplier-native-targets.json'])copy('apps/srm/deployment/'+file)
+ for(const file of['pilot2-human-targets.json','pilot2-native-execution.json','private-runtime-targets.json','supplier-native-targets.json'])copy('apps/srm/deployment/'+file)
  // Expose the unchanged shared SELECT prefix already used by current SRM.
  // Interpolation reconstructs the original Staging private SQL byte for byte;
  // the new reader uses only the public prefix and the existing projector.

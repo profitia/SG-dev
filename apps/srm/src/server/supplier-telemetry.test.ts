@@ -1,6 +1,27 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import http from 'node:http'
 import {instrumentSupplierIdentity,measureSupplierStage,measureSupplierWork,withSupplierTelemetry} from './supplier-telemetry'
+
+test('HTTP timing observes a complete real response separately from E1 and never logs request contents',async()=>{
+ const logs:string[]=[],previous=console.info;console.info=value=>{logs.push(String(value))}
+ const secret='private-query-and-body-never-log',server=http.createServer((request,response)=>{
+  assert(request.url?.includes(secret));response.write('first');setTimeout(()=>response.end(secret),25)
+ })
+ try{
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve))
+  const address=server.address();assert(address&&typeof address!=='string')
+  await withSupplierTelemetry('krs_lookup',async()=>{
+   await measureSupplierStage('E1_SOURCE_SCOPE',async()=>undefined)
+   const response=await fetch(`http://127.0.0.1:${address.port}/?q=${secret}`)
+   assert.equal(await response.text(),'first'+secret)
+   return new Response()
+  })
+  const trace=JSON.parse(logs[0]);assert.equal(trace.stages.NETWORK_HTTP.count,1)
+  assert(trace.stages.NETWORK_HTTP.totalMs>=20);assert.equal(trace.stages.NETWORK_HTTP.failed,0)
+  assert.equal(trace.stages.E1_SOURCE_SCOPE.count,1);assert(!logs.join().includes(secret))
+ }finally{server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));console.info=previous}
+})
 
 test('concurrent traces separate identity, SQL and business time without logging authority or payloads',async()=>{
  const logs:string[]=[],previous=console.info;console.info=(value)=>{logs.push(String(value))}

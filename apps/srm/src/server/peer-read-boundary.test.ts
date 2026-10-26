@@ -79,7 +79,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   Object.assign(currentDigests,receipt.pilot2ColdAcquisitionAdoption?.applicationSourceDigests);
   Object.assign(currentDigests,receipt.pilot2PrivateOperationsAdoption?.applicationSourceDigests,receipt.requestQuotaSourceCompatibility?.applicationSourceDigests,receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests,receipt.pilot2PrivateKysContinuityRepair?.applicationSourceDigests,receipt.pilot2PrivateKysValidityRepair?.applicationSourceDigests);
   Object.assign(currentDigests,receipt.pilot2ProviderRoutingAdoption?.applicationSourceDigests);
-  Object.assign(currentDigests,receipt.pilot2FinancialSinglePassAdoption?.applicationSourceDigests);
+  Object.assign(currentDigests,receipt.pilot2FinancialSinglePassAdoption?.applicationSourceDigests,receipt.nativeSqlRoundtripAdoption?.applicationSourceDigests);
   for(const [file,digest]of Object.entries(currentDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })
