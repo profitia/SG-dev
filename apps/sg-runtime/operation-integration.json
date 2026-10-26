@@ -2990,6 +2990,8 @@
     "sourceDigests": {
       "package.json": "6432f3b7f64b8634a9b9364cef06b44ebf9d73ee349ad4a7b21c332af622868a",
       "package-lock.json": "75cb7a8962c1360d53e29f5c2287ae4a918e0a9aca61b4aea33ee0de4a0c4f85",
+      "test/private-operation-host.test.mjs": "76cfc017a64940c6f39159d0ef6ce14df97c605354a650306af7982195935d80",
+      "test/request-work.test.mjs": "a23c5ec092293070e278cd892ab2a3721a04ea7e91f199f012e23dcf85fe1f1d",
       "src/access-store.mjs": "c38de2c51b50d72ddb0891e2528435770a9b74f40e844b899d1c36385c72148c",
       "src/delegated-job.mjs": "c40206b03e24ee1d2b719fda4bd37f573f6e568dd51f97fb6c9b2a3cdbde5772",
       "src/platform-ingestion.mjs": "99c5cb567be456cd07ef6c5671f5191da1d1fddff3e85d9d8bc551853034c4db",
@@ -3022,7 +3024,7 @@
       "tests/category-operation.test.ts": "3c206fa31088c216ff7511ca1a4035c3ee0e37af9f04f8b4a186ad764075206a",
       "tests/identity-runtime.test.ts": "b8878d7a6bd3ae55b06415e0e7f824b8e2151d6e79e455c203e85cbca11594f7",
       "tests/native-sql-roundtrips.test.mjs": "cbdcead10a19a0f454700b6c4b94148aa0a767d16481879edca7c2dbaaf1a728",
-      "tests/operation-context.test.mjs": "7d70686b9acd7b036404d3513c345402853643c305ecf9ce1ae7e395068f0431",
+      "tests/operation-context.test.mjs": "bfcd6efedaaa90557d7b0ac37849589f0361574912a87d30d9239421b51cf0a0",
       "tests/porr-demo-middleware.test.ts": "1712c402ae8d62128c12dc98f3abf4328fe0b19f56f69314d09b4e74eec577ef",
       "tests/private-host.integration.test.mjs": "1a96040c43a2e8e0d5ae68db416176c79d6107762e93b296f2b226efc24273be",
       "tests/self-service-account.test.ts": "294f9e4f9249ce952949aac3d3f8e55c2d7fe32b801ab28d6a0d9b267ef1f045"

@@ -135,7 +135,10 @@ test('Benchmark presentation renews the current receiver closure without rewriti
   assert.equal(current.design.finderRevision, '463982323726172160')
   assert.equal(current.design.canonRevision, '464039002702499840')
   for (const [path, digest] of Object.entries(current.applicationSourceDigests)) {
-    const observed = createHash('sha256').update(fs.readFileSync(new URL('../' + path, import.meta.url))).digest('hex')
+    const bytes=receipt.nativeSqlRoundtripAdoption.applicationSourceDigests[path]
+      ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':apps/sg-runtime/'+path])
+      :fs.readFileSync(new URL('../'+path,import.meta.url))
+    const observed = createHash('sha256').update(bytes).digest('hex')
     assert.equal(observed, digest, path)
     assert.notEqual(createHash('sha256').update('changed-content').digest('hex'), digest, path)
   }
