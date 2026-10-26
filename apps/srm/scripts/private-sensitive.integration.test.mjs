@@ -349,6 +349,16 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
      assert.equal((await owner.query("SELECT pg_get_functiondef('srm.current_supplier_work(uuid,uuid,text)'::regprocedure) value")).rows[0].value,before)
     })
     await owner.query(own('012-supplier-web-identity.sql'));await owner.query("INSERT INTO srm.supplier_web_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('012-supplier-web-identity.sql')),'2'.repeat(40)])
+    await t.test('inventory adoption accepts the exact current website-era functions and rolls back every replacement atomically',async()=>{
+     const before=(await owner.query("SELECT proname,prosrc FROM pg_proc WHERE oid IN('srm.current_supplier_work(uuid,uuid,text)'::regprocedure,'srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text)'::regprocedure,'srm.supplier_business_phase(uuid,text,uuid,text[])'::regprocedure) ORDER BY proname")).rows
+     await owner.query('SAVEPOINT current_inventory_installation');await owner.query(own('023-financial-inventory-work.sql'))
+     await owner.query('ROLLBACK TO SAVEPOINT current_inventory_installation;RELEASE SAVEPOINT current_inventory_installation')
+     assert.equal((await owner.query("SELECT to_regclass('srm.financial_inventory_installation') x")).rows[0].x,null)
+     assert.deepEqual((await owner.query("SELECT proname,prosrc FROM pg_proc WHERE oid IN('srm.current_supplier_work(uuid,uuid,text)'::regprocedure,'srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text)'::regprocedure,'srm.supplier_business_phase(uuid,text,uuid,text[])'::regprocedure) ORDER BY proname")).rows,before)
+    })
+    // No executor is registered for the additive inventory purpose here. The
+    // complete existing private/JDG/website regression runs after adoption.
+    await owner.query(own('023-financial-inventory-work.sql'))
     for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION srm.web_installation_descriptor(),srm.web_subject_row(text,uuid,uuid,uuid,text,text),srm.web_human_row(uuid,text,text,uuid,timestamptz),srm.web_cache_scope(uuid,text,text,text),srm.private_web_metadata(uuid,text,text) TO ${role}`)
     await owner.query(`GRANT SELECT ON srm.supplier_web_identity TO ${FOREGROUND};GRANT SELECT,INSERT,UPDATE ON srm.supplier_web_identity TO ${EXECUTOR}`)
     for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION profitia_requests.operation_runtime_descriptor() TO ${role}`)

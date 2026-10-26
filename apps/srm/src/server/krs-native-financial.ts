@@ -14,7 +14,7 @@ import {projectPublicFinancialData} from './corporate-knowledge'
 // original native Request/Source/Work/archive/MSR/Financial helpers as NIP mode.
 type Ports=Pick<XrayCompanyPorts,'createLookup'|'fetchMgbiFinancial'|'saveMgbiArchive'|'saveFinancialDocuments'|
  'readFinancialDocuments'|'enrichMsrFinancial'|'persistSection'|'saveSharedCompany'|'refreshFinancialIndicators'|'recordInterest'|'reprojectFinancialArchive'>
- &Partial<Pick<XrayCompanyPorts,'readFreshCompany'>>
+ &Partial<Pick<XrayCompanyPorts,'readFreshCompany'|'prepareFinancialInventory'>>
  &{readFreshFinancial?:(org:string,nip:string,at:Date)=>Promise<SectionEnvelope<FinancialData>|null>}
 export type KrsFinancialRecheck=(boundary?:'ACQUISITION'|'PUBLICATION')=>Promise<void>
 export type KrsFinancialExecution='CONTINUE_AFTER_ARCHIVE'|'COMPLETE_IN_REQUEST'
@@ -45,8 +45,13 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
  let pending=false
  if(result.rawResponse&&!result.errorCode&&result.section.retrievedAt){
   if(!cached){
-  await ports.saveMgbiArchive(org,nip,'pl-krs-rdf-record',result.rawResponse.pages,result.rawResponse.recordCount,result.section.retrievedAt,selection.requestId)
-  await ports.saveFinancialDocuments(org,nip,result.rawResponse.pages)
+  if(execution==='COMPLETE_IN_REQUEST'&&ports.prepareFinancialInventory){
+   await ports.prepareFinancialInventory(org,nip,result.rawResponse.pages,result.rawResponse.recordCount,result.section.retrievedAt,
+    history?.members.map(m=>m.krs)??[identity.selectedKrs])
+  }else{
+   await ports.saveMgbiArchive(org,nip,'pl-krs-rdf-record',result.rawResponse.pages,result.rawResponse.recordCount,result.section.retrievedAt,selection.requestId)
+   await ports.saveFinancialDocuments(org,nip,result.rawResponse.pages)
+  }
   await check()
   // Other consumers retain their accepted continuation policy. PILOT2 can
   // finish this durable inventory in the same admitted request, just as the

@@ -54,39 +54,36 @@ export function createAccessStore({ binding, now = Date.now }) {
     if (rows.length !== 1 || !rows[0] || typeof rows[0] !== 'object' || Array.isArray(rows[0])) fail()
     return rows[0]
   }
-  const descriptor = async query => {
+  const authority = async (query, extra = '', values = []) => {
     const row = await one(query, `SELECT current_database() AS database_name,current_user AS role,session_user AS login,
       r.rolsuper,r.rolbypassrls,r.rolcreatedb,r.rolcreaterole,r.rolinherit,
-      profitia_access.runtime_descriptor() AS descriptor FROM pg_roles r WHERE r.rolname=current_user`)
+      profitia_access.runtime_descriptor() AS descriptor${extra} FROM pg_roles r WHERE r.rolname=current_user`, values)
     const d = row?.descriptor
     if (!row || row.database_name !== config.databaseName || row.role !== config.role || row.login !== config.role || ['rolsuper', 'rolbypassrls', 'rolcreatedb', 'rolcreaterole', 'rolinherit'].some(key => row[key] !== false) || !d || d.schemaVersion !== ACCESS_STORE_CONTRACT.schemaVersion || d.schemaDigest !== config.schemaDigest || d.applicationId !== config.applicationId || d.environment !== config.environment || d.projectId !== config.projectId || d.branchId !== config.branchId || d.databaseName !== config.databaseName || d.role !== config.role) fail()
-    return d
+    return row
   }
+  const descriptor = async query => (await authority(query)).descriptor
   const verifyScope = async (query, lease) => {
     if (!lease || !leases.has(lease)) fail()
     if (!(Date.parse(lease.expiresAt) > now())) throw new OperationDenied('ACCESS_BASIS_INVALID')
-    await descriptor(query)
     if (lease.serviceId !== undefined) {
-      if (!await serviceDescriptor(query)) throw new OperationDenied('ACCESS_BASIS_INVALID')
-      const row = await one(query, `SELECT txid_current()::text AS transaction_id,
+      const row = await authority(query, `,profitia_services.runtime_descriptor() AS service_descriptor,txid_current()::text AS transaction_id,
         profitia_services.scope_allows($1,$2::uuid,$3,$4) AS allowed`,
       [config.applicationId, lease.organisationId, lease.operation, lease.resourceId])
+      if (!validateServiceDescriptor(row.service_descriptor)) throw new OperationDenied('ACCESS_BASIS_INVALID')
       if (row.transaction_id !== lease.transactionId) fail()
       if (row.allowed !== true) throw new OperationDenied('ACCESS_BASIS_INVALID')
       return
     }
-    const row = await one(query, `SELECT txid_current()::text AS transaction_id,
+    const row = await authority(query, `,txid_current()::text AS transaction_id,
       profitia_access.scope_allows($1,$2::uuid,$3::uuid) AS allowed`,
     [config.applicationId, lease.organisationId, lease.userId])
     if (row?.transaction_id !== lease.transactionId) fail()
     if (row.allowed === false) throw new OperationDenied('ACCESS_BASIS_INVALID')
     if (row.allowed !== true) fail()
   }
-  const serviceDescriptor = async query => {
+  const validateServiceDescriptor = d => {
     if (!config.service) fail()
-    await descriptor(query)
-    const row = await one(query, 'SELECT profitia_services.runtime_descriptor() AS descriptor')
-    const d = row.descriptor
     if (d === null) return null
     if (!d || d.schemaVersion !== '1.0.0' || d.schemaDigest !== config.service.schemaDigest
       || d.profileId !== config.service.profileId || d.deploymentId !== config.service.deploymentId
@@ -96,6 +93,7 @@ export function createAccessStore({ binding, now = Date.now }) {
       || Date.parse(d.expiresAt)>now()+30000) fail()
     return d
   }
+  const serviceDescriptor = async query => validateServiceDescriptor((await authority(query, ',profitia_services.runtime_descriptor() AS service_descriptor')).service_descriptor)
   return Object.freeze({
     contract: ACCESS_STORE_CONTRACT,
     async resolveBinding(query, key) {

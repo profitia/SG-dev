@@ -201,6 +201,13 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
     assert.equal((await owner.query("SELECT pg_get_functiondef('srm.supplier_business_phase(uuid,text,uuid,text[])'::regprocedure) value")).rows[0].value,before)
    })
    await owner.query(own('008-supplier-native-work.sql'));await owner.query("INSERT INTO srm.supplier_work_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('008-supplier-native-work.sql')),'e'.repeat(40)])
+   await owner.query('SAVEPOINT inventory_installation')
+   await owner.query(own('023-financial-inventory-work.sql'))
+   await owner.query('ROLLBACK TO SAVEPOINT inventory_installation');await owner.query('RELEASE SAVEPOINT inventory_installation')
+   assert.equal((await owner.query("SELECT to_regclass('srm.financial_inventory_installation') value")).rows[0].value,null)
+   await owner.query(own('023-financial-inventory-work.sql'))
+   await owner.query("INSERT INTO srm.financial_inventory_installation SELECT true,$1,$2,$3,service_id FROM profitia_services.runtime_bindings WHERE login_role=$3",[hash(own('023-financial-inventory-work.sql')),'e'.repeat(40),EXECUTOR])
+   await owner.query(`GRANT EXECUTE ON FUNCTION srm.financial_inventory_descriptor() TO ${EXECUTOR}`)
    for(const[unit,mode]of Object.entries(SUPPLIER_NATIVE_WORK_UNITS))await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_NATIVE_UNIT',$3)",[unit,mode,future()])
    await owner.query(`GRANT USAGE ON SCHEMA profitia_request_work TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_request_work.descriptor(uuid,text),profitia_request_work.bind_scope(uuid,text,text,uuid,uuid),profitia_request_work.scope_allows(uuid,text,uuid,uuid,text),srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${EXECUTOR};GRANT SELECT,INSERT,UPDATE ON srm.msr_sources,srm.msr_projections TO ${EXECUTOR};GRANT SELECT ON srm.catalog_companies,srm.catalog_financial_facts,srm.catalog_financial_indicators TO ${EXECUTOR}`)
    for(const role of[FOREGROUND,EXECUTOR,...(full?[CORPORATE]:[])])await owner.query(`GRANT EXECUTE ON FUNCTION srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${role}`)
@@ -264,7 +271,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   const inspection=createSrmSupplierRequestInspection({...inspectionOptions,inspectionSchemaDigest:hash(core('015-delegated-private-inspection.sql')),inspectionBusinessBoundaryDigest:hash(own('007-supplier-private-inspection.sql'))}),reader=createSrmSupplierPrivateReader({inspection})
   const {continuationSchemaDigest:_continuation,delegatedSchemaDigest:_delegated,delegatedBusinessBoundaryDigest:_business,...workOptions}=inspectionOptions
   const nativeWork=createSrmSupplierNativeWork({...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))})
-  const nativeStore=createSrmSupplierNativeWorkStore({work:nativeWork,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql'))})
+  const nativeStore=createSrmSupplierNativeWorkStore({work:nativeWork,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql'))})
   const sourceOptions={pool:sourcePool,auditPool:sourceAudit,
    application:{appId:'srm-provider-source',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
    binding:{applicationId:'srm-provider-source',environment:'development',projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:SOURCE,deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',schemaDigest:hash(core('008-platform-ingestion.sql'))},requestSchemaDigest:hash(own('009-supplier-source-request.sql'))}
@@ -626,6 +633,24 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    assert.equal(await nativeStore.msr(foreign).read(c),null)
    assert((await owner.query('SELECT octet_length(original_bytes)::int n FROM srm.msr_sources WHERE organization_id=$1 AND nip=$2 AND record_id=$3',[A,OTHER_NIP,c.recordId])).rows[0].n>8*1024*1024)
   })
+  await t.test('one financial inventory commits archive, documents and finite metadata under one current audited Work',async()=>{
+   const s=selection(nativeA),f=financial(),at=new Date().toISOString()
+   const result=await nativeStore.financialInventory(s,f.rawResponse.pages,f.rawResponse.recordCount,at,['0000000001'])
+   assert(result.documents.length>0);assert.equal(result.candidates.candidates.length,0)
+   const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->'requestWork'->>'unitId'='SRM_FINANCIAL_INVENTORY' AND event->>'resourceId'=$1 ORDER BY event_id",[s.requestId])).rows.map(r=>r.event)
+   assert.deepEqual(events.map(e=>e.phase),['INTENT','OUTCOME'])
+   const before=(await owner.query("SELECT payload_jsonb_sha256 FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'",[A,NIP])).rows[0]
+   failOutcome=true
+   try{await assert.rejects(nativeStore.financialInventory(s,f.rawResponse.pages,f.rawResponse.recordCount,new Date(Date.now()+1000).toISOString(),['0000000001']),isOperationDenied)}finally{failOutcome=false}
+   assert.deepEqual((await owner.query("SELECT payload_jsonb_sha256 FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'",[A,NIP])).rows[0],before)
+   await assert.rejects(async()=>nativeStore.financialInventory({...s,organisationId:B},f.rawResponse.pages,1,at,['0000000001']),isOperationDenied)
+   await assert.rejects(async()=>nativeStore.financialInventory(s,financial(OTHER_NIP).rawResponse.pages,1,at,['0000000001']),isOperationDenied)
+   await nativeWork.run(s,'SRM_FINANCIAL_INVENTORY',null,async(_context,c)=>{
+    assert.equal((await c.query('SELECT * FROM srm.source_snapshots')).rowCount,0)
+    assert.equal((await c.query('UPDATE srm.msr_sources SET state=state')).rowCount,0)
+    assert.equal((await c.query("UPDATE srm.mgbi_source_archives SET record_count=record_count WHERE model='pl-krs-wp-record'")).rowCount,0)
+   })
+  })
   await t.test('native cache, registration, PKD and financial reproject use real stored sources and all reviewed READ purposes',async()=>{
    const s=selection(nativeA),record={id:'native-wp',identifiers:{pl_nip:NIP,pl_krs:'0000000001'},content:{current_excerpt:{dane:{dzial1:{danePodmiotu:{nazwa:'SYNTHETIC_CACHED_COMPANY'}},dzial3:{przedmiotDzialalnosci:{przedmiotPrzewazajacejDzialalnosci:[{kodDzial:'46',kodKlasa:'38',kodPodklasa:'Z',opis:'SYNTHETIC_ACTIVITY'}]}}}}}}
    const at=new Date().toISOString(),g=mapMgbiGeneralRecords([record],{type:'NIP',value:NIP},at),f=financial()
@@ -791,7 +816,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    const application={...sourceOptions.application,appId:'srm-corporate-source',deploymentId:'synthetic-company-publication',configurationVersion:'corporate-v1'}
    const shapeText=fs.readFileSync(new URL('../src/server/corporate-source-shape.json',import.meta.url),'utf8')
    const external={configurationVersion:'company-provider-v1',schemaDigest:hash(core('009-external-call-admission.sql')),nativeSchemaDigest:hash(core('012-native-external-transport.sql')),maximumResponseBytes:1024*1024}
-   const fullOptions={work:{...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,
+   const fullOptions={financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql')),work:{...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,
     corporate:{application,binding:{...sourceOptions.binding,applicationId:application.appId,role:CORPORATE,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool:corporatePool,auditPool:corporateAudit,publicationSchemaDigest:hash(own('004-corporate-source.sql')+own('005-corporate-source-access.sql')+shapeText)},
     mgbi:{apiKey:'synthetic-native-company-key',authScheme:'raw',source:{application:sourceOptions.application,binding:sourceOptions.binding,pool:sourcePool,auditPool:sourceAudit,external,syntheticOrigin},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}}
    const company=createSrmNativeCompanyLookup(fullOptions),FULL_NIP='5260250274'
@@ -950,8 +975,11 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    const profiling=(await owner.query('SHOW track_functions')).rows[0].track_functions==='all'
    const profile=async()=>{
     if((await owner.query('SHOW track_functions')).rows[0].track_functions!=='all')return null
-    const c=await servicePool.connect();try{await c.query('SELECT pg_stat_force_next_flush()')}finally{c.release()}
-    await serviceAudit.query('SELECT pg_stat_force_next_flush()');await owner.query('SELECT pg_stat_clear_snapshot()')
+    // Both pooled backends may retain statistics from earlier parallel Work.
+    // Flush every fixture connection before taking a delta, not an arbitrary one.
+    const clients=await Promise.all([servicePool.connect(),servicePool.connect()])
+    try{await Promise.all(clients.map(async c=>{await c.query('SELECT pg_stat_force_next_flush()');await c.query('SELECT 1')}))}finally{clients.forEach(c=>c.release())}
+    await serviceAudit.query('SELECT pg_stat_force_next_flush()');await serviceAudit.query('SELECT 1');await owner.query('SELECT pg_stat_clear_snapshot()')
     return (await owner.query("SELECT coalesce(sum(calls),0)::int n FROM pg_stat_user_functions WHERE schemaname='srm' AND funcname='current_supplier_work'")).rows[0].n
    }
    const prepare=async org=>{
@@ -991,7 +1019,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
      }),isOperationDenied)
     }
    }
-   if(profiling)assert(samples[1].currentSupplierWorkCalls<samples[0].currentSupplierWorkCalls/10)
+   if(profiling)assert(samples[1].currentSupplierWorkCalls<samples[0].currentSupplierWorkCalls/10,JSON.stringify(samples))
    t.diagnostic(JSON.stringify({event:'srm_private_financial_batch_profile',scope:'isolated_synthetic_full_native_work',samples}))
    if(process.env.SRM_FINANCIAL_PERFORMANCE_OUTPUT)fs.writeFileSync(process.env.SRM_FINANCIAL_PERFORMANCE_OUTPUT,JSON.stringify({scope:'isolated_synthetic_full_native_work',samples},null,2))
   })

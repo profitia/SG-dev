@@ -26,8 +26,11 @@ export function createRequestWorkScope({binding,work,now=Date.now}){
   ||!digest.test(work.inputDigest??'')||!digest.test(work.schemaDigest??''))throw TypeError('Explicit current native SQL work unit required')
  const b=freeze(structuredClone(binding)),c=freeze(structuredClone(work)),handles=new WeakMap()
  const one=async(query,sql,args)=>{const r=await query(sql,args);if(!Array.isArray(r?.rows)||r.rows.length!==1)deny();return r.rows[0]}
- const read=async query=>{
-  const d=(await one(query,'SELECT profitia_request_work.descriptor($1::uuid,$2) AS descriptor',[c.requestId,c.unitId])).descriptor
+ const inspect=async(query,context)=>{
+  const r=await one(query,'SELECT profitia_request_work.descriptor($1::uuid,$2) AS descriptor'+
+   (context?',profitia_request_work.scope_allows($1::uuid,$2,$3::uuid,$4::uuid,$5) AS allowed':''),
+   [c.requestId,c.unitId,...(context?[context.organisationId,context.subjectUserId,c.accessMode]:[])])
+  const d=r.descriptor
   if(!d||d.schemaVersion!=='1.0.0'||d.schemaDigest!==c.schemaDigest||d.owner!=='profitia_access_owner'
    ||!['applicationId','environment','projectId','branchId','databaseName','role'].every(k=>d[k]===b[k])
    ||d.requestId!==c.requestId||d.unitId!==c.unitId||d.accessMode!==c.accessMode||d.effect!=='PRIVATE_SQL_WORK'
@@ -36,8 +39,9 @@ export function createRequestWorkScope({binding,work,now=Date.now}){
    ||typeof d.parentApplicationId!=='string'||!d.parentApplicationId.length||typeof d.resourceId!=='string'||!d.resourceId.length
    ||typeof d.sourceRef!=='string'||d.sourceRef.length<1||d.sourceRef.length>256
    ||!(Date.parse(d.policyExpiresAt)>now())||!(Date.parse(d.expiresAt)>now()))deny('ACCESS_BASIS_INVALID')
-  return freeze(structuredClone(d))
+  return {descriptor:freeze(structuredClone(d)),allowed:r.allowed}
  }
+ const read=async query=>(await inspect(query)).descriptor
  const stable=(a,b)=>['applicationId','environment','projectId','branchId','databaseName','role','requestId','unitId','accessMode','payloadDigest','policyVersion','transactionId','parentApplicationId','executorServiceId','subjectUserId','organisationId','delegationId','resourceId','schemaDigest','sourceRef','policyExpiresAt'].every(k=>a[k]===b[k])
  function evidence(h){if(!handles.has(h))deny();return freeze({requestId:c.requestId,unitId:c.unitId,accessMode:c.accessMode,inputDigest:c.inputDigest,policyVersion:h.policyVersion,policySourceRef:h.sourceRef,policyExpiresAt:h.policyExpiresAt,transactionId:h.transactionId,schemaDigest:c.schemaDigest})}
  const owned=(query,h,context)=>{
@@ -60,8 +64,8 @@ export function createRequestWorkScope({binding,work,now=Date.now}){
    if(result.allowed!==true)deny('AUDIT_UNAVAILABLE')
   },
   async verify(query,h,context){
-   owned(query,h,context);if(!stable(await read(query),h))deny('ACCESS_BASIS_INVALID')
-   const result=await one(query,'SELECT profitia_request_work.scope_allows($1::uuid,$2,$3::uuid,$4::uuid,$5) AS allowed',[c.requestId,c.unitId,context.organisationId,context.subjectUserId,c.accessMode])
+   owned(query,h,context);const result=await inspect(query,context)
+   if(!stable(result.descriptor,h))deny('ACCESS_BASIS_INVALID')
    if(result.allowed!==true)deny('ACCESS_BASIS_INVALID')
   },
  })

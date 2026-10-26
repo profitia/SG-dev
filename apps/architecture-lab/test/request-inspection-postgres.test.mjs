@@ -116,16 +116,18 @@ test('private inspection reuses accepted phases and canonical physical audit wit
     let failOutcome=false,dropOutcome=false,dropIntent=false,providerActive=true,providerCalls=0,actions=0
     const actualIntents=[]
     const readExternalAccount=createClerkAccountStatusReader({environment:'development',issuer:'https://identity.fixture.test',client:{users:{getUser:async subject=>{providerCalls++;return{id:subject,banned:!providerActive,locked:false,deprovisioned:false}}}}})
+    const statements=[]
     const privateOptions={
       application:{appId:'supplier-jobs',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-worker',configurationVersion:'worker-fixture-v1',organisationId:null,identityIssuer:'urn:profitia:database-service-runtime:v1',features:['job_execution'],operations:['job.execute']},
       binding:{applicationId:'supplier-jobs',environment:'development',projectId:'isolated-delegated-project',branchId:'isolated-delegated-branch',databaseName:DATABASE,role:EXECUTOR,schemaDigest:hash(source('001-internal-access.sql')),service:{schemaDigest:hash(source('005-service-read.sql')),profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-worker',configurationVersion:'worker-fixture-v1'}},
       job:{schemaDigest:hash(migration),targetOperation:'supplier.report.refresh',supplierSchemaDigest:hash(supplierMigration)},
       privateContinuation:{schemaDigest:hash(phaseSql),delegatedSchemaDigest:hash(extension)},
-      independentQuery:runtime.query.bind(runtime),readExternalAccount,
+      independentQuery:(sql,args)=>{statements.push(sql);return runtime.query(sql,args)},readExternalAccount,
       transact:async(work,limits)=>{
         const c=new Client({connectionString:runtimeUrl.toString()});await c.connect()
         const timer=setTimeout(()=>{void c.end().catch(()=>{})},limits.timeoutMs)
         try{await c.query('BEGIN');const v=await work({transaction:c,query:async(sql,args)=>{
+          statements.push(sql)
           if(dropIntent&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='INTENT')return{rows:[{recorded:true}]}
           if(dropOutcome&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME')return{rows:[{recorded:true}]}
           if(failOutcome&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME')throw Error('Synthetic canonical OUTCOME unavailable')
@@ -308,13 +310,21 @@ test('private inspection reuses accepted phases and canonical physical audit wit
       const before=await counts(),prior=(await owner.query('SELECT attempt_count FROM profitia_jobs.dispatches WHERE job_id=$1',[unitRequest])).rows[0].attempt_count
       let calls=0
       for(let i=0;i<2;i++){
+        statements.length=0
         const receipt=await runUnit(unitRequest,async(context,c)=>{
           calls++;assert.equal(context.actorKind,'SERVICE');assert.equal(context.subjectUserId,U);assert.notEqual(context.actorId,U)
           assert.equal(context.requestContinuation,undefined);assert.equal(context.requestInspection,undefined);assert.equal(context.requestReservation,undefined);assert.equal(context.dispatchAdmission,undefined)
           assert.equal(context.requestWork.accessMode,'WRITE');assert.equal(context.requestWork.transactionId,(await c.query('SELECT txid_current()::text tx')).rows[0].tx)
+          assert.deepEqual((await c.query("SELECT current_setting('statement_timeout') statement,current_setting('lock_timeout') lock,current_setting('idle_in_transaction_session_timeout') idle")).rows[0],{statement:'15s',lock:'3s',idle:'15s'})
           await c.query('INSERT INTO phase_business.results VALUES($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING',[unitRequest,'NATIVE_DOMAIN_RESULT',sqlUnit().inputDigest,A,U])
         })
         assert.deepEqual(receipt.value,{requestId:unitRequest,status:'ACCEPTED'})
+        const scopes=statements.filter(q=>q.includes('profitia_jobs.scope_allows'))
+        assert.equal(scopes.length,3)
+        assert(scopes.every(q=>q.includes('supplier_runtime_descriptor()')&&q.includes('profitia_jobs.runtime_descriptor()')&&q.includes('txid_current()')))
+        assert(statements.filter(q=>q.includes('profitia_request_work.scope_allows')).every(q=>q.includes('profitia_request_work.descriptor')))
+        assert.equal(statements.filter(q=>q.includes('set_config')).length,1)
+        t.diagnostic(JSON.stringify({event:'native_work_control_roundtrips',statements:statements.length,jobCheckpoints:scopes.length}))
         const events=(await owner.query('SELECT event FROM profitia_access.security_events WHERE decision_id=$1 ORDER BY event_id',[receipt.decisionId])).rows.map(x=>x.event)
         assert.deepEqual(events.map(e=>e.phase),['INTENT','OUTCOME']);assert.deepEqual(events[0].requestWork,events[1].requestWork)
         assert.equal(events[0].requestWork.policySourceRef,'SYNTHETIC_ONLY');assert(Date.parse(events[0].requestWork.policyExpiresAt)>Date.now())

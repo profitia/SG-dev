@@ -11,7 +11,13 @@ async function queryNative(target: pg.Pool | PoolClient, sql: string, values: re
     : sql.includes('profitia_jobs.lock_job(') ? 'DELEGATED_JOB_LOCK'
     : sql.includes('.append_audit(') ? 'AUDIT_APPEND' : 'NATIVE_SQL';
   try {
-    const result = await measureSupplierStage('E1_SQL',()=>target.query(sql, [...values]));
+    const stage=sql.includes('.scope_allows(')?sql.includes('profitia_jobs.scope_allows')?'E1_JOB_SCOPE'
+      :sql.includes('profitia_request_work.scope_allows')?'E1_WORK_SCOPE'
+      :sql.includes('profitia_ingestion.scope_allows')?'E1_SOURCE_SCOPE':undefined
+      :sql.includes('.append_audit(')?'E1_AUDIT':sql.includes("set_config('statement_timeout'")?'E1_TIMEOUT_SETUP'
+      :sql.includes('runtime_descriptor(')?'E1_DESCRIPTOR':undefined;
+    const query=()=>target.query(sql,[...values]);
+    const result = await measureSupplierStage('E1_SQL',()=>stage?measureSupplierStage(stage,query):query());
     if (kind === 'SERVICE_DESCRIPTOR') {
       const remainingMs = Date.parse(result.rows[0]?.descriptor?.expiresAt) - Date.now();
       if (remainingMs > 30000) console.warn('E1 service proof starts outside local clock window', { remainingMs });

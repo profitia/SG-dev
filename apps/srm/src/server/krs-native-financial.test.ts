@@ -39,6 +39,21 @@ test('native Financial composition keeps the original RDF/MSR/archive path and p
  await work.publish(work.result);assert.ok(f.events.includes('persist'));assert.ok(f.events.includes('public'))
  await assert.rejects(work.publish(work.result));assert.equal(f.events.filter(x=>x==='persist').length,1)
 })
+test('PILOT2 uses one prepared inventory while other consumers retain their accepted continuation',async()=>{
+ const f=await fixture()
+ f.ports.prepareFinancialInventory=async(org,actual,pages,count,retrievedAt,allowed)=>{
+  assert.equal(org,f.selection.organisationId);assert.equal(actual,nip)
+  assert.deepEqual(pages,f.result.rawResponse!.pages);assert.equal(count,1);assert.equal(retrievedAt,at);assert.deepEqual(allowed,[krs])
+  f.events.push('inventory')
+ }
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,undefined,'COMPLETE_IN_REQUEST')
+ assert.equal(work.pending,false);assert.equal(f.events.filter(x=>x==='inventory').length,1)
+ assert(!f.events.includes('archive'));assert(!f.events.includes('documents'));assert(f.events.includes('msr'))
+ await work.publish(work.result);assert(f.events.includes('public'))
+ const g=await fixture();g.ports.prepareFinancialInventory=async()=>assert.fail('The original consumer did not opt in')
+ assert.equal((await prepareKrsFinancialWork(g.ports,g.selection,g.identity,g.check,()=>now)).pending,true)
+ assert(g.events.includes('archive'));assert(g.events.includes('documents'))
+})
 test('invalid or stale identity denies before native registration and paid acquisition',async()=>{
  const f=await fixture();f.identity.identity.nip='7740001455'
  await assert.rejects(prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now));assert.deepEqual(f.events,[])
