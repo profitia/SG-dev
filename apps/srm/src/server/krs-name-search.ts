@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import type {CompanySnapshot,VerifiedIdentityV1} from '@profitia/krs-registry-contracts';
 import type {SupplierCandidate,SupplierSelection,SupplierReportData,SupplierXRayCard} from '@profitia/srm-xray';
 import type {MgbiFinancialResult} from './mgbi-financial';
@@ -47,7 +48,7 @@ export function createKrsNameSearch(ports:KrsNamePorts){
   async function checked(request:Request,ref:string){
     const selected=await registry.readSelection(request,ref);
     if(selected.identity.evidenceRef!==ref)throw Error('KRS_SELECTION_MISMATCH');
-    await krsGeneral(selected.snapshot,selected.identity,now());return selected;
+    await diagnosticRun('MAPPING',()=>krsGeneral(selected.snapshot,selected.identity,now()));return selected;
   }
   return Object.freeze({
     async search(request:Request,query:string){
@@ -60,13 +61,13 @@ export function createKrsNameSearch(ports:KrsNamePorts){
       if(!/^\d{10}$/.test(krs))throw Error('INVALID_REQUEST');
       const selected=await registry.verify(request,krs);
       if(selected.identity.selectedKrs!==krs)throw Error('KRS_SELECTION_MISMATCH');
-      await krsGeneral(selected.snapshot,selected.identity,now());
+      await diagnosticRun('MAPPING',()=>krsGeneral(selected.snapshot,selected.identity,now()));
       return {krs,name:selected.identity.identity.officialName,nip:selected.identity.identity.nip,
         locality:selected.snapshot.address?.city??null,selectionRef:selected.identity.evidenceRef};
     },
     async lookup(request:Request,selectionRef:string,key:string){
       if(!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(selectionRef)||!validRequestIdempotencyKey(key))throw Error('INVALID_REQUEST');
-      const selected=await checked(request,selectionRef),baseGeneral=await krsGeneral(selected.snapshot,selected.identity,now());
+      const selected=await checked(request,selectionRef),baseGeneral=await diagnosticRun('MAPPING',()=>krsGeneral(selected.snapshot,selected.identity,now()));
       let history:RegistryHistory|undefined,general=baseGeneral;
       let section=unavailableFinancial(new Date(now()).toISOString(),'MGBI_FINANCIAL_UNAVAILABLE'),metadata:SupplierReportData|null=null,workPending=false;
       try{
@@ -80,7 +81,7 @@ export function createKrsNameSearch(ports:KrsNamePorts){
         if(current.identity.selectedKrs!==selected.identity.selectedKrs||current.identity.identity.nip!==selected.identity.identity.nip
           ||current.identity.source.rawDigest!==selected.identity.source.rawDigest||current.identity.source.contentDigest!==selected.identity.source.contentDigest
           ||current.identity.source.sourceVersion!==selected.identity.source.sourceVersion||current.identity.source.retrievedAt!==selected.identity.source.retrievedAt)throw Error('KRS_SELECTION_SUPERSEDED');
-        const eligible=await reconcileKrsFinancial(current.identity,acquired,now(),history);
+        const eligible=await diagnosticRun('KRS_RECONCILE',()=>reconcileKrsFinancial(current.identity,acquired,now(),history));
         workPending=acquired.workPending===true&&!eligible.errorCode;
         // Only filtered records/facts enter the existing native financial writer.
         if(!eligible.errorCode&&!workPending){

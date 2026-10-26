@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import { SaxesParser } from "saxes";
 import { createHash } from "node:crypto";
 import type { MsrOriginal } from "./msr-source";
@@ -124,6 +125,7 @@ function statement(role: string): MsrStatement {
 
 /** Strict namespace-aware XML parsing only. No schema imports, scripts, URLs or external entities are executed. */
 export function parseMsrOriginal(source: MsrOriginal, expected?: MsrExpectedIdentity): MsrParsed {
+ return diagnosticRun('MSR_PARSE',()=>{
   const report = source.files.filter(f => /\.(xhtml|html|xbrl)$/i.test(f.name));
   if (report.length !== 1) invalid("MSR_REPORT_SET_UNSUPPORTED");
   const root = parseXml(report[0].text), nodes = walk(root);
@@ -265,6 +267,8 @@ export function parseMsrOriginal(source: MsrOriginal, expected?: MsrExpectedIden
   }
   return { mappingVersion: MSR_MAPPING_VERSION, parserRule:MSR_PARSER_RULE, sourceChecksum: source.checksum, standard: "IAS_IFRS", contexts, units, facts,
     warnings: [...warnings].sort(), relationships };
+
+ })
 }
 
 export type MsrExpectedIdentity = { nip:string; from:string; to:string; scope:"standalone"|"consolidated" };

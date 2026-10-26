@@ -17,7 +17,7 @@ test('telemetry preserves every financial, provider, cache and access business s
   const expected=['apps/srm/src/server/runtime-environment.ts','apps/srm/src/server/lookup-diagnostics.ts','apps/srm/src/server/db.ts','apps/srm/app/api/xray/search/route.ts','apps/srm/app/api/xray/report-data/route.ts']
   assert.deepEqual(proof.changedFiles,expected)
   for(const [name,hash]of Object.entries(proof.originalFiles))if(!expected.includes(name))assert.equal(sha(fs.readFileSync(path.join(output,name))),hash,name)
-  assert.deepEqual(proof.addedFiles,['apps/srm/src/server/supplier-telemetry.ts'])
+  assert.deepEqual(proof.addedFiles,['apps/srm/src/server/supplier-telemetry.ts','apps/srm/src/server/diagnostic-trace.ts','apps/srm/src/server/diagnostic-pg.ts'])
   assert.equal(sha(fs.readFileSync(path.join(output,proof.addedFiles[0]))),sha(fs.readFileSync(path.join(repo,proof.addedFiles[0]))))
   assert.throws(()=>instrumentPilot2(repo,output,proof),/unchanged historical source/)
   assert.throws(()=>prepareBaseline(repo,target,path.join(root,'unexpected'),'UNKNOWN'),/explicitly accepted/)

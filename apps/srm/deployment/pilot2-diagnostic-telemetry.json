@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-PILOT2-COMPLETE-DIAGNOSTIC-TELEMETRY-20261026",
+  "telemetrySchema": "srm.diagnostic-trace/1.0",
+  "sourceAuthority": "8d75d1ce437a82a4a2b24fda1774e2178a0fced4",
+  "producer": {
+    "projectKey": "ARCHITECTURE",
+    "taskId": "ARCHITECTURE-PILOT2-COMPLETE-DIAGNOSTIC-TELEMETRY-20261026",
+    "repository": "profitia/SG-dev",
+    "pullRequest": 738,
+    "sourceSha": "231a4efff7d25ad0a3bee5b0f5d41357b4e9c777"
+  },
+  "developmentServiceId": "srv-dbeh6srrjlhs73fmikrg",
+  "historicalBusinessBaselineSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+  "stage": "PRIVATE_OPERATIONS",
+  "enabledOnlyForExactDevelopmentService": true,
+  "disable": "SRM_DIAGNOSTIC_TELEMETRY=off",
+  "maximumSpans": 4096,
+  "maximumResources": 1024,
+  "maximumLogChunkBytes": 8192,
+  "correlationTtlMs": 300000,
+  "previousAcceptedRuntime": {
+    "version": "1.6.3",
+    "sourceSha": "aaef2d7ca23d9f845097e28900a9a0a2783e1f8c",
+    "sourceDigest": "c9fa00d3670a78029aa0166275e2c99be48538b4878e79756646c51c76b1c62c"
+  },
+  "acceptedInstrumentedRuntime": {
+    "version": "1.6.3",
+    "sourceSha": "231a4efff7d25ad0a3bee5b0f5d41357b4e9c777",
+    "sourceDigest": "b711122e672ac75180a88e95ef48d64519bd29219f2702dafac23089dc7a32f5"
+  },
+  "observationsDoNotAuthorize": true,
+  "businessOrSecuritySemanticsChanged": false,
+  "sqlOrProviderCallsFromSyntheticHealth": 0,
+  "freshBenchmarkAuthorized": false,
+  "databaseServerTiming": "UNAVAILABLE_WITHOUT_APPROVED_SERVER_PROFILING",
+  "deploymentStatus": "SOURCE_CANDIDATE_NOT_DEPLOYED"
+}

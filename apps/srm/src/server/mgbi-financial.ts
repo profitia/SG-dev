@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import { verifiedXmlMultiplier, equalAmounts, multiplySourceAmount } from "./financial-unit";
 import { withOrganization, type DatabasePool } from "./db";
@@ -167,6 +168,7 @@ function isInternationalStatementWithoutFacts(records: unknown[], identifier: Co
 }
 
 export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyIdentifier, retrievedAt: string, totalCount = records.length, history?:RegistryHistory): MgbiFinancialResult {
+ return diagnosticRun('FINANCIAL_NORMALIZE',()=>{
   const idKey = identifier.type === "KRS" ? "pl_krs" : "pl_nip";
   const identityMatching = records.filter((record) => string(field(record, "identifiers", idKey)) === identifier.value);
   if (records.length && !identityMatching.length) return empty("ERROR", retrievedAt, "MGBI_IDENTIFIER_MISMATCH", "IDENTIFIER_MISMATCH");
@@ -337,6 +339,8 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
     facts,
     errorCode: null,
   };
+
+ })
 }
 
 export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options: MgbiGeneralOptions & {companyHistory?:RegistryHistory} = {}): Promise<MgbiFinancialResult> {
@@ -374,6 +378,7 @@ export async function fetchMgbiFinancial(identifier: CompanyIdentifier, options:
 /** Offline reconstruction from the tenant's verified archive. No provider call,
  * no source receipt deletion, and no implicit cross-version gap filling. */
 export async function reprojectFinancialArchive(organizationId:string,nip:string,history?:RegistryHistory,pool?:DatabasePool,includeOriginalResponse=false):Promise<MgbiFinancialResult|null> {
+ return diagnosticRun('ARCHIVE_REPROJECT',async ()=>{
   return withOrganization(organizationId,async client=>{
     const row=(await client.query<FinancialArchive & {retrieved_at:Date|string}>(
       "SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,last_checked_at AS retrieved_at FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'",[organizationId,nip])).rows[0];
@@ -383,4 +388,6 @@ export async function reprojectFinancialArchive(organizationId:string,nip:string
     const result=mapMgbiFinancialRecords(financialRecordsFromPages(pages),{type:"NIP",value:nip},new Date(row.retrieved_at).toISOString(),row.record_count,history);
     return includeOriginalResponse?{...result,rawResponse:{pages,recordCount:row.record_count}}:result;
   },pool);
+
+ })
 }

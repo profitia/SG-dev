@@ -1,3 +1,5 @@
+import {instrumentDiagnosticPool} from './diagnostic-pg'
+import {diagnosticRun} from './diagnostic-trace'
 import pg from 'pg'
 import {createHash,randomUUID} from 'node:crypto'
 import {AsyncLocalStorage} from 'node:async_hooks'
@@ -84,9 +86,9 @@ async function createRuntime(env:Env){
   {createAdmittedGusSource,createGusMapper,GusError,GUS_ORIGIN,GUS_PATH},{createNipResolver}]=await Promise.all([
   import('@profitia/platform-contracts/platform-ingestion'),import('@profitia/krs-registry-runtime/identity'),import('@profitia/krs-registry-runtime/catalog'),
   import('@profitia/krs-registry-runtime/native'),import('@profitia/krs-registry-runtime/gus'),import('@profitia/krs-registry-runtime/nip-resolver')])
- const reader=new pg.Pool(pilot2RegistryConnection(env.KRS_PILOT2_READER_URL,'krs_reader'))
+ const reader=instrumentDiagnosticPool(new pg.Pool(pilot2RegistryConnection(env.KRS_PILOT2_READER_URL,'krs_reader')),'REGISTRY_READER')
  const sourceOptions=pilot2RegistryConnection(env.KRS_PILOT2_SOURCE_URL,'krs_ingest')
- const source=new pg.Pool(sourceOptions),audit=new pg.Pool({...sourceOptions,max:1}),catalog=new Catalog(reader)
+ const source=instrumentDiagnosticPool(new pg.Pool(sourceOptions),'REGISTRY_SOURCE'),audit=instrumentDiagnosticPool(new pg.Pool({...sourceOptions,max:1}),'INDEPENDENT_AUDIT'),catalog=new Catalog(reader)
  for(const pool of [reader,source,audit])pool.on('error',()=>console.error('PILOT2 registry database unavailable'))
  const host={...createSrmNativePgDriver(source,audit),
   application:{appId:'krs-registry-source',profileId:'PLATFORM_INTERNAL' as const,environment:'development' as const,
@@ -117,7 +119,7 @@ async function createRuntime(env:Env){
   krs:async(mapping,key,signal)=>{try{return await measureSupplierStage('KRS_CURRENT',()=>official.acquire(mapping,key,signal))}
    catch(error){const code=(error as {code?:string})?.code;if(code&&/^KRS_HTTP_(404|429|5[0-9]{2})$/.test(code))throw new GusError(code);throw error}},
   timeoutMs:target.providerRouting.primaryTimeoutMs,telemetry:event=>console.info('SRM registry telemetry',event)})
- async function selected(snapshot:Awaited<ReturnType<InstanceType<typeof Catalog>['read']>>,nip:string,signal:AbortSignal){
+ async function selectedObserved(snapshot:Awaited<ReturnType<InstanceType<typeof Catalog>['read']>>,nip:string,signal:AbortSignal){
   if(!snapshot||snapshot.nip!==nip)return deny()
   const identity=await resolveIdentity({selectedKrs:snapshot.canonicalKrs},catalog,Date.now())
   if(identity.status!=='VERIFIED'||identity.identity.nip!==nip||identity.evidenceRef!==snapshot.evidenceRef)return deny()
@@ -128,18 +130,19 @@ async function createRuntime(env:Env){
   issuedSelections.set(selection,JSON.stringify(selection))
   return {snapshot,selection}
  }
+ const selected:typeof selectedObserved=(...args)=>diagnosticRun('KRS_SELECTED',()=>selectedObserved(...args))
  return Object.freeze({async resolve(nip:string,signal:AbortSignal){
   const key=createHash('sha256').update('srm-pilot2-nip:'+randomUUID()+':'+nip).digest('hex')
   const result=await resolver.resolve(nip,key,signal);if(result.status==='FALLBACK')return result
   const snapshot=await catalog.read(result.value.snapshot.canonicalKrs)
   if(!snapshot||snapshot.evidenceRef!==result.value.snapshot.evidenceRef||snapshot.nip!==nip)return deny()
   return {status:'PRIMARY' as const,selection:(await selected(snapshot,nip,signal)).selection}
- },async accepted(reference:string,nip:string,signal:AbortSignal){
+ },async accepted(reference:string,nip:string,signal:AbortSignal){return diagnosticRun('KRS_ACCEPTED',async()=>{
   if(!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(reference)||!/^\d{10}$/.test(nip))return deny()
   const snapshot=await catalog.read(reference.split(':')[1])
   if(!snapshot||snapshot.evidenceRef!==reference||snapshot.nip!==nip)return deny()
   return selected(snapshot,nip,signal)
- }})
+ })}})
 }
 let runtime:ReturnType<typeof createRuntime>|undefined,configuration:string|undefined
 export function getPilot2Registry(env:Env=process.env){

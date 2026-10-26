@@ -1,3 +1,4 @@
+import {diagnosticAsync,diagnosticSync,diagnosticAuditCategory,diagnosticPhaseSourceDigest} from './diagnostic-phase.mjs'
 import {requestOperationPolicy,REQUEST_OPERATIONS} from './request-operations.mjs'
 import { createHash } from 'node:crypto'
 import { createAccessStore, DATABASE_SERVICE_ISSUER } from './access-store.mjs'
@@ -214,12 +215,12 @@ function createBoundOperationHost(options, serviceMode) {
             return identityBinding
           } })
           if (typeof authenticate !== 'function') unavailable()
-          const actor = await authenticate(request)
+          const actor = await diagnosticAsync('E1_CONTEXT',()=>authenticate(request))
           if (actor && (!bindingRead || !identityBinding)) unavailable()
           return actor
         },
-        recordAudit: event => delegated&&proof&&event.phase==='INTENT'&&event.decision==='ALLOW'
-          ?reportAdmission.appendJobIntent(independentQuery,proof,event):scopeStore.appendAudit(independentQuery, event),
+        recordAudit: event => diagnosticAsync(diagnosticAuditCategory(event),()=>delegated&&proof&&event.phase==='INTENT'&&event.decision==='ALLOW'
+          ?reportAdmission.appendJobIntent(independentQuery,proof,event):scopeStore.appendAudit(independentQuery, event)),
         withTransaction: async ({ actor, request }, run) => {
           if (!serviceMode && !identityBinding && !proof) unavailable()
           let entered = false, completed = false, closed = false, callbackResult,sourceAttempted=false
@@ -233,21 +234,21 @@ function createBoundOperationHost(options, serviceMode) {
                 [`${transactionTimeoutMs}ms`,`${transactionOptions.maxWaitMs}ms`])
               if (closed) unavailable()
               if(delegated && proof)await reportAdmission.bindJob(query,proof,request.resourceId)
-              const lease = proof && !serviceMode?await store.lockAdmittedReport(query,{actor,request,admission:reportAdmission,proof}):delegated ? await jobStore.lockJob(query,{actor,request}) : serviceMode
+              const lease = await diagnosticAsync('E1_CONTEXT',async()=>proof && !serviceMode?await store.lockAdmittedReport(query,{actor,request,admission:reportAdmission,proof}):delegated ? await jobStore.lockJob(query,{actor,request}) : serviceMode
                 ? await store.lockServiceRead(query, { actor, organisationId: request.organisationId, operation: request.operation, resourceId: request.resourceId })
-                : await store.lockAccess(query, { actor, identityBinding, organisationId: request.organisationId })
+                : await store.lockAccess(query, { actor, identityBinding, organisationId: request.organisationId }))
               const scope = Object.freeze({ applicationId: binding.applicationId, environment: binding.environment, userId: lease.userId, organisationId: lease.organisationId,
                 ...(serviceMode ? { serviceId: lease.serviceId, operation: lease.operation, resourceId: lease.resourceId } : {}) })
               let moduleEvidence
               if (moduleGuard) {
-                const evidence = await moduleGuard.bind(query, scope)
-                await store.verifyModuleAudit(query, module.auditSchemaDigest)
+                const evidence = await diagnosticAsync('E1_CONTEXT',()=>moduleGuard.bind(query, scope))
+                await diagnosticAsync('E1_DESCRIPTOR',()=>store.verifyModuleAudit(query, module.auditSchemaDigest))
                 moduleEvidence = freeze({ ...evidence, moduleSchemaDigest: module.schemaDigest, auditSchemaDigest: module.auditSchemaDigest })
               }
               const resources = delegated ? {resource:lease.state.resource} : freeze(copy(await readResources({ actor, request, scope, query, transaction })))
               if (closed || !resources || Object.getPrototypeOf(resources) !== Object.prototype || Object.keys(resources).some(key => !['resource', 'inputs'].includes(key))) unavailable()
               if (serviceMode && resources.inputs !== undefined) unavailable()
-              await scopeStore.verifyScope(query, lease)
+              await diagnosticAsync('E1_SCOPE',()=>scopeStore.verifyScope(query, lease))
               const admittedObservation=delegated&&proof?reportAdmission.jobObservation(lease.state):null
               const observation=delegated&&!admittedObservation?await readExternalAccount(lease.state.delegation.identityKey):null
               if(closed)unavailable()
@@ -255,7 +256,7 @@ function createBoundOperationHost(options, serviceMode) {
                 ? await requestLedger.loadPolicy(query, { actor, request, resource:resources.resource }) : undefined
               const phasePolicy=privatePhaseLedger?await privatePhaseLedger.loadPhase(query,{actor,request,lease}):null
               const inspectionPolicy=inspectionStore?await inspectionStore.load(query,{request,lease}):null
-              const nativeWorkPolicy=workStore?await workStore.load(query,{request,lease}):null
+              const nativeWorkPolicy=workStore?await diagnosticAsync('E1_POLICY',()=>workStore.load(query,{request,lease})):null
               let reserveStarted = false, completeStarted = false, ownedReservation
               callbackResult = await run({
                 state: { ...lease.state, resource: resources.resource, ...(resources.inputs === undefined ? {} : { inputs: resources.inputs }),
@@ -299,10 +300,10 @@ function createBoundOperationHost(options, serviceMode) {
                     if(closed)unavailable()
                   }
                 }:{}),
-                ...(nativeWorkPolicy?{recordWorkIntent:async event=>{if(closed)unavailable();await scopeStore.appendAudit(query,event,lease);if(closed)unavailable()},
-                  bindWork:async context=>{if(closed)unavailable();await workStore.bind(query,nativeWorkPolicy,context)},
-                  verifyWork:async context=>{if(closed)unavailable();await workStore.verify(query,nativeWorkPolicy,context)}}:{}),
-                ...(inspectionPolicy?{recordInspectionIntent:async event=>{if(closed)unavailable();await scopeStore.appendAudit(query,event,lease);if(closed)unavailable()},
+                ...(nativeWorkPolicy?{recordWorkIntent:async event=>{if(closed)unavailable();await diagnosticAsync('E1_INTENT',()=>scopeStore.appendAudit(query,event,lease));if(closed)unavailable()},
+                  bindWork:async context=>{if(closed)unavailable();await diagnosticAsync('E1_CONTEXT',()=>workStore.bind(query,nativeWorkPolicy,context))},
+                  verifyWork:async context=>{if(closed)unavailable();await diagnosticAsync('E1_SCOPE',()=>workStore.verify(query,nativeWorkPolicy,context))}}:{}),
+                ...(inspectionPolicy?{recordInspectionIntent:async event=>{if(closed)unavailable();await diagnosticAsync('E1_INTENT',()=>scopeStore.appendAudit(query,event,lease));if(closed)unavailable()},
                   bindInspection:async context=>{if(closed)unavailable();await inspectionStore.bind(query,inspectionPolicy,context)},
                   verifyInspection:async context=>{if(closed)unavailable();await inspectionStore.verify(query,inspectionPolicy,context)}}:{}),
                 ...(moduleEvidence ? { moduleEvidence } : {}),
@@ -321,8 +322,8 @@ function createBoundOperationHost(options, serviceMode) {
                   return jobStore.observeCommitted(query,lease,admission,receipt)
                 }}:{}),
                 transaction, transactionalEffects: true, outputBoundaryVersion: resources.resource?.projectionVersion,
-                projectOutput: (value, context) => projectOutput(value, context, transaction),
-                recordOutcome: event => scopeStore.appendAudit(query, event, lease),
+                projectOutput: (value, context) => diagnosticAsync('E1_PROJECT',async()=>projectOutput(value, context, transaction)),
+                recordOutcome: event => diagnosticAsync('E1_OUTCOME',()=>scopeStore.appendAudit(query, event, lease)),
                 ...(prepareInputs === undefined ? {} : { prepareInputs: async context => {
                   if (closed) unavailable()
                   await prepareInputs({ context, query, transaction })
@@ -336,7 +337,7 @@ function createBoundOperationHost(options, serviceMode) {
                 } }),
               })
               if (closed) unavailable()
-              await scopeStore.verifyScope(query, lease)
+              await diagnosticAsync('E1_SCOPE',()=>scopeStore.verifyScope(query, lease))
               completed = true
               return callbackResult
             }, transactionOptions)
@@ -358,5 +359,5 @@ export async function privateOperationHostSourceDigest() {
   const fs = await import('node:fs')
   return createHash('sha256').update(fs.readFileSync(new URL('./private-operation-host.mjs', import.meta.url)))
     .update(fs.readFileSync(new URL('./private-operation-host.d.mts', import.meta.url)))
-    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).update(await requestInspectionSourceDigest()).update(await requestWorkSourceDigest()).update(await reportAdmissionSourceDigest()).digest('hex')
+    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).update(await requestInspectionSourceDigest()).update(await requestWorkSourceDigest()).update(await reportAdmissionSourceDigest()).update(await diagnosticPhaseSourceDigest()).digest('hex')
 }

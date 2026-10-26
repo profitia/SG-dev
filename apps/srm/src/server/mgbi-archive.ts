@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import { createHash } from "node:crypto";
 import { withOrganization, type DatabasePool } from "./db";
 
@@ -46,6 +47,7 @@ export async function fetchMgbiPages(url: URL, headers: HeadersInit, signal: Abo
 /** The complete API payload stays tenant-scoped; only mapped person-free facts enter the shared catalog. */
 export async function saveMgbiArchive(organizationId: string, nip: string, model: MgbiModel,
   pages: unknown[], recordCount: number, retrievedAt: string, sourceRequestId: string, pool?: DatabasePool): Promise<void> {
+ return diagnosticRun('SOURCE_ARCHIVE',async ()=>{
   if (!/^\d{10}$/.test(nip) || !pages.length || !Number.isSafeInteger(recordCount) || recordCount < 0) {
     throw new Error("A complete MGBI response and NIP are required for archiving");
   }
@@ -64,4 +66,6 @@ export async function saveMgbiArchive(organizationId: string, nip: string, model
       [organizationId, nip, model, payload, digest, recordCount, new Date(retrievedAt), sourceRequestId],
     );
   }, pool);
+
+ })
 }

@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import type { PoolClient } from "pg";
 import { OPERATION_CONTRACT, OperationDenied, isOperationDenied, type OperationExecutor } from "@profitia/platform-contracts/operation-context";
 import { bindOrganizationTransaction } from "./db";
@@ -25,7 +26,7 @@ export function createOperationReportDataHandler(executor: OperationExecutor<Poo
       }, async (context, client) => {
         await client.query("SELECT set_config('srm.organization_id',$1,true)", [context.organisationId]);
         const pool = bindOrganizationTransaction(context.organisationId!, client);
-        const response = await project(context.organisationId!, selection, pool, JSON.stringify([context.applicationId, context.subjectUserId ?? context.actorId]));
+        const response = await diagnosticRun('REPORT_PROJECTION',()=>project(context.organisationId!, selection, pool, JSON.stringify([context.applicationId, context.subjectUserId ?? context.actorId])));
         if (!response.ok) throw new OperationDenied("POLICY_UNAVAILABLE");
         return response;
       });

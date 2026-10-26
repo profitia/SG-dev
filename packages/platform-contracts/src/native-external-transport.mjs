@@ -1,3 +1,4 @@
+import {diagnosticAsync,diagnosticSync} from './diagnostic-phase.mjs'
 import {createHmac} from 'node:crypto'
 import {readPresentationJson} from './embedded-read-channel.mjs'
 import {operationPayloadDigest} from './operation-context.mjs'
@@ -120,7 +121,7 @@ export async function readNativeProviderResponse(response,{config,requestUrl,ass
  signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort()
  try{
   if(reader)while(true){
-   assertActive();const part=await reader.read();assertActive()
+   assertActive();const part=await diagnosticAsync('SOURCE_BODY_READ',()=>reader.read());assertActive()
    if(part.done)break
    if(!(part.value instanceof Uint8Array)||size+part.value.byteLength>config.maximumResponseBytes)invalid()
    chunks.push(part.value.slice());size+=part.value.byteLength

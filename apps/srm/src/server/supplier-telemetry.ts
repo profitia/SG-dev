@@ -1,3 +1,4 @@
+import {diagnosticRun,withDiagnosticRequest} from './diagnostic-trace'
 import {AsyncLocalStorage} from 'node:async_hooks'
 import {randomUUID} from 'node:crypto'
 import {channel} from 'node:diagnostics_channel'
@@ -39,7 +40,7 @@ channel('undici:request:trailers').subscribe(message=>finishNetwork(message,fals
 channel('undici:request:error').subscribe(message=>finishNetwork(message,true))
 /** Durations and finite labels only. No SQL, arguments, reports, account IDs,
  * URL parameters, credentials or authority observations enter the trace. */
-export async function measureSupplierStage<T>(stage:Stage,action:()=>Promise<T>):Promise<T>{
+async function measureSupplierStageLegacy<T>(stage:Stage,action:()=>Promise<T>):Promise<T>{
  const trace=traces.getStore();if(!trace||!stages.includes(stage))return action()
  const start=performance.now();let failed=true
  try{const value=await action();failed=false;return value}finally{
@@ -47,12 +48,12 @@ export async function measureSupplierStage<T>(stage:Stage,action:()=>Promise<T>)
   const work=units.getStore();if(work)add(work.stages,stage,ms,failed)
  }
 }
-export async function measureSupplierWork<T>(unit:string,action:()=>Promise<T>):Promise<T>{
+async function measureSupplierWorkLegacy<T>(unit:string,action:()=>Promise<T>):Promise<T>{
  const trace=traces.getStore();if(!trace||!allowedUnits.has(unit)||trace.work.length>=128)return action()
  const work:Work={unit,totalMs:0,status:'ERROR',stages:{}},start=performance.now();trace.work.push(work)
  return units.run(work,async()=>{try{const value=await action();work.status='SUCCESS';return value}finally{work.totalMs=rounded(performance.now()-start)}})
 }
-export async function withSupplierTelemetry(route:string,action:()=>Promise<Response>):Promise<Response>{
+async function withSupplierTelemetryLegacy(route:string,action:()=>Promise<Response>):Promise<Response>{
  if(!allowedRoutes.has(route))return action()
  const trace:Trace={traceId:randomUUID(),route,stages:{},work:[]},start=performance.now()
  return traces.run(trace,async()=>{
@@ -94,4 +95,16 @@ export function instrumentSupplierIdentity<T extends {authenticateRequest:(...ar
   }
   return value
  }})
+}
+
+// Structured diagnostics observe the original collector/executor; no auth or
+// business result is retained in spans and no original checkpoint is replaced.
+export function measureSupplierStage<T>(stage:Stage,action:()=>Promise<T>):Promise<T>{
+ return diagnosticRun(stage,()=>measureSupplierStageLegacy(stage,action),{join:stage==='SOURCE_ARCHIVE'?'ALL':'SERIAL'})
+}
+export function measureSupplierWork<T>(unit:string,action:()=>Promise<T>):Promise<T>{
+ return diagnosticRun('NATIVE_WORK',()=>measureSupplierWorkLegacy(unit,action),{join:'SERIAL',unitId:unit})
+}
+export function withSupplierTelemetry(route:string,action:()=>Promise<Response>,request?:Request):Promise<Response>{
+ return withDiagnosticRequest(route,request,()=>withSupplierTelemetryLegacy(route,action))
 }

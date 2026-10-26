@@ -1,3 +1,4 @@
+import {diagnosticAsync,diagnosticSync,diagnosticAuditCategory,diagnosticPhaseSourceDigest} from './diagnostic-phase.mjs'
 import {createHash} from 'node:crypto'
 import {createOperationExecutor,OperationDenied,OPERATION_CONTRACT,operationPayloadDigest,isOperationDenied} from './operation-context.mjs'
 
@@ -63,7 +64,7 @@ export function createPlatformIngestionHost(options){
       ||!text(d.sourceRef)||!(Date.parse(d.expiresAt)>now())||Date.parse(d.expiresAt)>now()+30000)fail()
     return {descriptor:d,row:r}
   }
-  const descriptor=async query=>(await authority(query)).descriptor
+  const descriptor=async query=>(await diagnosticAsync('E1_DESCRIPTOR',()=>authority(query))).descriptor
   const append=async(query,event)=>{const encoded=JSON.stringify(event);if(Buffer.byteLength(encoded)>16384)fail()
     // A genuine scalar result is portable to pg and Prisma; do not decode void.
     const result=await one(query,'SELECT true AS recorded FROM profitia_ingestion.append_audit($1::jsonb)',[encoded])
@@ -81,7 +82,7 @@ export function createPlatformIngestionHost(options){
           const d=await descriptor(independentQuery);if(!d)return null
           return freeze({kind:'SERVICE',actorId:d.serviceId,serviceId:d.serviceId,issuer:a.identityIssuer,audience:a.appId,
             environment:a.environment,proofRef:d.proofRef,expiresAt:d.expiresAt})
-        },recordAudit:event=>append(independentQuery,event),
+        },recordAudit:event=>diagnosticAsync(diagnosticAuditCategory(event),()=>append(independentQuery,event)),
         withTransaction:async({actor,request},run)=>{
           let entered=false,closed=false,finished=false,ownedResult
           try{
@@ -104,7 +105,7 @@ export function createPlatformIngestionHost(options){
                 ||await validateSharedPayload(request.payload.content,{query,transaction})!==true)throw new OperationDenied('DATA_CLASSIFICATION_UNKNOWN')
               const verify=async()=>{
                 if(closed||!(Date.parse(actor.expiresAt)>now()))throw new OperationDenied('ACCESS_BASIS_INVALID')
-                const {descriptor:c,row:v}=await authority(query,request.resourceId)
+                const {descriptor:c,row:v}=await diagnosticAsync('E1_SCOPE',()=>authority(query,request.resourceId))
                 if(!c||c.proofRef!==actor.proofRef)throw new OperationDenied('ACCESS_BASIS_INVALID')
                 if(v.transaction_id!==state.transactionId)fail();if(v.allowed!==true)throw new OperationDenied('ACCESS_BASIS_INVALID')
               }
@@ -126,7 +127,7 @@ export function createPlatformIngestionHost(options){
                   if(!receipt(v.receipt,ownedReservation.effectId))fail()
                 },
                 projectOutput:value=>{if(!ownedReservation||!receipt(value,ownedReservation.effectId))fail();return freeze(structuredClone(value))},
-                recordOutcome:async event=>{await verify();await append(query,event)},
+                recordOutcome:async event=>{await verify();await diagnosticAsync('E1_OUTCOME',()=>append(query,event))},
               })
               if(!reserved||!ownedReservation||ownedReservation.status==='NEW'&&!completed)fail()
               await verify();if(closed)fail();finished=true
@@ -140,7 +141,7 @@ export function createPlatformIngestionHost(options){
       const result=await executor.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
         operation:'knowledge.ingest',organisationId:null,resourceId:supplied?.resourceId,payload:{sourceId:s.id,content:supplied?.payload},
         idempotencyKey:supplied?.idempotencyKey,request:null},async(context,transaction)=>{
-          await write(context.payload.content,transaction,context)
+          await diagnosticAsync('SOURCE_PUBLISH',async()=>write(context.payload.content,transaction,context))
           return{effectId:context.platformReservation.effectId,status:'COMMITTED'}
         })
       // Reached only AFTER the real host transaction, including OUTCOME, committed.
@@ -156,4 +157,4 @@ export function createPlatformIngestionHost(options){
 export async function platformIngestionSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(platformIngestionSchemaUrl))).digest('hex')}
 export async function platformIngestionSourceDigest(){const fs=await import('node:fs');return createHash('sha256')
   .update(fs.readFileSync(new URL('./platform-ingestion.mjs',import.meta.url))).update(fs.readFileSync(new URL('./platform-ingestion.d.mts',import.meta.url)))
-  .update(await platformIngestionSchemaDigest()).update(await unmeteredSourceSchemaDigest()).digest('hex')}
+  .update(await platformIngestionSchemaDigest()).update(await unmeteredSourceSchemaDigest()).update(await diagnosticPhaseSourceDigest()).digest('hex')}

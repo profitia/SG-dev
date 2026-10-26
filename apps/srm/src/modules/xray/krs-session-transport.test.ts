@@ -1,6 +1,21 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createKrsSessionTransport,prepareReport} from './krs-session-transport'
+test('form diagnostic fragment is correlation only and cannot replace the existing admission or bearer',async()=>{
+ const fragment='11111111-1111-4111-8111-111111111111',execution='22222222-2222-4222-8222-222222222222',nip='7772776017'
+ const token='fr1.33333333-3333-4333-8333-333333333333.'+'a'.repeat(64),seen:Headers[]=[]
+ const transport=createKrsSessionTransport(async()=> 'synthetic-bearer',async(path,init)=>{
+  seen.push(new Headers(init?.headers))
+  return path==='/api/xray/admission'?Response.json({token,nip,readyUntil:new Date(Date.now()+60000).toISOString(),expiresAt:new Date(Date.now()+120000).toISOString()},
+   {headers:{'X-SRM-Diagnostic-Execution':execution,'X-SRM-Diagnostic-Fragment':fragment}}):Response.json({})
+ })
+ await prepareReport(transport,nip,new AbortController().signal)
+ await transport('/api/xray/search',{method:'POST',body:JSON.stringify({identifier:nip})})
+ await transport('https://synthetic.invalid/api/xray/search')
+ assert.equal(seen[1].get('X-SRM-Diagnostic-Admission'),fragment);assert.equal(seen[1].get('X-SRM-Report-Admission'),token)
+ assert.equal(seen[1].get('Authorization'),'Bearer synthetic-bearer');assert.equal(seen[2].get('X-SRM-Diagnostic-Admission'),null)
+ assert.equal(seen[2].get('X-SRM-Report-Admission'),null)
+})
 test('form admission performs the only token refresh; the accepted search and Financial reuse the same bounded command',async()=>{
  let tokenReads=0;const seen:{path:string;grant:string|null;bearer:string|null}[]=[]
  const token='fr1.11111111-1111-4111-8111-111111111111.'+'a'.repeat(64),nip='7772776017'

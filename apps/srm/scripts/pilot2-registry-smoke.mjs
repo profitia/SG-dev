@@ -55,7 +55,13 @@ try{
  for(let attempt=0;attempt<80;attempt++){
   if(exitCode!==undefined)throw Error('Standalone server exited before readiness')
   let response;try{response=await fetch('http://127.0.0.1:'+port+'/api/health',{signal:AbortSignal.timeout(1000)})}catch{}
-  if(response){assert.equal(response.status,200,'Actual bundled registry constructor must pass readiness');const body=await response.json();assert.equal(body.status,'ok');healthy=true;break}
+  if(response){assert.equal(response.status,200,'Actual bundled registry constructor must pass readiness');const body=await response.json();assert.equal(body.status,'ok');
+   if(stage==='PRIVATE_OPERATIONS'){
+    const proof=body.diagnosticTelemetry,observer=await load('platform-contracts','src/diagnostic-phase.mjs')
+    assert.equal(proof?.schema,'srm.diagnostic-trace/1.0');assert.equal(proof.enabled,true);assert.equal(proof.installed,true);assert.equal(proof.syntheticCheck,'PASS')
+    assert.equal(proof.sqlQueriesInCheck,0);assert.equal(proof.providerCallsInCheck,0);assert.equal(proof.observerSourceDigest,await observer.diagnosticPhaseSourceDigest())
+   }
+   healthy=true;break}
   await delay(100)
  }
  assert(healthy,'Standalone readiness timeout')

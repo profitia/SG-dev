@@ -1,3 +1,4 @@
+import {instrumentDiagnosticPool} from './diagnostic-pg'
 import type pg from "pg";
 import type { PoolClient } from "pg";
 import type { createPrivateOperationHost } from "@profitia/platform-contracts/private-operation-host";
@@ -49,6 +50,7 @@ function acquire(pool: pg.Pool, maxWaitMs: number): Promise<PoolClient> {
  * No identity, permission, domain policy or audit implementation lives here. */
 export function createSrmNativePgDriver(pool: pg.Pool, auditPool: pg.Pool): NativeDriver {
   if (!pool || !auditPool || pool === auditPool) throw new TypeError("Distinct native transaction and independent audit pools required");
+  instrumentDiagnosticPool(pool);instrumentDiagnosticPool(auditPool,'INDEPENDENT_AUDIT');
   return {
     independentQuery: async (sql, values = []) => queryNative(auditPool, sql, values),
     transact: async (work, limits) => {

@@ -9,6 +9,26 @@ import {kysOverview} from '@profitia/srm-xray'
 const nip='8650004194',other='5272443955',now=new Date('2026-10-20T00:00:00Z'),retrievedAt='2026-10-19T23:00:00Z'
 const privateRef={snapshotId:'11111111-1111-4111-8111-111111111111',nip,entityType:'COMPANY',retentionUntil:'2026-10-21T00:00:00Z',exportRef:'b'.repeat(64)}
 const metadata=(selected=nip)=>projectReportData({nip:selected,entityType:'COMPANY'},{nip:selected,financial_json:null,financial_sha256:null,financial_checked_at:null,facts:[],indicators:[],kys:null},now,{})
+test('diagnostic correlation joins search and protected read without becoming an authority or changing logical keys',async()=>{
+ const execution='11111111-1111-4111-8111-111111111111',first='22222222-2222-4222-8222-222222222222',second='33333333-3333-4333-8333-333333333333'
+ const headers:Headers[]=[],logs:string[]=[];let keys=0
+ const transport:typeof fetch=async(path,init)=>{
+  headers.push(new Headers(init?.headers))
+  return Response.json(String(path).endsWith('/search')?{entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip}}}:metadata(),
+   {headers:{'X-SRM-Diagnostic-Execution':execution,'X-SRM-Diagnostic-Fragment':headers.length===1?first:second}})
+ }
+ const controller=new SupplierReportController(transport,()=>now,()=> 'synthetic-original-key-'+(++keys)),original=console.info
+ console.info=value=>{logs.push(String(value))}
+ try{await controller.search(nip)}finally{console.info=original}
+ assert.equal(controller.getSnapshot().error,null);assert.equal(keys,2);assert.equal(headers.length,2)
+ assert.equal(headers[0].get('X-SRM-Diagnostic-Execution'),null);assert.equal(headers[1].get('X-SRM-Diagnostic-Execution'),execution)
+ assert.equal(headers[1].get('X-SRM-Diagnostic-Parent'),first)
+ const events=logs.map(line=>JSON.parse(line));assert.equal(events.filter(e=>e.event==='srm_diagnostic_client_request').length,2)
+ const completed=events.filter(e=>e.event==='srm_diagnostic_client_complete');assert.equal(completed.length,1)
+ assert.equal(completed[0].traceId,execution);assert.equal(completed[0].lastFragmentId,second)
+ assert.equal(completed[0].clock,'BROWSER_PERFORMANCE_NOW_NOT_SERVER_CLOCK');assert(completed[0].endMs>=completed[0].startMs)
+ assert(!logs.join('').includes(nip));assert(!logs.join('').includes('synthetic-original-key'))
+})
 
 test('unprepared KRS and NIP requests use ordinary SDK token reuse without forwarding credentials to other destinations',async()=>{
  let tokens=0;const seen:{path:string;authorization:string|null}[]=[]
