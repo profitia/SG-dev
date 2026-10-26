@@ -564,7 +564,8 @@
     "Synthetic data supplied by demo host",
     "Locally bundled licensed fonts",
     "2026-10-26 owner decision: library geometry takes precedence over v3 source main actions (canon-actionHeight 32px; canon-actionFont 12px). Source measurements retain original 38px/13px values; do not hide approved differences.",
-    "Legacy C95 switch floats at canonical 1rem edge clearance below the canonical 65.625rem header breakpoint to preserve all source header geometry. Desktop control stays in the action slot."
+    "Legacy C95 switch floats at canonical 1rem edge clearance below the canonical 65.625rem header breakpoint to preserve all source header geometry. Desktop control stays in the action slot.",
+    "Library geometry precedence: action minimum 32px, font 12px, card-radius token 9px; original source fallbacks retained in matrix"
   ],
   "verification": {
     "initialDiscovery": "NOT_YET_VERIFIED",
@@ -25384,6 +25385,19 @@
       "nodeTests": 5,
       "typecheck": "PASS",
       "renderBuildCommand": "PASS"
+    },
+    "sourceIntegrity": {
+      "jsxEntries": 1864,
+      "styleEntries": 3246,
+      "result": "PASS",
+      "test": "test/source-integrity.test.mjs",
+      "method": "Pinned matrix attributes/declarations compared with parsed implementation. Explicit transformations retain original parameters and record their basis. Inactive CSS is source-integrity evidence, not a claim that every selector was rendered."
+    },
+    "expandedLocal": {
+      "browserTests": 120,
+      "result": "PASS",
+      "log": "sg2-pci-expanded-local.log",
+      "coverage": "Both theme interaction flows, 32 live-source geometry comparisons, 48 responsive cases"
     }
   },
   "fontAssets": [
@@ -25971,7 +25985,7 @@
       "selector": ".srm-ui .srm-side-menu-trigger:hover",
       "property": "background",
       "before": "#EFF6FC",
-      "after": "var(--theme-raised,#F3F8FD)",
+      "after": "var(--theme-raised,#EFF6FC)",
       "library": "464039002702499840"
     },
     {
@@ -26997,7 +27011,7 @@
       "selector": ".srm-ui .srm-side-menu-trigger:hover",
       "property": "background",
       "before": "#EFF6FC",
-      "after": "var(--theme-raised,#F3F8FD)",
+      "after": "var(--theme-raised,#EFF6FC)",
       "library": "464039002702499840"
     },
     {

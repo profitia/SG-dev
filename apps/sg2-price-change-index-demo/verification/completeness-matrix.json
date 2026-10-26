@@ -22650,7 +22650,15 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedTransform": {
+        "kind": "C27-focus-return",
+        "changedAttributes": [
+          "onCancel",
+          "onClick"
+        ],
+        "basis": "Pinned library C27 and keyboard requirement; close native dialog before restoring focus"
+      }
     },
     {
       "id": "pci1:src/components/generated/CanonHistoryDialog.tsx:L77:686",
@@ -31639,7 +31647,12 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedTransform": {
+        "kind": "C69-four-edges",
+        "selector": ".srm-side-menu-shell.is-horizontal .srm-side-menu-position>span:not(.srm-dropdown)",
+        "basis": "Pinned library C69 requires usable edge control in horizontal placement"
+      }
     },
     {
       "id": "pci1:css:159",
@@ -66140,7 +66153,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66325,7 +66338,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66505,7 +66518,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66529,7 +66542,7 @@
       "sourceLine": 132,
       "selector": "*",
       "parameters": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66559,7 +66572,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66589,7 +66602,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66639,7 +66652,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66699,7 +66712,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66734,7 +66747,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66764,7 +66777,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -66794,7 +66807,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -88194,7 +88207,15 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedTransform": {
+        "kind": "C27-focus-return",
+        "changedAttributes": [
+          "onCancel",
+          "onClick"
+        ],
+        "basis": "Pinned library C27 and keyboard requirement; close native dialog before restoring focus"
+      }
     },
     {
       "id": "pci2:src/components/generated/CanonHistoryDialog.tsx:L77:1422",
@@ -98737,7 +98758,12 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedTransform": {
+        "kind": "C69-four-edges",
+        "selector": ".srm-side-menu-shell.is-horizontal .srm-side-menu-position>span:not(.srm-dropdown)",
+        "basis": "Pinned library C69 requires usable edge control in horizontal placement"
+      }
     },
     {
       "id": "pci2:css:1163",
@@ -132511,7 +132537,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -132696,7 +132722,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -132876,7 +132902,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -132900,7 +132926,7 @@
       "sourceLine": 132,
       "selector": "*",
       "parameters": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -132930,7 +132956,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -132960,7 +132986,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -133010,7 +133036,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -133070,7 +133096,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -133105,7 +133131,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -133135,7 +133161,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -133165,7 +133191,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci2/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -141496,7 +141522,7 @@
       ],
       "behaviors": [],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141509,7 +141535,14 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedTransform": {
+        "kind": "local-theme-provider",
+        "changedAttributes": [
+          "value"
+        ],
+        "basis": "User sections 5–6 require per-instance state and callbacks; no shared preference storage"
+      }
     },
     {
       "id": "pci3:src/components/generated/CanonTheme.tsx:L80:1801",
@@ -141557,7 +141590,7 @@
         }
       ],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141570,7 +141603,11 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedTransform": {
+        "kind": "removed-remote-theme-transport",
+        "basis": "User section 6 prohibits runtime MagicPath connections; pinned local theme provider preserves UI"
+      }
     },
     {
       "id": "pci3:src/components/generated/CanonTheme.tsx:L87:1802",
@@ -141621,7 +141658,7 @@
       ],
       "behaviors": [],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141653,7 +141690,7 @@
       ],
       "behaviors": [],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141693,7 +141730,7 @@
       ],
       "behaviors": [],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141725,7 +141762,7 @@
       ],
       "behaviors": [],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141782,7 +141819,7 @@
           "value": "{CANON_COMPONENT_ID}"
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141795,7 +141832,14 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedTransform": {
+        "kind": "resolved-pinned-provenance",
+        "resolvedAttributes": {
+          "data-canon-source": "\"460628347660177408\""
+        },
+        "basis": "Same immutable CANON_COMPONENT_ID constant is inlined locally"
+      }
     },
     {
       "id": "pci3:src/components/generated/CanonTheme.tsx:L94:1807",
@@ -141835,7 +141879,7 @@
         }
       ],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141867,7 +141911,7 @@
       ],
       "behaviors": [],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -141894,7 +141938,7 @@
       "parameters": [],
       "behaviors": [],
       "canonicalReferences": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/CanonTheme.tsx",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/Theme.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
@@ -151131,7 +151175,16 @@
         "verification/source-manifest.json",
         "test/parity.spec.ts",
         "test/flows.spec.ts"
-      ]
+      ],
+      "approvedTransform": {
+        "kind": "library-action-geometry",
+        "properties": {
+          "--canon-actionHeight": "32px",
+          "--canon-actionFont": "12px",
+          "--canon-cardRadius": "9px"
+        },
+        "basis": "Explicit owner instruction: Dostosuj geometrię do biblioteki"
+      }
     },
     {
       "id": "pci3:css:2195",
@@ -191949,7 +192002,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192134,7 +192187,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192314,7 +192367,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192338,7 +192391,7 @@
       "sourceLine": 132,
       "selector": "*",
       "parameters": [],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192368,7 +192421,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192398,7 +192451,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192448,7 +192501,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192508,7 +192561,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192543,7 +192596,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192573,7 +192626,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {
@@ -192603,7 +192656,7 @@
           "important": false
         }
       ],
-      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/index.css",
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci3/base.css",
       "testFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
       "status": "WDROŻONE, NIEZWERYFIKOWANE",
       "result": {

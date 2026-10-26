@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "start": "node server.mjs",
-    "test": "node --test test/server.test.mjs",
+    "test": "node --test test/*.test.mjs",
     "test:browser": "playwright test"
   },
   "dependencies": {
@@ -25,6 +25,7 @@
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.6",
     "@vitejs/plugin-react": "6.1.2",
+    "postcss": "8.5.31",
     "tailwindcss": "4.3.3",
     "tailwindcss-animate": "1.0.7",
     "typescript": "5.8.3",
