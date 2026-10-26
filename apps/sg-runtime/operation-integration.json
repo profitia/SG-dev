@@ -3026,7 +3026,7 @@
       "tests/category-operation.test.ts": "3c206fa31088c216ff7511ca1a4035c3ee0e37af9f04f8b4a186ad764075206a",
       "tests/identity-runtime.test.ts": "b8878d7a6bd3ae55b06415e0e7f824b8e2151d6e79e455c203e85cbca11594f7",
       "tests/native-sql-roundtrips.test.mjs": "cbdcead10a19a0f454700b6c4b94148aa0a767d16481879edca7c2dbaaf1a728",
-      "tests/operation-context.test.mjs": "cbe69c21c53bd5cf64ca3350c733220bd41b27970c8fb761c0b1072bc0ded27b",
+      "tests/operation-context.test.mjs": "ced57a53681584025136d29900ea1f99dc7e25b90905452fbf1cb78ad61e108a",
       "tests/porr-demo-middleware.test.ts": "1712c402ae8d62128c12dc98f3abf4328fe0b19f56f69314d09b4e74eec577ef",
       "tests/private-host.integration.test.mjs": "1a96040c43a2e8e0d5ae68db416176c79d6107762e93b296f2b226efc24273be",
       "tests/self-service-account.test.ts": "294f9e4f9249ce952949aac3d3f8e55c2d7fe32b801ab28d6a0d9b267ef1f045"
