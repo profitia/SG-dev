@@ -2,7 +2,7 @@
 
 Architecture task ARCHITECTURE-PILOT2-COMPLETE-DIAGNOSTIC-TELEMETRY-20261026; SRM consumer SRM-PILOT2-COMPLETE-DIAGNOSTIC-TELEMETRY-20261026. This is an observation interface, not the proposed 3s execution contract. Existing Root, Source, Work, transactions, authority, audit and business semantics stay unchanged.
 
-The optional Node tracing channel profitia.platform.diagnostic-phase.v1 emits closed category labels only. Without subscribers the original action and promise are used directly. The helper bytes and declarations are included transitively in host/Source fingerprints. KRS Catalog, identity, current/history and GUS use this same observer. SG2/Maps recognition is source compatibility only, without product activation.
+The optional Node tracing channel profitia.platform.diagnostic-phase.v1 supplies closed category labels at entry. Node also attaches transient result/error values to its in-process tracing messages; SRM reads only finite labels and boolean failure status, never serializes those messages or stores their result/error values. Without subscribers the original action and promise are used directly. The helper bytes and declarations are included transitively in host/Source fingerprints. KRS Catalog, identity, current/history and GUS use this same observer. SG2/Maps recognition is source compatibility only, without product activation.
 
 SRM collects a bounded span tree with a process-monotonic clock, random observation-only span/connection/transaction IDs and issued trace/fragment UUIDs. Correlation has a five-minute process-local window and never authorizes access. Form admission remains separate from post-click time. Restart/eviction loses linkage.
 
