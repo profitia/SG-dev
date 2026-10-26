@@ -4882,5 +4882,28 @@
       "scripts/request-quota-adoption.test.mjs": "5bcb265a66175a60825fbb39eb42e6dc7dda9a32c19d008335d5b2c8888d65ce",
       "src/server/peer-read-boundary.test.ts": "5cbc83d39b8d06f8e5fe902c7efd1395935e60fedfac9193f65a713500c6df2a"
     }
+  },
+  "pilot2FinancialSinglePassAdoption": {
+    "taskId": "SRM-PILOT2-FINANCIAL-SINGLE-PASS-20261026",
+    "previousReceiptSourceSha": "d1a14dd1878619212f3dfe3e523b4503402936c3",
+    "previousReceiptDigest": "4a7fb0aa68a611469069a21410bffc34ff162a898aba1f955f575bb81715afd8",
+    "executionPolicy": "COMPLETE_IN_REQUEST",
+    "maximumNewDownloadsPerPass": 1,
+    "continuationCondition": "ACTUAL_MSR_PROCESSING_PENDING_ONLY",
+    "sharedContractChanged": false,
+    "schemaChanged": false,
+    "humanEntitlementsChanged": false,
+    "licensedFileSafeguardsChanged": false,
+    "defaultConsumerPolicyChanged": false,
+    "sourceFreshnessRenewedOnRead": false,
+    "applicationSourceDigests": {
+      "src/server/krs-native-financial.ts": "3acf9d3b248d8f34e88f3eeb05578431c77de455907f3c3f2eb89ca350d97e09",
+      "src/server/krs-native-financial.test.ts": "2283e1317bac7a66b05c6048028f7c88285766abf63b4b11fd7e6869a34237d2",
+      "src/server/supplier-native-company.ts": "8e84966692dae7ca95eec8551251a1b673feeb1ad777d72f7c1272a9272ce0ed",
+      "src/server/supplier-api-composition.ts": "e767823f58a271876504290b469e1d4f4597b5529c22ed7e46318468d69cb108",
+      "src/server/pilot2-cold-runtime.ts": "456985fc7156594e7f6107125fe59f58313ea059ad1704af591c4945e7265d76",
+      "scripts/request-quota-adoption.test.mjs": "0e13ca4cf91622fa5f124b2c91dda8f1750c6ff4b668a6b9155d1147884a7941",
+      "src/server/peer-read-boundary.test.ts": "d0392e7d91ba28695f9521a57abbe296faba483bdb0306878f287a7ab87a57f1"
+    }
   }
 }

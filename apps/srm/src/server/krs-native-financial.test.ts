@@ -134,3 +134,59 @@ test('database JSONB key ordering cannot turn an identical Financial cache hit i
  const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now)
  await work.publish(work.result);assert.equal(f.events.includes('public'),false)
 })
+
+test('PILOT2 completes a newly acquired structured Financial report without buying or replaying its inventory twice',async()=>{
+ const f=await fixture();let archiveReads=0,documentReads=0;
+ f.ports.reprojectFinancialArchive=async()=>{archiveReads++;return null};
+ f.ports.readFinancialDocuments=async()=>{documentReads++;return []};
+ f.ports.refreshFinancialIndicators=async()=>assert.fail('Corporate publication already computes indicators; no second calculation');
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,undefined,'COMPLETE_IN_REQUEST');
+ assert.equal(work.pending,false);assert.equal(work.result.section.data?.periods[0].facts[0].amount,'1000');
+ assert.equal(archiveReads,1);assert.equal(documentReads,1);
+ for(const step of['register','financial','archive','documents','msr'])assert.equal(f.events.filter(x=>x===step).length,1,step);
+ assert.ok(f.events.indexOf('archive')<f.events.indexOf('msr'));assert.equal(f.events.includes('persist'),false);
+ await work.publish(work.result);
+ for(const step of['persist','public','interest'])assert.equal(f.events.filter(x=>x===step).length,1,step);
+ await assert.rejects(work.publish(work.result));assert.equal(f.events.filter(x=>x==='financial').length,1);
+});
+
+test('PILOT2 continues only an actual MSR backlog and retains the existing one-original limit',async()=>{
+ const f=await fixture();
+ f.ports.enrichMsrFinancial=async(_org,_nip,base,options)=>{
+  assert.equal(options?.maximumNewDownloads,1);assert.deepEqual(options?.allowedKrs,[krs]);f.events.push('msr');
+  return {...base,section:{...base.section,warnings:['MSR_PROCESSING_PENDING']},msrChanged:false};
+ };
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,undefined,'COMPLETE_IN_REQUEST');
+ assert.equal(work.pending,true);assert.equal(f.events.filter(x=>x==='financial').length,1);
+ assert.equal(f.events.includes('archive'),true);assert.equal(f.events.includes('documents'),true);
+ await assert.rejects(work.publish(work.result));assert.equal(f.events.includes('persist'),false);assert.equal(f.events.includes('public'),false);
+});
+
+test('PILOT2 does not loop or raise file limits when the licensed original is deferred by its existing budget',async()=>{
+ const f=await fixture();
+ f.ports.enrichMsrFinancial=async(_org,_nip,base,options)=>{
+  assert.equal(options?.maximumNewDownloads,1);
+  return {...base,section:{...base.section,warnings:['MSR_PROCESSING_PENDING','MSR_FILE_BUDGET_EXHAUSTED']},msrChanged:false};
+ };
+ const work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,undefined,'COMPLETE_IN_REQUEST');
+ assert.equal(work.pending,false);assert.equal(work.result.section.warnings.includes('MSR_FILE_BUDGET_EXHAUSTED'),true);
+ assert.equal(f.events.filter(x=>x==='financial').length,1);
+});
+
+test('PILOT2 revocation after durable inventory stops same-request MSR and publication',async()=>{
+ const f=await fixture();f.ports.saveFinancialDocuments=async()=>{f.events.push('documents');f.revoke();return {documents:0,positions:0}};
+ await assert.rejects(prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,undefined,'COMPLETE_IN_REQUEST'),/REVOKED/);
+ assert.equal(f.events.includes('archive'),true);assert.equal(f.events.includes('msr'),false);assert.equal(f.events.includes('persist'),false);
+});
+
+test('PILOT2 fresh inventory still rejects a foreign KRS before archive, MSR or publication',async()=>{
+ const f=await fixture(true),work=await prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,undefined,'COMPLETE_IN_REQUEST');
+ assert.equal(work.pending,false);assert.ok(work.result.errorCode);
+ for(const step of['archive','documents','msr','persist','public'])assert.equal(f.events.includes(step),false,step);
+ await assert.rejects(work.publish(work.result));
+});
+
+test('unknown server execution policy refuses before any acquisition or persistence',async()=>{
+ const f=await fixture();await assert.rejects(prepareKrsFinancialWork(f.ports,f.selection,f.identity,f.check,()=>now,undefined,'UNKNOWN' as never));
+ assert.deepEqual(f.events,[]);
+});
