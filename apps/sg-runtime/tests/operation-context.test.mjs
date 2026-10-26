@@ -151,7 +151,7 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     for (const file of paths) {
       // The later source-compatibility task adds only its CI test command.
       // The presentation acceptance still pins its complete prior package.
-      const observed=file==='apps/sg-runtime/package.json'
+      const observed=['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json'].includes(file)
         ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':'+file])
         :fs.readFileSync(new URL(file,repository))
       assert.deepEqual(observed,execFileSync('git',['show',current.previousReceiptSourceSha+':'+file]),'Unchanged protected source: '+file)

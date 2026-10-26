@@ -3020,11 +3020,13 @@
       "platformIngestionSourceDigest": "8a3fa5a85dcdeb0d244ba1d8aa1e5d380f4a366a907633499a35e8ff20f47215"
     },
     "applicationSourceDigests": {
+      "../dashboard-preview/package-lock.json": "c094ef6e8288e8ca00c1ad120d28babc71e1739b7748af7ae0019542dac956b9",
+      "package-lock.json": "81ca73f9d5a790cabb73c67da1e6d94885b4ca7c9d1fcc22f1305d63a66993db",
       "package.json": "22e24af6d1eed449daf0f227fd04090e591fdbc77b7967d02cbe34f24282e744",
       "tests/category-operation.test.ts": "3c206fa31088c216ff7511ca1a4035c3ee0e37af9f04f8b4a186ad764075206a",
       "tests/identity-runtime.test.ts": "b8878d7a6bd3ae55b06415e0e7f824b8e2151d6e79e455c203e85cbca11594f7",
       "tests/native-sql-roundtrips.test.mjs": "cbdcead10a19a0f454700b6c4b94148aa0a767d16481879edca7c2dbaaf1a728",
-      "tests/operation-context.test.mjs": "bfcd6efedaaa90557d7b0ac37849589f0361574912a87d30d9239421b51cf0a0",
+      "tests/operation-context.test.mjs": "cbe69c21c53bd5cf64ca3350c733220bd41b27970c8fb761c0b1072bc0ded27b",
       "tests/porr-demo-middleware.test.ts": "1712c402ae8d62128c12dc98f3abf4328fe0b19f56f69314d09b4e74eec577ef",
       "tests/private-host.integration.test.mjs": "1a96040c43a2e8e0d5ae68db416176c79d6107762e93b296f2b226efc24273be",
       "tests/self-service-account.test.ts": "294f9e4f9249ce952949aac3d3f8e55c2d7fe32b801ab28d6a0d9b267ef1f045"
