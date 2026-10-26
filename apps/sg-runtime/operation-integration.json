@@ -2878,7 +2878,7 @@
     },
     "applicationSourceDigests": {
       "../dashboard-preview/app/benchmark-canon.css": "f61d11bac685885fa12d8566f73b993de57096e0585766ae4636e46afcfa72e2",
-      "../dashboard-preview/app/benchmark-visual.css": "8288508d3bf7f2c171cb17a7c9c062d17ef8441e03838a550830aff85c5128de",
+      "../dashboard-preview/app/benchmark-visual.css": "2ffe067ef0a0018d8320b7d6bf7dcd6d0e49bb0af0a4d23ce5c2bc123564fe3b",
       "../dashboard-preview/app/globals.css": "23551cac6e84a59063f3a6668b0d7facd6871ff3b20927cc47c56d72982f5c14",
       "../dashboard-preview/components/raw-data-view/benchmark-visual.tsx": "3e3073bac46aa4d3df83e3354128ad20299525adeb4d4875229062203dd91635",
       "../dashboard-preview/components/raw-data-view/index.tsx": "289a95ed6e5c0cca335b99e7d65aea3ba84e84ba3008b1a7dffe1bbf523047cd",
