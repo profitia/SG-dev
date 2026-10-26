@@ -90,11 +90,16 @@ test('path traversal cannot escape proposed producer scope',()=>fixture(({resolv
 }))
 
 const current=JSON.parse(fs.readFileSync(path.join(root,registryPath),'utf8'))
+// The G1 receipt is immutable history. Later approved capabilities may extend
+// today's registry, but every accepted KRS-era row must remain unchanged.
+const acceptedRegistry=JSON.parse(execFileSync('git',['show',`${g1Checkpoint}:${registryPath}`],{cwd:root,encoding:'utf8'}))
 const activeRoute=(project,paths)=>resolveProjectRouting({profile:resolveProjectProfile(project,root),targets:paths,repositoryRoot:root})
-test('current approved registry adds exactly three unique routes and preserves every previous row and metadata',()=>{
+test('accepted KRS checkpoint adds exactly three routes and current registry preserves every accepted row and metadata',()=>{
  const oldIds=new Set(original.surfaces.map(s=>s.id))
- assert.deepEqual(current.surfaces.filter(s=>oldIds.has(s.id)),original.surfaces)
- assert.deepEqual(current.surfaces.filter(s=>!oldIds.has(s.id)),candidates)
+ assert.deepEqual(acceptedRegistry.surfaces.filter(s=>oldIds.has(s.id)),original.surfaces)
+ assert.deepEqual(acceptedRegistry.surfaces.filter(s=>!oldIds.has(s.id)),candidates)
+ const active=new Map(current.surfaces.map(s=>[s.id,s]))
+ for(const row of acceptedRegistry.surfaces)assert.deepEqual(active.get(row.id),row)
  const {surfaces:ignoredOld,...oldMeta}=original,{surfaces:ignoredNew,...newMeta}=current
  assert.deepEqual(newMeta,oldMeta)
  const r=activeRoute('ARCHITECTURE',targets);assert.equal(r.ok,true,r.error)

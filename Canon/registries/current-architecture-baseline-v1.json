@@ -634,6 +634,60 @@
         "ARCHITECTURE"
       ],
       "onboardingAuthorization": "G1 GRANTED: explicit owner instruction KRS REGISTRY — FORMAL OWNER APPROVAL G1, 2026-10-22; Canon/evidence/2026-10-22-krs-registry-g1-onboarding.md"
+    },
+    {
+      "id": "SG2-PCI-BASE-001",
+      "capability": "Price Change Index UI",
+      "name": "Price Change Index reusable UI",
+      "pathPatterns": [
+        "packages/sg2-price-change-index-ui/**"
+      ],
+      "currentOwner": "SG2 Price Change Index",
+      "currentResponsibility": "Reusable presentation-only UI for the three pinned MagicPath designs; typed host-supplied demo data and events, no product integration.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "daf0ac13db8a8ebe3af7dff263b399da3638bfcc",
+      "allowedProjectKeys": [
+        "SG2"
+      ],
+      "onboardingAuthorization": "Explicit owner instruction for a new isolated reusable Price Change Index frontend and required onboarding, 2026-10-26; host conversation 01a17820-5e4f-7dd0-95bd-35daea1d6da2; Canon/evidence/2026-10-26-sg2-price-change-index-onboarding.md"
+    },
+    {
+      "id": "SG2-PCI-BASE-002",
+      "capability": "Price Change Index Demo",
+      "name": "Price Change Index isolated demo host",
+      "pathPatterns": [
+        "apps/sg2-price-change-index-demo/**"
+      ],
+      "currentOwner": "SG2 Price Change Index",
+      "currentResponsibility": "Isolated SG2 Development host, synthetic fixtures, local simulations, portability harness and frontend-only serving configuration.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "daf0ac13db8a8ebe3af7dff263b399da3638bfcc",
+      "allowedProjectKeys": [
+        "SG2"
+      ],
+      "onboardingAuthorization": "Explicit owner instruction for a new isolated reusable Price Change Index frontend and required onboarding, 2026-10-26; host conversation 01a17820-5e4f-7dd0-95bd-35daea1d6da2; Canon/evidence/2026-10-26-sg2-price-change-index-onboarding.md"
+    },
+    {
+      "id": "SG2-PCI-BASE-003",
+      "capability": "Price Change Index CI",
+      "name": "Price Change Index independent CI",
+      "pathPatterns": [
+        ".github/workflows/sg2-price-change-index-ci.yml"
+      ],
+      "currentOwner": "SG2 Price Change Index",
+      "currentResponsibility": "Independent offline UI/demo verification without product credentials, database, deployment or changes to existing runtimes.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "daf0ac13db8a8ebe3af7dff263b399da3638bfcc",
+      "allowedProjectKeys": [
+        "SG2"
+      ],
+      "onboardingAuthorization": "Explicit owner instruction for a new isolated reusable Price Change Index frontend and required onboarding, 2026-10-26; host conversation 01a17820-5e4f-7dd0-95bd-35daea1d6da2; Canon/evidence/2026-10-26-sg2-price-change-index-onboarding.md"
     }
   ],
   "cleanupFindings": [
