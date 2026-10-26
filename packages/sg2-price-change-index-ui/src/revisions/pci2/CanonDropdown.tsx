@@ -84,6 +84,11 @@ export const CanonDropdown = forwardRef<HTMLSelectElement, Props>(function Canon
   }, [query, open, choices]);
   useLayoutEffect(() => {
     if (!open || !trigger.current) return;
+    // C07 stays in the active C27 subtree and enters the native top layer.
+    // A fixed popover keeps viewport geometry despite the dialog's transform.
+    const modal=trigger.current.closest('dialog[open]');
+    const node=popup.current;
+    if(modal&&node){node.setAttribute('popover','manual');node.showPopover();}
     const place = () => {
       const node = trigger.current;
       if (!node) return;
@@ -96,6 +101,7 @@ export const CanonDropdown = forwardRef<HTMLSelectElement, Props>(function Canon
       const maxHeight = Math.min(370, Math.max(150, up ? above : below));
       setPosition({
         position: 'fixed',
+        ...(modal?{inset:'auto',margin:0,maxWidth:'none'}:{}),
         width,
         maxHeight,
         left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
@@ -126,6 +132,7 @@ export const CanonDropdown = forwardRef<HTMLSelectElement, Props>(function Canon
     window.addEventListener('resize', place);
     window.addEventListener('scroll', scroll, true);
     return () => {
+      if(node?.matches(':popover-open'))node.hidePopover();
       resizeObserver.disconnect();
       document.removeEventListener('pointerdown', outside);
       window.removeEventListener('resize', place);
@@ -217,6 +224,6 @@ export const CanonDropdown = forwardRef<HTMLSelectElement, Props>(function Canon
       {(query || matches.length > 40) && <div className="srm-dropdown-footer" role="status">
         {matches.length > 40 ? `Pokazano pierwsze 40 z ${matches.length} pasujących wartości. Dopisz więcej znaków, aby zawęzić listę.` : `${matches.length} z ${choices.length} pozycji`}
       </div>}
-    </div>, document.body)}
+    </div>, trigger.current?.closest('dialog[open]')??document.body)}
   </span>;
 });
