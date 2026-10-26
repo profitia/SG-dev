@@ -39,3 +39,5 @@ Task: SG2-BENCHMARK-CANON-POLISH-20261026. The pinned live Canon v114 and Finder
 The change is presentation-only. Protected server, provider, API, forecast mathematics and operation-authorization source boundaries remain byte-identical to the accepted receipt. No new data, forecast calculation or entitlement is introduced. The compatibility receipt records reviewed visual source fingerprints without rewriting its original acceptance evidence.
 
 Local verification: runtime selected behavior tests 21/21; dashboard suite 345/345; runtime typecheck and dashboard source-only typecheck pass. The standard dashboard typecheck encounters pre-existing generated `.next/types` route-export errors; clean CI is required before release. Live verification, retained-artifact rollback evidence and final CI are recorded in PMOS/PHR separately.
+
+Live verification follow-up: removed the retained legacy flex override on the disabled verification group, 40px helper-label reservation, and fixed checkbox-label height. Active and inactive controls now retain the same canonical grid. Eligibility, disabled states, aria-hidden, requests, and calculations are unchanged.

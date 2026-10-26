@@ -2878,7 +2878,7 @@
     },
     "applicationSourceDigests": {
       "../dashboard-preview/app/benchmark-canon.css": "f61d11bac685885fa12d8566f73b993de57096e0585766ae4636e46afcfa72e2",
-      "../dashboard-preview/app/benchmark-visual.css": "8288508d3bf7f2c171cb17a7c9c062d17ef8441e03838a550830aff85c5128de",
+      "../dashboard-preview/app/benchmark-visual.css": "2ffe067ef0a0018d8320b7d6bf7dcd6d0e49bb0af0a4d23ce5c2bc123564fe3b",
       "../dashboard-preview/app/globals.css": "23551cac6e84a59063f3a6668b0d7facd6871ff3b20927cc47c56d72982f5c14",
       "../dashboard-preview/components/raw-data-view/benchmark-visual.tsx": "3e3073bac46aa4d3df83e3354128ad20299525adeb4d4875229062203dd91635",
       "../dashboard-preview/components/raw-data-view/index.tsx": "289a95ed6e5c0cca335b99e7d65aea3ba84e84ba3008b1a7dffe1bbf523047cd",
@@ -2916,7 +2916,7 @@
       "../dashboard-preview/components/raw-data-view/magicpath/srm-history-chart.css": "07f57bba55f6182889cf802182fa37e3d5bc55436663d13d8b98626f63e8d8fe",
       "../dashboard-preview/components/raw-data-view/magicpath/srm-interaction-motion.css": "0719c9f4c7ab66686f3a2f0bd8e66ddd98de857ab3b06559da0ed47eb9763ccf",
       "../dashboard-preview/components/raw-data-view/magicpath/useChartPanel.ts": "66203e5e44f95f1596d88fd0c185fe78043251cb2b47a3cb60f1b87898d78e24",
-      "../dashboard-preview/docs/benchmark-magicpath-parity.md": "bfb9395e494a81d84619594e58c6200a48592262a12add8ae18f33a566c0fa56",
+      "../dashboard-preview/docs/benchmark-magicpath-parity.md": "ed6b0a2359b5fae2060238b8dd25e2c25029d2e36c6139457edd7e1174e9bb62",
       "../dashboard-preview/public/benchmark-visual/inter-latin-ext.woff2": "a28eb6d3ccb534ae0c94ca999371df024aab60b08c3c8a5720ee9e32fa0faaa2",
       "../dashboard-preview/public/benchmark-visual/inter-latin.woff2": "c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4",
       "../dashboard-preview/tests/magicpath-chart-geometry.test.ts": "6cd88343c3d175bb0bc6e400be16cc6eeccb5dfb563728d41066c6db4443707b",
