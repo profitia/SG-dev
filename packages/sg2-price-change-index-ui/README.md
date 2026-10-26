@@ -21,3 +21,5 @@ Pinned rem geometry assumes a 16px document root. Media queries and fixed/modal 
 The optional `onThemeChange(theme)` callback lets the host reflect the module mode in its own viewport/native controls. The standalone demo owns and restores its document color-scheme; the independent minimal host preserves its original document styles.
 
 Owner-approved responsive change: the original v1/v2 hidden scenario controls remain available at960/1050px and below. The module reuses the pinned library C07 compact dropdown (32px height,12px text,8px radius), in a48px row. Its8px top/bottom insets and independent horizontal navigation preserve all options and state across resizes. Desktop uses the original native selector. Original hidden source declarations remain in the provenance matrix alongside this explicit approved overlay.
+
+C07 popups inside native C27 stay in that dialog subtree and use the browser Popover API so its transform/overflow cannot trap or clip the menu. This requires modern native Dialog/Popover support. Outside a modal the pinned ordinary portal is unchanged. Inspecting a popup returns focus to its trigger when the popup closes on blur.
