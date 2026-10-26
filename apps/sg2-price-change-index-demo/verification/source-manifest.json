@@ -25404,7 +25404,12 @@
       "event": "A local asset-packaging patch was applied before inspecting a dirty-code-state BLOCKED result. No push, merge or deployment occurred. Only own pending edits were preserved outside the checkout and reverted. Clean require-begin then passed all applicable gates before the patches were reapplied.",
       "blockedCandidate": "23136b769d3feebfc62c83fe1a9029c16dcae95b",
       "result": "RECOVERED_WITH_CLEAN_PREFLIGHT",
-      "targetEnvironment": "development"
+      "targetEnvironment": "development",
+      "preCorrectivePublication": {
+        "firstRead": "PMOS_BEGIN_GATE blocked by temporary continuity database unavailability; clean source and all other gates PASS.",
+        "mutationWhileBlocked": false,
+        "retry": "All required gates PASS; no database configuration changed."
+      }
     },
     "assetPackaging": {
       "result": "PASS",
@@ -25460,7 +25465,12 @@
       "secretFiles": [],
       "productDatabaseCreated": false,
       "existingServiceDeploysChecked": 21,
-      "existingServiceDeployIdsChanged": []
+      "existingServiceDeployIdsChanged": [],
+      "currentDeployId": "dep-dbfplnmc6qcc73fvuc40",
+      "deployedSha": "11d4211b49108324b094bb88688f8741f53645af",
+      "ownDeployCount": 2,
+      "acceptedLkgDeployId": "dep-dbfplnmc6qcc73fvuc40",
+      "acceptanceStatus": "VERIFIED_STAGE1_1_TO_1"
     },
     "renderCost": {
       "computePlan": "0.5c-512mb",
@@ -25474,7 +25484,10 @@
       "bandwidthObservedGb": 21.57,
       "includedBandwidthGb": 25,
       "costBoundary": "The7USD approval covers the requested compute plan. Builds consume the existing shared workspace pool; future minutes/traffic follow existing workspace billing. No shared billing setting was changed.",
-      "documentation": "https://render.com/docs/build-pipeline"
+      "documentation": "https://render.com/docs/build-pipeline",
+      "pipelineChargesObservedAfterCorrectiveReleaseUsd": 25,
+      "bandwidthObservedAfterCorrectiveReleaseGb": 22.23,
+      "newPipelineMinutePoolPurchaseObserved": false
     },
     "phoneFlowAudit": {
       "viewport": {
@@ -25493,17 +25506,1454 @@
       "correctiveVerification": {
         "localPhoneCases": 44,
         "localPhoneResult": "PASS",
-        "localSourceGeometryCases": 16,
-        "localSourceGeometryResult": "PASS",
+        "renderPhoneCases": 44,
+        "renderPhoneResult": "PASS",
+        "renderTouchCases": 4,
+        "renderTouchResult": "PASS",
+        "sourceGeometryResult": "PASS",
         "canonicalMetrics": {
           "fieldHeight": 32,
           "fontSize": 12,
           "radius": 8,
           "addedRowHeight": 48
         },
-        "fullCandidateSuite": "RUNNING",
-        "render": "PENDING_CORRECTIVE_RELEASE"
+        "deployId": "dep-dbfplnmc6qcc73fvuc40"
       }
+    },
+    "finalAcceptance": {
+      "status": "PASS",
+      "acceptedCodeSha": "11d4211b49108324b094bb88688f8741f53645af",
+      "deployId": "dep-dbfplnmc6qcc73fvuc40",
+      "url": "https://price-change-index.onrender.com",
+      "capturedAt": "2026-10-26T18:56:55.210000+00:00",
+      "browserCases": 175,
+      "fullPhoneCases": 44,
+      "extraTouchCases": 4,
+      "httpChecks": 11,
+      "byteIdenticalStaticFiles": 49,
+      "sourceComparisonSets": 76,
+      "sourceElementStyleRows": 7969,
+      "matrixRows": 5117,
+      "viewports": [
+        390,
+        560,
+        768,
+        900,
+        1100,
+        1440,
+        1920,
+        2560
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "nodeSourceTests": 7,
+      "unapprovedDivergences": [],
+      "existingAuthorityServiceDeploysChecked": 21,
+      "existingDeployIdsChanged": [],
+      "localEvidenceLogs": [
+        "sg2-pci-175-final-live.log",
+        "sg2-pci-final-deep-local.log",
+        "sg2-pci-corrective-phone-live.log"
+      ],
+      "ciCandidate": {
+        "runId": "40374161015",
+        "sha": "d6916adaa560ac9f13c18fe5a7df22ee6a3c8de0",
+        "browserCases": 166,
+        "result": "PASS"
+      },
+      "ciAcceptedMain": {
+        "runId": "40375130388",
+        "sha": "11d4211b49108324b094bb88688f8741f53645af",
+        "browserCases": 166,
+        "result": "PASS"
+      },
+      "receiptCi": "The PR containing this receipt runs the expanded175-case suite; code assets remain unchanged.",
+      "sourceMatrixBasisUnchanged": true,
+      "runtimeSourceUnchangedFromDeployedSha": true,
+      "governanceTopologyChecks": 24
+    },
+    "finalSourceComparisons": [
+      {
+        "artifact": "parity-paired-source-behav-01794-1-advanced-disclosure-light/source-and-actual.json",
+        "sha256": "3bfcb6a3e4a3c2825a44414a23a2d18d59895ebd7787a78cdc045b424a0d6228",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "advanced disclosure",
+        "sourceElementCount": 237,
+        "receivedElementCount": 237
+      },
+      {
+        "artifact": "parity-paired-source-behav-06fb5-les-v3-saved-analyses-light/source-and-actual.json",
+        "sha256": "e6488baaf94cf8ca87bd3796f0c0f23357716d3845181b0391feac275d8a5e52",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "saved analyses",
+        "sourceElementCount": 28,
+        "receivedElementCount": 28
+      },
+      {
+        "artifact": "parity-paired-source-behav-1b89d--styles-v2-comparison-light/source-and-actual.json",
+        "sha256": "a21902572dd93940a129dcaa06400acfa9cf692253a29a7c3e9f3429d4a15718",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "comparison",
+        "sourceElementCount": 328,
+        "receivedElementCount": 328
+      },
+      {
+        "artifact": "parity-paired-source-behav-1e63e-styles-v2-methodology-light/source-and-actual.json",
+        "sha256": "09abd4e71c38f69140d66f67f7210b24358515c344ca26c6f9386fc14414b4d8",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "methodology",
+        "sourceElementCount": 324,
+        "receivedElementCount": 324
+      },
+      {
+        "artifact": "parity-paired-source-behav-270ff--v3-component-details-light/source-and-actual.json",
+        "sha256": "ccbf0529d581f1e8fe185a330bf41c8097254f439264ae1803fbb86177cde62a",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "component details",
+        "sourceElementCount": 159,
+        "receivedElementCount": 159
+      },
+      {
+        "artifact": "parity-paired-source-behav-2a070--v3-supplier-structure-dark/source-and-actual.json",
+        "sha256": "590cd47e5e69bac5c7f7053be4363dd657efb9ff652c138b0380a40e6e3efd76",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "supplier structure",
+        "sourceElementCount": 106,
+        "receivedElementCount": 106
+      },
+      {
+        "artifact": "parity-paired-source-behav-2f2a8--v3-result-comparison-light/source-and-actual.json",
+        "sha256": "6f3fdcf4c41ccffb33410dfde5465081df90bdb485a97908dbe6d05103431646",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "result comparison",
+        "sourceElementCount": 170,
+        "receivedElementCount": 170
+      },
+      {
+        "artifact": "parity-paired-source-behav-31a20--styles-v2-monitoring-light/source-and-actual.json",
+        "sha256": "87ecf766f7669cc5cd99e3b546859ed3d26acd7f8a39e2f817d3f22f298554fc",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "monitoring",
+        "sourceElementCount": 273,
+        "receivedElementCount": 273
+      },
+      {
+        "artifact": "parity-paired-source-behav-32041-r-styles-v1-menu-open-light/source-and-actual.json",
+        "sha256": "e68c5aa9096d64557965e5330a2c312c82abe3d53feb8eadb167f2ff836195c4",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "menu open",
+        "sourceElementCount": 313,
+        "receivedElementCount": 313
+      },
+      {
+        "artifact": "parity-paired-source-behav-386ac-les-v2-setup-purchase-light/source-and-actual.json",
+        "sha256": "c7fa351fe82b63226f3c81b95bbc957372ef70b3aca8a5817ef249362c310316",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "setup purchase",
+        "sourceElementCount": 152,
+        "receivedElementCount": 152
+      },
+      {
+        "artifact": "parity-paired-source-behav-4a99c-ew-category-selection-light/source-and-actual.json",
+        "sha256": "cde7de0dc3e456a435589d9fef00f15c172f910f1d1ba94bc9bb795ea40c6b90",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "new category selection",
+        "sourceElementCount": 116,
+        "receivedElementCount": 116
+      },
+      {
+        "artifact": "parity-paired-source-behav-4e225-er-styles-v3-date-step-dark/source-and-actual.json",
+        "sha256": "e6f51ad5852f54fd078eba8205e6d902f26b765e01531434ecac7c10a0df52f4",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "date step",
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-paired-source-behav-4e657-s-v3-component-details-dark/source-and-actual.json",
+        "sha256": "7962b54e81c9550a985e36636d48f4f99761c3ab02c36e80399d5eb750d28d3c",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "component details",
+        "sourceElementCount": 159,
+        "receivedElementCount": 159
+      },
+      {
+        "artifact": "parity-paired-source-behav-4f917--breakdown-disclosure-light/source-and-actual.json",
+        "sha256": "bee002869fd2e06b56144037feba30f88ab937c2708232ac909b0477b141732b",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "breakdown disclosure",
+        "sourceElementCount": 273,
+        "receivedElementCount": 273
+      },
+      {
+        "artifact": "parity-paired-source-behav-509ed-s-v3-result-monitoring-dark/source-and-actual.json",
+        "sha256": "8a5e8647881a3491f7c16702a960821294e3fd0ece9649eca327dcb0998d8988",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "result monitoring",
+        "sourceElementCount": 147,
+        "receivedElementCount": 147
+      },
+      {
+        "artifact": "parity-paired-source-behav-5586e-r-styles-v3-date-step-light/source-and-actual.json",
+        "sha256": "d66947354ec822f665cf90e693f989a6ad9b8f6e35ac2305547820ffcbeaa191",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "date step",
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-paired-source-behav-55eac-inner-styles-v2-saved-light/source-and-actual.json",
+        "sha256": "ef1ddaa5006535d4dc63e7bc13dce75a71f7a4863592b2657c46e90aa30df594",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "saved",
+        "sourceElementCount": 108,
+        "receivedElementCount": 108
+      },
+      {
+        "artifact": "parity-paired-source-behav-5b02a-yles-v3-purchase-step-light/source-and-actual.json",
+        "sha256": "40335fcb2ec308c9aab8b5d1fe991679588140ef85797c6735c000042394a060",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "purchase step",
+        "sourceElementCount": 53,
+        "receivedElementCount": 53
+      },
+      {
+        "artifact": "parity-paired-source-behav-638a4-s-v3-result-comparison-dark/source-and-actual.json",
+        "sha256": "ffb89bd43e4916d4590ae927ddc53b5ff6c8f429574d2e8e6a2a37e4769e14f5",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "result comparison",
+        "sourceElementCount": 170,
+        "receivedElementCount": 170
+      },
+      {
+        "artifact": "parity-paired-source-behav-642e6-v3-benchmark-structure-dark/source-and-actual.json",
+        "sha256": "1e545baab062b4f0cee2302d7e17bca44812d65466a7fe3a975db0579518a446",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "benchmark structure",
+        "sourceElementCount": 71,
+        "receivedElementCount": 71
+      },
+      {
+        "artifact": "parity-paired-source-behav-6cccf-yles-v3-saved-analyses-dark/source-and-actual.json",
+        "sha256": "a81efa6827b4caafe499e251a06ab1ca9939882f0189465a37271f8b50ed0c79",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "saved analyses",
+        "sourceElementCount": 28,
+        "receivedElementCount": 28
+      },
+      {
+        "artifact": "parity-paired-source-behav-6d31d-styles-v1-methodology-light/source-and-actual.json",
+        "sha256": "17fd094f9bd9597ad5dd9b0e258f9039340d32089cb2fda61a2ebef93da7039d",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "methodology",
+        "sourceElementCount": 340,
+        "receivedElementCount": 340
+      },
+      {
+        "artifact": "parity-paired-source-behav-78d8c-ner-styles-v2-history-light/source-and-actual.json",
+        "sha256": "febcf2b48e3c1698bc7269d442886d21f3f4bc0448a5562338bce6a66b38faf6",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "history",
+        "sourceElementCount": 290,
+        "receivedElementCount": 290
+      },
+      {
+        "artifact": "parity-paired-source-behav-838cd-es-v2-setup-structure-light/source-and-actual.json",
+        "sha256": "bb4c7696385d83148c4baa1d6a2b1d1e3a7ed5e90d847695d653b2fda333dd82",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "setup structure",
+        "sourceElementCount": 192,
+        "receivedElementCount": 192
+      },
+      {
+        "artifact": "parity-paired-source-behav-86045-r-styles-v2-menu-open-light/source-and-actual.json",
+        "sha256": "5a84fb14ef06a9e7b903b904691b38274b10cf1d26cebff40439853692e66d80",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "menu open",
+        "sourceElementCount": 125,
+        "receivedElementCount": 125
+      },
+      {
+        "artifact": "parity-paired-source-behav-93970-s-v1-price-simulation-light/source-and-actual.json",
+        "sha256": "045723da2f6faf61c8c2bd527a6fa7f9c644b04580d5a4dd6f093c6bbc418880",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "price simulation",
+        "sourceElementCount": 348,
+        "receivedElementCount": 348
+      },
+      {
+        "artifact": "parity-paired-source-behav-9b8b4-r-styles-v2-component-light/source-and-actual.json",
+        "sha256": "2c34dacbecec9ee160583c53fd078ed111da6d25644394c6ff3ccb7d6657b91a",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "component",
+        "sourceElementCount": 360,
+        "receivedElementCount": 360
+      },
+      {
+        "artifact": "parity-paired-source-behav-b1ce2--v3-result-monitoring-light/source-and-actual.json",
+        "sha256": "b2e76ea07b985fe8999dad6d7eca64ac9be3f69ab509559d38eff954dbf0470e",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "result monitoring",
+        "sourceElementCount": 147,
+        "receivedElementCount": 147
+      },
+      {
+        "artifact": "parity-paired-source-behav-b5d5a-1-menu-edge-selection-light/source-and-actual.json",
+        "sha256": "2386efc520bc5797b00efc76e3feb6ade193b233de631ba28cf3fc0644b4269b",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "menu edge selection",
+        "sourceElementCount": 313,
+        "receivedElementCount": 313
+      },
+      {
+        "artifact": "parity-paired-source-behav-c9c17-yles-v1-configuration-light/source-and-actual.json",
+        "sha256": "ac76c5213399c805a6ac6d9368a77c4ef1aae6d5a5c8dfcaba14b587f4c531df",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "configuration",
+        "sourceElementCount": 237,
+        "receivedElementCount": 237
+      },
+      {
+        "artifact": "parity-paired-source-behav-ce5b4-v3-supplier-structure-light/source-and-actual.json",
+        "sha256": "734946695fbee4b5535128ccaeb343edbdd9b20e86bddabf1a87832424517b41",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "supplier structure",
+        "sourceElementCount": 106,
+        "receivedElementCount": 106
+      },
+      {
+        "artifact": "parity-paired-source-behav-d1546-er-styles-v1-versions-light/source-and-actual.json",
+        "sha256": "6b7ffc8cc84b226a4f851fc4cf1f0cbaadfcd70dbb27fca537968f6f44f678b6",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "versions",
+        "sourceElementCount": 352,
+        "receivedElementCount": 352
+      },
+      {
+        "artifact": "parity-paired-source-behav-d8b3d-s-v3-direct-structure-light/source-and-actual.json",
+        "sha256": "67a6014d45eb82019c8b7617668e82fd85e8d864f0cde855cdd47d64127f44d4",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "direct structure",
+        "sourceElementCount": 103,
+        "receivedElementCount": 103
+      },
+      {
+        "artifact": "parity-paired-source-behav-db1b2--styles-v2-setup-date-light/source-and-actual.json",
+        "sha256": "56830286dd27dd29356f555ba6222956db9bad6b7cd7a1a6bfa13b3e8a1d0265",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "setup date",
+        "sourceElementCount": 154,
+        "receivedElementCount": 154
+      },
+      {
+        "artifact": "parity-paired-source-behav-db2cb-2-menu-edge-selection-light/source-and-actual.json",
+        "sha256": "331edd0c352caae4f88d18556e59a9ef6fe13c9e7d4883fa79f4e99a2bb849ce",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": "menu edge selection",
+        "sourceElementCount": 125,
+        "receivedElementCount": 125
+      },
+      {
+        "artifact": "parity-paired-source-behav-e876f-3-benchmark-structure-light/source-and-actual.json",
+        "sha256": "b029382ff204cd45c75898184f8a8fd837c00ca107fd35c93aae456338cef1cf",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "light",
+        "scenario": "benchmark structure",
+        "sourceElementCount": 71,
+        "receivedElementCount": 71
+      },
+      {
+        "artifact": "parity-paired-source-behav-eb315-s-v1-component-detail-light/source-and-actual.json",
+        "sha256": "658fff2131f149a48a96fa1d895e5fd2b2d3264496e823c73c832beefeee4679",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "component detail",
+        "sourceElementCount": 403,
+        "receivedElementCount": 403
+      },
+      {
+        "artifact": "parity-paired-source-behav-f1732-tyles-v3-purchase-step-dark/source-and-actual.json",
+        "sha256": "3230cfc049e3efe64759c8a6ffc0e18a9006aa41e21df816c1c235848a827784",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "purchase step",
+        "sourceElementCount": 53,
+        "receivedElementCount": 53
+      },
+      {
+        "artifact": "parity-paired-source-behav-fed38-es-v3-direct-structure-dark/source-and-actual.json",
+        "sha256": "38ca302897061cf5258e6540a2b1923a7427f588707919ff72654b5f188f9649",
+        "revision": "465437653945430016",
+        "width": null,
+        "theme": "dark",
+        "scenario": "direct structure",
+        "sourceElementCount": 103,
+        "receivedElementCount": 103
+      },
+      {
+        "artifact": "parity-paired-source-behavior-and-inner-styles-v1-home-light/source-and-actual.json",
+        "sha256": "0a55dd9977b9f21886a07e2f2911862d462954c586f538b82a9de57d02ed1059",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": "home",
+        "sourceElementCount": 124,
+        "receivedElementCount": 124
+      },
+      {
+        "artifact": "parity-paired-source-modal-background-scroll-v1-dark/source-and-actual-scroll.json",
+        "sha256": "b040fe5170361ced7c177d628a88ab280284bd101df0752f0736ad94eca33835",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 0,
+        "receivedElementCount": 0
+      },
+      {
+        "artifact": "parity-paired-source-modal-background-scroll-v1-light/source-and-actual-scroll.json",
+        "sha256": "c23db94f1e77af86dd0bf87244e8dca57e94d8745b93d59c3e49885102a85a49",
+        "revision": "465437640712400896",
+        "width": null,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 0,
+        "receivedElementCount": 0
+      },
+      {
+        "artifact": "parity-paired-source-modal-background-scroll-v2-dark/source-and-actual-scroll.json",
+        "sha256": "4c6d01c896fd9322a8cf882878c42fc1a4f420c3b0bfe6799e86dee92fa3f9c6",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 0,
+        "receivedElementCount": 0
+      },
+      {
+        "artifact": "parity-paired-source-modal-background-scroll-v2-light/source-and-actual-scroll.json",
+        "sha256": "94ab9616b8cb64fff17129097f3be608a8fc12e6657d41eb66ac3a795db0e195",
+        "revision": "465437647490396160",
+        "width": null,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 0,
+        "receivedElementCount": 0
+      },
+      {
+        "artifact": "parity-v1-source-main-geometry-1100-light/source-and-actual.json",
+        "sha256": "d2318e2f1e9cfbcbf4ff99284150f66788b523533a82395d8953e424821652c5",
+        "revision": "465437640712400896",
+        "width": 1100,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-v1-source-main-geometry-1440-light/source-and-actual.json",
+        "sha256": "fe639edff9b67b26d7f9593a826c3335ec7b0f30d2c205f764deed6931e1222c",
+        "revision": "465437640712400896",
+        "width": 1440,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-v1-source-main-geometry-1920-light/source-and-actual.json",
+        "sha256": "82736bdb791b32283952c69b0edc9fb367b66327592cb5afab901b1c74e132e3",
+        "revision": "465437640712400896",
+        "width": 1920,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-v1-source-main-geometry-2560-light/source-and-actual.json",
+        "sha256": "311266b3767743f9fd7cd4da79ab83fcc3c3cb7c4aa49a1a3c92359c8549f424",
+        "revision": "465437640712400896",
+        "width": 2560,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-v1-source-main-geometry-390-light/source-and-actual.json",
+        "sha256": "282e762ca917085a1b3ce1d9a002205665fb942a5343961307f63158d4b1ee43",
+        "revision": "465437640712400896",
+        "width": 390,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-v1-source-main-geometry-560-light/source-and-actual.json",
+        "sha256": "956e2cc439126e90755c80eb3c07979d9cdf23b4cf2ef6683a7eb47f701278c2",
+        "revision": "465437640712400896",
+        "width": 560,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-v1-source-main-geometry-768-light/source-and-actual.json",
+        "sha256": "b70de4ac8e9f90a283a99f137e1a5cd043a58ece43121cb56ef4cc464cba0bd9",
+        "revision": "465437640712400896",
+        "width": 768,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-v1-source-main-geometry-900-light/source-and-actual.json",
+        "sha256": "4b8bff68b9d52f80d3827531efb306f8b8b4f86b47454e4ab0bbcdd012aa8b66",
+        "revision": "465437640712400896",
+        "width": 900,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 48,
+        "receivedElementCount": 48
+      },
+      {
+        "artifact": "parity-v2-source-main-geometry-1100-light/source-and-actual.json",
+        "sha256": "286bfbb2bb9d062cfa8714eba173841142dd0dddb75ec50f1cb37b24c0e7076d",
+        "revision": "465437647490396160",
+        "width": 1100,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 17,
+        "receivedElementCount": 17
+      },
+      {
+        "artifact": "parity-v2-source-main-geometry-1440-light/source-and-actual.json",
+        "sha256": "e1a422e6523cf73f66ba79098aaf459fab08d7cc173fa1a05f2ace813b73c533",
+        "revision": "465437647490396160",
+        "width": 1440,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 17,
+        "receivedElementCount": 17
+      },
+      {
+        "artifact": "parity-v2-source-main-geometry-1920-light/source-and-actual.json",
+        "sha256": "e34f677ca9cdfbcf2f29cbaa2685e8c62d0f8aecc34e6e8f8e5e45ee99940ac0",
+        "revision": "465437647490396160",
+        "width": 1920,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 17,
+        "receivedElementCount": 17
+      },
+      {
+        "artifact": "parity-v2-source-main-geometry-2560-light/source-and-actual.json",
+        "sha256": "77f1ac86f8383248d6fd6638535b483d78ad093325985294a0023f544a6e51ec",
+        "revision": "465437647490396160",
+        "width": 2560,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 17,
+        "receivedElementCount": 17
+      },
+      {
+        "artifact": "parity-v2-source-main-geometry-390-light/source-and-actual.json",
+        "sha256": "c73ddc68d876a79b2f6acda2268057a1b7663cc14f69ba5729b03583d669b9cc",
+        "revision": "465437647490396160",
+        "width": 390,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 17,
+        "receivedElementCount": 17
+      },
+      {
+        "artifact": "parity-v2-source-main-geometry-560-light/source-and-actual.json",
+        "sha256": "8e3df081166d8d3b471fe9660af23f4271308f2f13caf106da6197d0e47f6473",
+        "revision": "465437647490396160",
+        "width": 560,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 17,
+        "receivedElementCount": 17
+      },
+      {
+        "artifact": "parity-v2-source-main-geometry-768-light/source-and-actual.json",
+        "sha256": "ce591268a02627db49dc1301615d282d1bed9d469977d08c3237d86d03aa9b10",
+        "revision": "465437647490396160",
+        "width": 768,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 17,
+        "receivedElementCount": 17
+      },
+      {
+        "artifact": "parity-v2-source-main-geometry-900-light/source-and-actual.json",
+        "sha256": "5cf923978cf496334bae41a6ea8851ad50f5583f1baadbf5a0ed2fe91efbb10e",
+        "revision": "465437647490396160",
+        "width": 900,
+        "theme": null,
+        "scenario": null,
+        "sourceElementCount": 17,
+        "receivedElementCount": 17
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-1100-dark/source-and-actual.json",
+        "sha256": "695f99e4c8cea0cf422c399d442bf8981a486dece5d6af17dd95f9d95c242154",
+        "revision": "465437653945430016",
+        "width": 1100,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-1100-light/source-and-actual.json",
+        "sha256": "492410b5d5bfa935b4f098a7cdbdf1414ea85526e617bcd5fc47b6fe858cfde1",
+        "revision": "465437653945430016",
+        "width": 1100,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-1440-dark/source-and-actual.json",
+        "sha256": "dbc1454cad1d090a5816ad67745af13b760a494a7a356de446a5f5bed6e048f8",
+        "revision": "465437653945430016",
+        "width": 1440,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-1440-light/source-and-actual.json",
+        "sha256": "678ee0046850d9c5c7a60679ddd95336a51d105cdf3af70e203b96d9a1ba22cd",
+        "revision": "465437653945430016",
+        "width": 1440,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-1920-dark/source-and-actual.json",
+        "sha256": "e04e27d79c0800d2060b8953846dc3970e8070e1368daf50b950295c4cab1cef",
+        "revision": "465437653945430016",
+        "width": 1920,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-1920-light/source-and-actual.json",
+        "sha256": "ae663e2b73da0095fdf1204606967330a1a2deda0354cb4fa749b56a0bec1b18",
+        "revision": "465437653945430016",
+        "width": 1920,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-2560-dark/source-and-actual.json",
+        "sha256": "95f698f48db0e5bb258b01ff1dfb6c8bb825aeb78d5206e80b309d23fa23390b",
+        "revision": "465437653945430016",
+        "width": 2560,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-2560-light/source-and-actual.json",
+        "sha256": "ed5a6c0605fcfe64f323d8bd9d0fbc1228c43d2459e3862421347e69c0b97d41",
+        "revision": "465437653945430016",
+        "width": 2560,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-390-dark/source-and-actual.json",
+        "sha256": "054e2f8ba36e0d714c816db54bff3cca321b2024b98f28114a68c7e43730b622",
+        "revision": "465437653945430016",
+        "width": 390,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-390-light/source-and-actual.json",
+        "sha256": "757edab5e20daad12ae720bd4fc9d4a9b00918c4e78a06e8a00bea9b4e567ce3",
+        "revision": "465437653945430016",
+        "width": 390,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-560-dark/source-and-actual.json",
+        "sha256": "023b35729c664ef21588501fb49581829091ffdd666b5b4a6356410e13779f7c",
+        "revision": "465437653945430016",
+        "width": 560,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-560-light/source-and-actual.json",
+        "sha256": "6d9c622e01d966591c771c9b25c34222a3c5e2f21b70bfd2574b73fcdfbe6d05",
+        "revision": "465437653945430016",
+        "width": 560,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-768-dark/source-and-actual.json",
+        "sha256": "bd862ecaa7a803367e1adc1a586061ae3b9bbbb6132187d6aa31aadcc5f5066f",
+        "revision": "465437653945430016",
+        "width": 768,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-768-light/source-and-actual.json",
+        "sha256": "96f4a479ba3ab3eec065102a0127da920a81cbb2746cfa66b927ead0195c85fc",
+        "revision": "465437653945430016",
+        "width": 768,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-900-dark/source-and-actual.json",
+        "sha256": "651295ca922e15316447c0ccb3e9dee6caa3cb831baece86e2f440eea2989e67",
+        "revision": "465437653945430016",
+        "width": 900,
+        "theme": "dark",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      },
+      {
+        "artifact": "parity-v3-source-and-approved-canon-geometry-900-light/source-and-actual.json",
+        "sha256": "a748417455a61d637e0cceb932f9e313c9c746605c6e0d596fe31ad668b034ee",
+        "revision": "465437653945430016",
+        "width": 900,
+        "theme": "light",
+        "scenario": null,
+        "sourceElementCount": 12,
+        "receivedElementCount": 12
+      }
+    ],
+    "staticAssetAttestation": {
+      "sourceSha": "11d4211b49108324b094bb88688f8741f53645af",
+      "deployId": "dep-dbfplnmc6qcc73fvuc40",
+      "origin": "https://price-change-index.onrender.com",
+      "files": 49,
+      "allMatch": true,
+      "rows": [
+        {
+          "file": "assets/400-DhzmkGAC.css",
+          "status": 200,
+          "expectedSha256": "c2cac57a38d5d66019ae1e7b8dd59f49b22ed51d1f1c28ba211e04217e2cf610",
+          "receivedSha256": "c2cac57a38d5d66019ae1e7b8dd59f49b22ed51d1f1c28ba211e04217e2cf610",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-Black-DDhSxYXU.ttf",
+          "status": 200,
+          "expectedSha256": "4795b76b5b54d140fa17432eb4ee2eb27c63156ca0c8184ed27c4781faafe276",
+          "receivedSha256": "4795b76b5b54d140fa17432eb4ee2eb27c63156ca0c8184ed27c4781faafe276",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-Bold-zdiomvYZ.ttf",
+          "status": 200,
+          "expectedSha256": "412c068eab6f36e6807d630ff89127165e8e4d3e8653434cdfb56b60cdcc3a32",
+          "receivedSha256": "412c068eab6f36e6807d630ff89127165e8e4d3e8653434cdfb56b60cdcc3a32",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-ExtraBold-DZtS5_wi.ttf",
+          "status": 200,
+          "expectedSha256": "d78d9777567fc7320968861417653cbbb80d861f0dfd9978e9705b4400696910",
+          "receivedSha256": "d78d9777567fc7320968861417653cbbb80d861f0dfd9978e9705b4400696910",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-ExtraLight-BEx6KSH1.ttf",
+          "status": 200,
+          "expectedSha256": "3be0e36c828b773e3f10568461f3a0baf7323cff772d9408df04222a205bcb1f",
+          "receivedSha256": "3be0e36c828b773e3f10568461f3a0baf7323cff772d9408df04222a205bcb1f",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-Light-WU__v9oT.ttf",
+          "status": 200,
+          "expectedSha256": "a04215a19659c1cfdf462157fc69efa03df8cc67c7353f83d80f8ead7698a169",
+          "receivedSha256": "a04215a19659c1cfdf462157fc69efa03df8cc67c7353f83d80f8ead7698a169",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-Medium-CKLJZXR2.ttf",
+          "status": 200,
+          "expectedSha256": "a645f55492d1c8cdace43c72be8cbec08e680b5a86d8b4c2d1c50d6e41e9cc96",
+          "receivedSha256": "a645f55492d1c8cdace43c72be8cbec08e680b5a86d8b4c2d1c50d6e41e9cc96",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-Regular-DYjygwQm.ttf",
+          "status": 200,
+          "expectedSha256": "3127f0b873387ee37e2040135a06e9e9c05030f509eb63689529becf28b50384",
+          "receivedSha256": "3127f0b873387ee37e2040135a06e9e9c05030f509eb63689529becf28b50384",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-SemiBold-XVCL1Lno.ttf",
+          "status": 200,
+          "expectedSha256": "b0b540e69bf6717016e33874670e09acf4bffc2ca3f4c1cf174a4ff696308c65",
+          "receivedSha256": "b0b540e69bf6717016e33874670e09acf4bffc2ca3f4c1cf174a4ff696308c65",
+          "matches": true
+        },
+        {
+          "file": "assets/Inter-Thin-BinVesNM.ttf",
+          "status": 200,
+          "expectedSha256": "9406f2adbb821d34651f66265b24bf67ed1731ac4133da8eb56270956009434f",
+          "receivedSha256": "9406f2adbb821d34651f66265b24bf67ed1731ac4133da8eb56270956009434f",
+          "matches": true
+        },
+        {
+          "file": "assets/index-CGpzx3nI.css",
+          "status": 200,
+          "expectedSha256": "4b2287b84b4ebdf70be485280222a31f4a3b96655df3340c63c30cb3cd2590c7",
+          "receivedSha256": "4b2287b84b4ebdf70be485280222a31f4a3b96655df3340c63c30cb3cd2590c7",
+          "matches": true
+        },
+        {
+          "file": "assets/index-Cdldf3CP.js",
+          "status": 200,
+          "expectedSha256": "74a3c900711b78d29ce84de3f17c79c6071cf4951f207e821196490ef77da91e",
+          "receivedSha256": "74a3c900711b78d29ce84de3f17c79c6071cf4951f207e821196490ef77da91e",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-3.019-OFL.txt",
+          "status": 200,
+          "expectedSha256": "4d7d9c95e7d7f2f0ebf76d5e0b344826b74e903a34028ee18ab54bb639e45906",
+          "receivedSha256": "4d7d9c95e7d7f2f0ebf76d5e0b344826b74e903a34028ee18ab54bb639e45906",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-4.1-OFL.txt",
+          "status": 200,
+          "expectedSha256": "3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345",
+          "receivedSha256": "3b0a5fca3d17942cde889069889dedbbbd075e9b599968c82a95f4d944e9b345",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-cyrillic-400-normal-HOLc17fK.woff",
+          "status": 200,
+          "expectedSha256": "6e441a6c94788318fa02b6d0a633aa29eebe27b69c6567eb1e59b4edc68ed70e",
+          "receivedSha256": "6e441a6c94788318fa02b6d0a633aa29eebe27b69c6567eb1e59b4edc68ed70e",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-cyrillic-400-normal-obahsSVq.woff2",
+          "status": 200,
+          "expectedSha256": "f0bb586459ce8f09b238285040f17e3e9e9538b2c5a7aae0775194e33c36c3c3",
+          "receivedSha256": "f0bb586459ce8f09b238285040f17e3e9e9538b2c5a7aae0775194e33c36c3c3",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-cyrillic-ext-400-normal-BQZuk6qB.woff2",
+          "status": 200,
+          "expectedSha256": "ef572f9187a8be018d9d9c2c6b77c1f6cb2af4199f02fc16c292ea10ab25a2cc",
+          "receivedSha256": "ef572f9187a8be018d9d9c2c6b77c1f6cb2af4199f02fc16c292ea10ab25a2cc",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-cyrillic-ext-400-normal-DQukG94-.woff",
+          "status": 200,
+          "expectedSha256": "5cb2f1cc0936f89a42ceae34f5a5720248dc5b8114c12b1c33a7d2ef01a9b6b9",
+          "receivedSha256": "5cb2f1cc0936f89a42ceae34f5a5720248dc5b8114c12b1c33a7d2ef01a9b6b9",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-greek-400-normal-B4URO6DV.woff2",
+          "status": 200,
+          "expectedSha256": "c15ddd00a9927b56f5c655a41f976f79bd848a20cce91fc14227751872a1cc27",
+          "receivedSha256": "c15ddd00a9927b56f5c655a41f976f79bd848a20cce91fc14227751872a1cc27",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-greek-400-normal-q2sYcFCs.woff",
+          "status": 200,
+          "expectedSha256": "bdae9d28729e8c68587d5d54e216d771a40d7a6800e824586a6e2f570c2f10df",
+          "receivedSha256": "bdae9d28729e8c68587d5d54e216d771a40d7a6800e824586a6e2f570c2f10df",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-greek-ext-400-normal-DGGRlc-M.woff2",
+          "status": 200,
+          "expectedSha256": "eadedd9e13c2582430a9fb1519eb86152fdabb483a6f66d90f8d8a52e977a1b7",
+          "receivedSha256": "eadedd9e13c2582430a9fb1519eb86152fdabb483a6f66d90f8d8a52e977a1b7",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-greek-ext-400-normal-KugGGMne.woff",
+          "status": 200,
+          "expectedSha256": "4f2b6f92ddfece8812e79774d446218aa6e0773ff8c2d31130fe2bdc23bd22d0",
+          "receivedSha256": "4f2b6f92ddfece8812e79774d446218aa6e0773ff8c2d31130fe2bdc23bd22d0",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-latin-400-normal-C38fXH4l.woff2",
+          "status": 200,
+          "expectedSha256": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+          "receivedSha256": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-latin-400-normal-CyCys3Eg.woff",
+          "status": 200,
+          "expectedSha256": "e20fa0b4fd2dd26e4d14b3ac3cc922509c3a63fa5e910e90c614544aa042dd45",
+          "receivedSha256": "e20fa0b4fd2dd26e4d14b3ac3cc922509c3a63fa5e910e90c614544aa042dd45",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-latin-ext-400-normal-77YHD8bZ.woff",
+          "status": 200,
+          "expectedSha256": "22ae8360fbad24d2af7c6c9898a346c881774dc87f7cf94bd262c48ad58d7116",
+          "receivedSha256": "22ae8360fbad24d2af7c6c9898a346c881774dc87f7cf94bd262c48ad58d7116",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-latin-ext-400-normal-C1nco2VV.woff2",
+          "status": 200,
+          "expectedSha256": "6744a7f509ebc6ab220a6cd4ea77e898adf014f03d88dcda5d45d8a9feefb4e9",
+          "receivedSha256": "6744a7f509ebc6ab220a6cd4ea77e898adf014f03d88dcda5d45d8a9feefb4e9",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-vietnamese-400-normal-Bbgyi5SW.woff",
+          "status": 200,
+          "expectedSha256": "54aa42d325bcdfd623ecb9eac4a5e3c6420c63d7b86e9d8545fb479f653beb57",
+          "receivedSha256": "54aa42d325bcdfd623ecb9eac4a5e3c6420c63d7b86e9d8545fb479f653beb57",
+          "matches": true
+        },
+        {
+          "file": "assets/inter-vietnamese-400-normal-DMkecbls.woff2",
+          "status": 200,
+          "expectedSha256": "547ad9fdaeb0ae43487f4b8a02e47c36553c0c0cb73c8aa98f93b7b615f6b55d",
+          "receivedSha256": "547ad9fdaeb0ae43487f4b8a02e47c36553c0c0cb73c8aa98f93b7b615f6b55d",
+          "matches": true
+        },
+        {
+          "file": "assets/legacy-fonts-CqWPJ3Dr.css",
+          "status": 200,
+          "expectedSha256": "8c379782ce4714a9335ab3baa439f2ec4ec82c7af9a303c14e7551cf49637ecc",
+          "receivedSha256": "8c379782ce4714a9335ab3baa439f2ec4ec82c7af9a303c14e7551cf49637ecc",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-OFL.txt",
+          "status": 200,
+          "expectedSha256": "84044c09058803d87a241bd28abb4ce30a433d7db9c27a04da3efad6a0ca539c",
+          "receivedSha256": "84044c09058803d87a241bd28abb4ce30a433d7db9c27a04da3efad6a0ca539c",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-cyrillic-400-normal-BepgbcUK.woff",
+          "status": 200,
+          "expectedSha256": "383c105bb30e149e8f2603918cbbf3e2f1051bb170a16ad3e329f695c136128c",
+          "receivedSha256": "383c105bb30e149e8f2603918cbbf3e2f1051bb170a16ad3e329f695c136128c",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-cyrillic-400-normal-CBPI_iaY.woff2",
+          "status": 200,
+          "expectedSha256": "fe349e5377e88095a1b04b615bf5e745f1899556545383c348a007aab628815e",
+          "receivedSha256": "fe349e5377e88095a1b04b615bf5e745f1899556545383c348a007aab628815e",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-cyrillic-ext-400-normal-DhDk0Xwi.woff",
+          "status": 200,
+          "expectedSha256": "8a8ac89e32a6f299be8fe353e7303f3b281ebe127ce6aa7ee2670e9c11e1e251",
+          "receivedSha256": "8a8ac89e32a6f299be8fe353e7303f3b281ebe127ce6aa7ee2670e9c11e1e251",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-cyrillic-ext-400-normal-qHufge6k.woff2",
+          "status": 200,
+          "expectedSha256": "6d6be3a7d40feb9b785e62c4b629a0e5949e50cbbbad06eea4800a4c311e9898",
+          "receivedSha256": "6d6be3a7d40feb9b785e62c4b629a0e5949e50cbbbad06eea4800a4c311e9898",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-greek-400-normal-D904r64h.woff",
+          "status": 200,
+          "expectedSha256": "e0b4a9370bb928018ef63412974b32e32c3392bc2a33bd02961a10307ea59b67",
+          "receivedSha256": "e0b4a9370bb928018ef63412974b32e32c3392bc2a33bd02961a10307ea59b67",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-greek-400-normal-ai2Z1K3C.woff2",
+          "status": 200,
+          "expectedSha256": "1567c22e954336d26ec306a0dd756d19bb5e62c67e597ce0b778fc312dc68176",
+          "receivedSha256": "1567c22e954336d26ec306a0dd756d19bb5e62c67e597ce0b778fc312dc68176",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-greek-ext-400-normal-C7ftzq0i.woff2",
+          "status": 200,
+          "expectedSha256": "34e65dc4e3deafe3d668d398a26c6a292730fe356a6a1f4303d5af3919a0e941",
+          "receivedSha256": "34e65dc4e3deafe3d668d398a26c6a292730fe356a6a1f4303d5af3919a0e941",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-greek-ext-400-normal-DSIYbWsP.woff",
+          "status": 200,
+          "expectedSha256": "02b4d89306066a2698c1e9f44463917fdbf17426c06789a52819d9f5f467cd64",
+          "receivedSha256": "02b4d89306066a2698c1e9f44463917fdbf17426c06789a52819d9f5f467cd64",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-latin-400-normal-BqEyEoaF.woff2",
+          "status": 200,
+          "expectedSha256": "425c0713a8176f92273d378599c7eac57de7fafabd4bd0ed457b70eb8f80d371",
+          "receivedSha256": "425c0713a8176f92273d378599c7eac57de7fafabd4bd0ed457b70eb8f80d371",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-latin-400-normal-D27F5sTu.woff",
+          "status": 200,
+          "expectedSha256": "6cff12116b83321230347db75d0721e70c27c6ec69eccca93ca4b1556eaaf67f",
+          "receivedSha256": "6cff12116b83321230347db75d0721e70c27c6ec69eccca93ca4b1556eaaf67f",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-latin-ext-400-normal-C3tdtHj3.woff2",
+          "status": 200,
+          "expectedSha256": "5725eacca97303d8bce26f76cfcaee4393295bbf93c1eb6c3e5e4f260b2da189",
+          "receivedSha256": "5725eacca97303d8bce26f76cfcaee4393295bbf93c1eb6c3e5e4f260b2da189",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-latin-ext-400-normal-CIveymTr.woff",
+          "status": 200,
+          "expectedSha256": "7468d3e77a4cbffab32ba29ef0201f6b6b6865ac5465964a7fbb973dbb7ff580",
+          "receivedSha256": "7468d3e77a4cbffab32ba29ef0201f6b6b6865ac5465964a7fbb973dbb7ff580",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-math-400-normal-BEFej5gc.woff2",
+          "status": 200,
+          "expectedSha256": "6fb289fea179641579de5b208600d490ee52177b347f83e92cf673afc419704e",
+          "receivedSha256": "6fb289fea179641579de5b208600d490ee52177b347f83e92cf673afc419704e",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-math-400-normal-D6sS4O5l.woff",
+          "status": 200,
+          "expectedSha256": "a7232b8539b1050fcaa3ba8495b7d8af7d4a4e8ce66d44606b7de8c50618844a",
+          "receivedSha256": "a7232b8539b1050fcaa3ba8495b7d8af7d4a4e8ce66d44606b7de8c50618844a",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-symbols-400-normal-C7tGlxgb.woff",
+          "status": 200,
+          "expectedSha256": "6c12462f33b711c773d282902ac26246f18c86dab70bca508372e9ca49efef03",
+          "receivedSha256": "6c12462f33b711c773d282902ac26246f18c86dab70bca508372e9ca49efef03",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-symbols-400-normal-CB1Ce4Gk.woff2",
+          "status": 200,
+          "expectedSha256": "a50e7f2d64f85c2d81fe7be1da5c943fde45c4ac47d3147f9b5a56b705b97824",
+          "receivedSha256": "a50e7f2d64f85c2d81fe7be1da5c943fde45c4ac47d3147f9b5a56b705b97824",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-vietnamese-400-normal-Bf76hAzZ.woff",
+          "status": 200,
+          "expectedSha256": "8881cd907e8f10a4fe6b5ad9bbb37088dc421bc58285d3f7c6e789611f0f6c81",
+          "receivedSha256": "8881cd907e8f10a4fe6b5ad9bbb37088dc421bc58285d3f7c6e789611f0f6c81",
+          "matches": true
+        },
+        {
+          "file": "assets/roboto-vietnamese-400-normal-D2PTxGxD.woff2",
+          "status": 200,
+          "expectedSha256": "76afb0e482ab569c50a1ca35dfd052daa3d0f6d54d1b30865f6fea4c35c2b350",
+          "receivedSha256": "76afb0e482ab569c50a1ca35dfd052daa3d0f6d54d1b30865f6fea4c35c2b350",
+          "matches": true
+        },
+        {
+          "file": "index.html",
+          "status": 200,
+          "expectedSha256": "ef92300393c24000cd2067a5c298278e63f602456d63c556a42a70813adf3f3e",
+          "receivedSha256": "ef92300393c24000cd2067a5c298278e63f602456d63c556a42a70813adf3f3e",
+          "matches": true
+        }
+      ]
+    },
+    "liveHttp": {
+      "origin": "https://price-change-index.onrender.com",
+      "sourceSha": "11d4211b49108324b094bb88688f8741f53645af",
+      "result": "PASS",
+      "results": [
+        {
+          "route": "/",
+          "status": 200,
+          "csp": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+          "nosniff": true
+        },
+        {
+          "route": "/v1",
+          "status": 200,
+          "csp": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+          "nosniff": true
+        },
+        {
+          "route": "/v2",
+          "status": 200,
+          "csp": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+          "nosniff": true
+        },
+        {
+          "route": "/v3",
+          "status": 200,
+          "csp": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+          "nosniff": true
+        },
+        {
+          "route": "/portable",
+          "status": 200,
+          "csp": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+          "nosniff": true
+        },
+        {
+          "route": "/api",
+          "status": 404
+        },
+        {
+          "route": "/.env",
+          "status": 404
+        },
+        {
+          "route": "/package.json",
+          "status": 404
+        },
+        {
+          "route": "/assets/missing.js",
+          "status": 404
+        },
+        {
+          "method": "POST",
+          "route": "/v3",
+          "status": 405
+        },
+        {
+          "method": "HEAD",
+          "route": "/v3",
+          "status": 200,
+          "bodyBytes": 0
+        }
+      ]
+    },
+    "livePhoneTouch": {
+      "sourceSha": "11d4211b49108324b094bb88688f8741f53645af",
+      "deployId": "dep-dbfplnmc6qcc73fvuc40",
+      "result": "PASS",
+      "rows": [
+        {
+          "view": "v1",
+          "theme": "light",
+          "pointer": "touch",
+          "selected": "fx",
+          "reloadReset": "ready",
+          "errors": [],
+          "externalRequests": []
+        },
+        {
+          "view": "v1",
+          "theme": "dark",
+          "pointer": "touch",
+          "selected": "fx",
+          "reloadReset": "ready",
+          "errors": [],
+          "externalRequests": []
+        },
+        {
+          "view": "v2",
+          "theme": "light",
+          "pointer": "touch",
+          "selected": "fx-missing",
+          "reloadReset": "complete",
+          "errors": [],
+          "externalRequests": []
+        },
+        {
+          "view": "v2",
+          "theme": "dark",
+          "pointer": "touch",
+          "selected": "fx-missing",
+          "reloadReset": "complete",
+          "errors": [],
+          "externalRequests": []
+        }
+      ]
+    },
+    "browserReadiness": {
+      "initialLiveResult": {
+        "passed": 165,
+        "failed": 1,
+        "failure": "Inspector selected the div physically under the pointer after a font swap moved the intended button. The expected SRM-C01 assertion was retained."
+      },
+      "measuredFontSwap": {
+        "sourceSha": "11d4211b49108324b094bb88688f8741f53645af",
+        "method": "Controlled delay of existing static font assets only; no application/source change",
+        "before": {
+          "hover": true,
+          "rect": {
+            "x": 72.515625,
+            "y": 348.96875,
+            "width": 132.6875,
+            "height": 34.1875,
+            "top": 348.96875,
+            "right": 205.203125,
+            "bottom": 383.15625,
+            "left": 72.515625
+          },
+          "fonts": "loading"
+        },
+        "after": {
+          "hover": false,
+          "rect": {
+            "x": 72.515625,
+            "y": 373.0625,
+            "width": 131.328125,
+            "height": 34.1875,
+            "top": 373.0625,
+            "right": 203.84375,
+            "bottom": 407.25,
+            "left": 72.515625
+          },
+          "fonts": "loaded"
+        },
+        "stable": {
+          "hover": true,
+          "rect": {
+            "x": 72.515625,
+            "y": 373.0625,
+            "width": 131.328125,
+            "height": 34.1875,
+            "top": 373.0625,
+            "right": 203.84375,
+            "bottom": 407.25,
+            "left": 72.515625
+          },
+          "fonts": "loaded"
+        },
+        "componentFound": true
+      },
+      "testCorrection": "Wait for visible module and document.fonts.ready before hover; assert actual :hover and fonts loaded. Application code unchanged.",
+      "correctedInspectorLiveCases": 6,
+      "correctedInspectorResult": "PASS"
+    },
+    "artifactStorageChronology": {
+      "intermediateRun": {
+        "passed": 165,
+        "failed": 1,
+        "failure": "ENOSPC while closing trace for v2 responsive2560/light; not accepted as PASS"
+      },
+      "recovery": "Removed only own redundant generated copies/debug download, retained original failed Render traces and measurements. Final175 assertions ran with screenshots/raw source comparisons and trace recording off; CI retains its normal traces/report.",
+      "finalLiveCases": 175,
+      "finalResult": "PASS",
+      "cleanupReceipt": {
+        "removed": [
+          {
+            "artifactName": "sg2-pci-d691-local-evidence",
+            "bytes": 40853318,
+            "basis": "Own redundant generated evidence; original CI run/artifact references and comparison index retained"
+          },
+          {
+            "artifactName": "sg2-pci-ci-40342228936-artifacts",
+            "bytes": 100933727,
+            "basis": "Own redundant generated evidence; original CI run/artifact references and comparison index retained"
+          },
+          {
+            "artifactName": "playwright-report",
+            "bytes": 2363599,
+            "basis": "Own generated HTML duplicate; complete original retained in sg2-pci-166-final-live-evidence"
+          }
+        ],
+        "freeBytesAfter": 984387584
+      }
+    },
+    "continuity": {
+      "profile": "SG2",
+      "controlPlane": "Existing registered SG2 Development control plane; no SRM PMOS writes or new continuity database",
+      "mainTask": {
+        "taskId": "SG2-PRICE-CHANGE-INDEX-FRONTEND-20261026",
+        "registrationId": "cmvp9993000001352wk5crk3v",
+        "conversationId": "pmos-task-v2:3dd8cc78461e6ff212945240a127e9d29d5440f8055b256c8fc99d4716d48bfe",
+        "acknowledgementAuthority": "Canonical PMOS/MEMOROS/PHR closeout follows acceptance of this receipt. Final generated identifiers belong to that task-scoped record and the final user handoff."
+      },
+      "completedAuxiliaryScopes": [
+        {
+          "taskId": "SG2-PRICE-CHANGE-INDEX-ONBOARDING-20261026",
+          "conversationId": "pmos-task-v2:2429d7cf7e913355c19cbd6e5ca9fd9931913a9e74c1a7985e6a1a1716b8131b",
+          "closeoutState": "CLOSEOUT_COMPLETE",
+          "pmosDbRecordId": "cmvpalc2q00009vbkns6pxtan",
+          "memoros": {
+            "status": "SUCCEEDED",
+            "threadId": "cmvpaleb900fz1glbb0drvn05",
+            "sourceRecordId": "55bf7f7e-37da-4e0a-a018-6f3a2baeafd5"
+          },
+          "phr": {
+            "status": "PUBLISHED",
+            "commitSha": "75ea7e6d81eef62766cd928c13ec5df731d4912a"
+          }
+        },
+        {
+          "taskId": "SG2-PCI-ROUTING-TEST-COMPAT-20261026",
+          "conversationId": "pmos-task-v2:7e3fbcc08e3a896600667e10e5634b6c0c6b80d649ee4e07b1d49f81d4cf1943",
+          "closeoutState": "CLOSEOUT_COMPLETE",
+          "pmosDbRecordId": "cmvpamm260000azt47tb98qab",
+          "memoros": {
+            "status": "SUCCEEDED",
+            "threadId": "cmvpamng400h61glbr2kn9xpj",
+            "sourceRecordId": "08050ea6-0d0c-415a-86c2-e86c9b791a57"
+          },
+          "phr": {
+            "status": "PUBLISHED",
+            "commitSha": "413136ee864c6f9161b8b549118d9cfc5daa62b7"
+          }
+        },
+        {
+          "taskId": "SG2-PCI-FONT-ASSETS-20261026",
+          "conversationId": "pmos-task-v2:b5c4aa35c7c1eed8792670aee4395ff06d9c760ab5c1478337ed3e3a68d9b017",
+          "closeoutState": "CLOSEOUT_COMPLETE",
+          "pmosDbRecordId": "cmvpfjh5j0000hdq83gh55kw8",
+          "memoros": {
+            "status": "SUCCEEDED",
+            "threadId": "cmvpfjjdf00ib1glbxlhzaqjj",
+            "sourceRecordId": "90966dda-6d96-4816-ba2c-e985d7ef1a10"
+          },
+          "phr": {
+            "status": "PUBLISHED",
+            "commitSha": "b3d69bfa25be16e6ecc80cfb682507d02c7fb4ab"
+          }
+        },
+        {
+          "taskId": "SG2-PCI-SOURCE-INTEGRITY-20261026",
+          "conversationId": "pmos-task-v2:869ebc15f4b92b36f27b91075fd60cf67ca80f640026259c2679b1c9597ba99b",
+          "closeoutState": "CLOSEOUT_COMPLETE",
+          "pmosDbRecordId": "cmvpfulro000058xyjok91hmm",
+          "memoros": {
+            "status": "SUCCEEDED",
+            "threadId": "cmvpfuoyw00ji1glb1jw5anbm",
+            "sourceRecordId": "99d0c5fd-b1ab-4952-a684-c86582a7215c"
+          },
+          "phr": {
+            "status": "PUBLISHED",
+            "commitSha": "f78d051f68f4513651ffdd7f6887b957a542bcb3"
+          }
+        }
+      ],
+      "allAuxiliaryPhrCommitsVerifiedInRemoteMain": true
     }
   },
   "fontAssets": [
@@ -27532,27 +28982,33 @@
   "resolvedImplementationDefects": [
     {
       "id": "C27-backdrop-scroll",
-      "status": "LOCAL_FIX_VERIFIED_RENDER_PENDING",
+      "status": "VERIFIED_RENDER",
       "rootCause": "The contained module locked its own surface while the demo page scrolled outside that surface.",
       "change": "Optional typed onScrollLockChange event; native C27 instance locks and releases; the demo host owns and restores its outer scroll policy.",
       "localEvidence": "Four paired immutable-source modal backdrop tests passed for versions1/2 and both themes.",
-      "sourceChanged": false
+      "sourceChanged": false,
+      "deployId": "dep-dbfplnmc6qcc73fvuc40",
+      "finalEvidence": "175-case live suite including font-ready inspector, viewport scheme and paired scroll regressions"
     },
     {
       "id": "viewport-color-scheme",
-      "status": "LOCAL_FIX_VERIFIED_RENDER_PENDING",
+      "status": "VERIFIED_RENDER",
       "rootCause": "The scoped module theme was dark while the outer demo document retained native color-scheme normal. The pinned v3 source sets the document scheme to dark/light.",
       "change": "The demo controls theme through existing onThemeChange and restores its own document color scheme on disposal. The portable test host remains untouched.",
       "initialSourceDark": "dark",
       "initialRenderDark": "normal",
-      "localEvidence": "Four strict v3 source comparisons at390/1440 in both themes include document color-scheme equality."
+      "localEvidence": "Four strict v3 source comparisons at390/1440 in both themes include document color-scheme equality.",
+      "deployId": "dep-dbfplnmc6qcc73fvuc40",
+      "finalEvidence": "175-case live suite including font-ready inspector, viewport scheme and paired scroll regressions"
     },
     {
       "id": "inspector-top-layer",
-      "status": "LOCAL_FIX_VERIFIED_RENDER_PENDING",
+      "status": "VERIFIED_RENDER",
       "rootCause": "A normal scoped inspector sibling was behind an already open native modal and could not receive focus.",
       "change": "Native inspector dialog with scroll-lock reference counting, nested focus return, Tab containment and isolated Escape handling.",
-      "localEvidence": "Six portability cases PASS including inspector above each of the three view dialogs; original dialog stays open until the next Escape."
+      "localEvidence": "Six portability cases PASS including inspector above each of the three view dialogs; original dialog stays open until the next Escape.",
+      "deployId": "dep-dbfplnmc6qcc73fvuc40",
+      "finalEvidence": "175-case live suite including font-ready inspector, viewport scheme and paired scroll regressions"
     }
   ]
 }

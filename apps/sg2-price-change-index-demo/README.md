@@ -1,27 +1,81 @@
-# Price Change Index — SG2 Development demo
+# Price Change Index — SG2 Development, etap 1
 
-Stage 1 only: synthetic local datasets and in-memory simulations. No real PORR records, product API, auth, database, provider, telemetry, LLM or cross-app connection. Names and source series in fixtures are demonstrative labels. Save changes only local demo state; a reload resets it. The UI package emits local intent callbacks recorded in memory by this host.
+**FRONTEND DEMO WDROŻONY I ZWERYFIKOWANY 1:1 względem przypiętych źródeł i zatwierdzonych adaptacji.** Wszystkie dane oraz procesy produktu są syntetyczne i lokalne. Zapis oznacza zmianę pamięci demonstracji. Nie jest zapisem do systemu biznesowego.
 
-Routes: /v1, /v2, /v3 (default), /portable (independent mounting/reset host). Use ?theme=dark for an initial dark mode, or the canonical theme switch. The host can configure a base path with PCI_BASE_PATH at build time. The module does not own a router.
+Demonstracja: [wersja 1](https://price-change-index.onrender.com/v1), [wersja 2](https://price-change-index.onrender.com/v2), [wersja 3](https://price-change-index.onrender.com/v3). [Minimalny odrębny host](https://price-change-index.onrender.com/portable) pokazuje montowanie, reset i odmontowanie publicznego komponentu. Oba motywy są dostępne również przez `?theme=dark`.
 
-Install/build: npm ci --install-links --include=dev, npm run typecheck, npm test, npm run build from this directory. Run npm start to serve only static output on 0.0.0.0 and PORT. No secret or DATABASE_URL is required. Local dev is npm run dev on 127.0.0.1:3671. The server accepts GET/HEAD only, supports direct-route reload and denies runtime network connections with CSP.
+## Tożsamość wydania
 
-Source revisions and the full element/style matrix are in verification/. DO WDROŻENIA is discovery only, not a parity PASS. Actual provider receipts and source/live comparison results are recorded in source-manifest.json. A LIVE provider status is separate from visual/behavioral acceptance.
+| Zasób | Faktyczna wartość |
+| --- | --- |
+| Właściciel / profil / cel | SG2 / SG-dev / development |
+| GitHub authority | profitia/SG-dev, main |
+| Workspace Render | PROFITIA WORKSPACE — tea-d7lps8rbc2fs73cn80dg |
+| Istniejący projekt | SpendGuru 2.0 Actual — prj-dap98ddg1s2s739ssatg |
+| Istniejące środowisko | Development — evm-dap98hm0tbcc738rro10 |
+| Nowy Web Service | Price Change Index — srv-dbfnd3jrjlhs73epihvg |
+| URL | https://price-change-index.onrender.com |
+| Przyjęty deploy / LKG | dep-dbfplnmc6qcc73fvuc40 |
+| Wdrożony zaakceptowany SHA main | 11d4211b49108324b094bb88688f8741f53645af |
+| Auto-deploy / preview | wyłączone / wyłączone |
+| Konfiguracja | Node 24, Frankfurt, jedna instancja 0.5c-512mb |
 
-Actual Render resource: [Price Change Index](https://price-change-index.onrender.com), service `srv-dbfnd3jrjlhs73epihvg`, inside existing PROFITIA WORKSPACE `tea-d7lps8rbc2fs73cn80dg` / SpendGuru 2.0 Actual `prj-dap98ddg1s2s739ssatg` / Development `evm-dap98hm0tbcc738rro10`. One 0.5c-512mb instance, manual deploy, Frankfurt. Only NODE_VERSION is configured; no linked environment group or secret file. First deploy `dep-dbfnd4jrjlhs73epimn0` serves accepted-main SHA `d792044040703994968c164da5cae74982c3d60d`. Its initial155 live checks passed, then an additional source-paired modal backdrop measurement found a scroll difference. A corrective release and final acceptance remain pending. Existing primary Development identities are preserved.
+Nie utworzono projektu Render. Pierwszy deploy `dep-dbfnd4jrjlhs73epimn0` / `d792044040703994968c164da5cae74982c3d60d` pozostaje historyczny i nie jest LKG 1:1. Powstały dokładnie dwa planowane deploye. Korekta jest drugim z nich; dokumentacyjny odbiór nie wymaga trzeciego wydania identycznych plików.
 
-Future controlled shutdown: suspend only the recorded new service after separate owner instruction; preserve source, service/deploy IDs, provenance and verification evidence. Do not delete it automatically. The first fully accepted corrective deployment becomes this module's LKG; the initial deployment with the known scroll difference is not a 1:1 LKG. Later rollback uses a retained accepted deployment with fresh configuration/source checks. Stage 2 host/data integration is a separate future task.
+PR-y: [734 — onboarding](https://github.com/profitia/SG-dev/pull/734), [735 — implementacja](https://github.com/profitia/SG-dev/pull/735), [736 — korekty i zatwierdzone selektory mobilne](https://github.com/profitia/SG-dev/pull/736). PR zawierający ten raport dodaje wyłącznie dowody i mocniejsze testy. Kod frontendu pozostaje kodem wdrożonego SHA.
 
-Build and run from this host: `npm ci --install-links --include=dev`, `npm run typecheck`, `npm run build`, `npm test`, `npm run test:browser`. The normal local browser suite checks behavior, two themes and all eight widths. `PCI_COMPARE_MAGICPATH=1 npm run test:browser` additionally reads the exact immutable MagicPath revisions and saves original/frontend screenshots and raw measurements. It does not mutate MagicPath. CI installs the licensed Inter 3.019 faces in its ephemeral font environment and runs these comparisons too. Both pages use Chromium's `--font-render-hinting=none` launch setting so native source fonts and bundled fonts use fractional glyph positioning; the first CI run exposed Linux headless-shell's different default. No geometry tolerance or source styling override is applied. `PCI_BASE_URL=https://<recorded-service-host>` runs the same browser suite against the deployed demo without starting a local server.
+## Przypięte źródła
 
-Chromium font evidence also showed a native Fontconfig midpoint difference: CSS weight 550 selected Inter Medium in Linux, while the approved macOS source and the bundled CSS faces selected Inter SemiBold. The ephemeral CI font configuration explicitly maps that Inter weight to SemiBold; platform-font evidence remains in source comparison artifacts. The product does not read or modify system font configuration. The 1,864 JSX entries and 3,246 style entries in the pinned discovery matrix are additionally checked against implementation syntax, including handlers, source fallbacks and explicitly documented scoping/canonical changes. These source-integrity checks complement browser verification; they do not claim every inactive CSS selector was rendered. Seven contract entries cover approved dark variants, provenance inspection, the independent host, base paths, dialog focus, menu edges and the owner-approved phone scenario controls.
+Projekt MagicPath: `463295321573851136`. Źródeł i biblioteki nie zmieniano podczas realizacji.
 
-For a prefixed standalone route, set the same `PCI_BASE_PATH=/pci/` for build and server runtime. Direct entries `/pci/v1`, `/pci/v2`, `/pci/v3`, `/pci/portable` and their local assets then resolve within that prefix. The UI module itself receives host navigation through props/events and does not inspect the host URL. Reset via reload, host unmount/remount or the public `resetKey`; preferences and product data are not persisted in browser storage.
+| Widok | Komponent | Rewizja |
+| --- | --- | --- |
+| v1 | 463296435564220416 | 465437640712400896 |
+| v2 | 463310747150213120 | 465437647490396160 |
+| v3 | 463321469305384960 | 465437653945430016 |
+| Zatwierdzona wspólna biblioteka, projekt 460628300646219776 | 460628347660177408 | 464039002702499840 |
 
-Local simulations: category selection and cost structure editing; validation of names/weights/base periods/prices/FX/units/terms; deterministic calculation/loading; source-history charts and local range/month selection; offer comparison; in-memory definitions, versions and saved comparisons; synthetic Benchmark Finder/SRM entry context and supplier association; menus, dropdowns, disclosures, dialogs, toasts and theme switching. No action creates a real supplier relationship, fetches a provider series, or saves to an application system.
+Zatwierdzone decyzje właściciela: ciemny wariant v1/v2 według biblioteki; pierwszeństwo geometrii biblioteki dla v3 (minimum przycisku 32px, font 12px, token promienia karty 9px); pokazanie selektorów scenariuszy także na telefonie. Mobilne selektory korzystają z rzeczywistego C07 w wariancie kompaktowym: 32px/12px/promień 8px, osobny wiersz 48px przy oryginalnych progach 960/1050px. Oryginalne deklaracje i pomiary pozostają w macierzy wraz z jawnym nadpisaniem. C95 na małym ekranie zachowuje geometrię nagłówka. Poprawki C27/C69, zamykanie dialogu, focus i lokalny inspektor mają opisane powiązanie z kanonem.
 
-Cost verification on 2026-10-26: the actual creation form displays $7/month for 0.5c-512mb. This is the compute charge. The workspace already uses the Performance builder at $25/1000 minutes; builder tier and spend limit are workspace-wide and were not changed. Observed pipeline charges were $25 before creation and $25 after the initial release, so no additional minute-pool purchase was observed. Starter's 1000 included minutes do not apply to Performance. Bandwidth after initial live testing was21.57/25GB. Future builds and excess traffic follow the existing workspace billing policy; $7 is not an all-inclusive workspace bill. No add-on, disk, extra instance or new workspace subscription was selected. See [Render build pipeline](https://render.com/docs/build-pipeline).
+## Odbiór i dowody
 
-Native C27 modal scroll state is an explicit `onScrollLockChange` presentation event. The demo host temporarily locks its own outer page and restores the prior overflow value. The reusable module locks its surface and releases locks on close/reset/disposal, so another host can select its own scrolling container without a product integration.
+[Macierz](verification/completeness-matrix.json): **5117 pozycji ZGODNE**, w tym 1864 JSX, 3246 CSS i 7 kontraktów. [Manifest źródeł i dowodów](verification/source-manifest.json) zachowuje historię wykrytych problemów oraz finalne potwierdzenia. Brak niezatwierdzonych rozbieżności.
 
-Owner-approved responsive change: the original v1/v2 hidden scenario controls remain available at960/1050px and below. The module reuses the pinned library C07 compact dropdown (32px height,12px text,8px radius), in a48px row. Its8px top/bottom insets and independent horizontal navigation preserve all options and state across resizes. Desktop uses the original native selector. Original hidden source declarations remain in the provenance matrix alongside this explicit approved overlay.
+- Render: **175 testów PASS**, dodatkowo **44 pełne ścieżki telefonu**, **4 testy rzeczywistych zdarzeń dotyku selektorów**, **11 kontroli HTTP**.
+- **76 par źródło–frontend**, 7969 wierszy elementów/stylów oraz 204 zrzuty w końcowym katalogu wyników. Pomiary obejmują geometrię, typografię, marginesy, paddingi, gapy, obramowania, cienie, przepełnienie i deklaracje ruchu. Wersja 3 ma także porównania wnętrz i dialogów w ciemnym motywie.
+- Oba motywy i szerokości 390, 560, 768, 900, 1100, 1440, 1920 i 2560px; klawiatura, dotyk, reset, bezpośrednie trasy, menu, filtry, dialogi i powrót fokusu.
+- Typecheck, build i **7 testów Node/źródeł PASS**. Lokalnie przeszło 166 wcześniejszych przypadków oraz 40 wzmocnionych porównań stylów. Rozszerzony zestaw 175 uruchamia CI raportu. [CI kandydata 40374161015](https://github.com/profitia/SG-dev/actions/runs/40374161015) i [CI zaakceptowanego main 40375130388](https://github.com/profitia/SG-dev/actions/runs/40375130388) mają wynik 166+7 PASS.
+- **49 plików statycznych Render jest identycznych bajtowo z buildem zaakceptowanego kodu.** Błędy przeglądarki i produktowe żądania sieciowe: brak. Log uruchomienia potwierdza port 10000 i LIVE, bez błędów aplikacji.
+- **21 istniejących usług authority zachowało identyfikatory deployów.** Nie wdrażano Staging ani Production ani istniejących runtime.
+
+Integralność nieaktywnego CSS oznacza zachowanie deklaracji oraz zatwierdzonych przekształceń; nie jest twierdzeniem, że każdy nieaktywny selektor został wyrenderowany. Nie przyjęto tolerancji geometrii. Różnice sposobu rasteryzacji/fontu natywnego i webowego są oddzielone od pomiarów. CI stosuje jednakowe fractional hinting i dokładne Inter 3.019 oraz jawne dopasowanie Fontconfig dla wagi 550. Oryginalnych źródeł nie stylizuje się pod wynik.
+
+Historia zachowuje: pierwotne przewijanie pod dialogiem; korektę natywnego color-scheme i warstwy inspektora; nieudany test kursora przy przesunięciu po ładowaniu fontu; pojedynczy błąd zapisu śladu ENOSPC. Gotowość fontów i rzeczywiste `:hover` są teraz asercjami. Końcowe 175 testów Render wykonało te same wymagania z zapisami źródło–frontend i wyłączonym nadmiarowym nagrywaniem śladów; standardowe ślady i raport pozostają w CI. Nieudanych przebiegów nie oznaczono wstecz jako PASS. Artefakty workflow mają retencję 14 dni; macierz, przypięte identyfikatory, pomiary początkowe i indeks SHA-256 końcowych porównań pozostają w repozytorium, a testy są odtwarzalne.
+
+## Kontrakt reużycia i lokalne symulacje
+
+Moduł: `packages/sg2-price-change-index-ui`. Host: `apps/sg2-price-change-index-demo`. [Kontrakt modułu](../../packages/sg2-price-change-index-ui/README.md) opisuje publiczny eksport React 18 `PriceChangeIndex`, typowane `data`, `content`, `theme`, `resetKey`, `onAction`, `onThemeChange`, `onNavigate` i `onScrollLockChange`. Dane, matematyka demonstracyjna i przykładowa identyfikacja PORR są w fixtures/configu hosta. Moduł nie importuje istniejącej aplikacji, routera, sesji ani globalnego store.
+
+Shadow DOM izoluje CSS i portale. Host dostarcza lokalne Inter/Roboto, root 16px oraz zgodny build TypeScript/Vite/Tailwind 4. Media queries i fixed/modal odnoszą się do viewportu. Inny bundler, skala root lub wąski kontener wymagają adaptera i osobnego odbioru. Host zarządza własną nawigacją, przewijaniem i natywnym color-scheme. Montowanie odbywa się przez React root; `resetKey` resetuje projekcję, a `unmount` usuwa powierzchnię, listenery i blokady. Nie zaimplementowano iframe, postMessage ani mikrofrontendu.
+
+Inspektor: najedź element i użyj Control+I; Escape zamyka, Tab pozostaje wewnątrz, a focus wraca do poprzedniego elementu. Odczytuje rzeczywiste lokalne referencje komponentów, zachowań i rewizji. Brak identyfikatora jest jawny. Metadane pochodzenia nie oznaczają automatycznej synchronizacji z MagicPath.
+
+Symulacje obejmują wybór kategorii i struktury, wagi, walidację, kalkulację/ładowanie, braki danych/bazy/FX, opóźnienia, wykresy/miesiące, cenę bazową, ofertę, zapis/wersje/historię w pamięci oraz syntetyczne konteksty Benchmark Finder/SRM i lokalne powiązanie dostawcy. Reload resetuje dane; nie ma lokalnej trwałości produktu. Przyszłe API oraz adaptery hosta są osobnym etapem.
+
+## Budowanie i izolacja
+
+W katalogu hosta: `npm ci --install-links --include=dev --no-audit --no-fund`, `npm run typecheck`, `npm test`, `npm run build`, `npm start`. Render buduje wyłącznie ten host i przypiętą zależność plikową modułu. Root repozytorium jest wymagany przez zależność z sąsiedniego packages; wynik to wyłącznie `apps/sg2-price-change-index-demo/dist`. Start: `node apps/sg2-price-change-index-demo/server.mjs`. Nie uruchamia istniejącego runtime.
+
+`PCI_COMPARE_MAGICPATH=1 npm run test:browser` uruchamia przypięte porównania. `PCI_BASE_URL=https://price-change-index.onrender.com` kieruje testy na istniejącą usługę. Opcjonalny prefiks `PCI_BASE_PATH=/pci/` należy ustawić jednakowo przy buildzie i uruchomieniu: lokalnie potwierdzono cztery trasy, reload i 50 żądań zasobów w tym prefiksie. Faktyczny Render jest skonfigurowany pod `/`.
+
+Serwer podaje wyłącznie statyczny frontend, GET/HEAD. CSP zabrania połączeń runtime, ramek i zewnętrznych skryptów. Brak produktowego backendu/API/bazy, migracji, ORM, workerów, cronów, dysku, auth, telemetrii, LLM oraz połączeń z istniejącym SRM/SpendGuru/Macrobond. Nie kopiowano env groups ani sekretów. Jedyną zmienną usługi jest NODE_VERSION. Ewidencja używa istniejącego control plane SG2; jego sekretów nie ma w frontendzie ani tej usłudze.
+
+## Koszt, utrzymanie i ewidencja
+
+Web Service został wybrany zgodnie z jawną decyzją właściciela. Compute: **7 USD/miesiąc**. Istniejący workspace korzysta z Performance builder **25 USD/1000 minut**; plan i globalny limit nie zostały zmienione. Opłata pipeline wynosiła 25 USD przed utworzeniem, po pierwszym i po poprawionym wydaniu: nie zaobserwowano zakupu dodatkowej puli. Ostatni odczyt transferu po wydaniu: 22,23/25GB. 7 USD jest ceną instancji; przyszłe buildy i transfer podlegają istniejącym zasadom workspace. Nie dodano płatnych dodatków, dysku ani kolejnej instancji. [Zasady Render](https://render.com/docs/build-pipeline).
+
+Wydania pozostają ręczne, po bramkach i zaakceptowanym SHA main, wyłącznie według zapisanego serviceId. Plik deployment/render.yaml jest referencją; nie odtwarzać z niego drugiej usługi ani projektu. Przyszłe kontrolowane wyłączenie wymaga osobnego polecenia właściciela: suspend wyłącznie `srv-dbfnd3jrjlhs73epihvg`, z zachowaniem kodu, IDs i dowodów. Nie usuwać zasobu automatycznie. Aktualny przyjęty deploy jest LKG modułu; rollback wymaga ponownego sprawdzenia konfiguracji i zapisanej zaakceptowanej rewizji.
+
+Główny task: `SG2-PRICE-CHANGE-INDEX-FRONTEND-20261026`, rejestracja `cmvp9993000001352wk5crk3v`. Cztery zakresy pomocnicze mają CLOSEOUT_COMPLETE, MEMOROS SUCCEEDED i PHR PUBLISHED; ancestry publikacji w zdalnym PHR potwierdzono. Ich rzeczywiste IDs są w manifeście. Końcowe identyfikatory głównego zamknięcia generuje kanoniczny PMOS/MEMOROS/PHR po przyjęciu tego raportu; źródłem potwierdzenia jest rekord tego tasku oraz końcowy handoff. Nie utworzono nowego PMOS modułu ani nie zapisano do SRM srm_pmos.
+
+Etap 2 pozostaje planem: ustalenie właściwego hosta i kontraktów danych/uprawnień, adapter hosta, kontrolowane podłączenie właściwego API, osobne testy i odbiór. Nie rozpoczęto integracji.
