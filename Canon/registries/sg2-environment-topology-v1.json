@@ -131,6 +131,22 @@
             "workerMode": "VERIFICATION_ONLY",
             "currentDeployId": "dep-dbbkc261egvs738asnc0",
             "deployedSha": "05a7d705e1aeeae04465e59b371ea0cd5a0d4c06"
+          },
+          "priceChangeIndexFrontend": {
+            "serviceId": "srv-dbfnd3jrjlhs73epihvg",
+            "name": "Price Change Index",
+            "url": "https://price-change-index.onrender.com",
+            "autoDeploy": false,
+            "currentDeployId": "dep-dbfnd4jrjlhs73epimn0",
+            "deployedSha": "d792044040703994968c164da5cae74982c3d60d",
+            "type": "web_service",
+            "owner": "SG2 Price Change Index",
+            "moduleNamespace": "sg2-price-change-index",
+            "purpose": "ISOLATED_STAGE1_FRONTEND_DEMO",
+            "productDataMode": "LOCAL_SYNTHETIC",
+            "productIntegrations": "NONE",
+            "databaseRequired": false,
+            "acceptanceStatus": "CORRECTIVE_RELEASE_PENDING"
           }
         },
         "privateNetworkIsolation": {

@@ -1,4 +1,4 @@
-import {usePresentationScope} from '../../PresentationScope';
+import {usePresentationScope,usePresentationMedia} from '../../PresentationScope';
 import React, { useEffect, useRef, useState } from 'react';
 import { CanonButton, CanonInput, CanonSelect, CanonTextarea } from './CanonElements';
 import { CanonHeader } from './CanonHeader';
@@ -73,6 +73,7 @@ function CanonTypography() {
 }
 const CCIWersja2AnalizaCenyIOfertyDostawcy = () => {
   const presentation=usePresentationScope();
+  const mobileScenarios=usePresentationMedia('(max-width:1050px)');
   const [screen, setScreen] = useState<Screen>('home'),
     [step, setStep] = useState(1),
     [scenario, setScenario] = useState<Scenario>('complete'),
@@ -320,7 +321,7 @@ const CCIWersja2AnalizaCenyIOfertyDostawcy = () => {
  <style>{spacingCSS}</style><CanonTypography />
  <div className="ca-prototype"><span>CCI · WERSJA 2</span><nav aria-label="Widoki makiety wersji 2">{[['home', '01', 'Punkt wyjścia'], ['setup', '02', 'Trzy pytania'], ['monitor', '03', 'Monitorowanie ceny'], ['compare', '04', 'Weryfikacja oferty'], ['saved', '05', 'Zapisane analizy']].map(([target, n, label]) => <CanonButton canonId="SRM-C08" usage={'CA2:prototype-' + target} key={target} aria-pressed={target === screen || screen === 'result' && target === mode} onClick={() => {
           if (target === 'monitor' || target === 'compare') demo(target);else if (target === 'setup') start();else go(target as Screen);
-        }}><small>{n}</small>{label}</CanonButton>)}</nav><label>Scenariusz<select aria-label="Scenariusz biznesowy makiety" value={scenario} onChange={e => setScenarioView(e.target.value as Scenario)}>{scenarios.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label></div>
+        }}><small>{n}</small>{label}</CanonButton>)}</nav><label>Scenariusz{mobileScenarios ? <CanonSelect canonId="SRM-C07" usage="PCI:scenario-mobile" className="pci-scenario-compact" aria-label="Scenariusz biznesowy makiety" value={scenario} onChange={e => setScenarioView(e.target.value as Scenario)}>{scenarios.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</CanonSelect> : <select aria-label="Scenariusz biznesowy makiety" value={scenario} onChange={e => setScenarioView(e.target.value as Scenario)}>{scenarios.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>}</label></div>
  <CanonHeader title="Cost Analysis"><span className="ca-demo-mark"><i />Dane demonstracyjne</span><span className="ca-language">PL</span><span className="ca-avatar">AK</span></CanonHeader>
  <CanonSideMenu defaultActive="Cost Analysis" items={['Benchmark Finder', 'Category Builder', 'Cost Scan', 'Cost Analysis', 'Moje analizy', 'Should Cost Analysis · Później']} onNavigate={label => {
       if (label === 'Cost Analysis') go('home');else if (label === 'Moje analizy') go('saved');else setPanel('navigation');
