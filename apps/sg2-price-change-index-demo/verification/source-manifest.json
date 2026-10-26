@@ -25466,11 +25466,11 @@
       "productDatabaseCreated": false,
       "existingServiceDeploysChecked": 21,
       "existingServiceDeployIdsChanged": [],
-      "currentDeployId": "dep-dbfplnmc6qcc73fvuc40",
-      "deployedSha": "11d4211b49108324b094bb88688f8741f53645af",
-      "ownDeployCount": 2,
-      "acceptedLkgDeployId": null,
-      "acceptanceStatus": "CORRECTIVE_RELEASE_PENDING_NATIVE_C07"
+      "currentDeployId": "dep-dbfr7dgm7kps739icirg",
+      "deployedSha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+      "ownDeployCount": 3,
+      "acceptedLkgDeployId": "dep-dbfr7dgm7kps739icirg",
+      "acceptanceStatus": "VERIFIED_STAGE1_1_TO_1"
     },
     "renderCost": {
       "computePlan": "0.5c-512mb",
@@ -25487,7 +25487,9 @@
       "documentation": "https://render.com/docs/build-pipeline",
       "pipelineChargesObservedAfterCorrectiveReleaseUsd": 25,
       "bandwidthObservedAfterCorrectiveReleaseGb": 22.23,
-      "newPipelineMinutePoolPurchaseObserved": false
+      "newPipelineMinutePoolPurchaseObserved": false,
+      "pipelineChargesObservedAfterNativeC07ReleaseUsd": 25,
+      "bandwidthObservedAfterNativeC07ReleaseGb": 22.64
     },
     "phoneFlowAudit": {
       "viewport": {
@@ -25504,12 +25506,11 @@
       "implementationVisibilityChanged": true,
       "initialResultRetained": true,
       "correctiveVerification": {
-        "localPhoneCases": 44,
-        "localPhoneResult": "PASS",
-        "renderPhoneCases": 44,
+        "localPhoneCases": 48,
+        "renderPhoneCases": 48,
         "renderPhoneResult": "PASS",
-        "renderTouchCases": 4,
-        "renderTouchResult": "PASS",
+        "renderExtraTouchCases": 4,
+        "renderExtraTouchResult": "PASS",
         "sourceGeometryResult": "PASS",
         "canonicalMetrics": {
           "fieldHeight": 32,
@@ -25517,23 +25518,23 @@
           "radius": 8,
           "addedRowHeight": 48
         },
-        "deployId": "dep-dbfplnmc6qcc73fvuc40"
+        "deployId": "dep-dbfr7dgm7kps739icirg"
       }
     },
     "finalAcceptance": {
-      "status": "WITHDRAWN_PENDING_NATIVE_C07_CORRECTION",
-      "acceptedCodeSha": "11d4211b49108324b094bb88688f8741f53645af",
-      "deployId": "dep-dbfplnmc6qcc73fvuc40",
+      "status": "PASS",
+      "acceptedCodeSha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+      "deployId": "dep-dbfr7dgm7kps739icirg",
       "url": "https://price-change-index.onrender.com",
-      "capturedAt": "2026-10-26T18:56:55.210000+00:00",
-      "browserCases": 175,
-      "fullPhoneCases": 44,
+      "capturedAt": "2026-10-26T20:24:15.793825+00:00",
+      "browserCases": 181,
+      "fullPhoneCases": 48,
       "extraTouchCases": 4,
       "httpChecks": 11,
       "byteIdenticalStaticFiles": 49,
-      "sourceComparisonSets": 76,
-      "sourceElementStyleRows": 7969,
-      "matrixRows": 5117,
+      "sourceComparisonSets": 78,
+      "sourceElementStyleRows": 7999,
+      "matrixRows": 5118,
       "viewports": [
         390,
         560,
@@ -25549,32 +25550,47 @@
         "dark"
       ],
       "nodeSourceTests": 7,
+      "governanceTopologyChecks": 24,
       "unapprovedDivergences": [],
       "existingAuthorityServiceDeploysChecked": 21,
       "existingDeployIdsChanged": [],
-      "localEvidenceLogs": [
-        "sg2-pci-175-final-live.log",
-        "sg2-pci-final-deep-local.log",
-        "sg2-pci-corrective-phone-live.log"
-      ],
+      "localBrowserCases": 181,
+      "localResult": "PASS",
       "ciCandidate": {
-        "runId": "40374161015",
-        "sha": "d6916adaa560ac9f13c18fe5a7df22ee6a3c8de0",
-        "browserCases": 166,
+        "runId": "40391652425",
+        "sha": "27d23ba31e8636130a7b3a23c79c1aa7917e0f6f",
+        "browserCases": 181,
         "result": "PASS"
       },
       "ciAcceptedMain": {
-        "runId": "40375130388",
-        "sha": "11d4211b49108324b094bb88688f8741f53645af",
-        "browserCases": 166,
+        "runId": "40392338768",
+        "sha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+        "browserCases": 181,
         "result": "PASS"
       },
-      "receiptCi": "The PR containing this receipt runs the expanded175-case suite; code assets remain unchanged.",
-      "sourceMatrixBasisUnchanged": true,
-      "runtimeSourceUnchangedFromDeployedSha": true,
-      "governanceTopologyChecks": 24
+      "receiptCi": "The documentation-only PR containing this current receipt runs the181-case suite. Accepted deployed source remains the explicitly recorded main SHA."
     },
     "finalSourceComparisons": [
+      {
+        "artifact": "parity-paired-source-C07-c-bfa05-pup-geometry-inside-C27-390/source-and-actual.json",
+        "sha256": "5aae31572ea459e448b1962de6b7d0344deaaa6e4cb734f8ff6ceff04d05f422",
+        "revision": "465437640712400896",
+        "width": 390,
+        "theme": null,
+        "scenario": "C07 popup inside C27",
+        "sourceElementCount": 15,
+        "receivedElementCount": 15
+      },
+      {
+        "artifact": "parity-paired-source-C07-c-ca4e2-up-geometry-inside-C27-1440/source-and-actual.json",
+        "sha256": "fcdb146864ec94bee641627230fffc222f0a0ec945ef50bf13a9f1449a9c0e96",
+        "revision": "465437640712400896",
+        "width": 1440,
+        "theme": null,
+        "scenario": "C07 popup inside C27",
+        "sourceElementCount": 15,
+        "receivedElementCount": 15
+      },
       {
         "artifact": "parity-paired-source-behav-01794-1-advanced-disclosure-light/source-and-actual.json",
         "sha256": "3bfcb6a3e4a3c2825a44414a23a2d18d59895ebd7787a78cdc045b424a0d6228",
@@ -26337,9 +26353,9 @@
       }
     ],
     "staticAssetAttestation": {
-      "sourceSha": "11d4211b49108324b094bb88688f8741f53645af",
-      "deployId": "dep-dbfplnmc6qcc73fvuc40",
       "origin": "https://price-change-index.onrender.com",
+      "sourceSha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+      "deployId": "dep-dbfr7dgm7kps739icirg",
       "files": 49,
       "allMatch": true,
       "rows": [
@@ -26414,17 +26430,17 @@
           "matches": true
         },
         {
+          "file": "assets/index-4tNxkn0s.js",
+          "status": 200,
+          "expectedSha256": "3cd926c18c0c66b7529dac3c95b9118758c800bea25c2d5551809a0f751d9cfc",
+          "receivedSha256": "3cd926c18c0c66b7529dac3c95b9118758c800bea25c2d5551809a0f751d9cfc",
+          "matches": true
+        },
+        {
           "file": "assets/index-CGpzx3nI.css",
           "status": 200,
           "expectedSha256": "4b2287b84b4ebdf70be485280222a31f4a3b96655df3340c63c30cb3cd2590c7",
           "receivedSha256": "4b2287b84b4ebdf70be485280222a31f4a3b96655df3340c63c30cb3cd2590c7",
-          "matches": true
-        },
-        {
-          "file": "assets/index-Cdldf3CP.js",
-          "status": 200,
-          "expectedSha256": "74a3c900711b78d29ce84de3f17c79c6071cf4951f207e821196490ef77da91e",
-          "receivedSha256": "74a3c900711b78d29ce84de3f17c79c6071cf4951f207e821196490ef77da91e",
           "matches": true
         },
         {
@@ -26682,15 +26698,16 @@
         {
           "file": "index.html",
           "status": 200,
-          "expectedSha256": "ef92300393c24000cd2067a5c298278e63f602456d63c556a42a70813adf3f3e",
-          "receivedSha256": "ef92300393c24000cd2067a5c298278e63f602456d63c556a42a70813adf3f3e",
+          "expectedSha256": "a3af50497be6223de1b6ba7ba67c117f405453164920aacafd51fc129cccbf40",
+          "receivedSha256": "a3af50497be6223de1b6ba7ba67c117f405453164920aacafd51fc129cccbf40",
           "matches": true
         }
       ]
     },
     "liveHttp": {
       "origin": "https://price-change-index.onrender.com",
-      "sourceSha": "11d4211b49108324b094bb88688f8741f53645af",
+      "sourceSha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+      "deployId": "dep-dbfr7dgm7kps739icirg",
       "result": "PASS",
       "results": [
         {
@@ -26741,20 +26758,20 @@
         },
         {
           "method": "POST",
-          "route": "/v3",
-          "status": 405
+          "status": 405,
+          "route": "/v3"
         },
         {
           "method": "HEAD",
-          "route": "/v3",
           "status": 200,
+          "route": "/v3",
           "bodyBytes": 0
         }
       ]
     },
     "livePhoneTouch": {
-      "sourceSha": "11d4211b49108324b094bb88688f8741f53645af",
-      "deployId": "dep-dbfplnmc6qcc73fvuc40",
+      "sourceSha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+      "deployId": "dep-dbfr7dgm7kps739icirg",
       "result": "PASS",
       "rows": [
         {
@@ -26986,19 +27003,94 @@
         },
         "error": "locator.click: Timeout 2500ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('option', { name: 'EUR', exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <button title=\"EUR\" type=\"button\" role=\"option\" tabindex=\"-1\" id=\":r5:-option-1\" data-empty=\"false\" data-active=\"false\" aria-selected=\"false\" class=\"srm-dropdown-option\" data-canon-source=\"shared-v1\" data-content-rule=\"SRM-TXT01\" data-spacing-rules=\"SRM-SP06\" data-library-component=\"SRM-C07\" data-canon-usage=\"CanonDropdown:option\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m"
       },
-      "result": "ROZBIEŻNOŚĆ",
+      "result": "PASS",
       "cause": "Pinned C07 renderer portals to body outside the active native C27 dialog; body popup is below the modal/inert.",
       "correction": "Retain C07 markup/styles, portal within the native dialog and use a manual native popover to preserve viewport positioning outside transformed/clipped dialog coordinates.",
       "sourceUnmodified": true,
       "localVerification": "181 browser cases PASS",
-      "renderVerification": "PENDING",
+      "renderVerification": "181 full browser cases and48 phone cases PASS",
       "localTargetedCases": 6,
       "localTargetedResult": "PASS",
       "sourceGeometry": "Exact source geometry retained at390/1440. Original inert search lacks focus; repaired search uses pinned C07/ACT-08 focus-within border #B1C9DD. Raw source and expected focused state both retained.",
       "inspectorFocus": "After popup blur/unmount, restore its real aria-controls trigger instead of the detached input.",
       "localFullCases": 181,
       "localFullResult": "PASS",
-      "runtimeSourceChangeRequiresNewControlledDeploy": true
+      "runtimeSourceChangeRequiresNewControlledDeploy": true,
+      "renderDeployId": "dep-dbfr7dgm7kps739icirg",
+      "renderSha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+      "sourceGeometryCases": 2,
+      "sourceGeometryResult": "PASS; exact geometry, canonical focused-search border from pinned C07/ACT-08",
+      "manualVerification": "Actual in-app browser changed price-dialog currency from PLN to EUR; selection and focused trigger visibly confirmed."
+    },
+    "acceptanceHistory": [
+      {
+        "status": "WITHDRAWN_PENDING_NATIVE_C07_CORRECTION",
+        "acceptedCodeSha": "11d4211b49108324b094bb88688f8741f53645af",
+        "deployId": "dep-dbfplnmc6qcc73fvuc40",
+        "url": "https://price-change-index.onrender.com",
+        "capturedAt": "2026-10-26T18:56:55.210000+00:00",
+        "browserCases": 175,
+        "fullPhoneCases": 44,
+        "extraTouchCases": 4,
+        "httpChecks": 11,
+        "byteIdenticalStaticFiles": 49,
+        "sourceComparisonSets": 76,
+        "sourceElementStyleRows": 7969,
+        "matrixRows": 5117,
+        "viewports": [
+          390,
+          560,
+          768,
+          900,
+          1100,
+          1440,
+          1920,
+          2560
+        ],
+        "themes": [
+          "light",
+          "dark"
+        ],
+        "nodeSourceTests": 7,
+        "unapprovedDivergences": [],
+        "existingAuthorityServiceDeploysChecked": 21,
+        "existingDeployIdsChanged": [],
+        "localEvidenceLogs": [
+          "sg2-pci-175-final-live.log",
+          "sg2-pci-final-deep-local.log",
+          "sg2-pci-corrective-phone-live.log"
+        ],
+        "ciCandidate": {
+          "runId": "40374161015",
+          "sha": "d6916adaa560ac9f13c18fe5a7df22ee6a3c8de0",
+          "browserCases": 166,
+          "result": "PASS"
+        },
+        "ciAcceptedMain": {
+          "runId": "40375130388",
+          "sha": "11d4211b49108324b094bb88688f8741f53645af",
+          "browserCases": 166,
+          "result": "PASS"
+        },
+        "receiptCi": "The PR containing this receipt runs the expanded175-case suite; code assets remain unchanged.",
+        "sourceMatrixBasisUnchanged": true,
+        "runtimeSourceUnchangedFromDeployedSha": true,
+        "governanceTopologyChecks": 24,
+        "withdrawalReason": "Additional native C07/C27 price-currency flow was not operable in the prior175-case release; fixed and covered by the current181-case suite."
+      }
+    ],
+    "runtimeConfigurationScan": {
+      "sourceSha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+      "deployId": "dep-dbfr7dgm7kps739icirg",
+      "filesScanned": 5,
+      "indicators": [],
+      "result": "PASS"
+    },
+    "acceptedSourceRebuild": {
+      "initialComparison": "Local output predated final source/documentation commit and had an older JS utility hash. Tailwind scans candidate text, so the accepted whole checkout was rebuilt before attestation.",
+      "sourceSha": "b2f2fcaf28b63e708ca1a90e1aeefc4ae636d531",
+      "acceptedRebuildResult": "49 emitted files byte-identical to actual Render;11 HTTP checks PASS",
+      "runtimeCodeOrServiceChangedForAttestation": false
     }
   },
   "fontAssets": [
@@ -29038,7 +29130,8 @@
       "localEvidence": "Four paired immutable-source modal backdrop tests passed for versions1/2 and both themes.",
       "sourceChanged": false,
       "deployId": "dep-dbfplnmc6qcc73fvuc40",
-      "finalEvidence": "175-case live suite including font-ready inspector, viewport scheme and paired scroll regressions"
+      "finalEvidence": "Current181-case suite plus48 full phone flows and native C07 focus/touch regressions",
+      "lastVerifiedDeployId": "dep-dbfr7dgm7kps739icirg"
     },
     {
       "id": "viewport-color-scheme",
@@ -29049,7 +29142,8 @@
       "initialRenderDark": "normal",
       "localEvidence": "Four strict v3 source comparisons at390/1440 in both themes include document color-scheme equality.",
       "deployId": "dep-dbfplnmc6qcc73fvuc40",
-      "finalEvidence": "175-case live suite including font-ready inspector, viewport scheme and paired scroll regressions"
+      "finalEvidence": "Current181-case suite plus48 full phone flows and native C07 focus/touch regressions",
+      "lastVerifiedDeployId": "dep-dbfr7dgm7kps739icirg"
     },
     {
       "id": "inspector-top-layer",
@@ -29058,7 +29152,8 @@
       "change": "Native inspector dialog with scroll-lock reference counting, nested focus return, Tab containment and isolated Escape handling.",
       "localEvidence": "Six portability cases PASS including inspector above each of the three view dialogs; original dialog stays open until the next Escape.",
       "deployId": "dep-dbfplnmc6qcc73fvuc40",
-      "finalEvidence": "175-case live suite including font-ready inspector, viewport scheme and paired scroll regressions"
+      "finalEvidence": "Current181-case suite plus48 full phone flows and native C07 focus/touch regressions",
+      "lastVerifiedDeployId": "dep-dbfr7dgm7kps739icirg"
     }
   ]
 }
