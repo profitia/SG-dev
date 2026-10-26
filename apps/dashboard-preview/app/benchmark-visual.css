@@ -12,14 +12,14 @@
 .bf-chart-workspace.bf-chart-workspace .forecast-portfolio-row{display:grid;align-items:center;gap:20px;padding:0 0 16px;margin:0;border:0;background:none}
 .bf-chart-workspace.bf-chart-workspace .forecast-current-row{grid-template-columns:170px minmax(150px,1fr) minmax(200px,1.35fr)}
 .bf-chart-workspace.bf-chart-workspace .forecast-verification-row{grid-template-columns:170px minmax(0,1fr);padding:15px 0;border-top:1px solid var(--faint-line)}
-.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle{display:flex;align-items:center;gap:10px;margin:0;min-height:0;padding:0}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle{display:flex;align-items:center;gap:10px;margin:0;min-height:0;height:auto;padding:0}
 .bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle input{width:15px;height:15px;margin:0;accent-color:var(--brand);flex:none}
 .bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle-copy strong{font-size:13px;font-weight:600;color:var(--brand-dark)}
 .bf-chart-workspace.bf-chart-workspace .forecast-portfolio-toggle-copy small{font-size:10px;font-weight:400;color:var(--muted);margin-top:4px;line-height:1.4}
 .bf-chart-workspace.bf-chart-workspace .control-group-label{font-size:10px;color:var(--muted);font-weight:400}
 .bf-chart-workspace.bf-chart-workspace .forecast-portfolio-group{display:flex;flex-direction:column;gap:5px;min-width:0}
 .bf-chart-workspace.bf-chart-workspace .forecast-portfolio-group.is-hidden{display:flex;visibility:visible;opacity:.48}
-.bf-chart-workspace.bf-chart-workspace .forecast-verification-group{display:grid;grid-template-columns:195px minmax(0,1fr);column-gap:22px;align-items:center}
+.bf-chart-workspace.bf-chart-workspace .forecast-verification-group,.bf-chart-workspace.bf-chart-workspace .forecast-verification-group.is-hidden{display:grid;grid-template-columns:195px minmax(0,1fr);column-gap:22px;align-items:center;width:100%}
 .bf-chart-workspace.bf-chart-workspace .forecast-verification-group>.control-label-with-help{grid-column:1;grid-row:1}
 .bf-chart-workspace.bf-chart-workspace .forecast-verification-group>.control-mode-buttons{grid-column:1;grid-row:2}
 .bf-chart-workspace.bf-chart-workspace .verification-quality-panel{grid-column:2;grid-row:1/3;padding:0;border:0;background:transparent;box-shadow:none}
@@ -82,7 +82,11 @@
 
 /* Retained production groups use C92 proportions, without legacy page line-height/padding. */
 .bf-chart-workspace .forecast-portfolio-toggle-copy small{line-height:1.4;white-space:normal}
-.bf-chart-workspace .control-label-with-help{gap:5px;min-height:0;line-height:1.4}
+.bf-chart-workspace.bf-chart-workspace .forecast-portfolio-controls .control-label-with-help{gap:5px;min-height:0;line-height:1.4}
+.bf-chart-workspace .forecast-portfolio-controls .control-label-with-help .control-info-button{width:14px;height:14px;min-height:0;padding:0;font-size:9px;line-height:1;transform:none;align-self:center}
+.bf-chart-workspace .forecast-portfolio-controls .control-label-with-help .control-group-label{line-height:1.4}
+.bf-chart-workspace.bf-chart-workspace .control-horizon-group .chart-range-buttons{min-height:30px}
+.bf-chart-workspace.bf-chart-workspace .verification-quality-panel{margin:0}
 .bf-chart-workspace .control-horizon-group .control-mode-buttons{margin:0}
 .bf-chart-workspace .verification-quality-metric strong{line-height:1.45;margin:0}
 .bf-chart-workspace .verification-confidence-metric strong{font-size:12px!important;font-weight:500!important;gap:7px}
@@ -92,7 +96,7 @@
 @container(max-width:850px){
  .bf-chart-workspace.bf-chart-workspace .forecast-current-row{grid-template-columns:150px 1fr 1.3fr;gap:14px;padding-bottom:10px}
  .bf-chart-workspace.bf-chart-workspace .forecast-verification-row{grid-template-columns:150px minmax(0,1fr);gap:14px;padding-bottom:10px}
- .bf-chart-workspace.bf-chart-workspace .forecast-verification-group{display:contents}
+ .bf-chart-workspace.bf-chart-workspace .forecast-verification-group,.bf-chart-workspace.bf-chart-workspace .forecast-verification-group.is-hidden{display:contents}
  .bf-chart-workspace.bf-chart-workspace .forecast-verification-group>.control-label-with-help{grid-column:2;grid-row:1;align-self:start}
  .bf-chart-workspace.bf-chart-workspace .forecast-verification-group>.control-mode-buttons{grid-column:2;grid-row:1;align-self:end;margin-top:19px}
  .bf-chart-workspace.bf-chart-workspace .verification-quality-panel{grid-column:1/-1;grid-row:2;padding:3px 0 0!important;border-left:0!important}
