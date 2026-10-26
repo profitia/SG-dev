@@ -76,7 +76,9 @@ function instrumentClient(client:object,poolKind:DiagnosticPoolKind){
   const finish=(error:boolean,result?:unknown)=>{if(finished)return;finished=true
    try{span.finish(error?'ERROR':'OK',error?null:commands(result))
     if(category==='SQL_COMMIT'||category==='SQL_ROLLBACK'){
-     transactions.get(client)?.(error?'FAILED_OR_UNKNOWN':category==='SQL_COMMIT'?'COMMITTED':'ROLLED_BACK');transactions.delete(client)
+     const command=result&&typeof result==='object'?'command'in result?(result as {command:unknown}).command:undefined:undefined
+     const outcome=error?'FAILED_OR_UNKNOWN':command==='ROLLBACK'?'ROLLED_BACK':category==='SQL_COMMIT'&&command==='COMMIT'?'COMMITTED':'FAILED_OR_UNKNOWN'
+     transactions.get(client)?.(outcome);transactions.delete(client)
     }else if(category==='SQL_BEGIN'&&error){transactions.get(client)?.('FAILED_OR_UNKNOWN');transactions.delete(client)}
    }catch{}
   }

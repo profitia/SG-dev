@@ -140,6 +140,7 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
  const stage=process.argv[4]??'BASELINE'
  if(!['prepare','build'].includes(command))deny('Use prepare or build; no cloud mutation is performed by this builder')
  const proof=command==='prepare'?prepareBaseline(repo,t,output,stage):buildBaseline(repo,t,output,stage)
- console.log(JSON.stringify({stage:proof.stage,businessSourceSha:proof.businessSourceSha,changedFiles:proof.changedFiles,built:proof.built,artifact:proof.artifact??null}))
+ console.log(JSON.stringify({stage:proof.stage,businessSourceSha:proof.businessSourceSha,changedFiles:proof.changedFiles,built:proof.built,artifact:proof.artifact??null,
+  diagnosticTelemetry:proof.overlay?.diagnosticTelemetry??null}))
 }
 

@@ -11,7 +11,7 @@
     "typecheck": "node scripts/build-krs-contract.mjs && tsc --noEmit",
     "coverage:audit": "tsx scripts/coverage/cli.ts",
     "test:coverage": "tsx --test scripts/coverage/coverage.test.ts",
-    "test": "node scripts/build-krs-contract.mjs && tsx --test --test-concurrency=1 src/server/*.test.ts src/server/integrations/*.test.ts scripts/coverage/*.test.ts src/modules/xray/report-controller.test.ts src/modules/xray/krs-session-transport.test.ts",
+    "test": "node scripts/build-krs-contract.mjs && tsx --test --test-concurrency=1 src/server/*.test.ts src/server/integrations/*.test.ts scripts/coverage/*.test.ts src/modules/xray/report-controller.test.ts src/modules/xray/krs-session-transport.test.ts && node --test scripts/pilot2-diagnostic-overlay.test.mjs",
     "migrate:development": "node scripts/migrate.mjs",
     "test:promotion": "node --test --test-concurrency=1 scripts/promotion.test.mjs scripts/staging-lifecycle.test.mjs scripts/runtime-permissions.test.mjs",
     "promote:staging": "node scripts/promote-staging.mjs",
