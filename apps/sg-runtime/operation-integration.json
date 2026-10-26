@@ -2978,8 +2978,8 @@
   "nativeSqlRoundtripAdoption": {
     "taskId": "SG2-NATIVE-SQL-ROUNDTRIP-COMPAT-20261026",
     "platformVersion": "1.29.1",
-    "previousReceiptSourceSha": "5a5fdd74075141508e0f744c2699e1eafbbf3454",
-    "previousReceiptDigest": "a70febff3b38682439d24bb9d50bf06d349e5525bea9fa93496aace4f07179b1",
+    "previousReceiptSourceSha": "32fce23eff7033e84d19ff74dc719c93eff34097",
+    "previousReceiptDigest": "b4194e86e8719a50cd03e1be9beaab3f1e860e68ed7c4fa2527527ede21630ff",
     "producer": {
       "projectKey": "ARCHITECTURE",
       "taskId": "ARCHITECTURE-NATIVE-SQL-ROUNDTRIPS-20261026",
