@@ -5087,7 +5087,8 @@
       "src/server/supplier-native-work-store.ts": "692f239fc773552af83b71bd7a4db2470a961548847e15d9b34cddd6b5fe10b2",
       "src/server/supplier-telemetry.ts": "4049a8d568b01e6aa33dad9bda7d54e61cd95637fe3bfed90f78909cdc01ef70",
       "../../packages/maps-embed/package.json": "02bd139ee9cade77dd7da822f0b563acb9d4e25774da535215cfa680ff9abe42",
-      "src/server/peer-read-boundary.test.ts": "1fed776fb5a11a881a8cc734d56fca5630acaf3c9c5ec41efa4d16caeb967a52"
+      "src/server/peer-read-boundary.test.ts": "1fed776fb5a11a881a8cc734d56fca5630acaf3c9c5ec41efa4d16caeb967a52",
+      "scripts/pilot2-private-overlay.test.mjs": "66a8ef0c74302c867cb90234d0d77d3ca3184dd4f29a5aa39c26a9c21379ccbe"
     },
     "observationOnly": true,
     "deploymentActivationScope": "SRM_PILOT2_ONLY",
