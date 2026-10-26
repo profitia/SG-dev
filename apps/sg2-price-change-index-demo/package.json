@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",
-    "@fontsource/inter-legacy": "npm:@fontsource/inter@4.5.15",
     "@fontsource/roboto": "5.3.0",
     "@profitia/sg2-price-change-index-ui": "file:../../packages/sg2-price-change-index-ui",
     "react": "18.3.1",

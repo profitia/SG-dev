@@ -10,8 +10,8 @@ services:
     plan: 0.5c-512mb
     numInstances: 1
     autoDeployTrigger: off
-    buildCommand: npm --prefix apps/sg2-price-change-index-demo ci --install-links --include=dev && npm --prefix apps/sg2-price-change-index-demo run build
-    startCommand: npm --prefix apps/sg2-price-change-index-demo run start
+    buildCommand: npm --prefix apps/sg2-price-change-index-demo ci --install-links --include=dev --no-audit --no-fund && npm --prefix apps/sg2-price-change-index-demo run build
+    startCommand: node apps/sg2-price-change-index-demo/server.mjs
     healthCheckPath: /
     buildFilter:
       paths: [apps/sg2-price-change-index-demo/**, packages/sg2-price-change-index-ui/**]

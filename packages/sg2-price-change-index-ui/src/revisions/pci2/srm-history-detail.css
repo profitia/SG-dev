@@ -7,7 +7,7 @@
   max-height:none; padding:0; overflow:hidden; overscroll-behavior:contain;
 }
 .srm-history-detail[open] { display:grid; grid-template-rows:auto minmax(0,1fr); }
-.srm-history-detail-head { display:flex; align-items:center; justify-content:space-between; gap:var(--srm-space-comfortable); padding:var(--srm-space-base) var(--srm-space-medium); background:white; border-bottom:1px solid var(--faint-line); min-width:0; }
+.srm-history-detail-head { display:flex; align-items:center; justify-content:space-between; gap:var(--srm-space-comfortable); padding:var(--srm-space-base) var(--srm-space-medium); background:var(--theme-surface,white); border-bottom:1px solid var(--faint-line); min-width:0; }
 .srm-history-detail-head>div:first-child { min-width:0; }
 .srm-history.srm-history-detail .srm-history-detail-head h2 { font-size:21px; line-height:1.2; }
 .srm-history-detail-head p { margin-top:var(--srm-space-tight); font-size:11px; }

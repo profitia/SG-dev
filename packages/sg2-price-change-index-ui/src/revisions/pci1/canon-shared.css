@@ -1,6 +1,6 @@
 /* One styling contract for actual nodes in both application and library views. */
-.srm-ui [data-library-component='SRM-C01'],.srm-ui [data-library-component='SRM-C02']{min-height:var(--canon-actionHeight,32px);border-radius:var(--canon-actionRadius,7px);font-size:var(--canon-actionFont,12px);font-weight:550;padding:var(--srm-space-compact) var(--srm-space-small);line-height:1.35;display:inline-flex;justify-content:center;align-items:center;gap:var(--srm-space-compact);background:white;border:1px solid var(--line);color:var(--brand-dark);}
-.srm-ui [data-library-component='SRM-C01']{background:var(--brand);border-color:var(--brand);color:white;}
+.srm-ui [data-library-component='SRM-C01'],.srm-ui [data-library-component='SRM-C02']{min-height:var(--canon-actionHeight,32px);border-radius:var(--canon-actionRadius,7px);font-size:var(--canon-actionFont,12px);font-weight:550;padding:var(--srm-space-compact) var(--srm-space-small);line-height:1.35;display:inline-flex;justify-content:center;align-items:center;gap:var(--srm-space-compact);background:var(--theme-surface,white);border:1px solid var(--line);color:var(--brand-dark);}
+.srm-ui [data-library-component='SRM-C01']{background:var(--action-fill,var(--brand));border-color:var(--brand);color:white;}
 .srm-ui [data-library-component='SRM-C03'],.srm-ui [data-library-component='SRM-C55']{color:var(--brand);}
 .srm-ui [data-library-component='SRM-C13']{border-radius:var(--canon-cardRadius,9px);}
 .srm-ui [data-library-component='SRM-C09']{--srm-hover-scale:var(--canon-hoverPill,1.06);}
@@ -13,16 +13,16 @@
 .srm-ui .srm-statement-card-actions .srm-history-view-switch{border-width:var(--canon-overviewBorder,.75px);border-radius:var(--canon-overviewRadius,6px);}
 .srm-ui .srm-card-footer{font-size:11px;line-height:24px;align-items:center;}
 .srm-ui .srm-card-footer :is(.srm-card-period,.srm-importance,.srm-text-link){font-size:inherit;line-height:inherit;}
-.srm-ui [data-canon-issue=true]{outline:2px dashed #C8554C!important;outline-offset:4px;}
+.srm-ui [data-canon-issue=true]{outline:2px dashed var(--theme-negative,#C8554C)!important;outline-offset:4px;}
 @media(prefers-reduced-motion:reduce){.srm-ui [data-canon-usage]{transition:none!important;animation:none!important;}}
 
 /* SRM-C18 / T06–T08: one typography and comparison tone for the full label.
    Liquidity fill keeps its fixed scale; label tone describes period-to-period change. */
 .srm-ui { --canon-radar-label-size: 1rem; --canon-radar-label-weight: 650; --canon-radar-help-size: .875rem; }
-.srm-ui [data-comparison-tone="positive"] { color: #176747; }
-.srm-ui [data-comparison-tone="negative"] { color: #A63830; }
-.srm-ui [data-comparison-tone="caution"] { color: #805400; }
-.srm-ui [data-comparison-tone="unknown"] { color: #526A82; }
+.srm-ui [data-comparison-tone="positive"] { color: var(--theme-positive,#176747); }
+.srm-ui [data-comparison-tone="negative"] { color: var(--theme-negative,#A63830); }
+.srm-ui [data-comparison-tone="caution"] { color: var(--theme-sand-text,#805400); }
+.srm-ui [data-comparison-tone="unknown"] { color: var(--theme-muted,#526A82); }
 .srm-ui .srm-label-motion[data-library-component="SRM-C18"] text { font-family: inherit; font-size: var(--canon-radar-label-size); font-weight: var(--canon-radar-label-weight); fill: currentColor; }
 .srm-ui .srm-radar-panel :is(.srm-chart-legend,.srm-semantic-legend) { justify-content: flex-start; text-align: left; flex-wrap: wrap; }
 .srm-ui .srm-radar-help, .srm-ui .srm-radar-help :is(summary,p,ul,li) { font-family: inherit; font-size: var(--canon-radar-help-size); line-height: 1.6; }

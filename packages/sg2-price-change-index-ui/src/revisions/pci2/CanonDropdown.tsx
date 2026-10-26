@@ -32,6 +32,7 @@ const normalize = (value: string) => value.toLocaleLowerCase('pl').normalize('NF
 
 /** C07 / ACT-08. One searchable single-select shared by filters and chart controls. */
 export const CanonDropdown = forwardRef<HTMLSelectElement, Props>(function CanonDropdown(props, forwardedRef) {
+  const document=usePresentationScope().document;
   const {
     children,
     value,

@@ -65,3 +65,7 @@
 @media(prefers-reduced-motion:reduce){.srm-theme-switch button{transition:none}}
 
 .pci-surface[data-srm-theme="dark"] :is(.cci-panel,.cci-empty,.ca-panel,.srm-dropdown-trigger){background:var(--surface);color:var(--text)}
+
+/* Approved C95 addition in legacy layouts: preserve their header flow on the
+   canonical 65.625rem header breakpoint. Exact C95 control geometry stays intact. */
+@media(max-width:65.625rem){.pci-surface .srm-canon-header .srm-theme-switch{position:fixed;right:1rem;bottom:1rem;z-index:80}}

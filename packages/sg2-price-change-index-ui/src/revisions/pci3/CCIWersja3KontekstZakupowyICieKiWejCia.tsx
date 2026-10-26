@@ -1,4 +1,4 @@
-import {useContent} from '../../PresentationScope';
+import {useContent,usePresentationScope} from '../../PresentationScope';
 import { CanonThemeSwitch } from './CanonTheme';
 
 
@@ -8,7 +8,7 @@ import { CanonThemeSwitch } from './CanonTheme';
 
 
 
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import type {Analysis,Component,Offer,Purchase,Scenario} from '../../data-contracts/pci3';
 import {createStackedPriceHistoryChart} from './StackedPriceHistoryChart';
 export function createCCIWersja3KontekstZakupowyICieKiWejCia(data:typeof import('../../data-contracts/pci3')){
@@ -27,7 +27,7 @@ const Node = ({
   children: React.ReactNode;
 }) => <div className="v3-panel" data-canon-visual-reference="SRM-C13">{children}</div>;
 const CCIWersja3KontekstZakupowyICieKiWejCia = () => {
-  const content=useContent();
+  const content=useContent();const scope=usePresentationScope();
   const [screen, setScreen] = useState<Screen>('home'),
     [origin, setOrigin] = useState<Origin>('direct'),
     [step, setStep] = useState(1),
@@ -54,6 +54,8 @@ const CCIWersja3KontekstZakupowyICieKiWejCia = () => {
   const [scenario, setScenario] = useState<Scenario>('complete'),
     [focusComponent, setFocusComponent] = useState<Component | null>(null);
   const [added, setAdded] = useState(false);
+  useEffect(()=>{if(!focusComponent)return;const previous=scope.document.activeElement as HTMLElement|null;const modal=scope.surface.querySelector<HTMLElement>('.v3-modal');modal?.querySelector<HTMLElement>('button')?.focus();const key=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();setFocusComponent(null);}if(event.key==='Tab'){const controls=Array.from(modal?.querySelectorAll<HTMLElement>('button,input,select,[tabindex="0"]')??[]);if(controls.length){event.preventDefault();const at=controls.indexOf(scope.document.activeElement as HTMLElement);controls[(at+(event.shiftKey?-1:1)+controls.length)%controls.length].focus();}}};scope.surface.addEventListener('keydown',key);return()=>{scope.surface.removeEventListener('keydown',key);previous?.focus();};},[focusComponent,scope]);
+
   const start = (kind: Origin = 'direct') => {
     const a = data.entryAnalysis(kind);
     setDraft(a);
@@ -301,7 +303,7 @@ const CCIWersja3KontekstZakupowyICieKiWejCia = () => {
           setMode('monitor');
           setScreen('result');
         }}><span>{a.name}</span><b>{money(Number(a.purchase.price), a.purchase.currency + '/' + a.purchase.unit)}</b></button>)}<button data-library-component="SRM-C01" data-canon-usage="cci-v3-primary-action" className="v3-primary" onClick={() => start('direct')}>Nowa analiza</button></Node><Node><h2>Historia porównań ofert</h2>{records.length ? records.map((a, i) => <p key={i}>{a.name} · {a.period} · oferta {fmt(a.offer)} · referencja {fmt(a.reference)} · różnica {fmt(a.offer - a.reference)}</p>) : <p>Nie zapisano jeszcze porównań. Możesz wrócić do analizy i sprawdzić ofertę.</p>}</Node></div>}
- {focusComponent && <div className="v3-modal-backdrop" onClick={() => setFocusComponent(null)}><aside className="v3-modal" onClick={e => e.stopPropagation()}><button data-canon-visual-reference="SRM-C60" aria-label="Zamknij" title="Zamknij" onClick={() => setFocusComponent(null)}>Zamknij ×</button><h2>{focusComponent.name}</h2><p>Benchmark: {focusComponent.benchmark}</p><p>Udział: {focusComponent.weight}% · źródło: {focusComponent.seriesId}</p><p>Jednostka / waluta: {focusComponent.unit} / {focusComponent.currency}</p><p>Kadencja: {focusComponent.frequency}</p><p>Przygotowanie: {focusComponent.aggregation}</p><p>Wartość bazowa w chwili zakupu: {fmt(observation(focusComponent, analysis.purchase.month, scenario))}</p><p>Wartość w analizowanym okresie: {fmt(observation(focusComponent, mode === 'compare' ? offer.month : selectedMonth, scenario))}</p><p className="v3-note">Dane fikcyjne, nie pobrano Macrobond.</p></aside></div>}
+ {focusComponent && <div className="v3-modal-backdrop" onClick={() => setFocusComponent(null)}><aside role="dialog" aria-modal="true" aria-label={focusComponent.name} data-canon-visual-reference="SRM-C27" className="v3-modal" onClick={e => e.stopPropagation()}><button data-canon-visual-reference="SRM-C60" aria-label="Zamknij" title="Zamknij" onClick={() => setFocusComponent(null)}>Zamknij ×</button><h2>{focusComponent.name}</h2><p>Benchmark: {focusComponent.benchmark}</p><p>Udział: {focusComponent.weight}% · źródło: {focusComponent.seriesId}</p><p>Jednostka / waluta: {focusComponent.unit} / {focusComponent.currency}</p><p>Kadencja: {focusComponent.frequency}</p><p>Przygotowanie: {focusComponent.aggregation}</p><p>Wartość bazowa w chwili zakupu: {fmt(observation(focusComponent, analysis.purchase.month, scenario))}</p><p>Wartość w analizowanym okresie: {fmt(observation(focusComponent, mode === 'compare' ? offer.month : selectedMonth, scenario))}</p><p className="v3-note">Dane fikcyjne, nie pobrano Macrobond.</p></aside></div>}
  <footer className="v3-footer">CCI v3 · osobny komponent MagicPath · dane i scenariusze demonstracyjne · Benchmark Finder i SRM bez zmian</footer>
  </div>;
 };

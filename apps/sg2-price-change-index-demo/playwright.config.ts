@@ -1,2 +1,3 @@
 import {defineConfig} from '@playwright/test';
-export default defineConfig({testDir:'test',testMatch:'**/*.spec.ts',fullyParallel:false,workers:1,reporter:[['list'],['html',{open:'never'}]],use:{baseURL:'http://127.0.0.1:3672',browserName:'chromium',channel:process.env.CI?undefined:'chrome',trace:'retain-on-failure',screenshot:'only-on-failure'},webServer:{command:'npm start',url:'http://127.0.0.1:3672/v3',reuseExistingServer:false,env:{PORT:'3672'}},timeout:30000});
+const live=process.env.PCI_BASE_URL;
+export default defineConfig({testDir:'test',testMatch:'**/*.spec.ts',fullyParallel:false,workers:1,reporter:[['list'],['html',{open:'never'}]],use:{baseURL:live??'http://127.0.0.1:3672',browserName:'chromium',channel:process.env.CI?undefined:'chrome',trace:'retain-on-failure',screenshot:'only-on-failure'},webServer:live?undefined:{command:'npm start',url:'http://127.0.0.1:3672/v3',reuseExistingServer:false,env:{PORT:'3672'}},timeout:30000});

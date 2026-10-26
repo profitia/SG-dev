@@ -35,7 +35,14 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npx playwright install --with-deps chromium
+      - name: Install the exact source environment font for live comparisons
+        run: |
+          mkdir -p "$HOME/.local/share/fonts/sg2-pci"
+          cp src/assets/inter-3.019/*.ttf "$HOME/.local/share/fonts/sg2-pci/"
+          fc-cache -f
       - run: npm run test:browser
+        env:
+          PCI_COMPARE_MAGICPATH: '1'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:

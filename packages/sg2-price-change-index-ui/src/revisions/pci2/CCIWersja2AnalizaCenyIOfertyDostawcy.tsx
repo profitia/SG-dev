@@ -1,3 +1,4 @@
+import {usePresentationScope} from '../../PresentationScope';
 import React, { useEffect, useRef, useState } from 'react';
 import { CanonButton, CanonInput, CanonSelect, CanonTextarea } from './CanonElements';
 import { CanonHeader } from './CanonHeader';
@@ -71,6 +72,7 @@ function CanonTypography() {
     }).join('\n')}</style>;
 }
 const CCIWersja2AnalizaCenyIOfertyDostawcy = () => {
+  const presentation=usePresentationScope();
   const [screen, setScreen] = useState<Screen>('home'),
     [step, setStep] = useState(1),
     [scenario, setScenario] = useState<Scenario>('complete'),
@@ -125,7 +127,8 @@ const CCIWersja2AnalizaCenyIOfertyDostawcy = () => {
       main.current?.focus({
         preventScroll: true
       });
-      window.scrollTo({
+      presentation.onNavigate?.(s);
+      presentation.surface.scrollTo({
         top: 0,
         left: 0,
         behavior: 'instant' as ScrollBehavior

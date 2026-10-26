@@ -1,6 +1,6 @@
 import React,{createContext,useContext} from 'react';
 import type {PriceChangeIndexContent} from './contracts';
-export interface PresentationScope{surface:HTMLDivElement;document:Document;dispose:()=>void;}
+export interface PresentationScope{surface:HTMLDivElement;document:Document;onNavigate?:(screen:string)=>void;dispose:()=>void;}
 const Context=createContext<PresentationScope|null>(null);
 const ContentContext=createContext<PriceChangeIndexContent>({});
 export const PresentationScopeProvider=Context.Provider;

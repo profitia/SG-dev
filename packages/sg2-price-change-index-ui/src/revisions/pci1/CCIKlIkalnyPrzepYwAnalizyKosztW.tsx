@@ -1,3 +1,4 @@
+import {usePresentationScope} from '../../PresentationScope';
 
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -88,6 +89,7 @@ function Dialog({
   return <CanonHistoryDialog title={title} subtitle={subtitle} onClose={onClose} compact={!wide}><div className="cci-dialog-body">{children}</div></CanonHistoryDialog>;
 }
 const CCIKlIkalnyPrzepYwAnalizyKosztW = () => {
+  const presentation=usePresentationScope();
   const [screen, setScreen] = useState<Screen>('dashboard'),
     [scenario, setScenario] = useState<Scenario>('ready');
   const [definition, setDefinition] = useState<Definition>(() => createDefinition()),
@@ -142,7 +144,8 @@ const CCIKlIkalnyPrzepYwAnalizyKosztW = () => {
       main.current?.focus({
         preventScroll: true
       });
-      window.scrollTo({
+      presentation.onNavigate?.(s);
+      presentation.surface.scrollTo({
         top: 0,
         left: 0,
         behavior: 'instant' as ScrollBehavior

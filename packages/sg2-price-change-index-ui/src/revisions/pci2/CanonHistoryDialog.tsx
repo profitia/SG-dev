@@ -63,6 +63,7 @@ export function CanonHistoryDialog({
       window.removeEventListener('resize', center);
       window.visualViewport?.removeEventListener('resize', center);
       window.visualViewport?.removeEventListener('scroll', center);
+      dialog.current?.close();
       previous?.focus({
         preventScroll: true
       });
