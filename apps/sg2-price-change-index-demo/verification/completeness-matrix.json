@@ -22699,11 +22699,11 @@
       "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/CCIKlIkalnyPrzepYwAnalizyKosztW.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
       "visualTestFile": "apps/sg2-price-change-index-demo/test/parity.spec.ts",
-      "status": "ZGODNE",
+      "status": "ROZBIEŻNOŚĆ",
       "result": {
         "implementation": "PRESENT",
         "local": "PASS: seven source/static checks,166 initial browser cases and40 strengthened style/dark cases",
-        "render": "PASS:175 browser cases,44 full phone cases and4 explicit touch cases on dep-dbfplnmc6qcc73fvuc40",
+        "render": "Current11d4211b popup is below native C27; local repair passed, Render correction pending",
         "acceptedCodeSha": "11d4211b49108324b094bb88688f8741f53645af",
         "method": "Pinned JSX attributes/handlers, with explicit bounded transformations"
       },
@@ -213364,13 +213364,45 @@
         "verification/source-manifest.json#finalAcceptance",
         "test/source-integrity.test.mjs"
       ]
+    },
+    {
+      "id": "sg2-pci-contract:native-modal-dropdown",
+      "kind": "approved-contract",
+      "variant": "pci1/pci2",
+      "componentId": "460628347660177408",
+      "revisionId": "464039002702499840",
+      "sourcePath": "Pinned C07 / ACT-08 and C27; actual price-dialog currency field",
+      "sourceLine": null,
+      "element": "C07 popup inside native C27 supports selection, filtering, Escape and focus return",
+      "parameters": [],
+      "behaviors": [
+        "Keep original popup geometry and styles",
+        "Portal remains in modal subtree",
+        "Native top layer avoids transform/overflow clipping",
+        "Touch selection and two-level Escape/focus"
+      ],
+      "canonicalReferences": [
+        "SRM-C07",
+        "SRM-C27",
+        "ACT-08"
+      ],
+      "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/CanonDropdown.tsx",
+      "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
+      "status": "ROZBIEŻNOŚĆ",
+      "result": {
+        "local": "181 browser cases PASS, including six new modal/geometry regressions",
+        "render": "Confirmed list not clickable on current deploy; corrective release required"
+      },
+      "evidence": [
+        "verification/source-manifest.json#nativeModalDropdownAudit"
+      ]
     }
   ],
   "verification": {
     "verifiedAt": "2026-10-26T18:56:55.210000+00:00",
     "acceptedCodeSha": "11d4211b49108324b094bb88688f8741f53645af",
     "deployId": "dep-dbfplnmc6qcc73fvuc40",
-    "status": "ZGODNE",
+    "status": "ROZBIEŻNOŚĆ",
     "sourceComparisonSets": 76,
     "runtimeCases": 175,
     "phoneCases": 44,
