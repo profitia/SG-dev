@@ -3088,13 +3088,14 @@
       "package-lock.json": "19eb2d02b30eb42dfac5fc69c5bea1e719b0a644e0fc5052781bb7c807a0a88b",
       "package.json": "2593f049f18036d272e7d5c35dcca62f7babe044585861e37dc8ca5a8a333393",
       "tests/category-operation.test.ts": "634a6b9f3d782cf79d26ecd8136e7d8a56dc0cb567a036b6ea23feada7b4c656",
-      "tests/diagnostic-telemetry-adoption.test.mjs": "5b53561198057ce254e77e66e089e451426b167c32b20bcdd32077711c9152a8",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "0ab33228389398389ea08cc146cdfcda2b14e7249f0619882086a443e39fcf4d",
       "tests/identity-runtime.test.ts": "1c3d0c83797497f8bdbb00daa5eece6fd861510433d92bbdf4b42eb2864b80ec",
       "tests/native-sql-roundtrips.test.mjs": "75ba2a75cde5decc940b134e8c97c3cf63fb631914d67dc49f17e7156a16e8c3",
       "tests/operation-context.test.mjs": "41a8c817397629d87073da97cce1db6930f1ae2c921cff3860bddedd44148a75",
       "tests/porr-demo-middleware.test.ts": "9d6172c054911f4be5b547f4bedeb31fc17b09de5365d2f1dffc25211d7ed0e5",
       "tests/private-host.integration.test.mjs": "fc0e2f54b642d15fbb8c5ac3f265a54ffbaf9b00e75eeff18a84f16f1a5af32f",
-      "tests/self-service-account.test.ts": "1a550808d1cb0265b8730b253f6d6bfcfd733e92745ea299ced7f67fd83f290f"
+      "tests/self-service-account.test.ts": "1a550808d1cb0265b8730b253f6d6bfcfd733e92745ea299ced7f67fd83f290f",
+      "../dashboard-preview/package-lock.json": "4b516e833633fbfd5b37640873eb816e208e01ab8435098e02e1ec8b4550ec5b"
     },
     "observationOnly": true,
     "deploymentActivationScope": "SRM_PILOT2_ONLY",
