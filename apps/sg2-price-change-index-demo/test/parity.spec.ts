@@ -116,3 +116,15 @@ for(const version of ['v1','v2'] as const)for(const theme of ['light','dark'])te
  expect(originalAfter.y-originalBefore.y).toBe(0);expect(actualAfter.y-actualBefore.y).toBe(originalAfter.y-originalBefore.y);
  await actual.keyboard.press('Escape');await expect(actual.getByRole('dialog')).toHaveCount(0);await expect(actual.locator('body')).toHaveCSS('overflow',overflow);await context.close();
 });
+
+for(const width of [390,1440])test(`paired source C07 currency popup geometry inside C27 ${width}`,async({browser},info)=>{
+ test.skip(!compareSource,'Explicit immutable-source comparison.');const context=await browser.newContext({viewport:{width,height:1024},reducedMotion:'reduce'}),source=await context.newPage(),actual=await context.newPage();
+ await source.goto('https://api.magicpath.ai/components/463296435564220416/revision/465437640712400896');await actual.goto(actualOrigin+'/v1');for(const page of [source,actual]){await ready(page);await page.getByRole('button',{name:/Moja cena/}).click();await page.getByRole('button',{name:'Waluta ceny bazowej',exact:true}).click();}
+ const measure=(page:Page)=>page.locator('.srm-dropdown-popup').evaluate(root=>[root,...root.querySelectorAll('*')].map(e=>{const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {tag:e.tagName,className:e.getAttribute('class'),x:r.x,y:r.y,width:r.width,height:r.height,padding:s.padding,margin:s.margin,font:s.font,borderRadius:s.borderRadius,border:s.border,boxShadow:s.boxShadow,color:s.color,background:s.backgroundColor,position:s.position};}));
+ const original=await measure(source),received=await measure(actual),expected=structuredClone(original);const focus={source:await source.locator('.srm-dropdown-search').evaluate(e=>e.matches(':focus-within')),actual:await actual.locator('.srm-dropdown-search').evaluate(e=>e.matches(':focus-within'))};expect(focus).toEqual({source:false,actual:true});
+ // The repaired C07 can focus its search input. The pinned C07/ACT-08 rule
+ // explicitly sets focus-within border-color var(--theme-line,#B1C9DD).
+ // Keep the raw inert-source border and require this exact canonical focus state.
+ for(const row of expected)if(row.className==='srm-dropdown-search')row.border='1px solid rgb(177, 201, 221)';
+ await fs.writeFile(info.outputPath('source-and-actual.json'),JSON.stringify({revision:'465437640712400896',library:'464039002702499840',width,scenario:'C07 popup inside C27',focus,original,received,expected,sourceBehaviorDefect:'Body portal is inert under native dialog; preserve geometry and apply the real C07 focus-within rule after restoring operability'},null,2));await source.screenshot({path:info.outputPath('magicpath.png'),fullPage:true});await actual.screenshot({path:info.outputPath('frontend.png'),fullPage:true});expect(received).toEqual(expected);await actual.getByRole('option',{name:'EUR',exact:true}).click();await expect(actual.locator('select[aria-label="Waluta ceny bazowej"]')).toHaveValue('EUR');await context.close();
+});

@@ -146,7 +146,7 @@
             "productDataMode": "LOCAL_SYNTHETIC",
             "productIntegrations": "NONE",
             "databaseRequired": false,
-            "acceptanceStatus": "VERIFIED_STAGE1_1_TO_1"
+            "acceptanceStatus": "CORRECTIVE_RELEASE_PENDING_NATIVE_C07"
           }
         },
         "privateNetworkIsolation": {

@@ -42,4 +42,16 @@ for(const version of ['v1','v2'])test(`phone ${version} C07 scenarios search, ke
  await page.setViewportSize({width:390,height:844});await expect(trigger).toBeVisible();await expect(page.locator('select[aria-label="'+label+'"]')).toHaveValue(value);await page.screenshot({path:info.outputPath('canonical-phone-scenario.png'),fullPage:true});
 });
 
+for(const width of [390,1440])test(`v1 native C27 currency dropdown commits, filters and restores focus ${width}`,async({browser},info)=>{
+ const context=await browser.newContext({viewport:{width,height:width===390?844:1024},hasTouch:true,isMobile:width===390}),page=observe(await context.newPage());
+ await page.goto(themedRoute((process.env.PCI_BASE_URL??'http://127.0.0.1:3672')+'/v1'));await page.evaluate(()=>document.fonts.ready);
+ const caller=page.getByRole('button',{name:/Moja cena/});await caller.focus();await caller.tap();const parent=page.getByRole('dialog').first(),field=page.getByRole('button',{name:'Waluta ceny bazowej',exact:true});await field.tap();
+ const popup=page.locator('.srm-dropdown-popup');expect(await popup.evaluate(e=>e.matches(':popover-open')&&!!e.closest('dialog[open]'))).toBe(true);await page.screenshot({path:info.outputPath('native-c07-popup.png'),fullPage:true});
+ await page.getByRole('combobox',{name:'Filtruj: Waluta ceny bazowej',exact:true}).fill('EUR');await page.getByRole('option',{name:'EUR',exact:true}).tap();
+ await expect(page.locator('select[aria-label="Waluta ceny bazowej"]')).toHaveValue('EUR');await expect(page.locator('.cci-price-result')).toContainText('EUR');await expect(popup).toHaveCount(0);await expect(field).toBeFocused();
+ await field.tap();await page.getByRole('option',{name:'EUR',exact:true}).hover();await page.keyboard.press('Control+i');const inspector=page.getByRole('dialog',{name:'Inspektor kanonu',exact:true});await expect(inspector).toContainText('SRM-C07');await page.keyboard.press('Escape');await expect(inspector).toHaveCount(0);await expect(parent).toBeVisible();await expect(field).toBeFocused();
+ await field.tap();await page.keyboard.press('Escape');await expect(popup).toHaveCount(0);await expect(parent).toBeVisible();await expect(field).toBeFocused();await expect(page.locator('body')).toHaveCSS('overflow','hidden');
+ await page.keyboard.press('Escape');await expect(parent).toHaveCount(0);await expect(caller).toBeFocused();expect(browserErrors.get(page)).toEqual([]);await context.close();
+});
+
 });

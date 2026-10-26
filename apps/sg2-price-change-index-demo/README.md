@@ -1,6 +1,6 @@
 # Price Change Index — SG2 Development, etap 1
 
-**FRONTEND DEMO WDROŻONY I ZWERYFIKOWANY 1:1 względem przypiętych źródeł i zatwierdzonych adaptacji.** Wszystkie dane oraz procesy produktu są syntetyczne i lokalne. Zapis oznacza zmianę pamięci demonstracji. Nie jest zapisem do systemu biznesowego.
+**ODBIÓR OTWARTY: korekta C07 w natywnym dialogu C27.** Wszystkie dane oraz procesy produktu są syntetyczne i lokalne. Zapis oznacza zmianę pamięci demonstracji. Nie jest zapisem do systemu biznesowego.
 
 Demonstracja: [wersja 1](https://price-change-index.onrender.com/v1), [wersja 2](https://price-change-index.onrender.com/v2), [wersja 3](https://price-change-index.onrender.com/v3). [Minimalny odrębny host](https://price-change-index.onrender.com/portable) pokazuje montowanie, reset i odmontowanie publicznego komponentu. Oba motywy są dostępne również przez `?theme=dark`.
 
@@ -15,14 +15,14 @@ Demonstracja: [wersja 1](https://price-change-index.onrender.com/v1), [wersja 2]
 | Istniejące środowisko | Development — evm-dap98hm0tbcc738rro10 |
 | Nowy Web Service | Price Change Index — srv-dbfnd3jrjlhs73epihvg |
 | URL | https://price-change-index.onrender.com |
-| Przyjęty deploy / LKG | dep-dbfplnmc6qcc73fvuc40 |
+| Bieżący deploy, korekta C07 w toku | dep-dbfplnmc6qcc73fvuc40 |
 | Wdrożony zaakceptowany SHA main | 11d4211b49108324b094bb88688f8741f53645af |
 | Auto-deploy / preview | wyłączone / wyłączone |
 | Konfiguracja | Node 24, Frankfurt, jedna instancja 0.5c-512mb |
 
-Nie utworzono projektu Render. Pierwszy deploy `dep-dbfnd4jrjlhs73epimn0` / `d792044040703994968c164da5cae74982c3d60d` pozostaje historyczny i nie jest LKG 1:1. Powstały dokładnie dwa planowane deploye. Korekta jest drugim z nich; dokumentacyjny odbiór nie wymaga trzeciego wydania identycznych plików.
+Nie utworzono projektu Render. Pierwszy deploy `dep-dbfnd4jrjlhs73epimn0` / `d792044040703994968c164da5cae74982c3d60d` pozostaje historyczny i nie jest LKG 1:1. Dotychczas powstały dwa planowane deploye. Dodatkowa kontrola waluty C07 w natywnym C27 wykazała niedostępny popup; lokalna korekta kodu wymaga nowego kontrolowanego wydania po przyjęciu main.
 
-PR-y: [734 — onboarding](https://github.com/profitia/SG-dev/pull/734), [735 — implementacja](https://github.com/profitia/SG-dev/pull/735), [736 — korekty i zatwierdzone selektory mobilne](https://github.com/profitia/SG-dev/pull/736). PR zawierający ten raport dodaje wyłącznie dowody i mocniejsze testy. Kod frontendu pozostaje kodem wdrożonego SHA.
+PR-y: [734 — onboarding](https://github.com/profitia/SG-dev/pull/734), [735 — implementacja](https://github.com/profitia/SG-dev/pull/735), [736 — korekty i zatwierdzone selektory mobilne](https://github.com/profitia/SG-dev/pull/736). PR737 zawiera historyczny odbiór175 przypadków. Bieżąca korekta C07/C27 zachowuje ten wynik i dopisuje wykrytą później ścieżkę; lokalnie przeszło181 przypadków, a nowy deploy i odbiór Render pozostają wymagane.
 
 ## Przypięte źródła
 
@@ -39,7 +39,7 @@ Zatwierdzone decyzje właściciela: ciemny wariant v1/v2 według biblioteki; pie
 
 ## Odbiór i dowody
 
-[Macierz](verification/completeness-matrix.json): **5117 pozycji ZGODNE**, w tym 1864 JSX, 3246 CSS i 7 kontraktów. [Manifest źródeł i dowodów](verification/source-manifest.json) zachowuje historię wykrytych problemów oraz finalne potwierdzenia. Brak niezatwierdzonych rozbieżności.
+[Macierz](verification/completeness-matrix.json): 5117 wcześniejszych pozycji oraz nowy kontrakt interakcji C07/C27; końcowy status jest otwarty do wdrożenia korekty. [Manifest źródeł i dowodów](verification/source-manifest.json) zachowuje historię wykrytych problemów oraz finalne potwierdzenia. Potwierdzona rozbieżność: lista waluty w dialogu „Moja cena” była pod natywną warstwą modalną; jej wybór wymaga korekty frontendu.
 
 - Render: **175 testów PASS**, dodatkowo **44 pełne ścieżki telefonu**, **4 testy rzeczywistych zdarzeń dotyku selektorów**, **11 kontroli HTTP**.
 - **76 par źródło–frontend**, 7969 wierszy elementów/stylów oraz 204 zrzuty w końcowym katalogu wyników. Pomiary obejmują geometrię, typografię, marginesy, paddingi, gapy, obramowania, cienie, przepełnienie i deklaracje ruchu. Wersja 3 ma także porównania wnętrz i dialogów w ciemnym motywie.
@@ -74,8 +74,10 @@ Serwer podaje wyłącznie statyczny frontend, GET/HEAD. CSP zabrania połączeń
 
 Web Service został wybrany zgodnie z jawną decyzją właściciela. Compute: **7 USD/miesiąc**. Istniejący workspace korzysta z Performance builder **25 USD/1000 minut**; plan i globalny limit nie zostały zmienione. Opłata pipeline wynosiła 25 USD przed utworzeniem, po pierwszym i po poprawionym wydaniu: nie zaobserwowano zakupu dodatkowej puli. Ostatni odczyt transferu po wydaniu: 22,23/25GB. 7 USD jest ceną instancji; przyszłe buildy i transfer podlegają istniejącym zasadom workspace. Nie dodano płatnych dodatków, dysku ani kolejnej instancji. [Zasady Render](https://render.com/docs/build-pipeline).
 
-Wydania pozostają ręczne, po bramkach i zaakceptowanym SHA main, wyłącznie według zapisanego serviceId. Plik deployment/render.yaml jest referencją; nie odtwarzać z niego drugiej usługi ani projektu. Przyszłe kontrolowane wyłączenie wymaga osobnego polecenia właściciela: suspend wyłącznie `srv-dbfnd3jrjlhs73epihvg`, z zachowaniem kodu, IDs i dowodów. Nie usuwać zasobu automatycznie. Aktualny przyjęty deploy jest LKG modułu; rollback wymaga ponownego sprawdzenia konfiguracji i zapisanej zaakceptowanej rewizji.
+Wydania pozostają ręczne, po bramkach i zaakceptowanym SHA main, wyłącznie według zapisanego serviceId. Plik deployment/render.yaml jest referencją; nie odtwarzać z niego drugiej usługi ani projektu. Przyszłe kontrolowane wyłączenie wymaga osobnego polecenia właściciela: suspend wyłącznie `srv-dbfnd3jrjlhs73epihvg`, z zachowaniem kodu, IDs i dowodów. Nie usuwać zasobu automatycznie. Nowy przyjęty LKG wymaga końcowego odbioru korekty C07; rollback wymaga ponownego sprawdzenia konfiguracji i zapisanej zaakceptowanej rewizji.
 
 Główny task: `SG2-PRICE-CHANGE-INDEX-FRONTEND-20261026`, rejestracja `cmvp9993000001352wk5crk3v`. Cztery zakresy pomocnicze mają CLOSEOUT_COMPLETE, MEMOROS SUCCEEDED i PHR PUBLISHED; ancestry publikacji w zdalnym PHR potwierdzono. Ich rzeczywiste IDs są w manifeście. Końcowe identyfikatory głównego zamknięcia generuje kanoniczny PMOS/MEMOROS/PHR po przyjęciu tego raportu; źródłem potwierdzenia jest rekord tego tasku oraz końcowy handoff. Nie utworzono nowego PMOS modułu ani nie zapisano do SRM srm_pmos.
 
 Etap 2 pozostaje planem: ustalenie właściwego hosta i kontraktów danych/uprawnień, adapter hosta, kontrolowane podłączenie właściwego API, osobne testy i odbiór. Nie rozpoczęto integracji.
+
+Dodatkowa regresja C07/C27: popup zachowuje źródłowy renderer i geometrię, pozostaje potomkiem natywnego dialogu oraz używa natywnego popover do wyjścia ponad transform/overflow. Testy obejmują filtr, dotyk, wybór, dwa poziomy Escape i focus; inspektor powraca do kontrolki wywołującej, gdy popup zostaje zamknięty przez blur. Do testów wymagane są natywne Dialog/Popover API. Stan wdrożenia pozostaje w macierzy i manifeście.

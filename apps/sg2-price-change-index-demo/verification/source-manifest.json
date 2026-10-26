@@ -25469,8 +25469,8 @@
       "currentDeployId": "dep-dbfplnmc6qcc73fvuc40",
       "deployedSha": "11d4211b49108324b094bb88688f8741f53645af",
       "ownDeployCount": 2,
-      "acceptedLkgDeployId": "dep-dbfplnmc6qcc73fvuc40",
-      "acceptanceStatus": "VERIFIED_STAGE1_1_TO_1"
+      "acceptedLkgDeployId": null,
+      "acceptanceStatus": "CORRECTIVE_RELEASE_PENDING_NATIVE_C07"
     },
     "renderCost": {
       "computePlan": "0.5c-512mb",
@@ -25521,7 +25521,7 @@
       }
     },
     "finalAcceptance": {
-      "status": "PASS",
+      "status": "WITHDRAWN_PENDING_NATIVE_C07_CORRECTION",
       "acceptedCodeSha": "11d4211b49108324b094bb88688f8741f53645af",
       "deployId": "dep-dbfplnmc6qcc73fvuc40",
       "url": "https://price-change-index.onrender.com",
@@ -26954,6 +26954,51 @@
         }
       ],
       "allAuxiliaryPhrCommitsVerifiedInRemoteMain": true
+    },
+    "nativeModalDropdownAudit": {
+      "initialDeployId": "dep-dbfplnmc6qcc73fvuc40",
+      "initialProbe": {
+        "selected": false,
+        "layout": {
+          "parent": "DIV",
+          "dialog": false,
+          "rect": {
+            "x": 205,
+            "y": 525.25,
+            "width": 507,
+            "height": 181,
+            "top": 525.25,
+            "right": 712,
+            "bottom": 706.25,
+            "left": 205
+          },
+          "dialogRect": {
+            "x": 180,
+            "y": 187,
+            "width": 1080,
+            "height": 650,
+            "top": 187,
+            "right": 1260,
+            "bottom": 837,
+            "left": 180
+          },
+          "dialogTransform": "matrix(1, 0, 0, 1, 0, -325)"
+        },
+        "error": "locator.click: Timeout 2500ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('option', { name: 'EUR', exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <button title=\"EUR\" type=\"button\" role=\"option\" tabindex=\"-1\" id=\":r5:-option-1\" data-empty=\"false\" data-active=\"false\" aria-selected=\"false\" class=\"srm-dropdown-option\" data-canon-source=\"shared-v1\" data-content-rule=\"SRM-TXT01\" data-spacing-rules=\"SRM-SP06\" data-library-component=\"SRM-C07\" data-canon-usage=\"CanonDropdown:option\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m"
+      },
+      "result": "ROZBIEŻNOŚĆ",
+      "cause": "Pinned C07 renderer portals to body outside the active native C27 dialog; body popup is below the modal/inert.",
+      "correction": "Retain C07 markup/styles, portal within the native dialog and use a manual native popover to preserve viewport positioning outside transformed/clipped dialog coordinates.",
+      "sourceUnmodified": true,
+      "localVerification": "181 browser cases PASS",
+      "renderVerification": "PENDING",
+      "localTargetedCases": 6,
+      "localTargetedResult": "PASS",
+      "sourceGeometry": "Exact source geometry retained at390/1440. Original inert search lacks focus; repaired search uses pinned C07/ACT-08 focus-within border #B1C9DD. Raw source and expected focused state both retained.",
+      "inspectorFocus": "After popup blur/unmount, restore its real aria-controls trigger instead of the detached input.",
+      "localFullCases": 181,
+      "localFullResult": "PASS",
+      "runtimeSourceChangeRequiresNewControlledDeploy": true
     }
   },
   "fontAssets": [
@@ -28977,6 +29022,11 @@
       "source": "pci1/pci2 horizontal side-menu CSS",
       "canon": "SRM-C69",
       "change": "Hide only the position caption, preserving the CanonDropdown span so all four canon edges stay selectable."
+    },
+    {
+      "source": "Pinned pci1/pci2 CanonDropdown body portal inside native C27",
+      "canon": "SRM-C07 / ACT-08 and SRM-C27",
+      "change": "Keep the C07 renderer in the native dialog subtree and lift its popup using manual native Popover API. Retain viewport geometry and all source style declarations. Restore inspector focus to the popup controller when blur removes the input."
     }
   ],
   "resolvedImplementationDefects": [
