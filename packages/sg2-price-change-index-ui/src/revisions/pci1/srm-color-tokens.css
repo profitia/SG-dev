@@ -1,0 +1,14 @@
+/* SRM UI COLOR CANON v0.1 — prototype, 12.10.2026.
+Brand roles are stable across screens; semantic radar colors are independent.
+No financial formula, qualification or normalization is changed here. */
+.srm-ui,.srm-history,.srm-color-canon{
+ --brand:#005A9C;--brand-dark:#003366;--brand-light:#66B2FF;--sand:#D2B48C;--mist:#F8F9FA;
+ --surface:#FFFFFF;--ink:var(--brand-dark);--blue:var(--brand);--page:var(--mist);
+ --text:#294D70;--muted:#526A82;--line:#D6E0E9;--faint-line:#E7EDF2;
+ --blue-soft:#EAF3FF;--sand-soft:#F7F1E8;--neutral:#EDF1F4;
+ --success:#25815F;--success-text:#176747;--success-soft:#DDEFE6;
+ --caution:#D49A2A;--caution-text:#805400;--caution-soft:#FCF0D6;
+ --negative:#C8554C;--negative-text:#A63830;--negative-soft:#F9E4E1;
+ --unknown:#718191;--unknown-soft:#F0F3F5;--reference:#465B70;
+}
+

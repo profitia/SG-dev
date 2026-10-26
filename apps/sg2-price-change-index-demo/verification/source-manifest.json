@@ -1,0 +1,568 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "SG2",
+  "pins": {
+    "pci1": {
+      "key": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896"
+    },
+    "pci2": {
+      "key": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160"
+    },
+    "pci3": {
+      "key": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016"
+    },
+    "library": {
+      "key": "library",
+      "componentId": "460628347660177408",
+      "revisionId": "464039002702499840"
+    }
+  },
+  "sourceFiles": [
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/App.tsx",
+      "sha256": "1dcf40646a2810e5fd8144804d9bc5a00284f951cf6b0d52f749756ab3b3f673"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/CCICanonStyles.tsx",
+      "sha256": "decca2789a23d232ec5a9b8e71baf3d8d877536ac62beb1bc454ce92ecdccbc4"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/CCIChart.tsx",
+      "sha256": "42e6ff90e79d53f3963ca7c61dac5c954cfecfd8a8fa8db3ade6f3549613f7a7"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/CCIKlIkalnyPrzepYwAnalizyKosztW.tsx",
+      "sha256": "0aeba608cf6a57988cffcb1c90a08e4950d65befc0cef069ab9437b6a8d77f63"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/CanonDropdown.tsx",
+      "sha256": "a7fd50e36325031ce64d50b925eb75da2523e5f380052af4b1f0b72e3e9061da"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/CanonElements.tsx",
+      "sha256": "e54b259194e9bc2516445e414c307b3a72d669555e9b92c0d49fc12aceb6c9c3"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/CanonHeader.tsx",
+      "sha256": "5ebe4feccb694b7980a918bda6b2dde4dc9502c1f214644557818e57f5d3fdaf"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/CanonHistoryDialog.tsx",
+      "sha256": "49425c293a3c49a474f5b6de5979d82f5069d667fdf93d688b6196b46fb30183"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/CanonSideMenu.tsx",
+      "sha256": "4628f50c2be997ed4acb2f6a89c00430629570696a1826dd83d5dfd147bd10f2"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/SpendGuruLogo.tsx",
+      "sha256": "d7ddaeb92cb7d8fc2ca03f43bbc4fda1b4196097602d60f8efac49593486a7d4"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/canon-dropdown.css",
+      "sha256": "5ebf4d048b75a595fc8ca3c907738ef27ef1ceb2f1a2ba741c56ca1fb8fd8103"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/canon-header.css",
+      "sha256": "0d32b30f73f0a7948755be5249bd04505c711ef23e4fd9d4ad938af60f8c2413"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/canon-identifiers.ts",
+      "sha256": "58e80dec138f838ff28ca0ff815938cccc323a1e1668195659d21df3c75940e6"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/canon-shared.css",
+      "sha256": "e4dbd0afecc3ef739bd2a9bc162a9ab12915d4ad7be6c87466dbc3a6f8018f77"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/canon-side-menu.css",
+      "sha256": "21f3d807a578da1556f336429dac5648acb2c666b6193586ff7d32f3507f4552"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/canon-tokens.ts",
+      "sha256": "43b704f6cda889512e04c687a90512f18abb903519014e4959c6de45ae6c7b95"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/cci-data.ts",
+      "sha256": "c5713713237a14d6ddd44ea2eb4ef6510f636253a1d96c9bae85a93009617424"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/cci-icons.tsx",
+      "sha256": "c95c0e2fde5454d20a9ba0ad9033f96dffa34d9fa0bbf79d648f3f3c51b91498"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/cci.css",
+      "sha256": "dbf340f69533864605fddf0404dba88cded5ecab0e1cf8e5098164ffb6dfd125"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/chart-time-presets.css",
+      "sha256": "ae5dbeae3a196c6b4ddd8d1c47a68fdfe468a28c49150a4849ecaa97b00e0fad"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/library-names.ts",
+      "sha256": "a7f6fda5e7b2a1c15d7739365a0620fcec6741796d19b428976361ea16cbb653"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/library-registry.ts",
+      "sha256": "b19501a5a8d45865bd7098dae85f1624a80a02368f8fd07c44aeeadd8ac97772"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/side-menu-contract.ts",
+      "sha256": "0e79c7d0bcfdd74c8b3672441e0802d23f0ed95346d2e01597d216264f350f45"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/spacing-contract.ts",
+      "sha256": "284fead08067063e82008f17c6785d8911dadc07f09677950ac5c5f10bfde493"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/srm-color-tokens.css",
+      "sha256": "f64629286433ccf68509f80a29952c71cb70bd1e21a5e948eecfd515ca5dced4"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/srm-history-detail.css",
+      "sha256": "54cf298d30e20286cecbaa50ea9237ceacfa6dfad5ddf53c8d9615dcf6283003"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/srm-history-table.css",
+      "sha256": "520936060bc84a8f2588f5ac0ae8d3ba694e8a39c79231b8ded76fa3f0817ad9"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/srm-interaction-motion.css",
+      "sha256": "fa9945d330bdfad37e265d2682007a7585ac180f752bc34587514d083900e924"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/components/generated/ui-copy-canon.ts",
+      "sha256": "6256df71a309d31cfe80c4e1fe8144a401e63dc6c9239241ac9f5b0489065a1b"
+    },
+    {
+      "view": "pci1",
+      "componentId": "463296435564220416",
+      "revisionId": "465437640712400896",
+      "path": "src/index.css",
+      "sha256": "23435921fd0c28f0eaceb817ea37ec5eeea0cbad0ad64aa397c16ec061ab9f8b"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/App.tsx",
+      "sha256": "7248cdb7f0253b30843bbaf694355fbd3d7f0a1de3356f0cb4528eafd0a06128"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/CCIWersja2AnalizaCenyIOfertyDostawcy.tsx",
+      "sha256": "34c7a6112bf91e90ff1bff94be6929dfb83f1f5f93a99918437037ed243d2f90"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/CanonDropdown.tsx",
+      "sha256": "a7fd50e36325031ce64d50b925eb75da2523e5f380052af4b1f0b72e3e9061da"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/CanonElements.tsx",
+      "sha256": "e54b259194e9bc2516445e414c307b3a72d669555e9b92c0d49fc12aceb6c9c3"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/CanonHeader.tsx",
+      "sha256": "5ebe4feccb694b7980a918bda6b2dde4dc9502c1f214644557818e57f5d3fdaf"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/CanonHistoryDialog.tsx",
+      "sha256": "49425c293a3c49a474f5b6de5979d82f5069d667fdf93d688b6196b46fb30183"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/CanonSideMenu.tsx",
+      "sha256": "4628f50c2be997ed4acb2f6a89c00430629570696a1826dd83d5dfd147bd10f2"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/PriceHistoryChart.tsx",
+      "sha256": "88abd81b3fc8fab16ea21fcbd45decf554a6edb5af8ae4e96e537de1853d6b34"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/SpendGuruLogo.tsx",
+      "sha256": "d7ddaeb92cb7d8fc2ca03f43bbc4fda1b4196097602d60f8efac49593486a7d4"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/canon-dropdown.css",
+      "sha256": "3d68145fbe1bf141e8f6d2ad15583fa05238e0237c896637d01d195237506134"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/canon-header.css",
+      "sha256": "d8323bb8c425464e2431562504a2ceeb3a4fe27e08dd200a1d17000cb3eeaaca"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/canon-identifiers.ts",
+      "sha256": "33041a24c210abd1a1c659fcfc763ab0cfdd717169230e31e2a8b90b0f9c3cc7"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/canon-shared.css",
+      "sha256": "a8909b835be6d50e2b4e1668fd37a3060892438a0ab641e8aa7086507f25f0af"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/canon-side-menu.css",
+      "sha256": "4ab3c3a68ae838893ccf9ac52846c8dd7afb329b7feaef9c36b4f45cd9114122"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/canon-tokens.ts",
+      "sha256": "f332c50212c8a9dcb43eb357c89cc54ecbb5b9e06e92bfb9f97a8c46c33cf7e4"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/cci-icons.tsx",
+      "sha256": "670622e64ec6270df2aef4cc4271f2d7ac71c21fbfd68a79eeb697471089f44d"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/library-names.ts",
+      "sha256": "bdeb7ddbf49e13f5f7971c387ba874755299ade3f1285e6c3726542ddd7a9464"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/library-registry.ts",
+      "sha256": "d44f10f021198e8fc00ad63a954adee6b02d04e61751e00d0217304d7c6d13c0"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/price-analysis-data.ts",
+      "sha256": "ffbc81181f0b6d65e4eb2c4628c1a8d713cd433b97a8e84cef96dc729c0aa967"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/price-analysis-v2.css",
+      "sha256": "1375f20f1ad9358e19b418fe0dfa91bae605bef34bb3c92e72964def7e500409"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/side-menu-contract.ts",
+      "sha256": "d852fc228d970c3bc87d0a01dba55a61f70d73733f07407790b3184dc68ebad8"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/spacing-contract.ts",
+      "sha256": "07a0c39422a3775cc33857b324abb849c7f6d94bdffd0a52bd344bc396a55879"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/srm-color-tokens.css",
+      "sha256": "85905bb6b804025c073b9ba09b60cb4058a6d697b420499f907b4eba198c5844"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/srm-history-detail.css",
+      "sha256": "bab54fc472393425c8a61aa094dac48c7f4249f14549fae2f2eb6f3865057048"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/srm-history-table.css",
+      "sha256": "e72b9818f0581ac3b2b1b2b4a741c507a9355fadf15f9ce398076159183753ba"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/srm-interaction-motion.css",
+      "sha256": "06e2d080ad8ace5e6e5a89fab819a0ec2bb399d8e7fa5ed4335aa8a2d49b4ac9"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/components/generated/ui-copy-canon.ts",
+      "sha256": "ea9c7a480b0e226098cc4b2f28b3d7aab1880aa47b920df2bee780f8c7fbe043"
+    },
+    {
+      "view": "pci2",
+      "componentId": "463310747150213120",
+      "revisionId": "465437647490396160",
+      "path": "src/index.css",
+      "sha256": "23435921fd0c28f0eaceb817ea37ec5eeea0cbad0ad64aa397c16ec061ab9f8b"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/App.tsx",
+      "sha256": "5e834c0cd039bbbbc46262d2fb8808182075dc3cffa7561381bdc8c9e8d723ad"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/CCIWersja3KontekstZakupowyICieKiWejCia.tsx",
+      "sha256": "1d0d6154afb7ebbbdea536930922d693e6480a1551e55ba855127641d55651cf"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/CanonTheme.tsx",
+      "sha256": "b111268ab4cf684ee9fd29989f82b67f181231313ef97551f937f5fc7fefb801"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/StackedPriceHistoryChart.tsx",
+      "sha256": "6af26e56dcc2ec2354d79d08129e4c417efe18f6143429bb95fcea53dec7d62d"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/canon-header.css",
+      "sha256": "a15e76bbb4122cc29d1fe7e9eae89e463705272d7cd1ca08d1d9829a97d3c13f"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/canon-shared.css",
+      "sha256": "7a32bdef8adff76b0dd9658b2ca14cac593d0711fe791b36c1e71cb7b36939fe"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/canon-side-menu.css",
+      "sha256": "b768239bdad2d06f2025edc045c54a5c131135bd474e26fa28a98eb2750d278a"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/canon-theme-contract.ts",
+      "sha256": "39de27c68683a7e9fe33a8c5cbb77e99ad47b7a1074afab7f884f68b8baf5437"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/canon-theme.css",
+      "sha256": "122a63cb8b42d3a6eead0b15e45a6536b287dd42cc4acafcecafbf1164e1ccd4"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/price-analysis-data.ts",
+      "sha256": "7dcb36e0d1569ddcfebed3f2e9bffff96d86a9c9634ace9ea2abed24c407624e"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/price-analysis-v2.css",
+      "sha256": "2731193bdb965f5193f06a2dba8930dab49987894c24a55c60346a529615c266"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/price-analysis-v3.css",
+      "sha256": "92f641cea1c9de0560e6799d8ca89d47dd00284fbeca064494b516da6ed8ad04"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/srm-color-tokens.css",
+      "sha256": "2132f70c74f782c68828bbd6a9816839220d132a21560afbda9e86d0b06625ad"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/srm-history-detail.css",
+      "sha256": "812fa1a5a8585b6b84fd943e4f0554ae9c0ccb382b48e4ac6484565505997085"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/srm-history-table.css",
+      "sha256": "e57925601653c77f289466eeddc76001c37bac9d32c8e038323040c68d700d76"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/srm-interaction-motion.css",
+      "sha256": "0d66ce9f524548d01425be3c129a30c75bda515cfc70818b6ceb25c8a8907a49"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/components/generated/stacked-price-chart.css",
+      "sha256": "41c4af3f3d1877e22090adb1b3535cc1fa2487a2f8204d13a49d057e99f7ec78"
+    },
+    {
+      "view": "pci3",
+      "componentId": "463321469305384960",
+      "revisionId": "465437653945430016",
+      "path": "src/index.css",
+      "sha256": "39ba1d5619534ca8218a9f54b9d46738deb88adb93dbd37b5f87942fd9b750bd"
+    }
+  ],
+  "approvedAdaptations": [
+    "Local pinned theme instead of live MagicPath iframe/postMessage",
+    "Approved dark variants and canonical switch for pci1/pci2",
+    "Scoped presentation DOM and CSS",
+    "Synthetic data supplied by demo host",
+    "Locally bundled licensed fonts"
+  ],
+  "verification": "NOT_YET_VERIFIED"
+}

@@ -1,0 +1,67 @@
+/* FND-05 / SRM-C95. A mode of the existing canon, not a second component library.
+   --theme-* is the migration bridge: original light literals stay as fallbacks.
+   Logos and brand palette specimens keep their original colors. No inversion. */
+.pci-surface {
+ --brand:#005A9C;--brand-dark:#003366;--brand-light:#66B2FF;--sand:#D2B48C;--mist:#F8F9FA;
+ --surface:#FFFFFF;--ink:var(--brand-dark);--blue:var(--brand);--page:var(--mist);
+ --text:#294D70;--muted:#526A82;--line:#D6E0E9;--faint-line:#E7EDF2;
+ --blue-soft:#EAF3FF;--sand-soft:#F7F1E8;--neutral:#EDF1F4;
+ --success:#25815F;--success-text:#176747;--success-soft:#DDEFE6;
+ --caution:#D49A2A;--caution-text:#805400;--caution-soft:#FCF0D6;
+ --negative:#C8554C;--negative-text:#A63830;--negative-soft:#F9E4E1;
+ --unknown:#718191;--unknown-soft:#F0F3F5;--reference:#465B70;
+
+--canon-actionRadius:7px;--canon-cardRadius:9px;--canon-actionHeight:32px;--canon-actionFont:12px; --surface:#FFFFFF;--page:#F8F9FA;--canvas:#F8F9FA;--ink:#003366;--brand:#005A9C;--brand-dark:#003366;--brand-light:#66B2FF;--text:#294D70;--muted:#526A82;--line:#D6E0E9;--blue-soft:#EAF3FF;--sand:#D2B48C;--success-text:#176747;--negative-text:#A63830; }
+.pci-surface[data-srm-theme="dark"] {
+ --theme-canvas:#091420;--theme-surface:#112131;--theme-raised:#172D42;--theme-chrome:#102E49;
+ --theme-ink:#E7F0FA;--theme-muted:#A5B8CB;--theme-accent:#7CC4FF;--theme-action:#126BA9;
+ --theme-line:#30465A;--theme-soft-line:rgba(162,193,221,.13);--theme-hover:rgba(124,196,255,.09);
+ --theme-positive:#76D9B2;--theme-positive-fill:#3EAA83;--theme-positive-soft:#163D36;
+ --theme-negative:#FF9B94;--theme-negative-fill:#C66A64;--theme-negative-soft:#442C34;
+ --theme-caution:#EAC278;--theme-caution-fill:#BB9349;--theme-caution-soft:#3C3425;
+ --theme-sand-soft:#332E2A;--theme-sand-text:#DCC39E;--theme-sand-line:#655745;
+ --theme-shadow:rgba(0,5,12,.32);--theme-overlay:rgba(1,7,15,.68);--theme-panel-shadow:rgba(0,5,12,.22);
+ --theme-reference:#A8BED3;--chart-year-start:#9AC3DF;--chart-year-end:#75BFFF;--chart-year-ink:#081521;
+ --action-fill:#126BA9;--chrome-strong:#102E49;
+ --background:#091420;--foreground:#E7F0FA;--card:#112131;--card-foreground:#E7F0FA;
+ --popover:#172D42;--popover-foreground:#E7F0FA;--border:#30465A;--input:#30465A;--ring:#7CC4FF;
+}
+.pci-surface[data-srm-theme="dark"],
+.pci-surface[data-srm-theme="dark"] :is(.srm-ui,.srm-history,.srm-color-canon) {
+ --brand:#7CC4FF;--brand-dark:#E7F0FA;--brand-light:#7CC4FF;--sand:#D2B48C;--mist:#091420;
+ --surface:#112131;--ink:#E7F0FA;--blue:#7CC4FF;--page:#091420;--canvas:#16283A;
+ --text:#C8D7E6;--muted:#A5B8CB;--line:#30465A;--faint-line:#253B4F;
+ --blue-soft:#1B3852;--sand-soft:#332E2A;--neutral:#1B3043;
+ --success:#3EAA83;--success-text:#76D9B2;--success-soft:#163D36;
+ --caution:#BB9349;--caution-text:#EAC278;--caution-soft:#3C3425;
+ --negative:#C66A64;--negative-text:#FF9B94;--negative-soft:#442C34;
+ --unknown:#96ABBF;--unknown-soft:#1C2F40;--reference:#A8BED3;
+}
+.pci-surface[data-srm-theme] {background:var(--page);color:var(--ink)}
+.srm-theme-switch{display:inline-flex;align-items:center;flex:none;gap:3px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--page);font:12px/1.2 Inter,Arial,sans-serif;color:var(--muted)}
+.srm-theme-switch button,.canon-studio-bar .srm-theme-switch button{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;min-height:30px;border:0;border-radius:999px;padding:0 10px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;transition:background 180ms,color 180ms;transform:none;scale:1}
+.srm-theme-switch button[aria-pressed="true"],.canon-studio-bar .srm-theme-switch button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 5px rgba(0,20,40,.08);font-weight:600}
+.srm-theme-switch button:hover,.canon-studio-bar .srm-theme-switch button:hover{color:var(--brand);background:var(--blue-soft)}
+.srm-theme-switch button:focus-visible{outline:2px solid var(--brand-light);outline-offset:3px}
+.canon-studio-bar{gap:20px}.canon-studio-bar>.srm-theme-switch{margin-left:0}
+.srm-theme-spec{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:24px;margin-bottom:24px}
+.srm-theme-spec-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:22px}
+.srm-theme-spec-heading h2{font-size:22px;font-weight:550;letter-spacing:-.6px;margin:7px 0}
+.srm-theme-spec p{font-size:12px;line-height:1.75;color:var(--muted)}
+.srm-theme-preview{display:grid;grid-template-columns:1.2fr 1fr;align-items:center;gap:24px;padding:26px 30px;border-radius:10px;background:var(--page);border:1px solid var(--faint-line);margin-bottom:22px}
+.srm-theme-preview h3{font-size:24px;font-weight:500;letter-spacing:-.7px;margin:10px 0}
+.srm-theme-preview p{max-width:340px}.srm-theme-preview-actions{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:20px}
+.srm-theme-positive{color:var(--success-text);font-size:14px;font-weight:600}.srm-theme-positive small{display:block;font-size:10px;font-weight:400;margin-top:3px}
+.srm-theme-mini-chart{min-width:0}.srm-theme-mini-chart>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px;color:var(--muted);font-size:11px;margin-bottom:14px}.srm-theme-mini-chart strong{font-weight:500;font-size:24px;color:var(--ink);white-space:nowrap}.srm-theme-mini-chart small{font-size:11px;font-weight:400;color:var(--muted)}.srm-theme-mini-chart svg{width:100%;display:block;overflow:visible}
+.srm-theme-palette{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px 14px}.srm-theme-palette>div{display:flex;align-items:center;gap:10px}.srm-theme-swatch{height:30px;width:30px;flex:none;border:1px solid var(--line);border-radius:8px}.srm-theme-palette strong{display:block;font-size:11px;font-weight:500}.srm-theme-palette small{display:block;font-size:10px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}.srm-theme-spec .srm-theme-rule{border-top:1px solid var(--faint-line);margin-top:22px;padding-top:16px;font-size:11px}
+/* Fixed brand assets retain their approved colors on a deliberate light stage. */
+[data-srm-theme="dark"] :is(.srm-header-logo,.lib-logo-stage,.lib-logo-preview,.srm-company-logo){background:#fff;border-radius:7px;padding:6px}
+[data-srm-theme="dark"] .srm-history-year-pill{color:var(--chart-year-ink)}
+[data-srm-theme="dark"] ::selection{background:#315D80;color:#fff}
+[data-srm-theme="dark"] ::placeholder{color:#8FA5BA;opacity:1}
+[data-srm-theme="dark"] :is(input,textarea,select){color-scheme:dark}
+@media(max-width:1060px){.canon-state{display:none}.canon-studio-bar>.srm-theme-switch{margin-left:auto}}
+@media(max-width:760px){.canon-studio-bar{gap:7px}.canon-studio-bar>.srm-theme-switch button span{display:none}.canon-studio-bar>.srm-theme-switch button{padding:0;width:29px}.srm-theme-preview{grid-template-columns:1fr;padding:20px}.srm-theme-palette{grid-template-columns:repeat(2,minmax(0,1fr))}.srm-theme-spec{padding:20px}.srm-theme-spec-heading{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){.srm-theme-switch button{transition:none}}
+
+.pci-surface[data-srm-theme="dark"] :is(.cci-panel,.cci-empty,.ca-panel,.srm-dropdown-trigger){background:var(--surface);color:var(--text)}

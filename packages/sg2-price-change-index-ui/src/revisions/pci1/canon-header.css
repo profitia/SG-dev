@@ -1,0 +1,27 @@
+/* HDR-01. One definition for Enter Page, supplier card and library examples. */
+.srm-ui .srm-topbar.srm-canon-header {
+  --srm-header-height:4.5rem; --srm-header-logo-width:9rem;
+  display:flex; align-items:center; flex-wrap:wrap;
+  min-height:var(--srm-header-height); height:auto; width:100%;
+  padding:var(--srm-header-block,.5rem) var(--srm-page-gutter,1.5rem);
+  gap:var(--srm-content-gap,1rem); background:#fff; color:#003366;
+  border-bottom:1px solid var(--line,#D6E0E9);
+}
+.srm-ui .srm-canon-header .srm-brand {display:flex;flex-direction:row;align-items:center;flex:0 1 auto;min-width:0;gap:var(--srm-content-gap,1rem);flex-wrap:nowrap;}
+.srm-ui .srm-canon-header .srm-header-logo {display:block;width:var(--srm-header-logo-width);flex:0 0 var(--srm-header-logo-width);line-height:0;}
+.srm-ui .srm-canon-header .srm-header-logo svg {display:block;width:100%;height:auto;}
+.srm-ui .srm-canon-header .srm-brand .srm-header-title {font-family:Inter,Arial,sans-serif;font-size:1.1875rem;font-weight:650;letter-spacing:-.022rem;line-height:1.25;color:#003366;white-space:normal;text-wrap:balance;}
+.srm-ui .srm-canon-header .srm-header-actions {display:flex;flex:1 1 18rem;align-items:center;justify-content:flex-end;gap:var(--srm-content-gap,1rem);min-width:0;margin-inline-start:auto;}
+.srm-ui .srm-canon-header .srm-header-actions .srm-search {order:initial;flex:1 1 16rem;margin:0;max-width:28rem;width:auto;}
+.srm-ui .srm-canon-header .srm-header-actions .srm-user {flex:0 0 2.125rem;}
+@media(max-width:65.625rem){.srm-ui .srm-canon-header .srm-header-actions{flex-basis:100%;}.srm-ui .srm-canon-header .srm-header-actions .srm-search{max-width:none;}}
+@media(max-width:38.75rem){.srm-ui .srm-topbar.srm-canon-header{--srm-header-logo-width:6.5rem;}.srm-ui .srm-canon-header .srm-brand{gap:var(--srm-space-small,.5rem);}.srm-ui .srm-canon-header .srm-brand .srm-header-title{font-size:.875rem;}}
+@media(max-width:23.75rem){.srm-ui .srm-topbar.srm-canon-header{--srm-header-logo-width:5.75rem;}.srm-ui .srm-canon-header .srm-brand .srm-header-title{font-size:.8125rem;}}
+.canon-studio.is-standalone{padding-top:0;}
+.canon-studio.is-standalone>.canon-studio-bar{display:none;}
+.canon-studio.is-standalone .srm-prototype,.canon-studio.is-standalone [data-relation-ui]{display:none;}
+.header-canon-demo{border:1px solid var(--line);border-radius:.75rem;overflow:hidden;margin-block:var(--srm-space-medium,1.5rem);background:#fff;}
+.header-canon-copy{padding:var(--srm-card-pad,1.5rem);font-size:.8125rem;line-height:1.6;}
+.header-canon-copy h2{margin:0 0 .75rem;font-size:1.125rem;}
+.header-canon-copy p{margin:.5rem 0;}
+
