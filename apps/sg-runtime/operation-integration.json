@@ -2974,5 +2974,64 @@
       "canonRevision": "464039002702499840",
       "finderRevision": "463982323726172160"
     }
+  },
+  "nativeSqlRoundtripAdoption": {
+    "taskId": "SG2-NATIVE-SQL-ROUNDTRIP-COMPAT-20261026",
+    "platformVersion": "1.29.1",
+    "previousReceiptSourceSha": "5a5fdd74075141508e0f744c2699e1eafbbf3454",
+    "previousReceiptDigest": "a70febff3b38682439d24bb9d50bf06d349e5525bea9fa93496aace4f07179b1",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-NATIVE-SQL-ROUNDTRIPS-20261026",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 729,
+      "sourceSha": "d64aa3f710f03b7efb8498df58b8a08fcef758cc"
+    },
+    "sourceDigests": {
+      "package.json": "6432f3b7f64b8634a9b9364cef06b44ebf9d73ee349ad4a7b21c332af622868a",
+      "package-lock.json": "75cb7a8962c1360d53e29f5c2287ae4a918e0a9aca61b4aea33ee0de4a0c4f85",
+      "src/access-store.mjs": "c38de2c51b50d72ddb0891e2528435770a9b74f40e844b899d1c36385c72148c",
+      "src/delegated-job.mjs": "c40206b03e24ee1d2b719fda4bd37f573f6e568dd51f97fb6c9b2a3cdbde5772",
+      "src/platform-ingestion.mjs": "99c5cb567be456cd07ef6c5671f5191da1d1fddff3e85d9d8bc551853034c4db",
+      "src/private-operation-host.mjs": "1dff6692965022276f5d2be330c5c5385a334c29bf73fc953fb9aaabb6f3caed",
+      "src/request-work.mjs": "45e849b3bb4bd1c50cd0e1296588f2de6562c9ab0cbcd99f3ab989540f5fd73b"
+    },
+    "sdkDigests": {
+      "operationSourceDigest": "2a7a2cbed3daed98b977259decb6b01e565dc528ce97f563b5e100ef7b52d525",
+      "privateOperationHostSourceDigest": "f4754c3383e93b1c1130f64f92243eb805ca6691f89d71247816a52cf83afe78",
+      "accessStoreSourceDigest": "898beae8260ab99c72217def546a9e6172cda9564de03a508a575f361aeec0a4",
+      "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "requestLedgerSourceDigest": "d24a1c98efe2f04a2d9cd6335f75bd6a37eda4bfe0eca0ebae712a638e9e43d5",
+      "externalRequestSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "delegatedJobSourceDigest": "11038f684e142f8f8c3507621de10289682101d5e69ce73eb5ac25764caa7c4c",
+      "requestContinuationSourceDigest": "d49673ecec3a85dad478b4e8d3e38aa30241cf04b61b6a7dfbb99e7af33c3c53",
+      "requestInspectionSourceDigest": "772f1f5a58e8e544d275c4b8bb0ab09774317a6673c1f6bd8563f96fc6a19811",
+      "requestWorkSourceDigest": "1b9a56aa85548fa0025366bf725ccad5c4ef278f43753dee9714ea97197bee86",
+      "requestOperationsSourceDigest": "65e1d46269df57ccd7f3f1637e9ac6a73171ecbdad02b35677d23469d73e7237",
+      "additionalRequestSchemaDigest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "externalCallSourceDigest": "ca6bb601cbb7c7eab58f726f133557fe1b1cae17a1606e0f4c070c6d2f803ad2",
+      "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "reportAdmissionSourceDigest": "f24e3f71ef76fdb1e8935d0ddc935ea96c146d93b7ecbc9d6a4a4e2d7879f794",
+      "reportAdmissionSchemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+      "requestQuotaSchemaDigest": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef",
+      "platformIngestionSourceDigest": "8a3fa5a85dcdeb0d244ba1d8aa1e5d380f4a366a907633499a35e8ff20f47215"
+    },
+    "applicationSourceDigests": {
+      "package.json": "22e24af6d1eed449daf0f227fd04090e591fdbc77b7967d02cbe34f24282e744",
+      "tests/category-operation.test.ts": "3c206fa31088c216ff7511ca1a4035c3ee0e37af9f04f8b4a186ad764075206a",
+      "tests/identity-runtime.test.ts": "b8878d7a6bd3ae55b06415e0e7f824b8e2151d6e79e455c203e85cbca11594f7",
+      "tests/native-sql-roundtrips.test.mjs": "cbdcead10a19a0f454700b6c4b94148aa0a767d16481879edca7c2dbaaf1a728",
+      "tests/operation-context.test.mjs": "7d70686b9acd7b036404d3513c345402853643c305ecf9ce1ae7e395068f0431",
+      "tests/porr-demo-middleware.test.ts": "1712c402ae8d62128c12dc98f3abf4328fe0b19f56f69314d09b4e74eec577ef",
+      "tests/private-host.integration.test.mjs": "1a96040c43a2e8e0d5ae68db416176c79d6107762e93b296f2b226efc24273be",
+      "tests/self-service-account.test.ts": "294f9e4f9249ce952949aac3d3f8e55c2d7fe32b801ab28d6a0d9b267ef1f045"
+    },
+    "currentAuthorityCheckpointsPreserved": true,
+    "physicalAuditPreserved": true,
+    "humanGrantsChanged": false,
+    "quotasChanged": false,
+    "runtimeDeploymentPerformed": false,
+    "scope": "SOURCE_COMPATIBILITY_ONLY_NO_SG2_ACTIVATION"
   }
 }
