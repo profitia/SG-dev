@@ -1,20 +1,8 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import './benchmark-chat.css';
-const CanonButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    canonId?: string;
-    usage?: string;
-}>(function VisualButton({ canonId, usage, ...props }, ref) { return <button {...props} ref={ref} data-library-component={canonId} data-canon-usage={usage}/>; });
-const CanonTextarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-    canonId?: string;
-    usage?: string;
-}>(function VisualTextarea({ canonId, usage, ...props }, ref) { return <textarea {...props} ref={ref} data-library-component={canonId} data-canon-usage={usage}/>; });
-const CanonElement = React.forwardRef<HTMLElement, {
-    as: React.ElementType;
-    canonId?: string;
-    usage?: string;
-    [key: string]: any;
-}>(function VisualElement({ as, canonId, usage, ...props }, ref) { return React.createElement(as, { ...props, ref, 'data-library-component': canonId, 'data-canon-usage': usage }); });
+import {CanonButton,CanonElement,CanonTextarea} from './magicpath/CanonElements';
+import {spacingCSS} from './magicpath/spacing-contract';
 const benchmarkChatContract = { id: 'BF-CHAT-01', avatarUrl: '/benchmark-visual/spendguru-avatar.png' };
 export function useBenchmarkChatOverlay() {
     const [overlay, setOverlay] = useState(false);
@@ -146,7 +134,7 @@ export function BenchmarkPresentation({ children, compact = false }: {
     useEffect(() => { if (!content.current)
         return; content.current.inert = open && overlay; return () => { if (content.current)
         content.current.inert = false; }; }, [open, overlay]);
-    return <div className="srm-ui bf-root bf-visual" data-chat-open={open}><div className="bf-page-region" ref={content}>{children}</div>{!compact && <BenchmarkChat open={open} overlay={overlay} onOpenChange={setOpen}/>}</div>;
+    return <div className="srm-ui bf-root bf-visual" data-chat-open={open}><style>{spacingCSS.replace(':root', '.bf-root')}</style><div className="bf-page-region" ref={content}>{children}</div>{!compact && <BenchmarkChat open={open} overlay={overlay} onOpenChange={setOpen}/>}</div>;
 }
 function ThemeIcon({
   dark

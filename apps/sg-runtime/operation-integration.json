@@ -2877,10 +2877,10 @@
       "canonRevision": "464039002702499840"
     },
     "applicationSourceDigests": {
-      "../dashboard-preview/app/benchmark-canon.css": "95665b101b2924c706c390aaec4ca1a0adf67195dc4a4297caed03caaa8f3a81",
-      "../dashboard-preview/app/benchmark-visual.css": "0b166d334ca0a3654a39b3f404d394b4a288079f7655a2c7add29c8bc6360b88",
+      "../dashboard-preview/app/benchmark-canon.css": "f61d11bac685885fa12d8566f73b993de57096e0585766ae4636e46afcfa72e2",
+      "../dashboard-preview/app/benchmark-visual.css": "8288508d3bf7f2c171cb17a7c9c062d17ef8441e03838a550830aff85c5128de",
       "../dashboard-preview/app/globals.css": "23551cac6e84a59063f3a6668b0d7facd6871ff3b20927cc47c56d72982f5c14",
-      "../dashboard-preview/components/raw-data-view/benchmark-visual.tsx": "5c862f16f5fa9ed7afddfabd6b66ef40af1bbadcd3eb1e87a87f2bf08cf7ee63",
+      "../dashboard-preview/components/raw-data-view/benchmark-visual.tsx": "3e3073bac46aa4d3df83e3354128ad20299525adeb4d4875229062203dd91635",
       "../dashboard-preview/components/raw-data-view/index.tsx": "289a95ed6e5c0cca335b99e7d65aea3ba84e84ba3008b1a7dffe1bbf523047cd",
       "../dashboard-preview/components/raw-data-view/magicpath-benchmark-chart.tsx": "9753b9cb6b450f5ede45cbf10c60382b2e467a4f8cbade303ba3aa261dc21c68",
       "../dashboard-preview/components/raw-data-view/magicpath-chart-geometry.ts": "3970b8c45d386221ca844854223efca4112968746a98704e65f9bd063ae83bb2",
@@ -2893,7 +2893,7 @@
       "../dashboard-preview/components/raw-data-view/magicpath/CanonChartToolsPanel.tsx": "d841570499e297ec0d2cdb6d4f0f428e1120c150b909d3c282727414f2697426",
       "../dashboard-preview/components/raw-data-view/magicpath/CanonChartValueLabels.tsx": "486c158f3e99fd917328d53af9e26d4275276d775c9fd2c522be0a3136ed7375",
       "../dashboard-preview/components/raw-data-view/magicpath/CanonDropdown.tsx": "30a582848e48d851648726147f27437b61d81a9fc4c96fb2c824a657340f934d",
-      "../dashboard-preview/components/raw-data-view/magicpath/CanonElements.tsx": "e0e55d0946439979386c0192224f74b6c4f4ee6f2a36abdc0f8f2ed014c5e752",
+      "../dashboard-preview/components/raw-data-view/magicpath/CanonElements.tsx": "ac3a6eb228a55ab91be6ff2b3effa2d4c09203328d76a5b24fad9ac6de06fdb0",
       "../dashboard-preview/components/raw-data-view/magicpath/CanonTimeIntervalHighlight.tsx": "29480515f8969b8e9caa861b759b8743450b565aa4252470bb7ccbf58544f928",
       "../dashboard-preview/components/raw-data-view/magicpath/canon-dropdown.css": "b8ebad2bde9a3b80ac62e07d89dc5fe5fb035286a4176906ec442f82f0368ada",
       "../dashboard-preview/components/raw-data-view/magicpath/canon-shared.css": "4cceded2017ff8dae3464c0c38bbc3db8d9f363494ea6c5812c338e5d46746cf",
@@ -2916,17 +2916,17 @@
       "../dashboard-preview/components/raw-data-view/magicpath/srm-history-chart.css": "07f57bba55f6182889cf802182fa37e3d5bc55436663d13d8b98626f63e8d8fe",
       "../dashboard-preview/components/raw-data-view/magicpath/srm-interaction-motion.css": "0719c9f4c7ab66686f3a2f0bd8e66ddd98de857ab3b06559da0ed47eb9763ccf",
       "../dashboard-preview/components/raw-data-view/magicpath/useChartPanel.ts": "66203e5e44f95f1596d88fd0c185fe78043251cb2b47a3cb60f1b87898d78e24",
-      "../dashboard-preview/docs/benchmark-magicpath-parity.md": "d30e1225c34a714dcaefe770c3c0a5a18c8029b5b071607b346e954cb787bd5a",
+      "../dashboard-preview/docs/benchmark-magicpath-parity.md": "bfb9395e494a81d84619594e58c6200a48592262a12add8ae18f33a566c0fa56",
       "../dashboard-preview/public/benchmark-visual/inter-latin-ext.woff2": "a28eb6d3ccb534ae0c94ca999371df024aab60b08c3c8a5720ee9e32fa0faaa2",
       "../dashboard-preview/public/benchmark-visual/inter-latin.woff2": "c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4",
       "../dashboard-preview/tests/magicpath-chart-geometry.test.ts": "6cd88343c3d175bb0bc6e400be16cc6eeccb5dfb563728d41066c6db4443707b",
-      "components/benchmark-finder/benchmark-finder-client.tsx": "1747631f6d548fd8b058792a8d9ead0d203c5199767cc1e456aab2b958f4d229",
-      "components/benchmark-finder/benchmark-finder-visual.css": "c7c0af7f1ff257eb5bdd6519c647c7b80c14083c29aa8560b1daaaeddfa90fe7",
+      "components/benchmark-finder/benchmark-finder-client.tsx": "373841e5c77f0027d677954f541f091661057789eafe8ee36d728dbd19e37a4b",
+      "components/benchmark-finder/benchmark-finder-visual.css": "86447cef1c76d03c8b0a5f2d3b12de052738bde3f17e15311f41c87648d08367",
       "components/benchmark-finder/visual/SpendGuruLogo.tsx": "7a0a687b9bb3a956dceedf5de42e404c34954cc352e73f1955920b5f1754f288",
       "components/benchmark-finder/visual/benchmark-chat.css": "04dac61254913724acd8ab69c78d0f3643dcfc561173480787afc662844c98e7",
-      "components/benchmark-finder/visual/benchmark-presentation.tsx": "004c55265b647a93d8652d4d151b10b0d0ec6a678b7530edc623b3d11cb31f7c",
+      "components/benchmark-finder/visual/benchmark-presentation.tsx": "77ebbb1228c0470c5e87e39788e945800ea41fe6a0040828671d87e02142ba7d",
       "components/benchmark-finder/visual/magicpath/CanonDropdown.tsx": "104a950d9b7fe0f1366c63b0921636c9ca98ae55de37daf7885390ca70437851",
-      "components/benchmark-finder/visual/magicpath/CanonElements.tsx": "cf021b08af3206e7d69d51ec37834309b8133bdea2e16280fd39379e913b9af8",
+      "components/benchmark-finder/visual/magicpath/CanonElements.tsx": "86bb0386e3dcfe006b5de8619c1d7be991106df39dabd081f7f5d1ec8c121ba4",
       "components/benchmark-finder/visual/magicpath/benchmark-finder.css": "3cf980c9def5f934cac3973c16d1b65f4a39b0fe7d205f46181cc6029fc4b8e6",
       "components/benchmark-finder/visual/magicpath/canon-dropdown.css": "b8ebad2bde9a3b80ac62e07d89dc5fe5fb035286a4176906ec442f82f0368ada",
       "components/benchmark-finder/visual/magicpath/canon-shared.css": "4cceded2017ff8dae3464c0c38bbc3db8d9f363494ea6c5812c338e5d46746cf",
@@ -2934,7 +2934,7 @@
       "components/benchmark-finder/visual/magicpath/srm-color-tokens.css": "5bf42e293693f3acabb32a8d4570a6b957615593344992f64520acac41ca3753",
       "components/benchmark-finder/visual/magicpath/srm-interaction-motion.css": "0719c9f4c7ab66686f3a2f0bd8e66ddd98de857ab3b06559da0ed47eb9763ccf",
       "components/porr-demo/porr-demo-shell.tsx": "7ef569612ecd5dbe75faaf432e3626d7868aa0153855e41cfe7d419a8c40eaed",
-      "docs/benchmark-magicpath-parity.md": "d30e1225c34a714dcaefe770c3c0a5a18c8029b5b071607b346e954cb787bd5a",
+      "docs/benchmark-magicpath-parity.md": "bfb9395e494a81d84619594e58c6200a48592262a12add8ae18f33a566c0fa56",
       "public/benchmark-visual/inter-latin-ext.woff2": "a28eb6d3ccb534ae0c94ca999371df024aab60b08c3c8a5720ee9e32fa0faaa2",
       "public/benchmark-visual/inter-latin.woff2": "c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4",
       "public/benchmark-visual/spendguru-avatar.png": "99e778fca02acce64867601fb90ecd89aaa24f5e2b38a0122c2e71fe9e173061",
@@ -2943,7 +2943,11 @@
       "tests/operation-context.test.mjs": "a90421a8ad64a5857f8aec08f62e9870e0d514436828e69c83f99deeec769569",
       "tests/porr-demo-middleware.test.ts": "93a59a6f15cde901060b23d3d2d17406fb00d3113543d98733cb4573575e6eac",
       "tests/porr-demo-ui-polish.test.ts": "f6ca51208904313f76ad607a9f741966c9533012ea153c792c674ef4ad75dc2b",
-      "tests/self-service-account.test.ts": "a21ed83d364a7274dc0c453bf2228de119a73026e156db2fc26d65651edf7f15"
+      "tests/self-service-account.test.ts": "a21ed83d364a7274dc0c453bf2228de119a73026e156db2fc26d65651edf7f15",
+      "components/benchmark-finder/visual/magicpath/spacing-contract.ts": "bd56e159331ae0ab048ecdba91ed2b7127f19c23d244cb7596b649f9cfdf6366",
+      "components/benchmark-finder/visual/magicpath/spacing-bindings.css": "4dbeea98fb9ec747d589d7f21efc52f1934fc81eb3c0df73342276d4c6f2b061",
+      "../dashboard-preview/components/raw-data-view/magicpath/spacing-contract.ts": "bd56e159331ae0ab048ecdba91ed2b7127f19c23d244cb7596b649f9cfdf6366",
+      "../dashboard-preview/components/raw-data-view/magicpath/spacing-bindings.css": "4dbeea98fb9ec747d589d7f21efc52f1934fc81eb3c0df73342276d4c6f2b061"
     },
     "unchangedSourceBoundaries": [
       "apps/sg-runtime/lib/benchmark",
@@ -2962,6 +2966,13 @@
     "operationGrantsChanged": false,
     "schemaChanged": false,
     "productDeploymentPerformed": false,
-    "oilRestrictionPreserved": true
+    "oilRestrictionPreserved": true,
+    "canonPolish": {
+      "taskId": "SG2-BENCHMARK-CANON-POLISH-20261026",
+      "reviewedBaseSha": "35b1ce3129dd5c88e1d76ccf04c8367c8c9813e0",
+      "scope": "Canonical typography, spacing, controls and motion only; no backend or provider changes",
+      "canonRevision": "464039002702499840",
+      "finderRevision": "463982323726172160"
+    }
   }
 }

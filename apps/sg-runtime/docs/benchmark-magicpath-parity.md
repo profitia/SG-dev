@@ -24,3 +24,18 @@ Geometry tests cover centre anchoring, bounded pan, missing observations, immuta
 ## Release boundary
 
 No Staging release, migration, database backfill, provider query or forecast recalculation is part of this change. Before Development deployment, record and verify the retained artifact, commit, configuration fingerprint and migration state for both existing services and confirm rollback feasibility. Do not modify operation-integration receipts merely to satisfy visual tests.
+
+## Canon polish — 2026-10-26
+
+Task: SG2-BENCHMARK-CANON-POLISH-20261026. The pinned live Canon v114 and Finder v18 were rechecked and are unchanged.
+
+- Import the complete, unchanged spacing contract and its component bindings in both presentation hosts. Scope its tokens to the respective Finder/chart root and bind primitive wrappers to canonical component identifiers.
+- Remove legacy Tailwind sizing from tabs, search sections and card expansion controls. Restore canonical heading/paragraph spacing, action-button variants, search-to-results spacing and recent-search typography.
+- Use the library field dimensions (42px) for the simple search input. The Finder prototype's missing descendant space in `.bf-search-panel:is(input,select)` leaves this particular field at 21px. The library C07 pattern, rather than that accidental selector behavior, is the authority for this correction.
+- Reuse C07 dropdown rows, surface, scrollbar and entrance animation in the existing remote metadata selector. Remote filtering, selected values, pagination and request handling are unchanged.
+- Restore the chart's 14px/1.5 base typography, single 16px control-panel padding, C92 row and metric proportions, help typography, and compact responsive layout. Remove obsolete dropdown rules from the previous presentation.
+- Bind hover transitions to the actual descendant action controls and keep reduced-motion and keyboard-focus behavior. Retain canonical chart panel backgrounds and circular ribbons.
+
+The change is presentation-only. Protected server, provider, API, forecast mathematics and operation-authorization source boundaries remain byte-identical to the accepted receipt. No new data, forecast calculation or entitlement is introduced. The compatibility receipt records reviewed visual source fingerprints without rewriting its original acceptance evidence.
+
+Local verification: runtime selected behavior tests 21/21; dashboard suite 345/345; runtime typecheck and dashboard source-only typecheck pass. The standard dashboard typecheck encounters pre-existing generated `.next/types` route-export errors; clean CI is required before release. Live verification, retained-artifact rollback evidence and final CI are recorded in PMOS/PHR separately.

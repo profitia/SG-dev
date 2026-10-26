@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import {CanonButton,CanonElement,CanonCloseButton} from './magicpath/CanonElements';
 import {CanonChartControlPanel} from './magicpath/CanonChartControlPanel';
 import {CanonDropdown} from './magicpath/CanonDropdown';
+import {spacingCSS} from './magicpath/spacing-contract';
 type HelpTopic = 'Modele' | 'Wartości' | 'Sprawdzalność' | 'Legenda';
 const models = ['Naive', 'Damped Holt', 'ETS', 'ARIMA'];
 const helpEnglish: Record<string, string> = {
@@ -133,7 +134,7 @@ export function BenchmarkChartControls({ enabled, children }: {
 }) {
     const scope=useRef<HTMLDivElement>(null);
     const measure=useCallback((height:number)=>scope.current?.closest<HTMLElement>('.bf-chart-workspace')?.style.setProperty('--chart-controls-measured-height',`${height}px`),[]);
-    return enabled ? <div ref={scope} style={{display:'contents'}}><CanonChartControlPanel onHeightChange={measure} content={<div className="bf-controls-content">{children}</div>}>{null}</CanonChartControlPanel></div> : <>{children}</>;
+    return enabled ? <div ref={scope} style={{display:'contents'}}><CanonChartControlPanel onHeightChange={measure} content={<div className="bf-controls-content"><style>{spacingCSS.replace(':root', '.bf-chart-workspace')}</style>{children}</div>}>{null}</CanonChartControlPanel></div> : <>{children}</>;
 }
 function contentText(value:React.ReactNode):string{return React.Children.toArray(value).map(child=>React.isValidElement<{children?:React.ReactNode}>(child)?contentText(child.props.children):typeof child==='string'||typeof child==='number'?String(child):'').join(' ')}
 /** Canon C07 appearance, original option callbacks/disabled states. */
