@@ -772,7 +772,7 @@ const MetadataValueSelector = memo(function MetadataValueSelector({
       ) : null}
 
       {isOpen ? (
-        <div className="bf-metadata-popup">
+        <div className="bf-metadata-popup srm-dropdown-popup">
           {requiresLongerQuery ? (
             <p className="px-2 py-3 text-sm text-slate-600">{t('advanced.typeToSearchValues', { count: REMOTE_METADATA_QUERY_MIN_LENGTH })}</p>
           ) : valueState.status === 'loading' ? (
@@ -790,7 +790,7 @@ const MetadataValueSelector = memo(function MetadataValueSelector({
               {!definition.allowMultipleValues ? (
                 <button
                   type="button"
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${selectedValues.length === 0 ? 'bg-teal-50 font-medium text-teal-900' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                  className="srm-dropdown-option" data-empty="true"
                   onClick={() => {
                     onSelectionChange([])
                     onSearchQueryChange('')
@@ -803,7 +803,7 @@ const MetadataValueSelector = memo(function MetadataValueSelector({
 
               {visibleItems.length > 0 ? (
                 <div
-                  className="bf-metadata-options"
+                  className="bf-metadata-options srm-dropdown-list"
                   data-testid={`benchmark-metadata-options-${definition.key}`}
                   data-visible-count={visibleItems.length}
                   data-total-count={valueState.items.length}
@@ -814,7 +814,7 @@ const MetadataValueSelector = memo(function MetadataValueSelector({
                       <button
                         key={item.value}
                         type="button"
-                        className="bf-metadata-option" aria-pressed={isSelected}
+                        className="bf-metadata-option srm-dropdown-option" aria-pressed={isSelected} data-active={isSelected}
                         onClick={() => toggleValue(item.value)}
                       >
                         <span className="min-w-0 flex-1 truncate">{item.label}</span>
@@ -2115,7 +2115,7 @@ export function BenchmarkFinderClient({
           </div>
           <span className="bf-page-index bf-heading-index" aria-hidden="true">01 <span>/ {locale === 'pl' ? 'Odkrywanie rynku' : 'Market discovery'}</span></span>
         </header>}
-        <section className="bf-search-panel rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <section className="bf-search-panel">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <h2 className="bf-search-title text-base font-semibold text-slate-950">{t('mode.search')}</h2>
@@ -2128,7 +2128,7 @@ export function BenchmarkFinderClient({
             <div className="bf-tabs" data-testid="benchmark-search-surface-mode">
               <button
                 type="button"
-                className={`rounded-full px-4 py-2 transition ${mode === 'search' && searchSurfaceMode === 'simple' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                data-library-component="SRM-C08"
                 onClick={() => openSearchSurface('simple')}
                 aria-pressed={mode === 'search' && searchSurfaceMode === 'simple'}
               >
@@ -2136,7 +2136,7 @@ export function BenchmarkFinderClient({
               </button>
               <button
                 type="button"
-                className={`rounded-full px-4 py-2 transition ${mode === 'search' && searchSurfaceMode === 'advanced' ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                data-library-component="SRM-C08"
                 onClick={openAdvancedSearchSurface}
                 aria-pressed={mode === 'search' && searchSurfaceMode === 'advanced'}
               >
@@ -2200,7 +2200,7 @@ export function BenchmarkFinderClient({
                 </form>
               ) : (
                 <form
-                  className="mt-6 space-y-5"
+                  className="bf-advanced-form"
                   onSubmit={(event) => {
                     event.preventDefault()
                     startSearchTransition(() => {
@@ -2493,7 +2493,7 @@ export function BenchmarkFinderClient({
                           aria-label={isActive ? t('actions.collapseAnalytics') : t('actions.expandAnalytics')}
                           title={isActive ? t('actions.collapseAnalytics') : t('actions.expandAnalytics')}
                           aria-expanded={isActive}
-                          className="bf-expand-control inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white text-lg text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 xl:order-2"
+                          className="bf-expand-control"
                           onClick={() => togglePreviewCard(candidate)}
                         >
                           <span className="bf-expand-icon"><FinderGlyph kind="chevron"/></span>
@@ -2545,6 +2545,7 @@ export function BenchmarkFinderClient({
                       <div className="bf-detail-actions">
                         {isPickerMode ? (
                           <button
+                            data-library-component="SRM-C01"
                             type="button"
                             className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                             disabled={isSaving}
@@ -2558,6 +2559,7 @@ export function BenchmarkFinderClient({
                           </button>
                         ) : (
                           <button
+                            data-library-component="SRM-C01"
                             type="button"
                             className="rounded-2xl border border-slate-300 bg-slate-100 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
                             onClick={() => {
@@ -2572,6 +2574,7 @@ export function BenchmarkFinderClient({
 
                         {!isPickerMode ? (
                           <button
+                            data-library-component="SRM-C02"
                             type="button"
                             disabled
                             title={t('actions.comingSoon')}
@@ -2588,9 +2591,10 @@ export function BenchmarkFinderClient({
             })}
 
             {results.length > RESULT_PREVIEW_LIMIT ? (
-              <div className="flex flex-wrap gap-3">
+              <div className="bf-more">
                 {visibleResultCount < results.length ? (
                   <button
+                    data-library-component="SRM-C02"
                     type="button"
                     className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                     onClick={() => setVisibleResultCount((current) => Math.min(current + RESULT_BATCH_SIZE, results.length))}
@@ -2600,6 +2604,7 @@ export function BenchmarkFinderClient({
                 ) : null}
                 {visibleResultCount > RESULT_PREVIEW_LIMIT ? (
                   <button
+                    data-library-component="SRM-C02"
                     type="button"
                     className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                     onClick={() => setVisibleResultCount(RESULT_PREVIEW_LIMIT)}

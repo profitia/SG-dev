@@ -1,3 +1,6 @@
+@import '../components/raw-data-view/magicpath/canon-shared.css';
+@import '../components/raw-data-view/magicpath/spacing-bindings.css';
+@import '../components/raw-data-view/magicpath/srm-interaction-motion.css';
 @import '../components/raw-data-view/magicpath/price-history-line.css';
 @import '../components/raw-data-view/magicpath/price-forecast.css';
 @import '../components/raw-data-view/magicpath/chart-crosshair.css';
@@ -15,7 +18,7 @@
 .bf-root,.bf-chart-workspace,.srm-forecast-help{
  --brand:#005A9C;--brand-dark:#003366;--brand-light:#66B2FF;--sand:#D2B48C;--mist:#F8F9FA;--canvas:#F8F9FA;--surface:#fff;--ink:#003366;--blue:#005A9C;--page:#F8F9FA;--text:#294D70;--muted:#526A82;--line:#D6E0E9;--faint-line:#E7EDF2;--blue-soft:#EAF3FF;--sand-soft:#F7F1E8;--neutral:#EDF1F4;--success:#25815F;--success-text:#176747;--success-soft:#DDEFE6;--negative:#C8554C;--negative-text:#A63830;--negative-soft:#F9E4E1;--unknown:#718191;--unknown-soft:#F0F3F5;--reference:#465B70;
  --theme-canvas:#eef2f5;--theme-surface:#fff;--theme-raised:#EDF5FC;--theme-hover:#eaf3ff88;--theme-ink:#003366;--theme-muted:#526A82;--theme-line:#D6E0E9;--theme-soft-line:#e7edf2;--theme-shadow:#00336603;
- --srm-space-micro:.125rem;--srm-space-tight:.25rem;--srm-space-compact:.5rem;--srm-space-small:.75rem;--srm-space-medium:1rem;--srm-space-comfortable:1.25rem;--srm-space-large:1.5rem;--srm-motion-time:220ms;--srm-motion-ease:cubic-bezier(.22,.75,.25,1);
+ --srm-space-micro:.125rem;--srm-space-tight:.25rem;--srm-space-compact:.5rem;--srm-space-small:.75rem;--srm-space-base:1rem;--srm-space-medium:1.5rem;--srm-space-comfortable:1.25rem;--srm-space-large:2rem;--srm-motion-time:220ms;--srm-motion-ease:cubic-bezier(.22,.75,.25,1);
 }
 :root:is([data-theme=dark],[data-benchmark-theme=dark]) :is(.bf-chart-workspace,.srm-forecast-help){
  --theme-canvas:var(--canon-theme-canvas,#091420);--theme-surface:var(--canon-theme-surface,#112131);--theme-raised:var(--canon-theme-raised,#172D42);--theme-chrome:var(--canon-theme-chrome,#102E49);
@@ -43,3 +46,5 @@
 
 @font-face{font-family:BenchmarkInter;src:url('/benchmark-visual/inter-latin.woff2') format('woff2');font-style:normal;font-weight:100 900;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 @font-face{font-family:BenchmarkInter;src:url('/benchmark-visual/inter-latin-ext.woff2') format('woff2');font-style:normal;font-weight:100 900;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+.srm-forecast-help{font-family:BenchmarkInter,Inter,Arial,sans-serif}
