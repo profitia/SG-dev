@@ -975,7 +975,10 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    const profiling=(await owner.query('SHOW track_functions')).rows[0].track_functions==='all'
    const profile=async()=>{
     if((await owner.query('SHOW track_functions')).rows[0].track_functions!=='all')return null
-    const c=await servicePool.connect();try{await c.query('SELECT pg_stat_force_next_flush()');await c.query('SELECT 1')}finally{c.release()}
+    // Both pooled backends may retain statistics from earlier parallel Work.
+    // Flush every fixture connection before taking a delta, not an arbitrary one.
+    const clients=await Promise.all([servicePool.connect(),servicePool.connect()])
+    try{await Promise.all(clients.map(async c=>{await c.query('SELECT pg_stat_force_next_flush()');await c.query('SELECT 1')}))}finally{clients.forEach(c=>c.release())}
     await serviceAudit.query('SELECT pg_stat_force_next_flush()');await serviceAudit.query('SELECT 1');await owner.query('SELECT pg_stat_clear_snapshot()')
     return (await owner.query("SELECT coalesce(sum(calls),0)::int n FROM pg_stat_user_functions WHERE schemaname='srm' AND funcname='current_supplier_work'")).rows[0].n
    }
