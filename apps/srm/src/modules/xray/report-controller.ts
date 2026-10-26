@@ -59,6 +59,9 @@ export class SupplierReportController {
   private logicalKeys=new Map<string,string>();
   private privateKysReference:PrivateKysReference|null|undefined;
   private nameSelection:SupplierSelection|null=null;
+  private diagnosticExecution:string|null=null;
+  private diagnosticParent:string|null=null;
+  private diagnosticUserStartMs:number|null=null;
   constructor(private readonly transport: typeof fetch = (input, init) => fetch(input, init),
     private readonly now: () => Date = () => new Date(),
     private readonly newRequestKey:()=>string=()=>crypto.randomUUID()) {}
@@ -66,14 +69,28 @@ export class SupplierReportController {
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private update(change: Partial<ReportState>) { this.state = { ...this.state, ...change }; for (const listener of this.listeners) listener(); }
   dispose = () => { this.generation += 1; this.metadataSequence += 1; for (const request of this.requests) request.abort(); this.requests.clear(); this.logicalKeys.clear(); this.privateKysReference=undefined; };
-  reset = () => { this.dispose(); this.nameSelection=null; this.state = initialState(); for (const listener of this.listeners) listener(); };
+  reset = () => { this.dispose(); this.nameSelection=null; this.diagnosticExecution=null;this.diagnosticParent=null;this.diagnosticUserStartMs=null;this.state = initialState(); for (const listener of this.listeners) listener(); };
+  private diagnosticComplete(generation:number){
+    if(generation!==this.generation||!this.diagnosticExecution||this.diagnosticUserStartMs===null)return;
+    try{console.info(JSON.stringify({event:'srm_diagnostic_client_complete',schema:'srm.diagnostic-trace/1.0',traceId:this.diagnosticExecution,
+      lastFragmentId:this.diagnosticParent,clock:'BROWSER_PERFORMANCE_NOW_NOT_SERVER_CLOCK',startMs:this.diagnosticUserStartMs,endMs:performance.now(),
+      status:this.state.error||this.state.metadataError?'ERROR':'OK',includesBrowserNetworkAndScheduling:true}));}catch{}
+    this.diagnosticUserStartMs=null;
+  }
   private async json(path: string, body: unknown, controller: AbortController): Promise<unknown> {
+    const diagnosticGeneration=this.generation;
+    const diagnosticStart=performance.now();let diagnosticHeaders:number|null=null,diagnosticBody:number|null=null,diagnosticResponse:Response|undefined;
     const logical=path+':'+JSON.stringify(body),key=this.logicalKeys.get(logical)??this.newRequestKey();
     this.logicalKeys.set(logical,key);
     this.requests.add(controller);
     try {
-      const response = await this.transport(path, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key":key }, body: JSON.stringify(body), cache: "no-store", signal: controller.signal });
+      const response = await this.transport(path, { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key":key,...(this.diagnosticExecution?{"X-SRM-Diagnostic-Execution":this.diagnosticExecution}:{}),...(this.diagnosticParent?{"X-SRM-Diagnostic-Parent":this.diagnosticParent}:{}) }, body: JSON.stringify(body), cache: "no-store", signal: controller.signal });
+      diagnosticResponse=response;diagnosticHeaders=performance.now();
+      const execution=response.headers.get("X-SRM-Diagnostic-Execution"),fragment=response.headers.get("X-SRM-Diagnostic-Fragment");
+      if(diagnosticGeneration===this.generation&&execution&&/^[a-f0-9-]{36}$/i.test(execution))this.diagnosticExecution=execution;
+      if(diagnosticGeneration===this.generation&&fragment&&/^[a-f0-9-]{36}$/i.test(fragment))this.diagnosticParent=fragment;
       const payload = await response.json();
+      diagnosticBody=performance.now();
       if (path.endsWith("/kys") && payload && typeof payload === "object") {
         const requestId = response.headers.get("X-SRM-Request-Id");
         const mode = response.headers.get("X-SRM-KYS-Mode");
@@ -82,11 +99,19 @@ export class SupplierReportController {
       if (!response.ok) throw new ReportRequestError(typeof payload?.error === "string" ? payload.error : "Nie udało się odczytać raportu.", payload?.timing);
       if(!(path==='/api/xray/krs/lookup'&&response.status===202)&&this.logicalKeys.get(logical)===key)this.logicalKeys.delete(logical);
       return payload;
-    } finally { this.requests.delete(controller); }
+    } finally {
+      try{
+        const traceId=diagnosticResponse?.headers.get('X-SRM-Diagnostic-Execution'),fragmentId=diagnosticResponse?.headers.get('X-SRM-Diagnostic-Fragment');
+        const route=path==='/api/xray/search'?'search':path==='/api/xray/krs/lookup'?'krs_lookup':path==='/api/xray/report-data'?'report_data':null;
+        if(route&&traceId&&fragmentId&&/^[a-f0-9-]{36}$/i.test(traceId)&&/^[a-f0-9-]{36}$/i.test(fragmentId))console.info(JSON.stringify({event:'srm_diagnostic_client_request',schema:'srm.diagnostic-trace/1.0',traceId,fragmentId,route,
+          clock:'BROWSER_PERFORMANCE_NOW_NOT_SERVER_CLOCK',startMs:diagnosticStart,headersAtMs:diagnosticHeaders,bodyAtMs:diagnosticBody,endMs:performance.now(),status:diagnosticResponse?.ok&&diagnosticBody!==null?'OK':'ERROR'}));
+      }catch{}
+      this.requests.delete(controller);
+    }
   }
   search = async (identifier: string) => {
     if (this.state.busy) return;
-    this.reset(); const generation = this.generation;
+    this.reset();this.diagnosticUserStartMs=performance.now();const generation = this.generation;
     this.update({ busy: true });
     try {
       const payload = await this.json("/api/xray/search", { identifier }, new AbortController()) as SearchResult & {krsSelection?:SupplierSelection;registryRoute?:ReportState["registryRoute"]};
@@ -102,14 +127,16 @@ export class SupplierReportController {
       }
       if (!inactiveSupplier(payload)) await this.refreshMetadata();
     } catch (error) { if (generation === this.generation) this.update({ error: message(error, "Nie udało się pobrać raportu.") }); }
-    finally { if (generation === this.generation) this.update({ busy: false }); }
+    finally { if (generation === this.generation) this.update({ busy: false });this.diagnosticComplete(generation); }
   };
   /** Name selections use only their protected BFF path. Never classify by NIP or invoke the NIP lookup. */
   searchKrs = async (selection:SupplierSelection,initial?:SearchResult,registryRoute:ReportState["registryRoute"]={provider:"KRS"}) => {
     if(this.state.busy)return;
     const path='/api/xray/krs/lookup',body={selectionRef:selection.selectionRef},logical=path+':'+JSON.stringify(body);
     const retryKey=this.logicalKeys.get(logical);
-    this.reset();this.nameSelection=selection;
+    const diagnosticExecution=initial?this.diagnosticExecution:null,diagnosticParent=initial?this.diagnosticParent:null;
+    const diagnosticUserStart=initial?this.diagnosticUserStartMs:performance.now();
+    this.reset();this.diagnosticExecution=diagnosticExecution;this.diagnosticParent=diagnosticParent;this.diagnosticUserStartMs=diagnosticUserStart;this.nameSelection=selection;
     const requestKey=retryKey??this.newRequestKey();this.logicalKeys.set(logical,requestKey);
     const generation=this.generation;this.update({busy:true,...(initial?{result:initial}:{}),registryRoute});
     try{
@@ -129,7 +156,7 @@ export class SupplierReportController {
       }
       throw Error('Przygotowanie dokumentów trwa dłużej. Spróbuj ponownie, aby kontynuować zapisane pobranie.');
     }catch(error){if(generation===this.generation){this.logicalKeys.set(logical,requestKey);this.update({error:message(error,'Nie udało się pobrać raportu wybranej spółki.')});}}
-    finally{if(generation===this.generation)this.update({busy:false});}
+    finally{if(generation===this.generation)this.update({busy:false});this.diagnosticComplete(generation);}
   };
   refreshMetadata = async () => {
     // The exact private read already returned snapshot-specific validity.

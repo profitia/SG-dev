@@ -10,6 +10,7 @@ import {humanPilot2} from './pilot2-human-overlay.mjs'
 import {scannerPilot2} from './pilot2-scanner-overlay.mjs'
 import {coldPilot2} from './pilot2-cold-overlay.mjs'
 import {privatePilot2} from './pilot2-private-overlay.mjs'
+import {diagnosticPilot2} from './pilot2-diagnostic-overlay.mjs'
 
 export const BUSINESS_BASELINE='6eede5cd19fd3a4519d66298effe9ef94633757a'
 const HASH=/^[a-f0-9]{40}$/
@@ -93,6 +94,7 @@ export function prepareBaseline(repo,t,output,stage='BASELINE'){
  if(['SCANNER','COLD_ACQUISITION','PRIVATE_OPERATIONS'].includes(stage))scannerPilot2(repo,output,proof)
  if(['COLD_ACQUISITION','PRIVATE_OPERATIONS'].includes(stage))coldPilot2(repo,output,proof)
  if(stage==='PRIVATE_OPERATIONS')privatePilot2(repo,output,proof)
+ if(stage==='PRIVATE_OPERATIONS')diagnosticPilot2(repo,output,proof)
  fs.writeFileSync(path.join(output,'baseline-proof.json'),JSON.stringify(proof,null,2)+'\n')
  return proof
 }

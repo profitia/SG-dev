@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import type {GeneralCompanyData,FinancialData,SectionEnvelope} from '@profitia/srm-xray'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {OperationDenied,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
@@ -23,8 +24,8 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
  const {validateIdentityEvidence}=await import('@profitia/krs-registry-contracts')
  const deny=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
  if(!['CONTINUE_AFTER_ARCHIVE','COMPLETE_IN_REQUEST'].includes(execution))return deny()
- const check=async(boundary?:Parameters<KrsFinancialRecheck>[0])=>{const current=await validateIdentityEvidence(identity,now());
-  if(current.status!=='VERIFIED'||current.identity.nip!==selection.command.nip)return deny();await recheck(boundary)}
+ const check=async(boundary?:Parameters<KrsFinancialRecheck>[0])=>{const current=await diagnosticRun('KRS_EVIDENCE_CHECK',()=>validateIdentityEvidence(identity,now()));
+  if(current.status!=='VERIFIED'||current.identity.nip!==selection.command.nip)return deny();await diagnosticRun('KRS_AUTHORITY_CHECK',()=>recheck(boundary))}
  await check()
  const org=selection.organisationId,nip=selection.command.nip
  const lookup=await ports.createLookup(org,{type:'NIP',value:nip},'COMPANY')
@@ -39,7 +40,7 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
  const stored=ports.readFreshFinancial?await ports.readFreshFinancial(org,nip,new Date(now())):(await ports.readFreshCompany?.(org,nip,new Date(now())))?.financial
  const restored=await ports.reprojectFinancialArchive(org,nip,history,undefined,true)
  const cached=restored&&isFreshCatalogEntry(restored.section.retrievedAt,new Date(now()))?restored:null
- let result=await reconcileKrsFinancial(identity,cached??await ports.fetchMgbiFinancial({type:'NIP',value:nip},{companyHistory:history}),now(),history)
+ let result=await diagnosticRun('KRS_RECONCILE',async()=>reconcileKrsFinancial(identity,cached??await ports.fetchMgbiFinancial({type:'NIP',value:nip},{companyHistory:history}),now(),history))
  // Check the applicable current or admitted report authority before its archive.
  await check(cached?undefined:'ACQUISITION')
  let pending=false
@@ -62,7 +63,7 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
   result=await ports.enrichMsrFinancial(org,nip,result,{requestId:selection.requestId,allowedKrs:history?.members.map(m=>m.krs)??[identity.selectedKrs],maximumNewDownloads:1})
   // MSR may have acquired a licensed original; recheck before publication.
   await check('ACQUISITION')
-  result=await reconcileKrsFinancial(identity,result,now(),history)
+  result=await diagnosticRun('KRS_RECONCILE',()=>reconcileKrsFinancial(identity,result,now(),history))
   pending=result.section.warnings.includes('MSR_PROCESSING_PENDING')&&!result.section.warnings.some(w=>['MSR_BUDGET_UNAVAILABLE','MSR_FILE_BUDGET_EXHAUSTED','MSR_PROVIDER_NOT_CONFIGURED'].includes(w))
   if(result.section.data){
    const documents=await ports.readFinancialDocuments(org,nip)
@@ -84,7 +85,7 @@ export async function prepareKrsFinancialWork(ports:Ports,selection:SupplierNati
   await check('PUBLICATION')
   if(pending||published||eligible.errorCode||JSON.stringify(eligible.rawResponse)!==JSON.stringify(accepted.rawResponse)
    ||JSON.stringify(eligible.facts)!==JSON.stringify(accepted.facts))return deny()
-  const audited=await reconcileKrsFinancial(identity,accepted,now(),history)
+  const audited=await diagnosticRun('KRS_RECONCILE',()=>reconcileKrsFinancial(identity,accepted,now(),history))
   if(audited.errorCode||JSON.stringify(audited.section)!==JSON.stringify(eligible.section))return deny()
   const snapshotId=await ports.persistSection(org,lookup,'financial',eligible.section,eligible.errorCode,unchanged?[]:eligible.facts,undefined,eligible.sourceData,cached?'CACHE':'PROVIDER')
   // Corporate Source is a separate publication boundary after private Work.

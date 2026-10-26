@@ -8,7 +8,9 @@ import {requestQuotaSchemaDigest} from '@profitia/platform-contracts/request-led
 import {REQUEST_QUOTA_ROOT_CONTRACT,operationSourceDigest} from '@profitia/platform-contracts/operation-context'
 import {REQUEST_QUOTA_HOST_CONTRACT,privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.requestQuotaSourceCompatibility,hash=x=>createHash('sha256').update(x).digest('hex')
-const beforeNative=path=>receipt.nativeSqlRoundtripAdoption.applicationSourceDigests[path]
+const beforeNative=path=>receipt.diagnosticTelemetryAdoption.applicationSourceDigests[path]
+ ?execFileSync('git',['show',receipt.diagnosticTelemetryAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
+ :receipt.nativeSqlRoundtripAdoption.applicationSourceDigests[path]
  ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
  :fs.readFileSync(new URL('../'+path,import.meta.url))
 test('SRM explicitly adopts SQL027 and preserves all historical contracts, counts and human grants',async()=>{
@@ -18,10 +20,10 @@ test('SRM explicitly adopts SQL027 and preserves all historical contracts, count
  assert.equal(a.platformVersion,'1.29.0');assert.equal(a.rootImplementation,REQUEST_QUOTA_ROOT_CONTRACT.implementation);assert.equal(a.hostVersion,REQUEST_QUOTA_HOST_CONTRACT.version)
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,712);assert.equal(a.producer.taskId,'ARCHITECTURE-SRM-REQUEST-UNMETERED-20261025')
  assert.deepEqual(a.operations,['supplier.report.refresh','supplier.private.refresh']);assert.equal(a.quotaMode,'UNMETERED')
- assert.equal(await requestQuotaSchemaDigest(),a.schemaDigest);assert.equal(await operationSourceDigest(),a.sdkDigests.operationSourceDigest);assert.equal(await privateOperationHostSourceDigest(),receipt.nativeSqlRoundtripAdoption.sdkDigests.privateOperationHostSourceDigest)
+ assert.equal(await requestQuotaSchemaDigest(),a.schemaDigest);assert.equal(await operationSourceDigest(),a.sdkDigests.operationSourceDigest);assert.equal(await privateOperationHostSourceDigest(),receipt.diagnosticTelemetryAdoption.sdkDigests.privateOperationHostSourceDigest)
  for(const[path,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+path])),digest,path)
-  assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),receipt.nativeSqlRoundtripAdoption.sourceDigests[path]??digest,path)
+  assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),receipt.diagnosticTelemetryAdoption.sourceDigests[path]??receipt.nativeSqlRoundtripAdoption.sourceDigests[path]??digest,path)
  }
  for(const[path,digest]of Object.entries(a.applicationSourceDigests)){
   const repair=receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateTransportParentRepair

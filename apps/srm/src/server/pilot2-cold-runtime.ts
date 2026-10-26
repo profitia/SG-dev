@@ -1,3 +1,5 @@
+import {instrumentDiagnosticPool} from './diagnostic-pg'
+import {diagnosticRun} from './diagnostic-trace'
 import pg from 'pg'
 import {createHash} from 'node:crypto'
 import {OPERATION_CONTRACT,OperationDenied,type OperationExecutor} from '@profitia/platform-contracts/operation-context'
@@ -101,12 +103,12 @@ function createRuntime(env:Env){
  const c=readPilot2ColdConfiguration(env),options=getPilot2HumanOptions(env),{human,work}=options,registryProvider=readPilot2RegistryProvider(env)
  const base:PrivateConfiguration={...options.config,application:{...options.config.application,
   operations:['supplier.report.read','supplier.report.project','supplier.report.export']}}
- const pair=(config:pg.PoolConfig)=>{
-  const pool=new pg.Pool(config),audit=new pg.Pool({...config,max:1})
+ const pair=(config:pg.PoolConfig,kind:'SOURCE'|'CORPORATE_SOURCE')=>{
+  const pool=instrumentDiagnosticPool(new pg.Pool(config),kind),audit=instrumentDiagnosticPool(new pg.Pool({...config,max:1}),'INDEPENDENT_AUDIT')
   for(const p of[pool,audit])p.on('error',()=>console.error('PILOT2 native Source unavailable'))
   return {pool,audit}
  }
- const source=pair(c.source),corporate=pair(c.corporate)
+ const source=pair(c.source,'SOURCE'),corporate=pair(c.corporate,'CORPORATE_SOURCE')
  const api=createSrmNativeSupplierRuntime({base,configurationVersion:native.configurationVersion,
   jobsUrl:env.PILOT2_E1_JOBS_URL!,providerSourceUrl:env.PILOT2_E1_SOURCE_URL!,corporateSourceUrl:env.PILOT2_E1_CORPORATE_URL!,
   runtimeRoles:{jobs:'srm_pilot2_jobs',providerSource:'srm_pilot2_source',corporateSource:'srm_pilot2_corporate'},
@@ -155,8 +157,8 @@ function createRuntime(env:Env){
   },async publishEligible(request,identity,result:MgbiFinancialResult){
    const prepared=pending.get(request);if(!prepared)return deny()
    try{await prepared.publish(result)
-    const response=await report(new Request(new URL('/api/xray/report-data',request.url),{method:'POST',headers:request.headers,
-     body:JSON.stringify({nip:identity.identity.nip,entityType:'COMPANY'}),signal:request.signal}))
+    const response=await diagnosticRun('REPORT_READ',()=>report(new Request(new URL('/api/xray/report-data',request.url),{method:'POST',headers:request.headers,
+     body:JSON.stringify({nip:identity.identity.nip,entityType:'COMPANY'}),signal:request.signal})))
     if(!response.ok)return deny();return response.json()
    }finally{pending.delete(request)}
   }}},async()=>false)

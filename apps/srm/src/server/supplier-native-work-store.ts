@@ -1,3 +1,5 @@
+
+import {diagnosticRun} from './diagnostic-trace'
 import { createHash } from 'node:crypto'
 import type { PoolClient } from 'pg'
 import { OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
@@ -27,12 +29,15 @@ const freeze=<T>(v:T):T=>{if(v&&typeof v==='object'){Object.values(v).forEach(fr
 // validator accepts their finite JSON values without making them mutable.
 const digest=(value:unknown)=>operationPayloadDigest(value as Json)
 function json<T>(value:T):T{
+ return diagnosticRun('JSON_CAPTURE',()=>{
   let text:string|undefined
   try{text=JSON.stringify(value,(_key,v)=>{if(typeof v==='number'&&!Number.isFinite(v))return refuse();return v})}catch{return refuse()}
   if(!text||Buffer.byteLength(text)>MAX_JSON_BYTES)return refuse()
   const captured=JSON.parse(text) as T
   operationPayloadDigest(captured as Json)
   return freeze(captured)
+
+ })
 }
 function select(value:SupplierNativeWorkSelection):SupplierNativeWorkSelection{
   if(!value||Object.getPrototypeOf(value)!==Object.prototype||Reflect.ownKeys(value).length!==3
@@ -153,8 +158,12 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       return run(s,model==='pl-krs-wp-record'?'SRM_ARCHIVE_GENERAL':'SRM_ARCHIVE_FINANCIAL',{model,bodyDigest:operationPayloadDigest(body as Json)},pool=>
         saveMgbiArchive(s.organisationId,s.command.nip,model,body.pages,body.recordCount,body.retrievedAt,s.requestId,pool))
     },
-    prepareDocuments(input:SupplierNativeWorkSelection,pages:unknown[]){const s=select(input),body=json(pages);return run(s,'SRM_PREPARE_DOCUMENTS',{bodyDigest:operationPayloadDigest(body as Json)},pool=>saveFinancialDocuments(s.organisationId,s.command.nip,body,pool))},
+    prepareDocuments(input:SupplierNativeWorkSelection,pages:unknown[]){
+ return diagnosticRun('DOCUMENT_PREPARE',()=>{const s=select(input),body=json(pages);return run(s,'SRM_PREPARE_DOCUMENTS',{bodyDigest:operationPayloadDigest(body as Json)},pool=>saveFinancialDocuments(s.organisationId,s.command.nip,body,pool))
+ })
+},
     financialInventory(input:SupplierNativeWorkSelection,pages:unknown[],recordCount:number,retrievedAt:string,allowedKrs:readonly string[]){
+ return diagnosticRun('FINANCIAL_INVENTORY',()=>{
       const s=select(input),body=json({pages,recordCount,retrievedAt,allowedKrs})
       if(!options.financialInventoryBoundaryDigest||!Array.isArray(body.pages)||body.pages.length<1
         ||body.pages.some(page=>!page||typeof page!=='object'||!Array.isArray((page as {results?:unknown}).results))
@@ -172,9 +181,14 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
         const documents=await withOrganization(s.organisationId,c=>readPreparedFinancialDocuments(c,s.organisationId,s.command.nip),pool)
         return {candidates,documents}
       })
-    },
+
+ })
+},
     restoreDocuments(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_PREPARE_DOCUMENTS',null,pool=>readFinancialDocuments(s.organisationId,s.command.nip,pool))},
-    preparedDocuments(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_READ_DOCUMENTS',null,(pool)=>withOrganization(s.organisationId,client=>readPreparedFinancialDocuments(client,s.organisationId,s.command.nip),pool))},
+    preparedDocuments(input:SupplierNativeWorkSelection){
+ return diagnosticRun('DOCUMENT_READ',()=>{const s=select(input);return run(s,'SRM_READ_DOCUMENTS',null,(pool)=>withOrganization(s.organisationId,client=>readPreparedFinancialDocuments(client,s.organisationId,s.command.nip),pool))
+ })
+},
     section(input:SupplierNativeWorkSelection,section:'general'|'financial',envelope:SectionEnvelope<GeneralCompanyData>|SectionEnvelope<FinancialData>,errorCode:string|null,
       facts:FinancialSourceFact[]=[],correlationId?:string|null,sourceData?:FinancialData,cacheStatus:'CACHE'|'PROVIDER'='PROVIDER'){
       const s=select(input),body=json({envelope,errorCode,facts,...(correlationId===undefined?{}:{correlationId}),...(sourceData===undefined?{}:{sourceData}),cacheStatus})
@@ -249,11 +263,14 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
         return persistSection(s.organisationId,{supplierId:rows[0].supplier_id,requestId:s.requestId},section,body.envelope,body.errorCode,body.facts,body.correlationId,body.sourceData,body.cacheStatus,pool,false,registryEnvelope)
       })
     },
-    interest(input:SupplierNativeWorkSelection){const s=select(input);return run(s,'SRM_RECORD_INTEREST',null,async(_pool,client,context)=>{
+    interest(input:SupplierNativeWorkSelection){
+ return diagnosticRun('RECORD_INTEREST',()=>{const s=select(input);return run(s,'SRM_RECORD_INTEREST',null,async(_pool,client,context)=>{
       const d=(await client.query('SELECT srm.named_interest_descriptor() AS descriptor')).rows[0]?.descriptor
       if(d?.namedBoundaryDigest!==namedDigest||!context.subjectUserId)return refuse()
       await recordSupplierInterest(client,s.organisationId,s.command.nip,{subjectKey:'profitia-account:'+context.subjectUserId,identityKind:'AUTHENTICATED'})
-    })},
+    })
+ })
+},
     msr(input:SupplierNativeWorkSelection,allowedKrs?:readonly string[]):MsrStore{
       const s=select(input),krs=allowedKrs===undefined?undefined:json(allowedKrs)
       const candidate=(value:MsrCandidate)=>{const c=json(value);if(c.nip!==s.command.nip||!/^[a-f0-9]{24}$/.test(c.recordId))return refuse();return c}

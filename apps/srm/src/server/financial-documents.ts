@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import { createHash } from "node:crypto";
 import type { FinancialData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization, type DatabasePool } from "./db";
@@ -35,6 +36,7 @@ const knownSchema = (name: string, version: string) => /^(Skonsolidowana)?Jednos
  * The adapter consumes structured XML fields only and never downloads or follows document URLs.
  */
 export function projectFinancialDocuments(records: unknown[]): FinancialSourceDocument[] {
+ return diagnosticRun('DOCUMENT_PREPARE',()=>{
   if (records.length > 10_000) throw new Error("Financial document limit exceeded");
   return records.flatMap((raw) => {
     const record = object(raw), document = object(record.document), content = object(record.content), schema = object(content.schema);
@@ -103,6 +105,8 @@ export function projectFinancialDocuments(records: unknown[]): FinancialSourceDo
       validation: availability === "XML_SUPPORTED" && from && to && from <= to && currency && scale && rows.size ? "VALID" as const : "REVIEW" as const,
       columns, rows: [...rows.values()].sort((a,b) => a.sourcePath.replaceAll(">", ".").localeCompare(b.sourcePath.replaceAll(">", "."), "pl", { numeric: true })) }];
   });
+
+ })
 }
 export function financialRecordsFromPages(pages: unknown[]): unknown[] { return pages.flatMap((page) => Array.isArray(object(page).results) ? object(page).results as unknown[] : []); }
 
@@ -132,6 +136,7 @@ export function projectArchivedFinancialDocuments(archive: FinancialArchive, org
 }
 
 export async function saveFinancialDocuments(organizationId: string, nip: string, pages: unknown[], pool?: DatabasePool): Promise<{ documents: number; positions: number }> {
+ return diagnosticRun('DOCUMENT_PREPARE',async ()=>{
   const documents = projectFinancialDocuments(financialRecordsFromPages(pages));
   const capturedPages = JSON.stringify(pages);
   return withOrganization(organizationId, async client => {
@@ -149,6 +154,8 @@ export async function saveFinancialDocuments(organizationId: string, nip: string
     return persistFinancialDocuments(client, organizationId, nip,
       projectArchivedFinancialDocuments(archive,organizationId,nip),archive.payload_jsonb_sha256);
   }, pool);
+
+ })
 }
 
 export async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
@@ -234,11 +241,17 @@ export async function restoreFinancialDocumentsFromArchive(client: DocumentClien
 /** Same provenance/checksum/identity projection after an authorised restoration.
  * Missing/stale prepared rows fail closed; this path performs no business writes. */
 export async function readPreparedFinancialDocuments(client: DocumentClient, organizationId: string, nip: string): Promise<FinancialSourceDocument[]> {
+ return diagnosticRun('DOCUMENT_READ',async ()=>{
   return financialDocumentsFromArchive(client, organizationId, nip, false);
+
+ })
 }
 
 export async function readFinancialDocuments(organizationId: string, nip: string, pool?:DatabasePool): Promise<FinancialSourceDocument[]> {
+ return diagnosticRun('DOCUMENT_READ',async ()=>{
   return withOrganization(organizationId, client => restoreFinancialDocumentsFromArchive(client,organizationId,nip),pool);
+
+ })
 }
 
 /** Enrich saved tenant reports without re-fetching, revaluing facts or expanding the shared catalog. */

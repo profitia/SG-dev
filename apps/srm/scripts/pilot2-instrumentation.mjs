@@ -43,7 +43,9 @@ export function instrumentPilot2(repo,output,proof){
  const collector='apps/srm/src/server/supplier-telemetry.ts'
  if(fs.existsSync(path.join(output,collector)))throw Error('Historical source unexpectedly contains the collector')
  fs.copyFileSync(path.join(repo,collector),path.join(output,collector))
- proof.addedFiles=[collector]
+ const diagnosticFiles=['apps/srm/src/server/diagnostic-trace.ts','apps/srm/src/server/diagnostic-pg.ts']
+ for(const name of diagnosticFiles)fs.copyFileSync(path.join(repo,name),path.join(output,name))
+ proof.addedFiles=[collector,...diagnosticFiles]
  proof.overlay={stage:'TELEMETRY',collectorSha256:sha(fs.readFileSync(path.join(output,collector))),
   adapterSha256:sha(fs.readFileSync(new URL('./pilot2-instrumentation.mjs',import.meta.url))),changesBusinessLogic:false,
   changedFiles:proof.changedFiles.map(name=>({path:name,sha256:sha(fs.readFileSync(path.join(output,name)))}))}

@@ -1,4 +1,5 @@
 import type pg from 'pg'
+import {diagnosticRun} from './diagnostic-trace'
 import type { PoolClient } from 'pg'
 import { createHmac } from 'node:crypto'
 import { createPlatformIngestionHost } from '@profitia/platform-contracts/platform-ingestion'
@@ -173,7 +174,9 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
     const intentKey = createHmac('sha256', Buffer.from(operationKey, 'hex')).update(JSON.stringify({ sourceId: policy.source.id, ordinal: ordinal++ })).digest('hex')
     busy = true
     try {
-      const response = externalNativeResponse(await host.execute({ command, intentKey }, { signal: init.signal ?? undefined }))
+      const diagnosticProvider=provider==='MGBI'?(url.pathname===paths[1]?'MGBI_FINANCIAL_SOURCE':'MGBI_GENERAL_SOURCE')
+        :provider==='MGBI_MSR_API'?'MSR_API_SOURCE':provider==='MGBI_MSR_STORAGE'?'MSR_STORAGE_SOURCE':provider==='CEIDG'?'CEIDG_SOURCE':'VERCLY_SOURCE'
+      const response = externalNativeResponse(await diagnosticRun(diagnosticProvider,()=>host.execute({ command, intentKey }, { signal: init.signal ?? undefined }),{join:'SERIAL'}))
       if (provider === 'MGBI_MSR_API' && url.pathname === MSR_LIMITS) msrLimitsSeen = response.ok
       if (provider === 'VERCLY' && command.method === 'POST') {
         if (response.ok) {

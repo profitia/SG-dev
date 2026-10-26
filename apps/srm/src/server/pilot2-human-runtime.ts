@@ -1,3 +1,4 @@
+import {instrumentDiagnosticPool} from './diagnostic-pg'
 import operationAcceptance from '../../operation-integration.json'
 import pg from 'pg'
 import {createHash} from 'node:crypto'
@@ -87,11 +88,11 @@ export function instantiatePilot2HumanOptions(env:Env=process.env):Pilot2HumanOp
   // credentials, change its four-connection ceiling or retain idle PILOT2
   // connections. Technical execution has its own independent PILOT2 login.
   const selected=foreground?{...configuration,max:1,idleTimeoutMillis:10}:configuration
-  const pool=new pg.Pool(selected),audit=new pg.Pool({...selected,max:1})
+  const pool=instrumentDiagnosticPool(new pg.Pool(selected),foreground?'HUMAN':'JOBS'),audit=instrumentDiagnosticPool(new pg.Pool({...selected,max:1}),'INDEPENDENT_AUDIT')
   for(const p of[pool,audit])p.on('error',()=>console.error('PILOT2 authorization database unavailable'))
   return {pool,audit}
  }
- const human=pair(selected.human,true),jobs=pair(selected.jobs),catalog=new pg.Pool(selected.catalog)
+ const human=pair(selected.human,true),jobs=pair(selected.jobs),catalog=instrumentDiagnosticPool(new pg.Pool(selected.catalog),'PUBLIC_CATALOG')
  catalog.on('error',()=>console.error('PILOT2 public catalog unavailable'))
  catalog.on('connect',client=>{
   const query=client.query.bind(client)

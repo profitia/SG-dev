@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import { isRestrictedRegistrationStatus } from "@profitia/srm-xray";
 import { readCompanyRegistrationStatus } from "./company-activity";
 import { readArchivedCompanyGeneral } from "./company-general-cache";
@@ -46,6 +47,7 @@ export function isCurrentFinancialMapping(section: StoredFinancialSection | null
 }
 
 export async function readFreshCompany(organizationId: string, nip: string, now = new Date(), pool?: DatabasePool): Promise<SharedCompany | null> {
+ return diagnosticRun('CACHE_READ',async ()=>{
   return withOrganization(organizationId, async (client) => {
     const result = await client.query<{
       general_json: GeneralSection | null; financial_json: StoredFinancialSection | null;
@@ -66,6 +68,8 @@ export async function readFreshCompany(organizationId: string, nip: string, now 
     if (!Array.isArray(row.financial_json.warnings) || !isCurrentFinancialMapping(row.financial_json)) return null;
     return { general: row.general_json, financial: row.financial_json, generalReprojected };
   }, pool);
+
+ })
 }
 
 /** Export reads the already stored projection and never initiates a provider request. */
@@ -229,7 +233,10 @@ function publicFinancialIndicators(calculated: ReturnType<typeof calculateFinanc
 }
 
 export function projectStoredIndicators(nip: string, data: FinancialData, facts: CatalogIndicatorFact[]): NonNullable<FinancialData["indicators"]> {
+ return diagnosticRun('INDICATORS',()=>{
   return publicFinancialIndicators(calculateFinancialIndicators(nip, data, facts));
+
+ })
 }
 
 /** Stored knowledge only: no provider request, row lock or business write. */
@@ -239,6 +246,7 @@ export async function readFinancialIndicators(client: Pick<PoolClient, "query">,
 
 /** Recalculate from shared validated facts; persist provenance without another provider call. */
 export async function writeFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData): Promise<NonNullable<FinancialData["indicators"]>> {
+ return diagnosticRun('INDICATORS',async ()=>{
   const calculated = await calculateStoredFinancialIndicators(client, nip, data);
   if (calculated.length) {
     await client.query(
@@ -274,6 +282,8 @@ export async function writeFinancialIndicators(client: Pick<PoolClient, "query">
     );
   }
   return publicFinancialIndicators(calculated);
+
+ })
 }
 
 export async function refreshFinancialIndicators(organizationId: string, nip: string, data: FinancialData): Promise<NonNullable<FinancialData["indicators"]>> {

@@ -1,3 +1,4 @@
+import {diagnosticRun} from './diagnostic-trace'
 import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
 import { createHash } from "node:crypto";
 import type { FinancialData, FinancialPeriod } from "@profitia/srm-xray";
@@ -49,6 +50,7 @@ export function selectMsrCandidates(records: readonly unknown[], nip: string, al
 
 export type MsrProjection = { parsed?:MsrParsed; data: FinancialData; facts: FinancialSourceFact[]; document: FinancialSourceDocument; retrievedAt:string };
 export function projectMsrFinancial(candidate: MsrCandidate, original: MsrOriginal, parsed: MsrParsed): MsrProjection {
+ return diagnosticRun('MSR_PROCESS',()=>{
   if (original.recordId !== candidate.recordId || parsed.sourceChecksum !== original.checksum || parsed.standard !== "IAS_IFRS"
       || new Set(parsed.contexts.map(c => c.scheme + ":" + c.entity)).size !== 1)
     throw new Error("MSR_SOURCE_IDENTITY_MISMATCH");
@@ -127,9 +129,12 @@ export function projectMsrFinancial(candidate: MsrCandidate, original: MsrOrigin
     schemaName:parsed.sourceType === "POSITIONED_XHTML" ? "POSITIONED_XHTML" : "ESEF/iXBRL",schemaVersion:parsed.mappingVersion,currency:currencies.length === 1 ? currencies[0] : null,
     scale:"1",correction:candidate.correction,filingDate:candidate.filingDate,checksum:original.checksum,mappingVersion:MSR_PROJECTION_VERSION,
     validation:parsed.warnings.length ? "REVIEW" : "VALID",columns,rows,metricEvidence } };
+
+ })
 }
 
 export function mergeMsrFinancial(base: MgbiFinancialResult, projections: readonly MsrProjection[], warnings: readonly string[]): MgbiFinancialResult {
+ return diagnosticRun('MSR_PROCESS',()=>{
   warnings = [...warnings,...projections.some(p=>p.data.periods.some(period=>period.msrRows?.some(r=>r.validation === "REVIEW"))) ? ["MSR_UNVERIFIED_SOURCE_VALUES"] : []];
   if (!projections.length) return warnings.length ? {...base,section:{...base.section,warnings:[...new Set([...base.section.warnings,...warnings])]}} : base;
   const projectedPeriods = projections.flatMap(p => p.data.periods);
@@ -139,4 +144,6 @@ export function mergeMsrFinancial(base: MgbiFinancialResult, projections: readon
   return {...base,sourceData:data,facts:[...base.facts.filter(f=>!projections.some(p=>p.data.periods.some(period=>period.from===f.periodStart && period.to===f.periodEnd && (period.scope==="standalone"?"UNIT":"CONSOLIDATED")===f.statementScope))),...projections.flatMap(p => p.facts)],errorCode:null,section:{...base.section,status:warnings.length ? "PARTIAL" : "SUCCESS",data,
     retrievedAt:[base.section.retrievedAt ?? "",...projections.map(p=>p.retrievedAt)].sort().at(-1)!,
     warnings:[...new Set([...base.section.warnings.filter(w => !["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS","MGBI_NO_STRUCTURED_FINANCIAL_DATA","MGBI_FINANCIAL_UNKNOWN_FORMAT","MGBI_FINANCIAL_UNSUPPORTED_XML","MGBI_FINANCIAL_NO_XML"].includes(w)),...warnings])]} };
+
+ })
 }

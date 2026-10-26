@@ -1,3 +1,5 @@
+import {diagnosticRun} from './diagnostic-trace'
+import {instrumentDiagnosticPool} from './diagnostic-pg'
 import { assertProductConnection, productOrganizationId } from "./runtime-environment";
 import { atLookupStage } from "./lookup-diagnostics";
 import pg, { type PoolClient } from "pg";
@@ -96,7 +98,7 @@ export function runtimeConnectionString(environment: Readonly<Record<string, str
 
 export function getPool(): pg.Pool {
   const connectionString = runtimeConnectionString();
-  sharedPool ??= new pg.Pool({ connectionString, max: 8 });
+  sharedPool ??= instrumentDiagnosticPool(new pg.Pool({ connectionString, max: 8 }),'DOMAIN');
   return sharedPool;
 }
 
@@ -111,6 +113,7 @@ export async function withOrganization<T>(
   action: (client: PoolClient) => Promise<T>,
   pool: DatabasePool = getPool(),
 ): Promise<T> {
+ return diagnosticRun('WITH_ORGANIZATION',async ()=>{
   assertOrganizationId(organizationId);
   const bound = boundTransactions.get(pool);
   if (bound && bound.organizationId !== organizationId) throw new Error("SRM bound transaction organization mismatch");
@@ -209,4 +212,6 @@ export async function withOrganization<T>(
   } finally {
     if (!bound) client.release();
   }
+
+ })
 }
