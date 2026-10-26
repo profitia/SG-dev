@@ -50,12 +50,14 @@ test('real ordinary source transactions retain one funded receipt and never adop
     const runtimeUrl=new URL(dbUrl);runtimeUrl.username=RUNTIME;runtimeUrl.password='isolated_ci_only'
     runtime=new Client({connectionString:runtimeUrl.toString()});await runtime.connect()
     let failOutcome=false,writes=0
+    const statements=[]
     const host=createPlatformIngestionHost({
       application:{appId:'stored-source',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-source',configurationVersion:'source-v1',
         identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
       binding:{applicationId:'stored-source',environment:'development',projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,
         role:RUNTIME,deploymentId:'synthetic-source',configurationVersion:'source-v1',schemaDigest:digest},
       source:{id:SOURCE,payloadSchema:'forecast-command-v1',qualityVersion:'quality-v1',classificationVersion:'shared-v1'},independentQuery:async(sql,values)=>{
+        statements.push(sql)
         const result=await runtime.query(sql,values)
         if(sql.includes('profitia_ingestion.append_audit')){
           assert.deepEqual(result.rows,[{recorded:true}]);assert(result.fields.every(field=>field.dataTypeID!==2278),'No unsupported void result may cross the native query port')
@@ -67,6 +69,7 @@ test('real ordinary source transactions retain one funded receipt and never adop
         assert.equal(limits.timeoutMs,15000)
         const c=new Client({connectionString:runtimeUrl.toString()});await c.connect();await c.query('BEGIN')
         try{const result=await work({transaction:c,query:async(sql,values)=>{
+          statements.push(sql)
           if(failOutcome&&sql.includes('profitia_ingestion.append_audit')&&JSON.parse(values[0]).phase==='OUTCOME')throw Error('synthetic audit outage')
           return c.query(sql,values)
         }});await c.query('COMMIT');return result}catch(e){await c.query('ROLLBACK');throw e}finally{await c.end()}
@@ -84,7 +87,13 @@ test('real ordinary source transactions retain one funded receipt and never adop
     })
     let committed
     await t.test('source commit has one funded effect; retry and a later caller failure cannot refund or repeat it',async()=>{
+      statements.length=0
       committed=await host.ingest(input,write);assert.equal(committed.value.status,'COMMITTED');assert(Object.isFrozen(committed.value))
+      const verification=statements.filter(q=>q.includes('profitia_ingestion.scope_allows'))
+      assert.equal(verification.length,5,'All existing scope checkpoints remain current, including reservation, completion and OUTCOME')
+      assert(verification.every(q=>q.includes('runtime_descriptor()')&&q.includes('txid_current()')))
+      assert.equal(statements.filter(q=>q.includes('set_config')).length,1)
+      t.diagnostic(JSON.stringify({event:'source_control_roundtrips',statements:statements.length,scopeCheckpoints:verification.length}))
       const proof=platformReceiptEvidence(committed.value);assert(proof);assert.equal(proof.sourceId,SOURCE);assert.equal(proof.contentDigest,operationPayloadDigest(payload))
       assert.equal(platformReceiptEvidence({...committed.value}),null,'Serialisation is not a source observation')
       const before=writes

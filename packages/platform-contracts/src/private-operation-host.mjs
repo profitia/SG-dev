@@ -229,9 +229,8 @@ function createBoundOperationHost(options, serviceMode) {
               entered = true
               // PostgreSQL 16 has no transaction_timeout. The driver MUST also
               // enforce transactionOptions.timeoutMs over the entire callback.
-              await query(`SET LOCAL statement_timeout='${transactionTimeoutMs}ms'`)
-              await query(`SET LOCAL lock_timeout='${transactionOptions.maxWaitMs}ms'`)
-              await query(`SET LOCAL idle_in_transaction_session_timeout='${transactionTimeoutMs}ms'`)
+              await query("SELECT set_config('statement_timeout',$1,true),set_config('lock_timeout',$2,true),set_config('idle_in_transaction_session_timeout',$1,true)",
+                [`${transactionTimeoutMs}ms`,`${transactionOptions.maxWaitMs}ms`])
               if (closed) unavailable()
               if(delegated && proof)await reportAdmission.bindJob(query,proof,request.resourceId)
               const lease = proof && !serviceMode?await store.lockAdmittedReport(query,{actor,request,admission:reportAdmission,proof}):delegated ? await jobStore.lockJob(query,{actor,request}) : serviceMode
