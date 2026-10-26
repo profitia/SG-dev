@@ -11,6 +11,8 @@ test('diagnostic source adoption preserves complete history and verifies current
  assert.equal(hash(prior),a.previousReceiptDigest);for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/private-operation-host'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,a.platformVersion)
+ for(const file of ['../package-lock.json','../../dashboard-preview/package-lock.json'])
+  assert.equal(JSON.parse(fs.readFileSync(new URL(file,import.meta.url))).packages['node_modules/@profitia/platform-contracts'].version,a.platformVersion,file)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
   if(file.startsWith('src/')||file==='package.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
