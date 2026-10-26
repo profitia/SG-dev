@@ -1,3 +1,4 @@
+import {diagnosticAsync} from '@profitia/platform-contracts/diagnostic-phase'
 import type {Pool,PoolClient} from 'pg'
 import {canonical,sha256,demand,krs,nip,validateCompanySnapshot} from '@profitia/krs-registry-contracts'
 import type {CompanySnapshot,Coverage,Register,SearchResult,CompanyCandidate} from '@profitia/krs-registry-contracts'
@@ -16,15 +17,24 @@ export const SEARCH_SQL=`WITH matches AS (
 export class Catalog {
   constructor(readonly pool:Pool){}
   async read(id:string,register?:Register):Promise<CompanySnapshot|null>{
+ return diagnosticAsync(register==='P'?'KRS_CATALOG_P':register==='S'?'KRS_CATALOG_S':'KRS_CATALOG_MAIN',async ()=>{
     demand(krs(id),'INVALID_KRS')
     const r=register?await this.pool.query('SELECT s.payload FROM krs_registry.company_sources c JOIN krs_registry.snapshots s USING(evidence_ref) WHERE c.krs=$1 AND c.register=$2 AND c.extract=$3',[id,register,'CURRENT']):await this.pool.query('SELECT s.payload FROM krs_registry.companies c JOIN krs_registry.snapshots s ON s.evidence_ref=c.latest_ref WHERE c.krs=$1',[id])
     return r.rows[0]?.payload??null
-  }
-  async accepted(ref:string):Promise<CompanySnapshot|null>{return (await this.pool.query('SELECT payload FROM krs_registry.snapshots WHERE evidence_ref=$1',[ref])).rows[0]?.payload??null}
+
+ })
+}
+  async accepted(ref:string):Promise<CompanySnapshot|null>{
+ return diagnosticAsync('KRS_CATALOG_ACCEPTED',async ()=>{return (await this.pool.query('SELECT payload FROM krs_registry.snapshots WHERE evidence_ref=$1',[ref])).rows[0]?.payload??null
+ })
+}
   async byNip(value:string):Promise<string[]>{
+ return diagnosticAsync('KRS_CATALOG_NIP',async ()=>{
     demand(nip(value),'INVALID_NIP')
     const r=await this.pool.query("SELECT DISTINCT i.krs FROM krs_registry.identifiers i JOIN krs_registry.company_sources c ON c.evidence_ref=i.evidence_ref WHERE i.kind='NIP' AND i.value=$1 AND i.valid AND i.removed_entry IS NULL AND c.extract='CURRENT' ORDER BY i.krs LIMIT 101",[value]);return r.rows.map(r=>r.krs)
-  }
+
+ })
+}
   async coverage(query:Pool|PoolClient=this.pool):Promise<Coverage>{
     const r=await query.query('SELECT m.*, (SELECT count(*)::int FROM krs_registry.companies WHERE latest_ref IS NOT NULL) AS count,(SELECT max(retrieved_at) FROM krs_registry.snapshots) AS last FROM krs_registry.metadata m')
     const m=r.rows[0];return {scope:'PROGRESSIVE',asOf:m.last?.toISOString()??null,bootstrapReference:m.bootstrap_reference,pendingChanges:null,observedCompanies:m.count,totalCompanies:null}

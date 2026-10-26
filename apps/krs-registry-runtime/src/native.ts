@@ -1,3 +1,5 @@
+
+import {diagnosticAsync} from '@profitia/platform-contracts/diagnostic-phase'
 import type {PoolClient} from 'pg'
 import {createPrivateOperationHost} from '@profitia/platform-contracts/private-operation-host'
 import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
@@ -141,8 +143,8 @@ export function createNativeCatalogPublication(options:{host:Omit<Ingestion,'val
     if(!proof||proof.source.applicationId!==options.host.application.appId||proof.source.sourceId!==options.acceptedSourceId||proof.source.environment!==options.host.application.environment
       ||proof.rawDigest!==snapshot.source.rawDigest||proof.rawDigest!==await sha256(input.response.bytes)
       ||proof.retrievedAt!==snapshot.source.retrievedAt||proof.url!==buildRequest({operation:snapshot.source.extract==='CURRENT'?'CURRENT':'FULL',krs:snapshot.canonicalKrs,register:snapshot.source.register}).url)return deny()
-    const rebuilt=await normalizeExtract(input.response.bytes,{krs:snapshot.canonicalKrs,register:snapshot.source.register,
-      extract:snapshot.source.extract,retrievedAt:proof.retrievedAt})
+    const rebuilt=await diagnosticAsync('SOURCE_PARSE',()=>normalizeExtract(input.response.bytes,{krs:snapshot.canonicalKrs,register:snapshot.source.register,
+      extract:snapshot.source.extract,retrievedAt:proof.retrievedAt}))
     if(canonical(rebuilt)!==canonical(snapshot))return deny()
     // The validated DTO deliberately uses null-prototype records. Its bounded
     // canonical JSON has the same bytes as Root JSON, without weakening Root's
@@ -172,8 +174,8 @@ export function createOfficialSeed(options:{client:ReturnType<typeof createKrsCl
     if(!ids.includes(id)||!['P','S'].includes(register)||!runReference||runReference.length>128)return deny()
     const key=await sha256(canonical({approval:options.approvalRef,krs:id,register,run:runReference}))
     const response=await options.client.get({operation:'CURRENT',krs:id,register},'krs-source-'+key)
-    const snapshot=await normalizeExtract(response.bytes,{krs:id,register,extract:'CURRENT',retrievedAt:response.retrievedAt})
-    const receipt=await options.publication.publish({snapshot,response},'krs-publication-'+key)
+    const snapshot=await diagnosticAsync('SOURCE_PARSE',()=>normalizeExtract(response.bytes,{krs:id,register,extract:'CURRENT',retrievedAt:response.retrievedAt}))
+    const receipt=await diagnosticAsync('SOURCE_PUBLISH',()=>options.publication.publish({snapshot,response},'krs-publication-'+key))
     return {snapshot,receipt}
   }})
 }
@@ -236,7 +238,7 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
   signal.throwIfAborted()
   const response=await client.get({operation:'CURRENT',krs:mapping.krs,register:'P'},'krs-nip-'+requestKey)
   signal.throwIfAborted()
-  const snapshot=await normalizeExtract(response.bytes,{krs:mapping.krs,register:'P',extract:'CURRENT',retrievedAt:response.retrievedAt})
+  const snapshot=await diagnosticAsync('SOURCE_PARSE',()=>normalizeExtract(response.bytes,{krs:mapping.krs,register:'P',extract:'CURRENT',retrievedAt:response.retrievedAt}))
   if(snapshot.nip!==mapping.nip||snapshot.canonicalKrs!==mapping.krs)return deny()
   // Missing/withheld KRS REGON is not evidence of REGON equality. Valid
   // differing parents/local units remain conflicts; no REGON14 truncation.
@@ -248,12 +250,13 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
   if(snapshot.regon!==null&&snapshot.regon!==mapping.regon
     &&snapshot.regon!==mapping.regon+'00000')return deny()
   signal.throwIfAborted()
-  const receipt=await publication.publish({snapshot,response},'krs-nip-publication-'+requestKey)
+  const receipt=await diagnosticAsync('SOURCE_PUBLISH',()=>publication.publish({snapshot,response},'krs-nip-publication-'+requestKey))
   signal.throwIfAborted()
   for(const [ref,value] of acquired)if(now()-Date.parse(value.snapshot.source.retrievedAt)>300000)acquired.delete(ref)
   if(acquired.size>=100)return deny()
   acquired.set(snapshot.evidenceRef,{snapshot,response});return {snapshot,receipt}
  },async continuity(reference:string,signal:AbortSignal):Promise<NativeContinuity|null>{
+ return diagnosticAsync('KRS_HISTORY',async ()=>{
   const current=acquired.get(reference)
   if(!current)return null
   if(now()-Date.parse(current.snapshot.source.retrievedAt)>300000)return deny()
@@ -272,7 +275,7 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
     const id=ids[0]!,key=await sha256(canonical({reference,krs:id,operation:'FULL'}))
     const response=await client.get({operation:'FULL',krs:id,register:'P'},'krs-continuity-'+key)
     signal.throwIfAborted()
-    const snapshot=await normalizeExtract(response.bytes,{krs:id,register:'P',extract:'FULL',retrievedAt:response.retrievedAt})
+    const snapshot=await diagnosticAsync('SOURCE_PARSE',()=>normalizeExtract(response.bytes,{krs:id,register:'P',extract:'FULL',retrievedAt:response.retrievedAt}))
     const nips=[...new Set(snapshot.identifiers.filter(i=>i.kind==='NIP').map(i=>i.value))]
     // An explicitly linked old register without any NIP cannot authorize its
     // finances. End the verified prefix here, retaining the already proved
@@ -280,11 +283,13 @@ export async function createNativeNipRegistrySource(options:{host:Omit<Ingestion
     // conflict and still denies the whole chain; it is never treated as absent.
     if(nips.length===0){excluded.push(Object.freeze({krs:id,reason:'MISSING_NIP'}));break}
     if(nips.length!==1||nips[0]!==current.snapshot.nip||snapshot.identifiers.some(i=>i.kind==='NIP'&&!i.valid))return deny()
-    await publication.publish({snapshot,response},'krs-continuity-publication-'+key)
+    await diagnosticAsync('SOURCE_PUBLISH',()=>publication.publish({snapshot,response},'krs-continuity-publication-'+key))
     value={snapshot,response}
    }
    const result=Object.freeze({currentEvidenceRef:reference,records:Object.freeze(records),excluded:Object.freeze(excluded)})
    continuityProofs.add(result);return result
   })()
- }})
+
+ })
+}})
 }

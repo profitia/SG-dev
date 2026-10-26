@@ -1,3 +1,4 @@
+import {diagnosticAsync} from '@profitia/platform-contracts/diagnostic-phase'
 import {identityDigest,validateIdentityEvidence,canonical,sha256,nip,regon,krs,acceptedNormalizerVersion} from '@profitia/krs-registry-contracts'
 import type {CompanySnapshot,SelectedKrsIdentityEvidenceV1,VerifiedIdentityV1,IdentityBlockCodeV1,BlockedIdentityV1} from '@profitia/krs-registry-contracts'
 export interface IdentityCatalog {
@@ -12,7 +13,7 @@ export function compatible(a:CompanySnapshot,b:CompanySnapshot):boolean{
   return a.canonicalKrs===b.canonicalKrs&&a.nip!==null&&a.nip===b.nip&&a.regon===b.regon
 }
 /** Catalog mappings are candidates; no mapper or name match grants identity. No MGBI is present in this runtime. */
-export async function resolveIdentity(input:{selectedKrs?:unknown;nip?:unknown;regon?:unknown},catalog:IdentityCatalog,now=Date.now()):Promise<SelectedKrsIdentityEvidenceV1>{
+async function resolveIdentityObserved(input:{selectedKrs?:unknown;nip?:unknown;regon?:unknown},catalog:IdentityCatalog,now=Date.now()):Promise<SelectedKrsIdentityEvidenceV1>{
   let selected=input.selectedKrs
   if(selected!==undefined&&!krs(selected))return blocked(null,'INVALID_KRS')
   if(input.nip!==undefined&&!nip(input.nip))return blocked(selected,'INVALID_NIP')
@@ -37,12 +38,12 @@ export async function resolveIdentity(input:{selectedKrs?:unknown;nip?:unknown;r
   if(!snapshot.officialName)return blocked(selected,'KRS_UNAVAILABLE',[],snapshot)
   if(!acceptedNormalizerVersion(snapshot.source.normalizerVersion))return blocked(selected,'UNSUPPORTED_EVIDENCE_VERSION',[],snapshot)
   const value:VerifiedIdentityV1={contract:'profitia.krs-company-identity',version:'1.0.0',status:'VERIFIED',selectedKrs:selected,identity:{entityKey:snapshot.entityKey,krs:selected,nip:snapshot.nip,regon:snapshot.regon,officialName:snapshot.officialName},source:{...snapshot.source,extract:'CURRENT',checkedAt:new Date(now).toISOString()},validity:{policy:'KRS_FINANCIAL_IDENTITY_FRESHNESS_V1',maxAgeSeconds:300,maxClockSkewSeconds:30,expiresAt:new Date(Date.parse(snapshot.source.retrievedAt)+300000).toISOString()},evidenceRef:snapshot.evidenceRef,evidenceDigest:'0'.repeat(64),historicalCandidates:snapshot.historicalCandidates}
-  value.evidenceDigest=await identityDigest(value)
-  try{await validateIdentityEvidence(value,now);return value}catch{return blocked(selected,'STALE_IDENTITY_EVIDENCE',[],snapshot)}
+  value.evidenceDigest=await diagnosticAsync('KRS_DIGEST',()=>identityDigest(value))
+  try{await diagnosticAsync('KRS_VALIDATE_IDENTITY',()=>validateIdentityEvidence(value,now));return value}catch{return blocked(selected,'STALE_IDENTITY_EVIDENCE',[],snapshot)}
 }
 /** Called at the eventual consumer boundary, in addition to its current E1 admission. Hash is never authority. */
-export async function revalidateAcceptedIdentity(input:unknown,selectedKrs:string,catalog:IdentityCatalog,now:number):Promise<VerifiedIdentityV1>{
-  const v=await validateIdentityEvidence(input,now)
+async function revalidateAcceptedIdentityObserved(input:unknown,selectedKrs:string,catalog:IdentityCatalog,now:number):Promise<VerifiedIdentityV1>{
+  const v=await diagnosticAsync('KRS_VALIDATE_IDENTITY',()=>validateIdentityEvidence(input,now))
   if(v.status!=='VERIFIED'||v.selectedKrs!==selectedKrs)throw Error('IDENTIFIER_CONFLICT')
   const accepted=await catalog.accepted(v.evidenceRef),current=await catalog.read(selectedKrs,v.source.register)
   if(!accepted||!current||current.evidenceRef!==v.evidenceRef)throw Error('STALE_IDENTITY_EVIDENCE')
@@ -53,3 +54,7 @@ export async function revalidateAcceptedIdentity(input:unknown,selectedKrs:strin
   if(await sha256(canonical(facts))!==source.contentDigest)throw Error('FORGED_SOURCE_EVIDENCE')
   return v
 }
+
+export const resolveIdentity:typeof resolveIdentityObserved=(...args)=>diagnosticAsync('KRS_RESOLVE_IDENTITY',()=>resolveIdentityObserved(...args))
+
+export const revalidateAcceptedIdentity:typeof revalidateAcceptedIdentityObserved=(...args)=>diagnosticAsync('KRS_VALIDATE_IDENTITY',()=>revalidateAcceptedIdentityObserved(...args))

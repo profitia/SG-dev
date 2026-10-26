@@ -1,3 +1,4 @@
+import {diagnosticAsync,diagnosticSync,diagnosticPhaseSourceDigest} from './diagnostic-phase.mjs'
 import {createHash,createHmac} from 'node:crypto'
 import {createPlatformDeliveryPort,platformDeliveryEvidence,platformReceiptEvidence} from './platform-ingestion.mjs'
 import {operationPayloadDigest} from './operation-context.mjs'
@@ -92,7 +93,7 @@ export function createExternalCallHost(options){
     &&(!native||['nativeSchemaDigest','nativePolicyVersion','nativeCompletionMode','nativeCredentialMode','nativeMaximumResponseBytes','nativeExpiresAt'].every(k=>a[k]===b[k])
       &&operationPayloadDigest(a.nativePathRules)===operationPayloadDigest(b.nativePathRules)&&operationPayloadDigest(a.nativeRedirectOrigins)===operationPayloadDigest(b.nativeRedirectOrigins))
     &&(!publicWeb||['publicWebSchemaDigest','publicWebPolicyVersion','publicWebMaximumRedirects','publicWebSyntheticOrigin','publicWebSourceRef','publicWebExpiresAt'].every(k=>a[k]===b[k]))
-  const control=async(action,callId,status,httpStatus,responseDigest,requestDigest,intentKey)=>{
+  const control=(action,callId,status,httpStatus,responseDigest,requestDigest,intentKey)=>diagnosticAsync('SOURCE_'+action,async()=>{
     const intentDigest=hmac(intentKey,JSON.stringify({scope:'intent-v1',applicationId:source.applicationId,environment:source.environment,sourceId,resourceId}))
     // Exactly eight sorted keys: identical to the existing root canonical JSON.
     const payload=Object.freeze({action,callId,configurationVersion:b.configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status}),holder={}
@@ -110,7 +111,7 @@ export function createExternalCallHost(options){
     if(!proof||proof.sourceId!==sourceId||proof.resourceId!==resourceId||proof.applicationId!==source.applicationId||proof.environment!==source.environment
       ||proof.contentDigest!==operationPayloadDigest(payload)||proof.idempotencyKeyDigest!==hash(deliveryKey)||proof.effectId!==receipt.effectId)throw new ExternalCallUnavailable()
     return {receipt,fresh:holder.value??null}
-  }
+  })
 
   const status=async callId=>{
     let r;try{r=await independentQuery('SELECT profitia_external_call.read_status($1::uuid,$2,$3) AS control',[callId,sourceId,resourceId])}catch{throw new ExternalCallUnavailable()}
@@ -118,6 +119,7 @@ export function createExternalCallHost(options){
     return r.rows[0].control.status
   }
   return Object.freeze({contract:EXTERNAL_CALL_CONTRACT,async execute(input,options={}){
+ return diagnosticAsync('SOURCE_CALL',async()=>{
     let supplied,signal
     try{
       if(!exact(input,'command,intentKey')||!record(options)||Object.keys(options).some(k=>k!=='signal'))throw Error()
@@ -128,7 +130,7 @@ export function createExternalCallHost(options){
     if(signal?.aborted)throw new ExternalCallUnavailable('NOT_SENT')
     let command,request,d,nativeContentType
     try{
-      command=freeze(structuredClone(parseCommand(supplied.command)));d=await descriptor();request=buildRequest(command)
+      command=freeze(structuredClone(parseCommand(supplied.command)));d=await diagnosticAsync('SOURCE_PREPARE',()=>descriptor());request=buildRequest(command)
       if(!exact(request,'body,method,url')||!['GET','POST'].includes(request.method)||typeof request.url!=='string'||request.url.length>8192
         ||!(request.body===null||typeof request.body==='string')||request.method==='GET'&&request.body!==null)throw Error()
       const url=new URL(request.url)
@@ -144,7 +146,7 @@ export function createExternalCallHost(options){
     try{
       plan=await control('PLAN',null,null,null,null,requestDigest,intentKey)
       if(await status(plan.receipt.effectId)!=='PLANNED')throw new ExternalCallUnavailable('RESULT_NOT_RETAINED')
-      if(!same(d,await descriptor()))throw new ExternalCallUnavailable('NOT_SENT')
+      if(!same(d,await diagnosticAsync('E1_SCOPE',()=>descriptor())))throw new ExternalCallUnavailable('NOT_SENT')
       if(signal?.aborted)throw new ExternalCallUnavailable('NOT_SENT')
       attempt=await control('ATTEMPT',plan.receipt.effectId,null,null,null,requestDigest,intentKey)
       if(!attempt.fresh||attempt.fresh.status!=='ATTEMPT_RESERVED'||attempt.fresh.callId!==plan.receipt.effectId)throw new ExternalCallUnavailable('UNVERIFIED')
@@ -170,12 +172,12 @@ export function createExternalCallHost(options){
           }
           if(native){if(!headers.has('accept'))headers.set('accept','*/*');if(nativeContentType)headers.set('content-type',nativeContentType);else headers.delete('content-type')}
           else{headers.set('accept','application/json');if(request.body!==null)headers.set('content-type','application/json')}
-          if(!same(d,await descriptor()))throw new ExternalCallUnavailable('NOT_SENT');assertActive()
+          if(!same(d,await diagnosticAsync('SOURCE_BEFORE_SEND',()=>descriptor())))throw new ExternalCallUnavailable('NOT_SENT');assertActive()
           sent=true
-          const response=publicWeb?await publicWebHop(request.url,{signal:abort.signal,maxBytes:native.maximumResponseBytes},publicBinding.syntheticOrigin):await fetch(request.url,{method:request.method,body:request.body,headers,signal:abort.signal,redirect:'manual',credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'})
+          const response=publicWeb?await publicWebHop(request.url,{signal:abort.signal,maxBytes:native.maximumResponseBytes},publicBinding.syntheticOrigin):await diagnosticAsync('SOURCE_HTTP',()=>fetch(request.url,{method:request.method,body:request.body,headers,signal:abort.signal,redirect:'manual',credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'}))
           if(abort.signal.aborted||response.redirected||response.url!==request.url||response.status<200||response.status>599||!native&&response.status>=300&&response.status<400){try{await response.body?.cancel()}catch{};throw new ExternalCallUnavailable()}
-          if(native)return await readNativeProviderResponse(response,{config:native,requestUrl:request.url,assertActive,signal:abort.signal,publicWeb})
-          const body=await readPresentationJson(response,d.maximumResponseBytes);assertActive()
+          if(native)return await diagnosticAsync('SOURCE_BODY',()=>readNativeProviderResponse(response,{config:native,requestUrl:request.url,assertActive,signal:abort.signal,publicWeb}))
+          const body=await diagnosticAsync('SOURCE_PARSE',()=>readPresentationJson(response,d.maximumResponseBytes));assertActive()
           const projected=await projectResponse(body,{status:response.status,signal:abort.signal});assertActive()
           // Reuse the same bounded/depth/prototype JSON reader for publication.
           const encoded=JSON.stringify(projected)
@@ -191,15 +193,17 @@ export function createExternalCallHost(options){
       settledStatus='RESPONSE'
     }catch{settledStatus=sent?'UNVERIFIED':'NOT_SENT'}finally{clearTimeout(timer);signal?.removeEventListener('abort',listener);abort.abort()}
     try{
-      if(!same(d,await descriptor()))throw new ExternalCallUnavailable()
-      const settlement=await control('SETTLE',plan.receipt.effectId,settledStatus,result?.status??null,result?(native?nativeResponseDigest(result,intentKey):hmac(intentKey,JSON.stringify(result))):null,requestDigest,intentKey)
+      if(!same(d,await diagnosticAsync('SOURCE_CONFIRM',()=>descriptor())))throw new ExternalCallUnavailable()
+      const settlement=await control('SETTLE',plan.receipt.effectId,settledStatus,result?.status??null,result?(native?diagnosticSync('SOURCE_DIGEST',()=>nativeResponseDigest(result,intentKey)):hmac(intentKey,JSON.stringify(result))):null,requestDigest,intentKey)
       if(!settlement.fresh||settlement.fresh.status!==settledStatus||await status(plan.receipt.effectId)!==settledStatus)throw new ExternalCallUnavailable()
       if(settledStatus!=='RESPONSE')throw new ExternalCallUnavailable(settledStatus==='NOT_SENT'?'NOT_SENT':'UNVERIFIED')
       evidence.set(result,freeze({sourceId,resourceId,applicationId:source.applicationId,environment:source.environment,callId:plan.receipt.effectId,
         attemptEffectId:attempt.receipt.effectId,settlementEffectId:settlement.receipt.effectId,unit:EXTERNAL_CALL_CONTRACT.unit,status:'RESPONSE',...(native?{transportProtocol:NATIVE_EXTERNAL_TRANSPORT.id}:{})}))
       return result
     }catch(error){if(error instanceof ExternalCallUnavailable)throw error;throw new ExternalCallUnavailable()}
-  }})
+
+ })
+}})
 }
 export async function externalCallSchemaDigest(){const fs=await import('node:fs');return hash(fs.readFileSync(new URL(externalCallSchemaUrl)))}
 export async function nativeExternalTransportSchemaDigest(){const fs=await import('node:fs');return hash(fs.readFileSync(new URL(nativeExternalTransportSchemaUrl)))}
@@ -209,4 +213,4 @@ export async function externalCallSourceDigest(){const fs=await import('node:fs'
   .update(fs.readFileSync(new URL('./native-external-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('./native-external-transport.d.mts',import.meta.url)))
   .update(await nativeExternalTransportSchemaDigest())
   .update(fs.readFileSync(new URL('./public-web-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('./public-web-transport.d.mts',import.meta.url)))
-  .update(await publicWebTransportSchemaDigest()).digest('hex')}
+  .update(await publicWebTransportSchemaDigest()).update(await diagnosticPhaseSourceDigest()).digest('hex')}

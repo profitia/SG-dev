@@ -1,0 +1,17 @@
+# PILOT2 diagnostic observation v1
+
+Architecture task ARCHITECTURE-PILOT2-COMPLETE-DIAGNOSTIC-TELEMETRY-20261026; SRM consumer SRM-PILOT2-COMPLETE-DIAGNOSTIC-TELEMETRY-20261026. This is an observation interface, not the proposed 3s execution contract. Existing Root, Source, Work, transactions, authority, audit and business semantics stay unchanged.
+
+The optional Node tracing channel profitia.platform.diagnostic-phase.v1 emits closed category labels only. Without subscribers the original action and promise are used directly. The helper bytes and declarations are included transitively in host/Source fingerprints. KRS Catalog, identity, current/history and GUS use this same observer. SG2/Maps recognition is source compatibility only, without product activation.
+
+SRM collects a bounded span tree with a process-monotonic clock, random observation-only span/connection/transaction IDs and issued trace/fragment UUIDs. Correlation has a five-minute process-local window and never authorizes access. Form admission remains separate from post-click time. Restart/eviction loses linkage.
+
+Inclusive time is end minus start. Exclusive time subtracts the union of child intervals. Explicit SERIAL and ALL joins record causal edges. Unknown overlaps, unfinished branches, drops and timing violations prevent complete causal claims. Async self time remains UNKNOWN; synchronous wall time is not request-exclusive CPU. Nested rows are not additive.
+
+Each physical pg Client.query is observed once, including raw clients, callbacks, promises and Query emitters. Pool.query does not add another SQL count. Pool.connect and public Client.connect are distinct. Connection occupancy and transaction intervals are nonadditive resources. Query calls and successful CommandComplete results are separate counts. Failed command counts and server-internal PL/pgSQL/RLS statements are unavailable. Server execution, wire-only, lock-wait and pure pool queue durations cannot be inferred from the client boundary; absent evidence these are NULL. No extension, extra SQL sampling, schema, grant or compute change is introduced.
+
+The handler ledger ends at response preparation. A completion footer separately measures analysis/export/bookkeeping up to the final footer log; network transfer and that last log itself are outside the measured boundary. CPU/event-loop/GC are process-wide overlapping observations.
+
+Collection defaults on only for development Render service srv-dbeh6srrjlhs73fmikrg and can be disabled with SRM_DIAGNOSTIC_TELEMETRY=off. Maximum 4096 spans and 1024 resources per fragment; overflow is explicit. Logs contain no SQL, parameters, NIP, user/organisation IDs, tokens, credentials, provider payloads or financial values. The offline utility verifies chunk completeness and interval arithmetic. The bounded in-memory health proof checks the installed shared observer and digest without SQL, Clerk or supplier HTTP.
+
+Source CI, actual historical overlay/build/standalone closure, controlled Development deployment and retained LKG are separate evidence gates. A fresh business benchmark and any claim of saved time require separate owner approval. Local disposable PostgreSQL setup failure is never reported as a passing database regression.
