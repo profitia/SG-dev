@@ -96,9 +96,10 @@ export function createSrmNativeCompanyLookup(options:Options){
       },
       saveMgbiArchive:async(org,nip,model,pages,count,at,requestId)=>{
         scope(org,nip);if(requestId!==selection.requestId)return refuse()
+        inventory=undefined
         return store.archive(selection,model,pages,count,at)
       },
-      saveFinancialDocuments:async(org,nip,pages)=>{scope(org,nip);return store.prepareDocuments(selection,pages)},
+      saveFinancialDocuments:async(org,nip,pages)=>{scope(org,nip);inventory=undefined;return store.prepareDocuments(selection,pages)},
       ...(options.financialInventoryBoundaryDigest?{prepareFinancialInventory:async(org:string,nip:string,pages:unknown[],count:number,at:string,allowedKrs:readonly string[])=>{
         scope(org,nip);if(inventory)return refuse()
         inventory=await store.financialInventory(selection,pages,count,at,allowedKrs)
@@ -125,7 +126,7 @@ export function createSrmNativeCompanyLookup(options:Options){
         }})
         // A changed MSR projection has its own committed receipt and current
         // prepared documents. It cannot reuse the pre-enrichment projection.
-        if(prepared&&(projectionChanged||result.msrChanged))inventory={...prepared,documents:await store.preparedDocuments(selection)}
+        if(prepared&&inventory===prepared&&(projectionChanged||result.msrChanged))inventory={...prepared,documents:await store.preparedDocuments(selection)}
         return result
       },
       persistSection:async(org,actual,section,envelope,errorCode,facts,correlation,sourceData,method)=>{
