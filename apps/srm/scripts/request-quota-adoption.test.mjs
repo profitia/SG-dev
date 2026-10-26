@@ -20,7 +20,8 @@ test('SRM explicitly adopts SQL027 and preserves all historical contracts, count
   assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),digest,path)
  }
  for(const[path,digest]of Object.entries(a.applicationSourceDigests)){
-  const repair=receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateTransportParentRepair:receipt.pilot2PrivateKysContinuityRepair;
+  const repair=receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateTransportParentRepair
+   :receipt.pilot2PrivateKysContinuityRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateKysContinuityRepair:receipt.pilot2ProviderRoutingAdoption;
   const bytes=repair?.applicationSourceDigests[path]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+path]):fs.readFileSync(new URL('../'+path,import.meta.url));
   assert.equal(hash(bytes),digest,path)
  }
@@ -33,7 +34,7 @@ test('private transport parent repair preserves the complete accepted quota rece
  assert.equal(hash(prior),repair.previousReceiptDigest);
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
  for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
-  const latest=receipt.pilot2PrivateKysContinuityRepair;
+  const latest=receipt.pilot2PrivateKysContinuityRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateKysContinuityRepair:receipt.pilot2ProviderRoutingAdoption;
   const bytes=latest?.applicationSourceDigests[path]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+path]):fs.readFileSync(new URL('../'+path,import.meta.url));
   assert.equal(hash(bytes),digest,path);
  }
@@ -54,6 +55,22 @@ test('private KYS validity uses the existing current-read evidence without addin
  const repair=receipt.pilot2PrivateKysValidityRepair,prior=execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),repair.previousReceiptDigest);
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
- for(const[path,digest]of Object.entries(repair.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+path,import.meta.url))),digest,path);
+ for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
+  const next=receipt.pilot2ProviderRoutingAdoption;
+  const bytes=next?.applicationSourceDigests[path]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+path]):fs.readFileSync(new URL('../'+path,import.meta.url));
+  assert.equal(hash(bytes),digest,path);
+ }
  assert.equal(repair.companyAdmissionAuthorizesKys,false);assert.equal(repair.extendsPrivateRetention,false);assert.equal(repair.humanEntitlementsChanged,false);
+});
+test('PILOT2 provider selection preserves accepted E1 receipts, original provider engines and seven-day source freshness',()=>{
+ const adoption=receipt.pilot2ProviderRoutingAdoption,prior=execFileSync('git',['show',adoption.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(prior),adoption.previousReceiptDigest);
+ for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
+ for(const[file,digest]of Object.entries(adoption.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file);
+ assert.equal(adoption.taskId,'SRM-PILOT2-PROVIDER-SWITCH-20261026');
+ for(const field of['sharedContractChanged','schemaChanged','humanEntitlementsChanged','sourceFreshnessRenewedBySwitch','kysAuthorizationChanged'])assert.equal(adoption[field],false,field);
+ const target=JSON.parse(fs.readFileSync(new URL('../deployment/pilot2-human-targets.json',import.meta.url)));
+ assert.equal(target.providerRouting.configurationKey,'SRM_PILOT2_REGISTRY_PROVIDER');
+ assert.deepEqual(target.providerRouting.allowedValues,['MGBI','KRS']);assert.equal(target.providerRouting.defaultWhenUnset,'KRS');
+ assert.equal(target.providerRouting.selectionAuthority,'SERVER_CONFIGURATION_ONLY');
 });

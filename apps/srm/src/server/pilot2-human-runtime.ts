@@ -28,6 +28,7 @@ export type Pilot2PrivateProjection=Readonly<{
  output:(value:unknown,context:OperationContext)=>Promise<Response>
 }>
 export type Pilot2HumanOptions=Readonly<{config:Pilot2Configuration;human:Human;work:ReportPreparationOptions;catalog:pg.Pool;
+ registryProvider?:'KRS'|'MGBI';
  privateProjection?:Pilot2PrivateProjection;
  cacheMiss?:Readonly<{search:(request:Request,nip:string)=>Promise<Response>;report:(request:Request,input:ReportSelection)=>Promise<Response>}>}>
 const deny=():never=>{throw new OperationDenied('ACCESS_BASIS_INVALID')}
@@ -130,6 +131,7 @@ export function getPilot2HumanRuntime(env:Env=process.env){
  * authorization implementation is introduced by this consumer. */
 export function createPilot2HumanRuntime(options:Pilot2HumanOptions){
  const {config,human,work,catalog}=options
+ if(options.registryProvider!==undefined&&!['KRS','MGBI'].includes(options.registryProvider))return deny()
  if(config.provider!=='clerk'||!work.reportAdmission||work.privateAcquisition
   ||human.application.operations.join(',')!=='supplier.report.refresh'
   ||work.job.targetOperation!=='supplier.report.refresh'||work.application.environment!=='development'
@@ -171,8 +173,12 @@ export function createPilot2HumanRuntime(options:Pilot2HumanOptions){
    readResources:async({actor,scope,request:bound})=>{
     if(actor.kind!=='HUMAN'||scope.userId!==actor.actorId||scope.organisationId!==proof.organisationId
      ||bound.operation!==operation||bound.resourceId!=='supplier-report:COMPANY:'+nip)return deny()
-    const client=await measureSupplierStage('POOL_WAIT',()=>catalog.connect())
-    try{selected=await readPilot2PublicCard(client,nip)}finally{client.release()}
+    // This cloned public reader contains accepted KRS cards only. MGBI mode
+    // retains the same Root admission, then uses the native MGBI cache/engine.
+    if(options.registryProvider!=='MGBI'){
+     const client=await measureSupplierStage('POOL_WAIT',()=>catalog.connect())
+     try{selected=await readPilot2PublicCard(client,nip)}finally{client.release()}
+    }
     const shared={id:bound.resourceId,type:'supplier_report',dataClass:'SHARED_KNOWLEDGE',environment:'development',
      ownerOrganisationId:null,ownerUserId:null,version:selected?.version??'pilot2-cache-miss-v1',
      projectionVersion:report?'srm-shared-financial-dto-v1':'srm-pilot2-company-card-v1',approvedSharedProjection:true}as const

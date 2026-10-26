@@ -38,6 +38,17 @@
     "privateJdgKysExports": "SEPARATE_CURRENT_AUTHORITY_REQUIRED",
     "paidAcquisitionWhileTyping": false
   },
+  "providerRouting": {
+    "configurationKey": "SRM_PILOT2_REGISTRY_PROVIDER",
+    "allowedValues": ["MGBI", "KRS"],
+    "defaultWhenUnset": "KRS",
+    "selectionAuthority": "SERVER_CONFIGURATION_ONLY",
+    "mgbi": "EXISTING_NATIVE_MGBI_GENERAL_AND_FINANCIAL_WITH_ORIGINAL_CACHE",
+    "krs": "EXISTING_GUS_KRS_GENERAL_AND_RECONCILED_MGBI_FINANCIAL",
+    "kys": "EXISTING_PRIVATE_VERCLY_FLOW",
+    "providerSwitchRenewsSourceFreshness": false,
+    "providerSwitchChangesHumanAccess": false
+  },
   "registryLkg": {
     "sourceSha": "0c3925d9aae1240a60f7c74727af6fba2724a6d1",
     "retainedArtifactDeployId": "dep-dbeqar3rjlhs738hm6n0",

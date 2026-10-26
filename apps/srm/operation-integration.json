@@ -4858,5 +4858,29 @@
       "src/server/peer-read-boundary.test.ts": "2c0c921c25bbf6db3a6815a4794cf9a54d9820f38605fc3fadce69f165f28276",
       "scripts/request-quota-adoption.test.mjs": "0a49f75a2d2fe499c8f76bab161fb6356e44899b3980b92aebc9781747a22485"
     }
+  },
+  "pilot2ProviderRoutingAdoption": {
+    "taskId": "SRM-PILOT2-PROVIDER-SWITCH-20261026",
+    "previousReceiptSourceSha": "b62f113e96a8fb9d80d13b79785ab09479fc92c9",
+    "previousReceiptDigest": "704093c960f8c2722514ad360ac81de922b7629f0887035352aeacba6b01b0d4",
+    "sharedContractChanged": false,
+    "schemaChanged": false,
+    "humanEntitlementsChanged": false,
+    "sourceFreshnessRenewedBySwitch": false,
+    "kysAuthorizationChanged": false,
+    "selectionAuthority": "SERVER_CONFIGURATION_ONLY",
+    "financialProvider": "EXISTING_MGBI",
+    "kysProvider": "EXISTING_VERCLY",
+    "applicationSourceDigests": {
+      "deployment/pilot2-human-targets.json": "039c31baaab9455af3e6ee046f93be57cda364b1c828e84121068d228e975d4e",
+      "src/server/pilot2-cold-runtime.ts": "9ce1e5278e2972170bda45dd9261093cc55fa49001f4f4af5167885eec73c5b4",
+      "src/server/pilot2-cold-runtime.test.ts": "685ff7a6d4e2922faefeb02dfdbc461c02076aae82dddc52d519ec47ebee58ad",
+      "src/server/pilot2-human-runtime.ts": "0508c15b0af5b6c659d5e31a45952dd68aeb63b074f7ffa8ee2c50fbaf9f53fb",
+      "src/server/krs-nip-runtime.ts": "b2d476b16780f29c6f9ac67648124bcf77548027565ebc34f5abbd7b121e5871",
+      "src/server/krs-nip-runtime.test.ts": "a4f599aee407f0e500178e99b2d37b39d18de33f7d2b26b8b039b6c3f518d95b",
+      "scripts/pilot2-human.integration.test.mjs": "ac5e3e66d4177c1168b66b23e3693ea6cb538035ca017eb8936015454a573b50",
+      "scripts/request-quota-adoption.test.mjs": "5bcb265a66175a60825fbb39eb42e6dc7dda9a32c19d008335d5b2c8888d65ce",
+      "src/server/peer-read-boundary.test.ts": "5cbc83d39b8d06f8e5fe902c7efd1395935e60fedfac9193f65a713500c6df2a"
+    }
   }
 }

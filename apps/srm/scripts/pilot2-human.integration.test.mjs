@@ -121,9 +121,32 @@ test('PILOT2 reuses actual Root and form Work: no Clerk or provider after click;
  await assert.rejects(runtime.search(request('search','fr1.'+randomUUID()+'.'+'0'.repeat(64)),f.NIP),isOperationDenied)
  await assert.rejects(runtime.search(new Request('http://localhost:3400/api/xray/search',{method:'POST',headers:{origin:'http://localhost:3400'}}),f.NIP),isOperationDenied)
  await assert.rejects(runtime.search(request('search?organisationId='+f.B),f.NIP),isOperationDenied)
+ // A provider switch cannot return a fresh KRS card from the cloned public
+ // cache while labelling the operation MGBI. Root and the NIP admission remain
+ // active before the original native MGBI composition receives control.
+ const beforeMgbiReads=reads;let mgbiSearches=0,mgbiReports=0
+ const mgbiRuntime=createPilot2HumanRuntime({config:{...human,provider:'clerk',databaseUrl:'synthetic-not-used'},
+  human,work,catalog,registryProvider:'MGBI',cacheMiss:{
+   async search(_request,nip){
+    assert.equal(nip,f.NIP);assert.equal(reportAdmissionEvidence(currentReportAdmission()).nip,f.NIP)
+    mgbiSearches++;return Response.json({provider:'MGBI',nip})
+   },async report(_request,selection){
+    assert.equal(selection.nip,f.NIP);assert.equal(reportAdmissionEvidence(currentReportAdmission()).nip,f.NIP)
+    mgbiReports++;return Response.json({provider:'MGBI',nip:selection.nip})
+   }}})
+ const mgbiResponse=await mgbiRuntime.search(request('search'),f.NIP)
+ assert.equal(mgbiResponse.status,200);assert.equal((await mgbiResponse.json()).provider,'MGBI')
+ assert.equal((await mgbiRuntime.report(request('report-data'),{nip:f.NIP,entityType:'COMPANY'})).status,200)
+ assert.equal(reads,beforeMgbiReads,'MGBI mode must not read or expose a stored KRS public card')
+ assert.equal(mgbiSearches,1);assert.equal(mgbiReports,1);assert.equal(clerk,0)
+ await assert.rejects(mgbiRuntime.search(request('search'),f.OTHER_NIP),isOperationDenied)
+ await assert.rejects(mgbiRuntime.search(request('search','fr1.'+randomUUID()+'.'+'0'.repeat(64)),f.NIP),isOperationDenied)
+ assert.equal(mgbiSearches,1)
  const beforeDisable=reads
  await f.controlled(()=>f.owner.query('UPDATE profitia_report_admission.receivers SET enabled=false WHERE foreground_role=$1',[f.FOREGROUND]))
  await assert.rejects(runtime.search(request('search'),f.NIP),isOperationDenied)
+ await assert.rejects(mgbiRuntime.search(request('search'),f.NIP),isOperationDenied)
+ assert.equal(mgbiSearches,1,'A disabled receiver must not dispatch the selected MGBI operation')
  assert.equal(reads,beforeDisable,'Disabled technical receiver cannot read the public cache')
  assert.equal(clerk,0);assert.deepEqual(await f.sourceCounts(),sourceBefore)
 }))
