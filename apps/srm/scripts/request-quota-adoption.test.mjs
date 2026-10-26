@@ -71,7 +71,7 @@ test('PILOT2 provider selection preserves accepted E1 receipts, original provide
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
  for(const[file,digest]of Object.entries(adoption.applicationSourceDigests)){
   const next=receipt.pilot2FinancialSinglePassAdoption;
-  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):fs.readFileSync(new URL('../'+file,import.meta.url));
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):beforeNative(file);
   assert.equal(hash(bytes),digest,file);
  }
  assert.equal(adoption.taskId,'SRM-PILOT2-PROVIDER-SWITCH-20261026');
@@ -86,7 +86,7 @@ test('PILOT2 single-pass Financial preserves historical contracts and changes no
  const adoption=receipt.pilot2FinancialSinglePassAdoption,prior=execFileSync('git',['show',adoption.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),adoption.previousReceiptDigest);
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
- for(const[file,digest]of Object.entries(adoption.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file);
+ for(const[file,digest]of Object.entries(adoption.applicationSourceDigests))assert.equal(hash(beforeNative(file)),digest,file);
  assert.equal(adoption.executionPolicy,'COMPLETE_IN_REQUEST');assert.equal(adoption.maximumNewDownloadsPerPass,1);
  for(const flag of['sharedContractChanged','schemaChanged','humanEntitlementsChanged','licensedFileSafeguardsChanged','defaultConsumerPolicyChanged','sourceFreshnessRenewedOnRead'])assert.equal(adoption[flag],false,flag);
  const pilot=fs.readFileSync(new URL('../src/server/pilot2-cold-runtime.ts',import.meta.url),'utf8');

@@ -4921,6 +4921,8 @@
     "sourceDigests": {
       "package.json": "6432f3b7f64b8634a9b9364cef06b44ebf9d73ee349ad4a7b21c332af622868a",
       "package-lock.json": "75cb7a8962c1360d53e29f5c2287ae4a918e0a9aca61b4aea33ee0de4a0c4f85",
+      "test/private-operation-host.test.mjs": "76cfc017a64940c6f39159d0ef6ce14df97c605354a650306af7982195935d80",
+      "test/request-work.test.mjs": "a23c5ec092293070e278cd892ab2a3721a04ea7e91f199f012e23dcf85fe1f1d",
       "src/access-store.mjs": "c38de2c51b50d72ddb0891e2528435770a9b74f40e844b899d1c36385c72148c",
       "src/delegated-job.mjs": "c40206b03e24ee1d2b719fda4bd37f573f6e568dd51f97fb6c9b2a3cdbde5772",
       "src/platform-ingestion.mjs": "99c5cb567be456cd07ef6c5671f5191da1d1fddff3e85d9d8bc551853034c4db",
@@ -4962,7 +4964,7 @@
       "scripts/native-execution-adoption.test.mjs": "68830aac0386d630c964e151f4a620bf6e31f415035811f5ed2c1d4d9d763e1e",
       "scripts/operation-context.test.mjs": "9c86e3602bb68e274ee0c9be49c39139d3f8ab7859bccf89b1df4312eda752e6",
       "scripts/pilot2-human-overlay.mjs": "4577126458f345d3826885cd32a8e821e52b8ab2ca003a702d334bebd75a5713",
-      "scripts/request-quota-adoption.test.mjs": "ed74ddd6b1b86145d6ed120443b05466ebef1f9070e331a7f69419f6e6826bac",
+      "scripts/request-quota-adoption.test.mjs": "17932f536b9fcb4ae8b5f558e501cd0c98ae17903be9483c47020bd5b338734a",
       "scripts/supplier-delegated-business.integration.test.mjs": "87211d6176971ce24233adf788af095a22cb88028fbfa1edf6c006df83cc8559",
       "src/server/krs-native-financial.test.ts": "eb279f94b33dca514721d57154a0b7b9056634a8a9c84a121b2679849526d45a",
       "src/server/krs-native-financial.ts": "830e11e16ed77d95ac46e545ce98fab4a9c003acb7272883ff1748e2f120b9f4",
