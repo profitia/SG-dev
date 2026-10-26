@@ -4909,7 +4909,7 @@
   "nativeSqlRoundtripAdoption": {
     "taskId": "SRM-PILOT2-NATIVE-EXECUTION-20261026",
     "platformVersion": "1.29.1",
-    "previousReceiptSourceSha": "5a5fdd74075141508e0f744c2699e1eafbbf3454",
+    "previousReceiptSourceSha": "32fce23eff7033e84d19ff74dc719c93eff34097",
     "previousReceiptDigest": "55f60529c025a8f3fc463a1d8f27f0417f1a3c283414f4fc4031ed3524e832f8",
     "producer": {
       "projectKey": "ARCHITECTURE",
@@ -4964,7 +4964,7 @@
       "scripts/native-execution-adoption.test.mjs": "68830aac0386d630c964e151f4a620bf6e31f415035811f5ed2c1d4d9d763e1e",
       "scripts/operation-context.test.mjs": "9c86e3602bb68e274ee0c9be49c39139d3f8ab7859bccf89b1df4312eda752e6",
       "scripts/pilot2-human-overlay.mjs": "4577126458f345d3826885cd32a8e821e52b8ab2ca003a702d334bebd75a5713",
-      "scripts/request-quota-adoption.test.mjs": "17932f536b9fcb4ae8b5f558e501cd0c98ae17903be9483c47020bd5b338734a",
+      "scripts/request-quota-adoption.test.mjs": "6cde1cdd1a725e0ab80914f605a6bb38485a6bdbedbff25dfc6ae628e88544e7",
       "scripts/supplier-delegated-business.integration.test.mjs": "87211d6176971ce24233adf788af095a22cb88028fbfa1edf6c006df83cc8559",
       "src/server/krs-native-financial.test.ts": "eb279f94b33dca514721d57154a0b7b9056634a8a9c84a121b2679849526d45a",
       "src/server/krs-native-financial.ts": "830e11e16ed77d95ac46e545ce98fab4a9c003acb7272883ff1748e2f120b9f4",

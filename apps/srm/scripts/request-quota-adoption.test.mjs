@@ -1,4 +1,5 @@
 import test from 'node:test'
+import {posix} from 'node:path'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
@@ -8,7 +9,7 @@ import {REQUEST_QUOTA_ROOT_CONTRACT,operationSourceDigest} from '@profitia/platf
 import {REQUEST_QUOTA_HOST_CONTRACT,privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.requestQuotaSourceCompatibility,hash=x=>createHash('sha256').update(x).digest('hex')
 const beforeNative=path=>receipt.nativeSqlRoundtripAdoption.applicationSourceDigests[path]
- ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':apps/srm/'+path])
+ ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
  :fs.readFileSync(new URL('../'+path,import.meta.url))
 test('SRM explicitly adopts SQL027 and preserves all historical contracts, counts and human grants',async()=>{
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
@@ -25,7 +26,7 @@ test('SRM explicitly adopts SQL027 and preserves all historical contracts, count
  for(const[path,digest]of Object.entries(a.applicationSourceDigests)){
   const repair=receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateTransportParentRepair
    :receipt.pilot2PrivateKysContinuityRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateKysContinuityRepair:receipt.pilot2ProviderRoutingAdoption;
-  const bytes=repair?.applicationSourceDigests[path]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+path]):beforeNative(path);
+  const bytes=repair?.applicationSourceDigests[path]?execFileSync('git',['show',repair.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)]):beforeNative(path);
   assert.equal(hash(bytes),digest,path)
  }
  for(const flag of['runtimeDeployment','sql027Installed','policyCountersReset','humanGrantsChanged'])assert.equal(a[flag],false,flag)
@@ -38,7 +39,7 @@ test('private transport parent repair preserves the complete accepted quota rece
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
  for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
   const latest=receipt.pilot2PrivateKysContinuityRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateKysContinuityRepair:receipt.pilot2ProviderRoutingAdoption;
-  const bytes=latest?.applicationSourceDigests[path]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+path]):beforeNative(path);
+  const bytes=latest?.applicationSourceDigests[path]?execFileSync('git',['show',latest.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)]):beforeNative(path);
   assert.equal(hash(bytes),digest,path);
  }
  assert.equal(repair.nativePublicParentRequired,true);assert.equal(repair.requestQuotaDefinitionChanged,false);assert.equal(repair.humanEntitlementsChanged,false);assert.equal(repair.runtimeBehaviorChanged,false);
@@ -49,7 +50,7 @@ test('private KYS receiver correction retains all accepted contracts and pins cu
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
  for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
   const next=receipt.pilot2PrivateKysValidityRepair;
-  const bytes=next?.applicationSourceDigests[path]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+path]):beforeNative(path);
+  const bytes=next?.applicationSourceDigests[path]?execFileSync('git',['show',next.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)]):beforeNative(path);
   assert.equal(hash(bytes),digest,path);
  }
  assert.equal(repair.privateKysRetryMaximum,1);assert.equal(repair.reconciledFinancialReplaced,false);assert.equal(repair.humanEntitlementsChanged,false);
@@ -60,7 +61,7 @@ test('private KYS validity uses the existing current-read evidence without addin
  for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
  for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
   const next=receipt.pilot2ProviderRoutingAdoption;
-  const bytes=next?.applicationSourceDigests[path]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+path]):beforeNative(path);
+  const bytes=next?.applicationSourceDigests[path]?execFileSync('git',['show',next.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)]):beforeNative(path);
   assert.equal(hash(bytes),digest,path);
  }
  assert.equal(repair.companyAdmissionAuthorizesKys,false);assert.equal(repair.extendsPrivateRetention,false);assert.equal(repair.humanEntitlementsChanged,false);
