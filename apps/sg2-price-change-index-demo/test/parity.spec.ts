@@ -90,3 +90,19 @@ for(const scenario of cases)test(`paired source behavior and inner styles ${scen
  const original=await measure(source),received=await measure(actual);const expected=structuredClone(original);if(scenario.version==='v3')for(const [i,row]of expected.entries()){if(row.className.split(' ').includes('v3-primary')){row.fontSize='12px';row.lineHeight='16.2px';row.minHeight='32px';}}
  await fs.writeFile(info.outputPath('source-and-actual.json'),JSON.stringify({scenario:scenario.name,revision,original,received,expected},null,2));await source.screenshot({path:info.outputPath('magicpath.png'),fullPage:true});await actual.screenshot({path:info.outputPath('frontend.png'),fullPage:true});expect(received).toEqual(expected);await context.close();
 });
+for(const version of ['v1','v2'] as const)for(const theme of ['light','dark'])test(`paired source modal background scroll ${version} ${theme}`,async({browser},info)=>{
+ test.skip(!compareSource,'Explicit immutable-source comparison.');
+ const [component,revision,rootSelector]=sourcePins[version],context=await browser.newContext({viewport:{width:1440,height:1024}}),source=await context.newPage(),actual=await context.newPage();
+ await source.goto(`https://api.magicpath.ai/components/${component}/revision/${revision}`);await actual.goto(actualOrigin+'/'+version+'?theme='+theme);await ready(source);await ready(actual);
+ if(version==='v2'){for(const page of [source,actual])await page.getByRole('button',{name:'03 Monitorowanie ceny',exact:true}).click();}
+ const overflow=await actual.locator('body').evaluate(e=>getComputedStyle(e).overflow);
+ for(const page of [source,actual])await page.getByRole('button',{name:version==='v1'?'Metodologia':'Jak to liczymy?',exact:true}).click();
+ const measure=(page:Page)=>page.locator(rootSelector).evaluate(e=>({y:e.getBoundingClientRect().y,windowScroll:window.scrollY,bodyScroll:document.body.scrollTop}));
+ const originalBefore=await measure(source),actualBefore=await measure(actual);
+ for(const page of [source,actual]){await page.mouse.move(5,800);await page.mouse.wheel(0,800);await page.waitForTimeout(150);}
+ const originalAfter=await measure(source),actualAfter=await measure(actual);
+ await fs.writeFile(info.outputPath('source-and-actual-scroll.json'),JSON.stringify({revision,theme,originalBefore,originalAfter,actualBefore,actualAfter},null,2));
+ await source.screenshot({path:info.outputPath('magicpath.png'),fullPage:true});await actual.screenshot({path:info.outputPath('frontend.png'),fullPage:true});
+ expect(originalAfter.y-originalBefore.y).toBe(0);expect(actualAfter.y-actualBefore.y).toBe(originalAfter.y-originalBefore.y);
+ await actual.keyboard.press('Escape');await expect(actual.getByRole('dialog')).toHaveCount(0);await expect(actual.locator('body')).toHaveCSS('overflow',overflow);await context.close();
+});

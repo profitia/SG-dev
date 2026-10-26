@@ -25417,6 +25417,27 @@
         "browserTests": 155,
         "result": "SUCCESS"
       }
+    },
+    "initialLiveRelease": {
+      "url": "https://price-change-index.onrender.com",
+      "serviceId": "srv-dbfnd3jrjlhs73epihvg",
+      "deployId": "dep-dbfnd4jrjlhs73epimn0",
+      "sha": "d792044040703994968c164da5cae74982c3d60d",
+      "browserChecks": 155,
+      "suiteResult": "PASS",
+      "acceptance": "NOT_ACCEPTED: additional direct source measurement found modal backdrop scroll divergence",
+      "targetedScroll": {
+        "source": {
+          "before": 0,
+          "after": 0
+        },
+        "render": {
+          "before": 0,
+          "after": 753
+        },
+        "unit": "window scroll px; source body remained0",
+        "sourceRevision": "465437640712400896"
+      }
     }
   },
   "fontAssets": [
@@ -27440,6 +27461,16 @@
       "source": "pci1/pci2 horizontal side-menu CSS",
       "canon": "SRM-C69",
       "change": "Hide only the position caption, preserving the CanonDropdown span so all four canon edges stay selectable."
+    }
+  ],
+  "resolvedImplementationDefects": [
+    {
+      "id": "C27-backdrop-scroll",
+      "status": "LOCAL_FIX_VERIFIED_RENDER_PENDING",
+      "rootCause": "The contained module locked its own surface while the demo page scrolled outside that surface.",
+      "change": "Optional typed onScrollLockChange event; native C27 instance locks and releases; the demo host owns and restores its outer scroll policy.",
+      "localEvidence": "Four paired immutable-source modal backdrop tests passed for versions1/2 and both themes.",
+      "sourceChanged": false
     }
   ]
 }

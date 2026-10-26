@@ -17,14 +17,13 @@ export function CanonHistoryDialog({
   actions?: React.ReactNode;
   compact?: boolean;
 }) {
- const document=usePresentationScope().document;
+ const {document,acquireScrollLock}=usePresentationScope();
 
   const dialog = useRef<HTMLDialogElement>(null),
     id = useId();
   useLayoutEffect(() => {
     const previous = document.activeElement as HTMLElement | null,
-      overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+      releaseScrollLock = acquireScrollLock();
     let clipped: {
       top: number;
       height: number;
@@ -59,11 +58,11 @@ export function CanonHistoryDialog({
     window.visualViewport?.addEventListener('scroll', center);
     return () => {
       observer.disconnect();
-      document.body.style.overflow = overflow;
       window.removeEventListener('resize', center);
       window.visualViewport?.removeEventListener('resize', center);
       window.visualViewport?.removeEventListener('scroll', center);
       dialog.current?.close();
+      releaseScrollLock();
       previous?.focus({
         preventScroll: true
       });

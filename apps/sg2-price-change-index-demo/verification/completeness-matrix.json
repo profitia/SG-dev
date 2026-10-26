@@ -192783,20 +192783,27 @@
       "element": "Native close before focus return",
       "parameters": [],
       "behaviors": [
-        "Native close before focus return"
+        "Native close before focus return",
+        "Native modal background scroll containment through an explicit host callback"
       ],
       "canonicalReferences": [
         "SRM-C27"
       ],
       "implementationFile": "packages/sg2-price-change-index-ui/src/revisions/pci1/CanonHistoryDialog.tsx",
       "testFile": "apps/sg2-price-change-index-demo/test/flows.spec.ts",
-      "status": "WDROŻONE, NIEZWERYFIKOWANE",
+      "status": "ROZBIEŻNOŚĆ",
       "result": {
-        "local": "PASS",
-        "render": "NOT_EXECUTED"
+        "local": "Four source-paired modal scroll cases PASS; focus-return flows PASS",
+        "render": "Initial155 checks PASS; targeted backdrop wheel found753px movement versus source0; corrective release pending"
       },
       "evidence": [
-        "verification/source-manifest.json"
+        "verification/source-manifest.json",
+        "test/parity.spec.ts: paired source modal background scroll"
+      ],
+      "implementationFiles": [
+        "packages/sg2-price-change-index-ui/src/revisions/pci1/CanonHistoryDialog.tsx",
+        "packages/sg2-price-change-index-ui/src/PresentationScope.tsx",
+        "apps/sg2-price-change-index-demo/src/main.tsx"
       ]
     },
     {
