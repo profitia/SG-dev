@@ -5059,7 +5059,7 @@
       "scripts/pilot2-instrumentation.test.mjs": "f4c9ce4610b91a65c1862a744746d6afeb893fc9605fa4b1ffd06ffb78e34000",
       "scripts/pilot2-registry-smoke.mjs": "f79d7798d8eb9f806def00d1d160ad92493496b6faf9522f238ebf20579e92f4",
       "scripts/private-host.integration.test.mjs": "d5f0e79f6c723003f70069b23869c417436815421a305e49f377c8dff272ffdc",
-      "scripts/request-quota-adoption.test.mjs": "dce8e8efc821d2f8982a4429d97ab47df2db7e8c760beda692e1ec9f806992a1",
+      "scripts/request-quota-adoption.test.mjs": "1e9c107ca64b809bc04d86b87eb72b96c0ca30fc5c1e2adb884dffc7e39c005a",
       "scripts/supplier-location-admission.integration.test.mjs": "765423d16ea3f8f9094dd6598c157f5e1c047b581352d9a9a4a05dbe8de41931",
       "src/modules/xray/krs-session-transport.test.ts": "da9161517e123a4cfe579c9039c4cffe00a6f8944688a21d3edf85d6c01bd128",
       "src/modules/xray/krs-session-transport.ts": "f12b8b9e5a2514c8cd86428774622243893cf348f14f615288322e37ccc1d9d7",

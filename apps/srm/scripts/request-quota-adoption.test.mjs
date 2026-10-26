@@ -8,10 +8,13 @@ import {requestQuotaSchemaDigest} from '@profitia/platform-contracts/request-led
 import {REQUEST_QUOTA_ROOT_CONTRACT,operationSourceDigest} from '@profitia/platform-contracts/operation-context'
 import {REQUEST_QUOTA_HOST_CONTRACT,privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.requestQuotaSourceCompatibility,hash=x=>createHash('sha256').update(x).digest('hex')
-const beforeNative=path=>receipt.diagnosticTelemetryAdoption.applicationSourceDigests[path]
- ?execFileSync('git',['show',receipt.diagnosticTelemetryAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
- :receipt.nativeSqlRoundtripAdoption.applicationSourceDigests[path]
+// These assertions verify pre-native receipts. If both later adoptions changed
+// a path, use the earlier native predecessor; current diagnostic bytes are
+// independently pinned by diagnostic-telemetry-adoption.test.mjs.
+const beforeNative=path=>receipt.nativeSqlRoundtripAdoption.applicationSourceDigests[path]
  ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
+ :receipt.diagnosticTelemetryAdoption.applicationSourceDigests[path]
+ ?execFileSync('git',['show',receipt.diagnosticTelemetryAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
  :fs.readFileSync(new URL('../'+path,import.meta.url))
 test('SRM explicitly adopts SQL027 and preserves all historical contracts, counts and human grants',async()=>{
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
