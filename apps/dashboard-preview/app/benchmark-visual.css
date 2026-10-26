@@ -89,6 +89,9 @@
 .bf-chart-workspace.bf-chart-workspace .verification-quality-panel{margin:0}
 .bf-chart-workspace .control-horizon-group .control-mode-buttons{margin:0}
 .bf-chart-workspace .verification-quality-metric strong{line-height:1.45;margin:0}
+.bf-chart-workspace.bf-chart-workspace .verification-quality-metric>span{font-size:10px;line-height:1.4}
+.bf-chart-workspace.bf-chart-workspace .verification-confidence-metric>strong>span{font-size:12px;line-height:1.45}
+.bf-chart-workspace.bf-chart-workspace .verification-confidence-dots>span{display:block;width:4px;height:4px;border-radius:50%;background:currentColor;font-size:0;line-height:0}
 .bf-chart-workspace .verification-confidence-metric strong{font-size:12px!important;font-weight:500!important;gap:7px}
 .bf-chart-workspace .verification-confidence-dots{gap:3px;font-size:4px}
 .bf-chart-workspace .bf-help-control{padding-top:11px}
