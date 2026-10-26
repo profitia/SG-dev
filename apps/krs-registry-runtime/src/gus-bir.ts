@@ -1,3 +1,4 @@
+import {diagnosticAsync,diagnosticSync} from '@profitia/platform-contracts/diagnostic-phase'
 import {SaxesParser} from 'saxes'
 import {nip,regon,krs,sha256} from '@profitia/krs-registry-contracts'
 import {externalCallEvidence,createExternalCallHost,nativeExternalTransportSchemaDigest} from '@profitia/platform-contracts/external-call'
@@ -59,6 +60,7 @@ function fields(xml:string):Record<string,string[]>{
  return result
 }
 export function gusResult(bytes:Uint8Array,action:GusAction):string{
+ return diagnosticSync('SOURCE_DECODE',()=>{
  if(bytes.byteLength>cap)return error('GUS_RESPONSE_TOO_LARGE')
  let text:string;try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes)}catch{return error('GUS_ENCODING_INVALID')}
  // BIR replies may be MTOM multipart. There are no binary data attachments in
@@ -70,6 +72,8 @@ export function gusResult(bytes:Uint8Array,action:GusAction):string{
  if(values.Fault)return error('GUS_SOAP_FAULT')
  const found=values[action+'Result'];if(found?.length!==1)return error('GUS_RESULT_INVALID')
  return found[0]!
+
+ })
 }
 function one(values:Record<string,string[]>,name:string):string|null{
  const v=values[name];if(!v?.length)return null
@@ -77,6 +81,7 @@ function one(values:Record<string,string[]>,name:string):string|null{
  return v[0]||null
 }
 export function gusSearchRecord(xml:string,requestedNip:string):{regon:string}|GusMapping{
+ return diagnosticSync('SOURCE_PARSE',()=>{
  if(!xml.trim())return {status:'NO_DATA',reason:'GUS_NO_RECORD'}
  const v=fields(xml),n=one(v,'Nip'),r=one(v,'Regon'),type=one(v,'Typ')
  if(!n&&!r)return {status:'NO_DATA',reason:'GUS_NO_RECORD'}
@@ -87,8 +92,11 @@ export function gusSearchRecord(xml:string,requestedNip:string):{regon:string}|G
  // Legal unit report, not an arbitrarily truncated local-unit REGON14.
  if(r.length!==9)return {status:'NO_KRS',reason:'GUS_LOCAL_UNIT_UNSUPPORTED'}
  return {regon:r}
+
+ })
 }
 export function gusFullRecord(xml:string,requestedNip:string,requestedRegon:string,now=Date.now()):GusMapping{
+ return diagnosticSync('SOURCE_PARSE',()=>{
  if(!xml.trim())return {status:'NO_DATA',reason:'GUS_REPORT_EMPTY'}
  const v=fields(xml),n=one(v,'praw_nip'),r=one(v,'praw_regon9'),symbol=one(v,'praw_rodzajRejestruEwidencji_Symbol'),name=one(v,'praw_rodzajRejestruEwidencji_Nazwa'),number=one(v,'praw_numerWRejestrzeEwidencji')
  if(n!==requestedNip||r!==requestedRegon)return error('GUS_REPORT_IDENTITY_MISMATCH','IDENTITY')
@@ -97,10 +105,12 @@ export function gusFullRecord(xml:string,requestedNip:string,requestedRegon:stri
  const id=/^\d{1,10}$/.test(number)?number.padStart(10,'0'):number
  if(!krs(id))return error('GUS_KRS_INVALID','IDENTITY')
  return {status:'MATCH',nip:requestedNip,regon:requestedRegon,krs:id,register:'P',registerSymbol:'138',checkedAt:new Date(now).toISOString()}
+
+ })
 }
 export function createGusMapper(options:{source:AdmittedSourcePort;now?:()=>number;readSid:()=>string|null;writeSid:(value:string|null)=>void}){
  const clock=options.now??Date.now
- async function invoke(action:GusAction,n:string,r:string|null,key:string,signal:AbortSignal){
+ async function invokeObserved(action:GusAction,n:string,r:string|null,key:string,signal:AbortSignal){
   signal.throwIfAborted()
   const result=await options.source.execute({command:{action,nip:n,regon:r,requestKey:key},intentKey:await sha256(key+':'+action)},{signal})
   const evidence=externalCallEvidence(result)
@@ -108,6 +118,8 @@ export function createGusMapper(options:{source:AdmittedSourcePort;now?:()=>numb
   if(result.status!==200)return error('GUS_HTTP_'+result.status)
   return gusResult(result.bytes,action)
  }
+ const phases={Zaloguj:'GUS_LOGIN',DaneSzukajPodmioty:'GUS_SEARCH',DanePobierzPelnyRaport:'GUS_REPORT',Wyloguj:'GUS_LOGOUT'}
+ const invoke:typeof invokeObserved=(action,...args)=>diagnosticAsync(phases[action],()=>invokeObserved(action,...args))
  let queue:Promise<unknown>=Promise.resolve()
  async function resolve(n:string,key:string,signal:AbortSignal):Promise<GusMapping>{
   signal.throwIfAborted()
@@ -139,7 +151,7 @@ export async function createAdmittedGusSource<T>(options:Omit<ExternalCallOption
  if(options.binding.origin!==GUS_ORIGIN||options.binding.transport!=='HTTPS')return error('GUS_SOURCE_ORIGIN_REFUSED','AUTHORITY')
  const {apiKey,readSid,permit,...hostOptions}=options
  const host=createExternalCallHost({...hostOptions,parseCommand:gusCommand,buildRequest:command=>gusRequest(command,apiKey,readSid()),
-  getHeaders:async(command,{signal})=>{await permit(signal);signal.throwIfAborted();const sid=readSid();if(command.action!=='Zaloguj'&&!sid)return error('GUS_SESSION_MISSING','AUTHORITY');return sid?{sid}:{}},
+  getHeaders:async(command,{signal})=>{await diagnosticAsync('GUS_PERMIT',()=>permit(signal));signal.throwIfAborted();const sid=readSid();if(command.action!=='Zaloguj'&&!sid)return error('GUS_SESSION_MISSING','AUTHORITY');return sid?{sid}:{}},
   nativeTransport:{schemaDigest:await nativeExternalTransportSchemaDigest(),credentialMode:'SERVER_HEADERS',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT',
    maximumResponseBytes:cap,redirectOrigins:[],pathRules:[{method:'POST',path:GUS_PATH,requestFormat:'SOAP'}]}})
  return Object.freeze({execute:host.execute})

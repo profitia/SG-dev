@@ -33,6 +33,7 @@ test('extension schema, declarations and source have explicit exact digests',asy
  const sql=fs.readFileSync(new URL(externalCallSchemaUrl));assert.equal(await externalCallSchemaDigest(),hash(sql))
  const expected=createHash('sha256').update(fs.readFileSync(new URL('../src/external-call.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/external-call.d.mts',import.meta.url))).update(hash(sql)).update(fs.readFileSync(new URL('../src/native-external-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/native-external-transport.d.mts',import.meta.url))).update(hash(fs.readFileSync(new URL('../migrations/access/012-native-external-transport.sql',import.meta.url))))
   .update(fs.readFileSync(new URL('../src/public-web-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/public-web-transport.d.mts',import.meta.url)))
-  .update(hash(fs.readFileSync(new URL('../migrations/access/018-public-web-transport.sql',import.meta.url)))).digest('hex')
+  .update(hash(fs.readFileSync(new URL('../migrations/access/018-public-web-transport.sql',import.meta.url))))
+  .update(createHash('sha256').update(fs.readFileSync(new URL('../src/diagnostic-phase.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/diagnostic-phase.d.mts',import.meta.url))).digest('hex')).digest('hex')
  assert.equal(await externalCallSourceDigest(),expected)
 })
