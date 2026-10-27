@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useId, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { SpendGuruLogo, PorrLogo } from './appshell-brand'
+import {AssistantWidget} from './assistant-widget'
 import './platform-appshell.css'
 
 type Props = {
@@ -38,7 +39,7 @@ const applications = [
 /** Presentation only. The host owns verified account data and sign-out. */
 export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false }: Props) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const inputId = useId(), en = locale === 'en'
+  const en = locale === 'en'
   useEffect(() => {
     try { setTheme(localStorage.getItem('sg2:appshell-theme:v1') === 'dark' ? 'dark' : 'light') } catch { /* Optional local appearance preference. */ }
   }, [])
@@ -48,7 +49,6 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
   }
   const addressed = salutation ? `, ${salutation}` : ''
   const userGreeting = en ? `Good morning${addressed}.` : `Dzień dobry${addressed}.`
-  const assistantGreeting = en ? `Hello${addressed}!` : `Cześć${addressed}!`
   return <div className="appshell srm-ui" data-theme={theme} style={{ colorScheme: theme }}>
     <a className="as-skip" href="#appshell-main">{en ? 'Skip to applications' : 'Przejdź do aplikacji'}</a>
     <header className="as-header"><div className="as-header-inner">
@@ -76,31 +76,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
           </article>)}
         </div></section>
         <section className="as-assistant" aria-label={en ? 'Your assistant' : 'Twój asystent'}>
-          <div className="srm-chat-slot"><div className="srm-chat-motion"><div className="srm-chat-window">
-            <button className="srm-chat-collapse" type="button" disabled aria-label={en ? 'Hide assistant' : 'Schowaj asystenta'}><Icon kind="collapse" size={20} /></button>
-            <header className="srm-chat-header">
-              <div className="srm-chat-greeting"><h3>{assistantGreeting} {en ? 'I am SpendGuru, your advisor.' : 'Jestem SpendGuru, Twój doradca.'}</h3></div>
-              <div className="srm-chat-tools">{([
-                ['detach', en ? 'Open chat in a separate window' : 'Otwórz czat w osobnym oknie'],
-                ['clock', en ? 'Conversation history' : 'Historia rozmowy'],
-                ['more', en ? 'Change avatar' : 'Zmień awatar SpendGuru'],
-              ] as const).map(([kind, label]) => <button key={kind} className="srm-chat-tool" type="button" disabled aria-label={label} title={label}><Icon kind={kind} size={20} /></button>)}</div>
-            </header>
-            <div className="srm-chat-transcript" role="region" aria-label={en ? 'SpendGuru introduction' : 'Powitanie SpendGuru'} tabIndex={0}>
-              <div className="srm-chat-welcome-live"><div className="srm-chat-incoming">
-                {assistantAvatar && <div className="srm-chat-avatar srm-chat-message-avatar"><img src={assistantAvatar === 'female' ? '/appshell/assistant-female.png' : '/appshell/assistant.png'} alt={en ? 'SpendGuru advisor' : 'Doradca SpendGuru'} width={61.44} height={61.44} /></div>}
-                <article className="srm-chat-message srm-chat-welcome-bubble" aria-label={en ? 'SpendGuru greeting' : 'Powitanie SpendGuru'}>
-                  <p><strong>{assistantGreeting} {en ? 'I am your SpendGuru advisor. Soon I will support you in your daily work, category analysis and supplier collaboration.' : 'Jestem Twoim doradcą SpendGuru. Wkrótce będę Cię wspierać w codziennej pracy, analizie kategorii oraz we współpracy z dostawcami.'}</strong></p>
-                  <p>{en ? 'Choose the application you would like to start with. Soon you will be able to talk to me.' : 'Tymczasem wybierz aplikację, od której chcesz zacząć, a już niedługo będzie można ze mną naprawdę porozmawiać.'}</p>
-                </article>
-              </div></div>
-            </div>
-            <div className="srm-chat-composer"><label htmlFor={inputId}>{en ? 'What would you like to ask?' : 'O co chcesz zapytać?'}</label>
-              <div className="srm-chat-input-wrap"><textarea id={inputId} rows={2} placeholder={en ? 'Write a message…' : 'Napisz wiadomość…'} disabled />
-                <button className="as-primary-button" type="button" disabled aria-label={en ? 'Send message' : 'Wyślij wiadomość'} title={en ? 'Send message' : 'Wyślij wiadomość'}><Icon kind="send" size={20} /></button>
-              </div>
-            </div>
-          </div></div></div>
+          <AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme}/>
         </section>
       </div>
     </main>
