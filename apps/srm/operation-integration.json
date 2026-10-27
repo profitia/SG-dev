@@ -5267,7 +5267,8 @@
       "src/server/supplier-map-readiness.test.ts": "c4085d820c87700a817360458c26359d26480145bd51e8d9d746848b4aad1d65",
       "src/server/account-recheck-adoption.test.ts": "08c66fda218528c543907758e339eedaed280853828851ee888bfce56b341d8f",
       "src/server/company-source-policy.test.ts": "8d1a1d3ee1bd226fab9c094454cb3821627a4f064c13496130f477c2e5773718",
-      "db/private-store/README.md": "c7253c29faa0e51a116f543d51ec0dbffd60ab138bea78718c1a116138916006"
+      "db/private-store/README.md": "c7253c29faa0e51a116f543d51ec0dbffd60ab138bea78718c1a116138916006",
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "fab074d68032492bf715bfbef82e510a0f79760a25baac99de78b68709b1e1ec"
     },
     "requestQuotaContractExtended": false
   }
