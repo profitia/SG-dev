@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto'
 import {replaceRegistrySeam as replace} from './pilot2-registry-overlay.mjs'
 const hash=value=>createHash('sha256').update(value).digest('hex')
 export const PILOT2_COLD_SOURCE_FILES=[
+ "apps/srm/deployment/development-pilot2-targets.json",
  "apps/srm/deployment/krs-live-pilot.json",
  "apps/srm/deployment/krs-name-pilot-targets.json",
  "apps/srm/deployment/krs-nip-development.json",
@@ -23,6 +24,7 @@ export const PILOT2_COLD_SOURCE_FILES=[
  "apps/srm/src/server/corporate-source-shape.json",
  "apps/srm/src/server/corporate-source-store.ts",
  "apps/srm/src/server/demo-auth.ts",
+ "apps/srm/src/server/development-pilot2-runtime.ts",
  "apps/srm/src/server/financial-documents.ts",
  "apps/srm/src/server/financial-excel-runtime.ts",
  "apps/srm/src/server/financial-excel.ts",

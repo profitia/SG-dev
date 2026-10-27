@@ -5115,14 +5115,18 @@
       "src/server/krs-name-runtime.ts": "0f1baadb5a79208cefacd632adab5e5ecc58354ed11e5ee208739b0484effb5c",
       "src/server/krs-name-search.ts": "f832d94c980876a548098abb11183a77ac55b45bae5b0664f08f2c8269d9dde7",
       "src/server/krs-name-search.test.ts": "c1ea440cc02b601192252004636f93ac127069e6fd57f9d449b36cd8a04d4a61",
-      "scripts/development-pilot2-installation.mjs": "56f23f3affed73a9ced4b0fa999dcb2016b15a60b92476a1af3faba157fcf380",
+      "scripts/development-pilot2-installation.mjs": "6fb6835082e0d72b810df9b4417d6df40dee73c321c51f5285be7ddfe2b0ef89",
       "scripts/development-pilot2.integration.test.mjs": "fb1c99ca53336c53e9edc59a97f2eec18d778a4215766e31ca9fec84b2ef143f",
       "scripts/native-execution-adoption.test.mjs": "f13d41543f2f20a23c712c563b859d08fc248bd3d797ee5933c8782ea68eb103",
       "scripts/diagnostic-telemetry-adoption.test.mjs": "24407c63400f0c88aae30ccb2ccd0f452bf07f295d31304658fb6a3132958850",
       "scripts/request-quota-adoption.test.mjs": "1f0528810c79da6af22689431ca1ba9be76cb32e2d5bcccdcb8309d9ceb0f895",
       "package.json": "a71554032ba63bb304ed6e213df43537986f49dceca112b483408caf05e9c3bd",
       "src/server/peer-read-boundary.test.ts": "d267e873ae02b5264a2ed3d9a767a15a6f2707234c9000dd4d35df7b53e27eb6",
-      "src/server/pilot2-registry.test.ts": "6250ef9e5f2f2bc9e5b6a54206ef82ada20eaa2481f3d2893f3250e7f352159e"
+      "src/server/pilot2-registry.test.ts": "6250ef9e5f2f2bc9e5b6a54206ef82ada20eaa2481f3d2893f3250e7f352159e",
+      "scripts/pilot2-registry-overlay.mjs": "ce412a7aa727179d4ea6b38270fc0e32f817c04a3238f370d37c5a0626f96ce8",
+      "scripts/pilot2-cold-overlay.mjs": "de11ea3077c5b4e400ea77e7623bd426fb2ad8f37398012456132f96e28a7a70",
+      "scripts/pilot2-registry-overlay.test.mjs": "b40f13fae01a5a55a1d694aa90e2954aa2ed0721ff9aa6d7fee07a57c8a47ac9",
+      "scripts/pilot2-cold-overlay.test.mjs": "30511d89a6ad0b0a3377cd951d36e77c00280ff638a2174f898ce39ef4d84d5c"
     },
     "preservedUiDigests": {
       "app/page.tsx": "90ee550441260bb02dea47681a1680614cd2ef9e1232c3e05dc107913041e316",

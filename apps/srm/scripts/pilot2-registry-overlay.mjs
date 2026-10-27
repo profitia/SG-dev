@@ -89,7 +89,7 @@ export function registryPilot2(repo,output,proof){
   fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(path.join(repo,name),to);proof.addedFiles.push(destination)
  }
  for(const name of ['pilot2-registry.ts','krs-general.ts','krs-continuity.ts','krs-financial.ts','native-pg-driver.ts'])copy('apps/srm/src/server/'+name)
- for(const name of ['pilot2-registry-targets.json','krs-name-pilot-targets.json'])copy('apps/srm/deployment/'+name)
+ for(const name of ['pilot2-registry-targets.json','krs-name-pilot-targets.json','development-pilot2-targets.json'])copy('apps/srm/deployment/'+name)
  copy('apps/srm/scripts/build-krs-contract.mjs')
  // KRS adds typed provenance only; all runtime financial functions remain the
  // archived Staging implementation.

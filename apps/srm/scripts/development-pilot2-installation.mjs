@@ -62,8 +62,10 @@ export function developmentPilot2RegistryPlan(sourceSha){
  for(const owner of ['profitia_ingestion_owner','krs_catalog_owner'])before.push('SET LOCAL ROLE '+owner,clone('krs_ingest',role),...(owner==='krs_catalog_owner'?[clone('krs_reader',reader)]:[]),'RESET ROLE')
  const after=[
   'REVOKE profitia_ingestion_owner,krs_catalog_owner FROM neondb_owner GRANTED BY neondb_owner',
+  `REVOKE ${roles.join(',')} FROM neondb_owner`,
   `DO $closed$ BEGIN IF current_user<>session_user
    OR pg_has_role(session_user,'profitia_ingestion_owner','MEMBER') OR pg_has_role(session_user,'krs_catalog_owner','MEMBER')
+   OR EXISTS(SELECT 1 FROM pg_auth_members WHERE member=session_user::regrole AND roleid IN(${roles.map(r=>q(r)+'::regrole').join(',')}))
    OR EXISTS(SELECT 1 FROM pg_auth_members WHERE member IN(${roles.map(r=>q(r)+'::regrole').join(',')}))
    OR(SELECT count(*) FROM pg_roles WHERE rolname IN(${roles.map(q).join(',')}) AND rolcanlogin AND rolconnlimit=4
     AND NOT(rolinherit OR rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication))<>2 THEN

@@ -29,6 +29,8 @@ test('Cold acquisition adopts canonical native engines, guarded HTTP continuatio
   }
   assert.match(read(cold,'src/modules/xray/report-controller.ts'),/response\.status===202/)
   assert.match(read(cold,'app/api/xray/krs/lookup/route.ts'),/getPilot2ColdRuntime\(\)\.lookup/)
+  for(const file of['src/server/development-pilot2-runtime.ts','deployment/development-pilot2-targets.json'])
+   assert.equal(read(cold,file),fs.readFileSync(path.join(repo,'apps/srm/'+file),'utf8'),'Current native imports need a complete shipped closure: '+file)
   assert.match(read(cold,'middleware.ts'),/'\/api\/xray\/financial-excel'/)
   assert.doesNotMatch(read(cold,'middleware.ts'),/api\/supplier-locations/)
  }finally{fs.rmSync(root,{recursive:true,force:true})}

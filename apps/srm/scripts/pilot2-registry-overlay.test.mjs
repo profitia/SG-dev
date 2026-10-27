@@ -26,6 +26,9 @@ test('registry stage retains all financial formula, parser, UI and freshness byt
   assert.equal(hash(fs.readFileSync(path.join(out,nativeSchema))),hash(fs.readFileSync(path.join(repo,nativeSchema))))
   assert.match(fs.readFileSync(path.join(out,'apps/srm/next.config.ts'),'utf8'),/platform-contracts\/migrations\/\*\*\/\*/)
   assert.match(fs.readFileSync(path.join(out,'apps/srm/app/api/health/route.ts'),'utf8'),/await getPilot2Registry\(\)/)
+  const mainTarget='apps/srm/deployment/development-pilot2-targets.json'
+  assert.equal(hash(fs.readFileSync(path.join(out,mainTarget))),hash(fs.readFileSync(path.join(repo,mainTarget))),
+   'The registry constructor must ship its exact Development target dependency')
   const engine=fs.readFileSync(path.join(out,'apps/srm/src/server/xray-lookup.ts'),'utf8')
   assert(engine.indexOf('if(registry)financial=await reconcilePilot2Financial')<engine.indexOf('await atLookupStage("source_archive"'))
   assert(engine.indexOf('if(registry)msr={...await reconcilePilot2Financial')<engine.indexOf('const savedFinancial ='))
