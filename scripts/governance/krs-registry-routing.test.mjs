@@ -154,14 +154,18 @@ test('present source still requires the current accepted exact owner routes',()=
  }
  fixture(({resolve})=>{assert.equal(resolve('ARCHITECTURE',targets).ok,false)},{candidate:false})
 })
-test('manifest adds only the G1 decision after its active dependencies',()=>{
+test('accepted manifest adds only G1 and current manifest preserves its accepted rows and dependencies',()=>{
  const p='Canon/registries/governance-manifest-v2.json',m=JSON.parse(fs.readFileSync(path.join(root,p),'utf8'))
  const before=JSON.parse(execFileSync('git',['show',`${evidence.authoritySha}:${p}`],{cwd:root,encoding:'utf8'}))
- const doc=m.documents.find(d=>d.id==='krs-registry-architecture-and-ownership')
+ const accepted=JSON.parse(execFileSync('git',['show',`${g1Checkpoint}:${p}`],{cwd:root,encoding:'utf8'}))
+ const doc=accepted.documents.find(d=>d.id==='krs-registry-architecture-and-ownership')
  assert.equal(doc.status,'ACTIVE');assert.equal(doc.owner,'Architecture Platform');assert.equal(doc.loadOrder,370)
  assert.deepEqual(doc.appliesTo,['SG2','SRM','ARCHITECTURE'])
- assert.deepEqual(m.documents.filter(d=>d.id!==doc.id),before.documents)
+ assert.deepEqual(accepted.documents.filter(d=>d.id!==doc.id),before.documents)
  const graph=new Map(m.documents.map(d=>[d.id,d]))
+ // G1 is immutable history; later registrations must preserve every accepted
+ // row rather than make today's entire manifest equal to the old snapshot.
+ for(const row of accepted.documents)assert.deepEqual(graph.get(row.id),row)
  for(const id of doc.dependsOn){assert.ok(graph.get(id).status.startsWith('ACTIVE'));assert.ok(graph.get(id).loadOrder<doc.loadOrder)}
 })
 test('original published foundation evidence is unchanged and governance CI executes the KRS regression',()=>{
