@@ -1,4 +1,5 @@
 import operationAcceptance from '../../operation-integration.json'
+import {readCompanySourcePolicy,type CompanySourcePolicy} from './company-source-policy'
 import {srmKrsPilotTarget} from './krs-native-runtime'
 import {reportAdmissionConfiguration} from './report-admission-runtime'
 import type pg from 'pg'
@@ -12,6 +13,7 @@ import mgbiPolicy from '../../deployment/mgbi-unmetered-policy.json'
 import privateTargets from '../../deployment/private-runtime-targets.json'
 type Env=Readonly<Record<string,string|undefined>>
 export type Configuration=Readonly<{base:PrivateConfiguration;configurationVersion:string;jobsUrl:string;providerSourceUrl:string;corporateSourceUrl:string;
+ companySourcePolicy?:CompanySourcePolicy;
  registryEnvelopeBoundaryDigest?:string;
  financialInventoryBoundaryDigest?:string;
  runtimeRoles?:typeof targets.runtimeRoles;mgbiKey:string;mgbiScheme:'raw'|'bearer';ceidgKey:string;verclyKey:string;verclyOrigin:string;referenceSecret:string}>
@@ -27,6 +29,7 @@ function roleUrl(value:string|undefined,role:string){
  return url.toString()
 }
 export function readSrmNativeSupplierConfiguration(base:PrivateConfiguration,env:Env=process.env):Configuration|undefined{
+ const companySourcePolicy=readCompanySourcePolicy(env)
  const enabled=env.PROFITIA_SUPPLIER_API_ENABLED??'false'
  if(!['true','false'].includes(enabled))return unavailable()
  if(enabled==='false')return undefined
@@ -44,7 +47,7 @@ export function readSrmNativeSupplierConfiguration(base:PrivateConfiguration,env
  let origin:URL;try{origin=new URL(env.VERCLY_API_BASE_URL??'')}catch{return unavailable()}
  if(!mgbiKey||!ceidgKey||!verclyKey||env.MGBI_AUTH_SCHEME!==undefined&&!['raw','bearer'].includes(env.MGBI_AUTH_SCHEME)
   ||origin.protocol!=='https:'||origin.pathname!=='/'||origin.port||origin.username||origin.password||origin.search||origin.hash)return unavailable()
- return Object.freeze({base,...(pilot?{runtimeRoles}:{}),configurationVersion:targets.configurationVersion,jobsUrl,providerSourceUrl,corporateSourceUrl,
+ return Object.freeze({base,...(pilot?{runtimeRoles}:{}),...(companySourcePolicy?{companySourcePolicy}:{}),configurationVersion:targets.configurationVersion,jobsUrl,providerSourceUrl,corporateSourceUrl,
   mgbiKey,mgbiScheme:env.MGBI_AUTH_SCHEME==='bearer'?'bearer':'raw',ceidgKey,verclyKey,verclyOrigin:origin.origin,referenceSecret:env.SRM_DEMO_SESSION_SECRET})
 }
 type Pools={pool:pg.Pool;auditPool:pg.Pool;jobsPool:pg.Pool;jobsAudit:pg.Pool;sourcePool:pg.Pool;sourceAudit:pg.Pool;corporatePool:pg.Pool;corporateAudit:pg.Pool;clerk:ClerkIdentityClient}
@@ -72,7 +75,7 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  const sourceOptions={pool:pools.sourcePool,auditPool:pools.sourceAudit,application:sourceApplication,
   binding:{applicationId:sourceApplication.appId,environment:'development' as const,projectId:targets.projectId,branchId:targets.branchId,
    databaseName:targets.databaseName,role:roles.providerSource,deploymentId:sourceApplication.deploymentId,
-   configurationVersion:version,schemaDigest:core['008-platform-ingestion.sql'],...(config.runtimeRoles?{unmeteredSchemaDigest:mgbiPolicy.unmeteredSchemaDigest}:{})},requestSchemaDigest:own['009-supplier-source-request.sql']}
+   configurationVersion:version,schemaDigest:core['008-platform-ingestion.sql'],...(config.runtimeRoles||config.companySourcePolicy==='MGBI_ONLY'?{unmeteredSchemaDigest:mgbiPolicy.unmeteredSchemaDigest}:{})},requestSchemaDigest:own['009-supplier-source-request.sql']}
  const source=createSrmSupplierSourceRequest(sourceOptions)
  const external={configurationVersion:version,schemaDigest:core['009-external-call-admission.sql'],nativeSchemaDigest:core['012-native-external-transport.sql'],maximumResponseBytes:1024*1024}
  const provider={...sourceOptions,external}
@@ -100,6 +103,7 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  return createSrmSupplierApi({
   company:{request:{...requestBase,application:app(['supplier.report.refresh'])},
    lookup:{work:{...workBase,job:publicJob,workBusinessBoundaryDigest:own['008-supplier-native-work.sql'],...(reportAdmission?{reportAdmission}:{})},namedInterestBoundaryDigest:own['003-named-supplier-interest.sql'],source,corporate,
+    ...(config.companySourcePolicy?{companySourcePolicy:config.companySourcePolicy}:{}),
     ...(config.registryEnvelopeBoundaryDigest?{registryEnvelopeBoundaryDigest:config.registryEnvelopeBoundaryDigest}:{}),
     ...(config.financialInventoryBoundaryDigest?{financialInventoryBoundaryDigest:config.financialInventoryBoundaryDigest}:{}),
     mgbi:{apiKey:config.mgbiKey,authScheme:config.mgbiScheme,source:{...provider,external:{...external,maximumResponseBytes:config.runtimeRoles?mgbiPolicy.maximumInventoryResponseBytes:external.maximumResponseBytes}},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}},

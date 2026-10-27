@@ -1,0 +1,128 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SRM-DEVELOPMENT-MGBI-RECOVERY-20261027",
+  "targetEnvironment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "companySourcePolicy": "MGBI_ONLY",
+  "baselineSourceSha": "ce4f293ec0f83bf3b4af1174f43c54eda6860738",
+  "baselineDeployment": "dep-dbg4h7t9fdbs73cokv4g",
+  "stagingReadOnlyReference": {
+    "serviceId": "srv-db496b3tqb8s73eh5sfg",
+    "sourceSha": "6eede5cd19fd3a4519d66298effe9ef94633757a"
+  },
+  "activeGusOrDirectKrsDependency": false,
+  "newCatalogDatabaseRequired": false,
+  "historicalPilotsAndCatalogsPreserved": true,
+  "existingUiAndChatPreserved": true,
+  "sharedSdkChanged": false,
+  "maximumNewMsrOriginalsPerPass": 1,
+  "newMsrOriginalRequiresExplicitXmlMime": true,
+  "storedOriginalsReusableWithoutRepurchase": true,
+  "requiredProductDatabaseApproval": {
+    "roleScopedInternalUnmeteredPolicies": [
+      {
+        "role": "srm_provider_development_source",
+        "sourceId": "srm.supplier.source-request"
+      },
+      {
+        "role": "srm_provider_development_source",
+        "sourceId": "srm.provider.mgbi"
+      },
+      {
+        "role": "srm_corporate_development_source",
+        "sourceId": "srm.catalog.corporate"
+      }
+    ],
+    "exactDeploymentBindings": [
+      "srm_private_development_jobs",
+      "srm_provider_development_source",
+      "srm_corporate_development_source"
+    ],
+    "sharedDefaultsAndHistoricalCountersPreserved": true,
+    "paidExternalPoliciesUnchanged": true,
+    "schemaChanges": false,
+    "newApplicationRolesOrPrivileges": false,
+    "temporaryOperatorMembership": {
+      "operatorRole": "neondb_owner",
+      "ownerRole": "profitia_ingestion_owner",
+      "existingAdminOptionVerified": true,
+      "baselineSetOption": false,
+      "scope": "ONE_TRANSACTION",
+      "newMembershipGrantor": "neondb_owner",
+      "inherit": false,
+      "admin": false,
+      "set": true,
+      "revokeOwnGrantBeforeCommit": true,
+      "preserveExistingCloudAdminGrant": true,
+      "localCommitAndRollbackValidation": "PASS"
+    },
+    "target": {
+      "projectId": "spring-bread-28217539",
+      "branchId": "br-sparkling-term-b99l107x",
+      "databaseName": "platform_private",
+      "postgresMajor": 16
+    }
+  },
+  "deploymentPerformed": false,
+  "businessAcceptance": "PENDING_LIVE_DEVELOPMENT_VALIDATION",
+  "mapsAcceptance": "SEPARATE_SUBSEQUENT_STAGE",
+  "stagingDeploymentAuthorized": false,
+  "localValidation": {
+    "typecheck": "PASS",
+    "build": "PASS",
+    "applicationTests": {
+      "passed": 777,
+      "failed": 0,
+      "skipped": 8
+    },
+    "diagnosticCollectorTests": {
+      "passed": 3,
+      "failed": 0
+    },
+    "operationAndTenantRegression": {
+      "passed": 560,
+      "failed": 0,
+      "skipped": 0
+    },
+    "mainMgbiComposition": {
+      "passed": 20,
+      "failed": 0
+    },
+    "operatorAdministrationPath": {
+      "passed": 4,
+      "failed": 0
+    },
+    "promotionGuards": {
+      "passed": 308,
+      "failed": 0,
+      "skipped": 3
+    },
+    "existingBrowserViews": {
+      "passed": 2,
+      "failed": 0
+    },
+    "networkScope": "SYNTHETIC_LOOPBACK_ONLY_FOR_DATABASE_INTEGRATION",
+    "businessAcceptanceProvenByLocalTests": false
+  },
+  "activationRisk": {
+    "applicationOwnershipOrHumanGrantsChanged": false,
+    "paidCallLimitsChanged": false,
+    "historicalRowsDeletedOrCountersReset": false,
+    "newPolicyCounters": "NEW_SEPARATE_LEDGER_STARTS_AT_ZERO; EXISTING_DEFAULT_COUNTS_REMAIN_UNCHANGED",
+    "expectedInterruption": "Brief E1 refusals are possible while the single main Development service and its three exact deployment bindings converge. Activate only a passed immutable build; do not touch other services.",
+    "riskIfApprovalDenied": "Current internal METERED Source budgets remain and full unlimited-operation acceptance cannot be claimed."
+  },
+  "rollback": {
+    "lastKnownGoodSourceSha": "ce4f293ec0f83bf3b4af1174f43c54eda6860738",
+    "lastKnownGoodDeployment": "dep-dbg4h7t9fdbs73cokv4g",
+    "actions": [
+      "Redeploy only the last known good main Development commit.",
+      "Atomically restore the three existing deployment binding identities and revoke only the three new role-scoped policies.",
+      "Preserve policy rows, consumed counters, Source effects, private acquisitions, reports and original receipts.",
+      "Revoke the temporary operator membership before commit and recheck the exact retained ADMIN grant."
+    ],
+    "noDatabaseRestoreOrDeletion": true,
+    "paidOrUncertainAcquisitionsNeverRetriedAutomatically": true,
+    "stagingAndPilotsUnchanged": true
+  }
+}

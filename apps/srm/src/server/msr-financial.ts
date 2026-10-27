@@ -23,6 +23,16 @@ const obj = (v: unknown): Record<string, unknown> => v && typeof v === "object" 
 export type MsrCandidate = { recordId: string; nip: string; from: string; to: string;
   scope: FinancialPeriod["scope"]; filingDate: string | null; correction: boolean | null; documentId: string | null };
 
+/** Check the provider inventory before admitting a new paid original. The
+ * transport independently verifies the received document/container as well.
+ * Kept outside MsrCandidate so historical receipt identities stay identical. */
+export function isLicensedMsrXmlOriginal(record:unknown):boolean {
+  const original=obj(obj(obj(obj(record).files).main_document).original);
+  const mime=typeof original.content_type==='string'?original.content_type.split(';')[0].trim().toLowerCase():'';
+  if(['filename','file_name','name'].some(key=>typeof original[key]==='string'&&/\.pdf(?:$|[?#])/i.test(original[key] as string)))return false;
+  return ['application/xml','text/xml','application/xhtml+xml','application/xbrl+xml','application/ixbrl+xml'].includes(mime);
+}
+
 /** Latest filing per independent scope. Older periods disclosed in that filing are retained.
  * At most two paid originals per lookup; never download every historical filing speculatively. */
 export function selectMsrCandidates(records: readonly unknown[], nip: string, allowedKrs?:readonly string[]): MsrCandidate[] {

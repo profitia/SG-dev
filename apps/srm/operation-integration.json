@@ -5097,5 +5097,37 @@
     "workOrTransactionBoundariesChanged": false,
     "sqlOrPolicyChanged": false,
     "runtimeDeploymentPerformed": false
+  },
+  "mgbiDevelopmentRecoveryAdoption": {
+    "taskId": "SRM-DEVELOPMENT-MGBI-RECOVERY-20261027",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "previousReceiptSourceSha": "ce4f293ec0f83bf3b4af1174f43c54eda6860738",
+    "previousReceiptDigest": "346f382938594c6a227e088977219fdf5c841bca68c765bafa52bc1591389836",
+    "companySourcePolicy": "MGBI_ONLY",
+    "sharedSdkChanged": false,
+    "humanEntitlementsChanged": false,
+    "historicalCountersReset": false,
+    "paidExternalPoliciesChanged": false,
+    "runtimeDeploymentPerformed": false,
+    "applicationSourceDigests": {
+      "deployment/mgbi-development-recovery-20261027.json": "d6e76c7dfc43d6cd4f62af9fbfed31a1d2f3c6ea2d00a8273248ae2db577ca89",
+      "package.json": "8dbdde5f2ddb795c3fcf2ccbeb0ca82f4c069d878280609457ddf83a732b6d99",
+      "scripts/corporate-source.integration.test.mjs": "c448d640074e97be558dab213c1a1d068eac4ea203ebc0bb59a3265b3621e711",
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "4cfecf62e578ca8a07c2b978b23e2b928a6ecfd674b4a7c9f48f554888ed7902",
+      "scripts/mgbi-development.integration.test.mjs": "73ccf450740cc4d0145018605325520cb80c5adc31ef620399bee8aa4a746785",
+      "scripts/native-execution-adoption.test.mjs": "7529c33637dc626f1c4e8fed32815fb00a097c407fd4bdcefa4e0428f2a62e8a",
+      "scripts/request-quota-adoption.test.mjs": "c105dd40390fca2f2a736a1fc08414f54364cc9b1b1809e2d3cd45345443c53d",
+      "scripts/supplier-delegated-business.integration.test.mjs": "918fea23e6aa7b9397e3c21920f2e31f592b0493827688b15f343253804c3824",
+      "src/server/company-source-policy.test.ts": "c11ea66e78017504f80ca191d459a3143da65c2c95387d98e0f09ac8b9e39ef2",
+      "src/server/company-source-policy.ts": "82993bfeed9e5c62e5ad19095a6c8e16100be0ad0a5558f5616dc9eada30b491",
+      "src/server/msr-financial.test.ts": "6445e65bd63c7b3ba4ea2135eece0d50adb8d059a04b6b560515ee4192fb5250",
+      "src/server/msr-financial.ts": "c54a5178079873eb0d090ddb4d3b46efc29c60d740354896b34a2d2a30a129e2",
+      "src/server/msr-repository.test.ts": "9ae617e7b3123a8303acc1eec31b73984c264ad7d31e69ae2260cc8755dde760",
+      "src/server/msr-repository.ts": "e0526387ee405002f59a33fa2a6bf5e0ae385ac54a4ee198123c2e0d61e11d87",
+      "src/server/peer-read-boundary.test.ts": "5d54493bf89c304409be52d42fae2d81e59983604a36ecde44e12d1760521550",
+      "src/server/private-runtime.ts": "33341c3c75c75b8e9fb17f46829084fa200d453203422b3af5b9dce82ddf0794",
+      "src/server/supplier-native-company.ts": "e1e07df42ad5cce433df62e3dae0fc4cbc8fb4fffb0d4bea94483daecb30807d",
+      "src/server/supplier-native-runtime.ts": "83d95c686fb1f29564959d4cff464e51056ecb5a53e5532879ac83fc7015a29f"
+    }
   }
 }

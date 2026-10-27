@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { projectMsrFinancial,selectMsrCandidates,mergeMsrFinancial,type MsrCandidate } from "./msr-financial";
+import { projectMsrFinancial,selectMsrCandidates,mergeMsrFinancial,isLicensedMsrXmlOriginal,type MsrCandidate } from "./msr-financial";
 import { MSR_MAPPING_VERSION,type MsrParsed,type MsrFact } from "./msr-parser";
 import type { MsrOriginal } from "./msr-source";
 import { buildFinancialExcel } from "./financial-excel";
@@ -11,6 +11,13 @@ import { MsrFinancialTables,formatMsrAmount } from "../../node_modules/@profitia
 import { financialQualityReason } from "@profitia/srm-xray";
 
 export const candidate:MsrCandidate={recordId:"68373e33935a5dc0776e1c56",nip:"5272443955",from:"2024-01-01",to:"2024-12-31",scope:"consolidated",filingDate:"2025-05-27",correction:false,documentId:"9559394"};
+test('new MSR purchases require explicit licensed XML metadata, independently of the IAS flag',()=>{
+  const record=(content_type:unknown,filename?:string)=>({document:{is_ias_compliant:true},files:{main_document:{original:{content_type,filename}}}});
+  for(const mime of ['application/xml','text/xml','application/xhtml+xml','application/xbrl+xml','application/ixbrl+xml','Application/XML; charset=utf-8'])assert.equal(isLicensedMsrXmlOriginal(record(mime)),true,mime);
+  for(const mime of [undefined,null,'','application/pdf','application/octet-stream','application/zip','text/html'])assert.equal(isLicensedMsrXmlOriginal(record(mime)),false,String(mime));
+  assert.equal(isLicensedMsrXmlOriginal(record('application/xml','report.PDF')),false);
+  assert.equal(isLicensedMsrXmlOriginal(null),false);
+});
 test("verified KRS allowlist filters MSR before latest-filing selection without changing receipt identity",()=>{
   const record=(id:string,krs:string,year:number)=>({id,identifiers:{pl_nip:candidate.nip,pl_krs:krs},document:{type:"financial_statement",is_ias_compliant:true,period_from_date:`${year}-01-01`,period_to_date:`${year}-12-31`}});
   const accepted=record("a".repeat(24),"0000000001",2024),foreign=record("b".repeat(24),"0000000002",2025);

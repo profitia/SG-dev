@@ -1,4 +1,5 @@
 import {projectSrmReportDataResponse} from './report-output'
+import {readCompanySourcePolicy} from './company-source-policy'
 import nipTargets from '../../deployment/krs-nip-development.json'
 import type {KrsNipCompany} from './krs-nip-runtime'
 import {createSrmKrsNativeRuntime,srmKrsPilotTarget,krsPilotDatabaseUrl} from './krs-native-runtime'
@@ -50,6 +51,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
  * Environment is independent of NODE_ENV or where the build runs. */
 export function readSrmPrivateReportConfiguration(env: EnvironmentInput = process.env): Readonly<{ provider: 'legacy_demo' }> | PrivateConfiguration {
   if (typeof window !== 'undefined') unavailable()
+  readCompanySourcePolicy(env)
   const identity = readSrmIdentityRuntime(env)
   if (identity.provider === 'legacy_demo') {
     if(env.PROFITIA_SUPPLIER_API_ENABLED==='true'||env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED==='true') unavailable()
