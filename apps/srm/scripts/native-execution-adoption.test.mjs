@@ -19,7 +19,7 @@ test('native SQL adoption preserves complete prior acceptance and pins the exact
  const modules={'private-operation-host':'privateOperationHostSourceDigest','access-store':'accessStoreSourceDigest',
   'delegated-job':'delegatedJobSourceDigest','platform-ingestion':'platformIngestionSourceDigest','request-work':'requestWorkSourceDigest'}
  for(const[module,fn]of Object.entries(modules))assert.equal(await(await import('@profitia/platform-contracts/'+module))[fn](),current.sdkDigests[fn],fn)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.supplierMapStartupRepair?.applicationSourceDigests[file]??receipt.mgbiDevelopmentSessionFreshnessRepair?.applicationSourceDigests[file]??receipt.mgbiDevelopmentRecoveryAdoption?.applicationSourceDigests[file]??current.applicationSourceDigests[file]??digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.supplierMapRuntimeReadinessRepair?.applicationSourceDigests[file]??receipt.supplierMapStartupRepair?.applicationSourceDigests[file]??receipt.mgbiDevelopmentSessionFreshnessRepair?.applicationSourceDigests[file]??receipt.mgbiDevelopmentRecoveryAdoption?.applicationSourceDigests[file]??current.applicationSourceDigests[file]??digest,file)
  assert.equal(a.currentAuthorityCheckpointsPreserved,true);assert.equal(a.physicalAuditPreserved,true)
  for(const flag of ['humanGrantsChanged','quotasChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)
 })
