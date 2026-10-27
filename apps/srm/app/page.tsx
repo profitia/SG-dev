@@ -129,7 +129,7 @@ function SupplierReportHome() {
 
       {state.busy && <p role="status" className="report-loading">Wyszukiwanie dostawcy. Poczekaj na wynik…</p>}
       {state.error && <p role="alert" className="search-error">{reportMessage(state.error)}</p>}
-      {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state}
+      {state.result && <SupplierReport key={`${state.result.entityType}:${supplierNip(state.result)}`} state={state} locationTransport={transport}
         onFetchKys={controller.fetchKys} onReadMetadata={controller.refreshMetadata} onRevealPesel={revealPesel} onDownloadExcel={downloadFinancialExcel} onDownloadKysPdf={downloadKysPdf} onDownloadKrsPdf={downloadKrsPdf} slots={{ summary: summarySlot, scanner: scannerSlot, kys: kysSlot }} />}
     </div>
   </main>;

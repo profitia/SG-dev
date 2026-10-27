@@ -7,7 +7,7 @@ import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation
 import {privateBusinessPlan} from '../db/private-store/initialize.mjs'
 import {createSupplierLocationRuntime,createSupplierLocationHandler} from '../src/server/supplier-locations.ts'
 import {createSrmSensitiveOperationHost,readPrivateSupplier,privateSupplierReportId} from '../src/server/supplier-sensitive-operation.ts'
-import {createSrmLocationGeocodingDomain,createSrmLocationGeocodingRequest} from '../src/server/supplier-location-geocoding.ts'
+import {createSrmLocationGeocodingDomain,createSrmLocationGeocodingRequest,createSrmTransientGeocodingDomain} from '../src/server/supplier-location-geocoding.ts'
 import {createSrmNativePgDriver} from '../src/server/native-pg-driver.ts'
 import {createDelegatedNativeWorkHost} from '@profitia/platform-contracts/private-operation-host'
 import {createClerkAccountStatusReader} from '@profitia/platform-contracts/identity-provider'
@@ -250,7 +250,7 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
    const request=new Request(ORIGIN,{headers:{Authorization:'Bearer external-'+U,Origin:ORIGIN}})
    assert.deepEqual(await createSrmLocationGeocodingRequest(sensitiveOptions).request(),{status:'WAITING_OWNER',paidCalls:0})
    const job={schemaDigest:hash(core('007-delegated-jobs.sql')),targetOperation:'supplier.location.geocode',supplierSchemaDigest:hash(core('013-supplier-delegation.sql')),operationSchemaDigest:hash(core('017-additional-request-operations.sql')),locationSchemaDigest:hash(core('019-supplier-location-operations.sql'))}
-   const geo=createSrmLocationGeocodingRequest(sensitiveOptions,{executorApplicationId:WORKER_APP,job})
+   const geo=createSrmLocationGeocodingRequest(options,{executorApplicationId:WORKER_APP,job})
    const grant=randomUUID(),binding=randomUUID(),execution=randomUUID()
    await controlled(async()=>{
     await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature)VALUES($1,'srm',$2,$3,'ALLOW','supplier.location.geocode','supplier_report')",[grant,A,U])
@@ -264,7 +264,7 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
    await assert.rejects(geo.request(input),e=>isOperationDenied(e)&&e.reasonCode==='LIMIT_POLICY_UNAVAILABLE')
    assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_requests.intents WHERE operation='supplier.location.geocode'")).rows[0].n,0)
    await controlled(()=>owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity)VALUES($1,'srm',$2,'supplier.location.geocode','ACTIVE','SYNTHETIC_FINITE_REQUESTS_NOT_GOOGLE_BUDGET',now()-interval '1 hour',now()+interval '2 hours',$3,10)",[randomUUID(),A,future()]))
-   const wrong=createSrmLocationGeocodingRequest(sensitiveOptions,{executorApplicationId:'incorrect-executor',job});await assert.rejects(wrong.request(input),isOperationDenied)
+   const wrong=createSrmLocationGeocodingRequest(options,{executorApplicationId:'incorrect-executor',job});await assert.rejects(wrong.request(input),isOperationDenied)
    const admitted=await geo.request(input);assert.equal(admitted.status,'ACCEPTED');assert.deepEqual((await geo.request(input)).receipt,admitted.receipt)
    const workerUrl=new URL(url);workerUrl.username=WORKER;workerUrl.password='isolated_ci_only';workPool=new pg.Pool({connectionString:workerUrl.toString(),max:3});workAudit=new pg.Pool({connectionString:workerUrl.toString(),max:1})
    const worker=createDelegatedNativeWorkHost({application:{appId:WORKER_APP,profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId:'geo-fixture',configurationVersion:'geo-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['job_execution'],operations:['job.execute']},
@@ -280,6 +280,31 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
    await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY' WHERE grant_id=$1",[grant]));await assert.rejects(save(),isOperationDenied);await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='ALLOW' WHERE grant_id=$1",[grant]))
    await save();const cached=(await(await page()).json()).items.find(v=>v.id===location.id);assert.equal(cached.coordinates.origin,'GOOGLE_GEOCODING');assert.equal(cached.updatedByUserId,U);assert.equal(Date.parse(cached.coordinates.expiresAt)-Date.parse(cached.coordinates.fetchedAt),29*86400000);assert.doesNotMatch(JSON.stringify(cached),/MUST_NOT_PERSIST/)
    await read();assert.equal(selection.alreadyResolved,true);assert.deepEqual(await geo.request(input),{status:'RESOLVED',paidCalls:0})
+   await st.test('transient completion retains only CAS/audit metadata and refuses replay, wrong digest and foreign target',async()=>{
+    const migration=own('018-transient-location-geocoding.sql')
+    await controlled(async()=>{
+     await owner.query(migration)
+     await owner.query("INSERT INTO srm.transient_location_geocoding_installation VALUES(true,'1.0.0',$1,$2)",[hash(migration),'a'.repeat(40)])
+     await owner.query(`GRANT EXECUTE ON FUNCTION srm.location_geocode_transient_complete(uuid,uuid,text,bigint,text) TO ${WORKER}`)
+    })
+    assert.equal((await owner.query('SELECT has_function_privilege($1,$2,\'EXECUTE\') AS allowed',[ROLE,'srm.location_geocode_transient_complete(uuid,uuid,text,bigint,text)'])).rows[0].allowed,false)
+    await call({...command,command:{...manual,label:'Ephemeral target',position:null}},U,'transient_manual_'+randomUUID())
+    const target=(await(await page()).json()).items.find(v=>v.label==='Ephemeral target')
+    const accepted=await geo.request({...input,locationId:target.id}),nativeInput={...workInput,resourceId:accepted.receipt.requestId,payload:accepted.payload}
+    const transient=createSrmTransientGeocodingDomain(hash(extension),hash(migration));let selected
+    await worker.runSqlWork(nativeInput,{unitId:'MAPS_GEOCODE_READ',accessMode:'READ',inputDigest:operationPayloadDigest({transient:'read'})},async(ctx,client)=>{selected=await transient.readCurrent(ctx,client)})
+    const save=domain=>worker.runSqlWork(nativeInput,{unitId:'MAPS_GEOCODE_SAVE',accessMode:'WRITE',inputDigest:operationPayloadDigest({transient:'save',result})},async(ctx,client)=>domain.storeCurrent(ctx,client,selected,result))
+    await assert.rejects(save(createSrmTransientGeocodingDomain(hash(extension),'0'.repeat(64))))
+    assert.equal(transient.result(),undefined)
+    await save(transient)
+    const current=(await(await page()).json()).items.find(v=>v.id===target.id),position=transient.result()
+    assert.equal(current.coordinates,null);assert.equal(current.geocodingStatus,'UNREQUESTED');assert.equal(current.version,String(Number(target.version)+1));assert.equal(current.updatedByUserId,U)
+    assert.deepEqual(position.coordinates.position,result.position);assert.equal(position.version,current.version)
+    assert(Date.parse(position.coordinates.expiresAt)-Date.parse(position.coordinates.fetchedAt)<=15*60000)
+    assert.doesNotMatch(JSON.stringify(current),/synthetic-only|MUST_NOT_PERSIST|GOOGLE_GEOCODING/)
+    await assert.rejects(save(transient),'completed CAS cannot be reused')
+    await assert.rejects(geo.request({...input,organisationId:B,locationId:target.id}),isOperationDenied)
+   })
    // A SOURCE location is rechecked against the exact currently accepted
    // MGBI version, under the narrow controlled metadata policy for SERVICE.
    const hq=(await(await page()).json()).items.find(v=>v.kind==='HEADQUARTERS'),normalized={line1:'Nowa 20',postalCode:'00-002',locality:'Warszawa',country:'Polska'}

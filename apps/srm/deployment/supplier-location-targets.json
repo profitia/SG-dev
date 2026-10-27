@@ -24,5 +24,21 @@
     "kysSynchronisation": false,
     "paidGeocodingBudget": 0,
     "sourceActivationRequiresSeparateOwnerGo": true
+  },
+  "transientGeocoding": {
+    "configurationVersion": "srm-google-geocoding-transient-v1",
+    "schemaDigest": "eaa31f2951330f643424954406b8767788b5da4b1720c696abe83de3b55399a6",
+    "ownerAdoptionRef": "REGISTERED_CURRENT_RENDER_GIT_COMMIT",
+    "persistence": "ACTIVE_VIEW_MEMORY_ONLY",
+    "maximumViewRetentionMs": 900000,
+    "provider": "GOOGLE_GEOCODING",
+    "projectId": "profitia-maps-development"
+  },
+  "searchedSupplierAccess": {
+    "configurationVersion": "srm-searched-locations-v1",
+    "schemaDigest": "ae96d24c34b22163400ca908e7f8509156f9168766d4114f0c39cada372f276a",
+    "activation": "OWNER_SCOPED_ROLE_AND_ORGANISATION_OPT_IN",
+    "preserveExistingPolicies": true,
+    "reactivateRevokedPolicies": false
   }
 }

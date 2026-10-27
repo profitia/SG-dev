@@ -62,12 +62,13 @@ function FinancialLimitations({ state, onReadMetadata }: { state: ReportState; o
   </>;
 }
 
-export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPesel, onDownloadExcel, onDownloadKysPdf, onDownloadKrsPdf, slots = {} }: {
+export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPesel, onDownloadExcel, onDownloadKysPdf, onDownloadKrsPdf, locationTransport, slots = {} }: {
   state: ReportState; onFetchKys: () => void; onReadMetadata: () => void;
   onRevealPesel: (token: string) => Promise<string>; onDownloadExcel: (scope: Scope, years: string[]) => Promise<void>;
   onDownloadKysPdf?: (selection: KysPdfSelection, signal: AbortSignal) => Promise<void>;
   onDownloadKrsPdf?: (selection: KysPdfSelection, signal: AbortSignal) => Promise<void>;
   slots?: SupplierReportSlots;
+  locationTransport?:typeof fetch;
 }) {
   const [financialIndicatorsTarget, setFinancialIndicatorsTarget] = useState<HTMLDivElement | null>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -154,7 +155,7 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     <section id="supplier-identity" className="report-identity" aria-labelledby="supplier-identity-title">
       <CanonElement as="div" canonId="SRM-C53" usage="supplier-report:02" className="report-identity-heading"><ReportWebIdentity key={`${supplier.entityType}:${supplierNip(supplier)}`} nip={supplierNip(supplier) ?? ""} entityType={supplier.entityType} name={name ?? "Dostawca"}><div>{!scanner && <p className="report-eyebrow">Raport dostawcy</p>}<h2 id="supplier-identity-title" tabIndex={-1}>{name ?? "Nazwa niedostępna"}</h2>
         <div className="srm-supplier-meta-row"><p>NIP: {supplierNip(supplier)} · {supplier.entityType === "JDG" ? "Jednoosobowa działalność gospodarcza" : `KRS: ${supplier.card.identity.krs ?? "nie ustalono"}`}{primaryPkd?.mainPkd && <> · <span className="report-primary-pkd">PKD {primaryPkd.mainPkd}{primaryPkd.mainPkdDescription ? ` — ${primaryPkd.mainPkdDescription}` : ""}</span></>}</p>{supplier.entityType==='COMPANY' && state.metadata?.locationSubject && state.metadata.preferenceScope && <SupplierLocations
-        key={state.metadata.preferenceScope+':'+state.metadata.locationSubject.supplierId} supplierId={state.metadata.locationSubject.supplierId} supplierName={name ?? "Dostawca"}
+        key={state.metadata.preferenceScope+':'+state.metadata.locationSubject.supplierId} supplierId={state.metadata.locationSubject.supplierId} supplierName={name ?? "Dostawca"} transport={locationTransport}
         refreshKey={[supplier.card.general.retrievedAt,state.kys?.retrievedAt,state.metadata.kys.lastAttemptAt].join(':')} />}</div></div></ReportWebIdentity>
         {!scanner && availability.code === "AVAILABLE" && selectedPeriod && <p className="report-period-label">Okres finansowy: <strong>{selectedPeriod.from} – {selectedPeriod.to}</strong><span>{scope === "standalone" ? "Jednostkowe" : "Skonsolidowane"}</span></p>}
       </CanonElement>

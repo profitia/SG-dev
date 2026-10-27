@@ -16,6 +16,7 @@ export type SupplierLocationRuntimeOptions=Omit<DriverOptions,'readResources'|'p
  sourceScope?:'HEADQUARTERS_MANUAL';
  businessDigest:string;parentSchemaDigest?:string;ledger:NonNullable<DriverOptions['requestLedger']>;
  readAcceptedKys?:(request:Request,org:string,nip:string)=>Promise<Response>
+ prepareAccess?:(request:Request,organisationId:string,supplierId:string,locationId?:string|null)=>Promise<void>
 }
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 const groups=['ALL','SUPPLIER_LOCATIONS','RELATED_ENTITIES','USER_LOCATIONS']
@@ -70,10 +71,11 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
    organisationId:input.organisationId,resourceId:p.locationId??locationCollectionId(input.supplierId),payload:p as unknown as Json,request:input.request,...(key?{idempotencyKey:key}:{})},run)
  const read=async<T>(input:Input,run:Parameters<typeof reader.execute<T>>[1])=>(await execute(reader,input,payload(input.supplierId),run)).value
  return Object.freeze({
-  async page(input:Input,group:string,offset:number,limit:number){if(options.sourceScope==='HEADQUARTERS_MANUAL'&&!['SUPPLIER_LOCATIONS','USER_LOCATIONS'].includes(group))return refuse();return read(input,(context,client)=>readLocationPage(context,client,input.supplierId,group,offset,limit))},
+  async page(input:Input,group:string,offset:number,limit:number){if(options.sourceScope==='HEADQUARTERS_MANUAL'&&!['SUPPLIER_LOCATIONS','USER_LOCATIONS'].includes(group))return refuse();await options.prepareAccess?.(input.request,input.organisationId,input.supplierId);return read(input,(context,client)=>readLocationPage(context,client,input.supplierId,group,offset,limit))},
   async write(input:Input,action:'CREATE'|'UPDATE'|'DEACTIVATE',locationId:string|null,expectedVersion:string|null,command:unknown,key:string){
    if(!validRequestIdempotencyKey(key))return refuse()
    const selected=action==='DEACTIVATE'?null:parseManualLocation(command)
+   await options.prepareAccess?.(input.request,input.organisationId,input.supplierId)
    const identity=action==='CREATE'&&admission?await resolveSrmPrivateIdentity({...options,readResources:async()=>refuse(),projectOutput:v=>v},input.request,input.organisationId):null
    const id=action==='CREATE'?(admission&&identity&&identity.organisationId?admission.locationId({organisationId:identity.organisationId,userId:identity.actor.actorId,supplierId:input.supplierId,idempotencyKey:key})
     :assignedLocationId(input.organisationId,input.supplierId,'MANUAL:'+key)):locationId
@@ -83,6 +85,7 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
    return (await execute(writer,input,p,(context,client)=>writeManualLocation(context,client,p),key)).value
   },
   async sync(input:Input){
+   await options.prepareAccess?.(input.request,input.organisationId,input.supplierId)
    const selected=await read(input,async(_context,client)=>{
     const row=(await client.query('SELECT nip,krs FROM srm.suppliers WHERE organization_id=$1 AND id=$2',[input.organisationId,input.supplierId])).rows[0]
     if(!row?.nip)return refuse()
@@ -136,7 +139,7 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
 }
 export type SupplierLocationRuntime=ReturnType<typeof createSupplierLocationRuntime>
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}
-export function createSupplierLocationHandler(runtime:SupplierLocationRuntime,defaultOrganisationId:string){
+export function createSupplierLocationHandler(runtime:SupplierLocationRuntime,defaultOrganisationId:string,geocoding?:Readonly<{resolve(input:Input&{locationId:string}):Promise<unknown>}>){
  return async(request:Request)=>{
   const fail=(status:number)=>Response.json({error:'Lokalizacje są teraz niedostępne.'},{status,headers})
   if(request.method!=='POST'){const r=fail(405);r.headers.set('Allow','POST');return r}
@@ -158,11 +161,17 @@ export function createSupplierLocationHandler(runtime:SupplierLocationRuntime,de
    if(b.action==='READ'){
     if(!closed(b,['action','supplierId','group','offset','limit'])||!groups.includes(String(b.group))||!Number.isInteger(b.offset)||!Number.isInteger(b.limit)
      ||Number(b.offset)<0||Number(b.offset)>100000||Number(b.limit)<1||Number(b.limit)>100)return fail(400)
-    return Response.json(await runtime.page(input,b.group as SupplierLocationGroup,b.offset as number,b.limit as number),{headers})
+    const page=await runtime.page(input,b.group as SupplierLocationGroup,b.offset as number,b.limit as number)
+    return Response.json({...page,...(geocoding?{geocodingAvailable:true}:{})},{headers})
    }
    if(b.action==='SYNC'){
     if(!closed(b,['action','supplierId']))return fail(400)
     return Response.json(await runtime.sync(input),{headers})
+   }
+   if(b.action==='GEOCODE'){
+    if(!closed(b,['action','supplierId','locationId'])||!uuid.test(String(b.locationId)))return fail(400)
+    if(!geocoding)return Response.json({status:'WAITING_OWNER',paidCalls:0},{headers})
+    return Response.json(await geocoding.resolve({...input,locationId:b.locationId as string}),{headers})
    }
    if(!['CREATE','UPDATE','DEACTIVATE'].includes(String(b.action))||!closed(b,['action','supplierId','locationId','expectedVersion','command'])
     ||b.locationId!==null&&!uuid.test(String(b.locationId))||b.action==='CREATE'&&(b.locationId!==null||b.expectedVersion!==null)

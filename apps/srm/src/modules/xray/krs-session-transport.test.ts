@@ -12,7 +12,8 @@ test('company session repair preserves prior acceptance and pins every changed c
  for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapStartupRepair
-  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
+  const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
   assert.equal(hash(bytes),digest,file)
  }
  assert.equal(a.serverAuthorityChecksChanged,false);assert.equal(a.tokenLifetimeChanged,false);assert.equal(a.providerRetriesAdded,false)
@@ -92,3 +93,26 @@ test('private retry is bounded and never retries revoked access, provider failur
  calls=0;const missing=createKrsSessionTransport(async()=> 'session',async()=>{calls++;return Response.json({}, {status:401})});
  await missing('/api/xray/kys',{method:'POST'});assert.equal(calls,1);
 });
+test('map reads and geocoding receive fresh SDK authority without a company admission or automatic retry',async()=>{
+ const reads:unknown[]=[],bodies:unknown[]=[],headers:Headers[]=[]
+ const transport=createKrsSessionTransport(async options=>{reads.push(options);return options?.skipCache?'fresh-map-session':'nearly-expired-session'},async(_path,init)=>{headers.push(new Headers(init?.headers));bodies.push(init?.body);return Response.json({}, {status:401})})
+ for(const action of['READ','SYNC','CREATE','GEOCODE']){
+  const body=JSON.stringify({action,supplierId:'11111111-1111-4111-8111-111111111111'})
+  assert.equal((await transport('/api/supplier-locations',{method:'POST',body,headers:{'Content-Type':'application/json','Idempotency-Key':'same-logical-command'}})).status,401)
+  assert.equal(bodies.at(-1),body)
+ }
+ await transport('/api/supplier-locations?supplierId=11111111-1111-4111-8111-111111111111',{method:'GET'})
+ assert.equal(headers.length,5,'no provider or identity retry is introduced');assert.equal(reads.length,5)
+ assert(reads.every(v=>JSON.stringify(v)==='{"skipCache":true}'))
+ for(const h of headers){assert.equal(h.get('Authorization'),'Bearer fresh-map-session');assert.equal(h.get('X-SRM-Report-Admission'),null)}
+ let tokenReads=0
+ await createKrsSessionTransport(async()=>{tokenReads++;return 'must-not-forward'},async(_path,init)=>{assert.equal(new Headers(init?.headers).get('Authorization'),null);return Response.json({})})('https://foreign.fixture.test/api/supplier-locations')
+ assert.equal(tokenReads,0)
+})
+
+test('map timing excludes the private supplier selector and authentication data',async()=>{
+ const original=console.info,lines:string[]=[];console.info=(value:unknown)=>{lines.push(String(value))}
+ try{await createKrsSessionTransport(async()=> 'synthetic-session-not-for-logs',async()=>Response.json({ready:true}))('/api/supplier-locations?supplierId=11111111-1111-4111-8111-111111111111')}finally{console.info=original}
+ assert.equal(lines.length,1);assert.equal(JSON.parse(lines[0]).path,'/api/supplier-locations')
+ assert.doesNotMatch(lines[0],/supplierId|11111111|synthetic-session|Bearer/)
+})

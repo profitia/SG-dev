@@ -293,3 +293,41 @@ policy. No historical baseline is changed and no HUMAN grant is added.
 Missing adoption keeps the new composition closed; all existing purposes work
 without SQL023. Rollback uses the retained application artifact and original
 source pins; the additive purpose can be disabled without deleting history.
+
+## Main Development transient geocoding and searched supplier access
+
+`018-transient-location-geocoding.sql` is an additive receiver for the existing
+Maps command / Root / delegated Work / Source hosts. Its only successful write
+is the guarded location CAS version, actual editor and audit request reference.
+Google coordinates and place IDs remain in the active browser view for at most
+15 minutes and are discarded on close, hidden view, expiry or access revocation.
+They are never stored in the product database, browser storage or Source payload.
+This path does not activate the persistent 29-day cache or its maintenance port.
+Uncertain delivery remains fenced by the existing Source and domain mechanisms.
+
+`018-searched-supplier-location-grants.sql` prepares exact collection policies
+only for an owner-approved runtime role and organisation, current verified members
+and suppliers already registered in that organisation. It never reactivates an
+existing revoked policy or removes a DENY. Exact geocoding permission is prepared
+only for an active location of that same supplier/member. New authority IDs are
+recorded in an immutable administrative log. This preparation finishes in its own
+transaction before Root admission; it cannot change an admitted access snapshot.
+The runtime has no direct table ACL, owner role or generic grant capability.
+
+Activation is confined to the registered main Development service and requires
+`PROFITIA_SUPPLIER_LOCATION_ACCESS_VERSION=srm-searched-locations-v1` and, for the
+paid provider, `PROFITIA_SUPPLIER_LOCATION_GEOCODING_VERSION=srm-google-geocoding-transient-v1`.
+The server-only `GOOGLE_GEOCODING_API_KEY` must allow only Geocoding API and the
+registered service outbound IP ranges. The existing ordinary jobs and Source
+pools are reused; no worker, scheduler, role or additional connection pool is created.
+Install the exact pinned SQL as the controlled owner, seed only the approved
+role/org scope, grant only the named metadata/Work functions and configure the
+existing E1 request, Work, Source and external-call policies before activation.
+SQL027 remains scoped to report/private refresh; it is not an opt-in for location
+operations. Existing location write/sync request contracts remain in force.
+
+Rollback disables these two optional flags and restores the last verified SRM
+artifact plus its three service deployment bindings. Preserve the additive
+installations, source/effect/call history and all counters; revoke new opt-in
+authority through the controlled owner if required. Do not delete location data
+or replay an uncertain Google delivery. PILOT2 and other environments are untouched.

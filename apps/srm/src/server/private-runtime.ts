@@ -7,7 +7,9 @@ import {createSrmReportAdmissionRuntime,reportAdmissionConfiguration,type SrmRep
 import {currentReportAdmission} from '@profitia/platform-contracts/report-admission'
 import type {KrsNameHttpRuntime} from './krs-name-runtime'
 import { createHash } from 'node:crypto'
-import {createSupplierLocationRuntime,type SupplierLocationRuntime} from './supplier-locations'
+import {createSupplierLocationRuntime,type SupplierLocationRuntime,type SupplierLocationRuntimeOptions} from './supplier-locations'
+import {createSrmLocationAccessEnrollment} from './supplier-location-access'
+import {createSrmLocationGeocodingRuntime,readSrmLocationGeocodingConfiguration,type SrmLocationGeocodingRuntime} from './supplier-location-geocoding-runtime'
 import {createSrmLocationAdmission,readSrmLocationAdmissionConfiguration} from './supplier-location-admission'
 import operationAcceptance from '../../operation-integration.json'
 import locationTargets from '../../deployment/supplier-location-targets.json'
@@ -38,6 +40,7 @@ export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
   krsName?:Promise<KrsNameHttpRuntime>
   krsNip?:Promise<KrsNipCompany>
   locations?: SupplierLocationRuntime
+  locationGeocoding?:SrmLocationGeocodingRuntime
 }>
 export type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
@@ -180,7 +183,10 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   if(!['true','false'].includes(nipEnabled)||nipEnabled==='true'&&(nipTargets.activationState!=='ACCEPTED'||!srmKrsPilotTarget(env)||!native))unavailable()
   const krsConfig=nameEnabled==='true'||nipEnabled==='true'?{reader:krsPilotDatabaseUrl(env.KRS_CATALOG_READER_URL,'krs_reader'),source:krsPilotDatabaseUrl(env.KRS_CATALOG_SOURCE_URL,'krs_ingest')}:null
   const admission=locationEnabled==='true'?readSrmLocationAdmissionConfiguration(env,operationAcceptance.p1ReceiverSourceCompatibility):null
-  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,admission,krsConfig,nipEnabled,env.GUS_BIR_API_KEY,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
+  const geocodingConfig=readSrmLocationGeocodingConfiguration(env,locationEnabled==='true',native)
+  const accessVersion=env.PROFITIA_SUPPLIER_LOCATION_ACCESS_VERSION
+  if(accessVersion!==undefined&&(accessVersion!=='srm-searched-locations-v1'||locationEnabled!=='true'||env.RENDER_SERVICE_ID!==locationTargets.serviceId||!!srmKrsPilotTarget(env)))unavailable()
+  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,admission,krsConfig,nipEnabled,geocodingConfig,accessVersion,env.GUS_BIR_API_KEY,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
   const cached = globalThis.__srmPrivateReportRuntime__
   if (cached) { if (cached.key !== key) unavailable(); return cached.runtime }
   const clerk = createSrmClerkClient(env)
@@ -204,6 +210,7 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     commandBoundaryDigest: config.supplierRequest.commandBoundaryDigest,
   }) }) : undefined
   let supplierApi:SrmSupplierApi|undefined
+  let locationPools:Parameters<typeof createSrmLocationGeocodingRuntime>[3]|undefined
   if(native){
     const pair=(databaseUrl:string)=>{
       const selected={...config,databaseUrl}
@@ -212,20 +219,25 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
       return {pool,audit}
     }
     const jobs=pair(native.jobsUrl),source=pair(native.providerSourceUrl),corporate=pair(native.corporateSourceUrl)
+    locationPools={jobs:jobs.pool,jobsAudit:jobs.audit,source:source.pool,sourceAudit:source.audit}
     supplierApi=createSrmNativeSupplierRuntime(native,{pool,auditPool,clerk,jobsPool:jobs.pool,jobsAudit:jobs.audit,
       sourcePool:source.pool,sourceAudit:source.audit,corporatePool:corporate.pool,corporateAudit:corporate.audit})
   }
   const core=nativeTargets.coreSchemaDigests
-  const locations=locationEnabled==='true'?createSupplierLocationRuntime({pool,auditPool,clerk,identity:config.identity,binding:config.binding,module:config.module,
-    application:{...config.application,configurationVersion:locationTargets.configurationVersion},businessDigest:locationTargets.businessSchemaDigest,sourceScope:'HEADQUARTERS_MANUAL',
+  const locationOptions:SupplierLocationRuntimeOptions|undefined=locationEnabled==='true'?{pool,auditPool,clerk,identity:config.identity,binding:config.binding,module:config.module,
+    application:{...config.application,configurationVersion:locationTargets.configurationVersion},businessDigest:locationTargets.businessSchemaDigest,sourceScope:'HEADQUARTERS_MANUAL' as const,
     locationAdmission:createSrmLocationAdmission(admission!),parentSchemaDigest:admission!.parentSchemaDigest,
     ledger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],operationSchemaDigest:core['017-additional-request-operations.sql'],locationSchemaDigest:locationTargets.sql019Digest},
     // Limited UAT never receives a KYS reader, even when the host has one.
-  }):undefined
+  }:undefined
+  if(locationOptions&&accessVersion)locationOptions.prepareAccess=createSrmLocationAccessEnrollment(locationOptions,locationTargets.searchedSupplierAccess.schemaDigest)
+  const locations=locationOptions?createSupplierLocationRuntime(locationOptions):undefined
+  const locationGeocoding=geocodingConfig&&native&&locationOptions&&locations&&locationPools?createSrmLocationGeocodingRuntime(locationOptions,locations,native,locationPools,geocodingConfig):undefined
   const baseRuntime = { provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
     ...(admissionConfig&&supplierApi?{reportAdmission:createSrmReportAdmissionRuntime({config,pool,api:supplierApi})}:{}),
     ...(supplierApi?{supplierApi}:{}),
     ...(locations?{locations}:{}),
+    ...(locationGeocoding?{locationGeocoding}:{}),
     ...(supplierRequest ? { supplierRequest } : {}) }
   let krsName:Promise<KrsNameHttpRuntime>|undefined
   let krsNip:Promise<KrsNipCompany>|undefined

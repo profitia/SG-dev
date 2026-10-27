@@ -15,7 +15,8 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
  const entry:{grant:Grant|null;prepare:(nip:string,signal:AbortSignal)=>Promise<{readyUntil:string}>}={grant:null,prepare:async()=>{throw Error('UNAVAILABLE')}}
  let formDiagnosticFragment:string|null=null
  const run:typeof fetch=async(input,init)=>{
-  if(typeof input!=='string'||!paths.has(input)&&!privateKysPaths.has(input))return transport(input,init)
+  const location=typeof input==='string'&&(input==='/api/supplier-locations'||input.startsWith('/api/supplier-locations?'))
+  if(typeof input!=='string'||!paths.has(input)&&!privateKysPaths.has(input)&&!location)return transport(input,init)
   init?.signal?.throwIfAborted()
   const start=performance.now()
   let grant=reportPaths.has(input)?entry.grant:null
@@ -23,7 +24,7 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
   if(grant&&Date.parse(grant.expiresAt)<=Date.now())throw Error('Przygotowanie wyszukiwania wygasło. Wpisz ponownie numer NIP.')
   // An ordinary company request can outlive the remaining cached bearer.
   // Refresh before starting; retain the admitted bearer and all final E1 checks.
-  const token=grant?.bearer??await getToken(input==='/api/xray/admission'||freshReportPaths.has(input)||privateKysPaths.has(input)?{skipCache:true}:undefined)
+  const token=grant?.bearer??await getToken(input==='/api/xray/admission'||freshReportPaths.has(input)||privateKysPaths.has(input)||location?{skipCache:true}:undefined)
   if(!token)throw Error('Sesja wygasła. Zaloguj się ponownie.')
   const sessionMs=performance.now()-start
   init?.signal?.throwIfAborted()
@@ -43,7 +44,7 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
    }
    return response
   }
-  finally{try{console.info(JSON.stringify({event:'srm_client_request_timing',path:input,httpStatus:status,sessionMs:Math.round(sessionMs*100)/100,fetchMs:Math.round((performance.now()-at)*100)/100,...(retries?{sessionRefreshRetries:retries}:{})}))}catch{}}
+  finally{try{console.info(JSON.stringify({event:'srm_client_request_timing',path:location?'/api/supplier-locations':input,httpStatus:status,sessionMs:Math.round(sessionMs*100)/100,fetchMs:Math.round((performance.now()-at)*100)/100,...(retries?{sessionRefreshRetries:retries}:{})}))}catch{}}
  }
  entry.prepare=async(nip,signal)=>{
   entry.grant=null;formDiagnosticFragment=null

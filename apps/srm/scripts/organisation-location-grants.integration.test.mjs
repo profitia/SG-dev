@@ -8,6 +8,7 @@ import {middleware} from '../middleware.ts'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {privateBusinessPlan} from '../db/private-store/initialize.mjs'
 import {createSupplierLocationRuntime,createSupplierLocationHandler} from '../src/server/supplier-locations.ts'
+import {createSrmLocationAccessEnrollment} from '../src/server/supplier-location-access.ts'
 import {createSupplierMapReadinessHandler} from '../src/server/supplier-map-readiness.ts'
 import {createSrmSensitiveOperationHost,readPrivateSupplier,privateSupplierReportId} from '../src/server/supplier-sensitive-operation.ts'
 import {createSrmLocationGeocodingDomain,createSrmLocationGeocodingRequest} from '../src/server/supplier-location-geocoding.ts'
@@ -194,6 +195,41 @@ for(const p1 of[true])test('organization location authority in actual SRM native
   await t.test('foreign organization, supplier and excluded KYS group are denied',async()=>{
    assert.equal((await page(U,B,SB)).status,403);assert.equal((await page(U,A,SB)).status,403)
    assert.equal((await call({action:'READ',supplierId:S,group:'RELATED_ENTITIES',offset:0,limit:50})).status,403)
+  })
+  await t.test('owner-scoped future supplier enrollment precedes Root, preserves existing grants and respects DENY/revocation',async()=>{
+   const migration=own('018-searched-supplier-location-grants.sql'),next=randomUUID()
+   await controlled(async()=>{
+    await owner.query(migration)
+    await owner.query("INSERT INTO srm.searched_location_scopes VALUES($1,$2,$3,'ACTIVE',true,'SYNTHETIC_OWNER_APPROVAL',$4)",[ROLE,A,hash(migration),future()])
+    await owner.query(`GRANT EXECUTE ON FUNCTION srm.enrol_searched_supplier_locations(uuid,uuid,uuid,uuid,text) TO ${ROLE}`)
+   })
+   await owner.query('BEGIN;SET LOCAL session_replication_role=replica')
+   await owner.query('INSERT INTO srm.suppliers(organization_id,id,nip,krs) VALUES($1,$2,$3,null)',[A,next,'5213390341']);await owner.query('COMMIT')
+   assert.equal((await owner.query('SELECT has_table_privilege($1,$2,\'INSERT,UPDATE,DELETE\') AS allowed',[ROLE,'srm.searched_location_scopes'])).rows[0].allowed,false)
+   await assert.rejects(pool.query('SELECT srm.enrol_searched_supplier_locations($1,$2,$3,null,$4)',[B,U,SB,hash(migration)]),e=>e.code==='42501')
+   const scoped=await pool.connect();try{await scoped.query('BEGIN');await scoped.query("SELECT set_config('profitia.module.supplier_report','already-admitted',true)");await assert.rejects(scoped.query('SELECT srm.enrol_searched_supplier_locations($1,$2,$3,null,$4)',[A,U,next,hash(migration)]),e=>e.code==='42501')}finally{await scoped.query('ROLLBACK');scoped.release()}
+   const prior=(await owner.query('SELECT * FROM profitia_access.organisation_location_policies WHERE resource_id=$1 ORDER BY policy_id',['supplier-locations:'+S])).rows
+   const enrolled=createSupplierLocationRuntime({...options,prepareAccess:createSrmLocationAccessEnrollment({...options,application:{...options.application,organisationId:A}},hash(migration))})
+   const handler=createSupplierLocationHandler(enrolled,A)
+   const send=(body,user=U,org=A)=>handler(new Request(ORIGIN+'/api/supplier-locations?organisationId='+org,{method:'POST',headers:{Origin:ORIGIN,Authorization:'Bearer external-'+user,'Content-Type':'application/json','Idempotency-Key':'enrollment_'+randomUUID()},body:JSON.stringify(body)}))
+   const read={action:'READ',supplierId:next,group:'USER_LOCATIONS',offset:0,limit:50}
+   assert.equal((await send(read)).status,200)
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_access.organisation_location_policies WHERE resource_id=$1',['supplier-locations:'+next])).rows[0].n,3)
+   const revision=(await owner.query('SELECT revision FROM profitia_access.installation WHERE singleton')).rows[0].revision
+   assert.equal((await send(read,V)).status,200)
+   assert.equal((await owner.query('SELECT revision FROM profitia_access.installation WHERE singleton')).rows[0].revision,revision,'repeat READ does not churn authority revision')
+   assert.deepEqual((await owner.query('SELECT * FROM profitia_access.organisation_location_policies WHERE resource_id=$1 ORDER BY policy_id',['supplier-locations:'+S])).rows,prior)
+   assert.equal((await send({action:'CREATE',supplierId:next,locationId:null,expectedVersion:null,command:manual})).status,202)
+   const newLocation=(await(await send(read)).json()).items[0]
+   await pool.query('SELECT srm.enrol_searched_supplier_locations($1,$2,$3,$4,$5)',[A,U,next,newLocation.id,hash(migration)])
+   assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_access.permission_grants WHERE user_id=$1 AND operation='supplier.location.geocode' AND resource_id=$2",[U,'supplier-location-geocode:'+newLocation.id])).rows[0].n,1)
+   assert.equal((await send(read,U,B)).status,403);assert.equal((await send({...read,supplierId:SB})).status,403)
+   const denied=randomUUID();await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants VALUES($1,'srm',$2,$3,'DENY','supplier.location.read','supplier_report',$4)",[denied,A,V,'supplier-locations:'+next]))
+   assert.equal((await send(read,V)).status,403);assert.equal((await send(read)).status,200)
+   await controlled(()=>owner.query("UPDATE profitia_access.organisation_location_policies SET status='REVOKED' WHERE resource_id=$1 AND operation='supplier.location.read'",['supplier-locations:'+next]))
+   assert.equal((await send(read)).status,403)
+   assert.equal((await owner.query("SELECT status FROM profitia_access.organisation_location_policies WHERE resource_id=$1 AND operation='supplier.location.read'",['supplier-locations:'+next])).rows[0].status,'REVOKED')
+   assert.equal((await owner.query('SELECT count(*)::int n FROM srm.searched_location_enrolments WHERE supplier_id=$1',[next])).rows[0].n,4)
   })
   await t.test('individual exact-child DENY overrides inherited WRITE without hiding legal READ',async()=>{
    const grant=randomUUID();await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants VALUES($1,'srm',$2,$3,'DENY','supplier.location.write','supplier_report',$4)",[grant,A,V,location.id]))

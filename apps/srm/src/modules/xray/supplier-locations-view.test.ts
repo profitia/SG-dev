@@ -17,7 +17,8 @@ test('map startup repair preserves every prior acceptance and pins current consu
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapRuntimeReadinessRepair
   const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapAddressOnlyRepair
-  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
+  const final:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):final?.applicationSourceDigests[file]?execFileSync('git',['show',final.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
   assert.equal(hash(bytes),digest,file)
  }
  assert.equal(a.maximumAutomaticStartupRetries,1);assert.equal(a.sharedSdkChanged,false);assert.equal(a.locationAuthorityChanged,false)
@@ -42,7 +43,11 @@ test('address-only repair preserves predecessor receipts and pins current source
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(prior),a.previousReceiptDigest)
  for(const[k,v]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt as Record<string,unknown>)[k],v,k)
- for(const[f,d]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../../'+f,import.meta.url))),d,f)
+ for(const[f,d]of Object.entries(a.applicationSourceDigests)){
+  const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
+  const bytes=next?.applicationSourceDigests[f]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+f]):readFileSync(new URL('../../../'+f,import.meta.url))
+  assert.equal(hash(bytes),d,f)
+ }
  assert.equal(a.inventedCoordinates,false);assert.equal(a.paidGeocodingEnabled,false);assert.equal(a.sharedSdkChanged,false)
 })
 const flush=()=>new Promise<void>(resolve=>setImmediate(resolve))
