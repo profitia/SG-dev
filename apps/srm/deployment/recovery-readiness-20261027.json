@@ -48,11 +48,11 @@
     ]
   },
   "stageII": {
-    "status": "PARTIAL_SUCCESS",
+    "status": "BLOCKED",
     "runtimeActivated": false,
     "problem": "Main SRM did not mount the accepted PILOT2 GUS/KRS and reconciled Financial composition; a missing publication could retain a successful Financial status.",
     "solution": "Opt-in main Development adapter over the existing current HUMAN/native Request/Work/Source boundaries; reuse PILOT2 registry resolution, continuity and COMPLETE_IN_REQUEST Financial with maximum one licensed original. Add distinct public registry reader/Source logins to avoid changing or sharing PILOT2 connection slots. The settled KRS body enters a separate current HUMAN read and physical OUTCOME; a different requested organisation is refused before Source resolution.",
-    "result": "Source and tests prepared; explicit Development-only owner-access approval received. Remote adoption and live business acceptance remain pending.",
+    "result": "User approval received. Approved atomic owner-access check failed in Neon: operator lacks ADMIN on the two NOLOGIN owner roles. Transaction rolled back; no new roles, Source bindings, credentials, application flags or deployment changes. Provider-side administrator intervention is required.",
     "verification": {
       "mainApplicationTestsPassed": 778,
       "mainApplicationTestsSkipped": 8,
@@ -64,10 +64,11 @@
       "fullOperationRegression": "PASS: 635 tests, zero skips, on a fresh isolated PostgreSQL cluster",
       "businessAcceptance": "NOT_YET_EXECUTED_ON_NEW_COMPOSITION",
       "finalProtectedProjection": "PASS: physical HUMAN OUTCOME and revocation after Source resolution",
-      "pilot2PackagingRegression": "PASS: 3 registry/cold overlay tests; full artifact build CI required"
+      "pilot2PackagingRegression": "PASS: 3 local dependency tests and full seven-stage pilot2-baseline-build CI at e3b4f7812a9816f46f3b8d43cd7b4b46f193dc63",
+      "ciOperationRegression": "First exact-head CI: 634 passed, one new test failed because its ordinary synthetic role had no SCRAM password. Fixture corrected; authenticated rerun pending."
     },
     "risk": [
-      "Temporary owner SET access is required in the existing Development-only registry catalogue; automatic approval review rejected the proposed check. No retry or remote catalogue change was performed.",
+      "No user-managed role has ADMIN or SET membership in either catalogue owner. Existing owners are NOLOGIN. Provider administrator must restore an auditable temporary execution path; do not use internal managed roles or enable owner login.",
       "New main code requires exact matching deployment bindings; coordinate activation and rollback with the live Render artifact.",
       "Existing location write/sync rolling policies and location-read denials remain to be assessed in the Maps stage."
     ],
@@ -91,11 +92,26 @@
       "existingPILOT2BindingsChanged": false,
       "status": "APPROVED_BY_USER_DEVELOPMENT_ONLY",
       "approvalRef": "USER-20261027-DEVELOPMENT-PILOT2-TECHNICAL-RECEIVERS"
+    },
+    "remoteAccessReadback": {
+      "projectId": "snowy-breeze-40315151",
+      "branchId": "br-summer-rain-b1nwbcbr",
+      "databaseName": "krs_registry_pilot",
+      "operator": "neondb_owner",
+      "ownerRoles": [
+        "profitia_ingestion_owner",
+        "krs_catalog_owner"
+      ],
+      "operatorMemberships": 0,
+      "allOwnerMemberships": 0,
+      "newRoleCount": 0,
+      "atomicCheck": "ROLLED_BACK_PERMISSION_DENIED",
+      "error": "permission denied to grant role profitia_ingestion_owner"
     }
   },
   "stageIII": {
     "status": "NOT_STARTED",
-    "reason": "Mandatory order; complete PILOT2 activation and acceptance first."
+    "reason": "Mandatory order; PILOT2 activation awaits provider-side catalogue administration."
   },
   "staging": {
     "mutated": false,

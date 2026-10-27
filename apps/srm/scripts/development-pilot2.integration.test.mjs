@@ -27,7 +27,7 @@ test('main KRS receiver commits genuine delegated General and retains tenant, re
   databaseName=f.baseBinding.databaseName
   const existing=(await f.owner.query('SELECT rolcanlogin,rolsuper,rolbypassrls,rolinherit,rolcreaterole,rolcreatedb FROM pg_roles WHERE rolname=$1',[role])).rows[0]
   if(existing)assert.deepEqual(existing,{rolcanlogin:true,rolsuper:false,rolbypassrls:false,rolinherit:false,rolcreaterole:false,rolcreatedb:false})
-  else{await f.owner.query(`CREATE ROLE ${role} LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS CONNECTION LIMIT 4`);createdRole=true}
+  else{await f.owner.query(`CREATE ROLE ${role} LOGIN PASSWORD 'isolated_ci_only' NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS CONNECTION LIMIT 4`);createdRole=true}
   await f.owner.query('GRANT CONNECT ON DATABASE '+databaseName+' TO '+role)
   await f.controlled(async()=>{
    await f.owner.query(f.own('022-pilot2-registry-envelope.sql'))
@@ -56,7 +56,7 @@ test('main KRS receiver commits genuine delegated General and retains tenant, re
    await f.owner.query(f.own('024-development-pilot2-receiver.sql'))
    await f.owner.query("UPDATE profitia_access.installation SET project_id='isolated-srm-service-project',branch_id='isolated-srm-service-branch'")
   })
-  const url=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);url.username=role;url.pathname='/'+databaseName
+  const url=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);url.username=role;url.password='isolated_ci_only';url.pathname='/'+databaseName
   const pool=new pg.Pool({connectionString:url.href,max:2}),audit=new pg.Pool({connectionString:url.href,max:1})
   try{
    const options={...f.workOptions,pool,auditPool:audit,application:{...f.workOptions.application,deploymentId:deployment},
