@@ -30,14 +30,15 @@ test('diagnostic correlation joins search and protected read without becoming an
  assert(!logs.join('').includes(nip));assert(!logs.join('').includes('synthetic-original-key'))
 })
 
-test('unprepared KRS and NIP requests use ordinary SDK token reuse without forwarding credentials to other destinations',async()=>{
- let tokens=0;const seen:{path:string;authorization:string|null}[]=[]
- const transport=createKrsSessionTransport(async options=>{assert.equal(options,undefined);return 'synthetic-session-'+ ++tokens},async(path,init)=>{
+test('unprepared KRS keeps ordinary token reuse while NIP starts fresh, without forwarding credentials to other destinations',async()=>{
+ let tokens=0;const reads:unknown[]=[],seen:{path:string;authorization:string|null}[]=[]
+ const transport=createKrsSessionTransport(async options=>{reads.push(options);return 'synthetic-session-'+ ++tokens},async(path,init)=>{
   seen.push({path:String(path),authorization:new Headers(init?.headers).get('authorization')});return Response.json({})
  })
  await transport('/api/xray/krs/status');await transport('/api/xray/krs/lookup',{method:'POST'});
  await transport('/api/xray/search');await transport('https://foreign.example/api/xray/krs/lookup');
  assert.equal(tokens,3);assert.deepEqual(seen.map(x=>x.authorization),['Bearer synthetic-session-1','Bearer synthetic-session-2','Bearer synthetic-session-3',null])
+ assert.deepEqual(reads,[undefined,undefined,{skipCache:true}])
  let calls=0;await assert.rejects(createKrsSessionTransport(async()=>null,async()=>{calls++;return Response.json({})})('/api/xray/krs/lookup'),/Sesja wygasła/);assert.equal(calls,0)
 })
 
