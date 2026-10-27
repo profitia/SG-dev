@@ -3145,13 +3145,19 @@
       "tests/identity-runtime.test.ts": "d7d335c62341a64f11a327b16a90e7f01f1bba2fb3637f1a6edd15abb6c0b3c4",
       "tests/category-operation.test.ts": "b0d96837030ec312fe5c2be15278e0f33cbd164ba786dab6ddd33f452d877102",
       "tests/porr-demo-middleware.test.ts": "89a31b766773db5277e36fb813435e761b800029e16ffaa5413b54dc70cc28cf",
-      "tests/operation-context.test.mjs": "28365c659381f331d805ff5c1a6616c42d68a77a4fd2868f6d71ef8212bbc06f",
-      "package.json": "497bbafb3a087c60fc6616c796017bf83cff07dbe6defeaa256c836b227e67c5"
+      "tests/operation-context.test.mjs": "f7b4819b6437b36838399918a37fe26de715e9ba85793ff286e1c2c87cb33443",
+      "package.json": "497bbafb3a087c60fc6616c796017bf83cff07dbe6defeaa256c836b227e67c5",
+      "deployment/appshell-development-release-20261027.json": "f26641d19ae1b3a36b6d15db5f89f0407a9e045c7140ed76256f8e6da5464ff7",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "f49153063f111b8bc96cde482f0c203c923eb38d0860014295e49da266198949",
+      "tests/native-sql-roundtrips.test.mjs": "ab4893512908a2b1ff572ae92e841d496329edb7fabfd8145a4d6f6e1f0d29a7"
     },
     "moduleIntegrationAdded": false,
     "cicConnected": false,
     "schemaChanged": false,
     "operationGrantsChanged": false,
-    "sourceAcceptanceIsNotRuntimeAcceptance": true
+    "sourceAcceptanceIsNotRuntimeAcceptance": true,
+    "addedBoundaryFiles": [
+      "apps/sg-runtime/deployment/appshell-development-release-20261027.json"
+    ]
   }
 }

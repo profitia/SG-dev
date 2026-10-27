@@ -147,7 +147,9 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     const paths = execFileSync('git', ['ls-tree', '-r', '--name-only', current.previousReceiptSourceSha, '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean)
     assert(paths.length > 0, path)
     const currentPaths = execFileSync('git', ['ls-files', '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean)
-    assert.deepEqual(currentPaths, paths, 'Boundary inventory: ' + path)
+    const additions=receipt.appShellSourceCompatibility.addedBoundaryFiles.filter(file=>file.startsWith(path+'/'))
+    assert.deepEqual(currentPaths, [...paths,...additions].sort(), 'Boundary inventory with explicit AppShell release record: ' + path)
+    for(const file of additions)assert.equal(createHash('sha256').update(fs.readFileSync(new URL(file,repository))).digest('hex'),receipt.appShellSourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')],file)
     for (const file of paths) {
       // The later source-compatibility task adds only its CI test command.
       // The presentation acceptance still pins its complete prior package.
