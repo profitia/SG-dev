@@ -3,6 +3,7 @@ import React,{useEffect,useRef,useState,useSyncExternalStore} from 'react'
 import {CanonButton,FinancialHistoryDialog,displayPostalAddress,currentLocationCoordinates,supplierLocationsMapProjection,type SupplierLocation,type SupplierLocationGroup,type ManualLocationInput} from '@profitia/srm-xray'
 import {SupplierLocationController} from './supplier-location-controller'
 import {mountSupplierMapWithStartupRetry} from './supplier-map-startup'
+import {prepareSupplierMapRuntime} from './supplier-map-readiness'
 import targets from '../../../deployment/supplier-location-targets.json'
 const groups=[['SUPPLIER_LOCATIONS','Siedziba i oddziały'],['USER_LOCATIONS','Własne lokalizacje']] as const
 const button=(label:string,onClick:()=>void,disabled=false)=><CanonButton canonId="SRM-C02" usage="supplier-locations:01" type="button" onClick={onClick} disabled={disabled}>{label}</CanonButton>
@@ -28,7 +29,8 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
   if(!open||!map.current||!state.page||state.blocked||!state.page.items.some(v=>currentLocationCoordinates(v)))return
   setMapStatus('loading');setSelectedLocation(null)
   let disposed=false,view:{close():void}|undefined
-  void import('@profitia/maps-embed').then(({mountMaps})=>{
+  const startup=new AbortController()
+  void prepareSupplierMapRuntime(supplierId,startup.signal).then(()=>import('@profitia/maps-embed')).then(({mountMaps})=>{
    if(disposed||!map.current)return
    const container=map.current
    view=mountSupplierMapWithStartupRetry(onStatus=>{
@@ -37,7 +39,7 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
     return attempt
    },s=>{if(!disposed)setMapStatus(s)})
   }).catch(()=>{if(!disposed)setMapStatus('error')})
-  return()=>{disposed=true;view?.close()}
+  return()=>{disposed=true;startup.abort();view?.close()}
  },[open,state.page,state.blocked,controller,group,offset,mapAttempt])
  useEffect(()=>{if(editing!==undefined)formStart.current?.focus()},[editing])
  const begin=(location:SupplierLocation|null)=>{setEditing(location);setForm(location?{label:location.label,description:location.description,address:location.address??empty.address,position:location.coordinates?.origin==='USER_INPUT'?location.coordinates.position:null}:empty);setPositionDraft(location?.coordinates?.origin==='USER_INPUT'?{lat:String(location.coordinates.position.lat),lng:String(location.coordinates.position.lng)}:{lat:'',lng:''});setFormError(null)}

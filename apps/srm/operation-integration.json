@@ -5176,5 +5176,30 @@
       "src/server/company-source-policy.test.ts": "a6c8786ff3af43e6268a0451cf8d9c586f4b170fa4f1f76f3e6575421e7ab04e",
       "src/server/peer-read-boundary.test.ts": "b1bdbc92a2acebe5052d2f1b2d0f719121f0bd91e84e1204b8614b078c63b8e7"
     }
+  },
+  "supplierMapRuntimeReadinessRepair": {
+    "taskId": "SRM-DEVELOPMENT-MAPS-RECOVERY-20261027",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "previousReceiptSourceSha": "4b59557a82a0223b01ff26f601951aafe23877a0",
+    "previousReceiptDigest": "141342e9d3ae3fdc7dad981f658a85899c80281a9d69fa545bc5bbcda843b895",
+    "scope": "AUTHORIZED_MAP_RUNTIME_READINESS_BEFORE_EMBED",
+    "locationAuthorityChanged": false,
+    "paidProviderCallsAdded": false,
+    "databaseSchemaChanged": false,
+    "mgbiOrSearchChanged": false,
+    "maximumHealthAttempts": 12,
+    "maximumHealthWaitMs": 60000,
+    "applicationSourceDigests": {
+      "app/api/supplier-locations/route.ts": "d1b007c6c82d50f0819f813bbcfd75257d922ed3a4ebc738833ebba83e618140",
+      "scripts/native-execution-adoption.test.mjs": "65eb677ca46489a5b16956bccb17962adc516496aaa794273e10eaab05b8539b",
+      "scripts/organisation-location-grants.integration.test.mjs": "da6f000942895e61626cc23fb0e0d956c89908139422762a5705c392a05bd957",
+      "scripts/request-quota-adoption.test.mjs": "553507f7912ddbfa855cbc39794998af51f6e93ebf804f2c7ad99dec31c3db81",
+      "src/modules/xray/supplier-locations-view.test.ts": "84a1c1cbeab09bf0e25c054bcc905adcaf05a7711c812bcd3a1c1abb4fefe0a8",
+      "src/modules/xray/supplier-locations-view.tsx": "e820a6702baa7f8dac4bfcc8b99311d49e05f087871787f4cb253ffd362f5d9f",
+      "src/modules/xray/supplier-map-readiness.ts": "f3906c4a679d3f49a131b5e8cd0692d4a6302fd20cd8803185b9b4be35a52c26",
+      "src/server/peer-read-boundary.test.ts": "a8bec15492fc5cddb1bfe1e0299f24a166333063edd4c5d979a0dd28143e268f",
+      "src/server/supplier-map-readiness.test.ts": "7f1f34669e066d0b7ba39cfb17ec93f55aeadb544c3ac9f33275a5038888a816",
+      "src/server/supplier-map-readiness.ts": "0a38fd2835e1a9a018ab6bf6fcc5b1efdc6b1399402b46d4063bcb42b2968041"
+    }
   }
 }

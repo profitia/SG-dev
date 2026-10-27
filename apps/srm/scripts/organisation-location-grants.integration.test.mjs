@@ -8,6 +8,7 @@ import {middleware} from '../middleware.ts'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {privateBusinessPlan} from '../db/private-store/initialize.mjs'
 import {createSupplierLocationRuntime,createSupplierLocationHandler} from '../src/server/supplier-locations.ts'
+import {createSupplierMapReadinessHandler} from '../src/server/supplier-map-readiness.ts'
 import {createSrmSensitiveOperationHost,readPrivateSupplier,privateSupplierReportId} from '../src/server/supplier-sensitive-operation.ts'
 import {createSrmLocationGeocodingDomain,createSrmLocationGeocodingRequest} from '../src/server/supplier-location-geocoding.ts'
 import {createSrmNativePgDriver} from '../src/server/native-pg-driver.ts'
@@ -157,6 +158,14 @@ for(const p1 of[true])test('organization location authority in actual SRM native
    return gate.headers.get('x-middleware-next')==='1'?handler(request):gate
   }
   const page=(user=U,org=A,supplierId=S)=>call({action:'READ',supplierId,group:'USER_LOCATIONS',offset:0,limit:50},user,undefined,org)
+  await t.test('map startup readiness uses actual current E1; foreign supplier and unverified actor never probe the runtime',async()=>{
+   let probes=0
+   const ready=createSupplierMapReadinessHandler({read:async(request,supplierId)=>{await runtime.page({request,organisationId:A,supplierId},'SUPPLIER_LOCATIONS',0,1)},transport:async()=>{probes++;return Response.json({service:'maps-runtime',environment:'development',configured:true,mode:'read-only',persistence:false})}})
+   const get=(supplierId,user=U,extra='')=>ready(new Request(ORIGIN+'/api/supplier-locations?supplierId='+supplierId+extra,{headers:{Origin:ORIGIN,Authorization:'Bearer external-'+user}}))
+   assert.equal((await get(S)).status,200);assert.equal((await get(S,V)).status,200);assert.equal(probes,2)
+   assert.equal((await get(SB)).status,403);assert.equal((await get(S,'unverified-fixture-user')).status,401)
+   assert.equal((await get(S,U,'&organisationId='+B)).status,400);assert.equal(probes,2)
+  })
   const key='org_manual_'+randomUUID(),command={action:'CREATE',supplierId:S,locationId:null,expectedVersion:null,command:manual}
   let location
   await t.test('admitted Clerk entry still rejects unverified identity in its actual E1 backend',async()=>{

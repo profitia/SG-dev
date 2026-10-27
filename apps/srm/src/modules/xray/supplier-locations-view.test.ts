@@ -13,7 +13,11 @@ test('map startup repair preserves every prior acceptance and pins current consu
  const before=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(before),a.previousReceiptDigest)
  for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
+  const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapRuntimeReadinessRepair
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
+  assert.equal(hash(bytes),digest,file)
+ }
  assert.equal(a.maximumAutomaticStartupRetries,1);assert.equal(a.sharedSdkChanged,false);assert.equal(a.locationAuthorityChanged,false)
 })
 const flush=()=>new Promise<void>(resolve=>setImmediate(resolve))
