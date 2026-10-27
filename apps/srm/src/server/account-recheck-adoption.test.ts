@@ -73,7 +73,8 @@ test('location build recovery preserves accepted access and changes no product r
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.krsFinancialTelemetryCompatibility.previousSourceSha+':apps/srm/'+file])),digest,file)
  assert.equal(a.productRuntimeChanged,false);assert.equal(a.databaseChanged,false)
  const file='src/server/supplier-locations.ts'
- assert.equal(hash(fs.readFileSync(path.join(root,file))),hash(execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/'+file])))
+ const next=receipt.supplierMapGeocodingActivation
+ assert.equal(hash(execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file])),hash(execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/'+file])))
 })
 
 test('location Clerk entry preserves all accepted receipts and keeps existing E1 authority',()=>{

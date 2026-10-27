@@ -28,7 +28,7 @@
   "transientGeocoding": {
     "configurationVersion": "srm-google-geocoding-transient-v1",
     "schemaDigest": "eaa31f2951330f643424954406b8767788b5da4b1720c696abe83de3b55399a6",
-    "ownerAdoptionRef": "9e37c529d59701d0fc0a0173c0fb0a5613c6d2d5",
+    "ownerAdoptionRef": "REGISTERED_CURRENT_RENDER_GIT_COMMIT",
     "persistence": "ACTIVE_VIEW_MEMORY_ONLY",
     "maximumViewRetentionMs": 900000,
     "provider": "GOOGLE_GEOCODING",

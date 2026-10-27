@@ -5245,7 +5245,7 @@
       "app/api/supplier-locations/route.ts": "7e48d85981e34c4dee369dcd425bac5a4bc4a06d2de75c7caeed6a8007e96169",
       "db/private-store/018-searched-supplier-location-grants.sql": "ae96d24c34b22163400ca908e7f8509156f9168766d4114f0c39cada372f276a",
       "db/private-store/018-transient-location-geocoding.sql": "eaa31f2951330f643424954406b8767788b5da4b1720c696abe83de3b55399a6",
-      "deployment/supplier-location-targets.json": "91ef55eb6230fb3b6a5e736ff3611d8ccdea5a738d6bcc20c2b032d10a4d2b0e",
+      "deployment/supplier-location-targets.json": "b325d2b84faa4a39a6f92a7c858a881b178b14c16688e8f4988ed342d178986c",
       "package-lock.json": "e7a3890b6d0b298b1b3581efbf8f50e4ee6994494c26ce11381b28ab5eba965c",
       "package.json": "3c837f195ac8f87e60f2737d47bc2981f7c8b7594850a71a16feb76b7d159bac",
       "scripts/native-execution-adoption.test.mjs": "1b921ef8421c1ee1a83509a26898e7ab0b101c4ab143a08dca18cf11a976f305",
@@ -5254,17 +5254,20 @@
       "scripts/supplier-locations.integration.test.mjs": "8c3aaa414f6042d2d7c6800afc763a5dc2e38e50389d17ac3f64adb8aa74068f",
       "src/modules/xray/supplier-location-controller.test.ts": "df8250b57b6ebae2e1877f8cbddea99f38c85435c4241b3b0480ca49ba0c7186",
       "src/modules/xray/supplier-location-controller.ts": "cb2f2c3cc5d42f07cbc5e571cb9a6c59a48380d3f3ae23b797ce7da1dd80eb9e",
-      "src/modules/xray/supplier-locations-view.test.ts": "c75a8327fc1bd0945d944301217db04c1d3ce01ab25dac93c23bd11071aa18bd",
+      "src/modules/xray/supplier-locations-view.test.ts": "f85107ea7f3131fd0c9eb2d07655b10c24fbe651da06afc9925ddad1c5dbd17a",
       "src/modules/xray/supplier-locations-view.tsx": "0bbeb53358d09e548a9b2d0d9eb134dc7028d9398ee6ffe7438c3883a31de502",
       "src/server/maps-geocoding-command.d.ts": "b06e61402b504921a5fd7f834b3d307ec099c0aa7a444e348f8a2ff12f2a6ff6",
       "src/server/peer-read-boundary.test.ts": "d764b2cb128f64619fa3eeca13cb41425302168e80e511e22a65a5a6f44559ca",
       "src/server/private-runtime.ts": "acb0af949fdf5b97dd7e2c530fa9d8c8405ccac4da2c597ad9bb5da71213e994",
       "src/server/supplier-location-access.ts": "1dcd43d6a7f80f1042dd1ed28ce78264494a403aaa42e59e54b1cc2719984ebb",
       "src/server/supplier-location-geocoding-runtime.test.ts": "a3992d4447835b7acdb49629d4c6d22605b0e3776cb43d554572f03e7a411ded",
-      "src/server/supplier-location-geocoding-runtime.ts": "26548da3c5d0d98eeaddfa93293897b0710a4f410a73418b727ad5a74bdc304c",
+      "src/server/supplier-location-geocoding-runtime.ts": "1c497ddd3b57f799c49b5956ebaf9016e76108bb756100eb6536916933fce50a",
       "src/server/supplier-location-geocoding.ts": "2910d0260df02d5dd2dde5024c3ad98ad048a03c7928ed86ed99fd90e21de38b",
       "src/server/supplier-locations.ts": "3f84614d7ba5262f3b090cc990b90696f3faaa7d5e41c5ef5408c52ae2e8c7e1",
-      "src/server/supplier-map-readiness.test.ts": "c4085d820c87700a817360458c26359d26480145bd51e8d9d746848b4aad1d65"
+      "src/server/supplier-map-readiness.test.ts": "c4085d820c87700a817360458c26359d26480145bd51e8d9d746848b4aad1d65",
+      "src/server/account-recheck-adoption.test.ts": "08c66fda218528c543907758e339eedaed280853828851ee888bfce56b341d8f",
+      "src/server/company-source-policy.test.ts": "8d1a1d3ee1bd226fab9c094454cb3821627a4f064c13496130f477c2e5773718",
+      "db/private-store/README.md": "c7253c29faa0e51a116f543d51ec0dbffd60ab138bea78718c1a116138916006"
     },
     "requestQuotaContractExtended": false
   }

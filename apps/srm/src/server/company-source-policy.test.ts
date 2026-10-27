@@ -17,7 +17,8 @@ test('MGBI recovery preserves the full prior acceptance and pins every current c
   for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
   for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
     const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.mgbiDevelopmentSessionFreshnessRepair.applicationSourceDigests[file as keyof typeof receipt.mgbiDevelopmentSessionFreshnessRepair.applicationSourceDigests]?receipt.mgbiDevelopmentSessionFreshnessRepair:receipt.supplierMapStartupRepair
-    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
+    const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
+    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
     assert.equal(hash(bytes),digest,file)
   }
   assert.equal(a.companySourcePolicy,'MGBI_ONLY');assert.equal(a.sharedSdkChanged,false);assert.equal(a.humanEntitlementsChanged,false)

@@ -44,7 +44,7 @@ export function createSrmLocationGeocodingRuntime(options:SupplierLocationRuntim
   const admitted=await requester.request(input)
   if(admitted.status!=='ACCEPTED')return admitted
   const domain=createSrmTransientGeocodingDomain(options.businessDigest,locationTargets.transientGeocoding.schemaDigest)
-  const command=createMapsGeocodingCommand({service,source,domain,...config,ownerAdoptionRef:locationTargets.transientGeocoding.ownerAdoptionRef})
+  const command=createMapsGeocodingCommand({service,source,domain,...config,ownerAdoptionRef:native.base.application.deploymentId.slice(-40)})
   const outcome=await command.run({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'job.execute',
    organisationId:input.organisationId,resourceId:admitted.receipt.requestId,payload:admitted.payload,request:null})
   const completed=domain.result()
