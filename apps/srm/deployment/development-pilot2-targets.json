@@ -6,6 +6,7 @@
   "origin": "https://srm-development-runtime.onrender.com",
   "flag": "SRM_DEVELOPMENT_PILOT2_LOOKUP",
   "registrySourceRole": "srm_development_krs_source",
+  "registryReaderRole": "srm_development_krs_reader",
   "registryEnvelopeBoundaryDigest": "73a56009b406d256070c270244d9010200e841eed23c6d4b07fe4487212084a9",
   "financialExecution": "COMPLETE_IN_REQUEST",
   "maximumNewLicensedOriginalsPerRequest": 1,

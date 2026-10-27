@@ -35,6 +35,15 @@ test('Source connection refuses Staging, other roles, databases and weaker TLS',
  assert.equal(pilot2RegistryConnection(url,'krs_ingest').ssl.rejectUnauthorized,true)
  for(const value of [url.replace('krs_ingest:','neondb_owner:'),url.replace('/krs_registry_pilot?','/srm_app?'),url.replace('sslmode=require','sslmode=disable'),url+'&options=role%3Downer',url.replace('ep-fragrant-cloud-b1y6i4v8','ep-autumn-wildflower-b1mv0vda')])assert.throws(()=>pilot2RegistryConnection(value,'krs_ingest'))
 })
+test('main Development has separate ordinary registry reader and Source credentials',()=>{
+ const host='ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech/krs_registry_pilot?sslmode=require'
+ for(const role of ['srm_development_krs_reader','srm_development_krs_source'] as const){
+  const url='postgresql://'+role+':fixture@'+host
+  assert.equal(pilot2RegistryConnection(url,role).user,role)
+  assert.equal(pilot2RegistryConnection(url,role).ssl.rejectUnauthorized,true)
+  assert.throws(()=>pilot2RegistryConnection(url.replace(role,'krs_ingest'),role))
+ }
+})
 test('real Source composition initializes across the app CJS and external ESM boundary without provider calls',async()=>{
  const host='ep-fragrant-cloud-b1y6i4v8.c-5.eu-central-1.aws.neon.tech/krs_registry_pilot?sslmode=require'
  const runtime=await getPilot2Registry({RENDER_SERVICE_ID:'srv-dbeh6srrjlhs73fmikrg',TARGET_ENVIRONMENT:'development',RENDER_GIT_COMMIT:'a'.repeat(40),

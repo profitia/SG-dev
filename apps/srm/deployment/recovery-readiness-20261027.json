@@ -48,15 +48,55 @@
     ]
   },
   "stageII": {
-    "status": "NOT_STARTED",
-    "plannedScope": "Reuse PILOT2 GUS/KRS identity, Financial reconciliation, one-original acquisition, cache and truthful publication inside the main native SRM flow; preserve main UI and private authority"
+    "status": "PARTIAL_SUCCESS",
+    "runtimeActivated": false,
+    "problem": "Main SRM did not mount the accepted PILOT2 GUS/KRS and reconciled Financial composition; a missing publication could retain a successful Financial status.",
+    "solution": "Opt-in main Development adapter over the existing current HUMAN/native Request/Work/Source boundaries; reuse PILOT2 registry resolution, continuity and COMPLETE_IN_REQUEST Financial with maximum one licensed original. Add distinct public registry reader/Source logins to avoid changing or sharing PILOT2 connection slots.",
+    "result": "Source and tests prepared; existing UI files preserved byte-for-byte. Remote adoption is pending explicit owner-access approval.",
+    "verification": {
+      "mainApplicationTestsPassed": 776,
+      "mainApplicationTestsSkipped": 8,
+      "diagnosticOverlayTestsPassed": 3,
+      "focusedConfigurationAndFinancialTestsPassed": 37,
+      "nativeReceiverTestsPassed": 6,
+      "typecheck": "PASS",
+      "build": "PASS",
+      "fullOperationRegression": "REQUIRED_BEFORE_ACTIVATION_AND_COMPLETION",
+      "businessAcceptance": "NOT_YET_EXECUTED_ON_NEW_COMPOSITION"
+    },
+    "risk": [
+      "Temporary owner SET access is required in the existing Development-only registry catalogue; automatic approval review rejected the proposed check. No retry or remote catalogue change was performed.",
+      "New main code requires exact matching deployment bindings; coordinate activation and rollback with the live Render artifact.",
+      "Existing location write/sync rolling policies and location-read denials remain to be assessed in the Maps stage."
+    ],
+    "approvalRequired": {
+      "projectId": "snowy-breeze-40315151",
+      "branchId": "br-summer-rain-b1nwbcbr",
+      "databaseName": "krs_registry_pilot",
+      "newOrdinaryRoles": [
+        "srm_development_krs_reader",
+        "srm_development_krs_source"
+      ],
+      "temporaryOwnerRoles": [
+        "krs_catalog_owner",
+        "profitia_ingestion_owner"
+      ],
+      "operator": "neondb_owner",
+      "atomicTransaction": true,
+      "ownerMembershipsRemovedBeforeCommit": true,
+      "newCompute": false,
+      "paidProviderAllowanceAdded": false,
+      "existingPILOT2BindingsChanged": false
+    }
   },
   "stageIII": {
-    "status": "NOT_STARTED"
+    "status": "NOT_STARTED",
+    "reason": "Mandatory order; complete PILOT2 activation and acceptance first."
   },
   "staging": {
     "mutated": false,
-    "ready": false
+    "ready": false,
+    "reason": "PILOT2 runtime/business acceptance and Maps acceptance are incomplete; no staging approval requested."
   },
   "recovery": {
     "candidateArtifactDigest": "ccdf22ec04877030ba3fe4eda7ec5ad03f2af7327a850e325bf843828cbfff51",

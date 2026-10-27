@@ -5,20 +5,21 @@ const registry=JSON.parse(fs.readFileSync(new URL('../deployment/pilot2-registry
 const q=value=>"'"+String(value).replaceAll("'","''")+"'"
 
 /** Reviewable plan only. A new ordinary Source login reuses the existing public
- * catalogue and shared GUS scheduler/funding. No existing policy/count changes.
+ * catalogue and shared GUS scheduler/funding. Its independent read-only login
+ * prevents contention with PILOT2's four-connection reader. No counter changes.
  * Owner access must be approved separately; this module makes no connection. */
 export function developmentPilot2RegistryPlan(sourceSha){
  if(!/^[a-f0-9]{40}$/.test(sourceSha??''))throw Error('Exact accepted main source required')
- const role=target.registrySourceRole,ref=target.taskId+':'+sourceSha
+ const role=target.registrySourceRole,reader=target.registryReaderRole,roles=[role,reader],ref=target.taskId+':'+sourceSha
  const before=["SET LOCAL statement_timeout='15s'","SET LOCAL lock_timeout='3s'",
   "SELECT pg_advisory_xact_lock(hashtext('srm-main-development-krs-receiver'))",
   `DO $guard$ BEGIN IF current_user<>session_user OR current_user<>'neondb_owner'
    OR current_database()<>'krs_registry_pilot'
-   OR EXISTS(SELECT 1 FROM pg_roles WHERE rolname=${q(role)})
+   OR EXISTS(SELECT 1 FROM pg_roles WHERE rolname IN(${roles.map(q).join(',')}))
    OR pg_has_role(session_user,'profitia_ingestion_owner','MEMBER')
    OR pg_has_role(session_user,'krs_catalog_owner','MEMBER') THEN RAISE EXCEPTION 'Exact uninstalled receiver and operator required';END IF;END $guard$`,
-  `CREATE ROLE ${role} LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS CONNECTION LIMIT 4`,
-  `GRANT CONNECT ON DATABASE krs_registry_pilot TO ${role}`,
+  ...roles.map(r=>`CREATE ROLE ${r} LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS CONNECTION LIMIT 4`),
+  `GRANT CONNECT ON DATABASE krs_registry_pilot TO ${roles.join(',')}`,
   'GRANT profitia_ingestion_owner,krs_catalog_owner TO neondb_owner WITH INHERIT FALSE,SET TRUE',
   'SET LOCAL ROLE profitia_ingestion_owner',
   `DO $source$ DECLARE b jsonb;r record;v jsonb;new_policy uuid;BEGIN
@@ -48,27 +49,56 @@ export function developmentPilot2RegistryPlan(sourceSha){
     INSERT INTO profitia_external_native.policies SELECT(jsonb_populate_record(NULL::profitia_external_native.policies,v)).*;
    END LOOP;
   END $source$`,'RESET ROLE']
- const clone=`DO $acl$ DECLARE r record;BEGIN
-  FOR r IN SELECT format('GRANT USAGE ON SCHEMA %I TO %I',n.nspname,${q(role)}) command
-   FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE a.grantee='krs_ingest'::regrole
+ const clone=(template,receiver)=>`DO $acl$ DECLARE r record;BEGIN
+  FOR r IN SELECT format('GRANT USAGE ON SCHEMA %I TO %I',n.nspname,${q(receiver)}) command
+   FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE a.grantee=${q(template)}::regrole
     AND n.nspowner=current_user::regrole AND a.privilege_type='USAGE'
-   UNION ALL SELECT format('GRANT EXECUTE ON FUNCTION %s TO %I',p.oid::regprocedure,${q(role)}) FROM pg_proc p
-    CROSS JOIN LATERAL aclexplode(p.proacl) a WHERE a.grantee='krs_ingest'::regrole AND p.proowner=current_user::regrole AND a.privilege_type='EXECUTE'
-   UNION ALL SELECT format('GRANT %s ON TABLE %s TO %I',a.privilege_type,c.oid::regclass,${q(role)}) FROM pg_class c
-    CROSS JOIN LATERAL aclexplode(c.relacl) a WHERE a.grantee='krs_ingest'::regrole AND c.relowner=current_user::regrole
+   UNION ALL SELECT format('GRANT EXECUTE ON FUNCTION %s TO %I',p.oid::regprocedure,${q(receiver)}) FROM pg_proc p
+    CROSS JOIN LATERAL aclexplode(p.proacl) a WHERE a.grantee=${q(template)}::regrole AND p.proowner=current_user::regrole AND a.privilege_type='EXECUTE'
+   UNION ALL SELECT format('GRANT %s ON TABLE %s TO %I',a.privilege_type,c.oid::regclass,${q(receiver)}) FROM pg_class c
+    CROSS JOIN LATERAL aclexplode(c.relacl) a WHERE a.grantee=${q(template)}::regrole AND c.relowner=current_user::regrole
      AND a.privilege_type IN('SELECT','INSERT','UPDATE') LOOP EXECUTE r.command;END LOOP;
  END $acl$`
- for(const owner of ['profitia_ingestion_owner','krs_catalog_owner'])before.push('SET LOCAL ROLE '+owner,clone,'RESET ROLE')
+ for(const owner of ['profitia_ingestion_owner','krs_catalog_owner'])before.push('SET LOCAL ROLE '+owner,clone('krs_ingest',role),...(owner==='krs_catalog_owner'?[clone('krs_reader',reader)]:[]),'RESET ROLE')
  const after=[
   'REVOKE profitia_ingestion_owner,krs_catalog_owner FROM neondb_owner GRANTED BY neondb_owner',
   `DO $closed$ BEGIN IF current_user<>session_user
    OR pg_has_role(session_user,'profitia_ingestion_owner','MEMBER') OR pg_has_role(session_user,'krs_catalog_owner','MEMBER')
-   OR EXISTS(SELECT 1 FROM pg_auth_members WHERE member=${q(role)}::regrole)
-   OR NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=${q(role)} AND rolcanlogin AND rolconnlimit=4
-    AND NOT(rolinherit OR rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication)) THEN
+   OR EXISTS(SELECT 1 FROM pg_auth_members WHERE member IN(${roles.map(r=>q(r)+'::regrole').join(',')}))
+   OR(SELECT count(*) FROM pg_roles WHERE rolname IN(${roles.map(q).join(',')}) AND rolcanlogin AND rolconnlimit=4
+    AND NOT(rolinherit OR rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolreplication))<>2 THEN
    RAISE EXCEPTION 'Ordinary receiver and complete owner-access cleanup required';END IF;END $closed$`]
  return {sourceSha,projectId:registry.catalog.projectId,branchId:registry.catalog.branchId,databaseName:registry.catalog.databaseName,
-  role,requiresOneTransaction:true,requiresExplicitOwnerAccessApproval:true,remoteExecutionApproved:false,
+  role,roles,requiresOneTransaction:true,requiresExplicitOwnerAccessApproval:true,remoteExecutionApproved:false,
   existingBindingsChanged:false,existingBudgetsChanged:false,paidProviderAllowanceAdded:false,
   beforeCredentials:before,afterCredentials:after,digest:createHash('sha256').update(JSON.stringify([before,after])).digest('hex')}
+}
+
+/** Operator executor, used only after the separate human approval. Passwords
+ * stay in memory; PostgreSQL error context is discarded. Verification uses an
+ * explicit ROLLBACK, and a failed COMMIT is never automatically replayed. */
+export async function applyDevelopmentPilot2Registry(client,sourceSha,passwords,mode){
+ const plan=developmentPilot2RegistryPlan(sourceSha)
+ if(!['VERIFY_ROLLBACK','APPLY'].includes(mode)||!passwords
+  ||Object.keys(passwords).sort().join(',')!==[...plan.roles].sort().join(',')
+  ||plan.roles.some(r=>typeof passwords[r]!=='string'||!/^[A-Za-z0-9_-]{40,128}$/.test(passwords[r])))
+  throw Error('Explicit transaction mode and two in-memory initial credentials required')
+ let phase='BEGIN',index=-1
+ await client.query('BEGIN')
+ try{
+  for(const[i,sql]of plan.beforeCredentials.entries()){index=i;await client.query(sql)}
+  phase='CREDENTIALS'
+  for(const role of plan.roles)await client.query('ALTER ROLE '+role+' PASSWORD '+q(passwords[role]))
+  phase='CLEANUP'
+  for(const sql of plan.afterCredentials)await client.query(sql)
+  phase=mode==='APPLY'?'COMMIT':'ROLLBACK';await client.query(phase)
+  return {transaction:mode==='APPLY'?'COMMITTED':'ROLLED_BACK',sourceSha,roles:plan.roles,
+   ownerMembershipsRemoved:true,existingPoliciesChanged:false,existingCountersChanged:false}
+ }catch(error){
+  await client.query('ROLLBACK').catch(()=>{})
+  const failure=Error(phase==='COMMIT'?'DEVELOPMENT_REGISTRY_OUTCOME_UNCERTAIN':'DEVELOPMENT_REGISTRY_INSTALLATION_FAILED')
+  failure.phase=phase;failure.statementIndex=index
+  failure.sqlState=typeof error?.code==='string'&&/^[A-Z0-9]{5}$/.test(error.code)?error.code:'UNAVAILABLE'
+  throw failure
+ }
 }

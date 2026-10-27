@@ -46,10 +46,10 @@ export function withPilot2RegistrySelection<T>(selection:Pilot2RegistrySelection
 }
 /** The same physical target is checked again at boot. No request may choose a
  * provider, database, role, organisation, registry identity or Source binding. */
-export function pilot2RegistryConnection(value:string|undefined,role:'krs_reader'|'krs_ingest'|'srm_development_krs_source'){
+export function pilot2RegistryConnection(value:string|undefined,role:'krs_reader'|'krs_ingest'|'srm_development_krs_source'|'srm_development_krs_reader'){
  if(!value||value!==value.trim())return deny()
  let u:URL;try{u=new URL(value);decodeURIComponent(u.password)}catch{return deny()}
- if(!['krs_reader','krs_ingest',development.registrySourceRole].includes(role)||!['postgres:','postgresql:'].includes(u.protocol)||u.hostname!==target.catalog.host||u.pathname!=='/'+target.catalog.databaseName
+ if(!['krs_reader','krs_ingest',development.registrySourceRole,development.registryReaderRole].includes(role)||!['postgres:','postgresql:'].includes(u.protocol)||u.hostname!==target.catalog.host||u.pathname!=='/'+target.catalog.databaseName
   ||u.username!==role||!u.password||u.hash||u.port&&u.port!=='5432'
   ||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k))
   ||u.searchParams.getAll('sslmode').length!==1||u.searchParams.get('sslmode')!=='require'
@@ -79,6 +79,7 @@ export const reconcilePilot2Financial=(selection:Pilot2RegistrySelection,result:
 async function createRuntime(env:Env){
  const main=env.RENDER_SERVICE_ID===development.serviceId&&env.SRM_DEVELOPMENT_PILOT2_LOOKUP==='true'
  const sourceRole=main?'srm_development_krs_source' as const:'krs_ingest' as const
+ const readerRole=main?'srm_development_krs_reader' as const:'krs_reader' as const
  const serviceId=main?development.serviceId:target.render.serviceId
  const transportProfile=target.runtime.transportProfile
  if(env.RENDER_SERVICE_ID!==serviceId||env.TARGET_ENVIRONMENT!=='development'
@@ -90,7 +91,7 @@ async function createRuntime(env:Env){
   {createAdmittedGusSource,createGusMapper,GusError,GUS_ORIGIN,GUS_PATH},{createNipResolver}]=await Promise.all([
   import('@profitia/platform-contracts/platform-ingestion'),import('@profitia/krs-registry-runtime/identity'),import('@profitia/krs-registry-runtime/catalog'),
   import('@profitia/krs-registry-runtime/native'),import('@profitia/krs-registry-runtime/gus'),import('@profitia/krs-registry-runtime/nip-resolver')])
- const reader=instrumentDiagnosticPool(new pg.Pool(pilot2RegistryConnection(env.KRS_PILOT2_READER_URL,'krs_reader')),'REGISTRY_READER')
+ const reader=instrumentDiagnosticPool(new pg.Pool(pilot2RegistryConnection(env.KRS_PILOT2_READER_URL,readerRole)),'REGISTRY_READER')
  const sourceOptions=pilot2RegistryConnection(env.KRS_PILOT2_SOURCE_URL,sourceRole)
  const source=instrumentDiagnosticPool(new pg.Pool(sourceOptions),'REGISTRY_SOURCE'),audit=instrumentDiagnosticPool(new pg.Pool({...sourceOptions,max:1}),'INDEPENDENT_AUDIT'),catalog=new Catalog(reader)
  for(const pool of [reader,source,audit])pool.on('error',()=>console.error('PILOT2 registry database unavailable'))
