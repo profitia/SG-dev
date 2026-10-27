@@ -69,6 +69,26 @@ export const KRS_GOVERNANCE_REVIEW_FILES = Object.freeze([
   'scripts/governance/identity-runtime-onboarding.test.mjs',
   'scripts/governance/krs-registry-routing.test.mjs',
 ])
+// One owner-approved ADP governance review, not generic Architecture admission.
+// Pins are trusted-main data: no candidate-supplied path/hash/approval manifest.
+// Source may be rebased onto a newer main only while these five blobs stay exact.
+export const ADP_GOVERNANCE_REVIEW = Object.freeze({
+  prNumber: 756,
+  branch: 'architecture/srm-adp-ui-onboarding-20261027',
+  sourceSha: '202bcd0b4c7e00a03a2a7eee9aeb38338363f3d0',
+  blobs: Object.freeze({
+    'Canon/v1.1-srm-adp-presentation-mounting-amendment.md': '947ee0f7737dfd062a17af340c5c8667c5d10cab',
+    'Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md': '4ba761883e0e94004a37ffd587099c7c0213c2c3',
+    'Canon/registries/current-architecture-baseline-v1.json': '8513437b3e5477f9838ab85a80b3a032d26dc79e',
+    'Canon/registries/governance-manifest-v2.json': 'bf4b89d9b617180481cce4d75f77ea04b52c313a',
+    'scripts/governance/srm-adp-routing.test.mjs': '6f662b75b6e6eced7f3a6a8d5640b786be2ae29d',
+  }),
+})
+function isPinnedAdpGovernanceReview(files) {
+  return Array.isArray(files) && files.length === Object.keys(ADP_GOVERNANCE_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(ADP_GOVERNANCE_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === ADP_GOVERNANCE_REVIEW.blobs[file.filename])
+}
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -80,10 +100,11 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   const krsReview = files.length === KRS_GOVERNANCE_REVIEW_FILES.length
     && files.every(file => KRS_GOVERNANCE_REVIEW_FILES.includes(file?.filename))
+  const closedReview = krsReview || isPinnedAdpGovernanceReview(files)
   const names = new Set()
   for (const file of files) {
-    if (!(krsReview || architecturePathAllowed(file.filename))
-      || !(krsReview ? ['added', 'modified'] : ['added', 'modified', 'removed']).includes(file.status)
+    if (!(closedReview || architecturePathAllowed(file.filename))
+      || !(closedReview ? ['added', 'modified'] : ['added', 'modified', 'removed']).includes(file.status)
       || Object.hasOwn(file, 'previous_filename') || !shaPattern.test(file.sha ?? '') || names.has(file.filename)) fail('ARCHITECTURE_PATH_REJECTED')
     names.add(file.filename)
   }
@@ -92,13 +113,17 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const routing = resolveProjectRouting({profile, targets: [...names], repositoryRoot})
   if (!routing.ok || routing.results.some(r => r.projectBoundaryStatus !== 'ALLOWED' || r.baselineClassification !== 'ALIGNED'
     || r.currentOwner !== (r.normalizedPath.startsWith('packages/') ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
-  if (!krsReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
+  if (!closedReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
 }
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
   if (family === 'MAIN') return context.controlSha
-  if (family === 'ARCHITECTURE') assertArchitectureFiles(pr, files, repositoryRoot)
+  if (family === 'ARCHITECTURE') {
+    assertArchitectureFiles(pr, files, repositoryRoot)
+    if (isPinnedAdpGovernanceReview(files)
+      && (pr.number !== ADP_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== ADP_GOVERNANCE_REVIEW.branch)) fail('ADP_GOVERNANCE_REVIEW_IDENTITY_REJECTED')
+  }
   return expectedSha
 }
 
