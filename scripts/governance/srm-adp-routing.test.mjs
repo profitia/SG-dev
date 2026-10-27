@@ -46,6 +46,6 @@ test('active manifest binds a bounded presentation amendment, not a service acti
  const m=validateGovernanceManifest(root);assert.equal(m.valid,true,m.errors.join('\n'))
  const d=m.activeDocuments.find(d=>d.id==='srm-adp-presentation-mounting-amendment');assert(d);assert.deepEqual(d.appliesTo,['SG2','SRM','ARCHITECTURE'])
  const source=fs.readFileSync(path.join(root,d.path),'utf8')
- for(const text of ['NATIVE VIEW','PRESENTATION_ONLY / LOCAL_STATE','/pl/dashboard','/[locale]/account','no Screen Context','No private `apps/srm/**` import','APPROVAL_PENDING'])assert(source.includes(text),text)
+ for(const text of ['NATIVE VIEW','PRESENTATION_ONLY / LOCAL_STATE','/pl/dashboard','/[locale]/account','no Screen Context','No private `apps/srm/**` import','OWNER_APPROVED / MAIN_ACCEPTANCE_PENDING','does not authorize skipping CI, automatic merge or product deployment'])assert(source.includes(text),text)
  const priorTree=execFileSync('git',['ls-tree',beforeSha,'--','packages/srm-adp-ui','.github/workflows/srm-adp-ui-ci.yml'],{cwd:root,encoding:'utf8'});assert.equal(priorTree,'')
 })

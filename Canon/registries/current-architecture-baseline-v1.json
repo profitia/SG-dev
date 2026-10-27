@@ -705,7 +705,7 @@
       "allowedProjectKeys": [
         "SRM"
       ],
-      "onboardingAuthorization": "Proposed ADP task owner acceptance; Canon/v1.1-srm-adp-presentation-mounting-amendment.md and Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md. Authoritative only after explicit acceptance and main merge."
+      "onboardingAuthorization": "Explicit human owner architecture approval of PR #756, 2026-10-27, host 01a17d49-61a6-7821-ba8e-18b45d3c4048; Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md. Authoritative only after required exact-head CI/governance and controlled main acceptance; no automatic merge or product deployment approval."
     },
     {
       "id": "SRM-ADP-BASE-002",
@@ -723,7 +723,7 @@
       "allowedProjectKeys": [
         "SRM"
       ],
-      "onboardingAuthorization": "Proposed ADP task owner acceptance; Canon/v1.1-srm-adp-presentation-mounting-amendment.md and Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md. Authoritative only after explicit acceptance and main merge."
+      "onboardingAuthorization": "Explicit human owner architecture approval of PR #756, 2026-10-27, host 01a17d49-61a6-7821-ba8e-18b45d3c4048; Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md. Authoritative only after required exact-head CI/governance and controlled main acceptance; no automatic merge or product deployment approval."
     }
   ],
   "cleanupFindings": [

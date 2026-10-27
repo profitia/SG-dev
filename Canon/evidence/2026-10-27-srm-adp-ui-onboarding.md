@@ -1,4 +1,4 @@
-# SRM ADP presentation UI — proposed ownership and routing
+# SRM ADP presentation UI — owner approval and pending main acceptance
 
 Date: **2026-10-27**. Profile: **ARCHITECTURE / SG-dev Architecture / development**.
 Authority: `profitia/SG-dev/main`; inspected source `acbc37b278a16a9e4c47f794e3eb7577d42f21d6`.
@@ -11,9 +11,11 @@ The user requested the complete clickable ADP mockup inside the existing SG2 Pla
 
 The accepted AppShell canon PR748 leaves the physical ADP public contract open. Current routing has `apps/srm/**` and `packages/srm-xray/**`, but no public ADP UI surface. The supplier/ADP workspace belongs to SRM; placing its implementation under SG2 or the X-Ray-only package would misstate ownership. Cross-app private imports and a MagicPath iframe are forbidden. A single new public UI boundary is therefore the minimal proposal; no new app/runtime/service is proposed.
 
-**Decision requested:** accept [Presentation Mounting Amendment v1.1](../v1.1-srm-adp-presentation-mounting-amendment.md), the public SRM-owned namespace `packages/srm-adp-ui/**` and its exact offline CI path. Existing SRM Runtime remains owner. SG2 consumes the versioned NATIVE VIEW under its existing paths; Architecture maintains common rules only. No owner or existing code is transferred.
+**Owner decision confirmed, 2026-10-27:** accept [Presentation Mounting Amendment v1.1](../v1.1-srm-adp-presentation-mounting-amendment.md), the public SRM-owned namespace `packages/srm-adp-ui/**` and its exact offline CI path. Existing SRM Runtime remains owner. SG2 consumes presentation contract v1.0.0 through NATIVE VIEW under its existing paths; Architecture maintains common rules only. No owner or existing code is transferred.
 
-This is **APPROVAL_PENDING** until explicit owner approval and controlled main acceptance. This evidence does not itself assert G1 approval, implementation, activation, a working module or 1:1 parity.
+Status: **OWNER_APPROVED / MAIN_ACCEPTANCE_PENDING**. This is a direct human decision in the identified host conversation, not an agent-authored GitHub approval review. The user confirmed SRM ownership, SRM-only write rights for both new surfaces, NATIVE VIEW, contract v1.0.0, separate SRM Producer/SG2 Consumer tasks, the Polish/English dashboard and ADP routes, and PRESENTATION_ONLY / LOCAL_STATE without business integrations or databases.
+
+The owner's limiting instruction is preserved verbatim: “Ta zgoda dotyczy lokalizacji, ownership i kontraktu architektonicznego. Nie stanowi zgody na pominięcie CI, automatyczny merge ani wdrożenie produktu.” The user requires the controlled exact-head proof, every applicable governance gate and a formal acceptance trace before main acceptance. Only after main acceptance may the separate producer/consumer execution tasks proceed; real ADP services remain excluded. Approval does not itself create authoritative routing, implemented code, activation, a working module or visual parity. Auto-merge has not been enabled, and no merge or product release has occurred.
 
 ## Exact onboarding candidate
 
