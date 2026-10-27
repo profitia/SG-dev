@@ -5129,5 +5129,28 @@
       "src/server/supplier-native-company.ts": "e1e07df42ad5cce433df62e3dae0fc4cbc8fb4fffb0d4bea94483daecb30807d",
       "src/server/supplier-native-runtime.ts": "83d95c686fb1f29564959d4cff464e51056ecb5a53e5532879ac83fc7015a29f"
     }
+  },
+  "mgbiDevelopmentSessionFreshnessRepair": {
+    "taskId": "SRM-DEVELOPMENT-MGBI-ACTIVATION-20261027",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "previousReceiptSourceSha": "743cd00757018eba6940c08f7d8e36db197a6f4d",
+    "previousReceiptDigest": "468f4a86771084001f8ad532be08114b6f64f39188cb72ef27ce7f4d02587279",
+    "scope": "FRESH_SDK_TOKEN_BEFORE_UNADMITTED_COMPANY_SEARCH_LOOKUP_AND_REPORT_READ",
+    "observedFailure": "Cached MGBI General and Financial succeeded; final HUMAN report read denied at2026-10-27T15:06:17.008Z as the request authority expired at15:06:17Z. A fresh bearer retry returned the visible report and audited SUCCEEDED.",
+    "serverAuthorityChecksChanged": false,
+    "tokenLifetimeChanged": false,
+    "providerRetriesAdded": false,
+    "admittedPilotBearerChanged": false,
+    "loginOrAccountBehaviorChanged": false,
+    "paidProviderLimitsChanged": false,
+    "applicationSourceDigests": {
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "cff9de5a4a58556c286cd71f3d70b0c2c79bd2fc7c8c6c9fa178b3b62c866d12",
+      "scripts/native-execution-adoption.test.mjs": "40186ab6b0bd0b2f83ef70f26897c9cfd94c73e96f28536610ccaed88e540db1",
+      "src/modules/xray/krs-session-transport.test.ts": "df6823f3a77911bff43b154ad7da14d8fbe73d5fe164e75ce523c013ef63928a",
+      "src/modules/xray/krs-session-transport.ts": "478beadfea1ff4f6a219271ff2f6b8614ac6e9c96e63f4402fc423de8b104330",
+      "src/modules/xray/report-controller.test.ts": "a382de04cc635bfa0b4125e1803b51ce3b17698aa61a3a95fa7704de48332a96",
+      "src/server/company-source-policy.test.ts": "14fb41258f4082c185558712db281e404aa1d4668882b766018931e286236f9e",
+      "src/server/peer-read-boundary.test.ts": "d9010cb852d1a46c53e12cdfb0e2b94b796732410ddb9c47a242bade8be4a6ca"
+    }
   }
 }

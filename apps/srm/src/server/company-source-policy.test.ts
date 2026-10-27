@@ -15,7 +15,11 @@ test('MGBI recovery preserves the full prior acceptance and pins every current c
   const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
   assert.equal(hash(previous),a.previousReceiptDigest)
   for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
-  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
+    const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.mgbiDevelopmentSessionFreshnessRepair
+    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
+    assert.equal(hash(bytes),digest,file)
+  }
   assert.equal(a.companySourcePolicy,'MGBI_ONLY');assert.equal(a.sharedSdkChanged,false);assert.equal(a.humanEntitlementsChanged,false)
   assert.equal(a.historicalCountersReset,false);assert.equal(a.paidExternalPoliciesChanged,false)
 })

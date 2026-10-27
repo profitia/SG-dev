@@ -1,6 +1,33 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createKrsSessionTransport,prepareReport} from './krs-session-transport'
+import {readFileSync} from 'node:fs'
+import {execFileSync} from 'node:child_process'
+import {createHash} from 'node:crypto'
+import receipt from '../../../operation-integration.json'
+test('company session repair preserves prior acceptance and pins every changed consumer',()=>{
+ const a=receipt.mgbiDevelopmentSessionFreshnessRepair,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
+ const before=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(before),a.previousReceiptDigest)
+ for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ assert.equal(a.serverAuthorityChecksChanged,false);assert.equal(a.tokenLifetimeChanged,false);assert.equal(a.providerRetriesAdded,false)
+})
+test('ordinary MGBI search, lookup and report read start with a fresh SDK bearer instead of a nearly expired cached token',async()=>{
+ for(const path of ['/api/xray/search','/api/xray/lookup','/api/xray/report-data']){
+  let clock=0,calls=0
+  const key='same-logical-command',body=JSON.stringify({identifier:'9511855233'})
+  const transport=createKrsSessionTransport(async options=>options?.skipCache?'fresh-60-second-token':'cached-1-second-token',async(actual,init)=>{
+   calls++;clock+=20000
+   const h=new Headers(init?.headers)
+   assert.equal(actual,path);assert.equal(h.get('Idempotency-Key'),key);assert.equal(init?.body,body)
+   assert.equal(h.get('X-SRM-Report-Admission'),null)
+   return Response.json({}, {status:clock<(h.get('Authorization')==='Bearer fresh-60-second-token'?60000:1000)?200:401})
+  })
+  assert.equal((await transport(path,{method:'POST',headers:{'Idempotency-Key':key},body})).status,200)
+  assert.equal(calls,1,'Token refresh must not introduce a provider retry')
+ }
+})
 test('form diagnostic fragment is correlation only and cannot replace the existing admission or bearer',async()=>{
  const fragment='11111111-1111-4111-8111-111111111111',execution='22222222-2222-4222-8222-222222222222',nip='7772776017'
  const token='fr1.33333333-3333-4333-8333-333333333333.'+'a'.repeat(64),seen:Headers[]=[]

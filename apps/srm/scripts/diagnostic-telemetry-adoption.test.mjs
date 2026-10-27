@@ -19,7 +19,7 @@ test('diagnostic source adoption preserves complete history and verifies current
  for(const module of modules){const sdk=await import('@profitia/platform-contracts/'+module);for(const[name,digest]of Object.entries(a.sdkDigests))if(typeof sdk[name]==='function'){assert.equal(await sdk[name](),digest,name);found.add(name)}}
  assert.equal(found.size,Object.keys(a.sdkDigests).length);assert.equal(a.sdkDigests.operationSourceDigest,receipt.nativeSqlRoundtripAdoption.sdkDigests.operationSourceDigest)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
-  const next=receipt.mgbiDevelopmentRecoveryAdoption
+  const next=receipt.mgbiDevelopmentRecoveryAdoption?.applicationSourceDigests[file]?receipt.mgbiDevelopmentRecoveryAdoption:receipt.mgbiDevelopmentSessionFreshnessRepair
   const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):fs.readFileSync(new URL('../'+file,import.meta.url))
   assert.equal(hash(bytes),digest,file)
  }

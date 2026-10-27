@@ -1,5 +1,6 @@
 const paths=new Set(['/api/xray/admission','/api/xray/krs/status','/api/xray/krs/search','/api/xray/krs/verify','/api/xray/krs/lookup','/api/xray/search','/api/xray/lookup','/api/xray/report-data'])
 const reportPaths=new Set(['/api/xray/krs/lookup','/api/xray/search','/api/xray/lookup','/api/xray/report-data'])
+const freshReportPaths=new Set(['/api/xray/search','/api/xray/lookup','/api/xray/report-data'])
 const privateKysPaths=new Set(['/api/xray/kys','/api/xray/jdg/kys'])
 type Grant={token:string;nip:string;readyUntil:string;expiresAt:string;bearer:string}
 const admissions=new WeakMap<typeof fetch,{grant:Grant|null;prepare:(nip:string,signal:AbortSignal)=>Promise<{readyUntil:string}>}>()
@@ -20,7 +21,9 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
   let grant=reportPaths.has(input)?entry.grant:null
   if(input==='/api/xray/search'&&grant){let body;try{body=JSON.parse(String(init?.body))}catch{};if(body?.identifier!==grant.nip)grant=null}
   if(grant&&Date.parse(grant.expiresAt)<=Date.now())throw Error('Przygotowanie wyszukiwania wygasło. Wpisz ponownie numer NIP.')
-  const token=grant?.bearer??await getToken(input==='/api/xray/admission'||privateKysPaths.has(input)?{skipCache:true}:undefined)
+  // An ordinary company request can outlive the remaining cached bearer.
+  // Refresh before starting; retain the admitted bearer and all final E1 checks.
+  const token=grant?.bearer??await getToken(input==='/api/xray/admission'||freshReportPaths.has(input)||privateKysPaths.has(input)?{skipCache:true}:undefined)
   if(!token)throw Error('Sesja wygasła. Zaloguj się ponownie.')
   const sessionMs=performance.now()-start
   init?.signal?.throwIfAborted()
