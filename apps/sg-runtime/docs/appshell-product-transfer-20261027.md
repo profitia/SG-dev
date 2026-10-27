@@ -39,3 +39,15 @@ Konto ACCOUNT_SELF nie daje członkostwa PORR ani dostępu do produktu. Statyczn
 Wydanie tylko istniejącego srv-dapa3tid0e5s73f8bc5g plus osobno zatwierdzony srv-dbcse6jrjlhs73eib3sg. Bez tworzenia zasobów, Render workers/dashboard/PCI/SRM releases, konfiguracji Clerk/Neon i migracji. Identity wymaga aktualizacji istniejącego niepoufnego guarda expected SHA do przyjętej rewizji; pozostała konfiguracja zachowana. Bieżące LKG odczytane u providera zapisano w release JSON, niezależnie od starszej migawki topologii. Rollback najpierw SG2 na LKG; przy rollbacku Identity przywrócić pin SHA i jego LKG, ponieważ nowy SG2 wymaga odczytu salutation.
 
 Przed implementacją zakres poszerzono zgodnie z akceptacją użytkownika i ponownie przeprowadzono pełne require-begin dla dokładnych ścieżek. Pierwotna rejestracja zadania zachowana. Pomocniczy omyłkowy plik poza zakresem natychmiast usunięto przed commit/push; brak wpływu na produkt. Brak zmiany ownership, routingu i aktywnych kanonów.
+
+## Korekta widżetu — polecenie użytkownika po odbiorze 27.10
+
+Na aktualnej, niezmienionej rewizji MagicPath 465855381789360128, C36/C37 (pasek/zwijanie) i C38 (odpięcie/przyłączenie) mają status produktowy. Najnowsze polecenie użytkownika uruchamia te zachowania prezentacji. Pozostała rozmowa, historia, zmiana preferencji profilu i moduły biznesowe nadal nie są integrowane.
+
+Widżet wydzielono do AssistantWidget; useAssistantWindow ma jednego właściciela React, kontrolowane osobne okno bez credentiali i identyfikatorów w URL, wspólny aktualny motyw i awatar. Zamknięcie krzyżykiem, przyłączenie, zmiana dokumentu, wylogowanie/wygaśnięcie sesji/unmount oraz pagehide sprzątają okno i obserwator. Zablokowanie popupu pozostawia widżet w biurku z rzeczywistym komunikatem błędu. Zwijanie przenosi fokus, a wsunięty panel jest inert.
+
+Brak przekazanej preferencji nie daje już pustego miejsca: ramka C33 pokazuje neutralny znak z istniejącego SVG SpendGuru. Nie jest to męska ani żeńska preferencja i nie zapisuje wartości do profilu. Nie ma wyprowadzania płci z imienia/słownika. Znana male/female nadal wybiera dokładny zatwierdzony zasób, także na pasku i w oknie. Błąd zasobu obrazu także otrzymuje neutralny znak.
+
+Zrzut oraz żywy DOM użytkownika potwierdziły brak elementu img w dotychczasowym widżecie. Z przepływu dotychczasowego AccountLanding wynika brak przekazanej wartości male/female; nie deklarujemy odczytania prywatnego rekordu w bazie. Zbiorcze zapytanie diagnostyczne po imieniu zostało odrzucone automatycznie i nie wykonano go. Użytkownik wskazał konto tomasz@profitia.pl; dalsze zawężenie do konkretnego UUID nie powiodło się przez brak dostępu SSH. Nie zmieniono danych profilu, rejestracji, grantów ani Identity.
+
+Lokalne testy SSR/granicy: 10/10 PASS. W Chrome sprawdzono zwijanie/wysuwanie i fokus, rzeczywiste osobne okno, wspólną zmianę motywu i ten sam żeński awatar. Pozostałe dowody interakcji i wydania są rejestrowane faktycznie, a nie przewidywane. Ta korekta nie oznacza działającej rozmowy/CIC ani naprawionej preferencji w prywatnym profilu.

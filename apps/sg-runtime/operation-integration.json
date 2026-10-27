@@ -3159,5 +3159,43 @@
     "addedBoundaryFiles": [
       "apps/sg-runtime/deployment/appshell-development-release-20261027.json"
     ]
+  },
+  "assistantWidgetSourceCompatibility": {
+    "taskId": "SG2-APPSHELL-PORR-FIRST-DEVELOPMENT-20261027",
+    "scope": "ASSISTANT_PRESENTATION_CORRECTION",
+    "previousReceiptSourceSha": "9e37c529d59701d0fc0a0173c0fb0a5613c6d2d5",
+    "previousReceiptSha256": "d40dd48c26e9daf62c1dec08cff98e8d362a9dd1802e024b2bfcd0cc97f1868e",
+    "sourceRevision": "465855381789360128",
+    "applicationSourceDigests": {
+      "app/[locale]/page.tsx": "a6ae006bdc4c0494fef80f5b9402f16f1146a0c52d846b311db5c1339b54d4bc",
+      "app/[locale]/account/page.tsx": "9cc0dd470a30aa8f4bdcd58daac7c924241cbde37d2612fe96f6b413cdb9efc1",
+      "components/auth/account-landing.tsx": "fa937faf79c54db34cea9fac075729a92e7bf601efb81ad085b3b3bb1f8dee60",
+      "components/appshell/platform-appshell-entry.tsx": "7ba1e9419e25009a6856b459c6b6880c2ea5c79dc391c8988d0e499c789d9fa0",
+      "components/appshell/platform-appshell.tsx": "242214888e3e2029daef0ad1034d72d095c3dec763f57f6639fc8f8d817bc42b",
+      "components/appshell/platform-appshell.css": "84ee042efa19bed4e4d7ae4f81f5cb7e6005aba4f912c90ad9ed8c5a87888018",
+      "components/appshell/appshell-brand.tsx": "ebdb9417e847c1e4b37e8cc826e2346e5c8867f04bf8371056287176fd9dc36c",
+      "public/appshell/assistant.png": "99e778fca02acce64867601fb90ecd89aaa24f5e2b38a0122c2e71fe9e173061",
+      "public/appshell/assistant-female.png": "b93261787c7db70b45d08c310109a1a8878b324f7a75c76043b6e5523d647798",
+      "tests/appshell-first-entry.test.tsx": "fcefa66dd88c867cd281b1ad293da89066ead4c1d86bef1a018ae2a4cf68deba",
+      "tests/appshell-product-boundary.test.ts": "26252dc9e9457f23118b9d19bfb876e7c20a2fa4684c36cfcae1d2b1dcc91c66",
+      "scripts/test-appshell-browser.mjs": "34963065fd839a932c27fa9f335c73df6c93e23858cb52188a2f00b7e63da6c4",
+      "lib/platform/account-session.ts": "8fc68c9547c1314b4070806e2166785a3a3d527f3f9014530a8dfc2a6c30636e",
+      "tests/self-service-account.test.ts": "9b529f38da6be5b96da8733544232485f242f496cbfeb151fb4edae8b7d5dada",
+      "tests/identity-runtime.test.ts": "ebba711761eb17e98e444fc6a938f4a3990ba64136edd71867b077d10139d7b2",
+      "tests/category-operation.test.ts": "156d7026a37532972d8aa862261bfec2b474283da4a421599c404a03cff2a417",
+      "tests/porr-demo-middleware.test.ts": "b6c1b0e8b94ef439a59a1571870ec316ab638ef3a55eb46442c3a0ccb7425f25",
+      "tests/operation-context.test.mjs": "271088e8d5bc97889ce3e6a4fbfef174dd5bceaec4eef59c9ee68b3fad38d562",
+      "package.json": "0ddb5750af018cdac4b71bbdce61db2baae6b701c81d6ee4043e05ee576058cc",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "7daa8c7465184c4500434743cc8778589943c4816b79444fc26b9403ef792d53",
+      "tests/native-sql-roundtrips.test.mjs": "5d43ebeb5058c0df5f8ddfb2de0343eabd3c1347652020d0a3b4238a89d7d273",
+      "components/appshell/assistant-widget.tsx": "ae9388584a965ae90b416fb4cb5844cb73be97d26df5f0cf25534bd2556ebdd9",
+      "components/appshell/use-assistant-window.ts": "93c87e3450419226ed707de540331dfc5b646d2ef79272b9445bfda31b990481",
+      "tests/assistant-widget.test.tsx": "08de2e4bc3c343043aa04e221d673d8ca7b1691ec77deeb7f07af06245b088e2"
+    },
+    "profileDataChanged": false,
+    "identityChanged": false,
+    "cicConnected": false,
+    "conversationEnabled": false,
+    "sourceAcceptanceIsNotRuntimeAcceptance": true
   }
 }
