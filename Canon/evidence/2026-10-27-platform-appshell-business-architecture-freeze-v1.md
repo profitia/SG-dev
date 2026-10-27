@@ -9,7 +9,7 @@ Dokument: [Platform AppShell — Business & Architecture Canon v1.0](../v1.0-pla
 
 **PROPOZYCJA DO ZATWIERDZENIA — APPROVAL_PENDING.** Użytkownik zlecił formalizację i przekazanie do procesu governance, wykluczając implementację, automatyczne zmiany kanonów produktów, konfigurację i wdrożenia. Nie zapisano zatwierdzenia biznesowego, decyzji merge ani aktywacji produktu.
 
-Zmiana obejmuje dokładnie nowy kanon, ten raport i jeden wpis aktywnego manifestu z podniesieniem `3.28.0` → `3.29.0`. Status `ACTIVE` wpisu jest proponowanym stanem po zatwierdzeniu i przyjęciu PR do main, zgodnie z istniejącym formatem manifestu. Validator obsługuje `ACTIVE`, `ACTIVE_ADAPTER`, `SUPERSEDED`; nie dodano nieobsługiwanego `DRAFT` ani równoległego rejestru. Gałąź robocza nie staje się authority przez zmianę JSON. Kanon wyraźnie warunkuje swoją moc zatwierdzeniem i przyjęciem do main.
+Zmiana obejmuje nowy kanon, ten raport, jeden wpis aktywnego manifestu z podniesieniem `3.28.0` → `3.29.0` oraz niezbędną korektę istniejącego historycznego testu manifestu KRS. Status `ACTIVE` wpisu jest proponowanym stanem po zatwierdzeniu i przyjęciu PR do main, zgodnie z istniejącym formatem manifestu. Validator obsługuje `ACTIVE`, `ACTIVE_ADAPTER`, `SUPERSEDED`; nie dodano nieobsługiwanego `DRAFT` ani równoległego rejestru. Gałąź robocza nie staje się authority przez zmianę JSON. Kanon wyraźnie warunkuje swoją moc zatwierdzeniem i przyjęciem do main.
 
 Ścieżki `Canon/**` rozwiązały się do **Governance Source Layer / ALIGNED**, z prawem profilu ARCHITECTURE. Baseline routingu, jego frozen reference i transitional epoch pozostają bez zmian. Brak nested `AGENTS.md` dla tych ścieżek. Załączony wrapper SG2 został odczytany jako materiał wejściowy; jawny wybór ARCHITECTURE w bieżącym zadaniu określa właściwy profil.
 
@@ -55,7 +55,23 @@ Kanoniczne `pmos:begin` zwróciło:
 
 Potwierdzono bazę `architecture_pmos` i rolę runtime `architecture_pmos_runtime`, bez superuser/BYPASSRLS/create-role/create-db. Są to istniejące zasoby continuity, nie produktowa baza PORR. PMOS i PHR są wymagane; Memoros jest wyłączony przez profil. Końcowy closeout i zdalny PR są oddzielnymi dowodami wykonania; nie stanowią zatwierdzenia nowego kanonu. Ich rzeczywiste identyfikatory i wyniki zapisuje kanoniczny handoff po wykonaniu.
 
-Wyniki walidacji propozycji są uzupełniane po sprawdzeniu końcowego diffu. Nie wykonuje się buildów produktu lub testów integracji usług dla dokumentacyjnej zmiany bez implementacji. CI właściwe dla manifestu pozostaje wymagane przed przyjęciem.
+Pierwszy przebieg testów governance: 39/40 PASS. Historyczny test KRS porównywał cały bieżący manifest ze stanem przed późniejszymi rejestracjami, więc odrzucał nowy wpis AppShell. Po czystym commicie dokumentacji rozszerzono dokładny preflight o `scripts/governance/krs-registry-routing.test.mjs`: pełne `--require-begin` ponownie dało PASS, w tym Governance Source Layer / ALIGNED dla tego pliku, przed jego edycją. Pierwotna rejestracja tasku pozostaje niezmieniona; nowy target i wynik tej dodatkowej bramki są jawne.
+
+Korekta sprawdza niezmienny checkpoint G1 `0ad9525f1397d41b965787fb487492a713ba0e54` i dokładną zawartość historycznego przyjęcia KRS, a osobno zachowanie każdego przyjętego wpisu oraz zależności w bieżącym manifeście. Nie osłabia ochrony istniejących wpisów i nie zmienia validatora, kontraktów KRS ani workflow.
+
+Nie wykonuje się buildów produktu lub testów integracji usług dla dokumentacyjnej zmiany bez implementacji. CI właściwe dla manifestu pozostaje wymagane przed przyjęciem. Wyniki końcowych kontroli zapisano poniżej po ich wykonaniu.
+
+| Kontrola | Wynik |
+| --- | --- |
+| Manifest i graf zależności | PASS; 49 aktywnych dokumentów po proponowanej rejestracji, loadOrder 380, bez zmiany wcześniejszych wpisów. |
+| Governance, Identity onboarding, KRS routing | PASS; 40/40 testów po korekcie testu historycznego. |
+| Wymagane w CI testy lifecycle/profile/publication/recovery PMOS | PASS; 59/59. |
+| PMOS typecheck oraz typecheck:lifecycle | PASS. |
+| Linki względne nowych dokumentów | PASS; 17/17 istniejących celów. |
+| Zakres i whitespace | Cztery wskazane pliki governance, brak zmian aplikacji/konfiguracji/zasobów; `git diff --check` PASS. |
+| Świeżość authority | Ponowny fetch potwierdził nadal `930a4586e1f9e12807b3ee9829590bf72a6db09d`; bez zmian wymagających aktualizacji analizy. |
+
+Pierwsza lokalna próba uruchomienia testów lifecycle nie mogła utworzyć kanału IPC procesu `tsx` z powodu ograniczeń wykonania. Ponowienie z dopuszczoną obsługą procesu dało podany wyżej PASS, bez zmian kodu PMOS. Nie ukrywa się tej próby jako błędu produktu. Status zdalnego CI i PR sprawdzany jest dla opublikowanego head i raportowany w końcowym handoff; powyższa tabela opisuje wykonane kontrole lokalne.
 
 ## 5. Zakres zatwierdzenia i dalsze granice
 
