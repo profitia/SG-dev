@@ -53,7 +53,8 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
   if (typeof window !== 'undefined') unavailable()
   const identity = readSrmIdentityRuntime(env)
   if (identity.provider === 'legacy_demo') {
-    if(env.PROFITIA_SUPPLIER_API_ENABLED==='true'||env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED==='true') unavailable()
+    if(env.PROFITIA_SUPPLIER_API_ENABLED==='true'||env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED==='true'
+      ||env.SRM_DEVELOPMENT_PILOT2_LOOKUP!==undefined&&env.SRM_DEVELOPMENT_PILOT2_LOOKUP!=='false') unavailable()
     return Object.freeze({ provider: 'legacy_demo' })
   }
   if (identity.application.environment !== 'development') unavailable()
@@ -231,7 +232,7 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   let krsName:Promise<KrsNameHttpRuntime>|undefined
   let krsNip:Promise<KrsNipCompany>|undefined
   if(developmentPilot2){
-    const bundle=Promise.resolve(createDevelopmentPilot2Runtime(config,baseRuntime,env))
+    const bundle=Promise.resolve(createDevelopmentPilot2Runtime(config,baseRuntime,env,{pool,auditPool,clerk}))
     krsName=bundle;krsNip=bundle.then(value=>value.nip)
   }
   if(krsConfig){

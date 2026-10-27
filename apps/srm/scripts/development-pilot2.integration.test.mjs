@@ -7,6 +7,7 @@ import {createSrmSupplierNativeWork} from '../src/server/supplier-request-work.t
 import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-work-store.ts'
 import {createSrmSupplierSourceLink} from '../src/server/supplier-source-link.ts'
 import {developmentPilot2RegistryPlan} from './development-pilot2-installation.mjs'
+import {createDevelopmentKrsProjection} from '../src/server/development-pilot2-runtime.ts'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
@@ -79,6 +80,23 @@ test('main KRS receiver commits genuine delegated General and retains tenant, re
    await f.controlled(()=>f.owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[f.A,f.U]))
    await assert.rejects(store.section(selection,'general',general,null))
    assert.deepEqual(await f.counts(),before,'Denied attempts cannot alter committed ownership/history')
+   await f.controlled(async()=>{
+    await f.owner.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[f.A,f.U])
+    await f.owner.query("UPDATE profitia_access.applications SET fixed_organisation_id=$1 WHERE application_id='srm'",[f.A])
+    await f.owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'ALLOW','supplier.report.read','supplier_report')",[randomUUID(),f.A,f.U])
+   })
+   const projection=createDevelopmentKrsProjection({...f.humanOptions,
+    application:{...f.humanOptions.application,profileId:'PORR_SUITE',organisationId:f.A}})
+   const publicValue={selection:{general,history:{version:'KRS_CONTINUITY_V1',currentKrs:'0000000001',members:[],links:[],unlinkedKrs:[]},
+    identity:{status:'VERIFIED',identity:{nip:f.NIP},selectedKrs:'0000000001',evidenceRef:ref}}}
+   const request=new Request('http://localhost:3400/api/xray/search',{method:'POST',headers:{origin:'http://localhost:3400'}})
+   const sourceBefore=await f.sourceCounts()
+   assert.deepEqual(await projection(request,f.NIP,publicValue),publicValue)
+   const audited=(await f.owner.query("SELECT event FROM profitia_access.security_events WHERE phase='OUTCOME' AND event->>'operation'='supplier.report.read' ORDER BY recorded_at DESC LIMIT 1")).rows[0].event
+   assert.equal(audited.reasonCode,'SUCCEEDED');assert.equal(audited.resourceId,'supplier-report:COMPANY:'+f.NIP)
+   await f.controlled(()=>f.owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[f.A,f.U]))
+   await assert.rejects(projection(request,f.NIP,publicValue))
+   assert.deepEqual(await f.sourceCounts(),sourceBefore,'Final protected projection cannot acquire provider data')
   }finally{await pool.end();await audit.end()}
  })
 })
