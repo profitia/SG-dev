@@ -5097,5 +5097,44 @@
     "workOrTransactionBoundariesChanged": false,
     "sqlOrPolicyChanged": false,
     "runtimeDeploymentPerformed": false
+  },
+  "developmentPilot2Adoption": {
+    "taskId": "SRM-DEVELOPMENT-RECOVERY-CONTINUATION-20261027",
+    "previousReceiptSourceSha": "e12bef8ccdea61cc51bc6b94ca9bf1384b48d18f",
+    "previousReceiptDigest": "346f382938594c6a227e088977219fdf5c841bca68c765bafa52bc1591389836",
+    "targetEnvironment": "development",
+    "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+    "applicationSourceDigests": {
+      "deployment/development-pilot2-targets.json": "52930d91ac54985e9c03637055710abbb52d8df4e90ee0adc05529a3cb035103",
+      "db/private-store/024-development-pilot2-receiver.sql": "b8fc32c0e05df83132ab01b6d4db9300f9a6257546f61d16a3997a5087ccd994",
+      "src/server/development-pilot2-runtime.ts": "2aad4f15a2d7ae649759ca58e5d329631f21622a36f4125ed3fca28ad5577299",
+      "src/server/development-pilot2-runtime.test.ts": "0277f5f5d5310a27456dcc3f1359db7a56ac235cd1dfea0fc1f1897d5c6b8ffb",
+      "src/server/private-runtime.ts": "79171c5ccb81a6e5785634d473d4ba5a4e56cf483117cee794bccda6ef884e51",
+      "src/server/supplier-native-runtime.ts": "44c66b2cc0b8d62f646c3d3562bad93846e800c44d51d067302aba5dbb5f647f",
+      "src/server/pilot2-registry.ts": "e9e320d8a2f11d65b0487d56b1f23a8009ef028cfafbae5ee3eb971875018c1f",
+      "src/server/krs-name-runtime.ts": "0f1baadb5a79208cefacd632adab5e5ecc58354ed11e5ee208739b0484effb5c",
+      "src/server/krs-name-search.ts": "f832d94c980876a548098abb11183a77ac55b45bae5b0664f08f2c8269d9dde7",
+      "src/server/krs-name-search.test.ts": "c1ea440cc02b601192252004636f93ac127069e6fd57f9d449b36cd8a04d4a61",
+      "scripts/development-pilot2-installation.mjs": "9226609418bedd720ec075b7c99851053e10c6784f6d6071907563b9fe86a1a2",
+      "scripts/development-pilot2.integration.test.mjs": "a2eaa888809d7e4ed12666a5a922920853a0c01c7f0b785c07f4141cad3251e4",
+      "scripts/native-execution-adoption.test.mjs": "f13d41543f2f20a23c712c563b859d08fc248bd3d797ee5933c8782ea68eb103",
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "24407c63400f0c88aae30ccb2ccd0f452bf07f295d31304658fb6a3132958850",
+      "scripts/request-quota-adoption.test.mjs": "1f0528810c79da6af22689431ca1ba9be76cb32e2d5bcccdcb8309d9ceb0f895",
+      "package.json": "a71554032ba63bb304ed6e213df43537986f49dceca112b483408caf05e9c3bd"
+    },
+    "preservedUiDigests": {
+      "app/page.tsx": "90ee550441260bb02dea47681a1680614cd2ef9e1232c3e05dc107913041e316",
+      "src/modules/xray/supplier-report.tsx": "f9d3168709572866762183e39aa0691014a83cbede8d0fe8e36e7f34e93f879f",
+      "src/modules/xray/report-controller.ts": "9c176f864f2f2bb90a1490ae59f67e8e4b6821cc00cc0a7f7e1689eb3bd3ea3c",
+      "src/modules/xray/supplier-locations-view.tsx": "1f8ac524bea0e14285f771e2a97a3f138334a1b94c1c5d93e7ce3b0236dae275"
+    },
+    "humanEntitlementsChanged": false,
+    "sharedE1ContractChanged": false,
+    "stagingMutation": false,
+    "maximumNewLicensedOriginalsPerRequest": 1,
+    "financialExecution": "COMPLETE_IN_REQUEST",
+    "runtimeActivated": false,
+    "registryOwnerAccessApproval": "PENDING",
+    "mapsAcceptance": "NOT_STARTED"
   }
 }
