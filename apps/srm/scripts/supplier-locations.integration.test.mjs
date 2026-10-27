@@ -250,7 +250,7 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
    const request=new Request(ORIGIN,{headers:{Authorization:'Bearer external-'+U,Origin:ORIGIN}})
    assert.deepEqual(await createSrmLocationGeocodingRequest(sensitiveOptions).request(),{status:'WAITING_OWNER',paidCalls:0})
    const job={schemaDigest:hash(core('007-delegated-jobs.sql')),targetOperation:'supplier.location.geocode',supplierSchemaDigest:hash(core('013-supplier-delegation.sql')),operationSchemaDigest:hash(core('017-additional-request-operations.sql')),locationSchemaDigest:hash(core('019-supplier-location-operations.sql'))}
-   const geo=createSrmLocationGeocodingRequest(sensitiveOptions,{executorApplicationId:WORKER_APP,job})
+   const geo=createSrmLocationGeocodingRequest(options,{executorApplicationId:WORKER_APP,job})
    const grant=randomUUID(),binding=randomUUID(),execution=randomUUID()
    await controlled(async()=>{
     await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature)VALUES($1,'srm',$2,$3,'ALLOW','supplier.location.geocode','supplier_report')",[grant,A,U])
@@ -264,7 +264,7 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
    await assert.rejects(geo.request(input),e=>isOperationDenied(e)&&e.reasonCode==='LIMIT_POLICY_UNAVAILABLE')
    assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_requests.intents WHERE operation='supplier.location.geocode'")).rows[0].n,0)
    await controlled(()=>owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity)VALUES($1,'srm',$2,'supplier.location.geocode','ACTIVE','SYNTHETIC_FINITE_REQUESTS_NOT_GOOGLE_BUDGET',now()-interval '1 hour',now()+interval '2 hours',$3,10)",[randomUUID(),A,future()]))
-   const wrong=createSrmLocationGeocodingRequest(sensitiveOptions,{executorApplicationId:'incorrect-executor',job});await assert.rejects(wrong.request(input),isOperationDenied)
+   const wrong=createSrmLocationGeocodingRequest(options,{executorApplicationId:'incorrect-executor',job});await assert.rejects(wrong.request(input),isOperationDenied)
    const admitted=await geo.request(input);assert.equal(admitted.status,'ACCEPTED');assert.deepEqual((await geo.request(input)).receipt,admitted.receipt)
    const workerUrl=new URL(url);workerUrl.username=WORKER;workerUrl.password='isolated_ci_only';workPool=new pg.Pool({connectionString:workerUrl.toString(),max:3});workAudit=new pg.Pool({connectionString:workerUrl.toString(),max:1})
    const worker=createDelegatedNativeWorkHost({application:{appId:WORKER_APP,profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId:'geo-fixture',configurationVersion:'geo-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['job_execution'],operations:['job.execute']},

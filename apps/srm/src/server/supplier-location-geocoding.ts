@@ -84,7 +84,8 @@ export function createSrmLocationGeocodingRequest(options:SupplierLocationRuntim
  if(!adoption)return Object.freeze({request:async()=>({status:'WAITING_OWNER' as const,paidCalls:0 as const})})
  const store=createDelegatedJobStore({binding:options.binding,...adoption.job})
  if(adoption.job.targetOperation!=='supplier.location.geocode')throw TypeError('Exact existing geocode delegation required')
- const {ledger,businessDigest,readAcceptedKys:_,...driver}=options
+ // P1 parent attestation belongs only to manual WRITE/SYNC, not GEOCODE.
+ const {ledger,businessDigest,readAcceptedKys:_,locationAdmission:__,parentSchemaDigest:___,...driver}=options
  const host=createSrmPrivateOperationHost({...driver,application:{...driver.application,operations:['supplier.location.geocode','supplier.report.read','supplier.private.read']},requestLedger:ledger,
   readResources:async({actor,request,scope,query})=>{
    const p=request.payload as unknown as {supplierId:string;locationId:string;addressVersion:string;command:{address:string;executorApplicationId:string}}
