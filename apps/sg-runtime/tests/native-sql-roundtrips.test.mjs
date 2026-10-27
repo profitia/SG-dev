@@ -23,7 +23,7 @@ test('native SQL adoption preserves complete prior acceptance and pins the exact
   const latest=receipt.appShellSourceCompatibility
   const historical=latest.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/sg-runtime/'+file]):fs.readFileSync(new URL('../'+file,import.meta.url))
   assert.equal(hash(historical),current.applicationSourceDigests[file]??digest,'preserved SQL receiver '+file)
-  if(latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),latest.applicationSourceDigests[file],'current AppShell receiver '+file)
+  if(latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.assistantWidgetSourceCompatibility.applicationSourceDigests[file]??latest.applicationSourceDigests[file],'current AppShell receiver '+file)
  }
  assert.equal(a.currentAuthorityCheckpointsPreserved,true);assert.equal(a.physicalAuditPreserved,true)
  for(const flag of ['humanGrantsChanged','quotasChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)

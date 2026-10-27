@@ -3838,11 +3838,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "ODWZOROWAĆ STATYCZNY PRODUKT",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "platform-appshell",
-      "implementation": "Wyłącznie powitanie, zapisany awatar, geometria i disabled controls. Bez formularza, historii, zmiany persony, detach, typing, odpowiedzi i komunikatów demonstracyjnych."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:d6d07772a6c5c9",
@@ -3934,11 +3934,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "ODWZOROWAĆ STATYCZNY PRODUKT",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "platform-appshell",
-      "implementation": "Wyłącznie powitanie, zapisany awatar, geometria i disabled controls. Bez formularza, historii, zmiany persony, detach, typing, odpowiedzi i komunikatów demonstracyjnych."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:e1f52c78c4a7cd",
@@ -4718,11 +4718,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Stan historii, odpięcia, błędu usługi, animacji pisania lub dodatkowego menu nie jest implementowany."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:232c8b98a09c6b",
@@ -4798,11 +4798,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Stan historii, odpięcia, błędu usługi, animacji pisania lub dodatkowego menu nie jest implementowany."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:565a58eec44bef",
@@ -4814,11 +4814,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Stan historii, odpięcia, błędu usługi, animacji pisania lub dodatkowego menu nie jest implementowany."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:a4eb02983d73d9",
@@ -4846,11 +4846,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Stan historii, odpięcia, błędu usługi, animacji pisania lub dodatkowego menu nie jest implementowany."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:502b509f2f07db",
@@ -4862,11 +4862,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Stan historii, odpięcia, błędu usługi, animacji pisania lub dodatkowego menu nie jest implementowany."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:119acbb5f2e6d5",
@@ -4878,11 +4878,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Stan historii, odpięcia, błędu usługi, animacji pisania lub dodatkowego menu nie jest implementowany."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:7adbec6b4a3dfb",
@@ -4894,11 +4894,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Stan historii, odpięcia, błędu usługi, animacji pisania lub dodatkowego menu nie jest implementowany."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:75ed329b5f27c8",
@@ -4910,11 +4910,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Interfejs i stałe teksty produktu; istniejący komponent oraz zachowanie wizualne kanonu. Nie ustanawia integracji backendu.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Stan historii, odpięcia, błędu usługi, animacji pisania lub dodatkowego menu nie jest implementowany."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "465804082116980736:3bef00a9f7e55f",
@@ -5150,11 +5150,11 @@
         "data": "produkt",
         "behavior": "produkt"
       },
-      "decision": "SPECYFIKACJA POZA ZAKRESEM",
+      "decision": "WDROŻYĆ ZACHOWANIE PRODUKTOWE",
       "sourceReason": "Istniejący kanon C38; zachowanie wizualne. Ograniczenia popupów i rzeczywisty host wymagają odrębnego sprawdzenia.",
       "verification": "SOURCE_REVIEW_COMPLETE; browser/build verification tracked separately",
-      "targetArea": "not-imported",
-      "implementation": "Poprawny wzorzec biblioteki, niewykorzystywany w statycznym ekranie tej iteracji."
+      "targetArea": "assistant-widget + use-assistant-window",
+      "implementation": "Polecenie korekty użytkownika: zwijanie, wysuwanie i kontrolowane odpinanie/przyłączanie. Bez rozmowy, historii, modelu i aktualizacji profilu."
     },
     {
       "id": "appshell:simulation-suffix",
@@ -5189,5 +5189,6 @@
     "WYKLUCZYĆ": 154,
     "SPECYFIKACJA POZA ZAKRESEM": 61,
     "ODWZOROWAĆ STATYCZNY PRODUKT": 38
-  }
+  },
+  "correction": "Presentation controls expressly requested by user after first deployment; source revision unchanged; no profile data write."
 }
