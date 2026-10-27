@@ -5152,5 +5152,29 @@
       "src/server/company-source-policy.test.ts": "14fb41258f4082c185558712db281e404aa1d4668882b766018931e286236f9e",
       "src/server/peer-read-boundary.test.ts": "d9010cb852d1a46c53e12cdfb0e2b94b796732410ddb9c47a242bade8be4a6ca"
     }
+  },
+  "supplierMapStartupRepair": {
+    "taskId": "SRM-DEVELOPMENT-MAPS-RECOVERY-20261027",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "previousReceiptSourceSha": "930a4586e1f9e12807b3ee9829590bf72a6db09d",
+    "previousReceiptDigest": "78ae2e7dd7acb13896ae89ebb60238929757b710fcec6cdeef980139e4e2b2c2",
+    "scope": "MAIN_DEVELOPMENT_MAP_PRESENTATION_STARTUP_ONLY",
+    "observedFailure": "First iframe startup during Maps Runtime wake-up did not complete the handshake; the existing retry displayed the real Google map and the saved manual marker.",
+    "maximumAutomaticStartupRetries": 1,
+    "sharedSdkChanged": false,
+    "locationAuthorityChanged": false,
+    "providerAcquisitionChanged": false,
+    "paidGeocodingEnabled": false,
+    "mgbiOrSearchChanged": false,
+    "applicationSourceDigests": {
+      "scripts/native-execution-adoption.test.mjs": "a82628691fd1708e3c5d7f3bf2a327334ce262bee458d430a3541e5a139e381f",
+      "scripts/request-quota-adoption.test.mjs": "96abc9d8d97c14bd4166c02242bb13c8cb58fb6d8c4f27ea48bfaa984e277d5e",
+      "src/modules/xray/krs-session-transport.test.ts": "3df464243df8ba010c7314285348e5659a524beb1eaa7539adb48afed505f616",
+      "src/modules/xray/supplier-locations-view.test.ts": "07008d94c3c2f52b2ea46d48e80d56c44afa49cd84a082567bb4846b5449afe7",
+      "src/modules/xray/supplier-locations-view.tsx": "c4b35da4384ce03754f052c2b04667a0a3207cff7ea0fb050abb63bf1f9d247e",
+      "src/modules/xray/supplier-map-startup.ts": "9899187a1a52ee0765e3acf3594a6f23fb2e7f4a32962d149558554be49f48a9",
+      "src/server/company-source-policy.test.ts": "a6c8786ff3af43e6268a0451cf8d9c586f4b170fa4f1f76f3e6575421e7ab04e",
+      "src/server/peer-read-boundary.test.ts": "b1bdbc92a2acebe5052d2f1b2d0f719121f0bd91e84e1204b8614b078c63b8e7"
+    }
   }
 }

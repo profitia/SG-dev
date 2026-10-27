@@ -2,6 +2,7 @@
 import React,{useEffect,useRef,useState,useSyncExternalStore} from 'react'
 import {CanonButton,FinancialHistoryDialog,displayPostalAddress,currentLocationCoordinates,supplierLocationsMapProjection,type SupplierLocation,type SupplierLocationGroup,type ManualLocationInput} from '@profitia/srm-xray'
 import {SupplierLocationController} from './supplier-location-controller'
+import {mountSupplierMapWithStartupRetry} from './supplier-map-startup'
 import targets from '../../../deployment/supplier-location-targets.json'
 const groups=[['SUPPLIER_LOCATIONS','Siedziba i oddziały'],['USER_LOCATIONS','Własne lokalizacje']] as const
 const button=(label:string,onClick:()=>void,disabled=false)=><CanonButton canonId="SRM-C02" usage="supplier-locations:01" type="button" onClick={onClick} disabled={disabled}>{label}</CanonButton>
@@ -29,8 +30,12 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
   let disposed=false,view:{close():void}|undefined
   void import('@profitia/maps-embed').then(({mountMaps})=>{
    if(disposed||!map.current)return
-   view=mountMaps({container:map.current,runtimeOrigin:targets.mapsRuntimeOrigin,readLocations:async({signal})=>supplierLocationsMapProjection((await controller.mapPage(group,offset,signal)).items),onSelect:id=>{if(!disposed)setSelectedLocation(id)},onStatus:s=>{if(!disposed)setMapStatus(s)}})
-   map.current.querySelector('iframe')?.setAttribute('style','width:100%;height:100%;border:0')
+   const container=map.current
+   view=mountSupplierMapWithStartupRetry(onStatus=>{
+    const attempt=mountMaps({container,runtimeOrigin:targets.mapsRuntimeOrigin,readLocations:async({signal})=>supplierLocationsMapProjection((await controller.mapPage(group,offset,signal)).items),onSelect:id=>{if(!disposed)setSelectedLocation(id)},onStatus})
+    container.querySelector('iframe')?.setAttribute('style','width:100%;height:100%;border:0')
+    return attempt
+   },s=>{if(!disposed)setMapStatus(s)})
   }).catch(()=>{if(!disposed)setMapStatus('error')})
   return()=>{disposed=true;view?.close()}
  },[open,state.page,state.blocked,controller,group,offset,mapAttempt])
