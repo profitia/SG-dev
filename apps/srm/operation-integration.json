@@ -5287,13 +5287,15 @@
       "src/server/peer-read-boundary.test.ts": "ffcd2fac3bd137b86b72ef02fb982400c6f9d800029aacc287f58fa3ac794074",
       "scripts/supplier-locations.integration.test.mjs": "ed453b2066ce75f5bfe0cd9db8ae184c4bc0b2367792a0479827d29c3a978204",
       "db/private-store/019-geocoding-reconciliation.sql": "1d8356b8795126c17766d617b5089da40188fe16140763c4c2f8e84dffc6f3b1",
-      "scripts/native-execution-adoption.test.mjs": "77419fc7e59ba69da44e3acea9994ad63355d3a0934af333d2287867c0a273a2"
+      "scripts/native-execution-adoption.test.mjs": "77419fc7e59ba69da44e3acea9994ad63355d3a0934af333d2287867c0a273a2",
+      "src/modules/xray/supplier-locations-view.tsx": "865845bafd1da32738d757613494f995fc52560ef1e4b94aa3280b9936d4cb7b"
     },
     "sourceControlQuery": "EXACT_ADMITTED_TRANSACTION",
     "sharedSdkChanged": false,
     "mapsProducerChanged": false,
     "mgbiOrSearchChanged": false,
     "automaticUncertainRetry": false,
-    "reconciliation": "OWNER_ONLY_PROVEN_ZERO_SOURCE_CALLS_APPEND_ONLY_HISTORY"
+    "reconciliation": "OWNER_ONLY_PROVEN_ZERO_SOURCE_CALLS_APPEND_ONLY_HISTORY",
+    "reopenSynchronization": "CURRENT_PROTECTED_SYNC_ON_EACH_OPEN"
   }
 }
