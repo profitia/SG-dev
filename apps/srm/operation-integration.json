@@ -5116,11 +5116,12 @@
       "src/server/krs-name-search.ts": "f832d94c980876a548098abb11183a77ac55b45bae5b0664f08f2c8269d9dde7",
       "src/server/krs-name-search.test.ts": "c1ea440cc02b601192252004636f93ac127069e6fd57f9d449b36cd8a04d4a61",
       "scripts/development-pilot2-installation.mjs": "9226609418bedd720ec075b7c99851053e10c6784f6d6071907563b9fe86a1a2",
-      "scripts/development-pilot2.integration.test.mjs": "a2eaa888809d7e4ed12666a5a922920853a0c01c7f0b785c07f4141cad3251e4",
+      "scripts/development-pilot2.integration.test.mjs": "f7c180c3fcb407a1eedeb8653773e5cb3e8771f1b38cf90af3bc22fa914a2c16",
       "scripts/native-execution-adoption.test.mjs": "f13d41543f2f20a23c712c563b859d08fc248bd3d797ee5933c8782ea68eb103",
       "scripts/diagnostic-telemetry-adoption.test.mjs": "24407c63400f0c88aae30ccb2ccd0f452bf07f295d31304658fb6a3132958850",
       "scripts/request-quota-adoption.test.mjs": "1f0528810c79da6af22689431ca1ba9be76cb32e2d5bcccdcb8309d9ceb0f895",
-      "package.json": "a71554032ba63bb304ed6e213df43537986f49dceca112b483408caf05e9c3bd"
+      "package.json": "a71554032ba63bb304ed6e213df43537986f49dceca112b483408caf05e9c3bd",
+      "src/server/peer-read-boundary.test.ts": "d267e873ae02b5264a2ed3d9a767a15a6f2707234c9000dd4d35df7b53e27eb6"
     },
     "preservedUiDigests": {
       "app/page.tsx": "90ee550441260bb02dea47681a1680614cd2ef9e1232c3e05dc107913041e316",

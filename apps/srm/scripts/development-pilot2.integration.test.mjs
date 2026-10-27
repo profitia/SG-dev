@@ -27,6 +27,7 @@ test('main KRS receiver commits genuine delegated General and retains tenant, re
   const existing=(await f.owner.query('SELECT rolcanlogin,rolsuper,rolbypassrls,rolinherit,rolcreaterole,rolcreatedb FROM pg_roles WHERE rolname=$1',[role])).rows[0]
   if(existing)assert.deepEqual(existing,{rolcanlogin:true,rolsuper:false,rolbypassrls:false,rolinherit:false,rolcreaterole:false,rolcreatedb:false})
   else{await f.owner.query(`CREATE ROLE ${role} LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS CONNECTION LIMIT 4`);createdRole=true}
+  await f.owner.query('GRANT CONNECT ON DATABASE '+databaseName+' TO '+role)
   await f.controlled(async()=>{
    await f.owner.query(f.own('022-pilot2-registry-envelope.sql'))
    await f.owner.query("INSERT INTO srm.pilot2_registry_envelope_installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[f.hash(f.own('022-pilot2-registry-envelope.sql'))])
@@ -71,11 +72,11 @@ test('main KRS receiver commits genuine delegated General and retains tenant, re
     data:{nip:f.NIP,krs:'0000000001',legalName:'SYNTHETIC_ONLY',legalForm:null,regon:null,registeredAddress:null,
      registeredAt:null,mainPkd:null,registrationStatus:'ACTIVE',registrySource:{provider:'KRS',evidenceRef:ref,retrievedAt:at,coverage:'PROGRESSIVE'}}}
    await store.section(selection,'general',general,null)
-   const row=(await f.owner.query('SELECT organization_id,pilot2_registry_envelope FROM srm.source_snapshots WHERE request_id=$1',[accepted.requestId])).rows[0]
+   const row=(await f.owner.query('SELECT s.organization_id,s.pilot2_registry_envelope FROM srm.source_snapshots s JOIN srm.provider_attempts a ON a.id=s.attempt_id AND a.organization_id=s.organization_id WHERE a.request_id=$1',[accepted.requestId])).rows[0]
    assert.equal(row.organization_id,f.A);assert.deepEqual(row.pilot2_registry_envelope,general)
    const before=await f.counts()
    await assert.rejects(store.section({...selection,organisationId:f.B},'general',general,null))
-   await f.controlled(()=>f.owner.query("UPDATE profitia_access.memberships SET status='REVOKED' WHERE organisation_id=$1 AND user_id=$2",[f.A,f.U]))
+   await f.controlled(()=>f.owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[f.A,f.U]))
    await assert.rejects(store.section(selection,'general',general,null))
    assert.deepEqual(await f.counts(),before,'Denied attempts cannot alter committed ownership/history')
   }finally{await pool.end();await audit.end()}
