@@ -5111,7 +5111,7 @@
     "runtimeDeploymentPerformed": false,
     "applicationSourceDigests": {
       "deployment/mgbi-development-recovery-20261027.json": "d6e76c7dfc43d6cd4f62af9fbfed31a1d2f3c6ea2d00a8273248ae2db577ca89",
-      "package.json": "8dbdde5f2ddb795c3fcf2ccbeb0ca82f4c069d878280609457ddf83a732b6d99",
+      "package.json": "384a4d4a2ec477b961386f2d78212afbea47fd66e6d08e72896d19284692dfd8",
       "scripts/corporate-source.integration.test.mjs": "c448d640074e97be558dab213c1a1d068eac4ea203ebc0bb59a3265b3621e711",
       "scripts/diagnostic-telemetry-adoption.test.mjs": "4cfecf62e578ca8a07c2b978b23e2b928a6ecfd674b4a7c9f48f554888ed7902",
       "scripts/mgbi-development.integration.test.mjs": "73ccf450740cc4d0145018605325520cb80c5adc31ef620399bee8aa4a746785",
