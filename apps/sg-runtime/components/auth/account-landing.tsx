@@ -2,9 +2,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useAuth, useClerk } from '@clerk/react'
+import { PlatformAppShell } from '@/components/appshell/platform-appshell'
 
 type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string; assistantAvatar?: 'male' | 'female' | null }
-export function AccountLanding({ locale, completionUrl }: { locale: 'pl' | 'en'; completionUrl: string }) {
+export function AccountLanding({ locale, completionUrl, presentation = 'account', organisationBranding }: {
+  locale: 'pl' | 'en'; completionUrl: string; presentation?: 'account' | 'workspace'; organisationBranding?: 'porr' | null
+}) {
   const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth(), clerk = useClerk()
   const key = JSON.stringify([userId, sessionId]), current = useRef<AbortController | null>(null)
   const [retry, setRetry] = useState(0), [state, setState] = useState<State>({ key: '', status: 'loading' })
@@ -40,6 +43,8 @@ export function AccountLanding({ locale, completionUrl }: { locale: 'pl' | 'en';
   if (!isLoaded) return <p role="status">{en ? 'Checking your session…' : 'Sprawdzamy Twoją sesję…'}</p>
   if (!isSignedIn) return <p><a href={`/${locale}`} className="underline">{en ? 'Sign in' : 'Zaloguj się'}</a></p>
   const status = state.key === key ? state.status : 'loading'
+  if (presentation === 'workspace' && status === 'ready') return <PlatformAppShell locale={locale}
+    assistantAvatar={state.assistantAvatar} organisationBranding={organisationBranding} onLogout={() => void logout()} />
   return <section className="space-y-5" key={key}>
     {status === 'ready' ? <><h1 className="text-3xl font-semibold">{en ? 'Your account is ready' : 'Konto gotowe'}</h1>
       <p>{en ? 'You are signed in to your Profitia account.' : 'Jesteś zalogowany do swojego konta Profitia.'}</p>
