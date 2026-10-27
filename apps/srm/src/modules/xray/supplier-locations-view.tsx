@@ -19,8 +19,9 @@ export function SupplierLocationMapPanel({page,mapRef,status,onRetry}:{page:Supp
   {status==='ready'&&<span className="srm-sr-only" role="status">Mapa lokalizacji jest gotowa.</span>}
  </section>{!hasCoordinates&&<p role="status" data-canon-id="SRM-C105">{page.total===0?'Brak dostępnych lokalizacji. Mapa pokazuje widok ogólny.':'Brak potwierdzonych współrzędnych. Mapa pokazuje widok ogólny; zapisane adresy pozostają na liście.'}</p>}</>
 }
-export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplierId:string;supplierName?:string;refreshKey:string}){
- const [controller]=useState(()=>new SupplierLocationController(supplierId)),state=useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot)
+export function SupplierLocations({supplierId,supplierName,refreshKey,transport=fetch}:{supplierId:string;supplierName?:string;refreshKey:string;transport?:typeof fetch}){
+ const currentTransport=useRef(transport);currentTransport.current=transport
+ const [controller]=useState(()=>new SupplierLocationController(supplierId,(input,init)=>currentTransport.current(input,init))),state=useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot)
  const [group,setGroup]=useState<SupplierLocationGroup>('SUPPLIER_LOCATIONS'),[offset,setOffset]=useState(0),[open,setOpen]=useState(false),[editing,setEditing]=useState<SupplierLocation|null|undefined>(undefined)
  const [form,setForm]=useState<ManualLocationInput>(empty),[formError,setFormError]=useState<string|null>(null),[saving,setSaving]=useState(false),[mapStatus,setMapStatus]=useState<'loading'|'ready'|'error'>('loading'),[mapAttempt,setMapAttempt]=useState(0),[selectedLocation,setSelectedLocation]=useState<string|null>(null),[positionDraft,setPositionDraft]=useState({lat:'',lng:''})
  const map=useRef<HTMLDivElement>(null),formStart=useRef<HTMLInputElement>(null)
@@ -41,7 +42,7 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
   setMapStatus('loading');setSelectedLocation(null)
   let disposed=false,view:{close():void}|undefined
   const startup=new AbortController()
-  void prepareSupplierMapRuntime(supplierId,startup.signal).then(()=>import('@profitia/maps-embed')).then(({mountMaps})=>{
+  void prepareSupplierMapRuntime(supplierId,startup.signal,transport).then(()=>import('@profitia/maps-embed')).then(({mountMaps})=>{
    if(disposed||!map.current)return
    const container=map.current
    view=mountSupplierMapWithStartupRetry(onStatus=>{
@@ -51,7 +52,7 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
    },s=>{if(!disposed)setMapStatus(s)})
   }).catch(()=>{if(!disposed)setMapStatus('error')})
   return()=>{disposed=true;startup.abort();view?.close()}
- },[open,state.page,state.blocked,controller,group,offset,mapAttempt])
+ },[open,state.page,state.blocked,controller,group,offset,mapAttempt,transport])
  useEffect(()=>{if(editing!==undefined)formStart.current?.focus()},[editing])
  const begin=(location:SupplierLocation|null)=>{setEditing(location);setForm(location?{label:location.label,description:location.description,address:location.address??empty.address,position:location.coordinates?.origin==='USER_INPUT'?location.coordinates.position:null}:empty);setPositionDraft(location?.coordinates?.origin==='USER_INPUT'?{lat:String(location.coordinates.position.lat),lng:String(location.coordinates.position.lng)}:{lat:'',lng:''});setFormError(null)}
  const save=async()=>{setSaving(true);setFormError(null);try{if((positionDraft.lat==='')!==(positionDraft.lng===''))throw Error('Podaj obie współrzędne albo pozostaw oba pola puste.');const position=positionDraft.lat===''?null:{lat:Number(positionDraft.lat),lng:Number(positionDraft.lng)};await controller.save(editing?'UPDATE':'CREATE',editing?.id??null,editing?.version??null,{...form,position});setEditing(undefined);await controller.load(group,offset)}catch(e){setFormError(e instanceof Error?e.message:'Nie udało się zapisać lokalizacji.')}finally{setSaving(false)}}

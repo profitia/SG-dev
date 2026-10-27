@@ -5255,7 +5255,7 @@
       "src/modules/xray/supplier-location-controller.test.ts": "11f3a6d9b7221250f9d68cfc9d33b1b0fc7202cb1030bf48dd243d92880bc0a3",
       "src/modules/xray/supplier-location-controller.ts": "7ef7f045250537d39d377d627c303f7cfb8871d0437b9145c3e911b2242eb1f1",
       "src/modules/xray/supplier-locations-view.test.ts": "f85107ea7f3131fd0c9eb2d07655b10c24fbe651da06afc9925ddad1c5dbd17a",
-      "src/modules/xray/supplier-locations-view.tsx": "0bbeb53358d09e548a9b2d0d9eb134dc7028d9398ee6ffe7438c3883a31de502",
+      "src/modules/xray/supplier-locations-view.tsx": "a522120eca2bd779b70b3e0de5cc47f275ea17c26a4e2945bd0280ae688a5fd0",
       "src/server/maps-geocoding-command.d.ts": "b06e61402b504921a5fd7f834b3d307ec099c0aa7a444e348f8a2ff12f2a6ff6",
       "src/server/peer-read-boundary.test.ts": "d764b2cb128f64619fa3eeca13cb41425302168e80e511e22a65a5a6f44559ca",
       "src/server/private-runtime.ts": "acb0af949fdf5b97dd7e2c530fa9d8c8405ccac4da2c597ad9bb5da71213e994",
@@ -5269,8 +5269,12 @@
       "src/server/company-source-policy.test.ts": "8d1a1d3ee1bd226fab9c094454cb3821627a4f064c13496130f477c2e5773718",
       "db/private-store/README.md": "c7253c29faa0e51a116f543d51ec0dbffd60ab138bea78718c1a116138916006",
       "scripts/diagnostic-telemetry-adoption.test.mjs": "fab074d68032492bf715bfbef82e510a0f79760a25baac99de78b68709b1e1ec",
-      "src/modules/xray/krs-session-transport.test.ts": "d79363e7920d8eb94609e31ad0bda328707d0d16e78acc72f1e8d8c277f92bf2"
+      "src/modules/xray/krs-session-transport.test.ts": "01737dd70d4376822595ab43a646e5e6b3e66a3c393811dc9bb6da45348850d7",
+      "app/page.tsx": "fc29bcdae24797414fcc9aa517417d4a1dcb78558c7275ce10113dae861f6185",
+      "src/modules/xray/supplier-report.tsx": "24ea7ea7295f941fa4a5475b5f07e5604bec69e7a93405f0be1d07e18cfe5c7a",
+      "src/modules/xray/krs-session-transport.ts": "a34089fd6c16915fedba8d5f91e36b8c02fe6b6121223c5dbdfd1a050e8bcdf6"
     },
-    "requestQuotaContractExtended": false
+    "requestQuotaContractExtended": false,
+    "mapSessionTransport": "EXISTING_FRESH_SDK_AUTHORIZATION_WITHOUT_REPORT_ADMISSION_OR_PROVIDER_RETRY"
   }
 }
