@@ -5276,5 +5276,26 @@
     },
     "requestQuotaContractExtended": false,
     "mapSessionTransport": "EXISTING_FRESH_SDK_AUTHORIZATION_WITHOUT_REPORT_ADMISSION_OR_PROVIDER_RETRY"
+  },
+  "supplierMapGeocodingTransactionRepair": {
+    "previousReceiptSourceSha": "f825ed2369c1248cfc00faaaa9e2e7bc322d6658",
+    "previousReceiptDigest": "0da48b24625dc56ed65e6a110a3194c06f6912b54b4ac59d8259d62d88c35113",
+    "applicationSourceDigests": {
+      "src/server/maps-geocoding-command.d.ts": "47537dda6827eab61d3b530797cffb9dfd412863e6e4770db7194caa398fa740",
+      "src/server/supplier-location-geocoding-runtime.ts": "1677380846ea500be1a9eca5fc6432b7491daf0a07a310301762dc8ecd16108d",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "bff6eb43083470322a206deabfdbe2fdb0ac25d3782a64ce5364e351700f8c54",
+      "src/server/peer-read-boundary.test.ts": "ffcd2fac3bd137b86b72ef02fb982400c6f9d800029aacc287f58fa3ac794074",
+      "scripts/supplier-locations.integration.test.mjs": "ed453b2066ce75f5bfe0cd9db8ae184c4bc0b2367792a0479827d29c3a978204",
+      "db/private-store/019-geocoding-reconciliation.sql": "1d8356b8795126c17766d617b5089da40188fe16140763c4c2f8e84dffc6f3b1",
+      "scripts/native-execution-adoption.test.mjs": "77419fc7e59ba69da44e3acea9994ad63355d3a0934af333d2287867c0a273a2",
+      "src/modules/xray/supplier-locations-view.tsx": "865845bafd1da32738d757613494f995fc52560ef1e4b94aa3280b9936d4cb7b"
+    },
+    "sourceControlQuery": "EXACT_ADMITTED_TRANSACTION",
+    "sharedSdkChanged": false,
+    "mapsProducerChanged": false,
+    "mgbiOrSearchChanged": false,
+    "automaticUncertainRetry": false,
+    "reconciliation": "OWNER_ONLY_PROVEN_ZERO_SOURCE_CALLS_APPEND_ONLY_HISTORY",
+    "reopenSynchronization": "CURRENT_PROTECTED_SYNC_ON_EACH_OPEN"
   }
 }

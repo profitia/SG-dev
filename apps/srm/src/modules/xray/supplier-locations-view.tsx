@@ -26,7 +26,7 @@ export function SupplierLocations({supplierId,supplierName,refreshKey,transport=
  const [form,setForm]=useState<ManualLocationInput>(empty),[formError,setFormError]=useState<string|null>(null),[saving,setSaving]=useState(false),[mapStatus,setMapStatus]=useState<'loading'|'ready'|'error'>('loading'),[mapAttempt,setMapAttempt]=useState(0),[selectedLocation,setSelectedLocation]=useState<string|null>(null),[positionDraft,setPositionDraft]=useState({lat:'',lng:''})
  const map=useRef<HTMLDivElement>(null),formStart=useRef<HTMLInputElement>(null)
  useEffect(()=>()=>controller.dispose(),[controller])
- useEffect(()=>{let current=true;void controller.sync().then(()=>{if(current&&open)void controller.load(group,offset)});return()=>{current=false}},[controller,refreshKey])
+ useEffect(()=>{if(!open)return;let current=true;void controller.sync().then(()=>{if(current)void controller.load(group,offset)});return()=>{current=false}},[controller,refreshKey,open])
  useEffect(()=>{if(open)void controller.load(group,offset)},[controller,open,group,offset])
  useEffect(()=>{if(!open)return;const timer=setInterval(()=>void controller.load(group,offset),30000);return()=>clearInterval(timer)},[open,controller,group,offset])
  useEffect(()=>{if(!state.blocked)return;setEditing(undefined);setForm(empty)},[state.blocked])
