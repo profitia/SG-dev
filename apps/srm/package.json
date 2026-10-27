@@ -43,7 +43,8 @@
     "react-dom": "19.2.4",
     "saxes": "5.0.1",
     "sharp": "0.35.5",
-    "@profitia/identity-runtime": "file:../identity-runtime"
+    "@profitia/identity-runtime": "file:../identity-runtime",
+    "@profitia/maps-runtime": "file:../maps-runtime"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -24,7 +24,8 @@ import {createSrmPrivateOperationHost} from './private-operation-host'
 import {createSupplierLocationHost,type SupplierLocationRuntimeOptions} from './supplier-locations'
 import {locationCollectionId,locationSourceEvidence} from './supplier-location-store'
 import type {LocationSource} from '@profitia/srm-xray'
-type Selection={organisationId:string;supplierId:string;locationId:string;address:string;addressVersion:string;expectedVersion:string;retentionUntil:string|null;alreadyResolved:boolean;uncertain:boolean;geocodingStatus:string;businessSchemaDigest?:string;supplierNip?:string;origin?:'SOURCE'|'MANUAL';group?:SupplierLocation['group'];sources?:LocationSource[]}
+export type GeocodingSelection={organisationId:string;supplierId:string;locationId:string;address:string;addressVersion:string;expectedVersion:string;retentionUntil:string|null;alreadyResolved:boolean;uncertain:boolean;geocodingStatus:string;businessSchemaDigest?:string;supplierNip?:string;origin?:'SOURCE'|'MANUAL';group?:SupplierLocation['group'];sources?:LocationSource[]}
+type Selection=GeocodingSelection
 const refuse=():never=>{throw new OperationDenied('RESOURCE_VERSION_CONFLICT')}
 /** Concrete SRM domain ports for the existing delegated Work host. No
  * connection, identity, source budget or provider implementation lives here. */
@@ -48,12 +49,39 @@ export function createSrmLocationGeocodingDomain(businessDigest:string){
   },
  })
 }
+export type TransientGeocodingResult=Readonly<{locationId:string;addressVersion:string;version:string;coordinates:LocationCoordinates}>
+/** Request-local result, exposed only after Work OUTCOME and a fresh HUMAN
+ * read. The guarded receiver advances CAS metadata but never stores Google data. */
+export function createSrmTransientGeocodingDomain(businessDigest:string,transientSchemaDigest:string){
+ const base=createSrmLocationGeocodingDomain(businessDigest)
+ let completed:TransientGeocodingResult|undefined
+ return Object.freeze({readCurrent:base.readCurrent,
+  async storeCurrent(context:Readonly<OperationContext>,client:PoolClient,selection:Selection,result:unknown){
+   const coordinates=googleCoordinates(result,selection.retentionUntil)
+   if(!coordinates){await base.storeCurrent(context,client,selection,result);return}
+   if(context.actorKind!=='SERVICE'||context.delegation?.target.operation!=='supplier.location.geocode')return refuse()
+   const row=(await client.query('SELECT srm.location_geocode_transient_complete($1::uuid,$2::uuid,$3,$4::bigint,$5) AS version',
+    [context.delegation.requestId,selection.locationId,selection.addressVersion,selection.expectedVersion,transientSchemaDigest])).rows[0]
+   if(typeof row?.version!=='string'||!/^\d{1,18}$/.test(row.version))return refuse()
+   completed=Object.freeze({locationId:selection.locationId,addressVersion:selection.addressVersion,version:row.version,
+    coordinates:{...coordinates,expiresAt:new Date(Math.min(Date.parse(coordinates.expiresAt!),Date.parse(coordinates.fetchedAt)+15*60000)).toISOString()}})
+  },
+  result:()=>completed,
+ })
+}
+export async function readSrmLocationGeocodingTarget(options:SupplierLocationRuntimeOptions,input:{request:Request;organisationId:string;supplierId:string;locationId:string}){
+ await options.prepareAccess?.(input.request,input.organisationId,input.supplierId,input.locationId)
+ const reader=createSupplierLocationHost(options,'supplier.location.read')
+ return (await reader.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.location.read',organisationId:input.organisationId,resourceId:locationCollectionId(input.supplierId),
+   payload:{action:'READ',supplierId:input.supplierId,locationId:null,addressVersion:null,expectedVersion:null,command:null},request:input.request},async(_context,client)=>{
+    await client.query('SELECT srm.location_expire($1::uuid,$2::uuid)',[input.organisationId,input.supplierId])
+    return (await client.query('SELECT srm.location_geocode_metadata($1::uuid,$2::uuid,$3::uuid,$4) AS value',[input.organisationId,input.supplierId,input.locationId,'supplier.location.read'])).rows[0]?.value as Selection|undefined})).value
+}
 type Job={schemaDigest:string;targetOperation:'supplier.location.geocode';supplierSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest:string}
 /** Optional server composition. Missing adoption creates no intent, job or
  * provider call; SQL policies and registered bindings remain the paid gate. */
 export function createSrmLocationGeocodingRequest(options:SupplierLocationRuntimeOptions,adoption?:Readonly<{executorApplicationId:string;job:Job}>){
  if(!adoption)return Object.freeze({request:async()=>({status:'WAITING_OWNER' as const,paidCalls:0 as const})})
- const reader=createSupplierLocationHost(options,'supplier.location.read')
  const store=createDelegatedJobStore({binding:options.binding,...adoption.job})
  if(adoption.job.targetOperation!=='supplier.location.geocode')throw TypeError('Exact existing geocode delegation required')
  const {ledger,businessDigest,readAcceptedKys:_,...driver}=options
@@ -71,10 +99,7 @@ export function createSrmLocationGeocodingRequest(options:SupplierLocationRuntim
   },projectOutput:value=>value,
  })
  return Object.freeze({async request(input:{request:Request;organisationId:string;supplierId:string;locationId:string}){
-  const prepared=(await reader.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.location.read',organisationId:input.organisationId,resourceId:locationCollectionId(input.supplierId),
-   payload:{action:'READ',supplierId:input.supplierId,locationId:null,addressVersion:null,expectedVersion:null,command:null},request:input.request},async(_context,client)=>{
-    await client.query('SELECT srm.location_expire($1::uuid,$2::uuid)',[input.organisationId,input.supplierId])
-    return (await client.query('SELECT srm.location_geocode_metadata($1::uuid,$2::uuid,$3::uuid,$4) AS value',[input.organisationId,input.supplierId,input.locationId,'supplier.location.read'])).rows[0]?.value as Selection|undefined})).value
+  const prepared=await readSrmLocationGeocodingTarget(options,input)
   if(!prepared)return{status:'UNRESOLVED' as const,paidCalls:0 as const}
   if(prepared.alreadyResolved)return{status:'RESOLVED' as const,paidCalls:0 as const}
   if(prepared.uncertain)return{status:'DELIVERY_UNCERTAIN' as const,paidCalls:0 as const}

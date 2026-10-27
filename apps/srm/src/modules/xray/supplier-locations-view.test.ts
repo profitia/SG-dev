@@ -42,7 +42,11 @@ test('address-only repair preserves predecessor receipts and pins current source
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(prior),a.previousReceiptDigest)
  for(const[k,v]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt as Record<string,unknown>)[k],v,k)
- for(const[f,d]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../../'+f,import.meta.url))),d,f)
+ for(const[f,d]of Object.entries(a.applicationSourceDigests)){
+  const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
+  const bytes=next?.applicationSourceDigests[f]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+f]):readFileSync(new URL('../../../'+f,import.meta.url))
+  assert.equal(hash(bytes),d,f)
+ }
  assert.equal(a.inventedCoordinates,false);assert.equal(a.paidGeocodingEnabled,false);assert.equal(a.sharedSdkChanged,false)
 })
 const flush=()=>new Promise<void>(resolve=>setImmediate(resolve))

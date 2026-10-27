@@ -56,7 +56,7 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
  const begin=(location:SupplierLocation|null)=>{setEditing(location);setForm(location?{label:location.label,description:location.description,address:location.address??empty.address,position:location.coordinates?.origin==='USER_INPUT'?location.coordinates.position:null}:empty);setPositionDraft(location?.coordinates?.origin==='USER_INPUT'?{lat:String(location.coordinates.position.lat),lng:String(location.coordinates.position.lng)}:{lat:'',lng:''});setFormError(null)}
  const save=async()=>{setSaving(true);setFormError(null);try{if((positionDraft.lat==='')!==(positionDraft.lng===''))throw Error('Podaj obie współrzędne albo pozostaw oba pola puste.');const position=positionDraft.lat===''?null:{lat:Number(positionDraft.lat),lng:Number(positionDraft.lng)};await controller.save(editing?'UPDATE':'CREATE',editing?.id??null,editing?.version??null,{...form,position});setEditing(undefined);await controller.load(group,offset)}catch(e){setFormError(e instanceof Error?e.message:'Nie udało się zapisać lokalizacji.')}finally{setSaving(false)}}
  const deactivate=async(location:SupplierLocation)=>{setSaving(true);setFormError(null);try{await controller.save('DEACTIVATE',location.id,location.version,null);await controller.load(group,offset)}catch(e){setFormError(e instanceof Error?e.message:'Nie udało się usunąć lokalizacji.')}finally{setSaving(false)}}
- const close=()=>{setOpen(false);setEditing(undefined);setForm(empty);setSelectedLocation(null)}
+ const close=()=>{controller.dispose();setOpen(false);setEditing(undefined);setForm(empty);setSelectedLocation(null)}
  return <>
   <CanonButton canonId="SRM-C103" usage="supplier-locations:open" className="srm-google-maps-button" type="button" aria-label="Otwórz lokalizację dostawcy w Google Maps" aria-haspopup="dialog" aria-expanded={open} onClick={event=>{event.currentTarget.focus({preventScroll:true});setOpen(true)}}>
    <img src="https://www.gstatic.com/images/branding/product/2x/maps_48dp.png" width={30} height={30} alt="" draggable={false}/>
@@ -68,6 +68,8 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
    {state.sync==='PENDING'&&<p role="status">Uzgadnianie lokalizacji z zapisanymi raportami…</p>}
    {state.sync==='UNAVAILABLE'&&<p>Nie potwierdzono pełnej synchronizacji raportów. Możesz odczytać dostępne zapisane lokalizacje.</p>}
    {state.error&&<p role="alert">{state.error}</p>}{state.busy&&<p role="status">Wczytywanie lokalizacji…</p>}
+   {state.geocoding==='PENDING'&&<p role="status">Ustalanie położenia zapisanego adresu…</p>}
+   {state.geocoding==='UNAVAILABLE'&&<p role="status">Nie udało się potwierdzić położenia adresu. Zapisane adresy pozostają dostępne.</p>}
    {group==='SUPPLIER_LOCATIONS'&&<p>Oddziały: dostępność danych nie została potwierdzona u dostawcy raportów.</p>}
    {state.page&&<p>Wyświetlono {state.page.items.length} z {state.page.total}. Na tej stronie: {state.page.items.filter(v=>!!currentLocationCoordinates(v)).length} ze współrzędnymi, {state.page.items.filter(v=>!currentLocationCoordinates(v)).length} bez współrzędnych.</p>}
    {state.blocked&&<p role="alert" data-canon-id="SRM-C105">Brak dostępu do lokalizacji. Potwierdź aktualny dostęp do raportu.</p>}
