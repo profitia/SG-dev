@@ -39,13 +39,15 @@ const core=name=>fs.readFileSync(new URL('../../../packages/platform-contracts/m
 const own=name=>fs.readFileSync(new URL('../db/private-store/'+name,import.meta.url),'utf8')
 
 export async function supplierBusinessFixture(t,full=false,probe,options={}){
- if(Object.keys(options).some(k=>k!=='databaseName')||options.databaseName!==undefined&&options.databaseName!=='platform_private')throw Error('Only the explicit disposable private-store installation fixture may override its database name')
+ if(Object.keys(options).some(k=>!['databaseName','companySourcePolicy'].includes(k))||options.databaseName!==undefined&&options.databaseName!=='platform_private'
+  ||options.companySourcePolicy!==undefined&&options.companySourcePolicy!=='MGBI_ONLY')throw Error('Only explicit disposable private-store test options are allowed')
+ const mgbiOnly=options.companySourcePolicy==='MGBI_ONLY'
  const DATABASE=options.databaseName??'srm_service_business_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
  const CORPORATE='srm_company_publication_runtime';let networkHits=0;const networkObservations=[];let financialBoundary
  let syntheticOrigin
- let fileMode=false,failFile=false,fileHits=0,limitsHits=0
+ let fileMode=false,failFile=false,fileHits=0,limitsHits=0,failCorporateCommit=false,corporateCommitRefusals=0,company
  const licensedXml='<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:x="http://www.xbrl.org/2003/instance" xmlns:f="https://xbrl.ifrs.org/taxonomy/2022-03-24/ifrs-full" xmlns:iso="http://www.xbrl.org/2003/iso4217"><body><ix:resources><x:context id="c"><x:entity><x:identifier scheme="lei">ISSUER</x:identifier></x:entity><x:period><x:startDate>2025-01-01</x:startDate><x:endDate>2025-12-31</x:endDate></x:period></x:context><x:unit id="u"><x:measure>iso:PLN</x:measure></x:unit></ix:resources><ix:nonFraction name="f:Revenue" contextRef="c" unitRef="u">123</ix:nonFraction></body></html>'
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
@@ -130,6 +132,19 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
     await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,'srm-corporate-source',$2,'SOURCE_TRANSACTION',1000,now()-interval '1 hour',now()+interval '2 hours',$3,'ACTIVE','SYNTHETIC_ONLY')",[randomUUID(),CORPORATE_SOURCE.id,future()])
     await owner.query('INSERT INTO profitia_srm_catalog.installation(version,schema_digest,field_schema,source_ref) VALUES($1,$2,$3::jsonb,$4)',[CORPORATE_PUBLICATION_VERSION,hash(own('004-corporate-source.sql')+own('005-corporate-source-access.sql')+shapeText),shapeText,'a'.repeat(40)])
     await owner.query(`GRANT USAGE ON SCHEMA profitia_ingestion,profitia_srm_catalog TO ${CORPORATE};GRANT USAGE ON SCHEMA profitia_srm_catalog TO profitia_access_owner;GRANT EXECUTE ON FUNCTION profitia_srm_catalog.scope_allows(text,boolean),profitia_srm_catalog.current_packet(text,boolean),profitia_srm_catalog.known_proof(text,uuid),profitia_srm_catalog.valid_stored_section(text,text,jsonb) TO profitia_access_owner;GRANT EXECUTE ON FUNCTION profitia_srm_catalog.runtime_descriptor(),profitia_srm_catalog.open_publication(uuid,uuid,text),profitia_ingestion.runtime_descriptor(),profitia_ingestion.current_state(text,text),profitia_ingestion.lock_ingestion(text,text,text),profitia_ingestion.scope_allows(text,text),profitia_ingestion.reserve(text,text,text,text,uuid),profitia_ingestion.complete(uuid,uuid),profitia_ingestion.append_audit(jsonb) TO ${CORPORATE}`)
+   }
+   if(full&&mgbiOnly){
+    await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='REVOKED'")
+    await owner.query("SELECT set_config('profitia.install.unmetered_digest',$1,true)",[hash(core('024-unmetered-public-sources.sql'))])
+    await owner.query(core('024-unmetered-public-sources.sql'))
+    await owner.query("SELECT set_config('profitia.install.role_source_quota_digest',$1,true)",[hash(core('026-role-source-quotas.sql'))])
+    await owner.query(core('026-role-source-quotas.sql'))
+    await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='ACTIVE'")
+    // Exhausted shared defaults remain historical. Only these exact ordinary
+    // logins receive internal UNMETERED policies; paid HTTP policies stay metered.
+    await owner.query('UPDATE profitia_ingestion.budgets SET capacity=1,consumed_count=1')
+    for(const[app,role,source]of[['srm-provider-source',SOURCE,SUPPLIER_SOURCE_REQUEST.id],['srm-provider-source',SOURCE,'srm.provider.mgbi'],['srm-corporate-source',CORPORATE,CORPORATE_SOURCE.id]])
+     await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,login_role,source_id,unit,quota_mode,capacity,window_start,window_end,expires_at,status,source_ref,consumed_count) VALUES($1,$2,$3,$4,'SOURCE_TRANSACTION','UNMETERED',NULL,NULL,NULL,NULL,'ACTIVE','SYNTHETIC_ONLY',100)",[randomUUID(),app,role,source])
    }
    await owner.query('COMMIT')
   }catch(error){await owner.query('ROLLBACK');throw error}
@@ -274,7 +289,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   const nativeStore=createSrmSupplierNativeWorkStore({work:nativeWork,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql'))})
   const sourceOptions={pool:sourcePool,auditPool:sourceAudit,
    application:{appId:'srm-provider-source',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
-   binding:{applicationId:'srm-provider-source',environment:'development',projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:SOURCE,deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',schemaDigest:hash(core('008-platform-ingestion.sql'))},requestSchemaDigest:hash(own('009-supplier-source-request.sql'))}
+   binding:{applicationId:'srm-provider-source',environment:'development',projectId:'isolated-source-project',branchId:'isolated-source-branch',databaseName:DATABASE,role:SOURCE,deploymentId:'synthetic-supplier-source',configurationVersion:'source-v1',schemaDigest:hash(core('008-platform-ingestion.sql')),...(mgbiOnly?{unmeteredSchemaDigest:hash(core('024-unmetered-public-sources.sql'))}:{})},requestSchemaDigest:hash(own('009-supplier-source-request.sql'))}
   const sourceStore=createSrmSupplierSourceRequest(sourceOptions)
   const sourceLink=createSrmSupplierSourceLink({work:{...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore})
   const selection=p=>({requestId:p.requestId,organisationId:p.organisationId,command:p.command})
@@ -813,13 +828,22 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   }else{
    const cpUrl=new URL(db);cpUrl.username=CORPORATE;cpUrl.password='isolated_ci_only'
    corporatePool=new pg.Pool({connectionString:cpUrl.toString(),max:2});corporateAudit=new pg.Pool({connectionString:cpUrl.toString(),max:1})
+   corporatePool.on('connect',client=>{const query=client.query.bind(client);client.query=(sql,...args)=>{
+    if(failCorporateCommit&&sql==='COMMIT'){corporateCommitRefusals++;return Promise.reject(Error('Synthetic actual corporate publication COMMIT refusal'))}
+    return query(sql,...args)
+   }})
    const application={...sourceOptions.application,appId:'srm-corporate-source',deploymentId:'synthetic-company-publication',configurationVersion:'corporate-v1'}
    const shapeText=fs.readFileSync(new URL('../src/server/corporate-source-shape.json',import.meta.url),'utf8')
    const external={configurationVersion:'company-provider-v1',schemaDigest:hash(core('009-external-call-admission.sql')),nativeSchemaDigest:hash(core('012-native-external-transport.sql')),maximumResponseBytes:1024*1024}
-   const fullOptions={financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql')),work:{...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,
+   const fullOptions={...(mgbiOnly?{companySourcePolicy:'MGBI_ONLY'}:{financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql'))}),work:{...workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:sourceStore,
     corporate:{application,binding:{...sourceOptions.binding,applicationId:application.appId,role:CORPORATE,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool:corporatePool,auditPool:corporateAudit,publicationSchemaDigest:hash(own('004-corporate-source.sql')+own('005-corporate-source-access.sql')+shapeText)},
     mgbi:{apiKey:'synthetic-native-company-key',authScheme:'raw',source:{application:sourceOptions.application,binding:sourceOptions.binding,pool:sourcePool,auditPool:sourceAudit,external,syntheticOrigin},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}}
-   const company=createSrmNativeCompanyLookup(fullOptions),FULL_NIP='5260250274'
+   company=createSrmNativeCompanyLookup(fullOptions);const FULL_NIP='5260250274'
+   if(mgbiOnly)await t.test('main MGBI company rejects the KRS continuation before any provider, SQL work or publication',async()=>{
+    const before=await counts(),effects=await sourceCounts(),hits=networkHits
+    await assert.rejects(company.prepareFinancial({}, {},async()=>{}),isOperationDenied)
+    assert.deepEqual(await counts(),before);assert.deepEqual(await sourceCounts(),effects);assert.equal(networkHits,hits)
+   })
    const history=async s=>(await owner.query("SELECT snapshot.section,count(*)::int n FROM srm.source_snapshots snapshot JOIN srm.provider_attempts a ON a.organization_id=snapshot.organization_id AND a.id=snapshot.attempt_id WHERE snapshot.organization_id=$1 AND a.request_id=$2 GROUP BY snapshot.section ORDER BY snapshot.section",[s.organisationId,s.requestId])).rows
    let cold,msrSelected
    await t.test('complete original company engine really acquires, privately stores, publishes and calculates under ordinary native roles',async()=>{
@@ -971,6 +995,30 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    })
   }
 
+  if(full&&mgbiOnly)await t.test('failed real publication COMMIT never reports success; an uncertain replay preserves private history without another paid call',async()=>{
+   const selected=selection(await parent(A,'9511855233'))
+   failCorporateCommit=true
+   try{await assert.rejects(company.run(selected))}finally{failCorporateCommit=false}
+   assert.equal(corporateCommitRefusals,1)
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_srm_catalog.publications WHERE nip=$1',[selected.command.nip])).rows[0].n,0)
+   const privateHistory=await counts(),hits=networkHits
+   await assert.rejects(company.run(selected),e=>e.certainty==='RESULT_NOT_RETAINED'&&e.retryAllowed===false)
+   assert.equal(networkHits,hits);assert.deepEqual(await counts(),privateHistory)
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_srm_catalog.publications WHERE nip=$1',[selected.command.nip])).rows[0].n,0)
+  })
+  if(full&&mgbiOnly)await t.test('main internal unlimited policies preserve exhausted defaults while paid provider admission still denies new acquisition',async()=>{
+   const defaults=(await owner.query('SELECT capacity::text,consumed_count::text,quota_mode FROM profitia_ingestion.budgets WHERE login_role IS NULL')).rows
+   assert(defaults.length>0);assert(defaults.every(b=>b.capacity==='1'&&b.consumed_count==='1'&&b.quota_mode==='METERED'))
+   const scoped=(await owner.query("SELECT consumed_count::int,quota_mode FROM profitia_ingestion.budgets WHERE login_role IS NOT NULL")).rows
+   assert.equal(scoped.length,3);assert(scoped.every(b=>b.consumed_count>100&&b.quota_mode==='UNMETERED'))
+   const before=networkHits
+   await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
+   try{await owner.query("UPDATE profitia_external_call.policies SET capacity=admitted_count WHERE resource_id='srm-provider:mgbi'");await owner.query('COMMIT')}catch(e){await owner.query('ROLLBACK');throw e}
+   const selected=selection(await parent(A,'5213390341'))
+   await assert.rejects(company.run(selected))
+   assert.equal(networkHits,before)
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_srm_catalog.publications WHERE nip=$1',[selected.command.nip])).rows[0].n,0)
+  })
   if(full)await t.test('395 private facts profile real Native Work before/after statement guards with the same ordinary role',async()=>{
    const profiling=(await owner.query('SHOW track_functions')).rows[0].track_functions==='all'
    const profile=async()=>{

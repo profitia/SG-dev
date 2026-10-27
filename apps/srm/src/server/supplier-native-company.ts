@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import {mgbiCompanyCache,type CompanySourcePolicy} from './company-source-policy'
 import { ExternalCallUnavailable } from '@profitia/platform-contracts/external-call'
 import { platformDeliveryEvidence } from '@profitia/platform-contracts/platform-ingestion'
 import { OperationDenied, isOperationDenied, operationPayloadDigest } from '@profitia/platform-contracts/operation-context'
@@ -22,6 +23,7 @@ import { readSupplierRequest } from './supplier-request-operation'
 type ProviderOptions=Omit<Parameters<typeof createSrmProviderSourceTransport>[0],
   'provider'|'providerOrigin'|'nip'|'operationKey'|'headers'>
 type Options={work:SupplierNativeWorkOptions;namedInterestBoundaryDigest:string;
+  companySourcePolicy?:CompanySourcePolicy;
   registryEnvelopeBoundaryDigest?:string;
   financialInventoryBoundaryDigest?:string;
   source:ReturnType<typeof createSrmSupplierSourceRequest>;
@@ -35,7 +37,8 @@ const hash=(value:string)=>createHash('sha256').update(value).digest('hex')
  * publication use their existing independent native hosts. No HTTP activation,
  * caller-selected identity, alternate writer or network inside SQL is added. */
 export function createSrmNativeCompanyLookup(options:Options){
-  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>!['registryEnvelopeBoundaryDigest','financialInventoryBoundaryDigest'].includes(k)).sort().join(',')!=='corporate,mgbi,namedInterestBoundaryDigest,source,work'
+  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>!['companySourcePolicy','registryEnvelopeBoundaryDigest','financialInventoryBoundaryDigest'].includes(k)).sort().join(',')!=='corporate,mgbi,namedInterestBoundaryDigest,source,work'
+    ||options.companySourcePolicy!==undefined&&options.companySourcePolicy!=='MGBI_ONLY'
     ||typeof options.mgbi?.apiKey!=='string'||!options.mgbi.apiKey.trim()
     ||!['raw','bearer'].includes(options.mgbi.authScheme)
     ||options.work.application.environment!==options.mgbi.source.application.environment
@@ -54,7 +57,7 @@ export function createSrmNativeCompanyLookup(options:Options){
   const fixed=structuredClone({application:options.mgbi.source.application,binding:options.mgbi.source.binding,
     external:options.mgbi.source.external,msrExternal:options.mgbi.msrExternal,
     syntheticOrigin:options.mgbi.source.syntheticOrigin,syntheticStorageOrigin:options.mgbi.syntheticStorageOrigin})
-  const apiKey=options.mgbi.apiKey.trim(),authScheme=options.mgbi.authScheme
+  const apiKey=options.mgbi.apiKey.trim(),authScheme=options.mgbi.authScheme,mgbiOnly=options.companySourcePolicy==='MGBI_ONLY'
   const headers={authorization:authScheme==='bearer'?'Bearer '+apiKey:apiKey,accept:'application/json'}
   const clock=now?()=>new Date(now()):()=>new Date()
   async function execute<T>(input:SupplierNativeWorkSelection,engine:(ports:XrayCompanyPorts)=>Promise<T>,recheck?:KrsFinancialRecheck,keepExistingSupplier=false){
@@ -81,7 +84,7 @@ export function createSrmNativeCompanyLookup(options:Options){
         operationKey=operationPayloadDigest({version:'srm-native-company-v1',sourceEffectId:admitted.sourceRequest.effectId,nip:selection.command.nip})
         return lookup
       },
-      readFreshCompany:async(org,nip,at)=>{scope(org,nip);return store.cache(selection,at??clock())},
+      readFreshCompany:async(org,nip,at)=>{scope(org,nip);const cached=await store.cache(selection,at??clock());return mgbiOnly?mgbiCompanyCache(cached):cached},
       readCompanyRegistration:async(org,nip)=>{scope(org,nip);return store.registration(selection)},
       enrichCompanyPkd:async(org,nip,section)=>{scope(org,nip);return store.pkd(selection,section)},
       reprojectFinancialArchive:async(org,nip,history,callerPool,includeOriginalResponse)=>{scope(org,nip);if(callerPool!==undefined)return refuse();return store.reproject(selection,history,includeOriginalResponse)},
@@ -109,7 +112,7 @@ export function createSrmNativeCompanyLookup(options:Options){
         scope(org,nip);if(metadata?.requestId!==selection.requestId||metadata.store||metadata.download||metadata.parse)return refuse()
         const current=store.msr(selection,metadata.allowedKrs)
         const prepared=inventory;let consumed=false,projectionChanged=false
-        const result=await enrichMsrFinancial(org,nip,base,{...metadata,store:prepared?{...current,candidates:async()=>{
+        const result=await enrichMsrFinancial(org,nip,base,{...metadata,...(mgbiOnly?{requireLicensedXmlMetadata:true,maximumNewDownloads:1}:{}),store:prepared?{...current,candidates:async()=>{
           if(consumed)return current.candidates();consumed=true;return prepared.candidates
         },save:async(...args)=>{await current.save(...args);projectionChanged=true},
           project:async(...args)=>{await current.project!(...args);projectionChanged=true}}:current,download:async recordId=>{
@@ -132,7 +135,7 @@ export function createSrmNativeCompanyLookup(options:Options){
       persistSection:async(org,actual,section,envelope,errorCode,facts,correlation,sourceData,method)=>{
         scope(org,selection.command.nip)
         if(actual.requestId!==lookup!.requestId||actual.supplierId!==lookup!.supplierId||!['general','financial'].includes(section)
-          ||(envelope.source.provider!=='MGBI'&&!(section==='general'&&envelope.source.provider==='KRS')))return refuse()
+          ||(envelope.source.provider!=='MGBI'&&!(!mgbiOnly&&section==='general'&&envelope.source.provider==='KRS')))return refuse()
         // The legacy port also accepts KYS; this closed original company
         // engine supplies only its MGBI general/financial sections.
         return store.section(selection,section as 'general'|'financial',envelope as Parameters<typeof store.section>[2],errorCode,facts,correlation,
@@ -162,7 +165,7 @@ export function createSrmNativeCompanyLookup(options:Options){
   }
   return Object.freeze({
     run:(selection:SupplierNativeWorkSelection)=>execute(selection,ports=>createXrayCompanyLookup(ports)(selection.organisationId,{identifier:{type:'NIP',value:selection.command.nip}}),undefined,true),
-    prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:Parameters<typeof prepareKrsFinancialWork>[5],execution?:KrsFinancialExecution)=>execute(selection,
+    prepareFinancial:(selection:SupplierNativeWorkSelection,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:Parameters<typeof prepareKrsFinancialWork>[5],execution?:KrsFinancialExecution)=>mgbiOnly?Promise.reject(new OperationDenied('RESOURCE_SCOPE_MISMATCH')):execute(selection,
       ports=>prepareKrsFinancialWork({...ports,readFreshFinancial:async(org,nip,at)=>{
         if(org!==selection.organisationId||nip!==selection.command.nip)return refuse()
         return store.financialCache(selection,at)

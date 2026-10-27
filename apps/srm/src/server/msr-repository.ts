@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { withOrganization, type DatabasePool } from "./db";
 import { persistFinancialDocuments, projectArchivedFinancialDocuments, financialRecordsFromPages, type FinancialArchive } from "./financial-documents";
-import { MSR_PROJECTION_VERSION, selectMsrCandidates, projectMsrFinancial, mergeMsrFinancial, type MsrCandidate, type MsrProjection } from "./msr-financial";
+import { MSR_PROJECTION_VERSION, selectMsrCandidates, isLicensedMsrXmlOriginal, projectMsrFinancial, mergeMsrFinancial, type MsrCandidate, type MsrProjection } from "./msr-financial";
 import { MSR_READABLE_MAPPING_VERSIONS, parseMsrOriginal, MsrParserError, type MsrParsed } from "./msr-parser";
 import { decodeMsrOriginal, downloadMsrOriginal, MsrSourceError, type MsrOriginal } from "./msr-source";
 import type { MgbiFinancialResult } from "./mgbi-financial";
@@ -51,7 +51,7 @@ export function recoverStoredMsrSource(candidate:MsrCandidate,row:MsrReceipt,par
 }
 
 export type MsrStore = {
-  candidates():Promise<{candidates:MsrCandidate[];archiveChecksum:string;metadataMissing?:boolean}|null>;
+  candidates():Promise<{candidates:MsrCandidate[];archiveChecksum:string;metadataMissing?:boolean;licensedXmlRecordIds?:readonly string[]}|null>;
   claim(candidate:MsrCandidate,claimId:string):Promise<boolean>;
   read(candidate:MsrCandidate):Promise<MsrReceipt|null>;
   receive(candidate:MsrCandidate,claimId:string,original:MsrOriginal):Promise<void>;
@@ -67,7 +67,9 @@ export function msrStore(organizationId:string,nip:string,requestId:string,allow
       if (!archive) return null;
       projectArchivedFinancialDocuments(archive,organizationId,nip); // checksum, complete inventory and supplier identity
       const records=financialRecordsFromPages(JSON.parse(archive.payload_text).pages),candidates=selectMsrCandidates(records,nip,allowedKrs);
-      return {candidates,archiveChecksum:archive.payload_jsonb_sha256,metadataMissing:candidates.some(c=>records.some(r=>{
+      return {candidates,archiveChecksum:archive.payload_jsonb_sha256,
+        licensedXmlRecordIds:records.filter(isLicensedMsrXmlOriginal).map(r=>String((r as Record<string,unknown>).id)),
+        metadataMissing:candidates.some(c=>records.some(r=>{
         const v=r as Record<string,unknown>;return v.id===c.recordId && !Object.hasOwn(v,'files');
       }))};
     },pool),
@@ -104,7 +106,7 @@ export function msrStore(organizationId:string,nip:string,requestId:string,allow
 /** One download per record for the lifetime of its receipt, including ambiguous failures.
  * A blocked receipt needs explicit evidence-based operator reconciliation, never cache deletion. */
 export async function enrichMsrFinancial(organizationId:string,nip:string,base:MgbiFinancialResult,
-  options:{requestId?:string;store?:MsrStore;download?:typeof downloadMsrOriginal;parse?:typeof parseMsrOriginal;refreshMetadata?:()=>Promise<void>;allowedKrs?:readonly string[];maximumNewDownloads?:number} = {}):Promise<MgbiFinancialResult & {msrChanged:boolean}> {
+  options:{requestId?:string;store?:MsrStore;download?:typeof downloadMsrOriginal;parse?:typeof parseMsrOriginal;refreshMetadata?:()=>Promise<void>;allowedKrs?:readonly string[];maximumNewDownloads?:number;requireLicensedXmlMetadata?:boolean} = {}):Promise<MgbiFinancialResult & {msrChanged:boolean}> {
   if(!options.store && !options.requestId)throw new Error("MSR_LOOKUP_CONTEXT_REQUIRED");
   const store = options.store ?? msrStore(organizationId,nip,options.requestId!,options.allowedKrs);let archive = await store.candidates();
   if(archive?.metadataMissing && options.refreshMetadata){await options.refreshMetadata();archive=await store.candidates();}
@@ -139,6 +141,9 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
         }
       } else { warnings.push(existing.state === "REQUESTED" ? "MSR_DOWNLOAD_RECONCILIATION_REQUIRED" : existing.error_code ?? "MSR_SOURCE_BLOCKED"); }
       continue;
+    }
+    if(existing?.state!=='RECEIVED'&&options.requireLicensedXmlMetadata&&!archive.licensedXmlRecordIds?.includes(candidate.recordId)){
+      warnings.push('MGBI_FINANCIAL_UNKNOWN_FORMAT');continue;
     }
     if(existing?.state!=='RECEIVED'&&options.maximumNewDownloads!==undefined&&newDownloads>=options.maximumNewDownloads){warnings.push('MSR_PROCESSING_PENDING');continue;}
     const claimId = existing?.claim_id ?? randomUUID();

@@ -27,6 +27,24 @@ test("MSR first retrieval persists original/facts, repeat cache reuse makes no d
   const again=await enrichMsrFinancial("org",c.nip,first,{store:f.store,download});
   assert.equal(downloads,1);assert.equal(f.saves(),1);assert.equal(f.claims(),1);assert.equal(again.msrChanged,false);
 });
+test('main MGBI policy blocks a new unknown-format purchase before claiming or calling the provider',async()=>{
+  const f=fixture();let calls=0;
+  const result=await enrichMsrFinancial('org',c.nip,base(),{store:f.store,requireLicensedXmlMetadata:true,download:async()=>{calls++;return source();}});
+  assert.equal(calls,0);assert.equal(f.claims(),0);assert.equal(f.get(),null);
+  assert.equal(result.section.status,'EMPTY');assert.ok(result.section.warnings.includes('MGBI_FINANCIAL_UNKNOWN_FORMAT'));
+});
+test('main MGBI policy accepts evidenced XML and reuses historical READY and RECEIVED originals without fresh metadata or purchase',async()=>{
+  const f=fixture();let calls=0;
+  f.store.candidates=async()=>({candidates:[c],archiveChecksum:'b'.repeat(64),licensedXmlRecordIds:[c.recordId]});
+  const first=await enrichMsrFinancial('org',c.nip,base(),{store:f.store,requireLicensedXmlMetadata:true,download:async()=>{calls++;return source();}});
+  const receipt=JSON.stringify(f.get());
+  f.store.candidates=async()=>({candidates:[c],archiveChecksum:'b'.repeat(64)});
+  const cached=await enrichMsrFinancial('org',c.nip,first,{store:f.store,requireLicensedXmlMetadata:true,download:async()=>{throw Error('paid retry');}});
+  assert.equal(cached.section.status,'SUCCESS');assert.equal(JSON.stringify(f.get()),receipt);assert.equal(calls,1);
+  const interrupted=fixture();await interrupted.store.claim(c,'original-claim');await interrupted.store.receive(c,'original-claim',source());
+  const recovered=await enrichMsrFinancial('org',c.nip,base(),{store:interrupted.store,requireLicensedXmlMetadata:true,download:async()=>{throw Error('paid retry');}});
+  assert.equal(recovered.section.status,'SUCCESS');assert.equal(interrupted.get().claim_id,'original-claim');
+});
 test("MSR ambiguous charged timeout is durable BLOCKED; ordinary lookup never repeats the download",async()=>{
   const f=fixture();let downloads=0;const download=async()=>{downloads++;throw new MsrSourceError("MSR_FILE_TIMEOUT","file_download");};
   const first=await enrichMsrFinancial("org",c.nip,base(),{store:f.store,download});
