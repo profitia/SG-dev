@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-DEVELOPMENT-RECOVERY-CONTINUATION-20261027",
+  "targetEnvironment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "origin": "https://srm-development-runtime.onrender.com",
+  "flag": "SRM_DEVELOPMENT_PILOT2_LOOKUP",
+  "registrySourceRole": "srm_development_krs_source",
+  "registryEnvelopeBoundaryDigest": "73a56009b406d256070c270244d9010200e841eed23c6d4b07fe4487212084a9",
+  "financialExecution": "COMPLETE_IN_REQUEST",
+  "maximumNewLicensedOriginalsPerRequest": 1,
+  "humanAuthority": "EXISTING_CURRENT_MAIN_SRM_ROOT",
+  "uiChanged": false,
+  "stagingActivated": false
+}

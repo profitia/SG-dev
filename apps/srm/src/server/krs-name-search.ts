@@ -86,6 +86,7 @@ export function createKrsNameSearch(ports:KrsNamePorts){
         // Only filtered records/facts enter the existing native financial writer.
         if(!eligible.errorCode&&!workPending){
           const published=await measureSupplierStage('FINANCIAL_PUBLICATION',()=>financial.publishEligible(request,current.identity,eligible));
+          if(!published&&['SUCCESS','PARTIAL'].includes(eligible.section.status))throw Error('FINANCIAL_PUBLICATION_UNAVAILABLE');
           if(published&&(published.nip!==current.identity.identity.nip||published.entityType!=='COMPANY'))throw Error('FINANCIAL_METADATA_MISMATCH');
           metadata=published;
         }

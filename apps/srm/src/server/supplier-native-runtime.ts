@@ -1,4 +1,6 @@
 import operationAcceptance from '../../operation-integration.json'
+import {developmentPilot2Enabled} from './development-pilot2-runtime'
+import developmentPilot2 from '../../deployment/development-pilot2-targets.json'
 import {srmKrsPilotTarget} from './krs-native-runtime'
 import {reportAdmissionConfiguration} from './report-admission-runtime'
 import type pg from 'pg'
@@ -44,7 +46,7 @@ export function readSrmNativeSupplierConfiguration(base:PrivateConfiguration,env
  let origin:URL;try{origin=new URL(env.VERCLY_API_BASE_URL??'')}catch{return unavailable()}
  if(!mgbiKey||!ceidgKey||!verclyKey||env.MGBI_AUTH_SCHEME!==undefined&&!['raw','bearer'].includes(env.MGBI_AUTH_SCHEME)
   ||origin.protocol!=='https:'||origin.pathname!=='/'||origin.port||origin.username||origin.password||origin.search||origin.hash)return unavailable()
- return Object.freeze({base,...(pilot?{runtimeRoles}:{}),configurationVersion:targets.configurationVersion,jobsUrl,providerSourceUrl,corporateSourceUrl,
+ return Object.freeze({base,...(pilot?{runtimeRoles}:{}),...(developmentPilot2Enabled(env)?{registryEnvelopeBoundaryDigest:developmentPilot2.registryEnvelopeBoundaryDigest}:{}),configurationVersion:targets.configurationVersion,jobsUrl,providerSourceUrl,corporateSourceUrl,
   mgbiKey,mgbiScheme:env.MGBI_AUTH_SCHEME==='bearer'?'bearer':'raw',ceidgKey,verclyKey,verclyOrigin:origin.origin,referenceSecret:env.SRM_DEMO_SESSION_SECRET})
 }
 type Pools={pool:pg.Pool;auditPool:pg.Pool;jobsPool:pg.Pool;jobsAudit:pg.Pool;sourcePool:pg.Pool;sourceAudit:pg.Pool;corporatePool:pg.Pool;corporateAudit:pg.Pool;clerk:ClerkIdentityClient}

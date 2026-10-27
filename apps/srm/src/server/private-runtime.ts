@@ -1,4 +1,5 @@
 import {projectSrmReportDataResponse} from './report-output'
+import {createDevelopmentPilot2Runtime,developmentPilot2Enabled} from './development-pilot2-runtime'
 import nipTargets from '../../deployment/krs-nip-development.json'
 import type {KrsNipCompany} from './krs-nip-runtime'
 import {createSrmKrsNativeRuntime,srmKrsPilotTarget,krsPilotDatabaseUrl} from './krs-native-runtime'
@@ -170,6 +171,8 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   const config = readSrmPrivateReportConfiguration(env)
   if (config.provider === 'legacy_demo') return config
   const native=readSrmNativeSupplierConfiguration(config,env)
+  const developmentPilot2=developmentPilot2Enabled(env)
+  if(developmentPilot2&&!native)unavailable()
   const locationEnabled=env.PROFITIA_SUPPLIER_LOCATIONS_ENABLED??'false'
   if(!['true','false'].includes(locationEnabled)||locationEnabled==='true' && (env.PROFITIA_SUPPLIER_LOCATIONS_CONFIGURATION_VERSION!==locationTargets.configurationVersion || config.binding.projectId!==locationTargets.projectId || config.binding.branchId!==locationTargets.branchId || config.binding.databaseName!==locationTargets.databaseName || config.binding.role!==locationTargets.runtimeRole))unavailable()
   const nameEnabled=env.SRM_KRS_NAME_SEARCH_ENABLED??'false'
@@ -178,7 +181,7 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   if(!['true','false'].includes(nipEnabled)||nipEnabled==='true'&&(nipTargets.activationState!=='ACCEPTED'||!srmKrsPilotTarget(env)||!native))unavailable()
   const krsConfig=nameEnabled==='true'||nipEnabled==='true'?{reader:krsPilotDatabaseUrl(env.KRS_CATALOG_READER_URL,'krs_reader'),source:krsPilotDatabaseUrl(env.KRS_CATALOG_SOURCE_URL,'krs_ingest')}:null
   const admission=locationEnabled==='true'?readSrmLocationAdmissionConfiguration(env,operationAcceptance.p1ReceiverSourceCompatibility):null
-  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,admission,krsConfig,nipEnabled,env.GUS_BIR_API_KEY,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
+  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,admission,krsConfig,nipEnabled,developmentPilot2,env.KRS_PILOT2_READER_URL,env.KRS_PILOT2_SOURCE_URL,env.GUS_BIR_API_KEY,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
   const cached = globalThis.__srmPrivateReportRuntime__
   if (cached) { if (cached.key !== key) unavailable(); return cached.runtime }
   const clerk = createSrmClerkClient(env)
@@ -227,6 +230,10 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     ...(supplierRequest ? { supplierRequest } : {}) }
   let krsName:Promise<KrsNameHttpRuntime>|undefined
   let krsNip:Promise<KrsNipCompany>|undefined
+  if(developmentPilot2){
+    const bundle=Promise.resolve(createDevelopmentPilot2Runtime(config,baseRuntime,env))
+    krsName=bundle;krsNip=bundle.then(value=>value.nip)
+  }
   if(krsConfig){
     const catalog=new pg.Pool(srmPrivatePoolConfiguration({...config,databaseUrl:krsConfig.reader},3))
     const source=new pg.Pool(srmPrivatePoolConfiguration({...config,databaseUrl:krsConfig.source},3))

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {CompanySnapshot,VerifiedIdentityV1} from '@profitia/krs-registry-contracts';
+import type {SupplierReportData} from '@profitia/srm-xray';
 import {createKrsNameSearch,refreshCatalogSelection,type AcceptedKrsSelection,type KrsNamePorts} from './krs-name-search';
 import {mapMgbiFinancialRecords} from './mgbi-financial';
 import {reconcileKrsFinancial} from './krs-financial';
@@ -21,7 +22,7 @@ function record(id='right',company=krs,companyNip=nip,amount='1000'){
 async function fixture(records=[record()]){
   const selected=await selection(),calls={acquire:0,publish:0,verify:0,search:0},result=mapMgbiFinancialRecords(records,{type:'NIP',value:nip},at);
   result.rawResponse={pages:[{results:records}],recordCount:records.length};
-  const ports:KrsNamePorts={now:()=>time,registry:{search:async()=>{calls.search++;return [{krs,name:selected.snapshot.officialName!,nip,locality:null}]},verify:async()=>{calls.verify++;return selected},readSelection:async()=>selected},financial:{acquire:async()=>{calls.acquire++;return result},publishEligible:async(_request,_identity,eligible)=>{calls.publish++;assert.ok(eligible.facts.every(f=>f.amount!=='999999'));return null}}};
+  const ports:KrsNamePorts={now:()=>time,registry:{search:async()=>{calls.search++;return [{krs,name:selected.snapshot.officialName!,nip,locality:null}]},verify:async()=>{calls.verify++;return selected},readSelection:async()=>selected},financial:{acquire:async()=>{calls.acquire++;return result},publishEligible:async(_request,_identity,eligible)=>{calls.publish++;assert.ok(eligible.facts.every(f=>f.amount!=='999999'));return {nip,entityType:'COMPANY'} as SupplierReportData}}};
   return {selected,calls,ports,result,request:new Request('https://srm.example/api/xray/krs/lookup')};
 }
 test('typing and verifying are independent pure operations with zero Financial effects',async()=>{
@@ -160,4 +161,10 @@ test('unavailable or revoked continuity makes zero paid Financial calls and pres
  const f=await fixture();f.ports.registry.history=async()=>{throw Error('KRS_CONTINUITY_UNVERIFIED')};
  const r=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-history-denied-001');
  assert.equal(f.calls.acquire,0);assert.equal(f.calls.publish,0);assert.ok(r.result.card.general.data);assert.equal(r.result.card.financial.data,null);
+});
+
+test('a missing publication cannot present a successful Financial report',async()=>{
+ const f=await fixture();f.ports.financial.publishEligible=async()=>null;
+ const r=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-publication-missing-001');
+ assert.equal(r.result.card.financial.status,'ERROR');assert.equal(r.result.card.financial.data,null);assert.equal(r.metadata,null);
 });

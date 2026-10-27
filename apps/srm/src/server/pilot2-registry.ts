@@ -21,6 +21,7 @@ import {runXrayLookup,type XrayLookupRequest} from './xray-lookup'
 import {runJdgLookup} from './jdg-lookup'
 import type {RegistrySearchResult} from './registry-search'
 import target from '../../deployment/pilot2-registry-targets.json'
+import development from '../../deployment/development-pilot2-targets.json'
 
 type Env=Readonly<Record<string,string|undefined>>
 export type Pilot2RegistrySelection=Readonly<{general:SectionEnvelope<GeneralCompanyData>;identity:VerifiedIdentityV1;history:RegistryHistory}>
@@ -45,10 +46,10 @@ export function withPilot2RegistrySelection<T>(selection:Pilot2RegistrySelection
 }
 /** The same physical target is checked again at boot. No request may choose a
  * provider, database, role, organisation, registry identity or Source binding. */
-export function pilot2RegistryConnection(value:string|undefined,role:'krs_reader'|'krs_ingest'){
+export function pilot2RegistryConnection(value:string|undefined,role:'krs_reader'|'krs_ingest'|'srm_development_krs_source'){
  if(!value||value!==value.trim())return deny()
  let u:URL;try{u=new URL(value);decodeURIComponent(u.password)}catch{return deny()}
- if(!['postgres:','postgresql:'].includes(u.protocol)||u.hostname!==target.catalog.host||u.pathname!=='/'+target.catalog.databaseName
+ if(!['krs_reader','krs_ingest',development.registrySourceRole].includes(role)||!['postgres:','postgresql:'].includes(u.protocol)||u.hostname!==target.catalog.host||u.pathname!=='/'+target.catalog.databaseName
   ||u.username!==role||!u.password||u.hash||u.port&&u.port!=='5432'
   ||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k))
   ||u.searchParams.getAll('sslmode').length!==1||u.searchParams.get('sslmode')!=='require'
@@ -76,8 +77,11 @@ export const reconcilePilot2Financial=(selection:Pilot2RegistrySelection,result:
  reconcileKrsFinancial(selection.identity,result,Date.now(),selection.history)
 
 async function createRuntime(env:Env){
+ const main=env.RENDER_SERVICE_ID===development.serviceId&&env.SRM_DEVELOPMENT_PILOT2_LOOKUP==='true'
+ const sourceRole=main?'srm_development_krs_source' as const:'krs_ingest' as const
+ const serviceId=main?development.serviceId:target.render.serviceId
  const transportProfile=target.runtime.transportProfile
- if(env.RENDER_SERVICE_ID!==target.render.serviceId||env.TARGET_ENVIRONMENT!=='development'
+ if(env.RENDER_SERVICE_ID!==serviceId||env.TARGET_ENVIRONMENT!=='development'
   ||transportProfile!=='EXTRACTS_ONLY'
   ||!env.RENDER_GIT_COMMIT||!/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT)||!/^[A-Za-z0-9]{20}$/.test(env.GUS_BIR_API_KEY??''))return deny()
  // Construct the host through the same ESM package instance as its external
@@ -87,15 +91,15 @@ async function createRuntime(env:Env){
   import('@profitia/platform-contracts/platform-ingestion'),import('@profitia/krs-registry-runtime/identity'),import('@profitia/krs-registry-runtime/catalog'),
   import('@profitia/krs-registry-runtime/native'),import('@profitia/krs-registry-runtime/gus'),import('@profitia/krs-registry-runtime/nip-resolver')])
  const reader=instrumentDiagnosticPool(new pg.Pool(pilot2RegistryConnection(env.KRS_PILOT2_READER_URL,'krs_reader')),'REGISTRY_READER')
- const sourceOptions=pilot2RegistryConnection(env.KRS_PILOT2_SOURCE_URL,'krs_ingest')
+ const sourceOptions=pilot2RegistryConnection(env.KRS_PILOT2_SOURCE_URL,sourceRole)
  const source=instrumentDiagnosticPool(new pg.Pool(sourceOptions),'REGISTRY_SOURCE'),audit=instrumentDiagnosticPool(new pg.Pool({...sourceOptions,max:1}),'INDEPENDENT_AUDIT'),catalog=new Catalog(reader)
  for(const pool of [reader,source,audit])pool.on('error',()=>console.error('PILOT2 registry database unavailable'))
  const host={...createSrmNativePgDriver(source,audit),
   application:{appId:'krs-registry-source',profileId:'PLATFORM_INTERNAL' as const,environment:'development' as const,
-   deploymentId:target.render.serviceId+':'+env.RENDER_GIT_COMMIT+':krs-registry-source',configurationVersion:target.runtime.configurationVersion,
+   deploymentId:serviceId+':'+env.RENDER_GIT_COMMIT+':krs-registry-source',configurationVersion:target.runtime.configurationVersion,
    identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest' as const]},
   binding:{applicationId:'krs-registry-source',environment:'development' as const,projectId:target.catalog.projectId,branchId:target.catalog.branchId,
-   databaseName:target.catalog.databaseName,role:'krs_ingest',deploymentId:target.render.serviceId+':'+env.RENDER_GIT_COMMIT+':krs-registry-source',
+   databaseName:target.catalog.databaseName,role:sourceRole,deploymentId:serviceId+':'+env.RENDER_GIT_COMMIT+':krs-registry-source',
    configurationVersion:target.runtime.configurationVersion,schemaDigest:target.runtime.schemaDigests.ingestion,
    unmeteredSchemaDigest:target.runtime.unmeteredSchemaDigest}}
  const gusHost=createPlatformIngestionHost({...host,source:{id:'krs.registry.gus',payloadSchema:'external-call-control-v1',
@@ -111,7 +115,7 @@ async function createRuntime(env:Env){
  }
  const gus=await createAdmittedGusSource<pg.PoolClient>({sourceHost:gusHost,sourceId:'krs.registry.gus',resourceId:'krs-gus:nip-map',
   apiKey:env.GUS_BIR_API_KEY!,readSid:()=>sid,permit,
-  binding:{role:'krs_ingest',configurationVersion:target.runtime.configurationVersion,schemaDigest:target.runtime.schemaDigests.external,origin:GUS_ORIGIN,transport:'HTTPS',pathRules:[{method:'POST',path:GUS_PATH}]},
+  binding:{role:sourceRole,configurationVersion:target.runtime.configurationVersion,schemaDigest:target.runtime.schemaDigests.external,origin:GUS_ORIGIN,transport:'HTTPS',pathRules:[{method:'POST',path:GUS_PATH}]},
   independentQuery:host.independentQuery,query:async(tx,sql,args)=>({rows:(await tx.query(sql,args)).rows})})
  const mapper=createGusMapper({source:gus,readSid:()=>sid,writeSid:value=>{sid=value}})
  const official=await createNativeNipRegistrySource({host,externalSchemaDigest:target.runtime.schemaDigests.external,transportProfile})
@@ -131,7 +135,12 @@ async function createRuntime(env:Env){
   return {snapshot,selection}
  }
  const selected:typeof selectedObserved=(...args)=>diagnosticRun('KRS_SELECTED',()=>selectedObserved(...args))
- return Object.freeze({async resolve(nip:string,signal:AbortSignal){
+ return Object.freeze({async identify(reference:string){
+  if(!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(reference))return deny()
+  const snapshot=await catalog.read(reference.split(':')[1])
+  if(!snapshot?.nip||snapshot.evidenceRef!==reference)return deny()
+  return snapshot.nip
+ },async resolve(nip:string,signal:AbortSignal){
   const key=createHash('sha256').update('srm-pilot2-nip:'+randomUUID()+':'+nip).digest('hex')
   const result=await resolver.resolve(nip,key,signal);if(result.status==='FALLBACK')return result
   const snapshot=await catalog.read(result.value.snapshot.canonicalKrs)
@@ -147,7 +156,7 @@ async function createRuntime(env:Env){
 let runtime:ReturnType<typeof createRuntime>|undefined,configuration:string|undefined
 export function getPilot2Registry(env:Env=process.env){
  const key=createHash('sha256').update(JSON.stringify([env.RENDER_SERVICE_ID,env.TARGET_ENVIRONMENT,env.RENDER_GIT_COMMIT,
-  env.GUS_BIR_API_KEY,env.KRS_PILOT2_READER_URL,env.KRS_PILOT2_SOURCE_URL])).digest('hex')
+  env.GUS_BIR_API_KEY,env.KRS_PILOT2_READER_URL,env.KRS_PILOT2_SOURCE_URL,env.SRM_DEVELOPMENT_PILOT2_LOOKUP])).digest('hex')
  if(configuration&&configuration!==key)return deny()
  configuration=key;return runtime??=createRuntime(env)
 }

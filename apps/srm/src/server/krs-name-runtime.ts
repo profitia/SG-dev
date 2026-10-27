@@ -6,6 +6,7 @@ import {createKrsNameSearch,type KrsNamePorts} from './krs-name-search';
 import {getSrmReportRuntime} from './private-runtime';
 import targets from '../../deployment/krs-name-pilot-targets.json';
 import {withSupplierTelemetry} from './supplier-telemetry';
+import {developmentPilot2Enabled} from './development-pilot2-runtime';
 export type KrsNameHttpRuntime=Readonly<{api:ReturnType<typeof createKrsNameSearch>;available(request:Request):Promise<boolean>;runReport?:<T>(request:Request,action:()=>Promise<T>)=>Promise<T>}>;
 export function createKrsNameHttpRuntime(ports:KrsNamePorts,available:KrsNameHttpRuntime['available']):KrsNameHttpRuntime{
   if(typeof window!=='undefined'||typeof available!=='function')throw Error('SERVER_ONLY');
@@ -13,6 +14,11 @@ export function createKrsNameHttpRuntime(ports:KrsNamePorts,available:KrsNameHtt
 }
 /** No live binding was accepted. A flag alone cannot turn test ports into production authority. */
 export function getSrmKrsNameRuntime(env:Readonly<Record<string,string|undefined>>=process.env):KrsNameHttpRuntime|null|Promise<KrsNameHttpRuntime>{
+  if(developmentPilot2Enabled(env)){
+    const runtime=getSrmReportRuntime(env);
+    if(runtime.provider!=='clerk'||!runtime.krsName)throw Error('KRS_PILOT_BINDING_UNAVAILABLE');
+    return runtime.krsName;
+  }
   const enabled=env.SRM_KRS_NAME_SEARCH_ENABLED??'false';
   if(enabled==='false')return null;
   if(enabled!=='true'||env.TARGET_ENVIRONMENT!=='development'||targets.activationState!=='ACCEPTED')throw Error('KRS_PILOT_BINDING_UNAVAILABLE');
