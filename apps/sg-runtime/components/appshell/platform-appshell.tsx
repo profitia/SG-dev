@@ -13,18 +13,13 @@ type Props = {
   onLogout: () => void
   signingOut?: boolean
 }
-type IconKind = 'chart' | 'search' | 'table' | 'arrow' | 'clock' | 'more' | 'collapse' | 'send' | 'detach' | 'sun' | 'moon'
+type IconKind = 'chart' | 'search' | 'table' | 'arrow' | 'sun' | 'moon'
 function Icon({ kind, size = 24 }: { kind: IconKind; size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={kind === 'chart' || kind === 'search' || kind === 'table' ? 1.6 : 1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {kind === 'chart' && <><path d="M4 20h16" /><rect x="5" y="12" width="3" height="5" rx="1.5" /><rect x="10.5" y="7" width="3" height="10" rx="1.5" /><rect x="16" y="3" width="3" height="14" rx="1.5" /></>}
     {kind === 'search' && <><circle cx="10" cy="10" r="6" /><path d="m15 15 5 5" /></>}
     {kind === 'table' && <><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M3 9h18M3 14h18M10 9v11" /></>}
     {kind === 'arrow' && <path d="M5 12h14m-5-5 5 5-5 5" />}
-    {kind === 'clock' && <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>}
-    {kind === 'more' && <g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></g>}
-    {kind === 'collapse' && <path d="m9 6 6 6-6 6" />}
-    {kind === 'detach' && <><path d="M14 4h6v6M20 4l-9 9" /><path d="M11 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6" /></>}
-    {kind === 'send' && <path d="m5 12 7-7 7 7M12 5v14" />}
     {kind === 'moon' && <path d="M20.4 14.3A8.7 8.7 0 0 1 9.7 3.6 8.7 8.7 0 1 0 20.4 14.3Z" />}
     {kind === 'sun' && <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4m0-14.2-1.4 1.4M6.3 17.7l-1.4 1.4" /></>}
   </svg>
