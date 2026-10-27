@@ -8,11 +8,13 @@ type ViewCoordinates={locationId:string;addressVersion:string;version:string;coo
 export class SupplierLocationController{
  private state=initial();private generation=0;private pending=new Set<AbortController>();private listeners=new Set<()=>void>();private keys=new Map<string,string>();private sequence=0
  private viewCoordinates=new Map<string,ViewCoordinates>();private geocodingAttempted=new Set<string>();private resolving=false
+ private coordinateExpiryTimer:ReturnType<typeof setTimeout>|undefined
+ private selection:{group:SupplierLocationGroup|'ALL';offset:number}={group:'ALL',offset:0}
  constructor(private readonly supplierId:string,private readonly transport:typeof fetch=(input,init)=>fetch(input,init),private readonly newKey=()=>crypto.randomUUID()){}
  subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>{this.listeners.delete(listener)}}
  getSnapshot=()=>this.state
  private update(patch:Partial<LocationViewState>){this.state={...this.state,...patch};for(const listener of this.listeners)listener()}
- dispose=()=>{this.generation++;this.sequence++;for(const request of this.pending)request.abort();this.pending.clear();this.keys.clear();this.viewCoordinates.clear();this.geocodingAttempted.clear();this.resolving=false;this.update(initial())}
+ dispose=()=>{this.generation++;this.sequence++;for(const request of this.pending)request.abort();this.pending.clear();this.keys.clear();this.viewCoordinates.clear();this.geocodingAttempted.clear();clearTimeout(this.coordinateExpiryTimer);this.resolving=false;this.update(initial())}
  private async request(body:unknown,key?:string,parentSignal?:AbortSignal){
   const generation=this.generation,controller=new AbortController();this.pending.add(controller)
   try{
@@ -32,6 +34,7 @@ export class SupplierLocationController{
   }catch(error){if(error instanceof LocationRequestError||controller.signal.aborted||generation!==this.generation)throw error;throw new LocationRequestError('Nie można teraz połączyć się z lokalizacjami. Ponów odczyt.')}finally{this.pending.delete(controller)}
  }
  async load(group:SupplierLocationGroup|'ALL'='ALL',offset=0){
+  this.selection={group,offset}
   const seq=++this.sequence,g=this.generation;this.update({busy:true,error:null})
   try{const page=await this.request({action:'READ',supplierId:this.supplierId,group,offset,limit:50}) as SupplierLocationPage
    if(seq!==this.sequence||g!==this.generation)return
@@ -59,13 +62,29 @@ export class SupplierLocationController{
    return currentLocationCoordinates(location)?location:{...location,coordinates:saved.coordinates,geocodingStatus:'RESOLVED' as const}
   })}
  }
+ private scheduleCoordinateExpiry(){
+  clearTimeout(this.coordinateExpiryTimer)
+  const deadlines=[...this.viewCoordinates.values()].map(v=>Date.parse(v.coordinates.expiresAt!))
+  if(!deadlines.length)return
+  this.coordinateExpiryTimer=setTimeout(()=>{
+   const now=Date.now()
+   for(const[id,value]of this.viewCoordinates)if(Date.parse(value.coordinates.expiresAt!)<=now)this.viewCoordinates.delete(id)
+   const page=this.state.page
+   if(page)this.update({page:{...page,items:page.items.map(location=>location.coordinates?.origin==='GOOGLE_GEOCODING'&&Date.parse(location.coordinates.expiresAt!)<=now
+    ?{...location,coordinates:null,geocodingStatus:'EXPIRED' as const}:location)}})
+   this.scheduleCoordinateExpiry()
+  },Math.max(1,Math.min(...deadlines)-Date.now()+1))
+  // Browser timers are numbers; Node-based presentation tests need no liveness
+  // from a view-only expiry timer.
+  if(typeof this.coordinateExpiryTimer==='object')this.coordinateExpiryTimer.unref?.()
+ }
  private async resolveVisible(page:SupplierLocationPage,group:SupplierLocationGroup|'ALL',offset:number){
   if(this.resolving||this.state.blocked)return
   const generation=this.generation;this.resolving=true
   try{
    for(const location of page.items){
     const logical=location.id+':'+location.addressVersion
-    if(generation!==this.generation)return
+    if(generation!==this.generation||this.selection.group!==group||this.selection.offset!==offset)return
     if(location.lifecycle!=='ACTIVE'||!completePostalAddress(location.address)||currentLocationCoordinates(location)||this.viewCoordinates.has(location.id)
      ||!['UNREQUESTED','EXPIRED'].includes(location.geocodingStatus)||this.geocodingAttempted.has(logical))continue
     this.geocodingAttempted.add(logical);this.update({geocoding:'PENDING'})
@@ -77,12 +96,13 @@ export class SupplierLocationController{
      ||Math.abs(c.position.lat)>90||Math.abs(c.position.lng)>180||!c.expiresAt||Date.parse(c.expiresAt)>Date.now()+15*60000
      ||!currentLocationCoordinates({lifecycle:'ACTIVE',coordinates:c})){this.update({geocoding:'UNAVAILABLE'});continue}
     this.viewCoordinates.set(location.id,value)
-    await this.load(group,offset)
+    this.scheduleCoordinateExpiry()
+    await this.load(this.selection.group,this.selection.offset)
     if(generation!==this.generation)return
     this.update({geocoding:'IDLE'})
    }
   }catch{if(generation===this.generation)this.update({geocoding:'UNAVAILABLE'})}
-  finally{if(generation===this.generation)this.resolving=false}
+  finally{if(generation===this.generation){this.resolving=false;if(this.state.page&&!this.state.blocked&&(this.selection.group!==group||this.selection.offset!==offset))void this.load(this.selection.group,this.selection.offset)}}
  }
  async sync(){
   const g=this.generation;this.update({sync:'PENDING'})

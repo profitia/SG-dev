@@ -95,3 +95,29 @@ test('revoked or changed protected state cannot display a paid result',async()=>
   if(mode==='revoked')assert.equal(controller.getSnapshot().blocked,true)
  }
 })
+test('transient Google coordinates are discarded at expiry without another paid attempt or protected-read cache',async()=>{
+ let reads=0,calls=0
+ const controller=new SupplierLocationController(supplier,async(_url,init)=>{
+  const body=JSON.parse(String(init?.body))
+  if(body.action==='GEOCODE'){calls++;return Response.json({status:'RESOLVED',transient:{locationId:addressOnly.id,addressVersion:'address-1',version:'2',coordinates:{...viewCoordinates,expiresAt:new Date(Date.now()+200).toISOString()}}})}
+  return Response.json({...page,total:1,geocodingAvailable:true,items:[{...addressOnly,version:reads++?'2':'1'}]})
+ })
+ await controller.load();for(let i=0;i<10&&!controller.getSnapshot().page?.items[0].coordinates;i++)await tick()
+ assert(controller.getSnapshot().page?.items[0].coordinates)
+ await new Promise(resolve=>setTimeout(resolve,250))
+ assert.equal(controller.getSnapshot().page?.items[0].coordinates,null);assert.equal(calls,1)
+ await controller.load();assert.equal(calls,1);controller.dispose()
+})
+test('a late headquarters geocode cannot replace the newly selected manual-locations page',async()=>{
+ let release!:(r:Response)=>void;let latestGroup=''
+ const controller=new SupplierLocationController(supplier,async(_url,init)=>{
+  const body=JSON.parse(String(init?.body))
+  if(body.action==='GEOCODE')return new Promise<Response>(resolve=>{release=resolve})
+  latestGroup=body.group
+  return Response.json(body.group==='USER_LOCATIONS'?page:{...page,total:1,geocodingAvailable:true,items:[addressOnly]})
+ })
+ await controller.load('SUPPLIER_LOCATIONS');await tick();await controller.load('USER_LOCATIONS')
+ release(Response.json({status:'RESOLVED',transient:{locationId:addressOnly.id,addressVersion:'address-1',version:'2',coordinates:viewCoordinates}}))
+ for(let i=0;i<10;i++)await tick()
+ assert.equal(controller.getSnapshot().page?.total,0);assert.equal(latestGroup,'USER_LOCATIONS');controller.dispose()
+})
