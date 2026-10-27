@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-DEVELOPMENT-RECOVERY-CONTINUATION-20261027",
+  "targetEnvironment": "development",
+  "repository": "profitia/SG-dev",
+  "authoritySha": "ce4f293ec0f83bf3b4af1174f43c54eda6860738",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "deployId": "dep-dbg4h7t9fdbs73cokv4g",
+  "stageI": {
+    "status": "PARTIAL_SUCCESS",
+    "fixed": [
+      "Legacy request SDK rejected active SQL027 UNMETERED policies with historical counters over capacity",
+      "Three main Development service/source deployment bindings still pointed to fc1e8916 instead of the actual live ce4f293e"
+    ],
+    "liveBusinessProof": {
+      "nip": "9511855233",
+      "company": "DECATHLON SPOLKA Z OGRANICZONA ODPOWIEDZIALNOSCIA",
+      "financialYear": 2025,
+      "netProfitPln": 123290321.14,
+      "revenuePln": 3074043623.87,
+      "searchTraceId": "1cddf65b-4832-45c4-be6f-174f5a0d4cec",
+      "observedAt": "2026-10-27T08:00:30Z",
+      "nativeWorkOutcomesSucceeded": 25,
+      "mgbiInventoryCalls": 0,
+      "newLicensedFiles": 0,
+      "kysCalls": 0,
+      "ceidgCalls": 1,
+      "publicWebCalls": 7
+    },
+    "verification": {
+      "mainTestsPassed": 770,
+      "mainTestsSkipped": 8,
+      "diagnosticOverlayTestsPassed": 3,
+      "operationIntegrationPassed": 560,
+      "unmeteredSqlAndSdkPassed": 50,
+      "typecheck": "PASS",
+      "build": "PASS",
+      "bindingChangeDryRun": "PASS_ALL_WRITES_ROLLED_BACK",
+      "bindingLiveOrdinaryRoleDescriptors": "PASS",
+      "humanEntitlementsChanged": false,
+      "sourceQuotasChanged": false,
+      "sourceCountersReset": false,
+      "ownerMembershipsRestoredExactly": true
+    },
+    "remaining": [
+      "Supplier location reads returned RESOURCE_SCOPE_MISMATCH during initial page mount; reserved for the Maps diagnosis",
+      "Existing location write/sync rolling 24h policies remain unchanged; SQL027 supports UNMETERED only for supplier report/private refresh"
+    ]
+  },
+  "stageII": {
+    "status": "NOT_STARTED",
+    "plannedScope": "Reuse PILOT2 GUS/KRS identity, Financial reconciliation, one-original acquisition, cache and truthful publication inside the main native SRM flow; preserve main UI and private authority"
+  },
+  "stageIII": {
+    "status": "NOT_STARTED"
+  },
+  "staging": {
+    "mutated": false,
+    "ready": false
+  },
+  "recovery": {
+    "candidateArtifactDigest": "ccdf22ec04877030ba3fe4eda7ec5ad03f2af7327a850e325bf843828cbfff51",
+    "previousDeployId": "dep-dbeimglg1s2s73fnm010",
+    "previousArtifactDigest": "0e3fd2164656bf5d4f8f8f713330b7ac6f927eec99f249cd543f3703a6408eb4",
+    "previousDeploymentHasKnownE1Defect": true,
+    "bindingRollback": "Guard the resulting versions 15/17/17, restore previous deployment/source_ref while advancing versions; coordinate with matching Render rollback. Do not restore historical counter values."
+  }
+}
