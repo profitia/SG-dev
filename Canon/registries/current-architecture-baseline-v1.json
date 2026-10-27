@@ -688,6 +688,42 @@
         "SG2"
       ],
       "onboardingAuthorization": "Explicit owner instruction for a new isolated reusable Price Change Index frontend and required onboarding, 2026-10-26; host conversation 01a17820-5e4f-7dd0-95bd-35daea1d6da2; Canon/evidence/2026-10-26-sg2-price-change-index-onboarding.md"
+    },
+    {
+      "id": "SRM-ADP-BASE-001",
+      "capability": "SRM ADP Presentation",
+      "name": "SRM ADP reusable presentation UI",
+      "pathPatterns": [
+        "packages/srm-adp-ui/**"
+      ],
+      "currentOwner": "SRM Runtime",
+      "currentResponsibility": "Public presentation-only supplier workspace and questionnaire mount; typed host input/events and scoped UI; no product data, providers, identity or persistence.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "acbc37b278a16a9e4c47f794e3eb7577d42f21d6",
+      "allowedProjectKeys": [
+        "SRM"
+      ],
+      "onboardingAuthorization": "Proposed ADP task owner acceptance; Canon/v1.1-srm-adp-presentation-mounting-amendment.md and Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md. Authoritative only after explicit acceptance and main merge."
+    },
+    {
+      "id": "SRM-ADP-BASE-002",
+      "capability": "SRM ADP Presentation CI",
+      "name": "SRM ADP UI offline CI",
+      "pathPatterns": [
+        ".github/workflows/srm-adp-ui-ci.yml"
+      ],
+      "currentOwner": "SRM Runtime",
+      "currentResponsibility": "Credential-free public presentation/contract verification; no runtime deployment, product database or provider activation.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "acbc37b278a16a9e4c47f794e3eb7577d42f21d6",
+      "allowedProjectKeys": [
+        "SRM"
+      ],
+      "onboardingAuthorization": "Proposed ADP task owner acceptance; Canon/v1.1-srm-adp-presentation-mounting-amendment.md and Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md. Authoritative only after explicit acceptance and main merge."
     }
   ],
   "cleanupFindings": [
