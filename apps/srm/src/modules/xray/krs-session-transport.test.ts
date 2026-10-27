@@ -10,7 +10,11 @@ test('company session repair preserves prior acceptance and pins every changed c
  const before=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(before),a.previousReceiptDigest)
  for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
+  const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapStartupRepair
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
+  assert.equal(hash(bytes),digest,file)
+ }
  assert.equal(a.serverAuthorityChecksChanged,false);assert.equal(a.tokenLifetimeChanged,false);assert.equal(a.providerRetriesAdded,false)
 })
 test('ordinary MGBI search, lookup and report read start with a fresh SDK bearer instead of a nearly expired cached token',async()=>{
