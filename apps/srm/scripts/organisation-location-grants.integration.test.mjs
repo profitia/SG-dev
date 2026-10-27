@@ -206,6 +206,19 @@ for(const p1 of[true])test('organization location authority in actual SRM native
    await controlled(()=>owner.query("UPDATE profitia_access.organisation_location_policies SET status='REVOKED' WHERE organisation_id=$1",[A]))
    assert.equal((await page()).status,403)
   })
+  await t.test('broad READ grants retain tenant and DENY fences and cannot bypass exact P1 CREATE proof',async()=>{
+   await controlled(async()=>{
+    for(const user of[U,V])for(const operation of['supplier.location.read','supplier.location.write','supplier.location.sync'])await owner.query("INSERT INTO profitia_access.permission_grants VALUES($1,'srm',$2,$3,'ALLOW',$4,'supplier_report',NULL)",[randomUUID(),A,user,operation])
+   })
+   assert.equal((await page()).status,200);assert.equal((await page(V)).status,200)
+   assert.equal((await page(U,B,SB)).status,403);assert.equal((await page(U,A,SB)).status,403)
+   assert.equal((await page('unverified-fixture-user')).status,401)
+   // P1 intentionally requires an exact parent collection for CREATE: a
+   // broad per-user grant alone must never bypass the signed parent proof.
+   const created=await call(command,U,'all_suppliers_'+randomUUID());assert.equal(created.status,403)
+   const denied=randomUUID();await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants VALUES($1,'srm',$2,$3,'DENY','supplier.location.read','supplier_report',$4)",[denied,A,V,'supplier-locations:'+S]))
+   assert.equal((await page(V)).status,403);assert.equal((await page()).status,200)
+  })
  }finally{
   if(previousProvider===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=previousProvider
   await workPool?.end();await workAudit?.end();await pool?.end();await auditPool?.end();await owner?.end();await root.query(`DROP DATABASE IF EXISTS ${DATABASE} WITH(FORCE)`);await root.end()
