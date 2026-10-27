@@ -1,0 +1,32 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
+
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..')
+test('public AppShell source has no design runtime, fixtures, module transport or inspector',()=>{
+ const files=fs.readdirSync(path.join(root,'components/appshell')).filter(f=>/\.(tsx|css)$/.test(f))
+ assert(files.length>=4)
+ for(const file of files){
+  const s=fs.readFileSync(path.join(root,'components/appshell',file),'utf8')
+  assert.doesNotMatch(s,/DeliveryRuntime|DeliveryVisibility|delivery-registry|appshell-provenance|library-registry|DashboardRelations|CanonHistoryDialog|data-delivery|data-magicpath|preparedReply|launchTimer|simulation-suffix|tylko projekt|symulacja|Tomaszu|Tomasz/,'Excluded source: '+file)
+  assert.doesNotMatch(s.replaceAll('http://www.w3.org/2000/svg',''),/from ['"].*(?:benchmark-finder|srm-xray|assessment|cic|\/api\/|ui-relations)|https?:\/\//,'No business module or remote design dependency: '+file)
+ }
+})
+test('theme and style scope cannot change global document preferences',()=>{
+ const ui=fs.readFileSync(path.join(root,'components/appshell/platform-appshell.tsx'),'utf8')
+ const css=fs.readFileSync(path.join(root,'components/appshell/platform-appshell.css'),'utf8')
+ assert.doesNotMatch(ui,/document\.documentElement|document\.body|history\.|window\.location|srm:interface-theme/)
+ assert.doesNotMatch(css,/(^|})\s*(?:html|body|:root)\s*[\[{:]/)
+ assert(css.includes('prefers-reduced-motion'));assert(css.includes('1100px'));assert(css.includes('760px'));assert(css.includes('420px'))
+ assert(ui.includes('data-theme={theme}'));assert(ui.includes('aria-pressed={theme === value}'))
+})
+test('root and account completion share the same workspace entry while registration remains the existing flow',()=>{
+ const home=fs.readFileSync(path.join(root,'app/[locale]/page.tsx'),'utf8')
+ const completion=fs.readFileSync(path.join(root,'app/[locale]/account/page.tsx'),'utf8')
+ const entry=fs.readFileSync(path.join(root,'components/appshell/platform-appshell-entry.tsx'),'utf8')
+ for(const s of [home,completion])assert(s.includes('<PlatformAppShellEntry'))
+ assert(entry.includes('presentation="workspace"'));assert(entry.includes('<SelfServiceAuthentication'));assert(entry.includes('/register'))
+ assert.doesNotMatch(entry,/benchmark-finder|supplier-intelligence|iframe|\/api\//)
+})

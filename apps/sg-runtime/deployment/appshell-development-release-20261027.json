@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SG2-APPSHELL-PORR-FIRST-DEVELOPMENT-20261027",
+  "status": "PLANNED_NOT_YET_DEPLOYED",
+  "targetEnvironment": "development",
+  "publicOrigin": "https://dev-sg2.spendguru.app",
+  "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+  "lastKnownGood": {
+    "deployId": "dep-dbfi98avcj2c73891b70",
+    "sourceSha": "32fce23eff7033e84d19ff74dc719c93eff34097"
+  },
+  "identityDependency": {
+    "pullRequest": 750,
+    "sourceSha": "0272c49daa98297be6e02b08939cf2b9ac97fb3c",
+    "serviceId": "srv-dbcse6jrjlhs73eib3sg",
+    "lastKnownGood": {
+      "deployId": "dep-dbf6fjtg1s2s73elc3kg",
+      "sourceSha": "59179d2026932dec10d4849081481956e36d9832"
+    },
+    "expectedSourceShaGuardPreserved": true
+  },
+  "infrastructureCreated": false,
+  "moduleIntegrations": [],
+  "schemaOrGrantChanges": false,
+  "runtimeEvidence": "Required after immutable accepted-SHA release; PMOS closeout records observed deployment and browser outcomes, not predicted values."
+}

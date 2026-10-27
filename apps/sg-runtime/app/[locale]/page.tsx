@@ -16,6 +16,7 @@ import { readSg2IdentityRuntime, type Sg2IdentityRuntime } from '@/lib/platform/
 import { ClerkSignIn } from '@/components/auth/clerk-sign-in'
 import { SelfServiceAuthentication } from '@/components/auth/clerk-sign-up'
 import { readSelfServiceAccountConfiguration, accountCompletionUrl } from '@/lib/platform/account-session'
+import { PlatformAppShellEntry } from '@/components/appshell/platform-appshell-entry'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,11 +47,8 @@ export default async function HomePage({ params, searchParams }: HomePageProps) 
   let selfService: ReturnType<typeof readSelfServiceAccountConfiguration> = null
   try { selfService = readSelfServiceAccountConfiguration() }
   catch { return <main className="p-8"><p role="alert">{t('porrDemo.configurationError')}</p></main> }
-  if (selfService && identity.provider === 'clerk') return <main className="min-h-screen bg-slate-50 px-6 py-16"><section className="mx-auto max-w-lg space-y-6 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-    <p className="font-semibold">SpendGuru</p><h1 className="text-3xl font-semibold">{locale === 'en' ? 'Welcome back' : 'Dobrze Cię widzieć'}</h1>
-    <SelfServiceAuthentication locale={locale} mode="login" completionUrl={accountCompletionUrl(selfService, locale, 'login')} />
-    <Link href={`/${locale}/register`} className="text-sm underline">{locale === 'en' ? 'Create your account' : 'Utwórz konto'}</Link>
-  </section></main>
+  if (selfService && identity.provider === 'clerk') return <PlatformAppShellEntry locale={locale}
+    completionUrl={accountCompletionUrl(selfService, locale, 'login')} organisationBranding={isPorrDemoProfile ? 'porr' : null} />
 
   if (!isPorrDemoProfile && identity.provider === 'legacy_demo') {
     return (

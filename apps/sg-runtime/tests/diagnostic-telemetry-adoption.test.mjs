@@ -20,7 +20,12 @@ test('diagnostic source adoption preserves complete history and verifies current
  const modules=['operation-context','private-operation-host','access-store','request-ledger','delegated-job','request-continuation','request-inspection','request-work','request-operations','external-call','supplier-location','report-admission','platform-ingestion','diagnostic-phase'],found=new Set()
  for(const module of modules){const sdk=await import('@profitia/platform-contracts/'+module);for(const[name,digest]of Object.entries(a.sdkDigests))if(typeof sdk[name]==='function'){assert.equal(await sdk[name](),digest,name);found.add(name)}}
  assert.equal(found.size,Object.keys(a.sdkDigests).length);assert.equal(a.sdkDigests.operationSourceDigest,receipt.nativeSqlRoundtripAdoption.sdkDigests.operationSourceDigest)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
+  const latest=receipt.appShellSourceCompatibility
+  const historical=latest.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/sg-runtime/'+file]):fs.readFileSync(new URL('../'+file,import.meta.url))
+  assert.equal(hash(historical),digest,'preserved diagnostic receiver '+file)
+  if(latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),latest.applicationSourceDigests[file],'current AppShell receiver '+file)
+ }
  for(const flag of ['executionContractChanged','authorityChecksChanged','workOrTransactionBoundariesChanged','sqlOrPolicyChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)
  assert.equal(a.observationOnly,true);assert.equal(a.deploymentActivationScope,'SRM_PILOT2_ONLY')
 })
