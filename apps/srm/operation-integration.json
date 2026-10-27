@@ -5201,5 +5201,26 @@
       "src/server/supplier-map-readiness.test.ts": "7f1f34669e066d0b7ba39cfb17ec93f55aeadb544c3ac9f33275a5038888a816",
       "src/server/supplier-map-readiness.ts": "0a38fd2835e1a9a018ab6bf6fcc5b1efdc6b1399402b46d4063bcb42b2968041"
     }
+  },
+  "supplierMapAddressOnlyRepair": {
+    "taskId": "SRM-DEVELOPMENT-MAPS-RECOVERY-20261027",
+    "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+    "previousReceiptSourceSha": "56b61912ccd63edf53f83f4caf8eede2736cd1ba",
+    "previousReceiptDigest": "cd56a32c08b0c9986a456c49e02c63a0facc9cbeb148a41f03e4292ada48fa31",
+    "scope": "MAP_PRESENTATION_WITHOUT_CONFIRMED_COORDINATES",
+    "inventedCoordinates": false,
+    "paidGeocodingEnabled": false,
+    "sharedSdkChanged": false,
+    "mgbiOrSearchChanged": false,
+    "databaseSchemaChanged": false,
+    "applicationSourceDigests": {
+      "src/modules/xray/supplier-locations-view.tsx": "dbb4b0050b2c051a9a60f2533fc7851f5a72b4970535b7d94f36a904e8b9ae45",
+      "src/modules/xray/supplier-locations-view.test.ts": "7b2e55f6bb8f77d5924124df453656576ddab08bb0413347f66749822df9b04a",
+      "src/server/supplier-map-readiness.test.ts": "de344982d49c2d5d043c409315c235893e3fdf799d042cae16b3108d1da32a3d",
+      "src/server/peer-read-boundary.test.ts": "97af75511d5ba99b158a3890021f274fa706beae349536a3644bf5e7eb560b34",
+      "scripts/native-execution-adoption.test.mjs": "284f803857825f0b37a7562a4f7fe1c583947309d6533f6ed8d6be37cea272b5",
+      "scripts/request-quota-adoption.test.mjs": "bbe4fa6c1dddac6188604c9e34b63ea4ab7c46544a14c35b78b131fe9efccdbb",
+      "scripts/organisation-location-grants.integration.test.mjs": "1b01a37767d684cd01e6cd82a5711c5ee621d1df5ff348d6b1f12fd03bdf5722"
+    }
   }
 }

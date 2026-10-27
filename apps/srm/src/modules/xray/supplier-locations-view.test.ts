@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import React from 'react'
 import {renderToStaticMarkup} from 'react-dom/server'
-import {SupplierLocations} from './supplier-locations-view'
+import {SupplierLocations,SupplierLocationMapPanel} from './supplier-locations-view'
+import type {SupplierLocationPage} from '@profitia/srm-xray'
 import {mountSupplierMapWithStartupRetry} from './supplier-map-startup'
 import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
@@ -15,10 +16,34 @@ test('map startup repair preserves every prior acceptance and pins current consu
  for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapRuntimeReadinessRepair
-  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
+  const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapAddressOnlyRepair
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
   assert.equal(hash(bytes),digest,file)
  }
  assert.equal(a.maximumAutomaticStartupRetries,1);assert.equal(a.sharedSdkChanged,false);assert.equal(a.locationAuthorityChanged,false)
+})
+test('address-only and empty authorized pages display the map without claiming a supplier position',()=>{
+ for(const items of [[],[{id:'address-only',label:'Fixture',address:{line1:'Testowa 1',postalCode:'00-001',locality:'Warszawa',country:'Polska'},lifecycle:'ACTIVE',coordinates:null}]]){
+  const page={items,total:items.length} as unknown as SupplierLocationPage
+  const html=renderToStaticMarkup(React.createElement(SupplierLocationMapPanel,{page,mapRef:null,status:'loading',onRetry(){}}))
+  assert.match(html,/aria-label="Mapa zapisanych lokalizacji"/)
+  assert.match(html,/srm-supplier-map-canvas/);assert.match(html,/Wczytywanie mapy/);assert.match(html,/Mapa pokazuje widok ogólny/)
+  assert.doesNotMatch(html,/Mapa lokalizacji jest gotowa|position|latitude|longitude/)
+ }
+})
+test('map unavailability remains explicit and offers retry without hiding an address-only page',()=>{
+ const page={items:[],total:0} as unknown as SupplierLocationPage
+ const html=renderToStaticMarkup(React.createElement(SupplierLocationMapPanel,{page,mapRef:null,status:'error',onRetry(){}}))
+ assert.match(html,/role="alert"/);assert.match(html,/Mapa jest chwilowo niedostępna/);assert.match(html,/Spróbuj ponownie/)
+ assert.doesNotMatch(html,/Mapa lokalizacji jest gotowa/)
+})
+test('address-only repair preserves predecessor receipts and pins current source',()=>{
+ const a=receipt.supplierMapAddressOnlyRepair,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
+ const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(prior),a.previousReceiptDigest)
+ for(const[k,v]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt as Record<string,unknown>)[k],v,k)
+ for(const[f,d]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../../'+f,import.meta.url))),d,f)
+ assert.equal(a.inventedCoordinates,false);assert.equal(a.paidGeocodingEnabled,false);assert.equal(a.sharedSdkChanged,false)
 })
 const flush=()=>new Promise<void>(resolve=>setImmediate(resolve))
 test('failed startup gets one new channel, old callbacks are fenced and successful map closes cleanly',async()=>{

@@ -1,6 +1,6 @@
 'use client'
 import React,{useEffect,useRef,useState,useSyncExternalStore} from 'react'
-import {CanonButton,FinancialHistoryDialog,displayPostalAddress,currentLocationCoordinates,supplierLocationsMapProjection,type SupplierLocation,type SupplierLocationGroup,type ManualLocationInput} from '@profitia/srm-xray'
+import {CanonButton,FinancialHistoryDialog,displayPostalAddress,currentLocationCoordinates,supplierLocationsMapProjection,type SupplierLocation,type SupplierLocationPage,type SupplierLocationGroup,type ManualLocationInput} from '@profitia/srm-xray'
 import {SupplierLocationController} from './supplier-location-controller'
 import {mountSupplierMapWithStartupRetry} from './supplier-map-startup'
 import {prepareSupplierMapRuntime} from './supplier-map-readiness'
@@ -8,6 +8,17 @@ import targets from '../../../deployment/supplier-location-targets.json'
 const groups=[['SUPPLIER_LOCATIONS','Siedziba i oddziały'],['USER_LOCATIONS','Własne lokalizacje']] as const
 const button=(label:string,onClick:()=>void,disabled=false)=><CanonButton canonId="SRM-C02" usage="supplier-locations:01" type="button" onClick={onClick} disabled={disabled}>{label}</CanonButton>
 const empty:ManualLocationInput={label:'',description:'',address:{line1:'',postalCode:'',locality:'',country:'Polska'},position:null}
+/** An address without coordinates must not suppress the map itself. The
+ * renderer receives an unresolved address and never invents its position. */
+export function SupplierLocationMapPanel({page,mapRef,status,onRetry}:{page:SupplierLocationPage;mapRef:React.Ref<HTMLDivElement>;status:'loading'|'ready'|'error';onRetry:()=>void}){
+ const hasCoordinates=page.items.some(v=>currentLocationCoordinates(v))
+ return <><section className="srm-supplier-map-panel" aria-label="Mapa zapisanych lokalizacji">
+  <div ref={mapRef} className="srm-supplier-map-canvas"/>
+  {status==='loading'&&<p role="status" data-canon-id="SRM-C105">Wczytywanie mapy…</p>}
+  {status==='error'&&<div role="alert" data-canon-id="SRM-C105"><p>Mapa jest chwilowo niedostępna. Zapisane adresy pozostają na liście.</p>{button('Spróbuj ponownie',onRetry)}</div>}
+  {status==='ready'&&<span className="srm-sr-only" role="status">Mapa lokalizacji jest gotowa.</span>}
+ </section>{!hasCoordinates&&<p role="status" data-canon-id="SRM-C105">{page.total===0?'Brak dostępnych lokalizacji. Mapa pokazuje widok ogólny.':'Brak potwierdzonych współrzędnych. Mapa pokazuje widok ogólny; zapisane adresy pozostają na liście.'}</p>}</>
+}
 export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplierId:string;supplierName?:string;refreshKey:string}){
  const [controller]=useState(()=>new SupplierLocationController(supplierId)),state=useSyncExternalStore(controller.subscribe,controller.getSnapshot,controller.getSnapshot)
  const [group,setGroup]=useState<SupplierLocationGroup>('SUPPLIER_LOCATIONS'),[offset,setOffset]=useState(0),[open,setOpen]=useState(false),[editing,setEditing]=useState<SupplierLocation|null|undefined>(undefined)
@@ -26,7 +37,7 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
   return()=>{window.removeEventListener('pagehide',clear);document.removeEventListener('visibilitychange',visibility)}
  },[controller])
  useEffect(()=>{
-  if(!open||!map.current||!state.page||state.blocked||!state.page.items.some(v=>currentLocationCoordinates(v)))return
+  if(!open||!map.current||!state.page||state.blocked)return
   setMapStatus('loading');setSelectedLocation(null)
   let disposed=false,view:{close():void}|undefined
   const startup=new AbortController()
@@ -60,12 +71,7 @@ export function SupplierLocations({supplierId,supplierName,refreshKey}:{supplier
    {group==='SUPPLIER_LOCATIONS'&&<p>Oddziały: dostępność danych nie została potwierdzona u dostawcy raportów.</p>}
    {state.page&&<p>Wyświetlono {state.page.items.length} z {state.page.total}. Na tej stronie: {state.page.items.filter(v=>!!currentLocationCoordinates(v)).length} ze współrzędnymi, {state.page.items.filter(v=>!currentLocationCoordinates(v)).length} bez współrzędnych.</p>}
    {state.blocked&&<p role="alert" data-canon-id="SRM-C105">Brak dostępu do lokalizacji. Potwierdź aktualny dostęp do raportu.</p>}
-   {state.page&&!state.blocked&&(state.page.items.some(v=>currentLocationCoordinates(v))?<section className="srm-supplier-map-panel" aria-label="Mapa zapisanych lokalizacji">
-    <div ref={map} className="srm-supplier-map-canvas"/>
-    {mapStatus==='loading'&&<p role="status" data-canon-id="SRM-C105">Wczytywanie mapy…</p>}
-    {mapStatus==='error'&&<div role="alert" data-canon-id="SRM-C105"><p>Mapa jest chwilowo niedostępna. Zapisane adresy pozostają na liście.</p>{button('Spróbuj ponownie',()=>setMapAttempt(v=>v+1))}</div>}
-    {mapStatus==='ready'&&<span className="srm-sr-only" role="status">Mapa lokalizacji jest gotowa.</span>}
-   </section>:<p role="status" data-canon-id="SRM-C105">{state.page.total===0?'Brak dostępnych lokalizacji.':state.page.items.some(v=>displayPostalAddress(v.address))?'Brak potwierdzonych współrzędnych. Zapisane adresy pozostają na liście.':'Brak adresu do wyświetlenia na mapie.'}</p>)}
+   {state.page&&!state.blocked&&<SupplierLocationMapPanel page={state.page} mapRef={map} status={mapStatus} onRetry={()=>setMapAttempt(v=>v+1)}/>}
    <ul>{state.page?.items.map(location=><li key={location.id} aria-current={selectedLocation===location.id?'location':undefined}><strong>{location.label}</strong><p>{displayPostalAddress(location.address)||'Brak potwierdzonego adresu'}</p>
     <p>{location.origin==='MANUAL'?'Lokalizacja własna organizacji':location.sources.map(source=>source.kind==='KYS'?'Raport KYS':'Rejestr KRS (MGBI)').join(' · ')}{location.relationship?.type&&<> · Relacja: {location.relationship.type}</>}</p>
     <p>{location.verification==='INCOMPLETE'?'Adres wymaga doprecyzowania. ':location.verification==='UNRESOLVED'?'Brak potwierdzonego adresu. ':''}{location.lifecycle==='INACTIVE'?'Relacja nieaktywna':currentLocationCoordinates(location)?'Lokalizacja na mapie':'Brak potwierdzonych współrzędnych'}</p>
