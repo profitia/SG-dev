@@ -12,3 +12,9 @@ Użyto publicznego `createPrivateOperationHost` oraz istniejącego w Identity pr
 Endpoint nie zwraca telefonu, stanowiska, płci słownikowej, preferencji awatara ani organizacji. Nie odmienia ponownie imienia, nie czyta go z Clerk metadata i nie aktualizuje istniejącego profilu. Preferencja awatara pozostaje odrębnym istniejącym kontraktem `/v1/account/assistant-avatar`, zgodnie z niezależnym wyborem użytkownika.
 
 Pełny preflight i require-begin przeszły przed edycją. Nowy task ma własny checkout, config, node_modules, PMOS/context i klon PHR. Bez zmian źródeł SG2/SRM lub wspólnych pakietów. Wydanie wyłącznie do istniejącego Identity Development nastąpi po CI i przyjęciu źródła; identyfikatory i dowody końcowe będą zapisane po ich rzeczywistym odczycie.
+
+Lokalnie: typecheck, build i lint PASS; pełna regresja Identity 358/358 PASS, w tym rzeczywisty izolowany PostgreSQL, E1/RLS, dwóch użytkowników, cofnięta sesja, niezweryfikowany e-mail, odmowa peer SRM, zamknięta projekcja i GET-only. Testy potwierdziły brak zmiany wersji/danych profilu, preferencji awatara oraz brak nowych membership/product grants. Nie używały Neon ani kont klientów.
+
+Istniejący cel wydania: `identity-runtime-development`, `srv-dbcse6jrjlhs73eib3sg`, workspace `tea-d7lps8rbc2fs73cn80dg`, environment `evm-db717krrjlhs739jgo1g`. Zaobserwowany LKG: `dep-dbf6fjtg1s2s73elc3kg`, source `59179d2026932dec10d4849081481956e36d9832`, manual deploy, bez nowej usługi. Build ma istniejącą blokadę `IDENTITY_RUNTIME_EXPECTED_SOURCE_SHA`; przy wydaniu wymaga wyłącznie aktualizacji tego niesekretnego pinu do przyjętej rewizji, bez zmiany credentiali lub reguł sesji.
+
+Porównanie z LKG wykazało także wcześniej przyjęte na main zmiany wspólnego platform-contracts 1.43. Ten task ich nie modyfikuje ani nie przypisuje sobie ich ownership. Regresja Identity sprawdza dokładne aktualne źródło wraz z tą zależnością; osobne aplikacje nie są wdrażane przez ten release.
