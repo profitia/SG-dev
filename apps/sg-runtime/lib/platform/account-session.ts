@@ -49,7 +49,7 @@ export async function readSelfServiceAccount(request: Request, { env = process.e
     const u = new URL(current.url), credential = current.headers.get('authorization')
     if (u.pathname !== '/api/account' || u.search || u.hash || current.headers.has('origin') && current.headers.get('origin') !== config.publicOrigin) return accountUnavailable(403)
     if (!/^Bearer [\x21-\x7e]{1,16384}$/i.test(credential ?? '')) return accountUnavailable(401)
-    const read = (path: '/v1/account' | '/v1/account/assistant-avatar') => transport(config.runtimeOrigin + path, { method: 'GET',
+    const read = (path: '/v1/account' | '/v1/account/assistant-avatar' | '/v1/account/salutation') => transport(config.runtimeOrigin + path, { method: 'GET',
       headers: { authorization: credential! }, credentials: 'omit', cache: 'no-store', redirect: 'error',
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(4000)]) })
     const response = await read('/v1/account')
@@ -64,7 +64,18 @@ export async function readSelfServiceAccount(request: Request, { env = process.e
     if (avatar !== null && (!avatar || Array.isArray(avatar) || Object.keys(avatar).sort().join(',') !== 'avatarSex,userId,version'
       || avatar.userId !== result.userId || ![null, 'male', 'female'].includes(avatar.avatarSex)
       || typeof avatar.version !== 'string' || !/^[1-9][0-9]{0,18}$/.test(avatar.version) || BigInt(avatar.version) > 9223372036854775807n)) return accountUnavailable()
+    const salutationResponse = await read('/v1/account/salutation')
+    if (!salutationResponse.ok) { await salutationResponse.body?.cancel(); return accountUnavailable(salutationResponse.status === 401 ? 401 : salutationResponse.status === 403 ? 403 : 503) }
+    const salutation = await boundedJson(salutationResponse) as { userId: string; firstName: string | null; vocative: string | null; dictionaryVersion: string | null; version: string } | null
+    const name = (value: unknown) => value === null || typeof value === 'string' && value.length > 0 && [...value].length <= 160 && value === value.trim() && !/[\p{Cc}\p{Cf}]/u.test(value)
+    if (salutation !== null && (!salutation || Array.isArray(salutation)
+      || Object.keys(salutation).sort().join(',') !== 'dictionaryVersion,firstName,userId,version,vocative'
+      || salutation.userId !== result.userId || !name(salutation.firstName) || !name(salutation.vocative)
+      || !(salutation.dictionaryVersion === null || typeof salutation.dictionaryVersion === 'string' && /^[A-Za-z0-9._:-]{1,160}$/.test(salutation.dictionaryVersion))
+      || salutation.vocative !== null && (salutation.firstName === null || salutation.dictionaryVersion === null)
+      || typeof salutation.version !== 'string' || !/^[1-9][0-9]{0,18}$/.test(salutation.version) || BigInt(salutation.version) > 9223372036854775807n)) return accountUnavailable()
     if (request.signal.aborted || !(Date.parse(result.expiresAt) > now())) return accountUnavailable()
-    return new Response(JSON.stringify({ ...result, assistantAvatar: avatar?.avatarSex ?? null }), { status: 200, headers })
+    return new Response(JSON.stringify({ ...result, assistantAvatar: avatar?.avatarSex ?? null,
+      salutation: salutation ? { firstName: salutation.firstName, vocative: salutation.vocative, dictionaryVersion: salutation.dictionaryVersion } : null }), { status: 200, headers })
   } catch { return accountUnavailable() }
 }

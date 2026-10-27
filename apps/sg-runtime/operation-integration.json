@@ -3104,5 +3104,54 @@
     "workOrTransactionBoundariesChanged": false,
     "sqlOrPolicyChanged": false,
     "runtimeDeploymentPerformed": false
+  },
+  "appShellSourceCompatibility": {
+    "taskId": "SG2-APPSHELL-PORR-FIRST-DEVELOPMENT-20261027",
+    "scope": "PRODUCT_ONLY_ACCOUNT_WORKSPACE",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "56b61912ccd63edf53f83f4caf8eede2736cd1ba",
+    "previousReceiptSha256": "bce5dfc4e0288dc8540b3f5ee5d3dd169f85c1bb91d8405be316eb6b9fa82edd",
+    "identityReadProducer": {
+      "pullRequest": 750,
+      "sourceSha": "0272c49daa98297be6e02b08939cf2b9ac97fb3c",
+      "serviceId": "srv-dbcse6jrjlhs73eib3sg",
+      "lastKnownGood": {
+        "deployId": "dep-dbf6fjtg1s2s73elc3kg",
+        "sourceSha": "59179d2026932dec10d4849081481956e36d9832"
+      },
+      "expectedSourceShaGuardPreserved": true
+    },
+    "design": {
+      "project": "465533749308841984",
+      "component": "465804082116980736",
+      "revision": "465855381789360128",
+      "libraryRevision": "465827262730764288"
+    },
+    "applicationSourceDigests": {
+      "app/[locale]/page.tsx": "a6ae006bdc4c0494fef80f5b9402f16f1146a0c52d846b311db5c1339b54d4bc",
+      "app/[locale]/account/page.tsx": "9cc0dd470a30aa8f4bdcd58daac7c924241cbde37d2612fe96f6b413cdb9efc1",
+      "components/auth/account-landing.tsx": "fa937faf79c54db34cea9fac075729a92e7bf601efb81ad085b3b3bb1f8dee60",
+      "components/appshell/platform-appshell-entry.tsx": "7ba1e9419e25009a6856b459c6b6880c2ea5c79dc391c8988d0e499c789d9fa0",
+      "components/appshell/platform-appshell.tsx": "18bb2c24ae39aed8fbfac561ee691ff0229d1482c355dcd9f0831792147bbd5d",
+      "components/appshell/platform-appshell.css": "5b06b7c70834a9e3faa1d90883c04fecf989886ca5fa3f8358b388438b23a49b",
+      "components/appshell/appshell-brand.tsx": "252114c96d1fd83d4af90ce9f0453517be7ec736ce40108380ff9ae3fba778a9",
+      "public/appshell/assistant.png": "99e778fca02acce64867601fb90ecd89aaa24f5e2b38a0122c2e71fe9e173061",
+      "public/appshell/assistant-female.png": "b93261787c7db70b45d08c310109a1a8878b324f7a75c76043b6e5523d647798",
+      "tests/appshell-first-entry.test.tsx": "fcefa66dd88c867cd281b1ad293da89066ead4c1d86bef1a018ae2a4cf68deba",
+      "tests/appshell-product-boundary.test.ts": "26252dc9e9457f23118b9d19bfb876e7c20a2fa4684c36cfcae1d2b1dcc91c66",
+      "scripts/test-appshell-browser.mjs": "ef872491a32bc347b33df022dce2d71cb9acc0cc086fb3d110b144e3973e23f0",
+      "lib/platform/account-session.ts": "8fc68c9547c1314b4070806e2166785a3a3d527f3f9014530a8dfc2a6c30636e",
+      "tests/self-service-account.test.ts": "f76ff63e50e343d3dbd6b1f698745effbb5b1b47027203e2efbf9f98f8f6d570",
+      "tests/identity-runtime.test.ts": "d7d335c62341a64f11a327b16a90e7f01f1bba2fb3637f1a6edd15abb6c0b3c4",
+      "tests/category-operation.test.ts": "b0d96837030ec312fe5c2be15278e0f33cbd164ba786dab6ddd33f452d877102",
+      "tests/porr-demo-middleware.test.ts": "89a31b766773db5277e36fb813435e761b800029e16ffaa5413b54dc70cc28cf",
+      "tests/operation-context.test.mjs": "28365c659381f331d805ff5c1a6616c42d68a77a4fd2868f6d71ef8212bbc06f",
+      "package.json": "497bbafb3a087c60fc6616c796017bf83cff07dbe6defeaa256c836b227e67c5"
+    },
+    "moduleIntegrationAdded": false,
+    "cicConnected": false,
+    "schemaChanged": false,
+    "operationGrantsChanged": false,
+    "sourceAcceptanceIsNotRuntimeAcceptance": true
   }
 }

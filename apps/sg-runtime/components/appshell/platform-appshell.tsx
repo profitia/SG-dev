@@ -88,7 +88,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
             </header>
             <div className="srm-chat-transcript" role="region" aria-label={en ? 'SpendGuru introduction' : 'Powitanie SpendGuru'} tabIndex={0}>
               <div className="srm-chat-welcome-live"><div className="srm-chat-incoming">
-                <div className="srm-chat-avatar srm-chat-message-avatar"><img src={assistantAvatar === 'female' ? '/appshell/assistant-female.png' : '/appshell/assistant.png'} alt={en ? 'SpendGuru advisor' : 'Doradca SpendGuru'} width={61.44} height={61.44} /></div>
+                {assistantAvatar && <div className="srm-chat-avatar srm-chat-message-avatar"><img src={assistantAvatar === 'female' ? '/appshell/assistant-female.png' : '/appshell/assistant.png'} alt={en ? 'SpendGuru advisor' : 'Doradca SpendGuru'} width={61.44} height={61.44} /></div>}
                 <article className="srm-chat-message srm-chat-welcome-bubble" aria-label={en ? 'SpendGuru greeting' : 'Powitanie SpendGuru'}>
                   <p><strong>{assistantGreeting} {en ? 'I am your SpendGuru advisor. Soon I will support you in your daily work, category analysis and supplier collaboration.' : 'Jestem Twoim doradcą SpendGuru. Wkrótce będę Cię wspierać w codziennej pracy, analizie kategorii oraz we współpracy z dostawcami.'}</strong></p>
                   <p>{en ? 'Choose the application you would like to start with. Soon you will be able to talk to me.' : 'Tymczasem wybierz aplikację, od której chcesz zacząć, a już niedługo będzie można ze mną naprawdę porozmawiać.'}</p>

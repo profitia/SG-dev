@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useAuth, useClerk } from '@clerk/react'
 import { PlatformAppShell } from '@/components/appshell/platform-appshell'
 
-type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string; assistantAvatar?: 'male' | 'female' | null }
+type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string; assistantAvatar?: 'male' | 'female' | null; salutation?: { firstName: string | null; vocative: string | null; dictionaryVersion: string | null } | null }
 export function AccountLanding({ locale, completionUrl, presentation = 'account', organisationBranding }: {
   locale: 'pl' | 'en'; completionUrl: string; presentation?: 'account' | 'workspace'; organisationBranding?: 'porr' | null
 }) {
@@ -13,27 +13,38 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
   const [retry, setRetry] = useState(0), [state, setState] = useState<State>({ key: '', status: 'loading' })
   useEffect(() => {
     const controller = new AbortController(); current.current?.abort(); current.current = controller
-    setState({ key, status: 'loading' })
+    setState(previous => presentation === 'workspace' && previous.key === key && previous.status === 'ready'
+      && Date.parse(previous.expiresAt ?? '') > Date.now() ? previous : { key, status: 'loading' })
     if (isLoaded && isSignedIn && userId && sessionId) void (async () => {
       try {
-        const credential = await getToken(); if (!credential) throw Error('SESSION_REQUIRED')
+        const credential = await getToken({ skipCache: presentation === 'workspace' }); if (!credential) throw Error('SESSION_REQUIRED')
         const response = await fetch('/api/account', { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: controller.signal,
           headers: { Authorization: `Bearer ${credential}` } })
         const result = await response.json()
         if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !(Date.parse(result.expiresAt) > Date.now())
-          || ![null, 'male', 'female'].includes(result.assistantAvatar)) throw Error('ACCOUNT_UNAVAILABLE')
-        if (!controller.signal.aborted) setState({ key, status: 'ready', userId: result.userId, expiresAt: result.expiresAt, assistantAvatar: result.assistantAvatar })
+          || ![null, 'male', 'female'].includes(result.assistantAvatar)
+          || !(result.salutation === null || result.salutation && ['firstName', 'vocative'].every(field => result.salutation[field] === null || typeof result.salutation[field] === 'string'))) throw Error('ACCOUNT_UNAVAILABLE')
+        if (!controller.signal.aborted) setState({ key, status: 'ready', userId: result.userId, expiresAt: result.expiresAt, assistantAvatar: result.assistantAvatar, salutation: result.salutation })
       } catch { if (!controller.signal.aborted) setState({ key, status: 'failed' }) }
     })()
     return () => controller.abort()
-  }, [isLoaded, isSignedIn, userId, sessionId, getToken, key, retry])
+  }, [isLoaded, isSignedIn, userId, sessionId, getToken, key, retry, presentation])
   useEffect(() => {
     if (state.status !== 'ready' || !state.expiresAt) return
-    // One local expiry invalidation, not permission polling or session renewal.
+    // A workspace rechecks the existing backend account proof with a fresh SDK
+    // token. No new session, organisation grant or product permission is minted.
+    if (presentation === 'workspace') {
+      const refresh = setTimeout(() => setRetry(n => n + 1), Math.min(2147483647, Math.max(1000, Date.parse(state.expiresAt) - Date.now() - 5000)))
+      const expiry = setTimeout(() => setState(previous => previous.key === state.key && previous.expiresAt === state.expiresAt && previous.status === 'ready'
+        ? { key: previous.key, status: 'expired' } : previous), Math.min(2147483647, Math.max(0, Date.parse(state.expiresAt) - Date.now())))
+      const focus = () => setRetry(n => n + 1)
+      window.addEventListener('focus', focus)
+      return () => { clearTimeout(refresh); clearTimeout(expiry); window.removeEventListener('focus', focus) }
+    }
     const timer = setTimeout(() => setState(previous => previous.key === state.key && previous.status === 'ready'
       ? { key: previous.key, status: 'expired' } : previous), Math.min(2147483647, Math.max(0, Date.parse(state.expiresAt) - Date.now())))
     return () => clearTimeout(timer)
-  }, [state.key, state.status, state.expiresAt])
+  }, [state.key, state.status, state.expiresAt, presentation])
   async function logout() {
     current.current?.abort(); setState({ key, status: 'signing-out' })
     try { await clerk.signOut({ sessionId: sessionId ?? undefined, redirectUrl: `/${locale}` }) }
@@ -44,7 +55,8 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
   if (!isSignedIn) return <p><a href={`/${locale}`} className="underline">{en ? 'Sign in' : 'Zaloguj się'}</a></p>
   const status = state.key === key ? state.status : 'loading'
   if (presentation === 'workspace' && status === 'ready') return <PlatformAppShell locale={locale}
-    assistantAvatar={state.assistantAvatar} organisationBranding={organisationBranding} onLogout={() => void logout()} />
+    assistantAvatar={state.assistantAvatar} salutation={locale === 'en' ? state.salutation?.firstName : state.salutation?.vocative}
+    organisationBranding={organisationBranding} onLogout={() => void logout()} />
   return <section className="space-y-5" key={key}>
     {status === 'ready' ? <><h1 className="text-3xl font-semibold">{en ? 'Your account is ready' : 'Konto gotowe'}</h1>
       <p>{en ? 'You are signed in to your Profitia account.' : 'Jesteś zalogowany do swojego konta Profitia.'}</p>
