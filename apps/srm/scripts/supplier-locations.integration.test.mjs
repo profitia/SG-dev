@@ -304,6 +304,17 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
     assert.doesNotMatch(JSON.stringify(current),/synthetic-only|MUST_NOT_PERSIST|GOOGLE_GEOCODING/)
     await assert.rejects(save(transient),'completed CAS cannot be reused')
     await assert.rejects(geo.request({...input,organisationId:B,locationId:target.id}),isOperationDenied)
+    const reconciliation=own('019-geocoding-reconciliation.sql')
+    await assert.rejects(owner.query(reconciliation),e=>e.code==='42501')
+    await controlled(()=>owner.query(reconciliation))
+    for(const role of[ROLE,WORKER])assert.equal((await owner.query("SELECT has_table_privilege($1,'srm.location_geocoding_reconciliations','SELECT,INSERT,UPDATE,DELETE,TRUNCATE') AS allowed",[role])).rows[0].allowed,false)
+    const insert="INSERT INTO srm.location_geocoding_reconciliations(organisation_id,supplier_id,location_id,previous_version,new_version,address_version,previous_request_id,previous_status,new_status,observed_source_calls,operator_login,reason,source_ref) VALUES($1,$2,$3,1,2,$4,$5,'DELIVERY_UNCERTAIN','UNREQUESTED',$6,session_user,'SYNTHETIC_LOCAL_NOT_SENT_PROOF',$7)"
+    const values=[A,S,target.id,target.addressVersion,accepted.receipt.requestId,0,'a'.repeat(40)]
+    await assert.rejects(controlled(()=>owner.query(insert,[...values.slice(0,5),1,values[6]])),e=>e.code==='23514')
+    await controlled(()=>owner.query(insert,values))
+    await assert.rejects(controlled(()=>owner.query("UPDATE srm.location_geocoding_reconciliations SET reason='rewrite'")),e=>e.code==='42501')
+    await assert.rejects(controlled(()=>owner.query('TRUNCATE srm.location_geocoding_reconciliations')),e=>e.code==='42501')
+    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.location_geocoding_reconciliations')).rows[0].n,1)
    })
    // A SOURCE location is rechecked against the exact currently accepted
    // MGBI version, under the narrow controlled metadata policy for SERVICE.

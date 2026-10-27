@@ -2,6 +2,7 @@ import type pg from 'pg'
 import {createMapsGeocodingCommand} from '@profitia/maps-runtime/src/server/geocoding-command.mjs'
 import {createClerkAccountStatusReader} from '@profitia/platform-contracts/identity-provider'
 import {OPERATION_CONTRACT,OperationDenied,type Application} from '@profitia/platform-contracts/operation-context'
+import type {ExternalCallOptions} from '@profitia/platform-contracts/external-call'
 import {createSrmNativePgDriver} from './native-pg-driver'
 import {createSrmLocationGeocodingRequest,createSrmTransientGeocodingDomain,readSrmLocationGeocodingTarget} from './supplier-location-geocoding'
 import type {SupplierLocationRuntime,SupplierLocationRuntimeOptions} from './supplier-locations'
@@ -21,6 +22,8 @@ export function readSrmLocationGeocodingConfiguration(env:Env,locationsEnabled:b
  return Object.freeze({apiKey:env.GOOGLE_GEOCODING_API_KEY.trim(),referenceSecret:native.referenceSecret})
 }
 type Pools=Readonly<{jobs:pg.Pool;jobsAudit:pg.Pool;source:pg.Pool;sourceAudit:pg.Pool}>
+/** Source PLAN/ATTEMPT/SETTLE must use the host's admitted transaction. */
+export const querySrmGeocodingTransaction:ExternalCallOptions<pg.PoolClient,unknown>['query']=async(transaction,sql,values=[])=>({rows:(await transaction.query(sql,values)).rows})
 /** Adopts the pinned Maps command in SRM; shares the existing ordinary pools.
  * No public address proxy, owner credential, scheduler or Google cache. */
 export function createSrmLocationGeocodingRuntime(options:SupplierLocationRuntimeOptions,locations:SupplierLocationRuntime,native:Configuration,pools:Pools,config:NonNullable<ReturnType<typeof readSrmLocationGeocodingConfiguration>>){
@@ -38,7 +41,7 @@ export function createSrmLocationGeocodingRuntime(options:SupplierLocationRuntim
  const sourceApplication=application('srm-provider-source',['knowledge_ingestion'],['knowledge.ingest'])
  const source={application:sourceApplication,binding:{...options.binding,applicationId:sourceApplication.appId,role:nativeTargets.runtimeRoles.providerSource,
   deploymentId:sourceApplication.deploymentId,configurationVersion:version,schemaDigest:core['008-platform-ingestion.sql'],unmeteredSchemaDigest:mgbiPolicy.unmeteredSchemaDigest},
-  ...createSrmNativePgDriver(pools.source,pools.sourceAudit),query:async(sql:string,values:readonly unknown[]=[])=>({rows:(await pools.source.query(sql,[...values])).rows}),
+  ...createSrmNativePgDriver(pools.source,pools.sourceAudit),query:querySrmGeocodingTransaction,
   external:{configurationVersion:version,schemaDigest:core['009-external-call-admission.sql'],nativeSchemaDigest:core['012-native-external-transport.sql']}}
  return Object.freeze({async resolve(input:{request:Request;organisationId:string;supplierId:string;locationId:string}){
   const admitted=await requester.request(input)

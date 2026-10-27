@@ -1,11 +1,22 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import {readSrmLocationGeocodingConfiguration,LOCATION_GEOCODING_VERSION} from './supplier-location-geocoding-runtime'
+import {readSrmLocationGeocodingConfiguration,LOCATION_GEOCODING_VERSION,querySrmGeocodingTransaction} from './supplier-location-geocoding-runtime'
+import type {PoolClient} from 'pg'
 import type {Configuration} from './supplier-native-runtime'
 import targets from '../../deployment/supplier-location-targets.json'
 import {createSupplierLocationHandler,type SupplierLocationRuntime} from './supplier-locations'
 const config={base:{application:{appId:'srm',environment:'development'},binding:{projectId:targets.projectId,branchId:targets.branchId}},referenceSecret:'synthetic-reference-'.repeat(3)} as Configuration
 const env={RENDER_SERVICE_ID:targets.serviceId,PROFITIA_SUPPLIER_LOCATION_GEOCODING_VERSION:LOCATION_GEOCODING_VERSION,GOOGLE_GEOCODING_API_KEY:'synthetic-only'}
+test('Source control writes stay on the exact admitted transaction and preserve its failure',async()=>{
+ const sql='SELECT profitia_external_call.apply_control($1::uuid,$2::uuid,$3) AS control',values=['effect','decision','envelope']
+ const failure=new Error('admitted transaction rolled back')
+ let first=0,second=0
+ const a={query:async(statement:string,parameters:unknown[])=>{first++;assert.equal(statement,sql);assert.equal(parameters,values);return{rows:[{control:'first'}]}}} as unknown as PoolClient
+ const b={query:async(statement:string,parameters:unknown[])=>{second++;assert.equal(statement,sql);assert.equal(parameters,values);throw failure}} as unknown as PoolClient
+ assert.deepEqual(await querySrmGeocodingTransaction(a,sql,values),{rows:[{control:'first'}]})
+ await assert.rejects(querySrmGeocodingTransaction(b,sql,values),error=>error===failure)
+ assert.equal(first,1);assert.equal(second,1)
+})
 test('a key alone cannot activate geocoding, and only the main registered Development target is eligible',()=>{
  assert.equal(readSrmLocationGeocodingConfiguration({GOOGLE_GEOCODING_API_KEY:'synthetic-only'},true,config),undefined)
  assert.equal(readSrmLocationGeocodingConfiguration(env,true,config)?.apiKey,'synthetic-only')
@@ -33,7 +44,14 @@ test('geocoding adoption preserves all previous receipts and pins the exact unch
  const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(previous),a.previousReceiptDigest)
  for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual(receipt[key],value,key)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+ const current=receipt.supplierMapGeocodingTransactionRepair??a
+ if(current!==a){
+  const prior=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+  assert.equal(hash(prior),current.previousReceiptDigest)
+  for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key)
+  assert.equal(current.sourceControlQuery,'EXACT_ADMITTED_TRANSACTION');assert.equal(current.automaticUncertainRetry,false)
+ }
+ for(const[file,digest]of Object.entries({...a.applicationSourceDigests,...current.applicationSourceDigests}))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
  for(const[file,digest]of Object.entries(a.mapsProducerDigests))assert.equal(hash(readFileSync(new URL('../../../maps-runtime/'+file,import.meta.url))),digest,file)
  assert.equal(a.googlePersistence,'ACTIVE_VIEW_MEMORY_ONLY');assert.equal(a.mgbiOrSearchChanged,false);assert.equal(a.sharedSdkChanged,false)
 })
