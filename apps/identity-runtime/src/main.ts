@@ -10,6 +10,7 @@ import { createMailgunTransactionalSender } from './mailgun-delivery.js'
 import pg from 'pg'
 import { createHash } from 'node:crypto'
 import { createAssistantAvatarSurface, type AssistantAvatarSurface } from './assistant-avatar.js'
+import { createAccountSalutationSurface, type AccountSalutationSurface } from './account-salutation.js'
 import { readConfiguration } from './config.js'
 import { createOfficialClient } from './official-client.js'
 import { createSessionBoundary, createDatabaseAuthority } from './session-boundary.js'
@@ -25,6 +26,7 @@ async function start() {
 let boundary: SessionBoundary | null = null
 let account: AccountSurface | null = null
 let avatar: AssistantAvatarSurface | null = null
+let salutation: AccountSalutationSurface | null = null
 let language: CommunicationLanguageSurface | null = null
 let registration: RegistrationSurface | null = null
 let registrationStore: RegistrationStore | null = null
@@ -97,6 +99,9 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     avatar = createAssistantAvatarSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
+    salutation = createAccountSalutationSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
+      transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
+      deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
     language = createCommunicationLanguageSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
@@ -115,7 +120,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     embedded = createEmbeddedAccountHandler(config, consumers)
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 let shuttingDown = false
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   if (shuttingDown) return
