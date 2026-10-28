@@ -150,9 +150,10 @@ export function createSrmCorporateSourceStore(options: {
     },
   })
   return Object.freeze({
-    async publish(input: unknown, idempotencyKey: string, preparation?:Readonly<{documents:readonly FinancialSourceDocument[];onPrepared?:(report:PreparedCompanyReport)=>void}>) {
+    async publish(input: unknown, idempotencyKey: string, preparation?:Readonly<{documents:readonly FinancialSourceDocument[];retainCurrentCatalog?:boolean;onPrepared?:(report:PreparedCompanyReport)=>void}>) {
       let prepared:PreparedCompanyReport|undefined
       const documents=preparation?structuredClone(preparation.documents):undefined
+      const retainCurrentCatalog=preparation?.retainCurrentCatalog===true
       if(options.readyReportSchemaDigest&&(!/^[a-f0-9]{64}$/.test(options.readyReportSchemaDigest)||!documents))return unavailable()
       // Capture once before awaiting. HTTP callers never supply owner IDs,
       // evidence IDs, write callbacks or a mutable body after admission.
@@ -170,7 +171,16 @@ export function createSrmCorporateSourceStore(options: {
         // Selector only: SQL still authenticates the actual protected Source
         // publication for each statement. It grants no authority by itself.
         await client.query("SELECT set_config('profitia.srm.catalog.nip',$1,true)",[packet.nip])
-        await measureSupplierStage('CORPORATE_WRITE',()=>writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId }))
+        if(retainCurrentCatalog){
+          // A one-time READY upgrade consumes the exact retained sections.
+          // It never rewrites their hash, provider timestamp or Source proof.
+          if(!packet.preserveGeneral||packet.facts.length)return unavailable()
+          const retained=(await client.query(`SELECT general_json=$2::jsonb
+            AND financial_json-'catalogMappingVersion'=$3::jsonb AS matches
+            FROM srm.catalog_companies WHERE nip=$1 FOR SHARE`,
+            [packet.nip,JSON.stringify(packet.general),JSON.stringify(packet.financial)])).rows[0]
+          if(retained?.matches!==true)return unavailable()
+        }else await measureSupplierStage('CORPORATE_WRITE',()=>writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId }))
         let indicators:CalculatedFinancialIndicator[]=[]
         if (packet.financial.data) await measureSupplierStage('CORPORATE_INDICATORS',()=>writeFinancialIndicators(client, packet.nip, packet.financial.data!,rows=>{indicators=rows}))
         if(options.readyReportSchemaDigest)prepared=await measureSupplierStage('REPORT_PREPARATION',()=>writeReadyCompanyReport(client,packet.nip,effectId,indicators,documents!,options.readyReportSchemaDigest!))

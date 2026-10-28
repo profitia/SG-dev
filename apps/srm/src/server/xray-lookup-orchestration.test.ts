@@ -191,3 +191,16 @@ test('selection is copied before asynchronous work and rejects invalid scope bef
   assert.deepEqual(f.calls, []);
   assert.equal((await run(ORG, input)).identity.nip, NIP);
 });
+
+test('opted-in READY upgrade prepares a current retained report without provider enrichment or private snapshot copies',async()=>{
+ const f=await fixture(),financial=structuredClone(f.financial.section);
+ financial.data!.revisionRule='FINANCIAL_REVISIONS_V1';financial.data!.qualityRule=FINANCIAL_QUALITY_RULE;
+ financial.data!.registryHistoryVersion=COMPANY_IDENTITY_VERSION;
+ f.setCache({general:f.general.section,financial});
+ f.ports.prepareReadyReport=async(org,nip,value)=>{f.calls.push('prepare-ready');assert.equal(org,ORG);assert.equal(nip,NIP);
+  assert.equal(value.financial,financial);assert.equal(value.preserveGeneral,true);assert.deepEqual(value.facts,[]);
+  assert.equal(value.generalSnapshotId,null);assert.equal(value.financialSnapshotId,null)};
+ const result=await createXrayCompanyLookup(f.ports)(ORG,request());
+ assert.equal(result.identity.nip,NIP);assert.equal(result.financial,financial);
+ assert.deepEqual(f.calls,['register','cache','documents-read','prepare-ready']);assert.equal(f.snapshots.length,0);
+})
