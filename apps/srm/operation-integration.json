@@ -5433,7 +5433,7 @@
     "consumerCompatibility": {
       "projectKey": "SG2",
       "taskId": "SG2-XRAY-PLATFORM130-SOURCE-COMPAT-20261028",
-      "sourceSha": "98f97213f461c57d8862d47621b83fb4f43dbeeb",
+      "sourceSha": "9e0d9e641522b4f846b5e549b184ca813040a6a0",
       "previousSourceSha": "c6b246c114c5583fdf1d9eb5d8f7f5488a639641"
     },
     "previousReceiptSourceSha": "98f97213f461c57d8862d47621b83fb4f43dbeeb",
@@ -5490,8 +5490,8 @@
       "scripts/diagnostic-telemetry-adoption.test.mjs": "1cb70bd8da86ab601ef632f972e1c82c4f5430a63c766709484d0e87f777bfc7",
       "scripts/native-execution-adoption.test.mjs": "bb101e2d546eb8405596f0ffd4fb99d7ab29f087d8e849089e5599af9f619915",
       "scripts/private-host.integration.test.mjs": "7661c75d89ea59f5f03cfcd083109e7e0b2302203da047701761871a62bae670",
-      "scripts/ready-report-release.mjs": "d2987756d3cb368239a39b058c630bba9daa40a31b8d6e3b840964d8a0465169",
-      "scripts/ready-report-release.test.mjs": "e23d397d9f52f882ac47e5f90e750de380f14609a1e6f72ae62ed06236c5c5c9",
+      "scripts/ready-report-release.mjs": "71c87dab8460ca0128dd89f0121c483075501a8037126412428f86ad9042f0fa",
+      "scripts/ready-report-release.test.mjs": "9720540d36e9902b7b84455e5a049a3a4fc0a6d54eb224fd49cf3bb4a3036b56",
       "scripts/ready-report.integration.test.mjs": "336611256715b62b89bad6bca5323d7ca011a5f8d6e0d21931ba8f5d00bbfb58",
       "scripts/request-quota-adoption.test.mjs": "04744515ce1d6ec719c6267211eff3984dad19becfe9c94b2f291a4b111afcba",
       "scripts/supplier-delegated-business.integration.test.mjs": "b13603ec984be69acebcdcf3bfca80402cdc445dedde4ae07ccb00ec175282ec",
@@ -5499,7 +5499,7 @@
       "scripts/xray-performance-adoption.test.mjs": "53c65e05d0d3b4c81bf343461dc24d912e62b230c84074924a4409d589fb23e5",
       "src/modules/xray/krs-session-transport.test.ts": "e0568c8d68a635906d2e76043ccf7c53e9012b68ea7164ba6f43386d82445d9b",
       "src/modules/xray/report-controller.test.ts": "445630e78c3447f1d80d002e138d8fc43486fee4cf637d9aed88345963adc626",
-      "src/modules/xray/report-controller.ts": "d46dee7ff59a5066cf9bd3f1a016d499f22b418a86182f4cc982d9f7199f93cd",
+      "src/modules/xray/report-controller.ts": "56406b6c5c53c3a0f7bd6020ecbcf19b561fb0ce884e350ef188c12800b98b5d",
       "src/server/company-classification.test.ts": "c0001062f08743ff6f03be2531c2686d7daa9d7751d6e20854d509847fa41398",
       "src/server/company-classification.ts": "e90509cd201c0ec794c52e7d0a2cf28d216d3d405972074409cf5c1effe628b4",
       "src/server/company-source-policy.test.ts": "55ff8a9957693ebf20c8aebb118bcd3468b700853a0a70e7ff8e24a9704ffec5",
@@ -5521,7 +5521,11 @@
       "src/server/supplier-request-work.ts": "73559726403c65149ae9a3f648add2f76b51100442fb69ea20b83fb5ea578227",
       "src/server/supplier-telemetry.ts": "2231a1dd45bb981e03de70c9591a2e4375780e4d801f53ca41c07dbeff82ffa0",
       "src/server/xray-lookup.ts": "46bbdc19addfee56081a1107bab9f8a7b7220659c355963e8b18445312ddec45",
-      "../maps-runtime/package-lock.json": "b7751c6ccd47bb8e72fa540e4400a1373eba2589c32139726778023bbd8cf2ea"
+      "../maps-runtime/package-lock.json": "b7751c6ccd47bb8e72fa540e4400a1373eba2589c32139726778023bbd8cf2ea",
+      "scripts/pilot2-cold-overlay.mjs": "d2944c3abb1bc575f7f3dcaa2ad62cf002af904cfd49a7250edfd767504cb51e",
+      "scripts/pilot2-cold-overlay.test.mjs": "4a84012de027541a5dac2acb23f1cdd47288a18256bf29b651703be286552821",
+      "deployment/pilot2-entry-runtime-lkg.json.gz": "f171c94470a1d0dd1c712248bb551088c88d920b935d9db3d07ae54b7e4ac1dc",
+      "src/modules/xray/supplier-report.tsx": "e2126bad65771dd4f29d5d54d5226f5b920fe00a9c412f77bfe37a808737f1f3"
     },
     "preparedReportRules": {
       "mapping": "2026-10-07-ccc-v2",
@@ -5561,13 +5565,20 @@
       "../dashboard-preview/package-lock.json": "e07d6ea2f799fdda48d2eaabe67c88d3202fe46eafa1b3f26f0f44a382fc89c3",
       "../maps-runtime/platform-integration.json": "bcfb0dfcb40377925ec8d57749cce2aeaf0044bbbf51235517d61200c87949f0",
       "../maps-runtime/test/embed.test.mjs": "818277cd50de73a759026f9bb3ecd57ca0d4ce6d3052f140ae48a81569c3e6ff",
-      "../sg-runtime/operation-integration.json": "89e9c8d952f7e09fd466495ab2769fbe9e45693892e63ada866acdead040c60c",
+      "../sg-runtime/operation-integration.json": "24be96344ef9afc656360b189f8dad2ee29856e1789f22d8e5ce63921a03e0bd",
       "../sg-runtime/package-lock.json": "8c58d89fb8d06e56afb84ac437cf25dddfa33cd299808e885a1fec6d01efc2b6",
-      "../sg-runtime/tests/category-operation.test.ts": "aa9c60c2e4ca7adc39a73b673e195dcc538c9a6b0633838e3043ac4648f5f876",
-      "../sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "50726a91d9c2a5d34cf73daa73344c5abede6b88c884d69eef1955f9d22c60a7",
-      "../sg-runtime/tests/operation-context.test.mjs": "67f21aa5792afac4bdb6ce99d77504ba7d3e3e6f9db87c34e0c950534a3264cd",
-      "../sg-runtime/tests/xray-platform-compatibility.test.mjs": "0c4ade7117cca5d98bc81ab4f8cc6947860d1d70a31997fedb953b3396a5d9fa",
-      "../../packages/maps-embed/package.json": "a1bf8a75b784e7cea3e50a71abe1df615140808e34b9c713aa18c56737502bb5"
+      "../sg-runtime/tests/category-operation.test.ts": "9a2bf865ee36eb1424a286a7da7b73944c8f04d76bb1dfac0c822ab6928756ef",
+      "../sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "bfe4d59a434a7e548a6f758bfc54c879eedbfea861fa831e8b9726fa2a8427c6",
+      "../sg-runtime/tests/operation-context.test.mjs": "fe8eacda0c5c9f99fd5f24e9a2bbb84e03d9a9e2586cc50e59c242aa8406795f",
+      "../sg-runtime/tests/xray-platform-compatibility.test.mjs": "b12b99c120a1f2a794d94058c8d6fcd33d91ded11f48ab88f7ca8cc3134ee2e1",
+      "../../packages/maps-embed/package.json": "a1bf8a75b784e7cea3e50a71abe1df615140808e34b9c713aa18c56737502bb5",
+      "../sg-runtime/tests/adp-appshell-consumer.test.tsx": "bb196d96a61f86a82791584fde396c1c3a73e12abbef51cdc6ae07f17e37d0bb",
+      "../sg-runtime/tests/identity-runtime.test.ts": "854feb1b0db3b5d029a60b1a794de2d55c63e69a31109519a69b2f4e2c411570",
+      "../sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "a7216a77f7e1ba1f433d4ae1e1cf2ae86999ec4f6b0e561001e93f696f3e13db",
+      "../sg-runtime/tests/native-sql-roundtrips.test.mjs": "146e871e30743ac5af29c1e5bf050a09aeebc5bf629366a099df069a995e7717",
+      "../sg-runtime/tests/porr-demo-middleware.test.ts": "aa70865ee1fd0b497c24ec71289098d81bba695ea0857ab98e64047a6832899c",
+      "../sg-runtime/tests/private-host.integration.test.mjs": "21a782050f2170c4610b51eef0bfdeb53ab6ed81f9504243afbb4336cba0ab18",
+      "../sg-runtime/tests/self-service-account.test.ts": "d6c926da140e5b4afc06ae1ebfd4131a235bd4d3f5a32f53ed7d4da2eeb3ab91"
     }
   }
 }

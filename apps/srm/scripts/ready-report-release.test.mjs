@@ -10,6 +10,9 @@ test('release scopes the additive installation, preserves paid controls and remo
  assert(!p.statements.some(s=>/DELETE FROM|TRUNCATE TABLE/.test(s.text)))
  const seen=[]
  await executeReadyReportRelease({query:async(text)=>{seen.push(text);return {rowCount:1}}},p,{apply:true})
+ assert(seen.some(s=>s.includes('WITH ADMIN FALSE, INHERIT FALSE, SET TRUE')));
+ assert(seen.some(s=>s.includes('GRANTED BY neondb_owner')));
+ assert(seen.at(-2).includes("grantor='cloud_admin'"));
  assert(seen.at(-1)==='COMMIT');assert(seen.at(-3).startsWith('REVOKE profitia_access_owner'))
  const cutover=readyReportReleasePlan({...revisions,mode:'bind'}),rollback=readyReportReleasePlan({...revisions,mode:'rollback-bind'})
  assert.equal(cutover.statements.filter(s=>s.text.startsWith('UPDATE ')).length,3)

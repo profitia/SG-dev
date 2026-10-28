@@ -16,8 +16,8 @@ export function readyReportReleasePlan({mode,sourceSha,previousSha}){
   ||target.databaseName!=='platform_private'||native.serviceId!==target.serviceId)fail('Main Development target required')
  const statements=[],add=(text,values=[])=>statements.push({text,values})
  const assertSql=condition=>`DO $check$ BEGIN IF NOT (${condition}) THEN RAISE EXCEPTION 'Exact main Development release precondition refused';END IF;END $check$`
- add(assertSql(`current_database()='platform_private' AND session_user='neondb_owner' AND NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=(SELECT oid FROM pg_roles WHERE rolname=session_user) AND roleid IN('profitia_access_owner'::regrole,'profitia_ingestion_owner'::regrole))`))
- add('GRANT profitia_access_owner,profitia_ingestion_owner TO neondb_owner')
+ add(assertSql(`current_database()='platform_private' AND session_user='neondb_owner' AND (SELECT count(*) FROM pg_auth_members WHERE member=session_user::regrole AND grantor='cloud_admin'::regrole AND roleid IN('profitia_access_owner'::regrole,'profitia_ingestion_owner'::regrole) AND admin_option AND NOT inherit_option AND NOT set_option)=2 AND NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=session_user::regrole AND grantor=session_user::regrole AND roleid IN('profitia_access_owner'::regrole,'profitia_ingestion_owner'::regrole) AND admin_option)`))
+ add('GRANT profitia_access_owner,profitia_ingestion_owner TO neondb_owner WITH ADMIN FALSE, INHERIT FALSE, SET TRUE')
  add('SET LOCAL ROLE profitia_access_owner')
  add(assertSql(`EXISTS(SELECT 1 FROM profitia_access.installation WHERE singleton AND environment='development' AND project_id='${target.projectId}' AND branch_id='${target.branchId}' AND database_name='${target.databaseName}')`))
  if(mode==='prepare'){
@@ -46,8 +46,8 @@ export function readyReportReleasePlan({mode,sourceSha,previousSha}){
     [target.serviceId+':'+to+':'+app,sourceSha,role,app,target.serviceId+':'+from+':'+app])
  }
  add('RESET ROLE')
- add('REVOKE profitia_access_owner,profitia_ingestion_owner FROM neondb_owner')
- add(assertSql(`NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=(SELECT oid FROM pg_roles WHERE rolname=session_user) AND roleid IN('profitia_access_owner'::regrole,'profitia_ingestion_owner'::regrole))`))
+ add('REVOKE profitia_access_owner,profitia_ingestion_owner FROM neondb_owner GRANTED BY neondb_owner')
+ add(assertSql(`NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=session_user::regrole AND roleid IN('profitia_access_owner'::regrole,'profitia_ingestion_owner'::regrole) AND (set_option OR inherit_option OR grantor=session_user::regrole)) AND (SELECT count(*) FROM pg_auth_members WHERE member=session_user::regrole AND grantor='cloud_admin'::regrole AND roleid IN('profitia_access_owner'::regrole,'profitia_ingestion_owner'::regrole) AND admin_option AND NOT inherit_option AND NOT set_option)=2`))
  return Object.freeze({target,mode,sourceSha,previousSha,statements})
 }
 export async function executeReadyReportRelease(client,plan,{apply=false}={}){

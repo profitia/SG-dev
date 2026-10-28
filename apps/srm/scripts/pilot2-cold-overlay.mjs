@@ -1,6 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import {createHash} from 'node:crypto'
+import {gunzipSync} from 'node:zlib'
+import {execFileSync} from 'node:child_process'
 import {replaceRegistrySeam as replace} from './pilot2-registry-overlay.mjs'
 const hash=value=>createHash('sha256').update(value).digest('hex')
 export const PILOT2_COLD_SOURCE_FILES=[
@@ -16,6 +18,7 @@ export const PILOT2_COLD_SOURCE_FILES=[
  "apps/srm/operation-integration.json",
  "apps/srm/src/demo/fixture.ts",
  "apps/srm/src/server/company-activity.ts",
+ "apps/srm/src/server/company-source-policy.ts",
  "apps/srm/src/server/company-continuity.ts",
  "apps/srm/src/server/company-general-cache.ts",
  "apps/srm/src/server/company-pkd.ts",
@@ -118,7 +121,20 @@ export function coldPilot2(repo,output,proof){
   }else{fs.mkdirSync(path.dirname(file),{recursive:true});proof.addedFiles.push(name)}
   fs.writeFileSync(file,contents)
  }
- for(const name of PILOT2_COLD_SOURCE_FILES)write(name,fs.readFileSync(path.join(repo,name)))
+ // Keep the pilot's accepted entry composition, independent of new main
+ // Development-only preparation and Maps dependencies. No pilot is deployed.
+ const pilotEntrySha='ce4f293ec0f83bf3b4af1174f43c54eda6860738'
+ const frozen=gunzipSync(fs.readFileSync(path.join(repo,'apps/srm/deployment/pilot2-entry-runtime-lkg.json.gz')),{maxOutputLength:262144})
+ if(hash(frozen)!=='265035da97a73dfc28067cd3556392c45d2a1f6fade2b8db3557f19a882544ee')throw Error('Exact accepted pilot composition required')
+ const entries=JSON.parse(frozen)
+ if(Object.keys(entries).length!==6||Object.keys(entries).some(name=>!PILOT2_COLD_SOURCE_FILES.includes(name)))throw Error('Pilot composition path rejected')
+ let available=false
+ try{execFileSync('git',['cat-file','-e',pilotEntrySha+'^{commit}'],{cwd:repo,stdio:'pipe'});available=true}catch{}
+ if(available){for(const[name,body]of Object.entries(entries))if(body!==execFileSync('git',['show',pilotEntrySha+':'+name],{cwd:repo,encoding:'utf8'}))throw Error('Pilot entry Git provenance differs')}
+ else if(execFileSync('git',['rev-parse','--is-shallow-repository'],{cwd:repo,encoding:'utf8'}).trim()!=='true')throw Error('Pilot entry authority missing from full history')
+ for(const name of PILOT2_COLD_SOURCE_FILES)write(name,entries[name]??fs.readFileSync(path.join(repo,name)))
+ proof.pilotEntrySourceSha=pilotEntrySha
+ proof.pilotEntryFiles=Object.keys(entries)
  // The existing HTTP controller owns KRS pending continuations and stable
  // idempotency keys. It contains no financial calculation or identity policy.
  write('apps/srm/src/modules/xray/report-controller.ts',fs.readFileSync(path.join(repo,'apps/srm/src/modules/xray/report-controller.ts')))

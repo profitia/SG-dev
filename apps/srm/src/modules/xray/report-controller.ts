@@ -12,6 +12,7 @@ class ReportRequestError extends Error {
 export type ReportState = {
   /** Time the user requested the displayed KYS; never source freshness or export identity. */
   kysRequestedAt?: string;
+  reportTiming?: {traceId:string;lastFragmentId:string|null;startedAt:number;controllerCompleteMs:number};
   registryRoute?: {provider:"KRS"|"MGBI";fallbackReason?:string};
   kysTiming?: KysRenderTiming; result: SearchResult | null; busy: boolean; error: string | null;
   kys: DisplayCard["kys"]; kysBusy: boolean; kysError: string | null;
@@ -75,6 +76,9 @@ export class SupplierReportController {
     try{console.info(JSON.stringify({event:'srm_diagnostic_client_complete',schema:'srm.diagnostic-trace/1.0',traceId:this.diagnosticExecution,
       lastFragmentId:this.diagnosticParent,clock:'BROWSER_PERFORMANCE_NOW_NOT_SERVER_CLOCK',startMs:this.diagnosticUserStartMs,endMs:performance.now(),
       status:this.state.error||this.state.metadataError?'ERROR':'OK',includesBrowserNetworkAndScheduling:true}));}catch{}
+    if(!this.state.error&&!this.state.metadataError&&this.state.result&&this.state.metadata)
+      this.update({reportTiming:{traceId:this.diagnosticExecution,lastFragmentId:this.diagnosticParent,
+        startedAt:this.diagnosticUserStartMs,controllerCompleteMs:performance.now()}});
     this.diagnosticUserStartMs=null;
   }
   private async json(path: string, body: unknown, controller: AbortController): Promise<unknown> {

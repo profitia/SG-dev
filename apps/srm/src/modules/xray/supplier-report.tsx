@@ -122,6 +122,21 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     const button = card.querySelector<HTMLButtonElement>(`[data-financial-view="${history ? "history" : "methodology"}"]`);
     button?.click();
   }
+  const renderedBasicReport = useRef<string | null>(null);
+  useEffect(() => {
+    const timing=state.reportTiming;
+    if(!timing||state.busy||state.metadataBusy||!state.result||!state.metadata||state.error||state.metadataError
+      ||renderedBasicReport.current===timing.traceId)return;
+    let second=0;
+    const first=requestAnimationFrame(()=>{second=requestAnimationFrame(()=>{
+      renderedBasicReport.current=timing.traceId;
+      console.info(JSON.stringify({event:'srm_diagnostic_client_rendered',schema:'srm.diagnostic-trace/1.0',
+        traceId:timing.traceId,lastFragmentId:timing.lastFragmentId,clock:'BROWSER_PERFORMANCE_NOW_NOT_SERVER_CLOCK',
+        startMs:timing.startedAt,endMs:performance.now(),controllerCompleteMs:timing.controllerCompleteMs,
+        completeBasicReport:true,afterCommittedViewAndTwoAnimationFrames:true}));
+    })});
+    return()=>{cancelAnimationFrame(first);cancelAnimationFrame(second)};
+  },[state.reportTiming,state.busy,state.metadataBusy,state.result,state.metadata,state.error,state.metadataError]);
   const renderedKysRequest = useRef<string | null>(null);
   useEffect(() => {
     const timing = state.kysTiming;
