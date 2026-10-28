@@ -12,6 +12,7 @@ type Props = {
   organisationBranding?: 'porr' | null
   onLogout: () => void
   signingOut?: boolean
+  onLaunchXray?: () => void
   onLaunchAdp?: () => void
   onLaunchBenchmark?: () => void
   moduleActive?: boolean
@@ -36,7 +37,7 @@ const applications = [
 ]
 
 /** Presentation only. The host owns verified account data and sign-out. */
-export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace }: Props) {
+export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace }: Props) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const en = locale === 'en'
   useEffect(() => {
@@ -70,7 +71,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
             <div className="as-app-top"><div className="as-app-icon"><Icon kind={app.kind} size={28} /></div></div>
             <div className="as-app-copy"><p className="as-eyebrow">{app.category}</p><h3>{app.name}</h3><p>{app.description}</p></div>
             <div className="as-app-footer"><ul className="as-tags" aria-label={en ? 'Application scope' : 'Zakres aplikacji'}>{app.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
-              <button className="as-primary-button as-launch" type="button" disabled={app.key==='benchmark'?!onLaunchBenchmark:app.key!=='adp'||!onLaunchAdp} onClick={app.key==='benchmark'?onLaunchBenchmark:app.key==='adp'?onLaunchAdp:undefined} aria-label={(en ? 'Launch ' : 'Uruchom ') + app.name}>{en ? 'Launch' : 'Uruchom'}<Icon kind="arrow" size={18} /></button>
+              <button className="as-primary-button as-launch" type="button" disabled={app.key==='benchmark'?!onLaunchBenchmark:app.key==='xray'?!onLaunchXray:!onLaunchAdp} onClick={app.key==='benchmark'?onLaunchBenchmark:app.key==='adp'?onLaunchAdp:app.key==='xray'?onLaunchXray:undefined} aria-label={(en ? 'Launch ' : 'Uruchom ') + app.name}>{en ? 'Launch' : 'Uruchom'}<Icon kind="arrow" size={18} /></button>
             </div>
           </article>)}
         </div></section>

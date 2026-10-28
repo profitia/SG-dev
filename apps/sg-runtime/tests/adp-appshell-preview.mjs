@@ -44,7 +44,7 @@ export async function bundleAdp(entry, {browser = false, write = false, outdir, 
   return build({entryPoints: [path.resolve(appRoot, entry)], absWorkingDir: appRoot, bundle: true, write,
     ...(write ? {outdir} : {}), ...(browser ? {define:{'process.env':'{}'}} : {}), platform: browser ? 'browser' : 'node', format: browser ? 'esm' : 'cjs', metafile, jsx:'automatic',
     loader: {'.css': browser ? 'css' : 'empty', '.woff2':'dataurl'}, alias: {'@': appRoot},
-    nodePaths: [path.dirname(runtimeRequire.resolve('react/package.json')), path.join(path.dirname(process.env.APPSHELL_TEST_RUNTIME || path.join(appRoot, 'package.json')), 'node_modules')],
+    nodePaths: [path.dirname(runtimeRequire.resolve('react/package.json')), path.join(path.dirname(process.env.APPSHELL_TEST_RUNTIME || path.join(appRoot, 'package.json')), 'node_modules'), ...(process.env.XRAY_PUBLIC_SERVER_MODULES ? [process.env.XRAY_PUBLIC_SERVER_MODULES] : [])],
     external: browser ? ['/benchmark-visual/*'] : ['react', 'react-dom', 'react-dom/client', 'react-dom/server', 'react/jsx-runtime'],
     plugins: [{name: 'public-acceptance-boundaries', setup(b) {
       b.onResolve({filter: /\.css\?inline$/}, args => ({path:path.resolve(args.resolveDir,args.path.replace(/\?inline$/, '')),namespace:'acceptance-inline-css'}))
@@ -56,6 +56,16 @@ export async function bundleAdp(entry, {browser = false, write = false, outdir, 
         if(consumer.dependencies['@profitia/sg2-price-change-index-ui']!=='file:../../packages/sg2-price-change-index-ui')throw Error('Unaccepted PCI package binding')
         return{path:path.resolve(appRoot,'../../packages/sg2-price-change-index-ui/src/business.ts')}
       })
+      b.onResolve({filter:/^@profitia\/srm-xray(?:\/.*)?$/},args=>{
+        const publicXray=process.env.XRAY_UI_SOURCE||path.resolve(appRoot,'../../packages/srm-xray');
+        const pkg=JSON.parse(fs.readFileSync(path.join(publicXray,'package.json'),'utf8'));
+        const accepted=JSON.parse(fs.readFileSync(path.join(appRoot,'xray-appshell-integration.json'),'utf8')).publicUi;
+        if(pkg.name!=='@profitia/srm-xray'||pkg.version!==accepted.version)throw Error('Unaccepted public X-Ray dependency');
+        const hash=createHash('sha256');for(const file of accepted.sourceFiles){if(path.isAbsolute(file)||file.split('/').includes('..'))throw Error('Invalid public source path');hash.update(file).update('\0').update(fs.readFileSync(path.join(publicXray,file))).update('\0');}
+        if(hash.digest('hex')!==accepted.sourceDigest)throw Error('Public X-Ray source differs');
+        const sub=args.path.split('/').slice(2).join('/'),entry=pkg.exports[sub?'./'+sub:'.'];
+        if(!entry)throw Error('Missing public X-Ray export');return{path:path.join(publicXray,typeof entry==='string'?entry:entry.default)};
+      });
       b.onResolve({filter: /^@profitia\/srm-adp-ui(?:\/styles\.css)?$/}, args => ({path: path.join(publicRoot, args.path.endsWith('/styles.css') ? 'src/styles.css' : 'src/index.ts')}))
       b.onResolve({filter: /^(?:next\/(?:navigation|image|link)|@clerk\/react|@\/components\/auth\/clerk-sign-up)$/}, args => ({path: args.path, namespace: 'acceptance-only'}))
       b.onLoad({filter: /.*/, namespace: 'acceptance-only'}, args => ({loader: 'js', resolveDir: appRoot, contents: args.path === 'next/navigation' ? (browser ? previewNavigation : testNavigation)
