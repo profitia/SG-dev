@@ -51,7 +51,7 @@ test('geocoding adoption preserves all previous receipts and pins the exact unch
   for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key)
   assert.equal(current.sourceControlQuery,'EXACT_ADMITTED_TRANSACTION');assert.equal(current.automaticUncertainRetry,false)
  }
- for(const[file,digest]of Object.entries({...a.applicationSourceDigests,...current.applicationSourceDigests,...receipt.stagingCompanyRoutingAdoption.applicationSourceDigests,...receipt.companyAbsenceRoutingRepair.applicationSourceDigests,...receipt.cachedReportE1Optimization.applicationSourceDigests,...receipt.readyCompanyMetadataCredentialReuse.applicationSourceDigests,...receipt.xrayPerformanceRecoveryV2.applicationSourceDigests}))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries({...a.applicationSourceDigests,...current.applicationSourceDigests,...receipt.stagingCompanyRoutingAdoption.applicationSourceDigests,...receipt.companyAbsenceRoutingRepair.applicationSourceDigests,...receipt.cachedReportE1Optimization.applicationSourceDigests,...receipt.readyCompanyMetadataCredentialReuse.applicationSourceDigests,...receipt.xrayPerformanceRecoveryV2.applicationSourceDigests,...receipt.appshellXraySourceCompatibility.applicationSourceDigests}))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
  for(const[file,digest]of Object.entries(a.mapsProducerDigests))assert.equal(hash(readFileSync(new URL('../../../maps-runtime/'+file,import.meta.url))),digest,file)
  assert.equal(a.googlePersistence,'ACTIVE_VIEW_MEMORY_ONLY');assert.equal(a.mgbiOrSearchChanged,false);assert.equal(a.sharedSdkChanged,false)
 })

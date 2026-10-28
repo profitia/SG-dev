@@ -1,3 +1,5 @@
+import {createPeerOperationSigner} from '@profitia/platform-contracts/peer-operation';
+import {readSrmPeerXRayConfiguration} from '../src/server/peer-xray.ts';
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
@@ -377,14 +379,15 @@ test('SRM real report and pg driver use the accepted private host', async t => {
     pool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 3 }); auditPool = new pg.Pool({ connectionString: runtimeUrl.toString(), max: 1 })
     assert.equal((await pool.query('SELECT current_user')).rows[0].current_user, ROLE)
     let revoked = false
+    const peerSource='https://dev-sg2.spendguru.app';let peerExpired=false,peerWrongAzp=false;
     // SDK responses are synthetic; no live login or custom JWT verifier.
     const clerk = { async authenticateRequest(request) {
       const user = request.headers.get('authorization')?.replace(/^Bearer external-/, '')
-      const auth = { isAuthenticated: true, tokenType: 'session_token', userId: `external-${user}`, sessionId: `session-${user}`, actor: null, sessionClaims: { iss: ISSUER, sub: `external-${user}`, sid: `session-${user}`, azp: ORIGIN, exp: Math.floor(Date.now() / 1000) + 3600 } }
+      const auth = { isAuthenticated: true, tokenType: 'session_token', userId: `external-${user}`, sessionId: `session-${user}`, actor: null, sessionClaims: { iss: ISSUER, sub: `external-${user}`, sid: `session-${user}`, azp: !peerWrongAzp&&new URL(request.url).origin===peerSource?peerSource:ORIGIN, exp: Math.floor(Date.now() / 1000) + (peerExpired?-1:3600) } }
       return { status: [U, V].includes(user) ? 'signed-in' : 'signed-out', isAuthenticated: [U, V].includes(user), toAuth: () => auth }
     }, sessions: { async getSession(id) { return { id, userId: id.replace('session-', 'external-'), status: revoked ? 'revoked' : 'active', expireAt: Date.now() + 3600000, abandonAt: Date.now() + 3600000, actor: null } } }, users: { async getUser(id) { return { id, banned: false, locked: false, deprovisioned: false } } } }
     const resourceId = `supplier-report:COMPANY:${NIP}`
-    const options = { pool, auditPool, clerk, application: { appId: 'srm', profileId: 'SUPPLIER_INTELLIGENCE_STANDALONE', environment: 'development', deploymentId: 'isolated-srm', configurationVersion: '1', identityIssuer: ISSUER, organisationId: null, features: ['supplier_report'], operations: ['supplier.report.read', 'supplier.report.project'] }, identity: { appId: 'srm', environment: 'development', issuer: ISSUER, authorizedParties: [ORIGIN] }, binding: { applicationId: 'srm', environment: 'development', projectId: 'isolated-private-project', branchId: 'isolated-private-branch', databaseName: DATABASE, role: ROLE, schemaDigest: digest },
+    const options = { pool, auditPool, clerk, application: { appId: 'srm', profileId: 'SUPPLIER_INTELLIGENCE_STANDALONE', environment: 'development', deploymentId: 'isolated-srm', configurationVersion: '1', identityIssuer: ISSUER, organisationId: null, features: ['supplier_report'], operations: ['supplier.report.read', 'supplier.report.project'] }, identity: { appId: 'srm', environment: 'development', issuer: ISSUER, authorizedParties: [ORIGIN,peerSource] }, binding: { applicationId: 'srm', environment: 'development', projectId: 'isolated-private-project', branchId: 'isolated-private-branch', databaseName: DATABASE, role: ROLE, schemaDigest: digest },
       readResources: async ({ request, scope, query }) => {
         assert.equal(request.resourceId, resourceId)
         const row = (await query('SELECT financial_sha256 FROM srm.catalog_companies WHERE nip=$1', [NIP])).rows[0]; assert(row)
@@ -790,6 +793,28 @@ test('SRM real report and pg driver use the accepted private host', async t => {
       const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event_id>$1 ORDER BY event_id",[eventBefore])).rows.map(row=>row.event)
       assert.deepEqual(events.map(event=>[event.operation,event.phase]),[['supplier.report.read','INTENT'],['supplier.report.read','FAILURE']])
     })
+    await t.test('verified AppShell caller reaches real native E1 tenant/resource boundary and HUMAN audit',async()=>{
+      const env={...reportEnvironment,PROFITIA_XRAY_PEER_VERSION:'1.0.0',TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',PROFITIA_XRAY_PEER_KEY_ID:'sg2-srm-xray-dev-v1',PROFITIA_XRAY_PEER_KEY:Buffer.alloc(32,17).toString('base64url')};
+      const config=readSrmPeerXRayConfiguration(env),sign=createPeerOperationSigner(config);
+      const peerRequest=async(user=U)=>sign(new Request(config.targetOrigin+'/api/xray/report-data',{method:'POST',headers:{authorization:'Bearer external-'+user,'content-type':'application/json','idempotency-key':randomUUID()},body:JSON.stringify({nip:NIP,entityType:'COMPANY'})}));
+      const dispatchFor=organisation=>createRuntimeSrmReportHandler(()=>({provider:'clerk',executor:reportHost,defaultOrganisationId:organisation}),async()=>{throw Error('No legacy fallback');},env);
+      for(const url of [config.sourceOrigin+'/api/xray/report-data','http://0.0.0.0:10000/api/xray/report-data']){
+        const forged=new Request(url,{method:'POST',headers:{authorization:'Bearer external-'+U,origin:config.sourceOrigin,host:new URL(config.sourceOrigin).host,'content-type':'application/json'},body:JSON.stringify({nip:NIP,entityType:'COMPANY'})});
+        assert.equal((await dispatchFor(A)(forged)).status,401);
+      }
+      const before=await lastEvent();
+      const response=await dispatchFor(A)(await peerRequest());assert.equal(response.status,200);const body=await response.json();assert.equal(body.data.financial.periods[0].facts[0].amount,'100');
+      const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event_id>$1 AND event->>'decision'='ALLOW' ORDER BY event_id",[before])).rows.map(row=>row.event);
+      assert.equal(events.length,2);assert(events.every(event=>event.organisationId===A&&event.actorId===U&&event.subjectUserId===U));
+      assert.equal((await dispatchFor(B)(await peerRequest(V))).status,403);
+      peerExpired=true;try{assert.equal((await dispatchFor(A)(await peerRequest())).status,401);}finally{peerExpired=false;}
+      peerWrongAzp=true;try{assert.equal((await dispatchFor(A)(await peerRequest())).status,401);}finally{peerWrongAzp=false;}
+      revoked=true;try{assert.equal((await dispatchFor(A)(await peerRequest())).status,401);}finally{revoked=false;}
+      await owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE organisation_id=$1",[A]);
+      try{assert.equal((await dispatchFor(A)(await peerRequest())).status,403);}finally{await owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE organisation_id=$1",[A]);}
+      assert.equal((await handler(request())).status,200);
+    });
+
   } finally { if (previousProvider === undefined) delete process.env.PROFITIA_AUTH_PROVIDER; else process.env.PROFITIA_AUTH_PROVIDER = previousProvider; globalThis.fetch = previousFetch; await pool?.end(); await auditPool?.end(); await owner?.end(); await root.end() }
 })
 

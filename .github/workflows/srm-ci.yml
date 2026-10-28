@@ -87,7 +87,7 @@ jobs:
           fs.writeFileSync(path.join(target,'package.json'),JSON.stringify({
             name:'isolated-supplier-summary-react18',private:true,type:'module',
             dependencies:{'@profitia/srm-xray':`file:${path.join(process.env.GITHUB_WORKSPACE,'packages/srm-xray')}`,
-              react:'18.3.1','react-dom':'18.3.1',tsx:'4.23.12',typescript:'5.9.3',
+              react:'18.3.1','react-dom':'18.3.1',tsx:'4.23.12',typescript:'5.9.3',esbuild:'0.25.12',jsdom:'26.1.0',
               '@types/react':'18.3.29','@types/react-dom':'18.3.7','@types/node':'20.19.43'}
           },null,2));
           fs.writeFileSync(path.join(target,'tsconfig.json'),JSON.stringify({compilerOptions:{
@@ -96,13 +96,14 @@ jobs:
           },include:['*.ts','*.tsx']},null,2));
           fs.copyFileSync('apps/srm/src/server/supplier-module-ports.test.ts',path.join(target,'pure.test.ts'));
           fs.copyFileSync('apps/srm/scripts/supplier-summary-react18.test.tsx',path.join(target,'ui.test.tsx'));
+          fs.copyFileSync('apps/srm/scripts/xray-workflow-react18.test.tsx',path.join(target,'workflow.test.tsx'));
           JS
       - name: Install public packages without credentials or lifecycle execution
         run: npm --prefix "$SUMMARY_HOST_FIXTURE" install --install-links --ignore-scripts --no-audit --no-fund --package-lock=false --registry=https://registry.npmjs.org --userconfig=/dev/null
       - name: Verify pure ports, actual React18 module and type compatibility
         run: |
           cd "$SUMMARY_HOST_FIXTURE"
-          node --import tsx --test --test-concurrency=1 pure.test.ts ui.test.tsx
+          node --import tsx --test --test-concurrency=1 pure.test.ts ui.test.tsx workflow.test.tsx
           node_modules/.bin/tsc --noEmit
       - name: Record bounded public-port proof
         run: |

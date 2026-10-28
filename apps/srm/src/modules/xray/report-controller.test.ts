@@ -213,3 +213,52 @@ for(const mode of ['wrong nip','missing radar','private KYS'] as const)test('inl
  const controller=new SupplierReportController(async()=>{calls++;return Response.json({entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip}},metadata:report})},()=>now)
  await controller.search(nip);assert(controller.getSnapshot().error);assert.equal(controller.getSnapshot().metadata,null);assert.equal(calls,1)
 })
+test('public NIP retry preserves uncertain intent, and a new explicit search remains a new action',async()=>{
+ let sequence=0,fail=true;const keys:string[]=[];
+ const c=new SupplierReportController(async(path,init)=>{
+  if(String(path).endsWith('/report-data'))return Response.json(metadata());
+  keys.push(new Headers(init?.headers).get('idempotency-key')!);if(fail){fail=false;throw Error('uncertain');}
+  return Response.json({entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip}}});
+ },()=>now,()=>`synthetic-public-key-${++sequence}`);
+ await c.search(nip);await c.retrySearch();assert.equal(keys[0],keys[1]);await c.search(nip);assert.notEqual(keys[2],keys[1]);
+});
+test('inactivation rejects a late response while keeping the retry intent',async()=>{
+ let complete!:(r:Response)=>void,calls=0;
+ const c=new SupplierReportController(async()=>{calls++;return new Promise(resolve=>{complete=resolve;});},()=>now);
+ const pending=c.search(nip);c.suspend();complete(Response.json({entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip}}}));await pending;
+ assert.equal(c.getSnapshot().result,null);assert.equal(c.getSnapshot().error,'XRAY_INTERRUPTED');assert.equal(calls,1);
+});
+
+
+test('a current 401/403 removes all previously displayed supplier and private KYS data before another operation can complete',async()=>{
+ let status=200;
+ const c=new SupplierReportController(async(path)=>{
+  if(status!==200)return Response.json({error:'XRAY_ACCESS_DENIED'},{status});
+  if(String(path).endsWith('/search'))return Response.json({entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip}}});
+  return Response.json(metadata());
+ },()=>now);
+ await c.search(nip);assert(c.getSnapshot().result);status=403;await c.refreshMetadata();
+ assert.equal(c.getSnapshot().result,null);assert.equal(c.getSnapshot().metadata,null);assert.equal(c.getSnapshot().kys.data,null);assert.equal(c.getSnapshot().error,'XRAY_ACCESS_DENIED');
+});
+
+
+test('a pending KYS response keeps the logical request key and a completed report starts a new next action',async()=>{
+ let attempt=0;const keys:string[]=[];
+ const c=new SupplierReportController(async(path,init)=>{
+  if(String(path).endsWith('/search'))return Response.json({entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip}}});
+  if(String(path).endsWith('/report-data'))return Response.json(metadata());
+  keys.push(new Headers(init?.headers).get('idempotency-key')!);attempt++;
+  return Response.json({section:attempt===1?{...sampleCard.kys,status:'PENDING',data:null}:{...sampleCard.kys,retrievedAt},privateReport:attempt===1?null:privateRef},{status:attempt===1?202:200});
+ },()=>now);
+ await c.search(nip);await c.fetchKys();assert.equal(c.getSnapshot().kys.status,'PENDING');await c.fetchKys();assert.equal(keys[0],keys[1]);await c.fetchKys();assert.notEqual(keys[2],keys[1]);
+});
+test('private KYS expiry hides its data and availability locally without any backend/provider request',async()=>{
+ let clock=now,calls=0;
+ const c=new SupplierReportController(async(path)=>{calls++;
+  if(String(path).endsWith('/search'))return Response.json({entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip}}});
+  if(String(path).endsWith('/report-data'))return Response.json(metadata());
+  return Response.json({section:{...sampleCard.kys,retrievedAt},privateReport:privateRef});
+ },()=>clock);
+ await c.search(nip);await c.fetchKys();assert(c.getSnapshot().kys.data);const before=calls;clock=new Date(privateRef.retentionUntil);c.expirePrivate();
+ assert.equal(c.getSnapshot().kys.data,null);assert.equal(c.getSnapshot().metadata?.kys.reportAvailable,false);assert.equal(c.getSnapshot().metadata?.kys.freshness.freshness,'EXPIRED');assert.equal(calls,before);
+});
