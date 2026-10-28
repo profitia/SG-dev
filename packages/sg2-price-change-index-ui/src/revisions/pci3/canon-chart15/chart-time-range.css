@@ -1,0 +1,27 @@
+/* CHT-04 · SRM-C74:same blue tokens, relative spacing, 44px-equivalent hit areas. */
+.srm-time-range { --srm-range-height:2.25rem; --srm-range-hit:calc(var(--srm-range-height) + 0.5rem); margin:0.75rem 2.955665% 0; padding-top:0.75rem; border-top:0.0625rem solid var(--line); color:var(--brand-dark); }
+.srm-time-range-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:0.75rem; font-size:0.6875rem; line-height:1.5; }
+.srm-time-range-heading > span { color:var(--muted); }
+.srm-time-range .srm-time-range-reset { min-height:1.875rem; padding:0.25rem 0.625rem; font-size:0.6875rem; line-height:1.5; border-radius:0.5rem; }
+.srm-time-range-track { position:relative; height:var(--srm-range-hit); background:var(--surface,var(--theme-surface,#fff)); border-radius:0.5rem; }
+.srm-time-range-overview { display:block; position:absolute; inset:0.25rem 0; width:100%; height:var(--srm-range-height); overflow:hidden; border-radius:0.375rem; opacity:0.5; }
+.srm-time-range-mask { position:absolute; top:0.25rem; bottom:0.25rem; background:color-mix(in srgb,var(--surface,var(--theme-surface,#fff)) 82%,transparent); pointer-events:none; }
+.srm-time-range .srm-time-range-window { --srm-hover-scale:1; display:block; min-width:0; min-height:0; padding:0; margin:0; touch-action:none; user-select:none; cursor:grab; scale:1; transform:none; filter:none; box-shadow:none; position:absolute; top:0.25rem; bottom:0.25rem; background:color-mix(in srgb,var(--brand-light,var(--theme-raised,#66B2FF)) 8%,transparent); border:0; border-block:0.0625rem solid color-mix(in srgb,var(--brand,var(--theme-accent,#005A9C)) 55%,transparent); border-radius:0; }
+.srm-time-range-window::before, .srm-time-range-window::after { content:''; position:absolute; top:-0.0625rem; bottom:-0.0625rem; width:0.0625rem; background:color-mix(in srgb,var(--action-fill,var(--brand)) 55%,transparent); }
+.srm-time-range-window::before { left:0; transform:translateX(-50%); }
+.srm-time-range-window::after { right:0; transform:translateX(50%); }
+.srm-time-range .srm-time-range-handle { --srm-hover-scale:1; position:absolute; z-index:2; top:0; width:var(--srm-range-hit); height:var(--srm-range-hit); min-width:var(--srm-range-hit); margin:0; padding:0; display:grid; place-items:center; transform:translateX(-50%); border:0; border-radius:50%; background:transparent; color:var(--brand); cursor:ew-resize; touch-action:none; box-shadow:none; filter:none; }
+.srm-time-range .srm-time-range-handle:hover { transform:translateX(-50%); filter:none; background:transparent; }
+.srm-time-range-grip { box-sizing:border-box; width:var(--srm-range-height); height:var(--srm-range-height); display:block; position:relative; background:var(--theme-surface,#fff); border:0.0625rem solid var(--brand); border-radius:50%; box-shadow:0 0.0625rem 0.25rem var(--theme-shadow,#00336614); transform-origin:center; transition:box-shadow 180ms ease-out, background 180ms ease-out; }
+.srm-time-range-handle:hover .srm-time-range-grip, .srm-time-range-handle[data-dragging="true"] .srm-time-range-grip { scale:1; background:var(--blue-soft); box-shadow:0 0 0 0.1875rem var(--blue-soft); }
+.srm-time-range-handle:focus-visible { outline:0.125rem solid var(--brand-light); outline-offset:0.0625rem; }
+.srm-time-range-dates { position:relative; min-height:1.75rem; font-size:0.6875rem; line-height:1.5; font-variant-numeric:tabular-nums; }
+.srm-time-range-date { position:absolute; top:0.5rem; transform:translateX(-50%); text-align:center; white-space:nowrap; pointer-events:none; }
+@media(prefers-reduced-motion:reduce) { .srm-time-range-grip { transition:none; scale:1!important; } }
+
+/* C74:the middle pans; edge handles stay above it and resize independently. */
+.srm-time-range .srm-time-range-window:disabled { cursor:default; opacity:1; }
+.srm-time-range .srm-time-range-window:not(:disabled):hover,
+.srm-time-range .srm-time-range-window[data-dragging="true"] { background:color-mix(in srgb,var(--brand-light,var(--theme-raised,#66B2FF)) 14%,transparent); filter:none; scale:1; transform:none; }
+.srm-time-range .srm-time-range-window[data-dragging="true"] { cursor:grabbing; }
+.srm-time-range .srm-time-range-window:focus-visible { outline:0.125rem solid var(--brand-light); outline-offset:0.125rem; }

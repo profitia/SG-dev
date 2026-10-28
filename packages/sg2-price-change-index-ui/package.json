@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./business": "./src/business.ts"
   },
   "peerDependencies": {
     "react": "^18.3.1",

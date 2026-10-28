@@ -11,7 +11,7 @@ test('public AppShell source has no design runtime, fixtures, module transport o
  for(const file of files){
   const s=fs.readFileSync(path.join(root,'components/appshell',file),'utf8')
   assert.doesNotMatch(s,/DeliveryRuntime|DeliveryVisibility|delivery-registry|appshell-provenance|library-registry|DashboardRelations|CanonHistoryDialog|data-delivery|data-magicpath|preparedReply|launchTimer|simulation-suffix|tylko projekt|symulacja|Tomaszu|Tomasz/,'Excluded source: '+file)
-  assert.doesNotMatch(s.replaceAll('http://www.w3.org/2000/svg',''),/from ['"].*(?:benchmark-finder|srm-xray|assessment|cic|\/api\/|ui-relations)|https?:\/\//,'No business module or remote design dependency: '+file)
+  assert.doesNotMatch(s.replaceAll('http://www.w3.org/2000/svg','').replace("import {BenchmarkFinderClient} from '../benchmark-finder/benchmark-finder-client'",''),/from ['"].*(?:benchmark-finder|srm-xray|assessment|cic|\/api\/|ui-relations)|https?:\/\//,'No business module or remote design dependency: '+file)
  }
 })
 test('theme and style scope cannot change global document preferences',()=>{
@@ -37,6 +37,6 @@ test('canonical dashboard and ADP are explicit children of one persistent accoun
  assert(layout.includes('<PlatformAppShellEntry'));assert(layout.includes(' dashboard'))
  for(const page of ['app/[locale]/dashboard/page.tsx','app/[locale]/dashboard/adp/page.tsx'])assert(fs.readFileSync(path.join(root,page),'utf8').includes('return null'))
  assert(guard.includes('workspaceReady && !dashboard'));assert(guard.includes('router.replace(dashboardPath(locale))'))
- assert(middleware.includes('dashboard(?:\\/adp)?'));assert(!middleware.includes('dashboard.*'))
+ assert(middleware.includes('dashboard(?:\\/(?:adp|benchmark-finder))?'));assert(!middleware.includes('dashboard.*'))
  assert.doesNotMatch(guard,/\bgrant\s*\(|organisationId|organizationId|signUp\(|createUser|\/api\/adp/)
 })

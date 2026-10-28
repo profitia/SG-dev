@@ -9,13 +9,19 @@ export const runtimeAliasWebpack = (config) => {
 	config.resolve ??= {}
 	config.resolve.alias ??= {}
 	config.resolve.alias['@'] = runtimeRoot
+	// The public PCI package ships scoped CSS strings for its native ShadowRoot.
+	config.module ??= { rules: [] }
+	config.module.rules ??= []
+	const cssRules = config.module.rules.find(rule => rule && typeof rule === 'object' && Array.isArray(rule.oneOf))
+	if (cssRules) cssRules.oneOf.unshift({ test: /\.css$/, resourceQuery: /inline/, type: 'asset/source' })
+	else config.module.rules.unshift({ test: /\.css$/, resourceQuery: /inline/, type: 'asset/source' })
 
 	return config
 }
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	transpilePackages: ['@profitia/srm-xray', '@profitia/srm-adp-ui'],
+	transpilePackages: ['@profitia/srm-xray', '@profitia/srm-adp-ui', '@profitia/sg2-price-change-index-ui'],
 	webpack: runtimeAliasWebpack,
 }
 

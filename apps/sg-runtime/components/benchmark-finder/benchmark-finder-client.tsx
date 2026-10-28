@@ -1,10 +1,14 @@
 'use client'
+
+import {PriceChangeIndexLayer} from '../price-change-index/price-change-index-layer'
 import {FinderGlyph} from './visual/benchmark-presentation'
 import {CanonDropdown} from './visual/magicpath/CanonDropdown'
 
 import './benchmark-finder-visual.css'
 import {SpendGuruLogo} from './visual/SpendGuruLogo'
 import {BenchmarkPresentation, BenchmarkThemeSwitch} from './visual/benchmark-presentation'
+
+import { RESULT_PREVIEW_LIMIT, RESULT_BATCH_SIZE, SEARCH_RESULTS_FETCH_LIMIT, nextVisibleResultCount } from './result-window'
 
 import {createDiscoveryRequester} from './discovery-request'
 import { NativeAnalyticsEmbed } from './native-analytics-embed'
@@ -54,6 +58,8 @@ import type {
 
 type BenchmarkFinderClientProps = {
   locale: 'pl' | 'en'
+  active?: boolean
+  assistantOwner?: 'module' | 'host'
   selectionMode?: 'standalone' | 'picker'
   onBenchmarkSelected?: (benchmark: SavedBenchmark) => void
   initialMode?: DiscoveryMode
@@ -187,9 +193,6 @@ class BenchmarkUiError extends Error {
   }
 }
 
-const RESULT_PREVIEW_LIMIT = 5
-const RESULT_BATCH_SIZE = 5
-const SEARCH_RESULTS_FETCH_LIMIT = 25
 const MAX_METADATA_VISIBLE_ITEMS = 40
 const RECENT_SEARCH_LIMIT = 8
 const RECENT_SEARCHES_SESSION_KEY = 'benchmark-finder-recent-searches'
@@ -910,7 +913,12 @@ export function BenchmarkFinderClient({
   initialSearchQuery = '',
   initialAiPrompt = '',
   showPorrDemoPortfolio = false,
+  active = true,
+  assistantOwner = 'module',
 }: BenchmarkFinderClientProps) {
+  const [pciSeed,setPciSeed]=useState<SavedBenchmark|null>(null)
+  const pciLaunching=useRef(false),pciActive=useRef(active);pciActive.current=active
+  useEffect(()=>{if(!active)setPciSeed(null)},[active])
   const persistence = useSg2BrowserPersistencePolicy()
   const identityMode = useSg2IdentityMode()
   const sessionCredential=useSg2SessionCredential()
@@ -1846,13 +1854,15 @@ export function BenchmarkFinderClient({
   }
 
   async function handleStartBuildingCategory(candidate: BenchmarkCandidate) {
-    const existing = saved.find((item) => item.providerSeries.providerSeriesId === candidate.providerSeries.providerSeriesId)
-    const payload = existing ?? await saveCandidate(candidate)
-    if (!payload) {
-      return
-    }
-
-    router.push(`/${locale}/category-builder?seedBenchmarkId=${encodeURIComponent(payload.businessBenchmarkId)}`)
+    if(pciLaunching.current || pciSeed || !pciActive.current)return
+    pciLaunching.current=true
+    try {
+      const existing=saved.find(item=>item.providerSeries.providerSeriesId===candidate.providerSeries.providerSeriesId)
+      const payload=existing??await saveCandidate(candidate)
+      if(!payload || !discoveryActiveRef.current || !pciActive.current)return
+      if(identityMode==='clerk')setPciSeed(payload)
+      else router.push(`/${locale}/category-builder?seedBenchmarkId=${encodeURIComponent(payload.businessBenchmarkId)}`)
+    }finally{pciLaunching.current=false}
   }
 
   async function ensureSemanticContext(candidates: BenchmarkCandidate[]) {
@@ -2083,7 +2093,7 @@ export function BenchmarkFinderClient({
   const presentedResults = visibleResults.filter(candidate=>!onlyForecast||PORR_DEMO_FORECAST_BENCHMARKS.some(item=>item.seriesId===candidate.providerSeries.providerSeriesId)||previewStates[candidate.providerSeries.providerSeriesId]?.analyticsEligibility.forecastPortfolioEnabled).sort((a,b)=>resultSort==='name'?a.displayName.localeCompare(b.displayName,locale):0)
 
   return (
-    <BenchmarkPresentation compact={isPickerMode}><main className={`bf-page min-h-screen${isPickerMode ? ' bf-visual-picker' : ''}`} data-testid="benchmark-finder-page">
+    <BenchmarkPresentation compact={isPickerMode||assistantOwner==='host'}><main className={`bf-page min-h-screen${isPickerMode ? ' bf-visual-picker' : ''}`} data-testid="benchmark-finder-page">
       <div className={`bf-brandbar bf-topbar${isPickerMode ? ' is-picker' : ''}`}>
           {!isPickerMode && <div className="bf-brand"><span><SpendGuruLogo width={148} /></span><span>Market Intelligence</span></div>}
           <div className="bf-header-actions"><BenchmarkThemeSwitch/>            <div className="bf-languages">
@@ -2597,7 +2607,7 @@ export function BenchmarkFinderClient({
                     data-library-component="SRM-C02"
                     type="button"
                     className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-                    onClick={() => setVisibleResultCount((current) => Math.min(current + RESULT_BATCH_SIZE, results.length))}
+                    onClick={() => setVisibleResultCount((current) => nextVisibleResultCount(current, results.length))}
                   >
                     {t('results.showMore')}
                   </button>
@@ -2684,6 +2694,6 @@ export function BenchmarkFinderClient({
           )}
         </section>
       </div></div></div>
-    </main></BenchmarkPresentation>
+    </main>{pciSeed&&<PriceChangeIndexLayer seed={pciSeed} locale={locale} onClose={()=>setPciSeed(null)} onAccessLost={()=>{setPciSeed(null);setSaved([]);setSavedError(locale==='en'?'Session or access unavailable.':'Sesja lub dostęp są niedostępne.')}}/>}</BenchmarkPresentation>
   )
 }

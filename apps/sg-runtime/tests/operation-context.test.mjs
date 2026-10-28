@@ -69,7 +69,7 @@ test('P1B accepts exact1.25 source while preserving all1.24 history and legacy d
  for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,'historical producer '+path)
  for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsSoapSourceCompatibility.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportSourceCompatibility.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests,...receipt.nativeSqlRoundtripAdoption.sourceDigests,...receipt.diagnosticTelemetryAdoption.sourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex'),digest,path)
  for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.applicationSourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.krsSoapSourceCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])).digest('hex'),digest,'historical receiver '+path)
- for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.applicationSourceDigests,...receipt.krsSoapSourceCompatibility.applicationSourceDigests,...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests,...receipt.unmeteredSourceCompatibility.applicationSourceDigests,...receipt.formReportSourceCompatibility.applicationSourceDigests,...receipt.requestQuotaSourceCompatibility.applicationSourceDigests,...receipt.benchmarkPresentationSourceCompatibility.applicationSourceDigests,...receipt.nativeSqlRoundtripAdoption.applicationSourceDigests,...receipt.diagnosticTelemetryAdoption.applicationSourceDigests,...receipt.appShellSourceCompatibility.applicationSourceDigests,...receipt.assistantWidgetSourceCompatibility.applicationSourceDigests,...receipt.adpPresentationSourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
+ for(const[path,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.applicationSourceDigests,...receipt.krsSoapSourceCompatibility.applicationSourceDigests,...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests,...receipt.unmeteredSourceCompatibility.applicationSourceDigests,...receipt.formReportSourceCompatibility.applicationSourceDigests,...receipt.requestQuotaSourceCompatibility.applicationSourceDigests,...receipt.benchmarkPresentationSourceCompatibility.applicationSourceDigests,...receipt.nativeSqlRoundtripAdoption.applicationSourceDigests,...receipt.diagnosticTelemetryAdoption.applicationSourceDigests,...receipt.appShellSourceCompatibility.applicationSourceDigests,...receipt.assistantWidgetSourceCompatibility.applicationSourceDigests,...receipt.adpPresentationSourceCompatibility.applicationSourceDigests,...receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests}))assert.equal(createHash('sha256').update(fs.readFileSync(new URL('../'+path,import.meta.url))).digest('hex'),digest,path)
  for(const flag of['supplierLocationBusinessAdopted','locationAdmissionOptedIn','sql020Installed','liveGrantsChanged','productDeploymentPerformed'])assert.equal(accepted[flag],false,flag)
 })
 
@@ -137,6 +137,8 @@ test('Benchmark presentation renews the current receiver closure without rewriti
   for (const [path, digest] of Object.entries(current.applicationSourceDigests)) {
     const bytes=receipt.nativeSqlRoundtripAdoption.applicationSourceDigests[path]
       ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':apps/sg-runtime/'+path])
+      :receipt.integratedBuyerJourneySourceCompatibility.changedApplicationFiles.includes(path)
+      ?execFileSync('git',['show',receipt.integratedBuyerJourneySourceCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])
       :fs.readFileSync(new URL('../'+path,import.meta.url))
     const observed = createHash('sha256').update(bytes).digest('hex')
     assert.equal(observed, digest, path)
@@ -147,14 +149,16 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     const paths = execFileSync('git', ['ls-tree', '-r', '--name-only', current.previousReceiptSourceSha, '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean)
     assert(paths.length > 0, path)
     const currentPaths = execFileSync('git', ['ls-files', '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean)
-    const additions=receipt.appShellSourceCompatibility.addedBoundaryFiles.filter(file=>file.startsWith(path+'/'))
+    const additions=[...receipt.appShellSourceCompatibility.addedBoundaryFiles,...receipt.integratedBuyerJourneySourceCompatibility.addedBoundaryFiles].filter(file=>file.startsWith(path+'/'))
     assert.deepEqual(currentPaths, [...paths,...additions].sort(), 'Boundary inventory with explicit AppShell release record: ' + path)
-    for(const file of additions)assert.equal(createHash('sha256').update(fs.readFileSync(new URL(file,repository))).digest('hex'),receipt.appShellSourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')],file)
+    for(const file of additions)assert.equal(createHash('sha256').update(fs.readFileSync(new URL(file,repository))).digest('hex'),receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')]??receipt.appShellSourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')],file)
     for (const file of paths) {
       // The later source-compatibility task adds only its CI test command.
       // The presentation acceptance still pins its complete prior package.
       const observed=['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json','apps/dashboard-preview/package-lock.json'].includes(file)
         ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':'+file])
+        :receipt.integratedBuyerJourneySourceCompatibility.changedApplicationFiles.includes(file.replace('apps/sg-runtime/',''))
+        ?execFileSync('git',['show',receipt.integratedBuyerJourneySourceCompatibility.previousReceiptSourceSha+':'+file])
         :fs.readFileSync(new URL(file,repository))
       assert.deepEqual(observed,execFileSync('git',['show',current.previousReceiptSourceSha+':'+file]),'Unchanged protected source: '+file)
     }
