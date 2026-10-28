@@ -12,6 +12,9 @@ type Props = {
   organisationBranding?: 'porr' | null
   onLogout: () => void
   signingOut?: boolean
+  onLaunchAdp?: () => void
+  moduleActive?: boolean
+  moduleWorkspace?: (theme: 'light' | 'dark') => React.ReactNode
 }
 type IconKind = 'chart' | 'search' | 'table' | 'arrow' | 'sun' | 'moon'
 function Icon({ kind, size = 24 }: { kind: IconKind; size?: number }) {
@@ -32,7 +35,7 @@ const applications = [
 ]
 
 /** Presentation only. The host owns verified account data and sign-out. */
-export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false }: Props) {
+export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchAdp, moduleActive = false, moduleWorkspace }: Props) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const en = locale === 'en'
   useEffect(() => {
@@ -44,7 +47,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
   }
   const addressed = salutation ? `, ${salutation}` : ''
   const userGreeting = en ? `Good morning${addressed}.` : `Dzień dobry${addressed}.`
-  return <div className="appshell srm-ui" data-theme={theme} style={{ colorScheme: theme }}>
+  return <div className={`appshell srm-ui${moduleActive ? ' as-module-active' : ''}`} data-theme={theme} style={{ colorScheme: theme }}>
     <a className="as-skip" href="#appshell-main">{en ? 'Skip to applications' : 'Przejdź do aplikacji'}</a>
     <header className="as-header"><div className="as-header-inner">
       <div className="as-brand-group"><div className="as-logo"><SpendGuruLogo width={164} /></div></div>
@@ -59,18 +62,19 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
       </div>
     </div></header>
     <main id="appshell-main" className="as-main" tabIndex={-1}>
-      <div className="as-introduction"><div><h1>{userGreeting}<br className="as-mobile-break" /> {en ? 'Shall we begin?' : 'Zaczynamy?'}</h1><p>{en ? 'Everything you need in your daily work — in one place.' : 'Wszystko, czego potrzebujesz w codziennej pracy — w jednym miejscu.'}</p></div></div>
+      <div className="as-introduction" hidden={moduleActive}><div><h1>{userGreeting}<br className="as-mobile-break" /> {en ? 'Shall we begin?' : 'Zaczynamy?'}</h1><p>{en ? 'Everything you need in your daily work — in one place.' : 'Wszystko, czego potrzebujesz w codziennej pracy — w jednym miejscu.'}</p></div></div>
       <div className="as-workspace">
-        <section className="as-applications" aria-label={en ? 'SpendGuru applications' : 'Aplikacje SpendGuru'}><div className="as-app-stack">
+        <section key="applications" className="as-applications" hidden={moduleActive} aria-label={en ? 'SpendGuru applications' : 'Aplikacje SpendGuru'}><div className="as-app-stack">
           {applications.map(app => <article className="as-app-card" key={app.key}>
             <div className="as-app-top"><div className="as-app-icon"><Icon kind={app.kind} size={28} /></div></div>
             <div className="as-app-copy"><p className="as-eyebrow">{app.category}</p><h3>{app.name}</h3><p>{app.description}</p></div>
             <div className="as-app-footer"><ul className="as-tags" aria-label={en ? 'Application scope' : 'Zakres aplikacji'}>{app.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
-              <button className="as-primary-button as-launch" type="button" disabled aria-label={(en ? 'Launch ' : 'Uruchom ') + app.name}>{en ? 'Launch' : 'Uruchom'}<Icon kind="arrow" size={18} /></button>
+              <button className="as-primary-button as-launch" type="button" disabled={app.key !== 'adp' || !onLaunchAdp} onClick={app.key === 'adp' ? onLaunchAdp : undefined} aria-label={(en ? 'Launch ' : 'Uruchom ') + app.name}>{en ? 'Launch' : 'Uruchom'}<Icon kind="arrow" size={18} /></button>
             </div>
           </article>)}
         </div></section>
-        <section className="as-assistant" aria-label={en ? 'Your assistant' : 'Twój asystent'}>
+        <section key="module" className="as-module-workspace" hidden={!moduleActive}>{moduleWorkspace?.(theme)}</section>
+        <section key="assistant" className="as-assistant" aria-label={en ? 'Your assistant' : 'Twój asystent'}>
           <AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme}/>
         </section>
       </div>

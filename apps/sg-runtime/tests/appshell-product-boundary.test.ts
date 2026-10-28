@@ -30,3 +30,13 @@ test('root and account completion share the same workspace entry while registrat
  assert(entry.includes('presentation="workspace"'));assert(entry.includes('<SelfServiceAuthentication'));assert(entry.includes('/register'))
  assert.doesNotMatch(entry,/benchmark-finder|supplier-intelligence|iframe|\/api\//)
 })
+test('canonical dashboard and ADP are explicit children of one persistent account guard',()=>{
+ const layout=fs.readFileSync(path.join(root,'app/[locale]/dashboard/layout.tsx'),'utf8')
+ const guard=fs.readFileSync(path.join(root,'components/auth/account-landing.tsx'),'utf8')
+ const middleware=fs.readFileSync(path.join(root,'middleware.ts'),'utf8')
+ assert(layout.includes('<PlatformAppShellEntry'));assert(layout.includes(' dashboard'))
+ for(const page of ['app/[locale]/dashboard/page.tsx','app/[locale]/dashboard/adp/page.tsx'])assert(fs.readFileSync(path.join(root,page),'utf8').includes('return null'))
+ assert(guard.includes('workspaceReady && !dashboard'));assert(guard.includes('router.replace(dashboardPath(locale))'))
+ assert(middleware.includes('dashboard(?:\\/adp)?'));assert(!middleware.includes('dashboard.*'))
+ assert.doesNotMatch(guard,/\bgrant\s*\(|organisationId|organizationId|signUp\(|createUser|\/api\/adp/)
+})

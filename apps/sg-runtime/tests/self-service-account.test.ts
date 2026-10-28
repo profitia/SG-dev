@@ -107,7 +107,7 @@ test('new source receipt preserves every previous acceptance and pins the comple
   for (const record of ['storedReadSourceAdoption', 'categoryShellAdoption', 'categoryTransportAdoption', 'categoryIngressAdoption'])
     for (const path of Object.keys(before[record].sourceDigests)) assert(path in current.applicationSourceDigests, path)
   for (const path of Object.keys({...before.supplierLocationSourceCompatibility.applicationSourceDigests,...before.platform125SourceCompatibility.applicationSourceDigests})) assert(path in current.applicationSourceDigests, path)
-  for (const [path, expected] of Object.entries({ ...current.applicationSourceDigests, ...receipt.accountRecheckSourceCompatibility.applicationSourceDigests, ...receipt.krsSoapSourceCompatibility?.applicationSourceDigests, ...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests, ...receipt.unmeteredSourceCompatibility.applicationSourceDigests,...receipt.formReportSourceCompatibility.applicationSourceDigests,...receipt.requestQuotaSourceCompatibility.applicationSourceDigests,...receipt.benchmarkPresentationSourceCompatibility.applicationSourceDigests,...receipt.nativeSqlRoundtripAdoption.applicationSourceDigests,...receipt.diagnosticTelemetryAdoption.applicationSourceDigests,...receipt.appShellSourceCompatibility.applicationSourceDigests,...receipt.assistantWidgetSourceCompatibility.applicationSourceDigests })) {
+  for (const [path, expected] of Object.entries({ ...current.applicationSourceDigests, ...receipt.accountRecheckSourceCompatibility.applicationSourceDigests, ...receipt.krsSoapSourceCompatibility?.applicationSourceDigests, ...receipt.assistantAvatarSourceCompatibility.applicationSourceDigests, ...receipt.unmeteredSourceCompatibility.applicationSourceDigests,...receipt.formReportSourceCompatibility.applicationSourceDigests,...receipt.requestQuotaSourceCompatibility.applicationSourceDigests,...receipt.benchmarkPresentationSourceCompatibility.applicationSourceDigests,...receipt.nativeSqlRoundtripAdoption.applicationSourceDigests,...receipt.diagnosticTelemetryAdoption.applicationSourceDigests,...receipt.appShellSourceCompatibility.applicationSourceDigests,...receipt.assistantWidgetSourceCompatibility.applicationSourceDigests,...receipt.adpPresentationSourceCompatibility.applicationSourceDigests })) {
     const observed = createHash('sha256').update(readFileSync(new URL('../' + path, import.meta.url))).digest('hex')
     assert.equal(observed, expected, path)
     assert.notEqual(createHash('sha256').update('mutated-source').digest('hex'), expected, 'Mutation must not pass: ' + path)
@@ -182,4 +182,15 @@ test('persisted vocative and avatar choice are independent and do not fall back 
   const response = await readSelfServiceAccount(request(), {env:env(), transport:async url => json(salutationPath(url) ? salutation(userA) : avatarPath(url) ? preference(userA,'male') : result())})
   const body=await response.json(); assert.equal(body.salutation.vocative,'Agnieszko'); assert.equal(body.assistantAvatar,'male')
   assert.deepEqual(Object.keys(body.salutation).sort(),['dictionaryVersion','firstName','vocative'])
+})
+
+// The existing central Identity callback remains account/*; the verified client
+// gate owns the final locale dashboard redirect. No new registration grant.
+test('dashboard adoption preserves fixed account completion and read-only Identity contract', () => {
+  const config = readSelfServiceAccountConfiguration(env())!
+  for (const locale of ['pl','en'] as const) for (const mode of ['login','registration'] as const)
+    assert.equal(accountCompletionUrl(config,locale,mode), `http://localhost:3600/account/sg2/account-${locale}/${mode}`)
+  const guard=readFileSync(new URL('../components/auth/account-landing.tsx',import.meta.url),'utf8')
+  assert(guard.includes('workspaceReady && !dashboard'));assert(guard.includes('router.replace(dashboardPath(locale))'))
+  assert.equal((guard.match(/fetch\('/g)||[]).length,1);assert(guard.includes("fetch('/api/account'"))
 })

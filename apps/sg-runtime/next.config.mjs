@@ -15,7 +15,7 @@ export const runtimeAliasWebpack = (config) => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	transpilePackages: ['@profitia/srm-xray'],
+	transpilePackages: ['@profitia/srm-xray', '@profitia/srm-adp-ui'],
 	webpack: runtimeAliasWebpack,
 }
 
