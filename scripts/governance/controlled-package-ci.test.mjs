@@ -84,8 +84,8 @@ test('manifest changes cannot hide private aliases, new pins or additional works
   assertManifestPolicy({dependencies: {...authority.dependencies, '@profitia/platform-contracts': 'file:../../packages/platform-contracts'}}, authority)
   for (const candidate of [{dependencies: {'@profitia/cic-core': '9.0.0'}}, {dependencies: {alias: 'npm:@profitia/cic-evals@1.0.0'}}, {dependencies: {'@profitia/cic-evals': '1.0.0'}}, {...authority, workspaces: ['../*']}, {...authority, overrides: {'@profitia/cic-core': '9'}}]) rejection(() => assertManifestPolicy(candidate, authority))
 })
-test('only the three reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
-  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/platform-contracts', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
+test('only the four reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
+  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/platform-contracts', '@profitia/sg2-price-change-index-ui', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
   const authority = {dependencies: {'@profitia/cic-core': '1.1.1'}}
   for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) {
     for (const resolved of [relative, `file:${relative}`]) {
