@@ -19,6 +19,7 @@ const eligibleCandidateBranch = ref => typeof ref === 'string' && CONTROLLED_CAN
 export const PRIVATE_PACKAGES = Object.freeze(['@profitia/advisory-widget', '@profitia/cic-core', '@profitia/cic-procurement'])
 export const LOCAL_PACKAGES = Object.freeze({
   '@profitia/platform-contracts': '../../packages/platform-contracts',
+  '@profitia/sg2-price-change-index-ui': '../../packages/sg2-price-change-index-ui',
   '@profitia/srm-xray': '../../packages/srm-xray',
   '@profitia/srm-adp-ui': '../../packages/srm-adp-ui',
 })
