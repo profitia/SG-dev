@@ -17,7 +17,7 @@ export type AdpKeyword = Readonly<{id:string;text:string}>;
 export type AdpPresentationModel = Readonly<{
   organizationDisplayName:string;
   summary?:Readonly<{adpStatus:string;adpDetails:string;agreementStatus:string;agreementDetails:string;experienceStatus:string;experienceDetails:string;recommendationStatus:string;recommendationText:string;recommendationSource?:string;recommendationDocumentId?:string;agreementDocumentId?:string}>;
-  form:Readonly<{values:Readonly<Record<string,string>>;roles:readonly string[];answers:Readonly<Record<string,string>>;declarations:readonly string[];privacyText?:string}>;
+  form:Readonly<{values:Readonly<Record<string,string>>;roles:readonly string[];answers:Readonly<Record<string,string>>;declarations:readonly string[];privacyText?:string;archiveNote?:string;documentMetadata?:readonly string[]}>;
   sapId?:string;
   owner:string;
   ownerOptions:readonly string[];

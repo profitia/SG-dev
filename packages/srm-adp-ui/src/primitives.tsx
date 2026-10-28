@@ -6,16 +6,25 @@ export const UiContext = createContext<{props:AdpWorkspaceProps;prefix:string;em
 export function useUi(){const value=useContext(UiContext);if(!value)throw new Error('ADP presentation host is required');return value;}
 export function useLabel(){const {props}=useUi();return (pl:string,en:string)=>props.locale==='en'?en:pl;}
 export function chooseCopy(locale:AdpLocale,pl:string,en:string){return locale==='en'?en:pl;}
-export const Button=forwardRef<HTMLButtonElement,React.ButtonHTMLAttributes<HTMLButtonElement>&{variant?:'primary'|'secondary'|'link'|'danger'}>(function Button({variant='secondary',className='',type='button',...p},ref){return <button {...p} type={type} ref={ref} className={`adp-button adp-button-${variant} ${className}`}/>;});
+export const Button=forwardRef<HTMLButtonElement,React.ButtonHTMLAttributes<HTMLButtonElement>&{variant?:'primary'|'secondary'|'link'|'danger'}>(function Button({variant='secondary',className='',type='button',onClick,...p},ref){return <button {...p} type={type} ref={ref} className={`adp-button adp-button-${variant} ${className}`} onClick={event=>{event.currentTarget.focus({preventScroll:true});onClick?.(event);}}/>;});
 export const Input=forwardRef<HTMLInputElement,React.InputHTMLAttributes<HTMLInputElement>>(function Input({className='',...p},ref){return <input {...p} ref={ref} className={`adp-input ${className}`}/>;});
 export const Textarea=forwardRef<HTMLTextAreaElement,React.TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({className='',...p},ref){return <textarea {...p} ref={ref} className={`adp-input ${className}`}/>;});
 export const Select=forwardRef<HTMLSelectElement,React.SelectHTMLAttributes<HTMLSelectElement>>(function Select(p,ref){const {props}=useUi();return <AdpSelect {...p} disabled={p.disabled||props.active===false} lang={props.locale} ref={ref}/>;});
 export function Heading({children}:{children:React.ReactNode}){return <h2 className="ws-heading">{children}</h2>;}
 export function Flow({children}:{children:React.ReactNode}){
- const flatten=(nodes:React.ReactNode):React.ReactNode[]=>React.Children.toArray(nodes).flatMap(n=>React.isValidElement(n)&&n.type===React.Fragment?flatten((n.props as {children?:React.ReactNode}).children):[n]);
- const groups:React.ReactNode[]=[];let text:React.ReactNode[]=[];
- const flush=()=>{if(text.length){groups.push(<div className="ws-text-stack" key={`text-${groups.length}`}>{text}</div>);text=[];}};
- for(const n of flatten(children)){const e=React.isValidElement(n)?n:null;const h=!!e&&(e.type===Heading||typeof e.type==='string'&&/^h[1-6]$/.test(e.type));const copy=h||!!e&&typeof e.type==='string'&&['p','span','strong','small'].includes(e.type);if(copy){if(h)flush();text.push(n);}else{flush();groups.push(<React.Fragment key={`block-${groups.length}`}>{n}</React.Fragment>);}}flush();return <div className="ws-flow">{groups}</div>;
+ type Entry={node:React.ReactNode;key:string};
+ const flatten=(nodes:React.ReactNode,prefix=''):Entry[]=>React.Children.toArray(nodes).flatMap((node,i)=>{
+  const key=prefix+String(React.isValidElement(node)?node.key??i:i);
+  return React.isValidElement(node)&&node.type===React.Fragment?flatten((node.props as {children?:React.ReactNode}).children,`${key}/`):[{node,key}];
+ });
+ const groups:React.ReactNode[]=[];let text:Entry[]=[];
+ const flush=()=>{if(text.length){groups.push(<div className="ws-text-stack" key={`text-${text[0].key}`}>{text.map(e=><React.Fragment key={e.key}>{e.node}</React.Fragment>)}</div>);text=[];}};
+ for(const {node,key} of flatten(children)){
+  const e=React.isValidElement(node)?node:null;const heading=!!e&&(e.type===Heading||typeof e.type==='string'&&/^h[1-6]$/.test(e.type));
+  const copy=heading||!!e&&typeof e.type==='string'&&['p','span','strong','small'].includes(e.type);
+  if(copy){if(heading)flush();text.push({node,key});}else{flush();groups.push(<React.Fragment key={`block-${key}`}>{node}</React.Fragment>);}
+ }
+ flush();return <div className="ws-flow">{groups}</div>;
 }
 export function Box({children,className=''}:{children:React.ReactNode;className?:string}){return <section className={`ws-box ${className}`}><Flow>{children}</Flow></section>;}
 export function Empty({children}:{children:React.ReactNode}){return <div className="ws-empty">{children}</div>;}

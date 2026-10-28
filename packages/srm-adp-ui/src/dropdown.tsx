@@ -29,6 +29,7 @@ function choicesOf(children: React.ReactNode, group?: string, disabled = false):
 const normalize = (value: string) => value.toLocaleLowerCase('pl').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
 export const AdpSelect = forwardRef<HTMLSelectElement, Props>(function AdpSelect(props, forwardedRef) {
     const { children, value, defaultValue, onChange, className = '', style, disabled, ...nativeProps } = props;
+    const copy = (pl:string,en:string) => props.lang==='en'?en:pl;
     const choices = useMemo(() => choicesOf(children), [children]);
     const [localValue, setLocalValue] = useState(String(defaultValue ?? choices.find(x => !x.disabled)?.value ?? ''));
     const selectedValue = value === undefined ? localValue : String(value);
@@ -36,7 +37,7 @@ export const AdpSelect = forwardRef<HTMLSelectElement, Props>(function AdpSelect
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [active, setActive] = useState('');
-    const [label, setLabel] = useState(props['aria-label'] ?? 'Wybierz wartość');
+    const [label, setLabel] = useState(props['aria-label'] ?? copy('Wybierz wartość','Select a value'));
     const [position, setPosition] = useState<React.CSSProperties>({});
     const native = useRef<HTMLSelectElement | null>(null);
     const trigger = useRef<HTMLButtonElement>(null);
@@ -60,8 +61,8 @@ export const AdpSelect = forwardRef<HTMLSelectElement, Props>(function AdpSelect
         const parent = trigger.current?.closest('label');
         const copy = parent?.cloneNode(true) as HTMLElement | undefined;
         copy?.querySelectorAll('select,button,.srm-dropdown').forEach(x => x.remove());
-        setLabel(props['aria-label'] ?? copy?.textContent?.trim() ?? 'Wybierz wartość');
-    }, [props['aria-label']]);
+        setLabel(props['aria-label'] ?? copy?.textContent?.trim() ?? (props.lang==='en'?'Select a value':'Wybierz wartość'));
+    }, [props['aria-label'],props.lang]);
     useEffect(() => {
         if (disabled)
             setOpen(false);
@@ -204,7 +205,7 @@ export const AdpSelect = forwardRef<HTMLSelectElement, Props>(function AdpSelect
                 show();
             }
         }}>
-      <span><>{selected?.label ?? 'Wybierz wartość'}</></span>
+      <span><>{selected?.label ?? copy('Wybierz wartość','Select a value')}</></span>
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg>
     </button>
     {open && createPortal(<div ref={popup} className="srm-dropdown-popup" style={position} onKeyDown={navigate} onBlur={event => {
@@ -217,7 +218,7 @@ export const AdpSelect = forwardRef<HTMLSelectElement, Props>(function AdpSelect
                 setQuery(event.target.value);
                 if (list.current)
                     list.current.scrollTop = 0;
-            }} placeholder="Filtruj wartości…" aria-label={`Filtruj: ${label}`} role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls={listId} aria-activedescendant={activeIndex >= 0 ? `${uid}-option-${activeIndex}` : undefined}/>
+            }} placeholder={copy('Filtruj wartości…','Filter values…')} aria-label={`${copy('Filtruj','Filter')}: ${label}`} role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls={listId} aria-activedescendant={activeIndex >= 0 ? `${uid}-option-${activeIndex}` : undefined}/>
       </div>
       <div ref={list} id={listId} role="listbox" aria-label={label} className="srm-dropdown-list">
         {visible.map((choice, index) => <button type="button" key={choice.value} id={`${uid}-option-${index}`} role="option" tabIndex={-1} aria-selected={choice.value === selectedValue} aria-disabled={choice.disabled || undefined} className="srm-dropdown-option" data-active={choice.value === active && !choice.disabled} data-empty={choice.value === ''} title={choice.label} onPointerMove={() => {
@@ -227,10 +228,10 @@ export const AdpSelect = forwardRef<HTMLSelectElement, Props>(function AdpSelect
           <span>{choice.group && <small><>{choice.group}</></small>}<>{choice.label}</></span>
           {choice.value === selectedValue && <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3 3 7-7"/></svg>}
         </button>)}
-        {!visible.length && <div className="srm-dropdown-empty" role="status">Brak pasujących wartości</div>}
+        {!visible.length && <div className="srm-dropdown-empty" role="status">{copy('Brak pasujących wartości','No matching values')}</div>}
       </div>
       {(query || matches.length > 40) && <div className="srm-dropdown-footer" role="status">
-        <>{matches.length > 40 ? `Pokazano pierwsze 40 z ${matches.length} pasujących wartości. Dopisz więcej znaków, aby zawęzić listę.` : `${matches.length} z ${choices.length} pozycji`}</>
+        <>{matches.length > 40 ? copy(`Pokazano pierwsze 40 z ${matches.length} pasujących wartości. Dopisz więcej znaków, aby zawęzić listę.`,`Showing the first 40 of ${matches.length} matching values. Type more to narrow the list.`) : copy(`${matches.length} z ${choices.length} pozycji`,`${matches.length} of ${choices.length} values`)}</>
       </div>}
     </div>, trigger.current?.closest('dialog') || trigger.current?.closest('.sg-adp-ui') || trigger.current!.parentElement!)}
   </span>;

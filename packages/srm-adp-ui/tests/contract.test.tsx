@@ -33,3 +33,8 @@ test('mounting and inactive states are actual lifecycle inputs rather than publi
  const p=props();for(const state of ['loading','error','unavailable'] as const){const html=renderToStaticMarkup(<AdpWorkspace {...p} state={state}/>);assert.doesNotMatch(html,/KARTA DOSTAWCY|type="checkbox"/);}
  const html=renderToStaticMarkup(<AdpWorkspace {...p} active={false}/>);assert.match(html,/hidden=""/);
 });
+test('approved document guidance and metadata are explicit host projections rather than discarded product content',()=>{
+ const p=props(),model={...p.model,form:{...p.model.form,archiveNote:'Wytyczne dokumentu klienta',privacyText:'Informacja o dokumencie',documentMetadata:['Dokument klienta · wersja testowa','Strona testowa']}};
+ const html=renderToStaticMarkup(<AdpWorkspace {...p} model={model} navigation={{view:'data',dataArea:'adp',section:'declarations'}}/>);
+ for(const copy of ['Wytyczne dokumentu klienta','Dokument klienta · wersja testowa','Strona testowa'])assert(html.includes(copy));
+});

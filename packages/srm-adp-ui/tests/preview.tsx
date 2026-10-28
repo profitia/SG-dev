@@ -3,10 +3,14 @@ import {createRoot} from 'react-dom/client';
 import {AdpWorkspace,FIELD_DEFINITIONS} from '../src/index';
 import type {AdpLocalEvent,AdpNavigation,AdpPresentationModel,AdpTheme} from '../src/types';
 
+const approvedDocumentCopy={declarations:[
+ 'Znamy Kodeks postępowania dla partnerów biznesowych (https://porr-group.com/group/einkauf) i uznajemy oraz popieramy zawarte w nim wartości i zasady.',
+ 'Potwierdzamy, że w naszym łańcuchu dostaw nie ma pracy dzieci i zobowiązujemy się do przestrzegania zasad UN Global Compact (https://unglobalcompact.org/what-is-gc/mission/principles) w obszarach praw człowieka, pracy, środowiska i przeciwdziałania korupcji.'
+],privacyText:"(Proszę NIE wypełniać odręcznie. Szczegóły na temat przetwarzania danych można znaleźć pod adresem: https://www.porr-group.com/datenschutz)",archiveNote:"Zewnętrzne i wewnętrzne podpisanie dokumentu w systemie SAP z podaniem daty wygaśnięcia (data podpisania +3 lata lub +1 rok w przypadku dostawców o znaczeniu istotnym) należy zarchiwizować. W przypadku rezygnacji z wewnętrznego podpisania archiwizacja w systemie SAP stanowi potwierdzenie wewnętrznej kontroli przeprowadzonej przez osobę odpowiedzialną za archiwizację.",documentMetadata:["Dokumentacja zarządzania(Public) · FC Główny Arkusz Danych Podstawowych · GP00000", "13/03/2026 10:00:57 · FC_SP02_01_001015_GP00000_pl · Bayer Philip/Mroczkowska Magdalena · 1/1"]};
 export function makeModel(filled=false):AdpPresentationModel{
  const values:Record<string,string>=Object.fromEntries(FIELD_DEFINITIONS.map(f=>[f.id,'']));
  if(filled)Object.assign(values,{name:'Alfa — karta testowa',country:'Polska',terms:'0',scope:'Pierwszy wiersz\nDrugi wiersz'});
- return {organizationDisplayName:'Organizacja testowa',form:{values,roles:[],answers:{},declarations:['Oświadczenie testowe A','Oświadczenie testowe B'],privacyText:'Informacja testowa o przetwarzaniu danych.'},owner:'',ownerOptions:['Opiekun testowy 1','Opiekun testowy 2'],categoryOptions:['Kategoria testowa A','Kategoria testowa B'],categories:[],categorySuggestions:[],contacts:[],locations:[],relations:[],activities:[],documents:[],projects:[],turnover:[],ratings:[],warning:null,warningHistory:[],plan:{year:'2026',goal:'',result:''},keywords:[]};
+ return {organizationDisplayName:'Organizacja testowa',form:{values,roles:[],answers:{},...approvedDocumentCopy},owner:'',ownerOptions:['Opiekun testowy 1','Opiekun testowy 2'],categoryOptions:['Kategoria testowa A','Kategoria testowa B'],categories:[],categorySuggestions:[],contacts:[],locations:[],relations:[],activities:[],documents:[],projects:[],turnover:[],ratings:[],warning:null,warningHistory:[],plan:{year:'2026',goal:'',result:''},keywords:[]};
 }
 const localId=()=>`local-${crypto.randomUUID()}`;
 export function reducePreview(m:AdpPresentationModel,e:AdpLocalEvent):AdpPresentationModel{
