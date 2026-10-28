@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.29.0",
+  "manifestVersion": "3.30.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -70,6 +70,7 @@
     {"id": "developer-lifecycle-v1", "version": "1.0", "path": "Canon/v1.0-developer-lifecycle-specification.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Governance Source Layer", "dependsOn": [], "supersededBy": "developer-lifecycle"},
     {"id": "repository-routing-v1", "version": "1.0", "path": "Canon/v1.0-repository-routing-and-module-ownership-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Architecture Governance", "dependsOn": [], "supersededBy": "repository-routing"},
     {"id": "srm-execution-adapter-v1", "version": "1.0", "path": "Canon/v1.0-srm-mandatory-task-wrapper.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SRM Runtime", "dependsOn": [], "supersededBy": "srm-execution-adapter"},
-    {"id": "vsc-execution-canon", "version": "1.0", "path": "Canon/v1.0-vsc-mandatory-execution-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Governance Source Layer", "dependsOn": [], "supersededBy": "agent-execution-canon"}
+    {"id": "vsc-execution-canon", "version": "1.0", "path": "Canon/v1.0-vsc-mandatory-execution-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Governance Source Layer", "dependsOn": [], "supersededBy": "agent-execution-canon"},
+    {"id": "srm-adp-presentation-mounting-amendment", "version": "1.1", "path": "Canon/v1.1-srm-adp-presentation-mounting-amendment.md", "status": "ACTIVE", "loadOrder": 390, "owner": "SRM Runtime", "appliesTo": ["SG2", "SRM", "ARCHITECTURE"], "dependsOn": ["platform-appshell-business-and-architecture-canon", "srm-architecture-component-placement", "repository-routing", "shared-development-contract-integration"]}
   ]
 }
