@@ -7,7 +7,7 @@ import { COMPANY_IDENTITY_VERSION } from "./company-continuity";
 import { isCompanyReportRestricted } from "@profitia/srm-xray";
 import { readSupplierRegistrationStatus, readCompanyRegistration } from "./company-activity";
 import { atLookupStage, logProviderOutcome, providerExceptionCode } from "./lookup-diagnostics";
-import type { SectionEnvelope, SupplierXRayCard } from "@profitia/srm-xray";
+import type { SectionEnvelope, SupplierXRayCard,GeneralCompanyData,FinancialData } from "@profitia/srm-xray";
 import { emptyCard } from "../demo/fixture";
 import { fetchMgbiGeneral, type CompanyIdentifier } from "./mgbi-general";
 import { fetchMgbiFinancial, reprojectFinancialArchive, type FinancialSourceFact } from "./mgbi-financial";
@@ -128,6 +128,10 @@ export type XrayCompanyPorts = {
   enrichCompanyPkd: typeof enrichCompanyPkd;
   persistSection: typeof persistSection;
   saveSharedCompany: typeof saveSharedCompany;
+  prepareReadyReport?: typeof saveSharedCompany;
+  persistCompanySections?:(organizationId:string,lookup:{supplierId:string;requestId:string},
+    general:Readonly<{envelope:SectionEnvelope<GeneralCompanyData>;errorCode:string|null}>,
+    financial:Readonly<{envelope:SectionEnvelope<FinancialData>;errorCode:string|null;facts:FinancialSourceFact[];sourceData?:FinancialData}>)=>Promise<{generalSnapshotId:string|null;financialSnapshotId:string|null}>;
   reprojectFinancialArchive: typeof reprojectFinancialArchive;
   enrichMsrFinancial: typeof enrichMsrFinancial;
   fetchMgbiGeneral: typeof fetchMgbiGeneral;
@@ -149,8 +153,8 @@ const companyPortNames = Object.freeze(Object.keys(legacyCompanyPorts).sort());
  * no mutable request, actor, lease or transaction is retained between calls. */
 export function createXrayCompanyLookup(input: XrayCompanyPorts) {
   if (typeof window !== "undefined" || !input || Object.getPrototypeOf(input) !== Object.prototype
-    || Object.keys(input).filter(key=>key!=='prepareFinancialInventory').sort().join(",") !== companyPortNames.join(",")
-    || Reflect.ownKeys(input).length !== companyPortNames.length+Number(Object.hasOwn(input,'prepareFinancialInventory'))
+    || Object.keys(input).filter(key=>!['prepareFinancialInventory','prepareReadyReport','persistCompanySections'].includes(key)).sort().join(",") !== companyPortNames.join(",")
+    || Reflect.ownKeys(input).length !== companyPortNames.length+Number(Object.hasOwn(input,'prepareFinancialInventory'))+Number(Object.hasOwn(input,'prepareReadyReport'))+Number(Object.hasOwn(input,'persistCompanySections'))
     || Object.values(Object.getOwnPropertyDescriptors(input)).some(d => !("value" in d) || typeof d.value !== "function")) {
     throw new TypeError("Complete explicit company report ports required");
   }
@@ -211,6 +215,8 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
     const financialSnapshotId = await ports.persistSection(organizationId,lookup,"financial",savedFinancial,msr.errorCode,msr.facts,undefined,sourceData,"CACHE");
     if (msr.msrChanged || reconstructed || JSON.stringify(savedFinancial)!==JSON.stringify(cached.financial)) {
       await ports.saveSharedCompany(organizationId,request.identifier.value,{general,financial:savedFinancial,generalSnapshotId:null,financialSnapshotId,facts:msr.facts,preserveGeneral:true});
+    } else if(ports.prepareReadyReport){
+      await ports.prepareReadyReport(organizationId,request.identifier.value,{general,financial:savedFinancial,generalSnapshotId:null,financialSnapshotId,facts:[],preserveGeneral:true});
     }
     const financial = savedFinancial.data
       ? { ...savedFinancial, data: { ...savedFinancial.data, indicators: await ports.refreshFinancialIndicators(organizationId, request.identifier.value, savedFinancial.data) } }
@@ -258,8 +264,12 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
     financial.section=applyFinancialDocumentMetadata(financial.section,documents,general.section.data?.registryHistory);
     if(financial.sourceData) financial.sourceData=applyFinancialDocumentMetadata({...financial.section,data:financial.sourceData},documents,general.section.data?.registryHistory).data ?? undefined;
   }
-  const generalSnapshotId = await ports.persistSection(organizationId, lookup, "general", general.section, general.errorCode);
-  const financialSnapshotId = isCompanyReportRestricted(general.section.data) ? null : await ports.persistSection(organizationId, lookup, "financial", financial.section, financial.errorCode, financial.facts, undefined, financial.sourceData);
+  const persisted=ports.persistCompanySections&&!isCompanyReportRestricted(general.section.data)
+    ?await ports.persistCompanySections(organizationId,lookup,{envelope:general.section,errorCode:general.errorCode},
+      {envelope:financial.section,errorCode:financial.errorCode,facts:financial.facts,...(financial.sourceData?{sourceData:financial.sourceData}:{})})
+    :{generalSnapshotId:await ports.persistSection(organizationId,lookup,"general",general.section,general.errorCode),
+      financialSnapshotId:isCompanyReportRestricted(general.section.data)?null:await ports.persistSection(organizationId,lookup,"financial",financial.section,financial.errorCode,financial.facts,undefined,financial.sourceData)}
+  const {generalSnapshotId,financialSnapshotId}=persisted;
   await atLookupStage("catalog_persistence", () => ports.saveSharedCompany(organizationId, request.identifier.value, {
     general: general.section, financial: financial.section,
     generalSnapshotId, financialSnapshotId, facts: financial.facts,

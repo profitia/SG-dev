@@ -41,8 +41,8 @@ const core=name=>fs.readFileSync(new URL('../../../packages/platform-contracts/m
 const own=name=>fs.readFileSync(new URL('../db/private-store/'+name,import.meta.url),'utf8')
 
 export async function supplierBusinessFixture(t,full=false,probe,options={}){
- if(Object.keys(options).some(k=>!['databaseName','companySourcePolicy'].includes(k))||options.databaseName!==undefined&&options.databaseName!=='platform_private'
-  ||options.companySourcePolicy!==undefined&&options.companySourcePolicy!=='MGBI_ONLY')throw Error('Only explicit disposable private-store test options are allowed')
+ if(Object.keys(options).some(k=>!['databaseName','companySourcePolicy','privateAcquisition'].includes(k))||options.databaseName!==undefined&&options.databaseName!=='platform_private'
+  ||options.companySourcePolicy!==undefined&&options.companySourcePolicy!=='MGBI_ONLY'||options.privateAcquisition!==undefined&&options.privateAcquisition!==true)throw Error('Only explicit disposable private-store test options are allowed')
  const mgbiOnly=options.companySourcePolicy==='MGBI_ONLY'
  const DATABASE=options.databaseName??'srm_service_business_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
@@ -69,6 +69,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   await owner.query(`REVOKE ALL ON DATABASE ${DATABASE} FROM PUBLIC;GRANT CONNECT ON DATABASE ${DATABASE} TO ${FOREGROUND},${EXECUTOR};GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
   const controlled=async work=>{await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner');try{const v=await work();await owner.query('COMMIT');return v}catch(e){await owner.query('ROLLBACK');throw e}}
   const sources=[['001-internal-access.sql','profitia_access.installation'],['002-module-scope.sql','profitia_modules.installation'],['003-module-audit.sql','profitia_modules.audit_installation'],['005-service-read.sql','profitia_services.installation'],['006-request-reservation.sql','profitia_requests.installation'],['007-delegated-jobs.sql','profitia_jobs.installation'],['010-external-request-admission.sql','profitia_requests.external_installation'],['011-request-continuation.sql','profitia_request_phases.installation'],['013-supplier-delegation.sql','profitia_supplier_jobs.installation'],['014-delegated-private-phases.sql','profitia_delegated_phases.installation'],['015-delegated-private-inspection.sql','profitia_request_inspection.installation'],['016-delegated-native-work.sql','profitia_request_work.installation']]
+  if(options.privateAcquisition)sources.push(['017-additional-request-operations.sql','profitia_requests.operation_installation'])
   const identity=randomUUID(),bindingId=randomUUID(),serviceId=randomUUID()
   await controlled(async()=>{
    for(const[name,table]of sources){const sql=core(name);await owner.query(sql)
@@ -189,7 +190,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    await owner.query("INSERT INTO srm.provider_attempts(organization_id,id,request_id,section,provider,attempt_no,status,completed_at) VALUES($1,$2,$3,'kys','VERCLY',1,'SUCCESS',now())",[A,legacyAttempt,legacyLookup])
    await owner.query("INSERT INTO srm.source_snapshots(organization_id,id,attempt_id,supplier_id,section,payload_json,payload_sha256,data_class,retrieved_at) VALUES($1,$2,$3,$4,'kys','{}',$5,'KYS_REDACTED',now())",[A,legacySnapshot,legacyAttempt,legacySupplier,'d'.repeat(64)])
    await owner.query("INSERT INTO srm.section_projections(organization_id,supplier_id,snapshot_id,section,projection_version,data_json) VALUES($1,$2,$3,'kys',1,'{}')",[A,legacySupplier,legacySnapshot])
-   await owner.query("INSERT INTO srm.catalog_kys_reports(nip,entity_type,report_json,report_sha256,retrieved_at,retention_until) VALUES($1,'COMPANY','{}',$2,now(),now()+interval '1 day')",[NIP,'e'.repeat(64)])
+   if(!options.privateAcquisition)await owner.query("INSERT INTO srm.catalog_kys_reports(nip,entity_type,report_json,report_sha256,retrieved_at,retention_until) VALUES($1,'COMPANY','{}',$2,now(),now()+interval '1 day')",[NIP,'e'.repeat(64)])
    await owner.query('SET LOCAL ROLE profitia_access_owner')
    for(const[name,table]of[['002-supplier-business-phases.sql','srm.supplier_business_installation'],['003-named-supplier-interest.sql','srm.named_interest_installation']]){await owner.query(own(name));await owner.query(`INSERT INTO ${table} VALUES(true,'1.0.0',$1,$2)`,[hash(own(name)),'b'.repeat(40)])}
 
@@ -218,6 +219,12 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
     assert.equal((await owner.query("SELECT pg_get_functiondef('srm.supplier_business_phase(uuid,text,uuid,text[])'::regprocedure) value")).rows[0].value,before)
    })
    await owner.query(own('008-supplier-native-work.sql'));await owner.query("INSERT INTO srm.supplier_work_installation VALUES(true,'1.0.0',$1,$2)",[hash(own('008-supplier-native-work.sql')),'e'.repeat(40)])
+   if(options.privateAcquisition){
+    for(const[name,table]of[['010-supplier-sensitive-work.sql','srm.supplier_sensitive_installation'],['011-supplier-private-acquisition.sql','srm.supplier_private_acquisition_installation'],['012-supplier-web-identity.sql','srm.supplier_web_installation']]){
+     await owner.query(own(name));await owner.query(`INSERT INTO ${table} VALUES(true,'1.0.0',$1,$2)`,[hash(own(name)),'f'.repeat(40)])
+    }
+   }
+   if(options.privateAcquisition)for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION srm.sensitive_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text),srm.sensitive_cache_scope(uuid,text,text,timestamptz,timestamptz,text),srm.sensitive_installation_descriptor(),srm.sensitive_human_snapshot(uuid,uuid),srm.private_supplier_metadata(uuid,text,text,text,uuid),srm.private_jdg_activity_metadata(uuid,text),srm.web_installation_descriptor(),srm.web_subject_row(text,uuid,uuid,uuid,text,text),srm.web_human_row(uuid,text,text,uuid,timestamptz),srm.web_cache_scope(uuid,text,text,text),srm.private_web_metadata(uuid,text,text) TO ${role}`)
    await owner.query('SAVEPOINT inventory_installation')
    await owner.query(own('023-financial-inventory-work.sql'))
    await owner.query('ROLLBACK TO SAVEPOINT inventory_installation');await owner.query('RELEASE SAVEPOINT inventory_installation')
@@ -685,7 +692,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    assert.equal((await nativeStore.pkd(s,partial)).mainPkdDescription,'SYNTHETIC_ACTIVITY')
    const projected=await nativeStore.reproject(s);assert(projected,'Existing current archive must be visible to pure reprojection');assert(projected.section.data.periods.length>0)
    const units=(await owner.query("SELECT DISTINCT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE phase='OUTCOME' AND event ? 'requestWork'")).rows.map(row=>row.unit)
-   assert.deepEqual(units.sort(),Object.keys(SUPPLIER_NATIVE_WORK_UNITS).sort())
+   assert.deepEqual(units.sort(),Object.keys(SUPPLIER_NATIVE_WORK_UNITS).filter(unit=>unit!=='SRM_STORE_COMPANY').sort())
   })
   await t.test('KRS General retains actual provider/evidence, rejects Financial and unscoped writes, and preserves MGBI history',async()=>{
    const s=selection(await parent(A,NIP)),g=mapMgbiGeneralRecords([{id:'synthetic-krs-general',identifiers:{pl_nip:NIP,pl_krs:'0000028860'},content:{current_excerpt:{dane:{dzial1:{danePodmiotu:{nazwa:'SYNTHETIC_KRS_GENERAL'}}}}}}],{type:'NIP',value:NIP},new Date().toISOString()).section

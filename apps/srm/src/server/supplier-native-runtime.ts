@@ -1,3 +1,4 @@
+import readyTargets from '../../deployment/ready-report-targets.json'
 import operationAcceptance from '../../operation-integration.json'
 import {readCompanySourcePolicy,type CompanySourcePolicy} from './company-source-policy'
 import {srmKrsPilotTarget} from './krs-native-runtime'
@@ -13,7 +14,7 @@ import mgbiPolicy from '../../deployment/mgbi-unmetered-policy.json'
 import privateTargets from '../../deployment/private-runtime-targets.json'
 type Env=Readonly<Record<string,string|undefined>>
 export type Configuration=Readonly<{base:PrivateConfiguration;configurationVersion:string;jobsUrl:string;providerSourceUrl:string;corporateSourceUrl:string;
- companySourcePolicy?:CompanySourcePolicy;
+ readyReportSchemaDigest?:string;readyCompanyWorkBoundaryDigest?:string;companySourcePolicy?:CompanySourcePolicy;
  registryEnvelopeBoundaryDigest?:string;
  financialInventoryBoundaryDigest?:string;
  runtimeRoles?:typeof targets.runtimeRoles;mgbiKey:string;mgbiScheme:'raw'|'bearer';ceidgKey:string;verclyKey:string;verclyOrigin:string;referenceSecret:string}>
@@ -34,6 +35,8 @@ export function readSrmNativeSupplierConfiguration(base:PrivateConfiguration,env
  if(!['true','false'].includes(enabled))return unavailable()
  if(enabled==='false')return undefined
  const pilot=srmKrsPilotTarget(env)
+ const ready=env.PROFITIA_READY_REPORT_ENABLED??'false'
+ if(!['true','false'].includes(ready)||ready==='true'&&(pilot||env.RENDER_SERVICE_ID!==readyTargets.serviceId||companySourcePolicy!=='MGBI_ONLY'))return unavailable()
  if(typeof window!=='undefined'||base.provider!=='clerk'||base.application.environment!=='development'
   ||base.binding.projectId!==targets.projectId||base.binding.branchId!==targets.branchId||base.binding.databaseName!==targets.databaseName
   ||env.RENDER_SERVICE_ID!==(pilot?.render.serviceId??targets.serviceId)||env.PROFITIA_SUPPLIER_API_CONFIGURATION_VERSION!==targets.configurationVersion
@@ -47,7 +50,7 @@ export function readSrmNativeSupplierConfiguration(base:PrivateConfiguration,env
  let origin:URL;try{origin=new URL(env.VERCLY_API_BASE_URL??'')}catch{return unavailable()}
  if(!mgbiKey||!ceidgKey||!verclyKey||env.MGBI_AUTH_SCHEME!==undefined&&!['raw','bearer'].includes(env.MGBI_AUTH_SCHEME)
   ||origin.protocol!=='https:'||origin.pathname!=='/'||origin.port||origin.username||origin.password||origin.search||origin.hash)return unavailable()
- return Object.freeze({base,...(pilot?{runtimeRoles}:{}),...(companySourcePolicy?{companySourcePolicy}:{}),configurationVersion:targets.configurationVersion,jobsUrl,providerSourceUrl,corporateSourceUrl,
+ return Object.freeze({base,...(ready==='true'?{readyReportSchemaDigest:readyTargets.schemaDigest,readyCompanyWorkBoundaryDigest:readyTargets.workSchemaDigest,financialInventoryBoundaryDigest:'c8d5ac31f2e55fb1d388af708178ca28771f66dda7b76938d6a9dc69801f6664'}:{}),...(pilot?{runtimeRoles}:{}),...(companySourcePolicy?{companySourcePolicy}:{}),configurationVersion:targets.configurationVersion,jobsUrl,providerSourceUrl,corporateSourceUrl,
   mgbiKey,mgbiScheme:env.MGBI_AUTH_SCHEME==='bearer'?'bearer':'raw',ceidgKey,verclyKey,verclyOrigin:origin.origin,referenceSecret:env.SRM_DEMO_SESSION_SECRET})
 }
 type Pools={pool:pg.Pool;auditPool:pg.Pool;jobsPool:pg.Pool;jobsAudit:pg.Pool;sourcePool:pg.Pool;sourceAudit:pg.Pool;corporatePool:pg.Pool;corporateAudit:pg.Pool;clerk:ClerkIdentityClient}
@@ -82,7 +85,7 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  const corporateApplication=serviceApplication('srm-corporate-source',version,['knowledge_ingestion'],['knowledge.ingest'])
  const corporate={application:corporateApplication,binding:{...sourceOptions.binding,applicationId:corporateApplication.appId,
   role:roles.corporateSource,deploymentId:corporateApplication.deploymentId},pool:pools.corporatePool,auditPool:pools.corporateAudit,
-  publicationSchemaDigest:targets.corporatePublicationSchemaDigest}
+  publicationSchemaDigest:targets.corporatePublicationSchemaDigest,...(config.readyReportSchemaDigest?{readyReportSchemaDigest:config.readyReportSchemaDigest}:{})}
  const requestBase={...human,requestLedger:ledger,commandBoundaryDigest:own['001-supplier-requests.sql']}
  const privateFlow=(entityType:'COMPANY'|'JDG',section:'kys'|'jdg')=>{
   const privateAcquisition={entityType,section,boundaryDigest:own['011-supplier-private-acquisition.sql']}
@@ -102,12 +105,14 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  }
  return createSrmSupplierApi({
   company:{request:{...requestBase,application:app(['supplier.report.refresh'])},
+   ...(config.readyReportSchemaDigest?{classification:{apiKey:config.ceidgKey,provider}}:{}),
    lookup:{work:{...workBase,job:publicJob,workBusinessBoundaryDigest:own['008-supplier-native-work.sql'],...(reportAdmission?{reportAdmission}:{})},namedInterestBoundaryDigest:own['003-named-supplier-interest.sql'],source,corporate,
     ...(config.companySourcePolicy?{companySourcePolicy:config.companySourcePolicy}:{}),
     ...(config.registryEnvelopeBoundaryDigest?{registryEnvelopeBoundaryDigest:config.registryEnvelopeBoundaryDigest}:{}),
     ...(config.financialInventoryBoundaryDigest?{financialInventoryBoundaryDigest:config.financialInventoryBoundaryDigest}:{}),
+    ...(config.readyCompanyWorkBoundaryDigest?{readyCompanyWorkBoundaryDigest:config.readyCompanyWorkBoundaryDigest}:{}),
     mgbi:{apiKey:config.mgbiKey,authScheme:config.mgbiScheme,source:{...provider,external:{...external,maximumResponseBytes:config.runtimeRoles?mgbiPolicy.maximumInventoryResponseBytes:external.maximumResponseBytes}},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}},
-   read:{...human,application:app(['supplier.report.read']),...(reportAdmission?{reportAdmission}:{})}},
+   read:{...human,application:app(['supplier.report.read']),...(reportAdmission?{reportAdmission}:{})},...(config.readyReportSchemaDigest?{ready:{schemaDigest:config.readyReportSchemaDigest,secret:config.referenceSecret}}:{})},
   companyKys:privateFlow('COMPANY','kys'),jdgKys:privateFlow('JDG','kys'),jdgRegistry:privateFlow('JDG','jdg'),
   web:{company:webFlow('COMPANY'),jdg:webFlow('JDG'),read:{...human,application:app(['supplier.private.read']),webBoundaryDigest:own['012-supplier-web-identity.sql']}},
   privateRead:{...human,application:app(['supplier.private.read','supplier.private.reveal','supplier.private.export']),

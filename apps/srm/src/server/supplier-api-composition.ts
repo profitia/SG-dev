@@ -1,3 +1,4 @@
+import {isCompanyReportRestricted} from '@profitia/srm-xray'
 import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray'
 import type {KrsFinancialRecheck,KrsFinancialExecution} from './krs-native-financial'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
@@ -19,6 +20,8 @@ import {createSrmKrsSourceTransport,guardOriginalProviderCall} from './provider-
 import {downloadVerclyKrsPdf} from './vercly-krs'
 import {operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
 import {currentReportAdmission,reportAdmissionEvidence} from '@profitia/platform-contracts/report-admission'
+import {createSrmCompanyClassifier} from './company-classification'
+import {createSrmReadyCompanyRead} from './ready-report-read'
 import {prepareSrmReportAdmission} from './report-admission-runtime'
 
 type RequestOptions=Parameters<typeof createSrmSupplierRequestOperationHost>[0]
@@ -27,7 +30,7 @@ type SensitiveOptions=Parameters<typeof createSrmNativeSensitiveLookup>[0]
 type PrivateReadOptions=Parameters<typeof createSrmSensitiveOperationHost>[0]
 type PrivateFlow=Readonly<{request:RequestOptions;lookup:SensitiveOptions}>
 export type SupplierApiOptions=Readonly<{
- company:Readonly<{request:RequestOptions;lookup:CompanyOptions;read:CompanyReadOptions}>
+ company:Readonly<{request:RequestOptions;lookup:CompanyOptions;read:CompanyReadOptions;classification?:Readonly<{apiKey:string;provider:Parameters<typeof createSrmCompanyClassifier>[0]['provider']}>;ready?:Readonly<{schemaDigest:string;secret:string}>}>
  companyKys:PrivateFlow;jdgKys:PrivateFlow;jdgRegistry:PrivateFlow;privateRead:PrivateReadOptions
  web?:Readonly<{company:Readonly<{request:RequestOptions;lookup:Parameters<typeof createSrmNativeWebLookup>[0]}>;jdg:Readonly<{request:RequestOptions;lookup:Parameters<typeof createSrmNativeWebLookup>[0]}>;read:WebReadOptions}>
  krs?:Readonly<{source:Omit<Parameters<typeof createSrmKrsSourceTransport>[0],'reference'|'operationKey'|'nip'|'headers'>;apiKey:string}>
@@ -81,7 +84,10 @@ function requestFlow(request:RequestOptions,work:SupplierNativeWorkOptions,targe
 export function createSrmSupplierApi(options:SupplierApiOptions){
  const company=createSrmNativeCompanyLookup(options.company.lookup)
  const known=createSrmKnownCompanyRead(options.company.read)
+ const ready=options.company.ready?createSrmReadyCompanyRead(options.company.read,options.company.ready.schemaDigest,options.company.ready.secret):undefined
  const admitCompany=requestFlow(options.company.request,options.company.lookup.work)
+ const classifier=options.company.classification?createSrmCompanyClassifier({...options.company.classification,work:options.company.lookup.work,source:options.company.lookup.source}):undefined
+ const preparedCommands=new WeakMap<Request,Readonly<{organisationId:string;nip:string;selection:SupplierNativeWorkSelection}>>()
  const privateRead=createSrmSensitiveOperationHost(options.privateRead),secret=options.privateRead.secret
  const krsPrepare=createSrmSensitiveOperationHost({...options.privateRead,exportMode:'KRS_PREPARE'})
  const krsFinal=createSrmSensitiveOperationHost({...options.privateRead,exportMode:'KRS_PDF'})
@@ -119,6 +125,12 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
   return read(input,input.command.nip,entityType,section)
  }
  return Object.freeze({
+  ...(classifier?{classify:async(input:SupplierHttpInput)=>{
+    const selection=await admitCompany(input,'COMPANY:report')
+    preparedCommands.set(input.request,{organisationId:input.organisationId,nip:input.command.nip,selection})
+    return classifier.classify(selection,input.request.signal)
+  }}:{}),
+  ...(ready?{ready:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>ready.read(input.request,input.organisationId,nip)}:{}),
   async prepareReport(input:SupplierHttpInput){
    if(currentReportAdmission())return refuse()
    const selected=await admitCompany(input,'COMPANY:FORM-ADMISSION')
@@ -141,10 +153,17 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
    }
   },
   async company(input:SupplierHttpInput){
-   const selected=await admitCompany(input,'COMPANY:report')
+   const prior=preparedCommands.get(input.request);preparedCommands.delete(input.request)
+   if(prior&&(prior.organisationId!==input.organisationId||prior.nip!==input.command.nip))return refuse()
+   const selected=prior?.selection??await admitCompany(input,'COMPANY:report')
    input.request.signal.throwIfAborted()
    const card=await company.run(selected)
    input.request.signal.throwIfAborted()
+   if(ready&&card.general.data&&!isCompanyReportRestricted(card.general.data)){
+    const prepared=await ready.read(input.request,input.organisationId,input.command.nip)
+    if(prepared.response)return prepared.response
+    throw new OperationDenied('POLICY_UNAVAILABLE')
+   }
    return createSrmCompanyCardRead(options.company.read,card).read(input.request,input.organisationId)
   },
   jdg:(input:SupplierHttpInput)=>sensitive(input,jdgRegistry,'JDG','jdg'),

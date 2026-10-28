@@ -114,7 +114,7 @@ export class SupplierReportController {
     this.reset();this.diagnosticUserStartMs=performance.now();const generation = this.generation;
     this.update({ busy: true });
     try {
-      const payload = await this.json("/api/xray/search", { identifier }, new AbortController()) as SearchResult & {krsSelection?:SupplierSelection;registryRoute?:ReportState["registryRoute"]};
+      const payload = await this.json("/api/xray/search", { identifier }, new AbortController()) as SearchResult & {krsSelection?:SupplierSelection;registryRoute?:ReportState["registryRoute"];metadata?:SupplierReportData};
       if (generation !== this.generation) return;
       if ((payload?.entityType !== "JDG" && payload?.entityType !== "COMPANY") || supplierNip(payload) !== identifier) throw new Error("Dane dostawcy nie zgadzają się z wyszukiwanym numerem NIP.");
       const route=payload.registryRoute
@@ -125,7 +125,13 @@ export class SupplierReportController {
        if(payload.entityType!=='COMPANY'||route?.provider!=='KRS'||selection.nip!==identifier||selection.krs!==payload.card.identity.krs)throw Error('Dane wyboru spółki są niezgodne.')
        await this.searchKrs(selection,payload,route);return
       }
-      if (!inactiveSupplier(payload)) await this.refreshMetadata();
+      if(payload.metadata!==undefined){
+        const report=payload.metadata
+        if(payload.entityType!=='COMPANY'||report?.schemaVersion!=='1.0'||report.nip!==identifier||report.entityType!=='COMPANY'
+          ||!report.financial||!Array.isArray(report.financial.periods)||!Array.isArray(report.financial.history)||!report.financial.scanner
+          ||report.kys?.status!=='NOT_REQUESTED'||report.kys.reportAvailable!==false)throw Error('Nie udało się potwierdzić kompletności gotowego raportu.')
+        this.update({metadata:report,metadataBusy:false,metadataError:null})
+      }else if (!inactiveSupplier(payload)) await this.refreshMetadata();
     } catch (error) { if (generation === this.generation) this.update({ error: message(error, "Nie udało się pobrać raportu.") }); }
     finally { if (generation === this.generation) this.update({ busy: false });this.diagnosticComplete(generation); }
   };

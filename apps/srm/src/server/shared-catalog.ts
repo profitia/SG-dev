@@ -245,7 +245,7 @@ export async function readFinancialIndicators(client: Pick<PoolClient, "query">,
 }
 
 /** Recalculate from shared validated facts; persist provenance without another provider call. */
-export async function writeFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData): Promise<NonNullable<FinancialData["indicators"]>> {
+export async function writeFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData, onCalculated?: (rows: ReturnType<typeof calculateFinancialIndicators>) => void): Promise<NonNullable<FinancialData["indicators"]>> {
  return diagnosticRun('INDICATORS',async ()=>{
   const calculated = await calculateStoredFinancialIndicators(client, nip, data);
   if (calculated.length) {
@@ -281,6 +281,7 @@ export async function writeFinancialIndicators(client: Pick<PoolClient, "query">
       })))],
     );
   }
+  onCalculated?.(structuredClone(calculated));
   return publicFinancialIndicators(calculated);
 
  })

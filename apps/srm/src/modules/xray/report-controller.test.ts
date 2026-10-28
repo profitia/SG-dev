@@ -193,3 +193,23 @@ test('NIP KRS selection continues only through the existing Financial BFF and re
  await controller.search(nip)
  assert.deepEqual(paths,['/api/xray/search','/api/xray/krs/lookup']);assert.equal(controller.getSnapshot().registryRoute?.provider,'KRS');assert.equal(controller.getSnapshot().result?.entityType,'COMPANY');assert.equal(controller.getSnapshot().error,null)
 })
+
+
+test('complete inline READY metadata removes the second request without changing the displayed card or radar',async()=>{
+ const report=metadata(),calls:string[]=[]
+ assert(report.financial.scanner)
+ const card={...sampleCard,identity:{...sampleCard.identity,nip}}
+ const controller=new SupplierReportController(async(path)=>{calls.push(String(path));return Response.json({entityType:'COMPANY',card,metadata:report})},()=>now)
+ await controller.search(nip)
+ assert.deepEqual(calls,['/api/xray/search']);assert.equal(controller.getSnapshot().error,null)
+ assert.deepEqual(controller.getSnapshot().metadata,report)
+ const result=controller.getSnapshot().result;assert.equal(result?.entityType,'COMPANY');assert.deepEqual(result?.entityType==='COMPANY'&&result.card,card)
+})
+for(const mode of ['wrong nip','missing radar','private KYS'] as const)test('inline READY refuses '+mode+' instead of presenting a complete report',async()=>{
+ const report=metadata();if(mode==='wrong nip')report.nip=other
+ if(mode==='missing radar')delete report.financial.scanner
+ if(mode==='private KYS')report.kys.reportAvailable=true
+ let calls=0
+ const controller=new SupplierReportController(async()=>{calls++;return Response.json({entityType:'COMPANY',card:{...sampleCard,identity:{...sampleCard.identity,nip}},metadata:report})},()=>now)
+ await controller.search(nip);assert(controller.getSnapshot().error);assert.equal(controller.getSnapshot().metadata,null);assert.equal(calls,1)
+})

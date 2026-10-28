@@ -72,11 +72,12 @@ function receipt(value:MsrReceipt|null):MsrReceipt|null{
 
 /** Actual original domain functions under one current native unit. Network
  * acquisition and shared publication remain separate responsibilities. */
-export function createSrmSupplierNativeWorkStore(options:{work:Readonly<SupplierNativeWork>;namedInterestBoundaryDigest:string;registryEnvelopeBoundaryDigest?:string;financialInventoryBoundaryDigest?:string}){
-  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>!['registryEnvelopeBoundaryDigest','financialInventoryBoundaryDigest'].includes(k)).sort().join(',')!=='namedInterestBoundaryDigest,work'
+export function createSrmSupplierNativeWorkStore(options:{work:Readonly<SupplierNativeWork>;namedInterestBoundaryDigest:string;registryEnvelopeBoundaryDigest?:string;financialInventoryBoundaryDigest?:string;readyCompanyWorkBoundaryDigest?:string}){
+  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>!['registryEnvelopeBoundaryDigest','financialInventoryBoundaryDigest','readyCompanyWorkBoundaryDigest'].includes(k)).sort().join(',')!=='namedInterestBoundaryDigest,work'
     ||typeof options.work?.run!=='function'||!/^[a-f0-9]{64}$/.test(options.namedInterestBoundaryDigest))throw TypeError('Explicit native Supplier work store required')
   if(options.registryEnvelopeBoundaryDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.registryEnvelopeBoundaryDigest))return refuse()
   if(options.financialInventoryBoundaryDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.financialInventoryBoundaryDigest))return refuse()
+  if(options.readyCompanyWorkBoundaryDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.readyCompanyWorkBoundaryDigest))return refuse()
   const work=options.work,namedDigest=options.namedInterestBoundaryDigest
   async function run<T>(selection:SupplierNativeWorkSelection,unitId:SupplierNativeWorkUnit,parameters:Json,
     action:(pool:DatabasePool,client:PoolClient,context:Readonly<OperationContext>)=>Promise<T>,capture:(v:T)=>T=json):Promise<T>{
@@ -92,6 +93,80 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       if(!performed||result.requestId!==selection.requestId||result.unitId!==unitId||result.status!=='ACCEPTED')return refuse()
       return captured as T
     }finally{captured=undefined}
+  }
+  async function section(input:SupplierNativeWorkSelection,section:'general'|'financial',envelope:SectionEnvelope<GeneralCompanyData>|SectionEnvelope<FinancialData>,errorCode:string|null,
+      facts:FinancialSourceFact[]=[],correlationId?:string|null,sourceData?:FinancialData,cacheStatus:'CACHE'|'PROVIDER'='PROVIDER',executor:typeof run=run){
+      const s=select(input),body=json({envelope,errorCode,facts,...(correlationId===undefined?{}:{correlationId}),...(sourceData===undefined?{}:{sourceData}),cacheStatus})
+      if(!['general','financial'].includes(section))return refuse()
+      if(section==='financial'?body.envelope.source.provider!=='MGBI':!['MGBI','KRS'].includes(body.envelope.source.provider))return refuse()
+      if(section==='general'&&body.envelope.source.provider==='MGBI'&&(body.envelope.data as GeneralCompanyData|null)?.registrySource)return refuse()
+      if(section==='general'&&body.envelope.source.provider==='KRS'){
+        const g=body.envelope.data as GeneralCompanyData|null,ref=body.envelope.source.recordId
+        if(!g||!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(ref??'')||ref?.split(':')[1]!==g.krs
+          ||g.registrySource?.provider!=='KRS'||g.registrySource.evidenceRef!==ref)return refuse()
+      }
+      if(section==='general'&&body.envelope.data&&'nip'in body.envelope.data&&body.envelope.data.nip!==s.command.nip)return refuse()
+      return executor(s,section==='general'?'SRM_STORE_GENERAL':'SRM_STORE_FINANCIAL',{bodyDigest:digest(body)},async(pool,client)=>{
+        const rows=(await client.query<{supplier_id:string}>("SELECT supplier_id FROM srm.lookup_requests WHERE organization_id=$1::uuid AND id=$2::uuid AND identifier=$3 AND entity_type='COMPANY'",[s.organisationId,s.requestId,s.command.nip])).rows
+        if(rows.length!==1)return refuse()
+        // The original request/attempt/snapshot is the replay authority. The
+        // current native unit already serializes this request and section;
+        // no receipt cache, second writer or domain ledger is introduced.
+        const previous=(await client.query<{snapshot_id:string|null;matches:boolean}>(
+          `SELECT snapshot.id snapshot_id,
+             (a.completed_at IS NOT NULL AND a.provider=$11::text AND a.error_code IS NOT DISTINCT FROM $4::text
+              AND ((a.status='NO_DATA' AND $5::jsonb='null'::jsonb AND snapshot.id IS NULL)
+                OR (a.status='SUCCESS' AND snapshot.id IS NOT NULL AND projection.id IS NOT NULL
+                  AND snapshot.supplier_id=$6::uuid AND snapshot.source_record_id IS NOT DISTINCT FROM $7::text
+                  AND snapshot.retrieved_at=$8::timestamptz AND snapshot.effective_at IS NOT DISTINCT FROM $9::timestamptz
+                  AND snapshot.payload_json=$10::jsonb AND projection.data_json=$5::jsonb))) matches
+           FROM srm.provider_attempts a LEFT JOIN srm.source_snapshots snapshot
+             ON snapshot.organization_id=a.organization_id AND snapshot.attempt_id=a.id AND snapshot.section=a.section
+           LEFT JOIN srm.section_projections projection ON projection.organization_id=snapshot.organization_id
+             AND projection.snapshot_id=snapshot.id AND projection.supplier_id=snapshot.supplier_id
+             AND projection.section=snapshot.section AND projection.projection_version=1
+           WHERE a.organization_id=$1::uuid AND a.request_id=$2::uuid AND a.section=$3 AND a.attempt_no=1`,
+          [s.organisationId,s.requestId,section,body.errorCode,JSON.stringify(body.envelope.data),rows[0].supplier_id,
+            body.envelope.source.recordId??null,body.envelope.retrievedAt,
+            body.envelope.effectiveAt&&!Number.isNaN(Date.parse(body.envelope.effectiveAt))?new Date(body.envelope.effectiveAt):null,
+            JSON.stringify(body.sourceData??body.envelope.data),body.envelope.source.provider])).rows
+        if(previous.length){
+          // A conflicting payload, unfinished/failed attempt or replacement
+          // financial provenance requires a new operation or reconciliation.
+          if(previous.length!==1||previous[0].matches!==true)return refuse()
+          if(body.facts.length){
+            const keys='amount,currencyCode,metricCode,normalizationRule,periodEnd,periodStart,periodType,sourceAmount,sourcePath,statementScope,unitCode,validationStatus'
+            if(section!=='financial'||!previous[0].snapshot_id||body.facts.some(f=>!f||Object.keys(f).sort().join(',')!==keys
+              ||Object.values(f).some(v=>typeof v!=='string'||v.length>4096)))return refuse()
+            // Compare the original durable facts as typed values. Numeric
+            // database scale and JSON property order are not new provenance;
+            // missing, extra, duplicated or changed facts still conflict.
+            const proof=await client.query<{matches:boolean}>(
+              `WITH supplied AS(
+                SELECT "metricCode","periodStart","periodEnd","periodType","statementScope",amount,"sourceAmount",
+                  "normalizationRule","currencyCode","unitCode","sourcePath","validationStatus"
+                FROM jsonb_to_recordset($1::jsonb) f("metricCode" text,"periodStart" date,"periodEnd" date,"periodType" text,
+                  "statementScope" text,amount numeric,"sourceAmount" numeric,"normalizationRule" text,"currencyCode" text,
+                  "unitCode" text,"sourcePath" text,"validationStatus" text)
+              ), stored AS(
+                SELECT metric_code,period_start,period_end,period_type,statement_scope,amount,source_amount,
+                  normalization_rule,currency_code,unit_code,source_path,validation_status
+                FROM srm.financial_facts WHERE organization_id=$2::uuid AND supplier_id=$3::uuid AND snapshot_id=$4::uuid
+              ) SELECT NOT EXISTS(
+                (SELECT * FROM supplied EXCEPT ALL SELECT * FROM stored)
+                UNION ALL (SELECT * FROM stored EXCEPT ALL SELECT * FROM supplied)
+              ) matches`,[JSON.stringify(body.facts),s.organisationId,rows[0].supplier_id,previous[0].snapshot_id])
+            if(proof.rows[0]?.matches!==true)return refuse()
+          }
+          return previous[0].snapshot_id
+        }
+        const registryEnvelope=!!options.registryEnvelopeBoundaryDigest&&section==='general'&&body.envelope.source.provider==='KRS'
+        if(registryEnvelope){
+          const descriptor=(await client.query('SELECT srm.pilot2_registry_envelope_descriptor() AS descriptor')).rows[0]?.descriptor
+          if(descriptor?.schemaDigest!==options.registryEnvelopeBoundaryDigest||descriptor.version!=='1.0.0')return refuse()
+        }
+        return persistSection(s.organisationId,{supplierId:rows[0].supplier_id,requestId:s.requestId},section,body.envelope,body.errorCode,body.facts,body.correlationId,body.sourceData,body.cacheStatus,pool,false,registryEnvelope)
+      })
   }
   return Object.freeze({
     register(input:SupplierNativeWorkSelection,existingSupplier:ExistingSupplierRegistration='TOUCH'){
@@ -193,78 +268,22 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
  return diagnosticRun('DOCUMENT_READ',()=>{const s=select(input);return run(s,'SRM_READ_DOCUMENTS',null,(pool)=>withOrganization(s.organisationId,client=>readPreparedFinancialDocuments(client,s.organisationId,s.command.nip),pool))
  })
 },
-    section(input:SupplierNativeWorkSelection,section:'general'|'financial',envelope:SectionEnvelope<GeneralCompanyData>|SectionEnvelope<FinancialData>,errorCode:string|null,
-      facts:FinancialSourceFact[]=[],correlationId?:string|null,sourceData?:FinancialData,cacheStatus:'CACHE'|'PROVIDER'='PROVIDER'){
-      const s=select(input),body=json({envelope,errorCode,facts,...(correlationId===undefined?{}:{correlationId}),...(sourceData===undefined?{}:{sourceData}),cacheStatus})
-      if(!['general','financial'].includes(section))return refuse()
-      if(section==='financial'?body.envelope.source.provider!=='MGBI':!['MGBI','KRS'].includes(body.envelope.source.provider))return refuse()
-      if(section==='general'&&body.envelope.source.provider==='MGBI'&&(body.envelope.data as GeneralCompanyData|null)?.registrySource)return refuse()
-      if(section==='general'&&body.envelope.source.provider==='KRS'){
-        const g=body.envelope.data as GeneralCompanyData|null,ref=body.envelope.source.recordId
-        if(!g||!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(ref??'')||ref?.split(':')[1]!==g.krs
-          ||g.registrySource?.provider!=='KRS'||g.registrySource.evidenceRef!==ref)return refuse()
-      }
-      if(section==='general'&&body.envelope.data&&'nip'in body.envelope.data&&body.envelope.data.nip!==s.command.nip)return refuse()
-      return run(s,section==='general'?'SRM_STORE_GENERAL':'SRM_STORE_FINANCIAL',{bodyDigest:digest(body)},async(pool,client)=>{
-        const rows=(await client.query<{supplier_id:string}>("SELECT supplier_id FROM srm.lookup_requests WHERE organization_id=$1::uuid AND id=$2::uuid AND identifier=$3 AND entity_type='COMPANY'",[s.organisationId,s.requestId,s.command.nip])).rows
-        if(rows.length!==1)return refuse()
-        // The original request/attempt/snapshot is the replay authority. The
-        // current native unit already serializes this request and section;
-        // no receipt cache, second writer or domain ledger is introduced.
-        const previous=(await client.query<{snapshot_id:string|null;matches:boolean}>(
-          `SELECT snapshot.id snapshot_id,
-             (a.completed_at IS NOT NULL AND a.provider=$11::text AND a.error_code IS NOT DISTINCT FROM $4::text
-              AND ((a.status='NO_DATA' AND $5::jsonb='null'::jsonb AND snapshot.id IS NULL)
-                OR (a.status='SUCCESS' AND snapshot.id IS NOT NULL AND projection.id IS NOT NULL
-                  AND snapshot.supplier_id=$6::uuid AND snapshot.source_record_id IS NOT DISTINCT FROM $7::text
-                  AND snapshot.retrieved_at=$8::timestamptz AND snapshot.effective_at IS NOT DISTINCT FROM $9::timestamptz
-                  AND snapshot.payload_json=$10::jsonb AND projection.data_json=$5::jsonb))) matches
-           FROM srm.provider_attempts a LEFT JOIN srm.source_snapshots snapshot
-             ON snapshot.organization_id=a.organization_id AND snapshot.attempt_id=a.id AND snapshot.section=a.section
-           LEFT JOIN srm.section_projections projection ON projection.organization_id=snapshot.organization_id
-             AND projection.snapshot_id=snapshot.id AND projection.supplier_id=snapshot.supplier_id
-             AND projection.section=snapshot.section AND projection.projection_version=1
-           WHERE a.organization_id=$1::uuid AND a.request_id=$2::uuid AND a.section=$3 AND a.attempt_no=1`,
-          [s.organisationId,s.requestId,section,body.errorCode,JSON.stringify(body.envelope.data),rows[0].supplier_id,
-            body.envelope.source.recordId??null,body.envelope.retrievedAt,
-            body.envelope.effectiveAt&&!Number.isNaN(Date.parse(body.envelope.effectiveAt))?new Date(body.envelope.effectiveAt):null,
-            JSON.stringify(body.sourceData??body.envelope.data),body.envelope.source.provider])).rows
-        if(previous.length){
-          // A conflicting payload, unfinished/failed attempt or replacement
-          // financial provenance requires a new operation or reconciliation.
-          if(previous.length!==1||previous[0].matches!==true)return refuse()
-          if(body.facts.length){
-            const keys='amount,currencyCode,metricCode,normalizationRule,periodEnd,periodStart,periodType,sourceAmount,sourcePath,statementScope,unitCode,validationStatus'
-            if(section!=='financial'||!previous[0].snapshot_id||body.facts.some(f=>!f||Object.keys(f).sort().join(',')!==keys
-              ||Object.values(f).some(v=>typeof v!=='string'||v.length>4096)))return refuse()
-            // Compare the original durable facts as typed values. Numeric
-            // database scale and JSON property order are not new provenance;
-            // missing, extra, duplicated or changed facts still conflict.
-            const proof=await client.query<{matches:boolean}>(
-              `WITH supplied AS(
-                SELECT "metricCode","periodStart","periodEnd","periodType","statementScope",amount,"sourceAmount",
-                  "normalizationRule","currencyCode","unitCode","sourcePath","validationStatus"
-                FROM jsonb_to_recordset($1::jsonb) f("metricCode" text,"periodStart" date,"periodEnd" date,"periodType" text,
-                  "statementScope" text,amount numeric,"sourceAmount" numeric,"normalizationRule" text,"currencyCode" text,
-                  "unitCode" text,"sourcePath" text,"validationStatus" text)
-              ), stored AS(
-                SELECT metric_code,period_start,period_end,period_type,statement_scope,amount,source_amount,
-                  normalization_rule,currency_code,unit_code,source_path,validation_status
-                FROM srm.financial_facts WHERE organization_id=$2::uuid AND supplier_id=$3::uuid AND snapshot_id=$4::uuid
-              ) SELECT NOT EXISTS(
-                (SELECT * FROM supplied EXCEPT ALL SELECT * FROM stored)
-                UNION ALL (SELECT * FROM stored EXCEPT ALL SELECT * FROM supplied)
-              ) matches`,[JSON.stringify(body.facts),s.organisationId,rows[0].supplier_id,previous[0].snapshot_id])
-            if(proof.rows[0]?.matches!==true)return refuse()
-          }
-          return previous[0].snapshot_id
+    section,
+    companySections(input:SupplierNativeWorkSelection,general:Readonly<{envelope:SectionEnvelope<GeneralCompanyData>;errorCode:string|null}>,
+      financial:Readonly<{envelope:SectionEnvelope<FinancialData>;errorCode:string|null;facts:FinancialSourceFact[];sourceData?:FinancialData}>){
+      if(!options.readyCompanyWorkBoundaryDigest)return refuse()
+      const selected=select(input),g=json(general),f=json(financial)
+      return run(selected,'SRM_STORE_COMPANY',{generalDigest:digest(g),financialDigest:digest(f)},async(pool,client,context)=>{
+        const descriptor=(await client.query('SELECT srm.ready_company_work_descriptor() AS descriptor')).rows[0]?.descriptor
+        if(descriptor?.schemaDigest!==options.readyCompanyWorkBoundaryDigest)return refuse()
+        const local:typeof run=async(s,unit,_parameters,action,capture=json)=>{
+          if(s.requestId!==selected.requestId||s.organisationId!==selected.organisationId||s.command.nip!==selected.command.nip
+            ||!['SRM_STORE_GENERAL','SRM_STORE_FINANCIAL'].includes(unit))return refuse()
+          const value=await action(pool,client,context);return value===undefined?value:capture(value)
         }
-        const registryEnvelope=!!options.registryEnvelopeBoundaryDigest&&section==='general'&&body.envelope.source.provider==='KRS'
-        if(registryEnvelope){
-          const descriptor=(await client.query('SELECT srm.pilot2_registry_envelope_descriptor() AS descriptor')).rows[0]?.descriptor
-          if(descriptor?.schemaDigest!==options.registryEnvelopeBoundaryDigest||descriptor.version!=='1.0.0')return refuse()
-        }
-        return persistSection(s.organisationId,{supplierId:rows[0].supplier_id,requestId:s.requestId},section,body.envelope,body.errorCode,body.facts,body.correlationId,body.sourceData,body.cacheStatus,pool,false,registryEnvelope)
+        const generalSnapshotId=await section(selected,'general',g.envelope,g.errorCode,[],undefined,undefined,'PROVIDER',local)
+        const financialSnapshotId=await section(selected,'financial',f.envelope,f.errorCode,f.facts,undefined,f.sourceData,'PROVIDER',local)
+        return {generalSnapshotId,financialSnapshotId}
       })
     },
     interest(input:SupplierNativeWorkSelection){

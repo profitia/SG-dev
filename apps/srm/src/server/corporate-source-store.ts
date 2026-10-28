@@ -9,6 +9,10 @@ import { readCorporateCompanyData, readCorporateFinancialData, MAX_CORPORATE_KNO
 import { writeSharedCompany, writeFinancialIndicators } from './shared-catalog'
 import type { FinancialSourceFact } from './mgbi-financial'
 import shape from './corporate-source-shape.json'
+import {writeReadyCompanyReport} from './ready-report-source'
+import type {FinancialSourceDocument} from './financial-documents'
+import type {PreparedCompanyReport} from './ready-report'
+import type {CalculatedFinancialIndicator} from './financial-indicators'
 import {measureSupplierStage} from './supplier-telemetry'
 
 export const CORPORATE_PUBLICATION_VERSION = 'srm-corporate-publication-v1'
@@ -125,7 +129,7 @@ export function corporateRevisionKey(input:unknown,publicationSchemaDigest:strin
 export function createSrmCorporateSourceStore(options: {
   application: Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]['application']
   binding: Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]['binding']
-  publicationSchemaDigest: string; pool: pg.Pool; auditPool: pg.Pool; now?: () => number
+  readyReportSchemaDigest?:string; publicationSchemaDigest: string; pool: pg.Pool; auditPool: pg.Pool; now?: () => number
 }) {
   if (typeof window !== 'undefined' || options.application.appId !== 'srm-corporate-source'
     || !/^[a-f0-9]{64}$/.test(options.publicationSchemaDigest)) return unavailable()
@@ -146,7 +150,10 @@ export function createSrmCorporateSourceStore(options: {
     },
   })
   return Object.freeze({
-    async publish(input: unknown, idempotencyKey: string) {
+    async publish(input: unknown, idempotencyKey: string, preparation?:Readonly<{documents:readonly FinancialSourceDocument[];onPrepared?:(report:PreparedCompanyReport)=>void}>) {
+      let prepared:PreparedCompanyReport|undefined
+      const documents=preparation?structuredClone(preparation.documents):undefined
+      if(options.readyReportSchemaDigest&&(!/^[a-f0-9]{64}$/.test(options.readyReportSchemaDigest)||!documents))return unavailable()
       // Capture once before awaiting. HTTP callers never supply owner IDs,
       // evidence IDs, write callbacks or a mutable body after admission.
       const packet = readCorporatePacket(input), body = JSON.stringify(packet)
@@ -164,7 +171,9 @@ export function createSrmCorporateSourceStore(options: {
         // publication for each statement. It grants no authority by itself.
         await client.query("SELECT set_config('profitia.srm.catalog.nip',$1,true)",[packet.nip])
         await measureSupplierStage('CORPORATE_WRITE',()=>writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId }))
-        if (packet.financial.data) await measureSupplierStage('CORPORATE_INDICATORS',()=>writeFinancialIndicators(client, packet.nip, packet.financial.data!))
+        let indicators:CalculatedFinancialIndicator[]=[]
+        if (packet.financial.data) await measureSupplierStage('CORPORATE_INDICATORS',()=>writeFinancialIndicators(client, packet.nip, packet.financial.data!,rows=>{indicators=rows}))
+        if(options.readyReportSchemaDigest)prepared=await measureSupplierStage('REPORT_PREPARATION',()=>writeReadyCompanyReport(client,packet.nip,effectId,indicators,documents!,options.readyReportSchemaDigest!))
       })).catch(error=>{
         let cause:unknown=error,timeout=false
         for(let depth=0;depth<8&&cause instanceof Error;depth++){
@@ -177,6 +186,7 @@ export function createSrmCorporateSourceStore(options: {
         throw error
       })
       if (!platformReceiptEvidence(result.value)) return unavailable()
+      if(prepared)preparation?.onPrepared?.(structuredClone(prepared))
       return result.value
     },
   })
