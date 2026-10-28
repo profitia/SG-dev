@@ -1,0 +1,283 @@
+{
+  "status": "PRE_CODE_QUALIFICATION",
+  "projectId": "465405993031966720",
+  "componentId": "465415479037693952",
+  "revisionId": "465859267208024064",
+  "libraryProject": "460628300646219776",
+  "libraryComponent": "460628347660177408",
+  "libraryRevision": "465827262730764288",
+  "sourceFiles": [
+    {
+      "path": "src/App.tsx",
+      "sha256": "50168219c7c591bb1546f6eb8ea0671ff17bff897ba67b764500cf7e8c881fa6"
+    },
+    {
+      "path": "src/components/generated/AdpAssistant.tsx",
+      "sha256": "cb1e3724f08877bf84be61d80e2bd92bd87b9068cdd3700f63d9d1a83b54ee09"
+    },
+    {
+      "path": "src/components/generated/AdpModules.tsx",
+      "sha256": "753e30fdd8de5dd6b515ef11d8f445eae204f8f422096bc77036e29359416c09"
+    },
+    {
+      "path": "src/components/generated/AdpNewsfeed.tsx",
+      "sha256": "3121c84222cac780335be9dd29e0e17d650ab0a1c033361a75867f5bf78e73c4"
+    },
+    {
+      "path": "src/components/generated/ArkuszDanychPodstawowych.tsx",
+      "sha256": "3461c3482424fdfb95fdb8fb160beba02e4033198b81232562ea7691d1aa4175"
+    },
+    {
+      "path": "src/components/generated/CanonDropdown.tsx",
+      "sha256": "50065e2ab48f1a7384b363f51a0ea1842a46a11122b60e4d2399c37751e7a27d"
+    },
+    {
+      "path": "src/components/generated/CanonElements.tsx",
+      "sha256": "29637c309813e33e30ae79a05894d84c08ba41f748dec3210441b3cc22d1bac7"
+    },
+    {
+      "path": "src/components/generated/CanonHeader.tsx",
+      "sha256": "33cd8dc08e12980410399ebf37d02be9eeb6b9f8e162ccbaedb6bc8c740c86b6"
+    },
+    {
+      "path": "src/components/generated/CanonHistoryDialog.tsx",
+      "sha256": "ccb0e3d2b33a553e68b31998a7a7e120060a35e7890b589271b41c92a69103e4"
+    },
+    {
+      "path": "src/components/generated/CanonTheme.tsx",
+      "sha256": "4bf31ebd10e843bcaf09c792222035d4314dad2adf23bdd381fefc53085a72b1"
+    },
+    {
+      "path": "src/components/generated/DashboardRelations.tsx",
+      "sha256": "b39e966be0277fc14d3b4ccb78cc7c8776d73ad546cfaf1c01923ff5f9858293"
+    },
+    {
+      "path": "src/components/generated/DeliveryRuntime.tsx",
+      "sha256": "0c7aac83e4a71a165f1937484fb046213dac96b56ffd6fe3db95997a967db38c"
+    },
+    {
+      "path": "src/components/generated/DeliveryVisibility.tsx",
+      "sha256": "dfe5022b68e114821845f796f22c1209086fde9eca834e85f21c96d526b85e04"
+    },
+    {
+      "path": "src/components/generated/RatingHistory.tsx",
+      "sha256": "5181ada785a7fe8f65ff3b0d93f8b83868f72b67848cc3b56e441b8c43a8fa24"
+    },
+    {
+      "path": "src/components/generated/SpacedContent.tsx",
+      "sha256": "e802807d7efddd4cf599c91443189a645b35a8291f7d4d52c55574931278168b"
+    },
+    {
+      "path": "src/components/generated/SpendGuruLogo.tsx",
+      "sha256": "61b068d6349b35b73475f3c90c96279878e23a24e13faed6a3f6ac3b04918a32"
+    },
+    {
+      "path": "src/components/generated/SupplierWorkspace.tsx",
+      "sha256": "308f7a4fec793a073c251aba61e26289d4e76f9d4832d1ff9d0e6be4c15025d6"
+    },
+    {
+      "path": "src/components/generated/WorkspaceInfo.tsx",
+      "sha256": "4678a175d17382073567173658ce400935f8d5f039d13b954efc9cca459ae8bf"
+    },
+    {
+      "path": "src/components/generated/adp-assistant-bindings.ts",
+      "sha256": "55210cedd36b61115fa3248bcbf400c7e3ed9da4ed1adf79f9d2644df199df04"
+    },
+    {
+      "path": "src/components/generated/adp-assistant.css",
+      "sha256": "6b86310319f1a59937ac4310c065b2da5083c9b05f72c2edc76001d092989bbb"
+    },
+    {
+      "path": "src/components/generated/adp-data.ts",
+      "sha256": "69ea3e9d85d0bc79ea0554500bdf3e39bba4ad90f9539046ce434987d73f85f6"
+    },
+    {
+      "path": "src/components/generated/adp-modules.css",
+      "sha256": "fcb0e656dee02ffc0a8c0fb8a63ad6fa5ddcae7bdbd6fd57afd75a5a5c9f61be"
+    },
+    {
+      "path": "src/components/generated/adp-spacing.css",
+      "sha256": "59e2498c33f727a36d4f2e1b88107c042040f347080d0d79336fbf99b418bc6c"
+    },
+    {
+      "path": "src/components/generated/adp-workspace-enhancements.css",
+      "sha256": "504241a62804957d807769b34de4a52527e4c2dcbb2517c73c02ca3931954f4d"
+    },
+    {
+      "path": "src/components/generated/adp.css",
+      "sha256": "769ae35eca699842546bb43d6594d11a5e9acad7b17cc590fe0f0ebfd3dbd0b0"
+    },
+    {
+      "path": "src/components/generated/canon-area-tabs.css",
+      "sha256": "fdf7aab61b3acbb91c82bc64b84f7daabc2a7c1b912334095308628696ea01ca"
+    },
+    {
+      "path": "src/components/generated/canon-dropdown.css",
+      "sha256": "f82fb3bdfe7073581b25e23802b12c1b25141855b667993888add0def7dfcb7f"
+    },
+    {
+      "path": "src/components/generated/canon-header.css",
+      "sha256": "da570902fcf03508a5f66dcf953958cb8350a2af97a4e3a2e08a4b052ab7e1ab"
+    },
+    {
+      "path": "src/components/generated/canon-identifiers.ts",
+      "sha256": "f07b727f25627742e6a58cb5a8001ab6b197ac020b7b52c02eefb4b5488fed93"
+    },
+    {
+      "path": "src/components/generated/canon-shared.css",
+      "sha256": "3d93d59380061f91ccab4da4a93be772f48b926ca4c60b76e20639f42f9b2f3d"
+    },
+    {
+      "path": "src/components/generated/canon-theme.css",
+      "sha256": "6cbeb8ca52843f93a086b37cd9b9d934fecb6cdde59d890566adc20d79b987f7"
+    },
+    {
+      "path": "src/components/generated/canonical-studio.css",
+      "sha256": "5f9e8f123b83e33dea9368f9f152526673944c025c1a46e7a4ac51fa6e86651d"
+    },
+    {
+      "path": "src/components/generated/chat-welcome-contract.ts",
+      "sha256": "b8ccdc20055ef96b0e73c8dfeba3fa7989cb012acc867f5eba5dba9c2d7cdbb5"
+    },
+    {
+      "path": "src/components/generated/delivery-entries-0.ts",
+      "sha256": "2b2215d720b98580305a3a7752a86f0f26ac0f801e2358891011fe33eacbb9e0"
+    },
+    {
+      "path": "src/components/generated/delivery-entries-1.ts",
+      "sha256": "be78ee6c4a6a76e3beba8c2c14d9fddafb99b97dd0fbe09a06964c235278a2fb"
+    },
+    {
+      "path": "src/components/generated/delivery-entries-2.ts",
+      "sha256": "760799dbf447e05c1e43ce9b16bcdb073dcd338e2d987b61ffc79580ff5cabc5"
+    },
+    {
+      "path": "src/components/generated/delivery-registry.css",
+      "sha256": "a4c86b61d3e6615e4ff308933df163ef7de5b62303905cba24f50d325832457a"
+    },
+    {
+      "path": "src/components/generated/delivery-registry.ts",
+      "sha256": "083412a5940805e53b83b2614207027f29866f61b5547b87f356a6fd4415bbe4"
+    },
+    {
+      "path": "src/components/generated/delivery-visibility.css",
+      "sha256": "99bef40bb088fc14518f3de271f6cdaf375d162d39f05dc9552f17e65b072ab3"
+    },
+    {
+      "path": "src/components/generated/embedded-assistant-host.ts",
+      "sha256": "7fd82ee1c1d40854ffdac03b0f83457f612ce4ee309ddc600db2dd9435ab1637"
+    },
+    {
+      "path": "src/components/generated/library-names.ts",
+      "sha256": "8dbcc3b73a9d04a3e1434db260c22fe4a3bca35bfd2acd212d53394dd5235ec0"
+    },
+    {
+      "path": "src/components/generated/library-registry.ts",
+      "sha256": "989ca40d84827648ad09d1ab36c62da7094c3fb2dfcd3349a9002b1e766c67f8"
+    },
+    {
+      "path": "src/components/generated/spacing-contract.ts",
+      "sha256": "bd56e159331ae0ab048ecdba91ed2b7127f19c23d244cb7596b649f9cfdf6366"
+    },
+    {
+      "path": "src/components/generated/spendguru-assessment.css",
+      "sha256": "96803bb65a9486cf107cf2922fed8297e9ce88c283062f3b27e566ad074a29b0"
+    },
+    {
+      "path": "src/components/generated/spendguru-logo.css",
+      "sha256": "78676af37cfd2d210c1861a47fc77ba2f3180b959942c329235bf012f148b01a"
+    },
+    {
+      "path": "src/components/generated/srm-dashboard.css",
+      "sha256": "3ed3dab3b933289f57a98f901012679bb23e7f6b8c8dcf175b4ab3ec20b7c333"
+    },
+    {
+      "path": "src/components/generated/srm-history-detail.css",
+      "sha256": "0c7ec8ba8bb4eeafd94af5f5dfd12cf72dfb5e0f57f7f28859de1fcaa17a9501"
+    },
+    {
+      "path": "src/components/generated/srm-interaction-motion.css",
+      "sha256": "f4a5868efbabfbde4a89db92c156fcdd7214ac9c59433baae2ac6bcf223888b8"
+    },
+    {
+      "path": "src/components/generated/supplier-workspace.css",
+      "sha256": "1c75019eba11e92db785d6466aafe4a21dc351508dab383145c94249d3b4ea53"
+    },
+    {
+      "path": "src/components/generated/ui-copy-canon.ts",
+      "sha256": "6256df71a309d31cfe80c4e1fe8144a401e63dc6c9239241ac9f5b0489065a1b"
+    },
+    {
+      "path": "src/components/generated/ui-relations.css",
+      "sha256": "e17cd14ef3a88ac66b3d1ba4c2414b940ec44a39eadc5c06eaaa26405e4bf35f"
+    },
+    {
+      "path": "src/components/generated/ui-relations.ts",
+      "sha256": "321dc696ca9f2e61bddca8b7c51e0c40fe94cfcfbf3a9df897358cbbcbd9dce4"
+    },
+    {
+      "path": "src/components/generated/useDetachedAssistantWindow.ts",
+      "sha256": "1089f0ed01b4c27d187ae8c842b3ebefb5f46c8a91fc13dd6fa021f38603832a"
+    },
+    {
+      "path": "src/components/generated/workspace-registry.ts",
+      "sha256": "dc83624f8927fea12cc10849ed9cede9b14c423bd415d3240ee8f062771c790e"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "39ba1d5619534ca8218a9f54b9d46738deb88adb93dbd37b5f87942fd9b750bd"
+    }
+  ],
+  "registryEntries": 1472,
+  "originalRegistrySourceRevision": "465575254601928704",
+  "originalRegistryHashesMatchCurrentSource": false,
+  "resolution": "Historical registry reviewed separately; stable source references and all current file bytes revalidated. No automatic synchronization claimed.",
+  "scopeOverrideNoteRefs": [
+    "465415479037693952:5aca2b7e10aae9",
+    "465415479037693952:37d193e49e4732",
+    "465415479037693952:620dfcadab6064",
+    "465415479037693952:41368ce37a0209",
+    "465415479037693952:c721348f085b37",
+    "465415479037693952:38c822da038e46",
+    "465415479037693952:597f596db1879c",
+    "465415479037693952:33cf519cb98ec6",
+    "465415479037693952:cffb0a1fe5c03f",
+    "465415479037693952:ab6b8f336bcb16",
+    "465415479037693952:fb34e4b8fe62a8",
+    "465415479037693952:3ac7bdbcc82e24",
+    "465415479037693952:050126abb0dd7b",
+    "465415479037693952:a07063d3c3fc3a",
+    "465415479037693952:dffe6ebe79862c",
+    "465415479037693952:accb9343c2ba07",
+    "465415479037693952:93b123d396a761",
+    "465415479037693952:c9a79f57626ae6",
+    "465415479037693952:4a8d231885e3bd",
+    "465415479037693952:23a02376c0bbfb",
+    "465415479037693952:ff80e50d282713",
+    "465415479037693952:4ee5964b73a8b5",
+    "465415479037693952:43c1b4838c4f3b",
+    "465415479037693952:540f9910413d3e",
+    "465415479037693952:d2d7d34f06ba38",
+    "465415479037693952:1adf6576ccd1f7",
+    "465415479037693952:c79fafa1a9f333",
+    "465415479037693952:92e8ba97c84a05",
+    "465415479037693952:245ddd673d7e3b",
+    "465415479037693952:48ecc39c2c5b41",
+    "465415479037693952:c933779d8dc954",
+    "465415479037693952:2c54fec643d638",
+    "465415479037693952:8f90bd76479878",
+    "465415479037693952:18bb9c6a50b12b",
+    "465415479037693952:0176f1fa43cf29",
+    "465415479037693952:c7b042e4dfffea"
+  ],
+  "dataBoundary": "Producer holds no synthetic supplier/company/person fixtures. Host-supplied typed presentation data and events only.",
+  "behaviorBoundary": "Source simulation handlers are excluded. New bounded local UI events are allowed by explicit clickable-mockup task; business-service operations stay disabled.",
+  "preservedStructure": {
+    "mainAreas": 8,
+    "formSections": 5,
+    "formFields": 43
+  },
+  "realServices": false,
+  "runtimeMetadata": "No delivery/inspection/provenance registries or helpers in client imports.",
+  "implementationAndAcceptanceClaimed": false
+}

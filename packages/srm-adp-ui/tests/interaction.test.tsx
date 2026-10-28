@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import {afterEach,test} from 'node:test';
+import {JSDOM} from 'jsdom';
+const dom=new JSDOM('<!doctype html><html><body style="overflow:auto"><button id="outside">Outside</button><div id="test-root"></div></body></html>',{url:'http://localhost/',pretendToBeVisual:true});
+for(const name of ['window','document','HTMLElement','Element','HTMLInputElement','HTMLSelectElement','HTMLTextAreaElement','HTMLDialogElement','Event','MouseEvent','KeyboardEvent','FocusEvent','Node'] as const)Object.defineProperty(globalThis,name,{value:dom.window[name],configurable:true,writable:true});
+Object.defineProperty(globalThis,'navigator',{value:dom.window.navigator,configurable:true});
+Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true,getComputedStyle:dom.window.getComputedStyle.bind(dom.window),requestAnimationFrame:dom.window.requestAnimationFrame.bind(dom.window),cancelAnimationFrame:dom.window.cancelAnimationFrame.bind(dom.window),ResizeObserver:class{observe(){}disconnect(){}}});
+dom.window.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
+dom.window.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};
+let networkCalls=0;globalThis.fetch=async()=>{networkCalls++;throw new Error('ADP must not make a service request');};
+const React=await import('react'),{act}=React,{createRoot}=await import('react-dom/client');
+const {AdpWorkspace}=await import('../src/index');
+const {makeModel,reducePreview}=await import('./preview');
+import type {AdpLocalEvent,AdpWorkspaceProps} from '../src/types';
+let root:ReturnType<typeof createRoot>|undefined;
+let captured:AdpLocalEvent[]=[];
+const text=(node:Element)=>node.textContent?.replace(/\s+/g,' ').trim()??'';
+function button(label:string,parent:ParentNode=document){const result=Array.from(parent.querySelectorAll<HTMLButtonElement>('button')).find(b=>text(b)===label);assert(result,`Button ${label} exists`);return result;}
+async function click(label:string,parent:ParentNode=document){await act(async()=>{button(label,parent).click();});}
+async function fill(selector:string,value:string,parent:ParentNode=document){const node=parent.querySelector<HTMLInputElement|HTMLTextAreaElement>(selector);assert(node,selector);await act(async()=>{const proto=node instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value')!.set!.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));});}
+async function choose(label:string,value:string){const trigger=document.querySelector<HTMLButtonElement>(`button[aria-haspopup="listbox"][aria-label="${label}"]`);assert(trigger,label);await act(async()=>trigger.click());const option=Array.from(document.querySelectorAll<HTMLButtonElement>('[role="option"]')).find(b=>text(b)===value);assert(option,value);await act(async()=>option.click());}
+async function mount(){captured=[];networkCalls=0;root=createRoot(document.getElementById('test-root')!);function Host(){const [model,setModel]=React.useState(()=>makeModel()),[navigation,setNavigation]=React.useState<AdpWorkspaceProps['navigation']>({view:'overview',section:'company',dataArea:'adp'});return <AdpWorkspace contractVersion="1.0.0" instanceId="unit-instance" locale="pl" theme="dark" model={model} navigation={navigation} onNavigate={setNavigation} onReturn={()=>{}} onLocalEvent={(e,instance)=>{assert.equal(instance,'unit-instance');captured.push(e);setModel(m=>reducePreview(m,e));}}/>;}await act(async()=>root!.render(<Host/>));}
+afterEach(async()=>{if(root)await act(async()=>root!.unmount());root=undefined;document.getElementById('test-root')!.replaceChildren();assert.equal(networkCalls,0);});
+test('tabs, all five sections, local form editing and arrows use the controlled host contract',async()=>{
+ await mount();await click('Dane i ADP');await fill('input[id$="-field-name"]','Nazwa wpisana przez użytkownika');assert(document.querySelector('h1')!.textContent!.includes('Nazwa wpisana'));
+ await click('Płatności');await fill('textarea[id$="-field-terms"]','0');await click('Firma i kontakt');await click('Płatności');assert.equal(document.querySelector<HTMLTextAreaElement>('textarea[id$="-field-terms"]')!.value,'0');
+ const current=button('Płatności');await act(async()=>current.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));assert.equal(document.querySelector('[role="tab"][aria-selected="true"][data-section]')?.textContent,'Działalność');
+ await click('Oświadczenia i podpis');assert(document.querySelector<HTMLInputElement>('input[id$="-field-signature"]')!.readOnly);assert(!Array.from(document.querySelectorAll('button')).some(b=>/podpisu|symulacj/i.test(text(b))));assert(captured.some(e=>e.type==='form.change'));
+});
+test('dialog validation, contact/location/relation editing and focus return operate without services',async()=>{
+ await mount();await click('Dane i ADP');await choose('Zakres danych','Kontakty i lokalizacje');const trigger=button('Dodaj kontakt');trigger.focus();await click('Dodaj kontakt');await click('Zapisz',document.querySelector('dialog')!);assert.match(document.querySelector('[role="alert"]')!.textContent!,/Uzupełnij/);
+ await fill('dialog input[id$="-modal-name"]','Osoba wpisana lokalnie');await fill('dialog input[id$="-modal-email"]','kontakt@example.invalid');await click('Zapisz',document.querySelector('dialog')!);assert.equal(document.activeElement,trigger);assert.match(document.querySelector('.ws-content')!.textContent!,/Osoba wpisana lokalnie/);
+ await click('Dodaj lokalizację');await fill('dialog input[id$="-modal-name"]','Lokalizacja lokalna');await fill('dialog textarea[id$="-modal-address"]','Pierwszy wiersz\nDrugi wiersz');await click('Zapisz',document.querySelector('dialog')!);assert.match(document.querySelector('.ws-content')!.textContent!,/Lokalizacja lokalna/);
+ await choose('Zakres danych','Powiązania firm');await click('Dodaj powiązanie');await fill('dialog input[id$="-modal-name"]','Podmiot lokalny');await choose('Rodzaj powiązania','Inna relacja');await fill('dialog input[id$="-modal-source"]','Notatka użytkownika');await click('Zapisz',document.querySelector('dialog')!);assert.match(document.querySelector('.ws-content')!.textContent!,/Podmiot lokalny/);
+});
+test('activities and filters use only host-owned local entries',async()=>{
+ await mount();await click('Aktywności');await click('Dodaj aktywność',document.querySelector('.ws-content')!);await fill('dialog input[id$="-modal-title"]','Temat lokalny');await fill('dialog input[id$="-modal-when"]','2026-10-28');await fill('dialog textarea[id$="-modal-body"]','Notatka wielowierszowa\nDrugi wiersz');await click('Zapisz',document.querySelector('dialog')!);assert.match(document.querySelector('.ws-content')!.textContent!,/Temat lokalny/);
+ await fill('.ws-activity-filters input','niepasujący filtr');assert.match(document.querySelector('.ws-content')!.textContent!,/Brak aktywności/);await click('Wyczyść filtry');assert.match(document.querySelector('.ws-content')!.textContent!,/Temat lokalny/);assert(captured.some(e=>e.type==='activity.add'));
+});
+test('document metadata and ratings can be inspected while request/signature/backend actions remain unavailable',async()=>{
+ await mount();await click('Dokumenty i umowy');await click('Dodaj dokument');await fill('dialog input[id$="-modal-name"]','Dokument lokalny');await fill('dialog input[id$="-modal-when"]','2026-10-28');await click('Zapisz',document.querySelector('dialog')!);await click('Otwórz podgląd');assert.match(document.querySelector('dialog')!.textContent!,/Dokument lokalny/);await click('Zamknij',document.querySelector('.ws-modal-actions')!);
+ await click('Poproś o aktualizację');assert(button('Wyślij',document.querySelector('dialog')!).disabled);await click('Anuluj',document.querySelector('.ws-modal-actions')!);
+ await click('Oceny');const additions=Array.from(document.querySelectorAll<HTMLButtonElement>('button')).filter(b=>text(b)==='Dodaj ocenę i komentarz');await act(async()=>additions[0].click());await act(async()=>document.querySelector<HTMLInputElement>('dialog input[type="radio"][value="4"]')!.click());await fill('dialog textarea[id$="-modal-comment"]','Komentarz lokalny');await click('Zapisz',document.querySelector('dialog')!);assert.match(document.querySelector('.ws-rating-history')!.textContent!,/Komentarz lokalny/);assert(captured.some(e=>e.type==='rating.add'));
+});
+test('keyword add/edit/remove has no publications, trend fixtures or search request',async()=>{
+ await mount();await click('Newsfeed');await fill('input[id$="-keyword"]','Własna fraza');await click('Dodaj słowo kluczowe');assert.match(document.querySelector('.nf-my-keywords')!.textContent!,/Własna fraza/);
+ await click('Edytuj',document.querySelector('.nf-my-keywords')!);await fill('input[id$="-keyword"]','Poprawiona fraza');await click('Zapisz zmianę frazy');assert.match(document.querySelector('.nf-my-keywords')!.textContent!,/Poprawiona fraza/);
+ await act(async()=>document.querySelector<HTMLButtonElement>('button[aria-label="Usuń frazę: Poprawiona fraza"]')!.click());assert.match(document.querySelector('.nf-my-keywords')!.textContent!,/Lista jest pusta/);assert.equal(document.querySelectorAll('iframe,.nf-chart,.nf-results').length,0);assert(captured.every(e=>e.type.startsWith('keyword.')));
+});
+test('custom select filters and keyboard selection are scoped to the mount and listeners are cleaned on unmount',async()=>{
+ await mount();const originalAdd=document.addEventListener.bind(document),originalRemove=document.removeEventListener.bind(document);const listeners=new Set<EventListenerOrEventListenerObject>();document.addEventListener=((type:string,listener:EventListenerOrEventListenerObject,options?:boolean|AddEventListenerOptions)=>{if(type==='pointerdown')listeners.add(listener);originalAdd(type,listener,options);}) as typeof document.addEventListener;document.removeEventListener=((type:string,listener:EventListenerOrEventListenerObject,options?:boolean|EventListenerOptions)=>{if(type==='pointerdown')listeners.delete(listener);originalRemove(type,listener,options);}) as typeof document.removeEventListener;
+ try{await click('Zarządzaj kategoriami');const trigger=document.querySelector<HTMLButtonElement>('dialog button[aria-haspopup="listbox"]')!;await act(async()=>trigger.click());const popup=document.querySelector('.srm-dropdown-popup')!;assert(popup.closest('.sg-adp-ui'));assert(popup.closest('dialog'));
+ await fill('.srm-dropdown-search input','testowa B');assert.equal(document.querySelectorAll('[role="option"]').length,1);await act(async()=>document.querySelector('.srm-dropdown-search input')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));await click('Przypisz kategorię',document.querySelector('dialog')!);assert.match(document.querySelector('.ws-tags')!.textContent!,/Kategoria testowa B/);
+ assert.equal(listeners.size,0);assert.equal(document.body.style.overflow,'auto');assert.equal(document.documentElement.getAttribute('data-srm-theme'),null);
+ }finally{document.addEventListener=originalAdd;document.removeEventListener=originalRemove;}
+});
+test('host visibility preserves a draft, while a new instance discards the previous identity scope',async()=>{
+ networkCalls=0;const target=document.getElementById('test-root')!;root=createRoot(target);let active=true,instance='first';
+ const render=()=>root!.render(<AdpWorkspace contractVersion="1.0.0" instanceId={instance} locale="pl" theme="light" model={makeModel()} navigation={{view:'data',section:'company',dataArea:'contacts'}} active={active} onNavigate={()=>{}} onReturn={()=>{}} onLocalEvent={()=>{}}/>);
+ await act(async()=>render());await click('Dodaj kontakt');await fill('dialog input[id$="-modal-name"]','Nieukończony wpis');active=false;await act(async()=>render());assert.equal(document.querySelectorAll('dialog').length,0);active=true;await act(async()=>render());assert.equal(document.querySelector<HTMLInputElement>('dialog input[id$="-modal-name"]')!.value,'Nieukończony wpis');instance='second';await act(async()=>render());assert.equal(document.querySelectorAll('dialog').length,0);assert(!target.textContent!.includes('Nieukończony wpis'));
+});
