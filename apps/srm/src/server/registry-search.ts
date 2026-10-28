@@ -21,12 +21,17 @@ export type RegistrySearchResult =
   | { entityType: "NOT_FOUND" }
   | { entityType: "UNAVAILABLE"; unavailableProvider: "CEIDG" | null };
 
-function verifiedCompany(company: SupplierXRayCard, nip: string): boolean {
+function acceptedCompanyOutcome(company: SupplierXRayCard, nip: string): boolean {
   const general = company.general, data = general.data;
-  return (general.status === "SUCCESS" || general.status === "PARTIAL") && data?.nip === nip
-    && company.identity.nip === nip && typeof data.krs === "string" && /^\d{10}$/.test(data.krs)
-    && company.identity.krs === data.krs && typeof data.legalName === "string" && !!data.legalName.trim()
-    && company.identity.name === data.legalName
+  if (!(general.status === "SUCCESS" || general.status === "PARTIAL") || data?.nip !== nip
+    || company.identity.nip !== nip || company.identity.krs !== data.krs || company.identity.name !== data.legalName) return false;
+  // Existing checksum-verified historical removal evidence can withhold a
+  // report even when the old record has no KRS/name. It cannot admit finances
+  // or become positive identity proof through a CEIDG availability error.
+  if (data.registrationStatus === "DEREGISTERED" && data.krs === null)
+    return company.financial.status === "NOT_REQUESTED" && company.financial.data === null;
+  return typeof data.krs === "string" && /^\d{10}$/.test(data.krs)
+    && typeof data.legalName === "string" && !!data.legalName.trim()
     && (!data.registryHistory || data.registryHistory.currentKrs === data.krs);
 }
 
@@ -42,7 +47,7 @@ export async function searchRegistryByNip(
     const company = await lookups.company(organizationId, request);
     // Do not reclassify or acquire a second report if the selected company
     // fails validation after the routing read (including a concurrent change).
-    return verifiedCompany(company, nip)
+    return acceptedCompanyOutcome(company, nip)
       ? { entityType: "COMPANY", card: company }
       : { entityType: "UNAVAILABLE", unavailableProvider: null };
   }
@@ -57,7 +62,8 @@ export async function searchRegistryByNip(
   if (jdg.status !== "EMPTY" && jdg.status !== "ERROR") return { entityType: "UNAVAILABLE", unavailableProvider: "CEIDG" };
 
   const company = await lookups.company(organizationId, request);
-  if (verifiedCompany(company, nip)) {
+  if (acceptedCompanyOutcome(company, nip)
+    && (jdg.status === "EMPTY" || company.general.data?.krs !== null)) {
     return { entityType: "COMPANY", card: company };
   }
 

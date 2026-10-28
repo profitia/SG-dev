@@ -5306,8 +5306,8 @@
     "referenceStagingSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
     "developmentBaselineSha": "296936bf35a315ca909568718fd2f7734e2d3f44",
     "applicationSourceDigests": {
-      "src/server/registry-search.ts": "ad3c5f86a5698e0837f76b33855bdd4ba3a6595b561ed8c1ba65e85799ee210a",
-      "src/server/registry-search.test.ts": "b02de6da7ee0ae91fae6e7a910c82b6ddd88025f6a6cc63dfadb6942fd2f26d5",
+      "src/server/registry-search.ts": "e53953a07b3e1fe026a737c3204f694c0d4ff41e3ae1e9173b359e2a14855963",
+      "src/server/registry-search.test.ts": "6caa784f446cb3bdf50fb5cdb647ee973a35ac1d8806d3cb05fd70075c5b88b9",
       "src/server/company-source-policy.ts": "ee40d2b29fd7fbb6bd9076b35b9c4a7791e2bacf3ab642999e89335e1a04f16c",
       "src/server/company-source-policy.test.ts": "1e6a0680fe0496395d71f5bc1eba11882bbf364eaeb4daf412e5cfd004b4f0bd",
       "src/server/supplier-company-read.ts": "d24952499345d25a6b69b0357ce6ed583dc6db565ec8ffead61581fc350d9c8b",

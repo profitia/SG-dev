@@ -138,6 +138,21 @@ test("authorization, audit and catalog failures propagate without provider fallb
   }),error=>error===denied);
 });
 
+test("historical removal evidence preserves the existing withheld-report notice without admitting incomplete identity or finances",async()=>{
+  const removed=company("PARTIAL",nip);
+  removed.identity.krs=null;removed.identity.name=null;
+  removed.general.data!.krs=null;removed.general.data!.legalName=null;
+  removed.general.data!.registrationStatus="DEREGISTERED";
+  const result=await searchRegistryByNip("org",request,{jdg:async()=>jdg("EMPTY"),company:async()=>removed});
+  assert.equal(result.entityType,"COMPANY");
+  assert.equal(result.entityType==="COMPANY"&&result.card.financial.status,"NOT_REQUESTED");
+  for(const unsafe of [
+    {...removed,financial:{...removed.financial,status:"SUCCESS" as const}},
+    {...removed,general:{...removed.general,data:{...removed.general.data!,registrationStatus:"UNKNOWN" as const}}},
+  ]) assert.equal((await searchRegistryByNip("org",request,{jdg:async()=>jdg("EMPTY"),company:async()=>unsafe})).entityType,"UNAVAILABLE");
+  assert.deepEqual(await searchRegistryByNip("org",request,{jdg:async()=>jdg("ERROR"),company:async()=>removed}),{entityType:"UNAVAILABLE",unavailableProvider:"CEIDG"});
+});
+
 test("a mismatched company identifier cannot select a company", async () => {
   const result = await searchRegistryByNip("org", request, {
     jdg: async () => jdg("EMPTY"), company: async () => company("SUCCESS", "5272443955"),
