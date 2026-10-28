@@ -22,7 +22,7 @@ test('MGBI recovery preserves the full prior acceptance and pins every current c
     const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
     const routing=receipt.stagingCompanyRoutingAdoption
     const repair=receipt.companyAbsenceRoutingRepair
-    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):routing.applicationSourceDigests[file as keyof typeof routing.applicationSourceDigests]?execFileSync('git',['show',routing.previousReceiptSourceSha+':apps/srm/'+file]):repair.applicationSourceDigests[file as keyof typeof repair.applicationSourceDigests]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
+    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):routing.applicationSourceDigests[file as keyof typeof routing.applicationSourceDigests]?execFileSync('git',['show',routing.previousReceiptSourceSha+':apps/srm/'+file]):repair.applicationSourceDigests[file as keyof typeof repair.applicationSourceDigests]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+file]):receipt.cachedReportE1Optimization.applicationSourceDigests[file as keyof typeof receipt.cachedReportE1Optimization.applicationSourceDigests]?execFileSync('git',['show',receipt.cachedReportE1Optimization.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
     assert.equal(hash(bytes),digest,file)
   }
   assert.equal(a.companySourcePolicy,'MGBI_ONLY');assert.equal(a.sharedSdkChanged,false);assert.equal(a.humanEntitlementsChanged,false)
@@ -36,7 +36,7 @@ test('routing adoption preserves accepted contracts and pins the bounded current
   for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
   for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
     const repair=receipt.companyAbsenceRoutingRepair
-    const bytes=repair.applicationSourceDigests[file as keyof typeof repair.applicationSourceDigests]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
+    const bytes=repair.applicationSourceDigests[file as keyof typeof repair.applicationSourceDigests]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+file]):receipt.cachedReportE1Optimization.applicationSourceDigests[file as keyof typeof receipt.cachedReportE1Optimization.applicationSourceDigests]?execFileSync('git',['show',receipt.cachedReportE1Optimization.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
     assert.equal(hash(bytes),digest,file)
   }
   for(const key of ['freshnessRulesChanged','humanAuthorityChanged','sharedSdkChanged','financialWorkflowChanged','providerLimitsChanged','sqlOrInfrastructureChanged','uiChatMapsChanged'])assert.equal(a[key as keyof typeof a],false,key)
@@ -92,7 +92,7 @@ test('company absence repair retains all earlier receipts and pins current bound
   const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
   assert.equal(hash(prior),a.previousReceiptDigest)
   for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
-  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){const next=receipt.cachedReportE1Optimization;const bytes=next.applicationSourceDigests[file as keyof typeof next.applicationSourceDigests]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url));assert.equal(hash(bytes),digest,file)}
   assert.equal(a.positiveSourceContractChanged,false);assert.equal(a.authorityOrProviderLimitsChanged,false)
 })
 
@@ -114,4 +114,15 @@ test('neutral absence requires exact MGBI EMPTY evidence, never errors or an inc
     (v:SharedCompany)=>{v[section].warnings=['MGBI_MAPPING_FAILED']},
     (v:SharedCompany)=>{v[section].effectiveAt='2026-01-01'},
   ]){const invalid=structuredClone(value);mutate(invalid);assert.equal(isEmptyMgbiCompany(invalid.general,invalid.financial),false)}
+})
+
+
+test('cached main report optimization preserves all prior acceptances and current account and publication checks',()=>{
+ const a=receipt.cachedReportE1Optimization,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
+ const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+ assert.equal(hash(previous),a.previousReceiptDigest)
+ for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+ assert.equal(a.transactionTimeoutMs,15000);assert.equal(a.externalAccountRecheckedBeforeOutcome,true);assert.equal(a.finalHumanReadRetained,true)
+ for(const key of ['authorizationCacheIntroduced','sharedSdkChanged','sqlOrInfrastructureChanged','providerAcquisitionOrLimitsChanged','routingChanged','financialFormulasChanged','uiChatMapsChanged','freshAndPilotPathChanged'])assert.equal(a[key as keyof typeof a],false,key)
 })

@@ -111,9 +111,13 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
           &&Array.isArray(row.financial_json.warnings)?row.financial_json:null
       })
     },
-    async indicators(input:SupplierNativeWorkSelection,data:FinancialData){
+    async indicators(input:SupplierNativeWorkSelection,data:FinancialData,cachedReport=false){
+      if(typeof cachedReport!=='boolean')return refuse()
       const s=select(input),body=json(data)
-      if(options.financialInventoryBoundaryDigest)return run(s,'SRM_CACHE_READ',{indicatorInputDigest:digest(body),metrics:FINANCIAL_INDICATOR_INPUT_CODES},async(_pool,client)=>{
+      // The current cached report reads the same closed metric set under one
+      // existing READ Work. Its RLS, current account/outcome checks and both
+      // publication revision checks remain on that exact transaction.
+      if(options.financialInventoryBoundaryDigest||cachedReport)return run(s,'SRM_CACHE_READ',{indicatorInputDigest:digest(body),metrics:FINANCIAL_INDICATOR_INPUT_CODES,...(cachedReport?{cachedReport:true}:{})},async(_pool,client)=>{
         const revision=await readIndicatorPublication(client,s.command.nip)
         const facts=await readStoredIndicatorFacts(client,s.command.nip,FINANCIAL_INDICATOR_INPUT_CODES)
         if(await readIndicatorPublication(client,s.command.nip)!==revision)throw Error('Indicator publication changed')

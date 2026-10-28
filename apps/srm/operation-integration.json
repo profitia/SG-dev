@@ -5358,5 +5358,37 @@
     "sqlOrInfrastructureChanged": false,
     "uiChatMapsChanged": false,
     "runtimeDeploymentPerformed": false
+  },
+  "cachedReportE1Optimization": {
+    "previousReceiptSourceSha": "c23688a17aaf3a0a6c20ef8a754b1c2b93961db8",
+    "previousReceiptDigest": "4f3cad68558ca4d10d5acc59e6b8506cff00417b0bbfd4c2124e4ae3080518cf",
+    "target": "MAIN_SRM_DEVELOPMENT_CACHED_MGBI_COMPANY",
+    "unitId": "SRM_CACHE_READ",
+    "accessMode": "READ",
+    "metricSelection": "SAME_COMPLETE_CLOSED_EXISTING_SET",
+    "publicationGuard": "CATALOG_ROW_XMIN_BEFORE_AND_AFTER_SAME_UNIT",
+    "transactionTimeoutMs": 15000,
+    "externalAccountRecheckedBeforeOutcome": true,
+    "finalHumanReadRetained": true,
+    "authorizationCacheIntroduced": false,
+    "sharedSdkChanged": false,
+    "sqlOrInfrastructureChanged": false,
+    "providerAcquisitionOrLimitsChanged": false,
+    "routingChanged": false,
+    "financialFormulasChanged": false,
+    "uiChatMapsChanged": false,
+    "freshAndPilotPathChanged": false,
+    "applicationSourceDigests": {
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "b313426a63205f543117105d9868d42a6efab003b7b009a987a0bd30cf693abf",
+      "scripts/native-execution-adoption.test.mjs": "84cdf31f7e9436df1090a6e42041b37bba6c89336f9c687df4ddd336726283cb",
+      "scripts/request-quota-adoption.test.mjs": "b5c406551820ec561012632e91ca8876ecfb2290dec1a23719e922d93e34a513",
+      "scripts/supplier-delegated-business.integration.test.mjs": "549398279c1a7d1f1138c7ec697883c35847414d473926f6aedd0dd16d6d2962",
+      "src/server/company-source-policy.test.ts": "c4c3eb15ba7aec8228d0b27420c551406ad61476d1a0338ac4c64539045578d3",
+      "src/server/peer-read-boundary.test.ts": "9be29b635b4c6df0e58311926de69279a30e3680690b4d14269e1d60d6dbb08b",
+      "src/server/supplier-indicator-read.test.ts": "03d7745906cc95bded5d761b640fbeebf1c8581b822552c4599e5e552b79800b",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "ad06a72641a7a857751cb3b4afe3fddf998629bac3639fba4cafd5536685a571",
+      "src/server/supplier-native-company.ts": "6c74dacb9c06d2a5e3c9d72f6755bbb219ac3ae177af84b9cd5d639bc52bd124",
+      "src/server/supplier-native-work-store.ts": "563b6ff535f2ba9f128c9645a1bb68a256cad30085a51affb3bfc6241d327e66"
+    }
   }
 }
