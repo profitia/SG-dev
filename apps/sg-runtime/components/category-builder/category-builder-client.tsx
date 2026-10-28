@@ -1,5 +1,7 @@
 'use client'
 
+import {categoryDraftStatus} from '../../lib/category/draft'
+
 import Link from 'next/link'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -61,10 +63,6 @@ function createEmptyDraft(): DraftCategory {
 
 function sumComponentWeights(components: DraftComponent[]) {
   return components.reduce((total, component) => total + component.weightPercent, 0)
-}
-
-function deriveDraftStatus(componentCount: number, allocatedPercent: number): CategoryStatus {
-  return componentCount >= 2 && allocatedPercent === 100 ? 'READY' : 'DRAFT'
 }
 
 function getMaximumAvailableWeight(components: DraftComponent[], componentId: string) {
@@ -240,7 +238,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
   const componentCount = draft.components.length
   const allocatedPercent = sumComponentWeights(draft.components)
   const remainingPercent = Math.max(0, 100 - allocatedPercent)
-  const derivedStatus: CategoryStatus = deriveDraftStatus(componentCount, allocatedPercent)
+  const derivedStatus: CategoryStatus = categoryDraftStatus(draft.components)
   const existingComponentKeys = new Set(draft.components.map((component) => normalizeComponentKey(component.name)))
 
   useEffect(() => {

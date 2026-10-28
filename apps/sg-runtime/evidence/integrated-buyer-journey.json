@@ -1,0 +1,847 @@
+{
+  "taskId": "SG2-INTEGRATED-BENCHMARK-TO-PCI-DEVELOPMENT-20261028",
+  "profile": "SG2",
+  "status": "PARTIAL_LOCAL_CANDIDATE_NOT_DEPLOYED",
+  "authority": "profitia/SG-dev/main",
+  "baselineSha": "8a28cd951365ac0ff824a7603c157848277b6420",
+  "refreshedMainSha": "c23688a17aaf3a0a6c20ef8a754b1c2b93961db8",
+  "renderReadback": {
+    "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "environmentId": "evm-dap98hm0tbcc738rro10",
+    "autoDeploy": "off",
+    "liveDeployId": "dep-dbgu1u3bc2fs73bkqabg",
+    "liveSha": "8a28cd951365ac0ff824a7603c157848277b6420",
+    "mutationsByThisTask": false
+  },
+  "design": {
+    "projectId": "463295321573851136",
+    "motherRevision": "465857540723474432",
+    "layerRevision": "465816145245642752",
+    "section15ReferenceDeclaredByMotherCss": "465813315344568320",
+    "automaticSynchronization": false,
+    "visualClaim": "PINNED_LAYOUT_AND_CONTROL_ADOPTION_NO_FULL_PIXEL_PARITY_CLAIM"
+  },
+  "matrix": [
+    {
+      "id": "A",
+      "behavior": "Dashboard → canonical Finder",
+      "implementation": "components/appshell/appshell-dashboard.tsx",
+      "test": "integrated-buyer-journey-browser.mjs",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "B",
+      "behavior": "Blank name / zero weight / selected benchmark seed",
+      "implementation": "components/price-change-index/price-change-index-controller.ts",
+      "test": "integrated-buyer-journey-browser.mjs",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "C",
+      "behavior": "Shared Picker and repeated selection",
+      "implementation": "components/benchmark-picker/shared-benchmark-picker.tsx",
+      "test": "benchmark-picker-controller.test.ts",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "D",
+      "behavior": "Category readiness and explicit terms",
+      "implementation": "lib/category/draft.ts",
+      "test": "integrated-buyer-journey-operation.test.ts",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "E",
+      "behavior": "Real native preparation → CCI → Indexed Price",
+      "implementation": "lib/cost-analysis/price-change-index-host.ts",
+      "test": "integrated-buyer-journey-operation.test.ts",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "F",
+      "behavior": "Cancel, focus return and same Finder context",
+      "implementation": "components/price-change-index/price-change-index-layer.tsx",
+      "test": "integrated-buyer-journey-browser.mjs",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "G",
+      "behavior": "Session/org loss and cross-tenant denial",
+      "implementation": "lib/cost-analysis/price-change-index-operation.ts",
+      "test": "integrated-buyer-journey-operation.test.ts",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "H",
+      "behavior": "No duplicate analysis/category create, unknown write guarded",
+      "implementation": "components/price-change-index/price-change-index-layer.tsx",
+      "test": "integrated-buyer-journey-browser.mjs",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "I",
+      "behavior": "Missing dates/history/unsupported mappings refuse",
+      "implementation": "lib/cost-analysis/price-change-index-host.ts",
+      "test": "integrated-buyer-journey-operation.test.ts",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "J",
+      "behavior": "First3 steps bounded, both themes4 viewports; touch/keyboard/C15",
+      "implementation": "components/price-change-index/price-change-index-layer.css",
+      "test": "integrated-buyer-journey-browser.mjs",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "K",
+      "behavior": "Minimal independent public-module mount and exclusion of demo graph",
+      "implementation": "packages/sg2-price-change-index-ui/src/business.ts",
+      "test": "integrated-buyer-journey-package.test.mjs",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "L",
+      "behavior": "Existing demo compatibility",
+      "implementation": "apps/sg2-price-change-index-demo",
+      "test": "demo test / typecheck / Vite build",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    },
+    {
+      "id": "M",
+      "behavior": "ADP, assistant, identity, forecast and SQL fences",
+      "implementation": "apps/sg-runtime/tests",
+      "test": "full test:operation-context file inventory",
+      "status": "LOCAL_AUTOMATED_PASS",
+      "liveStatus": "NOT_VERIFIED"
+    }
+  ],
+  "controlProvenance": [
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/CanonChartCrosshair.tsx",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/CanonChartCrosshair.tsx",
+      "originalExportSha256": "51d7e3fb61f14ee6b3d33d3a359deef59fa87a0fb0abdc2be27e89aadfe405aa",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/CanonChartTimeAxis.tsx",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/CanonChartTimeAxis.tsx",
+      "originalExportSha256": "b77c7e56465444365d458809576c93cd98738e5bde1a0824366856693edc0cc7",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/CanonChartTimePresets.tsx",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/CanonChartTimePresets.tsx",
+      "originalExportSha256": "56e6358e030b02a037568dc300348f83b9eeb40135881d8c9dbf330c9ebf1368",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/CanonChartTimeRange.tsx",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/CanonChartTimeRange.tsx",
+      "originalExportSha256": "d6c8d6ec47a8b16a35800b93a7e4cbc4535dfd1df4b19048c98a042207dcda35",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/CanonChartValueLabels.tsx",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/CanonChartValueLabels.tsx",
+      "originalExportSha256": "47b800f92c0f35b96b1e8f74184250becd0cf04c403723beeea8bff909ff521e",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/CanonElements.tsx",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/CanonElements.tsx",
+      "originalExportSha256": "5d5240807b470f0b5a853c7d0b26d9207a336a502dfc92471c28466b86f2fc1b",
+      "adoption": "MINIMAL_REACT_PRIMITIVE_ADAPTER",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/CanonTimeIntervalHighlight.tsx",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/CanonTimeIntervalHighlight.tsx",
+      "originalExportSha256": "c87bf608f6e17b86a93678998f5a186f77a601f23ceb1e8f080a3fc7a9ffc9d5",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/chart-crosshair.css",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/chart-crosshair.css",
+      "originalExportSha256": "b68f5e00c863ba46040bf582082495cd3997369fbb06a3fa25076b6eaa326194",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/chart-time-presets.css",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/chart-time-presets.css",
+      "originalExportSha256": "eb4be3cae7af6446b8a2bec6ea13fa43cb22d6d4450809ec7168e2900e3b9894",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/chart-time-presets.ts",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/chart-time-presets.ts",
+      "originalExportSha256": "4c07749bb50f9656d0afefdbfdef28d631b07b5ee2d35a778b6d787b2cc1e560",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/chart-time-range-motion.ts",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/chart-time-range-motion.ts",
+      "originalExportSha256": "36bd2c5c644c92bbfbf75e01c71684c7851f44cf7d03afa53ca971e65d16e8ae",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/chart-time-range.css",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/chart-time-range.css",
+      "originalExportSha256": "e6d71cf569e950438d963c4f7c6af57e3f7c0da7be0cf8ed27e10521e555667b",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/chart-value-labels.css",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/chart-value-labels.css",
+      "originalExportSha256": "df7571dd7ba71ce05c0118fd860f51180dccdee59acc748dd754228048d141f2",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/price-history-line.css",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/price-history-line.css",
+      "originalExportSha256": "c88b6892c3cdd01005cc7c2061693371ba8b97e2792230b1a03b3304047061bd",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    },
+    {
+      "file": "packages/sg2-price-change-index-ui/src/revisions/pci3/canon-chart15/srm-history-chart.css",
+      "originalExportFile": "pci-pinned-v3/src/components/generated/canon-chart15/srm-history-chart.css",
+      "originalExportSha256": "8d7ecc5abbc0b6a6c3ddf52aac84307c0c5dfccfd697e0e344b00609e522cd16",
+      "adoption": "ORIGINAL_PRODUCT_CONTROL_WITH_DELIVERY_WRAPPERS_REMOVED",
+      "sourceExportRevision": "465857540723474432"
+    }
+  ],
+  "testData": "SYNTHETIC_TEST_FIXTURES_ONLY_IN_TEST_HOST; PRODUCT_USES_EXISTING_E1_MARKET_DATA_HANDLERS",
+  "productPersistence": [
+    "EXISTING_BENCHMARK_SELECTION",
+    "EXISTING_CATEGORY_STRUCTURE"
+  ],
+  "unavailableCapabilities": [
+    "PRICE_MONITORING_ALERTS",
+    "SUPPLIER_OFFER_COMPARISON_AND_SAVE",
+    "ANALYSIS_SAVE_REOPEN_VERSIONING"
+  ],
+  "releaseGates": [
+    "ARCHITECTURE_PR764_OWNER_APPROVAL_AND_PROTECTED_MERGE",
+    "EXACT_SHA_TRUSTED_MAIN_CONTROLLED_PROOF",
+    "SG2_MAIN_MERGE_OWNER_APPROVAL",
+    "EXACT_DEVELOPMENT_SHA_DEPLOYMENT_OWNER_APPROVAL",
+    "REAL_AUTHENTICATED_DEVELOPMENT_UAT"
+  ],
+  "noNeonMigration": true,
+  "noNewInfrastructure": true,
+  "noStagingOrProductionDeployment": true,
+  "evidenceSidecar": "/private/tmp/sg2-integrated-buyer-journey-20261028",
+  "browserAcceptance": {
+    "mode": "REAL_COMPONENTS_SYNTHETIC_EXTERNAL_IDENTITY_AND_PROVIDER",
+    "geometry": [
+      {
+        "step": 1,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 57,
+          "bottom": 835,
+          "width": 372
+        },
+        "height": 633,
+        "scrollHeight": 633,
+        "width": 333,
+        "scrollWidth": 333,
+        "footer": {
+          "top": 778,
+          "bottom": 835
+        },
+        "clipped": []
+      },
+      {
+        "step": 1,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 57,
+          "bottom": 835,
+          "width": 372
+        },
+        "height": 633,
+        "scrollHeight": 633,
+        "width": 333,
+        "scrollWidth": 333,
+        "footer": {
+          "top": 778,
+          "bottom": 835
+        },
+        "clipped": []
+      },
+      {
+        "step": 1,
+        "viewport": {
+          "width": 768,
+          "height": 1024
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 734
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 671,
+        "scrollWidth": 671,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 1,
+        "viewport": {
+          "width": 768,
+          "height": 1024
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 734
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 671,
+        "scrollWidth": 671,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 1,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 883,
+          "width": 1406
+        },
+        "height": 702,
+        "scrollHeight": 702,
+        "width": 1343,
+        "scrollWidth": 1343,
+        "footer": {
+          "top": 826,
+          "bottom": 883
+        },
+        "clipped": []
+      },
+      {
+        "step": 1,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 883,
+          "width": 1406
+        },
+        "height": 702,
+        "scrollHeight": 702,
+        "width": 1343,
+        "scrollWidth": 1343,
+        "footer": {
+          "top": 826,
+          "bottom": 883
+        },
+        "clipped": []
+      },
+      {
+        "step": 1,
+        "viewport": {
+          "width": 2560,
+          "height": 1440
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 1478
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 1415,
+        "scrollWidth": 1415,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 1,
+        "viewport": {
+          "width": 2560,
+          "height": 1440
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 1478
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 1415,
+        "scrollWidth": 1415,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 2,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 57,
+          "bottom": 835,
+          "width": 372
+        },
+        "height": 633,
+        "scrollHeight": 633,
+        "width": 333,
+        "scrollWidth": 333,
+        "footer": {
+          "top": 778,
+          "bottom": 835
+        },
+        "clipped": []
+      },
+      {
+        "step": 2,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 57,
+          "bottom": 835,
+          "width": 372
+        },
+        "height": 633,
+        "scrollHeight": 633,
+        "width": 333,
+        "scrollWidth": 333,
+        "footer": {
+          "top": 778,
+          "bottom": 835
+        },
+        "clipped": []
+      },
+      {
+        "step": 2,
+        "viewport": {
+          "width": 768,
+          "height": 1024
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 734
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 671,
+        "scrollWidth": 671,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 2,
+        "viewport": {
+          "width": 768,
+          "height": 1024
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 734
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 671,
+        "scrollWidth": 671,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 2,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 883,
+          "width": 1406
+        },
+        "height": 702,
+        "scrollHeight": 702,
+        "width": 1343,
+        "scrollWidth": 1343,
+        "footer": {
+          "top": 826,
+          "bottom": 883
+        },
+        "clipped": []
+      },
+      {
+        "step": 2,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 883,
+          "width": 1406
+        },
+        "height": 702,
+        "scrollHeight": 702,
+        "width": 1343,
+        "scrollWidth": 1343,
+        "footer": {
+          "top": 826,
+          "bottom": 883
+        },
+        "clipped": []
+      },
+      {
+        "step": 2,
+        "viewport": {
+          "width": 2560,
+          "height": 1440
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 1478
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 1415,
+        "scrollWidth": 1415,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 2,
+        "viewport": {
+          "width": 2560,
+          "height": 1440
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 1478
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 1415,
+        "scrollWidth": 1415,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 3,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 57,
+          "bottom": 835,
+          "width": 372
+        },
+        "height": 633,
+        "scrollHeight": 633,
+        "width": 333,
+        "scrollWidth": 333,
+        "footer": {
+          "top": 778,
+          "bottom": 835
+        },
+        "clipped": []
+      },
+      {
+        "step": 3,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 57,
+          "bottom": 835,
+          "width": 372
+        },
+        "height": 633,
+        "scrollHeight": 633,
+        "width": 333,
+        "scrollWidth": 333,
+        "footer": {
+          "top": 778,
+          "bottom": 835
+        },
+        "clipped": []
+      },
+      {
+        "step": 3,
+        "viewport": {
+          "width": 768,
+          "height": 1024
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 734
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 671,
+        "scrollWidth": 671,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 3,
+        "viewport": {
+          "width": 768,
+          "height": 1024
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 734
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 671,
+        "scrollWidth": 671,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 3,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 883,
+          "width": 1406
+        },
+        "height": 702,
+        "scrollHeight": 702,
+        "width": 1343,
+        "scrollWidth": 1343,
+        "footer": {
+          "top": 826,
+          "bottom": 883
+        },
+        "clipped": []
+      },
+      {
+        "step": 3,
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 883,
+          "width": 1406
+        },
+        "height": 702,
+        "scrollHeight": 702,
+        "width": 1343,
+        "scrollWidth": 1343,
+        "footer": {
+          "top": 826,
+          "bottom": 883
+        },
+        "clipped": []
+      },
+      {
+        "step": 3,
+        "viewport": {
+          "width": 2560,
+          "height": 1440
+        },
+        "theme": "Ciemny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 1478
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 1415,
+        "scrollWidth": 1415,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      },
+      {
+        "step": 3,
+        "viewport": {
+          "width": 2560,
+          "height": 1440
+        },
+        "theme": "Jasny",
+        "box": {
+          "top": 65,
+          "bottom": 915,
+          "width": 1478
+        },
+        "height": 734,
+        "scrollHeight": 734,
+        "width": 1415,
+        "scrollWidth": 1415,
+        "footer": {
+          "top": 858,
+          "bottom": 915
+        },
+        "clipped": []
+      }
+    ],
+    "screenshots": {
+      "chart-crosshair.png": "80eeca4456b7b1e67e23faacfb278b8d1d6bbb033944369284b20e16b54d506a",
+      "finder-search.png": "b067c5a01c07c1b1ebe59333017f5f1d0976e1545c9aa4911cb314afa22f5f4d",
+      "result-1440-Ciemny.png": "15614f1ddcb484ac36166646e776f610ee159f12c3413734fc67106529402e8e",
+      "result-1440-Jasny.png": "a4ac5f8d70a741e924dd185d42e2c8f18d893ec5ec7862650ae7d7669649c67f",
+      "result-2560-Ciemny.png": "ce8c757f191df8d627857701833ef0173a43d433fda6ad3ae0aee035df265241",
+      "result-2560-Jasny.png": "e444fad8572ef199353459636ee62f76c70507f14d95c2d64adc4ce8e0a4c1e4",
+      "result-390-Ciemny.png": "84a05d297d3a73accf9aa2e2fa61a57e64e45cdec0467c6f06d9a8f3e4dbfa53",
+      "result-390-Jasny.png": "cf8e9c2d0b07658c79d6f6bf3f0b8e25f5178fd668c63594a14102fb750d2046",
+      "result-768-Ciemny.png": "c696323b75fe5395aeffbc738db6f19da6f671f9791dc584482a45608f02ce18",
+      "result-768-Jasny.png": "7a881538c50e88e810864dc3624eccee02ee207f0dda956b7cfddc8d73d20944",
+      "result.png": "bd41a214a21f8ce0cfba7d6cd848fdc398f1c38c8937216b6cd783386347e0f4",
+      "step-1-1440-Ciemny.png": "592eef651078e5b29054b074970198bececc0f9c7003970bba90ed28ea1bf9a6",
+      "step-1-1440-Jasny.png": "61b2ac0a10103cc321d79c10b0e16053fdd528a04289379029e4998a7edf2842",
+      "step-1-2560-Ciemny.png": "625d3d1f7fc9543ba307685fc66b89657a37ffeb87129a886b7827ebeaef4dff",
+      "step-1-2560-Jasny.png": "fd06c1d16b0b8091341226c21dea59811192fafb97519afb3926e38b4b643242",
+      "step-1-390-Ciemny.png": "7da080a56da31830b70a11dd5d27bf9642cae7ef5a4adc0b0b2a3fbffded82b0",
+      "step-1-390-Jasny.png": "77ce990b83f70cf9f0aee146734eab1aa9a56a850641606c4e5476d7e418298e",
+      "step-1-768-Ciemny.png": "fd8c3b67e9ff929c63bef2d63af193517a8ae5c94ae98e7a22928603657733d3",
+      "step-1-768-Jasny.png": "80e887309529469722dd3ed9e62ecf74e307ac5272508913bc1c23e70026199b",
+      "step-2-1440-Ciemny.png": "30331ec96d7fa4e09c56c2f49904d7300f858356f4c64c8256020ea1b2455cfb",
+      "step-2-1440-Jasny.png": "3293210161af5055e1cfe696d27cdf39f492b3735cc20924506344ccb1c375b5",
+      "step-2-2560-Ciemny.png": "b836d1d06115feac2c42d9a9160361a73ccdaf0d7afc8f66fe691b7e0a8954b1",
+      "step-2-2560-Jasny.png": "386a01ee0041e61a037c5dc7f2720ccdf402a8dcb0be7dbd8b1631f002beada8",
+      "step-2-390-Ciemny.png": "7c0371e0ab9c89488161b54356648c3ee25b27272a94cdec9f3c009b197ec254",
+      "step-2-390-Jasny.png": "f59c2226c3d382045d49f6d940b90208e9d64d8b583f925abd0a7de1e1e1dcd6",
+      "step-2-768-Ciemny.png": "36bf72a028c682c063b07d012aa8e7f95930578b96de66b6b7461c27be23fb75",
+      "step-2-768-Jasny.png": "40827e8a57cd4c7b18ee28ec73790d5a6d1d817afeaf246224e3d0998ec437ad",
+      "step-3-1440-Ciemny.png": "f1cbfe607b23e26eb968dd4c6905ee58b51d64bd93b2a79a7277f783dff156de",
+      "step-3-1440-Jasny.png": "b1a02556070b04b70ead06a2090b5505682cdff5794e19f00941cf1ad58d2853",
+      "step-3-2560-Ciemny.png": "01fe5e3e02f964f6321988d7a1e7439c2513cc955cbe61d1fbed6556391a013d",
+      "step-3-2560-Jasny.png": "78e19bf33f5c3d0e9acf7e3be2527468104dd63ca6284bde2e2d9a6f6fefe2fa",
+      "step-3-390-Ciemny.png": "31cda4eef0eb1de14dd341dc50b2745e8d58ec151e1b54c27546991ae7fb1923",
+      "step-3-390-Jasny.png": "3792b699cdc56cc8f8a9873b83ef62fda5417c8c8ed585ae5924471b23cd37a0",
+      "step-3-768-Ciemny.png": "1296e61fce97f76ddf426e8667e7b156d8feaf37585d70733192304836dd08fd",
+      "step-3-768-Jasny.png": "2a1eb2979a42d52c764715bfb1c70185a8aac9e35aad0b17db5c0f1ac4120e62"
+    },
+    "uncaughtErrors": [],
+    "crosshairKeyboardRangeTouchFocusReturnSessionCleanup": "PASS",
+    "liveCustomerAcceptance": false
+  },
+  "validation": {
+    "operationTests": {
+      "passed": 1139,
+      "failed": 0,
+      "skipped": 0
+    },
+    "runtimeTypecheck": "PASS",
+    "runtimeBuild": "PASS",
+    "independentHostTests": "3/3 PASS",
+    "demoTests": "7/7 PASS",
+    "demoTypecheck": "PASS",
+    "demoViteBuild": "PASS",
+    "controlledCi": "BLOCKED_PENDING_TRUSTED_MAIN_PACKAGE_ADMISSION_PR764",
+    "architectureControllerTests": "86/86 PASS"
+  }
+}

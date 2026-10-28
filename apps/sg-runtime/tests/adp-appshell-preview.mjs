@@ -42,15 +42,24 @@ export async function bundleAdp(entry, {browser = false, write = false, outdir, 
   verifyPublicAdoption()
   const {build} = runtimeRequire('esbuild')
   return build({entryPoints: [path.resolve(appRoot, entry)], absWorkingDir: appRoot, bundle: true, write,
-    ...(write ? {outdir} : {}), platform: browser ? 'browser' : 'node', format: browser ? 'esm' : 'cjs', metafile,
-    loader: {'.css': browser ? 'css' : 'empty'}, alias: {'@': appRoot},
+    ...(write ? {outdir} : {}), ...(browser ? {define:{'process.env':'{}'}} : {}), platform: browser ? 'browser' : 'node', format: browser ? 'esm' : 'cjs', metafile, jsx:'automatic',
+    loader: {'.css': browser ? 'css' : 'empty', '.woff2':'dataurl'}, alias: {'@': appRoot},
     nodePaths: [path.dirname(runtimeRequire.resolve('react/package.json')), path.join(path.dirname(process.env.APPSHELL_TEST_RUNTIME || path.join(appRoot, 'package.json')), 'node_modules')],
     external: browser ? ['/benchmark-visual/*'] : ['react', 'react-dom', 'react-dom/client', 'react-dom/server', 'react/jsx-runtime'],
     plugins: [{name: 'public-acceptance-boundaries', setup(b) {
+      b.onResolve({filter: /\.css\?inline$/}, args => ({path:path.resolve(args.resolveDir,args.path.replace(/\?inline$/, '')),namespace:'acceptance-inline-css'}))
+      b.onLoad({filter:/.*/,namespace:'acceptance-inline-css'},args=>({contents:fs.readFileSync(args.path,'utf8'),loader:'text'}))
+      // Test bundling resolves the declared public business entry from this candidate.
+      // Production uses the independently installed normal file dependency.
+      b.onResolve({filter:/^@profitia\/sg2-price-change-index-ui\/business$/},()=>{
+        const consumer=JSON.parse(fs.readFileSync(path.join(appRoot,'package.json'),'utf8'))
+        if(consumer.dependencies['@profitia/sg2-price-change-index-ui']!=='file:../../packages/sg2-price-change-index-ui')throw Error('Unaccepted PCI package binding')
+        return{path:path.resolve(appRoot,'../../packages/sg2-price-change-index-ui/src/business.ts')}
+      })
       b.onResolve({filter: /^@profitia\/srm-adp-ui(?:\/styles\.css)?$/}, args => ({path: path.join(publicRoot, args.path.endsWith('/styles.css') ? 'src/styles.css' : 'src/index.ts')}))
       b.onResolve({filter: /^(?:next\/(?:navigation|image|link)|@clerk\/react|@\/components\/auth\/clerk-sign-up)$/}, args => ({path: args.path, namespace: 'acceptance-only'}))
       b.onLoad({filter: /.*/, namespace: 'acceptance-only'}, args => ({loader: 'js', resolveDir: appRoot, contents: args.path === 'next/navigation' ? (browser ? previewNavigation : testNavigation)
-        : args.path === '@clerk/react' ? 'export const useAuth=()=>globalThis.__adpTestAuth;export const useClerk=()=>globalThis.__adpTestClerk;'
+        : args.path === '@clerk/react' ? 'import React from \'react\';export const useAuth=()=>globalThis.__adpTestAuth||{isLoaded:false};export const useClerk=()=>globalThis.__adpTestClerk;export const ClerkProvider=({children})=>children;export const ClerkFailed=()=>null;export const SignOutButton=({children})=>children;'
         : args.path.endsWith('clerk-sign-up') ? `import React from 'react';export const SelfServiceAuthentication=()=>React.createElement('div',{'data-existing-auth-flow':true});`
         : `import React from 'react';export default function Element(props){return React.createElement('${args.path === 'next/image' ? 'img' : 'a'}',props);}`}))
     }}]})

@@ -37,17 +37,17 @@ export function Sg2IdentityProvider({ mode, publishableKey, locale, children, sa
   </ProviderMode.Provider>
 }
 
-export type Sg2SessionPresentation = { status: 'loading' | 'signed-out' } | { status: 'signed-in'; userId: string; sessionId: string }
+export type Sg2SessionPresentation = { status: 'loading' | 'signed-out' } | { status: 'signed-in'; userId: string; sessionId: string; organisationId?: string | null }
 export function Sg2SessionContent({ session, locale, children }: { session: Sg2SessionPresentation; locale: 'pl' | 'en'; children: ReactNode }) {
   if (session.status === 'loading') return <p role="status">{locale === 'en' ? 'Checking session…' : 'Sprawdzanie sesji…'}</p>
   if (session.status !== 'signed-in' || !session.userId || !session.sessionId) return <p role="status"><a href={`/${locale}`}>{locale === 'en' ? 'Sign in to open the application.' : 'Zaloguj się, aby otworzyć aplikację.'}</a></p>
   // Replaces the entire Finder subtree, its request controllers and caches.
-  return <Fragment key={JSON.stringify([session.userId, session.sessionId])}>{children}</Fragment>
+  return <Fragment key={JSON.stringify([session.userId, session.sessionId, session.organisationId ?? null])}>{children}</Fragment>
 }
 function ClerkSessionContent({ locale, children }: { locale: 'pl' | 'en'; children: ReactNode }) {
-  const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth()
+  const { isLoaded, isSignedIn, userId, sessionId, orgId, getToken } = useAuth()
   const session: Sg2SessionPresentation = !isLoaded ? { status: 'loading' }
-    : isSignedIn && userId && sessionId ? { status: 'signed-in', userId, sessionId } : { status: 'signed-out' }
+    : isSignedIn && userId && sessionId ? { status: 'signed-in', userId, sessionId, organisationId: orgId ?? null } : { status: 'signed-out' }
   return <Sg2SessionContent session={session} locale={locale}>
     <div className="flex justify-end px-6 pt-4"><SignOutButton redirectUrl={`/${locale}`}>
       <button type="button" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800">{locale === 'en' ? 'Sign out' : 'Wyloguj się'}</button>
@@ -64,4 +64,13 @@ export function Sg2AuthenticatedView({ locale, children }: { locale: 'pl' | 'en'
  * sessions use memory only. Old demo history is neither read nor adopted. */
 export function useSg2BrowserPersistencePolicy(): BrowserPersistencePolicy {
   return useContext(ProviderMode) === 'legacy_demo' ? 'legacy' : 'volatile'
+}
+
+/** A module consumes the existing SDK session; it never starts a second login.
+ * SDK organisation IDs invalidate browser memory only, never authorise APIs. */
+export function Sg2ModuleSession({locale,children}:{locale:'pl'|'en';children:ReactNode}) {
+  const {isLoaded,isSignedIn,userId,sessionId,orgId,getToken}=useAuth()
+  const session:Sg2SessionPresentation=!isLoaded?{status:'loading'}:isSignedIn&&userId&&sessionId
+    ?{status:'signed-in',userId,sessionId,organisationId:orgId??null}:{status:'signed-out'}
+  return <Sg2SessionContent session={session} locale={locale}><CredentialGetter.Provider value={getToken}>{children}</CredentialGetter.Provider></Sg2SessionContent>
 }

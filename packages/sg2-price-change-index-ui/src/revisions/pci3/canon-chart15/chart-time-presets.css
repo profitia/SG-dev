@@ -1,0 +1,31 @@
+/* C86 / SP19:right-aligned rail, sharing the settings ribbon centre. */
+.srm-chart-time-presets {
+ position:absolute; right:0; top:calc(var(--chart-controls-symbol-size) + var(--chart-presets-top-gap));
+ z-index:4; display:flex; flex-direction:column; align-items:center;
+ width:var(--chart-presets-width); gap:var(--chart-presets-gap);
+ margin:0; padding:0; border:0; background:transparent;
+}
+.srm-ui .srm-chart-time-presets .srm-chart-time-preset {
+ display:grid; place-items:center; box-sizing:border-box; flex:none;
+ width:100%; min-width:0; height:var(--chart-presets-row); min-height:0;
+ margin:0; padding:0; border:0; border-radius:0; background:transparent;
+ box-shadow:none; outline:none; color:var(--brand-dark,var(--theme-ink,#003366));
+ font-family:inherit; font-size:var(--chart-presets-font); line-height:var(--chart-presets-line-height);
+ font-weight:var(--chart-presets-weight); font-variant-numeric:tabular-nums;
+ text-align:center; text-decoration:none; white-space:nowrap; cursor:pointer;
+ transform:none; scale:1; transition:scale 180ms cubic-bezier(.22,1,.36,1);
+}
+.srm-ui .srm-chart-time-presets .srm-chart-time-preset[aria-pressed="true"] {
+ font-weight:var(--chart-presets-active-weight);
+}
+/* Underline, rather than a box, is the keyboard-only focus indicator. */
+.srm-ui .srm-chart-time-presets .srm-chart-time-preset:focus-visible {
+ outline:none; text-decoration:underline; text-decoration-thickness:.125rem; text-underline-offset:.25rem;
+}
+.srm-ui .srm-chart-time-presets .srm-chart-time-preset:disabled { cursor:default; opacity:.5; }
+@media(hover:hover) and (pointer:fine) {
+ .srm-ui .srm-chart-time-presets .srm-chart-time-preset:not(:disabled):hover { scale:1.025; background:transparent; box-shadow:none; }
+}
+@media(prefers-reduced-motion:reduce) {
+ .srm-ui .srm-chart-time-presets .srm-chart-time-preset { transition:none; scale:1!important; }
+}

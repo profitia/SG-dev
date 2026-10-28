@@ -4,4 +4,5 @@ export interface PriceChangeIndexData{pci1:typeof import('./data-contracts/pci1'
 export interface PriceChangeIndexAction{view:PriceChangeIndexView;kind:'interaction'|'save'|'theme';label:string;}
 export interface PriceChangeIndexContent{headerTitle?:string;homeTitle?:string;homeDescription?:string;}
 export interface PriceChangeIndexNavigation{view:PriceChangeIndexView;screen:string;}
-export interface PriceChangeIndexProps{view:PriceChangeIndexView;data:PriceChangeIndexData;content?:PriceChangeIndexContent;theme?:PriceChangeIndexTheme;onThemeChange?:(theme:PriceChangeIndexTheme)=>void;onAction?:(event:PriceChangeIndexAction)=>void;onNavigate?:(event:PriceChangeIndexNavigation)=>void;onScrollLockChange?:(locked:boolean)=>void;resetKey?:string|number;className?:string;}
+export interface PriceChangeIndexDemoProps{mode?:'demo';view:PriceChangeIndexView;data:PriceChangeIndexData;content?:PriceChangeIndexContent;theme?:PriceChangeIndexTheme;onThemeChange?:(theme:PriceChangeIndexTheme)=>void;onAction?:(event:PriceChangeIndexAction)=>void;onNavigate?:(event:PriceChangeIndexNavigation)=>void;onScrollLockChange?:(locked:boolean)=>void;resetKey?:string|number;className?:string;}
+export type PriceChangeIndexProps=PriceChangeIndexDemoProps|import('./business-contracts').PriceChangeIndexBusinessProps;
