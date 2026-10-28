@@ -33,7 +33,7 @@ const expiry = () => new Date(Date.now() + 3600000).toISOString()
 
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const currentSdkDigests=sdkReceipt.diagnosticTelemetryAdoption.sdkDigests
-const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsSoapSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportSourceCompatibility.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPlatform130CiClosureCompatibility.sourceDigests}).filter(([file])=>file!=='package-lock.json'))
+const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsSoapSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportSourceCompatibility.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPlatform130CiClosureCompatibility.sourceDigests,...manifest.appshellXraySourceCompatibility.sourceDigests}).filter(([file])=>file!=='package-lock.json'))
 
 test('SG2 imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')

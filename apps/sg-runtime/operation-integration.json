@@ -4155,17 +4155,18 @@
     "taskId": "SG2-APPSHELL-XRAY-CONSUMER-20261028",
     "validationTaskIds": [
       "SG2-APPSHELL-XRAY-VALIDATION-20261028",
-      "SG2-APPSHELL-XRAY-HISTORICAL-CLOSURE-20261028"
+      "SG2-APPSHELL-XRAY-HISTORICAL-CLOSURE-20261028",
+      "SG2-APPSHELL-XRAY-UPSTREAM-COMPAT-20261029"
     ],
-    "previousReceiptSourceSha": "30d44989d5f923e832c43e8bbd9a3cd84ea0cabc",
-    "previousReceiptDigest": "f254d87a606d2f554c370b6108dc60af18c1f14242706288feef03d9e5cc9685",
-    "previousReceiptSha256": "f254d87a606d2f554c370b6108dc60af18c1f14242706288feef03d9e5cc9685",
-    "platformVersion": "1.30.0",
+    "previousReceiptSourceSha": "ed7a924f86d8c540820319d47bb611cda4f5937f",
+    "previousReceiptDigest": "24be96344ef9afc656360b189f8dad2ee29856e1789f22d8e5ce63921a03e0bd",
+    "previousReceiptSha256": "24be96344ef9afc656360b189f8dad2ee29856e1789f22d8e5ce63921a03e0bd",
+    "platformVersion": "1.31.0",
     "architectureProducer": {
       "projectKey": "ARCHITECTURE",
       "pullRequest": 773,
-      "sourceSha": "71e554d81201abf010fb1ef8331b3d312606798c",
-      "platformVersion": "1.30.0",
+      "sourceSha": "fd37d8c748aab42ab8ad1b9ce08b411a41a96634",
+      "platformVersion": "1.31.0",
       "peerOperationVersion": "1.0.0",
       "peerOperationDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7"
     },
@@ -4174,7 +4175,7 @@
       "version": "0.3.0",
       "contractId": "profitia.srm-xray.workflow",
       "contractVersion": "1.0.0",
-      "sourceDigest": "f7db4c43b50ba61742927643bb708e4c34ac56d36cc581126446ee95f58d3496",
+      "sourceDigest": "9eaf3f71f0de6c78fbe8ec86e35c3b4d52f51f3b23f280081a1f4d5a44a95815",
       "exports": [
         "./workflow",
         "./workflow-contract",
@@ -4257,12 +4258,12 @@
         "projectKey": "SRM",
         "taskId": "SRM-APPSHELL-XRAY-PRODUCER-20261028",
         "pullRequest": 775,
-        "sourceSha": "7b141298e3928e9f3bb681bcb7b398298d822dae"
+        "sourceSha": "6d2221c640926d6e497d10d247ccf646b657cadd"
       }
     },
     "sourceDigests": {
-      "package-lock.json": "7315d1bfe9033991f7403deb4a412165c64c8ce6ec82a59477f45d7c3134398e",
-      "package.json": "f26d7c4a2cbcc42e977308583485e966775022544e46f17a876192484e450002",
+      "package-lock.json": "f4b304a56f8fc20e3e2bc03d03add0698b7de4297de795a68f756f95b0da5079",
+      "package.json": "3061c9095167d9eadcecbd6a39652c3e9ad2284d6d12d4f451eb008b78ec55d6",
       "src/diagnostic-phase.d.mts": "51497cfa548f7a4876c4884b7b139e907ee4a8526ce37a400c9bff6d48376ea7",
       "src/diagnostic-phase.mjs": "0317fa7ef0d95c7574c1b0143094012f75876dee0b3fcd4602ee1a1a17f2bc07",
       "src/external-call.mjs": "f1e4bd0f6f21cc289d239a0238e3b6ef4b97a579849f109d425817e4b9b46143",
@@ -4271,6 +4272,8 @@
       "src/private-operation-host.mjs": "8de0db0d5cc2e0e5fd0fdaf0583c4bb1d89fbaeb3170be33aa732720591e2034",
       "test/diagnostic-phase.test.mjs": "d4d446da5cb98a208a05ffaaff2df4b4c805b7aa202d40dbeb3cbde4cac19c1e",
       "test/external-call.test.mjs": "b0db4c3dfefc22c810c56b13461b2cb1722acea9ce705948e7a916b7481675b1",
+      "src/current-human-read.mjs": "ed4e71142ace7c4fc679f76ab2a73e3c3f6cac8aa2858899988a59e48d8fd710",
+      "src/current-human-read.d.mts": "fe08930ffa39f7e79ca77910481fc0f353956805b9e9453468e2970f0c5182fb",
       "src/peer-operation.mjs": "316282f0b9b76c927427c62cdbd2dbda2c917457dfd91e280e652b89bde36a10",
       "src/peer-operation.d.mts": "a3f6d6463bc508475674667f3abb5b136a1cb4d2b0bbafa1c4eb5974c935f6b5",
       "README.md": "34271af7592b134c32c898b64b4fce46b6158498eb5709e9dfd22ff6c390d68e"
@@ -4340,10 +4343,12 @@
       "tests/native-sql-roundtrips.test.mjs",
       "tests/operation-context.test.mjs",
       "tests/porr-demo-middleware.test.ts",
+      "tests/private-host.integration.test.mjs",
       "tests/self-service-account.test.ts",
       "tests/xray-appshell.test.tsx",
       "tests/xray-browser-preview.tsx",
       "tests/xray-gateway.test.ts",
+      "tests/xray-platform-compatibility.test.mjs",
       "xray-appshell-integration.json",
       "../dashboard-preview/package-lock.json"
     ],
@@ -4357,28 +4362,30 @@
       "lib/appshell/xray-transport.ts": "80f78e4ccf3c379b530304c88a9fec4ee40931917404fd3d16fd8989932f36c1",
       "lib/platform/xray-gateway.ts": "f28df423b376c20c73cead823415d3d30517f70558d3d3a67c7e0bd6e25ceb80",
       "middleware.ts": "faee449207351aa4436014248ad3f8f8c3c43fdf74e84b2c9659415e87bc77ca",
-      "package-lock.json": "c935f99825276d384ccc0bb27a9e497c0a5bf75d1b8833fe69bb2a4201bc818f",
+      "package-lock.json": "0a6e38c9edad96f0b8d1ff9b16e0340bf86619974725eb1531dbcc3424301081",
       "package.json": "32682475673e5f49df6f737b8ea35b0b89e22a1eff7dfc073a16c28eec7c26de",
-      "tests/adp-appshell-consumer.test.tsx": "a8036c5a5dad899aca28ee8d92eb5ce40cb796bbe11550f09b44c23325929f58",
+      "tests/adp-appshell-consumer.test.tsx": "edae30b75686ddb64adda26d1c33fa4489f8c2f53733a048d7b813a5c8022820",
       "tests/adp-appshell-identity.test.tsx": "6895e0b14696ae23357594a8d73ee59ac09cc020e014f5ade47ac8c309c63486",
       "tests/adp-appshell-preview.mjs": "25779586f2729acb295979eef8801427c01ae5700cf8e8e3470033291feaa15c",
       "tests/appshell-product-boundary.test.ts": "1d13adce630583334db7f32c7834433322fbcce4d448b4838a90844085fbc6bf",
-      "tests/category-operation.test.ts": "0e5894bf053ca2fb8358ed592d327704e487e53c9b1ea0de5dcfd3f1af629560",
-      "tests/diagnostic-telemetry-adoption.test.mjs": "353e11074555bff3717a9a258eada096793fd2881e3cd4fa8085add1e3e9cfcc",
-      "tests/identity-runtime.test.ts": "ec03c2cf2237e926732c2c60f409fc6d1b1d83383ab477674668c3d5b63dd77e",
-      "tests/integrated-buyer-journey-package.test.mjs": "5b161e28009e31d2e370a1fcb02c61edc0ad278f02cb103046f6913bd7aab2d2",
-      "tests/native-sql-roundtrips.test.mjs": "39c736fa9a5637ec83643a84f95e00b1d0dc3707c19892ab26041b8bc2e67ddd",
-      "tests/operation-context.test.mjs": "0b29a61ab9933beaba506ab0ae73e696da23e1ba751308c0fb3513c15d6a672a",
-      "tests/porr-demo-middleware.test.ts": "27027e2fffdb0fd91bb1c41891dfa82ed2860fdcdbe87f3c0e11d1f9c8735aa7",
-      "tests/self-service-account.test.ts": "6ecfdae23423bba37ada331af01798371e102a5a331d5b904fba9c42d0454861",
+      "tests/category-operation.test.ts": "9028eadd71c00b7aa4a1cf4227e3c0b68aedc0f9cc74d928074cd419a2af5512",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "e29d4d9207577f63f16e77b2cbdb2464fb99eb0742f23954c66dca7dddc82464",
+      "tests/identity-runtime.test.ts": "d1cf9088265985c36f8cf4d2f7600becff290c2bbd82e576c7b1f73754db58f6",
+      "tests/integrated-buyer-journey-package.test.mjs": "0994db2daccb8748482bb5b61970d9c3b28c98c9afe15a42ed8d2b42b70aeff1",
+      "tests/native-sql-roundtrips.test.mjs": "2c4335290b51f407d047afcb9ec85e37923b59fe0be7ea65f3e62d2f6d5448e3",
+      "tests/operation-context.test.mjs": "66dc68cb475c3ff23da91338e3f0f5a4294fa085c3963dc56155b6310980f5ca",
+      "tests/porr-demo-middleware.test.ts": "24f3aac4d31f1a28b3d431935451a7458b169952021a2c6aff1f0792fadbeb30",
+      "tests/private-host.integration.test.mjs": "db3f3be2622f391cb2455bcd1ec30da7215a54849134485e63455653db76b39b",
+      "tests/self-service-account.test.ts": "3d20eaab346fff66b38f152806be7126afbe32a718496498b3394c2be43ca06b",
       "tests/xray-appshell.test.tsx": "5498f1600527879093284aeffac0d469c53f77c75d194eb270bab3528f0531f0",
       "tests/xray-browser-preview.tsx": "ac1ad6b44ad03c44c431b7af98b5767b1c164d12ff9a9a1267ab00089dce7b71",
-      "tests/xray-gateway.test.ts": "5ebbe2096209300fbcd6cdcf7fd71b8da00f57420d636d99f9bebdf8a861334d",
-      "xray-appshell-integration.json": "1c88dd0b0156cc9c9b4331f30e252682befd98b8514a35d5b7a0a77299642dac",
-      "../dashboard-preview/package-lock.json": "e07d6ea2f799fdda48d2eaabe67c88d3202fe46eafa1b3f26f0f44a382fc89c3"
+      "tests/xray-gateway.test.ts": "39cd186c88100aded0651ce48c365b602e27d9c0ad04c246ab843d7b5dae082d",
+      "tests/xray-platform-compatibility.test.mjs": "2fe956975313cb6fe1b16b0ee1fac45e045be432e934b18c1e83c99ccb29da2a",
+      "xray-appshell-integration.json": "f14e898ce85eb8269402e55bb6e50bb94aded88436deaac7ef5b4f201418eee4",
+      "../dashboard-preview/package-lock.json": "a8e5b14605b035eba7bf451c36ee549ce5fa1e568096c60a2c541869ece66686"
     },
     "repositorySourceDigests": {
-      "apps/dashboard-preview/package-lock.json": "e07d6ea2f799fdda48d2eaabe67c88d3202fe46eafa1b3f26f0f44a382fc89c3"
+      "apps/dashboard-preview/package-lock.json": "a8e5b14605b035eba7bf451c36ee549ce5fa1e568096c60a2c541869ece66686"
     }
   }
 }

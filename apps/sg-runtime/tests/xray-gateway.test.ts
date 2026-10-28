@@ -56,7 +56,7 @@ test('consumer binds exact owner source, additive history and the closed public 
  for(const[file,value]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(path.join(platform,file))),value,file);
  for(const[file,value]of Object.entries(current.applicationSourceDigests))assert.equal(hash(fs.readFileSync(path.join(app,file))),value,file);
  for(const[file,value]of Object.entries(current.repositorySourceDigests))assert.equal(hash(fs.readFileSync(path.resolve(app,'../..',file))),value,file);
- assert.equal(current.platformVersion,'1.30.0');assert.equal(current.publicUi.version,'0.3.0');assert.equal(descriptor.routes.pl,'/pl/dashboard/xray');assert.equal(descriptor.routes.en,'/en/dashboard/xray');
+ assert.equal(current.platformVersion,'1.31.0');assert.equal(current.publicUi.version,'0.3.0');assert.equal(descriptor.routes.pl,'/pl/dashboard/xray');assert.equal(descriptor.routes.en,'/en/dashboard/xray');
  for(const flag of ['identitySourceChanged','operationContractChanged','existingPeerReadChanged','grantsOrMembershipChanged','schemaOrInfrastructureChanged','benchmarkOrAdpBusinessLogicChanged','productDeploymentPerformed'])assert.equal(current[flag],false,flag);
  assert.equal(descriptor.deployment.liveAcceptance,'PENDING_OWNER_DEPLOYMENT_APPROVAL');
 });
