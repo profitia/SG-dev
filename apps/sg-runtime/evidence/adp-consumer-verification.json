@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SG2-ADP-APPSHELL-CONSUMER-20261028",
+  "status": "LOCAL_ACCEPTANCE_PASS_CI_AND_LIVE_RELEASE_PENDING",
+  "targetEnvironment": "development",
+  "basedOnMain": "3af53b5f64f9451766813b14ecccd6fa07872aa3",
+  "scope": "PRESENTATION_ONLY",
+  "stateBoundary": "LOCAL_STATE",
+  "integration": "NATIVE_VIEW",
+  "contractVersion": "1.0.0",
+  "sourceDigest": "ddff073ecef0fa95b396f860c6e28639b7d3060f61903ad278c300ff30c5bbc2",
+  "sources": {
+    "adp": {
+      "projectId": "465405993031966720",
+      "componentId": "465415479037693952",
+      "revisionId": "465859267208024064",
+      "files": 55
+    },
+    "library": {
+      "projectId": "460628300646219776",
+      "componentId": "460628347660177408",
+      "revisionId": "465827262730764288",
+      "files": 143
+    },
+    "appshell": {
+      "projectId": "465533749308841984",
+      "componentId": "465804082116980736",
+      "revisionId": "465855381789360128",
+      "files": 36
+    },
+    "currentReadback": "2026-10-28",
+    "revisionsUnchanged": true,
+    "libraryRelationship": "PINNED_PROVENANCE_NO_AUTOMATIC_SYNC"
+  },
+  "productMatrix": {
+    "rows": 1472,
+    "product": 760,
+    "local": 84,
+    "excluded": 627,
+    "spacingSpecification": 1,
+    "fields": 43,
+    "formSections": 5,
+    "areas": 8,
+    "evidenceOutsideClientGraph": true
+  },
+  "localTests": {
+    "focusedTests": 29,
+    "failed": 0,
+    "isolatedFrontendTypecheck": "PASS_WITH_TEST_ONLY_NEXT_CLERK_INTERFACE_STUBS",
+    "fullSg2TypecheckBuildAndBackendRegression": "PENDING_CONTROLLED_CI"
+  },
+  "browserAcceptance": {
+    "harness": "Actual browser, real public package and host components; isolated router adapter and synthetic presentation identity. No authenticated Development claim.",
+    "layoutChecks": 122,
+    "areasAndSectionsBothThemes": 104,
+    "intermediateWidthsBothThemes": 10,
+    "existingHomeBothThemes": 8,
+    "widths": [
+      390,
+      768,
+      1440,
+      2560
+    ],
+    "intermediateWidths": [
+      759,
+      761,
+      1050,
+      1051,
+      1920
+    ],
+    "horizontalOverflow": 0,
+    "designElements": 0,
+    "assistantInstances": 1,
+    "localFlows": [
+      "AppShell to ADP and return",
+      "memory survives ordinary return",
+      "browser Back preserves selected area and local content",
+      "all eight areas and five sections",
+      "company name and zero tax value",
+      "required dialog validation",
+      "contact and location",
+      "company relation with explicit source",
+      "activity with multiline note and native date input",
+      "document metadata without document status promotion",
+      "local six-star rating and history",
+      "local warning history",
+      "keyword entry without feed publication",
+      "English dashboard to ADP and return",
+      "detached assistant survives AppShell-ADP navigation and reattaches",
+      "all24assistant-state/theme/width return-button hit checks"
+    ],
+    "sourceThemeTokensMatchedBothThemes": true,
+    "sampledStyles": {
+      "selectors": 7,
+      "fontMapping": "Existing local SpendGuruAppShellInter face (Inter 400 source assets)",
+      "differences": [
+        {
+          "selector": ".adp-panel-heading h2",
+          "property": "width",
+          "source": "316.141px",
+          "host": "334.844px"
+        }
+      ],
+      "pixelParityClaim": false
+    },
+    "screenshots": "External acceptance artifacts, never a product dependency",
+    "assistantReturnHitChecks": 24,
+    "assistantPlacement": "Shared existing widget below the public module return row, using existing spacing tokens; return remains reachable expanded, collapsed and detached."
+  },
+  "identityTests": [
+    "No shell or ADP before current backend account proof",
+    "fixed pl/en canonical redirect after proof only",
+    "account rejection fails closed",
+    "proof expiry removes active module",
+    "session change resets all module memory",
+    "late previous-session response ignored",
+    "persisted avatar remains independent of salutation",
+    "sign-out failure removes previous workspace",
+    "one assistant retains state across return"
+  ],
+  "boundaries": {
+    "businessPersistence": false,
+    "businessProviderCalls": false,
+    "mailOrNotification": false,
+    "signatureProcess": false,
+    "cicOrScreenContext": false,
+    "secondAssistant": false,
+    "benchmarkFinderActivated": false,
+    "xrayActivated": false,
+    "newRenderService": false,
+    "identityConfigurationChanged": false,
+    "accountCompletionContractChanged": false,
+    "localStateSurvivesHardRefresh": false,
+    "evidence": "Public import graph, typed reducer tests and isolated browser with no business backend. Existing host account reads remain separate."
+  },
+  "liveAcceptance": {
+    "status": "NOT_EXECUTED",
+    "developmentDeployment": false,
+    "realLoginAndRegistration": false,
+    "realAuthenticatedRoutes": false
+  },
+  "limitations": [
+    "No physical touch-hardware test",
+    "No per-element pixel-diff claim",
+    "Full clean CI, source acceptance, controlled existing-service Development release and live user-flow acceptance remain required"
+  ],
+  "authorityRefresh": {
+    "reason": "Concurrent accepted SRM PR #761 advanced main after local candidate checkpoint",
+    "srmChangesInConsumerDiff": false,
+    "consumerImplementationBlobsUnchangedByRebase": true,
+    "fullRequireBeginAfterRebase": "PASS"
+  }
+}

@@ -115,3 +115,15 @@
 .appshell.srm-detached-shell .srm-chat-transcript { padding:var(--srm-space-medium) var(--srm-space-medium); }
 .appshell.srm-detached-shell .srm-chat-message { font-size:13px; }
 .appshell .srm-chat-neutral{display:block;width:100%;height:100%;color:var(--brand);padding:.25rem}.appshell .srm-chat-neutral .brand-logo-vector{width:100%;height:100%}.appshell .srm-chat-ribbon-avatar img{display:block;width:100%;height:100%;object-fit:cover;transform:scale(1.08)}.appshell.srm-detached-shell{height:100dvh;min-height:0;padding:var(--srm-space-small);overflow:hidden}.appshell.srm-detached-shell .srm-chat-motion{inset:0}.appshell.srm-detached-shell .srm-chat-slot.is-window{height:100%;min-height:0;overflow:visible}.appshell .srm-chat-attach-button{min-width:44px;min-height:44px}.appshell .srm-chat-ribbon{min-width:44px;min-height:44px}.appshell .srm-chat-detached-ribbon{animation:none}@media(prefers-reduced-motion:reduce){.appshell .srm-chat-motion,.appshell .srm-chat-ribbon,.appshell .srm-chat-slot.is-collapsed .srm-chat-motion,.appshell .srm-chat-slot.is-collapsed .srm-chat-ribbon{transition:none}}@media(max-width:420px){.appshell.srm-detached-shell{padding:var(--srm-space-compact)}}
+
+.appshell .as-module-workspace{--adp-font-family:SpendGuruAppShellInter,Arial,sans-serif;min-width:0}
+.appshell .as-module-error{max-width:90rem;margin:auto;padding:var(--srm-page-block) var(--srm-page-gutter)}
+.appshell.as-module-active .as-main{max-width:none;padding:0}
+.appshell.as-module-active .as-workspace{display:block}
+/* Keep the shared overlay below the public module return row in every state. */
+.appshell.as-module-active .as-assistant{--as-assistant-top:calc(5.5rem + var(--srm-page-block) + 2.75rem + var(--srm-space-compact));position:fixed;z-index:40;right:0;top:var(--as-assistant-top);width:min(28.625rem,100%);height:calc(100dvh - var(--as-assistant-top) - var(--srm-space-compact));pointer-events:none}
+.appshell.as-module-active .as-assistant .srm-chat-slot{height:100%;min-height:0}
+.appshell.as-module-active .as-assistant .srm-chat-motion,
+.appshell.as-module-active .as-assistant .srm-chat-ribbon,
+.appshell.as-module-active .as-assistant .srm-chat-detached-ribbon{pointer-events:auto}
+.appshell.as-module-active .as-assistant .srm-chat-slot.is-collapsed .srm-chat-motion{pointer-events:none}
