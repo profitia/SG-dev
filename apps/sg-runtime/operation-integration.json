@@ -4018,5 +4018,63 @@
       "newE1Grants": false,
       "historicalAcceptancePreserved": true
     }
+  },
+  "xrayPlatform130SourceCompatibility": {
+    "schemaVersion": "1.0",
+    "taskId": "SG2-XRAY-PLATFORM130-SOURCE-COMPAT-20261028",
+    "platformVersion": "1.30.0",
+    "targetEnvironment": "development",
+    "scope": "SOURCE_COMPATIBILITY_ONLY_NO_SG2_RUNTIME_ADOPTION",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCH-XRAY-CURRENT-REPORT-EXECUTION-V2-20261028",
+      "repository": "profitia/SG-dev",
+      "pullRequest": 772,
+      "sourceSha": "aa2f001d70cfb0c64b8fafece46a7283492fa5a5"
+    },
+    "previousReceiptSourceSha": "c6b246c114c5583fdf1d9eb5d8f7f5488a639641",
+    "previousReceiptDigest": "f254d87a606d2f554c370b6108dc60af18c1f14242706288feef03d9e5cc9685",
+    "sourceDigests": {
+      "package.json": "2d9ddbc29ac64fbebcf6c59e0b140d9b983d61e0ae5d4ed526ffd1ab58a27cce",
+      "src/current-human-read.mjs": "ed4e71142ace7c4fc679f76ab2a73e3c3f6cac8aa2858899988a59e48d8fd710",
+      "src/current-human-read.d.mts": "fe08930ffa39f7e79ca77910481fc0f353956805b9e9453468e2970f0c5182fb",
+      "package-lock.json": "7315d1bfe9033991f7403deb4a412165c64c8ce6ec82a59477f45d7c3134398e"
+    },
+    "sdkDigests": {
+      "operationSourceDigest": "2a7a2cbed3daed98b977259decb6b01e565dc528ce97f563b5e100ef7b52d525",
+      "privateOperationHostSourceDigest": "bf6d24ae0bd97de3b3b8de8c68ce43f4e9241ffac98a0073ce4decd9a31481ce",
+      "accessStoreSourceDigest": "898beae8260ab99c72217def546a9e6172cda9564de03a508a575f361aeec0a4",
+      "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "requestLedgerSourceDigest": "d24a1c98efe2f04a2d9cd6335f75bd6a37eda4bfe0eca0ebae712a638e9e43d5",
+      "externalRequestSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "requestQuotaSchemaDigest": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef",
+      "delegatedJobSourceDigest": "8a4ed214ac59146c31e73ba3704354228fd98062265561a91a08f4fcb38e0e5e",
+      "requestContinuationSourceDigest": "d49673ecec3a85dad478b4e8d3e38aa30241cf04b61b6a7dfbb99e7af33c3c53",
+      "requestInspectionSourceDigest": "772f1f5a58e8e544d275c4b8bb0ab09774317a6673c1f6bd8563f96fc6a19811",
+      "requestWorkSourceDigest": "1b9a56aa85548fa0025366bf725ccad5c4ef278f43753dee9714ea97197bee86",
+      "requestOperationsSourceDigest": "65e1d46269df57ccd7f3f1637e9ac6a73171ecbdad02b35677d23469d73e7237",
+      "additionalRequestSchemaDigest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "externalCallSourceDigest": "7c69673d85a2297d62612b4ec2f85cb6feaec769295d6d39263b51763df7b5d6",
+      "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "reportAdmissionSourceDigest": "f24e3f71ef76fdb1e8935d0ddc935ea96c146d93b7ecbc9d6a4a4e2d7879f794",
+      "reportAdmissionSchemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+      "platformIngestionSourceDigest": "ca1c686a3c5b8e1f9d9db7ab2775a8c80780a71dea2a8cf65ce5838febb83939",
+      "diagnosticPhaseSourceDigest": "52816918087b9bd437c8c7619be643146f5af9527ea692263b4f2aa0471c7556"
+    },
+    "applicationSourceDigests": {
+      "package-lock.json": "8c58d89fb8d06e56afb84ac437cf25dddfa33cd299808e885a1fec6d01efc2b6",
+      "../dashboard-preview/package-lock.json": "e07d6ea2f799fdda48d2eaabe67c88d3202fe46eafa1b3f26f0f44a382fc89c3",
+      "tests/operation-context.test.mjs": "67f21aa5792afac4bdb6ce99d77504ba7d3e3e6f9db87c34e0c950534a3264cd",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "50726a91d9c2a5d34cf73daa73344c5abede6b88c884d69eef1955f9d22c60a7",
+      "tests/category-operation.test.ts": "aa9c60c2e4ca7adc39a73b673e195dcc538c9a6b0633838e3043ac4648f5f876",
+      "tests/xray-platform-compatibility.test.mjs": "0c4ade7117cca5d98bc81ab4f8cc6947860d1d70a31997fedb953b3396a5d9fa",
+      "../../packages/maps-embed/package.json": "a1bf8a75b784e7cea3e50a71abe1df615140808e34b9c713aa18c56737502bb5"
+    },
+    "currentHumanReadOptedIn": false,
+    "sharedSqlInstalled": false,
+    "sg2FeatureChanged": false,
+    "providerConfigurationChanged": false,
+    "runtimeDeploymentPerformed": false
   }
 }

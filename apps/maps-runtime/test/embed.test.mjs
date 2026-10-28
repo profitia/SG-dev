@@ -1,4 +1,6 @@
-const beforeDiagnostics=()=>JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url))).previousAcceptance
+const currentAcceptance=()=>JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url)))
+const diagnosticsAcceptance=()=>{const a=currentAcceptance();return a.sdk130CompatibilityOnly?a.previousAcceptance:a}
+const beforeDiagnostics=()=>diagnosticsAcceptance().previousAcceptance
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {MessageChannel} from 'node:worker_threads'
@@ -63,10 +65,10 @@ test('explicit platform1.24 receipt accepts only tested peers and the unchanged 
   const installed=JSON.parse(fs.readFileSync(new URL('package.json',root)))
   assert.equal(accepted.taskId,'SRM-E1-SUPPLIER-LOCATION-MAPS-C16-ADOPTION-20261021')
   assert.equal(accepted.producer.sourceSha,'88c3337d943fa3893f2f357bb11b78c565e50047');assert.equal(accepted.producer.taskId,'ARCHITECTURE-SUPPLIER-LOCATIONS-E1-CI-20261021')
-  assert.equal(installed.version,'1.29.2');assert.equal(newest.platformVersion,'1.29.0');assert.equal(publication.platformVersion,'1.28.0');assert.equal(latest.platformVersion,'1.26.0');assert.deepEqual(publication.allowedPeerVersions,[...latest.allowedPeerVersions,'1.27.0','1.28.0']);assert.equal(publication.unmeteredSourceOptedIn,false);assert.equal(publication.sql024Installed,false);assert.equal(latest.accountRevalidationOptedIn,false);assert.deepEqual(latest.sourceDigests,current.sourceDigests);assert.deepEqual(latest.allowedPeerVersions,[...current.allowedPeerVersions,'1.26.0']);assert.equal(accepted.platformVersion,'1.24.0')
+  assert.equal(installed.version,currentAcceptance().platformVersion);assert.equal(newest.platformVersion,'1.29.0');assert.equal(publication.platformVersion,'1.28.0');assert.equal(latest.platformVersion,'1.26.0');assert.deepEqual(publication.allowedPeerVersions,[...latest.allowedPeerVersions,'1.27.0','1.28.0']);assert.equal(publication.unmeteredSourceOptedIn,false);assert.equal(publication.sql024Installed,false);assert.equal(latest.accountRevalidationOptedIn,false);assert.deepEqual(latest.sourceDigests,current.sourceDigests);assert.deepEqual(latest.allowedPeerVersions,[...current.allowedPeerVersions,'1.26.0']);assert.equal(accepted.platformVersion,'1.24.0')
   assert.deepEqual(accepted.allowedPeerVersions,['1.18.0','1.19.0','1.20.0','1.21.0','1.22.0','1.23.0','1.24.0'])
   const peer=JSON.parse(fs.readFileSync(new URL('./package.json',import.meta.resolve('@profitia/maps-embed'))))
-  assert.equal(peer.peerDependencies['@profitia/platform-contracts'],'1.18.0 || 1.19.0 || 1.20.0 || 1.21.0 || 1.22.0 || 1.23.0 || 1.24.0 || 1.25.0 || 1.26.0 || 1.27.0 || 1.28.0 || 1.29.0 || 1.29.1 || 1.29.2')
+  assert.equal(peer.peerDependencies['@profitia/platform-contracts'],currentAcceptance().allowedPeerVersions.join(' || '))
   assert.deepEqual(current.allowedPeerVersions,[...accepted.allowedPeerVersions,'1.25.0']);assert.deepEqual(current.sourceDigests,accepted.sourceDigests)
   assert.equal(current.producer.sourceSha,'f35c82b6d9d39720c04b4df2c6f0042f5379982a');assert.equal(current.locationAdmissionOptedIn,false)
   const sdk=await import('@profitia/platform-contracts/embedded-read-channel')
@@ -126,10 +128,21 @@ test('SDK1.29.1 compatibility preserves every previous Maps receipt and the exac
 
 
 test('SDK1.29.2 diagnostics source recognition preserves Maps semantics and complete accepted history',()=>{
- const a=JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url))),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json']);
+ const a=diagnosticsAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json']);
  assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptSha256);assert.deepEqual(a.previousAcceptance,JSON.parse(bytes));
  assert.equal(a.platformVersion,'1.29.2');assert.deepEqual(a.allowedPeerVersions,[...a.previousAcceptance.allowedPeerVersions,'1.29.2']);
  assert.deepEqual(a.sourceDigests,a.previousAcceptance.sourceDigests);assert.equal(a.readWireContract,a.previousAcceptance.readWireContract);
  assert.equal(a.producer.pullRequest,738);assert.equal(a.diagnosticObservationActivated,false);
  for(const flag of ['requestQuotaOptedIn','sql027Installed','reportAdmissionOptedIn','unmeteredSourceOptedIn','srmFeatureMounted','providerConfigurationChanged','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(a[flag],false,flag);
+});
+
+
+test('SDK1.30 compatibility keeps every Maps receipt and no current-human-read opt-in or deployment',()=>{
+ const a=currentAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json']);
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptSha256);assert.deepEqual(a.previousAcceptance,JSON.parse(bytes));
+ assert.equal(a.platformVersion,'1.30.0');assert.deepEqual(a.allowedPeerVersions,[...a.previousAcceptance.allowedPeerVersions,'1.30.0']);
+ assert.deepEqual(a.sourceDigests,a.previousAcceptance.sourceDigests);assert.equal(a.readWireContract,a.previousAcceptance.readWireContract);
+ const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/embedded-read-channel'));
+ for(const [file,digest]of Object.entries(a.sourceDigests))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex'),digest,file);
+ for(const flag of ['currentHumanReadOptedIn','srmFeatureMounted','providerConfigurationChanged','runtimeRoleOrGrantChanged','productDeploymentPerformed'])assert.equal(a[flag],false,flag);
 });
