@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import {posix} from 'node:path'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
-const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.diagnosticTelemetryAdoption,current=receipt.xrayPlatform130SourceCompatibility??a
+const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.diagnosticTelemetryAdoption,current=(receipt.xrayPlatform130CiClosureCompatibility??receipt.xrayPlatform130SourceCompatibility)??a
 const hash=value=>createHash('sha256').update(value).digest('hex')
 test('diagnostic source adoption preserves complete history and verifies current producer/consumer bytes',async()=>{
  assert(a);assert.equal(a.taskId,'SG2-PILOT2-DIAGNOSTIC-SOURCE-COMPAT-20261026');assert.equal(a.platformVersion,'1.29.2');assert.equal(a.producer.pullRequest,738)
