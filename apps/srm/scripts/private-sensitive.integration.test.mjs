@@ -133,7 +133,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
  const DATABASE='srm_sensitive_native_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
- const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,failedCeidg=false,revokeKrsExport=false,revokeWebRead=false;const networkObservations=[]
+ const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,failedCeidg=false,emptyMgbi=false,revokeEmptyReport=false,revokeKrsExport=false,revokeWebRead=false;const networkObservations=[]
  let syntheticOrigin
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
@@ -269,6 +269,10 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
      const url=new URL(req.url,'http://127.0.0.1')
      if(url.pathname==='/api/ceidg/v3/firma'){if(failedCeidg){res.statusCode=503;res.end('{}');return}if(emptyCeidg){res.end(JSON.stringify({firma:[]}));return}const nip=url.searchParams.get('nip');res.end(JSON.stringify({firma:[{id:'synthetic-jdg-'+nip,nazwa:'SYNTHETIC_JDG',status:'AKTYWNY',wlasciciel:{nip,pesel:'12345678901'},adresDzialalnosci:{miasto:'TEST_CITY'}}]}));return}
      if(url.pathname.startsWith('/v1/models/')){
+      if(emptyMgbi){
+       if(revokeEmptyReport&&url.pathname.includes('rdf-record'))await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY'WHERE application_id='srm'AND organisation_id=$1 AND user_id=$2 AND operation='supplier.report.read'",[A,U]))
+       res.end(JSON.stringify({count:0,results:[]}));return
+      }
       const nip=url.searchParams.get('identifiers.pl_nip')
       const wp={id:'a'.repeat(24),identifiers:{pl_nip:nip,pl_krs:'0000217580'},content:{current_excerpt:{naglowekA:{},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic Native Company',formaPrawna:'SA'}}}}}}
       const rdf={id:'b'.repeat(24),identifiers:{pl_nip:nip,pl_krs:'0000217580'},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31'},files:[],content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ca_cfy:'300',lae_lapfl_stl_cfy:'200'}}}}
@@ -609,6 +613,29 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     assert.equal(known.status,200);const body=await known.json();assert.equal(body.entityType,'COMPANY');assert.equal(networkHits,freshBefore)
     assert.equal(body.card.identity.nip,'5260250274');assert.equal(body.card.general.data.legalName,'Synthetic Native Company')
     assert.equal(body.card.financial.data.indicators.find(i=>i.code==='CURRENT_RATIO').value,'1.500000')
+   })
+   await t.test('actual empty CEIDG and MGBI returns not found with audited NO_DATA attempts and no company publication',async()=>{
+    const nip='9511855233',before=networkHits;emptyCeidg=true;emptyMgbi=true
+    let response
+    try{response=await http('search',{identifier:nip})}finally{emptyCeidg=false;emptyMgbi=false}
+    assert.equal(response.status,404);assert.match(JSON.stringify(await response.json()),/Nie znaleziono/)
+    assert.equal(networkHits,before+3)
+    const attempts=(await owner.query('SELECT a.section,a.status FROM srm.provider_attempts a JOIN srm.lookup_requests r ON r.id=a.request_id WHERE r.identifier=$1 AND r.organization_id=a.organization_id ORDER BY a.section',[nip])).rows
+    assert.equal(attempts.filter(a=>a.section==='general'&&a.status==='NO_DATA').length,1)
+    assert.equal(attempts.filter(a=>a.section==='financial'&&a.status==='NO_DATA').length,1)
+    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.catalog_companies WHERE nip=$1 AND (general_json IS NOT NULL OR financial_json IS NOT NULL)',[nip])).rows[0].n,0)
+   })
+   await t.test('CEIDG outage plus empty MGBI remains unavailable and neutral reads still require current report access',async()=>{
+    emptyMgbi=true;failedCeidg=true
+    try{
+     const unavailable=await http('search',{identifier:'5272443955'})
+     assert.equal(unavailable.status,503);assert.match(JSON.stringify(await unavailable.json()),/CEIDG/)
+     failedCeidg=false;emptyCeidg=true;revokeEmptyReport=true
+     assert.equal((await http('search',{identifier:'1130089950'})).status,403)
+    }finally{
+     emptyMgbi=false;failedCeidg=false;emptyCeidg=false;revokeEmptyReport=false
+     await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='ALLOW'WHERE application_id='srm'AND organisation_id=$1 AND user_id=$2 AND operation='supplier.report.read'",[A,U]))
+    }
    })
    await t.test('cached routing still checks current report access and organization membership before provider I/O',async()=>{
     const hits=networkHits
