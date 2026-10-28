@@ -70,7 +70,10 @@ export function BenchmarkPickerView({ locale, state, query, setQuery, search, mo
         const date = pickerObservationDate(candidate.lastObservationDate, locale)
         const cell = 'block px-2 py-2 align-top md:table-cell'
         return <tr key={key} className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-slate-200 p-2 md:table-row md:border-0 md:border-b md:p-0">
-          <th scope="row" className={cell + ' col-span-2 max-w-sm font-medium'}>{candidate.displayName}
+          <th scope="row" className={cell + ' col-span-2 max-w-sm font-medium'}>
+            <button type="button" className="text-left font-medium hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label={`${locale === 'pl' ? 'Wybierz benchmark' : 'Select benchmark'}: ${candidate.displayName}`}
+              disabled={disabled || !state.ready || state.selecting !== null} onClick={() => select(candidate)}>{candidate.displayName}</button>
             <span className="mt-1 block text-xs font-normal text-slate-500">{[source, candidate.region].filter(Boolean).join(' · ')}</span>
             {date ? <span className="block text-xs font-normal text-slate-500">{t.date}: {date}</span> : null}
           </th>

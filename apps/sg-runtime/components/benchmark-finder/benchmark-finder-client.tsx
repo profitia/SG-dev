@@ -60,6 +60,9 @@ type BenchmarkFinderClientProps = {
   locale: 'pl' | 'en'
   active?: boolean
   assistantOwner?: 'module' | 'host'
+  /** AppShell owns branding and theme controls when embedded. */
+  headerOwner?: 'module' | 'host'
+  hostTheme?: 'light' | 'dark'
   selectionMode?: 'standalone' | 'picker'
   onBenchmarkSelected?: (benchmark: SavedBenchmark) => void
   initialMode?: DiscoveryMode
@@ -915,7 +918,18 @@ export function BenchmarkFinderClient({
   showPorrDemoPortfolio = false,
   active = true,
   assistantOwner = 'module',
+  headerOwner = 'module',
+  hostTheme,
 }: BenchmarkFinderClientProps) {
+  useEffect(()=>{
+    if(headerOwner!=='host'||!hostTheme||!active)return
+    const root=document.documentElement,previous={srm:root.dataset.srmTheme,benchmark:root.dataset.benchmarkTheme}
+    root.dataset.srmTheme=hostTheme;root.dataset.benchmarkTheme=hostTheme
+    return()=>{
+      if(previous.srm===undefined)delete root.dataset.srmTheme;else root.dataset.srmTheme=previous.srm
+      if(previous.benchmark===undefined)delete root.dataset.benchmarkTheme;else root.dataset.benchmarkTheme=previous.benchmark
+    }
+  },[headerOwner,hostTheme,active])
   const [pciSeed,setPciSeed]=useState<SavedBenchmark|null>(null)
   const pciLaunching=useRef(false),pciActive=useRef(active);pciActive.current=active
   useEffect(()=>{if(!active)setPciSeed(null)},[active])
@@ -2094,7 +2108,7 @@ export function BenchmarkFinderClient({
 
   return (
     <BenchmarkPresentation compact={isPickerMode||assistantOwner==='host'}><main className={`bf-page min-h-screen${isPickerMode ? ' bf-visual-picker' : ''}`} data-testid="benchmark-finder-page">
-      <div className={`bf-brandbar bf-topbar${isPickerMode ? ' is-picker' : ''}`}>
+      {headerOwner === 'module' && <div className={`bf-brandbar bf-topbar${isPickerMode ? ' is-picker' : ''}`}>
           {!isPickerMode && <div className="bf-brand"><span><SpendGuruLogo width={148} /></span><span>Market Intelligence</span></div>}
           <div className="bf-header-actions"><BenchmarkThemeSwitch/>            <div className="bf-languages">
               <button
@@ -2115,7 +2129,7 @@ export function BenchmarkFinderClient({
               </button>
             </div>
           </div>
-        </div>
+        </div>}
         <div className="bf-workspace"><div className="bf-content-region"><div className="bf-content bf-main">
         {!isPickerMode && <header className="bf-page-heading bf-page-title">
           <div>
