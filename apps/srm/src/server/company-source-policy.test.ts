@@ -1,7 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import targets from '../../deployment/supplier-native-targets.json'
-import {readCompanySourcePolicy,mgbiCompanyCache} from './company-source-policy'
+import {readCompanySourcePolicy,mgbiCompanyCache,isKnownMgbiCompany} from './company-source-policy'
+import {mapMgbiGeneralRecords} from './mgbi-general'
+import {emptyCard} from '../demo/fixture'
 import {IdentityConfigurationUnavailable} from './identity-runtime'
 import type {SharedCompany} from './shared-catalog'
 import {readFileSync} from 'node:fs'
@@ -47,4 +49,24 @@ test('fresh acquisition reuses MGBI evidence only and never relabels or edits hi
     assert.equal(mgbiCompanyCache(historical),null);assert.equal(JSON.stringify(historical),before)
   }
   assert.equal(mgbiCompanyCache(null),null)
+})
+
+test('routing requires a complete exact MGBI company after the existing freshness read',()=>{
+  const nip='9511855233',krs='0000007163'
+  const general=mapMgbiGeneralRecords([{id:'a'.repeat(24),identifiers:{pl_nip:nip,pl_krs:krs},
+    content:{current_excerpt:{naglowekA:{},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic Known Company',formaPrawna:'SA'}}}}}}],
+    {type:'NIP',value:nip},new Date().toISOString()).section
+  const value:SharedCompany={general,financial:structuredClone(emptyCard.financial)}
+  assert.equal(isKnownMgbiCompany(value,nip),true)
+  assert.equal(isKnownMgbiCompany(null,nip),false)
+  assert.equal(isKnownMgbiCompany(value,'5272443955'),false)
+  for(const change of [
+    (v:SharedCompany)=>{v.general.source.provider='KRS'},
+    (v:SharedCompany)=>{v.general.status='ERROR'},
+    (v:SharedCompany)=>{v.general.data!.krs=null},
+    (v:SharedCompany)=>{v.general.data!.legalName=' '},
+    (v:SharedCompany)=>{v.general.data!.registryHistory=undefined},
+    (v:SharedCompany)=>{v.general.data!.registryHistory!.currentKrs='0000000001'},
+    (v:SharedCompany)=>{v.general.data!.registryHistory!.members=[]},
+  ]){const invalid=structuredClone(value);change(invalid);assert.equal(isKnownMgbiCompany(invalid,nip),false)}
 })
