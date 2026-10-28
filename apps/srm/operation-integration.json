@@ -5315,7 +5315,10 @@
       "src/server/peer-read-boundary.test.ts": "f4fdc5e332a4447e1d5f9cdd4b7d2a1486cfab9c13e2ecdf4c2cb277b6391027",
       "scripts/native-execution-adoption.test.mjs": "9b67b363f7bc4c2bb6bdfe823e8362d105b0a381bd75e3668e778ad7bdffb7bd",
       "scripts/request-quota-adoption.test.mjs": "48d9c644fc2f25a205022b24d73a770d803271d67da86f60c4d25f4f0d116dbf",
-      "scripts/diagnostic-telemetry-adoption.test.mjs": "5f94f76492eb4033412c19664fb390272c9aff11dbac9a9937b789707b70efd5"
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "5f94f76492eb4033412c19664fb390272c9aff11dbac9a9937b789707b70efd5",
+      "src/server/supplier-acquisition-http.test.ts": "3559f5aa352001dd25e7961a3de87f1b7840ec077bcc7bde77fb765e625e7f4b",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "a5cce63d0e33a6cea111f3d4c3b496b4d55fada8f08bcbdbddb5d9d88a529494",
+      "src/server/xray-repository.test.ts": "dd83e494c9a775c4462d312e26958aa73b939541715dba331ef203bbc065e722"
     },
     "knownCurrentMgbiCompanySkipsCeidg": true,
     "unknownNipChecksCeidgFirst": true,
