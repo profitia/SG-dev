@@ -5390,5 +5390,31 @@
       "src/server/supplier-native-company.ts": "6c74dacb9c06d2a5e3c9d72f6755bbb219ac3ae177af84b9cd5d639bc52bd124",
       "src/server/supplier-native-work-store.ts": "563b6ff535f2ba9f128c9645a1bb68a256cad30085a51affb3bfc6241d327e66"
     }
+  },
+  "readyCompanyMetadataCredentialReuse": {
+    "previousReceiptSourceSha": "7fd130ea0364e82fda0c068326cd5bb1d93fb523",
+    "previousReceiptDigest": "751b0c7dbb3342d61c74aa61eebfafcc95c0a9967dacec60d28a158bdc2a0920",
+    "target": "MAIN_SRM_READY_COMPANY_IMMEDIATE_METADATA_READ",
+    "dataHintLifetimeMs": 15000,
+    "minimumBearerHeadroomMs": 30000,
+    "expiryHintIsAuthority": false,
+    "serverAuthorityChecksChanged": false,
+    "authorizationDecisionCacheIntroduced": false,
+    "credentialPersistedByApplication": false,
+    "searchCredentialRefreshChanged": false,
+    "providerAcquisitionChanged": false,
+    "tokenLifetimeChanged": false,
+    "providerRetriesAdded": false,
+    "uiChatMapsChanged": false,
+    "applicationSourceDigests": {
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "febeef63c3651d83211210e6dbe77152ce728d28d1b568c8df2cbbc550215458",
+      "scripts/native-execution-adoption.test.mjs": "a50c7035bb9c1f3e073c9f93a6d5dd2e06455ac42509572099498ef428982559",
+      "scripts/request-quota-adoption.test.mjs": "a49bfa87713cf446fea120f27e483f575d49126911b41184592d20a6e0bce402",
+      "src/modules/xray/krs-session-transport.test.ts": "7d315a6d75607ab155d65f5321ea1da2b61c8dc2fa6ef50602b1a4035d6c1b6f",
+      "src/modules/xray/krs-session-transport.ts": "2e9ae3a566d8c7fcf8bd5cfdded14429c453028b7fa55454c3938af54ead76e1",
+      "src/server/company-source-policy.test.ts": "477e1af69094702ff70010d11630f2112c4412c0cd81af11fa92b493a6ddcada",
+      "src/server/peer-read-boundary.test.ts": "0c8f47441fd772993217ed743e9e7ad09b2178d496a959065d61a6f1fe10cec3",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "e467417f4c5d671fd20840c231cca9cef4ef8c72e33a37a1fa7e6602506bc23a"
+    }
   }
 }

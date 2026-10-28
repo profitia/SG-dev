@@ -13,7 +13,7 @@ test('company session repair preserves prior acceptance and pins every changed c
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapStartupRepair
   const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
-  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):receipt.readyCompanyMetadataCredentialReuse.applicationSourceDigests[file as keyof typeof receipt.readyCompanyMetadataCredentialReuse.applicationSourceDigests]?execFileSync('git',['show',receipt.readyCompanyMetadataCredentialReuse.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
   assert.equal(hash(bytes),digest,file)
  }
  assert.equal(a.serverAuthorityChecksChanged,false);assert.equal(a.tokenLifetimeChanged,false);assert.equal(a.providerRetriesAdded,false)
@@ -32,6 +32,60 @@ test('ordinary MGBI search, lookup and report read start with a fresh SDK bearer
   assert.equal((await transport(path,{method:'POST',headers:{'Idempotency-Key':key},body})).status,200)
   assert.equal(calls,1,'Token refresh must not introduce a provider retry')
  }
+})
+
+async function mainBrowser<T>(action:()=>Promise<T>,origin='https://srm-development-runtime.onrender.com'){
+ const original=Object.getOwnPropertyDescriptor(globalThis,'window')
+ Object.defineProperty(globalThis,'window',{value:{location:{origin}},configurable:true})
+ try{return await action()}finally{if(original)Object.defineProperty(globalThis,'window',original);else Reflect.deleteProperty(globalThis,'window')}
+}
+const metadataNip='9511855233',otherMetadataNip='5272443955'
+const sdkBearer=(seconds:number)=>'e30.'+Buffer.from(JSON.stringify({exp:Math.floor(Date.now()/1000)+seconds})).toString('base64url')+'.synthetic'
+const readyCompany=()=>Response.json({entityType:'COMPANY',card:{identity:{nip:metadataNip}}})
+const searchBody={method:'POST',body:JSON.stringify({identifier:metadataNip})}
+const readBody={method:'POST',body:JSON.stringify({nip:metadataNip,entityType:'COMPANY'})}
+
+test('main ready-company metadata uses the existing SDK bearer once with 30 seconds headroom, without storing authority or refreshing Search',async()=>mainBrowser(async()=>{
+ const reads:unknown[]=[],headers:Headers[]=[];const current=sdkBearer(60)
+ const transport=createKrsSessionTransport(async options=>{reads.push(options);return options?.skipCache?'fresh-search-bearer':current},async(path,init)=>{
+  headers.push(new Headers(init?.headers));return path==='/api/xray/search'?readyCompany():Response.json({})
+ })
+ await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',readBody);await transport('/api/xray/report-data',readBody)
+ assert.deepEqual(reads,[{skipCache:true},undefined,{skipCache:true}]);assert.equal(headers[1].get('Authorization'),'Bearer '+current)
+ for(const h of headers){assert.equal(h.get('X-SRM-Report-Admission'),null);assert.equal(h.get('X-SRM-Diagnostic-Admission'),null)}
+}))
+test('near-expired, missing, malformed and unverifiable-expiry SDK credentials still refresh before the same metadata read',async()=>mainBrowser(async()=>{
+ for(const token of [sdkBearer(29),sdkBearer(-1),null,'opaque','a.e30.c','a.eyJleHAiOiJmdXR1cmUifQ.c']){
+  const reads:unknown[]=[],seen:string[]=[]
+  const transport=createKrsSessionTransport(async options=>{reads.push(options);return options?.skipCache?'fresh-bearer':token},async(path,init)=>{seen.push(new Headers(init?.headers).get('Authorization')!);return path==='/api/xray/search'?readyCompany():Response.json({})})
+  await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',readBody)
+  assert.deepEqual(reads,[{skipCache:true},undefined,{skipCache:true}]);assert.equal(seen[1],'Bearer fresh-bearer')
+ }
+}))
+test('a revoked account or grant still returns the current server refusal, with no credential retry or cached DTO',async()=>mainBrowser(async()=>{
+ for(const status of [401,403,503]){
+  let calls=0;const transport=createKrsSessionTransport(async options=>options?.skipCache?'fresh-search':sdkBearer(60),async path=>{calls++;return path==='/api/xray/search'?readyCompany():Response.json({error:'Operation unavailable'},{status})})
+  await transport('/api/xray/search',searchBody)
+  const result=await transport('/api/xray/report-data',readBody);assert.equal(result.status,status);assert.deepEqual(await result.json(),{error:'Operation unavailable'});assert.equal(calls,2)
+ }
+}))
+test('another NIP, JDG, failed search, stale read hint and independent environment keep ordinary fresh credentials',async()=>{
+ for(const origin of ['https://srm-staging-runtime.onrender.com','https://srm-krs-pilot2-development.onrender.com','https://srm-development-runtime.onrender.com.foreign.invalid'])await mainBrowser(async()=>{
+  const reads:unknown[]=[];const transport=createKrsSessionTransport(async options=>{reads.push(options);return 'fresh'},async path=>path==='/api/xray/search'?readyCompany():Response.json({}))
+  await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',readBody);assert.deepEqual(reads,[{skipCache:true},{skipCache:true}])
+ },origin)
+ await mainBrowser(async()=>{
+  for(const body of [{nip:otherMetadataNip,entityType:'COMPANY'},{nip:metadataNip,entityType:'JDG'}]){
+   const reads:unknown[]=[];const transport=createKrsSessionTransport(async options=>{reads.push(options);return 'fresh'},async path=>path==='/api/xray/search'?readyCompany():Response.json({}))
+   await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',{method:'POST',body:JSON.stringify(body)});assert.deepEqual(reads,[{skipCache:true},{skipCache:true}])
+  }
+  const original=Date.now;let elapsed=0;Date.now=()=>original()+elapsed
+  try{const reads:unknown[]=[];const transport=createKrsSessionTransport(async options=>{reads.push(options);return sdkBearer(60)},async path=>path==='/api/xray/search'?readyCompany():Response.json({}))
+   await transport('/api/xray/search',searchBody);elapsed=16000;await transport('/api/xray/report-data',readBody);assert.deepEqual(reads,[{skipCache:true},{skipCache:true}])
+  }finally{Date.now=original}
+  const reads:unknown[]=[];const failed=createKrsSessionTransport(async options=>{reads.push(options);return 'fresh'},async path=>path==='/api/xray/search'?Response.json({error:'unavailable'},{status:503}):Response.json({}))
+  await failed('/api/xray/search',searchBody);await failed('/api/xray/report-data',readBody);assert.deepEqual(reads,[{skipCache:true},{skipCache:true}])
+ })
 })
 test('form diagnostic fragment is correlation only and cannot replace the existing admission or bearer',async()=>{
  const fragment='11111111-1111-4111-8111-111111111111',execution='22222222-2222-4222-8222-222222222222',nip='7772776017'
