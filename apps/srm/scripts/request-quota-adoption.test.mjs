@@ -31,6 +31,8 @@ const beforeNative=path=>receipt.nativeSqlRoundtripAdoption.applicationSourceDig
  ?execFileSync('git',['show',receipt.companyAbsenceRoutingRepair.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
  :receipt.cachedReportE1Optimization.applicationSourceDigests[path]
  ?execFileSync('git',['show',receipt.cachedReportE1Optimization.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
+ :receipt.readyCompanyMetadataCredentialReuse.applicationSourceDigests[path]
+ ?execFileSync('git',['show',receipt.readyCompanyMetadataCredentialReuse.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
  :fs.readFileSync(new URL('../'+path,import.meta.url))
 test('SRM explicitly adopts SQL027 and preserves all historical contracts, counts and human grants',async()=>{
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
