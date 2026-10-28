@@ -4258,7 +4258,7 @@
         "projectKey": "SRM",
         "taskId": "SRM-APPSHELL-XRAY-PRODUCER-20261028",
         "pullRequest": 775,
-        "sourceSha": "6d2221c640926d6e497d10d247ccf646b657cadd"
+        "sourceSha": "c88bca3c71502e1cc46a01a1fa367486264b9ed1"
       }
     },
     "sourceDigests": {
@@ -4350,7 +4350,8 @@
       "tests/xray-gateway.test.ts",
       "tests/xray-platform-compatibility.test.mjs",
       "xray-appshell-integration.json",
-      "../dashboard-preview/package-lock.json"
+      "../dashboard-preview/package-lock.json",
+      "../../packages/maps-embed/package.json"
     ],
     "applicationSourceDigests": {
       "app/[locale]/dashboard/xray/page.tsx": "4f2dab15ccc1cb0cd2f7adcf3fc83fb3b810e5506efa0db55c06f9eca41170b6",
@@ -4380,9 +4381,10 @@
       "tests/xray-appshell.test.tsx": "5498f1600527879093284aeffac0d469c53f77c75d194eb270bab3528f0531f0",
       "tests/xray-browser-preview.tsx": "ac1ad6b44ad03c44c431b7af98b5767b1c164d12ff9a9a1267ab00089dce7b71",
       "tests/xray-gateway.test.ts": "39cd186c88100aded0651ce48c365b602e27d9c0ad04c246ab843d7b5dae082d",
-      "tests/xray-platform-compatibility.test.mjs": "2fe956975313cb6fe1b16b0ee1fac45e045be432e934b18c1e83c99ccb29da2a",
-      "xray-appshell-integration.json": "f14e898ce85eb8269402e55bb6e50bb94aded88436deaac7ef5b4f201418eee4",
-      "../dashboard-preview/package-lock.json": "a8e5b14605b035eba7bf451c36ee549ce5fa1e568096c60a2c541869ece66686"
+      "tests/xray-platform-compatibility.test.mjs": "85b0e4a38dd521e7c0e3c9c94a46afef92d91b1b612b859d8c737b8c360e2d2b",
+      "xray-appshell-integration.json": "aa3ebefbbcb9fd0d83d4692f20ab968c0ee713858cdf86d91f60121eed2d4a56",
+      "../dashboard-preview/package-lock.json": "a8e5b14605b035eba7bf451c36ee549ce5fa1e568096c60a2c541869ece66686",
+      "../../packages/maps-embed/package.json": "8e6208e939b33583adfd9a4f779d0873309ccc7706921546f6666b184bb5ab3b"
     },
     "repositorySourceDigests": {
       "apps/dashboard-preview/package-lock.json": "a8e5b14605b035eba7bf451c36ee549ce5fa1e568096c60a2c541869ece66686"

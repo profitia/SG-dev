@@ -100,7 +100,7 @@
       "projectKey": "SRM",
       "taskId": "SRM-APPSHELL-XRAY-PRODUCER-20261028",
       "pullRequest": 775,
-      "sourceSha": "6d2221c640926d6e497d10d247ccf646b657cadd"
+      "sourceSha": "c88bca3c71502e1cc46a01a1fa367486264b9ed1"
     }
   },
   "routes": {
