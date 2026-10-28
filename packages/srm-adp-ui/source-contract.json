@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "logicalEntry": "adp",
+  "displayName": "ADP — Arkusz Danych Podstawowych",
+  "owner": "SRM Runtime",
+  "writableProfile": "SRM",
+  "package": "@profitia/srm-adp-ui",
+  "packageVersion": "1.0.0",
+  "contractVersion": "1.0.0",
+  "integration": "NATIVE_VIEW",
+  "scope": "PRESENTATION_ONLY",
+  "stateBoundary": "LOCAL_STATE",
+  "publicExports": [
+    ".",
+    "./styles.css"
+  ],
+  "mount": "AdpWorkspace",
+  "source": {
+    "projectId": "465405993031966720",
+    "componentId": "465415479037693952",
+    "revisionId": "465859267208024064"
+  },
+  "library": {
+    "projectId": "460628300646219776",
+    "componentId": "460628347660177408",
+    "revisionId": "465827262730764288",
+    "relationship": "PINNED_PROVENANCE_NO_AUTOMATIC_SYNC"
+  },
+  "canon": [
+    "Canon/v1.0-platform-appshell-business-and-architecture-canon.md",
+    "Canon/v1.1-srm-adp-presentation-mounting-amendment.md"
+  ],
+  "sourceDigestAlgorithm": "SHA256(sorted path + NUL + file bytes + NUL; package.json, package-lock.json, tsconfig.json and all src files)",
+  "sourceDigest": "ddff073ecef0fa95b396f860c6e28639b7d3060f61903ad278c300ff30c5bbc2",
+  "sourceFiles": [
+    "package-lock.json",
+    "package.json",
+    "src/dropdown.tsx",
+    "src/fields.ts",
+    "src/form.tsx",
+    "src/history-dialog.tsx",
+    "src/index.ts",
+    "src/primitives.tsx",
+    "src/styles.css",
+    "src/types.ts",
+    "src/workspace.tsx",
+    "tsconfig.json"
+  ],
+  "hostResponsibilities": [
+    "existing authorized Identity scope",
+    "synthetic presentation data",
+    "in-memory local adapter",
+    "instance invalidation and stale callback rejection",
+    "locale dashboard routing and Back/Forward",
+    "shared theme and assistant",
+    "mount error boundary",
+    "explicit version and digest adoption"
+  ],
+  "forbiddenCapabilities": [
+    "business persistence",
+    "provider/API/database transport",
+    "CIC/Screen Context",
+    "authentication/account mutation",
+    "global theme or storage ownership",
+    "private cross-application imports",
+    "second assistant",
+    "iframe"
+  ],
+  "status": "SOURCE_CANDIDATE_NOT_RELEASED",
+  "styleContract": {
+    "root": ".sg-adp-ui",
+    "theme": "host-provided light/dark",
+    "fontFamilyToken": "--adp-font-family",
+    "defaultFontFamily": "Inter,Arial,sans-serif"
+  }
+}

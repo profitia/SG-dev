@@ -1,0 +1,59 @@
+name: SRM ADP public presentation UI
+on:
+  pull_request:
+    paths:
+      - 'packages/srm-adp-ui/**'
+      - '.github/workflows/srm-adp-ui-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/srm-adp-ui/**'
+      - '.github/workflows/srm-adp-ui-ci.yml'
+permissions:
+  contents: read
+jobs:
+  presentation:
+    name: ADP offline presentation contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/srm-adp-ui
+    env:
+      NPM_TOKEN: ''
+      NODE_AUTH_TOKEN: ''
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install pinned public dependencies without credentials or lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund --userconfig=/dev/null --registry=https://registry.npmjs.org
+      - name: Verify isolated presentation, source qualification and actual public import graph
+        run: npm test
+      - name: Check types and build public exports without host services
+        run: npm run typecheck && npm run build
+      - name: Record actual validation identity
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import {execFileSync} from 'node:child_process';
+          const validationSha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+          if(validationSha!==process.env.EXPECTED_SHA)throw new Error('Candidate identity mismatch');
+          const contract=JSON.parse(fs.readFileSync('source-contract.json','utf8'));
+          fs.writeFileSync('dist/ci-proof.json',JSON.stringify({projectKey:'SRM',targetEnvironment:'development',scope:'OFFLINE_PRESENTATION_SOURCE',validationSha,candidateHeadSha:process.env.EXPECTED_SHA,contractVersion:contract.contractVersion,sourceDigest:contract.sourceDigest,tests:'PASS',typecheck:'PASS',build:'PASS',liveBrowserAcceptance:false,consumerIntegrationVerified:false,productDeploymentPerformed:false},null,2));
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srm-adp-presentation-source-proof
+          path: |
+            packages/srm-adp-ui/dist/ci-proof.json
+            packages/srm-adp-ui/source-contract.json
+            packages/srm-adp-ui/evidence/verification.json
+          retention-days: 30
+          if-no-files-found: error

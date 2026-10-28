@@ -1,0 +1,21 @@
+# SRM ADP public presentation UI
+
+SRM Runtime owns this public `NATIVE VIEW` package. Contract and package version: **1.0.0**. Delivery boundary: **PRESENTATION_ONLY / LOCAL_STATE**. The existing SG2 AppShell is the consumer and physical host; adopting this source does not deploy or transfer ownership of SRM.
+
+Import `AdpWorkspace` and its types from `@profitia/srm-adp-ui`; import `@profitia/srm-adp-ui/styles.css` once in the host. Private implementation imports are unsupported. `source-contract.json` pins the source, canonical references, public surface and exact source digest. A consumer must explicitly adopt that version and digest in its integration receipt.
+
+The host supplies the typed presentation model, `pl`/`en`, light/dark theme, local navigation and callbacks. It owns synthetic data and in-memory reactions to `AdpLocalEvent`. The producer includes no supplier/person fixtures, transport, database, authorization gateway, login, assistant, router or storage. The model is a permitted presentation projection, never evidence of authorization.
+
+Use one `instanceId` for the current authorized identity scope. Change it and discard host-held data when that scope changes or is revoked. Reject stale callbacks using the callback's instance ID. Set `active={false}` to suspend the workspace and close its dialog/portals while preserving its draft. Keep the same instance and model for an ordinary dashboard return. Remounting after a hard refresh does not imply durable persistence.
+
+The host synchronizes navigation with `/pl/dashboard/adp` or `/en/dashboard/adp`; return targets the matching dashboard. Back/Forward, direct-entry access checks, account completion and shared Identity/session behavior remain host responsibilities. The public UI cannot navigate to arbitrary external modules. Incompatible or incomplete presentation contracts throw; the host must provide its normal error boundary. The optional `state` and `onRetry` cover real mount loading/error/unavailability, without public scenario switches.
+
+The approved workspace has eight areas, five questionnaire sections and 43 original fields. User edits and approved dialogs emit local events only. Draft persistence, recipient sending, signatures and X-Ray searches remain disabled. Document metadata and ratings can be edited locally without claiming a stored file, a signed document or a completed business evaluation. X-Ray and Newsfeed have no provider result, frame, news article or trend fixture. There is no Screen Context or CIC integration.
+
+Styles and portals are scoped to `.sg-adp-ui`; the host supplies the existing Inter font through `--adp-font-family` (default `Inter,Arial,sans-serif`). The package changes no global theme, root CSS, body scrolling or browser storage. CSS keyframes use the package namespace. Buttons establish their focus before invoking a dialog, including pointer activation on macOS. Native dialogs capture that invoker before opening and restore focus on close. Select menus stay inside the mounted workspace/dialog and remove listeners when closed.
+
+Source qualification is recorded separately for UI, data and behavior in `evidence/source-transfer-matrix.*`. Design tools, inspectors, provenance, delivery registries and simulation handlers do not enter the public import graph. These evidence files and test fixtures are not runtime exports. This is a source transfer with pinned provenance, not a live dependency or automatic synchronization with MagicPath. Source exceptions and remaining acceptance work are listed in `evidence/verification.json`.
+
+Run `npm ci --ignore-scripts --no-audit --no-fund`, `npm test`, `npm run typecheck`, and `npm run build` within this package. `npm run preview` serves a credential-free local test host at `127.0.0.1:38126`; it is not a product application. Its CSP blocks connections and frames, and it is absent from the exported build. CI runs without package secrets, provider services or deployment access.
+
+Governance acceptance of the public path is distinct from source review, consumer adoption and Development release. A native update requires a new, controlled SG2 host artifact. No product deployment or live-user acceptance follows from creating this package.
