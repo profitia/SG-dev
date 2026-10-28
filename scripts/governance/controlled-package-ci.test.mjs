@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -266,6 +266,52 @@ const architecturePr = (count = 2) => ({...pr(), changed_files: count, base: {..
 const producerFile = (filename = 'packages/platform-contracts/src/user-profile.mjs') => ({filename, status: 'modified', sha: 'c'.repeat(40)})
 const architectureFiles = () => [producerFile(), producerFile('Canon/evidence/2026-10-21-identity-profile-b1-handoff.md')]
 const krsReviewFiles = () => KRS_GOVERNANCE_REVIEW_FILES.map(producerFile)
+const adpReviewFiles = () => Object.entries(ADP_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:'modified'}))
+const adpReviewPr = () => ({...architecturePr(5),number:ADP_GOVERNANCE_REVIEW.prNumber,head:{...architecturePr().head,ref:ADP_GOVERNANCE_REVIEW.branch}})
+
+test('ADP admission binds only the five approved blobs of PR756 and its exact branch',()=>{
+ assert(Object.isFrozen(ADP_GOVERNANCE_REVIEW));assert(Object.isFrozen(ADP_GOVERNANCE_REVIEW.blobs))
+ assert.equal(ADP_GOVERNANCE_REVIEW.prNumber,756);assert.equal(ADP_GOVERNANCE_REVIEW.sourceSha,'202bcd0b4c7e00a03a2a7eee9aeb38338363f3d0')
+ assert.equal(Object.keys(ADP_GOVERNANCE_REVIEW.blobs).length,5)
+ assert(!Object.keys(ADP_GOVERNANCE_REVIEW.blobs).some(n=>n.startsWith('apps/')||n.startsWith('packages/')||n.startsWith('.github/')))
+ const files=adpReviewFiles(),p=adpReviewPr()
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:files.map(f=>({...f,status:'added'}))}),other)
+ for(const delta of [{number:757},{number:undefined},{head:{...p.head,ref:'architecture/another-review'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...delta},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('ADP review refuses changed blobs, missing/extra/duplicate files, deletion and rename',()=>{
+ const original=adpReviewFiles()
+ for(let i=0;i<original.length;i++){
+  const incomplete=original.filter((_,j)=>i!==j);rejection(()=>selectCandidate(context(),{...adpReviewPr(),changed_files:incomplete.length},other,{files:incomplete}))
+  for(const patch of [{sha:'d'.repeat(40)},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename},{sha:'forged'}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),adpReviewPr(),other,{files}))
+  }
+  const files=original.map((f,j)=>i===j?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),adpReviewPr(),other,{files}))
+ }
+ for(const name of ['apps/sg-runtime/package.json','packages/srm-adp-ui/src/index.ts','packages/platform-contracts/src/operation-context.mjs',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-10-27-extra.md']){
+  const files=[...original,producerFile(name)];rejection(()=>selectCandidate(context(),{...adpReviewPr(),changed_files:files.length},other,{files}))
+  const replaced=[...original];replaced[0]=producerFile(name);rejection(()=>selectCandidate(context(),adpReviewPr(),other,{files:replaced}))
+ }
+})
+
+test('ADP review preserves trusted actor/repository/main and current owner routing fences',()=>{
+ const files=adpReviewFiles()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='staging',p=>p.state='closed']){const p=adpReviewPr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},adpReviewPr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/architecture/untrusted'},adpReviewPr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'));Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),adpReviewPr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('ADP review uses complete API pagination and metadata race fencing before fixed Git checks',async()=>{
+ const files=adpReviewFiles(),candidate=adpReviewPr(),result=await resolveCandidateAdmission(context(),'756',other,apiFixture(candidate,files).request)
+ assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
+ for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'756',other,apiFixture(candidate,files,after).request))
+ await assert.rejects(resolveCandidateAdmission(context(),'756',other,apiFixture(candidate,files.slice(1)).request))
+})
 
 test('KRS governance admission is one immutable complete fifteen-file review bundle without a dummy producer', () => {
   assert(Object.isFrozen(KRS_GOVERNANCE_REVIEW_FILES))
