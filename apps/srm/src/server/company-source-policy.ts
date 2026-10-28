@@ -21,6 +21,18 @@ export function mgbiCompanyCache(value:SharedCompany|null):SharedCompany|null {
   return value?.general.source.provider==='MGBI'&&value.financial.source.provider==='MGBI'?value:null
 }
 
+/** Confirmed provider absence is a neutral result, never a company publication.
+ * Errors, incomplete evidence and financial-only work do not qualify. */
+export function isEmptyMgbiCompany(general:SharedCompany['general'],financial:SharedCompany['financial']):boolean {
+  return [general,financial].every((section,index)=>section.status==='EMPTY'&&section.data===null
+    &&section.source.provider==='MGBI'&&section.source.model===(index===0?'pl-krs-wp-record':'pl-krs-rdf-record')
+    &&section.source.recordId===null&&section.effectiveAt===null
+    &&section.warnings.length===1&&section.warnings[0]===(index===0?'MGBI_NO_RECORD':'MGBI_NO_STRUCTURED_FINANCIAL_DATA')
+    &&typeof section.retrievedAt==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?Z$/.test(section.retrievedAt)
+    &&Number.isFinite(Date.parse(section.retrievedAt))
+    &&new Date(section.retrievedAt).toISOString().slice(0,10)===section.retrievedAt.slice(0,10))
+}
+
 /** Routing proof only, after the existing scoped freshness/mapping read.
  * A placeholder, another provider or incomplete identity cannot skip CEIDG. */
 export function isKnownMgbiCompany(value:SharedCompany|null,nip:string):boolean {

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import targets from '../../deployment/supplier-native-targets.json'
-import {readCompanySourcePolicy,mgbiCompanyCache,isKnownMgbiCompany} from './company-source-policy'
+import {readCompanySourcePolicy,mgbiCompanyCache,isKnownMgbiCompany,isEmptyMgbiCompany} from './company-source-policy'
 import {mapMgbiGeneralRecords} from './mgbi-general'
 import {emptyCard} from '../demo/fixture'
 import {IdentityConfigurationUnavailable} from './identity-runtime'
@@ -21,7 +21,8 @@ test('MGBI recovery preserves the full prior acceptance and pins every current c
     const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.mgbiDevelopmentSessionFreshnessRepair.applicationSourceDigests[file as keyof typeof receipt.mgbiDevelopmentSessionFreshnessRepair.applicationSourceDigests]?receipt.mgbiDevelopmentSessionFreshnessRepair:receipt.supplierMapStartupRepair
     const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
     const routing=receipt.stagingCompanyRoutingAdoption
-    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):routing.applicationSourceDigests[file as keyof typeof routing.applicationSourceDigests]?execFileSync('git',['show',routing.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
+    const repair=receipt.companyAbsenceRoutingRepair
+    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):routing.applicationSourceDigests[file as keyof typeof routing.applicationSourceDigests]?execFileSync('git',['show',routing.previousReceiptSourceSha+':apps/srm/'+file]):repair.applicationSourceDigests[file as keyof typeof repair.applicationSourceDigests]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
     assert.equal(hash(bytes),digest,file)
   }
   assert.equal(a.companySourcePolicy,'MGBI_ONLY');assert.equal(a.sharedSdkChanged,false);assert.equal(a.humanEntitlementsChanged,false)
@@ -33,7 +34,11 @@ test('routing adoption preserves accepted contracts and pins the bounded current
   const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
   assert.equal(hash(previous),a.previousReceiptDigest)
   for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
-  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
+    const repair=receipt.companyAbsenceRoutingRepair
+    const bytes=repair.applicationSourceDigests[file as keyof typeof repair.applicationSourceDigests]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
+    assert.equal(hash(bytes),digest,file)
+  }
   for(const key of ['freshnessRulesChanged','humanAuthorityChanged','sharedSdkChanged','financialWorkflowChanged','providerLimitsChanged','sqlOrInfrastructureChanged','uiChatMapsChanged'])assert.equal(a[key as keyof typeof a],false,key)
 })
 
@@ -79,4 +84,34 @@ test('routing requires a complete exact MGBI company after the existing freshnes
     (v:SharedCompany)=>{v.general.data!.registryHistory!.currentKrs='0000000001'},
     (v:SharedCompany)=>{v.general.data!.registryHistory!.members=[]},
   ]){const invalid=structuredClone(value);change(invalid);assert.equal(isKnownMgbiCompany(invalid,nip),false)}
+})
+
+
+test('company absence repair retains all earlier receipts and pins current bounded adapters',()=>{
+  const a=receipt.companyAbsenceRoutingRepair,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
+  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+  assert.equal(hash(prior),a.previousReceiptDigest)
+  for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+  assert.equal(a.positiveSourceContractChanged,false);assert.equal(a.authorityOrProviderLimitsChanged,false)
+})
+
+test('neutral absence requires exact MGBI EMPTY evidence, never errors or an incomplete identity',()=>{
+  const at='2026-10-28T10:00:00.000Z'
+  const value:SharedCompany={
+    general:{...structuredClone(emptyCard.general),status:'EMPTY',retrievedAt:at,warnings:['MGBI_NO_RECORD'],source:{provider:'MGBI',model:'pl-krs-wp-record',recordId:null}},
+    financial:{...structuredClone(emptyCard.financial),status:'EMPTY',retrievedAt:at,warnings:['MGBI_NO_STRUCTURED_FINANCIAL_DATA'],source:{provider:'MGBI',model:'pl-krs-rdf-record',recordId:null}},
+  }
+  assert.equal(isEmptyMgbiCompany(value.general,value.financial),true)
+  for(const section of ['general','financial'] as const)for(const mutate of [
+    (v:SharedCompany)=>{v[section].status='ERROR'},
+    (v:SharedCompany)=>{v[section].status='NOT_REQUESTED'},
+    (v:SharedCompany)=>{v[section].source.provider='KRS' as never},
+    (v:SharedCompany)=>{v[section].source.model='different-model'},
+    (v:SharedCompany)=>{v[section].source.recordId='a'.repeat(24)},
+    (v:SharedCompany)=>{v[section].retrievedAt=null},
+    (v:SharedCompany)=>{v[section].retrievedAt='2026-02-31T10:00:00Z'},
+    (v:SharedCompany)=>{v[section].warnings=['MGBI_MAPPING_FAILED']},
+    (v:SharedCompany)=>{v[section].effectiveAt='2026-01-01'},
+  ]){const invalid=structuredClone(value);mutate(invalid);assert.equal(isEmptyMgbiCompany(invalid.general,invalid.financial),false)}
 })

@@ -9,7 +9,7 @@ import {toPublicSection} from './xray-lookup'
 import {emptyCard} from '../demo/fixture'
 import {bindOrganizationTransaction} from './db'
 import {readFreshCompany} from './shared-catalog'
-import {isKnownMgbiCompany} from './company-source-policy'
+import {isKnownMgbiCompany,isEmptyMgbiCompany} from './company-source-policy'
 
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
 export type CompanyReadOptions=Omit<DriverOptions,'readResources'|'projectOutput'|'prepareInputs'|'describeOutcome'|'requestLedger'>
@@ -28,7 +28,9 @@ export function createSrmCompanyCardRead(options:CompanyReadOptions,input:Suppli
   ||input.kys.data!==null||input.kys.status!=='NOT_REQUESTED')return refuse()
  const section=<T extends SupplierXRayCard['general']|SupplierXRayCard['financial']>(value:T)=>({
   status:value.status,source:value.source,data:value.data,retrievedAt:value.retrievedAt,effectiveAt:value.effectiveAt,warnings:value.warnings})
- const packet=readCorporatePacket({version:CORPORATE_PUBLICATION_VERSION,nip,preserveGeneral:false,
+ const packet=isEmptyMgbiCompany(input.general,input.financial)
+  ?{general:{...section(input.general),data:null},financial:{...section(input.financial),data:null}}
+  :readCorporatePacket({version:CORPORATE_PUBLICATION_VERSION,nip,preserveGeneral:false,
   general:section(input.general),financial:section({...input.financial,data:projectPublicFinancialData(input.financial.data)}),facts:[]})
  if(input.identity.krs!==(packet.general.data?.krs??null)||input.identity.name!==(packet.general.data?.legalName??null))return refuse()
  const body={identity:{nip,krs:input.identity.krs,name:input.identity.name},

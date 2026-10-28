@@ -5332,5 +5332,31 @@
     "sqlOrInfrastructureChanged": false,
     "uiChatMapsChanged": false,
     "runtimeDeploymentPerformed": false
+  },
+  "companyAbsenceRoutingRepair": {
+    "taskId": "SRM-DEVELOPMENT-STAGING-ROUTING-20261028",
+    "version": "srm-company-absence-routing-v1",
+    "previousReceiptSourceSha": "3af53b5f64f9451766813b14ecccd6fa07872aa3",
+    "previousReceiptDigest": "70d59d7206a94cbee5cf4b2f73ac21012b04fec72ce5b4478eddd91d0c65fd61",
+    "applicationSourceDigests": {
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "8fce20cfbaed438038aa6148b57dc4173900f420c6371e5e1d4b30bb2b6173bd",
+      "scripts/native-execution-adoption.test.mjs": "068e564697a6a3434bab6d897c9b5f1fc0eb16d0f0206eed1af13bb0f8c3180a",
+      "scripts/private-sensitive.integration.test.mjs": "27c17aae60712cc8647afb0eeece6a65ad5f36a808402483f2014457f7ccb231",
+      "scripts/request-quota-adoption.test.mjs": "65b8309fd5638175f0cd6ff2701f2886e938ae921c4abbae07ad62f2313777eb",
+      "src/server/company-source-policy.test.ts": "5fcfa87f43d1c0a35756dd84924b079f2106cc20dd01c71aedfe28d0bbbc2427",
+      "src/server/company-source-policy.ts": "082105e39331d5ff7b368483d2f8802335327d523aedb6434ec89a03123a97c8",
+      "src/server/peer-read-boundary.test.ts": "13578f5ddb287d4a7f0601fb6337a82bdc38ceb7089fc2b9fb050fae513f9046",
+      "src/server/supplier-company-read.ts": "d2fa1d0ff949aaaa73e890bda300f6ca9915f374dc2d61122d3b2567122bbdcf",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "5d117be1b76e028a68dd0f283010fa2e1a6d23c9b250b882787238493f73a1ab",
+      "src/server/supplier-native-company.ts": "306f28014c7c0ac8eefae47e6215ad9dd3ad0016a3c5ed23457052315c335efd"
+    },
+    "emptyMgbiDoesNotPublishCompany": true,
+    "currentHumanReadStillRequired": true,
+    "ceidgErrorIsNotAbsence": true,
+    "positiveSourceContractChanged": false,
+    "authorityOrProviderLimitsChanged": false,
+    "sqlOrInfrastructureChanged": false,
+    "uiChatMapsChanged": false,
+    "runtimeDeploymentPerformed": false
   }
 }

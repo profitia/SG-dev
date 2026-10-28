@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import {mgbiCompanyCache,type CompanySourcePolicy} from './company-source-policy'
+import {mgbiCompanyCache,isEmptyMgbiCompany,type CompanySourcePolicy} from './company-source-policy'
 import { ExternalCallUnavailable } from '@profitia/platform-contracts/external-call'
 import { platformDeliveryEvidence } from '@profitia/platform-contracts/platform-ingestion'
 import { OperationDenied, isOperationDenied, operationPayloadDigest } from '@profitia/platform-contracts/operation-context'
@@ -143,6 +143,10 @@ export function createSrmNativeCompanyLookup(options:Options){
       },
       saveSharedCompany:async(org,nip,value)=>{
         scope(org,nip)
+        // NO_DATA attempts are already committed privately. No identified
+        // company or financial evidence exists to publish to corporate Source.
+        if(isEmptyMgbiCompany(value.general,value.financial)&&value.generalSnapshotId===null
+          &&value.financialSnapshotId===null&&value.facts.length===0&&!value.preserveGeneral)return
         const section=<T extends typeof value.general|typeof value.financial>(v:T)=>({status:v.status,source:v.source,
           retrievedAt:v.retrievedAt,effectiveAt:v.effectiveAt,warnings:v.warnings,data:v.data})
         const packet=readCorporatePacket({version:CORPORATE_PUBLICATION_VERSION,nip,preserveGeneral:value.preserveGeneral??false,

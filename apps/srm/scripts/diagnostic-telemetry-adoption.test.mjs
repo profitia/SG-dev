@@ -22,7 +22,8 @@ test('diagnostic source adoption preserves complete history and verifies current
   const next=receipt.mgbiDevelopmentRecoveryAdoption?.applicationSourceDigests[file]?receipt.mgbiDevelopmentRecoveryAdoption:receipt.mgbiDevelopmentSessionFreshnessRepair
   const latest=receipt.supplierMapGeocodingActivation
   const routing=receipt.stagingCompanyRoutingAdoption
-  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):routing.applicationSourceDigests[file]?execFileSync('git',['show',routing.previousReceiptSourceSha+':apps/srm/'+file]):fs.readFileSync(new URL('../'+file,import.meta.url))
+  const repair=receipt.companyAbsenceRoutingRepair
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):routing.applicationSourceDigests[file]?execFileSync('git',['show',routing.previousReceiptSourceSha+':apps/srm/'+file]):repair.applicationSourceDigests[file]?execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/'+file]):fs.readFileSync(new URL('../'+file,import.meta.url))
   assert.equal(hash(bytes),digest,file)
  }
  for(const flag of ['executionContractChanged','authorityChecksChanged','workOrTransactionBoundariesChanged','sqlOrPolicyChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)
