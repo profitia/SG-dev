@@ -7,7 +7,7 @@
   "architectureProducer": {
     "projectKey": "ARCHITECTURE",
     "pullRequest": 773,
-    "sourceSha": "fd37d8c748aab42ab8ad1b9ce08b411a41a96634",
+    "sourceSha": "b256cb1459a64fdb4e1fff0e04c676936560d34b",
     "platformVersion": "1.31.0",
     "peerOperationVersion": "1.0.0",
     "peerOperationDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7"
@@ -100,7 +100,7 @@
       "projectKey": "SRM",
       "taskId": "SRM-APPSHELL-XRAY-PRODUCER-20261028",
       "pullRequest": 775,
-      "sourceSha": "c88bca3c71502e1cc46a01a1fa367486264b9ed1"
+      "sourceSha": "2b29f8fedc8b26577976dd15b68192f406b127ac"
     }
   },
   "routes": {
