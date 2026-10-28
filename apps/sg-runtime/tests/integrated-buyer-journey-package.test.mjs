@@ -39,6 +39,25 @@ test('public business entry mounts and unmounts in a minimal independent host',a
   const shadow=host.querySelector('[data-pci-mode=business]').shadowRoot
   assert(shadow.querySelector('[data-flow-step="1"]'));assert.equal(shadow.querySelector('.pci-surface').dataset.srmTheme,'dark')
   assert.equal(dom.window.document.querySelectorAll('style').length,0);assert.equal(shadow.querySelector('input').value,'')
+  // Native input/paste events must cross the shadow presentation boundary and
+  // update the controlling host before another edit or render restores its value.
+  const render=()=>root.render(React.createElement(PriceChangeIndex,{mode:'business',view:'pci3',locale:'pl',theme:'dark',controller}))
+  controller.onNameChange=value=>{controller.name=value;render()}
+  controller.onComponentChange=(id,patch)=>{controller.components=controller.components.map(c=>c.id===id?{...c,...patch}:c);render()}
+  async function input(selector,value){
+    const element=shadow.querySelector(selector)
+    await React.act(async()=>{
+      Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype,'value').set.call(element,value)
+      element.dispatchEvent(new dom.window.InputEvent('input',{bubbles:true,composed:true,inputType:'insertFromPaste',data:value}))
+    })
+  }
+  await input('.v3-category-name input','Kategoria w niezależnym hoście')
+  await input('input[aria-label="Komponent"]','Miedź')
+  await input('input[type="number"]','90')
+  await React.act(async()=>render())
+  assert.equal(controller.name,'Kategoria w niezależnym hoście');assert.equal(controller.components[0].name,'Miedź');assert.equal(controller.components[0].weightPercent,90)
+  assert.equal(shadow.querySelector('.v3-category-name input').value,controller.name)
+  assert.equal(shadow.querySelector('input[aria-label="Komponent"]').value,'Miedź');assert.equal(shadow.querySelector('input[type="number"]').value,'90')
   await React.act(async()=>root.unmount());assert.equal(host.childNodes.length,0)
  }finally{dom.window.close();for(const name of names){const descriptor=prior.get(name);if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name]}}
 })

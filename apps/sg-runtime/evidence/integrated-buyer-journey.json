@@ -843,5 +843,21 @@
     "demoViteBuild": "PASS",
     "controlledCi": "BLOCKED_PENDING_TRUSTED_MAIN_PACKAGE_ADMISSION_PR764",
     "architectureControllerTests": "86/86 PASS"
+  },
+  "formCorrection20261028": {
+    "taskId": "SG2-BUYER-JOURNEY-FORM-FIX-20261028",
+    "baselineSha": "e669c22716ad169bdfb6c5c2ab383e25f1aaf902",
+    "scope": "PRESENTATION_AND_INPUT_HANDLING_ONLY",
+    "liveBaselineReproduction": [
+      "duplicate module branding",
+      "candidate name has no selection action",
+      "added component remains hidden on prior compact page"
+    ],
+    "reportedInputLossReproduced": false,
+    "inputCompatibility": "Native input/currentTarget; controlled host values remain authoritative",
+    "localValidation": "Expanded browser and contract tests; authoritative result in exact candidate CI",
+    "productDeploymentPerformed": false,
+    "schemaChanged": false,
+    "newE1Grants": false
   }
 }

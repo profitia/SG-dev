@@ -28,6 +28,18 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
   useLayoutEffect(()=>{const el=root.current;if(!el)return;const observer=new ResizeObserver(([entry])=>setCompact(entry.contentRect.width<650||entry.contentRect.height<700));observer.observe(el);return()=>observer.disconnect()},[])
   useEffect(()=>{content.current?.scrollTo({top:0});setPage(0)},[c.step,mode])
   const count=compact?1:2,pages=Math.max(1,Math.ceil(c.components.length/count)),currentPage=Math.min(page,pages-1)
+  const previousCount=useRef(c.components.length),focusAdded=useRef<string|null>(null)
+  useLayoutEffect(()=>{
+    if(c.components.length>previousCount.current){
+      focusAdded.current=c.components.at(-1)!.id
+      setPage(Math.floor((c.components.length-1)/count))
+    }
+    previousCount.current=c.components.length
+    if(focusAdded.current){
+      const row=Array.from(root.current?.querySelectorAll<HTMLTableRowElement>('tr[data-component-id]')??[]).find(el=>el.dataset.componentId===focusAdded.current)
+      if(row){row.querySelector<HTMLInputElement>('input')?.focus({preventScroll:true});focusAdded.current=null}
+    }
+  },[c.components,count,currentPage])
   const visible=c.components.slice(currentPage*count,(currentPage+1)*count),p=c.purchase
   const purchaseReady=Number(p.amount.replace(',','.'))>0&&!!p.currency.trim()&&!!p.unit.trim()&&!!p.taxBasis&&!!p.deliveryBasis.trim()
   const dateReady=!!p.purchaseDate&&!!p.referenceDate&&!!p.periodBasis&&c.components.every(x=>x.valueKind)
@@ -43,12 +55,12 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
           {c.step===1&&<>
             <h2>Jakie komponenty i benchmarki tworzą koszt Twojej kategorii?</h2>
             <p>Uzupełnij strukturę. Benchmark przekazany z wyszukiwarki zostaje zachowany.</p>
-            <label className="v3-category-name">Nazwa kategorii<input value={c.name} maxLength={120} onChange={e=>c.onNameChange(e.target.value)}/></label>
-            <div className="v3-table-wrap"><table><thead><tr><th>Komponent</th><th>Udział %</th><th>Wybrany benchmark</th><th><span className="pci-sr-only">Usuń</span></th></tr></thead><tbody>{visible.map(component=><tr key={component.id}>
-              <td><input aria-label="Komponent" value={component.name} maxLength={120} onChange={e=>c.onComponentChange(component.id,{name:e.target.value})}/></td>
+            <label className="v3-category-name">Nazwa kategorii<input value={c.name} maxLength={120} onInput={e=>c.onNameChange(e.currentTarget.value)}/></label>
+            <div className="v3-table-wrap"><table><thead><tr><th>Komponent</th><th>Udział %</th><th>Wybrany benchmark</th><th><span className="pci-sr-only">Usuń</span></th></tr></thead><tbody>{visible.map(component=><tr key={component.id} data-component-id={component.id}>
+              <td><input aria-label="Komponent" value={component.name} maxLength={120} onInput={e=>c.onComponentChange(component.id,{name:e.currentTarget.value})}/></td>
               <td><input aria-label={'Udział % '+component.name} type="number" min={0} max={100} step={1} inputMode="numeric" value={editing?.id===component.id?editing.text:component.weightPercent}
                 onFocus={()=>setEditing({id:component.id,text:component.weightPercent===0?'':String(component.weightPercent)})}
-                onBlur={()=>setEditing(null)} onChange={e=>{setEditing({id:component.id,text:e.target.value});c.onComponentChange(component.id,{weightPercent:e.target.value===''?0:Number(e.target.value)})}}/></td>
+                onBlur={()=>setEditing(null)} onInput={e=>{const text=e.currentTarget.value;setEditing({id:component.id,text});c.onComponentChange(component.id,{weightPercent:text===''?0:Number(text)})}}/></td>
               <td><button className="pci-benchmark-control" onClick={()=>c.onPickBenchmark(component.id)} title={component.benchmark.displayName}>{component.benchmark.displayName}<span aria-hidden>⌄</span></button></td>
               <td><button aria-label={'Usuń komponent '+component.name} onClick={()=>c.onRemove(component.id)}>×</button></td>
             </tr>)}</tbody></table></div>
@@ -59,16 +71,16 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
           </>}
           {c.step===2&&<>
             <h2>Ile ostatnio zapłaciłeś?</h2><p>Wpisz rzeczywistą cenę zakupu i jej warunki. Nie przeliczamy waluty ani jednostki.</p>
-            <label>Ostatnia cena zakupu<input aria-label="Ostatnia cena zakupu" inputMode="decimal" value={p.amount} onChange={e=>c.onPurchaseChange({amount:e.target.value})}/></label>
-            <label>Waluta<input aria-label="Waluta zakupu" value={p.currency} maxLength={3} placeholder="np. PLN" onChange={e=>c.onPurchaseChange({currency:e.target.value.toUpperCase()})}/></label>
-            <label>Jednostka<input aria-label="Jednostka zakupu" value={p.unit} maxLength={64} placeholder="np. tona" onChange={e=>c.onPurchaseChange({unit:e.target.value})}/></label>
+            <label>Ostatnia cena zakupu<input aria-label="Ostatnia cena zakupu" inputMode="decimal" value={p.amount} onInput={e=>c.onPurchaseChange({amount:e.currentTarget.value})}/></label>
+            <label>Waluta<input aria-label="Waluta zakupu" value={p.currency} maxLength={3} placeholder="np. PLN" onInput={e=>c.onPurchaseChange({currency:e.currentTarget.value.toUpperCase()})}/></label>
+            <label>Jednostka<input aria-label="Jednostka zakupu" value={p.unit} maxLength={64} placeholder="np. tona" onInput={e=>c.onPurchaseChange({unit:e.currentTarget.value})}/></label>
             <label>Cena netto / brutto<select value={p.taxBasis} onChange={e=>c.onPurchaseChange({taxBasis:e.target.value as typeof p.taxBasis})}><option value="">Wybierz</option><option value="NET">Netto</option><option value="GROSS">Brutto</option></select></label>
-            <label>Warunki dostawy<input aria-label="Warunki dostawy" value={p.deliveryBasis} placeholder="Określ warunki ceny" maxLength={256} onChange={e=>c.onPurchaseChange({deliveryBasis:e.target.value})}/></label>
+            <label>Warunki dostawy<input aria-label="Warunki dostawy" value={p.deliveryBasis} placeholder="Określ warunki ceny" maxLength={256} onInput={e=>c.onPurchaseChange({deliveryBasis:e.currentTarget.value})}/></label>
           </>}
           {c.step===3&&<>
             <h2>Kiedy ostatnio kupowałeś?</h2><p>Wskaż rzeczywistą datę i dokładny węzeł bazowy. Brakujących obserwacji nie zastępujemy innymi.</p>
-            <label>Data zakupu<input type="date" value={p.purchaseDate} onChange={e=>c.onPurchaseChange({purchaseDate:e.target.value,...(!p.economicPeriodApproved?{referenceDate:e.target.value}:{})})}/></label>
-            <label>Data węzła bazowego<input type="date" value={p.referenceDate} onChange={e=>c.onPurchaseChange({referenceDate:e.target.value})}/></label>
+            <label>Data zakupu<input type="date" value={p.purchaseDate} onInput={e=>{const value=e.currentTarget.value;c.onPurchaseChange({purchaseDate:value,...(!p.economicPeriodApproved?{referenceDate:value}:{})})}}/></label>
+            <label>Data węzła bazowego<input type="date" value={p.referenceDate} onInput={e=>c.onPurchaseChange({referenceDate:e.currentTarget.value})}/></label>
             <label>Znaczenie obserwacji<select value={p.periodBasis} onChange={e=>c.onPurchaseChange({periodBasis:e.target.value as typeof p.periodBasis})}><option value="">Wybierz metodę</option><option value="POINT_IN_TIME">Poziom w danym dniu</option><option value="END_OF_PERIOD">Koniec okresu</option><option value="PERIOD_AVERAGE">Średnia okresowa</option></select></label>
             <label>Łączenie kadencji<select value={p.reduction} onChange={e=>c.onPurchaseChange({reduction:e.target.value as typeof p.reduction})}><option value="NATIVE_ONLY">Wyłącznie natywne węzły</option><option value="END_OF_PERIOD">Koniec wspólnego okresu</option><option value="OBSERVATION_AVERAGE">Średnia obserwacji w okresie</option></select></label>
             <div className="pci-series-declarations">{visible.map(component=><label key={component.id}>{component.name} · rodzaj danych<select value={component.valueKind} onChange={e=>c.onComponentChange(component.id,{valueKind:e.target.value as typeof component.valueKind})}><option value="">Wybierz</option><option value="PRICE_LEVEL">Poziom ceny</option><option value="PRICE_INDEX">Indeks cenowy</option></select></label>)}</div>

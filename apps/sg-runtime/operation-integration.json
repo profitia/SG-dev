@@ -3757,7 +3757,7 @@
       "app/api/cost-analysis/price-change-index/route.ts": "dc1cf088e25c4d65cf82e6ac5114063100d107f00c61a236c750e4b17ac257b9",
       "components/appshell/adp-module-host.tsx": "6d1d1dca205370ccf321398ac152157483b14da3aba160a34daafb60e2860b44",
       "components/appshell/appshell-brand.tsx": "ebdb9417e847c1e4b37e8cc826e2346e5c8867f04bf8371056287176fd9dc36c",
-      "components/appshell/appshell-dashboard.tsx": "f769e3e82cf9476df7dfc685d3172ca33eb4ac31b52e9b9ba87fbbe18995e4a9",
+      "components/appshell/appshell-dashboard.tsx": "5471cd1b12268baebc138eb3491b1ab59e8b8ff0f59a1c44147d575ea1e888eb",
       "components/appshell/assistant-widget.tsx": "ae9388584a965ae90b416fb4cb5844cb73be97d26df5f0cf25534bd2556ebdd9",
       "components/appshell/platform-appshell-entry.tsx": "d038432d4be58c3b22f8d58689080e7ad054643e3fdb82e711c687e2bdcd1240",
       "components/appshell/platform-appshell.css": "0904d1586f0fdd42a7acfbd25ab3e9b37d7d2bf296378297da43182faa348a50",
@@ -3766,7 +3766,7 @@
       "components/auth/account-landing.tsx": "68b373c9f73d72e023baf3687af17e305d6b97638ea4dd9a6f95143d28913387",
       "components/auth/clerk-sign-up.tsx": "5b0fdc94541c246a951a1a65a0a2d872b7adb14250cfb7c3775d6f24a31837a7",
       "components/auth/session-boundary.tsx": "22353a5c905c67a8457b6528bde9098478bf5acb8811c5fe51f75979b0c6484f",
-      "components/benchmark-finder/benchmark-finder-client.tsx": "307c59f509f3dfec5d636c11c2d4a574e2a0888cbc8f8858d4f008801a77ffc1",
+      "components/benchmark-finder/benchmark-finder-client.tsx": "81cb1d9a94f7a7b240e79f0c23a1dc4b91f0b70bc5e909e90a0af4bbc4ff96e4",
       "components/benchmark-finder/benchmark-finder-visual.css": "86447cef1c76d03c8b0a5f2d3b12de052738bde3f17e15311f41c87648d08367",
       "components/benchmark-finder/benchmark-request.ts": "7c304513877750b148f6279d6fbed30518e87fef3436d513a20afb4af969db8a",
       "components/benchmark-finder/discovery-request.ts": "6cc1fd3e6373c213f6e80b85b97a69da85292cd9cf34323fccde1b8428554628",
@@ -3787,7 +3787,7 @@
       "components/benchmark-finder/visual/magicpath/srm-interaction-motion.css": "0719c9f4c7ab66686f3a2f0bd8e66ddd98de857ab3b06559da0ed47eb9763ccf",
       "components/benchmark-picker/picker-controller.ts": "74a2803888a492096161039b90834abd90c5895c254fab23040afe7f708ca096",
       "components/benchmark-picker/presentation.ts": "a7ead0e2cba2f00840108accbdcf3fef53b340a544b35b99796431503637f6a5",
-      "components/benchmark-picker/shared-benchmark-picker.tsx": "29d81f0ae6a2cec676cbd7dee865d76d7fd2a2e538293b84780548858a819e8e",
+      "components/benchmark-picker/shared-benchmark-picker.tsx": "a594141de51a1846c0e451e174e707eec752d0b98709decf468af0bceacbd12a",
       "components/category-builder/benchmark-picker-draft.ts": "7a973f0fbe63c16075812804a308ba115c35988554ada415a0549624c90972a3",
       "components/category-builder/category-builder-client.tsx": "9e468617949994af4d8067a3612062d466fc51c914d636dd4c543d496fc5e681",
       "components/category-builder/category-operation-request.ts": "10bb29396b3ef2b00e9ebc40eefbd4ab25b2d9f3a6a46622be6a232060b200cd",
@@ -3799,7 +3799,7 @@
       "deployment/appshell-development-release-20261027.json": "f26641d19ae1b3a36b6d15db5f89f0407a9e045c7140ed76256f8e6da5464ff7",
       "deployment/benchmark-discovery-targets.json": "9e54dd216f83fab38e77ba1d05f597cd9fa57276415d81e613b74af5a3e78c14",
       "docs/benchmark-magicpath-parity.md": "bfb9395e494a81d84619594e58c6200a48592262a12add8ae18f33a566c0fa56",
-      "docs/integrated-buyer-journey-contract.md": "b0edc022914122dff2a44c36fd9e731dd0f92a54769b9d9bf5944d1e2f44353a",
+      "docs/integrated-buyer-journey-contract.md": "cea41a829af818b0a0e3890e98f8bc3776e08a32f735fdf93e48fb4003cbb33c",
       "docs/integrated-buyer-journey-staging-readiness.md": "8cd78677c5087d3aca605a7d9a180774c0dd77d04145e391f7ca44aceb868c66",
       "evidence/adp-consumer-verification.json": "99116474d2b63fac5f95d03d8913e08934415b726099e00dbe0984859da87935",
       "evidence/adp-product-transfer-matrix.json": "787335a6d1edaa33e0775d220834344cf58ef9cdda7c91216d0de20c7e9c7e94",
@@ -3881,9 +3881,9 @@
       "tests/diagnostic-telemetry-adoption.test.mjs": "5068823417935de9c3cd2602ba2da205a91d304ac9f76d02835a43c52b24d42b",
       "tests/fixtures/benchmark-discovery-hosts.mjs": "69e66aa4d0af9b2410488a0a878d41c2c05471594800f585948f96b08bcf839a",
       "tests/identity-runtime.test.ts": "701f44093f77a8ff378e3706264351a4b7758b75c1581b50e2f9fcccc7d6821e",
-      "tests/integrated-buyer-journey-browser.mjs": "a42a5bf79b2ac335c8f49dabe342cb354de52a4a9f83dc1e3a58cd797e27f4bb",
+      "tests/integrated-buyer-journey-browser.mjs": "cd6fd05b5c42b2f37e0057769398c23f955c7057b630afb5f803dd655b6f0c83",
       "tests/integrated-buyer-journey-operation.test.ts": "4c9ebd760c3f0c5d33b75a013183844f43f825521fc9c83b799f9a09a9593b0f",
-      "tests/integrated-buyer-journey-package.test.mjs": "204839b211798b69fb16f2706faa545a2132b40aba25b59966f1f9cfdf10bdfa",
+      "tests/integrated-buyer-journey-package.test.mjs": "5d4590d607c06a23a45d2621425a2dac330011688a28ded81d5a2aa15c6adecc",
       "tests/integrated-buyer-journey-preview.mjs": "740a4efb2c3d2a7330f7508a75eb638b62f87460984dbbdfeaddabbb13e9bdeb",
       "tests/integrated-buyer-journey-preview.tsx": "4e22ec5decbecd47bd60136e943764d3f2d3a0859e42bc674b7fa71fe8bd8834",
       "tests/integrated-buyer-journey-request.test.ts": "750e34d7eafdb9f42ee7e6b3e697c4eb6ab7d1a9df85f45651af0987e1e3f5f4",
@@ -3894,12 +3894,12 @@
       "tests/private-host.integration.test.mjs": "fc0e2f54b642d15fbb8c5ac3f265a54ffbaf9b00e75eeff18a84f16f1a5af32f",
       "tests/rolling-daily-verification.test.ts": "1937c4661f3fa0c6cf3f044c0a2bcf11eac13ad5941c810874fc622dbf5c3e64",
       "tests/self-service-account.test.ts": "4f3e1744b8fec6c0de112685d89adc615e51c75e69f4a08df05b87297901e24f",
-      "tests/shared-benchmark-picker.test.tsx": "bcf832fdab8659da5eb5efb1758a80224696df69eb800333939fe5c00c957ea9"
+      "tests/shared-benchmark-picker.test.tsx": "70d36dbd5c1f1d5137d8ce178834d3e70689a92a7077a3a430bc373bcde7f1a8"
     },
     "publicUiSourceDigests": {
       "packages/sg2-price-change-index-ui/README.md": "960ebc6d8640eccd6c2bc038ba6fec2cb911731be8fbdb6e7052a6f79b3ed728",
       "packages/sg2-price-change-index-ui/package.json": "a2fbe01b2396333250a5c474daa63ea957a13d923cfc5410f32c714cee16ed78",
-      "packages/sg2-price-change-index-ui/src/BusinessPriceChangeIndex.tsx": "74ddb701363c913d270bcd9671c8406467ff69f233dda91077141e9957f25cde",
+      "packages/sg2-price-change-index-ui/src/BusinessPriceChangeIndex.tsx": "1a9d9af1409391bd249965fb9d3f52051b21f0d2669fcff1563a749453d1e854",
       "packages/sg2-price-change-index-ui/src/Inspector.tsx": "910e32195b6b9c0788532810b13518afda90c7177bb80f04e39b51f13c9a982d",
       "packages/sg2-price-change-index-ui/src/PresentationScope.tsx": "050086cc9e7de87c7e7e159c7bbd7dd28d98fb327fb6eac712e09532a613ae29",
       "packages/sg2-price-change-index-ui/src/PriceChangeIndex.tsx": "9eed73a93abd977dcbb1dfda5795060d14f8fcad97aebc5b5266f2debbb02724",
@@ -4007,6 +4007,16 @@
       "packages/sg2-price-change-index-ui/src/revisions/pci3/stacked-price-chart.css": "41c4af3f3d1877e22090adb1b3535cc1fa2487a2f8204d13a49d057e99f7ec78"
     },
     "controlledCiAdmissionPr": 764,
-    "liveCustomerAcceptance": "NOT_PERFORMED_DEPLOYMENT_NOT_AUTHORIZED"
+    "liveCustomerAcceptance": "NOT_PERFORMED_DEPLOYMENT_NOT_AUTHORIZED",
+    "formCorrection": {
+      "taskId": "SG2-BUYER-JOURNEY-FORM-FIX-20261028",
+      "baselineSha": "e669c22716ad169bdfb6c5c2ab383e25f1aaf902",
+      "baselineReceiptSha256": "34853b8dcd172676fee8950c73d9d346076349497bf77180b90a9adb88e6ce3a",
+      "scope": "PRESENTATION_AND_INPUT_HANDLING_ONLY",
+      "productDeploymentPerformed": false,
+      "schemaChanged": false,
+      "newE1Grants": false,
+      "historicalAcceptancePreserved": true
+    }
   }
 }
