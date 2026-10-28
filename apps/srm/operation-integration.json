@@ -5297,5 +5297,37 @@
     "automaticUncertainRetry": false,
     "reconciliation": "OWNER_ONLY_PROVEN_ZERO_SOURCE_CALLS_APPEND_ONLY_HISTORY",
     "reopenSynchronization": "CURRENT_PROTECTED_SYNC_ON_EACH_OPEN"
+  },
+  "stagingCompanyRoutingAdoption": {
+    "taskId": "SRM-DEVELOPMENT-STAGING-ROUTING-20261028",
+    "version": "srm-staging-company-routing-v1",
+    "previousReceiptSourceSha": "52c30c8b2dbbee6d3cc98639be01afcf042a2d23",
+    "previousReceiptDigest": "fabc45342ed28cb668b2ba737f732318b756102e5072752e34723e117af277b0",
+    "referenceStagingSha": "6eede5cd19fd3a4519d66298effe9ef94633757a",
+    "developmentBaselineSha": "296936bf35a315ca909568718fd2f7734e2d3f44",
+    "applicationSourceDigests": {
+      "src/server/registry-search.ts": "ad3c5f86a5698e0837f76b33855bdd4ba3a6595b561ed8c1ba65e85799ee210a",
+      "src/server/registry-search.test.ts": "b02de6da7ee0ae91fae6e7a910c82b6ddd88025f6a6cc63dfadb6942fd2f26d5",
+      "src/server/company-source-policy.ts": "ee40d2b29fd7fbb6bd9076b35b9c4a7791e2bacf3ab642999e89335e1a04f16c",
+      "src/server/company-source-policy.test.ts": "1e6a0680fe0496395d71f5bc1eba11882bbf364eaeb4daf412e5cfd004b4f0bd",
+      "src/server/supplier-company-read.ts": "d24952499345d25a6b69b0357ce6ed583dc6db565ec8ffead61581fc350d9c8b",
+      "scripts/private-sensitive.integration.test.mjs": "d31982617f7b568c3b33c67ec55b988cb8dc25dfc9e924cb82fc1394246798e4",
+      "src/server/peer-read-boundary.test.ts": "f4fdc5e332a4447e1d5f9cdd4b7d2a1486cfab9c13e2ecdf4c2cb277b6391027",
+      "scripts/native-execution-adoption.test.mjs": "9b67b363f7bc4c2bb6bdfe823e8362d105b0a381bd75e3668e778ad7bdffb7bd",
+      "scripts/request-quota-adoption.test.mjs": "48d9c644fc2f25a205022b24d73a770d803271d67da86f60c4d25f4f0d116dbf",
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "5f94f76492eb4033412c19664fb390272c9aff11dbac9a9937b789707b70efd5"
+    },
+    "knownCurrentMgbiCompanySkipsCeidg": true,
+    "unknownNipChecksCeidgFirst": true,
+    "ceidgErrorIsNotAbsence": true,
+    "independentExactMgbiIdentityRequired": true,
+    "freshnessRulesChanged": false,
+    "humanAuthorityChanged": false,
+    "sharedSdkChanged": false,
+    "financialWorkflowChanged": false,
+    "providerLimitsChanged": false,
+    "sqlOrInfrastructureChanged": false,
+    "uiChatMapsChanged": false,
+    "runtimeDeploymentPerformed": false
   }
 }
