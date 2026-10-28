@@ -4,7 +4,7 @@
   "taskId": "ARCH-XRAY-CURRENT-REPORT-EXECUTION-V2-20261028",
   "consumerTaskId": "SRM-XRAY-PERFORMANCE-RECOVERY-V2-IMPLEMENT-20261028",
   "targetEnvironment": "development",
-  "status": "PRODUCER_SOURCE_VALIDATED_CONSUMER_ADOPTION_PENDING",
+  "status": "PRODUCER_AND_SRM_CONSUMER_SOURCE_ACCEPTED",
   "contract": {
     "id": "profitia.current-human-read",
     "version": "1.0.0"
@@ -43,5 +43,28 @@
     "Canonical access, module, RLS, correlated INTENT/OUTCOME and COMMIT unchanged",
     "No delegated report admission, Source acquisition or private data operation accepted"
   ],
-  "deploymentOrOtherConsumerActivation": false
+  "deploymentOrOtherConsumerActivation": false,
+  "consumerAcceptance": {
+    "projectKey": "SRM",
+    "pullRequest": 774,
+    "sourceSha": "5d9e7e9d8aecbbf9837e859baf291501b8bb4fc1",
+    "scope": "ADDITIVE_MAIN_DEVELOPMENT_READY_REPORT_ONLY",
+    "receipt": "apps/srm/operation-integration.json#xrayPerformanceRecoveryV2",
+    "sourceDigest": "4045a9f9ec2cafc75f1d41846fdd197f0e52a874d2b4b7adc87d92b33d2537f3",
+    "realPostgres16ReadyAndFreshTests": 15,
+    "nativeRegressionTests": 584,
+    "mgbiRegressionTests": 28,
+    "readyObserved": {
+      "sdk": 1,
+      "sessions": 2,
+      "accounts": 2,
+      "work": 0,
+      "e1Sql": 19
+    },
+    "freshObservedWork": 5,
+    "revocationAndSourceRaceRollback": "PASS",
+    "noSharedPrivateDocuments": "PASS",
+    "noAuthorizationCache": "PASS",
+    "runtimeOrPerformanceClaim": false
+  }
 }
