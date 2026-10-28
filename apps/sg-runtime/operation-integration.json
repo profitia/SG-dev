@@ -4174,7 +4174,7 @@
       "version": "0.3.0",
       "contractId": "profitia.srm-xray.workflow",
       "contractVersion": "1.0.0",
-      "sourceDigest": "72e318cb086e43f1e11004b57bee396d854a7bd80225495ce291ac8a3c4e6ce9",
+      "sourceDigest": "f7db4c43b50ba61742927643bb708e4c34ac56d36cc581126446ee95f58d3496",
       "exports": [
         "./workflow",
         "./workflow-contract",
@@ -4257,7 +4257,7 @@
         "projectKey": "SRM",
         "taskId": "SRM-APPSHELL-XRAY-PRODUCER-20261028",
         "pullRequest": 775,
-        "sourceSha": "9a4e16dde0cff693efaccfbda207b5480717e14a"
+        "sourceSha": "7b141298e3928e9f3bb681bcb7b398298d822dae"
       }
     },
     "sourceDigests": {
@@ -4374,7 +4374,7 @@
       "tests/xray-appshell.test.tsx": "5498f1600527879093284aeffac0d469c53f77c75d194eb270bab3528f0531f0",
       "tests/xray-browser-preview.tsx": "ac1ad6b44ad03c44c431b7af98b5767b1c164d12ff9a9a1267ab00089dce7b71",
       "tests/xray-gateway.test.ts": "5ebbe2096209300fbcd6cdcf7fd71b8da00f57420d636d99f9bebdf8a861334d",
-      "xray-appshell-integration.json": "27efef43549d1d4af7f29024bb7a7ee9a28e225ff85b7ce9304913a3aa02dc23",
+      "xray-appshell-integration.json": "1c88dd0b0156cc9c9b4331f30e252682befd98b8514a35d5b7a0a77299642dac",
       "../dashboard-preview/package-lock.json": "e07d6ea2f799fdda48d2eaabe67c88d3202fe46eafa1b3f26f0f44a382fc89c3"
     },
     "repositorySourceDigests": {

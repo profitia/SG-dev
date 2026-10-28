@@ -17,7 +17,7 @@
     "version": "0.3.0",
     "contractId": "profitia.srm-xray.workflow",
     "contractVersion": "1.0.0",
-    "sourceDigest": "72e318cb086e43f1e11004b57bee396d854a7bd80225495ce291ac8a3c4e6ce9",
+    "sourceDigest": "f7db4c43b50ba61742927643bb708e4c34ac56d36cc581126446ee95f58d3496",
     "exports": [
       "./workflow",
       "./workflow-contract",
@@ -100,7 +100,7 @@
       "projectKey": "SRM",
       "taskId": "SRM-APPSHELL-XRAY-PRODUCER-20261028",
       "pullRequest": 775,
-      "sourceSha": "9a4e16dde0cff693efaccfbda207b5480717e14a"
+      "sourceSha": "7b141298e3928e9f3bb681bcb7b398298d822dae"
     }
   },
   "routes": {
