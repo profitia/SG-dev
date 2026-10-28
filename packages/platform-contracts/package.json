@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.30.0",
+  "version": "1.31.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",
@@ -133,6 +133,11 @@
       "types": "./src/current-human-read.d.mts",
       "import": "./src/current-human-read.mjs",
       "require": "./src/current-human-read.mjs"
+    },
+    "./peer-operation": {
+      "types": "./src/peer-operation.d.mts",
+      "import": "./src/peer-operation.mjs",
+      "require": "./src/peer-operation.mjs"
     }
   },
   "scripts": {
