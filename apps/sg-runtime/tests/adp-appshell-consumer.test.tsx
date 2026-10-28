@@ -30,7 +30,7 @@ test('ADP receiver compatibility preserves every accepted historical field and b
   for(const [key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key)
   const adoption=verifyPublicAdoption();assert.equal(current.publicUi.sourceDigest,adoption.sourceDigest);assert.equal(current.publicUi.contractVersion,adoption.contractVersion)
   assert.equal(current.scope,'PRESENTATION_ONLY_LOCAL_STATE_DASHBOARD_ADP');assert.equal(current.operationsChanged,false);assert.equal(current.grantsChanged,false)
-  for(const [file,digest]of Object.entries(current.applicationSourceDigests)){
+  for(const [file,digest]of Object.entries({...current.applicationSourceDigests,...receipt.accountProofRenewalSourceCompatibility.applicationSourceDigests})){
     assert.equal(hash(fs.readFileSync(path.join(appRoot,file))),digest,file)
     assert.notEqual(hash('unaccepted-source-mutation'),digest,file)
   }
@@ -44,6 +44,23 @@ test('ADP receiver compatibility preserves every accepted historical field and b
   const beforeMiddleware=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/middleware.ts'],{cwd:appRoot}).toString()
   const middleware=fs.readFileSync(path.join(appRoot,'middleware.ts'),'utf8')
   assert.equal(middleware.replace('|dashboard(?:\\/adp)?',''),beforeMiddleware)
+})
+test('account proof renewal compatibility is additive and preserves the complete accepted ADP receipt', () => {
+  const receipt=JSON.parse(fs.readFileSync(path.join(appRoot,'operation-integration.json'),'utf8')),renewal=receipt.accountProofRenewalSourceCompatibility
+  const prior=execFileSync('git',['show',renewal.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot})
+  const hash=value=>createHash('sha256').update(value).digest('hex')
+  assert.equal(hash(prior),renewal.previousReceiptSha256)
+  for(const [key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key)
+  const before=JSON.parse(prior.toString()).adpPresentationSourceCompatibility.applicationSourceDigests
+  const changed=Object.keys(renewal.applicationSourceDigests).sort()
+  assert.deepEqual(changed.filter(file=>!file.startsWith('tests/')),['components/auth/account-landing.tsx'])
+  for(const [file,digest]of Object.entries(renewal.applicationSourceDigests)){
+    assert.equal(hash(fs.readFileSync(path.join(appRoot,file))),digest,file)
+    assert.notEqual(digest,before[file],'Changed receiver '+file)
+  }
+  assert.equal(renewal.expiryGraceAdded,false);assert.equal(renewal.identityContractChanged,false)
+  assert.equal(renewal.operationsChanged,false);assert.equal(renewal.grantsChanged,false)
+  assert.equal(renewal.businessIntegrationAdded,false);assert.equal(renewal.runtimeDeploymentPerformed,false)
 })
 test('initial model has every field, approved document text and no invented supplier/provider results', () => {
   const model = local.createLocalAdpModel('Organization', '2027')

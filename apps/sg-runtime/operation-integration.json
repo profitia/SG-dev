@@ -3540,5 +3540,34 @@
     "cicConnected": false,
     "runtimeDeploymentPerformed": false,
     "sourceAcceptanceIsNotRuntimeAcceptance": true
+  },
+  "accountProofRenewalSourceCompatibility": {
+    "taskId": "SG2-ADP-ACCOUNT-PROOF-RENEWAL-20261028",
+    "scope": "WORKSPACE_ACCOUNT_PROOF_RENEWAL_ONLY",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "7fd130ea0364e82fda0c068326cd5bb1d93fb523",
+    "previousReceiptSha256": "039489981af67791aee13b50bb7efc4158e061000267b1ecf46c1365f51136d8",
+    "applicationSourceDigests": {
+      "components/auth/account-landing.tsx": "3021bcf892baec837a89e09459c520ddde385b50350b0cd30121037433ff7576",
+      "tests/adp-appshell-consumer.test.tsx": "4178fc0d7886394653e5d7de33e354b6b0435a6db1f598d0f8fe079c92fbd27a",
+      "tests/adp-appshell-identity.test.tsx": "044a31fa9f60853d4ce68d7c10d445d3f1f3bcc1651189390693c3a558007248",
+      "tests/category-operation.test.ts": "6edf5a9144e7983f676e1d132bf9334999bbe14fe117acfa3a912edc072804d4",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "32a75aae89785ed4d0df309af1261bfc5995be5cbc7936d144e33cf20fb25dc3",
+      "tests/identity-runtime.test.ts": "7b70eb1cfe2ba5d79531f7f8dca6706f1e178f65fee9f11234967e73c3a32468",
+      "tests/native-sql-roundtrips.test.mjs": "5d4d3620a921aea3feefc2475c84bc54c75e196ad449f1a69840c02f2bc5b9c0",
+      "tests/operation-context.test.mjs": "21cb7c2f327bf457f199bf96c37dc6050e5dd63941f7d6902b1fcf40d9643ef3",
+      "tests/porr-demo-middleware.test.ts": "4008ad22fcb12978b24b202c53735a460f5c583c233f85940355441e3ef949f5",
+      "tests/self-service-account.test.ts": "d64063af0c42e9a45399e9f181544b67613ffb83da0599004b629d41f564fc6c"
+    },
+    "renewalLeadMs": 15000,
+    "sameExpiryRetryMinimumMs": 1000,
+    "expiryGraceAdded": false,
+    "identityContractChanged": false,
+    "operationsChanged": false,
+    "grantsChanged": false,
+    "businessIntegrationAdded": false,
+    "storageAdded": false,
+    "runtimeDeploymentPerformed": false,
+    "sourceAcceptanceIsNotRuntimeAcceptance": true
   }
 }

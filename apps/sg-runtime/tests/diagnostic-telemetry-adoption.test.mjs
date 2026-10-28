@@ -26,7 +26,7 @@ test('diagnostic source adoption preserves complete history and verifies current
   const historicalSha=latest.applicationSourceDigests[file]?latest.previousReceiptSourceSha:adp.applicationSourceDigests[file]?adp.previousReceiptSourceSha:null
   const historical=historicalSha?execFileSync('git',['show',historicalSha+':'+posix.normalize('apps/sg-runtime/'+file)]):fs.readFileSync(new URL('../'+file,import.meta.url))
   assert.equal(hash(historical),digest,'preserved diagnostic receiver '+file)
-  if(adp.applicationSourceDigests[file]||latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),adp.applicationSourceDigests[file]??receipt.assistantWidgetSourceCompatibility.applicationSourceDigests[file]??latest.applicationSourceDigests[file],'current AppShell receiver '+file)
+  if(adp.applicationSourceDigests[file]||latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.accountProofRenewalSourceCompatibility.applicationSourceDigests[file]??adp.applicationSourceDigests[file]??receipt.assistantWidgetSourceCompatibility.applicationSourceDigests[file]??latest.applicationSourceDigests[file],'current AppShell receiver '+file)
  }
  for(const flag of ['executionContractChanged','authorityChecksChanged','workOrTransactionBoundariesChanged','sqlOrPolicyChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)
  assert.equal(a.observationOnly,true);assert.equal(a.deploymentActivationScope,'SRM_PILOT2_ONLY')
