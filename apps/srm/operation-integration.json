@@ -5589,8 +5589,8 @@
     "status": "SOURCE_CANDIDATE_ONLY",
     "taskId": "SRM-APPSHELL-XRAY-PRODUCER-20261028",
     "validationTaskId": "SRM-APPSHELL-XRAY-VALIDATION-20261028",
-    "previousReceiptSourceSha": "ed7a924f86d8c540820319d47bb611cda4f5937f",
-    "previousReceiptDigest": "973e2a1ab175dde19c84a134176d5506bc5949c2fde3f0e8057c8f2d15e8e941",
+    "previousReceiptSourceSha": "075ff7ba158c90f74e026e9e8034a22eae8d11de",
+    "previousReceiptDigest": "cf5045e8239e23cc87f020b005d5516fee48623f359a59c01754eaee8562a971",
     "platformVersion": "1.31.0",
     "sourceDigests": {
       "package-lock.json": "f4b304a56f8fc20e3e2bc03d03add0698b7de4297de795a68f756f95b0da5079",
@@ -5642,7 +5642,7 @@
     "architectureProducer": {
       "projectKey": "ARCHITECTURE",
       "pullRequest": 773,
-      "sourceSha": "fd37d8c748aab42ab8ad1b9ce08b411a41a96634",
+      "sourceSha": "b256cb1459a64fdb4e1fff0e04c676936560d34b",
       "platformVersion": "1.31.0",
       "peerOperationVersion": "1.0.0",
       "peerOperationDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7"
@@ -5766,10 +5766,10 @@
       "src/server/supplier-acquisition-http.ts": "b36637e75a89e6cb808c6ef7a4564dea79554720517fb767c01c7ac8a9f3490f",
       "src/server/supplier-location-geocoding-runtime.test.ts": "f236daa5e0c8331115277cfc38033f955f052d7ff27569f56246df4ca28aa7bc",
       "src/server/ui-canon.test.ts": "67ae7339154e09ac2e9f846b34ff2ae1768f9da458ffacae90c5a2c014a140f6",
-      "xray-appshell-integration.json": "7be9697c5204a44a09a07bf8a75a628973579d77a0bd6f8193b3ac483f9b5cce",
+      "xray-appshell-integration.json": "0549e13ba4ff601cfa53a584f8ae202e6c5f21f1bf83ba01278e044400259e4b",
       "../../.github/workflows/srm-ci.yml": "6bbca3d19726b9d7735856e7d3798bd94d7f531a2fc13d74c24155094eedfa24",
       "../maps-runtime/package-lock.json": "cb51869694c9b3d7e75496c07fbc20ade940cf4655a5af5aacd197d15a8726bf",
-      "../maps-runtime/platform-integration.json": "87dbfef2a4d93a693bbfa6c5616ecb4368d831ce04d9fb3a2e6bb36197bf554f",
+      "../maps-runtime/platform-integration.json": "b08f693c1e8d0dcd7be98eb27262df95fcc369c64eed600efc1865365a565765",
       "../maps-runtime/test/embed.test.mjs": "43db95de01ed22cd5de0d0035f11de9f6d5367236dff27fdb14766adb034a41f",
       "../../packages/maps-embed/package.json": "8e6208e939b33583adfd9a4f779d0873309ccc7706921546f6666b184bb5ab3b",
       "../../packages/srm-xray/README.md": "b3930b6ad99b4ab5227dd6b729f8579ea671c4547c7b40acae172b3adc767a63",
@@ -5804,7 +5804,7 @@
     "repositorySourceDigests": {
       ".github/workflows/srm-ci.yml": "6bbca3d19726b9d7735856e7d3798bd94d7f531a2fc13d74c24155094eedfa24",
       "apps/maps-runtime/package-lock.json": "cb51869694c9b3d7e75496c07fbc20ade940cf4655a5af5aacd197d15a8726bf",
-      "apps/maps-runtime/platform-integration.json": "87dbfef2a4d93a693bbfa6c5616ecb4368d831ce04d9fb3a2e6bb36197bf554f",
+      "apps/maps-runtime/platform-integration.json": "b08f693c1e8d0dcd7be98eb27262df95fcc369c64eed600efc1865365a565765",
       "apps/maps-runtime/test/embed.test.mjs": "43db95de01ed22cd5de0d0035f11de9f6d5367236dff27fdb14766adb034a41f",
       "packages/maps-embed/package.json": "8e6208e939b33583adfd9a4f779d0873309ccc7706921546f6666b184bb5ab3b"
     }
