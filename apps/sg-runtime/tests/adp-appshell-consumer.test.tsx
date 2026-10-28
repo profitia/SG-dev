@@ -2,6 +2,8 @@ import test, {before} from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
+import {createHash} from 'node:crypto'
+import {execFileSync} from 'node:child_process'
 let appRoot: string, publicRoot: string, local: any, createElement: any, renderToStaticMarkup: any, AdpModuleHost: any, bundleAdp: any, verifyPublicAdoption: any
 before(async () => {
  const harness = await import('./adp-appshell-preview.mjs'); ({appRoot,publicRoot,bundleAdp,verifyPublicAdoption}=harness)
@@ -19,6 +21,29 @@ test('public adoption binds version, bytes, source revision and the normal decla
   assert.equal(lock.packages['node_modules/@profitia/srm-adp-ui'].version, '1.0.0')
   assert(!lock.packages['node_modules/@profitia/srm-adp-ui'].link)
   assert.equal(lock.packages['']['dependencies']['@profitia/srm-adp-ui'], 'file:../../packages/srm-adp-ui')
+})
+test('ADP receiver compatibility preserves every accepted historical field and binds the complete current closure', () => {
+  const receipt=JSON.parse(fs.readFileSync(path.join(appRoot,'operation-integration.json'),'utf8')),current=receipt.adpPresentationSourceCompatibility
+  const prior=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot})
+  const hash=value=>createHash('sha256').update(value).digest('hex')
+  assert.equal(hash(prior),current.previousReceiptSha256)
+  for(const [key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key)
+  const adoption=verifyPublicAdoption();assert.equal(current.publicUi.sourceDigest,adoption.sourceDigest);assert.equal(current.publicUi.contractVersion,adoption.contractVersion)
+  assert.equal(current.scope,'PRESENTATION_ONLY_LOCAL_STATE_DASHBOARD_ADP');assert.equal(current.operationsChanged,false);assert.equal(current.grantsChanged,false)
+  for(const [file,digest]of Object.entries(current.applicationSourceDigests)){
+    assert.equal(hash(fs.readFileSync(path.join(appRoot,file))),digest,file)
+    assert.notEqual(hash('unaccepted-source-mutation'),digest,file)
+  }
+  const unchanged=current.preservedReceiverDigests
+  assert(Object.keys(unchanged).length>50)
+  for(const [file,digest]of Object.entries(unchanged))assert.equal(hash(fs.readFileSync(path.join(appRoot,file))),digest,'Preserved receiver '+file)
+  const previousManifest=JSON.parse(execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/package.json'],{cwd:appRoot}).toString())
+  const manifest=JSON.parse(fs.readFileSync(path.join(appRoot,'package.json'),'utf8'))
+  for(const [key,value]of Object.entries(previousManifest.dependencies))assert.equal(manifest.dependencies[key],value,'Unchanged dependency '+key)
+  assert.deepEqual(Object.keys(manifest.dependencies).filter(key=>!Object.hasOwn(previousManifest.dependencies,key)),['@profitia/srm-adp-ui'])
+  const beforeMiddleware=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/middleware.ts'],{cwd:appRoot}).toString()
+  const middleware=fs.readFileSync(path.join(appRoot,'middleware.ts'),'utf8')
+  assert.equal(middleware.replace('|dashboard(?:\\/adp)?',''),beforeMiddleware)
 })
 test('initial model has every field, approved document text and no invented supplier/provider results', () => {
   const model = local.createLocalAdpModel('Organization', '2027')
