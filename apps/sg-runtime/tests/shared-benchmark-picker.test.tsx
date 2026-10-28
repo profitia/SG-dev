@@ -93,3 +93,16 @@ test('isolation: shared picker code contains no reverse domain imports or foreca
     assert.doesNotMatch(source, /<iframe|analytics-eligibility|forecast\/|localStorage|sessionStorage/)
   }
 })
+
+test('candidate name is an accessible selection action with the same busy guard as Wybierz', () => {
+  const selected: string[] = []
+  const tree = BenchmarkPickerView({ locale: 'pl', state: state(), query: 'Copper', setQuery: noop, search: noop,
+    more: noop, select: candidate => selected.push(candidate.candidateId) })
+  visit(tree, e => {
+    if (e.type === 'button' && e.props['aria-label'] === 'Wybierz benchmark: Copper 0') (e.props.onClick as () => void)()
+  })
+  assert.deepEqual(selected, [item().candidateId])
+  const busy = renderToStaticMarkup(<BenchmarkPickerView locale="pl" state={{ ...state(), selecting: benchmarkSeriesKey(item()) }} query="Copper"
+    setQuery={noop} search={noop} more={noop} select={noop} />)
+  assert.match(busy, /aria-label="Wybierz benchmark: Copper 0" disabled=""/)
+})
