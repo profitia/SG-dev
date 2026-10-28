@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "logicalEntry": "adp",
+  "owner": "SRM Runtime",
+  "consumer": "SG Runtime",
+  "package": "@profitia/srm-adp-ui",
+  "packageVersion": "1.0.0",
+  "contractVersion": "1.0.0",
+  "integration": "NATIVE_VIEW",
+  "scope": "PRESENTATION_ONLY",
+  "stateBoundary": "LOCAL_STATE",
+  "producerPullRequest": 759,
+  "acceptedProducerMain": "52c30c8b2dbbee6d3cc98639be01afcf042a2d23",
+  "producerCandidate": "4639b46fbfcdc07f449237ae84032c9def21d823",
+  "sourceDigest": "ddff073ecef0fa95b396f860c6e28639b7d3060f61903ad278c300ff30c5bbc2",
+  "sourceRevision": "465859267208024064",
+  "routes": [
+    "/pl/dashboard",
+    "/pl/dashboard/adp",
+    "/en/dashboard",
+    "/en/dashboard/adp"
+  ],
+  "persistence": "NONE",
+  "businessTransport": "NONE",
+  "assistantContext": "NONE",
+  "status": "CONSUMER_SOURCE_CANDIDATE_NOT_DEPLOYED",
+  "acceptedPackagePolicyMain": "1b5df9addc6516e36883f81484be9a5d2e1f26db"
+}

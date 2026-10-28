@@ -2,15 +2,23 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useAuth, useClerk } from '@clerk/react'
-import { PlatformAppShell } from '@/components/appshell/platform-appshell'
+import { useRouter } from 'next/navigation'
+import { AppShellDashboard } from '@/components/appshell/appshell-dashboard'
+import { dashboardPath } from '@/lib/appshell/adp-navigation'
 
 type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string; assistantAvatar?: 'male' | 'female' | null; salutation?: { firstName: string | null; vocative: string | null; dictionaryVersion: string | null } | null }
-export function AccountLanding({ locale, completionUrl, presentation = 'account', organisationBranding }: {
-  locale: 'pl' | 'en'; completionUrl: string; presentation?: 'account' | 'workspace'; organisationBranding?: 'porr' | null
+export function AccountLanding({ locale, completionUrl, presentation = 'account', organisationBranding, dashboard = false }: {
+  locale: 'pl' | 'en'; completionUrl: string; presentation?: 'account' | 'workspace'; organisationBranding?: 'porr' | null; dashboard?: boolean
 }) {
   const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth(), clerk = useClerk()
+  const router = useRouter()
   const key = JSON.stringify([userId, sessionId]), current = useRef<AbortController | null>(null)
   const [retry, setRetry] = useState(0), [state, setState] = useState<State>({ key: '', status: 'loading' })
+  const workspaceReady = presentation === 'workspace' && isLoaded && isSignedIn && !!userId && !!sessionId
+    && state.key === key && state.status === 'ready' && Date.parse(state.expiresAt ?? '') > Date.now()
+  useEffect(() => {
+    if (workspaceReady && !dashboard) router.replace(dashboardPath(locale))
+  }, [workspaceReady, dashboard, locale, router])
   useEffect(() => {
     const controller = new AbortController(); current.current?.abort(); current.current = controller
     setState(previous => presentation === 'workspace' && previous.key === key && previous.status === 'ready'
@@ -53,8 +61,9 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
   const en = locale === 'en'
   if (!isLoaded) return <p role="status">{en ? 'Checking your session…' : 'Sprawdzamy Twoją sesję…'}</p>
   if (!isSignedIn) return <p><a href={`/${locale}`} className="underline">{en ? 'Sign in' : 'Zaloguj się'}</a></p>
-  const status = state.key === key ? state.status : 'loading'
-  if (presentation === 'workspace' && status === 'ready') return <PlatformAppShell locale={locale}
+  const status = state.key !== key ? 'loading' : state.status === 'ready' && !(Date.parse(state.expiresAt ?? '') > Date.now()) ? 'expired' : state.status
+  if (workspaceReady && !dashboard) return <p role="status">{en ? 'Opening your workspace…' : 'Otwieramy Twoje biurko…'}</p>
+  if (workspaceReady && dashboard) return <AppShellDashboard key={JSON.stringify([key, state.userId])} locale={locale}
     assistantAvatar={state.assistantAvatar} salutation={locale === 'en' ? state.salutation?.firstName : state.salutation?.vocative}
     organisationBranding={organisationBranding} onLogout={() => void logout()} />
   return <section className="space-y-5" key={key}>

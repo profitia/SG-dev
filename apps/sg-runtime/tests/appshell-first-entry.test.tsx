@@ -26,6 +26,12 @@ test('all greeting locations use the supplied persisted vocative, not an inflect
  assert.doesNotMatch(view(),/Tomasz|Tomaszu|undefined|null/)
  assert.doesNotMatch(view({salutation:'<script>alert(1)</script>'}),/<script>/)
 })
+test('the adopted host enables only the ADP entry and keeps other business modules disconnected',()=>{
+ const html=view({onLaunchAdp:()=>{}})
+ assert.equal((html.match(/class="as-primary-button as-launch"[^>]*disabled=""/g)||[]).length,2)
+ assert.match(html,/<button class="as-primary-button as-launch" type="button" aria-label="Uruchom ADP/)
+ assert.doesNotMatch(html,/iframe|\/api\/|href="https?:/)
+})
 test('avatar comes only from the saved explicit choice, independently of the salutation',()=>{
  const female=view({salutation:'Marku',assistantAvatar:'female'})
  assert(female.includes('/appshell/assistant-female.png'));assert(!female.includes('src="/appshell/assistant.png"'))

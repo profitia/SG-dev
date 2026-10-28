@@ -183,3 +183,14 @@ test('persisted vocative and avatar choice are independent and do not fall back 
   const body=await response.json(); assert.equal(body.salutation.vocative,'Agnieszko'); assert.equal(body.assistantAvatar,'male')
   assert.deepEqual(Object.keys(body.salutation).sort(),['dictionaryVersion','firstName','vocative'])
 })
+
+// The existing central Identity callback remains account/*; the verified client
+// gate owns the final locale dashboard redirect. No new registration grant.
+test('dashboard adoption preserves fixed account completion and read-only Identity contract', () => {
+  const config = readSelfServiceAccountConfiguration(env())!
+  for (const locale of ['pl','en'] as const) for (const mode of ['login','registration'] as const)
+    assert.equal(accountCompletionUrl(config,locale,mode), `http://localhost:3600/account/sg2/account-${locale}/${mode}`)
+  const guard=readFileSync(new URL('../components/auth/account-landing.tsx',import.meta.url),'utf8')
+  assert(guard.includes('workspaceReady && !dashboard'));assert(guard.includes('router.replace(dashboardPath(locale))'))
+  assert.equal((guard.match(/fetch\('/g)||[]).length,1);assert(guard.includes("fetch('/api/account'"))
+})
