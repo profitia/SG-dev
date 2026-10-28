@@ -133,7 +133,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
  const DATABASE='srm_sensitive_native_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
- const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,revokeKrsExport=false,revokeWebRead=false;const networkObservations=[]
+ const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,failedCeidg=false,revokeKrsExport=false,revokeWebRead=false;const networkObservations=[]
  let syntheticOrigin
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
@@ -267,7 +267,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
      }
      assert.equal(req.headers.authorization,'Bearer synthetic-native-sensitive-key');res.setHeader('content-type','application/json')
      const url=new URL(req.url,'http://127.0.0.1')
-     if(url.pathname==='/api/ceidg/v3/firma'){if(emptyCeidg){res.end(JSON.stringify({firma:[]}));return}const nip=url.searchParams.get('nip');res.end(JSON.stringify({firma:[{id:'synthetic-jdg-'+nip,nazwa:'SYNTHETIC_JDG',status:'AKTYWNY',wlasciciel:{nip,pesel:'12345678901'},adresDzialalnosci:{miasto:'TEST_CITY'}}]}));return}
+     if(url.pathname==='/api/ceidg/v3/firma'){if(failedCeidg){res.statusCode=503;res.end('{}');return}if(emptyCeidg){res.end(JSON.stringify({firma:[]}));return}const nip=url.searchParams.get('nip');res.end(JSON.stringify({firma:[{id:'synthetic-jdg-'+nip,nazwa:'SYNTHETIC_JDG',status:'AKTYWNY',wlasciciel:{nip,pesel:'12345678901'},adresDzialalnosci:{miasto:'TEST_CITY'}}]}));return}
      if(url.pathname.startsWith('/v1/models/')){
       const nip=url.searchParams.get('identifiers.pl_nip')
       const wp={id:'a'.repeat(24),identifiers:{pl_nip:nip,pl_krs:'0000217580'},content:{current_excerpt:{naglowekA:{},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic Native Company',formaPrawna:'SA'}}}}}}
@@ -599,15 +599,36 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     assert.equal(body.kys.status,'NOT_REQUESTED');assert.equal(body.kys.data,null);assert.equal(body.general.source,undefined);assert(!JSON.stringify(body).includes('12345678901'))
     assert.equal(networkHits,before+2);assert(networkObservations.every(x=>x.openTransactions===0))
    })
-   await t.test('actual search preserves confirmed empty CEIDG fallback and checks CEIDG before a cached company',async()=>{
+   await t.test('actual search classifies unknown NIP but a verified cached company performs no CEIDG or MGBI HTTP',async()=>{
     const before=networkHits;emptyCeidg=true
     let result
     try{result=await http('search',{identifier:'5210087493'})}finally{emptyCeidg=false}
     assert.equal(result.status,200);assert.equal((await result.json()).entityType,'COMPANY');assert.equal(networkHits,before+3)
     const paths=networkObservations.slice(-3).map(x=>x.path);assert(paths[0].startsWith('/api/ceidg/'));assert(paths[1].includes('wp-record'));assert(paths[2].includes('rdf-record'))
     const freshBefore=networkHits,known=await http('search',{identifier:'5260250274'})
-    assert.equal(known.status,200);assert.equal((await known.json()).entityType,'JDG');assert.equal(networkHits,freshBefore+1)
-    assert(networkObservations.at(-1).path.startsWith('/api/ceidg/'))
+    assert.equal(known.status,200);const body=await known.json();assert.equal(body.entityType,'COMPANY');assert.equal(networkHits,freshBefore)
+    assert.equal(body.card.identity.nip,'5260250274');assert.equal(body.card.general.data.legalName,'Synthetic Native Company')
+    assert.equal(body.card.financial.data.indicators.find(i=>i.code==='CURRENT_RATIO').value,'1.500000')
+   })
+   await t.test('cached routing still checks current report access and organization membership before provider I/O',async()=>{
+    const hits=networkHits
+    await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY'WHERE application_id='srm'AND organisation_id=$1 AND user_id=$2 AND operation='supplier.report.read'",[A,U]))
+    try{assert.equal((await http('search',{identifier:'5260250274'})).status,403)}
+    finally{await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='ALLOW'WHERE application_id='srm'AND organisation_id=$1 AND user_id=$2 AND operation='supplier.report.read'",[A,U]))}
+    const otherOrg=randomUUID()
+    assert.equal((await http('search',{identifier:'5260250274'},undefined,otherOrg)).status,403)
+    assert.equal(networkHits,hits)
+   })
+   await t.test('actual CEIDG provider unavailability is resolved by exact MGBI company evidence, never by the error itself',async()=>{
+    const before=networkHits;failedCeidg=true
+    let result
+    try{result=await http('search',{identifier:'5250009335'})}finally{failedCeidg=false}
+    assert.equal(result.status,200);const body=await result.json()
+    assert.equal(body.entityType,'COMPANY');assert.equal(body.card.identity.nip,'5250009335')
+    const paths=networkObservations.slice(before).map(x=>x.path)
+    assert(paths[0].startsWith('/api/ceidg/'))
+    assert.equal(paths.filter(x=>x.includes('wp-record')).length,1)
+    assert.equal(paths.filter(x=>x.includes('rdf-record')).length,1)
    })
    await t.test('actual protected KYS HTTP composes current HUMAN admission, native original engine and current masked read, and retries do not purchase',async()=>{
     const key='synthetic-http-repeat-'+randomUUID(),before=networkHits

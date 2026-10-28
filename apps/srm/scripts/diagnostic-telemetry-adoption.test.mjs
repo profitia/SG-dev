@@ -21,7 +21,8 @@ test('diagnostic source adoption preserves complete history and verifies current
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const next=receipt.mgbiDevelopmentRecoveryAdoption?.applicationSourceDigests[file]?receipt.mgbiDevelopmentRecoveryAdoption:receipt.mgbiDevelopmentSessionFreshnessRepair
   const latest=receipt.supplierMapGeocodingActivation
-  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):fs.readFileSync(new URL('../'+file,import.meta.url))
+  const routing=receipt.stagingCompanyRoutingAdoption
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):routing.applicationSourceDigests[file]?execFileSync('git',['show',routing.previousReceiptSourceSha+':apps/srm/'+file]):fs.readFileSync(new URL('../'+file,import.meta.url))
   assert.equal(hash(bytes),digest,file)
  }
  for(const flag of ['executionContractChanged','authorityChecksChanged','workOrTransactionBoundariesChanged','sqlOrPolicyChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)

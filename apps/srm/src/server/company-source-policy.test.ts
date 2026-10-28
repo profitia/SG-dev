@@ -1,7 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import targets from '../../deployment/supplier-native-targets.json'
-import {readCompanySourcePolicy,mgbiCompanyCache} from './company-source-policy'
+import {readCompanySourcePolicy,mgbiCompanyCache,isKnownMgbiCompany} from './company-source-policy'
+import {mapMgbiGeneralRecords} from './mgbi-general'
+import {emptyCard} from '../demo/fixture'
 import {IdentityConfigurationUnavailable} from './identity-runtime'
 import type {SharedCompany} from './shared-catalog'
 import {readFileSync} from 'node:fs'
@@ -18,11 +20,21 @@ test('MGBI recovery preserves the full prior acceptance and pins every current c
   for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
     const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.mgbiDevelopmentSessionFreshnessRepair.applicationSourceDigests[file as keyof typeof receipt.mgbiDevelopmentSessionFreshnessRepair.applicationSourceDigests]?receipt.mgbiDevelopmentSessionFreshnessRepair:receipt.supplierMapStartupRepair
     const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
-    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
+    const routing=receipt.stagingCompanyRoutingAdoption
+    const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):routing.applicationSourceDigests[file as keyof typeof routing.applicationSourceDigests]?execFileSync('git',['show',routing.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../'+file,import.meta.url))
     assert.equal(hash(bytes),digest,file)
   }
   assert.equal(a.companySourcePolicy,'MGBI_ONLY');assert.equal(a.sharedSdkChanged,false);assert.equal(a.humanEntitlementsChanged,false)
   assert.equal(a.historicalCountersReset,false);assert.equal(a.paidExternalPoliciesChanged,false)
+})
+
+test('routing adoption preserves accepted contracts and pins the bounded current consumer change',()=>{
+  const a=receipt.stagingCompanyRoutingAdoption,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
+  const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
+  assert.equal(hash(previous),a.previousReceiptDigest)
+  for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+  for(const key of ['freshnessRulesChanged','humanAuthorityChanged','sharedSdkChanged','financialWorkflowChanged','providerLimitsChanged','sqlOrInfrastructureChanged','uiChatMapsChanged'])assert.equal(a[key as keyof typeof a],false,key)
 })
 
 test('main Development selects MGBI without a new environment flag and refuses every alternate company activation',()=>{
@@ -47,4 +59,24 @@ test('fresh acquisition reuses MGBI evidence only and never relabels or edits hi
     assert.equal(mgbiCompanyCache(historical),null);assert.equal(JSON.stringify(historical),before)
   }
   assert.equal(mgbiCompanyCache(null),null)
+})
+
+test('routing requires a complete exact MGBI company after the existing freshness read',()=>{
+  const nip='9511855233',krs='0000007163'
+  const general=mapMgbiGeneralRecords([{id:'a'.repeat(24),identifiers:{pl_nip:nip,pl_krs:krs},
+    content:{current_excerpt:{naglowekA:{},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic Known Company',formaPrawna:'SA'}}}}}}],
+    {type:'NIP',value:nip},new Date().toISOString()).section
+  const value:SharedCompany={general,financial:structuredClone(emptyCard.financial)}
+  assert.equal(isKnownMgbiCompany(value,nip),true)
+  assert.equal(isKnownMgbiCompany(null,nip),false)
+  assert.equal(isKnownMgbiCompany(value,'5272443955'),false)
+  for(const change of [
+    (v:SharedCompany)=>{v.general.source.provider='KRS'},
+    (v:SharedCompany)=>{v.general.status='ERROR'},
+    (v:SharedCompany)=>{v.general.data!.krs=null},
+    (v:SharedCompany)=>{v.general.data!.legalName=' '},
+    (v:SharedCompany)=>{v.general.data!.registryHistory=undefined},
+    (v:SharedCompany)=>{v.general.data!.registryHistory!.currentKrs='0000000001'},
+    (v:SharedCompany)=>{v.general.data!.registryHistory!.members=[]},
+  ]){const invalid=structuredClone(value);change(invalid);assert.equal(isKnownMgbiCompany(invalid,nip),false)}
 })

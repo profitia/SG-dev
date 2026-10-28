@@ -9,6 +9,7 @@ import {toPublicSection} from './xray-lookup'
 import {emptyCard} from '../demo/fixture'
 import {bindOrganizationTransaction} from './db'
 import {readFreshCompany} from './shared-catalog'
+import {isKnownMgbiCompany} from './company-source-policy'
 
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
 export type CompanyReadOptions=Omit<DriverOptions,'readResources'|'projectOutput'|'prepareInputs'|'describeOutcome'|'requestLedger'>
@@ -81,7 +82,7 @@ export function createSrmKnownCompanyRead(options:CompanyReadOptions){
    operation:'supplier.report.read',organisationId,resourceId:'supplier-report:COMPANY:'+nip,payload:{nip,entityType:'COMPANY'},request},
    async(context,client)=>{
     await client.query("SELECT set_config('srm.organization_id',$1,true)",[context.organisationId])
-    return Boolean(await readFreshCompany(context.organisationId!,nip,new Date(),bindOrganizationTransaction(context.organisationId!,client)))
+    return isKnownMgbiCompany(await readFreshCompany(context.organisationId!,nip,new Date(),bindOrganizationTransaction(context.organisationId!,client)),nip)
    })
   return (await publication(result.value).json()).known===true
  }})

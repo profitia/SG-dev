@@ -28,11 +28,11 @@ function fixture(){
 function request(body:unknown={identifier:nip},changes:Record<string,string>={},query=''){
  return new Request(origin+'/api/xray/test'+query,{method:'POST',headers:{origin,'content-type':'application/json','idempotency-key':key,...changes},body:JSON.stringify(body)})
 }
-test('the unchanged MGBI-only route checks CEIDG first including known companies',async()=>{
+test('MGBI routing reads the protected catalog first and does not reclassify a selected company',async()=>{
  const f=fixture(),handler=createSrmSupplierOperationHandler('search',f.api,A)
- assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['jdg','company'])
+ assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['known','jdg','company'])
  f.calls.length=0;f.setKnown(true)
- assert.equal((await handler(request())).status,404);assert.deepEqual(f.calls.map(v=>v.kind),['jdg','company'])
+ assert.equal((await handler(request())).status,503);assert.deepEqual(f.calls.map(v=>v.kind),['known','company'])
 })
 test('server-selected KRS routing runs only after existing HTTP fences and preserves the logical command',async()=>{
  const f=fixture();let overrides=0
