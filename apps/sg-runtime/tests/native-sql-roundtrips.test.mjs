@@ -25,7 +25,7 @@ test('native SQL adoption preserves complete prior acceptance and pins the exact
   const historicalSha=latest.applicationSourceDigests[file]?latest.previousReceiptSourceSha:adp.applicationSourceDigests[file]?adp.previousReceiptSourceSha:null
   const historical=historicalSha?execFileSync('git',['show',historicalSha+':'+posix.normalize('apps/sg-runtime/'+file)]):fs.readFileSync(new URL('../'+file,import.meta.url))
   assert.equal(hash(historical),current.applicationSourceDigests[file]??digest,'preserved SQL receiver '+file)
-  if(adp.applicationSourceDigests[file]||latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),adp.applicationSourceDigests[file]??receipt.assistantWidgetSourceCompatibility.applicationSourceDigests[file]??latest.applicationSourceDigests[file],'current AppShell receiver '+file)
+  if(adp.applicationSourceDigests[file]||latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.accountProofRenewalSourceCompatibility.applicationSourceDigests[file]??adp.applicationSourceDigests[file]??receipt.assistantWidgetSourceCompatibility.applicationSourceDigests[file]??latest.applicationSourceDigests[file],'current AppShell receiver '+file)
  }
  assert.equal(a.currentAuthorityCheckpointsPreserved,true);assert.equal(a.physicalAuditPreserved,true)
  for(const flag of ['humanGrantsChanged','quotasChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)

@@ -42,7 +42,9 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
     // A workspace rechecks the existing backend account proof with a fresh SDK
     // token. No new session, organisation grant or product permission is minted.
     if (presentation === 'workspace') {
-      const refresh = setTimeout(() => setRetry(n => n + 1), Math.min(2147483647, Math.max(1000, Date.parse(state.expiresAt) - Date.now() - 5000)))
+      // Leave room for the existing bounded account reads. A successful proof
+      // with the same deadline must schedule another attempt, not extend access.
+      const refresh = setTimeout(() => setRetry(n => n + 1), Math.min(2147483647, Math.max(1000, Date.parse(state.expiresAt) - Date.now() - 15000)))
       const expiry = setTimeout(() => setState(previous => previous.key === state.key && previous.expiresAt === state.expiresAt && previous.status === 'ready'
         ? { key: previous.key, status: 'expired' } : previous), Math.min(2147483647, Math.max(0, Date.parse(state.expiresAt) - Date.now())))
       const focus = () => setRetry(n => n + 1)
@@ -52,7 +54,7 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
     const timer = setTimeout(() => setState(previous => previous.key === state.key && previous.status === 'ready'
       ? { key: previous.key, status: 'expired' } : previous), Math.min(2147483647, Math.max(0, Date.parse(state.expiresAt) - Date.now())))
     return () => clearTimeout(timer)
-  }, [state.key, state.status, state.expiresAt, presentation])
+  }, [state, presentation])
   async function logout() {
     current.current?.abort(); setState({ key, status: 'signing-out' })
     try { await clerk.signOut({ sessionId: sessionId ?? undefined, redirectUrl: `/${locale}` }) }

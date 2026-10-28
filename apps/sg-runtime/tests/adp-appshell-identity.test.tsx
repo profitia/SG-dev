@@ -76,6 +76,34 @@ test('actual account-proof expiry removes the active module before a later refre
   await React.act(async()=>{await new Promise(resolve=>setTimeout(resolve,180))})
   assert(!container.querySelector('.appshell'));assert(!container.querySelector('.sg-adp-ui'));assert(container.querySelector('[role=alert]'))
 })
+test('same-deadline renewal is retried and an extended proof preserves the same local model and assistant',async t=>{
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:new Date('2026-10-28T12:00:00Z')})
+  const initialExpiry=Date.now()+60000, tokenOptions: unknown[]=[];let calls=0
+  setup(async()=>Response.json({...proof(),expiresAt:new Date(++calls<3?initialExpiry:Date.now()+60000).toISOString()}))
+  g.__adpTestAuth={...auth(),getToken:async(options:unknown)=>{tokenOptions.push(options);return 'test-only-credential'}}
+  g.__adpTestNavigation.pathname='/pl/dashboard/adp';g.__adpTestNavigation.search='view=data';await render()
+  const module=container.querySelector('.sg-adp-ui'),assistant=container.querySelector('.srm-chat-slot')
+  const input=container.querySelector('input[id$="-field-name"]') as HTMLInputElement
+  await React.act(async()=>{Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype,'value')!.set!.call(input,'Uncommitted draft');input.dispatchEvent(new dom.window.Event('input',{bubbles:true}));container.querySelector<HTMLButtonElement>('[aria-label="Schowaj asystenta"]')!.click()})
+  await React.act(async()=>t.mock.timers.tick(45000));await flush();assert.equal(calls,2)
+  await React.act(async()=>t.mock.timers.tick(1000));await flush();assert.equal(calls,3)
+  await React.act(async()=>t.mock.timers.tick(15000));await flush()
+  assert.equal(container.querySelector('.sg-adp-ui'),module);assert.equal(input.value,'Uncommitted draft')
+  assert.equal(container.querySelector('.srm-chat-slot'),assistant);assert(assistant!.classList.contains('is-collapsed'))
+  assert(tokenOptions.every(options=>(options as {skipCache:boolean}).skipCache===true));assert(!container.querySelector('[role=alert]'))
+})
+test('renewal allows a bounded slow account read before expiry without unmounting the active workspace',async t=>{
+  t.mock.timers.enable({apis:['Date','setTimeout'],now:new Date('2026-10-28T12:00:00Z')})
+  let calls=0,resolveRenewal!: (response:Response)=>void
+  setup(()=>++calls===1?Promise.resolve(Response.json({...proof(),expiresAt:new Date(Date.now()+60000).toISOString()})):new Promise<Response>(resolve=>{resolveRenewal=resolve}))
+  g.__adpTestNavigation.pathname='/pl/dashboard/adp';await render()
+  const module=container.querySelector('.sg-adp-ui'),assistant=container.querySelector('.srm-chat-slot')
+  await React.act(async()=>t.mock.timers.tick(45000));await flush();assert.equal(calls,2)
+  await React.act(async()=>t.mock.timers.tick(10000));assert.equal(container.querySelector('.sg-adp-ui'),module)
+  await React.act(async()=>resolveRenewal(Response.json({...proof(),expiresAt:new Date(Date.now()+60000).toISOString()})));await flush()
+  await React.act(async()=>t.mock.timers.tick(6000));await flush()
+  assert.equal(container.querySelector('.sg-adp-ui'),module);assert.equal(container.querySelector('.srm-chat-slot'),assistant)
+})
 test('sign-out failure does not restore the previous local workspace or invent a successful logout',async()=>{
   setup();g.__adpTestNavigation.pathname='/pl/dashboard/adp';g.__adpTestClerk.signOut=async()=>{throw Error('test failure')}
   await render();assert(container.querySelector('.sg-adp-ui'))
