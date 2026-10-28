@@ -7,8 +7,8 @@
   "architectureProducer": {
     "projectKey": "ARCHITECTURE",
     "pullRequest": 773,
-    "sourceSha": "71e554d81201abf010fb1ef8331b3d312606798c",
-    "platformVersion": "1.30.0",
+    "sourceSha": "fd37d8c748aab42ab8ad1b9ce08b411a41a96634",
+    "platformVersion": "1.31.0",
     "peerOperationVersion": "1.0.0",
     "peerOperationDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7"
   },
@@ -17,7 +17,7 @@
     "version": "0.3.0",
     "contractId": "profitia.srm-xray.workflow",
     "contractVersion": "1.0.0",
-    "sourceDigest": "f7db4c43b50ba61742927643bb708e4c34ac56d36cc581126446ee95f58d3496",
+    "sourceDigest": "9eaf3f71f0de6c78fbe8ec86e35c3b4d52f51f3b23f280081a1f4d5a44a95815",
     "exports": [
       "./workflow",
       "./workflow-contract",

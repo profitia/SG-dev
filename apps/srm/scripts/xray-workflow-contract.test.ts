@@ -7,6 +7,13 @@ test('source is genuinely optional on the versioned wire, never fabricated by th
  const value={entityType:'COMPANY',card};validateXRayData('search',value);assert(!Object.hasOwn(card.general,'source'));
  for(const status of ['SUCCESS','EMPTY','PARTIAL','ERROR','NOT_REQUESTED','PENDING']){card.general.status=status as typeof card.general.status;validateXRayData('search',value);}
 });
+test('prepared inline metadata is supplier-bound and never carries private KYS authority',()=>{
+ const card={...publicCard,identity:{...publicCard.identity,nip:'0000000000'}};
+ const freshness={retrievedAt:null,checkedAt:null,cacheExpiresAt:null,retentionUntil:null,freshness:'ABSENT',readSource:'STORED',lastRetrievalMethod:'UNKNOWN'};
+ const metadata={schemaVersion:'1.0',nip:card.identity.nip,entityType:'COMPANY',financial:{status:'EMPTY',source:'MGBI',freshness,completeness:'EMPTY',limitations:[],mappingVersion:null,sourceVersion:null,representationVersion:null,periods:[],history:[],scanner:{version:'1.1',methodologyVersion:'4.0.0',qualification:'PARTIAL_SOURCE_VIEW',sourceVersion:null,periods:[]}},kys:{status:'NOT_REQUESTED',source:'VERCLY',freshness,completeness:'UNKNOWN',lastAttemptStatus:null,lastAttemptAt:null,limitations:[],reportAvailable:false}};
+ validateXRayData('search',{entityType:'COMPANY',card,metadata});
+ for(const invalid of [{...metadata,nip:'9999999999'},{...metadata,kys:{...metadata.kys,reportAvailable:true}},{...metadata,financial:{...metadata.financial,scanner:undefined}}])assert.throws(()=>validateXRayData('search',{entityType:'COMPANY',card,metadata:invalid}));
+});
 test('the version, operation, public shape and exact command boundary are independently checked',()=>{
  assert.equal(Object.keys(XRAY_OPERATIONS).length,5);validateXRayCommand('search',{identifier:'0000000000'});
  for(const value of [{identifier:'0000000000',organisationId:'foreign'},{identifier:'bad'},{userId:'forged'},null])assert.throws(()=>validateXRayCommand('search',value));
@@ -35,7 +42,7 @@ test('X-Ray acceptance is additive, preserves every historical receipt and binds
  const hash=(v:Uint8Array)=>createHash('sha256').update(v).digest('hex');
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json']);assert.equal(hash(prior),a.previousReceiptDigest);
  for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key);
- assert.equal(a.platformVersion,'1.30.0');assert.equal(a.architectureProducer.pullRequest,773);assert.equal(a.architectureProducer.peerOperationDigest,await peerOperationSourceDigest());
+ assert.equal(a.platformVersion,'1.31.0');assert.equal(a.architectureProducer.pullRequest,773);assert.equal(a.architectureProducer.peerOperationDigest,await peerOperationSourceDigest());
  assert.equal(a.publicUi.version,'0.3.0');assert.equal(a.publicUi.contractVersion,'1.0.0');
  const publicRoot=new URL('packages/srm-xray/',root),digest=createHash('sha256');for(const file of a.publicUi.sourceFiles)digest.update(file).update('\0').update(fs.readFileSync(new URL(file,publicRoot))).update('\0');assert.equal(digest.digest('hex'),a.publicUi.sourceDigest);
  for(const [file,digest]of Object.entries({...a.publicSourceDigests,...a.repositorySourceDigests}))assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file);

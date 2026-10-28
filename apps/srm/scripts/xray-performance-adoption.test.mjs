@@ -8,7 +8,7 @@ import {PREPARED_REPORT_RULES} from '../src/server/ready-report.ts'
 const hash=value=>createHash('sha256').update(value).digest('hex')
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url))
 test('complete X-Ray architecture adopts the exact producer and consumer closure without rewriting history or claiming deployment',async()=>{
- const receipt=JSON.parse(read('operation-integration.json')),a=receipt.xrayPerformanceRecoveryV2
+ const receipt=JSON.parse(read('operation-integration.json')),a=receipt.xrayPerformanceRecoveryV2,xray=receipt.appshellXraySourceCompatibility
  const before=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(before),a.previousReceiptDigest)
  for(const[key,value]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt[key],value,key)
@@ -19,11 +19,12 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/current-human-read'))
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),xray.sourceDigests[file]??digest,'installed '+file)
  }
  assert(Object.keys(a.applicationSourceDigests).length>=30)
- for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(read(file)),digest,'consumer '+file)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':apps/srm/'+file]):read(file)),digest,'historical consumer '+file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':apps/srm/'+file]):read(file)),digest,'historical '+file)
+ for(const[file,digest]of Object.entries(xray.applicationSourceDigests))assert.equal(hash(read(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))

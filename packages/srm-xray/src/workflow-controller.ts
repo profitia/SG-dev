@@ -11,6 +11,7 @@ class ReportRequestError extends Error {
 export type ReportState = {
   /** Time the user requested the displayed KYS; never source freshness or export identity. */
   kysRequestedAt?: string;
+  reportTiming?: {traceId:string;lastFragmentId:string|null;startedAt:number;controllerCompleteMs:number};
   registryRoute?: {provider:"KRS"|"MGBI";fallbackReason?:string};
   kysTiming?: KysRenderTiming; result: SearchResult | null; busy: boolean; error: string | null;
   kys: DisplayCard["kys"]; kysBusy: boolean; kysError: string | null;
@@ -81,6 +82,9 @@ export class SupplierReportController {
     try{console.info(JSON.stringify({event:'srm_diagnostic_client_complete',schema:'srm.diagnostic-trace/1.0',traceId:this.diagnosticExecution,
       lastFragmentId:this.diagnosticParent,clock:'BROWSER_PERFORMANCE_NOW_NOT_SERVER_CLOCK',startMs:this.diagnosticUserStartMs,endMs:performance.now(),
       status:this.state.error||this.state.metadataError?'ERROR':'OK',includesBrowserNetworkAndScheduling:true}));}catch{}
+    if(!this.state.error&&!this.state.metadataError&&this.state.result&&this.state.metadata)
+      this.update({reportTiming:{traceId:this.diagnosticExecution,lastFragmentId:this.diagnosticParent,
+        startedAt:this.diagnosticUserStartMs,controllerCompleteMs:performance.now()}});
     this.diagnosticUserStartMs=null;
   }
   private async json(path: string, body: unknown, controller: AbortController): Promise<unknown> {
@@ -149,7 +153,13 @@ export class SupplierReportController {
        if(payload.entityType!=='COMPANY'||route?.provider!=='KRS'||selection.nip!==identifier||selection.krs!==payload.card.identity.krs)throw Error('Dane wyboru spółki są niezgodne.')
        await this.searchKrs(selection,payload,route);return
       }
-      if (!inactiveSupplier(payload)) await this.refreshMetadata();
+      if(payload.metadata!==undefined){
+        const report=payload.metadata;
+        if(payload.entityType!=='COMPANY'||report?.schemaVersion!=='1.0'||report.nip!==identifier||report.entityType!=='COMPANY'
+          ||!report.financial||!Array.isArray(report.financial.periods)||!Array.isArray(report.financial.history)||!report.financial.scanner
+          ||report.kys?.status!=='NOT_REQUESTED'||report.kys.reportAvailable!==false)throw Error('Nie udało się potwierdzić kompletności gotowego raportu.');
+        this.update({metadata:report,metadataBusy:false,metadataError:null});
+      }else if (!inactiveSupplier(payload)) await this.refreshMetadata();
     } catch (error) { if(this.clearUnauthorized(error,generation))return; if (generation === this.generation) this.update({ error: message(error, "Nie udało się pobrać raportu.") }); }
     finally { if (generation === this.generation) this.update({ busy: false });this.diagnosticComplete(generation); }
   };

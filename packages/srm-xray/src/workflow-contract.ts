@@ -4,7 +4,7 @@ import type {SupplierSelection} from './supplier-search';
 /** Wire projection deliberately permits absent source; absence is not invented provenance. */
 export type PublicSection<T> = Omit<SectionEnvelope<T>, 'source'> & {source?: SectionEnvelope<T>['source']};
 export type XRayDisplayCard = {identity:SupplierIdentity;general:PublicSection<GeneralCompanyData>;financial:PublicSection<FinancialData>;kys:PublicSection<VerclyKysData>};
-export type XRaySearchResult = ({entityType:'COMPANY';card:XRayDisplayCard}|{entityType:'JDG';nip:string;section:PublicSection<JdgRegistryData>}) & {
+export type XRaySearchResult = ({entityType:'COMPANY';card:XRayDisplayCard;metadata?:SupplierReportData}|{entityType:'JDG';nip:string;section:PublicSection<JdgRegistryData>;metadata?:never}) & {
  registryRoute?:{provider:'MGBI'|'KRS';fallbackReason?:string};krsSelection?:SupplierSelection};
 export const XRAY_WORKFLOW_CONTRACT = Object.freeze({id:'profitia.srm-xray.workflow',version:'1.0.0'} as const);
 export const XRAY_OPERATIONS = Object.freeze({search:'/api/xray/search',report:'/api/xray/report-data',kys:'/api/xray/kys',jdgKys:'/api/xray/jdg/kys',krsLookup:'/api/xray/krs/lookup'} as const);
@@ -84,7 +84,8 @@ function section(v:unknown,data:(v:unknown)=>void):void {
 export function validateXRaySearch(value:unknown):asserts value is XRaySearchResult {
  requireValue(object(value));
  if(value.entityType==='JDG'){record(value,['entityType','nip','section'],['registryRoute']);requireValue(typeof value.nip==='string'&&/^\d{10}$/.test(value.nip));section(value.section,jdg);}
- else {record(value,['entityType','card'],['registryRoute','krsSelection']);requireValue(value.entityType==='COMPANY');record(value.card,['identity','general','financial','kys']);record(value.card.identity,['krs','nip','name']);requireValue(Object.values(value.card.identity).every(nullableText));section(value.card.general,general);section(value.card.financial,financial);section(value.card.kys,kys);requireValue(object(value.card.kys)&&value.card.kys.data===null);}
+ else {record(value,['entityType','card'],['registryRoute','krsSelection','metadata']);requireValue(value.entityType==='COMPANY');record(value.card,['identity','general','financial','kys']);record(value.card.identity,['krs','nip','name']);requireValue(Object.values(value.card.identity).every(nullableText));section(value.card.general,general);section(value.card.financial,financial);section(value.card.kys,kys);requireValue(object(value.card.kys)&&value.card.kys.data===null);
+ if(value.metadata!==undefined){metadata(value.metadata);requireValue(value.metadata.entityType==='COMPANY'&&value.metadata.nip===value.card.identity.nip&&value.metadata.financial.scanner&&value.metadata.kys.status==='NOT_REQUESTED'&&value.metadata.kys.reportAvailable===false);}}
  if(value.registryRoute){record(value.registryRoute,['provider'],['fallbackReason']);requireValue(['KRS','MGBI'].includes(value.registryRoute.provider as string));if(value.registryRoute.fallbackReason!==undefined)requireValue(text(value.registryRoute.fallbackReason));}
  if(value.krsSelection){record(value.krsSelection,['krs','nip','name','locality','selectionRef']);requireValue(['krs','nip','name','selectionRef'].every(k=>text((value.krsSelection as Record<string,unknown>)[k]))&&nullableText(value.krsSelection.locality));}
 }
