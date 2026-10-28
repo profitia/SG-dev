@@ -34,6 +34,7 @@ export function readyReportReleasePlan({mode,sourceSha,previousSha}){
   add('GRANT SELECT ON srm.ready_company_reports TO srm_private_development_runtime')
   add(`GRANT EXECUTE ON FUNCTION srm.ready_report_descriptor(),srm.publish_ready_report(text,uuid,text,text,text) TO ${native.runtimeRoles.corporateSource}`)
   add('GRANT EXECUTE ON FUNCTION srm.register_ready_report_read(uuid,uuid,text,text,uuid,jsonb) TO srm_private_development_runtime')
+  add(`GRANT EXECUTE ON FUNCTION srm.financial_inventory_descriptor() TO ${native.runtimeRoles.jobs}`)
   add("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) SELECT 'srm','SRM_STORE_COMPANY','WRITE','ACTIVE',$1,expires_at FROM profitia_request_work.policies WHERE application_id='srm' AND unit_id='SRM_STORE_FINANCIAL' AND status='ACTIVE' AND expires_at>now()",[sourceSha])
  }else{
   const from=mode==='bind'?previousSha:sourceSha,to=mode==='bind'?sourceSha:previousSha

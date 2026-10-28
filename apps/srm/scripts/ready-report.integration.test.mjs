@@ -21,6 +21,15 @@ import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8')
 test('ready report native Source and current HUMAN read preserve complete financial output, tenant history and rollback',t=>supplierBusinessFixture(t,true,async f=>{
  const {owner,controlled,humanOptions,sourceOptions,baseBinding,A,B,U,NIP,FOREGROUND,own,hash}=f
+ const readMainInventory=async()=>{const c=await f.servicePool.connect();try{return (await c.query('SELECT srm.financial_inventory_descriptor() descriptor')).rows[0].descriptor}finally{c.release()}};
+ const inventoryBefore=(await owner.query('SELECT * FROM srm.financial_inventory_installation')).rows;
+ assert.equal(inventoryBefore[0].runtime_role,f.inventoryRole);assert.notEqual(f.inventoryRole,f.EXECUTOR);
+ const legacyUrl=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);legacyUrl.pathname='/'+baseBinding.databaseName;legacyUrl.username=f.inventoryRole;legacyUrl.password='isolated_ci_only';
+ const legacy=new pg.Client({connectionString:legacyUrl.toString()});await legacy.connect();
+ let originalInventory;
+ try{originalInventory=(await legacy.query('SELECT srm.financial_inventory_descriptor() descriptor')).rows[0].descriptor}finally{await legacy.end()}
+ assert(originalInventory);assert.equal(originalInventory.schemaDigest,hash(own('023-financial-inventory-work.sql')));
+ assert.equal(await readMainInventory(),null);
  const sourceRole='srm_company_publication_runtime',shape=read('../src/server/ready-report-shape.json')
  const digest=hash(own('024-ready-report-history.sql')+own('025-ready-report-history.sql')+shape+JSON.stringify(PREPARED_REPORT_RULES))
  await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
@@ -35,6 +44,12 @@ test('ready report native Source and current HUMAN read preserve complete financ
    GRANT EXECUTE ON FUNCTION srm.register_ready_report_read(uuid,uuid,text,text,uuid,jsonb) TO ${FOREGROUND}`)
   await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'ALLOW','supplier.report.read','supplier_report')",[randomUUID(),A,U])
  })
+ await t.test('main receiver has its own inventory binding while the pilot installation and ordinary descriptor remain unchanged',async()=>{
+  assert.deepEqual((await owner.query('SELECT * FROM srm.financial_inventory_installation')).rows,inventoryBefore);
+  const actual=new pg.Client({connectionString:legacyUrl.toString()});await actual.connect();
+  try{assert.deepEqual((await actual.query('SELECT srm.financial_inventory_descriptor() descriptor')).rows[0].descriptor,originalInventory)}finally{await actual.end()}
+  assert.equal((await readMainInventory()).schemaDigest,hash(own('023-financial-inventory-work.sql')));
+ });
  const url=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);url.pathname='/'+baseBinding.databaseName;url.username=sourceRole;url.password='isolated_ci_only'
  const pool=new pg.Pool({connectionString:url.toString(),max:2}),auditPool=new pg.Pool({connectionString:url.toString(),max:1})
  try{

@@ -43,7 +43,7 @@ const own=name=>fs.readFileSync(new URL('../db/private-store/'+name,import.meta.
 export async function supplierBusinessFixture(t,full=false,probe,options={}){
  if(Object.keys(options).some(k=>!['databaseName','companySourcePolicy','privateAcquisition'].includes(k))||options.databaseName!==undefined&&options.databaseName!=='platform_private'
   ||options.companySourcePolicy!==undefined&&options.companySourcePolicy!=='MGBI_ONLY'||options.privateAcquisition!==undefined&&options.privateAcquisition!==true)throw Error('Only explicit disposable private-store test options are allowed')
- const mgbiOnly=options.companySourcePolicy==='MGBI_ONLY'
+ const mgbiOnly=options.companySourcePolicy==='MGBI_ONLY',inventoryRole=options.privateAcquisition?'srm_other_pilot_jobs':EXECUTOR
  const DATABASE=options.databaseName??'srm_service_business_'+randomUUID().replaceAll('-','')
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
@@ -55,7 +55,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
   await root.query(`CREATE DATABASE ${DATABASE}`)
   await root.query("BEGIN;SELECT pg_advisory_xact_lock(170001,20261017)")
-  for(const[role,login]of[['profitia_access_owner',false],['profitia_ingestion_owner',false],['srm_app_runtime',true],['neon_superuser',false],[FOREGROUND,true],[EXECUTOR,true],[SOURCE,true],...(full?[[CORPORATE,true]]:[]) ]){
+  for(const[role,login]of[['profitia_access_owner',false],['profitia_ingestion_owner',false],['srm_app_runtime',true],['neon_superuser',false],[FOREGROUND,true],[EXECUTOR,true],[SOURCE,true],...(options.privateAcquisition?[[inventoryRole,true]]:[]),...(full?[[CORPORATE,true]]:[]) ]){
    if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount)await root.query(`CREATE ROLE ${role} ${login?"LOGIN PASSWORD 'isolated_ci_only'":'NOLOGIN'} NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`)
    const flags=(await root.query('SELECT rolsuper,rolbypassrls,rolinherit,rolcanlogin FROM pg_roles WHERE rolname=$1',[role])).rows[0]
    // neon_superuser is only the existing provider-name stub used by other
@@ -65,8 +65,10 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    else assert.deepEqual(flags,{rolsuper:false,rolbypassrls:false,rolinherit:false,rolcanlogin:login})
   }
   await root.query(`ALTER ROLE ${FOREGROUND} CONNECTION LIMIT 4;ALTER ROLE ${EXECUTOR} CONNECTION LIMIT 4`)
+  if(options.privateAcquisition)await root.query(`ALTER ROLE ${inventoryRole} CONNECTION LIMIT 4`)
   await root.query('COMMIT');const db=new URL(rootUrl);db.pathname='/'+DATABASE;owner=new pg.Client({connectionString:db.toString()});await owner.connect()
   await owner.query(`REVOKE ALL ON DATABASE ${DATABASE} FROM PUBLIC;GRANT CONNECT ON DATABASE ${DATABASE} TO ${FOREGROUND},${EXECUTOR};GRANT CREATE ON DATABASE ${DATABASE} TO profitia_access_owner`)
+  if(options.privateAcquisition)await owner.query(`GRANT CONNECT ON DATABASE ${DATABASE} TO ${inventoryRole}`)
   const controlled=async work=>{await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner');try{const v=await work();await owner.query('COMMIT');return v}catch(e){await owner.query('ROLLBACK');throw e}}
   const sources=[['001-internal-access.sql','profitia_access.installation'],['002-module-scope.sql','profitia_modules.installation'],['003-module-audit.sql','profitia_modules.audit_installation'],['005-service-read.sql','profitia_services.installation'],['006-request-reservation.sql','profitia_requests.installation'],['007-delegated-jobs.sql','profitia_jobs.installation'],['010-external-request-admission.sql','profitia_requests.external_installation'],['011-request-continuation.sql','profitia_request_phases.installation'],['013-supplier-delegation.sql','profitia_supplier_jobs.installation'],['014-delegated-private-phases.sql','profitia_delegated_phases.installation'],['015-delegated-private-inspection.sql','profitia_request_inspection.installation'],['016-delegated-native-work.sql','profitia_request_work.installation']]
   if(options.privateAcquisition)sources.push(['017-additional-request-operations.sql','profitia_requests.operation_installation'])
@@ -90,6 +92,10 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
     await owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity) VALUES($1,'srm',$2,'supplier.report.refresh','ACTIVE','SYNTHETIC_ONLY',now()-interval '1 hour',now()+interval '2 hours',$3,50)",[randomUUID(),org,future()])
    }
    await owner.query("INSERT INTO profitia_services.runtime_bindings(login_role,binding_id,service_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'PLATFORM_INTERNAL','synthetic-srm-jobs','jobs-v1','ACTIVE','SYNTHETIC_ONLY',$4)",[EXECUTOR,randomUUID(),serviceId,future()])
+   if(options.privateAcquisition){
+    await owner.query("INSERT INTO profitia_access.runtime_bindings(login_role,application_id,status) VALUES($1,'srm-jobs','ACTIVE')",[inventoryRole]);
+    await owner.query("INSERT INTO profitia_services.runtime_bindings SELECT (jsonb_populate_record(NULL::profitia_services.runtime_bindings,to_jsonb(b)||jsonb_build_object('login_role',$1::text,'binding_id',gen_random_uuid()))).* FROM profitia_services.runtime_bindings b WHERE login_role=$2",[inventoryRole,EXECUTOR])
+   }
    await owner.query("INSERT INTO profitia_jobs.operation_bindings(binding_id,application_id,operation,foreground_role,profile_id,configuration_version,executor_application_id,source_id,source_project_id,source_branch_id,source_database_name,source_application_id,source_schema_digest,source_payload_schema,source_quality_version,source_classification_version,delegation_ttl_seconds,max_attempts,status,source_ref,expires_at) VALUES($1,'srm','supplier.report.refresh',$2,'SUPPLIER_INTELLIGENCE_STANDALONE','request-v1','srm-jobs','srm.supplier.source-request','isolated-source-project','isolated-source-branch',$5,'srm-provider-source',$3,'supplier-command-v1','srm-supplier-source-request-v1','srm-supplier-source-request-control-v1',3600,3,'ACTIVE','SYNTHETIC_ONLY',$4)",[bindingId,FOREGROUND,hash(core('008-platform-ingestion.sql')),future(),DATABASE])
    for(const org of[A,B])await owner.query("INSERT INTO profitia_jobs.execution_grants(grant_id,login_role,binding_id,organisation_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,$4,'ALLOW','ACTIVE','SYNTHETIC_ONLY',$5)",[randomUUID(),EXECUTOR,bindingId,org,future()])
    for(const[i,id]of['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL','RECORD_INTEREST'].entries())await owner.query("INSERT INTO profitia_request_phases.policies(application_id,phase_id,sequence,predecessor,operation,effect,status,source_ref,expires_at) VALUES('srm',$1,$2,$3,'supplier.report.refresh','PRIVATE_SQL_PHASE','ACTIVE','SYNTHETIC_ONLY',$4)",[id,i+1,['REGISTER_LOOKUP','STORE_GENERAL','STORE_FINANCIAL'][i-1]??null,future()])
@@ -230,8 +236,9 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    await owner.query('ROLLBACK TO SAVEPOINT inventory_installation');await owner.query('RELEASE SAVEPOINT inventory_installation')
    assert.equal((await owner.query("SELECT to_regclass('srm.financial_inventory_installation') value")).rows[0].value,null)
    await owner.query(own('023-financial-inventory-work.sql'))
-   await owner.query("INSERT INTO srm.financial_inventory_installation SELECT true,$1,$2,$3,service_id FROM profitia_services.runtime_bindings WHERE login_role=$3",[hash(own('023-financial-inventory-work.sql')),'e'.repeat(40),EXECUTOR])
+   await owner.query("INSERT INTO srm.financial_inventory_installation SELECT true,$1,$2,$3,service_id FROM profitia_services.runtime_bindings WHERE login_role=$3",[hash(own('023-financial-inventory-work.sql')),'e'.repeat(40),inventoryRole])
    await owner.query(`GRANT EXECUTE ON FUNCTION srm.financial_inventory_descriptor() TO ${EXECUTOR}`)
+   if(options.privateAcquisition)await owner.query(`GRANT USAGE ON SCHEMA srm TO ${inventoryRole};GRANT EXECUTE ON FUNCTION srm.financial_inventory_descriptor() TO ${inventoryRole}`)
    for(const[unit,mode]of Object.entries(SUPPLIER_NATIVE_WORK_UNITS))await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_NATIVE_UNIT',$3)",[unit,mode,future()])
    await owner.query(`GRANT USAGE ON SCHEMA profitia_request_work TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_request_work.descriptor(uuid,text),profitia_request_work.bind_scope(uuid,text,text,uuid,uuid),profitia_request_work.scope_allows(uuid,text,uuid,uuid,text),srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${EXECUTOR};GRANT SELECT,INSERT,UPDATE ON srm.msr_sources,srm.msr_projections TO ${EXECUTOR};GRANT SELECT ON srm.catalog_companies,srm.catalog_financial_facts,srm.catalog_financial_indicators TO ${EXECUTOR}`)
    for(const role of[FOREGROUND,EXECUTOR,...(full?[CORPORATE]:[])])await owner.query(`GRANT EXECUTE ON FUNCTION srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${role}`)
@@ -313,7 +320,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   const counts=async()=>(await owner.query('SELECT (SELECT count(*)::int FROM srm.lookup_requests)lookups,(SELECT count(*)::int FROM profitia_request_phases.effects)phases,(SELECT count(*)::int FROM srm.source_snapshots)snapshots,(SELECT coalesce(sum(accepted_count),0)::int FROM profitia_requests.policies)quota')).rows[0]
   const sourceCounts=async()=>(await owner.query(`SELECT (SELECT count(*)::int FROM profitia_ingestion.effects)e,(SELECT coalesce(sum(consumed_count),0)::int FROM profitia_ingestion.budgets)b,(SELECT count(*)::int FROM profitia_srm_acquisition.outcome_witnesses)w`)).rows[0]
   if(probe){await probe({owner,controlled,parent,workOptions,job,humanOptions,pool,auditPool,servicePool,serviceAudit,clerk,
-    sourceOptions,source:sourceStore,baseBinding,A,B,U,NIP,OTHER_NIP,FOREGROUND,EXECUTOR,core,own,hash,counts,sourceCounts});return}
+    sourceOptions,source:sourceStore,baseBinding,A,B,U,NIP,OTHER_NIP,FOREGROUND,EXECUTOR,inventoryRole,core,own,hash,counts,sourceCounts});return}
   if(!full){
   let accepted,acceptedB,acceptedGeneral,acceptedFinancial
   await t.test('real foreground parent and four actual Service domain phases commit one private report and named interest',async()=>{

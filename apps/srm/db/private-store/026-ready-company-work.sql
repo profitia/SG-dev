@@ -26,6 +26,33 @@ DECLARE d jsonb;i srm.ready_company_work_installation%ROWTYPE;BEGIN
  RETURN jsonb_build_object('schemaDigest',i.schema_digest);
 END $fn$;
 REVOKE ALL ON FUNCTION srm.ready_company_work_descriptor() FROM PUBLIC;
+-- Keep the pilot's immutable installation and original descriptor intact.
+-- The new receiver is admitted only by its own role/service-bound receipt.
+DO $inventory$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='srm.financial_inventory_descriptor()'::regprocedure
+  AND proowner='profitia_access_owner'::regrole AND prosecdef AND md5(prosrc)='5ff578fe909a295d40562df7bf8d7597') THEN
+  RAISE EXCEPTION 'Exact accepted inventory descriptor required';END IF;
+END $inventory$;
+ALTER FUNCTION srm.financial_inventory_descriptor() RENAME TO financial_inventory_descriptor_before_ready_v1;
+CREATE FUNCTION srm.financial_inventory_descriptor() RETURNS jsonb LANGUAGE plpgsql
+ SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE original jsonb;i srm.financial_inventory_installation%ROWTYPE;BEGIN
+ original:=srm.financial_inventory_descriptor_before_ready_v1();
+ IF original IS NOT NULL THEN RETURN original;END IF;
+ IF srm.ready_company_work_descriptor() IS NULL THEN RETURN NULL;END IF;
+ SELECT * INTO i FROM srm.financial_inventory_installation WHERE singleton
+  AND schema_digest='c8d5ac31f2e55fb1d388af708178ca28771f66dda7b76938d6a9dc69801f6664';
+ IF NOT FOUND THEN RETURN NULL;END IF;
+ RETURN jsonb_build_object('schemaDigest',i.schema_digest);
+END $fn$;
+REVOKE ALL ON FUNCTION srm.financial_inventory_descriptor() FROM PUBLIC;
+DO $inventory_acl$ DECLARE a record;BEGIN
+ FOR a IN SELECT x.grantee FROM pg_proc p,LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) x
+  WHERE p.oid='srm.financial_inventory_descriptor_before_ready_v1()'::regprocedure
+   AND x.privilege_type='EXECUTE' AND x.grantee<>p.proowner LOOP
+  EXECUTE format('GRANT EXECUTE ON FUNCTION srm.financial_inventory_descriptor() TO %s',CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE quote_ident(pg_get_userbyid(a.grantee)) END);
+ END LOOP;
+END $inventory_acl$;
 DO $adopt$ DECLARE b text;f text;BEGIN
  SELECT prosrc,pg_get_functiondef(oid) INTO b,f FROM pg_proc WHERE oid='srm.current_supplier_work(uuid,uuid,text)'::regprocedure AND proowner='profitia_access_owner'::regrole AND prosecdef;
  IF b IS NULL OR md5(b) NOT IN('7101006e4ff0b8f91e86497197e03d5b','5e7e617951d940a47f6fce4309fb77b3') THEN RAISE EXCEPTION 'Exact accepted inventory Work predecessor required';END IF;
