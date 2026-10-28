@@ -84,8 +84,8 @@ test('manifest changes cannot hide private aliases, new pins or additional works
   assertManifestPolicy({dependencies: {...authority.dependencies, '@profitia/platform-contracts': 'file:../../packages/platform-contracts'}}, authority)
   for (const candidate of [{dependencies: {'@profitia/cic-core': '9.0.0'}}, {dependencies: {alias: 'npm:@profitia/cic-evals@1.0.0'}}, {dependencies: {'@profitia/cic-evals': '1.0.0'}}, {...authority, workspaces: ['../*']}, {...authority, overrides: {'@profitia/cic-core': '9'}}]) rejection(() => assertManifestPolicy(candidate, authority))
 })
-test('only the two reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
-  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/platform-contracts', '@profitia/srm-xray'])
+test('only the three reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
+  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/platform-contracts', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
   const authority = {dependencies: {'@profitia/cic-core': '1.1.1'}}
   for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) {
     for (const resolved of [relative, `file:${relative}`]) {
@@ -114,11 +114,11 @@ test('only the two reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-test('actual local source validation rejects mismatched names, absent authority, added private dependencies and symlinks', () => {
+for (const name of Object.keys(LOCAL_PACKAGES)) test(`actual local source ${name} rejects mismatched names, absent authority, private dependencies and symlinks`, () => {
   const temporary = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'controlled-local-source-')))
   const candidateRoot = path.join(temporary, 'candidate'), authorityRoot = path.join(temporary, 'authority')
-  const name = '@profitia/srm-xray', relative = LOCAL_PACKAGES[name]
-  const local = path.join(candidateRoot, 'packages/srm-xray'), authorityLocal = path.join(authorityRoot, 'packages/srm-xray')
+  const relative = LOCAL_PACKAGES[name]
+  const local = path.resolve(candidateRoot, 'apps/sg-runtime', relative), authorityLocal = path.resolve(authorityRoot, 'apps/sg-runtime', relative)
   const manifest = {name, version: '0.2.0', peerDependencies: {react: '^18.3.1 || ^19.2.4'}}
   const candidate = lock(); candidate.packages[`node_modules/${name}`] = {version: manifest.version, resolved: `file:${relative}`}
   try {
@@ -154,30 +154,34 @@ test('actual current SG2 dependency policy remains valid and admits only the rev
   assertManifestPolicy(manifest, manifest)
   assertLocalPackageSources(root, authority, root)
   const candidate = structuredClone(authority)
-  const supplier = JSON.parse(fs.readFileSync(path.join(root, 'packages/srm-xray/package.json'), 'utf8'))
-  candidate.packages['node_modules/@profitia/srm-xray'] = {version: supplier.version, resolved: 'file:../../packages/srm-xray', peerDependencies: supplier.peerDependencies}
-  candidate.packages[''].dependencies['@profitia/srm-xray'] = 'file:../../packages/srm-xray'
+  const dependencies = {...manifest.dependencies}
+  for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) {
+    const source = JSON.parse(fs.readFileSync(path.resolve(root, 'apps/sg-runtime', relative, 'package.json'), 'utf8'))
+    candidate.packages[`node_modules/${name}`] = {version: source.version, resolved: `file:${relative}`, peerDependencies: source.peerDependencies}
+    candidate.packages[''].dependencies[name] = `file:${relative}`
+    dependencies[name] = `file:${relative}`
+  }
   assertPackagePolicy(candidate, authority, configuration)
-  assertManifestPolicy({...manifest, dependencies: {...manifest.dependencies, '@profitia/srm-xray': 'file:../../packages/srm-xray'}}, manifest)
+  assertManifestPolicy({...manifest, dependencies}, manifest)
   assertLocalPackageSources(root, candidate, root)
   for (const name of PRIVATE_PACKAGES) assert.deepEqual(candidate.packages[`node_modules/${name}`], authority.packages[`node_modules/${name}`])
 })
-test('actual local npm install-links executes no prepare or install lifecycle with a credential', () => {
+for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) test(`actual local npm install-links for ${name} executes no lifecycle with a credential`, () => {
   const directory = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'controlled-local-lifecycle-')))
-  const app = path.join(directory, 'apps/sg-runtime'), local = path.join(directory, 'packages/srm-xray')
+  const app = path.join(directory, 'apps/sg-runtime'), local = path.resolve(app, relative)
   try {
     fs.mkdirSync(app, {recursive: true}); fs.mkdirSync(local, {recursive: true})
     const script = `require('node:fs').writeFileSync(process.env.FIXTURE_MARKER,JSON.stringify({credentialPresent:Boolean(process.env.NPM_TOKEN||process.env.NODE_AUTH_TOKEN||process.env.GH_TOKEN||process.env.GITHUB_TOKEN)}))`
-    fs.writeFileSync(path.join(local, 'package.json'), JSON.stringify({name: '@profitia/srm-xray', version: '0.2.0', scripts: {prepare: `node -e "${script}"`, postinstall: `node -e "${script}"`}}))
-    fs.writeFileSync(path.join(app, 'package.json'), JSON.stringify({name: 'local-consumer-fixture', version: '1.0.0', dependencies: {'@profitia/srm-xray': 'file:../../packages/srm-xray'}}))
-    fs.writeFileSync(path.join(app, 'package-lock.json'), JSON.stringify({lockfileVersion: 3, packages: {'': {name: 'local-consumer-fixture', version: '1.0.0', dependencies: {'@profitia/srm-xray': 'file:../../packages/srm-xray'}}, 'node_modules/@profitia/srm-xray': {version: '0.2.0', resolved: 'file:../../packages/srm-xray', hasInstallScript: true}}}))
+    fs.writeFileSync(path.join(local, 'package.json'), JSON.stringify({name, version: '0.2.0', scripts: {prepare: `node -e "${script}"`, postinstall: `node -e "${script}"`}}))
+    fs.writeFileSync(path.join(app, 'package.json'), JSON.stringify({name: 'local-consumer-fixture', version: '1.0.0', dependencies: {[name]: `file:${relative}`}}))
+    fs.writeFileSync(path.join(app, 'package-lock.json'), JSON.stringify({lockfileVersion: 3, packages: {'': {name: 'local-consumer-fixture', version: '1.0.0', dependencies: {[name]: `file:${relative}`}}, [`node_modules/${name}`]: {version: '0.2.0', resolved: `file:${relative}`, hasInstallScript: true}}}))
     fs.writeFileSync(path.join(directory, 'empty-npmrc'), '')
     const marker = path.join(directory, 'phase.json')
     const env = {...process.env, NPM_CONFIG_CACHE: path.join(directory, 'cache'), NPM_CONFIG_USERCONFIG: path.join(directory, 'empty-npmrc'), FIXTURE_MARKER: marker, NODE_AUTH_TOKEN: '', GH_TOKEN: '', GITHUB_TOKEN: '', NPM_TOKEN: 'synthetic-canary-no-real-authority'}
     const installed = spawnSync('npm', ['ci', '--install-links', '--ignore-scripts', '--offline', '--no-audit', '--no-fund'], {cwd: app, env, stdio: 'pipe'})
     assert.equal(installed.status, 0)
     assert.equal(fs.existsSync(marker), false, 'local prepare and postinstall must not execute while credential exists')
-    assert.equal(fs.realpathSync(path.join(app, 'node_modules/@profitia/srm-xray')), path.join(app, 'node_modules/@profitia/srm-xray'), 'install-links must copy, not link, the local source')
+    assert.equal(fs.realpathSync(path.join(app, 'node_modules', name)), path.join(app, 'node_modules', name), 'install-links must copy, not link, the local source')
     const lifecycle = spawnSync('npm', ['rebuild', '--foreground-scripts', '--offline', '--no-audit', '--no-fund'], {cwd: app, env: {...env, NPM_TOKEN: ''}, stdio: 'pipe'})
     assert.equal(lifecycle.status, 0)
     assert.deepEqual(JSON.parse(fs.readFileSync(marker, 'utf8')), {credentialPresent: false})
