@@ -52,6 +52,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
  });
  const url=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);url.pathname='/'+baseBinding.databaseName;url.username=sourceRole;url.password='isolated_ci_only'
  const pool=new pg.Pool({connectionString:url.toString(),max:2}),auditPool=new pg.Pool({connectionString:url.toString(),max:1})
+ pool.on('connect',client=>{const query=client.query.bind(client);client.query=(sql,args,...rest)=>query(sql,args,...rest).catch(error=>{console.error('ISOLATED_CORPORATE_SQL_FAILURE',JSON.stringify({code:error.code,message:error.message,query:typeof sql==='string'?sql.slice(0,150):'native-query'}));throw error})});
  try{
   const application={...sourceOptions.application,appId:'srm-corporate-source',deploymentId:'synthetic-company-publication',configurationVersion:'corporate-v1'}
   const source=createSrmCorporateSourceStore({application,binding:{...sourceOptions.binding,applicationId:application.appId,role:sourceRole,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool,auditPool,
@@ -167,6 +168,43 @@ test('ready report native Source and current HUMAN read preserve complete financ
    assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE event->>'operation'='job.execute'")).rows[0].n,before)
    console.info('READY_FRESH_LOCAL_UNITS',JSON.stringify(units))
   })
+  await t.test('a retained current catalogue upgrades through original Source without HTTP, downloads or new private snapshots',async()=>{
+   const warmNip='1130089950',warmKrs='0000000002',checkedAt=new Date().toISOString();
+   const warmGeneral=mapMgbiGeneralRecords([{id:'c'.repeat(24),identifiers:{pl_nip:warmNip,pl_krs:warmKrs},content:{current_excerpt:{naglowekA:{numerKRS:warmKrs,dataRejestracjiWKRS:'2001-01-01'},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic retained company',formaPrawna:'SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ'}}}}}}],{type:'NIP',value:warmNip},checkedAt).section;
+   const warmFinancial=mapMgbiFinancialRecords([{id:'d'.repeat(24),identifiers:{pl_nip:warmNip,pl_krs:warmKrs},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31',is_ias_compliant:false},content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ta_cfy:'100',a_ca_cfy:'60',lae_lapfl_stl_cfy:'20',lae_lapfl_cfy:'40'},pala:{nrfs_cfy:'200',npl_cfy:'10',plfoa_cfy:'15'}}}}],{type:'NIP',value:warmNip},checkedAt,1,warmGeneral.data.registryHistory);
+   const corporateOptions={application,binding:{...sourceOptions.binding,applicationId:application.appId,role:sourceRole,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool,auditPool,
+    publicationSchemaDigest:hash(own('004-corporate-source.sql')+own('005-corporate-source-access.sql')+read('../src/server/corporate-source-shape.json'))};
+   const legacySource=createSrmCorporateSourceStore(corporateOptions);
+   await legacySource.publish({version:CORPORATE_PUBLICATION_VERSION,nip:warmNip,general:warmGeneral,financial:warmFinancial.section,facts:warmFinancial.facts,preserveGeneral:false},hash('retained-before-upgrade:'+randomUUID()));
+   assert.equal((await owner.query('SELECT count(*)::int n FROM srm.ready_company_reports WHERE nip=$1',[warmNip])).rows[0].n,0);
+   const retainedCatalog=(await owner.query('SELECT * FROM srm.catalog_companies WHERE nip=$1',[warmNip])).rows;
+   const retainedFacts=(await owner.query('SELECT * FROM srm.catalog_financial_facts WHERE nip=$1 ORDER BY metric_code,period_start',[warmNip])).rows;
+   const snapshots=(await owner.query('SELECT count(*)::int n FROM srm.source_snapshots')).rows[0].n;
+   const calls=(await owner.query('SELECT count(*)::int n FROM profitia_external_call.calls')).rows[0].n;
+   const accepted=await f.parent(A,warmNip),selected={requestId:accepted.requestId,organisationId:A,command:accepted.command};
+   const external={configurationVersion:'company-provider-v1',schemaDigest:hash(f.core('009-external-call-admission.sql')),nativeSchemaDigest:hash(f.core('012-native-external-transport.sql')),maximumResponseBytes:1048576};
+   const syntheticOrigin=(await owner.query("SELECT origin FROM profitia_external_call.policies WHERE resource_id='srm-provider:mgbi' LIMIT 1")).rows[0].origin;
+   const native=createSrmNativeCompanyLookup({companySourcePolicy:'MGBI_ONLY',work:{...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),
+    financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql')),readyCompanyWorkBoundaryDigest:hash(own('026-ready-company-work.sql')),source:f.source,corporate:{...corporateOptions,readyReportSchemaDigest:digest},
+    mgbi:{apiKey:'synthetic-retained-key',authScheme:'raw',source:{...sourceOptions,external,syntheticOrigin},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}});
+   await native.run(selected);
+   assert.deepEqual((await owner.query('SELECT * FROM srm.catalog_companies WHERE nip=$1',[warmNip])).rows,retainedCatalog);
+   assert.deepEqual((await owner.query('SELECT * FROM srm.catalog_financial_facts WHERE nip=$1 ORDER BY metric_code,period_start',[warmNip])).rows,retainedFacts);
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_external_call.calls')).rows[0].n,calls);
+   assert.equal((await owner.query('SELECT count(*)::int n FROM srm.source_snapshots')).rows[0].n,snapshots);
+   const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[accepted.requestId])).rows.map(r=>r.unit);
+   assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_CACHE_READ','SRM_PREPARE_DOCUMENTS']);
+   const released=await ready.read(request(),A,warmNip);assert(released.response);const report=await released.response.json();
+   assert.equal(report.identity.nip,warmNip);assert(report.metadata.financial.history.some(series=>series.code==='CURRENT_RATIO'&&series.points.some(point=>point.value==='3.000000')));
+   const altered=structuredClone(warmGeneral);altered.data.legalName='Different unretained company';
+   const sourceEffects=(await owner.query('SELECT count(*)::int n FROM profitia_ingestion.effects')).rows[0].n;
+   const upgradeSource=createSrmCorporateSourceStore({...corporateOptions,readyReportSchemaDigest:digest});
+   await assert.rejects(upgradeSource.publish({version:CORPORATE_PUBLICATION_VERSION,nip:warmNip,general:altered,financial:warmFinancial.section,facts:[],preserveGeneral:true},
+    hash('refuse-retained-mutation:'+randomUUID()),{documents:[],retainCurrentCatalog:true}),isOperationDenied);
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_ingestion.effects')).rows[0].n,sourceEffects);
+   assert.deepEqual((await owner.query('SELECT * FROM srm.catalog_companies WHERE nip=$1',[warmNip])).rows,retainedCatalog);
+   console.info('READY_RETAINED_WARMUP_UNITS',JSON.stringify(units));
+  });
   await t.test('account revocation before disclosure rolls back local selection history and withholds every report field',async()=>{
    const before=await counts();banAtOutcome=true
    await assert.rejects(ready.read(request(),A,NIP),isOperationDenied)

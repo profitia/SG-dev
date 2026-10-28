@@ -173,7 +173,7 @@ export function createSrmNativeCompanyLookup(options:Options){
         // metadata: changed evidence cannot reuse an old publication.
         const baseKey=corporateRevisionKey(packet,options.corporate.publicationSchemaDigest)
         await corporate.publish(packet,options.corporate.readyReportSchemaDigest?hash(baseKey+':'+options.corporate.readyReportSchemaDigest+':'+JSON.stringify(reportDocuments)):baseKey,
-          options.corporate.readyReportSchemaDigest?{documents:reportDocuments,onPrepared:body=>{preparedReport=body}}:undefined)
+          options.corporate.readyReportSchemaDigest?{documents:reportDocuments,retainCurrentCatalog:value.preserveGeneral===true&&value.generalSnapshotId===null&&value.financialSnapshotId===null&&value.facts.length===0,onPrepared:body=>{preparedReport=body}}:undefined)
       },
       refreshFinancialIndicators:async(org,nip,data)=>{scope(org,nip)
         if(preparedReport)return preparedReport.report.financial.history.flatMap(series=>series.points.map(point=>({

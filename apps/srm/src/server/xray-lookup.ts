@@ -1,3 +1,4 @@
+import {isKnownMgbiCompany} from "./company-source-policy";
 import type { DatabasePool } from "./db";
 import { projectPublicFinancialData } from "./corporate-knowledge";
 import { FINANCIAL_QUALITY_RULE } from "@profitia/srm-xray";
@@ -180,6 +181,18 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
   const lookup = await atLookupStage("lookup_registration", () => ports.createLookup(organizationId, request.identifier));
   const cached = await atLookupStage("cache_read", () => ports.readFreshCompany(organizationId, request.identifier.value));
   if (cached) {
+    const finance=cached.financial.data;
+    // One-time projection of a valid retained catalogue entry. Provider
+    // enrichment belongs to FRESH; the final current HUMAN read releases it.
+    if(ports.prepareReadyReport&&!cached.generalReprojected&&isKnownMgbiCompany(cached,request.identifier.value)
+      &&(cached.financial.status==='EMPTY'&&finance===null||finance&&finance.revisionRule==='FINANCIAL_REVISIONS_V1'
+        &&finance.registryHistoryVersion===COMPANY_IDENTITY_VERSION&&finance.qualityRule===FINANCIAL_QUALITY_RULE)){
+      await ports.readFinancialDocuments(organizationId,request.identifier.value);
+      await ports.prepareReadyReport(organizationId,request.identifier.value,{general:cached.general,financial:cached.financial,
+        generalSnapshotId:null,financialSnapshotId:null,facts:[],preserveGeneral:true});
+      return {identity:{nip:request.identifier.value,krs:cached.general.data!.krs,name:cached.general.data!.legalName},
+        general:cached.general,financial:cached.financial,kys:emptyCard.kys};
+    }
     const registration = cached.general.data?.registryHistory ? {status:cached.general.data.registrationStatus,deregisteredAt:cached.general.data.deregisteredAt}
       : await ports.readCompanyRegistration(organizationId, request.identifier.value);
     const companyData = await ports.enrichCompanyPkd(organizationId, request.identifier.value, cached.general);
