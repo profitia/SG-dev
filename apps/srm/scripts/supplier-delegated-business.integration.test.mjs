@@ -5,6 +5,8 @@ import test from 'node:test'
 import pg from 'pg'
 import http from 'node:http'
 import {createSrmNativeCompanyLookup} from '../src/server/supplier-native-company.ts'
+import {createSrmCompanyCardRead} from '../src/server/supplier-company-read.ts'
+import {FINANCIAL_INDICATOR_INPUT_CODES} from '../src/server/financial-indicators.ts'
 import {srmProviderSourcePolicy,SRM_MSR_STORAGE_ORIGIN} from '../src/server/provider-source-transport.ts'
 import {CORPORATE_SOURCE,CORPORATE_PUBLICATION_VERSION} from '../src/server/corporate-source-store.ts'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
@@ -163,7 +165,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
      if(url.pathname.endsWith('/limits')){limitsHits++;res.setHeader('content-type','application/json');res.end(JSON.stringify({max:{files:10},used:{files:0}}));return}
      if(url.pathname.endsWith('/files/main_document_uri')){fileHits++;if(failFile){res.destroy();return}res.setHeader('content-type','application/xhtml+xml');res.end(licensedXml);return}
 
-     const wp={id:'a'.repeat(24),identifiers:{pl_nip:nip,pl_krs:'0000217580'},content:{current_excerpt:{naglowekA:{},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic Native Company',formaPrawna:'SA'}}}}}}
+     const wp={id:'a'.repeat(24),identifiers:{pl_nip:nip,pl_krs:'0000217580'},content:{current_excerpt:{naglowekA:{},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic Native Company',formaPrawna:'SA'}},dzial3:{przedmiotDzialalnosci:{przedmiotPrzewazajacejDzialalnosci:[{kod:'46.38.Z',opis:'SYNTHETIC_ACTIVITY'}]}}}}}}
      const rdf={id:'b'.repeat(24),identifiers:{pl_nip:nip,pl_krs:'0000217580'},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31'},files:[],content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ca_cfy:'300',lae_lapfl_stl_cfy:'200'}}}}
      if(fileMode){rdf.id='c'.repeat(24);rdf.document.is_ias_compliant=true;rdf.content={};rdf.files={main_document:{original:{content_type:'application/xhtml+xml'}}}}
      res.setHeader('content-type','application/json');res.end(JSON.stringify({count:1,results:[url.pathname.includes('wp-record')?wp:rdf]}))
@@ -256,6 +258,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   pool=new pg.Pool({connectionString:humanUrl.toString(),max:2});auditPool=new pg.Pool({connectionString:humanUrl.toString(),max:1});servicePool=new pg.Pool({connectionString:serviceUrl.toString(),max:2});serviceAudit=new pg.Pool({connectionString:serviceUrl.toString(),max:1});rawService=new pg.Client({connectionString:serviceUrl.toString()});await rawService.connect()
   assert.deepEqual((await rawService.query('SELECT current_user::text role,session_user::text login')).rows[0],{role:EXECUTOR,login:EXECUTOR})
   let accountActive=true,failOutcome=false,omitOutcome=false,omitIntent=false,failInspectionCommit=false,omitSourceOutcome=false,sourceCommitted=false,failDeliveryCommit=false
+  let afterIndicatorRead,clerkAccountReads=0;const workIntents=[];const indicatorSelections=[]
   sourcePool.on('connect',client=>{const original=client.query.bind(client);client.query=async(sql,args,...rest)=>{
    if(omitSourceOutcome&&typeof sql==='string'&&sql.includes('profitia_ingestion.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME')return {rows:[{recorded:true}]}
    const result=await original(sql,args,...rest);if(sql==='COMMIT')sourceCommitted=true;return result
@@ -269,9 +272,14 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    if(typeof sql==='string'&&sql.includes('profitia_jobs.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME'){
     if(failOutcome)throw Error('Synthetic actual business audit failure')
     if(omitOutcome)return Promise.resolve({rows:[{recorded:true}]})
-   }return original(sql,args,...rest).catch(error=>traceFailure(error,sql))
+   }
+   if(typeof sql==='string'&&sql.includes('profitia_jobs.append_audit')){const e=JSON.parse(args[0]);if(e.phase==='INTENT'&&e.requestWork)workIntents.push({requestId:e.resourceId,unit:e.requestWork.unitId})}
+   return original(sql,args,...rest).catch(error=>traceFailure(error,sql)).then(async result=>{
+    if(typeof sql==='string'&&sql.includes('FROM srm.catalog_financial_facts')&&Array.isArray(args?.[1])){indicatorSelections.push([...args[1]]);if(args[1].length===FINANCIAL_INDICATOR_INPUT_CODES.length)await afterIndicatorRead?.()}
+    return result
+   })
   }})
-  const clerk={authenticateRequest:async()=>({status:'signed-in',isAuthenticated:true,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'external-'+U,sessionId:'session-'+U,actor:null,sessionClaims:{iss:ISSUER,sub:'external-'+U,sid:'session-'+U,azp:ORIGIN,exp:Math.floor(Date.now()/1000)+3600}})}),sessions:{getSession:async id=>({id,userId:'external-'+U,status:'active',actor:null,expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000})},users:{getUser:async id=>({id,banned:!accountActive,locked:false,deprovisioned:false})}}
+  const clerk={authenticateRequest:async()=>({status:'signed-in',isAuthenticated:true,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'external-'+U,sessionId:'session-'+U,actor:null,sessionClaims:{iss:ISSUER,sub:'external-'+U,sid:'session-'+U,azp:ORIGIN,exp:Math.floor(Date.now()/1000)+3600}})}),sessions:{getSession:async id=>({id,userId:'external-'+U,status:'active',actor:null,expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000})},users:{getUser:async id=>{clerkAccountReads++;return{id,banned:!accountActive,locked:false,deprovisioned:false}}}}
   const baseBinding={applicationId:'srm',environment:'development',projectId:'isolated-srm-service-project',branchId:'isolated-srm-service-branch',databaseName:DATABASE,role:FOREGROUND,schemaDigest:hash(core('001-internal-access.sql'))}
   const humanOptions={pool,auditPool,clerk,binding:baseBinding,module:{id:'supplier_report',schemaDigest:hash(core('002-module-scope.sql')),auditSchemaDigest:hash(core('003-module-audit.sql'))},identity:{appId:'srm',environment:'development',issuer:ISSUER,authorizedParties:[ORIGIN]},application:{appId:'srm',profileId:'SUPPLIER_INTELLIGENCE_STANDALONE',environment:'development',deploymentId:'synthetic-srm-request',configurationVersion:'request-v1',identityIssuer:ISSUER,organisationId:null,features:['supplier_report'],operations:['supplier.report.refresh']},requestLedger:{schemaDigest:hash(core('006-request-reservation.sql')),externalSchemaDigest:hash(core('010-external-request-admission.sql'))},commandBoundaryDigest:hash(own('001-supplier-requests.sql'))}
   const job={schemaDigest:hash(core('007-delegated-jobs.sql')),targetOperation:'supplier.report.refresh',supplierSchemaDigest:hash(core('013-supplier-delegation.sql'))}
@@ -884,6 +892,49 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
     assert.notEqual(fresh.requestId,cold.requestId);assert.deepEqual(await history(fresh),[{section:'financial',n:1},{section:'general',n:1}])
     assert.equal(networkHits,hits);assert.deepEqual((await owner.query('SELECT (SELECT count(*)::int FROM profitia_external_call.calls)calls,(SELECT count(*)::int FROM profitia_srm_catalog.publications)publications')).rows[0],before)
    })
+   if(mgbiOnly){
+    await t.test('main cached company consolidates indicator Work and skips PKD no-op while retaining ordinary-role history and exact finance',async()=>{
+     const selected=selection(await parent(A,FULL_NIP)),before=networkHits,workBefore=workIntents.length,factsBefore=indicatorSelections.length,readsBefore=clerkAccountReads
+     const result=await company.run(selected)
+     const units=workIntents.slice(workBefore).map(e=>e.unit)
+     assert.equal(units.filter(u=>u==='SRM_CACHE_READ').length,2,'one cache selection and one complete indicator read')
+     assert.equal(units.filter(u=>u==='SRM_GENERAL_METADATA_READ').length,0,'complete cached PKD needs no SQL unit')
+     assert.equal(units.length,8)
+     assert.deepEqual(indicatorSelections.slice(factsBefore),[FINANCIAL_INDICATOR_INPUT_CODES])
+     assert(clerkAccountReads-readsBefore>=2*units.length,'each remaining current Work keeps pre-effect and pre-outcome account reads')
+     assert.equal(result.general.data.mainPkdDescription,'SYNTHETIC_ACTIVITY')
+     assert.equal(result.financial.data.indicators.find(i=>i.code==='CURRENT_RATIO').value,'1.500000')
+     assert.deepEqual(await history(selected),[{section:'financial',n:1},{section:'general',n:1}]);assert.equal(networkHits,before)
+    })
+    await t.test('Clerk revocation during the actual consolidated fact read refuses the captured company result without provider I/O',async()=>{
+     const selected=selection(await parent(A,FULL_NIP)),before=networkHits;let observed=false
+     afterIndicatorRead=()=>{observed=true;accountActive=false}
+     try{await assert.rejects(company.run(selected),e=>isOperationDenied(e)||isOperationDenied(e.cause))}
+     finally{afterIndicatorRead=undefined;accountActive=true}
+     assert(observed);assert.equal(networkHits,before)
+     assert.equal((await owner.query('SELECT count(*)::int n FROM srm.catalog_financial_facts WHERE nip=$1',[FULL_NIP])).rows[0].n>0,true)
+    })
+    await t.test('missing Work OUTCOME after the consolidated fact read never releases its captured result',async()=>{
+     const selected=selection(await parent(A,FULL_NIP)),before=networkHits;let observed=false
+     afterIndicatorRead=()=>{observed=true;failOutcome=true}
+     try{await assert.rejects(company.run(selected),e=>isOperationDenied(e)||isOperationDenied(e.cause))}
+     finally{afterIndicatorRead=undefined;failOutcome=false}
+     assert(observed);assert.equal(networkHits,before)
+    })
+    await t.test('the current HUMAN report-read gate refuses a prepared optimized report after its grant is revoked',async()=>{
+     const selected=selection(await parent(A,FULL_NIP)),report=await company.run(selected),before=networkHits
+     const grant=randomUUID();await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature)VALUES($1,'srm',$2,$3,'ALLOW','supplier.report.read','supplier_report')",[grant,A,U]))
+     const {requestLedger:_ledger,commandBoundaryDigest:_boundary,...human}=humanOptions
+     const read=createSrmCompanyCardRead({...human,application:{...human.application,operations:['supplier.report.read']}},report)
+     const request=()=>new Request(ORIGIN+'/api/xray/company',{method:'POST',headers:{origin:ORIGIN}})
+     try{
+      const response=await read.read(request(),A);assert.equal(response.status,200);assert.equal((await response.json()).identity.nip,FULL_NIP)
+      await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY' WHERE grant_id=$1",[grant]))
+      await assert.rejects(read.read(request(),A),isOperationDenied)
+     }finally{await controlled(()=>owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[grant]))}
+     assert.equal(networkHits,before)
+    })
+   }
    await t.test('foreign organisation or command and a revoked original account cannot reuse the accepted parent',async()=>{
     const denied=error=>isOperationDenied(error)||isOperationDenied(error.cause)
     const before=await counts(),effects=await sourceCounts(),hits=networkHits

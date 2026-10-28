@@ -68,6 +68,8 @@ export function createSrmNativeCompanyLookup(options:Options){
     let operationKey:string|undefined,lookup:Readonly<{supplierId:string;requestId:string}>|undefined
     let mgbi:ReturnType<typeof createSrmProviderSourceTransport>|undefined
     let inventory:Awaited<ReturnType<typeof store.financialInventory>>|undefined
+    // Request-local data selection only; never an account/permission cache.
+    let cachedCompanySelected=false
     const scope=(org:string,nip:string)=>{if(org!==selection.organisationId||nip!==selection.command.nip||!lookup||!operationKey)return refuse()}
     const sourceOptions=()=>({application:fixed.application,binding:fixed.binding,pool,auditPool,now,
       external:fixed.external,syntheticOrigin:fixed.syntheticOrigin,headers,nip:selection.command.nip,
@@ -84,9 +86,19 @@ export function createSrmNativeCompanyLookup(options:Options){
         operationKey=operationPayloadDigest({version:'srm-native-company-v1',sourceEffectId:admitted.sourceRequest.effectId,nip:selection.command.nip})
         return lookup
       },
-      readFreshCompany:async(org,nip,at)=>{scope(org,nip);const cached=await store.cache(selection,at??clock());return mgbiOnly?mgbiCompanyCache(cached):cached},
+      readFreshCompany:async(org,nip,at)=>{
+        scope(org,nip);const cached=await store.cache(selection,at??clock()),selected=mgbiOnly?mgbiCompanyCache(cached):cached
+        cachedCompanySelected=mgbiOnly&&selected!==null
+        return selected
+      },
       readCompanyRegistration:async(org,nip)=>{scope(org,nip);return store.registration(selection)},
-      enrichCompanyPkd:async(org,nip,section)=>{scope(org,nip);return store.pkd(selection,section)},
+      enrichCompanyPkd:async(org,nip,section)=>{
+        scope(org,nip)
+        // The existing domain helper returns this already-authorized value
+        // unchanged, without SQL, when its description is present.
+        if(cachedCompanySelected&&section.data?.nip===nip&&section.data.mainPkdDescription)return section.data
+        return store.pkd(selection,section)
+      },
       reprojectFinancialArchive:async(org,nip,history,callerPool,includeOriginalResponse)=>{scope(org,nip);if(callerPool!==undefined)return refuse();return store.reproject(selection,history,includeOriginalResponse)},
       fetchMgbiGeneral:async identifier=>{
         scope(selection.organisationId,identifier.value);if(identifier.type!=='NIP')return refuse()
@@ -158,7 +170,7 @@ export function createSrmNativeCompanyLookup(options:Options){
         // metadata: changed evidence cannot reuse an old publication.
         await corporate.publish(packet,corporateRevisionKey(packet,options.corporate.publicationSchemaDigest))
       },
-      refreshFinancialIndicators:async(org,nip,data)=>{scope(org,nip);return store.indicators(selection,data)},
+      refreshFinancialIndicators:async(org,nip,data)=>{scope(org,nip);return store.indicators(selection,data,cachedCompanySelected)},
       recordInterest:async(org,nip)=>{scope(org,nip);await store.interest(selection)},
       recoverProviderException:error=>{
         if(isOperationDenied(error)||error instanceof ExternalCallUnavailable)throw error
