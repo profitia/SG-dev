@@ -28,7 +28,7 @@ export function AppShellDashboard(props: {
       <section hidden={!benchmarkActive} aria-label="Benchmark Finder" data-appshell-module="benchmark-finder">
         {benchmarkOpened&&<Sg2ModuleSession locale={props.locale}><div className="as-benchmark-module">
           <button type="button" className="as-secondary-button" onClick={()=>router.push(dashboardPath(props.locale))}>{props.locale==='en'?'Back to AppShell':'Wróć do AppShella'}</button>
-          <BenchmarkFinderClient locale={props.locale} active={benchmarkActive} assistantOwner="host"/>
+          <BenchmarkFinderClient locale={props.locale} active={benchmarkActive} assistantOwner="host" headerOwner="host" hostTheme={theme}/>
         </div></Sg2ModuleSession>}
       </section>
       <section hidden={!active} data-appshell-module="adp">{opened || active ? <AdpModuleHost locale={props.locale} theme={theme} active={active}
