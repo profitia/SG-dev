@@ -1,0 +1,32 @@
+/* Shared completion UI; viewport constraints apply only to the layer presentation. */
+.v3-app .v3-flow-content{min-width:0}
+.v3-app .v3-flow-actions{position:sticky;bottom:64px;z-index:12;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;margin-top:24px;border-top:1px solid var(--line);background:var(--page);box-shadow:0 -10px 18px var(--page)}
+.v3-app .v3-flow-actions .v3-actions{margin:0;justify-content:flex-end}
+.v3-app .v3-flow-actions>.v3-actions:only-child{width:100%;justify-content:space-between}
+.v3-app .v3-flow-actions>p{margin:0;max-width:560px;font-size:12px;color:var(--muted)}
+.v3-app .v3-mode-purpose{margin:24px 0}.v3-app .v3-mode-purpose h2{margin-bottom:8px}.v3-app .v3-mode-purpose p{margin:0;color:var(--muted);max-width:900px}
+.v3-app .v3-monitor-confirmation{background:var(--success-soft);border:1px solid var(--success);border-radius:9px;padding:20px 24px;margin:0 0 24px;color:var(--success-text);scroll-margin-top:16px}
+.v3-app .v3-monitor-confirmation h3{margin:0 0 8px;color:inherit}.v3-app .v3-monitor-confirmation p{margin:4px 0}
+.v3-app .v3-comparison-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.v3-app .v3-comparison-summary p{margin:0;padding:12px;border:1px solid var(--line);border-radius:7px;background:var(--page)}
+.v3-app .v3-comparison-summary p:last-child{grid-column:1/-1;background:var(--blue-soft)}
+.v3-app .v3-comparison-summary span{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+.v3-app .v3-comparison-summary strong{display:block;font-size:20px;line-height:1.4;overflow-wrap:anywhere}
+.v3-app .v3-supplier-options>summary{cursor:pointer;font-size:16px;font-weight:600;color:var(--brand-dark)}
+.v3-app .v3-supplier-options>summary span{font-size:11px;font-weight:400;color:var(--muted);margin-left:8px;white-space:nowrap}
+.v3-app .v3-supplier-options>summary:focus-visible{outline:2px solid var(--brand-light);outline-offset:4px}.v3-app .v3-supplier-options>div{padding-top:12px}
+.v3-app.v3-layer-layout{box-sizing:border-box;height:100dvh;min-height:0;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding-bottom:64px}
+.v3-app.v3-layer-layout>.v3-header{flex:0 0 auto;width:100%}
+.v3-app.v3-layer-layout>.v3-flow-content{flex:1 1 0;min-height:0;width:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+.v3-app.v3-layer-layout>.v3-flow-actions{flex:0 0 auto;position:relative;bottom:auto;width:100%;margin:0;padding:12px 0}
+@media(max-width:650px){.v3-app .v3-flow-actions{flex-direction:column;align-items:stretch;gap:8px}.v3-app .v3-flow-actions .v3-actions{width:100%}.v3-app .v3-flow-actions>p{font-size:11px;line-height:1.4}.v3-app .v3-flow-actions .v3-primary{flex:1}.v3-app .v3-comparison-summary{grid-template-columns:1fr}.v3-app.v3-layer-layout{padding-top:16px}}
+@media(prefers-reduced-motion:reduce){.v3-app .v3-flow-content{scroll-behavior:auto}}
+/* Result navigation follows the same left-back / right-actions convention as setup. */
+.v3-app[data-flow-screen="result"]>.v3-flow-actions{flex-direction:column;align-items:stretch;gap:8px}
+.v3-app .v3-flow-actions .v3-result-navigation{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px;width:100%;margin:0}
+.v3-app .v3-result-back{justify-self:start;align-self:center}
+.v3-app .v3-result-primary-actions{display:flex;justify-content:flex-end;min-width:0;gap:12px}
+.v3-app .v3-offer-primary-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;max-width:780px}
+.v3-app .v3-offer-primary-actions .v3-primary{min-height:32px;height:auto;white-space:normal;line-height:1.5;padding:6px 12px}
+.v3-app .v3-result-primary-actions>.v3-primary{flex:0 1 auto;white-space:normal;text-align:center}
+@media(max-width:650px){.v3-app .v3-flow-actions .v3-result-navigation{gap:12px}.v3-app .v3-offer-primary-actions{gap:8px}.v3-app .v3-offer-primary-actions .v3-primary{font-size:11px;padding:5px 8px}}

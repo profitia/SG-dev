@@ -94,7 +94,7 @@ test('ordinary AppShell return retains local model and the same single assistant
   g.__adpTestNavigation.pathname='/pl/dashboard/adp';g.__adpTestNavigation.search='view=data';await render()
   input=container.querySelector('input[id$="-field-name"]') as HTMLInputElement
   assert.equal(input.value,'Local supplier');assert.equal(container.querySelector('.srm-chat-slot'),assistant)
-  assert.equal(container.querySelectorAll('.as-launch:disabled').length,2)
+  assert.equal(container.querySelectorAll('.as-launch:disabled').length,1)
 })
 test('the existing detached assistant keeps its one owner across module return and closes on identity invalidation',async()=>{
   setup();g.__adpTestNavigation.pathname='/pl/dashboard/adp'

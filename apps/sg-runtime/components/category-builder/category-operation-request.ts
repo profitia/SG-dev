@@ -1,6 +1,7 @@
 type Options = Readonly<{
   mode: () => 'legacy_demo' | 'clerk' | 'unavailable'
   getToken: () => Promise<string | null>
+  organisationId?: () => string
   origin: () => string
   fetch: typeof fetch
 }>
@@ -44,7 +45,10 @@ export function createCategoryOperationRequester(options: Options) {
       if (closed || controller.signal.aborted) throw aborted()
       if (!token || token.length > 8192 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) throw unavailable()
       headers.set('Authorization', `Bearer ${token}`)
-      const response = await options.fetch(path, { method, body, headers, signal: controller.signal,
+      const selectedOrganisation = options.organisationId?.()
+      if (selectedOrganisation !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(selectedOrganisation)) throw unavailable()
+      const target = selectedOrganisation === undefined ? path : path + '?organisationId=' + encodeURIComponent(selectedOrganisation)
+      const response = await options.fetch(target, { method, body, headers, signal: controller.signal,
         credentials: 'omit', cache: 'no-store', redirect: 'manual', referrerPolicy: 'no-referrer' })
       if (closed || controller.signal.aborted) { await response.body?.cancel(); throw aborted() }
       return response
