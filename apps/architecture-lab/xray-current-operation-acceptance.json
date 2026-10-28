@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "1.0",
+  "producerProject": "ARCHITECTURE",
+  "taskId": "ARCH-XRAY-CURRENT-REPORT-EXECUTION-V2-20261028",
+  "consumerTaskId": "SRM-XRAY-PERFORMANCE-RECOVERY-V2-IMPLEMENT-20261028",
+  "targetEnvironment": "development",
+  "status": "PRODUCER_AND_SRM_CONSUMER_SOURCE_ACCEPTED",
+  "contract": {
+    "id": "profitia.current-human-read",
+    "version": "1.0.0"
+  },
+  "sourceDigest": "4045a9f9ec2cafc75f1d41846fdd197f0e52a874d2b4b7adc87d92b33d2537f3",
+  "baseAuthoritySha": "e669c22716ad169bdfb6c5c2ab383e25f1aaf902",
+  "sourceDigests": {
+    "src/current-human-read.mjs": "ed4e71142ace7c4fc679f76ab2a73e3c3f6cac8aa2858899988a59e48d8fd710",
+    "src/current-human-read.d.mts": "fe08930ffa39f7e79ca77910481fc0f353956805b9e9453468e2970f0c5182fb",
+    "test/current-human-read.test.mjs": "40761729f0a90f58cd0fd481804ec82982a04ce9af04f75b21c136f07274f11c",
+    "package.json": "2d9ddbc29ac64fbebcf6c59e0b140d9b983d61e0ae5d4ed526ffd1ab58a27cce",
+    "package-lock.json": "7315d1bfe9033991f7403deb4a412165c64c8ce6ec82a59477f45d7c3134398e"
+  },
+  "verification": {
+    "producerRegression": {
+      "tests": 1527,
+      "passed": 1527,
+      "failed": 0,
+      "skipped": 0,
+      "postgresVersion": 18
+    },
+    "currentReadDatabaseTests": 35,
+    "clerkObservedModel": {
+      "sdkPerExecution": 1,
+      "sessionsPerExecution": 2,
+      "accountsPerExecution": 2
+    },
+    "realClerkLatencyMeasured": false,
+    "build": "PASS",
+    "productDeploymentPerformed": false
+  },
+  "guarantees": [
+    "Official Clerk identity adapter remains the verifier",
+    "Fresh session, account and internal binding observations before disclosure",
+    "One exact request, actor and resource version; proof closed after execution",
+    "Canonical access, module, RLS, correlated INTENT/OUTCOME and COMMIT unchanged",
+    "No delegated report admission, Source acquisition or private data operation accepted"
+  ],
+  "deploymentOrOtherConsumerActivation": false,
+  "consumerAcceptance": {
+    "projectKey": "SRM",
+    "pullRequest": 774,
+    "sourceSha": "5d9e7e9d8aecbbf9837e859baf291501b8bb4fc1",
+    "scope": "ADDITIVE_MAIN_DEVELOPMENT_READY_REPORT_ONLY",
+    "receipt": "apps/srm/operation-integration.json#xrayPerformanceRecoveryV2",
+    "sourceDigest": "4045a9f9ec2cafc75f1d41846fdd197f0e52a874d2b4b7adc87d92b33d2537f3",
+    "realPostgres16ReadyAndFreshTests": 15,
+    "nativeRegressionTests": 584,
+    "mgbiRegressionTests": 28,
+    "readyObserved": {
+      "sdk": 1,
+      "sessions": 2,
+      "accounts": 2,
+      "work": 0,
+      "e1Sql": 19
+    },
+    "freshObservedWork": 5,
+    "revocationAndSourceRaceRollback": "PASS",
+    "noSharedPrivateDocuments": "PASS",
+    "noAuthorizationCache": "PASS",
+    "runtimeOrPerformanceClaim": false
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "environment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "version": "srm-prepared-company-report-v1",
+  "schemaDigest": "6a3161eb58e938ff3e91dd18cc413b2c52e29da347cd2b7372bca6f1adc02534",
+  "enabledByDefault": false,
+  "activationVariable": "PROFITIA_READY_REPORT_ENABLED",
+  "migrations": [
+    "024-ready-report-history.sql",
+    "025-ready-report-history.sql",
+    "026-ready-company-work.sql"
+  ],
+  "producerPullRequest": 772,
+  "sourceAuthority": "profitia/SG-dev/main",
+  "runtimeTestClaim": "LOCAL_ONLY_NOT_DEPLOYED",
+  "workSchemaDigest": "ec1fd6b4bf46cce33ecd353b4ad3bdb8cf5204d48f8aae848cd9eaf42f3cc02d"
+}

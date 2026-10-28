@@ -1,3 +1,5 @@
+import type {FinancialSourceDocument} from './financial-documents'
+import type {PreparedCompanyReport} from './ready-report'
 import { createHash } from 'node:crypto'
 import {mgbiCompanyCache,isEmptyMgbiCompany,type CompanySourcePolicy} from './company-source-policy'
 import { ExternalCallUnavailable } from '@profitia/platform-contracts/external-call'
@@ -25,7 +27,7 @@ type ProviderOptions=Omit<Parameters<typeof createSrmProviderSourceTransport>[0]
 type Options={work:SupplierNativeWorkOptions;namedInterestBoundaryDigest:string;
   companySourcePolicy?:CompanySourcePolicy;
   registryEnvelopeBoundaryDigest?:string;
-  financialInventoryBoundaryDigest?:string;
+  financialInventoryBoundaryDigest?:string;readyCompanyWorkBoundaryDigest?:string;
   source:ReturnType<typeof createSrmSupplierSourceRequest>;
   corporate:Parameters<typeof createSrmCorporateSourceStore>[0];
   mgbi:{apiKey:string;authScheme:'raw'|'bearer';source:ProviderOptions;
@@ -37,7 +39,7 @@ const hash=(value:string)=>createHash('sha256').update(value).digest('hex')
  * publication use their existing independent native hosts. No HTTP activation,
  * caller-selected identity, alternate writer or network inside SQL is added. */
 export function createSrmNativeCompanyLookup(options:Options){
-  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>!['companySourcePolicy','registryEnvelopeBoundaryDigest','financialInventoryBoundaryDigest'].includes(k)).sort().join(',')!=='corporate,mgbi,namedInterestBoundaryDigest,source,work'
+  if(typeof window!=='undefined'||!options||Object.keys(options).filter(k=>!['companySourcePolicy','registryEnvelopeBoundaryDigest','financialInventoryBoundaryDigest','readyCompanyWorkBoundaryDigest'].includes(k)).sort().join(',')!=='corporate,mgbi,namedInterestBoundaryDigest,source,work'
     ||options.companySourcePolicy!==undefined&&options.companySourcePolicy!=='MGBI_ONLY'
     ||typeof options.mgbi?.apiKey!=='string'||!options.mgbi.apiKey.trim()
     ||!['raw','bearer'].includes(options.mgbi.authScheme)
@@ -48,7 +50,7 @@ export function createSrmNativeCompanyLookup(options:Options){
   const sourceFields=['applicationId','environment','projectId','branchId','databaseName','schemaDigest'] as const
   if(!admittedSource||sourceFields.some(key=>options.mgbi.source.binding[key]!==admittedSource[key]))return refuse()
   const work=createSrmSupplierNativeWork(options.work)
-  const store=createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,
+  const store=createSrmSupplierNativeWorkStore({work,...(options.readyCompanyWorkBoundaryDigest?{readyCompanyWorkBoundaryDigest:options.readyCompanyWorkBoundaryDigest}:{}),namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,
     ...(options.financialInventoryBoundaryDigest?{financialInventoryBoundaryDigest:options.financialInventoryBoundaryDigest}:{}),
     ...(options.registryEnvelopeBoundaryDigest?{registryEnvelopeBoundaryDigest:options.registryEnvelopeBoundaryDigest}:{})})
   const link=createSrmSupplierSourceLink({work:options.work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,source:options.source})
@@ -70,6 +72,7 @@ export function createSrmNativeCompanyLookup(options:Options){
     let inventory:Awaited<ReturnType<typeof store.financialInventory>>|undefined
     // Request-local data selection only; never an account/permission cache.
     let cachedCompanySelected=false
+    let reportDocuments:readonly FinancialSourceDocument[]=[],preparedReport:PreparedCompanyReport|undefined
     const scope=(org:string,nip:string)=>{if(org!==selection.organisationId||nip!==selection.command.nip||!lookup||!operationKey)return refuse()}
     const sourceOptions=()=>({application:fixed.application,binding:fixed.binding,pool,auditPool,now,
       external:fixed.external,syntheticOrigin:fixed.syntheticOrigin,headers,nip:selection.command.nip,
@@ -119,7 +122,7 @@ export function createSrmNativeCompanyLookup(options:Options){
         scope(org,nip);if(inventory)return refuse()
         inventory=await store.financialInventory(selection,pages,count,at,allowedKrs)
       }}:{}),
-      readFinancialDocuments:async(org,nip)=>{scope(org,nip);return inventory?inventory.documents:store.restoreDocuments(selection)},
+      readFinancialDocuments:async(org,nip)=>{scope(org,nip);reportDocuments=inventory?inventory.documents:await store.restoreDocuments(selection);return [...reportDocuments]},
       enrichMsrFinancial:async(org,nip,base,metadata)=>{
         scope(org,nip);if(metadata?.requestId!==selection.requestId||metadata.store||metadata.download||metadata.parse)return refuse()
         const current=store.msr(selection,metadata.allowedKrs)
@@ -168,14 +171,27 @@ export function createSrmNativeCompanyLookup(options:Options){
         // Source still checks current service authority and audits every replay.
         // The complete packet includes issuer/source, periods and observation
         // metadata: changed evidence cannot reuse an old publication.
-        await corporate.publish(packet,corporateRevisionKey(packet,options.corporate.publicationSchemaDigest))
+        const baseKey=corporateRevisionKey(packet,options.corporate.publicationSchemaDigest)
+        await corporate.publish(packet,options.corporate.readyReportSchemaDigest?hash(baseKey+':'+options.corporate.readyReportSchemaDigest+':'+JSON.stringify(reportDocuments)):baseKey,
+          options.corporate.readyReportSchemaDigest?{documents:reportDocuments,onPrepared:body=>{preparedReport=body}}:undefined)
       },
-      refreshFinancialIndicators:async(org,nip,data)=>{scope(org,nip);return store.indicators(selection,data,cachedCompanySelected)},
-      recordInterest:async(org,nip)=>{scope(org,nip);await store.interest(selection)},
+      refreshFinancialIndicators:async(org,nip,data)=>{scope(org,nip)
+        if(preparedReport)return preparedReport.report.financial.history.flatMap(series=>series.points.map(point=>({
+          code:point.code,periodStart:point.periodStart,periodEnd:point.periodEnd,scope:point.scope,status:point.status,value:point.value,
+          unit:point.unit,importance:point.importance,reasonCode:point.reasonCode,formulaVersion:point.formulaVersion})))
+        return store.indicators(selection,data,cachedCompanySelected)
+      },
+      recordInterest:async(org,nip)=>{scope(org,nip);if(!preparedReport)await store.interest(selection)},
       recoverProviderException:error=>{
         if(isOperationDenied(error)||error instanceof ExternalCallUnavailable)throw error
         return providerExceptionCode(error)
       },
+    }
+    if(options.corporate.readyReportSchemaDigest)ports.prepareReadyReport=ports.saveSharedCompany
+    if(options.readyCompanyWorkBoundaryDigest)ports.persistCompanySections=async(org,actual,g,f)=>{
+      scope(org,selection.command.nip)
+      if(actual.requestId!==lookup!.requestId||actual.supplierId!==lookup!.supplierId)return refuse()
+      return store.companySections(selection,g,f)
     }
     return engine(ports)
   }

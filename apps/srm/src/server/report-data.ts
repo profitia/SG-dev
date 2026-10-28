@@ -113,7 +113,7 @@ function factEvidence(nip: string, period: FinancialPeriod, displayed: Financial
 }
 
 /** Allowlisted projection. Neither source paths, snapshot UUIDs nor provider JSON leave this function. */
-export function projectReportData(selection: ReportSelection, row: ReportReadRow, now = new Date(), env: Readonly<Record<string, string | undefined>> = process.env): SupplierReportData {
+export function projectReportData(selection: ReportSelection, row: ReportReadRow, now = new Date(), env: Readonly<Record<string, string | undefined>> = process.env, options: Readonly<{ includeScanner?: boolean }> = {}): SupplierReportData {
   if (row.nip !== selection.nip || row.indicators.some(i => i.nip !== selection.nip)) throw new Error("Report supplier identity mismatch");
   const section = selection.entityType === "COMPANY" ? row.financial_json : null;
   const mappingCurrent = section?.catalogMappingVersion === FINANCIAL_MAPPING_VERSION && (!section.data || section.data.qualityRule === FINANCIAL_QUALITY_RULE);
@@ -191,7 +191,7 @@ export function projectReportData(selection: ReportSelection, row: ReportReadRow
     limitations, mappingVersion: section?.catalogMappingVersion ?? null, sourceVersion,
     representationVersion: section ? opaque([selection.nip, sourceVersion, periods, history]) : null, periods, history };
   const scannerAsOf = financial.freshness.retrievedAt ?? now.toISOString();
-  financial.scanner = financialScanner(financial, qualifyScannerSources(financial, selected, row.scanner_documents ?? [], scannerAsOf), { tenantScope: row.scannerTenantScope ?? selection.nip, asOf: scannerAsOf });
+  if (options.includeScanner !== false) financial.scanner = financialScanner(financial, qualifyScannerSources(financial, selected, row.scanner_documents ?? [], scannerAsOf), { tenantScope: row.scannerTenantScope ?? selection.nip, asOf: scannerAsOf });
   const k = row.kys, retrievedAt = iso(k?.retrievedAt), retentionUntil = iso(k?.retentionUntil), ttl = kysCacheTtlMs(env);
   const cacheExpiresAt = retrievedAt && retentionUntil ? new Date(Math.min(Date.parse(retentionUntil), Date.parse(retrievedAt) + ttl)).toISOString() : null;
   const fresh = isFreshKys(retrievedAt, retentionUntil, now, ttl);

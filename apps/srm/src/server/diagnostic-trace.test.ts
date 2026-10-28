@@ -1,7 +1,7 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {tracingChannel} from 'node:diagnostics_channel'
-import {analyzeDiagnosticSpans,diagnosticRun,diagnosticResource,withDiagnosticRequest,unionLength,exportDiagnosticPacket,type DiagnosticPacket,type DiagnosticSpan,type DiagnosticCompletion} from './diagnostic-trace'
+import {diagnosticEnabled,analyzeDiagnosticSpans,diagnosticRun,diagnosticResource,withDiagnosticRequest,unionLength,exportDiagnosticPacket,type DiagnosticPacket,type DiagnosticSpan,type DiagnosticCompletion} from './diagnostic-trace'
 const pause=(n:number)=>new Promise(resolve=>setTimeout(resolve,n))
 test('interval union,not sum,defines exclusive parent time',()=>{
  assert.equal(unionLength([[0,5],[3,8],[10,12]]),10)
@@ -114,4 +114,23 @@ test('exported lines are byte bounded and every physical transaction has random 
  const summary=lines.map(line=>JSON.parse(line)).find(x=>x.event==='srm_diagnostic_trace')
  const spans=lines.map(line=>JSON.parse(line)).filter(x=>x.event==='srm_diagnostic_spans')
  assert.equal(spans.length,summary.spanChunks);assert.equal(spans.flatMap(x=>x.rows).length,122)
+})
+
+test('READY diagnostics require the exact main Development opt-in and identify each new stage and Work',async()=>{
+ const keys=['TARGET_ENVIRONMENT','RENDER_SERVICE_ID','PROFITIA_READY_REPORT_ENABLED','SRM_DIAGNOSTIC_TELEMETRY'];const old=new Map(keys.map(k=>[k,process.env[k]]));
+ try{
+  process.env.TARGET_ENVIRONMENT='development';process.env.RENDER_SERVICE_ID='srv-db1vu6gm7kps73d0e3r0';process.env.PROFITIA_READY_REPORT_ENABLED='false';delete process.env.SRM_DIAGNOSTIC_TELEMETRY;
+  assert.equal(diagnosticEnabled(),false);process.env.PROFITIA_READY_REPORT_ENABLED='true';assert.equal(diagnosticEnabled(),true);
+  process.env.TARGET_ENVIRONMENT='staging';assert.equal(diagnosticEnabled(),false);process.env.TARGET_ENVIRONMENT='development';
+  process.env.RENDER_SERVICE_ID='foreign-service';assert.equal(diagnosticEnabled(),false);process.env.RENDER_SERVICE_ID='srv-db1vu6gm7kps73d0e3r0';
+  process.env.SRM_DIAGNOSTIC_TELEMETRY='off';assert.equal(diagnosticEnabled(),false);delete process.env.SRM_DIAGNOSTIC_TELEMETRY;
+  let packet:DiagnosticPacket|undefined;
+  await withDiagnosticRequest('search',undefined,async()=>{
+   for(const name of ['READY_REPORT_READ','READY_REPORT_METADATA','REPORT_PREPARATION'])await diagnosticRun(name,()=>Promise.resolve());
+   await diagnosticRun('NATIVE_WORK',()=>Promise.resolve(),{unitId:'SRM_STORE_COMPANY'});
+   return Response.json({ok:true})
+  },{emit:p=>{packet=p}});
+  assert(packet);for(const name of ['READY_REPORT_READ','READY_REPORT_METADATA','REPORT_PREPARATION'])assert(packet.rows.some(r=>r.category===name));
+  assert(packet.rows.some(r=>r.unitId==='SRM_STORE_COMPANY'));
+ }finally{for(const[k,v]of old)if(v===undefined)delete process.env[k];else process.env[k]=v}
 })
