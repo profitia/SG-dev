@@ -31,7 +31,11 @@ test('Cold acquisition adopts canonical native engines, guarded HTTP continuatio
   for(const file of['supplier-native-work-store.ts','provider-source-transport.ts','krs-native-financial.ts']){
    assert.equal(read(cold,'src/server/'+file),fs.readFileSync(path.join(repo,'apps/srm/src/server/'+file),'utf8'))
   }
-  assert.match(read(cold,'src/modules/xray/report-controller.ts'),/response\.status===202/)
+  assert.match(read(cold,'src/modules/xray/report-controller.ts'),/@profitia\/srm-xray\/workflow-controller/)
+  assert.equal(fs.readFileSync(path.join(cold,'packages/srm-xray/src/workflow-controller.ts'),'utf8'),fs.readFileSync(path.join(repo,'packages/srm-xray/src/workflow-controller.ts'),'utf8'))
+  assert.match(fs.readFileSync(path.join(cold,'packages/srm-xray/src/workflow-controller.ts'),'utf8'),/response\.status!==202/)
+  assert(!fs.existsSync(path.join(cold,'packages/srm-xray/src/workflow-view.tsx')))
+  assert(!fs.existsSync(path.join(cold,'packages/srm-xray/src/workflow.css')))
   assert.match(read(cold,'app/api/xray/krs/lookup/route.ts'),/getPilot2ColdRuntime\(\)\.lookup/)
   assert.match(read(cold,'middleware.ts'),/'\/api\/xray\/financial-excel'/)
   assert.doesNotMatch(read(cold,'middleware.ts'),/api\/supplier-locations/)

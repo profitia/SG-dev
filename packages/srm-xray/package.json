@@ -40,7 +40,11 @@
       "types": "./src/workflow-contract.ts",
       "default": "./src/workflow-contract.ts"
     },
-    "./workflow.css": "./src/workflow.css"
+    "./workflow.css": "./src/workflow.css",
+    "./workflow-controller": {
+      "types": "./src/workflow-controller.ts",
+      "default": "./src/workflow-controller.ts"
+    }
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.2.4"

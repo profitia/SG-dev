@@ -17,7 +17,7 @@
     "version": "0.3.0",
     "contractId": "profitia.srm-xray.workflow",
     "contractVersion": "1.0.0",
-    "sourceDigest": "72e318cb086e43f1e11004b57bee396d854a7bd80225495ce291ac8a3c4e6ce9",
+    "sourceDigest": "f7db4c43b50ba61742927643bb708e4c34ac56d36cc581126446ee95f58d3496",
     "exports": [
       "./workflow",
       "./workflow-contract",

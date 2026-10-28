@@ -67,6 +67,7 @@ export const PILOT2_COLD_SOURCE_FILES=[
  "apps/srm/src/server/pilot2-registry.ts",
  "apps/srm/src/server/pilot2-report-projection.ts",
  "apps/srm/src/server/private-operation-host.ts",
+ "apps/srm/src/server/peer-xray.ts",
  "apps/srm/src/server/private-runtime.ts",
  "apps/srm/src/server/provider-source-transport.ts",
  "apps/srm/src/server/registry-search.ts",
@@ -138,6 +139,13 @@ export function coldPilot2(repo,output,proof){
  // The existing HTTP controller owns KRS pending continuations and stable
  // idempotency keys. It contains no financial calculation or identity policy.
  write('apps/srm/src/modules/xray/report-controller.ts',fs.readFileSync(path.join(repo,'apps/srm/src/modules/xray/report-controller.ts')))
+ // Preserve the retained UI and dependency lock while carrying the exact
+ // SRM-owned pure presentation/API dependencies of those existing adapters.
+ // No AppShell view, styles, route or peer activation is mounted in PILOT2.
+ for(const name of ['workflow-controller.ts','workflow-contract.ts','company-activity.ts'])write('packages/srm-xray/src/'+name,fs.readFileSync(path.join(repo,'packages/srm-xray/src/'+name)))
+ const workflowPackage='packages/srm-xray/package.json',workflowManifest=JSON.parse(fs.readFileSync(path.join(output,workflowPackage),'utf8'))
+ for(const name of ['workflow-controller','workflow-contract'])workflowManifest.exports['./'+name]={types:'./src/'+name+'.ts',default:'./src/'+name+'.ts'}
+ write(workflowPackage,JSON.stringify(workflowManifest,null,2)+'\n')
  const transport='apps/srm/src/modules/xray/krs-session-transport.ts'
  write(transport,replace(fs.readFileSync(path.join(output,transport),'utf8'),
   'const paths=new Set([',"const paths=new Set(['/api/xray/financial-excel',"))
