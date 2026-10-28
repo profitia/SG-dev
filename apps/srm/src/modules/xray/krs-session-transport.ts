@@ -5,10 +5,10 @@ const privateKysPaths=new Set(['/api/xray/kys','/api/xray/jdg/kys'])
 type Grant={token:string;nip:string;readyUntil:string;expiresAt:string;bearer:string}
 // Expiry is a refresh hint only. The server still authenticates the bearer and
 // checks current account, organisation, E1/RLS and outcome before releasing data.
-function hasReadHeadroom(token:string|null){
+function hasReadHeadroom(token:string|null,minimumMs=30000){
  try{if(!token)return false;const parts=token.split('.');if(parts.length!==3)return false;const part=parts[1];if(!part)return false
   const claim=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/')))
-  return Number.isSafeInteger(claim.exp)&&claim.exp*1000-Date.now()>=30000
+  return Number.isSafeInteger(claim.exp)&&claim.exp*1000-Date.now()>=minimumMs
  }catch{return false}
 }
 const admissions=new WeakMap<typeof fetch,{grant:Grant|null;prepare:(nip:string,signal:AbortSignal)=>Promise<{readyUntil:string}>}>()
@@ -36,18 +36,27 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
   let grant=reportPaths.has(input)?entry.grant:null
   if(input==='/api/xray/search'&&grant){let body;try{body=JSON.parse(String(init?.body))}catch{};if(body?.identifier!==grant.nip)grant=null}
   if(grant&&Date.parse(grant.expiresAt)<=Date.now())throw Error('Przygotowanie wyszukiwania wygasło. Wpisz ponownie numer NIP.')
-  // An ordinary company request can outlive the remaining cached bearer.
-  // Refresh before starting; retain the admitted bearer and all final E1 checks.
+  // Select an SDK credential with sufficient remaining lifetime. Retain an
+  // admitted command bearer and all final server E1 checks unchanged.
   let token=grant?.bearer??null
-  if(!token&&cachedRead){const current=await getToken();if(hasReadHeadroom(current))token=current}
-  token??=await getToken(input==='/api/xray/admission'||freshReportPaths.has(input)||privateKysPaths.has(input)||location?{skipCache:true}:undefined)
+  let tokenMode=grant?'COMMAND_BEARER':'SDK_DEFAULT'
+  const mainNipSearch=main&&input==='/api/xray/search'&&/^\d{10}$/.test(String(body?.identifier??''))
+  // Only the SDK owns its credential cache. A credential is never an ALLOW
+  // decision: every request retains the server's current H1/H2 checks. The
+  // longer Search headroom gives FRESH more time than an immediate read.
+  if(!token&&(cachedRead||mainNipSearch)){
+   const current=await getToken()
+   if(hasReadHeadroom(current,mainNipSearch?45000:30000)){token=current;tokenMode='CURRENT_SDK'}
+  }
+  if(!token){const force=input==='/api/xray/admission'||freshReportPaths.has(input)||privateKysPaths.has(input)||location
+   token=await getToken(force?{skipCache:true}:undefined);tokenMode=force?'FORCED_REFRESH':'SDK_DEFAULT'}
   if(!token)throw Error('Sesja wygasła. Zaloguj się ponownie.')
   const sessionMs=performance.now()-start
   init?.signal?.throwIfAborted()
   const headers=new Headers(init?.headers);headers.set('Authorization','Bearer '+token)
   if(grant)headers.set('X-SRM-Report-Admission',grant.token)
   if(grant&&formDiagnosticFragment)headers.set('X-SRM-Diagnostic-Admission',formDiagnosticFragment)
-  const at=performance.now();let status=0,retries=0
+  const at=performance.now();let status=0,retries=0,diagnostic:Record<string,string>={}
   try{
    let response=await transport(input,{...init,headers});status=response.status
    // A provider job may outlive the short Clerk bearer. Re-enter the same
@@ -58,6 +67,8 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
     if(fresh){await response.body?.cancel();headers.set('Authorization','Bearer '+fresh);retries++
      response=await transport(input,{...init,headers});status=response.status}
    }
+   const traceId=response.headers.get('X-SRM-Diagnostic-Execution'),fragmentId=response.headers.get('X-SRM-Diagnostic-Fragment')
+   if(/^[a-f0-9-]{36}$/i.test(traceId??'')&&/^[a-f0-9-]{36}$/i.test(fragmentId??''))diagnostic={traceId:traceId!,fragmentId:fragmentId!}
    // One immediate metadata read after this exact ready main company only.
    // Keep no token or ALLOW decision; use the existing SDK credential cache.
    if(main&&input==='/api/xray/search'&&response.ok&&!grant){try{
@@ -67,7 +78,7 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
    }catch{cachedMetadataRead=null}}
    return response
   }
-  finally{try{console.info(JSON.stringify({event:'srm_client_request_timing',path:location?'/api/supplier-locations':input,httpStatus:status,sessionMs:Math.round(sessionMs*100)/100,fetchMs:Math.round((performance.now()-at)*100)/100,...(retries?{sessionRefreshRetries:retries}:{})}))}catch{}}
+  finally{try{console.info(JSON.stringify({event:'srm_client_request_timing',path:location?'/api/supplier-locations':input,httpStatus:status,sessionMs:Math.round(sessionMs*100)/100,tokenMode,...diagnostic,fetchMs:Math.round((performance.now()-at)*100)/100,...(retries?{sessionRefreshRetries:retries}:{})}))}catch{}}
  }
  entry.prepare=async(nip,signal)=>{
   entry.grant=null;formDiagnosticFragment=null
