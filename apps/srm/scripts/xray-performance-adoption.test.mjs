@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
+import {posix} from 'node:path'
 import {currentHumanReadSourceDigest,CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read'
 import {PREPARED_REPORT_RULES} from '../src/server/ready-report.ts'
 const hash=value=>createHash('sha256').update(value).digest('hex')
@@ -22,8 +23,8 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),xray.sourceDigests[file]??digest,'installed '+file)
  }
  assert(Object.keys(a.applicationSourceDigests).length>=30)
- for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':apps/srm/'+file]):read(file)),digest,'historical consumer '+file)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':apps/srm/'+file]):read(file)),digest,'historical '+file)
+ for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)),digest,'historical '+file)
  for(const[file,digest]of Object.entries(xray.applicationSourceDigests))assert.equal(hash(read(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
