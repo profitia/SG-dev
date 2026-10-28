@@ -69,7 +69,7 @@ export function createSrmReadyCompanyRead(options:CompanyReadOptions,schemaDiges
     result.metadata.locationSubject={supplierId:subject.supplierId}
     result.metadata.preferenceScope=createHmac('sha256',secret).update(JSON.stringify([context.organisationId,
      JSON.stringify([context.applicationId,context.subjectUserId??context.actorId]),'scanner-preferences-v1'])).digest('hex')
-    return accepted={known:true,response:Response.json({...result.card,metadata:result.metadata},{headers})}
+    return accepted={known:true,response:await measureSupplierStage('RESPONSE_SERIALIZATION',async()=>Response.json({...result.card,metadata:result.metadata},{headers}))}
    })
   if(outcome.value!==accepted||!accepted)return refuse()
   return accepted

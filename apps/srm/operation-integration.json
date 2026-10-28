@@ -5505,7 +5505,7 @@
       "src/server/company-source-policy.test.ts": "55ff8a9957693ebf20c8aebb118bcd3468b700853a0a70e7ff8e24a9704ffec5",
       "src/server/corporate-source-store.ts": "596affa72c05e55d88c11b6769a058f810d84118325f2b3802ab532dfc9408f9",
       "src/server/peer-read-boundary.test.ts": "d372585bd98c8bdbe57fed05806ccf4a270ee6d6db0d9da680032554e2d27b54",
-      "src/server/ready-report-read.ts": "fe1580061e76dd92d81bef11235bd8c2f40c962bc0770b385e25aaa39a7aaa80",
+      "src/server/ready-report-read.ts": "4c8466260240b98ad657eb35a409095ccce4dc06059f36574f955648522603a5",
       "src/server/ready-report-shape.json": "b73a72802a7e3a7a401bef154a54a07d1402aeef1f7798bb30633b277fa681e1",
       "src/server/ready-report-source.ts": "d012e67e6c7fb1c0b43e6ee55ad12b0d21792c9ccc5405e292fcd2b18f2b7c9a",
       "src/server/ready-report.test.ts": "ecf8afbec10cbf5814e0b0dd59068261ff01e89b74f19931f4e414db85629049",
@@ -5519,13 +5519,15 @@
       "src/server/supplier-native-runtime.ts": "8a04ce953a91a19ab5bf6ee3fcccadf56854319b608231b132cb9380c3c915bb",
       "src/server/supplier-native-work-store.ts": "60b521131f7b1f56230619e88b90d5b9a2f55f00618be2cf9b6619517b87071a",
       "src/server/supplier-request-work.ts": "73559726403c65149ae9a3f648add2f76b51100442fb69ea20b83fb5ea578227",
-      "src/server/supplier-telemetry.ts": "2231a1dd45bb981e03de70c9591a2e4375780e4d801f53ca41c07dbeff82ffa0",
+      "src/server/supplier-telemetry.ts": "43193af6e571b2b5a478c97e86178992c1a6754d063be3af2384085bf7ac4875",
       "src/server/xray-lookup.ts": "46bbdc19addfee56081a1107bab9f8a7b7220659c355963e8b18445312ddec45",
       "../maps-runtime/package-lock.json": "b7751c6ccd47bb8e72fa540e4400a1373eba2589c32139726778023bbd8cf2ea",
       "scripts/pilot2-cold-overlay.mjs": "d2944c3abb1bc575f7f3dcaa2ad62cf002af904cfd49a7250edfd767504cb51e",
       "scripts/pilot2-cold-overlay.test.mjs": "4a84012de027541a5dac2acb23f1cdd47288a18256bf29b651703be286552821",
       "deployment/pilot2-entry-runtime-lkg.json.gz": "f171c94470a1d0dd1c712248bb551088c88d920b935d9db3d07ae54b7e4ac1dc",
-      "src/modules/xray/supplier-report.tsx": "e2126bad65771dd4f29d5d54d5226f5b920fe00a9c412f77bfe37a808737f1f3"
+      "src/modules/xray/supplier-report.tsx": "e2126bad65771dd4f29d5d54d5226f5b920fe00a9c412f77bfe37a808737f1f3",
+      "src/server/diagnostic-trace.test.ts": "4cdbca28ca38699b027311f8569376e5f2bbe46c53bf4b5f4f641ceff6db5166",
+      "src/server/diagnostic-trace.ts": "0db24c551310710dd10c7efc5175b31005ea9d4e8732802bfc3eab7993f9eedc"
     },
     "preparedReportRules": {
       "mapping": "2026-10-07-ccc-v2",
