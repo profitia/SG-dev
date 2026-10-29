@@ -53,7 +53,6 @@ export function createSrmNativeCompanyLookup(options:Options){
   const store=createSrmSupplierNativeWorkStore({work,...(options.readyCompanyWorkBoundaryDigest?{readyCompanyWorkBoundaryDigest:options.readyCompanyWorkBoundaryDigest}:{}),namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,
     ...(options.financialInventoryBoundaryDigest?{financialInventoryBoundaryDigest:options.financialInventoryBoundaryDigest}:{}),
     ...(options.registryEnvelopeBoundaryDigest?{registryEnvelopeBoundaryDigest:options.registryEnvelopeBoundaryDigest}:{})})
-  const link=createSrmSupplierSourceLink({work:options.work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,source:options.source})
   const corporate=createSrmCorporateSourceStore(options.corporate)
   const {pool,auditPool,now}=options.mgbi.source
   const fixed=structuredClone({application:options.mgbi.source.application,binding:options.mgbi.source.binding,
@@ -70,6 +69,13 @@ export function createSrmNativeCompanyLookup(options:Options){
     let operationKey:string|undefined,lookup:Readonly<{supplierId:string;requestId:string}>|undefined
     let mgbi:ReturnType<typeof createSrmProviderSourceTransport>|undefined
     let inventory:Awaited<ReturnType<typeof store.financialInventory>>|undefined
+    let initialCache:{value:Awaited<ReturnType<typeof store.cache>>}|undefined
+    const link=createSrmSupplierSourceLink({work:options.work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,source:options.source,
+      ...(options.readyCompanyWorkBoundaryDigest?{registration:{unitId:'SRM_REGISTER_LOOKUP' as const,run:async(work:Parameters<typeof createSrmSupplierNativeWorkStore>[0]['work'],selected:SupplierNativeWorkSelection,existing:Parameters<typeof store.register>[1])=>{
+        const registration=createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest,readyCompanyWorkBoundaryDigest:options.readyCompanyWorkBoundaryDigest})
+        const result=await registration.registerAndCache(selected,existing,clock())
+        if(result.cache!==undefined)initialCache={value:result.cache};return result.lookup
+      }}}:{})})
     // Request-local data selection only; never an account/permission cache.
     let cachedCompanySelected=false
     let reportDocuments:readonly FinancialSourceDocument[]=[],preparedReport:PreparedCompanyReport|undefined
@@ -90,7 +96,8 @@ export function createSrmNativeCompanyLookup(options:Options){
         return lookup
       },
       readFreshCompany:async(org,nip,at)=>{
-        scope(org,nip);const cached=await store.cache(selection,at??clock()),selected=mgbiOnly?mgbiCompanyCache(cached):cached
+        scope(org,nip);const cached=initialCache?initialCache.value:await store.cache(selection,at??clock()),selected=mgbiOnly?mgbiCompanyCache(cached):cached
+        initialCache=undefined
         cachedCompanySelected=mgbiOnly&&selected!==null
         return selected
       },

@@ -230,7 +230,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
    assert.equal(card.identity.nip,selectedNip);assert(card.financial.data)
    const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[accepted.requestId])).rows.map(r=>r.unit)
    assert(units.includes('SRM_STORE_COMPANY'));assert(!units.includes('SRM_STORE_GENERAL'));assert(!units.includes('SRM_STORE_FINANCIAL'));assert(!units.includes('SRM_RECORD_INTEREST'))
-   assert.equal(units.filter(unit=>unit==='SRM_CACHE_READ').length,1,'no indicator reconstruction Work')
+   assert.equal(units.filter(unit=>unit==='SRM_CACHE_READ').length,0,'registration reads the cache once; no cache or indicator reconstruction Work')
    const before=(await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE event->>'operation'='job.execute'")).rows[0].n
    const result=await ready.read(request(),A,selectedNip);assert(result.response)
    const output=await result.response.json();assert(output.metadata.financial.scanner);assert(output.metadata.financial.history.length)
@@ -262,7 +262,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
    assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_external_call.calls')).rows[0].n,calls);
    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.source_snapshots')).rows[0].n,snapshots);
    const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[accepted.requestId])).rows.map(r=>r.unit);
-   assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_CACHE_READ','SRM_PREPARE_DOCUMENTS']);
+   assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_PREPARE_DOCUMENTS']);
    const released=await ready.read(request(),A,warmNip);assert(released.response);const report=await released.response.json();
    assert.equal(report.identity.nip,warmNip);assert(report.metadata.financial.history.some(series=>series.code==='CURRENT_RATIO'&&series.points.some(point=>point.value==='3.000000')));
    const altered=structuredClone(warmGeneral);altered.data.legalName='Different unretained company';
