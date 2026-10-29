@@ -6,6 +6,7 @@ import {execFileSync} from 'node:child_process'
 import {posix} from 'node:path'
 import {currentHumanReadSourceDigest,CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read'
 import {PREPARED_REPORT_RULES} from '../src/server/ready-report.ts'
+import './fresh-report-release.test.mjs'
 const hash=value=>createHash('sha256').update(value).digest('hex')
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url))
 test('complete X-Ray architecture adopts the exact producer and consumer closure without rewriting history or claiming deployment',async()=>{

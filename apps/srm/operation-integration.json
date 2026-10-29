@@ -5929,8 +5929,8 @@
       "package-lock.json": "00cdef0a7ed8ec09027ba6a04206b574136c796f01c042450ca2b7dd9d0f25e3",
       "scripts/diagnostic-telemetry-adoption.test.mjs": "c06bbf9e744750eed26d14f6dac7da8d0a30fee34c714094b8f0cd13d4c4b36f",
       "scripts/native-execution-adoption.test.mjs": "1053f74063267210aab23d9f08ecd943a8861607ab2713c6ee2723655a2d1bd7",
-      "scripts/ready-report.integration.test.mjs": "0d5466abeb9e385ca90681920447e67fa40011cdc565009bd5bb5bae3df5618a",
-      "scripts/xray-performance-adoption.test.mjs": "004fa4262d5e840a6a2aee799ee436e34638eb3e64a8412a9bf8120ee63ee159",
+      "scripts/ready-report.integration.test.mjs": "c80161053a3b77576a071c7ada49b22cedde08b2bbf71fcc7a9ed0748c9bd8f2",
+      "scripts/xray-performance-adoption.test.mjs": "cbcea861f0ab5e57ddda75ef981d5acaefbe59179ada27aaf78da16a7a0d5266",
       "src/server/appshell-ready-peer.test.ts": "99adc608bdf2b264f3cdfb8d29b4ea3ebd215c1d5334e78ed6fc80cba0849031",
       "src/server/db.ts": "fd02edc58aa9644ed9df13c3c3d265fddf4a408b62415af93c70c3a33b720fb6",
       "src/server/financial-documents.ts": "61f573026a1dcc0dceb86ffbaecf909b5b2f9d702c52371dfb4c424596b3e10f",
@@ -5939,7 +5939,13 @@
       "src/server/supplier-native-company.ts": "7e748752175fd7d5882f765bd265f21053d64844625b86a1434d7d03f81a19c8",
       "src/server/supplier-native-work-store.ts": "4ccb17b73d6ad4c0e035c0346b046bfa0bec3261120bdc7e4dbdccb06c92b316",
       "src/server/supplier-source-link.ts": "85af93b1fb28a61a7fc96acdaef8114f888cbe1c972af29e8c3dbb91c4e2344b",
-      "../../packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b"
+      "../../packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b",
+      "scripts/fresh-report-release.mjs": "a0458a42a381d3fddc4e739f7c8286e7c4d85807cf142d0bc3aaafbdc230b3a3",
+      "src/server/db-native-work.test.ts": "531a82b2297f146799d4e1eab6815a72aab7e6925f1326c65659331da77970b9",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "96b031cf9627b06ad00b736132660f363109f60032b916b0bbeb85dac412a425",
+      "scripts/fresh-report-release.test.mjs": "571e69de8c08f6d03c25fa4c58f0de364923b0d54daa429cd1e8e952027eff42",
+      "deployment/xray-fresh-performance-2026-10-29.json": "e8b98391f32f784961cf836f4d0218d3424069a1791d4aaa4b1fd3ed4a15c469",
+      "src/server/peer-read-boundary.test.ts": "4cd5be909d8e442cced23da74fdf74a263bf91a6ea6ad61d7d2e7b3889872745"
     },
     "compatibilityPackageDigests": {
       "packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b"

@@ -22,6 +22,7 @@ import {mapMgbiFinancialRecords} from '../src/server/mgbi-financial.ts'
 import {createSrmSupplierNativeWork} from '../src/server/supplier-request-work.ts'
 import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-work-store.ts'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
+import {captureFreshFunctions,freshReportReleasePlan} from './fresh-report-release.mjs'
 
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8')
 test('ready report native Source and current HUMAN read preserve complete financial output, tenant history and rollback',t=>supplierBusinessFixture(t,true,async f=>{
@@ -83,6 +84,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
   await t.test('composite financial INSERT uses the existing statement guard without changing row policy, ACL or provenance',async()=>{
    const before=(await owner.query("SELECT pg_get_functiondef(oid) definition,proacl::text acl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid='srm.financial_statement_target()'::regprocedure")).rows[0]
    const policies=(await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' AND tablename='financial_facts' ORDER BY policyname")).rows
+   const functionBackup=await captureFreshFunctions(owner)
    const facts=Array.from({length:40},(_,i)=>financial.facts.map(f=>({...f,periodStart:(1980+i)+'-01-01',periodEnd:(1980+i)+'-12-31'}))).flat()
    const timings=[]
    const config={...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))}
@@ -120,6 +122,18 @@ test('ready report native Source and current HUMAN read preserve complete financ
    for(const key of Object.keys(after))assert.deepEqual(after[key],before[key],key)
    assert.deepEqual((await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' AND tablename='financial_facts' ORDER BY policyname")).rows,policies)
    console.info('FRESH_FINANCIAL_STATEMENT_COMPARISON',JSON.stringify(timings))
+   console.info('FRESH_SQL_FUNCTION_DIGESTS',JSON.stringify((await owner.query("SELECT oid::regprocedure::text id,md5(pg_get_functiondef(oid)) digest FROM pg_proc WHERE oid=ANY(ARRAY['srm.financial_statement_target()'::regprocedure,'srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text)'::regprocedure,'srm.ready_company_work_descriptor()'::regprocedure]) ORDER BY 1")).rows))
+   const optimizedFunctions=await captureFreshFunctions(owner)
+   const rollback=freshReportReleasePlan({mode:'rollback',sourceSha:'a'.repeat(40),previousSha:'b'.repeat(40),backup:functionBackup})
+   assert(rollback.statements.findIndex(s=>s.text.startsWith('REVOKE '))>rollback.statements.findIndex(s=>s.text.startsWith('UPDATE profitia_ingestion.')))
+   const beforeRollback=await f.counts()
+   await controlled(async()=>{
+    for(const statement of rollback.freshStatements)await owner.query(statement.text,statement.values)
+    assert.deepEqual(await captureFreshFunctions(owner),functionBackup)
+    await owner.query(own('028-fresh-report-performance.sql'))
+    assert.deepEqual(await captureFreshFunctions(owner),optimizedFunctions)
+   })
+   assert.deepEqual(await f.counts(),beforeRollback)
   })
   await t.test('revocation inside the consolidated FRESH Work rolls back both sections together',async()=>{
    const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command}
