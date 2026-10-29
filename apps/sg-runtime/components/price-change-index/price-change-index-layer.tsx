@@ -9,6 +9,7 @@ import type {SavedBenchmark} from '../../lib/benchmark/contracts'
 import type {PciAnalysisResponse} from '../../lib/cost-analysis/price-change-index-contracts'
 import {createPciRequester} from './price-change-index-request'
 import {emptyPurchase,seedPciComponent,pciStructureReady,pciInput,pciResult,pciCategoryBody,type PciComponent} from './price-change-index-controller'
+import {pciIssueMessage} from '../../lib/cost-analysis/price-change-index-messages'
 import './price-change-index-layer.css'
 
 export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:SavedBenchmark;locale:'pl'|'en';onClose:()=>void;onAccessLost:()=>void}){
@@ -43,7 +44,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
       if(response.status===401||response.status===403){onAccessLost();onClose();return}
       const body=await response.json() as PciAnalysisResponse
       if(!response.ok||body.status!=='CALCULATED'){
-        const message=body.status==='REFUSED'?body.issues.map(i=>i.message).join(' '):'Nie udało się obliczyć ceny. Sprawdź dane i dostępność źródła.'
+        const message=body.status==='REFUSED'?body.issues.map(pciIssueMessage).join(' '):'Nie udało się obliczyć ceny. Sprawdź dane i dostępność źródła.'
         throw Error(message)
       }
       if(active.current){setResult(pciResult(body,components));setStep('result')}

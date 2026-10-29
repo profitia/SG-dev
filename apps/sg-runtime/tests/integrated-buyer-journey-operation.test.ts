@@ -5,6 +5,7 @@ import {analysePriceChangeIndex} from '../lib/cost-analysis/price-change-index-h
 import {pciAnalysisRequest,PCI_JOURNEY_VERSION,type PciAnalysisRequest} from '../lib/cost-analysis/price-change-index-contracts'
 import {CCI_PRICE_NUMERIC_POLICY} from '../lib/cost-analysis/cci-indexed-price'
 import type {SavedBenchmark,BenchmarkAnalyticsSeriesResult} from '../lib/benchmark/contracts'
+import {pciIssueMessage} from '../lib/cost-analysis/price-change-index-messages'
 
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 const provider={providerCode:'MACROBOND' as const,displayName:'Macrobond'}
@@ -75,6 +76,42 @@ test('missing base, missing observations and unapproved period mappings never fa
   assert.equal(partial.indexedPrice.nodes[2].categoryIndexedPrice,null)
   assert.equal(partial.indexedPrice.nodes[2].status,'INCOMPLETE')
   assert.equal(partial.indexedPrice.nodes[1].categoryIndexedPrice,1000)
+})
+test('out-of-history buyer dates receive an actionable Polish range refusal, not a raw engine error',async()=>{
+ const f=fixtures();f.input.purchase.purchaseDate='2026-10-04';f.input.purchase.referenceDate='2026-10-04'
+ const before=JSON.stringify(f.input),handler=createPriceChangeIndexHandler({isClerk:()=>true,now:()=>cutoff,
+  selections:async()=>Response.json({items:f.selected}),history:async r=>Response.json(f.histories.get(r.nextUrl.searchParams.get('seriesId')!))})
+ const response=await handler(request(f.input)),result=await response.json()
+ assert.equal(response.status,422);assert.equal(result.status,'REFUSED');assert.equal(result.issues[0].code,'REFERENCE_DATE_OUTSIDE_HISTORY')
+ assert.match(result.issues[0].message,/poza zakresem dostępnej historii/);assert.match(result.issues[0].message,/2024/)
+ assert.doesNotMatch(result.issues[0].message,/Range must be/);assert.equal(JSON.stringify(f.input),before)
+})
+test('missing exact day stays refused and a corrected real date can be analysed without losing composition',()=>{
+ const f=fixtures();f.histories.get('energy')!.historical[1].value=null
+ const missing=analysePriceChangeIndex(f.input,f.selected,f.histories,cutoff)
+ assert.equal(missing.status,'REFUSED');if(missing.status!=='REFUSED')return
+ assert(missing.issues.some(x=>x.code==='MISSING_BASE_NODE'&&x.message.includes('kompletu notowań')))
+ f.input.purchase.purchaseDate='2024-01-03';f.input.purchase.referenceDate='2024-01-03'
+ const next=analysePriceChangeIndex(f.input,f.selected,f.histories,cutoff);assert.equal(next.status,'CALCULATED')
+ assert.deepEqual(f.input.category.components.map(x=>x.weightPercent),[60,40])
+})
+test('period consent remains a real gate, with plain language and no automatic date mapping',()=>{
+ const f=fixtures();for(const history of f.histories.values()){
+  history.frequency='MONTHLY';history.historical=history.historical.map((p,i)=>({...p,date:`2024-0${i+1}-01`}))
+ }
+ f.input.declarations=f.input.declarations.map(d=>({...d,periodBasis:'END_OF_PERIOD'}))
+ f.input.purchase.purchaseDate='2024-01-17';f.input.purchase.referenceDate='2024-01-01'
+ const date='2024-04-01T00:00:00.000Z',blocked=analysePriceChangeIndex(f.input,f.selected,f.histories,date)
+ assert.equal(blocked.status,'REFUSED');if(blocked.status!=='REFUSED')return
+ assert.equal(blocked.issues[0].code,'UNAPPROVED_PERIOD_MAPPING');assert.match(blocked.issues[0].message,/Potwierdź/)
+ f.input.purchase.economicPeriodApproved=true
+ assert.equal(analysePriceChangeIndex(f.input,f.selected,f.histories,date).status,'CALCULATED')
+ assert.equal(f.input.purchase.purchaseDate,'2024-01-17')
+})
+test('unknown engine details never become buyer-facing English and known reasons remain actionable',()=>{
+ assert.doesNotMatch(pciIssueMessage({code:'FUTURE_ENGINE_CODE',message:'internal technical detail'}),/internal technical/)
+ assert.match(pciIssueMessage({code:'NO_COMPARABLE_CADENCE',message:'opaque'}),/częstotliwość/)
+ assert.match(pciIssueMessage({code:'PURCHASE_OUTSIDE_BASE_PERIOD',message:'opaque'}),/rzeczywisty dzień zakupu/)
 })
 test('request terms and contract version are closed; readiness remains Category Builder policy',()=>{
   const f=fixtures();assert(pciAnalysisRequest.safeParse(f.input).success)

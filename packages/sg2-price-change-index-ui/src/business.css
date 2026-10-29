@@ -12,3 +12,34 @@
 @media(max-width:650px){.pci-business .v3-canon-chart-workspace{padding-right:2.5rem}}
 .pci-business .v3-canon-chart-workspace .srm-sr-only{position:absolute!important;width:1px;height:1px;padding:0!important;margin:-1px!important;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .pci-business .v3-canon-chart-workspace .srm-price-time-tick[data-label-visible="false"] time{visibility:hidden}
+
+/* Keep the entire composition in one table; constrain the list rather than paging rows away. */
+.pci-business[data-flow-screen=setup] .v3-flow-content{display:flex;flex-direction:column}
+.pci-business[data-flow-screen=setup] .v3-context,.pci-business[data-flow-screen=setup] .v3-steps{flex:0 0 auto}
+.pci-business[data-flow-screen=setup] .v3-grid2{flex:1 1 0;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
+.pci-business[data-flow-screen=setup] .v3-setup-panel{min-height:0;align-self:stretch;align-content:start;overflow:hidden}
+.pci-business[data-flow-step="1"] .v3-setup-panel{grid-template-rows:auto auto auto minmax(0,1fr) auto auto}
+.pci-business[data-flow-step="1"] .v3-table-wrap{min-height:0;overflow:auto;overscroll-behavior:contain}
+.pci-business[data-flow-step="1"] thead{position:sticky;top:0;z-index:1;background:var(--surface)}
+.pci-business[data-flow-step="1"] td{padding:8px}
+.pci-business .v3-flow-actions{display:block}
+.pci-business .pci-error{max-height:88px;padding:8px 10px;border:1px solid currentColor;border-radius:7px;line-height:1.4}
+.pci-business .pci-method-help>div{top:auto;bottom:calc(100% + 8px);max-height:240px;overflow:auto}
+.pci-business .pci-method-help>div p+p{margin-top:8px}
+.pci-business[data-flow-step="3"] .pci-series-declarations{min-height:0;max-height:180px;overflow:auto}
+@media(max-height:700px){
+ .pci-business[data-flow-screen=setup] .v3-setup-panel{padding:8px;gap:6px 10px}
+ .pci-business[data-flow-screen=setup] .v3-setup-panel>h2{font-size:16px;line-height:1.25}
+ .pci-business[data-flow-screen=setup] .v3-setup-panel>p{font-size:11px;line-height:1.3}
+ .pci-business[data-flow-screen=setup] .v3-setup-panel label{font-size:11px;line-height:1.3}
+ .pci-business[data-flow-screen=setup] .v3-setup-panel input:not([type=checkbox]),.pci-business[data-flow-screen=setup] .v3-setup-panel select{height:32px;min-height:32px;padding:5px 8px;font-size:12px}
+ .pci-business[data-flow-step="1"] td{padding:4px 6px}
+ .pci-business[data-flow-screen=setup] .v3-structure-help{margin-top:0;font-size:11px}
+}
+@media(max-width:650px){
+ .pci-business[data-flow-step="3"] .v3-setup-panel>label:not(.pci-period-approval){grid-column:auto;font-size:11px;line-height:1.25}
+ .pci-business[data-flow-step="3"] .v3-setup-panel select{max-width:100%;min-width:0}
+ .pci-business[data-flow-step="3"] .pci-series-declarations{grid-template-columns:repeat(2,minmax(0,1fr));font-size:11px;line-height:1.25}
+ .pci-business[data-flow-step="3"] .pci-series-declarations label{min-width:0}
+ .pci-business[data-flow-step="3"] .v3-setup-panel>p{font-size:11px}
+}
