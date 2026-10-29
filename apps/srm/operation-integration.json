@@ -5485,7 +5485,7 @@
       "db/private-store/026-ready-company-work.sql": "ec1fd6b4bf46cce33ecd353b4ad3bdb8cf5204d48f8aae848cd9eaf42f3cc02d",
       "deployment/ready-report-targets.json": "99fe9615c8bed59e79d6727cc95baf35ddd9a9a0cd3b6b5029c3561f2a99fa83",
       "package-lock.json": "ee0174d8a3b747b8ca49df47b9a68540393ed46a6409e981c0058fa97859ab39",
-      "package.json": "710e68e32540a3abc301919c9122da97d9ca71db5f86a8acff70733331f80d6c",
+      "package.json": "2f3fe8c724660225adc0db2ac8d76a0806a5b9a82bf9af60f04e959968bf1281",
       "scripts/corporate-source.integration.test.mjs": "db65a975b59a4030765cd9ae2de354dcf43871523b404436d99cc3ddee383ac8",
       "scripts/diagnostic-telemetry-adoption.test.mjs": "1cb70bd8da86ab601ef632f972e1c82c4f5430a63c766709484d0e87f777bfc7",
       "scripts/native-execution-adoption.test.mjs": "bb101e2d546eb8405596f0ffd4fb99d7ab29f087d8e849089e5599af9f619915",
@@ -5529,7 +5529,15 @@
       "src/server/diagnostic-trace.test.ts": "4cdbca28ca38699b027311f8569376e5f2bbe46c53bf4b5f4f641ceff6db5166",
       "src/server/diagnostic-trace.ts": "0db24c551310710dd10c7efc5175b31005ea9d4e8732802bfc3eab7993f9eedc",
       "src/server/xray-lookup-orchestration.test.ts": "6635dd3a196afb2f4648ee158df988f8abab7cac55b95137733f46f4cd2b559c",
-      "src/modules/xray/krs-session-transport.ts": "9c38a1d0e264055f3b960bc33faee8fcf15fa344e10462039008f2cca3a61daf"
+      "src/modules/xray/krs-session-transport.ts": "9c38a1d0e264055f3b960bc33faee8fcf15fa344e10462039008f2cca3a61daf",
+      "scripts/supplier-locations.integration.test.mjs": "fafe45783f6fb202965ff966205bbda453402d4546ce5c2aea711adbb1172ba2",
+      "src/server/supplier-location-source.ts": "3ddcb0ace9ff36d0da309026ceb926cc721fe4f8676e26fadb41ad892bfb6409",
+      "src/server/supplier-location-sync.test.ts": "d342900b2a61314010f59dba7dea09bc8d4e1f1ccc3adb1f416f3a9113f2629c",
+      "src/server/supplier-location-sync.ts": "be29913464d236f92af5b396ec8f9800eecbecdd8b24c5ad27272c5c508fa898",
+      "src/server/supplier-locations.ts": "36e31f44165982188c42db1045cc28107b46352f669b0d6f991eecdeb5036211",
+      "db/private-store/027-rural-location-geocoding.sql": "4b9665bc372e1735d6c0c6acd91a3addea04c58d992128fc96a4a388542312ce",
+      "scripts/rural-location-release.mjs": "2f64f32deb994105d97ceae78c1cff3e25508d915b9a12ba2c4fcc12960c4048",
+      "scripts/rural-location-release.test.mjs": "102170fc226808dc7d61fdc356657607888f5bcd28468d8f634bd5e0b680279c"
     },
     "preparedReportRules": {
       "mapping": "2026-10-07-ccc-v2",
@@ -5811,5 +5819,48 @@
       "apps/maps-runtime/test/embed.test.mjs": "43db95de01ed22cd5de0d0035f11de9f6d5367236dff27fdb14766adb034a41f",
       "packages/maps-embed/package.json": "8e6208e939b33583adfd9a4f779d0873309ccc7706921546f6666b184bb5ab3b"
     }
+  },
+  "ruralLocationAddressRecovery": {
+    "schemaVersion": "1.0",
+    "taskId": "SRM-NETTO-MAP-RESOLUTION-20261029",
+    "authorityBaseSha": "f6e387f295556f070f0cc1a94fc877cd2f578ea0",
+    "targetEnvironment": "development",
+    "targetServiceId": "srv-db1vu6gm7kps73d0e3r0",
+    "featureVersion": "srm-polish-rural-address-v1",
+    "activation": "EXPLICIT_OPTIONAL_DATABASE_DESCRIPTOR_ONLY",
+    "migration": "027-rural-location-geocoding.sql",
+    "migrationDigest": "4b9665bc372e1735d6c0c6acd91a3addea04c58d992128fc96a4a388542312ce",
+    "preserveOriginalMgbiText": true,
+    "preserveSourceHistory": true,
+    "preserveUncertainSendOnRepresentationOnlyChange": true,
+    "providerAccuracyThresholdChanged": false,
+    "paidProviderPoliciesChanged": false,
+    "runtimeRolesOrGrantsExpanded": false,
+    "otherEnvironmentDeployment": false,
+    "applicationSourceDigests": {
+      "package.json": "2f3fe8c724660225adc0db2ac8d76a0806a5b9a82bf9af60f04e959968bf1281",
+      "scripts/supplier-locations.integration.test.mjs": "fafe45783f6fb202965ff966205bbda453402d4546ce5c2aea711adbb1172ba2",
+      "src/server/supplier-location-source.ts": "3ddcb0ace9ff36d0da309026ceb926cc721fe4f8676e26fadb41ad892bfb6409",
+      "src/server/supplier-location-sync.test.ts": "d342900b2a61314010f59dba7dea09bc8d4e1f1ccc3adb1f416f3a9113f2629c",
+      "src/server/supplier-location-sync.ts": "be29913464d236f92af5b396ec8f9800eecbecdd8b24c5ad27272c5c508fa898",
+      "src/server/supplier-locations.ts": "36e31f44165982188c42db1045cc28107b46352f669b0d6f991eecdeb5036211",
+      "db/private-store/027-rural-location-geocoding.sql": "4b9665bc372e1735d6c0c6acd91a3addea04c58d992128fc96a4a388542312ce",
+      "scripts/rural-location-release.mjs": "2f64f32deb994105d97ceae78c1cff3e25508d915b9a12ba2c4fcc12960c4048",
+      "scripts/rural-location-release.test.mjs": "102170fc226808dc7d61fdc356657607888f5bcd28468d8f634bd5e0b680279c"
+    },
+    "verification": {
+      "isolatedPg16LocationCases": 47,
+      "failed": 0,
+      "skipped": 0,
+      "unitMappingCases": 8,
+      "actualProviderAndBrowserAfterRelease": "PENDING_NOT_A_SUCCESS_CLAIM",
+      "currentAuthorityFocusedCases": 77,
+      "currentAuthorityPlatformVersion": "1.31.0",
+      "releaseGuardCases": 4,
+      "cloudInstallDryRun": "PASS_ROLLBACK_ONLY",
+      "typecheck": "PASS",
+      "businessResultAfterRelease": "PENDING_NOT_A_SUCCESS_CLAIM"
+    },
+    "previousReceiptDigest": "7ae0101ba019f393d20544c2683dda9b87e0287aa0d9693b9576e719822acfec"
   }
 }

@@ -4,8 +4,9 @@ import {completePostalAddress,displayPostalAddress} from '@profitia/srm-xray'
 import {registryCalendarDate} from './company-continuity'
 
 export const LOCATION_PROJECTOR_VERSION='srm-supplier-locations-v1'
+export const POLISH_RURAL_ADDRESS_PROJECTION='srm-polish-rural-address-v1'
 export type LocationProjection=Pick<SupplierLocation,'group'|'kind'|'label'|'description'|'address'|'originalAddress'|'entityKey'|'sources'|'relationship'|'verification'|'lifecycle'>
-export type AcceptedCompanyAddress=Readonly<{supplierId:string;nip:string;krs:string;section:SectionEnvelope<GeneralCompanyData>;source:LocationSource;structuredAddress:PostalAddress|null}>
+export type AcceptedCompanyAddress=Readonly<{supplierId:string;nip:string;krs:string;section:SectionEnvelope<GeneralCompanyData>;source:LocationSource;structuredAddress:PostalAddress|null;addressProjection?:typeof POLISH_RURAL_ADDRESS_PROJECTION}>
 export type AcceptedRelatedSource=Readonly<{supplierId:string;source:LocationSource;entities:NonNullable<VerclyKysData['relatedEntities']>;complete:boolean}>
 const object=(v:unknown):v is Record<string,unknown>=>!!v&&Object.getPrototypeOf(v)===Object.prototype
 const text=(v:unknown,max=160):string|null=>typeof v==='string'&&v.trim()&&v.length<=max&&!/[\u0000-\u001f\u007f]/u.test(v)?v.trim().normalize('NFC'):null
@@ -17,12 +18,18 @@ function sourceValid(source:LocationSource,kind:'MGBI'|'KYS',now:number){
   ||kind==='KYS'&&(!source.retentionUntil||!Number.isFinite(Date.parse(source.retentionUntil))||Date.parse(source.retentionUntil)<=now))throw new TypeError('Current accepted location source required')
 }
 /** Same bounded KRS fields for fresh responses and checksum-verified archives. */
-export function mgbiStructuredLocationAddress(record:unknown):PostalAddress|null{
+export function mgbiStructuredLocationAddress(record:unknown,projection?:string):PostalAddress|null{
  let value=record
  for(const key of ['content','current_excerpt','dane','dzial1','siedzibaIAdres','adres'])value=object(value)?value[key]:null
  if(!object(value))return null
- const line=[text(value.ulica,100),text(value.nrDomu,30)].filter(Boolean).join(' '),unit=text(value.nrLokalu,30)
- return {line1:line?line+(unit?'/'+unit:''):null,postalCode:text(value.kodPocztowy,20),locality:text(value.miejscowosc,100),country:text(value.kraj,80)}
+ const street=text(value.ulica,100),number=text(value.nrDomu,30),unit=text(value.nrLokalu,30)
+ const locality=text(value.miejscowosc,100),country=text(value.kraj,80)
+ // A village without named streets uses its locality and building number.
+ // Both come from the same verified record; no street or coordinate is inferred.
+ const rural=projection===POLISH_RURAL_ADDRESS_PROJECTION&&!street&&!!locality&&!!number
+  &&/^\d{1,6}[a-z]?(?:[-/]\d{1,6}[a-z]?)?$/i.test(number)&&['PL','POLSKA','POLAND'].includes(country?.toUpperCase()??'')
+ const line=[street??(rural?locality:null),number].filter(Boolean).join(' ')
+ return {line1:line?line+(unit?'/'+unit:''):null,postalCode:text(value.kodPocztowy,20),locality,country}
 }
 export function projectSupplierHeadquarters(input:AcceptedCompanyAddress,now=Date.now()):LocationProjection|null{
  sourceValid(input.source,'MGBI',now)
@@ -73,8 +80,13 @@ export function projectRelatedCompanyLocations(input:AcceptedRelatedSource,corpo
 export function sourceAddressVersion(value:Pick<LocationProjection,'address'|'originalAddress'>):string{
  return locationDigest([LOCATION_PROJECTOR_VERSION,value.address,value.originalAddress])
 }
-export function sourceSyncIdentity(organisationId:string,supplierId:string,sources:readonly LocationSource[]):string{
- return 'srm-location-sync-'+locationDigest([LOCATION_PROJECTOR_VERSION,organisationId,supplierId,sources.map(v=>[v.kind,v.reportId,v.version]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))])
+export function sourceSyncIdentity(organisationId:string,supplierId:string,sources:readonly LocationSource[],addressProjection?:typeof POLISH_RURAL_ADDRESS_PROJECTION):string{
+ if(addressProjection!==undefined&&addressProjection!==POLISH_RURAL_ADDRESS_PROJECTION)throw new TypeError('Unknown address projection')
+ const input:unknown[]=[LOCATION_PROJECTOR_VERSION,organisationId,supplierId,sources.map(v=>[v.kind,v.reportId,v.version]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b)))]
+ // Only the corrected rural projection gets a new admitted reconciliation.
+ // Existing source receipts and identities for other addresses are unchanged.
+ if(addressProjection)input.push(addressProjection)
+ return 'srm-location-sync-'+locationDigest(input)
 }
 /** Reconciliation never treats a missing/incomplete source as a deletion. */
 export function sourceIsNewer(previous:LocationSource,next:LocationSource):boolean{

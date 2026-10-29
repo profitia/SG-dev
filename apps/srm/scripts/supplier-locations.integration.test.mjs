@@ -5,7 +5,9 @@ import test from 'node:test'
 import pg from 'pg'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {privateBusinessPlan} from '../db/private-store/initialize.mjs'
-import {createSupplierLocationRuntime,createSupplierLocationHandler} from '../src/server/supplier-locations.ts'
+import {createSupplierLocationRuntime,createSupplierLocationHandler,createSupplierLocationHost} from '../src/server/supplier-locations.ts'
+import {projectSupplierHeadquarters,sourceAddressVersion,POLISH_RURAL_ADDRESS_PROJECTION} from '../src/server/supplier-location-sync.ts'
+import {reconcileLocations,locationSourceEvidence} from '../src/server/supplier-location-store.ts'
 import {createSrmSensitiveOperationHost,readPrivateSupplier,privateSupplierReportId} from '../src/server/supplier-sensitive-operation.ts'
 import {createSrmLocationGeocodingDomain,createSrmLocationGeocodingRequest,createSrmTransientGeocodingDomain} from '../src/server/supplier-location-geocoding.ts'
 import {createSrmNativePgDriver} from '../src/server/native-pg-driver.ts'
@@ -331,6 +333,51 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
    const oldSelection=selection,currentEditVersion=(await(await page()).json()).items.find(v=>v.id===location.id).version,editKey='geo_changed_'+randomUUID(),editCommand={...manual,label:'Geo target changed',address:{...manual.address,line1:'Different 20'},position:null};await runtime.write({request:new Request(ORIGIN+'/api/supplier-locations',{method:'POST',headers:{Origin:ORIGIN,Authorization:'Bearer external-'+U}}),organisationId:A,supplierId:S},'UPDATE',location.id,currentEditVersion,editCommand,editKey)
    selection=oldSelection;await assert.rejects(save(),isOperationDenied)
    const current=(await(await page()).json()).items.find(v=>v.id===location.id);assert.equal(current.coordinates,null);assert.equal(current.address.line1,'Different 20')
+  })
+  await t.test('rural normalization opts in atomically, retains original Source and preserves uncertain delivery under the admitted row lock',async()=>{
+   const functions=['srm.location_sync_write(uuid,uuid,bigint,uuid,text,text,jsonb)','srm.location_installation_descriptor()']
+   const definitions=await Promise.all(functions.map(async f=>(await owner.query('SELECT pg_get_functiondef($1::regprocedure) value',[f])).rows[0].value))
+   const predecessor=(await owner.query("SELECT md5(prosrc) digest FROM pg_proc WHERE oid=$1::regprocedure",[functions[1]])).rows[0].digest
+   const section=structuredClone((await owner.query('SELECT general_json FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows[0].general_json)
+   const oldCatalog=(await owner.query('SELECT general_json,general_sha256 FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows[0]
+   const hq=(await(await page()).json()).items.find(v=>v.kind==='HEADQUARTERS')
+   const oldRow=(await owner.query('SELECT body,address_version,source_version,source_retrieved_at FROM srm.supplier_locations WHERE location_id=$1',[hq.id])).rows[0]
+   const migration=own('027-rural-location-geocoding.sql')
+   await assert.rejects(owner.query(migration),e=>e.code==='42501')
+   await assert.rejects(controlled(async()=>{await owner.query(migration);throw Error('synthetic rollback')}))
+   assert.equal((await owner.query('SELECT md5(prosrc) digest FROM pg_proc WHERE oid=$1::regprocedure',[functions[1]])).rows[0].digest,predecessor)
+   try{
+    await controlled(()=>owner.query(migration))
+    section.retrievedAt=new Date().toISOString();section.data.registeredAddress='30, 73-108, MOTANIEC, POLSKA'
+    const digest=hash(JSON.stringify(section)),source={kind:'MGBI',reportId:'MGBI:'+NIP+':'+digest,version:digest,retrievedAt:section.retrievedAt,effectiveAt:section.effectiveAt,retentionUntil:null}
+    await owner.query('UPDATE srm.catalog_companies SET general_json=$2::jsonb,general_sha256=$3 WHERE nip=$1',[NIP,JSON.stringify(section),digest])
+    const previous={line1:'30',postalCode:'73-108',locality:'MOTANIEC',country:'POLSKA'},normalized={...previous,line1:'MOTANIEC 30'}
+    const projection=projectSupplierHeadquarters({supplierId:S,nip:NIP,krs:section.data.krs,section,source,structuredAddress:normalized,addressProjection:POLISH_RURAL_ADDRESS_PROJECTION})
+    const evidence=[locationSourceEvidence(source,A,NIP)],host=createSupplierLocationHost(options,'supplier.location.sync',evidence)
+    for(const [status,expected]of[['LOW_PRECISION','UNREQUESTED'],['DELIVERY_UNCERTAIN','DELIVERY_UNCERTAIN']]){
+     const body={...oldRow.body,address:previous,originalAddress:section.data.registeredAddress,sources:[source],geocodingStatus:status,coordinates:null}
+     await owner.query("UPDATE srm.supplier_locations SET body=$2::jsonb,address_version=$3,source_retrieved_at=$4,source_version=encode(sha256(convert_to(($2::jsonb->'sources')::text,'UTF8')),'hex') WHERE location_id=$1",[hq.id,JSON.stringify(body),sourceAddressVersion({address:previous,originalAddress:section.data.registeredAddress}),section.retrievedAt])
+     const current=await(await page()).json(),p={action:'SYNC',supplierId:S,locationId:null,addressVersion:null,expectedVersion:current.collectionVersion,command:{sources:evidence.map(v=>({id:v.resource.id,version:v.resource.version}))}}
+     const request=new Request(ORIGIN+'/api/supplier-locations',{method:'POST',headers:{Origin:ORIGIN,Authorization:'Bearer external-'+U}})
+     const input={contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.location.sync',organisationId:A,resourceId:'supplier-locations:'+S,payload:p,request,idempotencyKey:'rural_fixture_'+randomUUID()}
+     const rows=[{...projection,id:hq.id,addressVersion:sourceAddressVersion(projection)}]
+     const result=await host.execute(input,(context,client)=>reconcileLocations(context,client,p,rows));assert.equal(result.decision,'ALLOW')
+     const after=(await(await page()).json()).items.find(v=>v.id===hq.id)
+     assert.equal(after.address.line1,'MOTANIEC 30');assert.equal(after.originalAddress,section.data.registeredAddress);assert.deepEqual(after.sources,[source]);assert.equal(after.geocodingStatus,expected);assert.equal(after.coordinates,null)
+     await assert.rejects(host.execute({...input,organisationId:B,idempotencyKey:'foreign_rural_'+randomUUID()},()=>{throw Error('foreign action must not run')}),isOperationDenied)
+     if(status==='DELIVERY_UNCERTAIN'){
+      const geo=createSrmLocationGeocodingRequest(options,{executorApplicationId:WORKER_APP,job:{schemaDigest:hash(core('007-delegated-jobs.sql')),targetOperation:'supplier.location.geocode',supplierSchemaDigest:hash(core('013-supplier-delegation.sql')),operationSchemaDigest:hash(core('017-additional-request-operations.sql')),locationSchemaDigest:hash(core('019-supplier-location-operations.sql'))}})
+      assert.deepEqual(await geo.request({request,organisationId:A,supplierId:S,locationId:hq.id}),{status:'DELIVERY_UNCERTAIN',paidCalls:0})
+     }
+    }
+    for(const f of functions)assert.equal((await owner.query('SELECT has_function_privilege($1,$2,\'EXECUTE\') allowed',[ROLE,f])).rows[0].allowed,true)
+    assert.equal((await owner.query("SELECT relrowsecurity AND relforcerowsecurity protected FROM pg_class WHERE oid='srm.supplier_locations'::regclass")).rows[0].protected,true)
+   }finally{
+    await controlled(async()=>{for(const definition of definitions)await owner.query(definition)})
+    await owner.query('UPDATE srm.catalog_companies SET general_json=$2::jsonb,general_sha256=$3 WHERE nip=$1',[NIP,JSON.stringify(oldCatalog.general_json),oldCatalog.general_sha256])
+    await owner.query('UPDATE srm.supplier_locations SET body=$2::jsonb,address_version=$3,source_version=$4,source_retrieved_at=$5 WHERE location_id=$1',[hq.id,JSON.stringify(oldRow.body),oldRow.address_version,oldRow.source_version,oldRow.source_retrieved_at])
+   }
+   assert.equal((await owner.query('SELECT md5(prosrc) digest FROM pg_proc WHERE oid=$1::regprocedure',[functions[1]])).rows[0].digest,predecessor)
   })
   await t.test('more than 500 eligible related companies persist and remain paged, with no provider acquisition',async()=>{
    const snapshot=randomUUID(),request=randomUUID(),attempt=randomUUID(),retrieved=new Date().toISOString(),until=future()

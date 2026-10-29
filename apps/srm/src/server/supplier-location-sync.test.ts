@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {mapMgbiGeneralRecord} from './mgbi-general'
 import {projectCompanyGeneralArchive} from './company-general-cache'
-import {mgbiStructuredLocationAddress,projectSupplierHeadquarters,projectRelatedCompanyLocations,sourceAddressVersion,sourceSyncIdentity,sourceIsNewer,type AcceptedCompanyAddress} from './supplier-location-sync'
+import {mgbiStructuredLocationAddress,projectSupplierHeadquarters,projectRelatedCompanyLocations,sourceAddressVersion,sourceSyncIdentity,sourceIsNewer,POLISH_RURAL_ADDRESS_PROJECTION,type AcceptedCompanyAddress} from './supplier-location-sync'
 import {parseManualLocation,currentLocationCoordinates,supplierLocationsMapProjection,type SupplierLocation,type LocationSource} from '@profitia/srm-xray'
 import {canonicalLocationJson,assignedLocationId,locationCommandDigest} from './supplier-location-store'
 const time='2026-10-21T10:00:00.000Z',now=Date.parse(time),supplierId='11111111-1111-4111-8111-111111111111'
@@ -23,6 +23,25 @@ test('partial address remains visible but unresolved; missing source cannot inve
  assert.equal(projectSupplierHeadquarters(c,now)?.kind,'HEADQUARTERS')
  assert.throws(()=>projectSupplierHeadquarters({...c,nip:'9999999999'},now),/identity/)
  assert.equal(projectSupplierHeadquarters({...c,section:{...c.section,data:{...c.section.data!,registrationStatus:'DEREGISTERED'}}},now),null)
+})
+test('opted-in Polish village address joins the verified locality and building number while preserving MGBI text and evidence',()=>{
+ const rural=structuredClone(record),a=rural.content.current_excerpt.dane.dzial1.siedzibaIAdres.adres
+ Object.assign(a,{ulica:'',nrDomu:'30',nrLokalu:'',miejscowosc:'MOTANIEC',kodPocztowy:'73-108'})
+ const legacy=mgbiStructuredLocationAddress(rural),normalized=mgbiStructuredLocationAddress(rural,POLISH_RURAL_ADDRESS_PROJECTION)
+ assert.equal(legacy?.line1,'30');assert.equal(normalized?.line1,'MOTANIEC 30')
+ const c=company(),section=mapMgbiGeneralRecord(rural,time).section
+ const original=projectSupplierHeadquarters({...c,section,structuredAddress:legacy},now)!
+ const corrected=projectSupplierHeadquarters({...c,section,structuredAddress:normalized,addressProjection:POLISH_RURAL_ADDRESS_PROJECTION},now)!
+ assert.equal(corrected.originalAddress,original.originalAddress);assert.deepEqual(corrected.sources,original.sources)
+ assert.equal(corrected.verification,'VERIFIED_SOURCE');assert.notEqual(sourceAddressVersion(corrected),sourceAddressVersion(original))
+ assert.equal(sourceSyncIdentity('org',supplierId,[c.source]),sourceSyncIdentity('org',supplierId,[c.source],undefined))
+ assert.notEqual(sourceSyncIdentity('org',supplierId,[c.source],POLISH_RURAL_ADDRESS_PROJECTION),sourceSyncIdentity('org',supplierId,[c.source]))
+ assert.deepEqual(mgbiStructuredLocationAddress(record,POLISH_RURAL_ADDRESS_PROJECTION),mgbiStructuredLocationAddress(record),'named street mapping is unchanged')
+ for(const patch of[{kraj:'DE'},{miejscowosc:''},{nrDomu:''},{nrDomu:'DZIAŁKA 30'}]){
+  const r=structuredClone(rural);Object.assign(r.content.current_excerpt.dane.dzial1.siedzibaIAdres.adres,patch)
+  assert.deepEqual(mgbiStructuredLocationAddress(r,POLISH_RURAL_ADDRESS_PROJECTION),mgbiStructuredLocationAddress(r))
+ }
+ Object.assign(a,{nrDomu:'30A',nrLokalu:'2'});assert.equal(mgbiStructuredLocationAddress(rural,POLISH_RURAL_ADDRESS_PROJECTION)?.line1,'MOTANIEC 30A/2')
 })
 test('KYS legal entities stay separate, preserve unlocated rows, and require exact legal identifiers for enrichment',()=>{
  const input={supplierId,source:kys,entities:[entity,{...entity,krs:'0000999999',nip:null},{...entity,krs:null,nip:null,name:'Jan Kowalski'}],complete:true}
