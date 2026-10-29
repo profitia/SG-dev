@@ -6071,5 +6071,40 @@
       "pullRequest": 786,
       "sourceSha": "0224d0ff2c5e43fd15a771e8c21f945a14fa8c7f"
     }
+  },
+  "freshRuntimeRefinement": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "64036dbd80ae2486704b955640a416f5f6f0220b",
+    "previousReceiptDigest": "e1b711c712954ed84221ba4e6c29a91a99675897aede42131d8627987d891d2b",
+    "searchRefreshHeadroomMs": 20000,
+    "metadataRefreshHeadroomMs": 30000,
+    "purpose": "Avoid redundant forced credential refresh within the measured FRESH envelope and observe numeric upstream HTTP status without provider data.",
+    "applicationSourceDigests": {
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "f50e07d8700b29ae887c9460ccf5aebe0d5823225004b940327b4ae35e7a6336",
+      "scripts/native-execution-adoption.test.mjs": "cfafa07907dc50abb7a5b7be7ff23fdac9f3bd0da94f9e3b41e2086c855550b2",
+      "scripts/xray-performance-adoption.test.mjs": "9b6ec446be201e0c36f122cd4cbbd0bcd4770a509ed0bf6ed42d941f4af002c1",
+      "src/modules/xray/krs-session-transport.test.ts": "1172877bed9161356cb41201facf235752c4e06082dabceeb0250e3e96e1a7d9",
+      "src/modules/xray/krs-session-transport.ts": "ad3f3209338f3fb275999fe8a77b306738b0a11cecd760a3019cc79b83c438da",
+      "src/server/diagnostic-trace.test.ts": "c02097f754c0f93ea00a22380cfb2edb8efb68d0a73dfd9309700b960fd33e03",
+      "src/server/diagnostic-trace.ts": "8c3e9fd30cae56afb68f1cd53406b1b5023281936c91c2f9ffa328ba7ce340cd",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "6d36bd214fc9f3f8a40eb96a1f2a2f6088b6376e0d00a398da691dfcc80e4504",
+      "src/server/peer-read-boundary.test.ts": "29b80bc9f54773562a62e7a3fa0b7195c4d9497dd67697009f4d6b27f2791bd4",
+      "scripts/xray-workflow-contract.test.ts": "6bc98dde77e7ed0bd35a84b8ce40b9c7c036de0771b118a19f42c8b174f24f23",
+      "scripts/rural-location-release.test.mjs": "b453f4d0b2df0ad4dbf5738e394b3c87b7814e78c35f9cd81b7456aac5283b54"
+    },
+    "serverAuthorityChecksChanged": false,
+    "sharedContractChanged": false,
+    "providerPolicyChanged": false,
+    "providerRetriesAdded": false,
+    "credentialsPersisted": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "sg2SearchBoundaryConsumer": {
+      "projectKey": "SG2",
+      "taskId": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029",
+      "pullRequest": 789,
+      "sourceSha": "c23229e013f0737dc4d0da00ad7ce4d7d66e597e"
+    }
   }
 }

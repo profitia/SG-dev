@@ -4659,5 +4659,43 @@
       "scope": "package peer dependency metadata only; no Maps behavior, activation or permissions"
     },
     "initialCandidateAuthorityMain": "55464b97305f7ef4884304f307b4aa8c2593bdd3"
+  },
+  "xraySearchBoundaryConsolidation": {
+    "taskId": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "64036dbd80ae2486704b955640a416f5f6f0220b",
+    "previousReceiptDigest": "fc64f9e4344c09a342accca0a6ff47f3f979be45b720c3df387156fb0daeac32",
+    "receiver": {
+      "applicationId": "srm",
+      "origin": "https://srm-development-runtime.onrender.com",
+      "sourceSha": "64036dbd80ae2486704b955640a416f5f6f0220b",
+      "currentHumanReadContract": {
+        "id": "profitia.current-human-read",
+        "version": "1.1.0"
+      }
+    },
+    "duplicateCallerAccountReadRemovedForSearch": true,
+    "receiverCurrentAdmissionAndFinalDisclosureRequired": true,
+    "privateOperationBoundariesChanged": false,
+    "authorizationCacheIntroduced": false,
+    "financialBackendDuplicated": false,
+    "sharedContractChanged": false,
+    "deploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "applicationSourceDigests": {
+      "lib/appshell/xray-transport.ts": "c11dee78c9b34705c0900d21319b4461ac17026bcc59cfe9d9c9cbf5bf7a321c",
+      "lib/platform/xray-gateway.ts": "3f658acb284ab8b52dde6c895bad4332f59c2b51bb183a5ca903a27a3900b9c7",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "f2eb422fd1eaddba7159e13aa247e925bf5d74d2a481fd20cffe84c58a6139ae",
+      "tests/native-sql-roundtrips.test.mjs": "8c4d8a4a1655d08d6086937c7bcd4ac4e776a855f0af95dd5b0ffcfad8e5d1c4",
+      "tests/xray-appshell.test.tsx": "d549c1daba08442f8995a106bf1b825e34660f22f8d984348a0b8df926420aa0",
+      "tests/xray-gateway.test.ts": "0a3c2a8557b09744a02630446fced6d24567cced179201b802033a78f4df4fda",
+      "tests/adp-appshell-consumer.test.tsx": "77f3dc2b4a29247fbed2524f54768c3b71aba4a2195dd46a5275f3e3dda9b530",
+      "tests/category-operation.test.ts": "09577234ce4e5fc0555b62b61ab0203dcb003f13ac196e01b5f355664382184d",
+      "tests/identity-runtime.test.ts": "a32128722ea95fa5390ea7aeca10f78faed474461584ab2e119f438e202224f6",
+      "tests/operation-context.test.mjs": "d2381ee9d9a71d42f96e1cbe11f5e62f07c598d0bb995eaeb48dc28934225bbf",
+      "tests/porr-demo-middleware.test.ts": "9a4096e5431b10d57c3d875b1a6f25fd1eb3c3aeace99f5315b7e6ba13afb573",
+      "tests/self-service-account.test.ts": "7e25c707b9e583170f951cdcf142a0523b63dd9267daac76baaa26d83832a227",
+      "tests/integrated-buyer-journey-package.test.mjs": "bfa70d793fb497687dcc8c5e5173d10a8d36b9224466c28738658f837c8e1acb"
+    }
   }
 }

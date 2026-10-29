@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {tracingChannel} from 'node:diagnostics_channel'
+import {channel,tracingChannel} from 'node:diagnostics_channel'
 import {diagnosticEnabled,analyzeDiagnosticSpans,diagnosticRun,diagnosticResource,withDiagnosticRequest,unionLength,exportDiagnosticPacket,type DiagnosticPacket,type DiagnosticSpan,type DiagnosticCompletion} from './diagnostic-trace'
 const pause=(n:number)=>new Promise(resolve=>setTimeout(resolve,n))
 test('interval union,not sum,defines exclusive parent time',()=>{
@@ -133,4 +133,22 @@ test('READY diagnostics require the exact main Development opt-in and identify e
   assert(packet);for(const name of ['READY_REPORT_READ','READY_REPORT_METADATA','REPORT_PREPARATION'])assert(packet.rows.some(r=>r.category===name));
   assert(packet.rows.some(r=>r.unitId==='SRM_STORE_COMPANY'));
  }finally{for(const[k,v]of old)if(v===undefined)delete process.env[k];else process.env[k]=v}
+})
+
+
+test('HTTP observation retains only a bounded numeric status and cannot leak provider data or change results',async()=>{
+ let packet:DiagnosticPacket|undefined
+ const secret='PRIVATE_PROVIDER_HEADER_BODY_URL',requests=[{},{},{}]
+ const result=await withDiagnosticRequest('search',undefined,async()=>{
+  for(const [i,statusCode]of [302,204,secret].entries()){
+   const request=requests[i]
+   channel('undici:request:create').publish({request,url:secret})
+   channel('undici:request:headers').publish({request,response:{statusCode,headers:{authorization:secret,location:secret},body:secret}})
+   channel('undici:request:trailers').publish({request})
+  }
+  return 'unchanged'
+ },{enabled:true,emit:p=>{packet=p}})
+ assert.equal(result,'unchanged');assert(packet)
+ assert.deepEqual(packet.resources.filter(r=>r.kind==='HTTP').map(r=>r.httpStatus),[302,204,undefined])
+ assert.doesNotMatch(JSON.stringify(packet),new RegExp(secret+'|authorization|location'))
 })

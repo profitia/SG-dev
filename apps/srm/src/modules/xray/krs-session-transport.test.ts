@@ -57,9 +57,9 @@ test('main NIP Search and its immediate metadata read use current SDK credential
 test('near-expired, missing, malformed and unverifiable-expiry SDK credentials still refresh before the same metadata read',async()=>mainBrowser(async()=>{
  for(const token of [sdkBearer(29),sdkBearer(-1),null,'opaque','a.e30.c','a.eyJleHAiOiJmdXR1cmUifQ.c']){
   const reads:unknown[]=[],seen:string[]=[]
-  const transport=createKrsSessionTransport(async options=>{reads.push(options);return options?.skipCache?'fresh-bearer':token},async(path,init)=>{seen.push(new Headers(init?.headers).get('Authorization')!);return path==='/api/xray/search'?readyCompany():Response.json({})})
+  const transport=createKrsSessionTransport(async options=>{reads.push(options);return reads.length===1?sdkBearer(60):options?.skipCache?'fresh-bearer':token},async(path,init)=>{seen.push(new Headers(init?.headers).get('Authorization')!);return path==='/api/xray/search'?readyCompany():Response.json({})})
   await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',readBody)
-  assert.deepEqual(reads,[undefined,{skipCache:true},undefined,{skipCache:true}]);assert.equal(seen[1],'Bearer fresh-bearer')
+  assert.deepEqual(reads,[undefined,undefined,{skipCache:true}]);assert.equal(seen[1],'Bearer fresh-bearer')
  }
 }))
 test('a revoked account or grant still returns the current server refusal, with no credential retry or cached DTO',async()=>mainBrowser(async()=>{
@@ -182,8 +182,8 @@ test('main Search never retains credentials or retries a current refusal, includ
   assert.deepEqual(reads,[undefined,undefined]);assert.deepEqual(sent,tokens.map(t=>'Bearer '+t));assert.equal(calls,2)
  }
 }))
-test('main Search refreshes below 45 seconds and on missing or malformed SDK expiry, with one unchanged HTTP command',async()=>mainBrowser(async()=>{
- for(const token of [sdkBearer(44),sdkBearer(29),sdkBearer(-1),null,'opaque','a.e30.c','a.eyJleHAiOiJmdXR1cmUifQ.c']){
+test('main Search refreshes below 20 seconds and on missing or malformed SDK expiry, with one unchanged HTTP command',async()=>mainBrowser(async()=>{
+ for(const token of [sdkBearer(19),sdkBearer(5),sdkBearer(-1),null,'opaque','a.e30.c','a.eyJleHAiOiJmdXR1cmUifQ.c']){
   const reads:unknown[]=[];let calls=0
   const transport=createKrsSessionTransport(async options=>{reads.push(options);return options?.skipCache?'fresh-bearer':token},async(_path,init)=>{
    calls++;assert.equal(new Headers(init?.headers).get('Authorization'),'Bearer fresh-bearer');assert.equal(init?.body,searchBody.body);return Response.json({})
@@ -199,4 +199,18 @@ test('client transport links finite timing to server diagnostic IDs without logg
  try{await createKrsSessionTransport(async()=>sdkBearer(60),async()=>Response.json({}, {headers:{'X-SRM-Diagnostic-Execution':traceId,'X-SRM-Diagnostic-Fragment':fragmentId}}))('/api/xray/search',searchBody)}finally{console.info=original}
  assert.equal(lines.length,1);const event=JSON.parse(lines[0]);assert.equal(event.tokenMode,'CURRENT_SDK');assert.equal(event.traceId,traceId);assert.equal(event.fragmentId,fragmentId)
  assert.doesNotMatch(lines[0],/Bearer|e30[.]|synthetic|9511855233/)
+}))
+
+
+test('main Search avoids a redundant forced refresh with 20-44 seconds while final current refusals remain final',async()=>mainBrowser(async()=>{
+ for(const seconds of [21,29,35,44])for(const status of [200,401,403,503]){
+  const token=sdkBearer(seconds),reads:unknown[]=[];let calls=0
+  const transport=createKrsSessionTransport(async options=>{reads.push(options);return token},async(_path,init)=>{
+   calls++;assert.equal(new Headers(init?.headers).get('Authorization'),'Bearer '+token)
+   assert.equal(init?.body,searchBody.body);assert.equal(new Headers(init?.headers).get('Idempotency-Key'),'same-command')
+   return Response.json({error:'current outcome'},{status})
+  })
+  assert.equal((await transport('/api/xray/search',{...searchBody,headers:{'Idempotency-Key':'same-command'}})).status,status)
+  assert.deepEqual(reads,[undefined]);assert.equal(calls,1,'No provider retry or retained authority')
+ }
 }))
