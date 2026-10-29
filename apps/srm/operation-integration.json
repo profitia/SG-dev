@@ -6090,7 +6090,8 @@
       "src/server/diagnostic-trace.ts": "8c3e9fd30cae56afb68f1cd53406b1b5023281936c91c2f9ffa328ba7ce340cd",
       "src/server/supplier-location-geocoding-runtime.test.ts": "6d36bd214fc9f3f8a40eb96a1f2a2f6088b6376e0d00a398da691dfcc80e4504",
       "src/server/peer-read-boundary.test.ts": "3dc48060beb05f5f3c07544772f6c4d68306636d700e2153b1390e9211c6761f",
-      "scripts/xray-workflow-contract.test.ts": "6bc98dde77e7ed0bd35a84b8ce40b9c7c036de0771b118a19f42c8b174f24f23"
+      "scripts/xray-workflow-contract.test.ts": "6bc98dde77e7ed0bd35a84b8ce40b9c7c036de0771b118a19f42c8b174f24f23",
+      "scripts/rural-location-release.test.mjs": "b453f4d0b2df0ad4dbf5738e394b3c87b7814e78c35f9cd81b7456aac5283b54"
     },
     "serverAuthorityChecksChanged": false,
     "sharedContractChanged": false,
