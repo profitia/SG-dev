@@ -59,7 +59,7 @@ export async function bundleAdp(entry, {browser = false, write = false, outdir, 
       b.onResolve({filter:/^@profitia\/srm-xray(?:\/.*)?$/},args=>{
         const publicXray=process.env.XRAY_UI_SOURCE||path.resolve(appRoot,'../../packages/srm-xray');
         const pkg=JSON.parse(fs.readFileSync(path.join(publicXray,'package.json'),'utf8'));
-        const accepted=JSON.parse(fs.readFileSync(path.join(appRoot,'xray-appshell-integration.json'),'utf8')).publicUi;
+        const accepted=JSON.parse(fs.readFileSync(path.join(appRoot,'operation-integration.json'),'utf8')).freshPerformanceRecovery.publicUi;
         if(pkg.name!=='@profitia/srm-xray'||pkg.version!==accepted.version)throw Error('Unaccepted public X-Ray dependency');
         const hash=createHash('sha256');for(const file of accepted.sourceFiles){if(path.isAbsolute(file)||file.split('/').includes('..'))throw Error('Invalid public source path');hash.update(file).update('\0').update(fs.readFileSync(path.join(publicXray,file))).update('\0');}
         if(hash.digest('hex')!==accepted.sourceDigest)throw Error('Public X-Ray source differs');
