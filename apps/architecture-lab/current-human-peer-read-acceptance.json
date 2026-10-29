@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-CURRENT-HUMAN-PEER-READ-20261029",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "authorityBaseSha": "55464b97305f7ef4884304f307b4aa8c2593bdd3",
+  "platformVersion": "1.32.0",
+  "contract": {
+    "id": "profitia.current-human-read",
+    "version": "1.1.0"
+  },
+  "scope": "Verified receiver request uses canonical peer identity input only for the official SDK; the actual business request remains bound through final fresh authority revalidation.",
+  "preserved": [
+    "current session, account and authoritative identity binding observations twice",
+    "no settled authorization cache",
+    "receiver request object, headers, cancellation and peer proof deadline",
+    "RLS, tenant isolation, canonical INTENT/OUTCOME and COMMIT",
+    "standalone behavior and all unrelated contract digests"
+  ],
+  "requiredConsumerTasks": {
+    "SRM": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "SG2": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029"
+  },
+  "localTests": {
+    "currentHumanReadAndPeer": 67,
+    "failed": 0,
+    "postgresVersion": 18,
+    "realProviderCalls": 0
+  },
+  "sourceDigests": {
+    "src/current-human-read.mjs": "81a8977e119d1c844812c6598ac79024530830e3eaed5e57cbfa2a45f4379325",
+    "src/current-human-read.d.mts": "0b3858e217511522ae8be2df5b8ff9f433ce360c435056ae4ef7055631f9f17d",
+    "test/current-human-read.test.mjs": "8dd9d41a43cfdc52d3b33b11b0eccdd5cfb1d002c97c02c503fcf1fc843046e4",
+    "package.json": "e8c9f5eda73be29b95d892698eb3f5e4cafcb522c135c7194177654922de03d6",
+    "package-lock.json": "e54cd376398ca072f3dcaf5e67de9c785cc529e213defe1c7bed44c6cdefeb88"
+  }
+}
