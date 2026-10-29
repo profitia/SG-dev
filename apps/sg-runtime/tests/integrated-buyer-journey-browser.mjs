@@ -146,6 +146,7 @@ try{
  assert.equal(await ui.getByLabel('Data benchmarku do porównania',{exact:true}).inputValue(),'2024-01-02')
  await page.request.post(base+'/__acceptance/price-data',{data:{scenario:'unavailable'}});await checkData()
  await availability.getByRole('alert').waitFor();assert.match(await availability.innerText(),/Ponów/)
+ assert.equal(await ui.locator('.pci-base-fields > [role=alert]').count(),0,'Explicit retry clears the previous calculation error')
  await page.request.post(base+'/__acceptance/price-data',{data:{scenario:'monthly'}})
  await ui.getByLabel('Data benchmarku do porównania',{exact:true}).fill('2024-01-01');await ui.getByLabel('Co oznaczają wartości benchmarków?').selectOption('PERIOD_AVERAGE')
  await availability.getByText(/Wybrany okres jeszcze się nie zakończył/).waitFor()

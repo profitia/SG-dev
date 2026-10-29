@@ -83,7 +83,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
     }catch(e){if(active.current){setSaveStatus('error');setError(e instanceof Error?e.message:'Nie potwierdzono zapisu kategorii.')}}
     // An unconfirmed write is never automatically retried with a new create identity.
   }
-  const controller:PciBusinessController={name,components,purchase,step,busy,error,result,preparation,onPrepare:()=>setPrepareAttempt(n=>n+1),categorySaveStatus:saveStatus,ready:pciStructureReady(name,components),
+  const controller:PciBusinessController={name,components,purchase,step,busy,error,result,preparation,onPrepare:()=>{setError(null);setPrepareAttempt(n=>n+1)},categorySaveStatus:saveStatus,ready:pciStructureReady(name,components),
     onNameChange:value=>{changed();setName(value)},onComponentChange:(id,patch)=>{changed();if('valueKind' in patch)setPurchase(p=>({...p,economicPeriodApproved:false}));setComponents(c=>c.map(x=>x.id===id?{...x,...patch}:x))},
     onRemove:id=>{changed();setPurchase(p=>({...p,economicPeriodApproved:false}));setComponents(c=>c.filter(x=>x.id!==id))},onPickBenchmark:id=>setPickTarget({id}),
     onPurchaseChange:patch=>{changed();setPurchase(p=>({...p,...patch,...(['purchaseDate','referenceDate','periodBasis','reduction'].some(key=>key in patch)?{economicPeriodApproved:false}:{})}))},onStep:value=>{setError(null);setStep(value)},onAnalyse:()=>void analyse(),onSaveCategory:()=>void saveCategory(),onClose:close}
