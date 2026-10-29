@@ -137,8 +137,12 @@ export function projectArchivedFinancialDocuments(archive: FinancialArchive, org
 
 export async function saveFinancialDocuments(organizationId: string, nip: string, pages: unknown[], pool?: DatabasePool): Promise<{ documents: number; positions: number }> {
  return diagnosticRun('DOCUMENT_PREPARE',async ()=>{
+  const records=financialRecordsFromPages(pages);
+  if(records.length>10_000)throw new Error("Financial document limit exceeded");
+  const hasDocuments=records.some(raw=>["financial_statement","consolidated_financial_statement"].includes(String(object(object(raw).document).type))&&!!text(object(raw).id));
   const capturedPages = JSON.stringify(pages);
   return withOrganization(organizationId, async client => {
+    if(!hasDocuments)return persistFinancialDocuments(client,organizationId,nip,[]);
     // When the source has already been archived, prepare from its verified
     // persisted bytes and bind the derived rows to that exact inventory. A
     // later READ must not need an implicit write to establish provenance.
@@ -148,7 +152,7 @@ export async function saveFinancialDocuments(organizationId: string, nip: string
        WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE`,
       [organizationId,nip,capturedPages])).rows[0];
     if (!archive) return persistFinancialDocuments(client, organizationId, nip,
-      projectFinancialDocuments(financialRecordsFromPages(pages)));
+      projectFinancialDocuments(records));
     if (!archive.pages_match) throw new Error("Financial preparation source differs from current archive");
     return persistFinancialDocuments(client, organizationId, nip,
       projectArchivedFinancialDocuments(archive,organizationId,nip),archive.payload_jsonb_sha256);

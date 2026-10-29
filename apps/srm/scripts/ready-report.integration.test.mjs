@@ -91,7 +91,9 @@ test('ready report native Source and current HUMAN read preserve complete financ
    for(const optimized of [false,true]){
     if(optimized)await controlled(()=>owner.query(own('028-fresh-report-performance.sql')))
     const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command}
-    await store.register(selection)
+    const registered=await store.registerAndCache(selection)
+    assert.equal(registered.lookup.requestId,selection.requestId)
+    assert.equal(Object.hasOwn(registered,'cache'),optimized,'old SQL must retain the separate cache Work, not invent a cache miss')
     let timing;const logger=console.info
     console.info=value=>{try{const x=JSON.parse(value);if(x.event==='srm_supplier_timing')timing=x}catch{logger(value)}}
     let stored
@@ -106,6 +108,10 @@ test('ready report native Source and current HUMAN read preserve complete financ
     await assert.rejects(work.run(selection,'SRM_STORE_COMPANY',{probe:optimized},async(_context,client)=>{
      await client.query("SELECT set_config('profitia.srm.financial.snapshot',$1,true)",[stored.financialSnapshotId])
      target=(await client.query('SELECT srm.financial_statement_target() target')).rows[0].target
+     for(const foreign of [stored.generalSnapshotId,randomUUID()]){
+      await client.query("SELECT set_config('profitia.srm.financial.snapshot',$1,true)",[foreign])
+      assert.equal((await client.query('SELECT srm.financial_statement_target() target')).rows[0].target,null)
+     }
      throw sentinel
     }),isOperationDenied)
     assert.equal(target===null,!optimized)
@@ -188,34 +194,43 @@ test('ready report native Source and current HUMAN read preserve complete financ
    assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE event->>'operation'='job.execute'")).rows[0].n,work)
    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.ready_report_read_outcomes')).rows[0].n,1)
   })
-  await t.test('existing peer fallback projection retains current identity and tenant fences without source writes',async()=>{
+  await t.test('AppShell uses the same prepared READY reader with current identity, rollback and tenant fences',async()=>{
    const caller='https://dev-sg2.spendguru.app',receiver='https://srm-development-runtime.onrender.com'
    const policy={environment:'development',callerApplicationId:'spendguru',receiverApplicationId:'srm',sourceOrigin:caller,targetOrigin:receiver,
     keyId:'synthetic-ready-peer',key:new Uint8Array(32).fill(7),routes:[{method:'POST',path:'/api/xray/search',maximumRequestBytes:2048,requireIdempotencyKey:true}],internalOrigins:[]}
-   let revoked=false
+   let revoked=false,revokeDuring=false,accounts=0,sessions=0,sdk=0
    const peerClerk={...original,authenticateRequest:async(...args)=>{
+    sdk++
     const state=await original.authenticateRequest(...args),auth=state.toAuth()
     return {status:state.status,isAuthenticated:state.isAuthenticated,toAuth:()=>({...auth,sessionClaims:{...auth.sessionClaims,azp:caller}})}
-   },users:{getUser:async id=>({...await original.users.getUser(id),banned:revoked})}}
-   const projection=createSrmCompanyCardRead({...base,clerk:peerClerk,
+   },sessions:{getSession:async id=>{sessions++;return original.sessions.getSession(id)}},users:{getUser:async id=>({...await original.users.getUser(id),banned:revoked||revokeDuring&&++accounts===2})}}
+   // Count both current account observations independently of their result.
+   const getUser=peerClerk.users.getUser
+   peerClerk.users.getUser=async id=>{if(!revokeDuring)accounts++;return getUser(id)}
+   const projection=createSrmReadyCompanyRead({...base,clerk:peerClerk,
     identity:{...base.identity,authorizedParties:[caller,receiver],requestBoundary:{publicOrigins:[caller,receiver],internalOrigins:['http://0.0.0.0:10000']}},
-    application:{...base.application,operations:['supplier.report.read']}},
-   {identity:{nip:NIP,krs:general.data.krs,name:general.data.legalName},general,financial:financial.section,kys:emptyCard.kys})
+    application:{...base.application,operations:['supplier.report.read']}},digest,'synthetic-ready-peer-secret-longer-than-32')
    const incoming=()=>createPeerOperationSigner(policy)(new Request(receiver+'/api/xray/search',{method:'POST',headers:{authorization:'Bearer synthetic-only',
      'content-type':'application/json','idempotency-key':'peer-projection-'+randomUUID()},body:JSON.stringify({identifier:NIP})}))
    const run=org=>withSrmPeerXRay(async request=>{
-    try{const response=await projection.read(request,org);return Response.json({entityType:'COMPANY',card:await response.json()})}
+    try{const prepared=await projection.read(request,org,NIP);assert(prepared.response);const {metadata,...card}=await prepared.response.json();return Response.json({entityType:'COMPANY',card,metadata})}
     catch(error){return supplierHttpFailure(error)}
    },{TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',
     PROFITIA_XRAY_PEER_VERSION:'1.0.0',PROFITIA_XRAY_PEER_KEY_ID:policy.keyId,PROFITIA_XRAY_PEER_KEY:Buffer.from(policy.key).toString('base64url')})
    const before=await counts(),response=await run(A)(await incoming())
    assert.equal(response.status,200);assert.equal((await response.json()).data.card.identity.nip,NIP)
+   assert.deepEqual({sdk,sessions,accounts},{sdk:1,sessions:2,accounts:2})
+   const after=await counts();assert.equal(after.reads,before.reads+1);assert.equal(after.lookups,before.lookups+1)
+   assert.equal(after.snapshots,before.snapshots);assert.equal(after.quota,before.quota)
+   accounts=0;revokeDuring=true
+   const during=await run(A)(await incoming());assert.equal(during.status,401);assert(!Object.hasOwn(await during.json(),'data'))
+   assert.deepEqual(await counts(),after);revokeDuring=false
    revoked=true
    const revokedResponse=await run(A)(await incoming());assert.equal(revokedResponse.status,401);assert(!Object.hasOwn(await revokedResponse.json(),'data'))
    revoked=false
    const foreignResponse=await run('33333333-3333-4333-8333-333333333333')(await incoming())
    assert.equal(foreignResponse.status,403);assert(!Object.hasOwn(await foreignResponse.json(),'data'))
-   assert.deepEqual(await counts(),before)
+   assert.deepEqual(await counts(),after)
   })
   await t.test('complete native FRESH pipeline prepares the report once and the next READY opening performs no Work',async()=>{
    const selectedNip='5260250274',accepted=await f.parent(A,selectedNip)
