@@ -37,10 +37,7 @@ test('rural adoption pins exact current files and retains previous authority, pr
  assert.equal(a.targetServiceId,'srv-db1vu6gm7kps73d0e3r0');assert.equal(a.featureVersion,'srm-polish-rural-address-v1')
  const previous=execFileSync('git',['show',a.authorityBaseSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(previous),a.previousReceiptDigest)
- for(const[k,v]of Object.entries(JSON.parse(previous))){
-  if(k==='xrayPerformanceRecoveryV2')assert.deepEqual({...receipt[k],applicationSourceDigests:v.applicationSourceDigests},v)
-  else assert.deepEqual(receipt[k],v,k)
- }
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
  assert.equal(hash(fs.readFileSync(new URL('../db/private-store/'+a.migration,import.meta.url))),a.migrationDigest)
  for(const flag of ['providerAccuracyThresholdChanged','paidProviderPoliciesChanged','runtimeRolesOrGrantsExpanded','otherEnvironmentDeployment'])assert.equal(a[flag],false,flag)
