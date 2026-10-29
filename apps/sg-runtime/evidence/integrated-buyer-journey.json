@@ -859,5 +859,92 @@
     "productDeploymentPerformed": false,
     "schemaChanged": false,
     "newE1Grants": false
+  },
+  "componentVisibilityCorrection20261029": {
+    "taskId": "SG2-PCI-CATEGORY-COMPONENTS-VISIBILITY-FIX",
+    "status": "SOURCE_CORRECTIVE_LOCAL_VERIFIED_NOT_RELEASED",
+    "authorityBaselineSha": "d6561053d25a4132dcfbc82c24924f7d9d6c3ee1",
+    "rootCause": "ProductView used compact?1:2 and sliced the controller components array; add navigated to the last component page. The complete data remained in state but prior rows and declarations were absent from the rendered page.",
+    "implementation": [
+      "Complete stable-ID controller array rendered in one named scrollable table; component pagination removed.",
+      "Ordinal/unfinished-name marker and distinct category/component/benchmark accessible labels; names remain explicit and blank until buyer input.",
+      "Focus/reveal added row; all prior rows retain identity, name, weight and benchmark. Existing callbacks and Shared Picker unchanged.",
+      "All per-component value declarations in one named region; fixed layer/footer and phone row grid; no horizontal overflow."
+    ],
+    "acceptanceMatrix": [
+      {
+        "scenario": "Oil+Steel simultaneously in continuous structure, edit either without component pages",
+        "status": "PASS",
+        "evidence": "apps/sg-runtime/tests/integrated-buyer-journey-browser.mjs"
+      },
+      {
+        "scenario": "2/3/5/8/12 components; all fields/actions keyboard-reachable in list order",
+        "status": "PASS",
+        "evidence": "apps/sg-runtime/tests/integrated-buyer-journey-browser.mjs"
+      },
+      {
+        "scenario": "90-percent structure remains editable and not ready; 100-percent valid structure ready",
+        "status": "PASS",
+        "evidence": "apps/sg-runtime/tests/integrated-buyer-journey-browser.mjs"
+      },
+      {
+        "scenario": "Shared Picker replacement preserves component ID/name/weight and every peer; middle remove/re-add retains peers",
+        "status": "PASS",
+        "evidence": "apps/sg-runtime/tests/integrated-buyer-journey-browser.mjs"
+      },
+      {
+        "scenario": "390x844,768x1024,1440x640,1440x900,2560x1440 light/dark; all rows/declarations discoverable; fixed footer; no outer overflow",
+        "status": "PASS",
+        "evidence": "apps/sg-runtime/tests/integrated-buyer-journey-browser.mjs"
+      },
+      {
+        "scenario": "Five-component real BFF/Core/IndexedPrice path with synthetic external responses produces1200PLN/tona and returns to unchanged Finder query/expanded result/focus",
+        "status": "PASS",
+        "evidence": "apps/sg-runtime/tests/integrated-buyer-journey-browser.mjs"
+      }
+    ],
+    "browser": {
+      "externalIdentityAndProvider": "SYNTHETIC_LOOPBACK_ONLY",
+      "calculation": "REAL_EXISTING_BFF_CCI_CORE_INDEXED_PRICE",
+      "geometryCases": 90,
+      "componentCounts": [
+        2,
+        3,
+        5,
+        8,
+        12
+      ],
+      "browserErrors": [],
+      "keyboard": "Tab through every field/action and12 declarations; Escape/focus return retained",
+      "artifactDirectory": "/private/tmp/sg2-pci-category-components-visibility-fix-20261029/browser",
+      "geometrySha256": "28bc766821ec100fa60b007292b4fdedc5bd40859bedbe17e65de56183b6a8c8",
+      "liveClerkMacrobondAcceptance": "NOT_PERFORMED_CORRECTION_NOT_DEPLOYED"
+    },
+    "regression": {
+      "focusedTests": 359,
+      "typecheck": "PASS",
+      "independentPublicHost": "PASS_12_COMPONENTS_STABLE_IDENTITIES_AND_DECLARATIONS",
+      "trustedCleanInstallBuildAndFullSuite": "REQUIRED_AT_EXACT_CANDIDATE_SHA_IN_CI"
+    },
+    "preserved": [
+      "Category Builder contracts and12-component/integer-weight/sum100 readiness",
+      "Clerk session and E1 operation authorization/organisation isolation",
+      "Macrobond integration and Shared Picker",
+      "CCI/IndexedPrice methodology and supported category persistence",
+      "Accepted AppShell/ADP/SRM/Forecast source and existing source provenance"
+    ],
+    "developmentReadback": {
+      "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+      "liveDeployId": "dep-dbheukg8v5cc738a99cg",
+      "liveSha": "30d44989d5f923e832c43e8bbd9a3cd84ea0cabc",
+      "externalDeploymentActivityObserved": "Externald656 attempt canceled; externalf6e387 deployment deactivated after rollback to30d44989. This task did not trigger/cancel/rollback any service. Re-read current main/LKG before any separately approved release.",
+      "mutationsByThisTask": false
+    },
+    "separateDateFeedbackCandidate": "PR780 retained separately; no date-methodology expansion in this corrective",
+    "mergePerformed": false,
+    "deploymentPerformed": false,
+    "neonMigrationPerformed": false,
+    "stagingProductionChanged": false,
+    "provenanceRenewal": "Initial exact-source CI32a0a36f refused modification of historical PCI receipt. Preserve that entire receipt and record four exact current receiver renewals plus two PCI presentation digests in an additive task-owned record. Dedicated test verifies complete prior receipt hash, every historical field and the exact renewal set; controller/policy unchanged. Fresh exact-head CI required."
   }
 }

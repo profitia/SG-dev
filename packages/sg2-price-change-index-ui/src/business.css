@@ -12,3 +12,52 @@
 @media(max-width:650px){.pci-business .v3-canon-chart-workspace{padding-right:2.5rem}}
 .pci-business .v3-canon-chart-workspace .srm-sr-only{position:absolute!important;width:1px;height:1px;padding:0!important;margin:-1px!important;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .pci-business .v3-canon-chart-workspace .srm-price-time-tick[data-label-visible="false"] time{visibility:hidden}
+
+/* Keep the entire composition in one table; constrain the list rather than paging rows away. */
+.pci-business[data-flow-screen=setup] .v3-flow-content{display:flex;flex-direction:column}
+.pci-business[data-flow-screen=setup] .v3-context,.pci-business[data-flow-screen=setup] .v3-steps{flex:0 0 auto}
+.pci-business[data-flow-screen=setup] .v3-grid2{flex:1 1 0;min-height:0;align-items:stretch;grid-template-rows:minmax(0,1fr)}
+.pci-business[data-flow-screen=setup] .v3-setup-panel{min-height:0;align-self:stretch;align-content:start;overflow:hidden}
+.pci-business[data-flow-step="1"] .v3-setup-panel{grid-template-rows:auto auto auto minmax(0,1fr) auto auto}
+.pci-business[data-flow-step="1"] .v3-table-wrap{min-height:0;overflow:auto;overscroll-behavior:contain}
+.pci-business[data-flow-step="1"] td{padding:8px}
+.pci-business[data-flow-step="3"] .pci-series-declarations{min-height:0;max-height:180px;overflow:auto}
+@media(max-height:700px){
+ .pci-business[data-flow-screen=setup] .v3-setup-panel{padding:8px;gap:6px 10px}
+ .pci-business[data-flow-screen=setup] .v3-setup-panel>h2{font-size:16px;line-height:1.25}
+ .pci-business[data-flow-screen=setup] .v3-setup-panel>p{font-size:11px;line-height:1.3}
+ .pci-business[data-flow-screen=setup] .v3-setup-panel label{font-size:11px;line-height:1.3}
+ .pci-business[data-flow-screen=setup] .v3-setup-panel input:not([type=checkbox]),.pci-business[data-flow-screen=setup] .v3-setup-panel select{height:32px;min-height:32px;padding:5px 8px;font-size:12px}
+ .pci-business[data-flow-step="1"] td{padding:4px 6px}
+ .pci-business[data-flow-screen=setup] .v3-structure-help{margin-top:0;font-size:11px}
+}
+@media(max-width:650px){
+ .pci-business[data-flow-step="3"] .v3-setup-panel>label:not(.pci-period-approval){grid-column:auto;font-size:11px;line-height:1.25}
+ .pci-business[data-flow-step="3"] .v3-setup-panel select{max-width:100%;min-width:0}
+ .pci-business[data-flow-step="3"] .pci-series-declarations{grid-template-columns:repeat(2,minmax(0,1fr));font-size:11px;line-height:1.25}
+ .pci-business[data-flow-step="3"] .pci-series-declarations label{min-width:0}
+ .pci-business[data-flow-step="3"] .v3-setup-panel>p{font-size:11px}
+}
+
+.pci-business .pci-component-name{display:flex;flex-direction:column;gap:3px;margin:0;min-width:0}
+.pci-business .pci-component-marker{font-size:10px;line-height:1.25;color:var(--muted);overflow-wrap:anywhere}
+.pci-business .pci-component-name input{width:100%;min-width:0}
+.pci-business .pci-benchmark-control{overflow-wrap:anywhere}
+.pci-business .pci-series-declarations{overscroll-behavior:contain;scroll-padding-block:8px;padding:3px}
+.pci-business[data-flow-step="1"] .v3-structure-help>div{top:auto;bottom:calc(100% + 8px);max-height:220px;overflow:auto}
+@media(max-width:650px){
+ .pci-business[data-flow-step="1"] table,.pci-business[data-flow-step="1"] tbody{display:block;width:100%}
+ .pci-business[data-flow-step="1"] thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+ .pci-business[data-flow-step="1"] tr[data-component-id]{display:grid;grid-template-columns:minmax(0,1fr) 72px 32px;gap:4px;border-bottom:1px solid var(--line);padding:6px}
+ .pci-business[data-flow-step="1"] tr[data-component-id]:last-child{border-bottom:0}
+ .pci-business[data-flow-step="1"] td{display:block;min-width:0;padding:0;border:0}
+ .pci-business[data-flow-step="1"] td:nth-child(2){display:flex;align-items:flex-end}
+ .pci-business[data-flow-step="1"] td:nth-child(3){grid-column:1/3;grid-row:2}
+ .pci-business[data-flow-step="1"] td:last-child{grid-column:3;grid-row:1/3;align-self:center}
+ .pci-business[data-flow-step="1"] td:last-child button{width:32px;padding:6px}
+}
+
+.pci-business .pci-component-weight{display:flex;flex-direction:column;gap:3px;min-width:0;width:100%}
+.pci-business .pci-component-weight input{min-width:0;width:100%}
+.pci-business .pci-weight-label{display:none;font-size:10px;line-height:1.25;color:var(--muted)}
+@media(max-width:650px){.pci-business .pci-weight-label{display:block}}

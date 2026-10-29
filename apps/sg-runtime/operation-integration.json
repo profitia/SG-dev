@@ -4373,7 +4373,7 @@
       "tests/category-operation.test.ts": "9028eadd71c00b7aa4a1cf4227e3c0b68aedc0f9cc74d928074cd419a2af5512",
       "tests/diagnostic-telemetry-adoption.test.mjs": "e29d4d9207577f63f16e77b2cbdb2464fb99eb0742f23954c66dca7dddc82464",
       "tests/identity-runtime.test.ts": "d1cf9088265985c36f8cf4d2f7600becff290c2bbd82e576c7b1f73754db58f6",
-      "tests/integrated-buyer-journey-package.test.mjs": "0994db2daccb8748482bb5b61970d9c3b28c98c9afe15a42ed8d2b42b70aeff1",
+      "tests/integrated-buyer-journey-package.test.mjs": "d83e4b9207c1e91a72f5f369371974ce12f1766153eedbc74a06e1083344c047",
       "tests/native-sql-roundtrips.test.mjs": "2c4335290b51f407d047afcb9ec85e37923b59fe0be7ea65f3e62d2f6d5448e3",
       "tests/operation-context.test.mjs": "66dc68cb475c3ff23da91338e3f0f5a4294fa085c3963dc56155b6310980f5ca",
       "tests/porr-demo-middleware.test.ts": "24f3aac4d31f1a28b3d431935451a7458b169952021a2c6aff1f0792fadbeb30",
@@ -4386,10 +4386,37 @@
       "tests/xray-platform-compatibility.test.mjs": "85b0e4a38dd521e7c0e3c9c94a46afef92d91b1b612b859d8c737b8c360e2d2b",
       "xray-appshell-integration.json": "43d1abd63fac339ad0f5ebfd1214beaf276e3cf1560357f951e751fc2eb5d5eb",
       "../dashboard-preview/package-lock.json": "a8e5b14605b035eba7bf451c36ee549ce5fa1e568096c60a2c541869ece66686",
-      "../../packages/maps-embed/package.json": "8e6208e939b33583adfd9a4f779d0873309ccc7706921546f6666b184bb5ab3b"
+      "../../packages/maps-embed/package.json": "8e6208e939b33583adfd9a4f779d0873309ccc7706921546f6666b184bb5ab3b",
+      "docs/integrated-buyer-journey-contract.md": "abccebba31a65eff8c424c1ba1f3ca1eb2f2896b18e6f02b1ecafd52137b3a9a",
+      "tests/integrated-buyer-journey-browser.mjs": "d964dc050457422b2c44f3080554fe9e444121909c29a0155394f6e8ce913e0e",
+      "tests/integrated-buyer-journey-preview.mjs": "d6a2db9bc07763ce60b12a1b83e7dd49efb550575ce8b8eb155a35a8d10a21a0"
     },
     "repositorySourceDigests": {
       "apps/dashboard-preview/package-lock.json": "a8e5b14605b035eba7bf451c36ee549ce5fa1e568096c60a2c541869ece66686"
     }
+  },
+  "pciComponentsVisibilitySourceCompatibility": {
+    "taskId": "SG2-PCI-CATEGORY-COMPONENTS-VISIBILITY-FIX",
+    "scope": "PRESENTATION_ONLY_COMPONENT_VISIBILITY_AND_EDITING",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "d6561053d25a4132dcfbc82c24924f7d9d6c3ee1",
+    "previousReceiptSha256": "0b0603f1d58c8d01e48636dce17b943db8f28cc3b21d25c2f823e0a06766f91e",
+    "currentReceiverSection": "appshellXraySourceCompatibility",
+    "currentReceiverDigestOverrides": {
+      "docs/integrated-buyer-journey-contract.md": "abccebba31a65eff8c424c1ba1f3ca1eb2f2896b18e6f02b1ecafd52137b3a9a",
+      "tests/integrated-buyer-journey-browser.mjs": "d964dc050457422b2c44f3080554fe9e444121909c29a0155394f6e8ce913e0e",
+      "tests/integrated-buyer-journey-preview.mjs": "d6a2db9bc07763ce60b12a1b83e7dd49efb550575ce8b8eb155a35a8d10a21a0",
+      "tests/integrated-buyer-journey-package.test.mjs": "d83e4b9207c1e91a72f5f369371974ce12f1766153eedbc74a06e1083344c047"
+    },
+    "publicUiSourceDigests": {
+      "packages/sg2-price-change-index-ui/src/BusinessPriceChangeIndex.tsx": "12b2d551e61fedcbfb9edbde4e5cb33d29e1a15fb0b5cc3a8fa938b858c0e74f",
+      "packages/sg2-price-change-index-ui/src/business.css": "a5cf5bea5b1d77ac88b00b1168bc9608f1cabc373f05baad309f64cd7aa51104"
+    },
+    "historicalAcceptancePreserved": true,
+    "productDeploymentPerformed": false,
+    "calculationChanged": false,
+    "identityOrGrantsChanged": false,
+    "schemaChanged": false,
+    "explanation": "Keep the accepted PCI receipt byte-for-byte. Renew only explicitly listed current receiver digests in the existing last receiver closure; this record binds those renewals and the current PCI presentation to the complete previous receipt, including its original receiver map."
   }
 }

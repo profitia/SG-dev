@@ -18,11 +18,32 @@ test('new receiver acceptance is additive, binds the whole closure and retains e
  assert.equal(hash(prior),a.previousReceiptSha256)
  for(const [key,value]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[key],value,key)
  for(const [file,digest]of Object.entries({...a.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests,...receipt.appshellXraySourceCompatibility.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
- for(const [file,digest]of Object.entries(a.publicUiSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ for(const [file,digest]of Object.entries({...a.publicUiSourceDigests,...receipt.pciComponentsVisibilitySourceCompatibility.publicUiSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
  assert.equal(a.design.motherRevisionId,'465857540723474432');assert.equal(a.design.layerRevisionId,'465816145245642752')
  assert.equal(a.dependencies['587'],'adbf34ffe16f25f4e097c9456dc962260bb1963e')
  for(const flag of ['newE1Grants','schemaChanged','neonMigrationPerformed','productDeploymentPerformed'])assert.equal(a[flag],false,flag)
  assert.equal(a.liveCustomerAcceptance,'NOT_PERFORMED_DEPLOYMENT_NOT_AUTHORIZED')
+})
+
+test('PCI correction preserves every historical acceptance and renews only its exact current receiver bindings',()=>{
+ const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),current=receipt.pciComponentsVisibilitySourceCompatibility
+ assert.equal(current.taskId,'SG2-PCI-CATEGORY-COMPONENTS-VISIBILITY-FIX');assert.equal(current.scope,'PRESENTATION_ONLY_COMPONENT_VISIBILITY_AND_EDITING')
+ assert.equal(current.previousReceiptSourceSha,'d6561053d25a4132dcfbc82c24924f7d9d6c3ee1');assert.equal(current.currentReceiverSection,'appshellXraySourceCompatibility')
+ const bytes=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot}),before=JSON.parse(bytes)
+ assert.equal(hash(bytes),current.previousReceiptSha256)
+ for(const[key,value]of Object.entries(before)){
+  // Retain the whole old current-receiver map in the pinned Git receipt; every
+  // other historical field remains byte-for-byte, including PCI/AppShell pins.
+  const observed=key===current.currentReceiverSection?{...receipt[key],applicationSourceDigests:value.applicationSourceDigests}:receipt[key]
+  assert.deepEqual(observed,value,key)
+ }
+ const keys=['docs/integrated-buyer-journey-contract.md','tests/integrated-buyer-journey-browser.mjs','tests/integrated-buyer-journey-package.test.mjs','tests/integrated-buyer-journey-preview.mjs']
+ assert.deepEqual(Object.keys(current.currentReceiverDigestOverrides).sort(),keys)
+ assert.deepEqual(receipt[current.currentReceiverSection].applicationSourceDigests,{...before[current.currentReceiverSection].applicationSourceDigests,...current.currentReceiverDigestOverrides})
+ for(const[file,digest]of Object.entries(current.currentReceiverDigestOverrides))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ assert.deepEqual(Object.keys(current.publicUiSourceDigests).sort(),['packages/sg2-price-change-index-ui/src/BusinessPriceChangeIndex.tsx','packages/sg2-price-change-index-ui/src/business.css'])
+ assert.equal(current.historicalAcceptancePreserved,true)
+ for(const flag of ['productDeploymentPerformed','calculationChanged','identityOrGrantsChanged','schemaChanged'])assert.equal(current[flag],false,flag)
 })
 
 test('public business entry mounts and unmounts in a minimal independent host',async()=>{
@@ -52,12 +73,27 @@ test('public business entry mounts and unmounts in a minimal independent host',a
     })
   }
   await input('.v3-category-name input','Kategoria w niezależnym hoście')
-  await input('input[aria-label="Komponent"]','Miedź')
+  await input('input[aria-label="Nazwa komponentu 1"]','Miedź')
   await input('input[type="number"]','90')
   await React.act(async()=>render())
   assert.equal(controller.name,'Kategoria w niezależnym hoście');assert.equal(controller.components[0].name,'Miedź');assert.equal(controller.components[0].weightPercent,90)
   assert.equal(shadow.querySelector('.v3-category-name input').value,controller.name)
-  assert.equal(shadow.querySelector('input[aria-label="Komponent"]').value,'Miedź');assert.equal(shadow.querySelector('input[type="number"]').value,'90')
+  assert.equal(shadow.querySelector('input[aria-label="Nazwa komponentu 1"]').value,'Miedź');assert.equal(shadow.querySelector('input[type="number"]').value,'90')
+  // A short viewport must never drop rows from the public composition contract.
+  controller.components=Array.from({length:12},(_,i)=>({id:'stable-'+i,name:i===4?'':'Składnik testowy '+i,weightPercent:0,valueKind:'',benchmark:{businessBenchmarkId:'test-'+i,displayName:'Test benchmark '+i}}))
+  await React.act(async()=>render())
+  assert.equal(shadow.querySelectorAll('tr[data-component-id]').length,12)
+  assert.equal(shadow.querySelectorAll('.v3-component-pager').length,0)
+  const blank=shadow.querySelector('tr[data-component-id="stable-4"]')
+  assert.equal(blank.querySelector('input').value,'');assert.match(blank.textContent,/Bez nazwy/);assert.match(blank.textContent,/Test benchmark 4/)
+  const before=controller.components.map(c=>({...c}))
+  await input('input[aria-label="Nazwa komponentu 9"]','Własna nazwa');await input('input[aria-label="Udział procentowy komponentu 9"]','90')
+  assert.equal(controller.components[8].id,'stable-8');assert.equal(controller.components[8].name,'Własna nazwa');assert.equal(controller.components[8].weightPercent,90)
+  assert.deepEqual(controller.components.filter((_,i)=>i!==8),before.filter((_,i)=>i!==8))
+  assert.equal(controller.name,'Kategoria w niezależnym hoście')
+  controller.step=3;await React.act(async()=>render())
+  assert.equal(shadow.querySelectorAll('.pci-series-declarations select').length,12)
+  assert.match(shadow.querySelector('.pci-series-declarations').textContent,/Bez nazwy/)
   await React.act(async()=>root.unmount());assert.equal(host.childNodes.length,0)
  }finally{dom.window.close();for(const name of names){const descriptor=prior.get(name);if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name]}}
 })

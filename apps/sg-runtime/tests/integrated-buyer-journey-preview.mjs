@@ -8,9 +8,9 @@ import {bundleAdp,appRoot,runtimeRequire} from './adp-appshell-preview.mjs'
 import {createPriceChangeIndexHandler} from '../lib/cost-analysis/price-change-index-operation.ts'
 export const organisation='11111111-1111-4111-8111-111111111111'
 const provider={providerCode:'MACROBOND',displayName:'Macrobond'}
-const candidates=['Copper','Energy'].map((displayName,i)=>({candidateId:'macrobond:s'+i,displayName,description:null,provider,providerSeries:{provider,providerSeriesId:'s'+i,providerSeriesKey:'s'+i},frequency:'daily',currency:'USD',unit:'index',source:'SYNTHETIC BROWSER FIXTURE',region:'World',metadata:{},lastObservationDate:'2024-01-03'}))
+const candidates=['Copper','Energy','Oil','Steel','Aluminium','Gas','Electricity','Plastic','Transport','Labor','Packaging','Water','Nickel'].map((displayName,i)=>({candidateId:'macrobond:s'+i,displayName,description:null,provider,providerSeries:{provider,providerSeriesId:'s'+i,providerSeriesKey:'s'+i},frequency:'daily',currency:'USD',unit:'index',source:'SYNTHETIC BROWSER FIXTURE',region:'World',metadata:{},lastObservationDate:'2024-01-03'}))
 const saved=c=>({selectionId:'selection-'+c.candidateId,businessBenchmarkId:c.providerSeries.providerSeriesId,organizationId:organisation,displayName:c.displayName,provider,providerSeries:c.providerSeries,frequency:c.frequency,currency:c.currency,unit:c.unit,source:c.source,selectedAt:'2024-01-01T00:00:00.000Z'})
-const history=c=>({providerSeries:c.providerSeries,displayName:c.displayName,frequency:'DAILY',currency:'USD',unit:'index',source:c.source,range:'ALL',latestValue:120,historical:[0,1,2].map((n)=>({date:'2024-01-0'+(n+1),value:c.displayName==='Copper'?[80,100,120][n]:[110,100,90][n]}))})
+const history=c=>({providerSeries:c.providerSeries,displayName:c.displayName,frequency:'DAILY',currency:'USD',unit:'index',source:c.source,range:'ALL',latestValue:120,historical:[0,1,2].map((n)=>({date:'2024-01-0'+(n+1),value:c.displayName==='Energy'?[110,100,90][n]:[80,100,120][n]}))})
 const outdir=process.env.JOURNEY_PREVIEW_OUTPUT
 if(!outdir||!path.isAbsolute(outdir))throw Error('Own absolute acceptance output required')
 fs.mkdirSync(outdir,{recursive:true})
