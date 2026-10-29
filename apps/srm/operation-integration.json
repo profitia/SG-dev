@@ -5949,7 +5949,10 @@
       "scripts/private-host.integration.test.mjs": "053b320b3f2153ede5c4b1a9518e537b32b2c1128edf66df75afa391eac676d5",
       "scripts/request-quota-adoption.test.mjs": "8f3da29a4503aa919af09aed802f8d99371e25929aaccdf9efd656abc24dda1e",
       "scripts/rural-location-release.test.mjs": "2c4a7e625da3b051c79137944c2f77cc503d2f5930a66f333b545179767580ca",
-      "scripts/supplier-location-admission.integration.test.mjs": "3ccbcc20faffda1e3aa704f36e89e5b4a7eb7b3aebf498ba53d95b232eb0ba77"
+      "scripts/supplier-location-admission.integration.test.mjs": "3ccbcc20faffda1e3aa704f36e89e5b4a7eb7b3aebf498ba53d95b232eb0ba77",
+      "scripts/xray-workflow-contract.test.ts": "1db635d2d423eb3000794318cf2abd3e1fb597a2710ae7b75cbef53c2a092efb",
+      "../maps-runtime/platform-integration.json": "c59c58d81701e5b0c7905670f162052315255c64c9dca2616562a10093d75dcb",
+      "../maps-runtime/test/embed.test.mjs": "c4d0f3bd1fd2a18a2a56ae696fe5e6e7c56c8ac7210c17e478d6db26320dc763"
     },
     "compatibilityPackageDigests": {
       "packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b"
@@ -5966,6 +5969,11 @@
       "taskId": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029",
       "pullRequest": 786,
       "sourceSha": "68987bf480133c0ccb9875f16889d077ac68433e"
+    },
+    "repositorySourceDigests": {
+      "apps/maps-runtime/platform-integration.json": "c59c58d81701e5b0c7905670f162052315255c64c9dca2616562a10093d75dcb",
+      "apps/maps-runtime/test/embed.test.mjs": "c4d0f3bd1fd2a18a2a56ae696fe5e6e7c56c8ac7210c17e478d6db26320dc763",
+      "packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b"
     }
   }
 }
