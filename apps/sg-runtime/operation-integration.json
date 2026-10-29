@@ -4452,14 +4452,15 @@
       "tests/self-service-account.test.ts": "8a96d839d005d375d808a8b14e4a09075347a28dfb91d89951987d1a80d016c2",
       "tests/adp-appshell-consumer.test.tsx": "246c3ee977127c572a1699e00507686676819b0b30684635beb36cebbe221d38",
       "tests/porr-demo-middleware.test.ts": "4425b4563976dc6b5a832fb52b123380f70ff5203b8141f60f9de10c153c47e4",
-      "tests/integrated-buyer-journey-package.test.mjs": "9f0a64527d2591f6e11bebc0f4bb406c596a02a451d280099122517ca5841c25",
+      "tests/integrated-buyer-journey-package.test.mjs": "dfd67c221a7d6810e0f78d62efdbd7bc8dabe6246bba401ca405a3bb2c85a229",
       "tests/operation-context.test.mjs": "aef6fdc1581c1c172e1759f019f2e6b275f5c6175f6aac9c8c102ea5310d5ccb",
       "tests/native-sql-roundtrips.test.mjs": "e7e10e64224dcfcabd6781295568cd322a90c15eaa32c8dd657838a6e7e641fa",
       "tests/identity-runtime.test.ts": "8b768f8ee019b9cc0b30715d749fd45d65cdc5f982251cd7eab94ca3881c6567",
       "tests/category-operation.test.ts": "731aaf180e8ba788446d0f643640756d4c24a049b4b6a2bfa30ff7cf4ee70d08",
       "tests/supplier-summary.test.ts": "20eb9fd461a4d1aa2e18e208d4a67b9b5378a9acc7d78ee4f5c0d3af80fa387a",
       "tests/adp-appshell-preview.mjs": "332117d56e478459b7c576dc7c8a9b466b231bd0849d3be1ba9843b3e002fe77",
-      "tests/xray-gateway.test.ts": "499b792b0799cbbdf6147325f1e23beb76131d4edd06f792da40af95f68e1a38"
+      "tests/xray-gateway.test.ts": "499b792b0799cbbdf6147325f1e23beb76131d4edd06f792da40af95f68e1a38",
+      "../../packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b"
     },
     "backend": "existing shared SRM only",
     "peerTransportContractVersion": "1.0.0",
@@ -4559,6 +4560,13 @@
       "pullRequest": 787,
       "sourceSha": "99293009e4c5cd74bfd69fca5759ba182d38c303"
     },
-    "browserTelemetryOnly": true
+    "browserTelemetryOnly": true,
+    "mapsDependencyCompatibilityProducer": {
+      "projectKey": "SRM",
+      "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+      "pullRequest": 787,
+      "sourceSha": "99293009e4c5cd74bfd69fca5759ba182d38c303",
+      "scope": "package peer dependency metadata only; no Maps behavior, activation or permissions"
+    }
   }
 }
