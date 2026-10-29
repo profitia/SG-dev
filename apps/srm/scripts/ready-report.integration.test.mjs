@@ -11,6 +11,11 @@ import {withSupplierTelemetry} from '../src/server/supplier-telemetry.ts'
 import {createSrmNativeCompanyLookup} from '../src/server/supplier-native-company.ts'
 import {createSrmCorporateSourceStore,CORPORATE_PUBLICATION_VERSION} from '../src/server/corporate-source-store.ts'
 import {createSrmReadyCompanyRead} from '../src/server/ready-report-read.ts'
+import {createSrmCompanyCardRead} from '../src/server/supplier-company-read.ts'
+import {emptyCard} from '../src/demo/fixture.ts'
+import {createPeerOperationSigner} from '@profitia/platform-contracts/peer-operation'
+import {withSrmPeerXRay} from '../src/server/peer-xray.ts'
+import {supplierHttpFailure} from '../src/server/supplier-acquisition-http.ts'
 import {PREPARED_REPORT_RULES,PREPARED_REPORT_VERSION} from '../src/server/ready-report.ts'
 import {mapMgbiGeneralRecords} from '../src/server/mgbi-general.ts'
 import {mapMgbiFinancialRecords} from '../src/server/mgbi-financial.ts'
@@ -147,6 +152,35 @@ test('ready report native Source and current HUMAN read preserve complete financ
    const after=await counts();assert.equal(after.reads,before.reads+1);assert.equal(after.lookups,before.lookups+1);assert.equal(after.snapshots,before.snapshots);assert.equal(after.quota,before.quota)
    assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE event->>'operation'='job.execute'")).rows[0].n,work)
    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.ready_report_read_outcomes')).rows[0].n,1)
+  })
+  await t.test('existing peer fallback projection retains current identity and tenant fences without source writes',async()=>{
+   const caller='https://dev-sg2.spendguru.app',receiver='https://srm-development-runtime.onrender.com'
+   const policy={environment:'development',callerApplicationId:'spendguru',receiverApplicationId:'srm',sourceOrigin:caller,targetOrigin:receiver,
+    keyId:'synthetic-ready-peer',key:new Uint8Array(32).fill(7),routes:[{method:'POST',path:'/api/xray/search',maximumRequestBytes:2048,requireIdempotencyKey:true}],internalOrigins:[]}
+   let revoked=false
+   const peerClerk={...original,authenticateRequest:async(...args)=>{
+    const state=await original.authenticateRequest(...args),auth=state.toAuth()
+    return {status:state.status,isAuthenticated:state.isAuthenticated,toAuth:()=>({...auth,sessionClaims:{...auth.sessionClaims,azp:caller}})}
+   },users:{getUser:async id=>({...await original.users.getUser(id),banned:revoked})}}
+   const projection=createSrmCompanyCardRead({...base,clerk:peerClerk,
+    identity:{...base.identity,authorizedParties:[caller,receiver],requestBoundary:{publicOrigins:[caller,receiver],internalOrigins:['http://0.0.0.0:10000']}},
+    application:{...base.application,operations:['supplier.report.read']}},
+   {identity:{nip:NIP,krs:general.data.krs,name:general.data.legalName},general,financial:financial.section,kys:emptyCard.kys})
+   const incoming=()=>createPeerOperationSigner(policy)(new Request(receiver+'/api/xray/search',{method:'POST',headers:{authorization:'Bearer synthetic-only',
+     'content-type':'application/json','idempotency-key':'peer-projection-'+randomUUID()},body:JSON.stringify({identifier:NIP})}))
+   const run=org=>withSrmPeerXRay(async request=>{
+    try{const response=await projection.read(request,org);return Response.json({entityType:'COMPANY',card:await response.json()})}
+    catch(error){return supplierHttpFailure(error)}
+   },{TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',
+    PROFITIA_XRAY_PEER_VERSION:'1.0.0',PROFITIA_XRAY_PEER_KEY_ID:policy.keyId,PROFITIA_XRAY_PEER_KEY:Buffer.from(policy.key).toString('base64url')})
+   const before=await counts(),response=await run(A)(await incoming())
+   assert.equal(response.status,200);assert.equal((await response.json()).data.card.identity.nip,NIP)
+   revoked=true
+   const revokedResponse=await run(A)(await incoming());assert.equal(revokedResponse.status,401);assert(!Object.hasOwn(await revokedResponse.json(),'data'))
+   revoked=false
+   const foreignResponse=await run('33333333-3333-4333-8333-333333333333')(await incoming())
+   assert.equal(foreignResponse.status,403);assert(!Object.hasOwn(await foreignResponse.json(),'data'))
+   assert.deepEqual(await counts(),before)
   })
   await t.test('complete native FRESH pipeline prepares the report once and the next READY opening performs no Work',async()=>{
    const selectedNip='5260250274',accepted=await f.parent(A,selectedNip)

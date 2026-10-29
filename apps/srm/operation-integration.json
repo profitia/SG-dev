@@ -5859,5 +5859,43 @@
       "businessResultAfterRelease": "PENDING_NOT_A_SUCCESS_CLAIM"
     },
     "previousReceiptDigest": "7ae0101ba019f393d20544c2683dda9b87e0287aa0d9693b9576e719822acfec"
+  },
+  "appshellReadyPeerRecovery": {
+    "status": "SOURCE_CANDIDATE_ONLY",
+    "taskId": "SRM-APPSHELL-XRAY-READY-PEER-FIX-20261029",
+    "validationTaskIds": [
+      "SRM-APPSHELL-XRAY-READY-PEER-VALIDATION-20261029",
+      "SRM-APPSHELL-XRAY-READY-PEER-COMPAT-20261029"
+    ],
+    "previousReceiptSourceSha": "e0e56fedfb72a98e79ec9d63153e1d0dbea68b21",
+    "previousReceiptDigest": "4d8aee3bdd5484e01d49453c11876211d0abb91e08a661aee5eb13adf8947468",
+    "acceptedHostSourceSha": "f6e387f295556f070f0cc1a94fc877cd2f578ea0",
+    "compatibleHostSourceSha": "e0e56fedfb72a98e79ec9d63153e1d0dbea68b21",
+    "compatibleHostReceiptDigest": "d098f69c836d213028633d5cd01577b5d3792cda77ff9a873613f5d53e38c917",
+    "platformVersion": "1.31.0",
+    "peerContractVersion": "1.0.0",
+    "selection": "EXISTING_CANONICAL_SUPPLIER_PATH_FOR_VERIFIED_PEERS",
+    "reason": "SDK1.31 optimized current-HUMAN READY identity does not consume verified peer operation receipts. Preserve ordinary SRM READY and reuse existing canonical supplier paths for verified peers at both initial routing and final public company projection.",
+    "taskStartHead": "d6561053d25a4132dcfbc82c24924f7d9d6c3ee1",
+    "taskCreatedChangeClassification": "TRANSITIONAL",
+    "applicationSourceDigests": {
+      "scripts/native-execution-adoption.test.mjs": "27af9dac760234597cb5684219c424480f7cbfa3bbee7b29b3792e85df68e664",
+      "scripts/ready-report.integration.test.mjs": "c741142b1144672d8263b9ce9b0a2a8b0b734207d2d0c5bf5d5fd49f6dde2073",
+      "scripts/rural-location-release.test.mjs": "29d6f6ccce8c83496334c459117fc94d20bf3c815275f82c41ac8675f6ee211d",
+      "scripts/xray-performance-adoption.test.mjs": "3552092316e74ff958a2244d0b6ee851964398c1591b36e8b1e032ca476d5e86",
+      "scripts/xray-workflow-contract.test.ts": "b1ecd81c8a34d80b1f112bee5f4b924d290d254635358a4fa13a65ff42910056",
+      "src/server/appshell-ready-peer.test.ts": "57157a6543614e5d875ceac7e7742d1c1b7988f9fe3a09ba2ed72ddccfb2fd2d",
+      "src/server/peer-read-boundary.test.ts": "7a78c06730aebfa1bd3c4d0553edb333c8d904f3254f6cd022a4ad66dc76ee0d",
+      "src/server/supplier-acquisition-http.ts": "d2af44eb7e2dee3378fc96099dad579823c39f038c62bd9161b8cf7c440008c4",
+      "src/server/supplier-api-composition.ts": "6662f8ea01795b1a70866e24f26962795928b6c1058ffbf0028dc15ecc467680",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "656f4da9d584193311a126bba39212a14546c4277d207d5c3e7a1ca61c389729"
+    },
+    "sdkChanged": false,
+    "identityChanged": false,
+    "standaloneReadyChanged": false,
+    "grantsOrMembershipChanged": false,
+    "schemaChanged": false,
+    "providerLogicDuplicated": false,
+    "productDeploymentPerformed": false
   }
 }
