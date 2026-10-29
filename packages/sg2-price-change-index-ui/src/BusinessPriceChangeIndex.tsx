@@ -22,25 +22,23 @@ import business from './business.css?inline'
 const styles=[theme,bindings,shared,v3,stacked,completion,fit,crosshair,labels,range,presets,time,history,business].join('\n')
 const fmt=(n:number|null)=>n==null?'—':new Intl.NumberFormat('pl-PL',{maximumFractionDigits:2}).format(n)
 function ProductView({controller:c}:PriceChangeIndexBusinessProps){
-  const [page,setPage]=useState(0),[compact,setCompact]=useState(false),[mode,setMode]=useState<'monitor'|'compare'>('monitor')
+  const [compact,setCompact]=useState(false),[mode,setMode]=useState<'monitor'|'compare'>('monitor')
   const [editing,setEditing]=useState<{id:string;text:string}|null>(null)
   const root=useRef<HTMLDivElement>(null),content=useRef<HTMLElement>(null)
   useLayoutEffect(()=>{const el=root.current;if(!el)return;const observer=new ResizeObserver(([entry])=>setCompact(entry.contentRect.width<650||entry.contentRect.height<700));observer.observe(el);return()=>observer.disconnect()},[])
-  useEffect(()=>{content.current?.scrollTo({top:0});setPage(0)},[c.step,mode])
-  const count=compact?1:2,pages=Math.max(1,Math.ceil(c.components.length/count)),currentPage=Math.min(page,pages-1)
+  useEffect(()=>{content.current?.scrollTo({top:0})},[c.step,mode])
   const previousCount=useRef(c.components.length),focusAdded=useRef<string|null>(null)
   useLayoutEffect(()=>{
     if(c.components.length>previousCount.current){
       focusAdded.current=c.components.at(-1)!.id
-      setPage(Math.floor((c.components.length-1)/count))
     }
     previousCount.current=c.components.length
     if(focusAdded.current){
       const row=Array.from(root.current?.querySelectorAll<HTMLTableRowElement>('tr[data-component-id]')??[]).find(el=>el.dataset.componentId===focusAdded.current)
-      if(row){row.querySelector<HTMLInputElement>('input')?.focus({preventScroll:true});focusAdded.current=null}
+      if(row){row.scrollIntoView?.({block:'nearest'});row.querySelector<HTMLInputElement>('input')?.focus({preventScroll:true});focusAdded.current=null}
     }
-  },[c.components,count,currentPage])
-  const visible=c.components.slice(currentPage*count,(currentPage+1)*count),p=c.purchase
+  },[c.components])
+  const p=c.purchase
   const purchaseReady=Number(p.amount.replace(',','.'))>0&&!!p.currency.trim()&&!!p.unit.trim()&&!!p.taxBasis&&!!p.deliveryBasis.trim()
   const dateReady=!!p.purchaseDate&&!!p.referenceDate&&!!p.periodBasis&&c.components.every(x=>x.valueKind)
   const result=c.result,last=result?.nodes.slice().reverse().find(n=>n.price!==null)
@@ -56,16 +54,15 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
             <h2>Jakie komponenty i benchmarki tworzą koszt Twojej kategorii?</h2>
             <p>Uzupełnij strukturę. Benchmark przekazany z wyszukiwarki zostaje zachowany.</p>
             <label className="v3-category-name">Nazwa kategorii<input value={c.name} maxLength={120} onInput={e=>c.onNameChange(e.currentTarget.value)}/></label>
-            <div className="v3-table-wrap"><table><thead><tr><th>Komponent</th><th>Udział %</th><th>Wybrany benchmark</th><th><span className="pci-sr-only">Usuń</span></th></tr></thead><tbody>{visible.map(component=><tr key={component.id} data-component-id={component.id}>
-              <td><input aria-label="Komponent" value={component.name} maxLength={120} onInput={e=>c.onComponentChange(component.id,{name:e.currentTarget.value})}/></td>
-              <td><input aria-label={'Udział % '+component.name} type="number" min={0} max={100} step={1} inputMode="numeric" value={editing?.id===component.id?editing.text:component.weightPercent}
+            <div className="v3-table-wrap" role="region" aria-label="Wszystkie komponenty kategorii" tabIndex={0}><table><caption className="pci-sr-only">Struktura kosztowa kategorii {c.name||'bez nazwy'}</caption><thead><tr><th>Nazwa komponentu</th><th>Udział %</th><th>Wybrany benchmark</th><th><span className="pci-sr-only">Usuń</span></th></tr></thead><tbody>{c.components.map((component,index)=><tr key={component.id} data-component-id={component.id}>
+              <td><label className="pci-component-name"><span className="pci-component-marker" id={'pci-name-status-'+component.id}>Składnik {index+1}{!component.name.trim()?' · Bez nazwy':''}</span><input aria-label={'Nazwa komponentu '+(index+1)} aria-describedby={'pci-name-status-'+component.id} placeholder="Podaj nazwę" value={component.name} maxLength={120} onInput={e=>c.onComponentChange(component.id,{name:e.currentTarget.value})}/></label></td>
+              <td><label className="pci-component-weight"><span className="pci-weight-label">Udział %</span><input aria-label={'Udział procentowy komponentu '+(index+1)} type="number" min={0} max={100} step={1} inputMode="numeric" value={editing?.id===component.id?editing.text:component.weightPercent}
                 onFocus={()=>setEditing({id:component.id,text:component.weightPercent===0?'':String(component.weightPercent)})}
-                onBlur={()=>setEditing(null)} onInput={e=>{const text=e.currentTarget.value;setEditing({id:component.id,text});c.onComponentChange(component.id,{weightPercent:text===''?0:Number(text)})}}/></td>
-              <td><button className="pci-benchmark-control" onClick={()=>c.onPickBenchmark(component.id)} title={component.benchmark.displayName}>{component.benchmark.displayName}<span aria-hidden>⌄</span></button></td>
-              <td><button aria-label={'Usuń komponent '+component.name} onClick={()=>c.onRemove(component.id)}>×</button></td>
+                onBlur={()=>setEditing(null)} onInput={e=>{const text=e.currentTarget.value;setEditing({id:component.id,text});c.onComponentChange(component.id,{weightPercent:text===''?0:Number(text)})}}/></label></td>
+              <td><button className="pci-benchmark-control" aria-label={'Zmień benchmark komponentu '+(index+1)+': '+component.benchmark.displayName} onClick={()=>c.onPickBenchmark(component.id)} title={component.benchmark.displayName}>{component.benchmark.displayName}<span aria-hidden>⌄</span></button></td>
+              <td><button aria-label={'Usuń komponent '+(index+1)+' — '+(component.name.trim()||'bez nazwy')} onClick={()=>c.onRemove(component.id)}>×</button></td>
             </tr>)}</tbody></table></div>
-            {pages>1&&<div className="v3-component-pager"><button disabled={currentPage===0} onClick={()=>setPage(currentPage-1)}>Poprzednie komponenty</button><span>{currentPage+1} / {pages}</span><button disabled={currentPage===pages-1} onClick={()=>setPage(currentPage+1)}>Kolejne komponenty</button></div>}
-            <p className="v3-structure-total">Łącznie: <b>{fmt(c.components.reduce((sum,x)=>sum+x.weightPercent,0))}%</b> · Uzupełnij do 100% i przypisz benchmarki</p>
+            <p className="v3-structure-total">{c.components.length} komponentów · Łącznie: <b>{fmt(c.components.reduce((sum,x)=>sum+x.weightPercent,0))}%</b>{c.ready?' · Struktura gotowa':' · Uzupełnij do 100% i przypisz benchmarki'}</p>
             <div className="v3-actions v3-component-add"><button disabled={c.components.length>=12} onClick={()=>c.onPickBenchmark(null)}>+ Dodaj komponent</button></div>
             <details className="v3-structure-help"><summary>Jak przygotować strukturę?</summary><div><p>Kategoria wymaga co najmniej dwóch komponentów. Udziały to liczby całkowite od 0 do 100; suma musi wynosić 100%.</p></div></details>
           </>}
@@ -83,8 +80,7 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
             <label>Data węzła bazowego<input type="date" value={p.referenceDate} onInput={e=>c.onPurchaseChange({referenceDate:e.currentTarget.value})}/></label>
             <label>Znaczenie obserwacji<select value={p.periodBasis} onChange={e=>c.onPurchaseChange({periodBasis:e.target.value as typeof p.periodBasis})}><option value="">Wybierz metodę</option><option value="POINT_IN_TIME">Poziom w danym dniu</option><option value="END_OF_PERIOD">Koniec okresu</option><option value="PERIOD_AVERAGE">Średnia okresowa</option></select></label>
             <label>Łączenie kadencji<select value={p.reduction} onChange={e=>c.onPurchaseChange({reduction:e.target.value as typeof p.reduction})}><option value="NATIVE_ONLY">Wyłącznie natywne węzły</option><option value="END_OF_PERIOD">Koniec wspólnego okresu</option><option value="OBSERVATION_AVERAGE">Średnia obserwacji w okresie</option></select></label>
-            <div className="pci-series-declarations">{visible.map(component=><label key={component.id}>{component.name} · rodzaj danych<select value={component.valueKind} onChange={e=>c.onComponentChange(component.id,{valueKind:e.target.value as typeof component.valueKind})}><option value="">Wybierz</option><option value="PRICE_LEVEL">Poziom ceny</option><option value="PRICE_INDEX">Indeks cenowy</option></select></label>)}</div>
-            {pages>1&&<div className="v3-component-pager"><button disabled={currentPage===0} onClick={()=>setPage(currentPage-1)}>Poprzednie</button><span>{currentPage+1} / {pages}</span><button disabled={currentPage===pages-1} onClick={()=>setPage(currentPage+1)}>Kolejne</button></div>}
+            <div className="pci-series-declarations" role="region" aria-label="Dane wszystkich komponentów" tabIndex={0}>{c.components.map((component,index)=><label key={component.id}>{index+1}. {component.name.trim()||'Bez nazwy'} · rodzaj danych<select aria-label={'Rodzaj danych komponentu '+(index+1)} value={component.valueKind} onChange={e=>c.onComponentChange(component.id,{valueKind:e.target.value as typeof component.valueKind})}><option value="">Wybierz</option><option value="PRICE_LEVEL">Poziom ceny</option><option value="PRICE_INDEX">Indeks cenowy</option></select></label>)}</div>
             <label className="v3-confirm pci-period-approval"><input type="checkbox" checked={p.economicPeriodApproved} onChange={e=>c.onPurchaseChange({economicPeriodApproved:e.target.checked})}/>Jawnie przypisuję zakup do wskazanego okresu ekonomicznego. To referencja okresu, nie notowanie z dnia transakcji.</label>
           </>}
         </section><aside className="v3-panel v3-setup-summary"><details open={!compact} className="v3-setup-summary-disclosure"><summary>Podsumowanie</summary><div><h3>Twoja kategoria</h3><p>{c.name||'Nadaj nazwę kategorii'}</p><p>{c.components.length} komponentów · {fmt(c.components.reduce((sum,x)=>sum+x.weightPercent,0))}%</p><p>{p.amount&&p.currency&&p.unit?`${p.amount} ${p.currency}/${p.unit}`:'Uzupełnij cenę zakupu'}</p><p>{p.purchaseDate||'Wybierz datę zakupu'}</p><p>Analiza nie zapisuje kategorii ani oferty. Zapis struktury jest osobną, jawną akcją.</p></div></details></aside></div>
