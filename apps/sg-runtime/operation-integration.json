@@ -4158,14 +4158,14 @@
       "SG2-APPSHELL-XRAY-HISTORICAL-CLOSURE-20261028",
       "SG2-APPSHELL-XRAY-UPSTREAM-COMPAT-20261029"
     ],
-    "previousReceiptSourceSha": "075ff7ba158c90f74e026e9e8034a22eae8d11de",
+    "previousReceiptSourceSha": "77f7908756a343f4c62bed50fb2a0e52af1cc375",
     "previousReceiptDigest": "24be96344ef9afc656360b189f8dad2ee29856e1789f22d8e5ce63921a03e0bd",
     "previousReceiptSha256": "24be96344ef9afc656360b189f8dad2ee29856e1789f22d8e5ce63921a03e0bd",
     "platformVersion": "1.31.0",
     "architectureProducer": {
       "projectKey": "ARCHITECTURE",
       "pullRequest": 773,
-      "sourceSha": "b256cb1459a64fdb4e1fff0e04c676936560d34b",
+      "sourceSha": "dcc1e6cdfc8d3d70b258efe1aaef9b141fac116a",
       "platformVersion": "1.31.0",
       "peerOperationVersion": "1.0.0",
       "peerOperationDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7"
@@ -4258,7 +4258,7 @@
         "projectKey": "SRM",
         "taskId": "SRM-APPSHELL-XRAY-PRODUCER-20261028",
         "pullRequest": 775,
-        "sourceSha": "2b29f8fedc8b26577976dd15b68192f406b127ac"
+        "sourceSha": "fded1f10852c80def37e5d084a35918064a0f9a3"
       }
     },
     "sourceDigests": {
@@ -4382,7 +4382,7 @@
       "tests/xray-browser-preview.tsx": "ac1ad6b44ad03c44c431b7af98b5767b1c164d12ff9a9a1267ab00089dce7b71",
       "tests/xray-gateway.test.ts": "39cd186c88100aded0651ce48c365b602e27d9c0ad04c246ab843d7b5dae082d",
       "tests/xray-platform-compatibility.test.mjs": "85b0e4a38dd521e7c0e3c9c94a46afef92d91b1b612b859d8c737b8c360e2d2b",
-      "xray-appshell-integration.json": "f0233c0002b44ff65b515a59b1d48b0da6f14e9f2430e42a9fc0d065d4659758",
+      "xray-appshell-integration.json": "43d1abd63fac339ad0f5ebfd1214beaf276e3cf1560357f951e751fc2eb5d5eb",
       "../dashboard-preview/package-lock.json": "a8e5b14605b035eba7bf451c36ee549ce5fa1e568096c60a2c541869ece66686",
       "../../packages/maps-embed/package.json": "8e6208e939b33583adfd9a4f779d0873309ccc7706921546f6666b184bb5ab3b"
     },
