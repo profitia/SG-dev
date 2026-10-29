@@ -96,6 +96,8 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   // this producer. Preserve its complete former receipt, then verify its
   // independently declared current file closure instead of creating a cycle.
   const consumer=JSON.parse(readFileSync(new URL('../../../sg-runtime/operation-integration.json',import.meta.url),'utf8'));
+  assert.deepEqual(consumer.freshPerformanceRecovery.currentHumanReadContract,receipt.freshPerformanceRecovery.currentHumanReadContract);
+  assert.deepEqual(consumer.freshPerformanceRecovery.publicUi,receipt.freshPerformanceRecovery.publicUi);
   const acceptedConsumer=receipt.appshellReadyPeerRecovery
     ?JSON.parse(execFileSync('git',['show',receipt.appshellReadyPeerRecovery.acceptedHostSourceSha+':apps/sg-runtime/operation-integration.json'],{encoding:'utf8'})):consumer;
   const adoption=consumer.appshellXraySourceCompatibility;
@@ -104,7 +106,12 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   if(receipt.appshellReadyPeerRecovery){
     const compatible=execFileSync('git',['show',receipt.appshellReadyPeerRecovery.compatibleHostSourceSha+':apps/sg-runtime/operation-integration.json']);
     assert.equal(hash(compatible),receipt.appshellReadyPeerRecovery.compatibleHostReceiptDigest);
-    assert.deepEqual(adoption,JSON.parse(compatible.toString()).appshellXraySourceCompatibility);
+    // Independently accepted SG2 main can renew only its source closure.
+    const currentHost=execFileSync('git',['show',consumer.freshPerformanceRecovery.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);
+    assert.equal(hash(currentHost),consumer.freshPerformanceRecovery.previousReceiptDigest);
+    assert.deepEqual(adoption,JSON.parse(currentHost.toString()).appshellXraySourceCompatibility);
+    for(const[key,value]of Object.entries(JSON.parse(compatible.toString()).appshellXraySourceCompatibility))
+      if(key!=='applicationSourceDigests')assert.deepEqual(adoption[key],value,key);
     for(const[key,value]of Object.entries(acceptedConsumer.appshellXraySourceCompatibility))
       if(key!=='applicationSourceDigests')assert.deepEqual(adoption[key],value,key);
   }else assert.deepEqual(adoption,acceptedConsumer.appshellXraySourceCompatibility);
@@ -116,9 +123,11 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   assert.equal(adoption.platformVersion,receipt.appshellXraySourceCompatibility.platformVersion);
   assert.equal(adoption.publicUi.sourceDigest,receipt.appshellXraySourceCompatibility.publicUi.sourceDigest);
   for(const[file,digest]of Object.entries(adoption.applicationSourceDigests))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
+  for(const[file,digest]of Object.entries(consumer.freshPerformanceRecovery.applicationSourceDigests))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
   Object.assign(currentDigests,receipt.appshellXraySourceCompatibility.applicationSourceDigests);
   Object.assign(currentDigests,receipt.ruralLocationAddressRecovery?.applicationSourceDigests);
   Object.assign(currentDigests,receipt.appshellReadyPeerRecovery?.applicationSourceDigests);
+  Object.assign(currentDigests,receipt.freshPerformanceRecovery?.applicationSourceDigests);
   for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

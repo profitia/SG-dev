@@ -27,15 +27,21 @@ const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
 const freeze=<T>(v:T):T=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
 // Domain declarations expose readonly arrays; the same canonical runtime
 // validator accepts their finite JSON values without making them mutable.
-const digest=(value:unknown)=>operationPayloadDigest(value as Json)
+// Payload evidence only: keys are our own deeply frozen copies, never caller
+// objects, identities or authority observations. Weak keys do not retain them.
+const capturedDigests=new WeakMap<object,string>()
+const digest=(value:unknown)=>value&&typeof value==='object'
+  ?capturedDigests.get(value)??operationPayloadDigest(value as Json):operationPayloadDigest(value as Json)
 function json<T>(value:T):T{
  return diagnosticRun('JSON_CAPTURE',()=>{
   let text:string|undefined
   try{text=JSON.stringify(value,(_key,v)=>{if(typeof v==='number'&&!Number.isFinite(v))return refuse();return v})}catch{return refuse()}
   if(!text||Buffer.byteLength(text)>MAX_JSON_BYTES)return refuse()
   const captured=JSON.parse(text) as T
-  operationPayloadDigest(captured as Json)
-  return freeze(captured)
+  const checksum=operationPayloadDigest(captured as Json)
+  const frozen=freeze(captured)
+  if(frozen&&typeof frozen==='object')capturedDigests.set(frozen,checksum)
+  return frozen
 
  })
 }
@@ -169,6 +175,19 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       })
   }
   return Object.freeze({
+    registerAndCache(input:SupplierNativeWorkSelection,existingSupplier:ExistingSupplierRegistration='TOUCH',now=new Date()){
+      if(!options.readyCompanyWorkBoundaryDigest||!['TOUCH','KEEP'].includes(existingSupplier))return refuse()
+      const s=select(input),at=new Date(now.getTime());if(!Number.isFinite(at.getTime()))return refuse()
+      return run(s,'SRM_REGISTER_LOOKUP',{existingSupplier,cacheAt:at.toISOString()},async(pool,client)=>{
+        const descriptor=(await client.query('SELECT srm.ready_company_work_descriptor() AS descriptor')).rows[0]?.descriptor
+        if(descriptor?.schemaDigest!==options.readyCompanyWorkBoundaryDigest)return refuse()
+        const lookup=await createLookup(s.organisationId,{type:'NIP',value:s.command.nip},'COMPANY',pool,s.requestId,existingSupplier)
+        // A rollback to the prior database contract retains the original
+        // separate CACHE_READ Work; an absent flag never means a cache miss.
+        return descriptor.freshLookupVersion==='1.0.0'
+          ?{lookup,cache:await readFreshCompany(s.organisationId,s.command.nip,at,pool)}:{lookup}
+      })
+    },
     register(input:SupplierNativeWorkSelection,existingSupplier:ExistingSupplierRegistration='TOUCH'){
       if(!['TOUCH','KEEP'].includes(existingSupplier))return refuse()
       const s=select(input);return run(s,'SRM_REGISTER_LOOKUP',existingSupplier==='KEEP'?{existingSupplier}:null,pool=>
@@ -234,11 +253,11 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       const records=financialRecordsFromPages(body.pages)
       if(records.length!==body.recordCount||records.some(record=>!record||typeof record!=='object'
         ||(record as {identifiers?:{pl_nip?:unknown}}).identifiers?.pl_nip!==s.command.nip))return refuse()
-      return run(s,model==='pl-krs-wp-record'?'SRM_ARCHIVE_GENERAL':'SRM_ARCHIVE_FINANCIAL',{model,bodyDigest:operationPayloadDigest(body as Json)},pool=>
+      return run(s,model==='pl-krs-wp-record'?'SRM_ARCHIVE_GENERAL':'SRM_ARCHIVE_FINANCIAL',{model,bodyDigest:digest(body)},pool=>
         saveMgbiArchive(s.organisationId,s.command.nip,model,body.pages,body.recordCount,body.retrievedAt,s.requestId,pool))
     },
     prepareDocuments(input:SupplierNativeWorkSelection,pages:unknown[]){
- return diagnosticRun('DOCUMENT_PREPARE',()=>{const s=select(input),body=json(pages);return run(s,'SRM_PREPARE_DOCUMENTS',{bodyDigest:operationPayloadDigest(body as Json)},pool=>saveFinancialDocuments(s.organisationId,s.command.nip,body,pool))
+ return diagnosticRun('DOCUMENT_PREPARE',()=>{const s=select(input),body=json(pages);return run(s,'SRM_PREPARE_DOCUMENTS',{bodyDigest:digest(body)},pool=>saveFinancialDocuments(s.organisationId,s.command.nip,body,pool))
  })
 },
     financialInventory(input:SupplierNativeWorkSelection,pages:unknown[],recordCount:number,retrievedAt:string,allowedKrs:readonly string[]){

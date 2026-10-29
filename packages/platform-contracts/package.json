@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.31.0",
+  "version": "1.32.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",

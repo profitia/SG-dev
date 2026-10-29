@@ -20,6 +20,8 @@ const historicalReceipt=()=>JSON.parse(execFileSync('git',['show',readCurrent().
 const historicalBytes=url=>{
  const relative=path.relative(path.resolve(appRoot,'../..'),fileURLToPath(url)).split(path.sep).join('/')
  const current=readCurrent().pciDatePreparationSourceCompatibility
+ const fresh=readCurrent().freshPerformanceRecovery,relativeApp=path.relative(appRoot,fileURLToPath(url)).split(path.sep).join('/')
+ if(!current.changedPaths.includes(relative)&&fresh?.applicationSourceDigests[relativeApp])return execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+relative],{cwd:appRoot})
  return current.changedPaths.includes(relative)?execFileSync('git',['show',current.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):fs.readFileSync(url)
 }
 test('new receiver acceptance is additive, binds the whole closure and retains exact pinned upstreams',()=>{
@@ -117,7 +119,7 @@ test('date preparation renews exact receiver bytes and preserves prior records a
   assert.deepEqual(observed,value,key)
  }
  assert.deepEqual(r.appshellXraySourceCompatibility.applicationSourceDigests,{...before.appshellXraySourceCompatibility.applicationSourceDigests,...current.currentReceiverDigestOverrides})
- for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.freshPerformanceRecovery.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??digest,file)
  for(const file of current.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',current.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
  for(const flag of ['calculationMethodChanged','identityOrGrantsChanged','productDeploymentPerformed','schemaChanged'])assert.equal(current[flag],false,flag)
 })

@@ -1,0 +1,28 @@
+{
+  "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+  "targetEnvironment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "migration": "028-fresh-report-performance.sql",
+  "functions": {
+    "srm.financial_statement_target()": {
+      "before": "1c98b3619c7566161df6d92bf8c5aee9",
+      "after": "c014672cd962640044911ab7c9fd665e"
+    },
+    "srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text)": {
+      "before": "f7309f68d951d295d03c176944c1e94c",
+      "after": "bd907d29ceeb7ce63489485941f1e203"
+    },
+    "srm.ready_company_work_descriptor()": {
+      "before": "14c0e97c6203a7e56ef887a2767183d3",
+      "after": "2848428db3c8491a975c241fb3b86873"
+    }
+  },
+  "dataOrHistoryDeleted": false,
+  "pilotDeploymentChanged": false,
+  "runtimeDeploymentPerformed": false,
+  "livePerformanceThresholdsAchieved": false,
+  "permanentRoleOrPolicyChanges": false
+}

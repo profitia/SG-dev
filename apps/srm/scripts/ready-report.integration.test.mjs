@@ -22,6 +22,7 @@ import {mapMgbiFinancialRecords} from '../src/server/mgbi-financial.ts'
 import {createSrmSupplierNativeWork} from '../src/server/supplier-request-work.ts'
 import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-work-store.ts'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
+import {captureFreshFunctions,freshReportReleasePlan} from './fresh-report-release.mjs'
 
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8')
 test('ready report native Source and current HUMAN read preserve complete financial output, tenant history and rollback',t=>supplierBusinessFixture(t,true,async f=>{
@@ -79,6 +80,60 @@ test('ready report native Source and current HUMAN read preserve complete financ
    const events=(await owner.query("SELECT phase,event FROM profitia_access.security_events WHERE event->'requestWork'->>'unitId'='SRM_STORE_COMPANY' ORDER BY event_id")).rows
    assert.deepEqual(events.map(e=>e.phase),['INTENT','OUTCOME']);assert(events.every(e=>e.event.decision==='ALLOW'))
    assert.equal((await owner.query("SELECT count(*)::int n FROM srm.source_snapshots WHERE organization_id=$1 AND id=ANY($2::uuid[])",[A,[stored.generalSnapshotId,stored.financialSnapshotId]])).rows[0].n,2)
+  })
+  await t.test('composite financial INSERT uses the existing statement guard without changing row policy, ACL or provenance',async()=>{
+   const before=(await owner.query("SELECT pg_get_functiondef(oid) definition,proacl::text acl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid='srm.financial_statement_target()'::regprocedure")).rows[0]
+   const policies=(await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' AND tablename='financial_facts' ORDER BY policyname")).rows
+   const functionBackup=await captureFreshFunctions(owner)
+   const facts=Array.from({length:40},(_,i)=>financial.facts.map(f=>({...f,periodStart:(1980+i)+'-01-01',periodEnd:(1980+i)+'-12-31'}))).flat()
+   const timings=[]
+   const config={...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))}
+   const work=createSrmSupplierNativeWork(config)
+   const store=createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),readyCompanyWorkBoundaryDigest:hash(own('026-ready-company-work.sql'))})
+   for(const optimized of [false,true]){
+    if(optimized)await controlled(()=>owner.query(own('028-fresh-report-performance.sql')))
+    const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command}
+    const registered=await store.registerAndCache(selection)
+    assert.equal(registered.lookup.requestId,selection.requestId)
+    assert.equal(Object.hasOwn(registered,'cache'),optimized,'old SQL must retain the separate cache Work, not invent a cache miss')
+    let timing;const logger=console.info
+    console.info=value=>{try{const x=JSON.parse(value);if(x.event==='srm_supplier_timing')timing=x}catch{logger(value)}}
+    let stored
+    try{await withSupplierTelemetry('search',async()=>{
+     stored=await store.companySections(selection,{envelope:general,errorCode:null},{envelope:financial.section,errorCode:financial.errorCode,facts})
+     return Response.json({ok:true})
+    })}finally{console.info=logger}
+    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.financial_facts WHERE snapshot_id=$1',[stored.financialSnapshotId])).rows[0].n,facts.length)
+    timings.push({optimized,facts:facts.length,insertMs:timing.stages.FINANCIAL_FACTS_INSERT.totalMs,sql:timing.stages.E1_SQL.count})
+    const sentinel=Error('rollback isolated statement probe')
+    let target
+    await assert.rejects(work.run(selection,'SRM_STORE_COMPANY',{probe:optimized},async(_context,client)=>{
+     await client.query("SELECT set_config('profitia.srm.financial.snapshot',$1,true)",[stored.financialSnapshotId])
+     target=(await client.query('SELECT srm.financial_statement_target() target')).rows[0].target
+     for(const foreign of [stored.generalSnapshotId,randomUUID()]){
+      await client.query("SELECT set_config('profitia.srm.financial.snapshot',$1,true)",[foreign])
+      assert.equal((await client.query('SELECT srm.financial_statement_target() target')).rows[0].target,null)
+     }
+     throw sentinel
+    }),isOperationDenied)
+    assert.equal(target===null,!optimized)
+   }
+   const after=(await owner.query("SELECT proacl::text acl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid='srm.financial_statement_target()'::regprocedure")).rows[0]
+   for(const key of Object.keys(after))assert.deepEqual(after[key],before[key],key)
+   assert.deepEqual((await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' AND tablename='financial_facts' ORDER BY policyname")).rows,policies)
+   console.info('FRESH_FINANCIAL_STATEMENT_COMPARISON',JSON.stringify(timings))
+   console.info('FRESH_SQL_FUNCTION_DIGESTS',JSON.stringify((await owner.query("SELECT oid::regprocedure::text id,md5(pg_get_functiondef(oid)) digest FROM pg_proc WHERE oid=ANY(ARRAY['srm.financial_statement_target()'::regprocedure,'srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text)'::regprocedure,'srm.ready_company_work_descriptor()'::regprocedure]) ORDER BY 1")).rows))
+   const optimizedFunctions=await captureFreshFunctions(owner)
+   const rollback=freshReportReleasePlan({mode:'rollback',sourceSha:'a'.repeat(40),previousSha:'b'.repeat(40),backup:functionBackup})
+   assert(rollback.statements.findIndex(s=>s.text.startsWith('REVOKE '))>rollback.statements.findIndex(s=>s.text.startsWith('UPDATE profitia_ingestion.')))
+   const beforeRollback=await f.counts()
+   await controlled(async()=>{
+    for(const statement of rollback.freshStatements)await owner.query(statement.text,statement.values)
+    assert.deepEqual(await captureFreshFunctions(owner),functionBackup)
+    await owner.query(own('028-fresh-report-performance.sql'))
+    assert.deepEqual(await captureFreshFunctions(owner),optimizedFunctions)
+   })
+   assert.deepEqual(await f.counts(),beforeRollback)
   })
   await t.test('revocation inside the consolidated FRESH Work rolls back both sections together',async()=>{
    const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command}
@@ -153,34 +208,43 @@ test('ready report native Source and current HUMAN read preserve complete financ
    assert.equal((await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE event->>'operation'='job.execute'")).rows[0].n,work)
    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.ready_report_read_outcomes')).rows[0].n,1)
   })
-  await t.test('existing peer fallback projection retains current identity and tenant fences without source writes',async()=>{
+  await t.test('AppShell uses the same prepared READY reader with current identity, rollback and tenant fences',async()=>{
    const caller='https://dev-sg2.spendguru.app',receiver='https://srm-development-runtime.onrender.com'
    const policy={environment:'development',callerApplicationId:'spendguru',receiverApplicationId:'srm',sourceOrigin:caller,targetOrigin:receiver,
     keyId:'synthetic-ready-peer',key:new Uint8Array(32).fill(7),routes:[{method:'POST',path:'/api/xray/search',maximumRequestBytes:2048,requireIdempotencyKey:true}],internalOrigins:[]}
-   let revoked=false
+   let revoked=false,revokeDuring=false,accounts=0,sessions=0,sdk=0
    const peerClerk={...original,authenticateRequest:async(...args)=>{
+    sdk++
     const state=await original.authenticateRequest(...args),auth=state.toAuth()
     return {status:state.status,isAuthenticated:state.isAuthenticated,toAuth:()=>({...auth,sessionClaims:{...auth.sessionClaims,azp:caller}})}
-   },users:{getUser:async id=>({...await original.users.getUser(id),banned:revoked})}}
-   const projection=createSrmCompanyCardRead({...base,clerk:peerClerk,
+   },sessions:{getSession:async id=>{sessions++;return original.sessions.getSession(id)}},users:{getUser:async id=>({...await original.users.getUser(id),banned:revoked||revokeDuring&&++accounts===2})}}
+   // Count both current account observations independently of their result.
+   const getUser=peerClerk.users.getUser
+   peerClerk.users.getUser=async id=>{if(!revokeDuring)accounts++;return getUser(id)}
+   const projection=createSrmReadyCompanyRead({...base,clerk:peerClerk,
     identity:{...base.identity,authorizedParties:[caller,receiver],requestBoundary:{publicOrigins:[caller,receiver],internalOrigins:['http://0.0.0.0:10000']}},
-    application:{...base.application,operations:['supplier.report.read']}},
-   {identity:{nip:NIP,krs:general.data.krs,name:general.data.legalName},general,financial:financial.section,kys:emptyCard.kys})
+    application:{...base.application,operations:['supplier.report.read']}},digest,'synthetic-ready-peer-secret-longer-than-32')
    const incoming=()=>createPeerOperationSigner(policy)(new Request(receiver+'/api/xray/search',{method:'POST',headers:{authorization:'Bearer synthetic-only',
      'content-type':'application/json','idempotency-key':'peer-projection-'+randomUUID()},body:JSON.stringify({identifier:NIP})}))
    const run=org=>withSrmPeerXRay(async request=>{
-    try{const response=await projection.read(request,org);return Response.json({entityType:'COMPANY',card:await response.json()})}
+    try{const prepared=await projection.read(request,org,NIP);assert(prepared.response);const {metadata,...card}=await prepared.response.json();return Response.json({entityType:'COMPANY',card,metadata})}
     catch(error){return supplierHttpFailure(error)}
    },{TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',
     PROFITIA_XRAY_PEER_VERSION:'1.0.0',PROFITIA_XRAY_PEER_KEY_ID:policy.keyId,PROFITIA_XRAY_PEER_KEY:Buffer.from(policy.key).toString('base64url')})
    const before=await counts(),response=await run(A)(await incoming())
    assert.equal(response.status,200);assert.equal((await response.json()).data.card.identity.nip,NIP)
+   assert.deepEqual({sdk,sessions,accounts},{sdk:1,sessions:2,accounts:2})
+   const after=await counts();assert.equal(after.reads,before.reads+1);assert.equal(after.lookups,before.lookups+1)
+   assert.equal(after.snapshots,before.snapshots);assert.equal(after.quota,before.quota)
+   accounts=0;revokeDuring=true
+   const during=await run(A)(await incoming());assert.equal(during.status,401);assert(!Object.hasOwn(await during.json(),'data'))
+   assert.deepEqual(await counts(),after);revokeDuring=false
    revoked=true
    const revokedResponse=await run(A)(await incoming());assert.equal(revokedResponse.status,401);assert(!Object.hasOwn(await revokedResponse.json(),'data'))
    revoked=false
    const foreignResponse=await run('33333333-3333-4333-8333-333333333333')(await incoming())
    assert.equal(foreignResponse.status,403);assert(!Object.hasOwn(await foreignResponse.json(),'data'))
-   assert.deepEqual(await counts(),before)
+   assert.deepEqual(await counts(),after)
   })
   await t.test('complete native FRESH pipeline prepares the report once and the next READY opening performs no Work',async()=>{
    const selectedNip='5260250274',accepted=await f.parent(A,selectedNip)
@@ -195,7 +259,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
    assert.equal(card.identity.nip,selectedNip);assert(card.financial.data)
    const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[accepted.requestId])).rows.map(r=>r.unit)
    assert(units.includes('SRM_STORE_COMPANY'));assert(!units.includes('SRM_STORE_GENERAL'));assert(!units.includes('SRM_STORE_FINANCIAL'));assert(!units.includes('SRM_RECORD_INTEREST'))
-   assert.equal(units.filter(unit=>unit==='SRM_CACHE_READ').length,1,'no indicator reconstruction Work')
+   assert.equal(units.filter(unit=>unit==='SRM_CACHE_READ').length,0,'registration reads the cache once; no cache or indicator reconstruction Work')
    const before=(await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE event->>'operation'='job.execute'")).rows[0].n
    const result=await ready.read(request(),A,selectedNip);assert(result.response)
    const output=await result.response.json();assert(output.metadata.financial.scanner);assert(output.metadata.financial.history.length)
@@ -227,7 +291,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
    assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_external_call.calls')).rows[0].n,calls);
    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.source_snapshots')).rows[0].n,snapshots);
    const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[accepted.requestId])).rows.map(r=>r.unit);
-   assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_CACHE_READ','SRM_PREPARE_DOCUMENTS']);
+   assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_PREPARE_DOCUMENTS']);
    const released=await ready.read(request(),A,warmNip);assert(released.response);const report=await released.response.json();
    assert.equal(report.identity.nip,warmNip);assert(report.metadata.financial.history.some(series=>series.code==='CURRENT_RATIO'&&series.points.some(point=>point.value==='3.000000')));
    const altered=structuredClone(warmGeneral);altered.data.legalName='Different unretained company';

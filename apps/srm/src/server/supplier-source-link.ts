@@ -17,14 +17,14 @@ const refuse=():never=>{throw new OperationDenied('DELEGATION_INVALID')}
  * No incoming HTTP delivery key, empty metadata action or alternate writer. */
 export function createSrmSupplierSourceLink(options:{work:SupplierNativeWorkOptions;namedInterestBoundaryDigest:string;
   source:ReturnType<typeof createSrmSupplierSourceRequest>;
-  registration?:Readonly<{unitId:SupplierNativeWorkUnit;run:(work:SupplierNativeWork,selection:SupplierNativeWorkSelection)=>Promise<{supplierId:string;requestId:string}>}>}){
+  registration?:Readonly<{unitId:SupplierNativeWorkUnit;run:(work:SupplierNativeWork,selection:SupplierNativeWorkSelection,existingSupplier:ExistingSupplierRegistration)=>Promise<{supplierId:string;requestId:string}>}>}){
   if(typeof window!=='undefined'||!options.source?.port||!platformDeliveryEvidence(options.source.port))return refuse()
   const work=createSrmSupplierNativeWork(options.work),source=options.source
   const registration=options.registration
   if(registration!==undefined&&(!registration||Object.getPrototypeOf(registration)!==Object.prototype
     ||Object.keys(registration).sort().join(',')!=='run,unitId'||Reflect.ownKeys(registration).length!==2
     ||Object.values(Object.getOwnPropertyDescriptors(registration)).some(d=>!('value'in d)||!d.enumerable)
-    ||registration.unitId!=='SRM_SENSITIVE_REGISTER'||typeof registration.run!=='function'))return refuse()
+    ||!['SRM_SENSITIVE_REGISTER','SRM_REGISTER_LOOKUP'].includes(registration.unitId)||typeof registration.run!=='function'))return refuse()
   const registerUnit=registration?.unitId??'SRM_REGISTER_LOOKUP',register=registration?.run
   const {application,binding,job,pool,auditPool,clerk,accountIdentity,now,transactionTimeoutMs}=options.work
   const dispatch=createDelegatedJobHost<PoolClient>({application,binding,job,now,transactionTimeoutMs,
@@ -33,7 +33,7 @@ export function createSrmSupplierSourceLink(options:{work:SupplierNativeWorkOpti
     readExternalAccount:createClerkAccountStatusReader({client:clerk,...accountIdentity,now})})
   return Object.freeze({
     async registerAndAdmit(input:SupplierNativeWorkSelection,existingSupplier:ExistingSupplierRegistration='TOUCH'){
-      if(!['TOUCH','KEEP'].includes(existingSupplier)||registration&&existingSupplier!=='TOUCH')return refuse()
+      if(!['TOUCH','KEEP'].includes(existingSupplier)||registration?.unitId==='SRM_SENSITIVE_REGISTER'&&existingSupplier!=='TOUCH')return refuse()
       const selection={requestId:input.requestId,organisationId:input.organisationId,command:readSupplierRequest(input.command)}
       let captured:Readonly<DelegatedJob>|undefined,entered=false
       const capture:SupplierNativeWork={run:async(s,unit,manifest,action)=>{
@@ -50,7 +50,7 @@ export function createSrmSupplierSourceLink(options:{work:SupplierNativeWorkOpti
         })}catch(error){captured=undefined;throw error}
       }}
       try{
-        const lookup=register?await register(capture,selection):await createSrmSupplierNativeWorkStore({work:capture,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest}).register(selection,existingSupplier)
+        const lookup=register?await register(capture,selection,existingSupplier):await createSrmSupplierNativeWorkStore({work:capture,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest}).register(selection,existingSupplier)
         const link=captured
         if(!entered||!link)return refuse()
         const operation={contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,

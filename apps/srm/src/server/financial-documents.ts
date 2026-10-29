@@ -137,10 +137,12 @@ export function projectArchivedFinancialDocuments(archive: FinancialArchive, org
 
 export async function saveFinancialDocuments(organizationId: string, nip: string, pages: unknown[], pool?: DatabasePool): Promise<{ documents: number; positions: number }> {
  return diagnosticRun('DOCUMENT_PREPARE',async ()=>{
-  const documents = projectFinancialDocuments(financialRecordsFromPages(pages));
+  const records=financialRecordsFromPages(pages);
+  if(records.length>10_000)throw new Error("Financial document limit exceeded");
+  const hasDocuments=records.some(raw=>["financial_statement","consolidated_financial_statement"].includes(String(object(object(raw).document).type))&&!!text(object(raw).id));
   const capturedPages = JSON.stringify(pages);
   return withOrganization(organizationId, async client => {
-    if (!documents.length) return persistFinancialDocuments(client, organizationId, nip, documents);
+    if(!hasDocuments)return persistFinancialDocuments(client,organizationId,nip,[]);
     // When the source has already been archived, prepare from its verified
     // persisted bytes and bind the derived rows to that exact inventory. A
     // later READ must not need an implicit write to establish provenance.
@@ -149,7 +151,8 @@ export async function saveFinancialDocuments(organizationId: string, nip: string
         payload_json->'pages'=$3::jsonb AS pages_match FROM srm.mgbi_source_archives
        WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE`,
       [organizationId,nip,capturedPages])).rows[0];
-    if (!archive) return persistFinancialDocuments(client, organizationId, nip, documents);
+    if (!archive) return persistFinancialDocuments(client, organizationId, nip,
+      projectFinancialDocuments(records));
     if (!archive.pages_match) throw new Error("Financial preparation source differs from current archive");
     return persistFinancialDocuments(client, organizationId, nip,
       projectArchivedFinancialDocuments(archive,organizationId,nip),archive.payload_jsonb_sha256);
@@ -161,9 +164,15 @@ export async function saveFinancialDocuments(organizationId: string, nip: string
 export async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
   documents: readonly FinancialSourceDocument[], archiveChecksum: string | null = null,
   verifiedProjection?: { version:string; checksum:string }): Promise<{ documents: number; positions: number }> {
-    for (const document of documents) await client.query(
+    if (!documents.length) return {documents:0,positions:0};
+    if (new Set(documents.map(d=>d.recordId)).size!==documents.length) throw new Error("Duplicate financial archive document");
+    // One statement retains every row's RLS, conflict and quality checks.
+    // The caller's existing transaction still owns atomicity and provenance.
+    await client.query(
       `INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256)
-       VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) ON CONFLICT (organization_id,nip,record_id) DO UPDATE SET
+       SELECT $1,$2,d.record_id,d.document_json,d.checksum_sha256,d.mapping_version,$4::text
+       FROM jsonb_to_recordset($3::jsonb) AS d(record_id text,document_json jsonb,checksum_sha256 text,mapping_version text)
+       ON CONFLICT (organization_id,nip,record_id) DO UPDATE SET
        document_json=EXCLUDED.document_json,checksum_sha256=EXCLUDED.checksum_sha256,mapping_version=EXCLUDED.mapping_version,updated_at=now()
        ,archive_jsonb_sha256=CASE WHEN EXCLUDED.archive_jsonb_sha256 IS NOT NULL OR
          (srm.financial_source_documents.checksum_sha256,srm.financial_source_documents.mapping_version) IS DISTINCT FROM (EXCLUDED.checksum_sha256,EXCLUDED.mapping_version)
@@ -172,9 +181,10 @@ export async function persistFinancialDocuments(client: DocumentClient, organiza
          OR (EXCLUDED.archive_jsonb_sha256 IS NOT NULL AND srm.financial_source_documents.archive_jsonb_sha256 IS DISTINCT FROM EXCLUDED.archive_jsonb_sha256))
        AND (EXCLUDED.document_json->>'availability' IN ('XML_SUPPORTED','IXBRL_SUPPORTED','XHTML_SUPPORTED') OR srm.financial_source_documents.document_json->>'availability' NOT IN ('XML_SUPPORTED','IXBRL_SUPPORTED','XHTML_SUPPORTED'))
        AND (EXCLUDED.document_json->>'validation' = 'VALID' OR srm.financial_source_documents.document_json->>'validation' <> 'VALID'
-         OR $8::boolean)`,
-      [organizationId,nip,document.recordId,JSON.stringify(document),document.checksum,document.mappingVersion,archiveChecksum,
-        verifiedProjection?.version===document.mappingVersion && verifiedProjection?.checksum===document.checksum]);
+         OR (EXCLUDED.mapping_version=$5::text AND EXCLUDED.checksum_sha256=$6::text))`,
+      [organizationId,nip,JSON.stringify(documents.map(document=>({record_id:document.recordId,document_json:document,
+        checksum_sha256:document.checksum,mapping_version:document.mappingVersion}))),archiveChecksum,
+        verifiedProjection?.version??null,verifiedProjection?.checksum??null]);
     return { documents: documents.length, positions: documents.reduce((count, document) => count + document.rows.length, 0) };
 }
 

@@ -1,5 +1,4 @@
 import {withSrmPeerXRay} from "./peer-xray";
-import {hasVerifiedPeerOperation} from '@profitia/platform-contracts/peer-operation'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-ledger'
 import {readPresentationJson} from '@profitia/platform-contracts/embedded-read-channel'
@@ -79,9 +78,7 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
    // The routing algorithm reads only status/data/nip. Its native ports here
    // provide already authorized public DTOs, without reintroducing provenance
    // or unmasked personal data to satisfy a legacy TypeScript interface.
-   // SDK 1.31's optimized READY reader has no peer identity adapter. Verified
-   // AppShell requests retain the existing full, current HUMAN/E1 path below.
-   const prepared=api.ready&&!hasVerifiedPeerOperation(request)?await api.ready(scope,command.nip):undefined
+   const prepared=api.ready?await api.ready(scope,command.nip):undefined
    if(prepared?.response){const {metadata,...card}=await prepared.response.json();return Response.json({entityType:'COMPANY',card,metadata},{headers:privateHeaders})}
    let problem:Response|undefined
    let selection:unknown,registryRoute:unknown,metadata:unknown

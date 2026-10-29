@@ -4,7 +4,7 @@ import type {ClerkIdentityClient} from './identity-provider.mjs'
 import type {PublicIdentityApplication} from './public-request.mjs'
 import type {createPrivateOperationHost} from './private-operation-host.mjs'
 
-export declare const CURRENT_HUMAN_READ_CONTRACT:Readonly<{id:'profitia.current-human-read';version:'1.0.0'}>
+export declare const CURRENT_HUMAN_READ_CONTRACT:Readonly<{id:'profitia.current-human-read';version:'1.1.0'}>
 export declare function createCurrentHumanReadIdentity(options:{
  client:ClerkIdentityClient;application:PublicIdentityApplication;now?:()=>number
  resolveBinding(key:Readonly<Pick<IdentityBinding,'environment'|'issuer'|'subject'>>):Promise<IdentityBinding|null>

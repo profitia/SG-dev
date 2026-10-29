@@ -39,11 +39,16 @@ function fixture(azp=source){
   if(denied)throw new OperationDenied('PERMISSION_DENIED')
  }
  const api={
-  // Reproduce the real SDK 1.31 READY identity path rather than a hard-coded error.
+  // Exercise the formally accepted shared identity adapter on both entrances.
   ready:async({request}:{request:Request})=>{
    calls.push('ready')
    const identity=createCurrentHumanReadIdentity({client,application,resolveBinding})
-   try{if(!await identity.authenticate(request))throw new OperationDenied('UNVERIFIED_IDENTITY')}
+   try{
+    const actor=await identity.authenticate(request)
+    if(!actor)throw new OperationDenied('UNVERIFIED_IDENTITY')
+    if(denied)throw new OperationDenied('PERMISSION_DENIED')
+    if(!await identity.revalidate(request,actor))throw new OperationDenied('UNVERIFIED_IDENTITY')
+   }
    finally{identity.close()}
    return {known:true,response:Response.json(card)}
   },
@@ -60,11 +65,11 @@ function request(origin?:string){
 }
 const signed=()=>createPeerOperationSigner(peer)(request())
 
-test('valid AppShell peer with READY enabled uses the existing protected company path once',async()=>{
+test('valid AppShell peer uses the same optimized READY without native company reconstruction',async()=>{
  const f=fixture(),response=await f.handler(await signed())
  assert.equal(response.status,200)
  const body=await response.json();assert.equal(body.contract.version,'1.0.0');assert.equal(body.data.card.identity.nip,card.identity.nip)
- assert.deepEqual(f.calls,['known','company']);assert.deepEqual(f.sdkOrigins,[source,source])
+ assert.deepEqual(f.calls,['ready']);assert.deepEqual(f.sdkOrigins,[source])
  assert.deepEqual(f.checks(),{sessions:2,accounts:2})
 })
 test('standalone SRM preserves the optimized READY path and does not start native acquisition',async()=>{
@@ -83,7 +88,7 @@ test('revoked account and permission denial remain authoritative before company 
  for(const denied of [false,true]){
   const f=fixture();if(denied)f.setDenied();else f.setBanned()
   const response=await f.handler(await signed())
-  assert.equal(response.status,denied?403:401);assert.deepEqual(f.calls,['known'])
+ assert.equal(response.status,denied?403:401);assert.deepEqual(f.calls,['ready'])
   const body=await response.json();assert(!Object.hasOwn(body,'data'))
  }
 })

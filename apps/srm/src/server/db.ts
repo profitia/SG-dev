@@ -122,6 +122,7 @@ export async function withOrganization<T>(
   }
   const client = await pool.connect();
   let inTransaction = false;
+  const native = bound?.delegated?.kind === 'NATIVE_WORK' ? bound.delegated : undefined;
   try {
     if (!bound) {
       await client.query("BEGIN");
@@ -132,22 +133,27 @@ export async function withOrganization<T>(
       bypass_rls: boolean;
       superuser: boolean;
       neon_superuser_member: boolean;
+      allowed?:boolean;descriptor?:Record<string,string>|null;input_digest?:string;transaction_id?:string;role?:string;login?:string;
+      organization_id?:string;organization_exists?:boolean;
     }>(
       "SELECT current_database() AS database_name, r.rolbypassrls AS bypass_rls, " +
       "r.rolsuper AS superuser, pg_has_role(current_user, 'neon_superuser', 'member') AS neon_superuser_member " +
+      (native ? ",profitia_request_work.scope_allows($1::uuid,$2,$3::uuid,$4::uuid,$5) AS allowed," +
+        "profitia_request_work.descriptor($1::uuid,$2) AS descriptor," +
+        "nullif(current_setting('profitia.native_work.scope',true),'')::jsonb->>2 AS input_digest," +
+        "txid_current()::text AS transaction_id,current_user::text AS role,session_user::text AS login," +
+        "current_setting('srm.organization_id',true) AS organization_id," +
+        "EXISTS(SELECT 1 FROM srm.organizations WHERE id=$3::uuid) AS organization_exists " : "") +
       "FROM pg_roles r WHERE r.rolname = current_user",
+      native ? [native.requestId,native.unitId,organizationId,native.subjectUserId,native.accessMode] : undefined,
     );
     const role = identity.rows[0];
     if (bound?.delegated) {
       const d = bound.delegated;
       if(d.kind==='NATIVE_WORK'){
-        const proof=await client.query<{allowed:boolean;descriptor:Record<string,string>|null;input_digest:string;transaction_id:string;role:string;login:string}>(
-          'SELECT profitia_request_work.scope_allows($1::uuid,$2,$3::uuid,$4::uuid,$5) AS allowed, '+
-          'profitia_request_work.descriptor($1::uuid,$2) AS descriptor, '+
-          "nullif(current_setting('profitia.native_work.scope',true),'')::jsonb->>2 AS input_digest, "+
-          'txid_current()::text AS transaction_id,current_user::text AS role,session_user::text AS login',
-          [d.requestId,d.unitId,organizationId,d.subjectUserId,d.accessMode])
-        const row=proof.rows[0],actual=row?.descriptor
+        // The same fresh checks share one SQL statement; no settled authority
+        // observation is retained for another domain action or transaction.
+        const row=role,actual=row?.descriptor
         if(row?.allowed!==true||!actual||row.role!==row.login||actual.role!==row.role
           ||actual.applicationId!==d.applicationId||actual.databaseName!==role?.database_name
           ||actual.executorServiceId!==d.actorId||actual.subjectUserId!==d.subjectUserId
@@ -193,12 +199,12 @@ export async function withOrganization<T>(
       throw new Error("SRM application role must enforce row-level security");
     }
     if (bound) {
-      const current = await client.query<{ organization_id: string }>("SELECT current_setting('srm.organization_id',true) AS organization_id");
-      if (current.rows[0]?.organization_id !== organizationId) throw new Error("SRM bound transaction context mismatch");
+      const current = native ? role : (await client.query<{ organization_id: string }>("SELECT current_setting('srm.organization_id',true) AS organization_id")).rows[0];
+      if (current?.organization_id !== organizationId) throw new Error("SRM bound transaction context mismatch");
     } else await client.query("SELECT set_config('srm.organization_id', $1, true)", [organizationId]);
     await atLookupStage("organization_context", async () => {
-      const organization = await client.query("SELECT id FROM srm.organizations WHERE id = $1", [organizationId]);
-      if (organization.rows.length !== 1) throw new Error("SRM organization must be provisioned before runtime use");
+      const exists = native ? role?.organization_exists : (await client.query("SELECT id FROM srm.organizations WHERE id = $1", [organizationId])).rows.length === 1;
+      if (!exists) throw new Error("SRM organization must be provisioned before runtime use");
     });
     const result = await action(client);
     if (!bound) {
