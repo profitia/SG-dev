@@ -4536,7 +4536,7 @@
       "package.json": "7c701c420a1d9badad3d21a38123dfb432f7ab945f6f41579320f1627e5123f9",
       "package-lock.json": "25f9d4fc776266f3389324915d6d8288d343517ec8c86aa31d98f4ea35a6cf8b",
       "tests/diagnostic-telemetry-adoption.test.mjs": "9bdb8b2119b4a1ba09e3e493c138279e4eeecf6c0476baa5db49637852f9983e",
-      "tests/xray-fresh-performance-adoption.test.mjs": "af5749eee3dc9c371cb05db4c4eb078367e1f92227c7abca0e60d802bf54aeba",
+      "tests/xray-fresh-performance-adoption.test.mjs": "ed5fe79e306a19f2f7af6584e23b9aed4c6a0f370a1abaaeb3e03402fb700c4d",
       "../dashboard-preview/package-lock.json": "b81943ae916763435266d68e149568744a9f964f4f969c3b61506143fb964b68",
       "tests/private-host.integration.test.mjs": "ea9bf4ed5063445eb7d18a2ee6541c02e6abffa02dc247cb83cd1699ad372c3b",
       "tests/self-service-account.test.ts": "8a96d839d005d375d808a8b14e4a09075347a28dfb91d89951987d1a80d016c2",
