@@ -57,3 +57,26 @@ The automated loopback acceptance uses the actual AppShell, Finder, Shared Picke
 
 
 The additive `pciComponentsVisibilitySourceCompatibility` binds the full prior receipt atd6561053, its original receiver map, four exact current receiver renewals and two public PCI presentation digests. The existing last current-receiver map remains the shared checksum projection used by existing source tests. Historical PCI, AppShell, ADP and producer acceptance fields remain unchanged. A dedicated test verifies the complete prior receipt hash, every preserved field, the exact allowed renewal set, every current source byte and unchanged calculation/identity/schema flags. No controller, policy, routing or required check is relaxed.
+
+## Date selection and refusal recovery — Development candidate, 2026-10-29
+
+Task: SG2-PCI-DATE-CALCULATION-RECOVERY-20261029. Authority baseline55464b97305f7ef4884304f307b4aa8c2593bdd3 preserves782/783. Reuses780's localized refusal explanations and out-of-history guard, not its older composition implementation.
+
+The existing stateless PCI BFF accepts an optional `mode: PREPARE`; omitted mode remains analysis. It revalidates the same current E1 selection/history operations and projects `prepareCciNodeInput` output. It performs no price calculation, source hydration, forecast request, persistence or grant. No new endpoint/permission/connector is introduced. Preparation and calculation read current history independently; availability never authorizes or guarantees later calculation.
+
+The host exposes optional typed preparation state/retry to the reusable UI. All dates remain explicit. Closed complete nodes are listed with purchase-period membership. Older nodes outside the purchase date are visibly unavailable, not a suggested substitute. Non-daily periods still require the buyer's explicit association. Changing dates, declarations, method or benchmark clears that association. Cancelled/stale preparation cannot publish after an edit, unmount, or organisation change. No result is published after the draft changes during calculation.
+
+Step03 explains transaction date versus reference period, provider frequency/unit versus buyer-reviewed economic qualification, and price versus inventory/production. It shows all components' actual history limits and requested-period status, Polish actionable refusals beside the date, focus on failed calculation, checking/retry states and a bounded scroll region with a fixed action bar. Unsupported source qualification is never inferred from title, unit or values. The buyer can change any source with the existing Shared Picker. The continuous Step01 structure from782 remains unchanged.
+
+### Actual Development observation (not candidate live acceptance)
+
+Authenticated retained user draft: Oil90%, Steel10%,100PLN/tona, purchase2026-10-22, reference2026-10-01, PERIOD_AVERAGE/NATIVE_ONLY. Bounded read-only Development market inspection independently matched exact displayed source names:
+
+- `wocaes0074`, Brent Spot FOB North Sea Close, Daily/USD per barrel: stored history1985-10-01 through2026-09-23; no observations on2026-10-01 or during October.
+- `cnprod4162`, China Iron & Steel Association Steel Stock Key Enterprises10-day Range: stored frequencyDaily, unitTons(Metric), observations2019-06-01 through2026-10-01. Recent supplied dates2026-09-01/11/21 and2026-10-01. This is inventory quantity, not steel price; declaring PRICE_LEVEL does not establish valid economic qualification. We neither relabel cadence from its title nor substitute a different series.
+
+Thus the requested October01 common base lacks Oil. On October22 no complete daily base is present either. The active native-daily method does not make this an open-month refusal. An actually monthly October period would separately remain open at the October29 cutoff. Historical common September dates cannot anchor the actual October purchase under Indexed Price. No lawful successful live price result is claimed for this pair. Source refresh/replacement must be a deliberate appropriate existing product action; this corrective does not alter ingestion or invent October data.
+
+Browser acceptance uses real UI/BFF/CCI/Indexed Price with explicitly synthetic identity/provider/persistence responses. It exercises valid daily/monthly calculation, missing data, unavailable source/retry, open month, explicit association, wrong-purchase-period refusal, field retention and Finder return. Read-only Neon diagnosis is not an authenticated live calculation test. Candidate live acceptance remains pending a separately approved deployment and the user's Clerk session. No real data values, credentials or private category records are committed as fixtures.
+
+Release requires a fresh exact-SHA proof and current main/LKG/service-binding check. No merge, deployment, environment/binding change or migration is performed by this task. Promote the accepted artifact to Staging only after separate authorization and Stage-specific gates; no promotion is initiated here.

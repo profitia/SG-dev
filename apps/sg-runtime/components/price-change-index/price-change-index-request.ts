@@ -2,9 +2,10 @@
  * no browser tenant claim authorizes a resource. */
 export function createPciRequester(options:{getToken:()=>Promise<string|null>;fetch:typeof fetch}){
   let closed=false;const pending=new Set<AbortController>()
-  const request=async(body:string)=>{
+  const request=async(body:string,signal?:AbortSignal)=>{
     if(closed)throw Error('SESSION_UNAVAILABLE')
     const controller=new AbortController();pending.add(controller)
+    const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)controller.abort()
     try{
       const token=await options.getToken()
       if(closed||controller.signal.aborted)throw new DOMException('Aborted','AbortError')
@@ -13,7 +14,7 @@ export function createPciRequester(options:{getToken:()=>Promise<string|null>;fe
         headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal})
       if(closed||controller.signal.aborted){await response.body?.cancel();throw new DOMException('Aborted','AbortError')}
       return response
-    }finally{pending.delete(controller)}
+    }finally{signal?.removeEventListener('abort',abort);pending.delete(controller)}
   }
   return Object.assign(request,{close(){closed=true;for(const c of pending)c.abort();pending.clear()}})
 }

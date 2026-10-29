@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
 import {bundleAdp,appRoot} from './adp-appshell-preview.mjs'
@@ -12,13 +14,21 @@ test('business-only public export excludes every demonstration engine, fixture, 
  for(const file of Object.keys(result.metafile.inputs))assert.doesNotMatch(file,/DeliveryRuntime|delivery-registry|\/fixtures|\/pci[12]\/|CCIWersja|StackedPriceHistoryChart|\/cost-analysis\//)
  assert.doesNotMatch(result.outputFiles[0].text,/\bfetch\s*\(|localStorage|sessionStorage|new WebSocket|data-delivery|DeliveryRuntime|simulation-suffix|designs\.magicpath/)
 })
+const receiptPath=new URL('../operation-integration.json',import.meta.url)
+const readCurrent=()=>JSON.parse(fs.readFileSync(receiptPath))
+const historicalReceipt=()=>JSON.parse(execFileSync('git',['show',readCurrent().pciDatePreparationSourceCompatibility.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot}))
+const historicalBytes=url=>{
+ const relative=path.relative(path.resolve(appRoot,'../..'),fileURLToPath(url)).split(path.sep).join('/')
+ const current=readCurrent().pciDatePreparationSourceCompatibility
+ return current.changedPaths.includes(relative)?execFileSync('git',['show',current.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):fs.readFileSync(url)
+}
 test('new receiver acceptance is additive, binds the whole closure and retains exact pinned upstreams',()=>{
- const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.integratedBuyerJourneySourceCompatibility
+ const receipt=historicalReceipt(),a=receipt.integratedBuyerJourneySourceCompatibility
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot})
  assert.equal(hash(prior),a.previousReceiptSha256)
  for(const [key,value]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[key],value,key)
- for(const [file,digest]of Object.entries({...a.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests,...receipt.appshellXraySourceCompatibility.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
- for(const [file,digest]of Object.entries({...a.publicUiSourceDigests,...receipt.pciComponentsVisibilitySourceCompatibility.publicUiSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ for(const [file,digest]of Object.entries({...a.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests,...receipt.appshellXraySourceCompatibility.applicationSourceDigests}))assert.equal(hash(historicalBytes(new URL('../'+file,import.meta.url))),digest,file)
+ for(const [file,digest]of Object.entries({...a.publicUiSourceDigests,...receipt.pciComponentsVisibilitySourceCompatibility.publicUiSourceDigests}))assert.equal(hash(historicalBytes(new URL('../../../'+file,import.meta.url))),digest,file)
  assert.equal(a.design.motherRevisionId,'465857540723474432');assert.equal(a.design.layerRevisionId,'465816145245642752')
  assert.equal(a.dependencies['587'],'adbf34ffe16f25f4e097c9456dc962260bb1963e')
  for(const flag of ['newE1Grants','schemaChanged','neonMigrationPerformed','productDeploymentPerformed'])assert.equal(a[flag],false,flag)
@@ -26,7 +36,7 @@ test('new receiver acceptance is additive, binds the whole closure and retains e
 })
 
 test('PCI correction preserves every historical acceptance and renews only its exact current receiver bindings',()=>{
- const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),current=receipt.pciComponentsVisibilitySourceCompatibility
+ const receipt=historicalReceipt(),current=receipt.pciComponentsVisibilitySourceCompatibility
  assert.equal(current.taskId,'SG2-PCI-CATEGORY-COMPONENTS-VISIBILITY-FIX');assert.equal(current.scope,'PRESENTATION_ONLY_COMPONENT_VISIBILITY_AND_EDITING')
  assert.equal(current.previousReceiptSourceSha,'d6561053d25a4132dcfbc82c24924f7d9d6c3ee1');assert.equal(current.currentReceiverSection,'appshellXraySourceCompatibility')
  const bytes=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot}),before=JSON.parse(bytes)
@@ -40,7 +50,7 @@ test('PCI correction preserves every historical acceptance and renews only its e
  const keys=['docs/integrated-buyer-journey-contract.md','tests/integrated-buyer-journey-browser.mjs','tests/integrated-buyer-journey-package.test.mjs','tests/integrated-buyer-journey-preview.mjs']
  assert.deepEqual(Object.keys(current.currentReceiverDigestOverrides).sort(),keys)
  assert.deepEqual(receipt[current.currentReceiverSection].applicationSourceDigests,{...before[current.currentReceiverSection].applicationSourceDigests,...current.currentReceiverDigestOverrides})
- for(const[file,digest]of Object.entries(current.currentReceiverDigestOverrides))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(current.currentReceiverDigestOverrides))assert.equal(hash(historicalBytes(new URL('../'+file,import.meta.url))),digest,file)
  assert.deepEqual(Object.keys(current.publicUiSourceDigests).sort(),['packages/sg2-price-change-index-ui/src/BusinessPriceChangeIndex.tsx','packages/sg2-price-change-index-ui/src/business.css'])
  assert.equal(current.historicalAcceptancePreserved,true)
  for(const flag of ['productDeploymentPerformed','calculationChanged','identityOrGrantsChanged','schemaChanged'])assert.equal(current[flag],false,flag)
@@ -96,4 +106,18 @@ test('public business entry mounts and unmounts in a minimal independent host',a
   assert.match(shadow.querySelector('.pci-series-declarations').textContent,/Bez nazwy/)
   await React.act(async()=>root.unmount());assert.equal(host.childNodes.length,0)
  }finally{dom.window.close();for(const name of names){const descriptor=prior.get(name);if(descriptor)Object.defineProperty(globalThis,name,descriptor);else delete globalThis[name]}}
+})
+
+test('date preparation renews exact receiver bytes and preserves prior records and calculation engines',()=>{
+ const r=readCurrent(),current=r.pciDatePreparationSourceCompatibility,before=historicalReceipt()
+ assert.equal(current.taskId,'SG2-PCI-DATE-CALCULATION-RECOVERY-20261029')
+ assert.equal(hash(execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot})),current.previousReceiptSha256)
+ for(const[key,value]of Object.entries(before)){
+  const observed=key==='appshellXraySourceCompatibility'?{...r[key],applicationSourceDigests:value.applicationSourceDigests}:r[key]
+  assert.deepEqual(observed,value,key)
+ }
+ assert.deepEqual(r.appshellXraySourceCompatibility.applicationSourceDigests,{...before.appshellXraySourceCompatibility.applicationSourceDigests,...current.currentReceiverDigestOverrides})
+ for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ for(const file of current.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',current.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
+ for(const flag of ['calculationMethodChanged','identityOrGrantsChanged','productDeploymentPerformed','schemaChanged'])assert.equal(current[flag],false,flag)
 })

@@ -16,13 +16,14 @@ if(!outdir||!path.isAbsolute(outdir))throw Error('Own absolute acceptance output
 fs.mkdirSync(outdir,{recursive:true})
 execFileSync(process.execPath,[runtimeRequire.resolve('tailwindcss/lib/cli.js'),'-i','app/globals.css','-o',path.join(outdir,'tailwind.css'),'--minify'],{cwd:appRoot,stdio:'pipe'})
 await bundleAdp('tests/integrated-buyer-journey-preview.tsx',{browser:true,write:true,outdir})
-let selections=[]
-const handler=createPriceChangeIndexHandler({isClerk:()=>true,now:()=> '2024-01-04T00:00:00.000Z',selections:async()=>Response.json({items:selections}),history:async r=>Response.json(history(candidates.find(c=>c.providerSeries.providerSeriesId===r.nextUrl.searchParams.get('seriesId'))))})
+let selections=[],dataScenario='normal'
+const handler=createPriceChangeIndexHandler({isClerk:()=>true,now:()=> '2024-01-04T00:00:00.000Z',selections:async()=>Response.json({items:selections}),history:async r=>{if(dataScenario==='unavailable')return new Response(null,{status:503});const h=history(candidates.find(c=>c.providerSeries.providerSeriesId===r.nextUrl.searchParams.get('seriesId')));if(dataScenario==='missing'&&h.displayName==='Energy')h.historical[1].value=null;if(dataScenario==='monthly'){h.frequency='Monthly';h.historical=[{date:'2023-11-01',value:90},{date:'2023-12-01',value:100},{date:'2024-01-01',value:110}]}return Response.json(h)}})
 const html='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/tailwind.css"><link rel="stylesheet" href="/fixture.css"><style>body{margin:0}*{box-sizing:border-box}</style></head><body><div id="root"></div><script type="module" src="/fixture.js"></script></body></html>'
 const server=http.createServer(async(req,res)=>{try{
  const u=new URL(req.url,'http://127.0.0.1'),route=u.pathname
  const chunks=[];for await(const chunk of req)chunks.push(chunk);const body=Buffer.concat(chunks).toString()
  const json=(value,status=200)=>{res.writeHead(status,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify(value))}
+ if(route==='/__acceptance/price-data'&&req.method==='POST'){const scenario=JSON.parse(body).scenario;if(!['normal','missing','monthly','unavailable'].includes(scenario))return json({},400);dataScenario=scenario;return json({scenario})}
  if(route==='/__acceptance/reset'&&req.method==='POST'){selections=[];return json({reset:true})}
  if(route==='/api/benchmark/search')return json({items:candidates.filter(c=>c.displayName.toLowerCase().includes((u.searchParams.get('q')||'').toLowerCase()))})
  if(route==='/api/benchmark/metadata')return json({items:[]})
