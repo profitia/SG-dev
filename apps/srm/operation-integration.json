@@ -6064,6 +6064,12 @@
         "tsconfig.json"
       ]
     },
-    "browserTelemetryOnly": true
+    "browserTelemetryOnly": true,
+    "peerBrowserTelemetryConsumer": {
+      "projectKey": "SG2",
+      "taskId": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029",
+      "pullRequest": 786,
+      "sourceSha": "78b8960b982ff6b1d37b99f0220db9868ee1960d"
+    }
   }
 }
