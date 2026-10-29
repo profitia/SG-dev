@@ -10,7 +10,7 @@
     "taskId": "ARCH-APPSHELL-XRAY-PEER-CONTRACT-20261028",
     "repository": "profitia/SG-dev",
     "pullRequest": 773,
-    "sourceSha": "b256cb1459a64fdb4e1fff0e04c676936560d34b"
+    "sourceSha": "dcc1e6cdfc8d3d70b258efe1aaef9b141fac116a"
   },
   "platformVersion": "1.31.0",
   "allowedPeerVersions": [
@@ -923,7 +923,7 @@
     "currentHumanReadOptedIn": false,
     "sdk130CompatibilityOnly": true
   },
-  "previousReceiptSourceSha": "075ff7ba158c90f74e026e9e8034a22eae8d11de",
+  "previousReceiptSourceSha": "77f7908756a343f4c62bed50fb2a0e52af1cc375",
   "previousReceiptSha256": "bcfb0dfcb40377925ec8d57749cce2aeaf0044bbbf51235517d61200c87949f0",
   "reportAdmissionOptedIn": false,
   "sql025Installed": false,

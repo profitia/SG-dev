@@ -17,6 +17,22 @@ test('form stage reuses the measured Registry engine and exact Staging SQL; no p
   prepareBaseline(repo,target,registry,'REGISTRY');const proof=prepareBaseline(repo,target,human,'FORM_ADMISSION')
   assert.equal(proof.overlay.stage,'FORM_ADMISSION');assert.equal(proof.overlay.coldAcquisitionStage,'NOT_YET_ADOPTED_FAIL_CLOSED')
   assert.equal(proof.overlay.clonedPrivateDataDisclosed,false)
+  assert.equal(proof.overlay.retainedHostSourceSha,'77f7908756a343f4c62bed50fb2a0e52af1cc375')
+  const retained={
+  "apps/srm/src/modules/xray/use-supplier-report.ts": "5a32d160bcc836e91749835d154cb90c57c93e591393d3f7f88e446a3cb4a5a4",
+  "apps/srm/src/server/private-operation-host.ts": "0a622121b0930e121a531345ded9770a4ebcd761a9f9900596492772cddf2165",
+  "apps/srm/src/server/request-origin.ts": "5af12d28d91f31873de3edc2ba00769856d8b3fd46f1397fa82715e6f4332672"
+}
+  assert.deepEqual(proof.overlay.retainedHostFiles,retained)
+  for(const[name,digest]of Object.entries(retained)){
+   const body=fs.readFileSync(path.join(human,name),'utf8')
+   assert.equal(hash(body),digest,name)
+   assert(!body.includes('@profitia/srm-xray/workflow'),name)
+   assert(!body.includes('@profitia/platform-contracts/peer-operation'),name)
+  }
+  assert(!fs.existsSync(path.join(human,'apps/srm/src/server/peer-xray.ts')))
+  assert(fs.readFileSync(path.join(repo,'apps/srm/src/server/private-operation-host.ts'),'utf8').includes('@profitia/platform-contracts/peer-operation'))
+
   for(const file of ['mgbi-financial.ts','mgbi-general.ts','financial-indicators.ts','financial-documents.ts','msr-repository.ts','msr-parser.ts','xray-lookup.ts']){
    const relative='apps/srm/src/server/'+file
    assert.equal(hash(fs.readFileSync(path.join(human,relative))),hash(fs.readFileSync(path.join(registry,relative))),file)
