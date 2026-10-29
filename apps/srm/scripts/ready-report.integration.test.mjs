@@ -80,6 +80,41 @@ test('ready report native Source and current HUMAN read preserve complete financ
    assert.deepEqual(events.map(e=>e.phase),['INTENT','OUTCOME']);assert(events.every(e=>e.event.decision==='ALLOW'))
    assert.equal((await owner.query("SELECT count(*)::int n FROM srm.source_snapshots WHERE organization_id=$1 AND id=ANY($2::uuid[])",[A,[stored.generalSnapshotId,stored.financialSnapshotId]])).rows[0].n,2)
   })
+  await t.test('composite financial INSERT uses the existing statement guard without changing row policy, ACL or provenance',async()=>{
+   const before=(await owner.query("SELECT pg_get_functiondef(oid) definition,proacl::text acl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid='srm.financial_statement_target()'::regprocedure")).rows[0]
+   const policies=(await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' AND tablename='financial_facts' ORDER BY policyname")).rows
+   const facts=Array.from({length:40},(_,i)=>financial.facts.map(f=>({...f,periodStart:(1980+i)+'-01-01',periodEnd:(1980+i)+'-12-31'}))).flat()
+   const timings=[]
+   const config={...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))}
+   const work=createSrmSupplierNativeWork(config)
+   const store=createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),readyCompanyWorkBoundaryDigest:hash(own('026-ready-company-work.sql'))})
+   for(const optimized of [false,true]){
+    if(optimized)await controlled(()=>owner.query(own('028-fresh-report-performance.sql')))
+    const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command}
+    await store.register(selection)
+    let timing;const logger=console.info
+    console.info=value=>{try{const x=JSON.parse(value);if(x.event==='srm_supplier_timing')timing=x}catch{logger(value)}}
+    let stored
+    try{await withSupplierTelemetry('search',async()=>{
+     stored=await store.companySections(selection,{envelope:general,errorCode:null},{envelope:financial.section,errorCode:financial.errorCode,facts})
+     return Response.json({ok:true})
+    })}finally{console.info=logger}
+    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.financial_facts WHERE snapshot_id=$1',[stored.financialSnapshotId])).rows[0].n,facts.length)
+    timings.push({optimized,facts:facts.length,insertMs:timing.stages.FINANCIAL_FACTS_INSERT.totalMs,sql:timing.stages.E1_SQL.count})
+    const sentinel=Error('rollback isolated statement probe')
+    let target
+    await assert.rejects(work.run(selection,'SRM_STORE_COMPANY',{probe:optimized},async(_context,client)=>{
+     await client.query("SELECT set_config('profitia.srm.financial.snapshot',$1,true)",[stored.financialSnapshotId])
+     target=(await client.query('SELECT srm.financial_statement_target() target')).rows[0].target
+     throw sentinel
+    }),isOperationDenied)
+    assert.equal(target===null,!optimized)
+   }
+   const after=(await owner.query("SELECT proacl::text acl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid='srm.financial_statement_target()'::regprocedure")).rows[0]
+   for(const key of Object.keys(after))assert.deepEqual(after[key],before[key],key)
+   assert.deepEqual((await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' AND tablename='financial_facts' ORDER BY policyname")).rows,policies)
+   console.info('FRESH_FINANCIAL_STATEMENT_COMPARISON',JSON.stringify(timings))
+  })
   await t.test('revocation inside the consolidated FRESH Work rolls back both sections together',async()=>{
    const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command}
    const config={...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))}
