@@ -19,9 +19,18 @@ export interface PciBusinessResult {
   methodologyId:string;cadence:string;baseDate:string;basePrice:number;currency:string;unit:string;
   nodes:readonly PciBusinessNode[];limitations:readonly string[]
 }
+/** Availability projected by the host's existing CCI adapter, never calculated by the UI. */
+export interface PciBasePreparation {
+  cadence:string|null; cutoff:string;
+  components:readonly {id:string;frequency:string|null;unit:string|null;firstDate:string|null;lastDate:string|null;status:string}[];
+  periods:readonly {start:string;endExclusive:string;eligible:boolean;requiresApproval:boolean}[];
+  issues:readonly {code:string;message:string}[];
+  canAnalyse:boolean
+}
 export interface PciBusinessController {
   name:string;components:readonly PciBusinessComponent[];purchase:PciBusinessPurchase;
   step:1|2|3|'result';ready:boolean;busy:boolean;error:string|null;result:PciBusinessResult|null;
+  preparation?:{status:'idle'|'loading'|'ready'|'error';data:PciBasePreparation|null;error:string|null};onPrepare?:()=>void;
   categorySaveStatus:'idle'|'saving'|'saved'|'error';
   onNameChange:(name:string)=>void;
   onComponentChange:(id:string,patch:Partial<Pick<PciBusinessComponent,'name'|'weightPercent'|'valueKind'>>)=>void;

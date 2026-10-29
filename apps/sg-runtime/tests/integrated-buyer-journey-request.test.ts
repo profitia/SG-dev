@@ -29,3 +29,12 @@ test('category adapter carries explicit seed organisation only as a revalidated 
  const invalid=createCategoryOperationRequester({mode:()=> 'clerk',getToken:async()=> 'synthetic.payload.signature',origin:()=> 'https://example.test',organisationId:()=> 'forged',fetch:async()=>assert.fail('Invalid scope dispatched')})
  await assert.rejects(invalid('/api/category'))
 })
+
+ test('availability cancellation aborts only its own request and never a later calculation',async()=>{
+ let resolve!:()=>void;const wait=new Promise<void>(r=>resolve=r),signals:AbortSignal[]=[]
+ const request=createPciRequester({getToken:async()=> 'synthetic.payload.signature',fetch:async(_url,init)=>{signals.push(init!.signal!);await wait;return Response.json({})}})
+ const abort=new AbortController(),old=request('{}',abort.signal).catch(e=>e.name)
+ await new Promise(r=>setTimeout(r,0));abort.abort()
+ const next=request('{}');await new Promise(r=>setTimeout(r,0));assert.equal(signals[0].aborted,true);assert.equal(signals[1].aborted,false)
+ resolve();assert.equal(await old,'AbortError');assert.equal((await next).status,200);request.close()
+ })

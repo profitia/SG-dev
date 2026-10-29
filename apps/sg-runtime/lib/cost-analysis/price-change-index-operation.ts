@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import type { SavedBenchmark, BenchmarkAnalyticsSeriesResult } from '../benchmark/contracts'
 import { analysePriceChangeIndex } from './price-change-index-host'
+import { preparePriceChangeIndex } from './price-change-index-preparation'
 import { pciAnalysisRequest } from './price-change-index-contracts'
 
 export const PCI_PRIVATE_HEADERS = Object.freeze({'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'})
@@ -56,6 +57,7 @@ export function createPriceChangeIndexHandler(options:Options) {
         const failed=results.find(r=>r.status!==200);if(failed)return unavailable(failed.status)
       }
       if(request.signal.aborted)return unavailable(499)
+      if(input.mode==='PREPARE')return reply(preparePriceChangeIndex(input,selected.items,histories,options.now()))
       const result=analysePriceChangeIndex(input,selected.items,histories,options.now())
       return reply(result,result.status==='CALCULATED'?200:422)
     }catch{return unavailable(request.signal.aborted?499:503)}
