@@ -24,8 +24,9 @@ function Workflow({locale,theme,active,transport,onReturn}:SupplierXRayWorkflowP
   const timing=reportTiming.current;
   if(!timing||timing.rendered||!result||selectedNip!==timing.nip||state.busy||state.metadataBusy
     ||state.error||state.metadataError||!state.metadata||searchPending)return;
+  if(typeof window==='undefined'||typeof window.requestAnimationFrame!=='function')return;
   const committedViewMs=performance.now();let second=0;
-  const first=requestAnimationFrame(()=>{second=requestAnimationFrame(()=>{
+  const first=window.requestAnimationFrame(()=>{second=window.requestAnimationFrame(()=>{
    if(reportTiming.current!==timing)return;
    timing.rendered=true;
    // Observability contains no supplier data, credentials or access proof.
@@ -36,7 +37,7 @@ function Workflow({locale,theme,active,transport,onReturn}:SupplierXRayWorkflowP
     financialStatus:result.entityType==='COMPANY'?result.card.financial.status:null,
     completeBasicReport:true,afterCommittedViewAndTwoAnimationFrames:true}));}catch{}
   });});
-  return()=>{cancelAnimationFrame(first);cancelAnimationFrame(second);};
+  return()=>{window.cancelAnimationFrame(first);window.cancelAnimationFrame(second);};
  },[active,result,selectedNip,searchPending,state.busy,state.metadataBusy,state.error,state.metadataError,state.metadata]);
  const problem=(message:string)=>t(message.startsWith('XRAY_')?message:'XRAY_UNAVAILABLE');
  const freshness=(kind:'financial'|'kys')=>{const data=state.metadata?.[kind];if(!data)return locale==='pl'?'Aktualność: nie ustalono':'Freshness: unknown';

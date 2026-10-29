@@ -5954,7 +5954,7 @@
       "../maps-runtime/platform-integration.json": "c59c58d81701e5b0c7905670f162052315255c64c9dca2616562a10093d75dcb",
       "../maps-runtime/test/embed.test.mjs": "c4d0f3bd1fd2a18a2a56ae696fe5e6e7c56c8ac7210c17e478d6db26320dc763",
       "../../packages/srm-xray/package.json": "824210aaffaa8ad9a284f1911ed569e0d265a3e8ae2f175d71129f30d56cd9f7",
-      "../../packages/srm-xray/src/workflow-view.tsx": "f8c836db1cc0cc30af8037d58889e0620f4a858f8a344dff1b53d4df76c8cd09"
+      "../../packages/srm-xray/src/workflow-view.tsx": "c816c595ee07e14b9da98c2d5c36d2c4b956b6cb465e848b34926c5e693b39ab"
     },
     "compatibilityPackageDigests": {
       "packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b"
@@ -5977,14 +5977,14 @@
       "apps/maps-runtime/test/embed.test.mjs": "c4d0f3bd1fd2a18a2a56ae696fe5e6e7c56c8ac7210c17e478d6db26320dc763",
       "packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b",
       "packages/srm-xray/package.json": "824210aaffaa8ad9a284f1911ed569e0d265a3e8ae2f175d71129f30d56cd9f7",
-      "packages/srm-xray/src/workflow-view.tsx": "f8c836db1cc0cc30af8037d58889e0620f4a858f8a344dff1b53d4df76c8cd09"
+      "packages/srm-xray/src/workflow-view.tsx": "c816c595ee07e14b9da98c2d5c36d2c4b956b6cb465e848b34926c5e693b39ab"
     },
     "publicUi": {
       "package": "@profitia/srm-xray",
       "version": "0.3.1",
       "contractId": "profitia.srm-xray.workflow",
       "contractVersion": "1.0.0",
-      "sourceDigest": "961f0b455cc19523ea691ccb3979854aafe365f8295dc4fa5d0209a5bfbe91c7",
+      "sourceDigest": "d125abcacf21223e926475aaf24c628a793f0e8be0990e5fb2f6407022ca4ab8",
       "exports": [
         "./workflow",
         "./workflow-contract",
