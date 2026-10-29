@@ -30,3 +30,16 @@ test('the public UI bundle contains no SRM private imports, peer keys, database 
  assert.doesNotMatch(result.outputFiles[0].text,/PROFITIA_XRAY_PEER_KEY|CLERK_SECRET|SRM_DEMO_SESSION_SECRET|createPeerOperationSigner|createSrmPrivateOperationHost/);
  const css=fs.readFileSync(path.join(publicUi,'src/workflow.css'),'utf8');assert.doesNotMatch(css,/(^|\})\s*(?:html|body|:root)\s*\{/);assert(css.includes('.srm-xray-workflow[data-theme=dark]'));assert(css.includes('prefers-reduced-motion'));
 });
+
+
+test('Search timing distinguishes SDK credential and gateway time without retaining credentials, identity or command',async()=>{
+ const {createAppShellXRayTransport}=await loadXRayModule('lib/appshell/xray-transport.ts');
+ const original=console.info,lines:string[]=[];console.info=(value:unknown)=>lines.push(String(value));
+ const trace='11111111-1111-4111-8111-111111111111';
+ try{const send=createAppShellXRayTransport(async()=>'private-synthetic-credential',async()=>Response.json({}, {headers:{'X-Profitia-Correlation-Id':trace}}));
+  await send('/api/xray/search',{method:'POST',body:JSON.stringify({identifier:'8521021463'}),headers:{'idempotency-key':trace}});
+ }finally{console.info=original}
+ assert.equal(lines.length,1);const event=JSON.parse(lines[0]);assert.equal(event.traceId,trace);assert.equal(event.httpStatus,200);
+ for(const key of ['credentialMs','gatewayMs','totalMs'])assert(Number.isFinite(event[key])&&event[key]>=0);
+ assert.doesNotMatch(lines[0],/private-synthetic|8521021463|Bearer|identifier|userId|organisationId/);
+});

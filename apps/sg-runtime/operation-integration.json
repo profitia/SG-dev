@@ -4659,5 +4659,36 @@
       "scope": "package peer dependency metadata only; no Maps behavior, activation or permissions"
     },
     "initialCandidateAuthorityMain": "55464b97305f7ef4884304f307b4aa8c2593bdd3"
+  },
+  "xraySearchBoundaryConsolidation": {
+    "taskId": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "64036dbd80ae2486704b955640a416f5f6f0220b",
+    "previousReceiptDigest": "fc64f9e4344c09a342accca0a6ff47f3f979be45b720c3df387156fb0daeac32",
+    "receiver": {
+      "applicationId": "srm",
+      "origin": "https://srm-development-runtime.onrender.com",
+      "sourceSha": "64036dbd80ae2486704b955640a416f5f6f0220b",
+      "currentHumanReadContract": {
+        "id": "profitia.current-human-read",
+        "version": "1.1.0"
+      }
+    },
+    "duplicateCallerAccountReadRemovedForSearch": true,
+    "receiverCurrentAdmissionAndFinalDisclosureRequired": true,
+    "privateOperationBoundariesChanged": false,
+    "authorizationCacheIntroduced": false,
+    "financialBackendDuplicated": false,
+    "sharedContractChanged": false,
+    "deploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "applicationSourceDigests": {
+      "lib/appshell/xray-transport.ts": "c11dee78c9b34705c0900d21319b4461ac17026bcc59cfe9d9c9cbf5bf7a321c",
+      "lib/platform/xray-gateway.ts": "3f658acb284ab8b52dde6c895bad4332f59c2b51bb183a5ca903a27a3900b9c7",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "f2eb422fd1eaddba7159e13aa247e925bf5d74d2a481fd20cffe84c58a6139ae",
+      "tests/native-sql-roundtrips.test.mjs": "8c4d8a4a1655d08d6086937c7bcd4ac4e776a855f0af95dd5b0ffcfad8e5d1c4",
+      "tests/xray-appshell.test.tsx": "d549c1daba08442f8995a106bf1b825e34660f22f8d984348a0b8df926420aa0",
+      "tests/xray-gateway.test.ts": "0a3c2a8557b09744a02630446fced6d24567cced179201b802033a78f4df4fda"
+    }
   }
 }
