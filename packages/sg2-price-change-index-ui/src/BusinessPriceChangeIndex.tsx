@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom'
 import {createPresentationScope,PresentationScopeProvider,type PresentationScope} from './PresentationScope'
 import {ThemeProvider,CanonThemeSwitch} from './Theme'
 import type {PriceChangeIndexBusinessProps} from './business-contracts'
+import {BasePeriodFields} from './BasePeriodFields'
 import {BusinessPriceChart} from './revisions/pci3/business-chart'
 import theme from './canon/theme.css?inline'
 import bindings from './revisions/pci3/canon-theme.css?inline'
@@ -74,15 +75,7 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
             <label>Cena netto / brutto<select value={p.taxBasis} onChange={e=>c.onPurchaseChange({taxBasis:e.target.value as typeof p.taxBasis})}><option value="">Wybierz</option><option value="NET">Netto</option><option value="GROSS">Brutto</option></select></label>
             <label>Warunki dostawy<input aria-label="Warunki dostawy" value={p.deliveryBasis} placeholder="Określ warunki ceny" maxLength={256} onInput={e=>c.onPurchaseChange({deliveryBasis:e.currentTarget.value})}/></label>
           </>}
-          {c.step===3&&<>
-            <h2>Kiedy ostatnio kupowałeś?</h2><p>Wskaż rzeczywistą datę i dokładny węzeł bazowy. Brakujących obserwacji nie zastępujemy innymi.</p>
-            <label>Data zakupu<input type="date" value={p.purchaseDate} onInput={e=>{const value=e.currentTarget.value;c.onPurchaseChange({purchaseDate:value,...(!p.economicPeriodApproved?{referenceDate:value}:{})})}}/></label>
-            <label>Data węzła bazowego<input type="date" value={p.referenceDate} onInput={e=>c.onPurchaseChange({referenceDate:e.currentTarget.value})}/></label>
-            <label>Znaczenie obserwacji<select value={p.periodBasis} onChange={e=>c.onPurchaseChange({periodBasis:e.target.value as typeof p.periodBasis})}><option value="">Wybierz metodę</option><option value="POINT_IN_TIME">Poziom w danym dniu</option><option value="END_OF_PERIOD">Koniec okresu</option><option value="PERIOD_AVERAGE">Średnia okresowa</option></select></label>
-            <label>Łączenie kadencji<select value={p.reduction} onChange={e=>c.onPurchaseChange({reduction:e.target.value as typeof p.reduction})}><option value="NATIVE_ONLY">Wyłącznie natywne węzły</option><option value="END_OF_PERIOD">Koniec wspólnego okresu</option><option value="OBSERVATION_AVERAGE">Średnia obserwacji w okresie</option></select></label>
-            <div className="pci-series-declarations" role="region" aria-label="Dane wszystkich komponentów" tabIndex={0}>{c.components.map((component,index)=><label key={component.id}>{index+1}. {component.name.trim()||'Bez nazwy'} · rodzaj danych<select aria-label={'Rodzaj danych komponentu '+(index+1)} value={component.valueKind} onChange={e=>c.onComponentChange(component.id,{valueKind:e.target.value as typeof component.valueKind})}><option value="">Wybierz</option><option value="PRICE_LEVEL">Poziom ceny</option><option value="PRICE_INDEX">Indeks cenowy</option></select></label>)}</div>
-            <label className="v3-confirm pci-period-approval"><input type="checkbox" checked={p.economicPeriodApproved} onChange={e=>c.onPurchaseChange({economicPeriodApproved:e.target.checked})}/>Jawnie przypisuję zakup do wskazanego okresu ekonomicznego. To referencja okresu, nie notowanie z dnia transakcji.</label>
-          </>}
+          {c.step===3&&<BasePeriodFields controller={c}/>}
         </section><aside className="v3-panel v3-setup-summary"><details open={!compact} className="v3-setup-summary-disclosure"><summary>Podsumowanie</summary><div><h3>Twoja kategoria</h3><p>{c.name||'Nadaj nazwę kategorii'}</p><p>{c.components.length} komponentów · {fmt(c.components.reduce((sum,x)=>sum+x.weightPercent,0))}%</p><p>{p.amount&&p.currency&&p.unit?`${p.amount} ${p.currency}/${p.unit}`:'Uzupełnij cenę zakupu'}</p><p>{p.purchaseDate||'Wybierz datę zakupu'}</p><p>Analiza nie zapisuje kategorii ani oferty. Zapis struktury jest osobną, jawną akcją.</p></div></details></aside></div>
       </>:result&&<>
         <div className="v3-actions" role="tablist" aria-label="Cel analizy"><button role="tab" aria-selected={mode==='monitor'} className={mode==='monitor'?'v3-active':''} onClick={()=>setMode('monitor')}>Obserwuj cenę</button><button role="tab" aria-selected={mode==='compare'} className={mode==='compare'?'v3-active':''} onClick={()=>setMode('compare')}>Sprawdź ofertę dostawcy</button></div>
@@ -97,9 +90,9 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
       </>}
     </main>
     <footer className="v3-flow-actions">
-      {c.error&&<p className="pci-error" role="alert">{c.error}</p>}
+      {c.error&&c.step!==3&&<p className="pci-error" role="alert">{c.error}</p>}
       <div className="v3-result-navigation"><button className="v3-result-back" disabled={c.busy} onClick={()=>c.step===1?c.onClose():c.onStep(c.step==='result'?3:(c.step-1) as 1|2)}>Wróć</button>
-        <div className="v3-result-primary-actions">{c.step==='result'?<button className="v3-primary" onClick={c.onClose}>Gotowe, wróć do Benchmark Findera</button>:<button className="v3-primary" disabled={c.busy||!c.ready||c.step>=2&&!purchaseReady||c.step===3&&!dateReady} onClick={()=>c.step===3?c.onAnalyse():c.onStep(c.step===1?2:3)}>{c.busy?'Obliczanie…':c.step===3?'Przeanalizuj cenę':'Dalej →'}</button>}</div>
+        <div className="v3-result-primary-actions">{c.step==='result'?<button className="v3-primary" onClick={c.onClose}>Gotowe, wróć do Benchmark Findera</button>:<button className="v3-primary" disabled={c.busy||!c.ready||c.step>=2&&!purchaseReady||c.step===3&&(!dateReady||c.preparation?.status==='loading')} onClick={()=>c.step===3?c.onAnalyse():c.onStep(c.step===1?2:3)}>{c.busy?'Obliczanie…':c.step===3?'Przeanalizuj cenę':'Dalej →'}</button>}</div>
       </div>
     </footer>
   </div>

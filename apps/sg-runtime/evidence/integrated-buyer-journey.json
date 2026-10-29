@@ -25,7 +25,7 @@
   "matrix": [
     {
       "id": "A",
-      "behavior": "Dashboard → canonical Finder",
+      "behavior": "Dashboard \u2192 canonical Finder",
       "implementation": "components/appshell/appshell-dashboard.tsx",
       "test": "integrated-buyer-journey-browser.mjs",
       "status": "LOCAL_AUTOMATED_PASS",
@@ -57,7 +57,7 @@
     },
     {
       "id": "E",
-      "behavior": "Real native preparation → CCI → Indexed Price",
+      "behavior": "Real native preparation \u2192 CCI \u2192 Indexed Price",
       "implementation": "lib/cost-analysis/price-change-index-host.ts",
       "test": "integrated-buyer-journey-operation.test.ts",
       "status": "LOCAL_AUTOMATED_PASS",
@@ -946,5 +946,101 @@
     "neonMigrationPerformed": false,
     "stagingProductionChanged": false,
     "provenanceRenewal": "Initial exact-source CI32a0a36f refused modification of historical PCI receipt. Preserve that entire receipt and record four exact current receiver renewals plus two PCI presentation digests in an additive task-owned record. Dedicated test verifies complete prior receipt hash, every historical field and the exact renewal set; controller/policy unchanged. Fresh exact-head CI required."
+  },
+  "dateCalculationRecovery": {
+    "taskId": "SG2-PCI-DATE-CALCULATION-RECOVERY-20261029",
+    "authoritySha": "55464b97305f7ef4884304f307b4aa8c2593bdd3",
+    "reusedPr780Head": "971c5262a0e16691b26baf7a9066fd999eec47cc",
+    "scope": "Input availability, date selection and refusal recovery; existing calculation and access contracts unchanged",
+    "localValidation": {
+      "focusedEngineInputTransportTests": 168,
+      "categoryPickerAppShellXrayRegressionTests": 71,
+      "publicPackagePortabilityAndProvenanceTests": 5,
+      "typecheck": "PASS",
+      "productionBuild": "PASS",
+      "browser": {
+        "cases": 90,
+        "componentCounts": [
+          2,
+          3,
+          5,
+          8,
+          12
+        ],
+        "viewports": [
+          "390x844",
+          "768x1024",
+          "1440x640",
+          "1440x900",
+          "2560x1440"
+        ],
+        "themes": [
+          "light",
+          "dark"
+        ],
+        "geometrySha256": "28bc766821ec100fa60b007292b4fdedc5bd40859bedbe17e65de56183b6a8c8",
+        "errors": [],
+        "refusalRecovery": [
+          "missing component observation and focused Polish alert",
+          "read503 and explicit retry",
+          "open month",
+          "closed monthly base without approval refused; explicit consent permits real CCI/IndexedPrice result",
+          "outside-purchase period cannot be selected as substitute",
+          "valid daily period explicitly selected; no date/consent mutation",
+          "full retained composition and Finder context"
+        ],
+        "externalIdentityProviderAndPersistence": "SYNTHETIC_LOOPBACK_ONLY",
+        "calculation": "REAL_EXISTING_ENGINES",
+        "liveAcceptance": "NOT_PERFORMED_CANDIDATE_NOT_DEPLOYED"
+      }
+    },
+    "developmentDiagnosis": {
+      "method": "Retained authenticated draft inspected through UI; bounded read-only Development market metadata/date-availability diagnostic. Not an E1 live calculation success.",
+      "purchaseDate": "2026-10-22",
+      "referenceDate": "2026-10-01",
+      "components": [
+        {
+          "providerSeriesId": "wocaes0074",
+          "source": "Brent Spot FOB North Sea Close",
+          "frequency": "Daily",
+          "unit": "USD/Barrel",
+          "firstDate": "1985-10-01",
+          "lastDate": "2026-09-23",
+          "octoberObservations": 0
+        },
+        {
+          "providerSeriesId": "cnprod4162",
+          "source": "China Iron & Steel Association Steel Stock Key Enterprises 10-day Range",
+          "frequency": "Daily",
+          "unit": "Tons (Metric)",
+          "firstDate": "2019-06-01",
+          "lastDate": "2026-10-01",
+          "recentAvailableDates": [
+            "2026-09-01",
+            "2026-09-11",
+            "2026-09-21",
+            "2026-10-01"
+          ],
+          "qualification": "Inventory quantity, not steel price"
+        }
+      ],
+      "cause": "Missing Oil observation at October01; no complete native daily base for October22 purchase. Earlier September common dates cannot anchor that purchase. Inventory series is independently economically inappropriate as a price benchmark.",
+      "actualPositiveCalculation": "NOT_CLAIMED_NO_LAWFUL_RESULT_FOR_THIS_PAIR",
+      "liveSha": "55464b97305f7ef4884304f307b4aa8c2593bdd3",
+      "liveDeployId": "dep-dbhp2jc9v7es73bguq5g"
+    },
+    "requiredCi": "Trusted clean installation, full regression/typecheck/build at exact PR head",
+    "preserved": [
+      "PR782 continuous full composition and stable component identities",
+      "PR783 and AppShell/ADP/SRM source",
+      "E1, Clerk, organisation isolation",
+      "CCI/IndexedPrice source and methodology",
+      "Source data and supported persistence"
+    ],
+    "mergePerformed": false,
+    "deploymentPerformed": false,
+    "databaseMutationPerformed": false,
+    "neonMigrationPerformed": false,
+    "stagingProductionChanged": false
   }
 }
