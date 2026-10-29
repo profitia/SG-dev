@@ -45,13 +45,13 @@ const readyCompany=()=>Response.json({entityType:'COMPANY',card:{identity:{nip:m
 const searchBody={method:'POST',body:JSON.stringify({identifier:metadataNip})}
 const readBody={method:'POST',body:JSON.stringify({nip:metadataNip,entityType:'COMPANY'})}
 
-test('main ready-company metadata uses the existing SDK bearer once with 30 seconds headroom, without storing authority or refreshing Search',async()=>mainBrowser(async()=>{
+test('main NIP Search and its immediate metadata read use current SDK credentials with independent expiry headroom and no stored authority',async()=>mainBrowser(async()=>{
  const reads:unknown[]=[],headers:Headers[]=[];const current=sdkBearer(60)
  const transport=createKrsSessionTransport(async options=>{reads.push(options);return options?.skipCache?'fresh-search-bearer':current},async(path,init)=>{
   headers.push(new Headers(init?.headers));return path==='/api/xray/search'?readyCompany():Response.json({})
  })
  await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',readBody);await transport('/api/xray/report-data',readBody)
- assert.deepEqual(reads,[{skipCache:true},undefined,{skipCache:true}]);assert.equal(headers[1].get('Authorization'),'Bearer '+current)
+ assert.deepEqual(reads,[undefined,undefined,{skipCache:true}]);assert.equal(headers[0].get('Authorization'),'Bearer '+current);assert.equal(headers[1].get('Authorization'),'Bearer '+current)
  for(const h of headers){assert.equal(h.get('X-SRM-Report-Admission'),null);assert.equal(h.get('X-SRM-Diagnostic-Admission'),null)}
 }))
 test('near-expired, missing, malformed and unverifiable-expiry SDK credentials still refresh before the same metadata read',async()=>mainBrowser(async()=>{
@@ -59,7 +59,7 @@ test('near-expired, missing, malformed and unverifiable-expiry SDK credentials s
   const reads:unknown[]=[],seen:string[]=[]
   const transport=createKrsSessionTransport(async options=>{reads.push(options);return options?.skipCache?'fresh-bearer':token},async(path,init)=>{seen.push(new Headers(init?.headers).get('Authorization')!);return path==='/api/xray/search'?readyCompany():Response.json({})})
   await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',readBody)
-  assert.deepEqual(reads,[{skipCache:true},undefined,{skipCache:true}]);assert.equal(seen[1],'Bearer fresh-bearer')
+  assert.deepEqual(reads,[undefined,{skipCache:true},undefined,{skipCache:true}]);assert.equal(seen[1],'Bearer fresh-bearer')
  }
 }))
 test('a revoked account or grant still returns the current server refusal, with no credential retry or cached DTO',async()=>mainBrowser(async()=>{
@@ -77,14 +77,14 @@ test('another NIP, JDG, failed search, stale read hint and independent environme
  await mainBrowser(async()=>{
   for(const body of [{nip:otherMetadataNip,entityType:'COMPANY'},{nip:metadataNip,entityType:'JDG'}]){
    const reads:unknown[]=[];const transport=createKrsSessionTransport(async options=>{reads.push(options);return 'fresh'},async path=>path==='/api/xray/search'?readyCompany():Response.json({}))
-   await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',{method:'POST',body:JSON.stringify(body)});assert.deepEqual(reads,[{skipCache:true},{skipCache:true}])
+   await transport('/api/xray/search',searchBody);await transport('/api/xray/report-data',{method:'POST',body:JSON.stringify(body)});assert.deepEqual(reads,[undefined,{skipCache:true},{skipCache:true}])
   }
   const original=Date.now;let elapsed=0;Date.now=()=>original()+elapsed
   try{const reads:unknown[]=[];const transport=createKrsSessionTransport(async options=>{reads.push(options);return sdkBearer(60)},async path=>path==='/api/xray/search'?readyCompany():Response.json({}))
-   await transport('/api/xray/search',searchBody);elapsed=16000;await transport('/api/xray/report-data',readBody);assert.deepEqual(reads,[{skipCache:true},{skipCache:true}])
+   await transport('/api/xray/search',searchBody);elapsed=16000;await transport('/api/xray/report-data',readBody);assert.deepEqual(reads,[undefined,{skipCache:true}])
   }finally{Date.now=original}
   const reads:unknown[]=[];const failed=createKrsSessionTransport(async options=>{reads.push(options);return 'fresh'},async path=>path==='/api/xray/search'?Response.json({error:'unavailable'},{status:503}):Response.json({}))
-  await failed('/api/xray/search',searchBody);await failed('/api/xray/report-data',readBody);assert.deepEqual(reads,[{skipCache:true},{skipCache:true}])
+  await failed('/api/xray/search',searchBody);await failed('/api/xray/report-data',readBody);assert.deepEqual(reads,[undefined,{skipCache:true},{skipCache:true}])
  })
 })
 test('form diagnostic fragment is correlation only and cannot replace the existing admission or bearer',async()=>{
@@ -170,3 +170,33 @@ test('map timing excludes the private supplier selector and authentication data'
  assert.equal(lines.length,1);assert.equal(JSON.parse(lines[0]).path,'/api/supplier-locations')
  assert.doesNotMatch(lines[0],/supplierId|11111111|synthetic-session|Bearer/)
 })
+
+test('main Search never retains credentials or retries a current refusal, including SDK credential changes and revoked access',async()=>mainBrowser(async()=>{
+ for(const status of [200,401,403,503]){
+  const reads:unknown[]=[],sent:string[]=[],tokens=[sdkBearer(60),sdkBearer(59)];let calls=0
+  const transport=createKrsSessionTransport(async options=>{reads.push(options);return tokens[reads.length-1]},async(_path,init)=>{
+   calls++;const headers=new Headers(init?.headers);sent.push(headers.get('Authorization')!);assert.equal(headers.get('X-SRM-Report-Admission'),null)
+   assert.equal(headers.get('Idempotency-Key'),'same-command');assert.equal(init?.body,searchBody.body);return Response.json({error:'current outcome'},{status})
+  })
+  for(let i=0;i<2;i++)assert.equal((await transport('/api/xray/search',{...searchBody,headers:{'Idempotency-Key':'same-command'}})).status,status)
+  assert.deepEqual(reads,[undefined,undefined]);assert.deepEqual(sent,tokens.map(t=>'Bearer '+t));assert.equal(calls,2)
+ }
+}))
+test('main Search refreshes below 45 seconds and on missing or malformed SDK expiry, with one unchanged HTTP command',async()=>mainBrowser(async()=>{
+ for(const token of [sdkBearer(44),sdkBearer(29),sdkBearer(-1),null,'opaque','a.e30.c','a.eyJleHAiOiJmdXR1cmUifQ.c']){
+  const reads:unknown[]=[];let calls=0
+  const transport=createKrsSessionTransport(async options=>{reads.push(options);return options?.skipCache?'fresh-bearer':token},async(_path,init)=>{
+   calls++;assert.equal(new Headers(init?.headers).get('Authorization'),'Bearer fresh-bearer');assert.equal(init?.body,searchBody.body);return Response.json({})
+  })
+  await transport('/api/xray/search',searchBody);assert.deepEqual(reads,[undefined,{skipCache:true}]);assert.equal(calls,1)
+ }
+ const controller=new AbortController();const transport=createKrsSessionTransport(async()=>{controller.abort();return sdkBearer(60)},async()=>assert.fail('No HTTP after cancellation'))
+ await assert.rejects(transport('/api/xray/search',{...searchBody,signal:controller.signal}))
+}))
+test('client transport links finite timing to server diagnostic IDs without logging credentials or the selected NIP',async()=>mainBrowser(async()=>{
+ const original=console.info,lines:string[]=[];console.info=(v:unknown)=>lines.push(String(v))
+ const traceId='11111111-1111-4111-8111-111111111111',fragmentId='22222222-2222-4222-8222-222222222222'
+ try{await createKrsSessionTransport(async()=>sdkBearer(60),async()=>Response.json({}, {headers:{'X-SRM-Diagnostic-Execution':traceId,'X-SRM-Diagnostic-Fragment':fragmentId}}))('/api/xray/search',searchBody)}finally{console.info=original}
+ assert.equal(lines.length,1);const event=JSON.parse(lines[0]);assert.equal(event.tokenMode,'CURRENT_SDK');assert.equal(event.traceId,traceId);assert.equal(event.fragmentId,fragmentId)
+ assert.doesNotMatch(lines[0],/Bearer|e30[.]|synthetic|9511855233/)
+}))

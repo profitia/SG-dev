@@ -5497,7 +5497,7 @@
       "scripts/supplier-delegated-business.integration.test.mjs": "340491283ac39d32ec912b2ea03fe511f62dab3e7cbf8f07b07982944f730cd9",
       "scripts/supplier-location-admission.integration.test.mjs": "0fbbb68744bf076711797b1e97456c1f064a677fa1c1aa832f70720bb377e45a",
       "scripts/xray-performance-adoption.test.mjs": "53c65e05d0d3b4c81bf343461dc24d912e62b230c84074924a4409d589fb23e5",
-      "src/modules/xray/krs-session-transport.test.ts": "e0568c8d68a635906d2e76043ccf7c53e9012b68ea7164ba6f43386d82445d9b",
+      "src/modules/xray/krs-session-transport.test.ts": "2c6288d1d7cd3ea4bea92c2c2646d4129b578b0cbc4f5e8aff1527cf98311e8d",
       "src/modules/xray/report-controller.test.ts": "445630e78c3447f1d80d002e138d8fc43486fee4cf637d9aed88345963adc626",
       "src/modules/xray/report-controller.ts": "56406b6c5c53c3a0f7bd6020ecbcf19b561fb0ce884e350ef188c12800b98b5d",
       "src/server/company-classification.test.ts": "c0001062f08743ff6f03be2531c2686d7daa9d7751d6e20854d509847fa41398",
@@ -5528,7 +5528,8 @@
       "src/modules/xray/supplier-report.tsx": "e2126bad65771dd4f29d5d54d5226f5b920fe00a9c412f77bfe37a808737f1f3",
       "src/server/diagnostic-trace.test.ts": "4cdbca28ca38699b027311f8569376e5f2bbe46c53bf4b5f4f641ceff6db5166",
       "src/server/diagnostic-trace.ts": "0db24c551310710dd10c7efc5175b31005ea9d4e8732802bfc3eab7993f9eedc",
-      "src/server/xray-lookup-orchestration.test.ts": "6635dd3a196afb2f4648ee158df988f8abab7cac55b95137733f46f4cd2b559c"
+      "src/server/xray-lookup-orchestration.test.ts": "6635dd3a196afb2f4648ee158df988f8abab7cac55b95137733f46f4cd2b559c",
+      "src/modules/xray/krs-session-transport.ts": "9c38a1d0e264055f3b960bc33faee8fcf15fa344e10462039008f2cca3a61daf"
     },
     "preparedReportRules": {
       "mapping": "2026-10-07-ccc-v2",
