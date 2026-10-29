@@ -106,7 +106,12 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   if(receipt.appshellReadyPeerRecovery){
     const compatible=execFileSync('git',['show',receipt.appshellReadyPeerRecovery.compatibleHostSourceSha+':apps/sg-runtime/operation-integration.json']);
     assert.equal(hash(compatible),receipt.appshellReadyPeerRecovery.compatibleHostReceiptDigest);
-    assert.deepEqual(adoption,JSON.parse(compatible.toString()).appshellXraySourceCompatibility);
+    // Independently accepted SG2 main can renew only its source closure.
+    const currentHost=execFileSync('git',['show',consumer.freshPerformanceRecovery.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);
+    assert.equal(hash(currentHost),consumer.freshPerformanceRecovery.previousReceiptDigest);
+    assert.deepEqual(adoption,JSON.parse(currentHost.toString()).appshellXraySourceCompatibility);
+    for(const[key,value]of Object.entries(JSON.parse(compatible.toString()).appshellXraySourceCompatibility))
+      if(key!=='applicationSourceDigests')assert.deepEqual(adoption[key],value,key);
     for(const[key,value]of Object.entries(acceptedConsumer.appshellXraySourceCompatibility))
       if(key!=='applicationSourceDigests')assert.deepEqual(adoption[key],value,key);
   }else assert.deepEqual(adoption,acceptedConsumer.appshellXraySourceCompatibility);
