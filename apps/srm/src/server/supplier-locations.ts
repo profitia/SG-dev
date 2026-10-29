@@ -8,7 +8,7 @@ import {createSrmPrivateOperationHost,resolveSrmPrivateIdentity} from './private
 import {createSupplierLocationAdmission} from '@profitia/platform-contracts/supplier-location'
 import {isSameOriginRequest} from './request-origin'
 import {locationCollectionId,locationCommandDigest,assignedLocationId,manualAddressVersion,readLocationPage,writeManualLocation,reconcileLocations,locationSourceEvidence,type LocationPayload} from './supplier-location-store'
-import {projectSupplierHeadquarters,projectRelatedCompanyLocations,sourceAddressVersion,sourceSyncIdentity,type LocationProjection} from './supplier-location-sync'
+import {projectSupplierHeadquarters,projectRelatedCompanyLocations,sourceAddressVersion,sourceSyncIdentity,type LocationProjection,type AcceptedCompanyAddress} from './supplier-location-sync'
 import {readLocationCompany,acceptedKysLocations,type AcceptedKysLocations} from './supplier-location-source'
 
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
@@ -98,8 +98,8 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
     try{const r=await options.readAcceptedKys(input.request,input.organisationId,selected.nip);if(r.ok)kys=acceptedKysLocations(await r.json(),selected.nip)}
     catch(e){if(!isOperationDenied(e))throw e}
    }
-   const plans:{rows:LocationProjection[];sources:LocationSource[]}[]=[]
-   if(selected.company){const h=projectSupplierHeadquarters(selected.company);if(h)plans.push({rows:[h],sources:[selected.company.source]})}
+   const plans:{rows:LocationProjection[];sources:LocationSource[];addressProjection?:AcceptedCompanyAddress['addressProjection']}[]=[]
+   if(selected.company){const h=projectSupplierHeadquarters(selected.company);if(h)plans.push({rows:[h],sources:[selected.company.source],addressProjection:selected.company.addressProjection})}
    if(kys){
     // First preserve every legally identified relationship, including those
     // without addresses. Enrichment uses only already stored corporate data.
@@ -117,13 +117,13 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
      if(!corporate.length)continue
      const entities=kys.entities.filter(v=>corporate.some(c=>v.krs?c.krs===v.krs:c.nip===v.nip))
      const rows=projectRelatedCompanyLocations({supplierId:input.supplierId,source:kys.source,entities,complete:true},corporate)
-     plans.push({rows,sources:[kys.source,...corporate.map(c=>c.source)]})
+     plans.push({rows,sources:[kys.source,...corporate.map(c=>c.source)],addressProjection:corporate.find(c=>c.addressProjection)?.addressProjection})
     }
    }
    const receipts=[]
    for(const plan of plans){
     const sources=[...new Map(plan.sources.map(v=>[v.kind+':'+v.reportId,v])).values()]
-    const key=sourceSyncIdentity(input.organisationId,input.supplierId,sources)
+    const key=sourceSyncIdentity(input.organisationId,input.supplierId,sources,plan.addressProjection)
     const expectedVersion=await read(input,async(context,client)=>{
      const digest=createHash('sha256').update(JSON.stringify(['profitia.request-key@1','srm',context.environment,context.actorId,'supplier.location.sync',key])).digest('hex')
      return (await client.query('SELECT srm.location_sync_target($1::uuid,$2::uuid,$3) AS value',[input.organisationId,input.supplierId,digest])).rows[0].value as string

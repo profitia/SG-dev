@@ -1,24 +1,28 @@
 import type {PoolClient} from 'pg'
 import type {GeneralCompanyData,SectionEnvelope,LocationSource,VerclyKysData} from '@profitia/srm-xray'
 import {readArchivedCompanyGeneral} from './company-general-cache'
-import {mgbiStructuredLocationAddress,type AcceptedCompanyAddress} from './supplier-location-sync'
+import {mgbiStructuredLocationAddress,POLISH_RURAL_ADDRESS_PROJECTION,type AcceptedCompanyAddress} from './supplier-location-sync'
 
 export type AcceptedKysLocations=Readonly<{source:LocationSource;entities:NonNullable<VerclyKysData['relatedEntities']>}>
 /** Runs only inside an admitted HUMAN location operation. SQL checks the
  * source's own current grant; it never acquires or refreshes a provider report. */
 export async function readLocationCompany(client:PoolClient,org:string,supplierId:string,nip:string):Promise<AcceptedCompanyAddress|null>{
- const row=(await client.query<{general_json:SectionEnvelope<GeneralCompanyData>;general_sha256:string}>(`SELECT general_json,general_sha256 FROM srm.catalog_companies
+ const row=(await client.query<{general_json:SectionEnvelope<GeneralCompanyData>;general_sha256:string;address_projection:string|null}>(`SELECT general_json,general_sha256,
+ srm.location_installation_descriptor()->>'ruralAddressNormalization' AS address_projection FROM srm.catalog_companies
  WHERE nip=$1 AND profitia_requests.location_permission('srm',$2::uuid,nullif(current_setting('profitia.user_id',true),'')::uuid,'supplier.report.read','supplier-report:COMPANY:'||nip)`,[nip,org])).rows[0]
  const section=row?.general_json,krs=section?.data?.krs
  if(!section?.data||!section.retrievedAt||!krs||!/^[a-f0-9]{64}$/.test(row.general_sha256))return null
- let structuredAddress=null
+ let structuredAddress=null,addressProjection:typeof POLISH_RURAL_ADDRESS_PROJECTION|undefined
  // The archive reader verifies checksum, legal identity and bounded records.
  // If absent or older, keep the accepted display address without guessing parts.
  const archived=await readArchivedCompanyGeneral(client,org,nip)
- if(archived?.section.data?.krs===krs&&archived.section.data.registeredAddress===section.data.registeredAddress)
-  structuredAddress=mgbiStructuredLocationAddress(archived.rawRecord)
+ if(archived?.section.data?.krs===krs&&archived.section.data.registeredAddress===section.data.registeredAddress){
+  const previous=mgbiStructuredLocationAddress(archived.rawRecord)
+  structuredAddress=mgbiStructuredLocationAddress(archived.rawRecord,row.address_projection??undefined)
+  if(structuredAddress?.line1!==previous?.line1)addressProjection=POLISH_RURAL_ADDRESS_PROJECTION
+ }
  return {supplierId,nip,krs,section,structuredAddress,source:{kind:'MGBI',reportId:'MGBI:'+nip+':'+row.general_sha256,version:row.general_sha256,
-  retrievedAt:section.retrievedAt,effectiveAt:section.effectiveAt,retentionUntil:null}}
+  retrievedAt:section.retrievedAt,effectiveAt:section.effectiveAt,retentionUntil:null},...(addressProjection?{addressProjection}:{})}
 }
 export function acceptedKysLocations(value:unknown,nip:string,now=Date.now()):AcceptedKysLocations|null{
  if(!value||typeof value!=='object')return null
