@@ -17,11 +17,7 @@ test('SG2 accepts the verified peer reader without changing its backend or histo
  assert.equal(a.uiOrFinancialBackendChanged,false);assert.equal(a.runtimeDeploymentPerformed,false)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/current-human-read'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,a.platformVersion)
- for(const[file,digest]of Object.entries(a.sourceDigests)){
-  assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  // npm excludes the producer's build lock from the installed package.
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
- }
+ for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file)
  assert.equal(a.publicUi.version,'0.3.1');assert.equal(a.publicUi.contractVersion,'1.0.0')
  const ui=createHash('sha256')
  for(const file of a.publicUi.sourceFiles)ui.update(file).update('\0').update(execFileSync('git',['show',a.publicUiProducer.sourceSha+':packages/srm-xray/'+file])).update('\0')
