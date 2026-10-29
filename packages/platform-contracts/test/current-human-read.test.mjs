@@ -5,6 +5,7 @@ import {createHash,randomUUID} from 'node:crypto'
 import {createRequire} from 'node:module'
 import {createCurrentHumanReadIdentity,createCurrentHumanReadHost,currentHumanReadSourceDigest} from '../src/current-human-read.mjs'
 import {OPERATION_CONTRACT,isOperationDenied} from '../src/operation-context.mjs'
+import {createPeerOperationSigner,createPeerOperationVerifier} from '../src/peer-operation.mjs'
 
 const T=2_000_000_000_000,ORIGIN='http://localhost:3400',ISSUER='https://identity.fixture.test',USER='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 function fixture(){
@@ -80,6 +81,43 @@ test('reverse-proxy normalization retains exact ingress and request-local identi
  const f=fixture();f.identity.requestBoundary={publicOrigins:[ORIGIN],internalOrigins:['http://127.0.0.1:9999']}
  const flow=f.make(),request=new Request('http://127.0.0.1:9999/api/search',{method:'POST',headers:{host:'localhost:3400',origin:ORIGIN}})
  const actor=await flow.authenticate(request);assert(actor);assert(await flow.revalidate(request,actor));assert.equal(f.calls.filter(x=>x==='sdk').length,1)
+})
+async function peerFixture(){
+ const f=fixture(),source='https://sg2.fixture.test',target='https://srm.fixture.test'
+ const configuration={environment:'development',callerApplicationId:'spendguru',receiverApplicationId:'srm',sourceOrigin:source,targetOrigin:target,
+  keyId:'isolated-current-read',key:new Uint8Array(32).fill(7),internalOrigins:[],
+  routes:[{method:'POST',path:'/api/search',maximumRequestBytes:2048,requireIdempotencyKey:true}]}
+ f.identity.authorizedParties=[source,target];f.identity.requestBoundary={publicOrigins:[source,target],internalOrigins:['http://127.0.0.1:9999']}
+ f.auth.sessionClaims.azp=source
+ const base=f.client.authenticateRequest
+ const sdkOrigins=[]
+ f.client.authenticateRequest=async(request,...args)=>{sdkOrigins.push(new URL(request.url).origin);return base(request,...args)}
+ const request=await createPeerOperationSigner(configuration,{now:()=>f.time})(new Request(target+'/api/search',{method:'POST',
+  headers:{authorization:'Bearer fixture_only','content-type':'application/json','idempotency-key':'synthetic-current-human-peer'},body:'{"identifier":"0000000000"}'}))
+ assert(await createPeerOperationVerifier(configuration,{now:()=>f.time})(request))
+ return {...f,request,make:f.make,sdkOrigins,advance:()=>{f.time+=60000}}
+}
+test('verified peer retains one SDK verification and two current authority reads on the actual receiver request',async()=>{
+ const f=await peerFixture(),flow=f.make(),actor=await flow.authenticate(f.request)
+ assert(actor);assert(await flow.revalidate(f.request,actor))
+ assert.deepEqual(f.sdkOrigins,['https://sg2.fixture.test'])
+ assert.deepEqual(f.calls,['sdk','session','account','binding','session','account','binding'])
+})
+for(const mutation of ['expired proof','copied request','changed headers','revoked session','revoked account','revoked binding'])test('current peer disclosure rejects '+mutation,async()=>{
+ const f=await peerFixture(),flow=f.make(),actor=await flow.authenticate(f.request);assert(actor)
+ let selected=f.request
+ if(mutation==='expired proof')f.advance()
+ if(mutation==='copied request')selected=f.request.clone()
+ if(mutation==='changed headers')selected.headers.set('authorization','Bearer replacement')
+ if(mutation==='revoked session')f.session.status='revoked'
+ if(mutation==='revoked account')f.user.banned=true
+ if(mutation==='revoked binding')f.binding.status='REVOKED'
+ assert.equal(await flow.revalidate(selected,actor),null)
+})
+test('signed headers without verifier receipt cannot select a caller identity',async()=>{
+ const f=await peerFixture(),flow=f.make()
+ assert.equal(await flow.authenticate(f.request.clone()),null)
+ assert.deepEqual(f.calls,['sdk']);assert.deepEqual(f.sdkOrigins,['https://srm.fixture.test'])
 })
 test('additive host fingerprint pins all real security dependencies',async()=>{
  assert.match(await currentHumanReadSourceDigest(),/^[a-f0-9]{64}$/)

@@ -5,8 +5,9 @@ import {createPrivateOperationHost,privateOperationHostSourceDigest} from './pri
 import {createAccessStore,accessStoreSourceDigest} from './access-store.mjs'
 import {OperationDenied,operationPayloadDigest,operationSourceDigest} from './operation-context.mjs'
 import {diagnosticAsync} from './diagnostic-phase.mjs'
+import {hasVerifiedPeerOperation,peerOperationIdentityRequest,peerOperationSourceDigest} from './peer-operation.mjs'
 
-export const CURRENT_HUMAN_READ_CONTRACT=Object.freeze({id:'profitia.current-human-read',version:'1.0.0'})
+export const CURRENT_HUMAN_READ_CONTRACT=Object.freeze({id:'profitia.current-human-read',version:'1.1.0'})
 const denied=()=>{throw new OperationDenied('UNVERIFIED_IDENTITY')}
 const unavailable=()=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
 const fingerprint=request=>createHash('sha256').update(JSON.stringify([
@@ -26,8 +27,9 @@ export function createCurrentHumanReadIdentity({client,application,resolveBindin
   ||typeof client.users?.getUser!=='function'||typeof resolveBinding!=='function'||typeof now!=='function')throw TypeError('Official Clerk client and current binding reader required')
  const identity=freeze(structuredClone(application))
  const normalize=identity.requestBoundary?createPublicIdentityRequestBoundary(identity.requestBoundary):request=>request
- let original=null,transport=null,normalizedTransport=null,sdkState=null,actor=null,phase=0,sdkCalls=0,closed=false
+ let original=null,transport=null,normalizedTransport=null,sdkState=null,actor=null,phase=0,sdkCalls=0,closed=false,peer=false
  const eligible=request=>!closed&&request===original&&!request.signal.aborted&&fingerprint(request)===transport
+  &&(!peer||hasVerifiedPeerOperation(request))
  const adapterClient={
   authenticateRequest:async(request,options)=>{
    if(!eligible(original)||!(request instanceof Request)||fingerprint(request)!==normalizedTransport)return null
@@ -52,7 +54,12 @@ export function createCurrentHumanReadIdentity({client,application,resolveBindin
  }
  const authenticate=createClerkIdentityAuthenticator({client:adapterClient,application:identity,resolveBinding,now})
  const read=async request=>{
-  const normalized=normalize(request)
+  // Only the shared verifier can establish this request-object capability.
+  // Preserve the actual receiver request for execution and final eligibility;
+  // the official SDK alone sees its authenticated caller-origin identity input.
+  const peerRequest=peerOperationIdentityRequest(request)
+  if(peer&&!peerRequest)return null
+  const normalized=normalize(peerRequest??request)
   if(!(normalized instanceof Request)||!eligible(request))return null
   const key=fingerprint(normalized)
   if(normalizedTransport!==null&&normalizedTransport!==key)return null
@@ -63,7 +70,7 @@ export function createCurrentHumanReadIdentity({client,application,resolveBindin
  return Object.freeze({
   async authenticate(request){
    if(closed||phase!==0||!(request instanceof Request)||request.signal.aborted)return null
-   original=request;transport=fingerprint(request);phase=1
+   original=request;transport=fingerprint(request);peer=hasVerifiedPeerOperation(request);phase=1
    actor=await read(request)
    return actor
   },
@@ -142,5 +149,5 @@ export async function currentHumanReadSourceDigest(){
   .update(fs.readFileSync(new URL('./current-human-read.d.mts',import.meta.url)))
   .update(await privateOperationHostSourceDigest()).update(await identitySourceDigest())
   .update(await accessStoreSourceDigest()).update(await operationSourceDigest())
-  .update(await publicIdentityRequestSourceDigest()).digest('hex')
+  .update(await publicIdentityRequestSourceDigest()).update(await peerOperationSourceDigest()).digest('hex')
 }
