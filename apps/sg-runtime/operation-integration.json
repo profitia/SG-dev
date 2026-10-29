@@ -4459,7 +4459,7 @@
       "tests/category-operation.test.ts": "731aaf180e8ba788446d0f643640756d4c24a049b4b6a2bfa30ff7cf4ee70d08",
       "tests/supplier-summary.test.ts": "20eb9fd461a4d1aa2e18e208d4a67b9b5378a9acc7d78ee4f5c0d3af80fa387a",
       "tests/adp-appshell-preview.mjs": "332117d56e478459b7c576dc7c8a9b466b231bd0849d3be1ba9843b3e002fe77",
-      "tests/xray-gateway.test.ts": "499b792b0799cbbdf6147325f1e23beb76131d4edd06f792da40af95f68e1a38",
+      "tests/xray-gateway.test.ts": "1412ac7cab183515abf51b7597f6701a31d077605a00fb99f2172faff3f8788d",
       "../../packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b"
     },
     "backend": "existing shared SRM only",
