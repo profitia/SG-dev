@@ -1,12 +1,12 @@
 'use client'
-import React,{useLayoutEffect,useRef,useState} from 'react'
+import React,{useEffect,useLayoutEffect,useRef,useState} from 'react'
 import {PriceChangeIndex,type PciBusinessController,type PciBusinessResult} from '@profitia/sg2-price-change-index-ui/business'
 import {useSg2SessionCredential,useSg2IdentityMode} from '../auth/session-boundary'
 import {SharedBenchmarkPicker} from '../benchmark-picker/shared-benchmark-picker'
 import {attachCategoryBenchmark} from '../category-builder/benchmark-picker-draft'
 import {createCategoryOperationRequester} from '../category-builder/category-operation-request'
 import type {SavedBenchmark} from '../../lib/benchmark/contracts'
-import type {PciAnalysisResponse} from '../../lib/cost-analysis/price-change-index-contracts'
+import type {PciAnalysisResponse,PciPreparationResponse} from '../../lib/cost-analysis/price-change-index-contracts'
 import {createPciRequester} from './price-change-index-request'
 import {emptyPurchase,seedPciComponent,pciStructureReady,pciInput,pciResult,pciCategoryBody,type PciComponent} from './price-change-index-controller'
 import './price-change-index-layer.css'
@@ -18,6 +18,8 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
   const [name,setName]=useState(''),[components,setComponents]=useState<PciComponent[]>(()=>[seedPciComponent(seed,'seed')]),[purchase,setPurchase]=useState(emptyPurchase)
   const [step,setStep]=useState<1|2|3|'result'>(1),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[result,setResult]=useState<PciBusinessResult|null>(null)
   const [pickTarget,setPickTarget]=useState<{id:string|null}|null>(null),[saveStatus,setSaveStatus]=useState<PciBusinessController['categorySaveStatus']>('idle')
+  const [preparation,setPreparation]=useState<NonNullable<PciBusinessController['preparation']>>({status:'idle',data:null,error:null}),[prepareAttempt,setPrepareAttempt]=useState(0)
+  const preparationAbort=useRef<AbortController|null>(null),generation=useRef(0)
   const [theme,setTheme]=useState<'light'|'dark'>('light')
   const request=useRef<ReturnType<typeof createPciRequester>|null>(null),categoryRequest=useRef<ReturnType<typeof createCategoryOperationRequester>|null>(null)
   useLayoutEffect(()=>{
@@ -33,13 +35,28 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
     return()=>{active.current=false;request.current?.close();categoryRequest.current?.close();picker.current?.close();dialog.current?.close();document.body.style.overflow=overflow;previous?.focus({preventScroll:true})}
   },[])
   useLayoutEffect(()=>{if(pickTarget)picker.current?.showModal()},[pickTarget])
-  const changed=()=>{dirty.current=true;setResult(null);setError(null);if(saveStatus==='saved')setSaveStatus('idle')}
+  useEffect(()=>{
+    if(step!==3||!pciStructureReady(name,components)||!purchase.amount||!purchase.currency||!purchase.unit||!purchase.taxBasis||!purchase.deliveryBasis||!purchase.purchaseDate||!purchase.referenceDate||!purchase.periodBasis||components.some(c=>!c.valueKind))return
+    const abort=new AbortController(),version=generation.current;preparationAbort.current=abort
+    setPreparation({status:'loading',data:null,error:null})
+    const timer=setTimeout(async()=>{try{
+      if(!request.current)return
+      const response=await request.current(JSON.stringify({...pciInput(name,components,purchase),mode:'PREPARE'}),abort.signal)
+      if(!active.current||abort.signal.aborted||version!==generation.current)return
+      if(response.status===401||response.status===403){onAccessLost();onClose();return}
+      const body=await response.json() as PciPreparationResponse
+      if(!response.ok||body.status!=='PREPARED')throw Error('PREPARATION_UNAVAILABLE')
+      setPreparation({status:'ready',data:body.preparation,error:null})
+    }catch(e){if(!abort.signal.aborted&&active.current&&version===generation.current){if(e instanceof Error&&e.message==='SESSION_UNAVAILABLE'){onAccessLost();onClose()}else setPreparation({status:'error',data:null,error:'Nie udało się sprawdzić notowań. Ponów sprawdzenie dostępności danych.'})}}},300)
+    return()=>{clearTimeout(timer);abort.abort()}
+  },[step,name,components,purchase,prepareAttempt])
+  const changed=()=>{generation.current++;preparationAbort.current?.abort();setPreparation({status:'idle',data:null,error:null});dirty.current=true;setResult(null);setError(null);if(saveStatus==='saved')setSaveStatus('idle')}
   const close=()=>{if(step!=='result'&&dirty.current&&!window.confirm('Odrzucić niezapisane zmiany i wrócić do Benchmark Findera?'))return;onClose()}
   async function analyse(){
-    if(inflight.current||!request.current)return;inflight.current=true;setBusy(true);setError(null);setResult(null)
+    if(inflight.current||!request.current)return;const version=generation.current;inflight.current=true;setBusy(true);setError(null);setResult(null)
     try{
       const response=await request.current(JSON.stringify(pciInput(name,components,purchase)))
-      if(!active.current)return
+      if(!active.current||version!==generation.current)return
       if(response.status===401||response.status===403){onAccessLost();onClose();return}
       const body=await response.json() as PciAnalysisResponse
       if(!response.ok||body.status!=='CALCULATED'){
@@ -47,7 +64,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
         throw Error(message)
       }
       if(active.current){setResult(pciResult(body,components));setStep('result')}
-    }catch(e){if(active.current){if(e instanceof Error&&e.message==='SESSION_UNAVAILABLE'){onAccessLost();onClose()}else setError(e instanceof Error?e.message:'Analiza niedostępna.')}}
+    }catch(e){if(active.current&&version===generation.current){if(e instanceof Error&&e.message==='SESSION_UNAVAILABLE'){onAccessLost();onClose()}else setError(e instanceof Error?e.message:'Analiza niedostępna.')}}
     finally{inflight.current=false;if(active.current)setBusy(false)}
   }
   async function saveCategory(){
@@ -66,10 +83,10 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
     }catch(e){if(active.current){setSaveStatus('error');setError(e instanceof Error?e.message:'Nie potwierdzono zapisu kategorii.')}}
     // An unconfirmed write is never automatically retried with a new create identity.
   }
-  const controller:PciBusinessController={name,components,purchase,step,busy,error,result,categorySaveStatus:saveStatus,ready:pciStructureReady(name,components),
-    onNameChange:value=>{changed();setName(value)},onComponentChange:(id,patch)=>{changed();setComponents(c=>c.map(x=>x.id===id?{...x,...patch}:x))},
-    onRemove:id=>{changed();setComponents(c=>c.filter(x=>x.id!==id))},onPickBenchmark:id=>setPickTarget({id}),
-    onPurchaseChange:patch=>{changed();setPurchase(p=>({...p,...patch}))},onStep:value=>{setError(null);setStep(value)},onAnalyse:()=>void analyse(),onSaveCategory:()=>void saveCategory(),onClose:close}
+  const controller:PciBusinessController={name,components,purchase,step,busy,error,result,preparation,onPrepare:()=>{setError(null);setPrepareAttempt(n=>n+1)},categorySaveStatus:saveStatus,ready:pciStructureReady(name,components),
+    onNameChange:value=>{changed();setName(value)},onComponentChange:(id,patch)=>{changed();if('valueKind' in patch)setPurchase(p=>({...p,economicPeriodApproved:false}));setComponents(c=>c.map(x=>x.id===id?{...x,...patch}:x))},
+    onRemove:id=>{changed();setPurchase(p=>({...p,economicPeriodApproved:false}));setComponents(c=>c.filter(x=>x.id!==id))},onPickBenchmark:id=>setPickTarget({id}),
+    onPurchaseChange:patch=>{changed();setPurchase(p=>({...p,...patch,...(['purchaseDate','referenceDate','periodBasis','reduction'].some(key=>key in patch)?{economicPeriodApproved:false}:{})}))},onStep:value=>{setError(null);setStep(value)},onAnalyse:()=>void analyse(),onSaveCategory:()=>void saveCategory(),onClose:close}
   return <dialog className="pci-host-dialog" data-theme={theme} ref={dialog} aria-labelledby="pci-layer-title" onCancel={e=>{e.preventDefault();close()}}>
     <header className="pci-host-bar"><h2 id="pci-layer-title">Price Change Index · Budowa kategorii</h2><button type="button" aria-label="Zamknij Price Change Index" onClick={close}>×</button></header>
     <div className="pci-host-content"><PriceChangeIndex view="pci3" mode="business" locale={locale} theme={theme} onThemeChange={setTheme} controller={controller}/></div>
@@ -78,7 +95,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
         onCancel={()=>setPickTarget(null)} onSelect={benchmark=>{
           if(!active.current)return
           if(benchmark.organizationId!==seed.organizationId){setError('Nie można mieszać benchmarków różnych organizacji.');setPickTarget(null);return}
-          changed();setComponents(c=>attachCategoryBenchmark({components:c},benchmark,{componentId:pickTarget.id,newComponent:()=>({id:crypto.randomUUID(),name:''})}).components.map(x=>({...x,valueKind:x.valueKind??''})));setPickTarget(null)
+          changed();setPurchase(p=>({...p,economicPeriodApproved:false}));setComponents(c=>attachCategoryBenchmark({components:c},benchmark,{componentId:pickTarget.id,newComponent:()=>({id:crypto.randomUUID(),name:''})}).components.map(x=>({...x,valueKind:x.valueKind??''})));setPickTarget(null)
         }}/>
     </dialog>}
   </dialog>

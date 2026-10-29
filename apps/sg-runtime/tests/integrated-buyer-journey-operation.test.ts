@@ -1,3 +1,4 @@
+import './price-change-index-preparation.test'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {createPriceChangeIndexHandler} from '../lib/cost-analysis/price-change-index-operation'

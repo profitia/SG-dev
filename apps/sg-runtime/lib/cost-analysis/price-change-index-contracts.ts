@@ -10,6 +10,7 @@ const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
 }, 'Valid calendar date required')
 export const pciAnalysisRequest = z.object({
   contractVersion: z.literal(PCI_JOURNEY_VERSION),
+  mode: z.enum(['PREPARE','ANALYSE']).optional(),
   organisationId: z.string().uuid(),
   category: categoryBodySchema,
   purchase: z.object({ amount: z.number().finite().positive(), currency: z.string().regex(/^[A-Z]{3}$/),
@@ -25,3 +26,5 @@ export type PciAnalysisResponse = { contractVersion: typeof PCI_JOURNEY_VERSION 
   | { status: 'CALCULATED'; core: CciNodesCalculated; indexedPrice: CciIndexedPriceResult }
   | { status: 'REFUSED'; issues: readonly { code: string; message: string }[]; core?: CciNodesRefused }
 )
+
+export type PciPreparationResponse = {contractVersion:typeof PCI_JOURNEY_VERSION;status:'PREPARED';preparation:import('@profitia/sg2-price-change-index-ui/business').PciBasePreparation}
