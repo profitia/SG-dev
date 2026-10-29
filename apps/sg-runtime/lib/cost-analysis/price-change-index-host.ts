@@ -5,6 +5,7 @@ import { createCalendarTargetPeriod, normalizeForecastSourceFrequency } from '..
 import { calculateCciFromMarketData } from './node-integration'
 import { calculateCciIndexedPrice, CciIndexedPriceValidationError } from './cci-indexed-price'
 import { PCI_JOURNEY_VERSION, type PciAnalysisRequest, type PciAnalysisResponse } from './price-change-index-contracts'
+import {pciIssueMessage} from './price-change-index-messages'
 
 /** Thin consumer of PRs #580/#584. No provider, persistence, resampling or alternative mathematics. */
 export function analysePriceChangeIndex(input: PciAnalysisRequest,
@@ -39,13 +40,18 @@ export function analysePriceChangeIndex(input: PciAnalysisRequest,
       snapshot:{retrievedAt:null,revisionRef:null}})
   }
   if (!Number.isFinite(start) || !Number.isFinite(end) || start>=end) return refuse('NO_OBSERVATIONS','Brak obserwacji do analizy.')
+  const reference=Date.parse(input.purchase.referenceDate+'T00:00:00.000Z')
+  if(reference<start||reference>=end){
+    const day=(value:number)=>new Intl.DateTimeFormat('pl-PL',{timeZone:'UTC'}).format(value)
+    return refuse('REFERENCE_DATE_OUTSIDE_HISTORY',`Data benchmarku ${day(reference)} jest poza zakresem dostępnej historii: ${day(start)} – ${day(end-1)}. Notowania muszą obejmować rzeczywisty dzień lub okres zakupu. Sprawdź datę odniesienia albo wybierz benchmarki z historią za ten okres. Nie zmieniaj rzeczywistej daty zakupu.`)
+  }
   const bases = new Set(input.declarations.map(d=>d.periodBasis))
   if (bases.size!==1) return refuse('INCOMPATIBLE_ECONOMIC_BASIS','Komponenty wymagają zgodnej, jawnie określonej podstawy ekonomicznej.')
   const core = calculateCciFromMarketData({modelKey:'transient-category',baseNodeStart:input.purchase.referenceDate+'T00:00:00.000Z',
     range:{start:new Date(start).toISOString(),endExclusive:new Date(end).toISOString()},cutoff,
     availability:'RETROSPECTIVE_CURRENT_HISTORY',alignmentPolicy:'STRICT_COMMON_NODES',nodeBasis:input.declarations[0].periodBasis,
     currencyPolicy:{kind:'NATIVE_CURRENCY_RELATIVES'},components})
-  if (core.status==='REFUSED') return {contractVersion:PCI_JOURNEY_VERSION,status:'REFUSED',issues:core.issues,core}
+  if (core.status==='REFUSED') return {contractVersion:PCI_JOURNEY_VERSION,status:'REFUSED',issues:core.issues.map(issue=>({...issue,message:pciIssueMessage(issue)})),core}
   if (core.calculation.nodes.length>25000) return refuse('DATA_VOLUME_LIMIT','Pełna historia przekracza limit tej analizy. Nie została sztucznie skrócona.')
   try {
     const indexedPrice=calculateCciIndexedPrice({calculation:core.calculation,basePrice:{amount:input.purchase.amount,
@@ -57,6 +63,6 @@ export function analysePriceChangeIndex(input: PciAnalysisRequest,
     return {contractVersion:PCI_JOURNEY_VERSION,status:'CALCULATED',core,indexedPrice}
   } catch(error) {
     if (!(error instanceof CciIndexedPriceValidationError)) throw error
-    return refuse(error.issue.code,error.issue.message)
+    return refuse(error.issue.code,pciIssueMessage(error.issue))
   }
 }

@@ -859,5 +859,21 @@
     "productDeploymentPerformed": false,
     "schemaChanged": false,
     "newE1Grants": false
+  },
+  "dateStructureCorrection20261029": {
+    "taskId": "SG2-PCI-DATE-STRUCTURE-UX-20261029",
+    "baselineSha": "77f7908756a343f4c62bed50fb2a0e52af1cc375",
+    "scope": "EXISTING_CONSUMER_PRESENTATION_AND_REFUSAL_FEEDBACK",
+    "twoRowsTogether": true,
+    "oneRowPaginationRemoved": true,
+    "sourceSemanticsInferred": false,
+    "coreMathChanged": false,
+    "purchaseDateMoved": false,
+    "periodConsentBypassed": false,
+    "validation": "Local actual components/Core with synthetic external fixtures; exact-source CI required; no corrected live claim",
+    "sourceRevisionChanged": false,
+    "productDeploymentPerformed": false,
+    "schemaChanged": false,
+    "newE1Grants": false
   }
 }
