@@ -97,6 +97,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   // independently declared current file closure instead of creating a cycle.
   const consumer=JSON.parse(readFileSync(new URL('../../../sg-runtime/operation-integration.json',import.meta.url),'utf8'));
   assert.deepEqual(consumer.freshPerformanceRecovery.currentHumanReadContract,receipt.freshPerformanceRecovery.currentHumanReadContract);
+  assert.deepEqual(consumer.freshPerformanceRecovery.publicUi,receipt.freshPerformanceRecovery.publicUi);
   const acceptedConsumer=receipt.appshellReadyPeerRecovery
     ?JSON.parse(execFileSync('git',['show',receipt.appshellReadyPeerRecovery.acceptedHostSourceSha+':apps/sg-runtime/operation-integration.json'],{encoding:'utf8'})):consumer;
   const adoption=consumer.appshellXraySourceCompatibility;

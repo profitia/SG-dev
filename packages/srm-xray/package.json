@@ -1,6 +1,6 @@
 {
   "name": "@profitia/srm-xray",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "Reusable SRM X-Ray section mounts and host contract",
   "type": "module",
