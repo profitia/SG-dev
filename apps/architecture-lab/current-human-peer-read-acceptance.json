@@ -33,9 +33,5 @@
     "test/current-human-read.test.mjs": "8dd9d41a43cfdc52d3b33b11b0eccdd5cfb1d002c97c02c503fcf1fc843046e4",
     "package.json": "e8c9f5eda73be29b95d892698eb3f5e4cafcb522c135c7194177654922de03d6",
     "package-lock.json": "e54cd376398ca072f3dcaf5e67de9c785cc529e213defe1c7bed44c6cdefeb88"
-  },
-  "compatibilityOnlyFiles": {
-    "packages/maps-embed/package.json": "d71003008cfacb1cdc3622923f7ff52d972f14ca6ad22d6af8ada5824e34bf9b"
-  },
-  "mapsRuntimeBehaviorChanged": false
+  }
 }
