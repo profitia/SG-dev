@@ -14,9 +14,10 @@ export function readAppShellXRayConfiguration(env:Environment=process.env):PeerO
  return {environment:'development',callerApplicationId:'spendguru',receiverApplicationId:'srm',sourceOrigin,targetOrigin,keyId,key:new Uint8Array(Buffer.from(key,'base64url')),
  routes:Object.values(XRAY_OPERATIONS).map(path=>({method:'POST',path,maximumRequestBytes:XRAY_REQUEST_BYTES,requireIdempotencyKey:true})),internalOrigins:[]};
 }
-/** Fixed mapping. Identity confirms the current end-user account; SRM then
- * authenticates that same captured bearer and independently checks current E1,
- * product, tenant and resource rights. No ALLOW/session proof is cached here. */
+/** Fixed mapping, never a financial or authorization backend. Search carries
+ * the original bearer to the accepted SRM receiver, which checks current identity
+ * at admission and final disclosure. Other operations retain their own-account
+ * boundary. No ALLOW/session proof or report is cached here. */
 export function createXRayGateway({env=process.env,transport=fetch,now=Date.now}:{env?:Environment;transport?:typeof fetch;now?:()=>number}={}){
  return async(request:Request,operationName:string):Promise<Response>=>{
   if(!Object.hasOwn(XRAY_OPERATIONS,operationName))return Response.json({error:'Not found'},{status:404,headers});
@@ -47,7 +48,10 @@ export function createXRayGateway({env=process.env,transport=fetch,now=Date.now}
     if(current.authenticated!==true||typeof current.userId!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(current.userId)||typeof current.expiresAt!=='string'||!(Date.parse(current.expiresAt)>now())||signal.aborted)return failure(operation,401,'XRAY_SESSION_REQUIRED');
     return {userId:current.userId,expiresAt:current.expiresAt};
    };
-   const current=await readAccount();if(current instanceof Response)return current;
+   // The accepted receiver performs both current HUMAN checkpoints for Search.
+   // Repeating its account read here adds no independent entitlement check.
+   // Private/report operations retain their original caller-side boundary.
+   const current=operation==='search'?null:await readAccount();if(current instanceof Response)return current;
    const correlationId=crypto.randomUUID();
    const outgoing=await createPeerOperationSigner(config,{newRequestId:()=>correlationId})(new Request(targetOrigin+XRAY_OPERATIONS[operation],{method:'POST',headers:{authorization,'content-type':'application/json','idempotency-key':key},body:JSON.stringify(command),signal}));
    const response=await transport(outgoing);
@@ -55,7 +59,7 @@ export function createXRayGateway({env=process.env,transport=fetch,now=Date.now}
    const payload=await readXRayJson(response,XRAY_RESPONSE_BYTES,signal);unwrapXRayResponse(operation,payload,response.status);
    if(response.ok&&(payload as {requestId:string}).requestId!==correlationId)return failure(operation,502,'XRAY_RESPONSE_INVALID');
    if(signal.aborted)return failure(operation,504,'XRAY_INTERRUPTED');
-   if(response.ok&&Date.parse(current.expiresAt)<=now()){
+   if(response.ok&&current&&Date.parse(current.expiresAt)<=now()){
     // A slow provider cannot turn a short account proof into a cached ALLOW.
     // Refresh only authority, never repeat the SRM/provider operation.
     const renewed=await readAccount();if(renewed instanceof Response)return renewed;
