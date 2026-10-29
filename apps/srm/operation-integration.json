@@ -5881,6 +5881,7 @@
     "applicationSourceDigests": {
       "scripts/native-execution-adoption.test.mjs": "27af9dac760234597cb5684219c424480f7cbfa3bbee7b29b3792e85df68e664",
       "scripts/ready-report.integration.test.mjs": "c741142b1144672d8263b9ce9b0a2a8b0b734207d2d0c5bf5d5fd49f6dde2073",
+      "scripts/rural-location-release.test.mjs": "29d6f6ccce8c83496334c459117fc94d20bf3c815275f82c41ac8675f6ee211d",
       "scripts/xray-performance-adoption.test.mjs": "3552092316e74ff958a2244d0b6ee851964398c1591b36e8b1e032ca476d5e86",
       "scripts/xray-workflow-contract.test.ts": "b1ecd81c8a34d80b1f112bee5f4b924d290d254635358a4fa13a65ff42910056",
       "src/server/appshell-ready-peer.test.ts": "57157a6543614e5d875ceac7e7742d1c1b7988f9fe3a09ba2ed72ddccfb2fd2d",
