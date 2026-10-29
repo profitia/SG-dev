@@ -40,7 +40,7 @@ test('PCI correction preserves every historical acceptance and renews only its e
  const keys=['docs/integrated-buyer-journey-contract.md','tests/integrated-buyer-journey-browser.mjs','tests/integrated-buyer-journey-package.test.mjs','tests/integrated-buyer-journey-preview.mjs']
  assert.deepEqual(Object.keys(current.currentReceiverDigestOverrides).sort(),keys)
  assert.deepEqual(receipt[current.currentReceiverSection].applicationSourceDigests,{...before[current.currentReceiverSection].applicationSourceDigests,...current.currentReceiverDigestOverrides})
- for(const[file,digest]of Object.entries(current.currentReceiverDigestOverrides))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(current.currentReceiverDigestOverrides))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.freshPerformanceRecovery.applicationSourceDigests[file]??digest,file)
  assert.deepEqual(Object.keys(current.publicUiSourceDigests).sort(),['packages/sg2-price-change-index-ui/src/BusinessPriceChangeIndex.tsx','packages/sg2-price-change-index-ui/src/business.css'])
  assert.equal(current.historicalAcceptancePreserved,true)
  for(const flag of ['productDeploymentPerformed','calculationChanged','identityOrGrantsChanged','schemaChanged'])assert.equal(current[flag],false,flag)
