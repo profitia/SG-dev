@@ -17,7 +17,7 @@ test('new receiver acceptance is additive, binds the whole closure and retains e
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot})
  assert.equal(hash(prior),a.previousReceiptSha256)
  for(const [key,value]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[key],value,key)
- for(const [file,digest]of Object.entries({...a.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests,...receipt.appshellXraySourceCompatibility.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const [file,digest]of Object.entries({...a.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests,...receipt.appshellXraySourceCompatibility.applicationSourceDigests,...receipt.freshPerformanceRecovery.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
  for(const [file,digest]of Object.entries({...a.publicUiSourceDigests,...receipt.pciComponentsVisibilitySourceCompatibility.publicUiSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
  assert.equal(a.design.motherRevisionId,'465857540723474432');assert.equal(a.design.layerRevisionId,'465816145245642752')
  assert.equal(a.dependencies['587'],'adbf34ffe16f25f4e097c9456dc962260bb1963e')
