@@ -1,5 +1,4 @@
 import {isCompanyReportRestricted} from '@profitia/srm-xray'
-import {hasVerifiedPeerOperation} from '@profitia/platform-contracts/peer-operation'
 import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray'
 import type {KrsFinancialRecheck,KrsFinancialExecution} from './krs-native-financial'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
@@ -160,9 +159,7 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
    input.request.signal.throwIfAborted()
    const card=await company.run(selected)
    input.request.signal.throwIfAborted()
-   // Keep peer results on the existing protected native projection until the
-   // optimized READY identity contract supports verified peer operations.
-   if(ready&&!hasVerifiedPeerOperation(input.request)&&card.general.data&&!isCompanyReportRestricted(card.general.data)){
+   if(ready&&card.general.data&&!isCompanyReportRestricted(card.general.data)){
     const prepared=await ready.read(input.request,input.organisationId,input.command.nip)
     if(prepared.response)return prepared.response
     throw new OperationDenied('POLICY_UNAVAILABLE')
