@@ -1,3 +1,4 @@
+import {withSrmPeerXRay} from "./peer-xray";
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-ledger'
 import {readPresentationJson} from '@profitia/platform-contracts/embedded-read-channel'
@@ -102,7 +103,7 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
 /** Explicit Clerk failure never invokes legacy. Default deployed legacy
  * remains the original complete handler until controlled activation. */
 export function createRuntimeSupplierOperationHandler(route:Route,legacy:(request:Request)=>Promise<Response>,resolve:()=>SrmReportRuntime=getSrmReportRuntime){
- return async(request:Request):Promise<Response>=>withSupplierTelemetry(route,async()=>{
+ return withSrmPeerXRay(async(request:Request):Promise<Response>=>withSupplierTelemetry(route,async()=>{
   try{
    const runtime=resolve()
    if(runtime.provider==='legacy_demo')return await legacy(request)
@@ -112,5 +113,5 @@ export function createRuntimeSupplierOperationHandler(route:Route,legacy:(reques
    const run=()=>createSrmSupplierOperationHandler(route,runtime.supplierApi!,runtime.defaultOrganisationId,nip?.company,nip?.search)(request)
    return runtime.reportAdmission?await runtime.reportAdmission.run(request,run):await run()
   }catch{return response(503)}
- })
+ }))
 }

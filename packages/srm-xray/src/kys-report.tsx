@@ -1,4 +1,5 @@
 "use client";
+import {useXRayText,useXRayLocale} from "./i18n";
 import React, { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { SectionEnvelope, VerclyKysData, VerclyPerson } from "./contracts";
 import { CanonButton, CanonElement } from "./ui-canon";
@@ -22,11 +23,13 @@ const tabs = [
   { id: "ownership", label: "Struktura właścicielska i podmioty", targets: ["relations"] },
 ] as const;
 type KysTab = typeof tabs[number]["id"];
-function pepMatchCount(count: number): string {
+function pepMatchCount(count: number,locale="pl"): string {
+  if(locale==="en")return `${count} matches in the report`;
   const form = new Intl.PluralRules("pl-PL").select(count);
   return `${count} ${form === "one" ? "dopasowanie" : form === "few" ? "dopasowania" : "dopasowań"} w raporcie`;
 }
 function PeselReveal({ token, onReveal }: { token: string | null | undefined; onReveal?: (token: string) => Promise<string> }) {
+  const t=useXRayText();
   const [revealed, setRevealed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
@@ -51,7 +54,7 @@ function PeselReveal({ token, onReveal }: { token: string | null | undefined; on
   }, [revealed]);
   return <CanonElement as="span" canonId="SRM-C58" usage="kys-pesel:mask" className="srm-pesel-control">
     <span id={id}>
-    {revealed ? <span>{revealed}</span> : token ? <span className="kys-pesel-mask" aria-label="Numer ukryty">•••••••••••</span> : "brak danych"}
+    {revealed ? <span>{revealed}</span> : token ? <span className="kys-pesel-mask" aria-label={t("Numer ukryty")}>{t("•••••••••••")}</span> : t("brak danych")}
     </span>
     {token && onReveal && <CanonButton canonId="SRM-C59" usage="kys-pesel:visibility" aria-controls={id} aria-pressed={!!revealed} aria-label={busy ? "Pobieranie numeru PESEL" : revealed ? "Ukryj PESEL" : "Pokaż PESEL"} title={revealed ? "Ukryj PESEL" : "Pokaż PESEL"} type="button" className="kys-pesel-button" disabled={busy} onClick={async (event) => {
       event.preventDefault();
@@ -66,7 +69,7 @@ function PeselReveal({ token, onReveal }: { token: string | null | undefined; on
       } catch { if (alive.current && currentToken.current === token) setError(true); }
       finally { if (alive.current && currentToken.current === token) setBusy(false); }
     }}><KysIcon kind={revealed ? "eye-closed" : "eye-open"} /></CanonButton>}
-    {error && <span className="kys-pesel-error" role="alert">Nie udało się ujawnić numeru.</span>}
+    {error && <span className="kys-pesel-error" role="alert">{t("Nie udało się ujawnić numeru.")}</span>}
   </CanonElement>;
 }
 
@@ -74,21 +77,22 @@ function KysPeopleTable({ people, count, onRevealPesel, beneficiaries = false }:
   people: readonly VerclyPerson[] | undefined; count?: number | null;
   onRevealPesel?: (token: string) => Promise<string>; beneficiaries?: boolean;
 }) {
+  const t=useXRayText();
   const id = useId();
   const [expanded, setExpanded] = useState<number[]>([]);
-  if (!people?.length) return <p>brak danych</p>;
+  if (!people?.length) return <p>{t("brak danych")}</p>;
   return <div className="srm-kys-table-scroll" role="region" tabIndex={0} aria-label={beneficiaries ? "Tabela beneficjentów rzeczywistych" : "Tabela kierownictwa i nadzoru"}>
     <CanonElement as="table" canonId="SRM-C57" usage="kys-people:table" className={`srm-kys-table srm-kys-people ${beneficiaries ? "has-relations" : "is-management"}`}>
-      <caption>{count == null ? "Liczba wpisów: nie ustalono" : `${count} wpisów w raporcie`}</caption>
-      <thead><tr><th scope="col">Imię i nazwisko</th><th scope="col">Rola / funkcja</th><th scope="col">PESEL</th><th scope="col">Sankcje</th><th scope="col">PEP</th>{beneficiaries && <th scope="col"><span className="srm-sr-only">Szczegóły</span></th>}</tr></thead>
+      <caption>{count == null ? t("Liczba wpisów: nie ustalono") : `${count} ${t("wpisów w raporcie")}`}</caption>
+      <thead><tr><th scope="col">{t("Imię i nazwisko")}</th><th scope="col">{t("Rola / funkcja")}</th><th scope="col">{t("PESEL")}</th><th scope="col">{t("Sankcje")}</th><th scope="col">{t("PEP")}</th>{beneficiaries && <th scope="col"><span className="srm-sr-only">{t("Szczegóły")}</span></th>}</tr></thead>
       <tbody>{people.map((person, index) => {
         const open = expanded.includes(index), rowId = `${id}-${index}`;
         return <React.Fragment key={`${person.fullName}:${index}`}><tr className="kys-person-entry">
-          <th scope="row">{person.fullName}</th><td>{person.positions.join(", ") || "brak danych"}</td>
+          <th scope="row">{person.fullName}</th><td>{person.positions.join(", ") || t("brak danych")}</td>
           <td><PeselReveal token={person.peselRevealToken} onReveal={onRevealPesel} /></td>
-          <td>{yesNo(person.sanctionsMatch)}</td><td>{yesNo(person.pepMatch)}</td>
-          {beneficiaries && <td><CanonButton canonId="SRM-C55" usage="kys-people:relation" className="srm-text-link srm-kys-expand" type="button" aria-expanded={open} aria-controls={rowId} onClick={() => setExpanded(previous => open ? previous.filter(i => i !== index) : [...previous, index])}>{open ? "Zwiń" : "Rozwiń"}<KysIcon kind="chevron" /></CanonButton></td>}
-        </tr>{beneficiaries && <tr id={rowId} hidden={!open} className="srm-kys-person-detail"><td colSpan={6}><dl><div><dt>Powiązanie / rejestr</dt><dd>{person.foundIn.join(", ") || "brak danych"}</dd></div></dl></td></tr>}</React.Fragment>;
+          <td>{t(yesNo(person.sanctionsMatch))}</td><td>{t(yesNo(person.pepMatch))}</td>
+          {beneficiaries && <td><CanonButton canonId="SRM-C55" usage="kys-people:relation" className="srm-text-link srm-kys-expand" type="button" aria-expanded={open} aria-controls={rowId} onClick={() => setExpanded(previous => open ? previous.filter(i => i !== index) : [...previous, index])}>{open ? t("Zwiń") : t("Rozwiń")}<KysIcon kind="chevron" /></CanonButton></td>}
+        </tr>{beneficiaries && <tr id={rowId} hidden={!open} className="srm-kys-person-detail"><td colSpan={6}><dl><div><dt>{t("Powiązanie / rejestr")}</dt><dd>{person.foundIn.join(", ") || t("brak danych")}</dd></div></dl></td></tr>}</React.Fragment>;
       })}</tbody>
     </CanonElement>
   </div>;
@@ -98,6 +102,9 @@ export function VerclyKysReport({ section, entityType = "COMPANY", onRevealPesel
   section: Omit<SectionEnvelope<VerclyKysData>, "source">; entityType?: "COMPANY" | "JDG";
   onRevealPesel?: (token: string) => Promise<string>; overview?: ReactNode;
 }) {
+  const t=useXRayText();
+  const locale=useXRayLocale();
+  const display=(text:string|null|undefined)=>text||t("brak danych");
   const id = useId(), tablist = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<KysTab>("summary");
   const tabAnchor = useRef<number | null>(null);
@@ -131,81 +138,81 @@ export function VerclyKysReport({ section, entityType = "COMPANY", onRevealPesel
     if (event.key === "End") next = availableTabs.length - 1;
     if (next !== undefined) { event.preventDefault(); select(availableTabs[next].id); tablist.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus({ preventScroll: true }); }
   }
-  if (section.status === "PENDING") return <div role="status"><p>Raport jest przygotowywany. Poczekaj na wynik…</p><div className="kys-progress" role="progressbar" aria-label="Postęp pobierania raportu KYS" aria-valuetext="Pobieranie trwa"><span /></div></div>;
-  if (!data || !["SUCCESS", "PARTIAL"].includes(section.status)) return <p role="status">{section.status === "ERROR" ? "Raport KYS jest niedostępny." : "brak danych"}</p>;
+  if (section.status === "PENDING") return <div role="status"><p>{t("Raport jest przygotowywany. Poczekaj na wynik…")}</p><div className="kys-progress" role="progressbar" aria-label={t("Postęp pobierania raportu KYS")} aria-valuetext={t("Pobieranie trwa")}><span /></div></div>;
+  if (!data || !["SUCCESS", "PARTIAL"].includes(section.status)) return <p role="status">{section.status === "ERROR" ? t("Raport KYS jest niedostępny.") : t("brak danych")}</p>;
   const registry = kysRegistryRows(data), lists = kysListRows(data);
   const sanctions = (data.screenedLists ?? []).filter(row => row.type.toUpperCase() === "SANCTIONS");
   const companyFields: [string, string][] = [
-    ["Nazwa", value(company?.name)], ...(entityType === "COMPANY" ? [["KRS", value(company?.krs)] as [string,string]] : []),
-    ["NIP", value(company?.nip)], ["REGON", value(company?.regon)], ["Forma prawna", polishCode(company?.legalForm, legalFormLabels)],
-    ["Adres", value(company?.address)], ["Telefon", value(company?.phone)], ["Dzielnica / gmina", value(company?.municipality)],
-    ["Powiat", value(company?.district)], ["Województwo", value(company?.voivodship)], ["Kraj", company?.country === "PL" ? "Polska" : value(company?.country)],
-    ["Kraj głównej siedziby", value(company?.headquarterCountry)], ["Status działalności", registry[3][1]],
-    ["Data powstania", value(company?.createdAt)], ["Data wpisu", value(company?.registeredAt)], ["Data rozpoczęcia działalności", value(company?.commencedAt)],
-    ["Ostatnia zmiana", value(company?.lastChangedAt)], ["PKD", value(company?.mainPkd)],
-    ...(entityType === "COMPANY" ? [["Kapitał zakładowy", capitalInThousands(company?.shareCapital)], ["Zasady reprezentacji", value(company?.representation)], ["Organ rejestrowy", value(company?.registerAuthority)], ["Forma własności", value(company?.ownershipForm)]] as [string,string][] : []),
+    ["Nazwa", display(company?.name)], ...(entityType === "COMPANY" ? [["KRS", display(company?.krs)] as [string,string]] : []),
+    ["NIP", display(company?.nip)], ["REGON", display(company?.regon)], ["Forma prawna", t(polishCode(company?.legalForm, legalFormLabels))],
+    ["Adres", display(company?.address)], ["Telefon", display(company?.phone)], ["Dzielnica / gmina", display(company?.municipality)],
+    ["Powiat", display(company?.district)], ["Województwo", display(company?.voivodship)], ["Kraj", company?.country === "PL" ? t("Polska") : display(company?.country)],
+    ["Kraj głównej siedziby", display(company?.headquarterCountry)], ["Status działalności", t(registry[3][1])],
+    ["Data powstania", display(company?.createdAt)], ["Data wpisu", display(company?.registeredAt)], ["Data rozpoczęcia działalności", display(company?.commencedAt)],
+    ["Ostatnia zmiana", display(company?.lastChangedAt)], ["PKD", display(company?.mainPkd)],
+    ...(entityType === "COMPANY" ? [["Kapitał zakładowy", t(capitalInThousands(company?.shareCapital).replace("tys. PLN",locale==="en"?"thousand PLN":"tys. PLN"))], ["Zasady reprezentacji", display(company?.representation)], ["Organ rejestrowy", display(company?.registerAuthority)], ["Forma własności", display(company?.ownershipForm)]] as [string,string][] : []),
   ];
   return <div className="srm-kys-report">
-    {section.status === "PARTIAL" && <p role="status">Dane częściowe</p>}
-    {section.warnings.map((warning, index) => <p className="xray-warning" key={index}>{warningLabel(warning)}</p>)}
-    <div className="srm-category-tabs srm-kys-tabs" role="tablist" aria-label="Obszary raportu KYS" ref={tablist}>{availableTabs.map((item, index) =>
-      <CanonButton canonId="SRM-C08" usage="kys-report:tab" type="button" key={item.id} role="tab" id={`${id}-tab-${item.id}`} aria-selected={tab === item.id} aria-controls={`${id}-panel-${item.id}`} data-kys-tab-for={item.targets.join(" ")} tabIndex={tab === item.id ? 0 : -1} onClick={() => select(item.id)} onKeyDown={event => keyboard(event,index)}>{item.label}</CanonButton>
+    {section.status === "PARTIAL" && <p role="status">{t("Dane częściowe")}</p>}
+    {section.warnings.map((warning, index) => <p className="xray-warning" key={index}>{t(warningLabel(warning))}</p>)}
+    <div className="srm-category-tabs srm-kys-tabs" role="tablist" aria-label={t("Obszary raportu KYS")} ref={tablist}>{availableTabs.map((item, index) =>
+      <CanonButton canonId="SRM-C08" usage="kys-report:tab" type="button" key={item.id} role="tab" id={`${id}-tab-${item.id}`} aria-selected={tab === item.id} aria-controls={`${id}-panel-${item.id}`} data-kys-tab-for={item.targets.join(" ")} tabIndex={tab === item.id ? 0 : -1} onClick={() => select(item.id)} onKeyDown={event => keyboard(event,index)}>{t(item.label)}</CanonButton>
     )}</div>
     {availableTabs.map(item => <div key={item.id} id={`${id}-panel-${item.id}`} role="tabpanel" aria-labelledby={`${id}-tab-${item.id}`} hidden={tab !== item.id} tabIndex={0} className="srm-kys-panel" style={{ minHeight: panelFloor }}>
       {/* Changing tabs unmounts any revealed identifier, including in-flight requests. */}
       <div key={tab}>
       {item.id === "summary" && <>
-        <div className="srm-kys-company"><h3>{value(company?.name)}</h3><div><span>Poziom ryzyka: <strong>{value(data.riskLevel)}</strong></span><span>Sankcje: <strong>{yesNo(sanctions.some(row => row.matched === true) ? true : sanctions.length && sanctions.every(row => row.matched === false) ? false : null)}</strong></span></div></div>
+        <div className="srm-kys-company"><h3>{display(company?.name)}</h3><div><span>{t("Poziom ryzyka: ")}<strong>{display(data.riskLevel)}</strong></span><span>{t("Sankcje: ")}<strong>{t(yesNo(sanctions.some(row => row.matched === true) ? true : sanctions.length && sanctions.every(row => row.matched === false) ? false : null))}</strong></span></div></div>
         {overview}
-        <section {...target("identity")} aria-label="Dane rejestrowe KYS"><div className="srm-kys-section-title"><h3>Dane rejestrowe</h3></div>
-          <CanonElement as="dl" canonId="SRM-C57" usage="kys-report:identity" className="srm-kys-registration">{companyFields.map(([label, text]) => <div key={label} className={["Nazwa", "Zasady reprezentacji", "Organ rejestrowy", "PKD"].includes(label) ? "srm-kys-field-wide" : undefined}><dt>{label}</dt><dd>{text}</dd></div>)}</CanonElement>
+        <section {...target("identity")} aria-label={t("Dane rejestrowe KYS")}><div className="srm-kys-section-title"><h3>{t("Dane rejestrowe")}</h3></div>
+          <CanonElement as="dl" canonId="SRM-C57" usage="kys-report:identity" className="srm-kys-registration">{companyFields.map(([label, text]) => <div key={label} className={["Nazwa", "Zasady reprezentacji", "Organ rejestrowy", "PKD"].includes(label) ? "srm-kys-field-wide" : undefined}><dt>{t(label)}</dt><dd>{text}</dd></div>)}</CanonElement>
         </section>
       </>}
       {item.id === "registers" && <>
-        <section {...target("registry")}><div className="srm-kys-section-title"><h3>Rejestry i statusy</h3></div><div className="srm-kys-table-scroll">
-          <CanonElement as="table" canonId="SRM-C57" usage="kys-report:registry" className="srm-kys-table srm-kys-register-table"><thead><tr><th scope="col">Rejestr / zakres</th><th scope="col">Zwrócony wynik</th></tr></thead><tbody>
-            {registry.map(([label, result]) => <tr key={label}><th scope="row">{label}</th><td>{result}</td></tr>)}
-            <tr className="srm-kys-queried"><th scope="row">Odpytane rejestry</th><td>{data.queriedRegisters.length ? data.queriedRegisters.map(name => registerLabels[name] ?? name).join(", ") : "nie ustalono"}</td></tr>
+        <section {...target("registry")}><div className="srm-kys-section-title"><h3>{t("Rejestry i statusy")}</h3></div><div className="srm-kys-table-scroll">
+          <CanonElement as="table" canonId="SRM-C57" usage="kys-report:registry" className="srm-kys-table srm-kys-register-table"><thead><tr><th scope="col">{t("Rejestr / zakres")}</th><th scope="col">{t("Zwrócony wynik")}</th></tr></thead><tbody>
+            {registry.map(([label, result]) => <tr key={label}><th scope="row">{t(label)}</th><td>{t(result)}</td></tr>)}
+            <tr className="srm-kys-queried"><th scope="row">{t("Odpytane rejestry")}</th><td>{data.queriedRegisters.length ? data.queriedRegisters.map(name => registerLabels[name] ?? name).join(", ") : t("nie ustalono")}</td></tr>
           </tbody></CanonElement>
         </div></section>
-        <section {...target("lists")}><div className="srm-kys-section-title"><h3>Listy sankcyjne i ostrzeżenia</h3></div>{lists.length ? <div className="srm-kys-table-scroll"><CanonElement as="table" canonId="SRM-C57" usage="kys-report:lists" className="srm-kys-table srm-kys-register-table"><thead><tr><th scope="col">Lista</th><th scope="col">Wynik</th></tr></thead><tbody>{lists.map((row,index) => <tr key={`${row.label}:${index}`}><th scope="row">{row.label}</th><td>{row.result}</td></tr>)}</tbody></CanonElement></div> : <p>brak danych</p>}</section>
+        <section {...target("lists")}><div className="srm-kys-section-title"><h3>{t("Listy sankcyjne i ostrzeżenia")}</h3></div>{lists.length ? <div className="srm-kys-table-scroll"><CanonElement as="table" canonId="SRM-C57" usage="kys-report:lists" className="srm-kys-table srm-kys-register-table"><thead><tr><th scope="col">{t("Lista")}</th><th scope="col">{t("Wynik")}</th></tr></thead><tbody>{lists.map((row,index) => <tr key={`${row.label}:${index}`}><th scope="row">{row.label}</th><td>{t(row.result)}</td></tr>)}</tbody></CanonElement></div> : <p>{t("brak danych")}</p>}</section>
       </>}
       {item.id === "management" && <>
-        <section {...target("people")}><div className="srm-kys-section-title"><h3>Osoby pełniące funkcje kierownicze i nadzorcze</h3></div><KysPeopleTable people={data.relatedPersons} count={data.relatedPersonsCount} onRevealPesel={onRevealPesel} /></section>
-        <section {...target("pep")} className="srm-kys-pep-section"><div className="srm-kys-section-title"><h3>Osoby na eksponowanych stanowiskach politycznych</h3></div>
-          <p className="kys-note">Dopasowanie wymaga sprawdzenia tożsamości. Wartość dopasowania nie jest prawdopodobieństwem naruszenia.</p>
-          <p className="kys-note">{data?.pepMatches ? pepMatchCount(data.pepMatches.length) : "brak danych"}</p>
+        <section {...target("people")}><div className="srm-kys-section-title"><h3>{t("Osoby pełniące funkcje kierownicze i nadzorcze")}</h3></div><KysPeopleTable people={data.relatedPersons} count={data.relatedPersonsCount} onRevealPesel={onRevealPesel} /></section>
+        <section {...target("pep")} className="srm-kys-pep-section"><div className="srm-kys-section-title"><h3>{t("Osoby na eksponowanych stanowiskach politycznych")}</h3></div>
+          <p className="kys-note">{t("Dopasowanie wymaga sprawdzenia tożsamości. Wartość dopasowania nie jest prawdopodobieństwem naruszenia.")}</p>
+          <p className="kys-note">{data?.pepMatches ? pepMatchCount(data.pepMatches.length,locale) : t("brak danych")}</p>
           {data?.pepMatches?.length ? <div className="srm-kys-table-scroll"><CanonElement as="table" canonId="SRM-C57" usage="kys-report:pep-table" className="srm-kys-table kys-pep-table">
-            <thead><tr><th>Dopasowano na podstawie</th><th>Osoba na liście</th><th>Data urodzenia</th><th>Stanowisko</th><th>Prawdopodobieństwo dopasowania</th></tr></thead>
+            <thead><tr><th>{t("Dopasowano na podstawie")}</th><th>{t("Osoba na liście")}</th><th>{t("Data urodzenia")}</th><th>{t("Stanowisko")}</th><th>{t("Prawdopodobieństwo dopasowania")}</th></tr></thead>
             <tbody>{data.pepMatches.map((match, index) => {
               const person = data[match.personGroup]?.[match.personIndex];
               return <tr key={`${match.personGroup}:${match.personIndex}:${index}`}>
-                <td><strong>{value(match.searchPhrase ?? match.personName)}</strong>
+                <td><strong>{display(match.searchPhrase ?? match.personName)}</strong>
                   <small>{match.personName}</small>
-                  {match.identifierMatchesPesel && <small>PESEL: <PeselReveal token={person?.peselRevealToken} onReveal={onRevealPesel} /></small>}
-                  {person?.citizenship.length ? <small>Obywatelstwo: {person.citizenship.join(", ")}</small> : null}
+                  {match.identifierMatchesPesel && <small>{t("PESEL: ")}<PeselReveal token={person?.peselRevealToken} onReveal={onRevealPesel} /></small>}
+                  {person?.citizenship.length ? <small>{t("Obywatelstwo: ")}{person.citizenship.join(", ")}</small> : null}
                 </td>
-                <td><strong>{value(match.matchedName)}</strong>
-                  {match.aliases.length ? <small>Inne nazwy: {match.aliases.join(", ")}</small> : null}
+                <td><strong>{display(match.matchedName)}</strong>
+                  {match.aliases.length ? <small>{t("Inne nazwy: ")}{match.aliases.join(", ")}</small> : null}
                 </td>
-                <td>{value(match.birthDate)}</td>
-                <td>{match.positions.length ? match.positions.join("; ") : "Szczegóły stanowiska niedostępne"}</td>
-                <td>{match.probabilityPercent === null ? "nie ustalono" : `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(match.probabilityPercent)}%`}</td>
+                <td>{display(match.birthDate)}</td>
+                <td>{match.positions.length ? match.positions.join("; ") : t("Szczegóły stanowiska niedostępne")}</td>
+                <td>{match.probabilityPercent === null ? t("nie ustalono") : `${new Intl.NumberFormat(locale==="pl"?"pl-PL":"en-GB", { maximumFractionDigits: 0 }).format(match.probabilityPercent)}%`}</td>
               </tr>;
             })}</tbody>
-          </CanonElement></div> : <p>{data?.pepMatches ? "Nie zwrócono dopasowań PEP w danych osób objętych raportem." : "Nie ustalono dostępności wyników PEP."}</p>}
+          </CanonElement></div> : <p>{data?.pepMatches ? t("Nie zwrócono dopasowań PEP w danych osób objętych raportem.") : t("Nie ustalono dostępności wyników PEP.")}</p>}
         
         </section>
       </>}
-      {item.id === "beneficiaries" && <section {...target("beneficiaries")}><div className="srm-kys-section-title"><h3>Beneficjenci rzeczywiści</h3></div><KysPeopleTable people={data.beneficialOwners} count={data.beneficialOwnersCount} beneficiaries onRevealPesel={onRevealPesel} /></section>}
-      {item.id === "ownership" && <section {...target("relations")}><div className="srm-kys-section-title"><h3>Struktura właścicielska i powiązane podmioty</h3></div>
-        {data.relatedEntities?.length ? <div className="srm-kys-table-scroll" tabIndex={0} role="region" aria-label="Tabela powiązań podmiotowych"><CanonElement as="table" canonId="SRM-C57" usage="kys-report:relations" className="srm-kys-table srm-kys-entities"><thead><tr><th scope="col">Podmiot</th><th scope="col">Powiązanie</th><th scope="col">Identyfikatory</th><th scope="col">Okres</th><th scope="col">Sankcje</th></tr></thead><tbody>
+      {item.id === "beneficiaries" && <section {...target("beneficiaries")}><div className="srm-kys-section-title"><h3>{t("Beneficjenci rzeczywiści")}</h3></div><KysPeopleTable people={data.beneficialOwners} count={data.beneficialOwnersCount} beneficiaries onRevealPesel={onRevealPesel} /></section>}
+      {item.id === "ownership" && <section {...target("relations")}><div className="srm-kys-section-title"><h3>{t("Struktura właścicielska i powiązane podmioty")}</h3></div>
+        {data.relatedEntities?.length ? <div className="srm-kys-table-scroll" tabIndex={0} role="region" aria-label={t("Tabela powiązań podmiotowych")}><CanonElement as="table" canonId="SRM-C57" usage="kys-report:relations" className="srm-kys-table srm-kys-entities"><thead><tr><th scope="col">{t("Podmiot")}</th><th scope="col">{t("Powiązanie")}</th><th scope="col">{t("Identyfikatory")}</th><th scope="col">{t("Okres")}</th><th scope="col">{t("Sankcje")}</th></tr></thead><tbody>
           {data.relatedEntities.map((entry,index) => <tr key={`${entry.name}:${index}`}>
-            <th scope="row">{entry.name}{entry.stakeDescription && <small>{entry.stakeDescription}</small>}</th><td>{entry.role === "SHAREHOLDER" ? "Udziałowiec" : value(entry.role)}</td>
-            <td className="srm-kys-identifiers">{[entry.krs && `KRS ${entry.krs}`, entry.nip && `NIP ${entry.nip}`, entry.regon && `REGON ${entry.regon}`].filter(Boolean).join(" · ") || "brak danych"}</td>
-            <td className="srm-kys-dates">{[entry.relationshipStart, entry.relationshipEnd].filter(Boolean).join(" – ") || "brak danych"}</td><td>{yesNo(entry.sanctionsMatch)}</td>
+            <th scope="row">{entry.name}{entry.stakeDescription && <small>{entry.stakeDescription}</small>}</th><td>{entry.role === "SHAREHOLDER" ? t("Udziałowiec") : display(entry.role)}</td>
+            <td className="srm-kys-identifiers">{[entry.krs && `KRS ${entry.krs}`, entry.nip && `NIP ${entry.nip}`, entry.regon && `REGON ${entry.regon}`].filter(Boolean).join(" · ") || t("brak danych")}</td>
+            <td className="srm-kys-dates">{[entry.relationshipStart, entry.relationshipEnd].filter(Boolean).join(" – ") || t("brak danych")}</td><td>{t(yesNo(entry.sanctionsMatch))}</td>
           </tr>)}
-        </tbody></CanonElement></div> : <p>brak danych</p>}
+        </tbody></CanonElement></div> : <p>{t("brak danych")}</p>}
       </section>}
       </div>
     </div>)}

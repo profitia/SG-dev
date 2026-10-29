@@ -1,4 +1,6 @@
+import {hasVerifiedPeerOperation} from "@profitia/platform-contracts/peer-operation";
 export function isSameOriginRequest(request: Request): boolean {
+  if(hasVerifiedPeerOperation(request))return true;
   const origin = request.headers.get("origin");
   if (!origin) return false;
   try {

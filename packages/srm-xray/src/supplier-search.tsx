@@ -1,5 +1,5 @@
 "use client";
-import {useEffect, useId, useLayoutEffect, useRef, useState, type RefObject, type KeyboardEvent} from 'react';
+import {useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent} from 'react';
 import {CanonButton, CanonInput} from './ui-canon';
 
 /** Data selected by the host. A suggestion or selection reference grants no access. */
@@ -13,7 +13,7 @@ export type SupplierSearchGateway = Readonly<{
 }>;
 type Props={nip:string; onNipChange:(value:string)=>void; onNipSearch:()=>void;
   onNameSearch:(selection:SupplierSelection)=>void; gateway:SupplierSearchGateway; busy:boolean;
-  inputRef?:RefObject<HTMLInputElement|null>;requireAdmission?:boolean};
+  inputRef?:Readonly<{current:HTMLInputElement|null}>;requireAdmission?:boolean};
 const SearchIcon=()=> <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5"/></svg>;
 
 /** MagicPath EnterPageView / ACT-09, inspected shared revision464012275896954880.

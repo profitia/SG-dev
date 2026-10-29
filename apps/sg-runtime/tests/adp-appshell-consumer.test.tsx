@@ -30,20 +30,20 @@ test('ADP receiver compatibility preserves every accepted historical field and b
   for(const [key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key)
   const adoption=verifyPublicAdoption();assert.equal(current.publicUi.sourceDigest,adoption.sourceDigest);assert.equal(current.publicUi.contractVersion,adoption.contractVersion)
   assert.equal(current.scope,'PRESENTATION_ONLY_LOCAL_STATE_DASHBOARD_ADP');assert.equal(current.operationsChanged,false);assert.equal(current.grantsChanged,false)
-  for(const [file,digest]of Object.entries({...current.applicationSourceDigests,...receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests})){
+  for(const [file,digest]of Object.entries({...current.applicationSourceDigests,...receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests,...receipt.appshellXraySourceCompatibility.applicationSourceDigests})){
     assert.equal(hash(fs.readFileSync(path.join(appRoot,file))),digest,file)
     assert.notEqual(hash('unaccepted-source-mutation'),digest,file)
   }
   const unchanged=current.preservedReceiverDigests
   assert(Object.keys(unchanged).length>50)
-  for(const [file,digest]of Object.entries({...unchanged,...receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(path.join(appRoot,file))),digest,'Preserved receiver '+file)
+  for(const [file,digest]of Object.entries({...unchanged,...receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests,...receipt.xrayPlatform130CiClosureCompatibility.applicationSourceDigests,...receipt.appshellXraySourceCompatibility.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(path.join(appRoot,file))),digest,'Preserved receiver '+file)
   const previousManifest=JSON.parse(execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/package.json'],{cwd:appRoot}).toString())
   const manifest=JSON.parse(fs.readFileSync(path.join(appRoot,'package.json'),'utf8'))
   for(const [key,value]of Object.entries(previousManifest.dependencies))assert.equal(manifest.dependencies[key],value,'Unchanged dependency '+key)
   assert.deepEqual(Object.keys(manifest.dependencies).filter(key=>!Object.hasOwn(previousManifest.dependencies,key)),['@profitia/sg2-price-change-index-ui','@profitia/srm-adp-ui'])
   const beforeMiddleware=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/middleware.ts'],{cwd:appRoot}).toString()
   const middleware=fs.readFileSync(path.join(appRoot,'middleware.ts'),'utf8')
-  assert.equal(middleware.replace('|dashboard(?:\\/(?:adp|benchmark-finder))?',''),beforeMiddleware)
+  assert.equal(middleware.replace('|dashboard(?:\\/(?:adp|benchmark-finder|xray))?',''),beforeMiddleware)
 })
 test('initial model has every field, approved document text and no invented supplier/provider results', () => {
   const model = local.createLocalAdpModel('Organization', '2027')

@@ -1,3 +1,5 @@
+import targets from '../../deployment/private-runtime-targets.json';
+import {peerOperationIdentityRequest} from "@profitia/platform-contracts/peer-operation";
 import type pg from "pg";
 import type { PoolClient } from "pg";
 import { createSrmNativePgDriver } from "./native-pg-driver";
@@ -6,6 +8,23 @@ import { createClerkIdentityAuthenticator, type ClerkIdentityClient } from "@pro
 import { bindPublicIdentityAuthenticator, type PublicIdentityApplication as IdentityApplication } from "@profitia/platform-contracts/public-request";
 import {createAccessStore} from '@profitia/platform-contracts/access-store';
 import {OperationDenied} from '@profitia/platform-contracts/operation-context';
+
+/** SDK authorized parties describe accepted user tokens, not alternate HTTP
+ * ingress authorities. Only an authenticated peer receipt may adapt the SDK
+ * input to SG2. A client-selected Host/URL must never select that path. */
+function bindSrmIdentity(authenticate:ReturnType<typeof createClerkIdentityAuthenticator>,identity:IdentityApplication){
+  const source=targets.environments.development.summaryPeerRead.sourceOrigin;
+  const boundary=identity.requestBoundary&&identity.environment==='development'
+    ?{...identity.requestBoundary,publicOrigins:identity.requestBoundary.publicOrigins.filter(origin=>origin!==source)}:identity.requestBoundary;
+  const ordinary=boundary?bindPublicIdentityAuthenticator(authenticate,boundary):authenticate;
+  return async(input:unknown)=>{
+    if(!(input instanceof Request))return null;
+    const peer=peerOperationIdentityRequest(input);
+    if(peer)return authenticate(peer);
+    if(identity.environment==='development'&&(new URL(input.url).origin===source||input.headers.get('host')===new URL(source).host))return null;
+    return ordinary(input);
+  };
+}
 
 type HostOptions = Parameters<typeof createPrivateOperationHost<PoolClient>>[0];
 
@@ -32,7 +51,7 @@ export function createSrmPrivateOperationHost(options: Omit<HostOptions, "indepe
     prepareInputs: options.prepareInputs, describeOutcome: options.describeOutcome,
     createAuthenticator: ({ resolveBinding }) => {
       const authenticate = createClerkIdentityAuthenticator({ client: clerk, application: identity, resolveBinding, now });
-      return identity.requestBoundary ? bindPublicIdentityAuthenticator(authenticate, identity.requestBoundary) : authenticate;
+      return bindSrmIdentity(authenticate,identity);
     },
     ...createSrmNativePgDriver(pool, auditPool),
   });
@@ -48,7 +67,7 @@ export async function resolveSrmPrivateIdentity(options:Parameters<typeof create
   if(read)throw new OperationDenied('UNVERIFIED_IDENTITY');read=true;
   identityBinding=await store.resolveBinding(driver.independentQuery,key);return identityBinding;
  }});
- const boundary=options.identity.requestBoundary?bindPublicIdentityAuthenticator(authenticate,options.identity.requestBoundary):authenticate;
+ const boundary=bindSrmIdentity(authenticate,options.identity);
  const actor=await boundary(request);
  if(!actor||actor.kind!=='HUMAN'||!read||!identityBinding)throw new OperationDenied('UNVERIFIED_IDENTITY');
  const binding=identityBinding;
