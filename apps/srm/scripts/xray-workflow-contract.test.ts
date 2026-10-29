@@ -46,6 +46,18 @@ test('X-Ray acceptance is additive, preserves every historical receipt and binds
  assert.equal(a.publicUi.version,'0.3.0');assert.equal(a.publicUi.contractVersion,'1.0.0');
  const publicRoot=new URL('packages/srm-xray/',root),digest=createHash('sha256');for(const file of a.publicUi.sourceFiles)digest.update(file).update('\0').update(fs.readFileSync(new URL(file,publicRoot))).update('\0');assert.equal(digest.digest('hex'),a.publicUi.sourceDigest);
  for(const [file,digest]of Object.entries({...a.publicSourceDigests,...a.repositorySourceDigests}))assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file);
- for(const [file,digest]of Object.entries({...a.applicationSourceDigests,...receipt.ruralLocationAddressRecovery?.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file);
+ for(const [file,digest]of Object.entries({...a.applicationSourceDigests,...receipt.ruralLocationAddressRecovery?.applicationSourceDigests,...receipt.appshellReadyPeerRecovery?.applicationSourceDigests}))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file);
  for(const flag of ['identitySourceChanged','operationContractChanged','existingPeerReadChanged','grantsOrMembershipChanged','schemaOrInfrastructureChanged','productDeploymentPerformed'])assert.equal(a[flag],false,flag);
+});
+
+test('READY peer repair is additive and preserves the SDK, standalone path and every previous acceptance',()=>{
+ const root=new URL('../',import.meta.url),receipt=JSON.parse(fs.readFileSync(new URL('operation-integration.json',root),'utf8')),a=receipt.appshellReadyPeerRecovery;
+ const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
+ const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(prior),a.previousReceiptDigest);
+ for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key);
+ assert.equal(a.platformVersion,'1.31.0');assert.equal(a.peerContractVersion,'1.0.0');
+ assert.equal(a.selection,'EXISTING_CANONICAL_SUPPLIER_PATH_FOR_VERIFIED_PEERS');
+ for(const flag of ['sdkChanged','identityChanged','standaloneReadyChanged','grantsOrMembershipChanged','schemaChanged','providerLogicDuplicated','productDeploymentPerformed'])assert.equal(a[flag],false,flag);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file);
 });
