@@ -124,6 +124,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   assert.equal(adoption.publicUi.sourceDigest,receipt.appshellXraySourceCompatibility.publicUi.sourceDigest);
   for(const[file,digest]of Object.entries(adoption.applicationSourceDigests))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
   for(const[file,digest]of Object.entries(consumer.freshPerformanceRecovery.applicationSourceDigests))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
+  for(const[file,digest]of Object.entries(consumer.xraySearchBoundaryConsolidation?.applicationSourceDigests??{}))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
   Object.assign(currentDigests,receipt.appshellXraySourceCompatibility.applicationSourceDigests);
   Object.assign(currentDigests,receipt.ruralLocationAddressRecovery?.applicationSourceDigests);
   Object.assign(currentDigests,receipt.appshellReadyPeerRecovery?.applicationSourceDigests);
