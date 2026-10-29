@@ -92,6 +92,20 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   Object.assign(currentDigests,receipt.cachedReportE1Optimization.applicationSourceDigests);
   Object.assign(currentDigests,receipt.readyCompanyMetadataCredentialReuse.applicationSourceDigests);
   Object.assign(currentDigests,receipt.xrayPerformanceRecoveryV2.consumerSourceDigests,receipt.xrayPerformanceRecoveryV2.applicationSourceDigests);
-  for(const [file,digest]of Object.entries(currentDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+  // Cross-owner receipts cannot hash one another: the consumer already pins
+  // this producer. Preserve its complete former receipt, then verify its
+  // independently declared current file closure instead of creating a cycle.
+  const consumer=JSON.parse(readFileSync(new URL('../../../sg-runtime/operation-integration.json',import.meta.url),'utf8'));
+  const adoption=consumer.appshellXraySourceCompatibility;
+  const priorConsumer=execFileSync('git',['show',adoption.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);
+  assert.equal(hash(priorConsumer),currentDigests['../sg-runtime/operation-integration.json']);
+  assert.equal(hash(priorConsumer),adoption.previousReceiptSha256);
+  for(const[key,value]of Object.entries(JSON.parse(priorConsumer.toString())))assert.deepEqual(consumer[key],value,key);
+  assert.deepEqual(Object.keys(consumer).sort(),[...Object.keys(JSON.parse(priorConsumer.toString())),'appshellXraySourceCompatibility'].sort());
+  assert.equal(adoption.platformVersion,receipt.appshellXraySourceCompatibility.platformVersion);
+  assert.equal(adoption.publicUi.sourceDigest,receipt.appshellXraySourceCompatibility.publicUi.sourceDigest);
+  for(const[file,digest]of Object.entries(adoption.applicationSourceDigests))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
+  Object.assign(currentDigests,receipt.appshellXraySourceCompatibility.applicationSourceDigests);
+  for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

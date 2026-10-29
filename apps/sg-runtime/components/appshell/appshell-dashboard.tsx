@@ -3,6 +3,8 @@
 import React, {useEffect, useState} from 'react'
 import {usePathname, useRouter, useSearchParams} from 'next/navigation'
 import {PlatformAppShell} from './platform-appshell'
+import {XRayModuleHost} from './xray-module-host'
+import {isXrayPath,xrayPath} from '@/lib/appshell/xray-navigation'
 import {AdpModuleHost} from './adp-module-host'
 import {adpPath, dashboardPath, isAdpPath, parseAdpNavigation} from '@/lib/appshell/adp-navigation'
 import {BenchmarkFinderClient} from '../benchmark-finder/benchmark-finder-client'
@@ -13,18 +15,25 @@ export function AppShellDashboard(props: {
   organisationBranding?: 'porr' | null; onLogout: () => void
 }) {
   const router = useRouter(), pathname = usePathname(), search = useSearchParams()
+  const xrayActive=isXrayPath(pathname,props.locale)
   const active = isAdpPath(pathname, props.locale)
   const benchmarkPath=`/${props.locale}/dashboard/benchmark-finder`
   const benchmarkActive=pathname===benchmarkPath||pathname===benchmarkPath+'/'
+  const [xrayOpened,setXrayOpened]=useState(xrayActive)
+  useEffect(()=>{if(xrayActive)setXrayOpened(true)},[xrayActive])
   const [opened, setOpened] = useState(active)
   const [benchmarkOpened,setBenchmarkOpened]=useState(benchmarkActive)
   useEffect(() => {if (active) setOpened(true)}, [active])
   useEffect(()=>{if(benchmarkActive)setBenchmarkOpened(true)},[benchmarkActive])
   const navigation = parseAdpNavigation(search.toString())
-  return <PlatformAppShell {...props} moduleActive={active||benchmarkActive}
+  return <PlatformAppShell {...props} moduleActive={active||benchmarkActive||xrayActive}
+    onLaunchXray={()=>{setXrayOpened(true);router.push(xrayPath(props.locale))}}
     onLaunchBenchmark={()=>{setBenchmarkOpened(true);router.push(benchmarkPath)}}
     onLaunchAdp={() => {setOpened(true); router.push(adpPath(props.locale))}}
     moduleWorkspace={theme => <>
+      <section hidden={!xrayActive} aria-label="X-Ray Supplier Intelligence" data-appshell-module="xray">
+        {xrayOpened&&<Sg2ModuleSession locale={props.locale}><XRayModuleHost locale={props.locale} theme={theme} active={xrayActive} onReturn={()=>router.push(dashboardPath(props.locale))}/></Sg2ModuleSession>}
+      </section>
       <section hidden={!benchmarkActive} aria-label="Benchmark Finder" data-appshell-module="benchmark-finder">
         {benchmarkOpened&&<Sg2ModuleSession locale={props.locale}><div className="as-benchmark-module">
           <button type="button" className="as-secondary-button" onClick={()=>router.push(dashboardPath(props.locale))}>{props.locale==='en'?'Back to AppShell':'Wróć do AppShella'}</button>

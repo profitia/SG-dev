@@ -1,10 +1,12 @@
 "use client";
-import { CanonButton, CanonElement, CanonSummary, CanonInput } from './ui-canon';
+import { CanonButton, CanonElement, CanonSummary, CanonInput, CanonSelect } from './ui-canon';
 
 import React, { useRef, useState } from "react";
 import { FinancialHistoryDialog } from "./FinancialHistoryDialog";
 import { KysIcon } from "./kys-report";
 import type { FinancialData, FinancialPeriod, FinancialPeriodSelection } from "./contracts";
+import {useXRayText} from "./i18n";
+import {financialLabels} from "./financial-labels";
 import { amountInThousands } from "./financial-labels";
 
 type Scope = FinancialPeriod["scope"];
@@ -160,7 +162,7 @@ function FragmentGroup({ title, rows, visible, onChart }: { title: string; rows:
   </>;
 }
 
-export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onScopeChange, selectedPeriod, exportOpen, onCloseExport }: { data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void>;
+function FullFinancialDashboard({ embedded, data, onDownloadExcel, selectedScope, onScopeChange, selectedPeriod, exportOpen, onCloseExport }: { embedded?:boolean; data: FinancialData; onDownloadExcel?: (scope: Scope, years: string[]) => Promise<void>;
   selectedScope?: Scope | null; onScopeChange?: (scope: Scope) => void; selectedPeriod?: FinancialPeriodSelection | null; exportOpen?: boolean; onCloseExport?: () => void }) {
   const [localExportOpen, setLocalExportOpen] = useState(false);
   const closeExport = () => { setLocalExportOpen(false); onCloseExport?.(); };
@@ -233,4 +235,28 @@ export function FinancialDashboard({ data, onDownloadExcel, selectedScope, onSco
     </details></>}
     {selectedRow && <StatementHistory row={{id:selectedRow.code,name:selectedRow.label,section:scope==='standalone'?'Jednostkowe':'Skonsolidowane',group:'Sprawozdanie finansowe',points:statementPoints(viewPeriods,selectedRow.code)}} onClose={()=>setSelectedRow(null)} />}
   </div>;
+}
+
+/** The same source periods/facts, without standalone drill-down/export UI. */
+export function FinancialDashboard(props:React.ComponentProps<typeof FullFinancialDashboard>){
+ return props.embedded?<EmbeddedFinancialDashboard data={props.data}/>:<FullFinancialDashboard {...props}/>;
+}
+function EmbeddedFinancialDashboard({data}:{data:FinancialData}){
+ const t=useXRayText();
+ const unit=(value:string)=>value==="THOUSAND_PLN"?t("tys. PLN"):value==="UNKNOWN"?t("Jednostka niepotwierdzona"):value;
+ const scopes=Array.from(new Set(availablePeriods(data).map(period=>period.scope)));
+ const [requested,setRequested]=useState<Scope|null>(null);
+ const scope=requested&&scopes.includes(requested)?requested:defaultFinancialScope(data);
+ const periods=scope?financialPeriodsByScope(data,scope):[];
+ const [selected,setSelected]=useState<string|null>(null);
+ const period=periods.find(p=>p.documentId===selected)??periods[0];
+ return <div className="xray-embedded-financial">
+  <div className="xray-financial-selection"><label>{t('Zakres')} <CanonSelect canonId="SRM-C07" usage="embedded-financial:scope" value={scope??''} onChange={e=>{setRequested(e.target.value as Scope);setSelected(null);}}>{scopes.map(s=><option key={s} value={s}>{t(s==='standalone'?'Dane jednostkowe':'Dane skonsolidowane')}</option>)}</CanonSelect></label>
+  <label>{t('Okres')} <CanonSelect canonId="SRM-C07" usage="embedded-financial:period" value={period?.documentId??''} onChange={e=>setSelected(e.target.value)}>{periods.map(p=><option key={p.documentId} value={p.documentId}>{p.from} – {p.to}</option>)}</CanonSelect></label></div>
+  {period?.sourceRegistration&&<p className="xray-freshness">{t('Wpis źródłowy KRS')}: {period.sourceRegistration.krs} · {period.sourceRegistration.legalName??t('brak danych')} · {t(period.sourceRegistration.relationship==='CURRENT'?'Wpis bieżący':period.sourceRegistration.relationship==='PREDECESSOR'?'Poprzednik':'Powiązanie niepotwierdzone')}</p>}
+  {period?<div className="financial-table-scroll" role="region" tabIndex={0} aria-label={t('Dane finansowe')}><CanonElement as="table" canonId="SRM-C48" usage="embedded-financial:table" className="financial-table"><thead><tr><th>{t('Pozycja sprawozdania')}</th><th>{t('Kwota źródłowa')}</th><th>{t('Waluta')}</th><th>{t('Jednostka')}</th></tr></thead><tbody>
+   {period.facts.map((fact,index)=><tr key={fact.metricCode+':'+index}><th scope="row">{financialLabels[fact.metricCode]?t(financialLabels[fact.metricCode].label):fact.metricCode}</th><td>{fact.amount}</td><td>{fact.currency}</td><td>{unit(fact.unit)}</td></tr>)}
+   {period.msrRows?.map(row=><tr key={row.key}><th scope="row">{row.label}{row.validation==="REVIEW"&&<small className="xray-warning">{t("Wymaga sprawdzenia")}</small>}</th><td>{row.amount??t('brak danych')}</td><td>{row.currency??t('brak danych')}</td><td>{unit(row.unit)}</td></tr>)}
+  </tbody></CanonElement></div>:<p>{t('brak danych')}</p>}
+ </div>;
 }

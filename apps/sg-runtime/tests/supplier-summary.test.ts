@@ -27,10 +27,13 @@ const call = (fetcher: typeof fetch, extra: Partial<Parameters<typeof fetchSuppl
   signal: new AbortController().signal, fetcher, ...extra,
 })
 test('the second host binds the installed public module and its declared producer source', () => {
-  const receipt = JSON.parse(readFileSync(new URL('../operation-integration.json', import.meta.url), 'utf8')).supplierSummary
+  const manifest = JSON.parse(readFileSync(new URL('../operation-integration.json', import.meta.url), 'utf8'))
+  const receipt = manifest.supplierSummary, current = manifest.appshellXraySourceCompatibility.publicUi
   const port = pathToFileURL(createRequire(import.meta.url).resolve('@profitia/srm-xray/shared-financial-summary'))
   const installed = JSON.parse(readFileSync(new URL('../package.json', port), 'utf8'))
-  assert.equal(installed.version, receipt.version); assert.equal(installed.name, receipt.package)
+  assert.equal(receipt.version, '0.2.1'); assert.equal(current.version, '0.3.0')
+  assert.equal(installed.version, current.version); assert.equal(installed.name, receipt.package)
+  assert.equal(current.package, receipt.package)
   assert.equal(receipt.producer.projectKey, 'SRM')
   for (const name of receipt.publicPorts) assert(Object.hasOwn(installed.exports, './' + name))
   assert.equal(readFileSync(port, 'utf8'), execFileSync('git', ['show', receipt.producer.sourceSha + ':packages/srm-xray/src/shared-financial-summary.ts'], { encoding: 'utf8' }))

@@ -11,11 +11,11 @@ test('native SQL adoption preserves complete prior acceptance and pins the exact
  assert.equal(hash(bytes),a.previousReceiptDigest)
  for(const[k,v]of Object.entries(JSON.parse(bytes)))assert.deepEqual(receipt[k],v,k)
  assert.equal(a.platformVersion,'1.29.1');assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,729)
- const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/private-operation-host'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,current.platformVersion)
+ const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/private-operation-host')),xray=receipt.appshellXraySourceCompatibility
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,xray.platformVersion)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,file)
-  if(file.startsWith('src/')||file==='package.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),current.sourceDigests[file]??digest,file)
+  if(file.startsWith('src/')||file==='package.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),xray.sourceDigests[file]??receipt.appshellXraySourceCompatibility.sourceDigests[file]??current.sourceDigests[file]??digest,file)
  }
  const modules={'private-operation-host':'privateOperationHostSourceDigest','access-store':'accessStoreSourceDigest',
   'delegated-job':'delegatedJobSourceDigest','platform-ingestion':'platformIngestionSourceDigest','request-work':'requestWorkSourceDigest'}
@@ -23,10 +23,10 @@ test('native SQL adoption preserves complete prior acceptance and pins the exact
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const latest=receipt.appShellSourceCompatibility,adp=receipt.adpPresentationSourceCompatibility
   const journey=receipt.integratedBuyerJourneySourceCompatibility
-  const historicalSha=latest.applicationSourceDigests[file]?latest.previousReceiptSourceSha:adp.applicationSourceDigests[file]?adp.previousReceiptSourceSha:journey.applicationSourceDigests[file]?journey.previousReceiptSourceSha:current.applicationSourceDigests[file]?current.previousReceiptSourceSha:null
+  const historicalSha=latest.applicationSourceDigests[file]?latest.previousReceiptSourceSha:adp.applicationSourceDigests[file]?adp.previousReceiptSourceSha:journey.applicationSourceDigests[file]?journey.previousReceiptSourceSha:current.applicationSourceDigests[file]?current.previousReceiptSourceSha:receipt.appshellXraySourceCompatibility.applicationSourceDigests[file]?receipt.appshellXraySourceCompatibility.previousReceiptSourceSha:null
   const historical=historicalSha?execFileSync('git',['show',historicalSha+':'+posix.normalize('apps/sg-runtime/'+file)]):fs.readFileSync(new URL('../'+file,import.meta.url))
   assert.equal(hash(historical),receipt.diagnosticTelemetryAdoption.applicationSourceDigests[file]??digest,'preserved SQL receiver '+file)
-  if(journey.applicationSourceDigests[file]||adp.applicationSourceDigests[file]||latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),current.applicationSourceDigests[file]??journey.applicationSourceDigests[file]??adp.applicationSourceDigests[file]??receipt.assistantWidgetSourceCompatibility.applicationSourceDigests[file]??latest.applicationSourceDigests[file],'current AppShell receiver '+file)
+  if(receipt.appshellXraySourceCompatibility.applicationSourceDigests[file]||journey.applicationSourceDigests[file]||adp.applicationSourceDigests[file]||latest.applicationSourceDigests[file])assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.appshellXraySourceCompatibility.applicationSourceDigests[file]??current.applicationSourceDigests[file]??journey.applicationSourceDigests[file]??adp.applicationSourceDigests[file]??receipt.assistantWidgetSourceCompatibility.applicationSourceDigests[file]??latest.applicationSourceDigests[file],'current AppShell receiver '+file)
  }
  assert.equal(a.currentAuthorityCheckpointsPreserved,true);assert.equal(a.physicalAuditPreserved,true)
  for(const flag of ['humanGrantsChanged','quotasChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)

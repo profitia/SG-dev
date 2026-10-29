@@ -628,3 +628,31 @@ transitions are versioned and appended to a forced-RLS immutable event table.
 location quotas keep their existing interfaces and semantics. Old non-adopting
 SDKs fail closed on unsupported unmetered policies. This source change seeds no
 policy, runtime grant, role or activation.
+# Authenticated peer operations (Development)
+
+`/peer-operation`, contract `profitia.peer-operation/1.0.0`, authenticates an
+explicit server caller separately from the existing Clerk HUMAN and E1 decision.
+Both hosts pin the exact source/target applications, origins, route/method list,
+body bounds and a dedicated server-only key of at least 32 random bytes. Key
+provisioning/configuration is a separate controlled release action; this source
+does not provision credentials or activate a runtime.
+
+The signer binds the captured end-user bearer, complete body, method, path,
+idempotency key, receiver and correlation ID to a maximum 60-second HMAC proof.
+Cookie, browser Origin, tenant query and untrusted identity/admission headers are
+refused. Proxy authorities must be deployment-owned local authorities with the
+exact target Host; forwarded headers never select an origin.
+
+The receiver verifies the actual Request before business dispatch. Its in-memory
+receipt is bound to that request object and all headers; it is not a permission
+or reusable serialized grant. `peerOperationIdentityRequest` is header-only input
+to the existing SDK, binding the user's original source `azp` to the separately
+authenticated target operation. It must never replace the business request or
+skip current account/binding/organisation/product/operation/resource checks.
+The ordinary SDK and all E1 guards remain unchanged. User audit attribution stays
+with the current HUMAN; safe caller attribution is available separately.
+
+Replays/retries still enter current user/E1 checks. Provider effects remain under
+the existing application idempotency ledger: preserve the exact logical intent
+key, never retry uncertain delivery with a newly minted key. This contract
+neither adds an ALLOW cache nor promises rollback/cancellation of remote work.

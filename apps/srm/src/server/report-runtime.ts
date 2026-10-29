@@ -1,3 +1,4 @@
+import {withSrmPeerXRay} from "./peer-xray";
 import { getSrmReportRuntime, type SrmReportRuntime } from './private-runtime'
 import { createOperationReportDataHandler } from './operation-report-data'
 import { reportDataHandler } from './report-data'
@@ -9,7 +10,7 @@ export function createRuntimeSrmReportHandler(
   legacy = reportDataHandler(),
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ) {
-  return async (request: Request): Promise<Response> => {
+  return withSrmPeerXRay(async (request: Request): Promise<Response> => {
     try {
       const runtime = resolveRuntime()
       if (runtime.provider === 'legacy_demo') return await legacy(request)
@@ -25,5 +26,5 @@ export function createRuntimeSrmReportHandler(
       return Response.json({ error: 'Operation unavailable' }, { status: 503,
         headers: { 'Cache-Control': 'private, no-store', 'Vary': 'Cookie, Authorization' } })
     }
-  }
+  },environment)
 }
