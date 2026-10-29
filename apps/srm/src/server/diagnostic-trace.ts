@@ -17,7 +17,7 @@ export type DiagnosticPoolKind='HUMAN'|'JOBS'|'SOURCE'|'CORPORATE_SOURCE'|'REGIS
 export type DiagnosticSpan={spanId:string;parentSpanId:string|null;category:string;startMs:number;endMs:number|null;status:'OK'|'ERROR'|'OPEN'|'INCOMPLETE';kind:'STAGE'|'SQL'|'WAIT';join:'SERIAL'|'ALL'|'RACE'|'UNSPECIFIED';sqlCommands?:number|null;poolKind?:DiagnosticPoolKind;synchronous?:boolean;unitId?:string;connectionId?:string;transactionId?:string}
 type SpanOptions=Partial<Pick<DiagnosticSpan,'kind'|'join'|'poolKind'|'unitId'|'connectionId'|'transactionId'>>
 type Context={trace:Trace;spanId:string}
-type Resource={id:string;parentSpanId:string|null;kind:'CONNECTION'|'TRANSACTION'|'HTTP';startMs:number;endMs:number|null;status:'OPEN'|'CLOSED'|'ABANDONED';outcome:string;poolKind?:DiagnosticPoolKind;connectionId?:string}
+type Resource={id:string;parentSpanId:string|null;kind:'CONNECTION'|'TRANSACTION'|'HTTP';startMs:number;endMs:number|null;status:'OPEN'|'CLOSED'|'ABANDONED';outcome:string;httpStatus?:number;poolKind?:DiagnosticPoolKind;connectionId?:string}
 type Trace={traceId:string;executionId:string;clockId:string;fragmentId:string;route:string;parentFragmentId:string|null;formAdmissionFragmentId:string|null;startMs:number;endMs:number;spans:DiagnosticSpan[];resources:Resource[];droppedSpans:number;droppedResources:number;cpu:NodeJS.CpuUsage;loopUtilization:ReturnType<typeof performance.eventLoopUtilization>;closed:boolean}
 type Correlation={executionId:string;expires:number;route:string;kind:'EXECUTION'|'FRAGMENT'}
 type State={storage:AsyncLocalStorage<Context>;clockId:string;hooked:boolean;installationFailed?:boolean;channelSpans:WeakMap<object,Context>;gc:Array<{startMs:number;durationMs:number}>;loop:ReturnType<typeof monitorEventLoopDelay>|null;correlations:Map<string,Correlation>}
@@ -35,14 +35,14 @@ const outcomes=new Set(['COMMITTED','ROLLED_BACK','FAILED_OR_UNKNOWN','RELEASED'
 export function diagnosticEnabled(){return process.env.TARGET_ENVIRONMENT==='development'&&(process.env.RENDER_SERVICE_ID==='srv-dbeh6srrjlhs73fmikrg'||process.env.RENDER_SERVICE_ID==='srv-db1vu6gm7kps73d0e3r0'&&process.env.PROFITIA_READY_REPORT_ENABLED==='true')&&[undefined,'on','full'].includes(process.env.SRM_DIAGNOSTIC_TELEMETRY)}
 export function diagnosticContext(){return state.storage.getStore()}
 export function withDiagnosticContext<T>(context:Context|undefined,action:()=>T){return context?state.storage.run(context,action):action()}
-type ResourceFinish=((outcome:'COMMITTED'|'ROLLED_BACK'|'FAILED_OR_UNKNOWN'|'RELEASED'|'DESTROYED'|'HTTP_COMPLETE'|'HTTP_FAILED')=>void)&{resourceId?:string}
+type ResourceFinish=((outcome:'COMMITTED'|'ROLLED_BACK'|'FAILED_OR_UNKNOWN'|'RELEASED'|'DESTROYED'|'HTTP_COMPLETE'|'HTTP_FAILED')=>void)&{resourceId?:string;observeHttpStatus?:(status:unknown)=>void}
 export function diagnosticResource(kind:Resource['kind'],poolKind?:DiagnosticPoolKind,connectionId?:string):ResourceFinish{
  const context=state.storage.getStore()
  if(!context||context.trace.closed)return ()=>{}
  if(context.trace.resources.length>=1024){context.trace.droppedResources++;return ()=>{}}
  const resource:Resource={id:id(),parentSpanId:context.spanId,kind:['CONNECTION','TRANSACTION','HTTP'].includes(kind)?kind:'CONNECTION',startMs:performance.now(),endMs:null,status:'OPEN',outcome:'UNKNOWN',...(poolKind&&poolKinds.has(poolKind)?{poolKind}:{}),...(connectionId&&/^[a-f0-9]{16}$/.test(connectionId)?{connectionId}:{})}
  context.trace.resources.push(resource)
- return Object.assign((outcome:Parameters<ResourceFinish>[0])=>{if(resource.endMs===null){resource.endMs=performance.now();resource.status=outcome==='DESTROYED'?'ABANDONED':'CLOSED';resource.outcome=outcomes.has(outcome)?outcome:'FAILED_OR_UNKNOWN'}},{resourceId:resource.id})
+ return Object.assign((outcome:Parameters<ResourceFinish>[0])=>{if(resource.endMs===null){resource.endMs=performance.now();resource.status=outcome==='DESTROYED'?'ABANDONED':'CLOSED';resource.outcome=outcomes.has(outcome)?outcome:'FAILED_OR_UNKNOWN'}},{resourceId:resource.id,observeHttpStatus:(status:unknown)=>{if(kind==='HTTP'&&!context.trace.closed&&Number.isInteger(status)&&Number(status)>=100&&Number(status)<=599)resource.httpStatus=Number(status)}})
 }
 function make(category:string,options:SpanOptions={}){
  const parent=state.storage.getStore()
@@ -92,6 +92,8 @@ function installChannels(){
  observer.observe({entryTypes:['gc']})
  const network=new WeakMap<object,ReturnType<typeof diagnosticResource>>()
  diagnosticsChannel('undici:request:create').subscribe(message=>{try{const r=(message as {request?:object}).request;if(r&&state.storage.getStore())network.set(r,diagnosticResource('HTTP'))}catch{}})
+ // Numeric status only: never retain headers, URL, body or provider error text.
+ diagnosticsChannel('undici:request:headers').subscribe(message=>{try{const m=message as {request?:object;response?:{statusCode?:unknown}};if(m.request)network.get(m.request)?.observeHttpStatus?.(m.response?.statusCode)}catch{}})
  for(const [event,outcome]of [['undici:request:trailers','HTTP_COMPLETE'],['undici:request:error','HTTP_FAILED']]as const)diagnosticsChannel(event).subscribe(message=>{try{const r=(message as {request?:object}).request;if(r){network.get(r)?.(outcome);network.delete(r)}}catch{}})
 }
 export function unionLength(intervals:Array<[number,number]>){

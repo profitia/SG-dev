@@ -43,10 +43,12 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
   const mainNipSearch=main&&input==='/api/xray/search'&&/^\d{10}$/.test(String(body?.identifier??''))
   // Only the SDK owns its credential cache. A credential is never an ALLOW
   // decision: every request retains the server's current H1/H2 checks. The
-  // longer Search headroom gives FRESH more time than an immediate read.
+  // Search keeps 20 seconds for the measured FRESH flow (13.75 seconds plus
+  // expiry/transport margin). A 45-second requirement unnecessarily renewed
+  // most otherwise current SDK credentials. This never extends token expiry.
   if(!token&&(cachedRead||mainNipSearch)){
    const current=await getToken()
-   if(hasReadHeadroom(current,mainNipSearch?45000:30000)){token=current;tokenMode='CURRENT_SDK'}
+   if(hasReadHeadroom(current,mainNipSearch?20000:30000)){token=current;tokenMode='CURRENT_SDK'}
   }
   if(!token){const force=input==='/api/xray/admission'||freshReportPaths.has(input)||privateKysPaths.has(input)||location
    token=await getToken(force?{skipCache:true}:undefined);tokenMode=force?'FORCED_REFRESH':'SDK_DEFAULT'}
