@@ -12,6 +12,7 @@ import {withDiagnosticRequest} from '../src/server/diagnostic-trace.ts'
 import {createSrmNativeCompanyLookup} from '../src/server/supplier-native-company.ts'
 import {createSrmCorporateSourceStore,CORPORATE_PUBLICATION_VERSION} from '../src/server/corporate-source-store.ts'
 import {createSrmReadyCompanyRead} from '../src/server/ready-report-read.ts'
+import {createSrmFreshReportSearch} from '../src/server/fresh-report.ts'
 import {createSrmCompanyCardRead} from '../src/server/supplier-company-read.ts'
 import {emptyCard} from '../src/demo/fixture.ts'
 import {createPeerOperationSigner} from '@profitia/platform-contracts/peer-operation'
@@ -342,6 +343,119 @@ test('ready report native Source and current HUMAN read preserve complete financ
    const foreignResponse=await run('33333333-3333-4333-8333-333333333333')(await incoming())
    assert.equal(foreignResponse.status,403);assert(!Object.hasOwn(await foreignResponse.json(),'data'))
    assert.deepEqual(await counts(),after)
+  })
+  await t.test('composed FRESH reuses actual command, native publication and final prepared read with current revocation',async t=>{
+   const origin='http://localhost:3400',secret='s'.repeat(40)
+   let sessions=0,accounts=0,sdk=0,banAt=0,companyCalls=0,classifications=0
+   const current={...original,authenticateRequest:async(...args)=>{sdk++;return original.authenticateRequest(...args)},
+    sessions:{getSession:async(...args)=>{sessions++;return original.sessions.getSession(...args)}},
+    users:{getUser:async(...args)=>({...await original.users.getUser(...args),banned:++accounts===banAt})}}
+   const syntheticOrigin=(await owner.query("SELECT origin FROM profitia_external_call.policies WHERE resource_id='srm-provider:mgbi' LIMIT 1")).rows[0].origin
+   const external={configurationVersion:'company-provider-v1',schemaDigest:hash(f.core('009-external-call-admission.sql')),nativeSchemaDigest:hash(f.core('012-native-external-transport.sql')),maximumResponseBytes:1048576}
+   const lookup={companySourcePolicy:'MGBI_ONLY',work:{...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},
+    namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql')),readyCompanyWorkBoundaryDigest:hash(own('026-ready-company-work.sql')),source:f.source,
+    corporate:{application,binding:{...sourceOptions.binding,applicationId:application.appId,role:sourceRole,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool,auditPool,
+     publicationSchemaDigest:hash(own('004-corporate-source.sql')+own('005-corporate-source-access.sql')+read('../src/server/corporate-source-shape.json')),readyReportSchemaDigest:digest},
+    mgbi:{apiKey:'synthetic-native-company-key',authScheme:'raw',source:{...sourceOptions,external,syntheticOrigin},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}}
+   const native=createSrmNativeCompanyLookup(lookup)
+   const options={request:{...humanOptions,clerk:current},lookup,
+    read:{...base,clerk:current,identity:{...base.identity,requestBoundary:{publicOrigins:[origin],internalOrigins:['http://0.0.0.0:10000']}},application:{...base.application,operations:['supplier.report.read']}},
+    ready:{schemaDigest:digest,secret}}
+   const ports={classify:async()=>{classifications++;return 'NOT_JDG'},company:selection=>{companyCalls++;return native.run(selection)},
+    jdg:async()=>{throw Error('A confirmed company must never acquire private JDG')}}
+   const run=(nip,org=A,selectedPorts=ports,key='composed-'+randomUUID())=>{
+    const request=new Request(origin+'/api/xray/search',{method:'POST',headers:{origin,'content-type':'application/json','idempotency-key':key},body:JSON.stringify({identifier:nip})})
+    return createSrmFreshReportSearch(options,selectedPorts)({request,organisationId:org,command:{kind:'SUPPLIER_REPORT',nip},idempotencyKey:key},key)
+   }
+   const reset=()=>{sessions=0;accounts=0;sdk=0;banAt=0;companyCalls=0;classifications=0}
+   const commandCounts=async()=>(await owner.query('SELECT (SELECT count(*)::int FROM profitia_supplier_requests.commands) commands,(SELECT count(*)::int FROM profitia_jobs.dispatches) dispatches')).rows[0]
+   await t.test('READY keeps two fresh checks and never admits refresh or classifies',async()=>{
+    reset();const before=await counts(),commands=await commandCounts()
+    const response=await run(NIP),body=await response.json()
+    assert.equal(response.status,200);assert.equal(body.entityType,'COMPANY');assert.equal(body.card.identity.nip,NIP)
+    assert(body.metadata.financial.scanner);assert.deepEqual({sdk,sessions,accounts,companyCalls,classifications},{sdk:1,sessions:2,accounts:2,companyCalls:0,classifications:0})
+    const after=await counts();assert.equal(after.reads,before.reads+1);assert.equal(after.quota,before.quota);assert.deepEqual(await commandCounts(),commands)
+   })
+   await t.test('MISS admission outcome rechecks Clerk and rolls back its command on revocation',async()=>{
+    reset();banAt=3;const before=await commandCounts()
+    await assert.rejects(run('5261009959'),isOperationDenied)
+    assert.equal(accounts,3);assert.equal(companyCalls,0);assert.deepEqual(await commandCounts(),before)
+   })
+   await t.test('FRESH publishes once and uses four current HUMAN account/session observations',async()=>{
+    reset();const response=await run('5261009959'),body=await response.json()
+    assert.equal(response.status,200);assert.equal(body.card.identity.nip,'5261009959');assert(body.metadata.financial.scanner)
+    assert.equal(body.card.general.status,'PARTIAL');assert.equal(body.card.financial.status,'SUCCESS')
+    assert.deepEqual({sdk,sessions,accounts,companyCalls,classifications},{sdk:3,sessions:4,accounts:4,companyCalls:1,classifications:1})
+    const commands=(await owner.query("SELECT request_id FROM profitia_supplier_requests.commands WHERE command_json->>'nip'='5261009959'")).rows
+    assert.equal(commands.length,1)
+    const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[commands[0].request_id])).rows.map(r=>r.unit)
+    assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_STORE_COMPANY'])
+   })
+   await t.test('final revocation withholds report and rolls back read history while accepted Source stays committed',async()=>{
+    reset();banAt=4;const before=await counts()
+    await assert.rejects(run('5242718525'),isOperationDenied)
+    assert.equal(accounts,4);assert.equal(companyCalls,1)
+    assert.equal((await counts()).reads,before.reads)
+    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.ready_company_reports WHERE nip=$1',['5242718525'])).rows[0].n,1)
+    reset();const result=await run('5242718525');assert.equal((await result.json()).card.identity.nip,'5242718525');assert.equal(companyCalls,0)
+   })
+   await t.test('foreign organisation cannot classify, dispatch, call provider or disclose report',async()=>{
+    reset();const before=await commandCounts()
+    await assert.rejects(run(NIP,'33333333-3333-4333-8333-333333333333'),isOperationDenied)
+    assert.equal(classifications,0);assert.equal(companyCalls,0);assert.deepEqual(await commandCounts(),before)
+   })
+   await t.test('a retry after admitted work failure keeps the command, dispatch and quota reservation',async()=>{
+    reset();const key='composed-retry-'+randomUUID(),failure=Error('synthetic failure before native work')
+    await assert.rejects(run('9511855233',A,{...ports,company:async()=>{throw failure}},key),error=>error===failure)
+    const admitted=await commandCounts(),quota=(await counts()).quota
+    const response=await run('9511855233',A,ports,key)
+    assert.equal((await response.json()).card.identity.nip,'9511855233')
+    assert.deepEqual(await commandCounts(),admitted);assert.equal((await counts()).quota,quota)
+   })
+   await t.test('CEIDG outage can use independently verified MGBI identity without treating outage as absence',async()=>{
+    reset();const response=await run('5270005984',A,{...ports,classify:async()=>{classifications++;return 'UNAVAILABLE'}})
+    const body=await response.json();assert.equal(response.status,200);assert.equal(body.entityType,'COMPANY')
+    assert.equal(body.card.identity.nip,'5270005984');assert.equal(classifications,1);assert.equal(companyCalls,1)
+   })
+   await t.test('confirmed JDG keeps its private path and never starts company acquisition',async()=>{
+    reset();const nip='5252242171';let jdgCalls=0
+    const section={status:'SUCCESS',data:{entries:[{nip}]},retrievedAt:new Date().toISOString(),effectiveAt:null,warnings:[]}
+    const response=await run(nip,A,{...ports,classify:async()=>{classifications++;return 'JDG'},
+     jdg:async selected=>{assert.equal(selected.command.nip,nip);jdgCalls++;return Response.json({section})}})
+    const result=await response.json();assert.equal(result.entityType,'JDG');assert.deepEqual(result.section,section)
+    assert.equal(jdgCalls,1);assert.equal(companyCalls,0);assert.equal(classifications,1)
+   })
+   await t.test('a mismatched company identity cannot be released through final READY',async()=>{
+    reset();const before=await counts()
+    await assert.rejects(run('5862016763',A,{...ports,company:async()=>({...emptyCard,identity:{nip:NIP,krs:null,name:null}})}),isOperationDenied)
+    assert.equal((await counts()).reads,before.reads)
+   })
+   await t.test('AppShell signed ingress uses the same composed READY and FRESH with current identity',async()=>{
+    reset();const caller='https://dev-sg2.spendguru.app',receiver='https://srm-development-runtime.onrender.com'
+    const policy={environment:'development',callerApplicationId:'spendguru',receiverApplicationId:'srm',sourceOrigin:caller,targetOrigin:receiver,
+     keyId:'synthetic-fresh-peer',key:new Uint8Array(32).fill(9),routes:[{method:'POST',path:'/api/xray/search',maximumRequestBytes:2048,requireIdempotencyKey:true}],internalOrigins:[]}
+    const peerClerk={...current,authenticateRequest:async(...args)=>{
+     const state=await current.authenticateRequest(...args),auth=state.toAuth()
+     return {status:state.status,isAuthenticated:state.isAuthenticated,toAuth:()=>({...auth,sessionClaims:{...auth.sessionClaims,azp:caller}})}
+    }}
+    const peerOptions={...options,read:{...options.read,clerk:peerClerk,identity:{...base.identity,authorizedParties:[caller,receiver],
+     requestBoundary:{publicOrigins:[caller,receiver],internalOrigins:['http://0.0.0.0:10000']}}}}
+    const environment={TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',
+     PROFITIA_XRAY_PEER_VERSION:'1.0.0',PROFITIA_XRAY_PEER_KEY_ID:policy.keyId,PROFITIA_XRAY_PEER_KEY:Buffer.from(policy.key).toString('base64url')}
+    const peerRun=async nip=>{
+     const key='fresh-peer-'+randomUUID(),request=await createPeerOperationSigner(policy)(new Request(receiver+'/api/xray/search',{
+      method:'POST',headers:{authorization:'Bearer synthetic-only','content-type':'application/json','idempotency-key':key},body:JSON.stringify({identifier:nip})}))
+     return withSrmPeerXRay(async incoming=>{
+      try{return await createSrmFreshReportSearch(peerOptions,ports)({request:incoming,organisationId:A,command:{kind:'SUPPLIER_REPORT',nip},idempotencyKey:key},key)}
+      catch(error){return supplierHttpFailure(error)}
+     },environment)(request)
+    }
+    const ready=await peerRun(NIP);assert.equal(ready.status,200);assert.equal((await ready.json()).data.card.identity.nip,NIP)
+    assert.deepEqual({sessions,accounts,companyCalls,classifications},{sessions:2,accounts:2,companyCalls:0,classifications:0})
+    reset();const fresh=await peerRun('7671004218');assert.equal(fresh.status,200)
+    assert.equal((await fresh.json()).data.card.identity.nip,'7671004218')
+    assert.deepEqual({sessions,accounts,companyCalls,classifications},{sessions:4,accounts:4,companyCalls:1,classifications:1})
+   })
   })
   await t.test('complete native FRESH pipeline prepares the report once and the next READY opening performs no Work',async()=>{
    const selectedNip='5260250274',accepted=await f.parent(A,selectedNip)

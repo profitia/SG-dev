@@ -1,7 +1,7 @@
 import {createHmac} from 'node:crypto'
 import type {PoolClient} from 'pg'
 import {createCurrentHumanReadHost} from '@profitia/platform-contracts/current-human-read'
-import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
+import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest,type OperationContext} from '@profitia/platform-contracts/operation-context'
 import type {CompanyReadOptions} from './supplier-company-read'
 import {createSrmNativePgDriver} from './native-pg-driver'
 import {readSupplierRequest} from './supplier-request-operation'
@@ -19,14 +19,14 @@ const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
 /** One current HUMAN read per opening. Only the classified Source view crosses
  * this boundary. History/frame effects are local metadata, never a refresh,
  * private acquisition or another copy of the financial source payload. */
-export function createSrmReadyCompanyRead(options:CompanyReadOptions,schemaDigest:string,secret:string){
+export function createSrmReadyCompanyReadPhase(options:CompanyReadOptions,schemaDigest:string,secret:string,
+ request:Request,organisationId:string,rawNip:string){
  if(options.reportAdmission||!secret||secret.length<32||!/^[a-f0-9]{64}$/.test(schemaDigest))return refuse()
  const {pool,auditPool,clerk,identity,application,binding,module,now}=options
- return Object.freeze({async read(request:Request,organisationId:string,rawNip:string):Promise<Readonly<{known:boolean;response:Response|null}>>{
   const nip=readSupplierRequest({kind:'SUPPLIER_REPORT',nip:rawNip}).nip,resourceId='supplier-report:COMPANY:'+nip
   let body:PreparedCompanyReport|null=null,entry:ReadyRow|undefined,reads=0
   let accepted:Readonly<{known:boolean;response:Response|null}>|undefined
-  const host=createCurrentHumanReadHost<PoolClient>({application,binding,module,clerk,identity,now,
+  const hostOptions:Parameters<typeof createCurrentHumanReadHost<PoolClient>>[0]={application,binding,module,clerk,identity,now,
    ...createSrmNativePgDriver(pool,auditPool),
    readResources:async({actor,request:operation,scope,query})=>{
     if(actor.kind!=='HUMAN'||scope.userId!==actor.actorId||scope.organisationId!==organisationId
@@ -49,9 +49,10 @@ export function createSrmReadyCompanyRead(options:CompanyReadOptions,schemaDiges
     if(value!==accepted||!accepted||accepted.response&&context.resource.version!==entry?.body_digest)return refuse()
     return value
    },
-  })
-  const outcome=await host.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
-   operation:'supplier.report.read',organisationId,resourceId,payload:{nip,entityType:'COMPANY'},request},async(context,client)=>{
+  }
+  const input={contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
+   operation:'supplier.report.read' as const,organisationId,resourceId,payload:{nip,entityType:'COMPANY'},request}
+  const action=async(context:Readonly<OperationContext>,client:PoolClient)=>{
     const at=new Date(now?.()??Date.now()),ttl=catalogFreshnessMs(process.env)
     const known=!!entry&&(body?isKnownMgbiCompany({general:body.general,financial:body.financial},nip):!!entry.general_json&&!!entry.financial_json&&isKnownMgbiCompany({general:entry.general_json,financial:entry.financial_json},nip))
      &&isFreshCatalogEntry(entry.general_checked_at,at,ttl)&&isFreshCatalogEntry(entry.financial_checked_at,at,ttl)
@@ -70,8 +71,19 @@ export function createSrmReadyCompanyRead(options:CompanyReadOptions,schemaDiges
     result.metadata.preferenceScope=createHmac('sha256',secret).update(JSON.stringify([context.organisationId,
      JSON.stringify([context.applicationId,context.subjectUserId??context.actorId]),'scanner-preferences-v1'])).digest('hex')
     return accepted={known:true,response:await measureSupplierStage('RESPONSE_SERIALIZATION',async()=>Response.json({...result.card,metadata:result.metadata},{headers}))}
-   })
-  if(outcome.value!==accepted||!accepted)return refuse()
+   }
+  return Object.freeze({hostOptions,input,action,result:()=>{if(!accepted)return refuse();return accepted}})
+}
+
+/** The ordinary READY host retains exactly the same domain phase and H1/H2.
+ * A composed FRESH host can use that phase without a second authorizer or DTO. */
+export function createSrmReadyCompanyRead(options:CompanyReadOptions,schemaDigest:string,secret:string){
+ if(options.reportAdmission||!secret||secret.length<32||!/^[a-f0-9]{64}$/.test(schemaDigest))return refuse()
+ return Object.freeze({async read(request:Request,organisationId:string,rawNip:string):Promise<Readonly<{known:boolean;response:Response|null}>>{
+  const phase=createSrmReadyCompanyReadPhase(options,schemaDigest,secret,request,organisationId,rawNip)
+  const outcome=await createCurrentHumanReadHost<PoolClient>(phase.hostOptions).execute(phase.input,phase.action)
+  const accepted=phase.result()
+  if(outcome.value!==accepted)return refuse()
   return accepted
  }})
 }
