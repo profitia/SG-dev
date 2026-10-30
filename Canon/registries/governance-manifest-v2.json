@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.32.0",
+  "manifestVersion": "3.33.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,27 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {
+      "id": "benchmark-qualification-layer-business-and-architecture-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-benchmark-qualification-layer-business-and-architecture-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 420,
+      "owner": "Architecture Platform",
+      "appliesTo": ["SG2", "ARCHITECTURE"],
+      "dependsOn": [
+        "agent-execution-canon",
+        "repository-routing",
+        "architecture-baseline",
+        "architecture-execution-adapter",
+        "spendguru-srm-target-architecture-canon",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
+        "platform-appshell-business-and-architecture-canon",
+        "profitia-package-and-limits-management",
+        "profitia-package-and-limits-customer-lifecycle"
+      ]
+    },
     {
       "id": "profitia-package-and-limits-customer-lifecycle",
       "version": "1.1",
