@@ -16,15 +16,30 @@ test('SG2 accepts the verified peer reader without changing its backend or histo
  assert.equal(a.backend,'existing shared SRM only');assert.equal(a.peerTransportContractVersion,'1.0.0')
  assert.equal(a.uiOrFinancialBackendChanged,false);assert.equal(a.runtimeDeploymentPerformed,false)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/current-human-read'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,a.platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.settledExternalFailureCompatibility??a).platformVersion)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
   // npm excludes the producer's build lock from the installed package.
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.settledExternalFailureCompatibility?.sourceDigests[file]??digest,'installed '+file)
  }
  assert.equal(a.publicUi.version,'0.3.1');assert.equal(a.publicUi.contractVersion,'1.0.0')
  const ui=createHash('sha256')
  for(const file of a.publicUi.sourceFiles)ui.update(file).update('\0').update(execFileSync('git',['show',a.publicUiProducer.sourceSha+':packages/srm-xray/'+file])).update('\0')
  assert.equal(ui.digest('hex'),a.publicUi.sourceDigest)
  assert.equal(a.publicUiProducer.projectKey,'SRM');assert.equal(a.browserTelemetryOnly,true)
+})
+
+test('SG2 accepts the exact settled-failure producer while retaining the existing shared SRM backend',async()=>{
+ const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.settledExternalFailureCompatibility
+ const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'])
+ assert.equal(hash(previous),a.previousReceiptDigest)
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k)
+ const sdk=await import('@profitia/platform-contracts/external-call')
+ assert.deepEqual(a.contract,sdk.EXTERNAL_CALL_FAILURE_OBSERVATION)
+ assert.equal(await sdk.externalCallSourceDigest(),a.sdkDigests.externalCallSourceDigest)
+ const root=new URL('../../../packages/platform-contracts/',import.meta.url)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,a.platformVersion)
+ for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const flag of ['runtimeBehaviorChanged','financialBackendDuplicated','providerPoliciesChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag)
 })
