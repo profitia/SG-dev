@@ -1,10 +1,21 @@
 import {diagnosticRun} from './diagnostic-trace'
 import { createHash } from "node:crypto";
 import { withOrganization, type DatabasePool } from "./db";
+import type {PoolClient} from 'pg';
 
 const PAGE_SIZE = 100;
 const MAX_PAGES = 100;
 export type MgbiModel = "pl-krs-wp-record" | "pl-krs-rdf-record";
+export type PersistedMgbiArchive = {organization_id:string;nip:string;model:MgbiModel;payload_text:string;
+  payload_jsonb_sha256:string;record_count:number;pages_match:boolean};
+const persistedArchives=new WeakMap<PersistedMgbiArchive,{client:Pick<PoolClient,'query'>;pages:unknown[];digest:string}>();
+/** Once-only data receipt from the actual writer, never an authority grant. */
+export function takePersistedMgbiArchive(value:PersistedMgbiArchive|undefined,client:Pick<PoolClient,'query'>,pages:unknown[]):PersistedMgbiArchive|undefined {
+  if(!value)return undefined;
+  const receipt=persistedArchives.get(value);persistedArchives.delete(value);
+  return receipt?.client===client&&receipt.pages===pages
+    &&createHash('sha256').update(JSON.stringify({pages})).digest('hex')===receipt.digest?value:undefined;
+}
 export type MgbiPages = { pages: unknown[]; records: unknown[]; count: number; errorCode: null }
   | { pages: []; records: []; count: 0; errorCode: string };
 
@@ -46,7 +57,8 @@ export async function fetchMgbiPages(url: URL, headers: HeadersInit, signal: Abo
 
 /** The complete API payload stays tenant-scoped; only mapped person-free facts enter the shared catalog. */
 export async function saveMgbiArchive(organizationId: string, nip: string, model: MgbiModel,
-  pages: unknown[], recordCount: number, retrievedAt: string, sourceRequestId: string, pool?: DatabasePool): Promise<void> {
+  pages: unknown[], recordCount: number, retrievedAt: string, sourceRequestId: string, pool?: DatabasePool,
+  onStored?:(archive:PersistedMgbiArchive)=>void): Promise<void> {
  return diagnosticRun('SOURCE_ARCHIVE',async ()=>{
   if (!/^\d{10}$/.test(nip) || !pages.length || !Number.isSafeInteger(recordCount) || recordCount < 0) {
     throw new Error("A complete MGBI response and NIP are required for archiving");
@@ -54,7 +66,7 @@ export async function saveMgbiArchive(organizationId: string, nip: string, model
   const payload = JSON.stringify({ pages });
   const digest = createHash("sha256").update(payload).digest("hex");
   await withOrganization(organizationId, async (client) => {
-    await client.query(
+    const result=await client.query<PersistedMgbiArchive>(
       `INSERT INTO srm.mgbi_source_archives(organization_id, nip, model, payload_json, payload_sha256,
          record_count, first_retrieved_at, last_checked_at, source_request_id)
        VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $7, $8)
@@ -62,9 +74,12 @@ export async function saveMgbiArchive(organizationId: string, nip: string, model
          payload_json = CASE WHEN srm.mgbi_source_archives.payload_sha256 IS DISTINCT FROM EXCLUDED.payload_sha256
            THEN EXCLUDED.payload_json ELSE srm.mgbi_source_archives.payload_json END,
          payload_sha256 = EXCLUDED.payload_sha256, record_count = EXCLUDED.record_count,
-         last_checked_at = EXCLUDED.last_checked_at, source_request_id = EXCLUDED.source_request_id`,
+         last_checked_at = EXCLUDED.last_checked_at, source_request_id = EXCLUDED.source_request_id`+
+         (onStored?` RETURNING organization_id,nip,model,payload_json::text AS payload_text,
+           payload_jsonb_sha256,record_count,payload_json->'pages'=($4::jsonb->'pages') AS pages_match`:''),
       [organizationId, nip, model, payload, digest, recordCount, new Date(retrievedAt), sourceRequestId],
     );
+    if(onStored&&result.rows.length===1){const row=Object.freeze(result.rows[0]);persistedArchives.set(row,{client,pages,digest});onStored(row);}
   }, pool);
 
  })

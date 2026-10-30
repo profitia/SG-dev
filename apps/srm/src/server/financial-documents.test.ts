@@ -24,7 +24,7 @@ test("archive reconstruction verifies persisted bytes rather than reserialized J
   assert.equal(document.recordId,"xml-1");assert.equal(document.rows[0].amounts.KwotaA,"1234567890123456.789");
   assert.notEqual(createHash("sha256").update(JSON.stringify(JSON.parse(source.payload_text))).digest("hex"),source.payload_jsonb_sha256);
 });
-function freshPreparation(changes:{archive?:Record<string,unknown>;stored?:Record<string,unknown>}={}){
+function freshPreparation(changes:{archive?:Record<string,unknown>;stored?:Record<string,unknown>;returning?:boolean}={}){
  const raw=record({identifiers:{pl_nip:archiveNip,pl_krs:'0000217580'}}),pages=[{results:[raw]}];
  const source={...archived([raw]),pages_match:true,...changes.archive};
  const document=projectFinancialDocuments([raw])[0],document_text=JSON.stringify(document);
@@ -34,12 +34,24 @@ function freshPreparation(changes:{archive?:Record<string,unknown>;stored?:Recor
  const calls:string[]=[];
  const client={query:async(sql:string)=>{calls.push(sql);
   if(sql.includes('FROM srm.mgbi_source_archives'))return {rows:[source]};
-  if(sql.trimStart().startsWith('INSERT INTO srm.financial_source_documents'))return {rows:[],rowCount:1};
+  if(sql.includes('INSERT INTO srm.financial_source_documents'))return {rows:changes.returning?[stored]:[],rowCount:1};
   if(sql.includes('FROM srm.financial_source_documents'))return {rows:[stored]};
   throw Error('Unexpected financial statement');
  }} as unknown as Parameters<typeof prepareFreshFinancialDocuments>[0];
  return {pages,source,stored,client,calls};
 }
+test('fresh document RETURNING reuses only complete actual rows with the same integrity checks',async()=>{
+ const ordinary=freshPreparation(),expected=await prepareFreshFinancialDocuments(ordinary.client,archiveOrg,archiveNip,ordinary.pages);
+ const returned=freshPreparation({returning:true}),actual=await prepareFreshFinancialDocuments(returned.client,archiveOrg,archiveNip,returned.pages);
+ assert.deepEqual(actual,expected);assert.equal(returned.calls.length,2);
+ assert(returned.calls[1].startsWith('WITH written AS (INSERT'));
+ assert(!returned.calls.some(sql=>sql.includes('FROM srm.financial_source_documents')));
+ for(const stored of[{organization_id:'22222222-2222-4222-8222-222222222222'},{nip:'6310200831'},
+  {archive_jsonb_sha256:'a'.repeat(64)},{document_jsonb_sha256:'b'.repeat(64)}]){
+  const invalid=freshPreparation({returning:true,stored});
+  await assert.rejects(prepareFreshFinancialDocuments(invalid.client,archiveOrg,archiveNip,invalid.pages));
+ }
+});
 test('fresh preparation validates locked archive once and returns actual protected documents',async()=>{
  const f=freshPreparation(),documents=await prepareFreshFinancialDocuments(f.client,archiveOrg,archiveNip,f.pages);
  assert.equal(documents.length,1);assert.equal(documents[0].recordId,f.stored.record_id);
