@@ -41,7 +41,7 @@ test('SG2 accepts the exact settled-failure producer while retaining the existin
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??a).platformVersion)
  for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.freshPostfetchCompatibility?.sourceDigests[file]??receipt.sourceLeaseClockCompatibility?.sourceDigests[file]??digest,file)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.pciMain800IntegrityCompatibility?.applicationSourceDigests[file]??receipt.pciLiveAcceptanceStabilization?.applicationSourceDigests[file]??receipt.freshPostfetchCompatibility?.applicationSourceDigests[file]??receipt.sourceLeaseClockCompatibility?.applicationSourceDigests[file]??digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.bqlPciFirstSourceCompatibility?.applicationSourceDigests[file]??receipt.pciMain800IntegrityCompatibility?.applicationSourceDigests[file]??receipt.pciLiveAcceptanceStabilization?.applicationSourceDigests[file]??receipt.freshPostfetchCompatibility?.applicationSourceDigests[file]??receipt.sourceLeaseClockCompatibility?.applicationSourceDigests[file]??digest,file)
  for(const flag of ['runtimeBehaviorChanged','financialBackendDuplicated','providerPoliciesChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag)
 })
 
@@ -81,6 +81,21 @@ test('SG2 explicitly accepts parallel current identity observations without a se
 
 
 export function assertPciMain800Integrity(receipt, readCurrent, readHistorical) {
+ if(Object.hasOwn(receipt,'bqlPciFirstSourceCompatibility')){
+  const a=receipt.bqlPciFirstSourceCompatibility
+  assert.equal(a.taskId,'SG2-BQL-PCI-FIRST-IMPLEMENTATION-20261030')
+  assert.equal(a.rulesetVersion,'bql-semantic/1.0.0')
+  const bytes=readHistorical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json')
+  assert.equal(hash(bytes),a.previousReceiptSha256)
+  const {bqlPciFirstSourceCompatibility,...preserved}=receipt,prior=JSON.parse(bytes)
+  assert.deepEqual(preserved,prior,'BQL preserves every historical source acceptance')
+  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).filter(([file])=>file.startsWith('apps/sg-runtime/')).map(([file,digest])=>[file.slice(16),digest])))
+  for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(readCurrent(file)),digest,'BQL exact current '+file)
+  for(const flag of ['calculationChanged','sourceHistoryChanged','authorizationChanged','schemaChanged','newProviderCalls','srmRuntimeChanged'])assert.equal(a[flag],false,flag)
+  assertPciMain800Integrity(prior,file=>Object.hasOwn(a.sourceDigests,file)?readHistorical(a.previousReceiptSourceSha,file):readCurrent(file),readHistorical)
+  return
+ }
+
  const a=receipt.pciMain800IntegrityCompatibility
  assert.equal(a.taskId,'SG2-PCI-LIVE-ACCEPTANCE-STABILIZATION-20261030')
  assert.equal(a.scope,'ADDITIVE_TEST_SOURCE_CONTINUITY_ONLY')

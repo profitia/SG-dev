@@ -165,6 +165,7 @@ function assertBqlIntegrity(receipt,current,historical){
  const {bqlPciFirstSourceCompatibility,...preserved}=receipt
  assert.deepEqual(preserved,JSON.parse(prior),'every earlier source acceptance is immutable')
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),a.changedSourcePaths)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).filter(([file])=>file.startsWith('apps/sg-runtime/')).map(([file,digest])=>[file.slice(16),digest])))
  for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(current(file)),digest,'BQL current '+file)
  for(const file of a.preservedEnginePaths)assert.equal(hash(current(file)),hash(historical(a.previousReceiptSourceSha,file)),file)
  for(const flag of ['calculationChanged','sourceHistoryChanged','authorizationChanged','schemaChanged','newProviderCalls','srmRuntimeChanged'])assert.equal(a[flag],false,flag)
