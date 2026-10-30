@@ -11,7 +11,7 @@ export const publicWebTransportSchemaUrl=new URL('../migrations/access/018-publi
 
 export const EXTERNAL_CALL_CONTRACT=Object.freeze({id:'profitia.external-call',version:'1.0.0',unit:'UPSTREAM_ATTEMPT_ADMISSION'})
 export const externalCallSchemaUrl=new URL('../migrations/access/009-external-call-admission.sql',import.meta.url).href
-const evidence=new WeakMap(),hex=/^[a-f0-9]{64}$/,uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
+const evidence=new WeakMap(),failureEvidence=new WeakMap(),hex=/^[a-f0-9]{64}$/,uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 const record=v=>v&&Object.getPrototypeOf(v)===Object.prototype
 const exact=(v,keys)=>record(v)&&Object.keys(v).sort().join(',')===keys
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
@@ -26,6 +26,11 @@ export class ExternalCallUnavailable extends Error{
   constructor(certainty='UNVERIFIED'){super('External result unavailable');this.name='ExternalCallUnavailable';this.certainty=['NOT_SENT','UNVERIFIED','RESULT_NOT_RETAINED'].includes(certainty)?certainty:'UNVERIFIED';this.retryAllowed=false}
 }
 export function externalCallEvidence(value){return value&&typeof value==='object'?evidence.get(value)??null:null}
+export const EXTERNAL_CALL_FAILURE_OBSERVATION=Object.freeze({id:'profitia.external-call.failure-observation',version:'1.0.0'})
+/** Observation of an unusable native response, never identity, access, retained
+ * provider data or permission to retry. Only the original host can brand it,
+ * after current Source confirmation and a committed, independently read SETTLE. */
+export function externalCallFailureEvidence(value){return value&&typeof value==='object'?failureEvidence.get(value)??null:null}
 /** Internal unclassified provider bytes, only after the original host settled.
  * Neither this Response nor its observation is a HUMAN or field-access grant. */
 export function externalNativeResponse(value){
@@ -154,7 +159,7 @@ export function createExternalCallHost(options){
     // An explicit native policy authorizes bounded completion of an admitted
     // upstream attempt, with CURRENT checks immediately before send and at
     // settlement. Its deadline is not a renewed HUMAN/private SQL lease.
-    const abort=new AbortController(),deadline=Math.min(now()+d.timeoutMs,Date.parse(native?d.nativeExpiresAt:d.expiresAt),publicWeb?Date.parse(d.publicWebExpiresAt):Infinity);let timer,listener,sent=false,result,settledStatus='NOT_SENT'
+    const abort=new AbortController(),deadline=Math.min(now()+d.timeoutMs,Date.parse(native?d.nativeExpiresAt:d.expiresAt),publicWeb?Date.parse(d.publicWebExpiresAt):Infinity);let timer,listener,sent=false,result,rejectedHttpStatus=null,settledStatus='NOT_SENT'
     const assertActive=()=>{if(abort.signal.aborted||now()>=deadline)throw new ExternalCallUnavailable(sent?'UNVERIFIED':'NOT_SENT')}
     try{
       result=await Promise.race([
@@ -176,7 +181,16 @@ export function createExternalCallHost(options){
           sent=true
           const response=publicWeb?await publicWebHop(request.url,{signal:abort.signal,maxBytes:native.maximumResponseBytes},publicBinding.syntheticOrigin):await diagnosticAsync('SOURCE_HTTP',()=>fetch(request.url,{method:request.method,body:request.body,headers,signal:abort.signal,redirect:'manual',credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'}))
           if(abort.signal.aborted||response.redirected||response.url!==request.url||response.status<200||response.status>599||!native&&response.status>=300&&response.status<400){try{await response.body?.cancel()}catch{};throw new ExternalCallUnavailable()}
-          if(native)return await diagnosticAsync('SOURCE_BODY',()=>readNativeProviderResponse(response,{config:native,requestUrl:request.url,assertActive,signal:abort.signal,publicWeb}))
+          if(native){
+            try{return await diagnosticAsync('SOURCE_BODY',()=>readNativeProviderResponse(response,{config:native,requestUrl:request.url,assertActive,signal:abort.signal,publicWeb}))}
+            catch(error){
+              // A provider response rejected by the bounded native decoder is
+              // distinct from a denied descriptor, abort or failed settlement.
+              // Keep only its numeric status; never retain body or Location.
+              if(!publicWeb&&error instanceof TypeError&&!abort.signal.aborted&&!signal?.aborted&&now()<deadline)rejectedHttpStatus=response.status
+              throw error
+            }
+          }
           const body=await diagnosticAsync('SOURCE_PARSE',()=>readPresentationJson(response,d.maximumResponseBytes));assertActive()
           const projected=await projectResponse(body,{status:response.status,signal:abort.signal});assertActive()
           // Reuse the same bounded/depth/prototype JSON reader for publication.
@@ -196,7 +210,16 @@ export function createExternalCallHost(options){
       if(!same(d,await diagnosticAsync('SOURCE_CONFIRM',()=>descriptor())))throw new ExternalCallUnavailable()
       const settlement=await control('SETTLE',plan.receipt.effectId,settledStatus,result?.status??null,result?(native?diagnosticSync('SOURCE_DIGEST',()=>nativeResponseDigest(result,intentKey)):hmac(intentKey,JSON.stringify(result))):null,requestDigest,intentKey)
       if(!settlement.fresh||settlement.fresh.status!==settledStatus||await status(plan.receipt.effectId)!==settledStatus)throw new ExternalCallUnavailable()
-      if(settledStatus!=='RESPONSE')throw new ExternalCallUnavailable(settledStatus==='NOT_SENT'?'NOT_SENT':'UNVERIFIED')
+      if(settledStatus!=='RESPONSE'){
+        const error=new ExternalCallUnavailable(settledStatus==='NOT_SENT'?'NOT_SENT':'UNVERIFIED')
+        if(settledStatus==='UNVERIFIED'&&rejectedHttpStatus!==null)failureEvidence.set(error,freeze({
+          contractId:EXTERNAL_CALL_FAILURE_OBSERVATION.id,contractVersion:EXTERNAL_CALL_FAILURE_OBSERVATION.version,
+          sourceId,resourceId,applicationId:source.applicationId,environment:source.environment,
+          callId:plan.receipt.effectId,attemptEffectId:attempt.receipt.effectId,settlementEffectId:settlement.receipt.effectId,
+          status:'UNVERIFIED',reason:'NATIVE_RESPONSE_REJECTED',httpStatus:rejectedHttpStatus,retryAllowed:false,
+        }))
+        throw error
+      }
       evidence.set(result,freeze({sourceId,resourceId,applicationId:source.applicationId,environment:source.environment,callId:plan.receipt.effectId,
         attemptEffectId:attempt.receipt.effectId,settlementEffectId:settlement.receipt.effectId,unit:EXTERNAL_CALL_CONTRACT.unit,status:'RESPONSE',...(native?{transportProtocol:NATIVE_EXTERNAL_TRANSPORT.id}:{})}))
       return result

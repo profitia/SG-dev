@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
-import {createExternalCallHost,EXTERNAL_CALL_CONTRACT,ExternalCallUnavailable,externalCallEvidence,externalCallSchemaUrl,externalCallSchemaDigest,externalCallSourceDigest} from '../src/external-call.mjs'
+import {createExternalCallHost,EXTERNAL_CALL_CONTRACT,EXTERNAL_CALL_FAILURE_OBSERVATION,ExternalCallUnavailable,externalCallEvidence,externalCallFailureEvidence,externalCallSchemaUrl,externalCallSchemaDigest,externalCallSourceDigest} from '../src/external-call.mjs'
 const hash=v=>createHash('sha256').update(v).digest('hex')
 const base={sourceId:'source',resourceId:'resource',sourceHost:{ingest:async()=>({value:{status:'COMMITTED'}})},binding:{role:'ordinary_runtime',configurationVersion:'v1',origin:'https://supplier.example',transport:'HTTPS',schemaDigest:'a'.repeat(64),pathRules:[{method:'GET',path:'/api'}]},
  independentQuery:async()=>{throw Error('No query allowed')},query:async()=>{throw Error('No query allowed')},parseCommand:v=>v,buildRequest:()=>({method:'GET',url:'https://supplier.example/api',body:null}),projectResponse:v=>v}
@@ -19,6 +19,11 @@ test('unavailability exposes certainty without private diagnostics or safe autom
 test('a fabricated source host or serialized receipt never mints an external port',()=>{
  assert.throws(()=>createExternalCallHost(base),TypeError)
  assert.throws(()=>createExternalCallHost({...base,sourceHost:{contract:{id:'profitia.platform-ingestion',version:'1.0.0'},ingest:base.sourceHost.ingest}}),TypeError)
+})
+test('provider failure observations cannot be fabricated from an error, public fields or serialized evidence',()=>{
+ assert.deepEqual(EXTERNAL_CALL_FAILURE_OBSERVATION,{id:'profitia.external-call.failure-observation',version:'1.0.0'})
+ assert(Object.isFrozen(EXTERNAL_CALL_FAILURE_OBSERVATION))
+ for(const value of [null,{},new ExternalCallUnavailable(),Object.assign(new ExternalCallUnavailable(),{httpStatus:301,status:'UNVERIFIED',reason:'NATIVE_RESPONSE_REJECTED'}),{contractId:EXTERNAL_CALL_FAILURE_OBSERVATION.id,contractVersion:'1.0.0'}])assert.equal(externalCallFailureEvidence(value),null)
 })
 for(const [name,patch]of [
  ['credentials in origin',{origin:'https://user:password@supplier.example'}],['query in origin',{origin:'https://supplier.example?private=x'}],
