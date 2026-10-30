@@ -4,6 +4,8 @@ import {createPresentationScope,PresentationScopeProvider,type PresentationScope
 import {ThemeProvider,CanonThemeSwitch} from './Theme'
 import type {PriceChangeIndexBusinessProps} from './business-contracts'
 import {BasePeriodFields} from './BasePeriodFields'
+import {SmartPreparationFields,SmartReferenceDetails} from './SmartPreparationFields'
+import {MarketProxyResult} from './MarketProxyResult'
 import {BusinessPriceChart} from './revisions/pci3/business-chart'
 import theme from './canon/theme.css?inline'
 import bindings from './revisions/pci3/canon-theme.css?inline'
@@ -41,7 +43,8 @@ function ProductView({controller:c,locale='pl'}:PriceChangeIndexBusinessProps){
   },[c.components])
   const p=c.purchase
   const purchaseReady=Number(p.amount.replace(',','.'))>0&&!!p.currency.trim()&&!!p.unit.trim()&&!!p.taxBasis&&!!p.deliveryBasis.trim()
-  const dateReady=!!p.purchaseDate&&!!p.referenceDate&&!!p.periodBasis&&c.components.every(x=>x.valueKind)
+  const reference=c.smart?.reference
+  const dateReady=c.smart?c.smart.status==='ready'&&!!reference&&(reference.mode==='EARLIER_MARKET_PROXY'?c.smart.proxyMarketOnlyAccepted:!reference.requiresApproval||c.smart.strictPeriodAccepted):!!p.purchaseDate&&!!p.referenceDate&&!!p.periodBasis&&c.components.every(x=>x.valueKind)
   const result=c.result,last=result?.nodes.slice().reverse().find(n=>n.price!==null)
   return <div ref={root} className="v3-app srm-ui v3-layer-layout pci-business" data-flow-screen={c.step==='result'?'result':'setup'} data-flow-step={c.step}
     data-design-component="463321469305384960" data-design-revision="465857540723474432" data-product-surface="pci-buyer-journey-v1">
@@ -77,9 +80,10 @@ function ProductView({controller:c,locale='pl'}:PriceChangeIndexBusinessProps){
             <label>Cena netto / brutto<select value={p.taxBasis} onChange={e=>c.onPurchaseChange({taxBasis:e.target.value as typeof p.taxBasis})}><option value="">Wybierz</option><option value="NET">Netto</option><option value="GROSS">Brutto</option></select></label>
             <label>Warunki dostawy<input aria-label="Warunki dostawy" value={p.deliveryBasis} placeholder="Określ warunki ceny" maxLength={256} onInput={e=>c.onPurchaseChange({deliveryBasis:e.currentTarget.value})}/></label>
           </>}
-          {c.step===3&&<BasePeriodFields controller={c}/>}
+          {c.step===3&&(c.smart?<SmartPreparationFields controller={c} locale={locale}/>:<BasePeriodFields controller={c}/>)}
         </section><aside className="v3-panel v3-setup-summary"><details open={!compact} className="v3-setup-summary-disclosure"><summary>Podsumowanie</summary><div><h3>Twoja kategoria</h3><p>{c.name||'Nadaj nazwę kategorii'}</p><p>{c.components.length} komponentów · {fmt(c.components.reduce((sum,x)=>sum+x.weightPercent,0))}%</p><p>{p.amount&&p.currency&&p.unit?`${p.amount} ${p.currency}/${p.unit}`:'Uzupełnij cenę zakupu'}</p><p>{p.purchaseDate||'Wybierz datę zakupu'}</p><p>Analiza nie zapisuje kategorii ani oferty. Zapis struktury jest osobną, jawną akcją.</p></div></details></aside></div>
-      </>:result&&<>
+      </>:c.smart?.marketResult?<MarketProxyResult controller={c} locale={locale}/>:result&&<>
+        {c.smart?.reference&&<section className="pci-strict-result"><h2>{locale==='pl'?'Ścisłe odniesienie — modelowana cena zakupu':'Strict reference — modeled purchase price'}</h2><p>{locale==='pl'?'Faktyczna data zakupu':'Actual purchase date'}: {p.purchaseDate}</p><SmartReferenceDetails reference={c.smart.reference} locale={locale}/><p>{locale==='pl'?'Źródłowe waluty bez FX; bieżąca historia nie potwierdza publikacji na dzień zakupu.':'Source currencies without FX; current history does not prove publication on the purchase date.'}</p></section>}
         <div className="v3-actions" role="tablist" aria-label="Cel analizy"><button role="tab" aria-selected={mode==='monitor'} className={mode==='monitor'?'v3-active':''} onClick={()=>setMode('monitor')}>Obserwuj cenę</button><button role="tab" aria-selected={mode==='compare'} className={mode==='compare'?'v3-active':''} onClick={()=>setMode('compare')}>Sprawdź ofertę dostawcy</button></div>
         <div className="v3-grid2"><section><div className="v3-panel"><h2>{mode==='monitor'?'Obserwuj zmiany modelowanej ceny kategorii':'Punkt odniesienia dla oferty dostawcy'}</h2><p>Punktem odniesienia jest Twoja własna cena zakupu.</p><div className="v3-price">{fmt(last?.price??null)} {result.currency}/{result.unit}</div><p>{last?.date.slice(0,10)} · {fmt(last?.changePercent??null)}% względem ostatniego zakupu</p>
           <BusinessPriceChart result={result} components={c.components} name={c.name}/></div>
@@ -94,7 +98,7 @@ function ProductView({controller:c,locale='pl'}:PriceChangeIndexBusinessProps){
     <footer className="v3-flow-actions">
       {c.error&&c.step!==3&&<p className="pci-error" role="alert">{c.error}</p>}
       <div className="v3-result-navigation"><button className="v3-result-back" disabled={c.busy} onClick={()=>c.step===1?c.onClose():c.onStep(c.step==='result'?3:(c.step-1) as 1|2)}>Wróć</button>
-        <div className="v3-result-primary-actions">{c.step==='result'?<button className="v3-primary" onClick={c.onClose}>Gotowe, wróć do Benchmark Findera</button>:<button className="v3-primary" disabled={c.busy||!c.ready||!!c.qualificationIssue||c.step>=2&&!purchaseReady||c.step===3&&(!dateReady||c.preparation?.status==='loading')} onClick={()=>c.step===3?c.onAnalyse():c.onStep(c.step===1?2:3)}>{c.busy?'Obliczanie…':c.step===3?'Przeanalizuj cenę':'Dalej →'}</button>}</div>
+        <div className="v3-result-primary-actions">{c.step==='result'?<button className="v3-primary" onClick={c.onClose}>Gotowe, wróć do Benchmark Findera</button>:<button className="v3-primary" disabled={c.busy||!c.ready||!!c.qualificationIssue||c.step>=2&&!purchaseReady||c.step===3&&(!dateReady||c.preparation?.status==='loading')} onClick={()=>c.step===3?c.onAnalyse():c.onStep(c.step===1?2:3)}>{c.busy?'Obliczanie…':c.step===3?(reference?.mode==='EARLIER_MARKET_PROXY'?(locale==='pl'?'Zatwierdź wcześniejszy okres i pokaż indeks rynku':'Confirm earlier reference and show market index'):(locale==='pl'?'Przeanalizuj cenę':'Analyse price')):'Dalej →'}</button>}</div>
       </div>
     </footer>
   </div>

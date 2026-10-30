@@ -168,3 +168,8 @@ test('genuine uncertainty requires meaningful per-component verification; a know
   f.selected[0].semanticProfile = classifyBenchmark({ ...f.selected[0], displayName: 'Steel inventories', currency: null, unit: 'Tonnes' })
   assert.equal(prepareSmartPci(f.input, f.selected, f.histories, now).preparation.issues[0].code, 'SEMANTIC_MISMATCH')
 })
+
+test('verified declaration cannot relabel an explicit monthly average as EOP',()=>{
+ const f=fixture();cadence(f,0,'Monthly','Average');cadence(f,1,'Monthly','Average');f.input.declarations[0].periodBasis='END_OF_PERIOD';f.input.declarations[0].verified=true
+ const p=prepareSmartPci(f.input,f.selected,f.histories,now).preparation;assert.equal(p.state,'VERIFICATION_REQUIRED');assert.equal(p.candidates.length,0)
+})

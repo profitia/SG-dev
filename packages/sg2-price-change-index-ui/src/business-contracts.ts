@@ -20,7 +20,7 @@ export interface PciBusinessNode {
   components:readonly {id:string;price:number|null;contribution:number|null;changePercent:number|null}[]
 }
 export interface PciBusinessResult {
-  methodologyId:string;cadence:string;baseDate:string;basePrice:number;currency:string;unit:string;
+  methodologyId:string;cadence:string;baseDate:string;purchaseDate?:string;basePrice:number;currency:string;unit:string;
   nodes:readonly PciBusinessNode[];limitations:readonly string[]
 }
 /** Availability projected by the host's existing CCI adapter, never calculated by the UI. */

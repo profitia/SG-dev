@@ -18,9 +18,9 @@ export function pciInput(name:string,components:readonly PciComponent[],purchase
       periodBasis:purchase.periodBasis as 'POINT_IN_TIME'|'END_OF_PERIOD'|'PERIOD_AVERAGE',reduction:purchase.reduction}))}
 }
 /** Monetary values are projections of authoritative engine outputs, never recomputed demo formulas. */
-export function pciResult(response:Extract<PciAnalysisResponse,{status:'CALCULATED'}>,components:readonly PciComponent[]):PciBusinessResult{
+export function pciResult(response:Pick<Extract<PciAnalysisResponse,{status:'CALCULATED'}>,'indexedPrice'>,components:readonly PciComponent[]):PciBusinessResult{
   const r=response.indexedPrice
-  return{methodologyId:r.methodologyId,cadence:r.analysisCadence,baseDate:r.baseNode.start,basePrice:r.basePrice.amount,currency:r.currency,unit:r.unit,limitations:r.limitations,
+  return{methodologyId:r.methodologyId,cadence:r.analysisCadence,baseDate:r.baseNode.start,purchaseDate:r.basePrice.purchaseDate,basePrice:r.basePrice.amount,currency:r.currency,unit:r.unit,limitations:r.limitations,
     nodes:r.nodes.map((node,n)=>({date:node.period.start,cci:node.cci,price:node.categoryIndexedPrice,changePercent:node.categoryPriceChangePercent,
       components:components.map((component,i)=>{
         const part=node.components.find(c=>c.componentId===component.id),core=r.sourceCalculation.nodes[n].components.find(c=>c.componentId===component.id)
@@ -38,8 +38,8 @@ export function pciSmartInput(name:string,components:readonly PciComponent[],pur
     ...(options.olderYear===null?{}:{olderYear:options.olderYear}),...(options.reference?{reference:options.reference}:{})}
 }
 export function pciMarketResult(response:Extract<import('../../lib/cost-analysis/pci-smart-preparation-contracts').SmartPciResponse,{status:'PROXY_MARKET_ONLY'}>):import('@profitia/sg2-price-change-index-ui').PciMarketIndexResult{
-  return {variant:'EARLIER_MARKET_PROXY',methodologyId:response.calculation.methodologyId,cadence:response.calculation.analysisCadence,baseDate:response.reference.period.start,
+  return {variant:'EARLIER_MARKET_PROXY',methodologyId:response.calculation.methodologyVersion,cadence:response.calculation.analysisCadence,baseDate:response.reference.period.start,
     purchaseDate:response.purchaseContext.purchaseDate,purchaseAmount:response.purchaseContext.amount,purchaseCurrency:response.purchaseContext.currency,purchaseUnit:response.purchaseContext.unit,
     comparisonStatus:response.comparisonStatus,limitations:response.preparation.limitations,
-    nodes:response.calculation.nodes.map(n=>({date:n.period.start,cci:n.cci,changePercent:n.changeFromBasePercent,components:n.components.map(c=>({id:c.componentId,contributionPP:c.contributionFromBasePP}))}))}
+    nodes:response.calculation.nodes.map(n=>({date:n.period.start,cci:n.cci,changePercent:n.cumulativeChangePercent,components:n.components.map(c=>({id:c.componentId,contributionPP:c.contributionPercentagePoints}))}))}
 }

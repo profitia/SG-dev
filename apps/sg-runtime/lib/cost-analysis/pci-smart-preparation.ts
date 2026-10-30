@@ -156,11 +156,11 @@ function prepareValue(source: Source, period: ForecastTargetPeriod, basis: CciNo
     if (source.observations[i].native.endExclusive <= period.endExclusive) rows.push(source.observations[i])
   }
   const dates = rows.map(p => p.originalDate), start = period.start.toISOString(), end = period.endExclusive.toISOString()
-  const issues = source.issues.filter(i => !i.period || i.period >= start && i.period < end).map(i => ({ ...i, usedInWindow: true }))
+  const issues: SmartIssue[] = source.issues.filter(i => !i.period || i.period >= start && i.period < end).map(i => ({ ...i, usedInWindow: true }))
   if (!method) issues.push(smartIssue('UNAPPROVED_AGGREGATION', locale, { componentId: source.view.id, period: start, usedInWindow: true }))
   if (!rows.length || rows.some(r => r.value === null)) issues.push(smartIssue('MISSING_OBSERVATION', locale, { componentId: source.view.id, period: start, usedInWindow: true }))
   if (issues.length) return { ...identity, sourceDates: dates, sourceCount: rows.length, quality: 'INSUFFICIENT', value: null, issues }
-  const points = rows.map(r => ({ date: r.date, value: r.value }))
+  const points = rows.map(r => ({ observedAt: new Date(r.date), value: r.value! }))
   const value = method === 'NATIVE_VALUE' ? rows[0].value : method === 'AVAILABLE_OBSERVATION_AVERAGE'
     ? reduceForecastPeriodAverage(points) : reduceForecastPeriodEndOfPeriod(points)?.value ?? null
   const quality = method === 'NATIVE_VALUE' ? 'QUALIFIED_COMPLETE' as const : 'QUALIFIED_PARTIAL_DISCLOSED' as const
@@ -196,6 +196,7 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
     return { preparation: { ...prep, issues: [smartIssue(start.toISOString() >= cutoff ? 'OPEN_PURCHASE_PERIOD' : 'DATA_VOLUME_LIMIT', input.locale)] }, contexts }
   }
   const allCandidates: SmartCandidate[] = []
+  let compatibleMethods=false
   for (const cadence of FORECAST_NATIVE_FREQUENCIES) {
     for (const basis of ['POINT_IN_TIME', 'END_OF_PERIOD', 'PERIOD_AVERAGE'] as const) {
       const periods: ForecastTargetPeriod[] = []
@@ -210,6 +211,7 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
       const template = periods[0] ?? createCalendarTargetPeriod(purchaseDay, cadence)
       const methods = sources.map(s => methodFor(s, cadence, basis, template))
       if (sources.some((s, i) => s.view.weightPercent > 0 && !methods[i])) continue
+      compatibleMethods=true
       const provenance = periods.map(period => ({ period: periodIdentity(period), components: sources.map((s, i) => prepareValue(s, period, basis, methods[i], input.locale)) }))
       const nodes: CciAlignedNode[] = provenance.map(n => ({ period: n.period,
         status: n.components.every((p, i) => sources[i].view.weightPercent === 0 || p.value !== null && p.quality !== 'INSUFFICIENT') ? 'COMPLETE' : 'INCOMPLETE',
@@ -249,7 +251,7 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
   // Return all candidates in the bounded requested window; never auto-select older references.
   const issues = allCandidates.length ? [] : [smartIssue('NO_QUALIFIED_REFERENCE', input.locale),
     ...diagnostics.filter(i => i.usedInWindow).slice(0, 12),
-    ...(active.some(s => !FORECAST_NATIVE_FREQUENCIES.some(cadence => ['POINT_IN_TIME', 'END_OF_PERIOD', 'PERIOD_AVERAGE'].some(basis => methodFor(s, cadence, basis as CciNodeBasis, createCalendarTargetPeriod(purchaseDay, cadence)))))
+    ...(!compatibleMethods
       ? [smartIssue('UNAPPROVED_AGGREGATION', input.locale)] : [])]
   return { preparation: { ...prep, candidates: allCandidates, recommendedCandidateId: recommended?.id ?? null,
     state: recommended?.mode ?? 'NO_QUALIFIED_REFERENCE', issues }, contexts }

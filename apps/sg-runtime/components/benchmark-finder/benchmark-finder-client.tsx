@@ -1,6 +1,7 @@
 'use client'
 
 import {PriceChangeIndexLayer} from '../price-change-index/price-change-index-layer'
+import {BenchmarkQualificationFilter,matchesQualification,type QualificationFilter} from '../benchmark-picker/benchmark-qualification-filter'
 import {BenchmarkQualification} from '../benchmark-picker/benchmark-qualification'
 import {FinderGlyph} from './visual/benchmark-presentation'
 import {CanonDropdown} from './visual/magicpath/CanonDropdown'
@@ -967,6 +968,7 @@ export function BenchmarkFinderClient({
   const [mode, setMode] = useState<DiscoveryMode>(initialLocaleSwitchSnapshot?.mode ?? initialMode ?? (initialAiPrompt.trim() ? 'ai' : 'search'))
   const [searchSurfaceMode, setSearchSurfaceMode] = useState<SearchSurfaceMode>(initialLocaleSwitchSnapshot?.searchSurfaceMode ?? 'simple')
   const [onlyForecast,setOnlyForecast]=useState(false)
+  const [pciFilter,setPciFilter]=useState<QualificationFilter>('ALL')
   const [resultSort,setResultSort]=useState('relevance')
   const [query, setQuery] = useState(initialLocaleSwitchSnapshot?.query ?? initialSearchQuery)
   const [exactSeriesId, setExactSeriesId] = useState(initialLocaleSwitchSnapshot?.exactSeriesId ?? '')
@@ -2105,7 +2107,7 @@ export function BenchmarkFinderClient({
     }
   }, [hasSearched, previewStates, visibleResults])
 
-  const presentedResults = visibleResults.filter(candidate=>!onlyForecast||PORR_DEMO_FORECAST_BENCHMARKS.some(item=>item.seriesId===candidate.providerSeries.providerSeriesId)||previewStates[candidate.providerSeries.providerSeriesId]?.analyticsEligibility.forecastPortfolioEnabled).sort((a,b)=>resultSort==='name'?a.displayName.localeCompare(b.displayName,locale):0)
+  const presentedResults = visibleResults.filter(candidate=>matchesQualification(enrichedCandidates[candidate.providerSeries.providerSeriesId]??candidate,pciFilter)).filter(candidate=>!onlyForecast||PORR_DEMO_FORECAST_BENCHMARKS.some(item=>item.seriesId===candidate.providerSeries.providerSeriesId)||previewStates[candidate.providerSeries.providerSeriesId]?.analyticsEligibility.forecastPortfolioEnabled).sort((a,b)=>resultSort==='name'?a.displayName.localeCompare(b.displayName,locale):0)
 
   return (
     <BenchmarkPresentation compact={isPickerMode||assistantOwner==='host'}><main className={`bf-page min-h-screen${isPickerMode ? ' bf-visual-picker' : ''}`} data-testid="benchmark-finder-page">
@@ -2456,7 +2458,7 @@ export function BenchmarkFinderClient({
                 {hasSearched ? t('results.count', { count: results.length }) : mode === 'ai' ? t('results.aiSubtitle') : t('results.subtitle')}
               </p>
             </div>
-            <div className="bf-result-tools"><label className="bf-forecast-filter"><input type="checkbox" checked={onlyForecast} onChange={event=>setOnlyForecast(event.target.checked)}/>{locale==='pl'?'Z prognozą':'With forecast'}</label><label className="bf-sort"><span>{locale==='pl'?'Sortuj':'Sort'}</span><CanonDropdown aria-label={locale==='pl'?'Sortowanie wyników':'Sort results'} value={resultSort} onChange={event=>setResultSort(event.target.value)}><option value="relevance">{locale==='pl'?'Dopasowanie':'Relevance'}</option><option value="name">{locale==='pl'?'Nazwa A–Z':'Name A–Z'}</option></CanonDropdown></label>{isSearching&&<span role="status">{t('common.loading')}</span>}</div>
+            <div className="bf-result-tools"><BenchmarkQualificationFilter locale={locale} value={pciFilter} onChange={setPciFilter}/><label className="bf-forecast-filter"><input type="checkbox" checked={onlyForecast} onChange={event=>setOnlyForecast(event.target.checked)}/>{locale==='pl'?'Z prognozą':'With forecast'}</label><label className="bf-sort"><span>{locale==='pl'?'Sortuj':'Sort'}</span><CanonDropdown aria-label={locale==='pl'?'Sortowanie wyników':'Sort results'} value={resultSort} onChange={event=>setResultSort(event.target.value)}><option value="relevance">{locale==='pl'?'Dopasowanie':'Relevance'}</option><option value="name">{locale==='pl'?'Nazwa A–Z':'Name A–Z'}</option></CanonDropdown></label>{isSearching&&<span role="status">{t('common.loading')}</span>}</div>
           </div>
 
           <div ref={resultsRef} className="bf-results-list">
@@ -2471,6 +2473,7 @@ export function BenchmarkFinderClient({
               </div>
             ) : null}
 
+            {hasSearched&&pciFilter!=='ALL'&&<p className="bf-empty-filter" role="status">{locale==='pl'?'Filtr PCI obejmuje wyświetloną część wyników. Pokaż więcej lub wybierz Wszystkie, aby sprawdzić pozostałe.':'The PCI filter covers displayed results. Show more or choose All to inspect the remaining results.'}</p>}
             {hasSearched && !isSearching && results.length > 0 && onlyForecast && presentedResults.length === 0 ? <p className="bf-empty-filter" role="status">{locale === 'pl' ? 'Brak benchmarków z prognozą w wyświetlonej części wyników. Można wyłączyć filtr lub pokazać więcej wyników.' : 'No benchmarks with forecasts in the displayed results. Clear the filter or show more results.'}</p> : null}
             {presentedResults.map((candidate) => {
               const seriesId = candidate.providerSeries.providerSeriesId
