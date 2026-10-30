@@ -4829,6 +4829,7 @@
     "applicationSourceDigests": {
       "../dashboard-preview/package-lock.json": "570ca613dd68ae26579bcda3c8de1158175cc14677ae5fff74c5211d10df37e0",
       "package-lock.json": "9ac3dd6c224c5c8203d923c8cfc79c0d37f9218f71bfc2ef1a0b682840172282",
+      "tests/adp-appshell-consumer.test.tsx": "a7ddab44d35082a336adbc27e6b3450fe597f5b9a3980a1d738d085b0a1c8313",
       "tests/category-operation.test.ts": "f44d20bdd0fc648cf3c9a64e22199f465735232f380a400705e016dba01bafd8",
       "tests/diagnostic-telemetry-adoption.test.mjs": "81a36b3ad8d756a5f253c62cd0968028f17c3994e8c6d2e1e56ea71268667fa0",
       "tests/identity-runtime.test.ts": "8ed504e06d213c0ed026124eb81c2cc405ad9cdb7bc5603b9a1e83fc7ec8cdd8",
