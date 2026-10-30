@@ -22,8 +22,10 @@ const pciCurrent=JSON.parse(read('operation-integration.json')).pciCurrentIntegr
 const pciOriginal=JSON.parse(read('operation-integration.json')).pciReceiptIntegrityCompatibility
 const documentReuse=JSON.parse(read('operation-integration.json')).freshDocumentWriteReuseRecovery
 const recordBound=JSON.parse(read('operation-integration.json')).mgbiRecordResponseBoundRecovery
+const resultCapture=JSON.parse(read('operation-integration.json')).freshResultCaptureRecovery
+const beforeResultCapture=file=>resultCapture?.applicationSourceDigests[file]?execFileSync('git',['show',resultCapture.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
 const bql=JSON.parse(read('operation-integration.json')).bqlPciIntegrityContinuation
-const beforeBql=file=>bql?.applicationSourceDigests[file]||bql?.consumerSourceDigests[file]?execFileSync('git',['show',bql.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const beforeBql=file=>bql?.applicationSourceDigests[file]||bql?.consumerSourceDigests[file]?execFileSync('git',['show',bql.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeResultCapture(file)
 const beforeRecordBound=file=>recordBound?.applicationSourceDigests[file]?execFileSync('git',['show',recordBound.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeBql(file)
 const beforeDocumentReuse=file=>documentReuse?.applicationSourceDigests[file]?execFileSync('git',['show',documentReuse.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRecordBound(file)
 const beforeCurrentPci=file=>pciCurrent?.applicationSourceDigests[file]||pciOriginal?.consumerSourceDigests[file]?execFileSync('git',['show',pciCurrent.mainSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeDocumentReuse(file)
@@ -52,7 +54,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):rural?.applicationSourceDigests[file]?execFileSync('git',['show',rural.authorityBaseSha+':'+posix.normalize('apps/srm/'+file)]):peer?.applicationSourceDigests[file]?execFileSync('git',['show',peer.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fresh.applicationSourceDigests[file]?execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRefinement(file)),digest,'historical '+file)
- for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests,...bql?.applicationSourceDigests,...bql?.consumerSourceDigests}))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests,...bql?.applicationSourceDigests,...bql?.consumerSourceDigests,...resultCapture?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))
@@ -326,6 +328,24 @@ test('final PCI integration preserves both accepted histories and rejects unappr
 
 
 export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
+ if(Object.hasOwn(receipt,'freshResultCaptureRecovery')){
+  const a=receipt.freshResultCaptureRecovery
+  assert.equal(a.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029')
+  assert.equal(a.scope,'REMOVE_UNUSED_RETURN_DATA_DIGESTS_ONLY')
+  assert.equal(a.targetEnvironment,'development');assert.equal(a.platformVersion,'1.32.3')
+  const bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
+  assert.equal(hash(bytes),a.previousReceiptDigest)
+  const {freshResultCaptureRecovery,...preserved}=receipt,prior=JSON.parse(bytes)
+  assert.deepEqual(preserved,prior,'Every existing receipt remains unchanged')
+  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),["scripts/diagnostic-telemetry-adoption.test.mjs","scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-workflow-contract.test.ts","src/server/peer-read-boundary.test.ts","src/server/private-work-json.test.ts","src/server/private-work-json.ts","src/server/supplier-location-geocoding-runtime.test.ts","src/server/supplier-native-work-store.ts"])
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readCurrent(posix.normalize('apps/srm/'+file))),digest,'Current result capture '+file)
+  for(const flag of ['requiredManifestDigestsPreserved','immutableReturnedDataPreserved','currentChecksPreserved'])assert.equal(a[flag],true,flag)
+  for(const flag of ['authorizationChanged','contractsChanged','sqlChanged','providerPolicyChanged','runtimeDeploymentClaimed','livePerformanceThresholdsClaimed'])assert.equal(a[flag],false,flag)
+  const original=file=>Object.hasOwn(a.applicationSourceDigests,posix.relative('apps/srm',file))?readHistorical(a.previousReceiptSourceSha,file):readCurrent(file)
+  assertCurrentPciIntegrity(prior,original,readHistorical)
+  return
+ }
+
  if(Object.hasOwn(receipt,'bqlPciIntegrityContinuation')){
   const a=receipt.bqlPciIntegrityContinuation
   assert.equal(a.taskId,'SRM-BQL-PCI-SOURCE-INTEGRITY-20261030')
@@ -438,4 +458,16 @@ test('current PCI synchronization preserves all histories and rejects receipt, r
   assert.throws(()=>assertCurrentPciIntegrity(receipt,file=>file===path?Buffer.concat([current(file),Buffer.from('\n// intentional integrity fault')]):current(file),historical))
  }
  assert.throws(()=>assertCurrentPciIntegrity(receipt,current,(sha,file)=>Buffer.concat([historical(sha,file),Buffer.from(' ')])))
+})
+
+
+test('unused return digest recovery preserves prior history and refuses source or receipt substitution',()=>{
+ const receipt=JSON.parse(read('operation-integration.json'))
+ const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url))
+ const historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
+ assertCurrentPciIntegrity(receipt,current,historical)
+ for(const mutate of [r=>r.freshResultCaptureRecovery.authorizationChanged=true,r=>r.freshResultCaptureRecovery.requiredManifestDigestsPreserved=false,r=>r.freshResultCaptureRecovery.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),r=>r.freshPerformanceRecovery.platformVersion='0.0.0']){
+  const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
+ }
+ assert.throws(()=>assertCurrentPciIntegrity(receipt,file=>file==='apps/srm/src/server/private-work-json.ts'?Buffer.concat([current(file),Buffer.from(' ')]):current(file),historical))
 })

@@ -1,5 +1,6 @@
 
 import {diagnosticRun} from './diagnostic-trace'
+import {capturePrivateWorkJson} from './private-work-json'
 import { createHash } from 'node:crypto'
 import type { PoolClient } from 'pg'
 import { OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
@@ -113,7 +114,7 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
   if(options.readyCompanyWorkBoundaryDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.readyCompanyWorkBoundaryDigest))return refuse()
   const work=options.work,namedDigest=options.namedInterestBoundaryDigest
   async function run<T>(selection:SupplierNativeWorkSelection,unitId:SupplierNativeWorkUnit,parameters:Json,
-    action:(pool:DatabasePool,client:PoolClient,context:Readonly<OperationContext>)=>Promise<T>,capture:(v:T)=>T=json):Promise<T>{
+    action:(pool:DatabasePool,client:PoolClient,context:Readonly<OperationContext>)=>Promise<T>,capture:(v:T)=>T=capturePrivateWorkJson):Promise<T>{
     let captured:T|undefined,performed=false
     try{
       const result=await work.run(selection,unitId,{version:SUPPLIER_NATIVE_STORE_VERSION,nip:selection.command.nip,parameters},async(context,client)=>{
