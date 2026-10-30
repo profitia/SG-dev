@@ -11,6 +11,7 @@ import { reportAvailability, ReportAvailabilityView, type ReportAvailability, in
 import { supplierNip, inactiveSupplier, type DisplayCard, type ReportState, type SearchResult } from "./report-controller";
 import {SupplierLocations} from './supplier-locations-view';
 import {createSupplierWebRequest} from './supplier-web-request';
+import {observeReportResourceTiming} from './report-performance';
 
 type Scope = FinancialPeriod["scope"];
 export type SupplierReportContext = {
@@ -130,9 +131,11 @@ export function SupplierReport({ state, onFetchKys, onReadMetadata, onRevealPese
     let second=0;
     const first=requestAnimationFrame(()=>{second=requestAnimationFrame(()=>{
       renderedBasicReport.current=timing.traceId;
+      const renderedAt=performance.now();
       console.info(JSON.stringify({event:'srm_diagnostic_client_rendered',schema:'srm.diagnostic-trace/1.0',
         traceId:timing.traceId,lastFragmentId:timing.lastFragmentId,clock:'BROWSER_PERFORMANCE_NOW_NOT_SERVER_CLOCK',
-        startMs:timing.startedAt,endMs:performance.now(),controllerCompleteMs:timing.controllerCompleteMs,
+        startMs:timing.startedAt,endMs:renderedAt,controllerCompleteMs:timing.controllerCompleteMs,
+        network:observeReportResourceTiming(timing.startedAt,timing.controllerCompleteMs,renderedAt),
         completeBasicReport:true,afterCommittedViewAndTwoAnimationFrames:true}));
     })});
     return()=>{cancelAnimationFrame(first);cancelAnimationFrame(second)};

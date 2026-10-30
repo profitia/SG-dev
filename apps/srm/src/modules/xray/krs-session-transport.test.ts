@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createKrsSessionTransport,prepareReport} from './krs-session-transport'
+import './report-performance.test'
 import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
@@ -44,6 +45,24 @@ const sdkBearer=(seconds:number)=>'e30.'+Buffer.from(JSON.stringify({exp:Math.fl
 const readyCompany=()=>Response.json({entityType:'COMPANY',card:{identity:{nip:metadataNip}}})
 const searchBody={method:'POST',body:JSON.stringify({identifier:metadataNip})}
 const readBody={method:'POST',body:JSON.stringify({nip:metadataNip,entityType:'COMPANY'})}
+
+test('server company hint avoids duplicate body consumption and retains current metadata authority',async()=>mainBrowser(async()=>{
+ const current=sdkBearer(60),reads:unknown[]=[],body={entityType:'COMPANY',card:{identity:{nip:metadataNip}},metadata:{nip:metadataNip}};
+ const response=Response.json(body,{headers:{'X-SRM-Prepared-Company':metadataNip}});
+ Object.defineProperty(response,'clone',{value:()=>assert.fail('No second report body reader')});
+ let calls=0;const transport=createKrsSessionTransport(async options=>{reads.push(options);return current},async path=>{
+  calls++;return path==='/api/xray/search'?response:Response.json({error:'Operation unavailable'},{status:403});
+ });
+ assert.equal(await transport('/api/xray/search',searchBody),response);assert.deepEqual(await response.json(),body);
+ const denied=await transport('/api/xray/report-data',readBody);assert.equal(denied.status,403);assert.equal(calls,2);
+ assert.deepEqual(reads,[undefined,undefined]);
+}));
+test('unrelated company hint cannot classify a JDG or avoid ordinary credential refresh',async()=>mainBrowser(async()=>{
+ const reads:unknown[]=[];const transport=createKrsSessionTransport(async options=>{reads.push(options);return sdkBearer(60)},async path=>
+  path==='/api/xray/search'?Response.json({entityType:'JDG',section:{status:'SUCCESS'}},{headers:{'X-SRM-Prepared-Company':otherMetadataNip}}):Response.json({}));
+ const result=await transport('/api/xray/search',searchBody);assert.equal((await result.json()).entityType,'JDG');
+ await transport('/api/xray/report-data',readBody);assert.deepEqual(reads,[undefined,{skipCache:true}]);
+}));
 
 test('main NIP Search and its immediate metadata read use current SDK credentials with independent expiry headroom and no stored authority',async()=>mainBrowser(async()=>{
  const reads:unknown[]=[],headers:Headers[]=[];const current=sdkBearer(60)

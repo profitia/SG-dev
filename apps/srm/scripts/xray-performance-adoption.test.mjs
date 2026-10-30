@@ -14,7 +14,9 @@ const refinement=JSON.parse(read('operation-integration.json')).freshRuntimeRefi
 const settled=JSON.parse(read('operation-integration.json')).settledExternalFailureRecovery
 const clock=JSON.parse(read('operation-integration.json')).sourceLeaseClockRecovery
 const postfetch=JSON.parse(read('operation-integration.json')).freshPostfetchRecovery
-const beforePostfetch=file=>postfetch?.applicationSourceDigests[file]?execFileSync('git',['show',postfetch.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const preparedEvidence=JSON.parse(read('operation-integration.json')).freshPreparedEvidenceRecovery
+const beforePreparedEvidence=file=>preparedEvidence?.applicationSourceDigests[file]?execFileSync('git',['show',preparedEvidence.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const beforePostfetch=file=>postfetch?.applicationSourceDigests[file]?execFileSync('git',['show',postfetch.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforePreparedEvidence(file)
 const beforeClock=file=>clock?.applicationSourceDigests[file]?execFileSync('git',['show',clock.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforePostfetch(file)
 const beforeSettled=file=>settled?.applicationSourceDigests[file]?execFileSync('git',['show',settled.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeClock(file)
 const beforeRefinement=file=>refinement?.applicationSourceDigests[file]?execFileSync('git',['show',refinement.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeSettled(file)
@@ -35,7 +37,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):rural?.applicationSourceDigests[file]?execFileSync('git',['show',rural.authorityBaseSha+':'+posix.normalize('apps/srm/'+file)]):peer?.applicationSourceDigests[file]?execFileSync('git',['show',peer.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fresh.applicationSourceDigests[file]?execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRefinement(file)),digest,'historical '+file)
- for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))
@@ -127,5 +129,16 @@ test('FRESH postfetch adoption preserves exact history, producer and current sec
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
  }
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforePreparedEvidence(file)),digest,file)
 })
+
+test('prepared evidence recovery preserves prior acceptance, current SDK authority and protected source provenance',()=>{
+ const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshPreparedEvidenceRecovery;
+ const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptDigest);
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k);
+ assert.equal(a.platformVersion,'1.32.3');assert.equal(a.sourceArchiveLockPreserved,true);
+ for(const flag of['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
+ assert(Object.keys(a.applicationSourceDigests).length>=9);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(read(file)),digest,file);
+});

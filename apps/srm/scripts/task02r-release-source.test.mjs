@@ -23,7 +23,13 @@ test('the narrow build retains deployed Identity/KRS bytes and only accepts the 
    assert.throws(()=>assembleTask02rSource(root,out),/RELEASE_OVERRIDE_DIGEST_MISMATCH/)
    inputRoot=path.join(temp,'accepted-source')
    execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,inputRoot])
+   // Materialize the complete tested build closure, while retaining all Git
+   // objects and exact byte assertions. Unrelated historical benchmark data
+   // must not exhaust the disk during this disposable fixture's checkout.
+   execFileSync('git',['sparse-checkout','init','--cone'],{cwd:inputRoot})
+   execFileSync('git',['sparse-checkout','set','apps/srm','packages/platform-contracts','packages/srm-xray','packages/maps-contracts','packages/maps-embed'],{cwd:inputRoot})
    execFileSync('git',['checkout','--quiet','--detach',acceptance.preservedBoundedIndicatorSourceSha],{cwd:inputRoot})
+   assert.equal(execFileSync('git',['rev-parse','HEAD'],{cwd:inputRoot,encoding:'utf8'}).trim(),acceptance.preservedBoundedIndicatorSourceSha)
    execFileSync('git',['remote','set-url','origin','https://github.com/profitia/SG-dev.git'],{cwd:inputRoot})
   }
   const receipt=assembleTask02rSource(inputRoot,out),base=receipt.baselineSha

@@ -6498,5 +6498,37 @@
     "structuredFreshWorkUnits": 2,
     "sqlMigration": "029-fresh-postfetch-work.sql",
     "existingRlsPoliciesAndAclUnchanged": true
+  },
+  "freshPreparedEvidenceRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "previousReceiptSourceSha": "5c87c18192b405c907ca5575adc40a4cbb63d074",
+    "previousReceiptDigest": "c951cae6879b7af6a6a1419ac0768c7aab2df0a2a4d7deaf4c3f82695eefdf45",
+    "platformVersion": "1.32.3",
+    "sourceArchiveLockPreserved": true,
+    "serverAuthorityChecksChanged": false,
+    "sourcePoliciesChanged": false,
+    "paidRetriesAdded": false,
+    "uiOrRoutingChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "applicationSourceDigests": {
+      "scripts/native-execution-adoption.test.mjs": "7fb6dfaa7493915b6d8abf5499588db0487c8fc7fc562a69d8670933808e4256",
+      "scripts/rural-location-release.test.mjs": "05b44643eeb4bfde125d0c9cab930a2be132a36c93a770204c08e9ee4af9ad04",
+      "scripts/task02r-release-source.test.mjs": "00d20e4024b6f786ef668db49d293f417e6d2e5297d25601f8041b6d81cc6092",
+      "scripts/xray-performance-adoption.test.mjs": "20cb1bee33acb9bb457f739d79e7616194bad7405d012148efa45260aafc35aa",
+      "scripts/xray-workflow-contract.test.ts": "47f55300181d609dae4cbde47496be382183d22f0fe2063e93f7811e1beb99d4",
+      "src/modules/xray/krs-session-transport.test.ts": "2d2346771bb6b89ee65989e650a32972327fb7a7c7b5b59f3c31e5ab38a29337",
+      "src/modules/xray/krs-session-transport.ts": "eb52130b3ed3760e59806bc4026c5b34bacee10417c5c2201072c6a416feab24",
+      "src/modules/xray/report-performance.test.ts": "4cb3ea8057e23e3fa44c8863aae2d3c523fb85f2bedd26410f5215f4c1749bb4",
+      "src/modules/xray/report-performance.ts": "33ce9d96692cce5deb2f2b79ab903da39c11367b8230af33a9d596a1e55ae0d0",
+      "src/modules/xray/supplier-report.tsx": "bbf13c639aabe52289b473712715315c5cb21129836d256c8147cd70fef3cac8",
+      "src/server/financial-documents.test.ts": "8e3ead591d1abb919287eca479167153aabb1cbc8aeb179841f899daa724f715",
+      "src/server/financial-documents.ts": "fe0478d95fc398a8c343ddee39821f4876dde012e6369007fd075070e9671c80",
+      "src/server/fresh-postfetch-work.test.ts": "9ed33be9a4e92c37cd79135c06fc1d088365bdc7d9d82515ff2bd27c478c9658",
+      "src/server/peer-read-boundary.test.ts": "b7bc68e8416f0faff04c8980878078ec3e1fa6c0c99cb57ce422d6d637310c97",
+      "src/server/supplier-acquisition-http.ts": "0b3db9c298be3aa33d99e935a6c864c8f89887a73b3fa6f36393c3955d1e48b4",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "c198654e22a4c543945c7cc3dcd0896a29abbbc17884701a280e329f8c15d13e",
+      "src/server/supplier-native-work-store.ts": "73550782dcb3724ab3219c38e49c9c7e0d200a41705322408c3cf0b559daacd2"
+    }
   }
 }

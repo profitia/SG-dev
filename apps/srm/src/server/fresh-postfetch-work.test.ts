@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import {mapMgbiGeneralRecords} from './mgbi-general'
 import {mapMgbiFinancialRecords} from './mgbi-financial'
 import {isStructuredFreshCompany} from './supplier-native-work-store'
+import {createSrmSupplierOperationHandler} from './supplier-acquisition-http'
+import type {SrmSupplierApi} from './supplier-api-composition'
 
 const nip='5272443955',krs='0000217580',at='2026-10-30T06:00:00.000Z'
 function fixture(){
@@ -16,6 +18,20 @@ test('only complete identified structured MGBI evidence qualifies for the atomic
  const {g,f}=fixture();assert.equal(isStructuredFreshCompany(nip,g,f),true)
  assert.equal(isStructuredFreshCompany('5260250274',g,f),false)
 })
+test('only an identified main Development company response carries the non-authorizing body-read hint',async()=>{
+ const organization='11111111-1111-4111-8111-111111111111';
+ for(const [origin,returnedNip,expected]of[
+  ['https://srm-development-runtime.onrender.com',nip,nip],
+  ['https://srm-development-runtime.onrender.com','5260250274',null],
+  ['https://srm-staging-runtime.onrender.com',nip,null],
+ ] as const){
+  const api={ready:async()=>({known:true,response:Response.json({identity:{nip:returnedNip},metadata:{nip:returnedNip}})})} as unknown as SrmSupplierApi;
+  const response=await createSrmSupplierOperationHandler('search',api,organization)(new Request(origin+'/api/xray/search',{
+   method:'POST',headers:{origin,'content-type':'application/json','idempotency-key':organization},body:JSON.stringify({identifier:nip})}));
+  assert.equal(response.status,200);assert.equal(response.headers.get('X-SRM-Prepared-Company'),expected);
+  assert.equal(response.headers.get('Cache-Control'),'private, no-store');
+ }
+});
 for(const [label,change] of [
  ['ambiguous identity',(g:any)=>g.errorCode='COMPANY_IDENTITY_AMBIGUOUS'],
  ['provider error',(_g:any,f:any)=>f.errorCode='MGBI_UNAVAILABLE'],

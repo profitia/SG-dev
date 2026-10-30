@@ -79,7 +79,8 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
    // provide already authorized public DTOs, without reintroducing provenance
    // or unmasked personal data to satisfy a legacy TypeScript interface.
    const prepared=api.ready?await api.ready(scope,command.nip):undefined
-   if(prepared?.response){const {metadata,...card}=await prepared.response.json();return Response.json({entityType:'COMPANY',card,metadata},{headers:privateHeaders})}
+   if(prepared?.response){const {metadata,...card}=await prepared.response.json();return Response.json({entityType:'COMPANY',card,metadata},{headers:{...privateHeaders,
+    ...(new URL(request.url).origin==='https://srm-development-runtime.onrender.com'&&card.identity?.nip===command.nip?{'X-SRM-Prepared-Company':command.nip}:{})}})}
    let problem:Response|undefined
    let selection:unknown,registryRoute:unknown,metadata:unknown
    const value=async(r:Response)=>{if(!r.ok){problem=r;throw Error('Supplier API refused')}return r.json()}
@@ -95,7 +96,8 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
    }).catch(error=>{if(problem)return {entityType:'HTTP_FAILURE' as const,response:problem};throw error})
    if(result.entityType==='HTTP_FAILURE')return result.response
    if(result.entityType==='JDG')return Response.json({entityType:'JDG',nip:command.nip,section:result.section},{headers:privateHeaders})
-   if(result.entityType==='COMPANY')return Response.json({entityType:'COMPANY',card:result.card,...(metadata?{metadata}:{}),...(selection?{krsSelection:selection}:{}),...(registryRoute?{registryRoute}:{})},{headers:privateHeaders})
+   if(result.entityType==='COMPANY')return Response.json({entityType:'COMPANY',card:result.card,...(metadata?{metadata}:{}),...(selection?{krsSelection:selection}:{}),...(registryRoute?{registryRoute}:{})},{headers:{...privateHeaders,
+    ...(new URL(request.url).origin==='https://srm-development-runtime.onrender.com'&&!selection&&result.card.identity.nip===command.nip?{'X-SRM-Prepared-Company':command.nip}:{})}})
    return response(result.entityType==='NOT_FOUND'?404:503,result.entityType==='NOT_FOUND'?'Nie znaleziono podmiotu o podanym numerze NIP.':result.unavailableProvider==='CEIDG'?'Baza CEIDG chwilowo niedostępna. Spróbuj później.':'Nie udało się ustalić typu podmiotu. Spróbuj ponownie później.')
   }catch(error){return supplierHttpFailure(error)}
  }
