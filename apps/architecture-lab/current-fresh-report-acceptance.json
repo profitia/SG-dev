@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "1.0",
+  "status": "CANDIDATE_SOURCE_ONLY",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCHITECTURE-FRESH-CONSOLIDATION-CANDIDATE-20261030",
+  "hostConversationId": "01a133c2-c245-77a0-bb6b-33165e2ad80c",
+  "targetEnvironment": "development",
+  "authorityBaseSha": "b964823b7e369aa70c52ffb7b268a6493157092a",
+  "package": {
+    "name": "@profitia/platform-current-fresh-report",
+    "version": "1.0.0",
+    "path": "packages/platform-contracts/current-fresh-report",
+    "peer": "@profitia/platform-contracts@1.32.3"
+  },
+  "contract": {
+    "id": "profitia.current-fresh-report",
+    "version": "1.0.0",
+    "sourceDigest": "79eacef3681bad6c7235856a36695f7aeec5b8f0380f9e78ac1ae9b29ce05175"
+  },
+  "unchanged": {
+    "sdkVersion": "1.32.3",
+    "currentHumanReadVersion": "1.1.0",
+    "currentHumanReadSourceDigest": "ad9c99db147d32a521166cd2956a22cfb56014c66606ee57d665f26b94fb3aac",
+    "privateOperationHostSourceDigest": "63d2e2721f2a7bc2223e90f39192e4933f657a89f91be03c84db7db9958f7a08"
+  },
+  "scope": "One request-bound COMPANY shared report opening: current probe H1/H2, guarded refresh admission with current account/session outcome, unchanged existing Source/Work, then a current final disclosure. No persisted identity or ALLOW cache.",
+  "localNewFamily": {
+    "passed": 68,
+    "failed": 0,
+    "skipped": 0,
+    "postgresqlVersion": "16.14",
+    "publicPackedInstall": "PASS_OFFLINE_NO_CREDENTIALS_OR_SCRIPTS",
+    "esmAndCommonJs": "PASS",
+    "singleCanonicalSdkPeer": "PASS",
+    "strictTypes": "PASS"
+  },
+  "controlledHumanComparison": {
+    "baselineFreshSessionReads": 5,
+    "baselineFreshAccountReads": 5,
+    "candidateFreshSessionReads": 4,
+    "candidateFreshAccountReads": 4,
+    "canonicalSqlCallCount": "UNCHANGED_IN_COMPARABLE_LOCAL_FIXTURE",
+    "readySessionReads": 2,
+    "readyAccountReads": 2,
+    "distinctFreshTransactions": 3,
+    "transactionHeldDuringSourceWork": false,
+    "sourceAndNativeAccountReadsChanged": false,
+    "liveSupplierPerformanceMeasured": false
+  },
+  "requiredConsumerAdoption": {
+    "SRM": "SEPARATE_TASK_AND_EXACT_SHA_DIGEST_ADOPTION_PENDING",
+    "SG2": "ZERO_SOURCE_OR_RECEIPT_DIFF_REQUIRED",
+    "Maps": "UNCHANGED",
+    "Identity": "UNCHANGED"
+  },
+  "sourceDigests": {
+    "current-fresh-report/package.json": "3f91492278432df5cb2cbb4db44f29b8eefc38fa2ea0f4da3b4fe94b531ee026",
+    "current-fresh-report/package-lock.json": "a4aa3080a474d5c7190035e61cdfe0626ce90e9cc7d0a3a05db807b944e5e221",
+    "current-fresh-report/src/current-fresh-report.mjs": "29c8a0fb5d048217afd25a3678c35ff03d0d5a663ba76b338a1e8117875176cb",
+    "current-fresh-report/src/current-fresh-report.d.mts": "2da701f79cb5aaf4447239255a96169b5394f6ddd62713c19b213a240fe39a38",
+    "current-fresh-report/test/current-fresh-report.test.mjs": "e1efb741eb563b6cf48f0e4b9b5174c6c063d2f37ab2c2e9dddb3bbc85d349b2",
+    "current-fresh-report/test/current-fresh-report-postgres.test.mjs": "61f31ddabfa56cd6428a2e90525fa1a40d9471949912a63183c9ebc2ff122a6e",
+    "current-fresh-report/test/types/current-fresh-report.mts": "09c8e9368851254380322d335b203cab89fb8d275268fad9354c5b9e32e9d575"
+  },
+  "cloudSqlInstalled": false,
+  "rolesOrPermissionsChanged": false,
+  "providerAcquisitionsPerformed": false,
+  "productDeploymentPerformed": false,
+  "performanceThresholdsClaimed": false,
+  "localValidation": {
+    "producerAndLaboratory": {
+      "passed": 1654,
+      "failed": 0,
+      "skipped": 0
+    },
+    "governance": {
+      "passed": 119,
+      "failed": 0,
+      "skipped": 0
+    },
+    "newFamily": {
+      "passed": 68,
+      "failed": 0,
+      "skipped": 0
+    },
+    "publicPackageBuild": "PASS",
+    "remoteCi": "REPORTED_SEPARATELY_FOR_EXACT_PR_HEAD"
+  },
+  "sourceGo": {
+    "status": "NOT_GRANTED_CONTROLLED_CI_ADMISSION_PENDING",
+    "trustedMain": "b964823b7e369aa70c52ffb7b268a6493157092a",
+    "reason": "Existing controlled SG2 producer admission does not admit the optional package, laboratory receipt or workflow paths. No policy exception or bypass is part of this task."
+  }
+}
