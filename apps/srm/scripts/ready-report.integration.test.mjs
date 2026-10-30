@@ -24,6 +24,7 @@ import {createSrmSupplierSourceLink} from '../src/server/supplier-source-link.ts
 import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-work-store.ts'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {captureFreshFunctions,freshReportReleasePlan} from './fresh-report-release.mjs'
+import {captureFreshPostfetchFunctions,freshPostfetchReleasePlan} from './fresh-postfetch-release.mjs'
 
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8')
 test('ready report native Source and current HUMAN read preserve complete financial output, tenant history and rollback',t=>supplierBusinessFixture(t,true,async f=>{
@@ -151,7 +152,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
   await t.test('postfetch composition preserves policies, rollback and all tenant data on revocation',async()=>{
    const names=['srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text)','srm.ready_company_work_descriptor()'];
    const inspect=async()=>(await owner.query('SELECT oid::regprocedure::text id,pg_get_functiondef(oid) definition,proacl::text acl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid=ANY($1::regprocedure[]) ORDER BY 1',[names])).rows;
-   const beforeFunctions=await inspect(),policies=(await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' ORDER BY tablename,policyname")).rows;
+   const backup=await captureFreshPostfetchFunctions(owner),beforeFunctions=await inspect(),policies=(await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' ORDER BY tablename,policyname")).rows;
    await assert.rejects(owner.query(own('029-fresh-postfetch-work.sql')),e=>e.code==='42501');
    await controlled(async()=>{await owner.query('SAVEPOINT candidate');await owner.query(own('029-fresh-postfetch-work.sql'));await owner.query('ROLLBACK TO SAVEPOINT candidate');assert.deepEqual(await inspect(),beforeFunctions);await owner.query(own('029-fresh-postfetch-work.sql'))});
    const afterFunctions=await inspect();
@@ -184,7 +185,13 @@ test('ready report native Source and current HUMAN read preserve complete financ
     for(const table of ['msr_sources','msr_projections','catalog_companies'])assert.equal((await c.query('SELECT srm.native_supplier_row($1,$2::uuid,NULL,NULL,NULL,$3,$4,$5) allowed',[table,A,NIP,'financial','WRITE'])).rows[0].allowed,false);
     examined=true;throw Error('isolated row fence rollback');
    }),isOperationDenied);assert(examined);assert.deepEqual(await privateCounts(),stable);
-   await controlled(async()=>{for(const row of beforeFunctions)await owner.query(row.definition);assert.deepEqual(await inspect(),beforeFunctions);await owner.query(own('029-fresh-postfetch-work.sql'));assert.deepEqual(await inspect(),afterFunctions)});
+   const rollback=freshPostfetchReleasePlan({mode:'rollback',sourceSha:'a'.repeat(40),previousSha:'b'.repeat(40),backup});
+   const install=freshPostfetchReleasePlan({mode:'install-bind',sourceSha:'a'.repeat(40),previousSha:'b'.repeat(40),backup});
+   for(const plan of [install,rollback]){
+    assert.equal(plan.statements.filter(s=>s.text.startsWith('UPDATE profitia_')).length,3);
+    assert(plan.statements.findIndex(s=>s.text.startsWith('REVOKE '))>plan.statements.findIndex(s=>s.text.startsWith('UPDATE profitia_ingestion.')));
+   }
+   await controlled(async()=>{for(const stmt of rollback.freshStatements)await owner.query(stmt.text,stmt.values);assert.deepEqual(await inspect(),beforeFunctions);for(const stmt of install.freshStatements)await owner.query(stmt.text,stmt.values);assert.deepEqual(await inspect(),afterFunctions)});
    assert.deepEqual(await privateCounts(),stable);
   });
   await t.test('CEIDG classification uses the report command and native Source without private JDG or company snapshot writes',async()=>{
