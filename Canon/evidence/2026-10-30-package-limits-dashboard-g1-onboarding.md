@@ -46,10 +46,12 @@ No Finder/Picker/PCI/BQL/SRM/X-Ray/provider/FRESH/Identity application or shared
 
 ## Gates, validation and continuation
 
-Canonical initial preflight and registered require-begin: PASS for the seven exact governance paths, clean isolated branch, real host identity and existing ARCHITECTURE PMOS runtime.
+Canonical initial preflight and registered require-begin: PASS for the initial seven exact governance paths, clean isolated branch, real host identity and existing ARCHITECTURE PMOS runtime.
 Registration: `cmvvcon05000013mejvrfua8g`.
 Returned conversation: `pmos-task-v2:57ce789c7825e5b90bae7a486902775dee2c7630d4a4231c6153a453785346d5`.
 
 Required validation includes the new positive/negative routing and preservation tests, existing governance/Identity/KRS and PMOS suites, typechecks, manifest/relative-link/scope checks and exact-head CI. Actual PR/main/continuity outcomes are recorded only after they occur in the PR handoff and final plan report.
 
 After accepted source routing and this phase's canonical closeout, continue implementation and the authorised first Development release under the same owner plan with appropriate phase task identity and exact paths. No fresh owner permission is required merely for that planned transition. No LIVE claim, schema installation, role creation, secret read/configuration or deployment is made by this G1 artifact.
+
+The existing KRS onboarding regression initially assumed that no capability could follow KRS in today's registry. The exact additional test path was preflighted before edit. Its bounded correction validates the immutable accepted KRS checkpoint against its predecessor, then requires every accepted module to remain unchanged in the current list and rejects duplicate capability identities. All KRS routing/activation/ownership checks remain. This extends the declared execution scope to `scripts/governance/krs-registry-routing.test.mjs`; no KRS runtime/provider/source contract changes.
