@@ -21,9 +21,11 @@ const historicalBytes=url=>{
  const relative=path.relative(path.resolve(appRoot,'../..'),fileURLToPath(url)).split(path.sep).join('/')
  const current=readCurrent().pciDatePreparationSourceCompatibility
  const fresh=readCurrent().freshPerformanceRecovery,relativeApp=path.relative(appRoot,fileURLToPath(url)).split(path.sep).join('/')
+ const stabilization=readCurrent().pciLiveAcceptanceStabilization
  if(!current.changedPaths.includes(relative)&&fresh?.applicationSourceDigests[relativeApp])return execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+relative],{cwd:appRoot})
  const consolidated=readCurrent().xraySearchBoundaryConsolidation
  if(!current.changedPaths.includes(relative)&&consolidated?.applicationSourceDigests[relativeApp])return execFileSync('git',['show',consolidated.previousReceiptSourceSha+':'+relative],{cwd:appRoot})
+ if(!current.changedPaths.includes(relative)&&(stabilization?.applicationSourceDigests[relativeApp]||stabilization?.publicUiSourceDigests[relative]))return execFileSync('git',['show',stabilization.previousReceiptSourceSha+':'+relative],{cwd:appRoot})
  return current.changedPaths.includes(relative)?execFileSync('git',['show',current.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):fs.readFileSync(url)
 }
 test('new receiver acceptance is additive, binds the whole closure and retains exact pinned upstreams',()=>{
@@ -121,7 +123,21 @@ test('date preparation renews exact receiver bytes and preserves prior records a
   assert.deepEqual(observed,value,key)
  }
  assert.deepEqual(r.appshellXraySourceCompatibility.applicationSourceDigests,{...before.appshellXraySourceCompatibility.applicationSourceDigests,...current.currentReceiverDigestOverrides})
- for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.xraySearchBoundaryConsolidation?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.freshPerformanceRecovery.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??digest,file)
+ for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.pciLiveAcceptanceStabilization?.publicUiSourceDigests[file]??r.pciLiveAcceptanceStabilization?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.xraySearchBoundaryConsolidation?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.freshPerformanceRecovery.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??digest,file)
  for(const file of current.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',current.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
  for(const flag of ['calculationMethodChanged','identityOrGrantsChanged','productDeploymentPerformed','schemaChanged'])assert.equal(current[flag],false,flag)
+})
+
+// Current receiver additions never rewrite historical source acceptance.
+test('PCI stabilization appends exact current source bindings and keeps every earlier receipt and engine',()=>{
+ const r=readCurrent(),a=r.pciLiveAcceptanceStabilization
+ assert.equal(a.taskId,'SG2-PCI-LIVE-ACCEPTANCE-STABILIZATION-20261030')
+ const bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot})
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ for(const[k,v]of Object.entries(JSON.parse(bytes)))assert.deepEqual(r[k],v,k)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.publicUiSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ for(const file of r.pciDatePreparationSourceCompatibility.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',a.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
+ for(const field of ['serverAuthorizationChanged','grantsChanged','calculationChanged','sourceHistoryChanged','productDeploymentPerformed'])assert.equal(a[field],false,field)
+ assert.equal(a.proofExpiryPreserved,true);assert.equal(a.additionalPaidProviderCalls,0)
 })
