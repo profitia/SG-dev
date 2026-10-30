@@ -687,3 +687,26 @@ test("no hidden calendar proration: DST day and leap-year original anchor remain
   assert.equal(new Date(leap.start).toISOString().slice(0, 10), "2027-02-28");
   assert.equal(new Date(leap.end).toISOString().slice(0, 10), "2028-02-29");
 });
+test("dashboard totals are independent of pagination and retain the signed current operator boundary", async () => {
+  const data = await store.transact(actor(), (s) => s.summary());
+  const counts = (
+    await f.owner.query(
+      "SELECT (SELECT count(*) FROM profitia_limits.packages)::int packages,(SELECT count(*) FROM profitia_limits.package_versions)::int versions",
+    )
+  ).rows[0];
+  assert.equal(Number(data.packages), counts.packages);
+  assert.equal(Number(data.versions), counts.versions);
+  assert.equal(Number(data.products), 2);
+  assert(data.nearestEnds.length <= 5);
+  await assert.rejects(
+    store.transact({ ...actor(), userId: otherId }, (s) => s.summary()),
+    (e) => e.status === 403,
+  );
+  await assert.rejects(
+    f.runtime.query(
+      "SELECT profitia_limits.dashboard($1,$2,'forged','{}','forged')",
+      [actorId, Date.now() + 4000],
+    ),
+    (e) => e.code === "42501",
+  );
+});

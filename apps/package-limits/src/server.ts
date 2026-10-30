@@ -135,9 +135,10 @@ export function createHandler(deps: Dependencies) {
               offset,
               q: (url.searchParams.get("q") ?? "").slice(0, 256),
             });
+            state.summary = await session.summary();
             const ids = [
               ...new Set<string>(
-                state.assignments.map(
+                [...state.assignments, ...state.summary.nearestEnds].map(
                   (a: { organisation_id: string }) => a.organisation_id,
                 ),
               ),
@@ -211,6 +212,7 @@ async function main() {
     ]);
     if (
       l.schemaDigest !== c.limitsDigest ||
+      l.dashboardDigest !== c.dashboardDigest ||
       i.rows[0].d.schemaDigest !== c.identityDigest ||
       l.commandKeyFingerprint !==
         createHash("sha256").update(c.commandKey).digest("hex") ||

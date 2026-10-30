@@ -43,6 +43,7 @@ async function app() {
       transact: async (a, action) => {
         if (a.ordinary) throw new Fault(403, "OPERATOR_REQUIRED");
         return action({
+          summary: async () => ({ nearestEnds: [] }),
           call: async () => {
             calls++;
             return {

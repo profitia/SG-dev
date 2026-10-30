@@ -5,7 +5,13 @@ export function page(c: Config): string {
     publishableKey: c.publishableKey,
     issuer: c.issuer,
     origin: c.origin,
-    localization: plPL,
+    localization: {
+      ...plPL,
+      signIn: {
+        ...plPL.signIn,
+        start: { ...plPL.signIn?.start, subtitle: "Panel operatora Profitii" },
+      },
+    },
   }).replaceAll("<", "\\u003c");
   return (
     '<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Profitia — Pakiety i limity</title><link rel="stylesheet" href="/styles.css"></head><body><div id="app"><main class="welcome"><div class="brand">P<span>Profitia</span></div><h1>Pakiety i limity</h1><p role="status">Przygotowujemy bezpieczne logowanie…</p></main></div><script type="application/json" id="configuration">' +

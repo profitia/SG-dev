@@ -327,15 +327,60 @@ function render() {
             : "") +
     "</div>";
   if (view === "dashboard") {
+    const summary = state.summary;
+    const card = (label: string, value: unknown, note = "") =>
+      '<div class="card"><span class="muted">' +
+      escape(label) +
+      "</span><strong>" +
+      escape(value) +
+      '</strong><p class="small">' +
+      escape(note) +
+      "</p></div>";
     content +=
-      '<div class="cards"><div class="card"><span class="muted">Produkty komercyjne</span><strong>' +
-      state.products.length +
-      '</strong><p class="small">SpendGuru · SRM Standalone</p></div><div class="card"><span class="muted">Pakiety w bieżącym widoku</span><strong>' +
-      state.packages.length +
-      '</strong><p class="small">Wersje robocze i opublikowane</p></div><div class="card"><span class="muted">Przypisania w bieżącym widoku</span><strong>' +
-      state.assignments.length +
-      '</strong><p class="small">Oddzielnie dla każdego produktu</p></div></div>' +
+      '<div class="cards">' +
+      card(
+        "Produkty komercyjne",
+        summary.products,
+        "SpendGuru · SRM Standalone",
+      ) +
+      card(
+        "Pakiety",
+        summary.packages,
+        summary.versions +
+          " wersji · " +
+          summary.publishedVersions +
+          " opublikowanych",
+      ) +
+      card("Organizacje z przypisaniem", summary.organisations) +
+      card(
+        "Aktywne przypisania",
+        summary.activeAssignments,
+        "Oddzielnie dla każdego produktu",
+      ) +
+      card(
+        "Oczekujące przypisania",
+        summary.plannedAssignments,
+        "Rozpoczną się w zapisanym terminie",
+      ) +
+      "</div>" +
       pending +
+      '<section class="panel"><h2>Najbliższe zakończenia okresów</h2>' +
+      table(
+        ["Organizacja", "Produkt i pakiet", "Koniec (wyłącznie)"],
+        summary.nearestEnds.map(
+          (a: Row) =>
+            "<tr><td>" +
+            escape(orgName(a.organisation_id)) +
+            "</td><td>" +
+            escape(productName(a.product_id)) +
+            " · " +
+            escape(a.package_name) +
+            "</td><td>" +
+            escape(dateText(a.end_at)) +
+            "</td></tr>",
+        ),
+      ) +
+      "</section>" +
       '<section class="panel"><h2>Rozpocznij pracę</h2><p>Utwórz pakiet, zdefiniuj funkcjonalności i limity, a następnie opublikuj niezmienną wersję. Przypisz ją istniejącej organizacji na podstawie zatwierdzonej umowy lub danych testowych Development.</p><div class="toolbar">' +
       action("new-package", "Utwórz pakiet", "", true) +
       action("go-assignments", "Przejdź do przypisań") +
@@ -1355,6 +1400,7 @@ async function sessionChanged() {
     window.Clerk.mountSignIn(document.getElementById("sign-in"), {
       routing: "hash",
       withSignUp: false,
+      appearance: { elements: { footerAction: { display: "none" } } },
       forceRedirectUrl: config.origin,
     });
     return;
