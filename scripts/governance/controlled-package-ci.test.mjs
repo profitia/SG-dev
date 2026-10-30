@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -327,6 +327,78 @@ test('FRESH review requires complete API files and repeat metadata before the ex
  for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'817',other,apiFixture(candidate,files,after).request))
  await assert.rejects(resolveCandidateAdmission(context(),'817',other,apiFixture(candidate,files.slice(1)).request))
 })
+const payloadCaptureFiles = () => Object.entries(PAYLOAD_CAPTURE_PRODUCER_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:'added'}))
+const payloadCapturePr = () => ({...architecturePr(10),number:827,head:{...architecturePr().head,ref:PAYLOAD_CAPTURE_PRODUCER_REVIEW.branch,sha:PAYLOAD_CAPTURE_PRODUCER_REVIEW.sourceSha}})
+
+test('payload capture review admits only exact PR827 HEAD and ten immutable added blobs',()=>{
+ const pinned=PAYLOAD_CAPTURE_PRODUCER_REVIEW,files=payloadCaptureFiles(),p=payloadCapturePr()
+ assert(Object.isFrozen(pinned));assert(Object.isFrozen(pinned.blobs));assert.equal(pinned.prNumber,827)
+ assert.equal(pinned.branch,'architecture/payload-capture-source-publication-20261031')
+ assert.equal(pinned.sourceSha,'9d44684b968ca3a067d414f7c450b6016ecc8d19')
+ assert.equal(files.length,10)
+ assert.equal(files.filter(f=>f.filename.startsWith('packages/platform-contracts/payload-capture/')).length,6)
+ assert.equal(files.filter(f=>f.filename.startsWith('apps/architecture-lab/')).length,2)
+ assert.equal(files.filter(f=>f.filename.startsWith('Canon/evidence/')).length,2)
+ assert.equal(selectCandidate(context(),p,pinned.sourceSha,{files}),pinned.sourceSha)
+ assert.equal(selectCandidate(context(),p,pinned.sourceSha,{files:[...files].reverse()}),pinned.sourceSha)
+ for(const patch of [{number:817},{number:828},{number:undefined},{head:{...p.head,ref:'architecture/another-capture'}},
+  {head:{...p.head,sha:other}},{head:{...p.head,sha}}]){
+  const changed={...p,...patch}
+  rejection(()=>selectCandidate(context(),changed,changed.head.sha,{files}))
+ }
+ for(const expected of [undefined,sha,other,'main'])rejection(()=>selectCandidate(context(),p,expected,{files}))
+})
+test('payload capture review refuses each changed, absent, duplicate, modified, removed or renamed file and every extension',()=>{
+ const original=payloadCaptureFiles(),p=payloadCapturePr(),head=p.head.sha
+ for(let i=0;i<original.length;i++){
+  const fewer=original.filter((_,j)=>i!==j)
+  rejection(()=>selectCandidate(context(),{...p,changed_files:fewer.length},head,{files:fewer}))
+  for(const patch of [{sha:'d'.repeat(40)},{sha:'forged'},{status:'modified'},{status:'removed'},{status:'copied'},
+   {status:'renamed',previous_filename:original[i].filename},{previous_filename:original[i].filename}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f)
+   rejection(()=>selectCandidate(context(),p,head,{files}))
+  }
+  const files=original.map((f,j)=>i===j?original[(i+1)%original.length]:f)
+  rejection(()=>selectCandidate(context(),p,head,{files}))
+ }
+ for(const name of ['packages/platform-contracts/payload-capture/src/extra.mjs','packages/platform-contracts/other/package.json',
+  'packages/platform-contracts/src/operation-context.mjs','apps/architecture-lab/test/extra.test.mjs','apps/srm/package.json',
+  'apps/sg-runtime/package.json',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-10-31-extra.md']){
+  const extra={...producerFile(name),status:'added'},files=[...original,extra]
+  rejection(()=>selectCandidate(context(),{...p,changed_files:files.length},head,{files}))
+  const replaced=[...original];replaced[0]=extra
+  rejection(()=>selectCandidate(context(),p,head,{files:replaced}))
+ }
+})
+test('payload capture review preserves trusted owner, main, repository, routing and source classification',()=>{
+ const files=payloadCaptureFiles(),head=PAYLOAD_CAPTURE_PRODUCER_REVIEW.sourceSha
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.repo.full_name='other/SG-dev',
+  p=>p.base.ref='staging',p=>p.base.ref='production',p=>p.state='closed']){
+  const p=payloadCapturePr();edit(p);rejection(()=>selectCandidate(context(),p,head,{files}))
+ }
+ for(const patch of [{actor:'other'},{triggeringActor:'other'},{event:'pull_request_target'},{ref:'refs/heads/architecture/untrusted'},
+  {workflowRef:`${REPOSITORY}/${WORKFLOW}@refs/heads/sg2/untrusted`}])rejection(()=>selectCandidate({...context(),...patch},payloadCapturePr(),head,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const pattern of ['packages/platform-contracts/**','apps/architecture-lab/**','Canon/**'])for(const patch of [
+  {currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){
+   const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes(pattern))
+   assert(surface);Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry))
+   rejection(()=>selectCandidate(context(),payloadCapturePr(),head,{files,repositoryRoot:root}))
+ }}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+test('payload capture review requires complete API pages, repeat metadata and exact-head stability',async()=>{
+ const files=payloadCaptureFiles(),candidate=payloadCapturePr(),head=candidate.head.sha
+ const api=apiFixture(candidate,files),result=await resolveCandidateAdmission(context(),'827',head,api.request)
+ assert.equal(result.sha,head);assert.equal(result.admission.kind,'ARCHITECTURE');assert.deepEqual(result.admission.files,files)
+ assert.deepEqual(api.calls,[`repos/${REPOSITORY}/pulls/827`,`repos/${REPOSITORY}/pulls/827/files?per_page=100&page=1`,`repos/${REPOSITORY}/pulls/827`])
+ for(const after of [{...candidate,head:{...candidate.head,sha:other}},{...candidate,base:{...candidate.base,sha:other}},
+  {...candidate,changed_files:9},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}]){
+  await assert.rejects(resolveCandidateAdmission(context(),'827',head,apiFixture(candidate,files,after).request))
+ }
+ await assert.rejects(resolveCandidateAdmission(context(),'827',head,apiFixture(candidate,files.slice(1)).request))
+ await assert.rejects(resolveCandidateAdmission(context(),'827',head,async endpoint=>{if(endpoint.includes('/files?'))throw Error('unavailable');return {data:structuredClone(candidate)}}))
+})
+
 const adpReviewFiles = () => Object.entries(ADP_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:'modified'}))
 const adpReviewPr = () => ({...architecturePr(5),number:ADP_GOVERNANCE_REVIEW.prNumber,head:{...architecturePr().head,ref:ADP_GOVERNANCE_REVIEW.branch}})
 
