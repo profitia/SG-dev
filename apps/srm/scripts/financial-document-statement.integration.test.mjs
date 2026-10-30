@@ -13,7 +13,7 @@ import {captureFinancialDocumentPolicies,documentStatementPolicyPlan} from './fi
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context';
 const ident=x=>'\"'+x.replaceAll('\"','\"\"')+'\"';
 const selectedPolicies=['inspected_update_fence','native_work_insert','native_work_read','native_work_update','private_operation_fence'];
-test('financial document statement guard preserves same-NIP tenant isolation, Source writes and original fallback',t=>supplierBusinessFixture(t,true,async f=>{
+test('ready report document statement guard preserves same-NIP tenant isolation, Source writes and original fallback',t=>supplierBusinessFixture(t,true,async f=>{
  const {owner,controlled,own,core,hash,A,B,NIP}=f;
  await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner');try{await owner.query('GRANT EXECUTE ON FUNCTION profitia_srm_catalog.valid_shape(jsonb,jsonb,jsonb,integer),profitia_srm_catalog.unique_keys(json,integer),profitia_srm_catalog.immutable() TO profitia_access_owner');await owner.query('COMMIT')}catch(e){await owner.query('ROLLBACK');throw e}
  await controlled(async()=>{
