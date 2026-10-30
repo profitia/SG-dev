@@ -6950,13 +6950,13 @@
     "scope": "CURRENT_FRESH_HUMAN_BOUNDARY_COMPOSITION_ONLY",
     "targetEnvironment": "development",
     "platformVersion": "1.32.3",
-    "previousReceiptSourceSha": "f74669342904d03beaf9577618c634f98b442849",
+    "previousReceiptSourceSha": "0d7f0d7131ea340d230822d344aab5b65e6098ec",
     "previousReceiptDigest": "3cbe91dd25e5ac4b8bfd65df854138db480cfe6e32634f87ba85c663ff369929",
     "producer": {
       "projectKey": "ARCHITECTURE",
       "pullRequest": 817,
-      "sourceSha": "9f23dc13902f942c31fe7d86ba5bf7bc2e9c6363",
-      "sourceGo": false
+      "sourceSha": "e5e70c956a2d75ee918e1d1088712406e33fd0eb",
+      "sourceGo": true
     },
     "optionalPackage": {
       "name": "@profitia/platform-current-fresh-report",
@@ -6968,7 +6968,7 @@
       "version": "1.0.0"
     },
     "applicationSourceDigests": {
-      "package-lock.json": "c3beb370fd87ff5d177100b6f1d093c4cfe38e5255e52c59beefe78a9edc18e2",
+      "package-lock.json": "83588b7c7b9cfdcabb422819f6d4e09107688050bef564a44dcdfd682fbe519d",
       "package.json": "c018f5c1b18438e0b3a45d9d668e08a2fd6db6d99f89db3cc7b3eebc9edba31d",
       "scripts/native-execution-adoption.test.mjs": "82cecdb3d249073dd719cdf92e2636df292773070c9173a8ea0a89406b68beae",
       "scripts/ready-report.integration.test.mjs": "f8b09ade980b8df73e1518f37d8da19e4e7cfd587989ea349553977dd75baa5e",
