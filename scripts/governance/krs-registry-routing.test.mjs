@@ -112,9 +112,16 @@ test('active onboarding preserves physical resources and earlier planned modules
  const p='Canon/registries/architecture-onboarding-v1.json',now=JSON.parse(fs.readFileSync(path.join(root,p),'utf8'))
  const before=JSON.parse(execFileSync('git',['show',`${evidence.authoritySha}:${p}`],{cwd:root,encoding:'utf8'}))
  const {plannedModules:oldModules,...oldPhysical}=before,{plannedModules,...physical}=now
- assert.deepEqual(physical,oldPhysical);assert.deepEqual(plannedModules.slice(0,oldModules.length),oldModules)
- assert.equal(plannedModules.length,oldModules.length+1)
- const k=plannedModules.at(-1)
+ // Check the immutable KRS acceptance against its actual predecessor. Current
+ // approved capabilities may extend the list, but cannot rewrite accepted rows.
+ const accepted=JSON.parse(execFileSync('git',['show',`${g1Checkpoint}:${p}`],{cwd:root,encoding:'utf8'}))
+ const {plannedModules:acceptedModules,...acceptedPhysical}=accepted
+ assert.deepEqual(acceptedPhysical,oldPhysical);assert.deepEqual(physical,acceptedPhysical)
+ assert.deepEqual(acceptedModules.slice(0,oldModules.length),oldModules)
+ assert.equal(acceptedModules.length,oldModules.length+1)
+ for(const module of acceptedModules)assert.deepEqual(plannedModules.find(m=>m.capability===module.capability),module)
+ assert.equal(new Set(plannedModules.map(m=>m.capability)).size,plannedModules.length)
+ const k=acceptedModules.at(-1)
  assert.equal(k.capability,'KRS Registry');assert.equal(k.owner,'Architecture Platform');assert.equal(k.projectKey,'ARCHITECTURE')
  assert.equal(k.pathPattern,'apps/krs-registry-runtime/**');assert.equal(k.contractsPath,'packages/krs-registry-contracts/**');assert.equal(k.ciPath,targets[2]);assert.deepEqual(k.approval,evidence.approval)
  assert.equal(k.runtimeCreated,false);assert.equal(k.plannedRender.serviceId,null);assert.equal(k.plannedRender.createOrDeployAuthorized,false);assert.equal(k.catalogStorage.projectId,null)
