@@ -6,7 +6,7 @@ import {randomUUID,randomBytes,createHash} from 'node:crypto'
 import {createRequire} from 'node:module'
 import {assertIsolatedTestConnection} from '../src/operation-postgres-fixture.mjs'
 import {createPlatformIngestionHost} from '../../../packages/platform-contracts/src/platform-ingestion.mjs'
-import {createExternalCallHost,externalCallEvidence,externalNativeResponse,nativeExternalTransportSchemaDigest,ExternalCallUnavailable} from '../../../packages/platform-contracts/src/external-call.mjs'
+import {createExternalCallHost,externalCallEvidence,externalCallFailureEvidence,externalNativeResponse,nativeExternalTransportSchemaDigest,ExternalCallUnavailable} from '../../../packages/platform-contracts/src/external-call.mjs'
 const {Client}=createRequire(import.meta.url)('pg'),DATABASE='external_'+randomUUID().replaceAll('-',''),ROLE='native_external_fixture'
 const SOURCE='native.external.synthetic',RESOURCE='synthetic-query',hash=v=>createHash('sha256').update(v).digest('hex')
 const rootSql=fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/008-platform-ingestion.sql',import.meta.url),'utf8')
@@ -135,6 +135,36 @@ test('ordinary native provider protocol reuses committed source controls and fai
    const n=hits;await assert.rejects(createExternalCallHost(settings).execute(input({path:'/redirect'})),unavailable);assert.equal(hits,n+1)
    const json=await createExternalCallHost(settings).execute(input({path:'/data',method:'POST',body:'{}'}));assert.deepEqual(json,{status:200,body:{value:3}})
    await assert.rejects(createExternalCallHost(settings).execute(input()),unavailable)
+  })
+  await t.test('refused native redirect yields only an original error observation after all three committed controls',async()=>{
+   const i=input({path:'/bad-redirect'}),n=hits,b=await counts();let failure
+   await assert.rejects(host.execute(i),error=>{failure=error;return unavailable(error)})
+   assert.equal(hits,n+1)
+   const observation=externalCallFailureEvidence(failure)
+   assert.deepEqual({...observation,callId:null,attemptEffectId:null,settlementEffectId:null},{
+    contractId:'profitia.external-call.failure-observation',contractVersion:'1.0.0',sourceId:SOURCE,resourceId:RESOURCE,
+    applicationId:'external-source',environment:'development',callId:null,attemptEffectId:null,settlementEffectId:null,
+    status:'UNVERIFIED',reason:'NATIVE_RESPONSE_REJECTED',httpStatus:302,retryAllowed:false,
+   })
+   assert(Object.isFrozen(observation));assert.notEqual(observation.attemptEffectId,observation.settlementEffectId)
+   assert.equal(externalCallFailureEvidence({...failure}),null);assert.equal(externalCallFailureEvidence(JSON.parse(JSON.stringify(observation))),null)
+   assert.equal(externalCallEvidence(failure),null);assert.throws(()=>externalNativeResponse(failure))
+   assert.deepEqual(await counts(),{calls:b.calls+1,admissions:b.admissions+1,transactions:b.transactions+3})
+   const stored=(await owner.query('SELECT status,http_status,response_digest FROM profitia_external_call.calls WHERE call_id=$1',[observation.callId])).rows[0]
+   assert.deepEqual(stored,{status:'UNVERIFIED',http_status:null,response_digest:null})
+   await assert.rejects(host.execute(i),error=>unavailable(error)&&externalCallFailureEvidence(error)===null);assert.equal(hits,n+1)
+   assert(!JSON.stringify(observation).includes('unapproved.example'));assert(!JSON.stringify(failure).includes('302'))
+  })
+  for(const failureKind of ['control','audit','acknowledgement'])await t.test('refused redirect with '+failureKind+' settlement failure never yields an availability observation',async()=>{
+   if(failureKind==='control')auditFailure='SETTLE'
+   if(failureKind==='audit')failAuditPhase='SETTLE'
+   if(failureKind==='acknowledgement')ackLoss='SETTLE'
+   await assert.rejects(host.execute(input({path:'/bad-redirect'})),error=>unavailable(error)&&externalCallFailureEvidence(error)===null)
+  })
+  await t.test('refused redirect with current Source revocation cannot be reclassified as provider availability',async()=>{
+   onResponse=()=>owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED'")
+   try{await assert.rejects(host.execute(input({path:'/bad-redirect'})),error=>unavailable(error)&&externalCallFailureEvidence(error)===null)}
+   finally{await owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE'")}
   })
   await t.test('wrong policy, path, format, role and owner query cannot admit a request',async()=>{
    const n=hits,b=await counts()
