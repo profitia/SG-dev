@@ -8,6 +8,7 @@ import {srmProviderSourcePolicy} from '../src/server/provider-source-transport.t
 import {randomUUID} from 'node:crypto'
 import {supplierBusinessFixture} from './supplier-delegated-business.integration.test.mjs'
 import {withSupplierTelemetry} from '../src/server/supplier-telemetry.ts'
+import {withDiagnosticRequest} from '../src/server/diagnostic-trace.ts'
 import {createSrmNativeCompanyLookup} from '../src/server/supplier-native-company.ts'
 import {createSrmCorporateSourceStore,CORPORATE_PUBLICATION_VERSION} from '../src/server/corporate-source-store.ts'
 import {createSrmReadyCompanyRead} from '../src/server/ready-report-read.ts'
@@ -351,8 +352,11 @@ test('ready report native Source and current HUMAN read preserve complete financ
     corporate:{application,binding:{...sourceOptions.binding,applicationId:application.appId,role:sourceRole,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool,auditPool,
       publicationSchemaDigest:hash(own('004-corporate-source.sql')+own('005-corporate-source-access.sql')+read('../src/server/corporate-source-shape.json')),readyReportSchemaDigest:digest},
     mgbi:{apiKey:'synthetic-native-company-key',authScheme:'raw',source:{...sourceOptions,external,syntheticOrigin},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}})
-   const card=await native.run({requestId:accepted.requestId,organisationId:A,command:accepted.command})
+   let packet;
+   const card=await withDiagnosticRequest('search',undefined,()=>native.run({requestId:accepted.requestId,organisationId:A,command:accepted.command}),{enabled:true,emit:p=>{packet=p}})
    assert.equal(card.identity.nip,selectedNip);assert(card.financial.data)
+   const preparation=packet.rows.filter(row=>row.category==='DOCUMENT_PREPARE'&&row.sqlQueryCalls>0);
+   assert.equal(preparation.length,1);assert.equal(preparation[0].sqlQueryCalls,1,'fresh archive and document rows must come from actual writers without redundant rereads');
    const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[accepted.requestId])).rows.map(r=>r.unit)
    assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_STORE_COMPANY']);assert(!units.includes('SRM_STORE_GENERAL'));assert(!units.includes('SRM_STORE_FINANCIAL'));assert(!units.includes('SRM_RECORD_INTEREST'))
    assert.equal(units.filter(unit=>unit==='SRM_CACHE_READ').length,0,'registration reads the cache once; no cache or indicator reconstruction Work')

@@ -1,4 +1,5 @@
 import {diagnosticRun} from './diagnostic-trace'
+import {takePersistedMgbiArchive,type PersistedMgbiArchive} from './mgbi-archive'
 import { createHash } from "node:crypto";
 import type { FinancialData, SectionEnvelope } from "@profitia/srm-xray";
 import { withOrganization, type DatabasePool } from "./db";
@@ -172,13 +173,12 @@ export async function saveFinancialDocuments(organizationId: string, nip: string
 
 export async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
   documents: readonly FinancialSourceDocument[], archiveChecksum: string | null = null,
-  verifiedProjection?: { version:string; checksum:string }): Promise<{ documents: number; positions: number }> {
+  verifiedProjection?: { version:string; checksum:string },onStored?:(rows:StoredDocument[])=>void): Promise<{ documents: number; positions: number }> {
     if (!documents.length) return {documents:0,positions:0};
     if (new Set(documents.map(d=>d.recordId)).size!==documents.length) throw new Error("Duplicate financial archive document");
     // One statement retains every row's RLS, conflict and quality checks.
     // The caller's existing transaction still owns atomicity and provenance.
-    await client.query(
-      `INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256)
+    const insert=`INSERT INTO srm.financial_source_documents(organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256)
        SELECT $1,$2,d.record_id,d.document_json,d.checksum_sha256,d.mapping_version,$4::text
        FROM jsonb_to_recordset($3::jsonb) AS d(record_id text,document_json jsonb,checksum_sha256 text,mapping_version text)
        ON CONFLICT (organization_id,nip,record_id) DO UPDATE SET
@@ -190,10 +190,15 @@ export async function persistFinancialDocuments(client: DocumentClient, organiza
          OR (EXCLUDED.archive_jsonb_sha256 IS NOT NULL AND srm.financial_source_documents.archive_jsonb_sha256 IS DISTINCT FROM EXCLUDED.archive_jsonb_sha256))
        AND (EXCLUDED.document_json->>'availability' IN ('XML_SUPPORTED','IXBRL_SUPPORTED','XHTML_SUPPORTED') OR srm.financial_source_documents.document_json->>'availability' NOT IN ('XML_SUPPORTED','IXBRL_SUPPORTED','XHTML_SUPPORTED'))
        AND (EXCLUDED.document_json->>'validation' = 'VALID' OR srm.financial_source_documents.document_json->>'validation' <> 'VALID'
-         OR (EXCLUDED.mapping_version=$5::text AND EXCLUDED.checksum_sha256=$6::text))`,
+         OR (EXCLUDED.mapping_version=$5::text AND EXCLUDED.checksum_sha256=$6::text))`;
+    const result=await client.query<StoredDocument>(onStored?`WITH written AS (${insert}
+       RETURNING organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256,
+        document_json::text AS document_text,document_jsonb_sha256)
+       SELECT * FROM written ORDER BY record_id`:insert,
       [organizationId,nip,JSON.stringify(documents.map(document=>({record_id:document.recordId,document_json:document,
         checksum_sha256:document.checksum,mapping_version:document.mappingVersion}))),archiveChecksum,
         verifiedProjection?.version??null,verifiedProjection?.checksum??null]);
+    onStored?.(result.rows);
     return { documents: documents.length, positions: documents.reduce((count, document) => count + document.rows.length, 0) };
 }
 
@@ -202,6 +207,9 @@ type StoredDocument = { organization_id: string; nip: string; record_id: string;
 async function storedDocuments(client: DocumentClient, organizationId: string, nip: string): Promise<StoredDocument[]> {
   const rows = (await client.query<StoredDocument>(
     "SELECT organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256,document_json::text AS document_text,document_jsonb_sha256 FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2 ORDER BY record_id", [organizationId,nip])).rows;
+  return verifyStoredDocuments(rows,organizationId,nip);
+}
+function verifyStoredDocuments(rows:StoredDocument[],organizationId:string,nip:string):StoredDocument[]{
   if (rows.some(r => r.organization_id !== organizationId || r.nip !== nip || r.record_id !== r.document_json?.recordId
       || !hashFormat(r.checksum_sha256) || r.checksum_sha256 !== r.document_json?.checksum || r.mapping_version !== r.document_json?.mappingVersion
       || !hashFormat(r.document_jsonb_sha256) || typeof r.document_text !== "string" || checksum(r.document_text) !== r.document_jsonb_sha256))
@@ -214,9 +222,9 @@ async function storedDocuments(client: DocumentClient, organizationId: string, n
  * actual protected rows (including better-quality preserved projections).
  * The lock and the caller's original COMMIT/outcome remain authoritative. */
 export async function prepareFreshFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
-  pages: unknown[]): Promise<FinancialSourceDocument[]> {
+  pages: unknown[],persistedArchive?:PersistedMgbiArchive): Promise<FinancialSourceDocument[]> {
  return diagnosticRun('DOCUMENT_PREPARE',async()=>{
-  const archive=(await client.query<FinancialArchive & {pages_match:boolean}>(
+  const archive=takePersistedMgbiArchive(persistedArchive,client,pages)??(await client.query<FinancialArchive & {pages_match:boolean}>(
    `SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,
      payload_json->'pages'=$3::jsonb AS pages_match FROM srm.mgbi_source_archives
     WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE`,
@@ -229,8 +237,14 @@ export async function prepareFreshFinancialDocuments(client: DocumentClient, org
   if(ids.some(id=>typeof id!=='string'||!id)||new Set(ids).size!==ids.length
    ||ids.length!==documents.length||documents.some(d=>!ids.includes(d.recordId)))
    throw new Error('Incomplete or ambiguous financial archive inventory');
-  await persistFinancialDocuments(client,organizationId,nip,documents,archive.payload_jsonb_sha256);
-  const stored=await diagnosticRun('DOCUMENT_READ',()=>storedDocuments(client,organizationId,nip));
+  let returned:StoredDocument[]=[];
+  await persistFinancialDocuments(client,organizationId,nip,documents,archive.payload_jsonb_sha256,undefined,rows=>{returned=rows});
+  // RETURNING supplies the actual protected rows, ordered by PostgreSQL as in
+  // the original read. A skipped stable/better-quality row keeps the full read.
+  const complete=returned.length>0&&returned.length===ids.length&&new Set(returned.map(r=>r.record_id)).size===ids.length
+    &&returned.every(r=>ids.includes(r.record_id));
+  const stored=complete?verifyStoredDocuments(returned,organizationId,nip)
+    :await diagnosticRun('DOCUMENT_READ',()=>storedDocuments(client,organizationId,nip));
   const expected=stored.filter(r=>ids.includes(r.record_id));
   if(expected.length!==ids.length||!expected.every(r=>r.archive_jsonb_sha256===archive.payload_jsonb_sha256
    &&(r.mapping_version===FINANCIAL_DOCUMENT_MAPPING_VERSION||['IXBRL_SUPPORTED','XHTML_SUPPORTED'].includes(r.document_json.availability))))

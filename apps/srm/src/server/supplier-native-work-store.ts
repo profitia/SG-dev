@@ -13,7 +13,7 @@ import { FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from './fi
 import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
 import { reprojectFinancialArchive, type FinancialSourceFact } from './mgbi-financial'
-import { saveMgbiArchive } from './mgbi-archive'
+import { saveMgbiArchive,type PersistedMgbiArchive } from './mgbi-archive'
 import { applyFinancialDocumentMetadata, financialRecordsFromPages, prepareFreshFinancialDocuments, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
 import type {MgbiGeneralResult} from './mgbi-general'
 import type {MgbiFinancialResult} from './mgbi-financial'
@@ -326,9 +326,10 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
         // snapshots, facts and attempts share the original tenant transaction.
         // A revoked account at its outcome rolls every one of these back.
         await diagnosticRun('MGBI_GENERAL_ARCHIVE',()=>saveMgbiArchive(selected.organisationId,selected.command.nip,'pl-krs-wp-record',g.rawResponse!.pages,g.rawResponse!.recordCount,g.section.retrievedAt!,selected.requestId,pool))
-        await diagnosticRun('MGBI_FINANCIAL_ARCHIVE',()=>saveMgbiArchive(selected.organisationId,selected.command.nip,'pl-krs-rdf-record',f.rawResponse!.pages,f.rawResponse!.recordCount,f.section.retrievedAt!,selected.requestId,pool))
+        let archive:PersistedMgbiArchive|undefined
+        await diagnosticRun('MGBI_FINANCIAL_ARCHIVE',()=>saveMgbiArchive(selected.organisationId,selected.command.nip,'pl-krs-rdf-record',f.rawResponse!.pages,f.rawResponse!.recordCount,f.section.retrievedAt!,selected.requestId,pool,value=>{archive=value}))
         const documents=await withOrganization(selected.organisationId,actual=>
-          prepareFreshFinancialDocuments(actual,selected.organisationId,selected.command.nip,f.rawResponse!.pages),pool)
+          prepareFreshFinancialDocuments(actual,selected.organisationId,selected.command.nip,f.rawResponse!.pages,archive),pool)
         const sectionWithDocuments=applyFinancialDocumentMetadata(f.section,documents,g.section.data?.registryHistory)
         // The original pages are now durably archived in this transaction.
         // Return only the prepared result needed by Source publication, not

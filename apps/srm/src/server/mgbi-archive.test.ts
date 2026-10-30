@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fetchMgbiPages, saveMgbiArchive } from "./mgbi-archive";
+import { fetchMgbiPages, saveMgbiArchive,takePersistedMgbiArchive } from "./mgbi-archive";
+
+test('serialized or fabricated archive rows cannot mint a once-only writer receipt',()=>{
+ const forged={organization_id:'11111111-1111-4111-8111-111111111111',nip:'5213390341',model:'pl-krs-rdf-record' as const,
+  payload_text:'{}',payload_jsonb_sha256:'a'.repeat(64),record_count:0,pages_match:true};
+ assert.equal(takePersistedMgbiArchive(forged,{query:async()=>({rows:[]})} as never,[]),undefined);
+});
 
 test("collects every page without removing unmapped fields or personal data", async () => {
   const urls: string[] = [];

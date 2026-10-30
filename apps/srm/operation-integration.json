@@ -6740,5 +6740,39 @@
     "businessDataChanged": false,
     "runtimeDeploymentPerformed": false,
     "paidAcquisitionsPerformed": false
+  },
+  "freshDocumentWriteReuseRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "previousReceiptSourceSha": "846a46113d7d0c6caf602c06eb214933347a5191",
+    "previousReceiptDigest": "1496c0d7acb1cd765931076bc97c75eb17b02e12155cff30bb7ee408b39141e5",
+    "platformVersion": "1.32.3",
+    "onceOnlyArchiveRowCapture": true,
+    "actualDocumentRowsReused": true,
+    "betterProjectionFallbackPreserved": true,
+    "boundedProviderResponseObservation": true,
+    "serverAuthorityChecksChanged": false,
+    "sourcePoliciesChanged": false,
+    "paidRetriesAdded": false,
+    "uiOrRoutingChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "applicationSourceDigests": {
+      "scripts/corporate-source.integration.test.mjs": "11a414cded1d42d38f8232baa1eb2011dda7f149aba215cec349db75b0b85121",
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "dcf0aba654765d4bafeb4caaf7557bda0230594891ca9df22ea0b8dbdb3643b5",
+      "scripts/native-execution-adoption.test.mjs": "90c57b6c7a3fe17a0749a6e00fb0283430f170ad7c4b640ada0ea756f470ec11",
+      "scripts/ready-report.integration.test.mjs": "161545525eb49f0a6ab1774e99ce965dd43a8a68c1ce77ff6ec9f6495d096917",
+      "scripts/rural-location-release.test.mjs": "d1874d0bbe57aa447189d9c7017477980192cd4ec37888c65288ba4c7a1d7344",
+      "scripts/xray-performance-adoption.test.mjs": "2d44bc04ebf1f899361f90b5fdf3d99a19125b50156e3c0f47de2c07b2e6fbfa",
+      "scripts/xray-workflow-contract.test.ts": "aea5a44cf32f10e6eb2afbc08bc49d7cec60c064bd930862f9b3cd2d3eaddccc",
+      "src/server/financial-documents.test.ts": "a925abe9a95cb5c125a44af12070c4dd58da1663b462e5ce0e1e888461f78b2c",
+      "src/server/financial-documents.ts": "e4890fba09ef116b3fb623d45197d46e0e084fbccd4a3e21cb8be9165371852f",
+      "src/server/mgbi-archive.test.ts": "ef8400a11e8f0e571a384d7dcd6276ddc573ffafe205eb8350e14b5e8509e909",
+      "src/server/mgbi-archive.ts": "fa01e28bf283e86920c252b2c081c00e0d4ca6cca5a3fa11c08267499a040250",
+      "src/server/peer-read-boundary.test.ts": "fc721a361a86fc4a08e7c28421a50cb86421f00f01c7e422476a91682f04e570",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "c083ed1df7b5028b4a486212d01ee1a18330dfdd6a1af8b0df202fa5e4a5bf53",
+      "src/server/supplier-native-work-store.ts": "bd472d4c2c2e635de545a10b70ae29d1a72f3c86a4ebc461e2007893e4421a46",
+      "src/server/supplier-telemetry.test.ts": "fa7cddd17084ec4263170c1c6edc5f6b495e045949385fbd64b25a198c57005f",
+      "src/server/supplier-telemetry.ts": "de670539055eae41bfc9b2548b1c81e17a0156e30f02369fe503cc9a0ef626d9"
+    }
   }
 }

@@ -1,7 +1,29 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import http from 'node:http'
-import {instrumentSupplierIdentity,measureSupplierStage,measureSupplierWork,withSupplierTelemetry} from './supplier-telemetry'
+import {instrumentSupplierIdentity,measureSupplierStage,measureSupplierWork,withSupplierTelemetry,mgbiResponseBoundary} from './supplier-telemetry'
+import {channel} from 'node:diagnostics_channel'
+
+test('MGBI boundary observation reports only finite response metadata without changing provider results',async()=>{
+ const secret='private-nip-token-header-and-body',request={origin:'https://api.mgbi.pl',path:'/v1/models/pl-krs-rdf-record/records?identifiers.pl_nip='+secret};
+ const response={statusCode:200,headers:[Buffer.from('Content-Length'),Buffer.from('2097152'),Buffer.from('Authorization'),Buffer.from(secret)]};
+ assert.deepEqual(mgbiResponseBoundary({request,response}),{section:'financial',httpStatus:200,declaredLength:'VALID',declaredBytes:2097152});
+ for(const value of ['-1','1, 1','999999999999999999999','infinite'])assert.equal(mgbiResponseBoundary({request,response:{...response,headers:[Buffer.from('content-length'),Buffer.from(value)]}})?.declaredLength,'INVALID');
+ assert.equal(mgbiResponseBoundary({request:{...request,origin:'https://foreign.invalid'},response}),undefined);
+ assert.equal(mgbiResponseBoundary({request:{...request,path:'/v1/models/pl-krs-rdf-record/records/secret/files/main_document_uri'},response}),undefined);
+ const logs:string[]=[],previous=console.info;
+ try{
+  console.info=value=>{logs.push(String(value))};
+  await withSupplierTelemetry('search',async()=>{
+   channel('undici:request:create').publish({request});channel('undici:request:headers').publish({request,response});channel('undici:request:trailers').publish({request});
+   return Response.json({ok:true});
+  });
+  const event=logs.map(s=>JSON.parse(s)).find(x=>x.event==='srm_mgbi_response_boundary');
+  assert(event);assert.equal(event.declaredBytes,2097152);assert.match(event.traceId,/^[a-f0-9-]{36}$/);
+  assert.deepEqual(Object.keys(event).sort(),['event','traceId','section','httpStatus','declaredLength','declaredBytes'].sort());
+  assert(!logs.join().includes(secret));assert(!logs.join().toLowerCase().includes('authorization'));
+ }finally{console.info=previous;}
+});
 
 test('HTTP timing observes a complete real response separately from E1 and never logs request contents',async()=>{
  const logs:string[]=[],previous=console.info;console.info=value=>{logs.push(String(value))}

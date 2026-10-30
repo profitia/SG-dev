@@ -24,9 +24,34 @@ function add(target:Partial<Record<Stage,Metric>>,stage:Stage,ms:number,failed:b
 // Observe Undici's actual HTTP attempt through body completion. No transport
 // is replaced and no URL, headers, payload or credentials enter telemetry.
 const network=new WeakMap<object,{trace:Trace;work?:Work;start:number}>()
+/** Inspect only fixed MGBI record-list responses. Query values, headers,
+ * credentials and content never enter this numeric boundary observation. */
+export function mgbiResponseBoundary(message:unknown){
+ const m=message as {request?:{origin?:unknown;path?:unknown};response?:{statusCode?:unknown;headers?:unknown}}
+ const origin=String(m?.request?.origin)
+ if(!['https://api.mgbi.pl','https://api.mgbi.pl/'].includes(origin)||typeof m.request?.path!=='string')return undefined
+ const path=m.request.path.split('?')[0],section=path==='/v1/models/pl-krs-rdf-record/records'?'financial'
+  :path==='/v1/models/pl-krs-wp-record/records'?'general':undefined
+ if(!section||!Number.isInteger(m.response?.statusCode)||Number(m.response?.statusCode)<100||Number(m.response?.statusCode)>599||!Array.isArray(m.response?.headers))return undefined
+ let declaredBytes:number|null=null,declaredLength:'ABSENT'|'VALID'|'INVALID'='ABSENT'
+ for(let i=0;i<m.response.headers.length;i+=2){
+  const key=m.response.headers[i],value=m.response.headers[i+1]
+  if(!(key instanceof Uint8Array)||!(value instanceof Uint8Array)||Buffer.from(key).toString('latin1').toLowerCase()!=='content-length')continue
+  const text=Buffer.from(value).toString('latin1')
+  if(declaredLength!=='ABSENT'||!/^\d{1,16}$/.test(text)||!Number.isSafeInteger(Number(text)))return {section,httpStatus:Number(m.response.statusCode),declaredLength:'INVALID' as const,declaredBytes:null}
+  declaredLength='VALID';declaredBytes=Number(text)
+ }
+ return {section,httpStatus:Number(m.response.statusCode),declaredLength,declaredBytes}
+}
 channel('undici:request:create').subscribe(message=>{
  const request=(message as {request?:object})?.request,trace=traces.getStore()
  if(request&&trace)network.set(request,{trace,work:units.getStore(),start:performance.now()})
+})
+channel('undici:request:headers').subscribe(message=>{
+ try{
+  const request=(message as {request?:object})?.request,captured=request&&network.get(request),boundary=captured&&mgbiResponseBoundary(message)
+  if(captured&&boundary)console.info(JSON.stringify({event:'srm_mgbi_response_boundary',traceId:captured.trace.traceId,...boundary}))
+ }catch{}
 })
 const finishNetwork=(message:unknown,failed:boolean)=>{
  const request=(message as {request?:object})?.request,captured=request&&network.get(request)
