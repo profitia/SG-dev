@@ -9,6 +9,8 @@ import {
   identityDigest,
   verificationSql,
   verifyInstallation,
+  rolesSql,
+  limitsLoginRolesSql,
 } from "../scripts/install.mjs";
 let f, store;
 const today = new Date().toISOString().slice(0, 10);
@@ -49,6 +51,49 @@ before(async () => {
 });
 after(async () => {
   if (f) await f.close();
+});
+test("installation role plan works as a non-superuser administrator and refuses privileged runtime roles", async () => {
+  const c = await f.owner.connect();
+  const renamed = (s) => s.replaceAll("profitia_limits", "limits_probe");
+  try {
+    await c.query("BEGIN");
+    await c.query(
+      "CREATE ROLE limits_probe_admin NOLOGIN NOSUPERUSER CREATEROLE",
+    );
+    await c.query(
+      "GRANT CREATE ON DATABASE neondb TO limits_probe_admin WITH GRANT OPTION",
+    );
+    await c.query("SET LOCAL ROLE limits_probe_admin");
+    await c.query(renamed(limitsLoginRolesSql));
+    await c.query(renamed(rolesSql));
+    const rows = (
+      await c.query(
+        "SELECT rolname,rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolinherit FROM pg_roles WHERE rolname IN('limits_probe_runtime','limits_probe_migrator')",
+      )
+    ).rows;
+    assert.equal(rows.length, 2);
+    assert(
+      rows.every(
+        (r) =>
+          !r.rolsuper &&
+          !r.rolbypassrls &&
+          !r.rolcreatedb &&
+          !r.rolcreaterole &&
+          !r.rolinherit,
+      ),
+    );
+    await c.query("ROLLBACK");
+    await c.query("BEGIN");
+    await c.query(renamed(limitsLoginRolesSql));
+    await c.query("ALTER ROLE limits_probe_runtime BYPASSRLS");
+    await assert.rejects(
+      c.query(renamed(rolesSql)),
+      /SQL_CREATED_ORDINARY_LOGIN_REQUIRED/,
+    );
+  } finally {
+    await c.query("ROLLBACK");
+    c.release();
+  }
 });
 test("ordinary roles, exact receipts and FORCE RLS; no raw-table or owner escape", async () => {
   const health = await store.health();
