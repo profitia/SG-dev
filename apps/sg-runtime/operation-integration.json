@@ -4946,7 +4946,9 @@
       "tests/self-service-account.test.ts": "a9bd4b17e3cc3e93e957499c1960f09e6a78599609791e924c41f3a387b76651",
       "tests/xray-fresh-performance-adoption.test.mjs": "76ecac7216254869914d7e72552f991d14a687c294152de434adbac9259f1460",
       "tests/xray-gateway.test.ts": "a50b4bfafcf9836e245fc718f4dc20acacbc69fa77709865ab11c87b6788e66d",
-      "../../packages/maps-embed/package.json": "f63d225d5bf087537f5c273c837fa2c131762d00543944a82a9fa8427e58ae15"
+      "../../packages/maps-embed/package.json": "f63d225d5bf087537f5c273c837fa2c131762d00543944a82a9fa8427e58ae15",
+      "../maps-runtime/platform-integration.json": "c2b84411e7eb88276b9472b29062087a4c69f080c6ed7d390ab2000987e867bf",
+      "../maps-runtime/test/embed.test.mjs": "d8d302319f29a915d315f798dee134edac33cc890791e83a0b6d5c9441308806"
     },
     "currentIdentityReadsParallel": true,
     "durableAuthorizationCache": false,
@@ -4958,15 +4960,19 @@
     "uiOrRoutingChanged": false,
     "repositorySourceDigests": {
       "apps/dashboard-preview/package-lock.json": "c3fdfe4f4e7fa2205119050c8f70308bb618d5083e34e1bb01936cbd9650020f",
-      "packages/maps-embed/package.json": "f63d225d5bf087537f5c273c837fa2c131762d00543944a82a9fa8427e58ae15"
+      "packages/maps-embed/package.json": "f63d225d5bf087537f5c273c837fa2c131762d00543944a82a9fa8427e58ae15",
+      "apps/maps-runtime/platform-integration.json": "c2b84411e7eb88276b9472b29062087a4c69f080c6ed7d390ab2000987e867bf",
+      "apps/maps-runtime/test/embed.test.mjs": "d8d302319f29a915d315f798dee134edac33cc890791e83a0b6d5c9441308806"
     },
     "relatedSourceInputs": {
       "projectKey": "SRM",
       "pullRequest": 800,
       "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
-      "sourceSha": "9a076f21e9c9df0d52449514f5d16c3b91804fe3",
+      "sourceSha": "4229a6214b091b2cae8b17af3ef6eeb8fcbc00eb",
       "files": {
-        "packages/maps-embed/package.json": "f63d225d5bf087537f5c273c837fa2c131762d00543944a82a9fa8427e58ae15"
+        "packages/maps-embed/package.json": "f63d225d5bf087537f5c273c837fa2c131762d00543944a82a9fa8427e58ae15",
+        "apps/maps-runtime/platform-integration.json": "c2b84411e7eb88276b9472b29062087a4c69f080c6ed7d390ab2000987e867bf",
+        "apps/maps-runtime/test/embed.test.mjs": "d8d302319f29a915d315f798dee134edac33cc890791e83a0b6d5c9441308806"
       }
     }
   }

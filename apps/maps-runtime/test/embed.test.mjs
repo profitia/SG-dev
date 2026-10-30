@@ -1,5 +1,6 @@
 const latestAcceptance=()=>JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url)));
-const settledAcceptance=()=>{const a=latestAcceptance();return a.sourceLeaseClockCompatibilityOnly?a.previousAcceptance:a}
+const clockAcceptance=()=>{const a=latestAcceptance();return a.currentIdentityParallelCompatibilityOnly?a.previousAcceptance:a}
+const settledAcceptance=()=>{const a=clockAcceptance();return a.sourceLeaseClockCompatibilityOnly?a.previousAcceptance:a}
 const humanReadAcceptance=()=>{const a=settledAcceptance();return a.settledExternalFailureCompatibilityOnly?a.previousAcceptance:a}
 const peerAcceptance=()=>{const a=humanReadAcceptance();return a.currentHumanReadCompatibilityOnly?a.previousAcceptance:a}
 const currentAcceptance=()=>{const a=peerAcceptance();return a.peerOperationCompatibilityOnly?a.previousAcceptance:a}
@@ -182,7 +183,15 @@ test('SDK1.32.1 compatibility preserves Maps history without adopting external f
 })
 
 test('SDK1.32.2 compatibility changes only accepted peer bytes, without a Maps deployment',()=>{
- const a=latestAcceptance();assert.equal(a.platformVersion,'1.32.2');assert.equal(a.sourceLeaseClockCompatibilityOnly,true)
+ const a=clockAcceptance();assert.equal(a.platformVersion,'1.32.2');assert.equal(a.sourceLeaseClockCompatibilityOnly,true)
  assert.equal(a.sourceLeaseClockBehaviorAdopted,false);assert.equal(a.schemaOrPolicyChanged,false);assert.equal(a.runtimeDeploymentClaimed,false)
  assert.deepEqual(a.allowedPeerVersions,[...a.previousAcceptance.allowedPeerVersions,'1.32.2'])
+})
+
+
+test('SDK1.32.3 compatibility retains the Maps deployment and every prior receipt',()=>{
+ const a=latestAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json'])
+ assert.equal(a.platformVersion,'1.32.3');assert.equal(a.previousReceiptSha256,createHash('sha256').update(bytes).digest('hex'));assert.deepEqual(a.previousAcceptance,JSON.parse(bytes))
+ assert.deepEqual(a.allowedPeerVersions,[...a.previousAcceptance.allowedPeerVersions,'1.32.3'])
+ assert.equal(a.currentIdentityParallelCompatibilityOnly,true);assert.equal(a.currentIdentityBehaviorAdopted,false);assert.equal(a.schemaOrPolicyChanged,false);assert.equal(a.runtimeDeploymentClaimed,false)
 })
