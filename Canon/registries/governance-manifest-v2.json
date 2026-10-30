@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.33.0",
+  "manifestVersion": "3.34.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,29 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {
+      "id": "package-limits-development-runbook",
+      "version": "1.0",
+      "path": "Canon/runbooks/package-limits-development-v1.md",
+      "status": "ACTIVE",
+      "loadOrder": 430,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "profitia-package-and-limits-management",
+        "profitia-package-and-limits-customer-lifecycle",
+        "identity-runtime-architecture-and-ownership",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
+        "repository-routing",
+        "architecture-baseline",
+        "architecture-resource-onboarding",
+        "architecture-execution-adapter",
+        "architecture-reporting-runbook"
+      ]
+    },
     {
       "id": "benchmark-qualification-layer-business-and-architecture-canon",
       "version": "1.0",
