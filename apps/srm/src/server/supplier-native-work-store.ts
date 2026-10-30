@@ -20,7 +20,7 @@ import type {MgbiFinancialResult} from './mgbi-financial'
 import {isCompanyReportRestricted} from '@profitia/srm-xray'
 import {isKnownMgbiCompany} from './company-source-policy'
 import { msrStore, type MsrReceipt, type MsrStore } from './msr-repository'
-import type { MsrCandidate } from './msr-financial'
+import { selectMsrCandidates, type MsrCandidate } from './msr-financial'
 import type { MsrOriginal } from './msr-source'
 import type { FinancialData, GeneralCompanyData, SectionEnvelope } from '@profitia/srm-xray'
 
@@ -37,9 +37,11 @@ const capturedDigests=new WeakMap<object,string>()
 const digest=(value:unknown)=>value&&typeof value==='object'
   ?capturedDigests.get(value)??operationPayloadDigest(value as Json):operationPayloadDigest(value as Json)
 
-/** Only complete structured evidence can skip the separate MSR inventory.
- * Unknown/error/IAS results keep the original path; no missing value is proof
- * of a supported financial report. This predicate grants no authority. */
+/** Complete structured evidence with no current MSR candidate can skip the
+ * separate inventory. Use the same filing selection as enrichment: an IAS
+ * attachment or superseded filing is not a current financial statement.
+ * Unknown/error/current MSR results keep their original path. No authority is
+ * granted by this predicate, and all source records remain archived. */
 export function isStructuredFreshCompany(nip:string,g:MgbiGeneralResult,f:MgbiFinancialResult):boolean{
   if(g.errorCode!==null||f.errorCode!==null||!['SUCCESS','PARTIAL'].includes(g.section.status)||f.section.status!=='SUCCESS'
     ||g.section.source.provider!=='MGBI'||f.section.source.provider!=='MGBI'
@@ -53,7 +55,9 @@ export function isStructuredFreshCompany(nip:string,g:MgbiGeneralResult,f:MgbiFi
     if(records.length!==raw.recordCount||records.some(record=>!record||typeof record!=='object'
       ||(record as {identifiers?:{pl_nip?:unknown}}).identifiers?.pl_nip!==nip))return false
   }
-  return !financialRecordsFromPages(f.rawResponse.pages).some(record=>(record as {document?:{is_ias_compliant?:unknown}}).document?.is_ias_compliant===true)
+  const allowedKrs=g.section.data?.registryHistory?.members.map(member=>member.krs)
+    ??(g.section.data?.krs?[g.section.data.krs]:[])
+  return selectMsrCandidates(financialRecordsFromPages(f.rawResponse.pages),nip,allowedKrs).length===0
 }
 function json<T>(value:T):T{
  return diagnosticRun('JSON_CAPTURE',()=>{

@@ -6530,5 +6530,31 @@
       "src/server/supplier-location-geocoding-runtime.test.ts": "c198654e22a4c543945c7cc3dcd0896a29abbbc17884701a280e329f8c15d13e",
       "src/server/supplier-native-work-store.ts": "73550782dcb3724ab3219c38e49c9c7e0d200a41705322408c3cf0b559daacd2"
     }
+  },
+  "freshMsrEligibilityRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "previousReceiptSourceSha": "6da89374fa9a6d3ba830868748fd3172deab891b",
+    "previousReceiptDigest": "230735c01e6a3fca948fb68dac7566ee22ebecf768ee60289fb2c7cd905f83d9",
+    "platformVersion": "1.32.3",
+    "sourceArchiveLockPreserved": true,
+    "originalMsrSelectorReused": true,
+    "currentMsrPathPreserved": true,
+    "historicalAndNonFinancialIasRetained": true,
+    "serverAuthorityChecksChanged": false,
+    "sourcePoliciesChanged": false,
+    "paidRetriesAdded": false,
+    "uiOrRoutingChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "applicationSourceDigests": {
+      "scripts/native-execution-adoption.test.mjs": "2724a8c2eb799f5c7850e19a39886a9ce8056d495bf98fcd1518f1f46b5f8ccc",
+      "scripts/rural-location-release.test.mjs": "ccbd62c50d6d196d8716df5b31e8c002a4aac62fe491e10e47e7f2ba324a5396",
+      "scripts/xray-performance-adoption.test.mjs": "442c5f11aed56e66683a27534ddc3931762c0dbe12a1640fe7017eba1ce61d05",
+      "scripts/xray-workflow-contract.test.ts": "5ac97b6fcaab1bab03b76fca259d5411700ce3e38fe21ebc62ed5a3a0c52d106",
+      "src/server/fresh-postfetch-work.test.ts": "98463553b051e81416ff0fb45a1a4ad38ae1ed36e1a2c3f175b39fa46f0087af",
+      "src/server/peer-read-boundary.test.ts": "85d86f09319c03246aa9193d0a0a7b0c203ca6edc153afde71061ecac00254ba",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "bbf04eee99222ae7cc4d0af9508a962d8ba3ef639dec6dd313327a9ec0dbffda",
+      "src/server/supplier-native-work-store.ts": "766f197505455716c5c7b9dd3132dccfdbadcb7b36c7bbd0f5aa2311e0c9ea87"
+    }
   }
 }
