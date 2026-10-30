@@ -120,7 +120,7 @@ function readSource(input: SmartPciRequest, index: number, selected: readonly Sa
     firstDate: observations[0]?.date.slice(0, 10) ?? null, lastDate: observations.at(-1)?.date.slice(0, 10) ?? null,
     unit: history?.unit ?? benchmark.unit, currency: history?.currency ?? benchmark.currency,
     historyFingerprint: history ? 'raw-history-sha256:' + digest({ provider: history.providerSeries, frequency: history.frequency, historical: history.historical }) : null,
-    expectedObservations: 'UNKNOWN', warnings } }
+    sourceObservations:history?.historical??[],sourceRevision:'UNAVAILABLE',historicalPublicationAvailability:'UNKNOWN',expectedObservations: 'UNKNOWN', warnings } }
 }
 
 function tiles(target: ForecastTargetPeriod, source: CciCadence): boolean {
@@ -187,7 +187,7 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
   const years = [...new Set(sources.flatMap(s => s.observations.map(p => Number(p.date.slice(0, 4)))))].sort((a, b) => b - a)
   const preparationId = 'pci-smart:' + digest({ version: PCI_PREPARATION_METHOD, purchase: input.purchase, organisationId: input.organisationId,
     category: input.category, declarations: input.declarations, olderYear: input.olderYear ?? null, cutoff,
-    sources: sources.map(s => ({ ...s.view, evidence: savedBenchmarkProfile(selected.find(b => b.providerSeries.providerSeriesId === s.view.seriesId)!).evidence })) })
+    sources: sources.map(s => ({ ...s.view, sourceObservations:undefined, evidence: savedBenchmarkProfile(selected.find(b => b.providerSeries.providerSeriesId === s.view.seriesId)!).evidence })) })
   const prep = { ...empty, id: preparationId, components: sources.map(s => s.view), availableYears: years, historicalDiagnostics: diagnostics }
   const globalIssues = active.flatMap(s => s.view.verificationRequired ? [smartIssue('METHODOLOGY_REQUIRED', input.locale, { componentId: s.view.id })]
     : s.issues.filter(i => !i.period))
@@ -246,6 +246,7 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
     || Number(a.quality === 'QUALIFIED_PARTIAL_DISCLOSED') - Number(b.quality === 'QUALIFIED_PARTIAL_DISCLOSED')
     || a.lagDays - b.lagDays || FORECAST_NATIVE_FREQUENCIES.indexOf(a.period.cadence) - FORECAST_NATIVE_FREQUENCIES.indexOf(b.period.cadence)
     || b.period.start.localeCompare(a.period.start) || a.basis.localeCompare(b.basis) || a.id.localeCompare(b.id))
+  if(allCandidates.some(c=>c.mode==='STRICT_PURCHASE_REFERENCE')){for(let i=allCandidates.length-1;i>=0;i--)if(allCandidates[i].mode==='EARLIER_MARKET_PROXY'){contexts.delete(allCandidates[i].id);allCandidates.splice(i,1)}}
   const recommended = allCandidates.find(c => !c.olderExplicitSelection)
   if (recommended) recommended.recommended = true
   // Return all candidates in the bounded requested window; never auto-select older references.

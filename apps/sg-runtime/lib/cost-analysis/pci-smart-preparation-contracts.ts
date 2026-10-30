@@ -47,7 +47,7 @@ export interface SmartComponentView {
   valueKind: 'PRICE_LEVEL' | 'PRICE_INDEX' | null; nativeCadence: CciCadence | null
   periodBasis: CciNodeBasis | null; evidence: readonly string[]; verificationRequired: boolean
   firstDate: string | null; lastDate: string | null; unit: string | null; currency: string | null
-  historyFingerprint: string | null; expectedObservations: 'UNKNOWN'; warnings: readonly SmartIssue[]
+  historyFingerprint: string | null; sourceObservations: readonly {date:string;value:number|null}[]; sourceRevision:'UNAVAILABLE'; historicalPublicationAvailability:'UNKNOWN'; expectedObservations: 'UNKNOWN'; warnings: readonly SmartIssue[]
 }
 export interface SmartPreparedComponent {
   id: string; method: string; methodVersion: typeof PCI_PREPARATION_METHOD

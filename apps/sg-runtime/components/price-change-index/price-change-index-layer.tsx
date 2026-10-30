@@ -64,7 +64,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
   const close=()=>{if(step!=='result'&&dirty.current&&!window.confirm('Odrzucić niezapisane zmiany i wrócić do Benchmark Findera?'))return;onClose()}
   async function analyse(){
     if(qualificationIssue){setError(qualificationIssue);return}
-    if(inflight.current||!request.current)return;const version=generation.current;inflight.current=true;setBusy(true);setError(null);setResult(null)
+    if(inflight.current||!request.current)return;const version=generation.current;inflight.current=true;setBusy(true);setError(null);setResult(null);setMarketResult(null)
     try{
       const response=await request.current(JSON.stringify(pciSmartInput(name,components,purchase,locale,'ANALYSE',{olderYear,reference:preparation.data&&selectedCandidateId?{candidateId:selectedCandidateId,preparationId:preparation.data.id,strictPeriodAccepted,proxyMarketOnlyAccepted}:undefined})))
       if(!active.current||version!==generation.current)return
