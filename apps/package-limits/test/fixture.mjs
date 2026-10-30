@@ -59,13 +59,13 @@ export async function fixture() {
     }
   }
   await owner.query(
-    "CREATE ROLE profitia_limits_runtime LOGIN PASSWORD $pwd$fixture_runtime_only$pwd$",
+    "CREATE ROLE profitia_limits_runtime LOGIN NOINHERIT PASSWORD $pwd$fixture_runtime_only$pwd$",
   );
   await owner.query(
-    "CREATE ROLE profitia_limits_migrator LOGIN PASSWORD $pwd$fixture_migrator_only$pwd$",
+    "CREATE ROLE profitia_limits_migrator LOGIN NOINHERIT PASSWORD $pwd$fixture_migrator_only$pwd$",
   );
   await owner.query(
-    "CREATE ROLE profitia_limits_identity_reader LOGIN PASSWORD $pwd$fixture_reader_only$pwd$",
+    "CREATE ROLE profitia_limits_identity_reader LOGIN NOINHERIT PASSWORD $pwd$fixture_reader_only$pwd$",
   );
   await owner.query(rolesSql);
   const c = await owner.connect();

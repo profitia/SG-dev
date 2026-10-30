@@ -42,22 +42,24 @@ export const identitySql = i.replaceAll(
   "__IDENTITY_SCHEMA_DIGEST__",
   identityDigest,
 );
+// Neon control-plane role creation grants administrative neon_superuser rights.
+// Create these ordinary logins with SQL; passwords are supplied privately later.
+export const limitsLoginRolesSql = `CREATE ROLE profitia_limits_runtime LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+CREATE ROLE profitia_limits_migrator LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;`;
+export const identityLoginRoleSql = `CREATE ROLE profitia_limits_identity_reader LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;`;
 export const rolesSql = String.raw`DO $guard$ BEGIN
  IF current_database()<>'neondb' OR session_user IN('profitia_limits_runtime','profitia_limits_migrator') THEN RAISE EXCEPTION 'CONTROLLED_ADMIN_REQUIRED';END IF;
  IF EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='profitia_limits') OR EXISTS(SELECT 1 FROM pg_roles WHERE rolname='profitia_limits_owner') THEN RAISE EXCEPTION 'EXISTING_INSTALLATION_REQUIRES_VERIFIED_REPLAY';END IF;
 END $guard$;
 CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 CREATE ROLE profitia_limits_owner NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
-ALTER ROLE profitia_limits_runtime NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
-ALTER ROLE profitia_limits_migrator NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
-DO $r$ BEGIN IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='neon_superuser') THEN EXECUTE 'REVOKE neon_superuser FROM profitia_limits_runtime,profitia_limits_migrator';END IF; END $r$;
+DO $r$ BEGIN IF (SELECT count(*) FROM pg_roles WHERE rolname IN('profitia_limits_runtime','profitia_limits_migrator') AND rolcanlogin AND NOT(rolsuper OR rolcreatedb OR rolcreaterole OR rolbypassrls OR rolinherit))<>2 OR EXISTS(SELECT 1 FROM pg_auth_members a JOIN pg_roles r ON r.oid=a.member WHERE r.rolname IN('profitia_limits_runtime','profitia_limits_migrator')) THEN RAISE EXCEPTION 'SQL_CREATED_ORDINARY_LOGIN_REQUIRED';END IF; END $r$;
 GRANT profitia_limits_owner TO profitia_limits_migrator;
 GRANT CREATE ON DATABASE neondb TO profitia_limits_owner;`;
 export const identityPrefix = String.raw`DO $guard$ BEGIN
  IF current_database()<>'platform_private' OR session_user='profitia_limits_identity_reader' OR EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='profitia_limits_identity_read') THEN RAISE EXCEPTION 'EXACT_EMPTY_ADAPTER_REQUIRED';END IF;
 END $guard$;
-ALTER ROLE profitia_limits_identity_reader NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
-DO $r$ BEGIN IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='neon_superuser') THEN EXECUTE 'REVOKE neon_superuser FROM profitia_limits_identity_reader';END IF; END $r$;
+DO $r$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='profitia_limits_identity_reader' AND rolcanlogin AND NOT(rolsuper OR rolcreatedb OR rolcreaterole OR rolbypassrls OR rolinherit)) OR EXISTS(SELECT 1 FROM pg_auth_members a JOIN pg_roles r ON r.oid=a.member WHERE r.rolname='profitia_limits_identity_reader') THEN RAISE EXCEPTION 'SQL_CREATED_ORDINARY_READER_REQUIRED';END IF; END $r$;
 CREATE SCHEMA profitia_limits_identity_read AUTHORIZATION profitia_access_owner;
 SET LOCAL ROLE profitia_access_owner;`;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -83,6 +85,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           limitsDigest,
           identityDigest,
           limits: {
+            loginRolesSql: limitsLoginRolesSql,
             rolesSql,
             migrationSql:
               "SET LOCAL ROLE profitia_limits_owner;\n" +
@@ -94,6 +97,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
             verificationSql: verificationSql("limits"),
           },
           identity: {
+            loginRoleSql: identityLoginRoleSql,
             migrationSql: identityPrefix + "\n" + identitySql,
             verificationSql: verificationSql("identity"),
           },
