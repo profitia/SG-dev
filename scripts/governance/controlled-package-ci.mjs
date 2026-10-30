@@ -112,6 +112,30 @@ function isPinnedLimitsG1Review(files) {
     && files.every(file => Object.hasOwn(LIMITS_G1_GOVERNANCE_REVIEW.blobs, file?.filename ?? '')
       && file?.sha === LIMITS_G1_GOVERNANCE_REVIEW.blobs[file.filename])
 }
+// Necessary formal FRESH producer review. This is one exact artifact, never a
+// generic optional-package/workflow admission or a new SG2 dependency source.
+export const FRESH_REPORT_PRODUCER_REVIEW = Object.freeze({
+  prNumber: 817,
+  branch: 'architecture/fresh-boundary-coordination-20261030',
+  sourceSha: '9f23dc13902f942c31fe7d86ba5bf7bc2e9c6363',
+  blobs: Object.freeze({
+    '.github/workflows/platform-contracts-ci.yml': '0c2e92d0465a81b48ff64e046567c0d4cf4be79a',
+    'Canon/evidence/2026-10-30-current-fresh-report-candidate.md': 'd9bf848cd310550e7d92e3c02c7f694e8bc45dcf',
+    'apps/architecture-lab/current-fresh-report-acceptance.json': 'ebf28e9925db85ac61fbb1deba965b6ca5680a43',
+    'packages/platform-contracts/current-fresh-report/package-lock.json': '23d5286f6391712107533323ba621c054155329a',
+    'packages/platform-contracts/current-fresh-report/package.json': 'dedb0b3d3043d41719185fe00c90044dfeebf729',
+    'packages/platform-contracts/current-fresh-report/src/current-fresh-report.d.mts': '1c3f4ab575747d3c2cd1e8e0f11baf2cf215257c',
+    'packages/platform-contracts/current-fresh-report/src/current-fresh-report.mjs': 'f5b906ce6df118bbcdadd6e1c5f8d379f87bd985',
+    'packages/platform-contracts/current-fresh-report/test/current-fresh-report-postgres.test.mjs': '4768c71455f8682fec55865874a383245b52380b',
+    'packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs': '90fce244085b96d5751714dc3d4781fb1c16459c',
+    'packages/platform-contracts/current-fresh-report/test/types/current-fresh-report.mts': '0340a97ce9a94408d856037349ae161582f70426',
+  }),
+})
+function isPinnedFreshReportReview(files) {
+  return Array.isArray(files) && files.length === Object.keys(FRESH_REPORT_PRODUCER_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(FRESH_REPORT_PRODUCER_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === FRESH_REPORT_PRODUCER_REVIEW.blobs[file.filename])
+}
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -123,7 +147,8 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   const krsReview = files.length === KRS_GOVERNANCE_REVIEW_FILES.length
     && files.every(file => KRS_GOVERNANCE_REVIEW_FILES.includes(file?.filename))
-  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files)
+  const freshReportReview = isPinnedFreshReportReview(files)
+  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -135,7 +160,9 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   if (profile.repository.slug !== REPOSITORY || profile.repository.routingRegistry !== 'Canon/registries/current-architecture-baseline-v1.json') fail('ARCHITECTURE_ROUTING_REJECTED')
   const routing = resolveProjectRouting({profile, targets: [...names], repositoryRoot})
   if (!routing.ok || routing.results.some(r => r.projectBoundaryStatus !== 'ALLOWED' || r.baselineClassification !== 'ALIGNED'
-    || r.currentOwner !== (r.normalizedPath.startsWith('packages/') ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
+    || r.currentOwner !== (r.normalizedPath.startsWith('packages/')
+      || freshReportReview && r.normalizedPath === 'apps/architecture-lab/current-fresh-report-acceptance.json'
+      ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
   if (!closedReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
 }
 
@@ -148,6 +175,8 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
       && (pr.number !== ADP_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== ADP_GOVERNANCE_REVIEW.branch)) fail('ADP_GOVERNANCE_REVIEW_IDENTITY_REJECTED')
     if (isPinnedLimitsG1Review(files)
       && (pr.number !== LIMITS_G1_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== LIMITS_G1_GOVERNANCE_REVIEW.branch)) fail('LIMITS_G1_REVIEW_IDENTITY_REJECTED')
+    if (isPinnedFreshReportReview(files)
+      && (pr.number !== FRESH_REPORT_PRODUCER_REVIEW.prNumber || pr.head.ref !== FRESH_REPORT_PRODUCER_REVIEW.branch)) fail('FRESH_REPORT_REVIEW_IDENTITY_REJECTED')
   }
   return expectedSha
 }
