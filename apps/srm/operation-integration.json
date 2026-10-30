@@ -6774,5 +6774,37 @@
       "src/server/supplier-telemetry.test.ts": "fa7cddd17084ec4263170c1c6edc5f6b495e045949385fbd64b25a198c57005f",
       "src/server/supplier-telemetry.ts": "de670539055eae41bfc9b2548b1c81e17a0156e30f02369fe503cc9a0ef626d9"
     }
+  },
+  "mgbiRecordResponseBoundRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "previousReceiptSourceSha": "850d9831ed321e25a051b982fbb2a52872e2b050",
+    "previousReceiptDigest": "2cfc5c7920647f01674a29840e032d9ebda96f69bd3852e2a609113e4deb80e4",
+    "platformVersion": "1.32.3",
+    "maximumResponseBytes": 2097152,
+    "previousMaximumResponseBytes": 1048576,
+    "mainMGBIOnly": true,
+    "finiteResponseBound": true,
+    "paidQuotaAndLicensingPreserved": true,
+    "sourceHistoryAndCountersPreserved": true,
+    "serverAuthorityChecksChanged": false,
+    "paidRetriesAdded": false,
+    "uiOrRoutingChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "cloudPolicyActivationClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "applicationSourceDigests": {
+      "db/private-store/030-mgbi-record-response-bound.sql": "d1fcf615e324888ea0c3faafb510891a1e1296dd696e7570eb8a382e475af608",
+      "deployment/mgbi-record-response-bound-2026-10-30.json": "fabc9a4e81cd7648bee5633d9c03722e03371bf28a5c4b79191e4f25e0ab8388",
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "8a596813c2947b9fa5e68fb8f9e2eed69a286073312bac4b2dbaf23d981066c7",
+      "scripts/native-execution-adoption.test.mjs": "366c533a6ac1206b10ed87ab8a165c9ded020209f59ed3c2774b41b688434a58",
+      "scripts/rural-location-release.test.mjs": "3f3eae0755b3c5ec2fd9a5ab2886a543f16154229c7bacb3f009c4dec40d4903",
+      "scripts/xray-performance-adoption.test.mjs": "e2eaa1ca3137b5350b915bf68b9c575a374c5dc0b5fe23ae23547d70a1e3638e",
+      "scripts/xray-workflow-contract.test.ts": "45f618c9dde5ac31c130ce12dd4083e5b6e09375f7d91059b3b565af2948c6d2",
+      "src/server/mgbi-response-bound.test.ts": "ff83292ed3c85d4308b8521327c53910e3f3aad2c57ade60a73ed8c9ee22fe70",
+      "src/server/mgbi-response-bound.ts": "5fadef38900814f2dc6106bc75774fb92acc7b54aabba6fd4c61c9f8a558acab",
+      "src/server/peer-read-boundary.test.ts": "489b7fdd61bbf9db7442187205ee79deedfcbf7f9a767eb552eccf67f767f06b",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "da719d58ed70dabd5ab0b2589e021e29e858934496b8a1c1e3ea03cd882d6927",
+      "src/server/supplier-native-runtime.ts": "aa18390961dccd4ad5266935a6f16aaad8a985ec3b73c41e0893666685ac3a96"
+    }
   }
 }

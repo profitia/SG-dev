@@ -21,7 +21,9 @@ const persisted=JSON.parse(read('operation-integration.json')).freshPersistedRes
 const pciCurrent=JSON.parse(read('operation-integration.json')).pciCurrentIntegrationCompatibility
 const pciOriginal=JSON.parse(read('operation-integration.json')).pciReceiptIntegrityCompatibility
 const documentReuse=JSON.parse(read('operation-integration.json')).freshDocumentWriteReuseRecovery
-const beforeDocumentReuse=file=>documentReuse?.applicationSourceDigests[file]?execFileSync('git',['show',documentReuse.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const recordBound=JSON.parse(read('operation-integration.json')).mgbiRecordResponseBoundRecovery
+const beforeRecordBound=file=>recordBound?.applicationSourceDigests[file]?execFileSync('git',['show',recordBound.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const beforeDocumentReuse=file=>documentReuse?.applicationSourceDigests[file]?execFileSync('git',['show',documentReuse.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRecordBound(file)
 const beforeCurrentPci=file=>pciCurrent?.applicationSourceDigests[file]||pciOriginal?.consumerSourceDigests[file]?execFileSync('git',['show',pciCurrent.mainSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeDocumentReuse(file)
 const beforePersisted=file=>persisted?.applicationSourceDigests[file]?execFileSync('git',['show',persisted.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeCurrentPci(file)
 const beforeProjectionCpu=file=>projectionCpu?.applicationSourceDigests[file]?execFileSync('git',['show',projectionCpu.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforePersisted(file)
@@ -48,7 +50,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):rural?.applicationSourceDigests[file]?execFileSync('git',['show',rural.authorityBaseSha+':'+posix.normalize('apps/srm/'+file)]):peer?.applicationSourceDigests[file]?execFileSync('git',['show',peer.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fresh.applicationSourceDigests[file]?execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRefinement(file)),digest,'historical '+file)
- for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))
@@ -201,7 +203,7 @@ test('document writer reuse preserves accepted history, current authority and pr
  for(const flag of ['onceOnlyArchiveRowCapture','actualDocumentRowsReused','betterProjectionFallbackPreserved','boundedProviderResponseObservation'])assert.equal(a[flag],true,flag);
  for(const flag of ['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
  assert(Object.keys(a.applicationSourceDigests).length>=12);
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(read(file)),digest,file);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforeRecordBound(file)),digest,file);
 });
 
 // Previous acceptances remain frozen and independently executable.
@@ -322,6 +324,22 @@ test('final PCI integration preserves both accepted histories and rejects unappr
 
 
 export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
+ if(Object.hasOwn(receipt,'mgbiRecordResponseBoundRecovery')){
+  const a=receipt.mgbiRecordResponseBoundRecovery
+  assert.equal(a.previousReceiptSourceSha,'850d9831ed321e25a051b982fbb2a52872e2b050')
+  const priorBytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
+  assert.equal(hash(priorBytes),a.previousReceiptDigest)
+  const {mgbiRecordResponseBoundRecovery:continuation,...preserved}=receipt;const prior=JSON.parse(priorBytes)
+  assert.deepEqual(preserved,prior,'all prior SRM and PCI acceptances remain unchanged')
+  assert.equal(a.platformVersion,'1.32.3');assert.equal(a.maximumResponseBytes,2097152)
+  for(const flag of ['mainMGBIOnly','finiteResponseBound','paidQuotaAndLicensingPreserved','sourceHistoryAndCountersPreserved'])assert.equal(a[flag],true,flag)
+  for(const flag of ['serverAuthorityChecksChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','cloudPolicyActivationClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag)
+  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),["db/private-store/030-mgbi-record-response-bound.sql","deployment/mgbi-record-response-bound-2026-10-30.json","scripts/diagnostic-telemetry-adoption.test.mjs","scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-workflow-contract.test.ts","src/server/mgbi-response-bound.test.ts","src/server/mgbi-response-bound.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts","src/server/supplier-native-runtime.ts"])
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readCurrent('apps/srm/'+file)),digest,'bounded MGBI current source '+file)
+  const priorCurrent=file=>Object.hasOwn(a.applicationSourceDigests,file.replace(/^apps\/srm\//,''))?readHistorical(a.previousReceiptSourceSha,file):readCurrent(file)
+  assertCurrentPciIntegrity(prior,priorCurrent,readHistorical);return
+ }
+
  if(Object.hasOwn(receipt,'freshDocumentWriteReuseRecovery')){
   const a=receipt.freshDocumentWriteReuseRecovery
   assert.equal(a.previousReceiptSourceSha,'846a46113d7d0c6caf602c06eb214933347a5191')
@@ -373,6 +391,10 @@ test('current PCI synchronization preserves all histories and rejects receipt, r
  const historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
  assertCurrentPciIntegrity(receipt,current,historical)
  const faults=[
+  r=>r.mgbiRecordResponseBoundRecovery.mainMGBIOnly=false,
+  r=>r.mgbiRecordResponseBoundRecovery.maximumResponseBytes=33554432,
+  r=>r.mgbiRecordResponseBoundRecovery.previousReceiptSourceSha='UNAPPROVED',
+  r=>r.mgbiRecordResponseBoundRecovery.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),
   r=>r.freshDocumentWriteReuseRecovery.onceOnlyArchiveRowCapture=false,
   r=>r.freshDocumentWriteReuseRecovery.previousReceiptSourceSha='UNAPPROVED',
   r=>r.freshDocumentWriteReuseRecovery.previousReceiptDigest='0'.repeat(64),

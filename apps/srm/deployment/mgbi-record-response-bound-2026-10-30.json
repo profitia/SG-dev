@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "REVIEW_CANDIDATE_NOT_DEPLOYED",
+  "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+  "environment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "humanRole": "srm_private_development_runtime",
+  "providerRole": "srm_provider_development_source",
+  "policyId": "3892aef8-2616-42f6-9b43-50e3e4d7dbef",
+  "sourceId": "srm.provider.mgbi",
+  "resourceId": "srm-provider:mgbi",
+  "previousMaximumResponseBytes": 1048576,
+  "maximumResponseBytes": 2097152,
+  "capacity": 1000,
+  "quotaMode": "METERED",
+  "licenseFormatsUnchanged": true,
+  "originalBudget": 30,
+  "sourceHistoryAndCountersPreserved": true,
+  "otherProvidersAndEnvironmentsUnchanged": true
+}

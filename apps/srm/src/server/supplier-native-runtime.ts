@@ -11,6 +11,7 @@ import {createSrmSupplierApi} from './supplier-api-composition'
 import {createSrmSupplierSourceRequest} from './supplier-source-request'
 import targets from '../../deployment/supplier-native-targets.json'
 import mgbiPolicy from '../../deployment/mgbi-unmetered-policy.json'
+import {mainMgbiRecordResponseBound} from './mgbi-response-bound'
 import privateTargets from '../../deployment/private-runtime-targets.json'
 type Env=Readonly<Record<string,string|undefined>>
 export type Configuration=Readonly<{base:PrivateConfiguration;configurationVersion:string;jobsUrl:string;providerSourceUrl:string;corporateSourceUrl:string;
@@ -60,6 +61,7 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
  const roles=config.runtimeRoles??targets.runtimeRoles
  const reportAdmission=config.runtimeRoles?reportAdmissionConfiguration():undefined
  const c=config.base,core=targets.coreSchemaDigests,own=targets.businessBoundaryDigests,version=config.configurationVersion
+ const mainRecordBound=config.runtimeRoles?undefined:mainMgbiRecordResponseBound(c.application,c.binding,roles.providerSource,config.companySourcePolicy)
  const human={pool:pools.pool,auditPool:pools.auditPool,clerk:pools.clerk,identity:c.identity,binding:c.binding,module:c.module}
  const app=(operations:typeof c.application.operations)=>({...c.application,configurationVersion:version,operations})
  const ledger={schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],quotaSchemaDigest:operationAcceptance.requestQuotaSourceCompatibility.schemaDigest}
@@ -111,7 +113,8 @@ export function createSrmNativeSupplierRuntime(config:Configuration,pools:Pools)
     ...(config.registryEnvelopeBoundaryDigest?{registryEnvelopeBoundaryDigest:config.registryEnvelopeBoundaryDigest}:{}),
     ...(config.financialInventoryBoundaryDigest?{financialInventoryBoundaryDigest:config.financialInventoryBoundaryDigest}:{}),
     ...(config.readyCompanyWorkBoundaryDigest?{readyCompanyWorkBoundaryDigest:config.readyCompanyWorkBoundaryDigest}:{}),
-    mgbi:{apiKey:config.mgbiKey,authScheme:config.mgbiScheme,source:{...provider,external:{...external,maximumResponseBytes:config.runtimeRoles?mgbiPolicy.maximumInventoryResponseBytes:external.maximumResponseBytes}},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}},
+    mgbi:{apiKey:config.mgbiKey,authScheme:config.mgbiScheme,source:{...provider,external:{...external,maximumResponseBytes:config.runtimeRoles?mgbiPolicy.maximumInventoryResponseBytes:external.maximumResponseBytes,
+     ...(mainRecordBound===undefined?{}:{maximumResponseBytes:mainRecordBound})}},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}},
    read:{...human,application:app(['supplier.report.read']),...(reportAdmission?{reportAdmission}:{})},...(config.readyReportSchemaDigest?{ready:{schemaDigest:config.readyReportSchemaDigest,secret:config.referenceSecret}}:{})},
   companyKys:privateFlow('COMPANY','kys'),jdgKys:privateFlow('JDG','kys'),jdgRegistry:privateFlow('JDG','jdg'),
   web:{company:webFlow('COMPANY'),jdg:webFlow('JDG'),read:{...human,application:app(['supplier.private.read']),webBoundaryDigest:own['012-supplier-web-identity.sql']}},
