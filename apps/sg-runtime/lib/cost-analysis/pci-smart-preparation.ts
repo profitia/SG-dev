@@ -197,6 +197,7 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
   }
   const allCandidates: SmartCandidate[] = []
   let compatibleMethods=false
+  const purchasePeriodIssues:SmartIssue[]=[]
   for (const cadence of FORECAST_NATIVE_FREQUENCIES) {
     for (const basis of ['POINT_IN_TIME', 'END_OF_PERIOD', 'PERIOD_AVERAGE'] as const) {
       const periods: ForecastTargetPeriod[] = []
@@ -213,6 +214,9 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
       if (sources.some((s, i) => s.view.weightPercent > 0 && !methods[i])) continue
       compatibleMethods=true
       const provenance = periods.map(period => ({ period: periodIdentity(period), components: sources.map((s, i) => prepareValue(s, period, basis, methods[i], input.locale)) }))
+      const containing=createCalendarTargetPeriod(purchaseDay,cadence)
+      if(containing.endExclusive.toISOString()>cutoff){for(const source of active)purchasePeriodIssues.push(smartIssue('OPEN_PURCHASE_PERIOD',input.locale,{componentId:source.view.id,period:containing.start.toISOString(),usedInWindow:true}))}
+      else{const atPurchase=provenance.find(p=>p.period.start===containing.start.toISOString());for(const part of atPurchase?.components??[])purchasePeriodIssues.push(...part.issues)}
       const nodes: CciAlignedNode[] = provenance.map(n => ({ period: n.period,
         status: n.components.every((p, i) => sources[i].view.weightPercent === 0 || p.value !== null && p.quality !== 'INSUFFICIENT') ? 'COMPLETE' : 'INCOMPLETE',
         components: n.components.map((p, i) => ({ componentId: p.id, weightPercent: sources[i].view.weightPercent,
@@ -250,8 +254,10 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
   const recommended = allCandidates.find(c => !c.olderExplicitSelection)
   if (recommended) recommended.recommended = true
   // Return all candidates in the bounded requested window; never auto-select older references.
-  const issues = allCandidates.length ? [] : [smartIssue('NO_QUALIFIED_REFERENCE', input.locale),
-    ...diagnostics.filter(i => i.usedInWindow).slice(0, 12),
+  const strictAvailable=allCandidates.some(c=>c.mode==='STRICT_PURCHASE_REFERENCE')
+  const purchaseIssues=[...new Map(purchasePeriodIssues.map(i=>[JSON.stringify([i.code,i.componentId,i.period]),i])).values()].slice(0,12)
+  const issues = allCandidates.length ? strictAvailable?[]:purchaseIssues : [smartIssue('NO_QUALIFIED_REFERENCE', input.locale),
+    ...purchaseIssues,...diagnostics.filter(i => i.usedInWindow).slice(0, 12),
     ...(!compatibleMethods
       ? [smartIssue('UNAPPROVED_AGGREGATION', input.locale)] : [])]
   return { preparation: { ...prep, candidates: allCandidates, recommendedCandidateId: recommended?.id ?? null,

@@ -173,3 +173,10 @@ test('verified declaration cannot relabel an explicit monthly average as EOP',()
  const f=fixture();cadence(f,0,'Monthly','Average');cadence(f,1,'Monthly','Average');f.input.declarations[0].periodBasis='END_OF_PERIOD';f.input.declarations[0].verified=true
  const p=prepareSmartPci(f.input,f.selected,f.histories,now).preparation;assert.equal(p.state,'VERIFICATION_REQUIRED');assert.equal(p.candidates.length,0)
 })
+
+test('proxy explains the unavailable purchase period separately for each component without disqualifying its valid base',()=>{
+ const f=fixture();f.input.purchase.purchaseDate='2026-10-22';cadence(f,0,'Monthly','Average');cadence(f,1,'Monthly','Average')
+ const p=prepareSmartPci(f.input,f.selected,f.histories,now).preparation;assert.equal(p.state,'EARLIER_MARKET_PROXY')
+ assert.deepEqual(p.issues.filter(i=>i.code==='OPEN_PURCHASE_PERIOD').map(i=>i.componentId).sort(),['series-0','series-1'])
+ assert(p.issues.every(i=>i.period==='2026-10-01T00:00:00.000Z'));assert.equal(run(f).status,'PROXY_MARKET_ONLY')
+})
