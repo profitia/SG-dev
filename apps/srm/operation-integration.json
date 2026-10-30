@@ -6513,7 +6513,9 @@
     "performanceThresholdsClaimed": false,
     "applicationSourceDigests": {
       "scripts/native-execution-adoption.test.mjs": "7fb6dfaa7493915b6d8abf5499588db0487c8fc7fc562a69d8670933808e4256",
+      "scripts/task02r-release-source.test.mjs": "00d20e4024b6f786ef668db49d293f417e6d2e5297d25601f8041b6d81cc6092",
       "scripts/xray-performance-adoption.test.mjs": "20cb1bee33acb9bb457f739d79e7616194bad7405d012148efa45260aafc35aa",
+      "scripts/xray-workflow-contract.test.ts": "47f55300181d609dae4cbde47496be382183d22f0fe2063e93f7811e1beb99d4",
       "src/modules/xray/krs-session-transport.test.ts": "2d2346771bb6b89ee65989e650a32972327fb7a7c7b5b59f3c31e5ab38a29337",
       "src/modules/xray/krs-session-transport.ts": "eb52130b3ed3760e59806bc4026c5b34bacee10417c5c2201072c6a416feab24",
       "src/modules/xray/report-performance.test.ts": "4cb3ea8057e23e3fa44c8863aae2d3c523fb85f2bedd26410f5215f4c1749bb4",
