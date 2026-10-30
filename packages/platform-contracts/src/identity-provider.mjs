@@ -79,7 +79,7 @@ export function createClerkIdentityAuthenticator({ client, application, resolveB
     // A browser cookie alone does not authorize a cross-site mutation. Bearer
     // tokens are verified by the SDK; no custom JWT or cookie protocol lives here.
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !request.headers.has('origin') && !/^Bearer\s+\S+$/i.test(request.headers.get('authorization') ?? '')) return null
-    let state, auth, session, user
+    let state, auth, session, user, userId, sessionId, tokenExpiresAt
     try {
       state = await client.authenticateRequest(identityRequest, { acceptsToken: 'session_token', authorizedParties: config.authorizedParties, clockSkewInMs: 0 })
       if (state?.status !== 'signed-in' || state.isAuthenticated !== true || typeof state.toAuth !== 'function') return null
@@ -88,24 +88,30 @@ export function createClerkIdentityAuthenticator({ client, application, resolveB
       if (auth?.isAuthenticated !== true || auth.tokenType !== 'session_token' || !text(auth.userId) || !text(auth.sessionId) || claims?.iss !== config.issuer || claims.sub !== auth.userId || claims.sid !== auth.sessionId || !config.authorizedParties.includes(claims.azp) || (claims.azp !== origin && !peerReads.some(rule => rule.sourceOrigin === claims.azp)) || claims.act != null || auth.actor != null || !Number.isSafeInteger(claims.exp) || claims.exp * 1000 <= now()) return null
       // JWT signature/expiry alone does not prove that a session or account is
       // still active. Do not cache these authority reads or return stale ALLOW.
-      session = await client.sessions.getSession(auth.sessionId)
-      if (session?.id !== auth.sessionId || session.userId !== auth.userId || session.status !== 'active' || session.actor != null || !Number.isFinite(session.expireAt) || session.expireAt <= now() || !Number.isFinite(session.abandonAt) || session.abandonAt <= now()) return null
-      user = await client.users.getUser(auth.userId)
-      if (!activeClerkUser(user, auth.userId)) return null
+      userId = auth.userId; sessionId = auth.sessionId; tokenExpiresAt = claims.exp * 1000
+      // Independent current observations of the same SDK-verified identity.
+      // Both must finish and validate before resolving any internal binding.
+      // These are fresh provider reads on every authentication, never ALLOW
+      // memoization; the outcome boundary performs its own current reads.
+      ;[session, user] = await Promise.all([
+        client.sessions.getSession(sessionId), client.users.getUser(userId),
+      ])
+      if (session?.id !== sessionId || session.userId !== userId || session.status !== 'active' || session.actor != null || !Number.isFinite(session.expireAt) || session.expireAt <= now() || !Number.isFinite(session.abandonAt) || session.abandonAt <= now()) return null
+      if (!activeClerkUser(user, userId)) return null
     } catch { throw new OperationDenied('POLICY_UNAVAILABLE') }
 
-    const key = Object.freeze({ environment: config.environment, issuer: config.issuer, subject: auth.userId })
+    const key = Object.freeze({ environment: config.environment, issuer: config.issuer, subject: userId })
     let binding
     try { binding = await resolveBinding(key) }
     catch { throw new OperationDenied('POLICY_UNAVAILABLE') }
     const time = now()
     if (!binding || binding.environment !== key.environment || binding.issuer !== key.issuer || binding.subject !== key.subject || binding.status !== 'ACTIVE' || !uuid.test(binding.userId) || !text(binding.version) || !text(binding.sourceRef) || !future(binding.expiresAt, time)) return null
-    const expiry = Math.min(auth.sessionClaims.exp * 1000, session.expireAt, session.abandonAt, Date.parse(binding.expiresAt))
+    const expiry = Math.min(tokenExpiresAt, session.expireAt, session.abandonAt, Date.parse(binding.expiresAt))
     if (expiry <= time) return null
     // The audience is the server binding to this application, not a fabricated
     // JWT aud claim. SDK-verified azp + exact issuer bind its authentication proof.
     return Object.freeze({ kind: 'HUMAN', actorId: binding.userId, userId: binding.userId,
-      proofRef: `clerk-session:${auth.sessionId}:binding:${binding.version}`,
+      proofRef: `clerk-session:${sessionId}:binding:${binding.version}`,
       issuer: config.issuer, audience: config.appId, environment: config.environment, expiresAt: new Date(expiry).toISOString() })
   }
 }

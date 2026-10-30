@@ -125,3 +125,50 @@ test('configuration is pinned and rejects wildcards, credential URLs and release
     const x = fixture(); assert.throws(() => createClerkIdentityAuthenticator({ client: x.client, application: { ...x.app, ...patch }, resolveBinding: x.resolveBinding }))
   }
 })
+
+for (const first of ['session', 'user']) test('current identity reads overlap and require both observations, '+first+' first', async () => {
+  const f = fixture(), releases = {}, started = []
+  for (const kind of ['session', 'user']) {
+    const api = kind === 'session' ? f.client.sessions : f.client.users
+    api[kind === 'session' ? 'getSession' : 'getUser'] = async () => {
+      started.push(kind)
+      return new Promise(resolve => { releases[kind] = () => resolve({...f[kind]}) })
+    }
+  }
+  let finished = false
+  const pending = f.make()(f.request()).then(value => { finished = true; return value })
+  await new Promise(resolve => setImmediate(resolve))
+  assert.deepEqual(started, ['session', 'user']); assert(!f.calls.includes('binding'))
+  releases[first](); await new Promise(resolve => setImmediate(resolve))
+  assert.equal(finished, false); assert(!f.calls.includes('binding'))
+  releases[first === 'session' ? 'user' : 'session']()
+  assert.equal((await pending).actorId, internalUser)
+})
+
+for (const revoked of ['session', 'user']) test('revocation while parallel current identity reads are in flight denies '+revoked, async () => {
+  const f = fixture(); let release
+  f.client.users.getUser = async () => new Promise(resolve => { release = () => resolve({...f.user}) })
+  f.client.sessions.getSession = async () => {
+    await new Promise(resolve => setImmediate(resolve))
+    return {...f.session}
+  }
+  const pending = f.make()(f.request())
+  await new Promise(resolve => setImmediate(resolve))
+  if (revoked === 'session') f.session.status = 'revoked'
+  else f.user.banned = true
+  release()
+  assert.equal(await pending, null); assert(!f.calls.includes('binding'))
+})
+
+test('parallel observations retain the SDK-verified subject, session and expiry across provider awaits', async () => {
+  const f = fixture()
+  f.client.users.getUser = async id => {
+    assert.equal(id, 'user_synthetic')
+    f.auth.userId = 'user_foreign'; f.auth.sessionId = 'sess_foreign'; f.claims.exp += 9999
+    return {...f.user}
+  }
+  const actor = await f.make()(f.request())
+  assert.equal(actor.actorId, internalUser)
+  assert.equal(actor.proofRef, 'clerk-session:sess_synthetic:binding:binding-v1')
+  assert.equal(actor.expiresAt, new Date(time + 60_000).toISOString())
+})
