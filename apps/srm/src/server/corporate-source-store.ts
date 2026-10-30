@@ -171,6 +171,7 @@ export function createSrmCorporateSourceStore(options: {
         // Selector only: SQL still authenticates the actual protected Source
         // publication for each statement. It grants no authority by itself.
         await client.query("SELECT set_config('profitia.srm.catalog.nip',$1,true)",[packet.nip])
+        let inserted: import('./shared-catalog').InsertedCompanyPublication|undefined
         if(retainCurrentCatalog){
           // A one-time READY upgrade consumes the exact retained sections.
           // It never rewrites their hash, provider timestamp or Source proof.
@@ -180,10 +181,10 @@ export function createSrmCorporateSourceStore(options: {
             FROM srm.catalog_companies WHERE nip=$1 FOR SHARE`,
             [packet.nip,JSON.stringify(packet.general),JSON.stringify(packet.financial)])).rows[0]
           if(retained?.matches!==true)return unavailable()
-        }else await measureSupplierStage('CORPORATE_WRITE',()=>writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId }))
+        }else await measureSupplierStage('CORPORATE_WRITE',()=>writeSharedCompany(client, null, packet.nip, { ...packet, generalSnapshotId: effectId, financialSnapshotId: effectId },value=>{inserted=value}))
         let indicators:CalculatedFinancialIndicator[]=[]
-        if (packet.financial.data) await measureSupplierStage('CORPORATE_INDICATORS',()=>writeFinancialIndicators(client, packet.nip, packet.financial.data!,rows=>{indicators=rows}))
-        if(options.readyReportSchemaDigest)prepared=await measureSupplierStage('REPORT_PREPARATION',()=>writeReadyCompanyReport(client,packet.nip,effectId,indicators,documents!,options.readyReportSchemaDigest!))
+        if (packet.financial.data) await measureSupplierStage('CORPORATE_INDICATORS',()=>writeFinancialIndicators(client, packet.nip, packet.financial.data!,rows=>{indicators=rows},inserted))
+        if(options.readyReportSchemaDigest)prepared=await measureSupplierStage('REPORT_PREPARATION',()=>writeReadyCompanyReport(client,packet.nip,effectId,indicators,documents!,options.readyReportSchemaDigest!,inserted))
       })).catch(error=>{
         let cause:unknown=error,timeout=false
         for(let depth=0;depth<8&&cause instanceof Error;depth++){

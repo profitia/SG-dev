@@ -140,7 +140,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   Object.assign(currentDigests,receipt.freshPostfetchRecovery?.applicationSourceDigests);
   Object.assign(currentDigests,receipt.freshPreparedEvidenceRecovery?.applicationSourceDigests);
   Object.assign(currentDigests,receipt.freshMsrEligibilityRecovery?.applicationSourceDigests);
-  Object.assign(currentDigests,receipt.freshProjectionCpuRecovery?.applicationSourceDigests);
+  Object.assign(currentDigests,receipt.freshProjectionCpuRecovery?.applicationSourceDigests,receipt.freshPersistedResultRecovery?.applicationSourceDigests);
   for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

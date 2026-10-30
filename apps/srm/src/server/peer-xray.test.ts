@@ -28,3 +28,20 @@ test('invalid actual response data and private/extra root fields fail closed ins
  for(const value of [{entityType:'COMPANY',card:{...sampleCard,privateData:'secret'}},{...sampleCard},{entityType:'JDG',nip:'0000000000',section:{status:'SUCCESS',data:{entries:'invalid'}}}]){
  const response=await withSrmPeerXRay(async()=>Response.json(value),env)(await signed());assert.equal(response.status,502);assert.equal((await response.json()).error.code,'XRAY_RESPONSE_INVALID');}
 });
+
+test('peer timing measures the complete validated response without retaining credentials or changing logger failures',async()=>{
+ const logs:unknown[]=[];const original=console.info;
+ try{
+  console.info=value=>{logs.push(JSON.parse(value));};
+  const nativeTraceId='22222222-2222-4222-8222-222222222222';
+  const handler=withSrmPeerXRay(async()=>Response.json({entityType:'COMPANY',card:publicCard},{headers:{'X-SRM-Request-Id':nativeTraceId}}),env);
+  assert.equal((await handler(await signed())).status,200);
+  assert.equal(logs.length,1);const event=logs[0] as Record<string,unknown>;
+  assert.equal(event.event,'srm_xray_peer_timing');assert.equal(event.nativeTraceId,nativeTraceId);
+  assert.deepEqual(Object.keys(event).sort(),['event','operation','requestId','nativeTraceId','verifyMs','commandMs','handlerMs','readMs','validateMs','serializeMs','totalMs'].sort());
+  for(const [key,value]of Object.entries(event))if(key.endsWith('Ms'))assert(typeof value==='number'&&Number.isFinite(value)&&value>=0);
+  assert(!JSON.stringify(event).includes('synthetic-user'));assert(!JSON.stringify(event).includes(configuration.keyId));
+  console.info=()=>{throw Error('unavailable logger')};
+  assert.deepEqual(unwrapXRayResponse('search',await (await handler(await signed())).json(),200),{entityType:'COMPANY',card:publicCard});
+ }finally{console.info=original;}
+});

@@ -5,13 +5,17 @@ import {prepareCompanyReport,PREPARED_REPORT_VERSION,type PreparedCompanyReport}
 import type {FinancialSourceDocument} from './financial-documents'
 import type {CalculatedFinancialIndicator} from './financial-indicators'
 import type {ReportReadRow} from './report-data'
+import type {InsertedCompanyPublication} from './shared-catalog'
 
 /** Runs only inside the original admitted corporate Source publication. The
  * SQL port independently requires that exact publication and its outcome.
  * Raw source documents are consumed here and never persisted in this view. */
 export async function writeReadyCompanyReport(client:PoolClient,nip:string,effectId:string,
- indicators:CalculatedFinancialIndicator[],documents:readonly FinancialSourceDocument[],schemaDigest:string):Promise<PreparedCompanyReport|undefined>{
- const row=(await client.query<ReportReadRow&{general_json:PreparedCompanyReport['general'];general_sha256:string;
+ indicators:CalculatedFinancialIndicator[],documents:readonly FinancialSourceDocument[],schemaDigest:string,
+ inserted?:InsertedCompanyPublication):Promise<PreparedCompanyReport|undefined>{
+ if(inserted&&(inserted.nip!==nip||inserted.general_source_snapshot_id!==effectId||inserted.financial_source_snapshot_id!==effectId))
+  throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+ const row=inserted?{...inserted,kys:null}:(await client.query<ReportReadRow&{general_json:PreparedCompanyReport['general'];general_sha256:string;
   general_source_snapshot_id:string;financial_source_snapshot_id:string}>(
   `SELECT c.nip,c.financial_json,c.financial_sha256,c.financial_checked_at,
    coalesce((SELECT jsonb_agg(jsonb_build_object('metricCode',metric_code,'periodStart',period_start::text,'periodEnd',period_end::text,

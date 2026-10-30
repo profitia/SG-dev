@@ -6586,5 +6586,38 @@
       "src/server/peer-read-boundary.test.ts": "d3040bfb921101e7f9696ef62cc676fa6ecdae940c0523ce0073ea0ef573bad6",
       "src/server/supplier-location-geocoding-runtime.test.ts": "ff2c349671c0ad31f22cbe5bf2ebf7dc5ab6613c68af399629833c31b7147ace"
     }
+  },
+  "freshPersistedResultRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "previousReceiptSourceSha": "3ba8c572882cd157f4370769772fdca5b785bc53",
+    "previousReceiptDigest": "0acd7dc8a351982393a41e1986043df09a8c0f779b5b14738662a4b41213479e",
+    "platformVersion": "1.32.3",
+    "onlyAtomicInsertMayReuse": true,
+    "actualReturningRows": true,
+    "existingHistoryReadPreserved": true,
+    "sourceCommitAndReceiptPreserved": true,
+    "peerBoundaryTiming": true,
+    "serverAuthorityChecksChanged": false,
+    "sourcePoliciesChanged": false,
+    "paidRetriesAdded": false,
+    "uiOrRoutingChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "applicationSourceDigests": {
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "684ac4f822540be0ce44a9fddd22544876420c714887ebda8a2185e56907a63a",
+      "scripts/native-execution-adoption.test.mjs": "716ea955891d9093d0fc27eb4e464d1e0bbd1f64d19951ebf8d0a93b8ede427d",
+      "scripts/ready-report.integration.test.mjs": "2e1056aa84c65d493bcfc9c769c2d1c84a6c900b499081ca56f557c8b13e8db1",
+      "scripts/rural-location-release.test.mjs": "04a23a676233d16e7ec12a28da7608dd79b7418bc1aef22e1f175d3531932573",
+      "scripts/xray-performance-adoption.test.mjs": "2d938ee8e95c0f0bceb804b1bc39a4d375f4c827243b39ba8c72f17b360110a0",
+      "scripts/xray-workflow-contract.test.ts": "95877ec7c540477ea081b35fa515352fd06376c3ec31ccf4cb2c09571e96115c",
+      "src/server/corporate-source-store.ts": "4bb5e52de33c8e6c0cdc49ff5d46e5143fd2f21023835be354280cd6507b7f4e",
+      "src/server/peer-read-boundary.test.ts": "96471612c6828cc35ca30b6016b93c358fba57e64717b92aaea81ec45de4aa0e",
+      "src/server/peer-xray.test.ts": "09edd683b833f14d91daaac43482ea824ef99c58425a2579bf7e00161a422b03",
+      "src/server/peer-xray.ts": "45b954102d2c7012f0529a4aa86f303eed5ab16add7fbfc4c05bfd06de47cb24",
+      "src/server/ready-report-source.ts": "38d29668e386d4b9096aec61c65e46555bc94271a5568af1cecb8c887f103ac6",
+      "src/server/shared-catalog.test.ts": "c2276778377caa2eeaf57f3b93f41462a74f540bdc2f8d7921f8fceeedd27808",
+      "src/server/shared-catalog.ts": "a7e51c6c0ea30b413bbe7fe8d52ee266cb99ad62b7515e93f5987c983e2d5cb4",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "f0cc20a185b4a2c930c050cdd95d1f89a313e52163544945e8e45a022e12fdf5"
+    }
   }
 }

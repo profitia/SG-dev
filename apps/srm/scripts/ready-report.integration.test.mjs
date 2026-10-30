@@ -16,7 +16,8 @@ import {emptyCard} from '../src/demo/fixture.ts'
 import {createPeerOperationSigner} from '@profitia/platform-contracts/peer-operation'
 import {withSrmPeerXRay} from '../src/server/peer-xray.ts'
 import {supplierHttpFailure} from '../src/server/supplier-acquisition-http.ts'
-import {PREPARED_REPORT_RULES,PREPARED_REPORT_VERSION} from '../src/server/ready-report.ts'
+import {PREPARED_REPORT_RULES,PREPARED_REPORT_VERSION,prepareCompanyReport} from '../src/server/ready-report.ts'
+import {calculateFinancialIndicators,FINANCIAL_INDICATOR_INPUT_CODES} from '../src/server/financial-indicators.ts'
 import {mapMgbiGeneralRecords} from '../src/server/mgbi-general.ts'
 import {mapMgbiFinancialRecords} from '../src/server/mgbi-financial.ts'
 import {createSrmSupplierNativeWork} from '../src/server/supplier-request-work.ts'
@@ -60,7 +61,8 @@ test('ready report native Source and current HUMAN read preserve complete financ
  });
  const url=new URL(process.env.SRM_OPERATION_TEST_OWNER_URL);url.pathname='/'+baseBinding.databaseName;url.username=sourceRole;url.password='isolated_ci_only'
  const pool=new pg.Pool({connectionString:url.toString(),max:2}),auditPool=new pg.Pool({connectionString:url.toString(),max:1})
- pool.on('connect',client=>{const query=client.query.bind(client);client.query=(sql,args,...rest)=>query(sql,args,...rest).catch(error=>{console.error('ISOLATED_CORPORATE_SQL_FAILURE',JSON.stringify({code:error.code,message:error.message,query:typeof sql==='string'?sql.slice(0,150):'native-query'}));throw error})});
+ const publicationQueries=[];
+ pool.on('connect',client=>{const query=client.query.bind(client);client.query=(sql,args,...rest)=>query(sql,args,...rest).then(result=>{publicationQueries.push({sql,rows:structuredClone(result.rows)});return result}).catch(error=>{console.error('ISOLATED_CORPORATE_SQL_FAILURE',JSON.stringify({code:error.code,message:error.message,query:typeof sql==='string'?sql.slice(0,150):'native-query'}));throw error})});
  try{
   const application={...sourceOptions.application,appId:'srm-corporate-source',deploymentId:'synthetic-company-publication',configurationVersion:'corporate-v1'}
   const source=createSrmCorporateSourceStore({application,binding:{...sourceOptions.binding,applicationId:application.appId,role:sourceRole,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool,auditPool,
@@ -242,12 +244,41 @@ test('ready report native Source and current HUMAN read preserve complete financ
   })
   let prepared
   await t.test('the original corporate publication atomically prepares one public report without private document storage',async()=>{
+   publicationQueries.length=0;
    await source.publish(packet,hash('ready-source:'+randomUUID()),{documents:[],onPrepared:value=>{prepared=value}})
    assert(prepared);assert.equal(prepared.nip,NIP)
    const rows=(await owner.query('SELECT * FROM srm.ready_company_reports WHERE nip=$1',[NIP])).rows
    assert.equal(rows.length,1);assert.equal(rows[0].body_json.report.kys.reportAvailable,false)
    assert(!rows[0].body_text.includes('scanner_documents'))
    assert((await owner.query("SELECT count(*)::int n FROM profitia_ingestion.security_events WHERE decision_id=(SELECT decision_id FROM profitia_srm_catalog.publications WHERE effect_id=$1) AND phase='OUTCOME' AND event->>'decision'='ALLOW'",[rows[0].publication_effect])).rows[0].n===1)
+   assert(!publicationQueries.some(q=>q.sql.includes('FROM srm.catalog_financial_facts')),'brand-new publication must not reread facts');
+   const stored=(await owner.query('SELECT nip,general_json,general_sha256,general_source_snapshot_id,financial_json,financial_sha256,financial_checked_at,financial_source_snapshot_id FROM srm.catalog_companies WHERE nip=$1',[NIP])).rows[0];
+   const returning=publicationQueries.find(q=>q.sql.includes('RETURNING nip, general_json'));
+   assert.deepEqual(returning.rows,[stored]);
+   const facts=(await owner.query(`SELECT metric_code AS "metricCode",period_start::text AS "periodStart",period_end::text AS "periodEnd",statement_scope AS "statementScope",amount::text AS amount,source_amount::text AS "sourceAmount",currency_code AS "currencyCode",unit_code AS "unitCode",source_path AS "sourcePath",validation_status AS "validationStatus",normalization_rule AS "normalizationRule",source_snapshot_id::text AS "sourceSnapshotId" FROM srm.catalog_financial_facts WHERE nip=$1`,[NIP])).rows;
+   const key=f=>JSON.stringify([f.metricCode,f.periodStart,f.periodEnd,f.statementScope]);
+   assert.deepEqual(publicationQueries.find(q=>q.sql.includes('RETURNING metric_code')).rows.sort((a,b)=>key(a).localeCompare(key(b))),[...facts].sort((a,b)=>key(a).localeCompare(key(b))));
+   const indicators=calculateFinancialIndicators(NIP,financial.section.data,facts.filter(f=>FINANCIAL_INDICATOR_INPUT_CODES.includes(f.metricCode)));
+   assert.deepEqual(prepared,prepareCompanyReport({general:stored.general_json,row:{...stored,facts,indicators,kys:null},documents:[],sources:{generalHash:stored.general_sha256,financialHash:stored.financial_sha256,generalEffectId:stored.general_source_snapshot_id,financialEffectId:stored.financial_source_snapshot_id}}));
+  })
+  await t.test('an existing publication retains the authoritative complete-facts read',async()=>{
+   publicationQueries.length=0;
+   await source.publish(packet,hash('ready-existing-source:'+randomUUID()),{documents:[],onPrepared:value=>{prepared=value}});
+   assert(prepared);assert(publicationQueries.some(q=>q.sql.includes('FROM srm.catalog_financial_facts')));
+   assert(publicationQueries.some(q=>q.sql.includes('FROM srm.catalog_companies c WHERE c.nip=$1')));
+   assert(!publicationQueries.some(q=>q.sql.includes('RETURNING metric_code')));
+  })
+  await t.test('concurrent first publications reuse only the winning insert and preserve the losing publication read',async()=>{
+   const racingNip='1234563218',racing=JSON.parse(JSON.stringify(packet).replaceAll(NIP,racingNip));
+   assert.equal((await owner.query('SELECT count(*)::int n FROM srm.catalog_companies WHERE nip=$1',[racingNip])).rows[0].n,0);
+   publicationQueries.length=0;const reports=[];
+   await Promise.all([0,1].map(i=>source.publish(racing,hash('racing-first-source:'+i+randomUUID()),{documents:[],onPrepared:r=>{reports.push(r)}})));
+   assert.equal(reports.length,2);assert(reports.every(r=>r.nip===racingNip));
+   const claims=publicationQueries.filter(q=>q.sql.startsWith('INSERT INTO srm.catalog_companies(nip)'));
+   assert.deepEqual(claims.map(q=>q.rows.length).sort(),[0,1]);
+   assert.equal(publicationQueries.filter(q=>q.sql.includes('RETURNING metric_code')).length,1);
+   assert.equal(publicationQueries.filter(q=>q.sql.includes('FROM srm.catalog_companies c WHERE c.nip=$1')).length,1);
+   assert.equal((await owner.query('SELECT count(*)::int n FROM srm.catalog_financial_facts WHERE nip=$1',[racingNip])).rows[0].n,financial.facts.length);
   })
   let sdk=0,sessions=0,accounts=0,banAtOutcome=false
   const original=humanOptions.clerk

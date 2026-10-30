@@ -30,6 +30,17 @@ type FinancialSection = SectionEnvelope<FinancialData>;
 type StoredFinancialSection = FinancialSection & { catalogMappingVersion?: string };
 type CatalogSection = "general" | "financial";
 
+/** Only rows returned by the database in this publication transaction. A new
+ * catalog row cannot have older facts (the facts reference that catalog row).
+ * Existing/conflicting rows must still read their complete retained history. */
+export type InsertedCompanyPublication = {
+  nip: string; general_json: GeneralSection; general_sha256: string;
+  general_source_snapshot_id: string; financial_source_snapshot_id: string;
+  financial_json: StoredFinancialSection; financial_sha256: string;
+  financial_checked_at: Date | string;
+  facts: Array<CatalogIndicatorFact & { sourceAmount: string }>;
+};
+
 export type SharedCompany = { general: GeneralSection; financial: FinancialSection; generalReprojected?: boolean };
 
 function sha256(value: unknown): string {
@@ -89,13 +100,14 @@ async function upsertSection(
   client: { query: (sql: string, parameters?: unknown[]) => Promise<unknown> },
   nip: string, sectionName: CatalogSection, section: GeneralSection | FinancialSection,
   organizationId: string | null, snapshotId: string | null,
-): Promise<void> {
+  captureInserted = false,
+): Promise<Omit<InsertedCompanyPublication, "facts"> | undefined> {
   if (!section.retrievedAt || (section.status !== "SUCCESS" && section.status !== "PARTIAL" && section.status !== "EMPTY")) return;
   const prefix = sectionName === "general" ? "general" : "financial";
   const payload = sectionName === "financial" ? { ...section, catalogMappingVersion: FINANCIAL_MAPPING_VERSION } : section;
   const hash = sha256({ status: payload.status, data: payload.data, warnings: payload.warnings, catalogMappingVersion: sectionName === "financial" ? FINANCIAL_MAPPING_VERSION : undefined });
   // Only the payload changes on a content delta. checked_at records a successful provider check.
-  await client.query(
+  const result = await client.query(
     `INSERT INTO srm.catalog_companies(nip, ${prefix}_json, ${prefix}_sha256, ${prefix}_checked_at, ${prefix}_source_organization_id, ${prefix}_source_snapshot_id)
      VALUES ($1, $2::jsonb, $3, $4, $5, $6)
      ON CONFLICT (nip) DO UPDATE SET
@@ -104,9 +116,12 @@ async function upsertSection(
        ${prefix}_checked_at = EXCLUDED.${prefix}_checked_at,
        ${prefix}_source_organization_id = CASE WHEN srm.catalog_companies.${prefix}_sha256 IS DISTINCT FROM EXCLUDED.${prefix}_sha256 THEN EXCLUDED.${prefix}_source_organization_id ELSE srm.catalog_companies.${prefix}_source_organization_id END,
        ${prefix}_source_snapshot_id = CASE WHEN srm.catalog_companies.${prefix}_sha256 IS DISTINCT FROM EXCLUDED.${prefix}_sha256 THEN EXCLUDED.${prefix}_source_snapshot_id ELSE srm.catalog_companies.${prefix}_source_snapshot_id END,
-       updated_at = CASE WHEN srm.catalog_companies.${prefix}_sha256 IS DISTINCT FROM EXCLUDED.${prefix}_sha256 THEN now() ELSE srm.catalog_companies.updated_at END`,
+       updated_at = CASE WHEN srm.catalog_companies.${prefix}_sha256 IS DISTINCT FROM EXCLUDED.${prefix}_sha256 THEN now() ELSE srm.catalog_companies.updated_at END` +
+       (captureInserted ? ` RETURNING nip, general_json, general_sha256, general_source_snapshot_id,
+         financial_json, financial_sha256, financial_checked_at, financial_source_snapshot_id` : ""),
     [nip, JSON.stringify(payload), hash, new Date(section.retrievedAt), organizationId, snapshotId],
   );
+  return captureInserted ? (result as { rows: Omit<InsertedCompanyPublication, "facts">[] }).rows[0] : undefined;
 }
 
 /** Existing interest persistence with an explicit transaction and actor key.
@@ -152,14 +167,20 @@ export type SharedCompanyInput = {
 
 /** Single existing catalog writer. SOURCE uses real global evidence and no
  * organization owner; legacy calls retain their original wrapper and values. */
-export async function writeSharedCompany(client: Pick<PoolClient, "query">, organizationId: string | null, nip: string, input: SharedCompanyInput): Promise<void> {
-  await client.query("INSERT INTO srm.catalog_companies(nip) VALUES ($1) ON CONFLICT DO NOTHING", [nip]);
+export async function writeSharedCompany(client: Pick<PoolClient, "query">, organizationId: string | null, nip: string, input: SharedCompanyInput,
+  onInserted?: (publication: InsertedCompanyPublication) => void): Promise<void> {
+  const inserted = await client.query<{ nip: string }>("INSERT INTO srm.catalog_companies(nip) VALUES ($1) ON CONFLICT DO NOTHING" + (onInserted ? " RETURNING nip" : ""), [nip]);
+  const capture = !!onInserted && organizationId === null && !input.preserveGeneral
+    && inserted.rows.length === 1 && inserted.rows[0].nip === nip;
   if (!input.preserveGeneral) await upsertSection(client, nip, "general", input.general, organizationId, input.generalSnapshotId);
-  await upsertSection(client, nip, "financial", input.financial, organizationId, input.financialSnapshotId);
-  if (!input.financialSnapshotId || !input.facts.length || !input.financial.retrievedAt) return;
+  const publication = await upsertSection(client, nip, "financial", input.financial, organizationId, input.financialSnapshotId, capture);
+  if (!input.financialSnapshotId || !input.facts.length || !input.financial.retrievedAt) {
+    if (capture && publication && input.facts.length === 0) onInserted!({ ...publication, facts: [] });
+    return;
+  }
   const rows = input.facts.map((fact) => ({ ...fact, nip, sourceOrganizationId: organizationId,
     sourceSnapshotId: input.financialSnapshotId, retrievedAt: input.financial.retrievedAt }));
-  await client.query(
+  const storedFacts = await client.query<InsertedCompanyPublication['facts'][number]>(
     `INSERT INTO srm.catalog_financial_facts(nip, metric_code, period_start, period_end, statement_scope,
        period_type, amount, source_amount, normalization_rule, currency_code, unit_code, source_path,
        validation_status, source_organization_id, source_snapshot_id, retrieved_at)
@@ -184,7 +205,11 @@ export async function writeSharedCompany(client: Pick<PoolClient, "query">, orga
        srm.catalog_financial_facts.source_snapshot_id, srm.catalog_financial_facts.retrieved_at)
        IS DISTINCT FROM (EXCLUDED.amount, EXCLUDED.source_amount, EXCLUDED.normalization_rule,
        EXCLUDED.currency_code, EXCLUDED.unit_code, EXCLUDED.source_path, EXCLUDED.validation_status, EXCLUDED.source_organization_id,
-       EXCLUDED.source_snapshot_id, EXCLUDED.retrieved_at)`,
+       EXCLUDED.source_snapshot_id, EXCLUDED.retrieved_at)` + (capture ? `
+     RETURNING metric_code AS "metricCode", period_start::text AS "periodStart", period_end::text AS "periodEnd",
+       statement_scope AS "statementScope", amount::text AS amount, source_amount::text AS "sourceAmount",
+       currency_code AS "currencyCode", unit_code AS "unitCode", source_path AS "sourcePath",
+       validation_status AS "validationStatus", normalization_rule AS "normalizationRule", source_snapshot_id::text AS "sourceSnapshotId"` : ""),
     [JSON.stringify(rows.map((row) => ({ nip: row.nip, metric_code: row.metricCode,
       period_start: row.periodStart, period_end: row.periodEnd, statement_scope: row.statementScope,
       period_type: row.periodType, amount: row.amount, source_amount: row.sourceAmount,
@@ -193,6 +218,9 @@ export async function writeSharedCompany(client: Pick<PoolClient, "query">, orga
       source_organization_id: row.sourceOrganizationId, source_snapshot_id: row.sourceSnapshotId,
       retrieved_at: row.retrievedAt })))],
   );
+  // A missing/partial RETURNING result cannot stand in for complete history.
+  if (capture && publication && storedFacts.rows.length === input.facts.length)
+    onInserted!({ ...publication, facts: storedFacts.rows });
 }
 
 export async function saveSharedCompany(organizationId: string, nip: string, input: SharedCompanyInput): Promise<void> {
@@ -245,9 +273,12 @@ export async function readFinancialIndicators(client: Pick<PoolClient, "query">,
 }
 
 /** Recalculate from shared validated facts; persist provenance without another provider call. */
-export async function writeFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData, onCalculated?: (rows: ReturnType<typeof calculateFinancialIndicators>) => void): Promise<NonNullable<FinancialData["indicators"]>> {
+export async function writeFinancialIndicators(client: Pick<PoolClient, "query">, nip: string, data: FinancialData, onCalculated?: (rows: ReturnType<typeof calculateFinancialIndicators>) => void,
+  inserted?: InsertedCompanyPublication): Promise<NonNullable<FinancialData["indicators"]>> {
  return diagnosticRun('INDICATORS',async ()=>{
-  const calculated = await calculateStoredFinancialIndicators(client, nip, data);
+  if (inserted && inserted.nip !== nip) throw new Error("Inserted publication identity mismatch");
+  const calculated = inserted ? calculateFinancialIndicators(nip, data, inserted.facts.filter(f => FINANCIAL_INDICATOR_INPUT_CODES.includes(f.metricCode)))
+    : await calculateStoredFinancialIndicators(client, nip, data);
   if (calculated.length) {
     await client.query(
       `INSERT INTO srm.catalog_financial_indicators(nip, indicator_code, period_start, period_end,
