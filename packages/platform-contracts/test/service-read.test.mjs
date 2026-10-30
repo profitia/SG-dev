@@ -18,7 +18,7 @@ test('service host composes the same operation contract and requires no HTTP ide
   const host=createServiceReadHost(options())
   assert.equal(host.contract.implementation,'1.0.0-candidate.16')
   assert.equal(host.hostContract.version,'1.11.0');assert(Object.isFrozen(host))
-  assert.match(await serviceReadSchemaDigest(),/^[a-f0-9]{64}$/)
+  assert.equal(await serviceReadSchemaDigest(),'f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49')
 })
 for(const operation of ['benchmark.selection.read','category.write','knowledge.ingest','job.execute','supplier.report.refresh','account.settings.read','personal.list.read']){
   test(`read-only service host refuses ${operation} at construction`,()=>{

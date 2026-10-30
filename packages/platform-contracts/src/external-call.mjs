@@ -66,7 +66,7 @@ export function createExternalCallHost(options){
   if(source.sourceId!==sourceId||source.payloadSchema!=='external-call-control-v1'
     ||b.transport==='LOCAL_SYNTHETIC_HTTP'&&source.environment!=='development')throw TypeError('Accepted external control source required')
   const descriptor=async()=>{
-    const startedMs=now();let result;try{result=await independentQuery(`SELECT current_database() AS database_name,current_user AS role,session_user AS login,${publicWeb?'profitia_public_web':native?'profitia_external_native':'profitia_external_call'}.descriptor($1,$2) AS descriptor,extract(epoch from clock_timestamp())*1000 AS descriptor_observed_ms`,[sourceId,resourceId])}catch{throw new ExternalCallUnavailable('NOT_SENT')}
+    const startedMs=now();let result;try{result=await independentQuery(`SELECT current_database() AS database_name,current_user AS role,session_user AS login,${publicWeb?'profitia_public_web':native?'profitia_external_native':'profitia_external_call'}.descriptor($1,$2) AS descriptor,(extract(epoch from clock_timestamp())*1000)::double precision AS descriptor_observed_ms`,[sourceId,resourceId])}catch{throw new ExternalCallUnavailable('NOT_SENT')}
     const receivedMs=now(),row=result?.rows?.length===1?result.rows[0]:null,d=boundedDatabaseLease(row?.descriptor,row?.descriptor_observed_ms,startedMs,receivedMs)
     const quotaValid=d?.quotaMode==='UNMETERED'
       ?d.capacity===null&&!!source.unmeteredSchemaDigest&&d.unmeteredSchemaDigest===source.unmeteredSchemaDigest
