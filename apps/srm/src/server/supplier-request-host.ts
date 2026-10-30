@@ -3,10 +3,14 @@ import {createSrmPrivateOperationHost} from './private-operation-host'
 import {readSupplierRequest,supplierRequestResourceId,projectSupplierRequest,SUPPLIER_REQUEST_PROJECTION,PRIVATE_SUPPLIER_REQUEST_PROJECTION,privateSupplierRequestResourceId,readSupplierPrivateAcquisition,type SupplierPrivateAcquisition} from './supplier-request-operation'
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
 
-export function createSrmSupplierRequestOperationHost(options: Omit<DriverOptions, 'readResources' | 'projectOutput' | 'prepareInputs' | 'describeOutcome' | 'requestLedger'> & {
+type RequestOptions=Omit<DriverOptions, 'readResources' | 'projectOutput' | 'prepareInputs' | 'describeOutcome' | 'requestLedger'> & {
   requestLedger: { schemaDigest: string; externalSchemaDigest: string; operationSchemaDigest?:string; quotaSchemaDigest?:string }; commandBoundaryDigest: string
   privateAcquisition?:SupplierPrivateAcquisition
-}) {
+}
+
+/** The command resource and projection are shared by the ordinary Root host
+ * and the producer-owned FRESH composition. They grant no authority alone. */
+export function srmSupplierRequestDefinition(options:RequestOptions){
   const acquisition=options.privateAcquisition===undefined?undefined:readSupplierPrivateAcquisition(options.privateAcquisition)
   const operation=acquisition?'supplier.private.refresh':'supplier.report.refresh'
   if (options.application.operations.length !== 1 || options.application.operations[0] !== operation
@@ -15,7 +19,7 @@ export function createSrmSupplierRequestOperationHost(options: Omit<DriverOption
   const digest = options.commandBoundaryDigest
   const operationSchemaDigest=options.requestLedger.operationSchemaDigest
   const resourceId=(command:ReturnType<typeof readSupplierRequest>)=>acquisition?privateSupplierRequestResourceId(command,{entityType:acquisition.entityType,section:acquisition.section}):supplierRequestResourceId(command)
-  return createSrmPrivateOperationHost({ ...options,
+  const definition:Pick<DriverOptions,'readResources'|'projectOutput'>={
     readResources: async ({ actor, request, scope, query }) => {
       const command = readSupplierRequest(request.payload)
       if (actor.kind !== 'HUMAN' || !scope.organisationId || !scope.userId
@@ -36,5 +40,10 @@ export function createSrmSupplierRequestOperationHost(options: Omit<DriverOption
         version: 'srm-private-command-v1', projectionVersion: acquisition?PRIVATE_SUPPLIER_REQUEST_PROJECTION:SUPPLIER_REQUEST_PROJECTION } }
     },
     projectOutput: projectSupplierRequest,
-  })
+  }
+  return definition
+}
+
+export function createSrmSupplierRequestOperationHost(options:RequestOptions){
+  return createSrmPrivateOperationHost({...options,...srmSupplierRequestDefinition(options)})
 }

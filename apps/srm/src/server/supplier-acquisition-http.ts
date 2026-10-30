@@ -75,6 +75,7 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
    }
    if(route==='company-kys'||route==='jdg-kys')return await api.kys(input,route==='company-kys'?'COMPANY':'JDG')
    if(searchOverride)return await searchOverride(input)
+   if(api.search)return await api.search(input)
    // The routing algorithm reads only status/data/nip. Its native ports here
    // provide already authorized public DTOs, without reintroducing provenance
    // or unmasked personal data to satisfy a legacy TypeScript interface.
