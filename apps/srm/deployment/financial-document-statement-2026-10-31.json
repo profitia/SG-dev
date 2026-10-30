@@ -1,0 +1,159 @@
+{
+  "version": "srm-document-statement-guard-v1",
+  "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+  "targetEnvironment": "development",
+  "targetServiceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "status": "PREPARED_NOT_AUTHORIZED_NOT_APPLIED",
+  "owner": "profitia_access_owner",
+  "table": "srm.financial_source_documents",
+  "policies": [
+    "inspected_update_fence",
+    "native_work_insert",
+    "native_work_read",
+    "native_work_update",
+    "private_operation_fence"
+  ],
+  "migration": "032-document-statement-guard.sql",
+  "migrationSha256": "6207a4bec5c1e89e401657d53478dc753de55132cdfe717a4d634273770805f6",
+  "originalPolicies": [
+    {
+      "cmd": "SELECT",
+      "qual": "true",
+      "roles": [
+        "profitia_access_owner"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "PERMISSIVE",
+      "policyname": "delegated_controlled_read",
+      "schemaname": "srm",
+      "with_check": null
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(organization_id = (NULLIF(current_setting('srm.organization_id'::text, true), ''::text))::uuid)",
+      "roles": [
+        "srm_app_runtime"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "PERMISSIVE",
+      "policyname": "financial_source_documents_tenant",
+      "schemaname": "srm",
+      "with_check": "(organization_id = (NULLIF(current_setting('srm.organization_id'::text, true), ''::text))::uuid)"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE\n    CASE\n        WHEN ((profitia_access.runtime_descriptor() ->> 'applicationId'::text) = 'srm'::text) THEN profitia_modules.scope_allows('supplier_report'::text, organization_id)\n        ELSE srm.delegated_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text)\n    END\nEND",
+      "roles": [
+        "public"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "RESTRICTIVE",
+      "policyname": "inspected_delete_fence",
+      "schemaname": "srm",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.inspected_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text)\nEND",
+      "roles": [
+        "public"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "PERMISSIVE",
+      "policyname": "inspected_read_admission",
+      "schemaname": "srm",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE\n    CASE\n        WHEN ((profitia_access.runtime_descriptor() ->> 'applicationId'::text) = 'srm'::text) THEN profitia_modules.scope_allows('supplier_report'::text, organization_id)\n        ELSE srm.delegated_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text)\n    END\nEND OR\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.native_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text, 'WRITE'::text)\nEND)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "RESTRICTIVE",
+      "policyname": "inspected_update_fence",
+      "schemaname": "srm",
+      "with_check": "(\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE\n    CASE\n        WHEN ((profitia_access.runtime_descriptor() ->> 'applicationId'::text) = 'srm'::text) THEN profitia_modules.scope_allows('supplier_report'::text, organization_id)\n        ELSE srm.delegated_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text)\n    END\nEND OR\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.native_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text, 'WRITE'::text)\nEND)"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "public"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "PERMISSIVE",
+      "policyname": "native_work_insert",
+      "schemaname": "srm",
+      "with_check": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.native_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text, 'WRITE'::text)\nEND"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.native_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text, 'READ'::text)\nEND",
+      "roles": [
+        "public"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "PERMISSIVE",
+      "policyname": "native_work_read",
+      "schemaname": "srm",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.native_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text, 'WRITE'::text)\nEND",
+      "roles": [
+        "public"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "PERMISSIVE",
+      "policyname": "native_work_update",
+      "schemaname": "srm",
+      "with_check": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.native_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text, 'WRITE'::text)\nEND"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE\n    CASE\n        WHEN ((profitia_access.runtime_descriptor() ->> 'applicationId'::text) = 'srm'::text) THEN profitia_modules.scope_allows('supplier_report'::text, organization_id)\n        ELSE srm.delegated_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text)\n    END\nEND",
+      "roles": [
+        "public"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "PERMISSIVE",
+      "policyname": "private_operation_admission",
+      "schemaname": "srm",
+      "with_check": "\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE\n    CASE\n        WHEN ((profitia_access.runtime_descriptor() ->> 'applicationId'::text) = 'srm'::text) THEN profitia_modules.scope_allows('supplier_report'::text, organization_id)\n        ELSE srm.delegated_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text)\n    END\nEND"
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN true\n    ELSE (\n    CASE\n        WHEN ((profitia_access.runtime_descriptor() ->> 'applicationId'::text) = 'srm'::text) THEN profitia_modules.scope_allows('supplier_report'::text, organization_id)\n        ELSE srm.delegated_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text)\n    END OR srm.inspected_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text))\nEND OR\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.native_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text, 'READ'::text)\nEND)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "financial_source_documents",
+      "permissive": "RESTRICTIVE",
+      "policyname": "private_operation_fence",
+      "schemaname": "srm",
+      "with_check": "(\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE\n    CASE\n        WHEN ((profitia_access.runtime_descriptor() ->> 'applicationId'::text) = 'srm'::text) THEN profitia_modules.scope_allows('supplier_report'::text, organization_id)\n        ELSE srm.delegated_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text)\n    END\nEND OR\nCASE\n    WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false\n    ELSE srm.native_supplier_row('financial_source_documents'::text, organization_id, NULL::uuid, NULL::uuid, NULL::uuid, nip, 'financial'::text, 'WRITE'::text)\nEND)"
+    }
+  ],
+  "installedPolicyMd5": {
+    "inspected_update_fence": "cac6b88b0fe49ced7a096ca0c5b3a05f",
+    "native_work_insert": "40d19f69b8a3b3abe5653fdc63ad8725",
+    "native_work_read": "01388c02e49dcaa4961ad8c33b2be9a0",
+    "native_work_update": "587d51c4f36081c2d73af68352fd5d89",
+    "private_operation_fence": "e136adbea5abf4107e5cca4c99756974"
+  },
+  "outerReleaseFenceRequired": true,
+  "temporaryOwnerMustBeRevokedBeforeCommit": true,
+  "crossStatementAuthorizationCache": false,
+  "rlsDisabled": false,
+  "rolesOrAclChanged": false,
+  "sourceHistoryChanged": false,
+  "providerPoliciesChanged": false,
+  "excludedEnvironmentsChanged": false,
+  "localMeasurement": "ISOLATED_SYNTHETIC_SQL_NOT_LIVE_FRESH"
+}
