@@ -9,7 +9,7 @@
     "id": "profitia.source-lease-clock",
     "version": "1.0.0"
   },
-  "scope": "Same-statement trusted database time validates the existing 30s Source proof and ingestion-policy lease; local deadline is clamped conservatively from query start. No lease, authority or provider acquisition is cached.",
+  "scope": "Same-statement trusted database time validates the existing 30s Source proof and ingestion-policy lease; local deadline is clamped conservatively from query start. No lease, authority or provider acquisition is cached. The identical native Work service proof uses the same bounded conversion; HUMAN identity and policy checks are unchanged.",
   "runtimeEvidence": {
     "readOnlyQueries": 100,
     "priorLocalUpperBoundRejections": 19,
@@ -34,7 +34,10 @@
     "test/database-lease.test.mjs": "30fd8441f7040bc3d513ace4d5df36ca10d59d23dfa402fd0ceffcdb54cbafa8",
     "test/external-call.test.mjs": "de3405a538c39114299c60b6ea0bfa5b6c1887155db25fe1eb732c432efbc875",
     "package.json": "a9d694aa138104dd0d6711e827b11caa0568f263ba95452f03790891b21dd253",
-    "package-lock.json": "9c908528d526cea7853d226452c923ceff7534e1b2828e45bc5f1058badb4df8"
+    "package-lock.json": "9c908528d526cea7853d226452c923ceff7534e1b2828e45bc5f1058badb4df8",
+    "src/access-store.mjs": "da8c1d099c50ca1737055649ca26870f42e1fada74d9bdb1f9aced84fd5d6431",
+    "test/service-read.test.mjs": "d96bdc9c820d8549f7ad21b14aaa32eeac9b0741dcbf6653e0b7570b2daede39",
+    "test/private-operation-host.test.mjs": "16ae3da15104819a1c321c3aa8702e5a0c09df39d4a945136740912a550bd03f"
   },
   "integrationTestDigest": "7c9cd13db37efa845cbba20ae2b1a6badea8de6ecf24af723dfcfb9c98fc9dc1",
   "runtimeDeploymentClaimed": false,
