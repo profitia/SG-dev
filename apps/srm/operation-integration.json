@@ -6419,7 +6419,7 @@
       "scripts/rural-location-release.test.mjs": "f023a71e0df1130f32cd04b1ceb0323d1ed9a83007f6bcdf32ee0b2955455d9c",
       "scripts/supplier-location-admission.integration.test.mjs": "b7ad29d3d063659a25ccd666139defa35b39b533b9de9a5bf6089653124f8609",
       "scripts/xray-performance-adoption.test.mjs": "6b6d627d6277c8698d28424a28675a6c8b59d74e575398af34518afa0b0063cd",
-      "scripts/xray-workflow-contract.test.ts": "783d8cc7e8f6422312a533ec902cfb49dabece4f47f93ed739e93060031f5676",
+      "scripts/xray-workflow-contract.test.ts": "82e297bbb44e3b48777773ad8172a29db4a4f54e1f9d3f1404868f6b058c7b41",
       "src/server/fresh-postfetch-work.test.ts": "577f5f3404b69f9f97676e32e969e22d56cbea3f6db88cd08940bc2bf75c2577",
       "src/server/peer-read-boundary.test.ts": "f97c8399e92e46ba4f3656c5f26678bdffdd6ca811c0cde7310e00f02d85111a",
       "src/server/supplier-location-geocoding-runtime.test.ts": "7608826d3966d1bbe67663296bdcaaf3e0a764f4688046d995b63f670774b94f",
