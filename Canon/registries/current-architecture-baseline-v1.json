@@ -6,6 +6,42 @@
   "pathResolutionStrategy": "MOST_SPECIFIC_MATCH_WINS",
   "surfaces": [
     {
+      "id": "LIMITS-BASE-001",
+      "capability": "Package & Limits Management",
+      "name": "Package & Limits Dashboard Runtime",
+      "pathPatterns": [
+        "apps/package-limits/**"
+      ],
+      "currentResponsibility": "Independent Profitia operator dashboard, commercial package definitions, immutable versions, organisation assignment references and bounded administration; no Identity or product runtime ownership.",
+      "currentOwner": "Architecture Platform",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "9e164df67e6e356975ad7b4f572abc5bef407f3d",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "Explicit owner Full Development Implementation & First Live Deployment plan section4, 2026-10-30, host01a18b57-efdf-79e3-a75a-9061dc5e57cb; Canon/evidence/2026-10-30-package-limits-dashboard-g1-onboarding.md."
+    },
+    {
+      "id": "LIMITS-BASE-002",
+      "capability": "Package & Limits CI",
+      "name": "Package & Limits Dashboard CI",
+      "pathPatterns": [
+        ".github/workflows/package-limits-ci.yml"
+      ],
+      "currentResponsibility": "Credential-free package/assignment/security/build tests and exact source validation; no automatic deployment.",
+      "currentOwner": "Architecture Platform",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "9e164df67e6e356975ad7b4f572abc5bef407f3d",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "Explicit owner Full Development Implementation & First Live Deployment plan section4, 2026-10-30, host01a18b57-efdf-79e3-a75a-9061dc5e57cb; Canon/evidence/2026-10-30-package-limits-dashboard-g1-onboarding.md."
+    },
+    {
       "id": "MAPS-BASE-001",
       "capability": "Maps Runtime",
       "name": "Maps Runtime",

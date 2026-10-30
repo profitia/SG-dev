@@ -62,6 +62,59 @@
   },
   "plannedModules": [
     {
+      "capability": "Package & Limits Management",
+      "owner": "Architecture Platform",
+      "projectKey": "ARCHITECTURE",
+      "targetEnvironment": "development",
+      "pathPattern": "apps/package-limits/**",
+      "ciPath": ".github/workflows/package-limits-ci.yml",
+      "approval": {
+        "decision": "G1 GRANTED",
+        "sourceType": "EXPLICIT_OWNER_CHAT_INSTRUCTION",
+        "sourceTitle": "PROFITIA — PACKAGE & LIMITS MANAGEMENT DASHBOARD / FULL DEVELOPMENT IMPLEMENTATION & FIRST LIVE DEPLOYMENT",
+        "hostConversationId": "01a18b57-efdf-79e3-a75a-9061dc5e57cb",
+        "date": "2026-10-30",
+        "reference": "Canon/evidence/2026-10-30-package-limits-dashboard-g1-onboarding.md"
+      },
+      "status": "SOURCE_ONBOARDING_CANDIDATE_NO_APPLICATION_INSTALLED",
+      "continuityProjectKey": "ARCHITECTURE",
+      "githubEnvironment": {
+        "name": "profitia-limits-development",
+        "id": 25772685296
+      },
+      "developmentRender": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": "prj-dbi556u1egvs73euin20",
+        "environmentId": "evm-dbi5932jnfac73cs1nhg",
+        "serviceId": "srv-dbi5at9srm7s73da7ol0",
+        "url": "https://limits-development.onrender.com",
+        "deploymentPolicy": "MANUAL_EXACT_SHA",
+        "autoDeploy": false
+      },
+      "developmentStorage": {
+        "neonProjectId": "lingering-thunder-05075810",
+        "branchId": "br-green-hall-b9s837k0",
+        "databaseName": "neondb",
+        "schemaName": "profitia_limits",
+        "schemaStatus": "NOT_INSTALLED_AT_G1",
+        "runtimeRole": "profitia_limits_runtime",
+        "ownerRole": "profitia_limits_owner",
+        "migratorRole": "profitia_limits_migrator"
+      },
+      "identityAuthority": {
+        "neonProjectId": "spring-bread-28217539",
+        "branchId": "br-sparkling-term-b99l107x",
+        "databaseName": "platform_private",
+        "access": "MINIMAL_READ_ADAPTER_ONLY_NO_SECOND_IDENTITY_STORE"
+      },
+      "resourceCreationAuthority": "NO_NEW_PROJECT_SERVICE_OR_DATABASE",
+      "developmentImplementationAndReleaseAuthority": "EXPLICIT_FULL_PLAN_APPROVAL_SUBJECT_TO_GATES",
+      "stagingProductionAuthority": "NONE",
+      "businessCanonsUnchanged": true,
+      "decisionDocument": "Canon/runbooks/package-limits-development-v1.md",
+      "evidenceDocument": "Canon/evidence/2026-10-30-package-limits-dashboard-g1-onboarding.md"
+    },
+    {
       "capability": "Identity Runtime",
       "owner": "Architecture Platform",
       "projectKey": "ARCHITECTURE",
