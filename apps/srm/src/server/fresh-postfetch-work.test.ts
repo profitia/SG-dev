@@ -18,6 +18,31 @@ test('only complete identified structured MGBI evidence qualifies for the atomic
  const {g,f}=fixture();assert.equal(isStructuredFreshCompany(nip,g,f),true)
  assert.equal(isStructuredFreshCompany('5260250274',g,f),false)
 })
+test('historical IAS attachments do not activate MSR when the current financial statements are structured',()=>{
+ const {g,f}=fixture(),current=f.rawResponse.pages[0].results[0]
+ const attachments=['activity_report','resolution_on_approval','auditors_opinion','balance_sheet'].map((type,index)=>({
+  id:(index+1).toString(16).repeat(24),identifiers:{pl_nip:nip,pl_krs:krs},
+  document:{type,period_from_date:'2017-01-01',period_to_date:'2017-12-31',is_ias_compliant:true},
+ }))
+ f.rawResponse={pages:[{count:5,results:[current,...attachments] as unknown as (typeof current)[]}],recordCount:5}
+ const before=JSON.stringify(f)
+ assert.equal(isStructuredFreshCompany(nip,g,f),true)
+ assert.equal(JSON.stringify(f),before,'selection must not discard or mutate archived attachments')
+})
+test('superseded IAS filing follows the same latest-filing rule as MSR enrichment',()=>{
+ const {g,f}=fixture(),current=f.rawResponse.pages[0].results[0]
+ const older={...structuredClone(current),id:'c'.repeat(24),document:{...current.document,period_from_date:'2017-01-01',period_to_date:'2017-12-31',is_ias_compliant:true}}
+ f.rawResponse={pages:[{count:2,results:[current,older]}],recordCount:2}
+ assert.equal(isStructuredFreshCompany(nip,g,f),true)
+ older.document.period_from_date='2026-01-01';older.document.period_to_date='2026-12-31'
+ assert.equal(isStructuredFreshCompany(nip,g,f),false,'a current IAS statement retains MSR handling')
+})
+test('current consolidated IAS evidence retains MSR even when the standalone filing is structured',()=>{
+ const {g,f}=fixture(),current=f.rawResponse.pages[0].results[0]
+ const consolidated={...structuredClone(current),id:'d'.repeat(24),document:{...current.document,type:'consolidated_financial_statement',is_ias_compliant:true}}
+ f.rawResponse={pages:[{count:2,results:[current,consolidated]}],recordCount:2}
+ assert.equal(isStructuredFreshCompany(nip,g,f),false)
+})
 test('only an identified main Development company response carries the non-authorizing body-read hint',async()=>{
  const organization='11111111-1111-4111-8111-111111111111';
  for(const [origin,returnedNip,expected]of[
