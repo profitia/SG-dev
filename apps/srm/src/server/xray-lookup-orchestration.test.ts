@@ -73,6 +73,25 @@ test('one company workflow preserves original provider mapping, private archive 
   assert.equal(ratio?.status, 'AVAILABLE'); assert.equal(ratio?.value, '1.500000');
 });
 
+test('accepted atomic postfetch result is published once without repeated archive, inventory, MSR or section Work',async()=>{
+ const f=await fixture();f.ports.persistFreshCompany=async(org,nip,g,financial)=>{
+  assert.equal(org,ORG);assert.equal(nip,NIP);assert.equal(g.section.data?.nip,NIP)
+  f.calls.push('atomic-postfetch');return {generalSnapshotId:GENERAL_SNAPSHOT,financialSnapshotId:FINANCIAL_SNAPSHOT,financial}
+ }
+ const report=await createXrayCompanyLookup(f.ports)(ORG,request())
+ assert.deepEqual(f.calls,['register','cache','fetch-general','fetch-financial','atomic-postfetch','publish','indicators','interest'])
+ assert.equal(report.identity.nip,NIP);assert.equal(f.published.length,1);assert.equal(f.published[0].financialSnapshotId,FINANCIAL_SNAPSHOT)
+})
+
+test('postfetch refusal is a hard failure; an explicit unsupported result retains the original path',async()=>{
+ const f=await fixture(),denied=new OperationDenied('PERMISSION_DENIED')
+ f.ports.persistFreshCompany=async()=>{throw denied}
+ await assert.rejects(createXrayCompanyLookup(f.ports)(ORG,request()),error=>error===denied)
+ assert(!f.calls.includes('publish'));assert(!f.calls.some(c=>c.startsWith('archive-')))
+ f.calls.length=0;f.ports.persistFreshCompany=async()=>null
+ await createXrayCompanyLookup(f.ports)(ORG,request());assert(f.calls.includes('msr'));assert(f.calls.includes('archive-pl-krs-wp-record'))
+})
+
 test('complete current cache avoids provider calls and keeps exact original stored-data/MSR behavior', async () => {
   const f = await fixture();
   const financial = structuredClone(f.financial.section);
