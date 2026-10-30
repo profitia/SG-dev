@@ -34,7 +34,7 @@ export function createSrmSupplierSourceRequest(options:{application:RootOptions[
         [command.nip,context.platformReservation.effectId,context.decisionId])
       if(result.rows[0]?.admitted!==true)return refuse()
     }})
-  async function observe(input:unknown,deliveryKey:string,optional:boolean){
+  async function observe(input:unknown,deliveryKey:string){
       const command=readSupplierRequest(input)
       if(!/^[a-f0-9]{64}$/.test(deliveryKey))return refuse()
       // This is an existing-record observation, never a call to ingest/deliver.
@@ -50,17 +50,12 @@ export function createSrmSupplierSourceRequest(options:{application:RootOptions[
         const key=operationPayloadDigest({applicationId:b.applicationId,environment:b.environment,serviceId:d.serviceId,
           sourceId:SUPPLIER_SOURCE_REQUEST.id,key:deliveryKey})
         const value=(await client.query('SELECT profitia_srm_acquisition.receipt($1,$2) AS receipt',[command.nip,key])).rows[0]?.receipt
-        if(value===null&&optional)return null
         if(!value||Object.keys(value).sort().join(',')!=='effectId,status'||value.status!=='COMMITTED'
           ||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value.effectId))return refuse()
         return Object.freeze({effectId:value.effectId as string,status:'COMMITTED' as const})
       },{timeoutMs:10000,maxWaitMs:3000})
   }
   return Object.freeze({port,
-    read:async(input:unknown,deliveryKey:string)=>await observe(input,deliveryKey,false)??refuse(),
-    // A missing committed row alone permits the original dispatch. Binding,
-    // schema, database, malformed receipt and authority failures remain hard
-    // stops. This observation cannot create or serialize Source authority.
-    readIfCommitted:(input:unknown,deliveryKey:string)=>observe(input,deliveryKey,true),
+    read:(input:unknown,deliveryKey:string)=>observe(input,deliveryKey),
   })
 }

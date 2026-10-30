@@ -326,7 +326,11 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
         await saveFinancialDocuments(selected.organisationId,selected.command.nip,f.rawResponse!.pages,pool)
         const documents=await readPreparedFinancialDocuments(client,selected.organisationId,selected.command.nip)
         const sectionWithDocuments=applyFinancialDocumentMetadata(f.section,documents,g.section.data?.registryHistory)
-        const prepared={...f,section:sectionWithDocuments,...(f.sourceData?{sourceData:applyFinancialDocumentMetadata({...sectionWithDocuments,data:f.sourceData},documents,g.section.data?.registryHistory).data??undefined}:{})}
+        // The original pages are now durably archived in this transaction.
+        // Return only the prepared result needed by Source publication, not
+        // another captured copy of the raw financial response.
+        const prepared:MgbiFinancialResult={section:sectionWithDocuments,facts:f.facts,errorCode:f.errorCode,
+          ...(f.sourceData?{sourceData:applyFinancialDocumentMetadata({...sectionWithDocuments,data:f.sourceData},documents,g.section.data?.registryHistory).data??undefined}:{})}
         const local:typeof run=async(s,unit,_parameters,action,capture=json)=>{
           if(s.requestId!==selected.requestId||s.organisationId!==selected.organisationId||s.command.nip!==selected.command.nip
             ||!['SRM_STORE_GENERAL','SRM_STORE_FINANCIAL'].includes(unit))return refuse()

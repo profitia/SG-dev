@@ -173,7 +173,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
    const revoked={...config.clerk,users:{getUser:async(...args)=>({...await config.clerk.users.getUser(...args),banned:++checks===2})}};
    const before=await privateCounts();await assert.rejects(makeStore(createSrmSupplierNativeWork({...config,clerk:revoked})).freshCompany(selection,g,fin),isOperationDenied);
    assert.equal(checks,2);assert.deepEqual(await privateCounts(),before);
-   const stored=await store.freshCompany(selection,g,fin);assert(stored?.generalSnapshotId);assert(stored?.financialSnapshotId);assert.equal(stored.documents.length,1);
+   const stored=await store.freshCompany(selection,g,fin);assert(stored?.generalSnapshotId);assert(stored?.financialSnapshotId);assert.equal(stored.documents.length,1);assert.equal(stored.financial.rawResponse,undefined,'Archived provider pages are not copied into the prepared return value');
    const stable=await privateCounts();
    await assert.rejects(store.freshCompany({...selection,organisationId:B},g,fin),isOperationDenied);assert.deepEqual(await privateCounts(),stable);
    let examined=false;
@@ -221,15 +221,16 @@ test('ready report native Source and current HUMAN read preserve complete financ
      assert.equal(await classifier.classify(selection,new AbortController().signal),expected);assert.equal(hits,calls+1)
      assert.deepEqual(await f.counts(),before)
      const key=(await owner.query('SELECT delivery_key FROM profitia_jobs.dispatches WHERE request_id=$1',[selection.requestId])).rows[0].delivery_key;
-     const committed=await f.source.readIfCommitted(selection.command,key);assert(committed);assert.deepEqual(committed,await f.source.read(selection.command,key));
-     assert.equal(await f.source.readIfCommitted(selection.command,'0'.repeat(64)),null);
-     await assert.rejects(f.source.readIfCommitted({...selection.command,organisationId:B},key));
+     const committed=await f.source.read(selection.command,key);assert(committed);
+     await assert.rejects(f.source.read(selection.command,'0'.repeat(64)),isOperationDenied);
+     await assert.rejects(f.source.read({...selection.command,organisationId:B},key));
      if(selected==='EMPTY'){
       const sourceCount=async()=>(await owner.query('SELECT (SELECT count(*)::int FROM profitia_ingestion.effects) effects,(SELECT count(*)::int FROM profitia_ingestion.security_events) audit')).rows[0];
-      const prior=await sourceCount(),link=createSrmSupplierSourceLink({work:{...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:f.source});
-      assert.deepEqual((await link.registerAndAdmit(selection)).sourceRequest,committed);assert.deepEqual(await sourceCount(),prior);
+      let accountReads=0;const clerk={...f.workOptions.clerk,users:{getUser:async(...args)=>{accountReads++;return f.workOptions.clerk.users.getUser(...args)}}};
+      const prior=await sourceCount(),link=createSrmSupplierSourceLink({work:{...f.workOptions,clerk,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:f.source});
+      assert.deepEqual((await link.registerAndAdmit(selection)).sourceRequest,committed);assert.deepEqual(await sourceCount(),prior);assert.equal(accountReads,2,'Only registration entry/outcome reads remain; confirmed delivery does not repeat dispatch admission');
       await owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED' WHERE login_role=$1",[role]);
-      try{await assert.rejects(f.source.readIfCommitted(selection.command,key),isOperationDenied);await assert.rejects(link.registerAndAdmit(selection),isOperationDenied)}finally{await owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE' WHERE login_role=$1",[role])}
+      try{await assert.rejects(f.source.read(selection.command,key),isOperationDenied);await assert.rejects(link.registerAndAdmit(selection),isOperationDenied)}finally{await owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE' WHERE login_role=$1",[role])}
       assert.deepEqual(await sourceCount(),prior);
      }
      if(selected==='REDIRECT'){
