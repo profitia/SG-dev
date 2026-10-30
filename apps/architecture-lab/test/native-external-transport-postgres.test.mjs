@@ -65,7 +65,8 @@ test('ordinary native provider protocol reuses committed source controls and fai
   })
   const runtimeUrl=new URL(dbUrl);runtimeUrl.username=ROLE;runtimeUrl.password='isolated_ci_only'
   runtime=new Client({connectionString:runtimeUrl.toString()});await runtime.connect()
-  const sourceHost=createPlatformIngestionHost({
+  let sourceClockOffsetMs=0
+  const sourceHost=createPlatformIngestionHost({now:()=>Date.now()+sourceClockOffsetMs,
    application:{appId:'external-source',environment:'development',profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-source',configurationVersion:'source-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
    binding:{applicationId:'external-source',environment:'development',projectId:'external-project',branchId:'external-branch',databaseName:DATABASE,role:ROLE,deploymentId:'synthetic-source',configurationVersion:'source-v1',schemaDigest:rootDigest},
    source:{id:SOURCE,payloadSchema:'external-call-control-v1',qualityVersion:'quality-v1',classificationVersion:'control-v1'},
@@ -85,7 +86,7 @@ test('ordinary native provider protocol reuses committed source controls and fai
     }catch(e){await c.query('ROLLBACK');throw e}finally{await c.end()}
    },
   })
-  const settings={sourceHost,sourceId:SOURCE,resourceId:RESOURCE,binding:{role:ROLE,configurationVersion:'external-v1',schemaDigest:digest,origin,transport:'LOCAL_SYNTHETIC_HTTP',pathRules:paths},
+  const settings={now:()=>Date.now()+sourceClockOffsetMs,sourceHost,sourceId:SOURCE,resourceId:RESOURCE,binding:{role:ROLE,configurationVersion:'external-v1',schemaDigest:digest,origin,transport:'LOCAL_SYNTHETIC_HTTP',pathRules:paths},
    independentQuery:(q,v)=>runtime.query(q,v),query:async(c,q,v)=>{c.externalPhase=JSON.parse(v[2]).content.action;if(auditFailure===c.externalPhase){auditFailure=null;throw Error('synthetic control failure')};return c.query(q,v)},
    parseCommand:v=>{if(!v||Object.getPrototypeOf(v)!==Object.prototype||Object.keys(v).some(k=>!['path','query','method','body'].includes(k)))throw Error('closed command');return v},
    buildRequest:c=>({method:c.method??'GET',url:origin+(c.path??'/data')+(c.query?'?'+new URLSearchParams({q:c.query}):''),body:c.body??null}),
@@ -111,6 +112,17 @@ test('ordinary native provider protocol reuses committed source controls and fai
   const native={schemaDigest:nativeDigest,pathRules:nativeRules,redirectOrigins:[origin],maximumResponseBytes:8192,credentialMode:'SERVER_HEADERS',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'}
   const host=createExternalCallHost({...nativeBase,nativeTransport:native})
   const counts=async()=>({calls:(await owner.query('SELECT count(*)::int AS n FROM profitia_external_call.calls')).rows[0].n,admissions:(await owner.query('SELECT admitted_count AS n FROM profitia_external_call.policies')).rows[0].n,transactions:(await owner.query('SELECT consumed_count AS n FROM profitia_ingestion.budgets')).rows[0].n})
+  await t.test('small database clock lead permits a current settled Source without extending its lease',async()=>{
+   sourceClockOffsetMs=-5
+   try{const b=await counts(),n=hits,r=await host.execute(input());assert.equal(r.status,200);assert.equal(hits,n+1)
+    assert.deepEqual(await counts(),{calls:b.calls+1,admissions:b.admissions+1,transactions:b.transactions+3})
+   }finally{sourceClockOffsetMs=0}
+  })
+  await t.test('database clock divergence outside the bound fails before provider admission',async()=>{
+   sourceClockOffsetMs=-1100
+   try{const b=await counts(),n=hits;await assert.rejects(host.execute(input()),unavailable);assert.equal(hits,n);assert.deepEqual(await counts(),b)
+   }finally{sourceClockOffsetMs=0}
+  })
   await t.test('binary result and a reconstructed native Response require three committed controls',async()=>{
    const b=await counts(),r=await host.execute(input());assert.deepEqual(r.bytes,Uint8Array.of(0,255,12));r.bytes[0]=88;assert.equal(r.bytes[0],0)
    assert.equal(r.headers['set-cookie'],undefined);assert.equal(r.headers['x-private'],undefined)

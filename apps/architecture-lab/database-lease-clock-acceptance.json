@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-CURRENT-HUMAN-PEER-READ-20261029",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "authorityBaseSha": "5cea1b3632212080f1a43cab281f23e30dd9aecc",
+  "platformVersion": "1.32.2",
+  "contract": {
+    "id": "profitia.source-lease-clock",
+    "version": "1.0.0"
+  },
+  "scope": "Same-statement trusted database time validates the existing 30s Source proof and ingestion-policy lease; local deadline is clamped conservatively from query start. No lease, authority or provider acquisition is cached. The identical native Work service proof uses the same bounded conversion; HUMAN identity and policy checks are unchanged.",
+  "runtimeEvidence": {
+    "readOnlyQueries": 100,
+    "priorLocalUpperBoundRejections": 19,
+    "largestRemainingMs": 30001,
+    "bindingMismatches": 0
+  },
+  "maximumLeaseMs": 30000,
+  "maximumClockDivergenceMs": 1000,
+  "subtractsEntireQueryRoundTrip": true,
+  "keepsOriginalAbsoluteExpiryCheck": true,
+  "sourceCurrentRechecksUnchanged": true,
+  "sourceAuditAndCommitUnchanged": true,
+  "schemaOrPolicyChanges": false,
+  "requiredConsumerTasks": {
+    "SRM": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "SG2": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029"
+  },
+  "sourceDigests": {
+    "src/database-lease.mjs": "0d6d6366ea12b48d3f06cbaffb5f2ce6b3dacdb4617ab41e346ae28344774183",
+    "src/platform-ingestion.mjs": "4159bcd2bdc6de7e32e573461ac07d73572d0ab9c4d9bf6aafc1b3fe41036a1f",
+    "src/external-call.mjs": "8c78b368c26a7014558407a9656a9fdeff6aff016badf8d181401e250be37587",
+    "test/database-lease.test.mjs": "30fd8441f7040bc3d513ace4d5df36ca10d59d23dfa402fd0ceffcdb54cbafa8",
+    "test/external-call.test.mjs": "de3405a538c39114299c60b6ea0bfa5b6c1887155db25fe1eb732c432efbc875",
+    "package.json": "a9d694aa138104dd0d6711e827b11caa0568f263ba95452f03790891b21dd253",
+    "package-lock.json": "9c908528d526cea7853d226452c923ceff7534e1b2828e45bc5f1058badb4df8",
+    "src/access-store.mjs": "f1e6c382e4d91d8ac7f366e755ad918857c710265b6ba3b22ddfd8779e5b0934",
+    "test/service-read.test.mjs": "975c8df45b3a48631ff2d7a5e418effa62e68b92830b8fa47754fbabb7d65e28",
+    "test/private-operation-host.test.mjs": "7f47634bba7e55a27479b40044d059c89884707bf66f5025960da6a2c5c0ec23"
+  },
+  "integrationTestDigest": "7c9cd13db37efa845cbba20ae2b1a6badea8de6ecf24af723dfcfb9c98fc9dc1",
+  "runtimeDeploymentClaimed": false,
+  "performanceThresholdsClaimed": false
+}

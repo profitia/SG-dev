@@ -20,7 +20,7 @@ test('the versioned host pins the additive candidate and preserves the base SQL'
   assert.match(await privateOperationHostSourceDigest(),/^[a-f0-9]{64}$/)
   assert.equal(await operationSourceDigest(),'2a7a2cbed3daed98b977259decb6b01e565dc528ce97f563b5e100ef7b52d525')
   assert.equal(await identitySourceDigest(),'b7f3e09e6c62bbaf20c42752f514022c91b0dc0fef9db387f41f613a124ce0b4')
-  assert.equal(await accessStoreSourceDigest(),'898beae8260ab99c72217def546a9e6172cda9564de03a508a575f361aeec0a4')
+  assert.equal(await accessStoreSourceDigest(),'71e42f5e194f8b251c86a70c22bfbd7cb940cf66b8279159b08781f042ec9f47')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
 })
 for(const module of [null,false,{},[],{id:'benchmark',schemaDigest:'a'.repeat(64)},{id:'unknown',schemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64)},{id:'benchmark',schemaDigest:'a'.repeat(64),auditSchemaDigest:'b'.repeat(64),extra:'untrusted'}]){
