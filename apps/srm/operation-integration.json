@@ -6144,6 +6144,8 @@
       "scripts/xray-performance-adoption.test.mjs": "39d8b7f97dc12b9e0bde256d1b884b4fd08afe2914dec16605a22c33be8b5224",
       "scripts/xray-workflow-contract.test.ts": "dc70a0c2dd8b3c660a1d3e349691d0c26e6629acee6f353ba566f1df7d751087",
       "src/server/company-classification.ts": "61d6e8621107b09daa781103a9673ad756d5ac9459db0967a5dae58d1df54d66",
+      "src/server/peer-read-boundary.test.ts": "bd8c29e93dd0a02dabad22124454fa25c33c9059ea1c3372ade9bb50f91fd00a",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "d82e77ebafba37045a1784a1acc77f4f44ee08f96ff5173568fb57eccfcadd32",
       "../../packages/maps-embed/package.json": "b9ff92ed8b471f032536ff97732cf90f574b1feda3ff0696103734c88fef0b36"
     },
     "repositorySourceDigests": {},
@@ -6154,6 +6156,11 @@
     "humanAuthorityChanged": false,
     "sqlSchemaChanged": false,
     "runtimeDeploymentClaimed": false,
-    "performanceThresholdsClaimed": false
+    "performanceThresholdsClaimed": false,
+    "peerConsumer": {
+      "projectKey": "SG2",
+      "pullRequest": 791,
+      "sourceSha": "302305a27ea7683ec908d5da154f9ce2323fbfb4"
+    }
   }
 }
