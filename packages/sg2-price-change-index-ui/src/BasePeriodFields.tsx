@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react'
 import type {PciBusinessController} from './business-contracts'
 
 const frequency:Record<string,string>={DAILY:'dzienna',Daily:'dzienna',WEEKLY:'tygodniowa',Weekly:'tygodniowa',MONTHLY:'miesięczna',Monthly:'miesięczna',QUARTERLY:'kwartalna',Quarterly:'kwartalna',ANNUAL:'roczna',Annual:'roczna'}
-const status:Record<string,string>={COMPLETE:'Dane dostępne',MISSING_OBSERVATION:'Brak notowania w wybranym okresie',INCOMPLETE_COVERAGE:'Niepełne dane okresu',EXCLUDED_ZERO_WEIGHT:'Udział 0% — poza obliczeniem',OPEN_PERIOD:'Okres jeszcze otwarty',NO_MATCHING_PERIOD:'Brak zgodnego okresu',NO_OBSERVATIONS:'Brak notowań',NOT_ASSESSED:'Dostępność nie została sprawdzona'}
+const status:Record<string,string>={COMPLETE:'Dane dostępne',MISSING_OBSERVATION:'Brak notowania w wybranym okresie',INCOMPLETE_COVERAGE:'Niepełne dane okresu',EXCLUDED_ZERO_WEIGHT:'Udział 0% — poza obliczeniem',OPEN_PERIOD:'Okres jeszcze otwarty',NO_MATCHING_PERIOD:'Brak zgodnego okresu',NO_OBSERVATIONS:'Brak notowań',NOT_ASSESSED:'Dostępność nie została sprawdzona',DUPLICATE_NATIVE_PERIOD:'Konflikt notowań w jednym okresie',DUPLICATE_OBSERVATION:'Powtórzone znaczniki czasu',INVALID_PRICE_LEVEL:'Historia nie spełnia wymagań modelu'}
 export function BasePeriodFields({controller:c}:{controller:PciBusinessController}){
  const p=c.purchase,a=c.preparation,data=a?.data,alert=useRef<HTMLDivElement>(null)
  const [year,setYear]=useState('')
@@ -42,7 +42,7 @@ export function BasePeriodFields({controller:c}:{controller:PciBusinessControlle
    {c.onPrepare&&<button onClick={c.onPrepare} disabled={a?.status==='loading'||!p.purchaseDate||!p.referenceDate||!p.periodBasis||c.components.some(v=>!v.valueKind)}>{a?.status==='loading'?'Sprawdzanie notowań…':'Sprawdź dostępność danych'}</button>}
    {!a?.data&&a?.status!=='loading'&&<p>Uzupełnij daty i potwierdź znaczenie danych każdego komponentu. Następnie sprawdź dostępność; aplikacja nie wybierze daty za Ciebie.</p>}
    {a?.error&&<p role="alert" className="pci-base-error">{a.error}</p>}
-   {data&&<><p>Wspólna częstotliwość: {frequency[data.cadence??'']??data.cadence??'brak zgodnej metody'}. Dopuszczalne okresy dla daty zakupu: {eligible.length}.</p>
+   {data&&<><p>Wspólna częstotliwość: {frequency[data.cadence??'']??data.cadence??'nie ustalono — sprawdź przyczynę poniżej'}. Dopuszczalne okresy dla daty zakupu: {eligible.length}.</p>
     {data.issues.length>0&&<ul className="pci-base-error" aria-live="polite">{data.issues.map((i,index)=><li key={i.code+index}>{i.message}</li>)}</ul>}
     {data.periods.length>0&&<div className="pci-date-grid"><label>Rok dostępnej historii<select value={shownYear} onChange={e=>setYear(e.target.value)}>{years.map(v=><option key={v}>{v}</option>)}</select></label>
      <label>Wspólny zamknięty okres<select aria-label="Wspólny zamknięty okres" value={data.periods.some(v=>v.start===p.referenceDate&&v.start.startsWith(shownYear))?p.referenceDate:''} onChange={e=>c.onPurchaseChange({referenceDate:e.target.value})}><option value="">Wybierz okres obejmujący datę zakupu</option>{data.periods.filter(v=>v.start.startsWith(shownYear)).map(v=><option key={v.start} value={v.start} disabled={!v.eligible}>{v.start} – przed {v.endExclusive}{v.eligible?'':' · poza datą zakupu'}</option>)}</select></label></div>}
