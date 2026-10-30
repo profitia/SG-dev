@@ -15,9 +15,10 @@ export function assertPciSmartIntegrity(receipt,current,historical){
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),a.changedSourcePaths)
  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).filter(([f])=>f.startsWith('apps/sg-runtime/')).map(([f,d])=>[f.slice(16),d])))
  for(const[file,hash]of Object.entries(a.sourceDigests)){
-  assert(!file.startsWith('/')&&!file.split('/').includes('..')&&(file.startsWith('apps/sg-runtime/')||file.startsWith('packages/sg2-price-change-index-ui/')||file==='.github/workflows/sg2-price-change-index-ci.yml'))
+  assert(!file.startsWith('/')&&!file.split('/').includes('..')&&(file.startsWith('apps/sg-runtime/')||file.startsWith('packages/sg2-price-change-index-ui/')||file.startsWith('apps/sg2-price-change-index-demo/test/')||file==='.github/workflows/sg2-price-change-index-ci.yml'))
   assert.match(hash,/^[a-f0-9]{64}$/);assert.equal(digest(current(file)),hash,'exact smart source '+file)
  }
+ assert.deepEqual(a.preservedEnginePaths,prior.bqlPciFirstSourceCompatibility.preservedEnginePaths.filter(file=>file!=='apps/sg-runtime/lib/cost-analysis/price-change-index-operation.ts'))
  for(const file of a.preservedEnginePaths)assert.equal(digest(current(file)),digest(historical(a.previousReceiptSourceSha,file)),'unchanged engine '+file)
  for(const flag of ['cciCoreChanged','indexedPriceChanged','sourceHistoryChanged','authorizationContractChanged','schemaChanged','newPaidProviderCalls','srmRuntimeChanged','productDeploymentPerformed'])assert.equal(a[flag],false,flag)
  return{prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}

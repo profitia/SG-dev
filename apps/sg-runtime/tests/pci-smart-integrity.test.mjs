@@ -14,3 +14,8 @@ test('tampered current file, receipt, historical digest, engine and rollback evi
  const engine=r.pciSmartPreparationCompatibility.preservedEnginePaths[0]
  assert.throws(()=>assertPciSmartIntegrity(r,f=>f===engine?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
 })
+test('every changed SG2 source in the candidate has an exact additive binding',()=>{
+ const a=receipt().pciSmartPreparationCompatibility
+ const changed=execFileSync('git',['diff','--name-only',a.previousReceiptSourceSha,'--','apps/sg-runtime','packages/sg2-price-change-index-ui','apps/sg2-price-change-index-demo'],{encoding:'utf8'}).trim().split('\n').filter(f=>f&&f!=='apps/sg-runtime/operation-integration.json').sort()
+ assert.deepEqual(a.changedSourcePaths,changed)
+})
