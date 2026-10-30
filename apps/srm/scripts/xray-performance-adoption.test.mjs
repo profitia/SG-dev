@@ -17,7 +17,9 @@ const postfetch=JSON.parse(read('operation-integration.json')).freshPostfetchRec
 const preparedEvidence=JSON.parse(read('operation-integration.json')).freshPreparedEvidenceRecovery
 const msrEligibility=JSON.parse(read('operation-integration.json')).freshMsrEligibilityRecovery
 const projectionCpu=JSON.parse(read('operation-integration.json')).freshProjectionCpuRecovery
-const beforeProjectionCpu=file=>projectionCpu?.applicationSourceDigests[file]?execFileSync('git',['show',projectionCpu.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const persisted=JSON.parse(read('operation-integration.json')).freshPersistedResultRecovery
+const beforePersisted=file=>persisted?.applicationSourceDigests[file]?execFileSync('git',['show',persisted.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const beforeProjectionCpu=file=>projectionCpu?.applicationSourceDigests[file]?execFileSync('git',['show',projectionCpu.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforePersisted(file)
 const beforeMsrEligibility=file=>msrEligibility?.applicationSourceDigests[file]?execFileSync('git',['show',msrEligibility.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeProjectionCpu(file)
 const beforePreparedEvidence=file=>preparedEvidence?.applicationSourceDigests[file]?execFileSync('git',['show',preparedEvidence.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeMsrEligibility(file)
 const beforePostfetch=file=>postfetch?.applicationSourceDigests[file]?execFileSync('git',['show',postfetch.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforePreparedEvidence(file)
@@ -41,7 +43,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):rural?.applicationSourceDigests[file]?execFileSync('git',['show',rural.authorityBaseSha+':'+posix.normalize('apps/srm/'+file)]):peer?.applicationSourceDigests[file]?execFileSync('git',['show',peer.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fresh.applicationSourceDigests[file]?execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRefinement(file)),digest,'historical '+file)
- for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))
@@ -169,6 +171,19 @@ test('financial CPU recovery preserves accepted history, projection version and 
  assert.equal(a.platformVersion,'1.32.3');
  assert.equal(a.documentMappingVersionChanged,false);assert.equal(a.invocationOnlyFamilyPreparation,true);
  for(const flag of['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
+ assert(Object.keys(a.applicationSourceDigests).length>=10);
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforePersisted(file)),digest,file);
+});
+
+
+test('persisted Source result reuse preserves all prior receipts and current security boundaries',()=>{
+ const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshPersistedResultRecovery;
+ const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
+ assert.equal(hash(previous),a.previousReceiptDigest);
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k);
+ assert.equal(a.platformVersion,'1.32.3');
+ for(const flag of ['onlyAtomicInsertMayReuse','actualReturningRows','existingHistoryReadPreserved','sourceCommitAndReceiptPreserved','peerBoundaryTiming'])assert.equal(a[flag],true,flag);
+ for(const flag of ['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
  assert(Object.keys(a.applicationSourceDigests).length>=10);
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(read(file)),digest,file);
 });

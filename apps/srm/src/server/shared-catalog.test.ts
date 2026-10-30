@@ -37,6 +37,33 @@ import { writeSharedCompany, writeFinancialIndicators, readFinancialIndicators }
 import { mapMgbiFinancialRecords } from './mgbi-financial';
 const NIP = '5272443955', PROOF = '40000000-0000-4000-8000-000000000001';
 
+test('only an atomically inserted global catalog row can reuse actual stored publication rows', async () => {
+ const mapped=mapMgbiFinancialRecords([{id:'b'.repeat(24),identifiers:{pl_nip:NIP,pl_krs:'0000217580'},
+  document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31'},
+  content:{schema:{name:'JednostkaInnaWZlotych'},standardized_fields:{bs:{a_ca_cfy:'300',lae_lapfl_stl_cfy:'200'}}}}],
+  {type:'NIP',value:NIP},'2026-10-19T00:00:00.000Z');
+ const input={general:{...mapped.section,data:null},financial:mapped.section,generalSnapshotId:PROOF,financialSnapshotId:PROOF,facts:mapped.facts};
+ const actualFacts=mapped.facts.map(f=>({...f,sourceSnapshotId:PROOF,amount:f.metricCode==='BS_A_CA'?'301.00':f.amount}));
+ const actualRow={nip:NIP,general_json:input.general,general_sha256:'a'.repeat(64),general_source_snapshot_id:PROOF,
+  financial_json:{...mapped.section,catalogMappingVersion:FINANCIAL_MAPPING_VERSION},financial_sha256:'b'.repeat(64),financial_checked_at:'2026-10-19T00:00:00.000Z',financial_source_snapshot_id:PROOF};
+ for(const mode of ['new','existing','preserved','private','partial'] as const){
+  let captured:Parameters<NonNullable<Parameters<typeof writeSharedCompany>[4]>>[0]|undefined;
+  const client={query:async(sql:string)=>({rows:sql.includes('RETURNING nip')?(sql.includes('financial_json')?[actualRow]:mode==='existing'?[]:[{nip:NIP}]):sql.includes('RETURNING metric_code')?(mode==='partial'?actualFacts.slice(1):actualFacts):[]})} as unknown as Pick<PoolClient,'query'>;
+  assert.equal(await writeSharedCompany(client,mode==='private'?'11111111-1111-4111-8111-111111111111':null,NIP,
+   {...input,preserveGeneral:mode==='preserved'},value=>{captured=value}),undefined);
+  if(mode!=='new'){assert.equal(captured,undefined,mode+' requires full stored-history read');continue;}
+  assert.deepEqual(captured,{...actualRow,facts:actualFacts});
+  const noRead={query:async(sql:string)=>{assert(!sql.startsWith('SELECT'));return {rows:[]}}} as unknown as Pick<PoolClient,'query'>;
+  const calculated=await writeFinancialIndicators(noRead,NIP,mapped.section.data!,undefined,captured);
+  const ordinary={query:async(sql:string)=>({rows:sql.startsWith('SELECT')?actualFacts:[]})} as unknown as Pick<PoolClient,'query'>;
+  assert.deepEqual(calculated,await writeFinancialIndicators(ordinary,NIP,mapped.section.data!));
+  // The original calculator rejects the stored/input mismatch. Reusing the
+  // unpersisted packet instead would incorrectly produce a valid 1.500000.
+  assert.equal(calculated.find(i=>i.code==='CURRENT_RATIO')?.value,null);
+  await assert.rejects(writeFinancialIndicators(noRead,'0000000000',mapped.section.data!,undefined,captured),/identity mismatch/);
+ }
+});
+
 test('the single explicit catalog writer preserves legacy owner values and allows real global SOURCE lineage', async () => {
   const source = mapMgbiFinancialRecords([{id:'b'.repeat(24),identifiers:{pl_nip:NIP,pl_krs:'0000217580'},
     document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31'},
