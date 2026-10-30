@@ -6856,5 +6856,44 @@
     "runtimeDeploymentPerformed": false,
     "paidAcquisitionsPerformed": false,
     "previousConsumerSourceSha": "3a4e8316465355be6acf359d91d4e5e56b9410d4"
+  },
+  "freshResultCaptureRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "targetEnvironment": "development",
+    "scope": "REMOVE_UNUSED_RETURN_DATA_DIGESTS_ONLY",
+    "previousReceiptSourceSha": "9e164df67e6e356975ad7b4f572abc5bef407f3d",
+    "previousReceiptDigest": "13c4945b8f9c51610f3c7b8db194fff50452c38059d4b65267510265077ceae1",
+    "platformVersion": "1.32.3",
+    "requiredManifestDigestsPreserved": true,
+    "immutableReturnedDataPreserved": true,
+    "currentChecksPreserved": true,
+    "authorizationChanged": false,
+    "contractsChanged": false,
+    "sqlChanged": false,
+    "providerPolicyChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "livePerformanceThresholdsClaimed": false,
+    "localSyntheticReturnCopyBenchmark": {
+      "syntheticReplayOnly": true,
+      "liveProvider": false,
+      "liveLatencyClaimed": false,
+      "payloadBytes": 754713,
+      "iterations": 15,
+      "beforeMedianMs": 10.613582999999949,
+      "afterMedianMs": 3.8990420000000086,
+      "canonicalDigestAndDataIdentical": true
+    },
+    "applicationSourceDigests": {
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "8a596813c2947b9fa5e68fb8f9e2eed69a286073312bac4b2dbaf23d981066c7",
+      "scripts/native-execution-adoption.test.mjs": "efe6005297a3cbc024a5fb1915063f3027c32f1d3681c434fe0621a3762bfe84",
+      "scripts/rural-location-release.test.mjs": "2b57598563fc8d54fd6c992b602b94c8a45a2e088fef62cca994487f7384e96a",
+      "scripts/xray-performance-adoption.test.mjs": "b73d070260938a4e0fdadc21c4c7ad8cfc8dbd0ab23e9b8dd7caa1451875bfd5",
+      "scripts/xray-workflow-contract.test.ts": "3ebad1713aa9ce95f7ee68228a3cd0399bd1a4279de66e86d84b64731fdfe1eb",
+      "src/server/peer-read-boundary.test.ts": "de61f771c18eb22d9eefe7cd7ebec882b876dc1c5673ac054881131651bd411b",
+      "src/server/private-work-json.test.ts": "2d5b9f8ae5d113ec281934bc6cb1a1a8e9c2d25efcae7a03c93924890818a935",
+      "src/server/private-work-json.ts": "bb9dff209e9738bd45ff1fc1d0538d912436560d37a1e184a203549047c769b2",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "ec123304d761c381ba1baafa829f5397754c921dd567052a1500f63710e2defe",
+      "src/server/supplier-native-work-store.ts": "8ea80153000e9f896f442bf7250773ec06f1ae6d114ba1bad18bef30fb04ecda"
+    }
   }
 }
