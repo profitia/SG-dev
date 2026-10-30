@@ -86,8 +86,6 @@ window.addEventListener('load', async () => {
       }
 
       if (!(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_EXPIRED');
-      status.textContent = cfg.en ? 'Your account is ready.' : 'Konto gotowe.';
-      if (window.spendGuruAccountReady) await window.spendGuruAccountReady();
       if (current !== generation || window.Clerk.session?.id !== key) return;
       window.location.replace(cfg.returnTo);
     } catch (error) { if (current === generation && error.name !== 'AbortError') unavailable(); }
