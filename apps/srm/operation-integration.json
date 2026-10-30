@@ -6513,6 +6513,7 @@
     "performanceThresholdsClaimed": false,
     "applicationSourceDigests": {
       "scripts/native-execution-adoption.test.mjs": "7fb6dfaa7493915b6d8abf5499588db0487c8fc7fc562a69d8670933808e4256",
+      "scripts/rural-location-release.test.mjs": "05b44643eeb4bfde125d0c9cab930a2be132a36c93a770204c08e9ee4af9ad04",
       "scripts/task02r-release-source.test.mjs": "00d20e4024b6f786ef668db49d293f417e6d2e5297d25601f8041b6d81cc6092",
       "scripts/xray-performance-adoption.test.mjs": "20cb1bee33acb9bb457f739d79e7616194bad7405d012148efa45260aafc35aa",
       "scripts/xray-workflow-contract.test.ts": "47f55300181d609dae4cbde47496be382183d22f0fe2063e93f7811e1beb99d4",
