@@ -28,3 +28,18 @@ export function pciResult(response:Extract<PciAnalysisResponse,{status:'CALCULAT
           changePercent:core?.benchmarkRelative==null?null:(core.benchmarkRelative-1)*100}
       })}))}
 }
+
+/** Versioned smart preparation input; legacy journey callers remain supported. */
+export function pciSmartInput(name:string,components:readonly PciComponent[],purchase:PciBusinessPurchase,locale:'pl'|'en',mode:'PREPARE'|'ANALYSE',options:{olderYear:number|null;reference?:import('../../lib/cost-analysis/pci-smart-preparation-contracts').SmartPciRequest['reference']}):import('../../lib/cost-analysis/pci-smart-preparation-contracts').SmartPciRequest{
+  const legacy=pciInput(name,components,purchase)
+  const {referenceDate,economicPeriodApproved,...anchor}=legacy.purchase
+  return {contractVersion:'sg2.price-change-index.smart/1.0.0',mode,locale,organisationId:legacy.organisationId,category:legacy.category,purchase:anchor,
+    declarations:components.map(c=>({componentId:c.id,...(c.valueKind?{valueKind:c.valueKind}:{}),...c.preparationMethod,reduction:c.preparationMethod?.reduction??'AUTO',verified:c.preparationMethod?.verified??false})),
+    ...(options.olderYear===null?{}:{olderYear:options.olderYear}),...(options.reference?{reference:options.reference}:{})}
+}
+export function pciMarketResult(response:Extract<import('../../lib/cost-analysis/pci-smart-preparation-contracts').SmartPciResponse,{status:'PROXY_MARKET_ONLY'}>):import('@profitia/sg2-price-change-index-ui').PciMarketIndexResult{
+  return {variant:'EARLIER_MARKET_PROXY',methodologyId:response.calculation.methodologyId,cadence:response.calculation.analysisCadence,baseDate:response.reference.period.start,
+    purchaseDate:response.purchaseContext.purchaseDate,purchaseAmount:response.purchaseContext.amount,purchaseCurrency:response.purchaseContext.currency,purchaseUnit:response.purchaseContext.unit,
+    comparisonStatus:response.comparisonStatus,limitations:response.preparation.limitations,
+    nodes:response.calculation.nodes.map(n=>({date:n.period.start,cci:n.cci,changePercent:n.changeFromBasePercent,components:n.components.map(c=>({id:c.componentId,contributionPP:c.contributionFromBasePP}))}))}
+}
