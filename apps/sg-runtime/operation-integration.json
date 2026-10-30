@@ -4826,7 +4826,20 @@
       "currentHumanReadSourceDigest": "8783f64acac6ec903db4b40d2137d8c31467dea2c148a616f8942867536ef084",
       "peerOperationSourceDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7"
     },
-    "applicationSourceDigests": {},
+    "applicationSourceDigests": {
+      "../dashboard-preview/package-lock.json": "570ca613dd68ae26579bcda3c8de1158175cc14677ae5fff74c5211d10df37e0",
+      "package-lock.json": "9ac3dd6c224c5c8203d923c8cfc79c0d37f9218f71bfc2ef1a0b682840172282",
+      "tests/category-operation.test.ts": "f44d20bdd0fc648cf3c9a64e22199f465735232f380a400705e016dba01bafd8",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "81a36b3ad8d756a5f253c62cd0968028f17c3994e8c6d2e1e56ea71268667fa0",
+      "tests/identity-runtime.test.ts": "8ed504e06d213c0ed026124eb81c2cc405ad9cdb7bc5603b9a1e83fc7ec8cdd8",
+      "tests/native-sql-roundtrips.test.mjs": "04ec5f1ffd64cc88622658bceff00645fd036d3ecf96d0bc687c133e07cc1ddd",
+      "tests/operation-context.test.mjs": "70732e45f5063e3c75a24d216f25dac392d8a561b90c1525a661a6efa467812c",
+      "tests/porr-demo-middleware.test.ts": "f29fcd9e325cd9192deb8d96686c72444effe392fccbdf7a415cf4eaed31fc26",
+      "tests/private-host.integration.test.mjs": "8e6dd1119f8879f67fbeb82556dd8b0a9380f2c4e4425c9940c830fb0300b627",
+      "tests/self-service-account.test.ts": "38e3fdf3871a283cf63fc8954310c7fd943289a2cd468676c764328cb1f52bd0",
+      "tests/xray-fresh-performance-adoption.test.mjs": "f3b4b1b9cda3c11c6d6739874ea2cc58432ee46f09d1b1b8fc6ef7899fa50764",
+      "tests/xray-gateway.test.ts": "e820c3a6de06b95a2bd7be18349617c957b7296292462664a11ed8da66defe3f"
+    },
     "maximumLeaseMs": 30000,
     "maximumClockDivergenceMs": 1000,
     "subtractsEntireQueryRoundTrip": true,
