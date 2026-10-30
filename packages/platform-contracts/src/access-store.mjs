@@ -1,3 +1,4 @@
+import {boundedDatabaseLease} from './database-lease.mjs'
 import { createHash } from 'node:crypto'
 import { OperationDenied, normalizeModuleEvidence } from './operation-context.mjs'
 
@@ -55,11 +56,17 @@ export function createAccessStore({ binding, now = Date.now }) {
     return rows[0]
   }
   const authority = async (query, extra = '', values = []) => {
+    const startedMs=now()
     const row = await one(query, `SELECT current_database() AS database_name,current_user AS role,session_user AS login,
       r.rolsuper,r.rolbypassrls,r.rolcreatedb,r.rolcreaterole,r.rolinherit,
-      profitia_access.runtime_descriptor() AS descriptor${extra} FROM pg_roles r WHERE r.rolname=current_user`, values)
+      profitia_access.runtime_descriptor() AS descriptor${extra},extract(epoch from clock_timestamp())*1000 AS descriptor_observed_ms FROM pg_roles r WHERE r.rolname=current_user`, values)
     const d = row?.descriptor
     if (!row || row.database_name !== config.databaseName || row.role !== config.role || row.login !== config.role || ['rolsuper', 'rolbypassrls', 'rolcreatedb', 'rolcreaterole', 'rolinherit'].some(key => row[key] !== false) || !d || d.schemaVersion !== ACCESS_STORE_CONTRACT.schemaVersion || d.schemaDigest !== config.schemaDigest || d.applicationId !== config.applicationId || d.environment !== config.environment || d.projectId !== config.projectId || d.branchId !== config.branchId || d.databaseName !== config.databaseName || d.role !== config.role) fail()
+    if(Object.hasOwn(row,'service_descriptor')&&row.service_descriptor!==null){
+      const bounded=boundedDatabaseLease(row.service_descriptor,row.descriptor_observed_ms,startedMs,now())
+      if(!bounded)fail()
+      return {...row,service_descriptor:bounded}
+    }
     return row
   }
   const descriptor = async query => (await authority(query)).descriptor
@@ -219,7 +226,8 @@ export function accessStoreSourceDigest() {
     .update(fs.readFileSync(new URL('./access-store.d.mts', import.meta.url)))
     .update(fs.readFileSync(new URL(accessSchemaUrl)))
     .update(fs.readFileSync(new URL(moduleAuditSchemaUrl)))
-    .update(fs.readFileSync(new URL(serviceReadSchemaUrl))).digest('hex'))
+    .update(fs.readFileSync(new URL(serviceReadSchemaUrl)))
+    .update(fs.readFileSync(new URL('./database-lease.mjs',import.meta.url))).digest('hex'))
 }
 export function accessSchemaDigest() {
   return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL(accessSchemaUrl))).digest('hex'))
@@ -228,5 +236,6 @@ export function moduleAuditSchemaDigest() {
   return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL(moduleAuditSchemaUrl))).digest('hex'))
 }
 export function serviceReadSchemaDigest() {
-  return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL(serviceReadSchemaUrl))).digest('hex'))
+  return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL(serviceReadSchemaUrl)))
+    .update(fs.readFileSync(new URL('./database-lease.mjs',import.meta.url))).digest('hex'))
 }
