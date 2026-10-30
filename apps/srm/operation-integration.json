@@ -6807,5 +6807,54 @@
       "src/server/supplier-location-geocoding-runtime.test.ts": "da719d58ed70dabd5ab0b2589e021e29e858934496b8a1c1e3ea03cd882d6927",
       "src/server/supplier-native-runtime.ts": "aa18390961dccd4ad5266935a6f16aaad8a985ec3b73c41e0893666685ac3a96"
     }
+  },
+  "bqlPciIntegrityContinuation": {
+    "taskId": "SRM-BQL-PCI-SOURCE-INTEGRITY-20261030",
+    "scope": "ADDITIVE_TEST_SOURCE_CONTINUITY_ONLY",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "41da3789bc03a1072cd4b040ed512fbf594fced0",
+    "previousReceiptSha256": "0d6c444c1469b39bcc2d0c30073247153834ba9dae29bd7c518399dcbde475ed",
+    "applicationSourceDigests": {
+      "scripts/native-execution-adoption.test.mjs": "6bd15ee4812084386607597e4a082abbfd1e2c634c8472011d3247ff2c6406a8",
+      "scripts/rural-location-release.test.mjs": "08a30062a355b34127028a03b6ba245a18f962dc9280673737acbf2d581d4f43",
+      "scripts/xray-performance-adoption.test.mjs": "aea4ef53c64d018ca269c7a166e97643b5accba7c9e644dc3b7df8b86bf20011",
+      "scripts/xray-workflow-contract.test.ts": "4d1efba38785fb9dbb0aa28d5e2e09d95bbe4d16706634054f4111a207bc40a9",
+      "src/server/peer-read-boundary.test.ts": "84b99e974cdc9e06615cc8133dd9fe4dae783262b4803597fe88d48dc74ec895",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "ecffe0b8cba39beb65584d01416c3785f373feb8ede7397a200d4635fbcc98c4"
+    },
+    "consumerSourceDigests": {
+      "../sg-runtime/components/auth/account-landing.tsx": "88eda002b9c2f7c7c9e34bbe1286dd85f265bf02d5efff749e0dc99e8cd19c85",
+      "../sg-runtime/components/price-change-index/price-change-index-layer.tsx": "1db52e07e43e1a9ac5ea5ac0684afa62be49bdcda8bebd81ac5724cf2900d3de",
+      "../sg-runtime/docs/pci-live-acceptance-stabilization.md": "5fb9aec0cec4d514ce347fb8e58c6c2302d76218f249bea3a4d92a66a223dcb4",
+      "../sg-runtime/lib/cost-analysis/price-change-index-host.ts": "6046335c556b0f94f7fd76c96ea16d7b7840392279b2bc09018d303a8cd9cc93",
+      "../sg-runtime/lib/cost-analysis/price-change-index-messages.ts": "70c8fd99c09d5a488c845491349647a79fcf24c81d88e2ff54d9ab7e433a75d7",
+      "../sg-runtime/lib/cost-analysis/price-change-index-preparation.ts": "a6fe3ca8078e24c25e2718f987a215fef0589c9d36df4e586974fed125648ee5",
+      "../sg-runtime/operation-integration.json": "f5ce5fe6b86015b49a7824c5ec8e323dc619eaf5bf857fb3f32a858feb499b86",
+      "../sg-runtime/package.json": "7ef667666ab6711adc5bd07dc0cccfdfda66ebe04a66c6991ff5b72f0d3c084d",
+      "../sg-runtime/tests/account-landing-lifecycle.test.tsx": "5a933d3d54b8890ac8436632e9eb3d9855efcc26606f82a5a4d9ff383bde9bcb",
+      "../sg-runtime/tests/adp-appshell-consumer.test.tsx": "14d206e73d8827a387e8dc62d14be227333f032380cf78a88d28dff3ca1766be",
+      "../sg-runtime/tests/category-operation.test.ts": "9d929029b2bdb2b7c33e735e7e9ff611780f500dd47dc9cc1b03dc86bbef932c",
+      "../sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "2be43963d68e37d732c8af8ded7a9762060e4e03f52847516be2e05ca741f8d7",
+      "../sg-runtime/tests/identity-runtime.test.ts": "819031efbe017d9976b51c4edf84620acc846287dc85ffc0f0acd572e9bc4728",
+      "../sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "33a604a6afed6c81452d43dacd58f8fa554f399ede0941828e69a2518215003c",
+      "../sg-runtime/tests/integrated-buyer-journey-request.test.ts": "8bc91f19113e2e8b63d9bff87c94dd46b59e9a7688a9f3ef3229744181db3f47",
+      "../sg-runtime/tests/native-sql-roundtrips.test.mjs": "aac915e06c1f56eae8feb8f6801ca94309704cfb2c256605fac1b3fbb2d4a08f",
+      "../sg-runtime/tests/operation-context.test.mjs": "48c98f1c1b73b1a183af46d9f7bffb90e86dcfdb25f7e753866dff7448ae1764",
+      "../sg-runtime/tests/pci-live-acceptance-preview.mjs": "2cc22d68bd5071a7d4f98ca541e30bd35ab785b1d320dab683ec40203ddd51cb",
+      "../sg-runtime/tests/pci-live-acceptance-preview.tsx": "2dc415c41fd6cc1457c78284f5b6a45ccf8a731126f35a0e3a2e5ff239df6b93",
+      "../sg-runtime/tests/porr-demo-middleware.test.ts": "215a0d35ef51be50f1bb4e8d95652891f429ef7db8101981b635f78499c90932",
+      "../sg-runtime/tests/price-change-index-preparation.test.ts": "012da9e5923c34728083490fd29b5f0061d1561011a6c1ff47234eb4d37cef9d",
+      "../sg-runtime/tests/self-service-account.test.ts": "18a3e7d1a4a7fa399f35d70e857da7e1c56988dcdba24e3ed148ddda0f89407e",
+      "../sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "adb9514df0e0057ec000a9a480a45188db3600dd516659af8a22d47a9a473ff3",
+      "../sg-runtime/tests/xray-gateway.test.ts": "4cc9701d16a0e00bffca4e98c1a4f76e2bb4e558b33770dd86e4f796a01ac3d1"
+    },
+    "runtimeChanged": false,
+    "authorizationChanged": false,
+    "sqlChanged": false,
+    "contractsChanged": false,
+    "businessDataChanged": false,
+    "runtimeDeploymentPerformed": false,
+    "paidAcquisitionsPerformed": false,
+    "previousConsumerSourceSha": "3a4e8316465355be6acf359d91d4e5e56b9410d4"
   }
 }

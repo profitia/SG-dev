@@ -1,6 +1,7 @@
 'use client'
 
 import {PriceChangeIndexLayer} from '../price-change-index/price-change-index-layer'
+import {BenchmarkQualification} from '../benchmark-picker/benchmark-qualification'
 import {FinderGlyph} from './visual/benchmark-presentation'
 import {CanonDropdown} from './visual/magicpath/CanonDropdown'
 
@@ -2497,6 +2498,7 @@ export function BenchmarkFinderClient({
                       {candidate.aiReason ? <p className="mt-2 text-sm text-slate-600">{t('results.whyThisMatch', { value: candidate.aiReason })}</p> : null}
 
                       {conciseMetadata ? <p className="bf-metadata">{conciseMetadata}</p> : null}
+                      <BenchmarkQualification candidate={enrichedCandidate} locale={locale} modelContext="PCI"/>
                     </div>
 
                     <div className="bf-card-values bf-candidate-value">

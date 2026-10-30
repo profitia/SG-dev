@@ -8,6 +8,7 @@ import type {
 import { prisma } from '@/lib/db/prisma'
 import type { BenchmarkCandidate, SavedBenchmark } from '@/lib/benchmark/contracts'
 import { resolveSavedBenchmarkDisplayName } from '@/lib/benchmark/presentation'
+import { classifyBenchmark } from '@/lib/benchmark/qualification'
 
 type MappingWithRelations = BenchmarkProviderMapping & {
   businessBenchmark: BusinessBenchmark & {
@@ -21,6 +22,13 @@ function toSavedBenchmark(mapping: MappingWithRelations): SavedBenchmark {
     .sort((left: OrganizationBenchmarkSelection, right: OrganizationBenchmarkSelection) => right.createdAt.getTime() - left.createdAt.getTime())[0]
 
   return {
+    semanticProfile: classifyBenchmark({
+      displayName: mapping.title || mapping.businessBenchmark.displayName,
+      description: mapping.businessBenchmark.description,
+      currency: mapping.currency, unit: mapping.unit, frequency: mapping.frequency, source: mapping.sourceLabel,
+      metadata: mapping.metadataJson,
+      providerSeries: {provider:{providerCode:'MACROBOND',displayName:mapping.providerDisplayName},providerSeriesId:mapping.providerSeriesId},
+    }),
     selectionId: latestSelection?.id ?? '',
     businessBenchmarkId: mapping.businessBenchmark.id,
     organizationId: mapping.organizationId,
