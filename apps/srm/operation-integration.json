@@ -6617,7 +6617,8 @@
       "src/server/ready-report-source.ts": "38d29668e386d4b9096aec61c65e46555bc94271a5568af1cecb8c887f103ac6",
       "src/server/shared-catalog.test.ts": "c2276778377caa2eeaf57f3b93f41462a74f540bdc2f8d7921f8fceeedd27808",
       "src/server/shared-catalog.ts": "a7e51c6c0ea30b413bbe7fe8d52ee266cb99ad62b7515e93f5987c983e2d5cb4",
-      "src/server/supplier-location-geocoding-runtime.test.ts": "f0cc20a185b4a2c930c050cdd95d1f89a313e52163544945e8e45a022e12fdf5"
+      "src/server/supplier-location-geocoding-runtime.test.ts": "f0cc20a185b4a2c930c050cdd95d1f89a313e52163544945e8e45a022e12fdf5",
+      "scripts/corporate-source.integration.test.mjs": "7bcd25808e52dfcfc32e135e586814635618fde80025669db8ad6d329428332a"
     }
   }
 }
