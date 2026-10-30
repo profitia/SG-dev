@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-CURRENT-HUMAN-PEER-READ-20261029",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "authorityBaseSha": "b44e33aee5a1a2ada9cf6ab5d7965b17506e37dc",
+  "platformVersion": "1.32.1",
+  "contract": {
+    "id": "profitia.external-call.failure-observation",
+    "version": "1.0.0"
+  },
+  "scope": "Original-host non-serializable observation of a native response rejected by bounded decoding, exposed only after current Source confirmation and committed independently-read UNVERIFIED settlement. Does not expose provider data, redirects, authorization or retry authority.",
+  "unchanged": [
+    "external-call1.0.0 admission and SQL schema",
+    "native redirect destination policy and no automatic follow",
+    "Source current revalidation, audits, effects and settlement status",
+    "HUMAN admission/final disclosure, RLS and tenant access",
+    "limits, retained data and provider retry policy"
+  ],
+  "negativeCases": [
+    "fabricated and serialized observations",
+    "Source revocation",
+    "control/audit failure",
+    "lost COMMIT acknowledgement",
+    "repeat intent without new upstream attempt"
+  ],
+  "requiredConsumerTasks": {
+    "SRM": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "SG2": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029"
+  },
+  "localTests": {
+    "nativePostgres18": 26,
+    "failed": 0,
+    "skipped": 0,
+    "realProviderCalls": 0,
+    "platformContracts": 1176,
+    "platformContractsPassed": 1172,
+    "platformContractsSkipped": 4
+  },
+  "sourceDigests": {
+    "src/external-call.mjs": "476da49a3c37c1bae9b2e328fb2da055cb06eec788fd093db9e11fbdcfec7802",
+    "src/external-call.d.mts": "0fb4810f17cc1719521199974b2393f5c34667a469e8e1347390f28adae72140",
+    "test/external-call.test.mjs": "7d75ae48e11ebfa1f33b6ac96926cb53926dd1d19f40013c33a8b3b33eb12379",
+    "package.json": "3add4d285e4dcf11f94b2f846b9232dd766bb4694ebf1080b1edf92d71ff073f",
+    "package-lock.json": "d7cf56321712e1124cf704179f5f541c78f7e35e7c3bdbbecf9855f45a57d263"
+  },
+  "integrationTestDigest": "7db6c67e20608d3dd5637c67b69a2e07d6abeb8e34c24cc9dc5904906ba51165",
+  "schemaOrPolicyChanges": false,
+  "runtimeDeploymentClaimed": false,
+  "performanceThresholdsClaimed": false
+}

@@ -38,7 +38,7 @@ test('rural adoption pins exact current files and retains previous authority, pr
  const previous=execFileSync('git',['show',a.authorityBaseSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(previous),a.previousReceiptDigest)
  for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.freshRuntimeRefinement?.applicationSourceDigests[file]??receipt.freshPerformanceRecovery.applicationSourceDigests[file]??receipt.appshellReadyPeerRecovery?.applicationSourceDigests[file]??digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.settledExternalFailureRecovery?.applicationSourceDigests[file]??receipt.freshRuntimeRefinement?.applicationSourceDigests[file]??receipt.freshPerformanceRecovery.applicationSourceDigests[file]??receipt.appshellReadyPeerRecovery?.applicationSourceDigests[file]??digest,file)
  assert.equal(hash(fs.readFileSync(new URL('../db/private-store/'+a.migration,import.meta.url))),a.migrationDigest)
  for(const flag of ['providerAccuracyThresholdChanged','paidProviderPoliciesChanged','runtimeRolesOrGrantsExpanded','otherEnvironmentDeployment'])assert.equal(a[flag],false,flag)
  for(const file of ['src/server/google/geocoding.mjs','src/server/geocoding-command.mjs'])assert.deepEqual(fs.readFileSync(new URL('../../maps-runtime/'+file,import.meta.url)),execFileSync('git',['show',a.authorityBaseSha+':apps/maps-runtime/'+file]))

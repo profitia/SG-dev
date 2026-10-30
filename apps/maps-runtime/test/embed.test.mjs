@@ -1,5 +1,6 @@
 const latestAcceptance=()=>JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url)));
-const peerAcceptance=()=>{const a=latestAcceptance();return a.currentHumanReadCompatibilityOnly?a.previousAcceptance:a}
+const humanReadAcceptance=()=>{const a=latestAcceptance();return a.settledExternalFailureCompatibilityOnly?a.previousAcceptance:a}
+const peerAcceptance=()=>{const a=humanReadAcceptance();return a.currentHumanReadCompatibilityOnly?a.previousAcceptance:a}
 const currentAcceptance=()=>{const a=peerAcceptance();return a.peerOperationCompatibilityOnly?a.previousAcceptance:a}
 const diagnosticsAcceptance=()=>{const a=currentAcceptance();return a.sdk130CompatibilityOnly?a.previousAcceptance:a}
 const beforeDiagnostics=()=>diagnosticsAcceptance().previousAcceptance
@@ -161,10 +162,20 @@ test('SDK1.31 peer source compatibility preserves every prior Maps receipt and t
 });
 
 test('SDK1.32 compatibility keeps Maps channel and every prior receipt unchanged without activation',()=>{
- const a=latestAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json'])
+ const a=humanReadAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json'])
  assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptSha256)
  assert.deepEqual(a.previousAcceptance,JSON.parse(bytes));assert.deepEqual(a.sourceDigests,a.previousAcceptance.sourceDigests)
  assert.deepEqual(a.allowedPeerVersions,[...a.previousAcceptance.allowedPeerVersions,'1.32.0'])
  assert.equal(a.currentHumanReadCompatibilityOnly,true);assert.equal(a.currentHumanReadOptedIn,false)
+ for(const flag of ['providerConfigurationChanged','runtimeRoleOrGrantChanged','productDeploymentPerformed','paidGeocodingEnabled'])assert.equal(a[flag],false,flag)
+})
+
+
+test('SDK1.32.1 compatibility preserves Maps history without adopting external failure handling',()=>{
+ const a=latestAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json'])
+ assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptSha256);assert.deepEqual(a.previousAcceptance,JSON.parse(bytes))
+ assert.equal(a.platformVersion,'1.32.1');assert.deepEqual(a.allowedPeerVersions,[...a.previousAcceptance.allowedPeerVersions,'1.32.1'])
+ assert.deepEqual(a.sourceDigests,a.previousAcceptance.sourceDigests);assert.equal(a.readWireContract,a.previousAcceptance.readWireContract)
+ assert.equal(a.settledExternalFailureCompatibilityOnly,true);assert.equal(a.settledExternalFailureAdopted,false)
  for(const flag of ['providerConfigurationChanged','runtimeRoleOrGrantChanged','productDeploymentPerformed','paidGeocodingEnabled'])assert.equal(a[flag],false,flag)
 })

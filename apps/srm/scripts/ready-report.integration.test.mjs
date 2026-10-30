@@ -151,7 +151,8 @@ test('ready report native Source and current HUMAN read preserve complete financ
    let hits=0,mode='EMPTY'
    const server=http.createServer((request,response)=>{
     hits++;assert.equal(new URL(request.url,'http://local').searchParams.get('nip'),NIP)
-    response.statusCode=mode==='EMPTY'?204:mode==='OUTAGE'?503:200
+    response.statusCode=mode==='EMPTY'?204:mode==='OUTAGE'?503:mode==='REDIRECT'?301:200
+    if(mode==='REDIRECT')response.setHeader('location','https://dane.biznes.gov.pl/')
     response.setHeader('content-type','application/json');response.end(mode==='JDG'?JSON.stringify({firma:[{id:'synthetic',nazwa:'PRIVATE BUSINESS',wlasciciel:{nip:NIP,imie:'PRIVATE PERSON'}}]}):undefined)
    })
    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin='http://127.0.0.1:'+server.address().port
@@ -168,10 +169,14 @@ test('ready report native Source and current HUMAN read preserve complete financ
    const classifier=createSrmCompanyClassifier({work:{...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},source:f.source,
     apiKey:'synthetic-ceidg-token',provider:{...sourceOptions,syntheticOrigin:origin,external:{configurationVersion:'classification-provider-v1',schemaDigest:hash(f.core('009-external-call-admission.sql')),nativeSchemaDigest:hash(f.core('012-native-external-transport.sql')),maximumResponseBytes:1048576}}})
    try{
-    for(const [selected,expected]of [['EMPTY','NOT_JDG'],['JDG','JDG'],['OUTAGE','UNAVAILABLE']]){
+    for(const [selected,expected]of [['EMPTY','NOT_JDG'],['JDG','JDG'],['OUTAGE','UNAVAILABLE'],['REDIRECT','UNAVAILABLE']]){
      mode=selected;const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command},before=await f.counts(),calls=hits
      assert.equal(await classifier.classify(selection,new AbortController().signal),expected);assert.equal(hits,calls+1)
      assert.deepEqual(await f.counts(),before)
+     if(selected==='REDIRECT'){
+      const row=(await owner.query("SELECT status,http_status,response_digest FROM profitia_external_call.calls WHERE source_id=$1 ORDER BY created_at DESC LIMIT 1",[policy.source.id])).rows[0]
+      assert.deepEqual(row,{status:'UNVERIFIED',http_status:null,response_digest:null})
+     }
     }
    }finally{await new Promise(resolve=>server.close(resolve))}
   })
