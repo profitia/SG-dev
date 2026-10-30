@@ -51,6 +51,18 @@ export function qualifyScannerSources(
   documents: readonly FinancialSourceDocument[],
   asOf: string,
 ): ScannerSourceEvidence {
+  // Current and comparative periods can consult exactly the same filings.
+  // Identify the complete ordered group by its members in this invocation,
+  // preserving duplicates and distinct documents with the same record ID.
+  // This holds no source data or verdict beyond the synchronous preparation.
+  const documentIndexes = new Map(documents.map((document,index)=>[document,index]));
+  const revisions = new Map<string,ReturnType<typeof resolveDocumentFamily>>();
+  const revisionFor = (group:readonly FinancialSourceDocument[]) => {
+    const key = group.map(document=>documentIndexes.get(document)).join(',');
+    let revision = revisions.get(key);
+    if (!revision) { revision = resolveDocumentFamily(group); revisions.set(key,revision); }
+    return revision;
+  };
   return Object.fromEntries(
     financial.periods.map((p) => {
       const result: ScannerSourceEvidence[string] = {
@@ -69,7 +81,7 @@ export function qualifyScannerSources(
       if (!doc || !original) return reject("SOURCE_DOCUMENT_UNAVAILABLE");
       if (!annual(p) || !annual(doc)) return reject("NON_ANNUAL_PERIOD");
       const family = documents.filter(d => d.sourceKrs === doc.sourceKrs && d.scope === doc.scope && d.from === doc.from && d.to === doc.to && d.filingDate && d.filingDate <= asOf.slice(0,10));
-      const revision = resolveDocumentFamily(family);
+      const revision = revisionFor(family);
       if (doc.standard === "IAS_IFRS") return [id(p), qualifyMsrPeriod(p, doc, revision, asOf)];
       if (
         doc.mappingVersion !== FINANCIAL_DOCUMENT_MAPPING_VERSION ||
@@ -123,7 +135,7 @@ export function qualifyScannerSources(
         return reject("SOURCE_REVISION_UNRESOLVED");
       for (const candidate of candidates) {
         const group = candidates.filter(d => d.from === candidate.from && d.to === candidate.to);
-        if (resolveDocumentFamily(group).status !== "RESOLVED") return reject("SOURCE_REVISION_UNRESOLVED");
+        if (revisionFor(group).status !== "RESOLVED") return reject("SOURCE_REVISION_UNRESOLVED");
       }
       const column = comparative ? "KwotaB" : "KwotaA";
       const rows = new Map(

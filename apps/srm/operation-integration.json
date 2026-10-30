@@ -6556,5 +6556,35 @@
       "src/server/supplier-location-geocoding-runtime.test.ts": "bbf04eee99222ae7cc4d0af9508a962d8ba3ef639dec6dd313327a9ec0dbffda",
       "src/server/supplier-native-work-store.ts": "766f197505455716c5c7b9dd3132dccfdbadcb7b36c7bbd0f5aa2311e0c9ea87"
     }
+  },
+  "freshProjectionCpuRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "previousReceiptSourceSha": "00452a23d42fc3f97e36dd3685913f99d9361222",
+    "previousReceiptDigest": "a83763f152599770b323f959a4e5d6e90ddb0d196ad900f759b441a2527240c8",
+    "platformVersion": "1.32.3",
+    "documentMappingVersionChanged": false,
+    "invocationOnlyFamilyPreparation": true,
+    "invocationOnlyScannerPreparation": true,
+    "serverAuthorityChecksChanged": false,
+    "sourcePoliciesChanged": false,
+    "paidRetriesAdded": false,
+    "uiOrRoutingChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "applicationSourceDigests": {
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "56c5d9c61e8038323b4697fdbb933d2c45c158686cd6b1aa1feab76e9fb9b83b",
+      "scripts/native-execution-adoption.test.mjs": "4e9f3e73cb1fdce8d05e3106e08f5793d428237d8544254a0518c84051bf6a58",
+      "scripts/rural-location-release.test.mjs": "84a9cdb71d3088cdc4faf8cb84be5c4c55787ca5abb8464e2c95583e0b7f8e1c",
+      "scripts/xray-performance-adoption.test.mjs": "6bf0be756c884cfa0660b8d82d407af1fb67a12f8b7e4c2a659ebd995193c27a",
+      "scripts/xray-workflow-contract.test.ts": "cd7ed750bee883569c66a27298830e8fa374ccdb818e5227385da70fc2318016",
+      "src/server/financial-documents.test.ts": "634383f1fa0dc760bc549c206380baa5921d4eb0fce1f30656eb3fe0e8ab6bed",
+      "src/server/financial-documents.ts": "35a824e099c9c82cd2ebbcf3dbb25f8c032d3594cdcbd0a6cd0bd1c324b5f329",
+      "src/server/financial-scanner-source.test.ts": "9e83a252bc08c05fe8e1908a5634415c5012cf5e87a35a09eeb9d579b8b85ed3",
+      "src/server/financial-scanner-source.ts": "4d733ad03f9d5a5dc95fe753c2af686a996f126a48f4e545f5c999d67bcb21c2",
+      "src/server/mgbi-financial.test.ts": "56610fd5335b20ec61258f7df06be5143c9b710887dad78ae44f98cf95f210a0",
+      "src/server/mgbi-financial.ts": "aa556a8397b95a710bf8dbf9bd9ad6c1032723f5c1009efb5e62f319afa4035b",
+      "src/server/peer-read-boundary.test.ts": "d3040bfb921101e7f9696ef62cc676fa6ecdae940c0523ce0073ea0ef573bad6",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "ff2c349671c0ad31f22cbe5bf2ebf7dc5ab6613c68af399629833c31b7147ace"
+    }
   }
 }

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { fetchMgbiFinancial, mapMgbiFinancialRecords } from "./mgbi-financial";
+import {projectFinancialDocuments} from './financial-documents';
+import {resolveDocumentFamily} from './financial-revisions';
 
 const identifier = { type: "KRS" as const, value: "0000162128" };
 const record = {
@@ -12,6 +14,21 @@ const record = {
   } },
 };
 const at = "2026-10-06T08:00:00.000Z";
+
+test('family preparation preserves complete revision evidence and never reuses another invocation',()=>{
+ const original={...record,id:'family-original',document:{...record.document,filing_date:'2026-06-01',is_correction:false}};
+ const copy={...original,id:'family-copy',document:{...original.document,filing_date:'2026-06-02',is_correction:true}};
+ const rows=[original,copy],expected=resolveDocumentFamily(projectFinancialDocuments(rows));
+ const first=mapMgbiFinancialRecords(rows,identifier,at);
+ assert.equal(first.section.status,'SUCCESS');
+ assert(first.section.data?.periods.every(p=>p.effectiveRevisionId===expected.id&&p.revisionStatus===expected.status));
+ const changed=structuredClone(rows);changed[1].content.standardized_fields.bs.a_ca_cfy++;
+ const changedExpected=resolveDocumentFamily(projectFinancialDocuments(changed));
+ const second=mapMgbiFinancialRecords(changed,identifier,at);
+ assert.notEqual(expected.id,changedExpected.id);
+ assert(second.section.data?.periods.every(p=>p.effectiveRevisionId===changedExpected.id&&p.revisionStatus===changedExpected.status));
+ assert.deepEqual(mapMgbiFinancialRecords(rows,identifier,at),first);
+});
 
 test("maps JSON standardized fields extracted from an XML financial statement into calculable facts", () => {
   const result = mapMgbiFinancialRecords([record], identifier, at);
