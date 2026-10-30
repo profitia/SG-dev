@@ -82,8 +82,10 @@ jobs:
         run: npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
       - name: Install pinned public transport classifier without credentials or lifecycle scripts
         run: npm --prefix packages/platform-contracts ci --ignore-scripts --no-audit --no-fund
-      - name: Test contract and laboratory guards without credentials or database access
-        run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs
+      - name: Link optional FRESH composition to the existing local SDK without credentials or lifecycle scripts
+        run: npm --prefix packages/platform-contracts/current-fresh-report ci --ignore-scripts --no-audit --no-fund
+      - name: Test canonical and optional contracts in isolated PostgreSQL
+        run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs packages/platform-contracts/current-fresh-report/test/*.test.mjs
       - name: Validate registered routing and workspace isolation
         run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/controlled-package-ci.test.mjs scripts/governance/controlled-package-ci-path-coverage.test.mjs
 
