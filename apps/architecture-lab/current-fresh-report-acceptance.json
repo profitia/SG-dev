@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "1.0",
+  "status": "CANDIDATE_SOURCE_ONLY",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCHITECTURE-FRESH-CONSOLIDATION-CANDIDATE-20261030",
+  "hostConversationId": "01a133c2-c245-77a0-bb6b-33165e2ad80c",
+  "targetEnvironment": "development",
+  "authorityBaseSha": "c9a24696d21d6387a3e4083b53634984d9ca85bc",
+  "package": {
+    "name": "@profitia/platform-current-fresh-report",
+    "version": "1.0.0",
+    "path": "packages/platform-contracts/current-fresh-report",
+    "peer": "@profitia/platform-contracts@1.32.3"
+  },
+  "contract": {
+    "id": "profitia.current-fresh-report",
+    "version": "1.0.0",
+    "sourceDigest": "e181eebc6d56f1816d780e5e0cc80779e8696ccc45638ce8db8919d461c7cb8f"
+  },
+  "unchanged": {
+    "sdkVersion": "1.32.3",
+    "currentHumanReadVersion": "1.1.0",
+    "currentHumanReadSourceDigest": "ad9c99db147d32a521166cd2956a22cfb56014c66606ee57d665f26b94fb3aac",
+    "privateOperationHostSourceDigest": "63d2e2721f2a7bc2223e90f39192e4933f657a89f91be03c84db7db9958f7a08"
+  },
+  "scope": "One request-bound COMPANY shared report opening: current probe H1/H2, guarded refresh admission with current account/session outcome, unchanged existing Source/Work, then a current final disclosure. No persisted identity or ALLOW cache.",
+  "localNewFamily": {
+    "passed": 68,
+    "failed": 0,
+    "skipped": 0,
+    "postgresqlVersion": "16.14",
+    "publicPackedInstall": "PASS_OFFLINE_NO_CREDENTIALS_OR_SCRIPTS",
+    "esmAndCommonJs": "PASS",
+    "singleCanonicalSdkPeer": "PASS",
+    "strictTypes": "PASS"
+  },
+  "controlledHumanComparison": {
+    "baselineFreshSessionReads": 5,
+    "baselineFreshAccountReads": 5,
+    "candidateFreshSessionReads": 4,
+    "candidateFreshAccountReads": 4,
+    "canonicalSqlCallCount": "UNCHANGED_IN_COMPARABLE_LOCAL_FIXTURE",
+    "readySessionReads": 2,
+    "readyAccountReads": 2,
+    "distinctFreshTransactions": 3,
+    "transactionHeldDuringSourceWork": false,
+    "sourceAndNativeAccountReadsChanged": false,
+    "liveSupplierPerformanceMeasured": false
+  },
+  "requiredConsumerAdoption": {
+    "SRM": "SEPARATE_TASK_AND_EXACT_SHA_DIGEST_ADOPTION_PENDING",
+    "SG2": "ZERO_SOURCE_OR_RECEIPT_DIFF_REQUIRED",
+    "Maps": "UNCHANGED",
+    "Identity": "UNCHANGED"
+  },
+  "sourceDigests": {
+    "current-fresh-report/package.json": "79917ba7597fcbd46146ee532b54d95c4960e1ec3183d9ced71850ee9cc284bd",
+    "current-fresh-report/package-lock.json": "a4aa3080a474d5c7190035e61cdfe0626ce90e9cc7d0a3a05db807b944e5e221",
+    "current-fresh-report/src/current-fresh-report.mjs": "29c8a0fb5d048217afd25a3678c35ff03d0d5a663ba76b338a1e8117875176cb",
+    "current-fresh-report/src/current-fresh-report.d.mts": "2da701f79cb5aaf4447239255a96169b5394f6ddd62713c19b213a240fe39a38",
+    "test/current-fresh-report.test.mjs": "334f54380819d4c34b481cd532b6fef50522eebc123d58dbeefb4c4918d59adb",
+    "test/types/current-fresh-report.mts": "46c3bc749919587cf986cda80d186ddc9a957a7344974e3aab2b7edb215abfbb"
+  },
+  "labSourceDigests": {
+    "test/current-fresh-report-postgres.test.mjs": "06afd032e738ac862a2c865fd025874714938bc1cb03f8a572d01dc37bf26550"
+  },
+  "cloudSqlInstalled": false,
+  "rolesOrPermissionsChanged": false,
+  "providerAcquisitionsPerformed": false,
+  "productDeploymentPerformed": false,
+  "performanceThresholdsClaimed": false,
+  "localValidation": {
+    "producerAndLaboratory": {
+      "passed": 1654,
+      "failed": 0,
+      "skipped": 0
+    },
+    "governance": {
+      "passed": 115,
+      "failed": 0,
+      "skipped": 0
+    },
+    "newFamily": {
+      "passed": 68,
+      "failed": 0,
+      "skipped": 0
+    },
+    "publicPackageBuild": "PASS",
+    "remoteCi": "REPORTED_SEPARATELY_FOR_EXACT_PR_HEAD"
+  }
+}
