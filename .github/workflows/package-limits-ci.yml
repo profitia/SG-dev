@@ -1,0 +1,65 @@
+name: Package Limits Development source
+on:
+  pull_request:
+    paths:
+      [
+        "apps/package-limits/**",
+        ".github/workflows/package-limits-ci.yml",
+        "Canon/evidence/2026-10-30-package-limits-dashboard-development-release.md",
+      ]
+  push:
+    branches: [main]
+    paths: ["apps/package-limits/**", ".github/workflows/package-limits-ci.yml"]
+permissions:
+  contents: read
+concurrency:
+  group: package-limits-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  source-security:
+    name: Limits source, ordinary SQL roles and operator contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: limits_fixture_owner
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: neondb
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      LIMITS_TEST_OWNER_URL: postgresql://limits_fixture_owner:isolated_ci_only@127.0.0.1:5432/neondb
+      LIMITS_TEST_ISOLATED: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - name: Pinned public dependencies and existing local contract; no lifecycle or credentials
+        run: npm --prefix apps/package-limits ci --ignore-scripts --install-links --no-audit --no-fund
+      - name: Types, executable build, official identity boundary and real HTTP refusal
+        working-directory: apps/package-limits
+        run: npm run typecheck && npm run build && npm test
+      - name: Real synthetic PostgreSQL migrations, current operator, immutable history and concurrency
+        working-directory: apps/package-limits
+        run: npm run test:database
+      - name: Required current routing and governance regression
+        run: node scripts/governance/validate-governance-manifest.mjs && node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/package-limits-routing.test.mjs
+      - name: Exact SHA, changed paths and canonical CI preflight
+        working-directory: apps/package-limits
+        env:
+          CANDIDATE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          VALIDATION_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: npm run ci:proof
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: package-limits-source-proof
+          path: apps/package-limits/dist/source-proof.json
+          if-no-files-found: error
+          retention-days: 30
