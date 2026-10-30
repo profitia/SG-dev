@@ -78,3 +78,8 @@
 .pci-business .pci-period-availability{border-block:1px solid var(--line);padding:12px 0;margin-bottom:12px}
 .pci-business .pci-base-fields .pci-period-approval{font-size:12px!important}
 @media(max-width:650px){.pci-business .pci-date-grid,.pci-business .pci-base-fields .pci-series-declarations{grid-template-columns:1fr}.pci-business .pci-base-fields{padding:12px}}
+.pci-business .pci-component-qualification{font-size:12px;line-height:1.5;overflow-wrap:anywhere;margin-top:6px;display:grid;gap:2px}
+.pci-business .pci-component-qualification p{font-size:inherit;margin:0}
+.pci-business .pci-qualification-issue{flex:0 0 auto;max-height:15vh;overflow:auto;margin:4px 0;padding:8px;border:1px solid var(--line);border-inline-start:4px solid #ba6520;border-radius:8px;font-size:13px;line-height:1.5}
+.pci-business .pci-qualification-summary{flex:0 0 auto;max-height:22vh;overflow:auto;margin:4px 0 8px;font-size:12px;line-height:1.5}
+.pci-business .pci-qualification-summary>div{padding:8px 0;border-top:1px solid var(--line)}

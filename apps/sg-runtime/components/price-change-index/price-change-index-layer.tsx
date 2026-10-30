@@ -6,6 +6,8 @@ import {SharedBenchmarkPicker} from '../benchmark-picker/shared-benchmark-picker
 import {attachCategoryBenchmark} from '../category-builder/benchmark-picker-draft'
 import {createCategoryOperationRequester} from '../category-builder/category-operation-request'
 import type {SavedBenchmark} from '../../lib/benchmark/contracts'
+import {savedBenchmarkProfile} from '../../lib/benchmark/qualification'
+import {presentQualification} from '../../lib/benchmark/qualification-presentation'
 import type {PciAnalysisResponse,PciPreparationResponse} from '../../lib/cost-analysis/price-change-index-contracts'
 import {createPciRequester} from './price-change-index-request'
 import {emptyPurchase,seedPciComponent,pciStructureReady,pciInput,pciResult,pciCategoryBody,type PciComponent} from './price-change-index-controller'
@@ -21,6 +23,9 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
   const [preparation,setPreparation]=useState<NonNullable<PciBusinessController['preparation']>>({status:'idle',data:null,error:null}),[prepareAttempt,setPrepareAttempt]=useState(0)
   const preparationAbort=useRef<AbortController|null>(null),generation=useRef(0)
   const [theme,setTheme]=useState<'light'|'dark'>('light')
+  const qualifiedComponents=components.map(c=>({...c,qualification:presentQualification(savedBenchmarkProfile(c.benchmark),locale,'PCI',step===3?c.valueKind:undefined)}))
+  const incompatible=qualifiedComponents.filter(c=>c.qualification.status==='UNSUITABLE')
+  const qualificationIssue=incompatible.length ? `${incompatible[0].name||incompatible[0].benchmark.displayName}: ${incompatible[0].qualification.reason}${incompatible.length>1?(locale==='pl'?' Sprawdź też pozostałe oznaczone komponenty.':' Check the other marked components too.'):''}` : null
   const request=useRef<ReturnType<typeof createPciRequester>|null>(null),categoryRequest=useRef<ReturnType<typeof createCategoryOperationRequester>|null>(null)
   useLayoutEffect(()=>{
     active.current=true
@@ -36,7 +41,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
   },[])
   useLayoutEffect(()=>{if(pickTarget)picker.current?.showModal()},[pickTarget])
   useEffect(()=>{
-    if(step!==3||!pciStructureReady(name,components)||!purchase.amount||!purchase.currency||!purchase.unit||!purchase.taxBasis||!purchase.deliveryBasis||!purchase.purchaseDate||!purchase.referenceDate||!purchase.periodBasis||components.some(c=>!c.valueKind))return
+    if(step!==3||qualificationIssue||!pciStructureReady(name,components)||!purchase.amount||!purchase.currency||!purchase.unit||!purchase.taxBasis||!purchase.deliveryBasis||!purchase.purchaseDate||!purchase.referenceDate||!purchase.periodBasis||components.some(c=>!c.valueKind))return
     const abort=new AbortController(),version=generation.current;preparationAbort.current=abort
     setPreparation({status:'loading',data:null,error:null})
     const timer=setTimeout(async()=>{try{
@@ -51,10 +56,11 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
       ?'Chwilowo nie można potwierdzić sesji. Dane pozostają zachowane. Ponów sprawdzenie dostępności danych.'
       :'Nie udało się sprawdzić notowań. Ponów sprawdzenie dostępności danych.'})}},300)
     return()=>{clearTimeout(timer);abort.abort()}
-  },[step,name,components,purchase,prepareAttempt])
+  },[step,name,components,purchase,prepareAttempt,qualificationIssue])
   const changed=()=>{generation.current++;preparationAbort.current?.abort();setPreparation({status:'idle',data:null,error:null});dirty.current=true;setResult(null);setError(null);if(saveStatus==='saved')setSaveStatus('idle')}
   const close=()=>{if(step!=='result'&&dirty.current&&!window.confirm('Odrzucić niezapisane zmiany i wrócić do Benchmark Findera?'))return;onClose()}
   async function analyse(){
+    if(qualificationIssue){setError(qualificationIssue);return}
     if(inflight.current||!request.current)return;const version=generation.current;inflight.current=true;setBusy(true);setError(null);setResult(null)
     try{
       const response=await request.current(JSON.stringify(pciInput(name,components,purchase)))
@@ -87,7 +93,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
     }catch(e){if(active.current){setSaveStatus('error');setError(e instanceof Error?e.message:'Nie potwierdzono zapisu kategorii.')}}
     // An unconfirmed write is never automatically retried with a new create identity.
   }
-  const controller:PciBusinessController={name,components,purchase,step,busy,error,result,preparation,onPrepare:()=>{setError(null);setPrepareAttempt(n=>n+1)},categorySaveStatus:saveStatus,ready:pciStructureReady(name,components),
+  const controller:PciBusinessController={name,components:qualifiedComponents,purchase,step,busy,error,result,qualificationIssue,preparation,onPrepare:()=>{setError(null);setPrepareAttempt(n=>n+1)},categorySaveStatus:saveStatus,ready:pciStructureReady(name,components),
     onNameChange:value=>{changed();setName(value)},onComponentChange:(id,patch)=>{changed();if('valueKind' in patch)setPurchase(p=>({...p,economicPeriodApproved:false}));setComponents(c=>c.map(x=>x.id===id?{...x,...patch}:x))},
     onRemove:id=>{changed();setPurchase(p=>({...p,economicPeriodApproved:false}));setComponents(c=>c.filter(x=>x.id!==id))},onPickBenchmark:id=>setPickTarget({id}),
     onPurchaseChange:patch=>{changed();setPurchase(p=>({...p,...patch,...(['purchaseDate','referenceDate','periodBasis','reduction'].some(key=>key in patch)?{economicPeriodApproved:false}:{})}))},onStep:value=>{setError(null);setStep(value)},onAnalyse:()=>void analyse(),onSaveCategory:()=>void saveCategory(),onClose:close}
@@ -95,7 +101,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
     <header className="pci-host-bar"><h2 id="pci-layer-title">Price Change Index · Budowa kategorii</h2><button type="button" aria-label="Zamknij Price Change Index" onClick={close}>×</button></header>
     <div className="pci-host-content"><PriceChangeIndex view="pci3" mode="business" locale={locale} theme={theme} onThemeChange={setTheme} controller={controller}/></div>
     {pickTarget&&<dialog className="pci-picker-dialog" ref={picker} aria-label="Wybierz benchmark komponentu" onCancel={e=>{e.preventDefault();setPickTarget(null)}}>
-      <SharedBenchmarkPicker locale={locale} initialSelectedBenchmarkId={components.find(c=>c.id===pickTarget.id)?.benchmark.businessBenchmarkId}
+      <SharedBenchmarkPicker locale={locale} modelContext="PCI" initialSelectedBenchmarkId={components.find(c=>c.id===pickTarget.id)?.benchmark.businessBenchmarkId}
         onCancel={()=>setPickTarget(null)} onSelect={benchmark=>{
           if(!active.current)return
           if(benchmark.organizationId!==seed.organizationId){setError('Nie można mieszać benchmarków różnych organizacji.');setPickTarget(null);return}

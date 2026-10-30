@@ -22,7 +22,7 @@ import business from './business.css?inline'
 
 const styles=[theme,bindings,shared,v3,stacked,completion,fit,crosshair,labels,range,presets,time,history,business].join('\n')
 const fmt=(n:number|null)=>n==null?'—':new Intl.NumberFormat('pl-PL',{maximumFractionDigits:2}).format(n)
-function ProductView({controller:c}:PriceChangeIndexBusinessProps){
+function ProductView({controller:c,locale='pl'}:PriceChangeIndexBusinessProps){
   const [compact,setCompact]=useState(false),[mode,setMode]=useState<'monitor'|'compare'>('monitor')
   const [editing,setEditing]=useState<{id:string;text:string}|null>(null)
   const root=useRef<HTMLDivElement>(null),content=useRef<HTMLElement>(null)
@@ -50,6 +50,8 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
       {c.step!=='result'?<>
         <div className="v3-context"><b>Benchmark Finder → Price Change Index</b><span>Wybrany benchmark został wstawiony do struktury. Uzupełnij resztę kosztów.</span></div>
         <div className="v3-steps" role="tablist" aria-label="Budowa kategorii">{['Z czego składa się produkt?','Ile ostatnio zapłaciłeś?','Kiedy kupowałeś?'].map((title,i)=><button key={title} role="tab" aria-selected={c.step===i+1} className={c.step===i+1?'v3-active':''} disabled={c.busy||(i>0&&!c.ready)||(i>1&&!purchaseReady)} onClick={()=>c.onStep((i+1) as 1|2|3)}><span className="v3-step-number">0{i+1}</span><span className="v3-step-title">{title}</span></button>)}</div>
+        {c.qualificationIssue&&<p className="pci-qualification-issue" role="alert">{c.qualificationIssue}</p>}
+        {c.components.some(x=>x.qualification)&&<details className="pci-qualification-summary"><summary>{locale==='pl'?'Znaczenie benchmarków i dopasowanie do PCI':'Benchmark meaning and PCI suitability'}</summary><p>{locale==='pl'?'Kwalifikacja semantyczna nie potwierdza dostępności historii. Notowania i wspólne okresy sprawdzamy osobno. Nieustalone znaczenie wymaga sprawdzenia źródła przed deklaracją rodzaju danych.':'Semantic suitability does not confirm history availability. Observations and common periods are checked separately. Check the source before declaring an undetermined data type.'}</p>{c.components.map((x,i)=>x.qualification&&<div key={x.id}><b>{x.name||`${locale==='pl'?'Składnik':'Component'} ${i+1}`} · {x.benchmark.displayName}</b><p>{x.qualification.classification} · {x.qualification.eligibility}</p><p>{x.qualification.reason}</p><button onClick={()=>c.onPickBenchmark(x.id)}>{locale==='pl'?'Zmień benchmark':'Change benchmark'}</button></div>)}</details>}
         <div className="v3-grid2"><section className="v3-panel v3-setup-panel">
           {c.step===1&&<>
             <h2>Jakie komponenty i benchmarki tworzą koszt Twojej kategorii?</h2>
@@ -60,7 +62,7 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
               <td><label className="pci-component-weight"><span className="pci-weight-label">Udział %</span><input aria-label={'Udział procentowy komponentu '+(index+1)} type="number" min={0} max={100} step={1} inputMode="numeric" value={editing?.id===component.id?editing.text:component.weightPercent}
                 onFocus={()=>setEditing({id:component.id,text:component.weightPercent===0?'':String(component.weightPercent)})}
                 onBlur={()=>setEditing(null)} onInput={e=>{const text=e.currentTarget.value;setEditing({id:component.id,text});c.onComponentChange(component.id,{weightPercent:text===''?0:Number(text)})}}/></label></td>
-              <td><button className="pci-benchmark-control" aria-label={'Zmień benchmark komponentu '+(index+1)+': '+component.benchmark.displayName} onClick={()=>c.onPickBenchmark(component.id)} title={component.benchmark.displayName}>{component.benchmark.displayName}<span aria-hidden>⌄</span></button></td>
+              <td><button className="pci-benchmark-control" aria-label={'Zmień benchmark komponentu '+(index+1)+': '+component.benchmark.displayName} onClick={()=>c.onPickBenchmark(component.id)} title={component.benchmark.displayName}>{component.benchmark.displayName}<span aria-hidden>⌄</span></button>{component.qualification&&<div className="pci-component-qualification" data-pci-eligibility={component.qualification.status}><b>{component.qualification.classification}</b><span>{component.qualification.eligibility}</span><p>{component.qualification.reason}</p></div>}</td>
               <td><button aria-label={'Usuń komponent '+(index+1)+' — '+(component.name.trim()||'bez nazwy')} onClick={()=>c.onRemove(component.id)}>×</button></td>
             </tr>)}</tbody></table></div>
             <p className="v3-structure-total">{c.components.length} komponentów · Łącznie: <b>{fmt(c.components.reduce((sum,x)=>sum+x.weightPercent,0))}%</b>{c.ready?' · Struktura gotowa':' · Uzupełnij do 100% i przypisz benchmarki'}</p>
@@ -92,7 +94,7 @@ function ProductView({controller:c}:PriceChangeIndexBusinessProps){
     <footer className="v3-flow-actions">
       {c.error&&c.step!==3&&<p className="pci-error" role="alert">{c.error}</p>}
       <div className="v3-result-navigation"><button className="v3-result-back" disabled={c.busy} onClick={()=>c.step===1?c.onClose():c.onStep(c.step==='result'?3:(c.step-1) as 1|2)}>Wróć</button>
-        <div className="v3-result-primary-actions">{c.step==='result'?<button className="v3-primary" onClick={c.onClose}>Gotowe, wróć do Benchmark Findera</button>:<button className="v3-primary" disabled={c.busy||!c.ready||c.step>=2&&!purchaseReady||c.step===3&&(!dateReady||c.preparation?.status==='loading')} onClick={()=>c.step===3?c.onAnalyse():c.onStep(c.step===1?2:3)}>{c.busy?'Obliczanie…':c.step===3?'Przeanalizuj cenę':'Dalej →'}</button>}</div>
+        <div className="v3-result-primary-actions">{c.step==='result'?<button className="v3-primary" onClick={c.onClose}>Gotowe, wróć do Benchmark Findera</button>:<button className="v3-primary" disabled={c.busy||!c.ready||!!c.qualificationIssue||c.step>=2&&!purchaseReady||c.step===3&&(!dateReady||c.preparation?.status==='loading')} onClick={()=>c.step===3?c.onAnalyse():c.onStep(c.step===1?2:3)}>{c.busy?'Obliczanie…':c.step===3?'Przeanalizuj cenę':'Dalej →'}</button>}</div>
       </div>
     </footer>
   </div>

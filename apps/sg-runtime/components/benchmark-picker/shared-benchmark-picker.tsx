@@ -8,10 +8,13 @@ import { benchmarkSeriesKey, createPickerController, emptyPickerState, type Pick
 import { benchmarkPriceType, pickerNumber, pickerObservationDate } from './presentation'
 import { formatDisplayMeasurement, sanitizeUserFacingPublisher } from '../../lib/benchmark/presentation'
 import type { BenchmarkCandidate, SavedBenchmark } from '../../lib/benchmark/contracts'
+import { BenchmarkQualification } from './benchmark-qualification'
 
 /** Mount/key a fresh Picker for a different consumer context. It owns no category or model action. */
 export interface SharedBenchmarkPickerProps {
   locale: 'pl' | 'en'
+  /** Eligibility is opt-in; generic Category Builder/Forecast callers retain their own model rules. */
+  modelContext?: 'PCI'
   initialQuery?: string
   /** Existing businessBenchmarkId, resolved only against the current authorized saved selections. */
   initialSelectedBenchmarkId?: string | null
@@ -35,10 +38,11 @@ const copy = {
 const button = 'rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:opacity-50'
 
 /** Shared presentational surface; no forecasts, iframes, category identifiers or metric calculation. */
-export function BenchmarkPickerView({ locale, state, query, setQuery, search, more, select, cancel, initialSelectedBenchmarkId, disabled = false }: {
+export function BenchmarkPickerView({ locale, state, query, setQuery, search, more, select, cancel, initialSelectedBenchmarkId, disabled = false, modelContext }: {
   locale: 'pl' | 'en'; state: PickerState; query: string; setQuery: (query: string) => void; search: () => void
   more: () => void; select: (candidate: BenchmarkCandidate) => void; cancel?: () => void
   initialSelectedBenchmarkId?: string | null; disabled?: boolean
+  modelContext?: 'PCI'
 }) {
   const t = copy[locale], visible = state.candidates.slice(0, state.visibleCount)
   const selected = state.saved.find(item => item.businessBenchmarkId === initialSelectedBenchmarkId)
@@ -76,6 +80,7 @@ export function BenchmarkPickerView({ locale, state, query, setQuery, search, mo
               disabled={disabled || !state.ready || state.selecting !== null} onClick={() => select(candidate)}>{candidate.displayName}</button>
             <span className="mt-1 block text-xs font-normal text-slate-500">{[source, candidate.region].filter(Boolean).join(' · ')}</span>
             {date ? <span className="block text-xs font-normal text-slate-500">{t.date}: {date}</span> : null}
+            <BenchmarkQualification candidate={candidate} locale={locale} modelContext={modelContext}/>
           </th>
           <td className={cell}><span className="block text-xs text-slate-500 md:hidden">{t.type}</span>{benchmarkPriceType(candidate, state.priceTypes, locale)}</td>
           <td className={cell}><span className="block text-xs text-slate-500 md:hidden">{t.frequency}</span>{preview?.frequency ?? candidate.frequency ?? '—'}</td>

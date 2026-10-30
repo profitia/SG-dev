@@ -7,6 +7,9 @@ import { BenchmarkPickerView, SharedBenchmarkPicker, type SharedBenchmarkPickerP
 import { emptyPickerState, benchmarkSeriesKey, type PickerState } from '../components/benchmark-picker/picker-controller'
 import { benchmarkPriceType, pickerNumber } from '../components/benchmark-picker/presentation'
 import type { BenchmarkCandidate, SavedBenchmark } from '../lib/benchmark/contracts'
+// Included in the existing mandatory SG2 operation suite, without a parallel test entrypoint.
+import './benchmark-qualification.test'
+import './bql-integration.test'
 
 const provider = { providerCode: 'MACROBOND' as const, displayName: 'Macrobond' }
 function item(index = 0): BenchmarkCandidate { return { candidateId: `macrobond:s${index}`, displayName: `Copper ${index}`, description: null, provider,

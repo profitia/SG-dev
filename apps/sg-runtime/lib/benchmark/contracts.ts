@@ -1,3 +1,5 @@
+import type {BenchmarkSemanticProfile} from './qualification'
+
 export type BenchmarkProviderCode = 'MACROBOND'
 
 export type BenchmarkRangePreset = '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL'
@@ -156,6 +158,8 @@ export interface BenchmarkAnalyticsSeriesResult {
 }
 
 export interface SavedBenchmark {
+  /** Derived from current provider metadata in the authorized response; not persisted separately. */
+  semanticProfile?: BenchmarkSemanticProfile
   selectionId: string
   businessBenchmarkId: string
   organizationId: string
