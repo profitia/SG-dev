@@ -2,6 +2,7 @@ import type {PoolClient} from 'pg'
 import {createDelegatedJobHost} from '@profitia/platform-contracts/private-operation-host'
 import {createClerkAccountStatusReader} from '@profitia/platform-contracts/identity-provider'
 import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
+import {externalCallFailureEvidence} from '@profitia/platform-contracts/external-call'
 import {createSrmNativePgDriver} from './native-pg-driver'
 import type {SupplierNativeWorkOptions,SupplierNativeWorkSelection} from './supplier-request-work'
 import type {createSrmSupplierSourceRequest} from './supplier-source-request'
@@ -49,8 +50,20 @@ export function createSrmCompanyClassifier(options:Readonly<{
   const transport=createSrmProviderSourceTransport({...provider,provider:'CEIDG',providerOrigin:'https://dane.biznes.gov.pl',nip:command.nip,
    operationKey:operationPayloadDigest({version:'srm-company-classification-v1',requestId:input.requestId,nip:command.nip}),
    headers:{authorization:'Bearer '+options.apiKey.trim(),accept:'application/json'}})
-  const result=await guardOriginalProviderCall(transport.fetcher,fetcher=>fetchCeidgJdg(command.nip,{token:options.apiKey,fetcher,
-   url:'https://dane.biznes.gov.pl/api/ceidg/v3/firma'}))
+  let result:CeidgResult
+  try{result=await guardOriginalProviderCall(transport.fetcher,fetcher=>fetchCeidgJdg(command.nip,{token:options.apiKey,fetcher,
+   url:'https://dane.biznes.gov.pl/api/ceidg/v3/firma'}))}
+  catch(error){
+   signal.throwIfAborted()
+   const failure=externalCallFailureEvidence(error)
+   // A refused redirect is provider unavailability only after the original
+   // Source host confirms current authority and commits its failed attempt.
+   // No redirect is followed and no JDG/company identity is inferred here.
+   if(failure?.sourceId==='srm.provider.ceidg'&&failure.resourceId==='srm-provider:ceidg'
+    &&failure.applicationId===provider.application.appId&&failure.environment===provider.application.environment
+    &&[301,302,303,307,308].includes(failure.httpStatus))return 'UNAVAILABLE'
+   throw error
+  }
   signal.throwIfAborted()
   return classifyCeidgResult(command.nip,result)
  }})

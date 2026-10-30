@@ -6106,5 +6106,54 @@
       "pullRequest": 789,
       "sourceSha": "c23229e013f0737dc4d0da00ad7ce4d7d66e597e"
     }
+  },
+  "settledExternalFailureRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "projectKey": "SRM",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "b44e33aee5a1a2ada9cf6ab5d7965b17506e37dc",
+    "previousReceiptDigest": "a9f48563efd768b22c0bbb1ce9f626114ac0ee8ef0dad65c3133ec220f6eabc3",
+    "platformVersion": "1.32.1",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCHITECTURE-CURRENT-HUMAN-PEER-READ-20261029",
+      "pullRequest": 790,
+      "sourceSha": "8e02c03da1ddb9b2edf18ac144e2ad6120a86073"
+    },
+    "contract": {
+      "id": "profitia.external-call.failure-observation",
+      "version": "1.0.0"
+    },
+    "sourceDigests": {
+      "src/external-call.mjs": "476da49a3c37c1bae9b2e328fb2da055cb06eec788fd093db9e11fbdcfec7802",
+      "src/external-call.d.mts": "0fb4810f17cc1719521199974b2393f5c34667a469e8e1347390f28adae72140",
+      "test/external-call.test.mjs": "7d75ae48e11ebfa1f33b6ac96926cb53926dd1d19f40013c33a8b3b33eb12379",
+      "package.json": "3add4d285e4dcf11f94b2f846b9232dd766bb4694ebf1080b1edf92d71ff073f",
+      "package-lock.json": "d7cf56321712e1124cf704179f5f541c78f7e35e7c3bdbbecf9855f45a57d263"
+    },
+    "sdkDigests": {
+      "externalCallSourceDigest": "8be49fa155b6169f19616c74660cdda29fb8d566538c460f6faa6a151fad43fa"
+    },
+    "applicationSourceDigests": {
+      "package-lock.json": "fa4a935cb4b1cd226a416ec44213523d9271f8199d59c6343790daefc9f39d1c",
+      "scripts/diagnostic-telemetry-adoption.test.mjs": "b276d163171c1a6fc66d4f21f151788d5624132e405ec920ffa896056b06aa8a",
+      "scripts/native-execution-adoption.test.mjs": "5228a3fa2aa53382fb956e5a30d35a4ed5ecdb2b0dd09744af616a3e3b0cf822",
+      "scripts/operation-context.test.mjs": "ac9219cd0ed0504a8f145d235319461723238e1679a80ddc4b9e95c0bd067e3c",
+      "scripts/ready-report.integration.test.mjs": "799ef2dc32b37462f2de7b4ab8eef9326d819a28c60d04231b7431b22162269f",
+      "scripts/rural-location-release.test.mjs": "6da4870b08998e20343465e82bb1499de4d3d82fa69e2f5a5a81a57c0a9372c2",
+      "scripts/xray-performance-adoption.test.mjs": "39d8b7f97dc12b9e0bde256d1b884b4fd08afe2914dec16605a22c33be8b5224",
+      "scripts/xray-workflow-contract.test.ts": "dc70a0c2dd8b3c660a1d3e349691d0c26e6629acee6f353ba566f1df7d751087",
+      "src/server/company-classification.ts": "61d6e8621107b09daa781103a9673ad756d5ac9459db0967a5dae58d1df54d66",
+      "../../packages/maps-embed/package.json": "b9ff92ed8b471f032536ff97732cf90f574b1feda3ff0696103734c88fef0b36"
+    },
+    "repositorySourceDigests": {},
+    "classification": "Only a branded original-host CEIDG redirect failure after committed current settlement becomes UNAVAILABLE; existing routing still requires independently verified MGBI identity.",
+    "redirectPolicyChanged": false,
+    "providerRetryAdded": false,
+    "sourceFailureBypassed": false,
+    "humanAuthorityChanged": false,
+    "sqlSchemaChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false
   }
 }
