@@ -6150,7 +6150,8 @@
       "../dashboard-preview/package-lock.json": "7782f8784d9f3e078b865c1821b561ab62698c391d11e410037d172ad3983f5a",
       "../sg-runtime/package-lock.json": "eea8976f79c958e873282a422bfc6b8c6586d11987d916e8f5d6e654ebc71640",
       "../maps-runtime/platform-integration.json": "c45aa396422c2b61b1d37d19be27f3af7afe9b0576167ea93882f1303fa61e06",
-      "../maps-runtime/test/embed.test.mjs": "f743b479d147b3029bdd9aba23792c5d195c3b35a901a7efed1acc9d43f84faf"
+      "../maps-runtime/test/embed.test.mjs": "f743b479d147b3029bdd9aba23792c5d195c3b35a901a7efed1acc9d43f84faf",
+      "scripts/private-host.integration.test.mjs": "6791820feceddd9ac8240f29de373ae1d917c0d36151913d65a78b159da8b058"
     },
     "repositorySourceDigests": {
       "packages/maps-embed/package.json": "b9ff92ed8b471f032536ff97732cf90f574b1feda3ff0696103734c88fef0b36",
@@ -6168,7 +6169,7 @@
     "peerConsumer": {
       "projectKey": "SG2",
       "pullRequest": 791,
-      "sourceSha": "302305a27ea7683ec908d5da154f9ce2323fbfb4"
+      "sourceSha": "a8d1323d60926f8116ac79cadc3672fcda59219b"
     }
   }
 }
