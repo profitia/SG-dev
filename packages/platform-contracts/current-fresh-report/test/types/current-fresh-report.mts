@@ -1,6 +1,6 @@
-import {createCurrentFreshReportHost,type CurrentFreshReportRefreshOptions,type CurrentFreshReportReadOptions} from '../../current-fresh-report/src/current-fresh-report.mjs'
-import type {ClerkIdentityClient} from '../../src/identity-provider.mjs'
-import type {PublicIdentityApplication} from '../../src/public-request.mjs'
+import {createCurrentFreshReportHost,type CurrentFreshReportRefreshOptions,type CurrentFreshReportReadOptions} from '../../src/current-fresh-report.mjs'
+import type {ClerkIdentityClient} from '@profitia/platform-contracts/identity-provider'
+import type {PublicIdentityApplication} from '@profitia/platform-contracts/public-request'
 declare const clerk:ClerkIdentityClient,identity:PublicIdentityApplication
 declare const probe:CurrentFreshReportReadOptions<{query(sql:string):Promise<void>}>
 declare const refresh:CurrentFreshReportRefreshOptions<{query(sql:string):Promise<void>}>

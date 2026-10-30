@@ -2,18 +2,19 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash,randomUUID} from 'node:crypto'
-import pg from 'pg'
-import {assertIsolatedTestConnection} from '../src/operation-postgres-fixture.mjs'
-import {createCurrentFreshReportHost} from '../../../packages/platform-contracts/current-fresh-report/src/current-fresh-report.mjs'
-import {createCurrentHumanReadHost} from '../../../packages/platform-contracts/src/current-human-read.mjs'
-import {createPrivateOperationHost} from '../../../packages/platform-contracts/src/private-operation-host.mjs'
-import {createClerkIdentityAuthenticator} from '../../../packages/platform-contracts/src/identity-provider.mjs'
-import {OPERATION_CONTRACT,operationPayloadDigest} from '../../../packages/platform-contracts/src/operation-context.mjs'
-import {createPeerOperationSigner,createPeerOperationVerifier} from '../../../packages/platform-contracts/src/peer-operation.mjs'
+import {createRequire} from 'node:module'
+import {assertIsolatedTestConnection} from '../../../../apps/architecture-lab/src/operation-postgres-fixture.mjs'
+import {createCurrentFreshReportHost} from '../src/current-fresh-report.mjs'
+import {createCurrentHumanReadHost} from '@profitia/platform-contracts/current-human-read'
+import {createPrivateOperationHost} from '@profitia/platform-contracts/private-operation-host'
+import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider'
+import {OPERATION_CONTRACT,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
+import {createPeerOperationSigner,createPeerOperationVerifier} from '@profitia/platform-contracts/peer-operation'
+const pg=createRequire(new URL('../../../../apps/architecture-lab/package.json',import.meta.url))('pg')
 
 const U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 const ISSUER='https://identity.fixture.test',ORIGIN='https://srm.fixture.test',ROLE='fresh_report_runtime_fixture'
-const source=n=>fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/access/'+n,import.meta.url),'utf8')
+const source=n=>fs.readFileSync(new URL('../../migrations/access/'+n,import.meta.url),'utf8')
 const hash=v=>createHash('sha256').update(v).digest('hex')
 const future=()=>new Date(Date.now()+3600000).toISOString()
 const denied=e=>typeof e?.reasonCode==='string'

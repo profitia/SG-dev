@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Optional current FRESH composition of the unchanged canonical platform contracts",
+  "files": ["src"],
   "exports": {
     ".": {
       "types": "./src/current-fresh-report.d.mts",
@@ -13,7 +14,7 @@
   },
   "scripts": {
     "build": "node --check src/current-fresh-report.mjs",
-    "test": "node --test ../test/current-fresh-report.test.mjs ../../../apps/architecture-lab/test/current-fresh-report-postgres.test.mjs"
+    "test": "node --test test/*.test.mjs"
   },
   "peerDependencies": {
     "@profitia/platform-contracts": "1.32.3"

@@ -6,9 +6,9 @@ import {execFileSync} from 'node:child_process'
 import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
-import {createCurrentFreshReportHost,CURRENT_FRESH_REPORT_CONTRACT,currentFreshReportSourceDigest} from '../current-fresh-report/src/current-fresh-report.mjs'
-import {currentHumanReadSourceDigest,CURRENT_HUMAN_READ_CONTRACT} from '../src/current-human-read.mjs'
-import {privateOperationHostSourceDigest} from '../src/private-operation-host.mjs'
+import {createCurrentFreshReportHost,CURRENT_FRESH_REPORT_CONTRACT,currentFreshReportSourceDigest} from '../src/current-fresh-report.mjs'
+import {currentHumanReadSourceDigest,CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read'
+import {privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'
 
 function fixture(){
  const unexpected=async()=>assert.fail('No external call in constructor or rejected input')
@@ -24,14 +24,14 @@ function fixture(){
 test('additive producer has an independent fingerprint and preserves existing READY and host digests',async()=>{
  assert.deepEqual(CURRENT_FRESH_REPORT_CONTRACT,{id:'profitia.current-fresh-report',version:'1.0.0'})
  assert.deepEqual(CURRENT_HUMAN_READ_CONTRACT,{id:'profitia.current-human-read',version:'1.1.0'})
- const accepted=JSON.parse(fs.readFileSync(new URL('../../../apps/srm/operation-integration.json',import.meta.url)))
+ const accepted=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
  assert.equal(await currentHumanReadSourceDigest(),accepted.freshPostfetchRecovery.sdkDigests.currentHumanReadSourceDigest)
  assert.equal(await privateOperationHostSourceDigest(),accepted.freshPostfetchRecovery.sdkDigests.privateOperationHostSourceDigest)
  assert.match(await currentFreshReportSourceDigest(),/^[a-f0-9]{64}$/)
  assert.equal(createCurrentFreshReportHost(fixture()).hostContract,CURRENT_FRESH_REPORT_CONTRACT)
 })
 test('the public package entry exposes the same implementation to ESM and CommonJS',()=>{
- const sdk=createRequire(new URL('../current-fresh-report/package.json',import.meta.url))('@profitia/platform-current-fresh-report')
+ const sdk=createRequire(new URL('../package.json',import.meta.url))('@profitia/platform-current-fresh-report')
  assert.equal(sdk.createCurrentFreshReportHost,createCurrentFreshReportHost)
  assert.equal(sdk.CURRENT_FRESH_REPORT_CONTRACT,CURRENT_FRESH_REPORT_CONTRACT)
 })
@@ -43,7 +43,7 @@ test('packed public install uses exactly one unchanged SDK 1.32.3 peer, without 
  const env=Object.fromEntries(['PATH','HOME','TMPDIR','SystemRoot'].filter(k=>process.env[k]).map(k=>[k,process.env[k]]))
  const args=['--userconfig',userconfig,'--globalconfig',globalconfig,'--cache',path.join(temporary,'cache'),'--offline','--ignore-scripts','--no-audit','--no-fund']
  const npm=(arguments_,cwd)=>execFileSync('npm',[...arguments_,...args],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']})
- const sdkRoot=fileURLToPath(new URL('../',import.meta.url)),leafRoot=path.join(sdkRoot,'current-fresh-report')
+ const sdkRoot=fileURLToPath(new URL('../../',import.meta.url)),leafRoot=path.join(sdkRoot,'current-fresh-report')
  let passed=false
  try{
   const pack=cwd=>path.join(artifacts,JSON.parse(npm(['pack','--json','--pack-destination',artifacts],cwd))[0].filename)
@@ -100,7 +100,7 @@ test('abort refuses the opening before authentication or SQL',async()=>{
  {probe:bad,refresh:bad,work:bad,read:bad}),e=>e.name==='AbortError')
 })
 test('public declarations compile positive calls and reject alternate authority and Work output',async()=>{
- const require=createRequire(new URL('../../../apps/architecture-lab/package.json',import.meta.url)),ts=require('typescript')
+ const require=createRequire(new URL('../../../../apps/architecture-lab/package.json',import.meta.url)),ts=require('typescript')
  const file=new URL('./types/current-fresh-report.mts',import.meta.url).pathname
  const program=ts.createProgram([file],{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.NodeNext,moduleResolution:ts.ModuleResolutionKind.NodeNext,strict:true,noEmit:true,types:[],lib:['lib.es2022.d.ts','lib.dom.d.ts']})
  const errors=ts.getPreEmitDiagnostics(program)

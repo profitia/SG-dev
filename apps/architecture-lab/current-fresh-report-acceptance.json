@@ -5,7 +5,7 @@
   "taskId": "ARCHITECTURE-FRESH-CONSOLIDATION-CANDIDATE-20261030",
   "hostConversationId": "01a133c2-c245-77a0-bb6b-33165e2ad80c",
   "targetEnvironment": "development",
-  "authorityBaseSha": "c9a24696d21d6387a3e4083b53634984d9ca85bc",
+  "authorityBaseSha": "b964823b7e369aa70c52ffb7b268a6493157092a",
   "package": {
     "name": "@profitia/platform-current-fresh-report",
     "version": "1.0.0",
@@ -15,7 +15,7 @@
   "contract": {
     "id": "profitia.current-fresh-report",
     "version": "1.0.0",
-    "sourceDigest": "e181eebc6d56f1816d780e5e0cc80779e8696ccc45638ce8db8919d461c7cb8f"
+    "sourceDigest": "79eacef3681bad6c7235856a36695f7aeec5b8f0380f9e78ac1ae9b29ce05175"
   },
   "unchanged": {
     "sdkVersion": "1.32.3",
@@ -54,15 +54,13 @@
     "Identity": "UNCHANGED"
   },
   "sourceDigests": {
-    "current-fresh-report/package.json": "79917ba7597fcbd46146ee532b54d95c4960e1ec3183d9ced71850ee9cc284bd",
+    "current-fresh-report/package.json": "3f91492278432df5cb2cbb4db44f29b8eefc38fa2ea0f4da3b4fe94b531ee026",
     "current-fresh-report/package-lock.json": "a4aa3080a474d5c7190035e61cdfe0626ce90e9cc7d0a3a05db807b944e5e221",
     "current-fresh-report/src/current-fresh-report.mjs": "29c8a0fb5d048217afd25a3678c35ff03d0d5a663ba76b338a1e8117875176cb",
     "current-fresh-report/src/current-fresh-report.d.mts": "2da701f79cb5aaf4447239255a96169b5394f6ddd62713c19b213a240fe39a38",
-    "test/current-fresh-report.test.mjs": "334f54380819d4c34b481cd532b6fef50522eebc123d58dbeefb4c4918d59adb",
-    "test/types/current-fresh-report.mts": "46c3bc749919587cf986cda80d186ddc9a957a7344974e3aab2b7edb215abfbb"
-  },
-  "labSourceDigests": {
-    "test/current-fresh-report-postgres.test.mjs": "06afd032e738ac862a2c865fd025874714938bc1cb03f8a572d01dc37bf26550"
+    "current-fresh-report/test/current-fresh-report.test.mjs": "e1efb741eb563b6cf48f0e4b9b5174c6c063d2f37ab2c2e9dddb3bbc85d349b2",
+    "current-fresh-report/test/current-fresh-report-postgres.test.mjs": "61f31ddabfa56cd6428a2e90525fa1a40d9471949912a63183c9ebc2ff122a6e",
+    "current-fresh-report/test/types/current-fresh-report.mts": "09c8e9368851254380322d335b203cab89fb8d275268fad9354c5b9e32e9d575"
   },
   "cloudSqlInstalled": false,
   "rolesOrPermissionsChanged": false,
@@ -76,7 +74,7 @@
       "skipped": 0
     },
     "governance": {
-      "passed": 115,
+      "passed": 119,
       "failed": 0,
       "skipped": 0
     },
@@ -87,5 +85,10 @@
     },
     "publicPackageBuild": "PASS",
     "remoteCi": "REPORTED_SEPARATELY_FOR_EXACT_PR_HEAD"
+  },
+  "sourceGo": {
+    "status": "NOT_GRANTED_CONTROLLED_CI_ADMISSION_PENDING",
+    "trustedMain": "b964823b7e369aa70c52ffb7b268a6493157092a",
+    "reason": "Existing controlled SG2 producer admission does not admit the optional package, laboratory receipt or workflow paths. No policy exception or bypass is part of this task."
   }
 }

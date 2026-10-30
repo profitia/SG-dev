@@ -127,8 +127,11 @@ Strict public type tests also reject alternate authority and Work output.
 An actual offline packed consumer installation verifies public ESM/CommonJS
 exports, the complete source fingerprint and one deduplicated canonical SDK
 1.32.3 peer. It uses empty npm credential configuration, no lifecycle scripts,
-no registry, no provider and no database connection. CI installs the optional
-test dependency and includes this family through its existing producer globs.
+no registry, no provider and no database connection. The family lives exclusively
+under the optional package's `test` directory. Platform producer CI explicitly
+installs its local test peer and adds that test glob. Existing SDK/lab globs and
+the Identity/Maps/KRS workflows remain independent and unchanged. Runtime
+packaging includes only `src`, without the test fixtures.
 
 The comparable real-SQL fixture observes:
 
@@ -153,3 +156,16 @@ reported separately in this task's PMOS/PHR and draft PR. A passing producer tes
 does not prove consumer adoption, live provider behavior or a product deployment.
 No cloud schema, policy, role, secret, service, deployment or data migration is
 part of this candidate.
+
+The complete isolated suite passed **1654/1654**, and the governance suite passed
+**119/119** after preserving main's independently accepted Package Limits policy.
+The public package build and strict type proof passed. The exact PR HEAD and
+remote job outcomes are recorded in the producer's canonical closeout.
+
+**SOURCE GO remains withheld.** Trusted main `b964823b7e369aa70c52ffb7b268a6493157092a`
+admits only the existing closed producer path layout to controlled SG2 CI. Its
+`architecturePathAllowed` does not admit this optional package, laboratory receipt
+or producer workflow. Zero product diff does not replace the required exact-source
+controlled SG2 proof. A separately authorized governance review must resolve that
+admission before SOURCE GO; this producer does not widen the policy, change the
+candidate namespace to evade it, or substitute a local test for the required proof.
