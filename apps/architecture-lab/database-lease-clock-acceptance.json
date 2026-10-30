@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-CURRENT-HUMAN-PEER-READ-20261029",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "authorityBaseSha": "5cea1b3632212080f1a43cab281f23e30dd9aecc",
+  "platformVersion": "1.32.2",
+  "contract": {
+    "id": "profitia.source-lease-clock",
+    "version": "1.0.0"
+  },
+  "scope": "Same-statement trusted database time validates the existing 30s Source proof and ingestion-policy lease; local deadline is clamped conservatively from query start. No lease, authority or provider acquisition is cached.",
+  "runtimeEvidence": {
+    "readOnlyQueries": 100,
+    "priorLocalUpperBoundRejections": 19,
+    "largestRemainingMs": 30001,
+    "bindingMismatches": 0
+  },
+  "maximumLeaseMs": 30000,
+  "maximumClockDivergenceMs": 1000,
+  "subtractsEntireQueryRoundTrip": true,
+  "keepsOriginalAbsoluteExpiryCheck": true,
+  "sourceCurrentRechecksUnchanged": true,
+  "sourceAuditAndCommitUnchanged": true,
+  "schemaOrPolicyChanges": false,
+  "requiredConsumerTasks": {
+    "SRM": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "SG2": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029"
+  },
+  "sourceDigests": {
+    "src/database-lease.mjs": "0d6d6366ea12b48d3f06cbaffb5f2ce6b3dacdb4617ab41e346ae28344774183",
+    "src/platform-ingestion.mjs": "625b482f0d1ec4bfdfc3cc9d8fb537e359aae51293469afd2d9dd36d1608bca1",
+    "src/external-call.mjs": "fa1978992a07821c8da2ddad9e7170a4b393ca93b5e1498594db5a8c12ad3778",
+    "test/database-lease.test.mjs": "30fd8441f7040bc3d513ace4d5df36ca10d59d23dfa402fd0ceffcdb54cbafa8",
+    "test/external-call.test.mjs": "de3405a538c39114299c60b6ea0bfa5b6c1887155db25fe1eb732c432efbc875",
+    "package.json": "a9d694aa138104dd0d6711e827b11caa0568f263ba95452f03790891b21dd253",
+    "package-lock.json": "9c908528d526cea7853d226452c923ceff7534e1b2828e45bc5f1058badb4df8"
+  },
+  "integrationTestDigest": "7c9cd13db37efa845cbba20ae2b1a6badea8de6ecf24af723dfcfb9c98fc9dc1",
+  "runtimeDeploymentClaimed": false,
+  "performanceThresholdsClaimed": false
+}
