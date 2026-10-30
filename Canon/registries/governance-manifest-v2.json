@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.30.0",
+  "manifestVersion": "3.31.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,7 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {"id":"profitia-package-and-limits-management","version":"1.0","path":"Canon/v1.0-profitia-package-and-limits-management-canon.md","status":"ACTIVE","loadOrder":400,"owner":"Architecture Platform","appliesTo":["SG2","SRM","ARCHITECTURE"],"dependsOn":["repository-routing","architecture-baseline","architecture-execution-adapter","spendguru-srm-target-architecture-canon","operation-context-and-access-contract","operation-access-matrix","platform-appshell-business-and-architecture-canon","identity-runtime-architecture-and-ownership","shared-development-contract-integration","architecture-reporting-runbook"]},
     {"id":"platform-appshell-business-and-architecture-canon","version":"1.0","path":"Canon/v1.0-platform-appshell-business-and-architecture-canon.md","status":"ACTIVE","loadOrder":380,"owner":"Architecture Platform","appliesTo":["SG2","SRM","ARCHITECTURE"],"dependsOn":["repository-routing","architecture-baseline","architecture-execution-adapter","spendguru-srm-target-architecture-canon","srm-business-capability-canon","srm-architecture-component-placement","srm-modular-xray-mounting-amendment","identity-runtime-architecture-and-ownership","operation-context-and-access-contract","operation-access-matrix","shared-development-contract-integration","architecture-reporting-runbook"]},
     {"id":"krs-registry-architecture-and-ownership","version":"1.0","path":"Canon/v1.0-krs-registry-architecture-and-ownership-canon.md","status":"ACTIVE","loadOrder":370,"owner":"Architecture Platform","appliesTo":["SG2","SRM","ARCHITECTURE"],"dependsOn":["repository-routing","architecture-baseline","architecture-execution-adapter","architecture-environment-topology","spendguru-srm-target-architecture-canon","operation-context-and-access-contract","architecture-resource-onboarding","shared-development-contract-integration","architecture-reporting-runbook"]},
     {"id":"identity-runtime-architecture-and-ownership","version":"1.0","path":"Canon/v1.0-identity-runtime-architecture-and-ownership-canon.md","status":"ACTIVE","loadOrder":365,"owner":"Architecture Platform","appliesTo":["SG2","SRM","ARCHITECTURE"],"dependsOn":["repository-routing","architecture-baseline","architecture-execution-adapter","architecture-environment-topology","spendguru-srm-target-architecture-canon","operation-context-and-access-contract","spendguru-srm-architecture-delivery-roadmap","architecture-resource-onboarding","architecture-reporting-runbook"]},
