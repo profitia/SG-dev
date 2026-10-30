@@ -5030,11 +5030,12 @@
       "tests/category-operation.test.ts": "7cb8c99d148dbe7ffdd629dc36001b23102806f5f06397ba84a496e6ccafb934",
       "tests/diagnostic-telemetry-adoption.test.mjs": "abdb84e3046287244e2ca5a8c9a6aa56937622a1c22967a563e7a1a21a501b29",
       "tests/identity-runtime.test.ts": "8eea967de4b74269ba96604296e12ce1d5dd22042797c555aebb6cd5f2808fb4",
+      "tests/integrated-buyer-journey-package.test.mjs": "4efb46c3a1281ad0e0948ee05b80b92c7300510678fb3733f6404a6d195c925d",
       "tests/native-sql-roundtrips.test.mjs": "d7af27a8bf9cb862b841268589bb25892016509407c3cb30a6e90c694b735055",
       "tests/operation-context.test.mjs": "06a7c2c08f4988f950b730931262ef8a6402220a16d5612abdbbef4963b522ad",
       "tests/porr-demo-middleware.test.ts": "da67d450dd19c6ab32ad4d4f71cdfe9e7ea39db1be589ccb4c3a617c01db3f37",
       "tests/self-service-account.test.ts": "3909936dafe0a7c9d0b093c5d90aa751d29736fb5e6be7b38499b0a7f1aef58d",
-      "tests/xray-fresh-performance-adoption.test.mjs": "12e5ffbd9d3a64379bd04aad77189d721d12b27facd4a99e63850ce7cba9ec09",
+      "tests/xray-fresh-performance-adoption.test.mjs": "bafa0701db2d5bfaea31be384ecaafe2911883852c4df53bfe5c2d6623abdcf0",
       "tests/xray-gateway.test.ts": "87fc31cfa9f66a596b731bbcf45b422d612051712992ff3334c39d8b5e04550d"
     },
     "businessCodeChanged": false,

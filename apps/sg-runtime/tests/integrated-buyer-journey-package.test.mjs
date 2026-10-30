@@ -135,7 +135,14 @@ test('PCI stabilization appends exact current source bindings and keeps every ea
  const bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot})
  assert.equal(hash(bytes),a.previousReceiptSha256)
  for(const[k,v]of Object.entries(JSON.parse(bytes)))assert.deepEqual(r[k],v,k)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
+  const continuation=r.pciMain800IntegrityCompatibility
+  const historical=continuation?.applicationSourceDigests[file]
+   ?execFileSync('git',['show',continuation.pciSourceSha+':apps/sg-runtime/'+file],{cwd:appRoot})
+   :fs.readFileSync(new URL('../'+file,import.meta.url))
+  assert.equal(hash(historical),digest,'original PCI '+file)
+  assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),continuation?.applicationSourceDigests[file]??digest,'current '+file)
+ }
  for(const[file,digest]of Object.entries(a.publicUiSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
  for(const file of r.pciDatePreparationSourceCompatibility.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',a.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
  for(const field of ['serverAuthorizationChanged','grantsChanged','calculationChanged','sourceHistoryChanged','productDeploymentPerformed'])assert.equal(a[field],false,field)

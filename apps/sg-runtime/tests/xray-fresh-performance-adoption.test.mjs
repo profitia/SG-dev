@@ -95,7 +95,7 @@ export function assertPciMain800Integrity(receipt, readCurrent, readHistorical) 
  assert.deepEqual(preserved,JSON.parse(previous),'every main800 receipt remains unchanged')
  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),[
   'tests/adp-appshell-consumer.test.tsx','tests/category-operation.test.ts','tests/diagnostic-telemetry-adoption.test.mjs',
-  'tests/identity-runtime.test.ts','tests/native-sql-roundtrips.test.mjs','tests/operation-context.test.mjs',
+  'tests/identity-runtime.test.ts','tests/integrated-buyer-journey-package.test.mjs','tests/native-sql-roundtrips.test.mjs','tests/operation-context.test.mjs',
   'tests/porr-demo-middleware.test.ts','tests/self-service-account.test.ts','tests/xray-fresh-performance-adoption.test.mjs','tests/xray-gateway.test.ts'
  ])
  for(const flag of ['businessCodeChanged','calculationChanged','authorizationChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)
