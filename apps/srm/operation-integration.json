@@ -6148,10 +6148,14 @@
       "src/server/supplier-location-geocoding-runtime.test.ts": "d82e77ebafba37045a1784a1acc77f4f44ee08f96ff5173568fb57eccfcadd32",
       "../../packages/maps-embed/package.json": "b9ff92ed8b471f032536ff97732cf90f574b1feda3ff0696103734c88fef0b36",
       "../dashboard-preview/package-lock.json": "7782f8784d9f3e078b865c1821b561ab62698c391d11e410037d172ad3983f5a",
-      "../sg-runtime/package-lock.json": "eea8976f79c958e873282a422bfc6b8c6586d11987d916e8f5d6e654ebc71640"
+      "../sg-runtime/package-lock.json": "eea8976f79c958e873282a422bfc6b8c6586d11987d916e8f5d6e654ebc71640",
+      "../maps-runtime/platform-integration.json": "c45aa396422c2b61b1d37d19be27f3af7afe9b0576167ea93882f1303fa61e06",
+      "../maps-runtime/test/embed.test.mjs": "f743b479d147b3029bdd9aba23792c5d195c3b35a901a7efed1acc9d43f84faf"
     },
     "repositorySourceDigests": {
-      "packages/maps-embed/package.json": "b9ff92ed8b471f032536ff97732cf90f574b1feda3ff0696103734c88fef0b36"
+      "packages/maps-embed/package.json": "b9ff92ed8b471f032536ff97732cf90f574b1feda3ff0696103734c88fef0b36",
+      "apps/maps-runtime/platform-integration.json": "c45aa396422c2b61b1d37d19be27f3af7afe9b0576167ea93882f1303fa61e06",
+      "apps/maps-runtime/test/embed.test.mjs": "f743b479d147b3029bdd9aba23792c5d195c3b35a901a7efed1acc9d43f84faf"
     },
     "classification": "Only a branded original-host CEIDG redirect failure after committed current settlement becomes UNAVAILABLE; existing routing still requires independently verified MGBI identity.",
     "redirectPolicyChanged": false,
