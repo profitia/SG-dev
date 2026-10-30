@@ -54,7 +54,7 @@ export function createPlatformIngestionHost(options){
   // this checkpoint, and the existing scope lock and all validators remain.
   const authority=async(query,resourceId)=>{
     const scoped=resourceId!==undefined,startedMs=now()
-    const r=await one(query,'SELECT current_database() AS database_name,current_user AS role,session_user AS login,profitia_ingestion.runtime_descriptor() AS descriptor,extract(epoch from clock_timestamp())*1000 AS descriptor_observed_ms'+
+    const r=await one(query,'SELECT current_database() AS database_name,current_user AS role,session_user AS login,profitia_ingestion.runtime_descriptor() AS descriptor,(extract(epoch from clock_timestamp())*1000)::double precision AS descriptor_observed_ms'+
       (scoped?',txid_current()::text AS transaction_id,profitia_ingestion.scope_allows($1,$2) AS allowed':''),scoped?[s.id,resourceId]:[]),receivedMs=now(),raw=r.descriptor,d=raw===null?null:boundedDatabaseLease(raw,r.descriptor_observed_ms,startedMs,receivedMs)
     if(r.database_name!==b.databaseName||r.role!==b.role||r.login!==b.role)fail()
     if(raw===null)return {descriptor:null,row:r}
@@ -93,7 +93,7 @@ export function createPlatformIngestionHost(options){
                 [`${transactionTimeoutMs}ms`,`${Math.min(transactionTimeoutMs,3000)}ms`])
               const d=await descriptor(query)
               if(!d||d.serviceId!==actor.actorId||d.proofRef!==actor.proofRef)throw new OperationDenied('ACCESS_BASIS_INVALID')
-              const lockStartedMs=now(),r=await one(query,'SELECT profitia_ingestion.lock_ingestion($1,$2,$3) AS state,extract(epoch from clock_timestamp())*1000 AS descriptor_observed_ms',[s.id,request.resourceId,actor.proofRef]),lockReceivedMs=now()
+              const lockStartedMs=now(),r=await one(query,'SELECT profitia_ingestion.lock_ingestion($1,$2,$3) AS state,(extract(epoch from clock_timestamp())*1000)::double precision AS descriptor_observed_ms',[s.id,request.resourceId,actor.proofRef]),lockReceivedMs=now()
               const state=r.state==null?r.state:{...r.state,ingestion:boundedDatabaseLease(r.state.ingestion,r.descriptor_observed_ms,lockStartedMs,lockReceivedMs)}
               if(state===null)throw new OperationDenied('PERMISSION_DENIED')
               if(!state||state.applicationId!==a.appId||state.environment!==a.environment||state.serviceBindingVersion!==actor.proofRef

@@ -59,7 +59,7 @@ export function createAccessStore({ binding, now = Date.now }) {
     const startedMs=now()
     const row = await one(query, `SELECT current_database() AS database_name,current_user AS role,session_user AS login,
       r.rolsuper,r.rolbypassrls,r.rolcreatedb,r.rolcreaterole,r.rolinherit,
-      profitia_access.runtime_descriptor() AS descriptor${extra},extract(epoch from clock_timestamp())*1000 AS descriptor_observed_ms FROM pg_roles r WHERE r.rolname=current_user`, values)
+      profitia_access.runtime_descriptor() AS descriptor${extra},(extract(epoch from clock_timestamp())*1000)::double precision AS descriptor_observed_ms FROM pg_roles r WHERE r.rolname=current_user`, values)
     const d = row?.descriptor
     if (!row || row.database_name !== config.databaseName || row.role !== config.role || row.login !== config.role || ['rolsuper', 'rolbypassrls', 'rolcreatedb', 'rolcreaterole', 'rolinherit'].some(key => row[key] !== false) || !d || d.schemaVersion !== ACCESS_STORE_CONTRACT.schemaVersion || d.schemaDigest !== config.schemaDigest || d.applicationId !== config.applicationId || d.environment !== config.environment || d.projectId !== config.projectId || d.branchId !== config.branchId || d.databaseName !== config.databaseName || d.role !== config.role) fail()
     if(Object.hasOwn(row,'service_descriptor')&&row.service_descriptor!==null){
@@ -237,5 +237,5 @@ export function moduleAuditSchemaDigest() {
 }
 export function serviceReadSchemaDigest() {
   return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL(serviceReadSchemaUrl)))
-    .update(fs.readFileSync(new URL('./database-lease.mjs',import.meta.url))).digest('hex'))
+    .digest('hex'))
 }
