@@ -39,11 +39,11 @@ test('new P1 receipt preserves every historical record and verifies exact curren
  assert.equal(await operationSourceDigest(),receipt.requestQuotaSourceCompatibility.sdkDigests.operationSourceDigest)
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  const installed=new URL('../',import.meta.resolve('@profitia/platform-contracts/supplier-location'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,receipt.freshPerformanceRecovery.platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,(receipt.settledExternalFailureRecovery??receipt.freshPerformanceRecovery).platformVersion)
  for(const[file,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'historical producer '+file)
- for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportAdmissionAdoption.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests,...receipt.nativeSqlRoundtripAdoption.sourceDigests,...receipt.diagnosticTelemetryAdoption.sourceDigests,...receipt.xrayPerformanceRecoveryV2.sourceDigests,...receipt.appshellXraySourceCompatibility.sourceDigests,...receipt.freshPerformanceRecovery.sourceDigests})){
+ for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportAdmissionAdoption.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests,...receipt.nativeSqlRoundtripAdoption.sourceDigests,...receipt.diagnosticTelemetryAdoption.sourceDigests,...receipt.xrayPerformanceRecoveryV2.sourceDigests,...receipt.appshellXraySourceCompatibility.sourceDigests,...receipt.freshPerformanceRecovery.sourceDigests,...receipt.settledExternalFailureRecovery?.sourceDigests})){
   assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
+  if(file!=='package-lock.json'&&!file.startsWith('test/'))assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(accepted.applicationSourceDigests)){
   const change=receipt.krsLivePilotSourceCompatibility?.changedFiles[file];

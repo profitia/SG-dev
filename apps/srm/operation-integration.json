@@ -6151,7 +6151,9 @@
       "../sg-runtime/package-lock.json": "eea8976f79c958e873282a422bfc6b8c6586d11987d916e8f5d6e654ebc71640",
       "../maps-runtime/platform-integration.json": "c45aa396422c2b61b1d37d19be27f3af7afe9b0576167ea93882f1303fa61e06",
       "../maps-runtime/test/embed.test.mjs": "f743b479d147b3029bdd9aba23792c5d195c3b35a901a7efed1acc9d43f84faf",
-      "scripts/private-host.integration.test.mjs": "6791820feceddd9ac8240f29de373ae1d917c0d36151913d65a78b159da8b058"
+      "scripts/private-host.integration.test.mjs": "6791820feceddd9ac8240f29de373ae1d917c0d36151913d65a78b159da8b058",
+      "scripts/supplier-location-admission.integration.test.mjs": "c0ba83c519e7b5fd77b07f90a02b992f6dcac022e3647d7674ec5e37c973c073",
+      "scripts/request-quota-adoption.test.mjs": "2ce84f0e4fcc8534d6681b65e4a89002a4d1af225c7dcc9a9a05857462febe20"
     },
     "repositorySourceDigests": {
       "packages/maps-embed/package.json": "b9ff92ed8b471f032536ff97732cf90f574b1feda3ff0696103734c88fef0b36",
