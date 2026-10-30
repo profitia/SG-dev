@@ -1635,7 +1635,7 @@ test('public web source receipt preserves historical records and verifies every 
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
  assert.equal(receipt.xrayPlatform130CiClosureCompatibility.platformVersion,'1.30.0')
  assert.equal(receipt.appshellXraySourceCompatibility.platformVersion,'1.31.0')
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,receipt.freshPerformanceRecovery.platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
  assert.equal(await sdk.externalCallSourceDigest(),currentSdkDigests.externalCallSourceDigest)
  assert.equal(await sdk.publicWebTransportSchemaDigest(),current.sdkDigests.publicWebTransportSchemaDigest)
  assert.equal(Object.keys(current.sourceDigests).length,57)
