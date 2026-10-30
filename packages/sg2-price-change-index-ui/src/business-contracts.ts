@@ -5,6 +5,8 @@ export interface PciBusinessComponent {
   id:string; name:string; weightPercent:number;
   benchmark:{businessBenchmarkId:string;displayName:string;providerSeries:{providerSeriesId:string};currency:string|null;unit:string|null;frequency:string|null};
   valueKind:''|'PRICE_LEVEL'|'PRICE_INDEX'
+  /** Optional consumer-provided semantic projection; carries no calculation or access decision. */
+  qualification?:{classification:string;eligibility:string|null;reason:string;status?:'SUITABLE'|'UNSUITABLE'|'VERIFY'|'NOT_EVALUATED'}
 }
 export interface PciBusinessPurchase {
   amount:string;currency:string;unit:string;taxBasis:''|'NET'|'GROSS';deliveryBasis:string;
@@ -30,6 +32,7 @@ export interface PciBasePreparation {
 export interface PciBusinessController {
   name:string;components:readonly PciBusinessComponent[];purchase:PciBusinessPurchase;
   step:1|2|3|'result';ready:boolean;busy:boolean;error:string|null;result:PciBusinessResult|null;
+  qualificationIssue?:string|null
   preparation?:{status:'idle'|'loading'|'ready'|'error';data:PciBasePreparation|null;error:string|null};onPrepare?:()=>void;
   categorySaveStatus:'idle'|'saving'|'saved'|'error';
   onNameChange:(name:string)=>void;

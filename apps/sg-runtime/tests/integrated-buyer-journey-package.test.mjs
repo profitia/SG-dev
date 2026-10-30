@@ -16,6 +16,11 @@ test('business-only public export excludes every demonstration engine, fixture, 
 })
 const receiptPath=new URL('../operation-integration.json',import.meta.url)
 const readCurrent=()=>JSON.parse(fs.readFileSync(receiptPath))
+const preBqlBytes=url=>{
+ const bql=readCurrent().bqlPciFirstSourceCompatibility
+ const relative=path.relative(path.resolve(appRoot,'../..'),fileURLToPath(url)).split(path.sep).join('/')
+ return bql?.sourceDigests[relative]?execFileSync('git',['show',bql.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):fs.readFileSync(url)
+}
 const historicalReceipt=()=>JSON.parse(execFileSync('git',['show',readCurrent().pciDatePreparationSourceCompatibility.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot}))
 const historicalBytes=url=>{
  const relative=path.relative(path.resolve(appRoot,'../..'),fileURLToPath(url)).split(path.sep).join('/')
@@ -26,7 +31,7 @@ const historicalBytes=url=>{
  const consolidated=readCurrent().xraySearchBoundaryConsolidation
  if(!current.changedPaths.includes(relative)&&consolidated?.applicationSourceDigests[relativeApp])return execFileSync('git',['show',consolidated.previousReceiptSourceSha+':'+relative],{cwd:appRoot})
  if(!current.changedPaths.includes(relative)&&(stabilization?.applicationSourceDigests[relativeApp]||stabilization?.publicUiSourceDigests[relative]))return execFileSync('git',['show',stabilization.previousReceiptSourceSha+':'+relative],{cwd:appRoot})
- return current.changedPaths.includes(relative)?execFileSync('git',['show',current.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):fs.readFileSync(url)
+ return current.changedPaths.includes(relative)?execFileSync('git',['show',current.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):preBqlBytes(url)
 }
 test('new receiver acceptance is additive, binds the whole closure and retains exact pinned upstreams',()=>{
  const receipt=historicalReceipt(),a=receipt.integratedBuyerJourneySourceCompatibility
@@ -123,7 +128,7 @@ test('date preparation renews exact receiver bytes and preserves prior records a
   assert.deepEqual(observed,value,key)
  }
  assert.deepEqual(r.appshellXraySourceCompatibility.applicationSourceDigests,{...before.appshellXraySourceCompatibility.applicationSourceDigests,...current.currentReceiverDigestOverrides})
- for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.pciMain800IntegrityCompatibility?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.pciLiveAcceptanceStabilization?.publicUiSourceDigests[file]??r.pciLiveAcceptanceStabilization?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.xraySearchBoundaryConsolidation?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.freshPerformanceRecovery.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??digest,file)
+ for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.bqlPciFirstSourceCompatibility?.sourceDigests[path.relative(path.resolve(appRoot,'../..'),fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.pciMain800IntegrityCompatibility?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.pciLiveAcceptanceStabilization?.publicUiSourceDigests[file]??r.pciLiveAcceptanceStabilization?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.xraySearchBoundaryConsolidation?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.freshPerformanceRecovery.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??digest,file)
  for(const file of current.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',current.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
  for(const flag of ['calculationMethodChanged','identityOrGrantsChanged','productDeploymentPerformed','schemaChanged'])assert.equal(current[flag],false,flag)
 })
@@ -139,12 +144,40 @@ test('PCI stabilization appends exact current source bindings and keeps every ea
   const continuation=r.pciMain800IntegrityCompatibility
   const historical=continuation?.applicationSourceDigests[file]
    ?execFileSync('git',['show',continuation.pciSourceSha+':apps/sg-runtime/'+file],{cwd:appRoot})
-   :fs.readFileSync(new URL('../'+file,import.meta.url))
+   :preBqlBytes(new URL('../'+file,import.meta.url))
   assert.equal(hash(historical),digest,'original PCI '+file)
-  assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),continuation?.applicationSourceDigests[file]??digest,'current '+file)
+  assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),r.bqlPciFirstSourceCompatibility?.sourceDigests['apps/sg-runtime/'+file]??continuation?.applicationSourceDigests[file]??digest,'current '+file)
  }
- for(const[file,digest]of Object.entries(a.publicUiSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.publicUiSourceDigests)){
+  assert.equal(hash(preBqlBytes(new URL('../../../'+file,import.meta.url))),digest,'preserved '+file)
+  assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.bqlPciFirstSourceCompatibility?.sourceDigests[file]??digest,'current '+file)
+ }
  for(const file of r.pciDatePreparationSourceCompatibility.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',a.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
  for(const field of ['serverAuthorizationChanged','grantsChanged','calculationChanged','sourceHistoryChanged','productDeploymentPerformed'])assert.equal(a[field],false,field)
  assert.equal(a.proofExpiryPreserved,true);assert.equal(a.additionalPaidProviderCalls,0)
+})
+
+function assertBqlIntegrity(receipt,current,historical){
+ const a=receipt.bqlPciFirstSourceCompatibility
+ assert.equal(a.taskId,'SG2-BQL-PCI-FIRST-IMPLEMENTATION-20261030')
+ const prior=historical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json')
+ assert.equal(hash(prior),a.previousReceiptSha256)
+ const {bqlPciFirstSourceCompatibility,...preserved}=receipt
+ assert.deepEqual(preserved,JSON.parse(prior),'every earlier source acceptance is immutable')
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),a.changedSourcePaths)
+ for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(current(file)),digest,'BQL current '+file)
+ for(const file of a.preservedEnginePaths)assert.equal(hash(current(file)),hash(historical(a.previousReceiptSourceSha,file)),file)
+ for(const flag of ['calculationChanged','sourceHistoryChanged','authorizationChanged','schemaChanged','newProviderCalls','srmRuntimeChanged'])assert.equal(a[flag],false,flag)
+}
+test('BQL appends exact current inputs, retains every prior receipt and rejects manipulated source or evidence',()=>{
+ const receipt=readCurrent(),current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url))
+ const historical=(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:appRoot})
+ assertBqlIntegrity(receipt,current,historical)
+ const first=receipt.bqlPciFirstSourceCompatibility.changedSourcePaths[0]
+ assert.throws(()=>assertBqlIntegrity(receipt,file=>file===first?Buffer.concat([current(file),Buffer.from('tamper')]):current(file),historical))
+ const altered=structuredClone(receipt);altered.bqlPciFirstSourceCompatibility.sourceDigests[first]='0'.repeat(64)
+ assert.throws(()=>assertBqlIntegrity(altered,current,historical))
+ const changedHistory=structuredClone(receipt);changedHistory.pciLiveAcceptanceStabilization.additionalPaidProviderCalls=1
+ assert.throws(()=>assertBqlIntegrity(changedHistory,current,historical))
+ assert.throws(()=>assertBqlIntegrity(receipt,current,(sha,file)=>Buffer.concat([historical(sha,file),Buffer.from('tamper')])))
 })
