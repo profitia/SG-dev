@@ -7011,5 +7011,34 @@
     "stagingProductionPilotsChanged": false,
     "runtimeDeploymentClaimed": false,
     "livePerformanceThresholdsClaimed": false
+  },
+  "freshDataCopyRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "scope": "IMMUTABLE_CORPORATE_PACKET_AND_CANONICAL_DOCUMENT_WIRE_ONLY",
+    "targetEnvironment": "development",
+    "platformVersion": "1.32.3",
+    "previousReceiptSourceSha": "a921dfc23d1e72ea10750993515fb6c41f0bd90b",
+    "previousReceiptDigest": "139f62f98051e0979cfa316e11a91a0537bfcebfb427f8f9b082dc5320afaec3",
+    "applicationSourceDigests": {
+      "scripts/native-execution-adoption.test.mjs": "7a19be781f379cd599566b55ca4ad29fb8acb5bae7a625a2c815542c44a0cafd",
+      "scripts/xray-performance-adoption.test.mjs": "69134550465d229664b70b25b665788f6893cdd52eb842ca964610dd7d3cbc4c",
+      "src/server/corporate-source-store.test.ts": "60870f2a5f674def40a1fb561895b164aa6944aa098b0d4e822faf9718b550d3",
+      "src/server/corporate-source-store.ts": "27605822dd8ae9fd0b2ae00f2d3e217c0b4d5178e7fafe214259856403ca69f3",
+      "src/server/financial-documents.test.ts": "5fec98afc547d4f8716deeb338c206f8896f0780e40ad580af5c27f195b5dbdc",
+      "src/server/financial-documents.ts": "21895df015351d4f693018b31af7b8c72ea0bda056e68ecc03d5f2cb037421e4"
+    },
+    "moduleOwnedImmutableDataOnly": true,
+    "canonicalDocumentChecksumVerified": true,
+    "revisionKeysByteCompatible": true,
+    "currentAuthorityAndRollbackPreserved": true,
+    "providerAndRoutingPreserved": true,
+    "authorizationChanged": false,
+    "rlsChanged": false,
+    "schemaChanged": false,
+    "providerPolicyChanged": false,
+    "uiChatMapsChanged": false,
+    "excludedEnvironmentsChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "livePerformanceThresholdsClaimed": false
   }
 }

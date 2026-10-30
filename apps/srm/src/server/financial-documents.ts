@@ -173,7 +173,7 @@ export async function saveFinancialDocuments(organizationId: string, nip: string
 
 export async function persistFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
   documents: readonly FinancialSourceDocument[], archiveChecksum: string | null = null,
-  verifiedProjection?: { version:string; checksum:string },onStored?:(rows:StoredDocument[])=>void): Promise<{ documents: number; positions: number }> {
+  verifiedProjection?: { version:string; checksum:string },onStored?:(rows:StoredDocumentWire[])=>void): Promise<{ documents: number; positions: number }> {
     if (!documents.length) return {documents:0,positions:0};
     if (new Set(documents.map(d=>d.recordId)).size!==documents.length) throw new Error("Duplicate financial archive document");
     // One statement retains every row's RLS, conflict and quality checks.
@@ -191,8 +191,8 @@ export async function persistFinancialDocuments(client: DocumentClient, organiza
        AND (EXCLUDED.document_json->>'availability' IN ('XML_SUPPORTED','IXBRL_SUPPORTED','XHTML_SUPPORTED') OR srm.financial_source_documents.document_json->>'availability' NOT IN ('XML_SUPPORTED','IXBRL_SUPPORTED','XHTML_SUPPORTED'))
        AND (EXCLUDED.document_json->>'validation' = 'VALID' OR srm.financial_source_documents.document_json->>'validation' <> 'VALID'
          OR (EXCLUDED.mapping_version=$5::text AND EXCLUDED.checksum_sha256=$6::text))`;
-    const result=await client.query<StoredDocument>(onStored?`WITH written AS (${insert}
-       RETURNING organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256,
+    const result=await client.query<StoredDocumentWire>(onStored?`WITH written AS (${insert}
+       RETURNING organization_id,nip,record_id,checksum_sha256,mapping_version,archive_jsonb_sha256,
         document_json::text AS document_text,document_jsonb_sha256)
        SELECT * FROM written ORDER BY record_id`:insert,
       [organizationId,nip,JSON.stringify(documents.map(document=>({record_id:document.recordId,document_json:document,
@@ -204,17 +204,26 @@ export async function persistFinancialDocuments(client: DocumentClient, organiza
 
 type StoredDocument = { organization_id: string; nip: string; record_id: string; document_json: FinancialSourceDocument;
   checksum_sha256: string; mapping_version: string; archive_jsonb_sha256: string | null; document_text: string; document_jsonb_sha256: string };
+type StoredDocumentWire = Omit<StoredDocument,'document_json'>;
 async function storedDocuments(client: DocumentClient, organizationId: string, nip: string): Promise<StoredDocument[]> {
-  const rows = (await client.query<StoredDocument>(
-    "SELECT organization_id,nip,record_id,document_json,checksum_sha256,mapping_version,archive_jsonb_sha256,document_json::text AS document_text,document_jsonb_sha256 FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2 ORDER BY record_id", [organizationId,nip])).rows;
+  const rows = (await client.query<StoredDocumentWire>(
+    "SELECT organization_id,nip,record_id,checksum_sha256,mapping_version,archive_jsonb_sha256,document_json::text AS document_text,document_jsonb_sha256 FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2 ORDER BY record_id", [organizationId,nip])).rows;
   return verifyStoredDocuments(rows,organizationId,nip);
 }
-function verifyStoredDocuments(rows:StoredDocument[],organizationId:string,nip:string):StoredDocument[]{
-  if (rows.some(r => r.organization_id !== organizationId || r.nip !== nip || r.record_id !== r.document_json?.recordId
-      || !hashFormat(r.checksum_sha256) || r.checksum_sha256 !== r.document_json?.checksum || r.mapping_version !== r.document_json?.mappingVersion
-      || !hashFormat(r.document_jsonb_sha256) || typeof r.document_text !== "string" || checksum(r.document_text) !== r.document_jsonb_sha256))
-    throw new Error("Financial document identity or checksum mismatch");
-  return rows;
+function verifyStoredDocuments(rows:StoredDocumentWire[],organizationId:string,nip:string):StoredDocument[]{
+  return rows.map(r=>{
+    if(r.organization_id!==organizationId||r.nip!==nip||!hashFormat(r.checksum_sha256)
+      ||!hashFormat(r.document_jsonb_sha256)||typeof r.document_text!=='string'||checksum(r.document_text)!==r.document_jsonb_sha256)
+      throw new Error('Financial document identity or checksum mismatch');
+    let document:FinancialSourceDocument;
+    try{document=JSON.parse(r.document_text)}catch{throw new Error('Financial document identity or checksum mismatch')}
+    if(r.record_id!==document?.recordId||r.checksum_sha256!==document?.checksum||r.mapping_version!==document?.mappingVersion)
+      throw new Error('Financial document identity or checksum mismatch');
+    // The protected query returns the canonical bytes once. Decode only the
+    // same bytes whose database checksum was verified, rather than receiving
+    // a second JSON copy alongside its canonical text.
+    return {...r,document_json:document};
+  });
 }
 
 /** One admitted FRESH transaction has just written and locked this archive.
@@ -237,7 +246,7 @@ export async function prepareFreshFinancialDocuments(client: DocumentClient, org
   if(ids.some(id=>typeof id!=='string'||!id)||new Set(ids).size!==ids.length
    ||ids.length!==documents.length||documents.some(d=>!ids.includes(d.recordId)))
    throw new Error('Incomplete or ambiguous financial archive inventory');
-  let returned:StoredDocument[]=[];
+  let returned:StoredDocumentWire[]=[];
   await persistFinancialDocuments(client,organizationId,nip,documents,archive.payload_jsonb_sha256,undefined,rows=>{returned=rows});
   // RETURNING supplies the actual protected rows, ordered by PostgreSQL as in
   // the original read. A skipped stable/better-quality row keeps the full read.
