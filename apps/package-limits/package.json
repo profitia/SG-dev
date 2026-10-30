@@ -1,0 +1,29 @@
+{
+  "name": "@profitia/package-limits",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "start": "node dist/server.js",
+    "test": "node --test test/domain.test.mjs test/identity.test.mjs test/api.test.mjs",
+    "test:database": "node --test --test-concurrency=1 test/database.test.mjs",
+    "ci:proof": "node scripts/ci-proof.mjs",
+    "install:plan": "node scripts/install.mjs"
+  },
+  "dependencies": {
+    "@clerk/backend": "3.25.0",
+    "@clerk/localizations": "4.23.0",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.5",
+    "typescript": "5.9.3"
+  }
+}
