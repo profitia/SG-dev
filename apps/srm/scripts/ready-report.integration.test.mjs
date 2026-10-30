@@ -20,9 +20,11 @@ import {PREPARED_REPORT_RULES,PREPARED_REPORT_VERSION} from '../src/server/ready
 import {mapMgbiGeneralRecords} from '../src/server/mgbi-general.ts'
 import {mapMgbiFinancialRecords} from '../src/server/mgbi-financial.ts'
 import {createSrmSupplierNativeWork} from '../src/server/supplier-request-work.ts'
+import {createSrmSupplierSourceLink} from '../src/server/supplier-source-link.ts'
 import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-work-store.ts'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {captureFreshFunctions,freshReportReleasePlan} from './fresh-report-release.mjs'
+import {captureFreshPostfetchFunctions,freshPostfetchReleasePlan} from './fresh-postfetch-release.mjs'
 
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8')
 test('ready report native Source and current HUMAN read preserve complete financial output, tenant history and rollback',t=>supplierBusinessFixture(t,true,async f=>{
@@ -147,6 +149,51 @@ test('ready report native Source and current HUMAN read preserve complete financ
    await assert.rejects(store.companySections(selection,{envelope:general,errorCode:null},{envelope:financial.section,errorCode:financial.errorCode,facts:financial.facts}),isOperationDenied)
    assert.equal(checks,2);assert.deepEqual(await f.counts(),before)
   })
+  await t.test('postfetch composition preserves policies, rollback and all tenant data on revocation',async()=>{
+   const names=['srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text)','srm.ready_company_work_descriptor()'];
+   const inspect=async()=>(await owner.query('SELECT oid::regprocedure::text id,pg_get_functiondef(oid) definition,proacl::text acl,proowner,prosecdef,proconfig FROM pg_proc WHERE oid=ANY($1::regprocedure[]) ORDER BY 1',[names])).rows;
+   const backup=await captureFreshPostfetchFunctions(owner),beforeFunctions=await inspect(),policies=(await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' ORDER BY tablename,policyname")).rows;
+   await assert.rejects(owner.query(own('029-fresh-postfetch-work.sql')),e=>e.code==='42501');
+   await controlled(async()=>{await owner.query('SAVEPOINT candidate');await owner.query(own('029-fresh-postfetch-work.sql'));await owner.query('ROLLBACK TO SAVEPOINT candidate');assert.deepEqual(await inspect(),beforeFunctions);await owner.query(own('029-fresh-postfetch-work.sql'))});
+   const afterFunctions=await inspect();
+   for(let i=0;i<afterFunctions.length;i++)for(const key of ['acl','proowner','prosecdef','proconfig'])assert.deepEqual(afterFunctions[i][key],beforeFunctions[i][key]);
+   assert.deepEqual((await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' ORDER BY tablename,policyname")).rows,policies);
+   assert.deepEqual((await owner.query('SELECT * FROM srm.financial_inventory_installation')).rows,inventoryBefore);
+   console.info('POSTFETCH_FUNCTIONS',JSON.stringify((await owner.query('SELECT oid::regprocedure::text id,md5(pg_get_functiondef(oid)) digest FROM pg_proc WHERE oid=ANY($1::regprocedure[]) ORDER BY 1',[names])).rows));
+   const wp={id:'e'.repeat(24),identifiers:{pl_nip:NIP,pl_krs:KRS},content:{current_excerpt:{naglowekA:{numerKRS:KRS,dataRejestracjiWKRS:'2001-01-01'},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic postfetch',formaPrawna:'SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ'}}}}}};
+   const rdf={id:'f'.repeat(24),identifiers:{pl_nip:NIP,pl_krs:KRS},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31',is_ias_compliant:false},content:{schema:{name:'JednostkaInnaWZlotych',version:'1-2'},standardized_fields:{bs:{a_ta_cfy:'100',a_ca_cfy:'60',lae_lapfl_stl_cfy:'20'},pala:{nrfs_cfy:'200',npl_cfy:'10'}}}};
+   const g={...mapMgbiGeneralRecords([wp],{type:'NIP',value:NIP},at),rawResponse:{pages:[{count:1,results:[wp]}],recordCount:1}};
+   const fin={...mapMgbiFinancialRecords([rdf],{type:'NIP',value:NIP},at,1,g.section.data.registryHistory),rawResponse:{pages:[{count:1,results:[rdf]}],recordCount:1}};
+   const config={...f.workOptions,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))};
+   const work=createSrmSupplierNativeWork(config),makeStore=selectedWork=>createSrmSupplierNativeWorkStore({work:selectedWork,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),readyCompanyWorkBoundaryDigest:hash(own('026-ready-company-work.sql'))});
+   const privateCounts=async()=>(await owner.query('SELECT (SELECT count(*)::int FROM srm.mgbi_source_archives) archives,(SELECT count(*)::int FROM srm.financial_source_documents) documents,(SELECT count(*)::int FROM srm.source_snapshots) snapshots,(SELECT count(*)::int FROM srm.financial_facts) facts,(SELECT count(*)::int FROM srm.provider_attempts) attempts')).rows[0];
+   const store=makeStore(work),accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command};
+   await store.register(selection);
+   let checks=0;
+   const revoked={...config.clerk,users:{getUser:async(...args)=>({...await config.clerk.users.getUser(...args),banned:++checks===2})}};
+   const before=await privateCounts();await assert.rejects(makeStore(createSrmSupplierNativeWork({...config,clerk:revoked})).freshCompany(selection,g,fin),isOperationDenied);
+   assert.equal(checks,2);assert.deepEqual(await privateCounts(),before);
+   const stored=await store.freshCompany(selection,g,fin);assert(stored?.generalSnapshotId);assert(stored?.financialSnapshotId);assert.equal(stored.documents.length,1);assert.equal(stored.financial.rawResponse,undefined,'Archived provider pages are not copied into the prepared return value');
+   const stable=await privateCounts();
+   await assert.rejects(store.freshCompany({...selection,organisationId:B},g,fin),isOperationDenied);assert.deepEqual(await privateCounts(),stable);
+   let examined=false;
+   await assert.rejects(work.run(selection,'SRM_STORE_COMPANY',{probe:'postfetch fences'},async(_context,c)=>{
+    for(const table of ['mgbi_source_archives','financial_source_documents','msr_sources','msr_projections'])for(const mode of ['READ','WRITE']){
+     assert.equal((await c.query('SELECT srm.native_supplier_row($1,$2::uuid,NULL,NULL,NULL,$3,$4,$5) allowed',[table,B,NIP,'financial',mode])).rows[0].allowed,false);
+     assert.equal((await c.query('SELECT srm.native_supplier_row($1,$2::uuid,NULL,NULL,NULL,$3,$4,$5) allowed',[table,A,'5260250274','financial',mode])).rows[0].allowed,false);
+    }
+    for(const table of ['msr_sources','msr_projections','catalog_companies'])assert.equal((await c.query('SELECT srm.native_supplier_row($1,$2::uuid,NULL,NULL,NULL,$3,$4,$5) allowed',[table,A,NIP,'financial','WRITE'])).rows[0].allowed,false);
+    examined=true;throw Error('isolated row fence rollback');
+   }),isOperationDenied);assert(examined);assert.deepEqual(await privateCounts(),stable);
+   const rollback=freshPostfetchReleasePlan({mode:'rollback',sourceSha:'a'.repeat(40),previousSha:'b'.repeat(40),backup});
+   const install=freshPostfetchReleasePlan({mode:'install-bind',sourceSha:'a'.repeat(40),previousSha:'b'.repeat(40),backup});
+   for(const plan of [install,rollback]){
+    assert.equal(plan.statements.filter(s=>s.text.startsWith('UPDATE profitia_')).length,3);
+    assert(plan.statements.findIndex(s=>s.text.startsWith('REVOKE '))>plan.statements.findIndex(s=>s.text.startsWith('UPDATE profitia_ingestion.')));
+   }
+   await controlled(async()=>{for(const stmt of rollback.freshStatements)await owner.query(stmt.text,stmt.values);assert.deepEqual(await inspect(),beforeFunctions);for(const stmt of install.freshStatements)await owner.query(stmt.text,stmt.values);assert.deepEqual(await inspect(),afterFunctions)});
+   assert.deepEqual(await privateCounts(),stable);
+  });
   await t.test('CEIDG classification uses the report command and native Source without private JDG or company snapshot writes',async()=>{
    let hits=0,mode='EMPTY'
    const server=http.createServer((request,response)=>{
@@ -173,6 +220,19 @@ test('ready report native Source and current HUMAN read preserve complete financ
      mode=selected;const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command},before=await f.counts(),calls=hits
      assert.equal(await classifier.classify(selection,new AbortController().signal),expected);assert.equal(hits,calls+1)
      assert.deepEqual(await f.counts(),before)
+     const key=(await owner.query('SELECT delivery_key FROM profitia_jobs.dispatches WHERE request_id=$1',[selection.requestId])).rows[0].delivery_key;
+     const committed=await f.source.read(selection.command,key);assert(committed);
+     await assert.rejects(f.source.read(selection.command,'0'.repeat(64)),isOperationDenied);
+     await assert.rejects(f.source.read({...selection.command,organisationId:B},key));
+     if(selected==='EMPTY'){
+      const sourceCount=async()=>(await owner.query('SELECT (SELECT count(*)::int FROM profitia_ingestion.effects) effects,(SELECT count(*)::int FROM profitia_ingestion.security_events) audit')).rows[0];
+      let accountReads=0;const clerk={...f.workOptions.clerk,users:{getUser:async(...args)=>{accountReads++;return f.workOptions.clerk.users.getUser(...args)}}};
+      const prior=await sourceCount(),link=createSrmSupplierSourceLink({work:{...f.workOptions,clerk,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),source:f.source});
+      assert.deepEqual((await link.registerAndAdmit(selection)).sourceRequest,committed);assert.deepEqual(await sourceCount(),prior);assert.equal(accountReads,2,'Only registration entry/outcome reads remain; confirmed delivery does not repeat dispatch admission');
+      await owner.query("UPDATE profitia_ingestion.grants SET status='REVOKED' WHERE login_role=$1",[role]);
+      try{await assert.rejects(f.source.read(selection.command,key),isOperationDenied);await assert.rejects(link.registerAndAdmit(selection),isOperationDenied)}finally{await owner.query("UPDATE profitia_ingestion.grants SET status='ACTIVE' WHERE login_role=$1",[role])}
+      assert.deepEqual(await sourceCount(),prior);
+     }
      if(selected==='REDIRECT'){
       const row=(await owner.query("SELECT status,http_status,response_digest FROM profitia_external_call.calls WHERE source_id=$1 ORDER BY created_at DESC LIMIT 1",[policy.source.id])).rows[0]
       assert.deepEqual(row,{status:'UNVERIFIED',http_status:null,response_digest:null})
@@ -263,7 +323,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
    const card=await native.run({requestId:accepted.requestId,organisationId:A,command:accepted.command})
    assert.equal(card.identity.nip,selectedNip);assert(card.financial.data)
    const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[accepted.requestId])).rows.map(r=>r.unit)
-   assert(units.includes('SRM_STORE_COMPANY'));assert(!units.includes('SRM_STORE_GENERAL'));assert(!units.includes('SRM_STORE_FINANCIAL'));assert(!units.includes('SRM_RECORD_INTEREST'))
+   assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_STORE_COMPANY']);assert(!units.includes('SRM_STORE_GENERAL'));assert(!units.includes('SRM_STORE_FINANCIAL'));assert(!units.includes('SRM_RECORD_INTEREST'))
    assert.equal(units.filter(unit=>unit==='SRM_CACHE_READ').length,0,'registration reads the cache once; no cache or indicator reconstruction Work')
    const before=(await owner.query("SELECT count(*)::int n FROM profitia_access.security_events WHERE event->>'operation'='job.execute'")).rows[0].n
    const result=await ready.read(request(),A,selectedNip);assert(result.response)

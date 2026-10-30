@@ -122,6 +122,8 @@ export async function fetchCompanyFinancial(data: SupplierXRayCard["general"]["d
  * host must bind each port to its current admitted HUMAN/SOURCE operation.
  * Partial compositions never inherit a demo database or provider credential. */
 export type XrayCompanyPorts = {
+  persistFreshCompany?:(org:string,nip:string,general:Awaited<ReturnType<typeof fetchMgbiGeneral>>,
+    financial:Awaited<ReturnType<typeof fetchMgbiFinancial>>)=>Promise<null|{generalSnapshotId:string|null;financialSnapshotId:string|null;financial:Awaited<ReturnType<typeof fetchMgbiFinancial>>}>;
   prepareFinancialInventory?:(org:string,nip:string,pages:unknown[],recordCount:number,retrievedAt:string,allowedKrs:readonly string[])=>Promise<void>;
   createLookup: typeof createLookup;
   readFreshCompany: typeof readFreshCompany;
@@ -154,8 +156,8 @@ const companyPortNames = Object.freeze(Object.keys(legacyCompanyPorts).sort());
  * no mutable request, actor, lease or transaction is retained between calls. */
 export function createXrayCompanyLookup(input: XrayCompanyPorts) {
   if (typeof window !== "undefined" || !input || Object.getPrototypeOf(input) !== Object.prototype
-    || Object.keys(input).filter(key=>!['prepareFinancialInventory','prepareReadyReport','persistCompanySections'].includes(key)).sort().join(",") !== companyPortNames.join(",")
-    || Reflect.ownKeys(input).length !== companyPortNames.length+Number(Object.hasOwn(input,'prepareFinancialInventory'))+Number(Object.hasOwn(input,'prepareReadyReport'))+Number(Object.hasOwn(input,'persistCompanySections'))
+    || Object.keys(input).filter(key=>!['prepareFinancialInventory','prepareReadyReport','persistCompanySections','persistFreshCompany'].includes(key)).sort().join(",") !== companyPortNames.join(",")
+    || Reflect.ownKeys(input).length !== companyPortNames.length+Number(Object.hasOwn(input,'prepareFinancialInventory'))+Number(Object.hasOwn(input,'prepareReadyReport'))+Number(Object.hasOwn(input,'persistCompanySections'))+Number(Object.hasOwn(input,'persistFreshCompany'))
     || Object.values(Object.getOwnPropertyDescriptors(input)).some(d => !("value" in d) || typeof d.value !== "function")) {
     throw new TypeError("Complete explicit company report ports required");
   }
@@ -256,9 +258,15 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
   const allowedKrs=general.section.data?.registryHistory?.members.map(m=>m.krs)??(general.section.data?.krs?[general.section.data.krs]:[]);
   logProviderOutcome("MGBI", "general", general.section.status, general.errorCode);
   if (!isCompanyReportRestricted(general.section.data)) logProviderOutcome("MGBI", "financial", financial.section.status, financial.errorCode);
+  // The native composition can commit the already fetched structured report
+  // atomically. Unsupported/MSR/error cases return null before any effect and
+  // retain the original acquisition and enrichment path below.
+  const prepared=!isCompanyReportRestricted(general.section.data)&&ports.persistFreshCompany
+    ?await ports.persistFreshCompany(organizationId,request.identifier.value,general,financial):null;
+  if(prepared)financial=prepared.financial;
   // Keep complete provider responses in a tenant-scoped store, separate from
   // the normalized, person-free catalog reused across organizations.
-  await atLookupStage("source_archive", () => Promise.all([
+  if(!prepared)await atLookupStage("source_archive", () => Promise.all([
     general.rawResponse && general.section.retrievedAt
       ? ports.saveMgbiArchive(organizationId, request.identifier.value, "pl-krs-wp-record",
         general.rawResponse.pages, general.rawResponse.recordCount, general.section.retrievedAt, lookup.requestId)
@@ -270,18 +278,18 @@ async function runCompanyLookup(ports: Readonly<XrayCompanyPorts>, organizationI
         financial.rawResponse.pages, financial.rawResponse.recordCount, financial.section.retrievedAt, lookup.requestId).then(() => ports.saveFinancialDocuments(organizationId, request.identifier.value, financial.rawResponse!.pages))
       : Promise.resolve(),
   ]));
-  if (!isCompanyReportRestricted(general.section.data) && financial.rawResponse)
+  if (!prepared && !isCompanyReportRestricted(general.section.data) && financial.rawResponse)
     financial = await atLookupStage("financial_persistence", () => ports.enrichMsrFinancial(organizationId,request.identifier.value,financial,{requestId:lookup.requestId,allowedKrs:general.section.data?.registryHistory?.members.map(m=>m.krs)}),"financial");
-  if (!isCompanyReportRestricted(general.section.data) && financial.section.data) {
+  if (!prepared && !isCompanyReportRestricted(general.section.data) && financial.section.data) {
     const documents=await ports.readFinancialDocuments(organizationId,request.identifier.value);
     financial.section=applyFinancialDocumentMetadata(financial.section,documents,general.section.data?.registryHistory);
     if(financial.sourceData) financial.sourceData=applyFinancialDocumentMetadata({...financial.section,data:financial.sourceData},documents,general.section.data?.registryHistory).data ?? undefined;
   }
-  const persisted=ports.persistCompanySections&&!isCompanyReportRestricted(general.section.data)
+  const persisted=prepared??(ports.persistCompanySections&&!isCompanyReportRestricted(general.section.data)
     ?await ports.persistCompanySections(organizationId,lookup,{envelope:general.section,errorCode:general.errorCode},
       {envelope:financial.section,errorCode:financial.errorCode,facts:financial.facts,...(financial.sourceData?{sourceData:financial.sourceData}:{})})
     :{generalSnapshotId:await ports.persistSection(organizationId,lookup,"general",general.section,general.errorCode),
-      financialSnapshotId:isCompanyReportRestricted(general.section.data)?null:await ports.persistSection(organizationId,lookup,"financial",financial.section,financial.errorCode,financial.facts,undefined,financial.sourceData)}
+      financialSnapshotId:isCompanyReportRestricted(general.section.data)?null:await ports.persistSection(organizationId,lookup,"financial",financial.section,financial.errorCode,financial.facts,undefined,financial.sourceData)})
   const {generalSnapshotId,financialSnapshotId}=persisted;
   await atLookupStage("catalog_persistence", () => ports.saveSharedCompany(organizationId, request.identifier.value, {
     general: general.section, financial: financial.section,

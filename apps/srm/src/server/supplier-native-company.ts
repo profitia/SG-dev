@@ -129,6 +129,12 @@ export function createSrmNativeCompanyLookup(options:Options){
         scope(org,nip);if(inventory)return refuse()
         inventory=await store.financialInventory(selection,pages,count,at,allowedKrs)
       }}:{}),
+      ...(mgbiOnly&&options.readyCompanyWorkBoundaryDigest?{persistFreshCompany:async(org:string,nip:string,general:Parameters<typeof store.freshCompany>[1],financial:Parameters<typeof store.freshCompany>[2])=>{
+        scope(org,nip)
+        const result=await store.freshCompany(selection,general,financial)
+        if(result)reportDocuments=result.documents
+        return result
+      }}:{}),
       readFinancialDocuments:async(org,nip)=>{scope(org,nip);reportDocuments=inventory?inventory.documents:await store.restoreDocuments(selection);return [...reportDocuments]},
       enrichMsrFinancial:async(org,nip,base,metadata)=>{
         scope(org,nip);if(metadata?.requestId!==selection.requestId||metadata.store||metadata.download||metadata.parse)return refuse()

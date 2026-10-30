@@ -49,8 +49,8 @@ function beforePrivateAcquisitionApplicationSource(path){
  return execFileSync('git',['show','8c5e14b0fc4815021231f6752c1073f1c191465b:apps/srm/'+path])
 }
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
-const currentSdkDigests={...sdkReceipt.appshellXraySourceCompatibility.sdkDigests,...sdkReceipt.settledExternalFailureRecovery?.sdkDigests,...sdkReceipt.sourceLeaseClockRecovery?.sdkDigests}
-const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportAdmissionAdoption.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPerformanceRecoveryV2.sourceDigests,...manifest.appshellXraySourceCompatibility.sourceDigests,...manifest.freshPerformanceRecovery.sourceDigests,...manifest.settledExternalFailureRecovery?.sourceDigests,...manifest.sourceLeaseClockRecovery?.sourceDigests}).filter(([file])=>file!=='package-lock.json'&&!file.startsWith('test/')))
+const currentSdkDigests={...sdkReceipt.appshellXraySourceCompatibility.sdkDigests,...sdkReceipt.settledExternalFailureRecovery?.sdkDigests,...sdkReceipt.sourceLeaseClockRecovery?.sdkDigests,...sdkReceipt.freshPostfetchRecovery?.sdkDigests}
+const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportAdmissionAdoption.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPerformanceRecoveryV2.sourceDigests,...manifest.appshellXraySourceCompatibility.sourceDigests,...manifest.freshPerformanceRecovery.sourceDigests,...manifest.settledExternalFailureRecovery?.sourceDigests,...manifest.sourceLeaseClockRecovery?.sourceDigests,...manifest.freshPostfetchRecovery?.sourceDigests}).filter(([file])=>file!=='package-lock.json'&&!file.startsWith('test/')))
 
 test('SRM imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
@@ -199,7 +199,7 @@ test('complete JDG and KYS orchestration ports retain original engines without c
 
 test('SRM accepts the published optional producer fingerprints', async () => {
   assert.equal(await accessStoreSourceDigest(), currentSdkDigests.accessStoreSourceDigest)
-  assert.equal(await identitySourceDigest(), 'b7f3e09e6c62bbaf20c42752f514022c91b0dc0fef9db387f41f613a124ce0b4')
+  assert.equal(await identitySourceDigest(), currentSdkDigests.identitySourceDigest)
   assert.equal(await privateOperationHostSourceDigest(),currentSdkDigests.privateOperationHostSourceDigest)
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')
@@ -1526,7 +1526,7 @@ test('public web source receipt preserves historical records and verifies every 
  assert.equal(current.taskId,'SRM-E1-SUPPLIER-EXTERNAL-ADOPTION-20261020');assert.equal(current.platformVersion,'1.23.0');assert.equal(current.rootImplementation,receipt.supplierLocationSourceCompatibility.previousRootAcceptance.contract.implementation)
  assert.equal(current.producer.projectKey,'ARCHITECTURE');assert.equal(current.producer.sourceSha,'403255c88bbf81a67e384c269e38cae848b018f1')
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.sourceLeaseClockRecovery??receipt.settledExternalFailureRecovery??receipt.freshPerformanceRecovery).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.freshPostfetchRecovery??receipt.sourceLeaseClockRecovery??receipt.settledExternalFailureRecovery??receipt.freshPerformanceRecovery).platformVersion)
  assert.equal(await sdk.externalCallSourceDigest(),currentSdkDigests.externalCallSourceDigest)
  assert.equal(await sdk.publicWebTransportSchemaDigest(),current.sdkDigests.publicWebTransportSchemaDigest)
  assert.equal(Object.keys(current.sourceDigests).length,57)

@@ -34,17 +34,16 @@ export function createSrmSupplierSourceRequest(options:{application:RootOptions[
         [command.nip,context.platformReservation.effectId,context.decisionId])
       if(result.rows[0]?.admitted!==true)return refuse()
     }})
-  return Object.freeze({port,
-    async read(input:unknown,deliveryKey:string){
+  async function observe(input:unknown,deliveryKey:string){
       const command=readSupplierRequest(input)
       if(!/^[a-f0-9]{64}$/.test(deliveryKey))return refuse()
       // This is an existing-record observation, never a call to ingest/deliver.
       // Its serialized result cannot mint Root platformReceiptEvidence.
       return driver.transact(async({transaction:client})=>{
         await verify(client)
-        const root=(await client.query('SELECT current_database() AS database_name,current_user AS role,session_user AS login,profitia_ingestion.runtime_descriptor() AS descriptor')).rows[0]
+        const root=(await client.query('SELECT current_database() AS database_name,current_user AS role,session_user AS login,profitia_ingestion.runtime_descriptor() AS descriptor,profitia_ingestion.current_state($1,$2) IS NOT NULL AS allowed',[SUPPLIER_SOURCE_REQUEST.id,command.nip])).rows[0]
         const d=root?.descriptor,b=fixed.binding
-        if(!d||root.database_name!==b.databaseName||root.role!==b.role||root.login!==b.role
+        if(!d||root.allowed!==true||root.database_name!==b.databaseName||root.role!==b.role||root.login!==b.role
           ||d.applicationId!==b.applicationId||d.environment!==b.environment||d.projectId!==b.projectId
           ||d.branchId!==b.branchId||d.databaseName!==b.databaseName||d.role!==b.role||d.schemaDigest!==b.schemaDigest
           ||d.deploymentId!==b.deploymentId||d.configurationVersion!==b.configurationVersion)return refuse()
@@ -55,6 +54,8 @@ export function createSrmSupplierSourceRequest(options:{application:RootOptions[
           ||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value.effectId))return refuse()
         return Object.freeze({effectId:value.effectId as string,status:'COMMITTED' as const})
       },{timeoutMs:10000,maxWaitMs:3000})
-    },
+  }
+  return Object.freeze({port,
+    read:(input:unknown,deliveryKey:string)=>observe(input,deliveryKey),
   })
 }

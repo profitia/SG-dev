@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCHITECTURE-CURRENT-HUMAN-PEER-READ-20261029",
+  "targetEnvironment": "development",
+  "authorityBaseSha": "cb8ad767a5b0cfa0e44f92b66fd5d5f41f3fbad7",
+  "platformVersion": "1.32.3",
+  "contract": {
+    "id": "profitia.current-identity-observation",
+    "version": "1.0.0"
+  },
+  "scope": "Concurrent independent session and account observations after official SDK verification; both must validate before internal binding resolution. No durable authorization cache or removed boundary recheck.",
+  "sdkVerifiedIdentityCapturedBeforeAwait": true,
+  "freshObservationsPerAuthentication": true,
+  "finalDisclosureRevalidationPreserved": true,
+  "providerOrSqlPolicyChanged": false,
+  "sourceDigests": {
+    "src/identity-provider.mjs": "1fc428a14196509a6493d96404e5f4c3ff9fc0fdfdcecfebcf8f18394e6a68c3",
+    "test/identity-provider.test.mjs": "2cdee56cac2f71bba50e76176452a5bbd4edf9290704009ffb6108d78fa2dde8",
+    "package.json": "1a93c1c53498a3e38c800092979f51bcb84ae3a2ee4e725931a9177abd4c5771",
+    "package-lock.json": "1cda03f165497dc86d27c8958ebba030d122a592a1eeedd3e396628660f861d9",
+    "test/private-operation-host.test.mjs": "f5e2682da91457290e10d3637459b54e61fb0b3b5923a04df1b2ddbac3e48f9b"
+  },
+  "requiredConsumerTasks": {
+    "SRM": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "SG2": "SG2-XRAY-FRESH-PERFORMANCE-ADOPTION-20261029"
+  },
+  "runtimeDeploymentClaimed": false,
+  "performanceThresholdsClaimed": false,
+  "identitySourceDigest": "662f6c95138a0f8cd8f835c569084d669fbe85e34a762676584297ecd5f03606"
+}

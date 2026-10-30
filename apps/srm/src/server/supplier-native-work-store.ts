@@ -14,7 +14,11 @@ import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
 import { reprojectFinancialArchive, type FinancialSourceFact } from './mgbi-financial'
 import { saveMgbiArchive } from './mgbi-archive'
-import { financialRecordsFromPages, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
+import { applyFinancialDocumentMetadata, financialRecordsFromPages, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
+import type {MgbiGeneralResult} from './mgbi-general'
+import type {MgbiFinancialResult} from './mgbi-financial'
+import {isCompanyReportRestricted} from '@profitia/srm-xray'
+import {isKnownMgbiCompany} from './company-source-policy'
 import { msrStore, type MsrReceipt, type MsrStore } from './msr-repository'
 import type { MsrCandidate } from './msr-financial'
 import type { MsrOriginal } from './msr-source'
@@ -32,6 +36,25 @@ const freeze=<T>(v:T):T=>{if(v&&typeof v==='object'){Object.values(v).forEach(fr
 const capturedDigests=new WeakMap<object,string>()
 const digest=(value:unknown)=>value&&typeof value==='object'
   ?capturedDigests.get(value)??operationPayloadDigest(value as Json):operationPayloadDigest(value as Json)
+
+/** Only complete structured evidence can skip the separate MSR inventory.
+ * Unknown/error/IAS results keep the original path; no missing value is proof
+ * of a supported financial report. This predicate grants no authority. */
+export function isStructuredFreshCompany(nip:string,g:MgbiGeneralResult,f:MgbiFinancialResult):boolean{
+  if(g.errorCode!==null||f.errorCode!==null||!['SUCCESS','PARTIAL'].includes(g.section.status)||f.section.status!=='SUCCESS'
+    ||g.section.source.provider!=='MGBI'||f.section.source.provider!=='MGBI'
+    ||!isKnownMgbiCompany({general:g.section,financial:f.section},nip)||isCompanyReportRestricted(g.section.data)
+    ||!f.section.data||!g.rawResponse||!f.rawResponse||!g.section.retrievedAt||!f.section.retrievedAt)return false
+  for(const value of [g,f]){
+    const raw=value.rawResponse!
+    if(!Array.isArray(raw.pages)||raw.pages.length<1||!Number.isSafeInteger(raw.recordCount)||raw.recordCount<1
+      ||raw.pages.some(page=>!page||typeof page!=='object'||!Array.isArray((page as {results?:unknown}).results)))return false
+    const records=financialRecordsFromPages(raw.pages)
+    if(records.length!==raw.recordCount||records.some(record=>!record||typeof record!=='object'
+      ||(record as {identifiers?:{pl_nip?:unknown}}).identifiers?.pl_nip!==nip))return false
+  }
+  return !financialRecordsFromPages(f.rawResponse.pages).some(record=>(record as {document?:{is_ias_compliant?:unknown}}).document?.is_ias_compliant===true)
+}
 function json<T>(value:T):T{
  return diagnosticRun('JSON_CAPTURE',()=>{
   let text:string|undefined
@@ -288,6 +311,36 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
  })
 },
     section,
+    async freshCompany(input:SupplierNativeWorkSelection,general:MgbiGeneralResult,financial:MgbiFinancialResult){
+      const selected=select(input),g=json(general),f=json(financial)
+      if(!isStructuredFreshCompany(selected.command.nip,g,f))return null
+      if(!options.readyCompanyWorkBoundaryDigest)return refuse()
+      return run(selected,'SRM_STORE_COMPANY',{generalDigest:digest(g),financialDigest:digest(f),postfetchVersion:'1.0.0'},async(pool,client,context)=>{
+        const descriptor=(await client.query('SELECT srm.ready_company_work_descriptor() AS descriptor')).rows[0]?.descriptor
+        if(descriptor?.schemaDigest!==options.readyCompanyWorkBoundaryDigest||descriptor.freshPostfetchVersion!=='1.0.0')return refuse()
+        // Network acquisition is finished. Archives, prepared documents,
+        // snapshots, facts and attempts share the original tenant transaction.
+        // A revoked account at its outcome rolls every one of these back.
+        await diagnosticRun('MGBI_GENERAL_ARCHIVE',()=>saveMgbiArchive(selected.organisationId,selected.command.nip,'pl-krs-wp-record',g.rawResponse!.pages,g.rawResponse!.recordCount,g.section.retrievedAt!,selected.requestId,pool))
+        await diagnosticRun('MGBI_FINANCIAL_ARCHIVE',()=>saveMgbiArchive(selected.organisationId,selected.command.nip,'pl-krs-rdf-record',f.rawResponse!.pages,f.rawResponse!.recordCount,f.section.retrievedAt!,selected.requestId,pool))
+        await saveFinancialDocuments(selected.organisationId,selected.command.nip,f.rawResponse!.pages,pool)
+        const documents=await readPreparedFinancialDocuments(client,selected.organisationId,selected.command.nip)
+        const sectionWithDocuments=applyFinancialDocumentMetadata(f.section,documents,g.section.data?.registryHistory)
+        // The original pages are now durably archived in this transaction.
+        // Return only the prepared result needed by Source publication, not
+        // another captured copy of the raw financial response.
+        const prepared:MgbiFinancialResult={section:sectionWithDocuments,facts:f.facts,errorCode:f.errorCode,
+          ...(f.sourceData?{sourceData:applyFinancialDocumentMetadata({...sectionWithDocuments,data:f.sourceData},documents,g.section.data?.registryHistory).data??undefined}:{})}
+        const local:typeof run=async(s,unit,_parameters,action,capture=json)=>{
+          if(s.requestId!==selected.requestId||s.organisationId!==selected.organisationId||s.command.nip!==selected.command.nip
+            ||!['SRM_STORE_GENERAL','SRM_STORE_FINANCIAL'].includes(unit))return refuse()
+          const value=await action(pool,client,context);return value===undefined?value:capture(value)
+        }
+        const generalSnapshotId=await section(selected,'general',g.section,g.errorCode,[],undefined,undefined,'PROVIDER',local)
+        const financialSnapshotId=await section(selected,'financial',prepared.section,prepared.errorCode,prepared.facts,undefined,prepared.sourceData,'PROVIDER',local)
+        return {generalSnapshotId,financialSnapshotId,financial:prepared,documents}
+      })
+    },
     companySections(input:SupplierNativeWorkSelection,general:Readonly<{envelope:SectionEnvelope<GeneralCompanyData>;errorCode:string|null}>,
       financial:Readonly<{envelope:SectionEnvelope<FinancialData>;errorCode:string|null;facts:FinancialSourceFact[];sourceData?:FinancialData}>){
       if(!options.readyCompanyWorkBoundaryDigest)return refuse()

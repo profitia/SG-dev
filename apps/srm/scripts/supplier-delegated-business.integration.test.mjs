@@ -845,6 +845,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    await owner.query("UPDATE profitia_jobs.dispatches SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE request_id=$1",[s.requestId])
    const result=await sourceLink.registerAndAdmit(s);assert.equal(result.sourceStatus,'CONFIRMED')
    assert.deepEqual(await sourceCounts(),{e:before.e+1,b:before.b+1,w:before.w+1})
+   assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_jobs.delivery_observations o JOIN profitia_jobs.dispatches j USING(job_id) WHERE j.request_id=$1',[s.requestId])).rows[0].n,1,'A committed Source receipt alone cannot bypass the missing private delivery observation')
   })
 
   }else{

@@ -53,6 +53,15 @@ export function createSrmSupplierSourceLink(options:{work:SupplierNativeWorkOpti
         const lookup=register?await register(capture,selection,existingSupplier):await createSrmSupplierNativeWorkStore({work:capture,namedInterestBoundaryDigest:options.namedInterestBoundaryDigest}).register(selection,existingSupplier)
         const link=captured
         if(!entered||!link)return refuse()
+        // Classification may have already committed this exact request's
+        // admission. Registration just completed its current account/outcome
+        // checks; observe the original Source row under its current binding
+        // instead of admitting the same delivery a second time.
+        // Both sides must already be confirmed. A committed Source effect
+        // with a missing private observation still takes the original leased
+        // reconciliation path; it cannot be presented as settled delivery.
+        const committed=link.status==='CONFIRMED'?await source.read(selection.command,link.deliveryKey):null
+        if(committed)return Object.freeze({lookup,sourceStatus:'CONFIRMED' as const,sourceRequest:committed})
         const operation={contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
           operation:'job.execute' as const,organisationId:selection.organisationId,resourceId:selection.requestId,payload:selection.command,request:null}
         let admitted=(await dispatch.admit(operation)).value

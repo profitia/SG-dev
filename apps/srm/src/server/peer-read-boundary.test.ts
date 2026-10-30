@@ -41,13 +41,15 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   assert.equal(accepted.producer.sourceSha, '9a226aef8dc36949b13999dbeba046dc1cf62a29')
   assert.equal(accepted.producer.projectKey, 'ARCHITECTURE'); assert.equal(accepted.producer.pullRequest, 568)
   assert.equal(accepted.previousApplicationAuthority, 'c82d400ab53783376fefecd487131b0ef6812ad8')
-  assert.equal(accepted.identityDigest, await identitySourceDigest())
+  assert.equal(receipt.freshPostfetchRecovery?.sdkDigests.identitySourceDigest??accepted.identityDigest, await identitySourceDigest())
+  const historicalIdentity=createHash('sha256').update(execFileSync('git',['show',accepted.producer.sourceSha+':packages/platform-contracts/src/identity-provider.mjs'])).update(execFileSync('git',['show',accepted.producer.sourceSha+':packages/platform-contracts/src/identity-provider.d.mts'])).digest('hex');
+  assert.equal(accepted.identityDigest,historicalIdentity);
   const previous = JSON.parse(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':apps/srm/operation-integration.json'], { encoding: 'utf8' }))
   for (const [key, value] of Object.entries(previous)) assert.deepEqual(['contract','producer'].includes(key) ? receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   const root = new URL('../', pathToFileURL(createRequire(import.meta.url).resolve('@profitia/platform-contracts/identity-provider')))
   assert.deepEqual(Object.keys(accepted.sdkSourceDigests).sort(), ['src/identity-provider.d.mts', 'src/identity-provider.mjs'])
   for (const [path, digest] of Object.entries(accepted.sdkSourceDigests)) {
-    assert.equal(hash(readFileSync(new URL(path, root))), digest, path)
+    assert.equal(hash(readFileSync(new URL(path, root))), receipt.freshPostfetchRecovery?.sourceDigests[path]??digest, path)
     assert.equal(hash(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':packages/platform-contracts/' + path])), previous.publicWebTransportSourceCompatibility.sourceDigests[path])
   }
   const currentDigests={ ...accepted.sourceDigests, ...receipt.supplierLocationSourceCompatibility.applicationSourceDigests, ...receipt.supplierLocationFullStackAdoption.sourceDigests, ...receipt.p1ReceiverSourceCompatibility.applicationSourceDigests };
@@ -134,6 +136,8 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   Object.assign(currentDigests,receipt.settledExternalFailureRecovery?.applicationSourceDigests);
   for(const[file,digest]of Object.entries(consumer.sourceLeaseClockCompatibility?.applicationSourceDigests??{}))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
   Object.assign(currentDigests,receipt.sourceLeaseClockRecovery?.applicationSourceDigests);
+  for(const[file,digest]of Object.entries(consumer.freshPostfetchCompatibility?.applicationSourceDigests??{}))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
+  Object.assign(currentDigests,receipt.freshPostfetchRecovery?.applicationSourceDigests);
   for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

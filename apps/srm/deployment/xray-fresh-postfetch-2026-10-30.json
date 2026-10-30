@@ -1,0 +1,26 @@
+{
+  "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+  "targetEnvironment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "migration": "029-fresh-postfetch-work.sql",
+  "functions": {
+    "srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text)": {
+      "before": "bd907d29ceeb7ce63489485941f1e203",
+      "after": "dcdb56ade81f04e67a1faa6768be8c42"
+    },
+    "srm.ready_company_work_descriptor()": {
+      "before": "2848428db3c8491a975c241fb3b86873",
+      "after": "eac5fa80b59a0df3fd45f15920123020"
+    }
+  },
+  "changesExistingPolicies": false,
+  "changesAcl": false,
+  "changesTenantAccess": false,
+  "providerQuotaOrLicenseChanged": false,
+  "historyDeleted": false,
+  "pilotOrMapsDeploymentChanged": false,
+  "runtimeDeploymentClaimed": false
+}
