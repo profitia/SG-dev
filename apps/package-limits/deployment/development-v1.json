@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "project": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "applicationId": "package-limits-development",
+  "origin": "https://limits-development.onrender.com",
+  "repository": "profitia/SG-dev",
+  "sourcePath": "apps/package-limits",
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "projectId": "prj-dbi556u1egvs73euin20",
+    "environmentId": "evm-dbi5932jnfac73cs1nhg",
+    "serviceId": "srv-dbi5at9srm7s73da7ol0",
+    "autoDeploy": false,
+    "previews": false
+  },
+  "limits": {
+    "projectId": "lingering-thunder-05075810",
+    "branchId": "br-green-hall-b9s837k0",
+    "database": "neondb",
+    "host": "ep-muddy-surf-b9vpyy2d.c-7.eu-central-1.aws.neon.tech",
+    "schema": "profitia_limits",
+    "owner": "profitia_limits_owner",
+    "migrator": "profitia_limits_migrator",
+    "runtime": "profitia_limits_runtime"
+  },
+  "identity": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "database": "platform_private",
+    "host": "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+    "schema": "profitia_limits_identity_read",
+    "runtime": "profitia_limits_identity_reader"
+  },
+  "metering": "NOT_CONNECTED",
+  "e1Projection": "PENDING_NOT_CONNECTED"
+}
