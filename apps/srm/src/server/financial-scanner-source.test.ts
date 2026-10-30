@@ -11,6 +11,17 @@ import {
 } from "./financial-documents";
 import { qualifyScannerSources } from "./financial-scanner-source";
 const id = "standalone:2025-01-01:2025-12-31";
+test('scanner prepares exact revision groups per invocation and never reuses an earlier qualified verdict',()=>{
+ const {f,selected,doc}=fixture();
+ const copy={...structuredClone(doc),recordId:'equivalent',filingDate:'2026-07-16',checksum:'b'.repeat(64),correction:true};
+ const documents=[doc,copy],first=qualifyScannerSources(f,selected,documents,'2026-10-14');
+ assert.ok(first[id].basis.REVENUE);
+ copy.rows[0].amounts.KwotaA='99';
+ const changed=qualifyScannerSources(f,selected,documents,'2026-10-14');
+ assert.equal(changed[id].reason,'SOURCE_REVISION_UNRESOLVED');assert.deepEqual(changed[id].basis,{});
+ copy.rows[0].amounts.KwotaA='100';
+ assert.deepEqual(qualifyScannerSources(f,selected,documents,'2026-10-14'),first);
+});
 test("scanner revision families and comparison bases stay separated by filing issuer KRS",()=>{
   const {f,selected,doc}=fixture();doc.sourceKrs="0000000001";
   const other={...structuredClone(doc),recordId:"successor",sourceKrs:"0000000002",checksum:"b".repeat(64)};

@@ -6,6 +6,14 @@ const record = (overrides: Record<string, unknown> = {}) => ({ id: "xml-1", docu
  extracted_fields: { "Naglowek.OkresOd": "2025-02-01", "Naglowek.OkresDo": "2026-01-31", "Bilans.Aktywa.KwotaA": "1234567890123456.789", "Bilans.Aktywa.KwotaB": null, "RZiS.RZiSKalk.A.KwotaA": "-17.3456", "RZiS.RZiSKalk.A.KwotaB1": "0", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.NazwaPozycji": "=1+1", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.KwotyPozycji.KwotaA": "1", "RachPrzeplywow.A.KwotaA": "999", "InformacjeDodatkowe.KwotaA": "888" }, standardized_fields: { bs: { a_ta_cfy: 1234567890123456.8 } } }, ...overrides });
 
 const archiveOrg = "11111111-1111-4111-8111-111111111111", archiveNip = "5213390341";
+test('financial position order retains Polish numeric collation and original evidence',()=>{
+ const paths=['Bilans.Łącznie10','Bilans.Łącznie2','Bilans.Aktywa10','Bilans.Aktywa2','Bilans.Aktywa02','Bilans.Zapas','Bilans.Żródło','RZiS.RZiSKalk.A.Pozycja10','RZiS.RZiSKalk.A.Pozycja2'];
+ const source=record({content:{schema:{name:'JednostkaInnaWZlotych',version:'1-3'},extracted_fields:Object.fromEntries(paths.map((p,i)=>[p+'.KwotaA',String(i+1)]))}});
+ const before=JSON.stringify(source),document=projectFinancialDocuments([source])[0];
+ assert.deepEqual(document.rows.map(r=>r.sourcePath),paths.slice().sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})));
+ assert.equal(document.checksum,createHash('sha256').update(before).digest('hex'));
+ assert.equal(JSON.stringify(source),before);
+});
 function archived(records: unknown[] = [record({identifiers:{pl_nip:archiveNip}})]) {
   const payload_text = JSON.stringify({pages:[{results:records}]},null,2);
   return {organization_id:archiveOrg,nip:archiveNip,model:"pl-krs-rdf-record",payload_text,

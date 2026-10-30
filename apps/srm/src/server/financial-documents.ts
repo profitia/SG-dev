@@ -30,6 +30,9 @@ const object = (value: unknown): Record<string, unknown> => value && typeof valu
 const text = (value: unknown): string | null => typeof value === "string" && value.trim() ? value.trim() : null;
 const date = (value: unknown): string | null => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) ? value : null;
 const knownSchema = (name: string, version: string) => /^(Skonsolidowana)?Jednostka(Inna|Mala|Mikro)(WZlotych|WTysiacach(?:Zlotych)?)$/i.test(name) && /^1-[0123]E?$/.test(version);
+// The locale and options are constant for every financial position. Reuse
+// only the comparer, never source data, identity or an authority observation.
+const financialPathCollator = new Intl.Collator("pl", { numeric: true });
 
 /** MGBI's XML dictionary is authoritative for full sections; standardized fields are a derived subset.
  * Keep one source path per position, including custom rows. No amount/name-based merging is allowed.
@@ -103,7 +106,7 @@ export function projectFinancialDocuments(records: unknown[]): FinancialSourceDo
       schemaSystemCode: text(normalized.get("Naglowek.KodSprawozdania.@kodSystemowy")), currency, scale, unitBasis, correction: typeof document.is_correction === "boolean" ? document.is_correction : null, filingDate: date(document.filing_date),
       checksum: createHash("sha256").update(JSON.stringify(raw)).digest("hex"), mappingVersion: FINANCIAL_DOCUMENT_MAPPING_VERSION,
       validation: availability === "XML_SUPPORTED" && from && to && from <= to && currency && scale && rows.size ? "VALID" as const : "REVIEW" as const,
-      columns, rows: [...rows.values()].sort((a,b) => a.sourcePath.replaceAll(">", ".").localeCompare(b.sourcePath.replaceAll(">", "."), "pl", { numeric: true })) }];
+      columns, rows: [...rows.values()].sort((a,b) => financialPathCollator.compare(a.sourcePath.replaceAll(">", "."), b.sourcePath.replaceAll(">", "."))) }];
   });
 
  })

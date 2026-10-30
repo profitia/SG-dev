@@ -6,7 +6,7 @@ import { projectArchivedFinancialDocuments, financialRecordsFromPages, type Fina
 import { resolveDocumentFamily, FINANCIAL_REVISION_RULE } from "./financial-revisions";
 import type { FinancialData, FinancialPeriod, SectionEnvelope } from "@profitia/srm-xray";
 import type { CompanyIdentifier, MgbiGeneralOptions } from "./mgbi-general";
-import { projectFinancialDocuments } from "./financial-documents";
+import { projectFinancialDocuments, type FinancialSourceDocument } from "./financial-documents";
 import { fetchMgbiPages } from "./mgbi-archive";
 import { COMPANY_IDENTITY_VERSION, financialRegistration, type RegistryHistory } from "./company-continuity";
 
@@ -164,7 +164,8 @@ function isInternationalStatementWithoutFacts(records: unknown[], identifier: Co
     return string(field(record, "identifiers", idKey)) === identifier.value
       && (type === "financial_statement" || type === "consolidated_financial_statement");
   });
-  return statements.length > 0 && projectFinancialDocuments(statements).length === statements.length && projectFinancialDocuments(statements).every(document => document.standard === "IAS_IFRS" && document.availability !== "XML_SUPPORTED" && !document.rows.length);
+  const documents = projectFinancialDocuments(statements);
+  return statements.length > 0 && documents.length === statements.length && documents.every(document => document.standard === "IAS_IFRS" && document.availability !== "XML_SUPPORTED" && !document.rows.length);
 }
 
 export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyIdentifier, retrievedAt: string, totalCount = records.length, history?:RegistryHistory): MgbiFinancialResult {
@@ -180,6 +181,17 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
   }).sort((a, b) => rank(a)-rank(b) || (string(field(b, "document", "filing_date")) ?? "").localeCompare(string(field(a, "document", "filing_date")) ?? "") || (string(field(b, "document", "period_to_date")) ?? "").localeCompare(string(field(a, "document", "period_to_date")) ?? ""));
 
   const documents = new Map(projectFinancialDocuments(selected).map((document) => [document.recordId, document]));
+  // A family can have several filings and both current/comparative periods.
+  // Resolve its complete content once in this normalization only. No result
+  // survives the invocation or a change to the source inventory.
+  const familyKey = (scope: unknown, from: unknown, to: unknown, krs: unknown) => JSON.stringify([scope,from,to,krs]);
+  const families = new Map<string,FinancialSourceDocument[]>();
+  for (const document of documents.values()) {
+    const key = familyKey(document.scope,document.from,document.to,document.sourceKrs);
+    const family = families.get(key) ?? [];
+    family.push(document); families.set(key,family);
+  }
+  const revisions = new Map<string,ReturnType<typeof resolveDocumentFamily>>();
   const periods: FinancialPeriod[] = [];
   const facts: FinancialSourceFact[] = [];
   const sourceDocuments = new Map<FinancialSourceFact, string>();
@@ -205,7 +217,9 @@ export function mapMgbiFinancialRecords(records: unknown[], identifier: CompanyI
       if (!owners.has(key)) owners.set(key,recordId);
     }
     if ((!standardized && !extracted) || documentMetadata?.availability === "NO_XML" || documentMetadata?.availability === "UNSUPPORTED_XML") continue;
-    const revision = resolveDocumentFamily([...documents.values()].filter(d=>d.scope===documentMetadata?.scope && d.from===from && d.to===to && d.sourceKrs===documentMetadata?.sourceKrs));
+    const family = familyKey(documentMetadata?.scope,from,to,documentMetadata?.sourceKrs);
+    let revision = revisions.get(family);
+    if (!revision) { revision = resolveDocumentFamily(families.get(family) ?? []); revisions.set(family,revision); }
     const schema = string(field(record, "content", "schema", "name")) ?? "";
     const multiplier = verifiedXmlMultiplier(record, schema);
     // Standardized values can already be PLN, even in a thousand-unit schema.
