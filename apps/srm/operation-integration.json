@@ -6251,7 +6251,7 @@
     "applicationSourceDigests": {
       "../maps-runtime/platform-integration.json": "0aeb8545fed75110ebca79f8cad4c29a980c028a949db95387782b39b23a02d3",
       "../maps-runtime/test/embed.test.mjs": "04883cd7c32f48c8ace02800242631af04edb14019bd983b2750b338b0a9acd4",
-      "package-lock.json": "74574b518cdd019b8151017a2fe94686ce52c1b120a2a6b5583051ece318ba75",
+      "package-lock.json": "e732ad6b11d543ae34071a459d6c415d88e082ee64a910e4500b59dbb3be11cf",
       "scripts/diagnostic-telemetry-adoption.test.mjs": "864537653b6abc3a021ec9a834b27f240ded43497b5a949dc43ff349e65fbace",
       "scripts/native-execution-adoption.test.mjs": "4e11595b238bc46076dab347a687f091101a1aefe752ebf27a6ee105a3b57176",
       "scripts/operation-context.test.mjs": "1c85bdae3d28ac177117db1130ebe3c0b8c512c823f85ac7ee14a3e7d1386c7c",
