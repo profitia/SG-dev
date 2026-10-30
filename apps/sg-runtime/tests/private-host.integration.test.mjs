@@ -74,7 +74,7 @@ test('SG2 imports the exact optional external control source without adopting a 
 
 test('SG2 explicitly accepts the published optional producer fingerprints', async () => {
   assert.equal(await accessStoreSourceDigest(), currentSdkDigests.accessStoreSourceDigest)
-  assert.equal(await identitySourceDigest(), 'b7f3e09e6c62bbaf20c42752f514022c91b0dc0fef9db387f41f613a124ce0b4')
+  assert.equal(await identitySourceDigest(), currentSdkDigests.identitySourceDigest)
   assert.equal(await privateOperationHostSourceDigest(),currentSdkDigests.privateOperationHostSourceDigest)
   assert.equal(moduleDigest, 'c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed')
   assert.equal(auditDigest, 'af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac')

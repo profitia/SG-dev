@@ -33,13 +33,14 @@ test('SG2 explicitly receives the peer identity producer without enabling cross-
   assert.equal(accepted.producer.sourceSha, '9a226aef8dc36949b13999dbeba046dc1cf62a29')
   assert.equal(accepted.producer.projectKey, 'ARCHITECTURE'); assert.equal(accepted.producer.pullRequest, 568)
   assert.equal(accepted.previousApplicationAuthority, 'c82d400ab53783376fefecd487131b0ef6812ad8')
-  assert.equal(accepted.identityDigest, await identitySourceDigest())
+  assert.equal(receipt.freshPostfetchCompatibility?.sdkDigests.identitySourceDigest??accepted.identityDigest, await identitySourceDigest())
+  assert.equal(accepted.identityDigest,createHash('sha256').update(execFileSync('git',['show',accepted.producer.sourceSha+':packages/platform-contracts/src/identity-provider.mjs'])).update(execFileSync('git',['show',accepted.producer.sourceSha+':packages/platform-contracts/src/identity-provider.d.mts'])).digest('hex'))
   const previous = JSON.parse(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
   for (const [key, value] of Object.entries(previous)) assert.deepEqual(['contract','producer'].includes(key) ? receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
   const root = new URL('../', pathToFileURL(createRequire(import.meta.url).resolve('@profitia/platform-contracts/identity-provider')))
   assert.deepEqual(Object.keys(accepted.sdkSourceDigests).sort(), ['src/identity-provider.d.mts', 'src/identity-provider.mjs'])
   for (const [path, digest] of Object.entries(accepted.sdkSourceDigests)) {
-    assert.equal(hash(readFileSync(new URL(path, root))), digest, path)
+    assert.equal(hash(readFileSync(new URL(path, root))), receipt.freshPostfetchCompatibility?.sourceDigests[path]??digest, path)
     assert.equal(hash(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':packages/platform-contracts/' + path])), previous.publicWebTransportSourceCompatibility.sourceDigests[path])
   }
   // The earlier receiver receipt remains immutable; the additive repair below
