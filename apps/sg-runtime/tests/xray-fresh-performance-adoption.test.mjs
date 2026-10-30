@@ -40,7 +40,7 @@ test('SG2 accepts the exact settled-failure producer while retaining the existin
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.sourceLeaseClockCompatibility??a).platformVersion)
  for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.sourceLeaseClockCompatibility?.sourceDigests[file]??digest,file)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.sourceLeaseClockCompatibility?.applicationSourceDigests[file]??digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.pciLiveAcceptanceStabilization?.applicationSourceDigests[file]??receipt.sourceLeaseClockCompatibility?.applicationSourceDigests[file]??digest,file)
  for(const flag of ['runtimeBehaviorChanged','financialBackendDuplicated','providerPoliciesChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag)
 })
 
@@ -58,5 +58,5 @@ test('Source clock adoption preserves complete history and exact producer while 
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
  }
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.pciLiveAcceptanceStabilization?.applicationSourceDigests[file]??digest,file)
 })

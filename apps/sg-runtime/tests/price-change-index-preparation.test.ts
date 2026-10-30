@@ -76,3 +76,29 @@ test('PREPARE revalidates existing E1 reads, does not calculate/write, and close
   if(deny==='foreign')assert.equal(calls.length,0)
  }
 })
+
+test('WTI-shaped stored UTC period collision is reported by component, without inventing a cadence failure or trimming history',()=>{
+ const f=fixture(),h=f.histories.get('steel-test')!
+ h.displayName='Synthetic Cushing WTI fixture';h.providerSeries.providerSeriesId='wti-fixture';h.providerSeries.providerSeriesKey='wti-fixture';f.selected[1].providerSeries=h.providerSeries
+ h.historical=[{date:'1986-01-01T23:00:00.000Z',value:25.56},{date:'1986-01-02T00:00:00.000Z',value:25.56},{date:'1986-01-02T23:00:00.000Z',value:26},...h.historical]
+ const before=JSON.stringify({input:f.input,histories:[...f.histories]})
+ const p=preparePriceChangeIndex(f.input,f.selected,f.histories,cutoff).preparation
+ assert.equal(p.canAnalyse,false);assert.equal(p.periods.length,0)
+ assert.equal(p.components[1].status,'DUPLICATE_NATIVE_PERIOD');assert.equal(p.components[1].firstDate,'1986-01-01');assert.equal(p.components[1].lastDate,'2026-10-23')
+ assert.equal(p.issues[0].code,'DUPLICATE_NATIVE_PERIOD');assert.match(p.issues[0].message,/steel-test.*Synthetic Cushing WTI fixture.*wti-fixture/)
+ assert.match(p.issues[0].message,/1986-01-02.*UTC/);assert.match(p.issues[0].message,/Wybierz inny właściwy benchmark/);assert.match(p.issues[0].message,/Sama zmiana daty zakupu nie usuwa/)
+ const r=analysePriceChangeIndex(f.input,f.selected,f.histories,cutoff);assert.equal(r.status,'REFUSED')
+ if(r.status==='REFUSED'){assert.equal(r.core?.issues[0].code,'DUPLICATE_NATIVE_PERIOD');assert.equal(r.issues[0].message,p.issues[0].message)}
+ assert.equal(JSON.stringify({input:f.input,histories:[...f.histories]}),before)
+})
+test('nonpositive values and duplicate exact timestamps keep their distinct Core codes and actionable messages',()=>{
+ for(const kind of ['negative','duplicate']){
+  const f=fixture(),h=f.histories.get('steel-test')!
+  if(kind==='negative')h.historical[0].value=-36.98;else h.historical.splice(1,0,{...h.historical[0]})
+  const p=preparePriceChangeIndex(f.input,f.selected,f.histories,cutoff).preparation
+  assert.equal(p.issues[0].code,kind==='negative'?'INVALID_PRICE_LEVEL':'DUPLICATE_OBSERVATION')
+  assert.match(p.issues[0].message,/steel-test/);assert.match(p.issues[0].message,/Wybierz inny właściwy benchmark/)
+  if(kind==='negative'){assert.match(p.issues[0].message,/-36.98/);assert.match(p.issues[0].message,/2026-10-01/)}
+  assert.equal(p.canAnalyse,false);assert.equal(analysePriceChangeIndex(f.input,f.selected,f.histories,cutoff).status,'REFUSED')
+ }
+})

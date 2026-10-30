@@ -4862,5 +4862,47 @@
         "apps/maps-runtime/test/embed.test.mjs": "04883cd7c32f48c8ace02800242631af04edb14019bd983b2750b338b0a9acd4"
       }
     }
+  },
+  "pciLiveAcceptanceStabilization": {
+    "taskId": "SG2-PCI-LIVE-ACCEPTANCE-STABILIZATION-20261030",
+    "scope": "CURRENT_CONSUMER_LIFECYCLE_AND_REFUSAL_PRESENTATION_ONLY",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "cb8ad767a5b0cfa0e44f92b66fd5d5f41f3fbad7",
+    "previousReceiptSha256": "a18531ca355a917e9f7b9a7af9996467ad07b6f4e53cd063bbaee19a4d1e64cd",
+    "applicationSourceDigests": {
+      "components/auth/account-landing.tsx": "88eda002b9c2f7c7c9e34bbe1286dd85f265bf02d5efff749e0dc99e8cd19c85",
+      "components/price-change-index/price-change-index-layer.tsx": "95e41085eafffb926e44a8606f98ed58fed28e44ed00853fb832a8dfd0e1bb24",
+      "docs/pci-live-acceptance-stabilization.md": "5fb9aec0cec4d514ce347fb8e58c6c2302d76218f249bea3a4d92a66a223dcb4",
+      "lib/cost-analysis/price-change-index-host.ts": "6046335c556b0f94f7fd76c96ea16d7b7840392279b2bc09018d303a8cd9cc93",
+      "lib/cost-analysis/price-change-index-messages.ts": "70c8fd99c09d5a488c845491349647a79fcf24c81d88e2ff54d9ab7e433a75d7",
+      "lib/cost-analysis/price-change-index-preparation.ts": "a6fe3ca8078e24c25e2718f987a215fef0589c9d36df4e586974fed125648ee5",
+      "package.json": "7ef667666ab6711adc5bd07dc0cccfdfda66ebe04a66c6991ff5b72f0d3c084d",
+      "tests/account-landing-lifecycle.test.tsx": "5a933d3d54b8890ac8436632e9eb3d9855efcc26606f82a5a4d9ff383bde9bcb",
+      "tests/adp-appshell-consumer.test.tsx": "224434bfd2c00fb7231d18b331764a99cc713e564261fae1ef29d611696035cd",
+      "tests/category-operation.test.ts": "f17ec1e7143ed13cce385cbd3c39cfd79d62467f2af0bd057bcbd5289e60f1a3",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "57de05b5842730279991aab24492a9dd459e08e2541125dbb49037f2f0dc0118",
+      "tests/identity-runtime.test.ts": "553a211acd086f57fe891e1fd570ab8d9e17e05a83611a6a1b7fe12b5065e7c3",
+      "tests/integrated-buyer-journey-package.test.mjs": "5a2c424ef1ee8ea7c5f9ed8473959e0f11f60488084703b8ece652d3d2f58b43",
+      "tests/integrated-buyer-journey-request.test.ts": "8bc91f19113e2e8b63d9bff87c94dd46b59e9a7688a9f3ef3229744181db3f47",
+      "tests/native-sql-roundtrips.test.mjs": "c5c408a5d3b6cb8eee2d54cfccba950c815c84613852543ab6f4df97234760d6",
+      "tests/operation-context.test.mjs": "b5c36111c89659f3c37627de67a3c090ebdbfb0315091b6b85e605c3a88e87e7",
+      "tests/pci-live-acceptance-preview.mjs": "2cc22d68bd5071a7d4f98ca541e30bd35ab785b1d320dab683ec40203ddd51cb",
+      "tests/pci-live-acceptance-preview.tsx": "2dc415c41fd6cc1457c78284f5b6a45ccf8a731126f35a0e3a2e5ff239df6b93",
+      "tests/porr-demo-middleware.test.ts": "7bc1af2bb4ed6503c10989149f9fc475bc955231681dd3dc34de117b2999298c",
+      "tests/price-change-index-preparation.test.ts": "012da9e5923c34728083490fd29b5f0061d1561011a6c1ff47234eb4d37cef9d",
+      "tests/self-service-account.test.ts": "e68fa71bac41468ce505570e61a79255d59e37e03f157ccdff2fec8b096575da",
+      "tests/xray-fresh-performance-adoption.test.mjs": "566a71ee100f8efd5c4b4f7681debfb576c637c4a9bb5fcb351bea84c7aa53f6",
+      "tests/xray-gateway.test.ts": "b5081154113b5858d541b4e6681c23618357aefdcaa9be8c9a8714a8a7da05c7"
+    },
+    "publicUiSourceDigests": {
+      "packages/sg2-price-change-index-ui/src/BasePeriodFields.tsx": "aaf00cee9a513a90da8a77fc5f1eb6c964d9bd6deed7f0d2c3a0c318b3058471"
+    },
+    "serverAuthorizationChanged": false,
+    "grantsChanged": false,
+    "calculationChanged": false,
+    "sourceHistoryChanged": false,
+    "productDeploymentPerformed": false,
+    "proofExpiryPreserved": true,
+    "additionalPaidProviderCalls": 0
   }
 }

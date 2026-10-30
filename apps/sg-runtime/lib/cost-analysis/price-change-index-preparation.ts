@@ -1,7 +1,7 @@
 import type {SavedBenchmark,BenchmarkAnalyticsSeriesResult} from '../benchmark/contracts'
 import {buildPciMarketRequest} from './price-change-index-host'
 import {prepareCciNodeInput} from './node-integration'
-import {pciIssueMessage} from './price-change-index-messages'
+import {pciIssueMessage,pciCategoryIssues} from './price-change-index-messages'
 import {PCI_JOURNEY_VERSION,type PciAnalysisRequest,type PciPreparationResponse} from './price-change-index-contracts'
 
 /** Read-only projection of the existing adapter. No replacement observations,
@@ -20,7 +20,13 @@ export function preparePriceChangeIndex(input:PciAnalysisRequest,selected:readon
   const inRange=request.baseNodeStart>=request.range.start&&request.baseNodeStart<request.range.endExclusive
   const prepared=prepareCciNodeInput({...request,baseNodeStart:inRange?request.baseNodeStart:request.range.start})
   const alignment=prepared.alignment
-  if(!alignment){result.preparation.issues=prepared.status==='REFUSED'?prepared.issues.map(i=>({...i,message:pciIssueMessage(i)})):[];return result}
+  if(!alignment){
+    if(prepared.status==='REFUSED'){
+      result.preparation.issues=pciCategoryIssues(prepared.issues,input,histories)
+      result.preparation.components=components.map(c=>({...c,status:prepared.issues.find(i=>i.componentId===c.id)?.code??c.status}))
+    }
+    return result
+  }
   const purchase=input.purchase.purchaseDate+'T00:00:00.000Z'
   const periods=alignment.nodes.filter(n=>n.status==='COMPLETE').map(n=>({start:n.period.start.slice(0,10),endExclusive:n.period.endExclusive.slice(0,10),eligible:purchase>=n.period.start&&purchase<n.period.endExclusive,requiresApproval:n.period.cadence!=='DAILY'}))
   const requested=alignment.nodes.find(n=>n.period.start===request.baseNodeStart)
