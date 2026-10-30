@@ -361,10 +361,10 @@ test('original SRM clients use ordinary-role native source controls without a se
       mode='MSR_BUDGET'
       try{const before=hits;const selected=msrTransport({binding});await assert.rejects(downloadMsrOriginal(MSR_RECORD,{apiKey:CREDENTIAL,fetcher:selected.fetcher}),error=>error.code==='MSR_FILE_BUDGET_EXHAUSTED');assert.equal(hits,before+1)}finally{mode='NORMAL'}
     })
-    await t.test('pilot Financial accepts a complete inventory above one MiB and still refuses its bounded maximum',async()=>{
+    await t.test('main two MiB and pilot eight MiB Financial bounds accept complete inventory and retain overflow refusal',async()=>{
       const policy=JSON.parse(fs.readFileSync(new URL('../deployment/mgbi-unmetered-policy.json',import.meta.url)))
-      const maximum=policy.maximumInventoryResponseBytes
-      assert.equal(maximum,8*1024*1024)
+      const pilotMaximum=policy.maximumInventoryResponseBytes
+      assert.equal(pilotMaximum,8*1024*1024)
       const extensionDigest=hash(readSql('024-unmetered-public-sources.sql'))
       const binding={...settings('MGBI').binding,unmeteredSchemaDigest:extensionDigest}
       mode='MGBI_LARGE'
@@ -372,6 +372,8 @@ test('original SRM clients use ordinary-role native source controls without a se
         const before=hits
         await assert.rejects(transport('MGBI',{binding}).fetcher(mgbiUrl()),unavailable)
         assert.equal(hits,before+1)
+        for(const maximum of [2*1024*1024,pilotMaximum]){
+        const attemptStart=hits
         await controlled(async()=>{
           const p=(await owner.query("SELECT p.*,to_jsonb(n) native FROM profitia_external_call.policies p JOIN profitia_external_native.policies n USING(policy_id) WHERE p.resource_id='srm-provider:mgbi' AND p.status='ACTIVE'")).rows[0]
           await owner.query("UPDATE profitia_external_native.policies SET status='REVOKED' WHERE policy_id=$1",[p.policy_id])
@@ -384,10 +386,12 @@ test('original SRM clients use ordinary-role native source controls without a se
         const result=await fetchMgbiFinancial({type:'NIP',value:NIP},{apiKey:CREDENTIAL,fetcher:transport('MGBI',{binding,external}).fetcher})
         assert.equal(result.errorCode,null);assert.equal(result.rawResponse.recordCount,1)
         assert(Buffer.byteLength(JSON.stringify(result.rawResponse.pages))>1024*1024)
-        assert.equal(hits,before+2)
+        assert.equal(hits,attemptStart+1)
         mode='MGBI_OVERSIZE'
         await assert.rejects(transport('MGBI',{binding,external}).fetcher(mgbiUrl()),unavailable)
-        assert.equal(hits,before+3)
+        assert.equal(hits,attemptStart+2)
+        mode='MGBI_LARGE'
+        }
       }finally{mode='NORMAL'}
     })
     await t.test('source records contain neither raw provider bodies, credentials, private keys nor invented human owners', async () => {
