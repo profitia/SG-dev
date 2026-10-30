@@ -128,7 +128,7 @@ test('date preparation renews exact receiver bytes and preserves prior records a
   assert.deepEqual(observed,value,key)
  }
  assert.deepEqual(r.appshellXraySourceCompatibility.applicationSourceDigests,{...before.appshellXraySourceCompatibility.applicationSourceDigests,...current.currentReceiverDigestOverrides})
- for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.bqlPciFirstSourceCompatibility?.sourceDigests[path.relative(path.resolve(appRoot,'../..'),fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.pciMain800IntegrityCompatibility?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.pciLiveAcceptanceStabilization?.publicUiSourceDigests[file]??r.pciLiveAcceptanceStabilization?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.xraySearchBoundaryConsolidation?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.freshPerformanceRecovery.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??digest,file)
+ for(const[file,digest]of Object.entries(current.sourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.bqlLiveAcceptanceCompatibility?.sourceDigests[path.relative(path.resolve(appRoot,'../..'),fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.bqlPciFirstSourceCompatibility?.sourceDigests[path.relative(path.resolve(appRoot,'../..'),fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.pciMain800IntegrityCompatibility?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.pciLiveAcceptanceStabilization?.publicUiSourceDigests[file]??r.pciLiveAcceptanceStabilization?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.xraySearchBoundaryConsolidation?.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??r.freshPerformanceRecovery.applicationSourceDigests[path.relative(appRoot,fileURLToPath(new URL('../../../'+file,import.meta.url))).split(path.sep).join('/')]??digest,file)
  for(const file of current.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',current.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
  for(const flag of ['calculationMethodChanged','identityOrGrantsChanged','productDeploymentPerformed','schemaChanged'])assert.equal(current[flag],false,flag)
 })
@@ -146,11 +146,11 @@ test('PCI stabilization appends exact current source bindings and keeps every ea
    ?execFileSync('git',['show',continuation.pciSourceSha+':apps/sg-runtime/'+file],{cwd:appRoot})
    :preBqlBytes(new URL('../'+file,import.meta.url))
   assert.equal(hash(historical),digest,'original PCI '+file)
-  assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),r.bqlPciFirstSourceCompatibility?.sourceDigests['apps/sg-runtime/'+file]??continuation?.applicationSourceDigests[file]??digest,'current '+file)
+  assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),r.bqlLiveAcceptanceCompatibility?.sourceDigests['apps/sg-runtime/'+file]??r.bqlPciFirstSourceCompatibility?.sourceDigests['apps/sg-runtime/'+file]??continuation?.applicationSourceDigests[file]??digest,'current '+file)
  }
  for(const[file,digest]of Object.entries(a.publicUiSourceDigests)){
   assert.equal(hash(preBqlBytes(new URL('../../../'+file,import.meta.url))),digest,'preserved '+file)
-  assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.bqlPciFirstSourceCompatibility?.sourceDigests[file]??digest,'current '+file)
+  assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),r.bqlLiveAcceptanceCompatibility?.sourceDigests[file]??r.bqlPciFirstSourceCompatibility?.sourceDigests[file]??digest,'current '+file)
  }
  for(const file of r.pciDatePreparationSourceCompatibility.preservedEnginePaths)assert.equal(hash(fs.readFileSync(new URL('../../../'+file,import.meta.url))),hash(execFileSync('git',['show',a.previousReceiptSourceSha+':'+file],{cwd:appRoot})),file)
  for(const field of ['serverAuthorizationChanged','grantsChanged','calculationChanged','sourceHistoryChanged','productDeploymentPerformed'])assert.equal(a[field],false,field)
@@ -158,6 +158,19 @@ test('PCI stabilization appends exact current source bindings and keeps every ea
 })
 
 function assertBqlIntegrity(receipt,current,historical){
+ if(receipt.bqlLiveAcceptanceCompatibility){
+  const a=receipt.bqlLiveAcceptanceCompatibility,bytes=historical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json')
+  assert.equal(a.taskId,'SG2-BQL-PCI-FIRST-IMPLEMENTATION-20261030');assert.equal(a.rulesetVersion,'bql-semantic/1.0.1')
+  assert.equal(hash(bytes),a.previousReceiptSha256)
+  const {bqlLiveAcceptanceCompatibility,...preserved}=receipt,prior=JSON.parse(bytes)
+  assert.deepEqual(preserved,prior,'live refinement preserves the original BQL receipt and all historical digests')
+  assert.deepEqual(Object.keys(a.sourceDigests).sort(),a.changedSourcePaths)
+  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).filter(([file])=>file.startsWith('apps/sg-runtime/')).map(([file,digest])=>[file.slice(16),digest])))
+  for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(current(file)),digest,'live refinement exact '+file)
+  for(const flag of ['calculationChanged','sourceHistoryChanged','authorizationChanged','schemaChanged','newProviderCalls','srmRuntimeChanged'])assert.equal(a[flag],false,flag)
+  assertBqlIntegrity(prior,file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file),historical)
+  return
+ }
  const a=receipt.bqlPciFirstSourceCompatibility
  assert.equal(a.taskId,'SG2-BQL-PCI-FIRST-IMPLEMENTATION-20261030')
  const prior=historical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json')
@@ -181,4 +194,16 @@ test('BQL appends exact current inputs, retains every prior receipt and rejects 
  const changedHistory=structuredClone(receipt);changedHistory.pciLiveAcceptanceStabilization.additionalPaidProviderCalls=1
  assert.throws(()=>assertBqlIntegrity(changedHistory,current,historical))
  assert.throws(()=>assertBqlIntegrity(receipt,current,(sha,file)=>Buffer.concat([historical(sha,file),Buffer.from('tamper')])))
+})
+
+test('live BQL refinement rejects manipulation of its new component, evidence or historical receipt',()=>{
+ const receipt=readCurrent(),a=receipt.bqlLiveAcceptanceCompatibility,current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url))
+ const historical=(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:appRoot})
+ assert(a);assertBqlIntegrity(receipt,current,historical)
+ const component='apps/sg-runtime/components/benchmark-picker/benchmark-qualification.tsx'
+ assert.throws(()=>assertBqlIntegrity(receipt,file=>file===component?Buffer.concat([current(file),Buffer.from('tamper')]):current(file),historical))
+ const altered=structuredClone(receipt);altered.bqlLiveAcceptanceCompatibility.sourceDigests[component]='0'.repeat(64)
+ assert.throws(()=>assertBqlIntegrity(altered,current,historical))
+ const changed=structuredClone(receipt);changed.bqlPciFirstSourceCompatibility.rulesetVersion='rewritten'
+ assert.throws(()=>assertBqlIntegrity(changed,current,historical))
 })
