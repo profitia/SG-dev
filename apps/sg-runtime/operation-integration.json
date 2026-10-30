@@ -4734,7 +4734,7 @@
       "tests/native-sql-roundtrips.test.mjs": "0a0255d6b36aa49100f01b5dc08bb4ba36dcb4ade3b6f84966c1b2216cf7ebe0",
       "tests/operation-context.test.mjs": "ceeaa549e229a8aea9612ea0ff9698b97240585bca5a720ad306ba443b646c6d",
       "tests/porr-demo-middleware.test.ts": "4f4da1812f726b56c8f120efcec80eae2b0ded994fc10c302d663e276f16dd29",
-      "tests/private-host.integration.test.mjs": "8740b7571473fb9da6083a37031cee806fb4079382735af7dfcf54c2c2493a31",
+      "tests/private-host.integration.test.mjs": "da96e0817560cab4f6ed78b799e4c9c02106d21456b0db6a6507f2a810dbc77f",
       "tests/self-service-account.test.ts": "2cb4ae080d7bda93e8bb6932a39989dcfda862e644b1842f712940f3959764fa",
       "tests/xray-fresh-performance-adoption.test.mjs": "2aebc9b15a57bbea99cd39da22a027285e09a9cc43db80758d9eeb52fc5e3bad",
       "tests/xray-gateway.test.ts": "b48bc53ac65d1770fdb27ae66540543de50350f35bb24faa1adcd16ae5be2ec8",
