@@ -32,8 +32,8 @@ const auditDigest = await moduleAuditSchemaDigest()
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
-const currentSdkDigests={...sdkReceipt.diagnosticTelemetryAdoption.sdkDigests,...sdkReceipt.freshPerformanceRecovery.sdkDigests,...sdkReceipt.settledExternalFailureCompatibility?.sdkDigests,...sdkReceipt.sourceLeaseClockCompatibility?.sdkDigests}
-const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsSoapSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportSourceCompatibility.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPlatform130CiClosureCompatibility.sourceDigests,...manifest.appshellXraySourceCompatibility.sourceDigests,...manifest.freshPerformanceRecovery.sourceDigests,...manifest.settledExternalFailureCompatibility?.sourceDigests,...manifest.sourceLeaseClockCompatibility?.sourceDigests}).filter(([file])=>file!=='package-lock.json'&&!file.startsWith('test/')))
+const currentSdkDigests={...sdkReceipt.diagnosticTelemetryAdoption.sdkDigests,...sdkReceipt.freshPerformanceRecovery.sdkDigests,...sdkReceipt.settledExternalFailureCompatibility?.sdkDigests,...sdkReceipt.sourceLeaseClockCompatibility?.sdkDigests,...sdkReceipt.freshPostfetchCompatibility?.sdkDigests}
+const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsSoapSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportSourceCompatibility.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPlatform130CiClosureCompatibility.sourceDigests,...manifest.appshellXraySourceCompatibility.sourceDigests,...manifest.freshPerformanceRecovery.sourceDigests,...manifest.settledExternalFailureCompatibility?.sourceDigests,...manifest.sourceLeaseClockCompatibility?.sourceDigests,...manifest.freshPostfetchCompatibility?.sourceDigests}).filter(([file])=>file!=='package-lock.json'&&!file.startsWith('test/')))
 
 test('SG2 imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
@@ -1635,7 +1635,7 @@ test('public web source receipt preserves historical records and verifies every 
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
  assert.equal(receipt.xrayPlatform130CiClosureCompatibility.platformVersion,'1.30.0')
  assert.equal(receipt.appshellXraySourceCompatibility.platformVersion,'1.31.0')
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.sourceLeaseClockCompatibility??receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
  assert.equal(await sdk.externalCallSourceDigest(),currentSdkDigests.externalCallSourceDigest)
  assert.equal(await sdk.publicWebTransportSchemaDigest(),current.sdkDigests.publicWebTransportSchemaDigest)
  assert.equal(Object.keys(current.sourceDigests).length,57)
