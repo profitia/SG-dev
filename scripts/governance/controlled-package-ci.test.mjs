@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -315,6 +315,53 @@ test('ADP review uses complete API pagination and metadata race fencing before f
  assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
  for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'756',other,apiFixture(candidate,files,after).request))
  await assert.rejects(resolveCandidateAdmission(context(),'756',other,apiFixture(candidate,files.slice(1)).request))
+})
+
+const limitsG1ReviewFiles = () => Object.entries(LIMITS_G1_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:'modified'}))
+const limitsG1ReviewPr = () => ({...architecturePr(8),number:LIMITS_G1_GOVERNANCE_REVIEW.prNumber,head:{...architecturePr().head,ref:LIMITS_G1_GOVERNANCE_REVIEW.branch}})
+
+test('Limits G1 admission binds only the eight frozen blobs of PR814 and its exact branch',()=>{
+ assert(Object.isFrozen(LIMITS_G1_GOVERNANCE_REVIEW));assert(Object.isFrozen(LIMITS_G1_GOVERNANCE_REVIEW.blobs))
+ assert.equal(LIMITS_G1_GOVERNANCE_REVIEW.prNumber,814);assert.equal(LIMITS_G1_GOVERNANCE_REVIEW.sourceSha,'b6f1772ecc23b9efcbac6cb4e7265cfbea375c42')
+ assert.equal(Object.keys(LIMITS_G1_GOVERNANCE_REVIEW.blobs).length,8)
+ assert(!Object.keys(LIMITS_G1_GOVERNANCE_REVIEW.blobs).some(n=>n.startsWith('apps/')||n.startsWith('packages/')||n.startsWith('.github/')))
+ const files=limitsG1ReviewFiles(),p=limitsG1ReviewPr()
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:files.map(f=>({...f,status:'added'}))}),other)
+ for(const delta of [{number:815},{number:undefined},{head:{...p.head,ref:'architecture/another-review'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...delta},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('Limits G1 review refuses changed blobs, missing/extra/duplicate files, deletion and rename',()=>{
+ const original=limitsG1ReviewFiles()
+ for(let i=0;i<original.length;i++){
+  const incomplete=original.filter((_,j)=>i!==j);rejection(()=>selectCandidate(context(),{...limitsG1ReviewPr(),changed_files:incomplete.length},other,{files:incomplete}))
+  for(const patch of [{sha:'d'.repeat(40)},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename},{sha:'forged'}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),limitsG1ReviewPr(),other,{files}))
+  }
+  const files=original.map((f,j)=>i===j?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),limitsG1ReviewPr(),other,{files}))
+ }
+ for(const name of ['apps/sg-runtime/package.json','apps/package-limits/src/server.ts','packages/platform-contracts/src/operation-context.mjs',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-10-27-extra.md']){
+  const files=[...original,producerFile(name)];rejection(()=>selectCandidate(context(),{...limitsG1ReviewPr(),changed_files:files.length},other,{files}))
+  const replaced=[...original];replaced[0]=producerFile(name);rejection(()=>selectCandidate(context(),limitsG1ReviewPr(),other,{files:replaced}))
+ }
+})
+
+test('Limits G1 review preserves trusted actor/repository/main and current owner routing fences',()=>{
+ const files=limitsG1ReviewFiles()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='staging',p=>p.state='closed']){const p=limitsG1ReviewPr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},limitsG1ReviewPr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/architecture/untrusted'},limitsG1ReviewPr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'));Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),limitsG1ReviewPr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Limits G1 review uses complete API pagination and metadata race fencing before fixed Git checks',async()=>{
+ const files=limitsG1ReviewFiles(),candidate=limitsG1ReviewPr(),result=await resolveCandidateAdmission(context(),'814',other,apiFixture(candidate,files).request)
+ assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
+ for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'814',other,apiFixture(candidate,files,after).request))
+ await assert.rejects(resolveCandidateAdmission(context(),'814',other,apiFixture(candidate,files.slice(1)).request))
 })
 
 test('KRS governance admission is one immutable complete fifteen-file review bundle without a dummy producer', () => {
