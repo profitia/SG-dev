@@ -180,3 +180,10 @@ test('proxy explains the unavailable purchase period separately for each compone
  assert.deepEqual(p.issues.filter(i=>i.code==='OPEN_PURCHASE_PERIOD').map(i=>i.componentId).sort(),['series-0','series-1'])
  assert(p.issues.every(i=>i.period==='2026-10-01T00:00:00.000Z'));assert.equal(run(f).status,'PROXY_MARKET_ONLY')
 })
+
+test('deliberate older-year discovery includes the actual native week year across New Year',()=>{
+ const f=fixture();f.input.purchase.purchaseDate='2026-05-15';cadence(f,0,'Daily','Close',['2026-01-01']);cadence(f,1,'Weekly','Close',['2026-01-01'])
+ const p=prepareSmartPci(f.input,f.selected,f.histories,now).preparation;assert(p.availableYears.includes(2025));assert.equal(p.candidates.length,0)
+ f.input.olderYear=2025;const older=prepareSmartPci(f.input,f.selected,f.histories,now).preparation
+ assert(older.candidates.some(c=>c.period.start==='2025-12-29T00:00:00.000Z'&&c.olderExplicitSelection));assert.equal(older.recommendedCandidateId,null)
+})

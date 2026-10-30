@@ -40,6 +40,7 @@ try{
    await page.setViewportSize(viewport)
    for(const theme of ['Ciemny','Jasny']){
     await ui().getByRole('button',{name:theme,exact:true}).click()
+    assert.equal(await ui().evaluate(el=>el.shadowRoot.querySelector('.pci-surface').dataset.srmTheme),theme==='Ciemny'?'dark':'light')
     const geometry=await ui().locator('.pci-business').evaluate(el=>{const r=el.getBoundingClientRect(),footer=el.querySelector('footer').getBoundingClientRect(),panel=el.querySelector('.v3-setup-panel');return{top:r.top,bottom:r.bottom,footerBottom:footer.bottom,panelWidth:panel.clientWidth,panelScrollWidth:panel.scrollWidth}})
     assert(geometry.bottom<=viewport.height+1);assert(geometry.footerBottom<=viewport.height+1);assert(geometry.panelScrollWidth<=geometry.panelWidth+1)
     checks.push({mode,viewport,theme,...geometry})
@@ -62,7 +63,7 @@ try{
   await ui().locator('[data-flow-screen=result]').waitFor()
   assert.equal(await ui().getByRole('alert').count(),0)
   if(mode==='normal'){await ui().getByRole('heading',{name:'Ścisłe odniesienie — modelowana cena zakupu',exact:true}).waitFor();assert.equal(await ui().locator('.v3-component-line').count(),5)}
-  else{await ui().getByRole('heading',{name:'Wcześniejsze proxy — wyłącznie indeks rynku',exact:true}).waitFor();await ui().getByRole('heading',{name:'Brak późniejszego punktu porównania',exact:true}).waitFor();assert.equal(await ui().locator('.pci-market-result .v3-price').count(),0)}
+  else{await ui().getByRole('heading',{name:'Wcześniejsze proxy — wyłącznie indeks rynku',exact:true}).waitFor();await ui().getByRole('heading',{name:'Brak późniejszego punktu porównania',exact:true}).waitFor();assert.equal(await ui().locator('.pci-market-result .v3-price').count(),0);assert.doesNotMatch(await ui().locator('.pci-market-chart').innerText(),/ · 0%/);assert.match(await ui().locator('.pci-market-chart').innerText(),/poziom bazowy/)}
   await page.screenshot({path:path.join(output,mode+'-result.png')})
   await ui().getByRole('button',{name:'Gotowe, wróć do Benchmark Findera',exact:true}).click();assert.equal(await page.locator('.pci-host-dialog').count(),0)
   assert.equal(await page.getByPlaceholder('Szukaj benchmarku, surowca, indeksu lub rynku...').inputValue(),'Oil');assert.equal(await page.locator('.bf-expand-control').first().getAttribute('aria-expanded'),'true')

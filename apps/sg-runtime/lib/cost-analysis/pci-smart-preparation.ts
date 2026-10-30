@@ -184,7 +184,7 @@ export function prepareSmartPci(input: SmartPciRequest, selected: readonly Saved
   const sources = input.category.components.map((_, i) => readSource(input, i, selected, histories))
   const active = sources.filter(s => s.view.weightPercent > 0)
   const diagnostics = sources.flatMap(s => s.issues.map(i => ({ ...i, usedInWindow: !i.period || i.period >= start.toISOString() && i.period < cutoff })))
-  const years = [...new Set(sources.flatMap(s => s.observations.map(p => Number(p.date.slice(0, 4)))))].sort((a, b) => b - a)
+  const years = [...new Set(sources.flatMap(s => s.observations.flatMap(p => [Number(p.date.slice(0, 4)),p.native.start.getUTCFullYear()])))].sort((a, b) => b - a)
   const preparationId = 'pci-smart:' + digest({ version: PCI_PREPARATION_METHOD, purchase: input.purchase, organisationId: input.organisationId,
     category: input.category, declarations: input.declarations, olderYear: input.olderYear ?? null, cutoff,
     sources: sources.map(s => ({ ...s.view, sourceObservations:undefined, evidence: savedBenchmarkProfile(selected.find(b => b.providerSeries.providerSeriesId === s.view.seriesId)!).evidence })) })
