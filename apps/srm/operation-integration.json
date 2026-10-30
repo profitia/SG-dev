@@ -6616,7 +6616,7 @@
     "applicationSourceDigests": {
       "scripts/native-execution-adoption.test.mjs": "c42f0f0f9cf6374011685d4054d55d0dda67fee68c5ffd40f4d723718c254d01",
       "scripts/rural-location-release.test.mjs": "0af6db6910561ba9979b232e26b7cf60fff0b0297def2bba86a21d275ba09cac",
-      "scripts/xray-performance-adoption.test.mjs": "a08e8eb1d14c94dd8ecf991de324ad499ea72f519dad7a7d3388d7680606678f",
+      "scripts/xray-performance-adoption.test.mjs": "0a05a6106723c94de4ef397463a163aabd803c0e143a0700a8f8e444525ed5cd",
       "scripts/xray-workflow-contract.test.ts": "d770811fb51ee521b36a60c83ceeb46bb7c60d4eb1fc05a639218950c7d0e33f",
       "src/server/peer-read-boundary.test.ts": "ab53390d6ab1eb09918de59db87003a471886bca63394d47e7ad35ed54592a55",
       "src/server/supplier-location-geocoding-runtime.test.ts": "80de67e82eafa8b1569e8b43ca17ba3ee05615b5d3bbbe2c3424e227d468be88"

@@ -18,7 +18,7 @@ const preparedEvidence=JSON.parse(read('operation-integration.json')).freshPrepa
 const msrEligibility=JSON.parse(read('operation-integration.json')).freshMsrEligibilityRecovery
 const pciContinuation=JSON.parse(read('operation-integration.json')).pciMain801IntegrityCompatibility
 const pciOriginal=JSON.parse(read('operation-integration.json')).pciReceiptIntegrityCompatibility
-const beforePciContinuation=file=>pciContinuation?.applicationSourceDigests[file]?execFileSync('git',['show',pciContinuation.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const beforePciContinuation=file=>pciContinuation?.applicationSourceDigests[file]||pciOriginal?.consumerSourceDigests[file]?execFileSync('git',['show',pciContinuation.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
 const beforeMsrEligibility=file=>msrEligibility?.applicationSourceDigests[file]?execFileSync('git',['show',msrEligibility.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforePciContinuation(file)
 const beforePreparedEvidence=file=>preparedEvidence?.applicationSourceDigests[file]?execFileSync('git',['show',preparedEvidence.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeMsrEligibility(file)
 const beforePostfetch=file=>postfetch?.applicationSourceDigests[file]?execFileSync('git',['show',postfetch.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforePreparedEvidence(file)
