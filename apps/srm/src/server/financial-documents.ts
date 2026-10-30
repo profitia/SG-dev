@@ -118,7 +118,7 @@ const hashFormat = (value: unknown): value is string => typeof value === "string
 
 /** Verify exact persisted JSONB bytes before parsing. Never hash a reserialized object
  * against the historical wire hash, follow URLs, or obtain another tenant's source. */
-export function projectArchivedFinancialDocuments(archive: FinancialArchive, organizationId: string, nip: string): FinancialSourceDocument[] {
+function verifiedArchiveRecords(archive: FinancialArchive, organizationId: string, nip: string): unknown[] {
   if (archive.organization_id !== organizationId || archive.nip !== nip || archive.model !== "pl-krs-rdf-record")
     throw new Error("Financial archive identity mismatch");
   if (!hashFormat(archive.payload_jsonb_sha256) || typeof archive.payload_text !== "string" || archive.payload_text.length > 20_000_000
@@ -130,9 +130,15 @@ export function projectArchivedFinancialDocuments(archive: FinancialArchive, org
   if (!Number.isSafeInteger(archive.record_count) || archive.record_count < 0 || records.length !== archive.record_count || records.length > 10_000)
     throw new Error("Financial archive record count mismatch");
   if (records.some(record => object(object(record).identifiers).pl_nip !== nip)) throw new Error("Financial archive supplier mismatch");
+  return records;
+}
+function projectedArchiveDocuments(records: unknown[]): FinancialSourceDocument[] {
   const documents = projectFinancialDocuments(records);
   if (new Set(documents.map(d => d.recordId)).size !== documents.length) throw new Error("Duplicate financial archive document");
   return documents;
+}
+export function projectArchivedFinancialDocuments(archive: FinancialArchive, organizationId: string, nip: string): FinancialSourceDocument[] {
+ return projectedArchiveDocuments(verifiedArchiveRecords(archive,organizationId,nip));
 }
 
 export async function saveFinancialDocuments(organizationId: string, nip: string, pages: unknown[], pool?: DatabasePool): Promise<{ documents: number; positions: number }> {
@@ -198,6 +204,39 @@ async function storedDocuments(client: DocumentClient, organizationId: string, n
       || !hashFormat(r.document_jsonb_sha256) || typeof r.document_text !== "string" || checksum(r.document_text) !== r.document_jsonb_sha256))
     throw new Error("Financial document identity or checksum mismatch");
   return rows;
+}
+
+/** One admitted FRESH transaction has just written and locked this archive.
+ * Validate its persisted bytes once, persist the projection, then return the
+ * actual protected rows (including better-quality preserved projections).
+ * The lock and the caller's original COMMIT/outcome remain authoritative. */
+export async function prepareFreshFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
+  pages: unknown[]): Promise<FinancialSourceDocument[]> {
+ return diagnosticRun('DOCUMENT_PREPARE',async()=>{
+  const archive=(await client.query<FinancialArchive & {pages_match:boolean}>(
+   `SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,
+     payload_json->'pages'=$3::jsonb AS pages_match FROM srm.mgbi_source_archives
+    WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record' FOR SHARE`,
+   [organizationId,nip,JSON.stringify(pages)])).rows[0];
+  if(!archive||archive.pages_match!==true)throw new Error('Financial preparation source differs from current archive');
+  const records=verifiedArchiveRecords(archive,organizationId,nip),documents=projectedArchiveDocuments(records);
+  const ids=records.filter(raw=>
+   ['financial_statement','consolidated_financial_statement'].includes(String(object(object(raw).document).type))
+    &&object(raw).id!==null&&object(raw).id!==undefined).map(raw=>object(raw).id);
+  if(ids.some(id=>typeof id!=='string'||!id)||new Set(ids).size!==ids.length
+   ||ids.length!==documents.length||documents.some(d=>!ids.includes(d.recordId)))
+   throw new Error('Incomplete or ambiguous financial archive inventory');
+  await persistFinancialDocuments(client,organizationId,nip,documents,archive.payload_jsonb_sha256);
+  const stored=await diagnosticRun('DOCUMENT_READ',()=>storedDocuments(client,organizationId,nip));
+  const expected=stored.filter(r=>ids.includes(r.record_id));
+  if(expected.length!==ids.length||!expected.every(r=>r.archive_jsonb_sha256===archive.payload_jsonb_sha256
+   &&(r.mapping_version===FINANCIAL_DOCUMENT_MAPPING_VERSION||['IXBRL_SUPPORTED','XHTML_SUPPORTED'].includes(r.document_json.availability))))
+   throw new Error('Financial documents require authorised preparation');
+  const origins=new Map<string,string>();
+  for(const raw of records){const r=object(raw),krs=String(object(r.identifiers).pl_krs??'');
+   if(r.id!==null&&r.id!==undefined&&/^\d{10}$/.test(krs))origins.set(String(r.id),krs)}
+  return expected.map(r=>origins.has(r.record_id)?{...r.document_json,sourceKrs:origins.get(r.record_id)!}:r.document_json);
+ });
 }
 
 /** Caller owns the withOrganization transaction. Restoration locks its source

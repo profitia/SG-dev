@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { projectFinancialDocuments, applyFinancialDocumentMetadata, projectArchivedFinancialDocuments } from "./financial-documents";
+import { projectFinancialDocuments, applyFinancialDocumentMetadata, projectArchivedFinancialDocuments, prepareFreshFinancialDocuments } from "./financial-documents";
 import { createHash } from "node:crypto";
 const record = (overrides: Record<string, unknown> = {}) => ({ id: "xml-1", document: { type: "financial_statement", period_from_date: "2025-02-01", period_to_date: "2026-01-31", is_ias_compliant: true }, content: { schema: { name: "JednostkaInnaWZlotych", version: "1-3" },
  extracted_fields: { "Naglowek.OkresOd": "2025-02-01", "Naglowek.OkresDo": "2026-01-31", "Bilans.Aktywa.KwotaA": "1234567890123456.789", "Bilans.Aktywa.KwotaB": null, "RZiS.RZiSKalk.A.KwotaA": "-17.3456", "RZiS.RZiSKalk.A.KwotaB1": "0", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.NazwaPozycji": "=1+1", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.KwotyPozycji.KwotaA": "1", "RachPrzeplywow.A.KwotaA": "999", "InformacjeDodatkowe.KwotaA": "888" }, standardized_fields: { bs: { a_ta_cfy: 1234567890123456.8 } } }, ...overrides });
@@ -15,6 +15,60 @@ test("archive reconstruction verifies persisted bytes rather than reserialized J
   const source=archived();const [document]=projectArchivedFinancialDocuments(source,archiveOrg,archiveNip);
   assert.equal(document.recordId,"xml-1");assert.equal(document.rows[0].amounts.KwotaA,"1234567890123456.789");
   assert.notEqual(createHash("sha256").update(JSON.stringify(JSON.parse(source.payload_text))).digest("hex"),source.payload_jsonb_sha256);
+});
+function freshPreparation(changes:{archive?:Record<string,unknown>;stored?:Record<string,unknown>}={}){
+ const raw=record({identifiers:{pl_nip:archiveNip,pl_krs:'0000217580'}}),pages=[{results:[raw]}];
+ const source={...archived([raw]),pages_match:true,...changes.archive};
+ const document=projectFinancialDocuments([raw])[0],document_text=JSON.stringify(document);
+ const stored={organization_id:archiveOrg,nip:archiveNip,record_id:document.recordId,document_json:document,
+  checksum_sha256:document.checksum,mapping_version:document.mappingVersion,archive_jsonb_sha256:source.payload_jsonb_sha256,
+  document_text,document_jsonb_sha256:createHash('sha256').update(document_text).digest('hex'),...changes.stored};
+ const calls:string[]=[];
+ const client={query:async(sql:string)=>{calls.push(sql);
+  if(sql.includes('FROM srm.mgbi_source_archives'))return {rows:[source]};
+  if(sql.trimStart().startsWith('INSERT INTO srm.financial_source_documents'))return {rows:[],rowCount:1};
+  if(sql.includes('FROM srm.financial_source_documents'))return {rows:[stored]};
+  throw Error('Unexpected financial statement');
+ }} as unknown as Parameters<typeof prepareFreshFinancialDocuments>[0];
+ return {pages,source,stored,client,calls};
+}
+test('fresh preparation validates locked archive once and returns actual protected documents',async()=>{
+ const f=freshPreparation(),documents=await prepareFreshFinancialDocuments(f.client,archiveOrg,archiveNip,f.pages);
+ assert.equal(documents.length,1);assert.equal(documents[0].recordId,f.stored.record_id);
+ assert.equal(documents[0].sourceKrs,'0000217580');assert.deepEqual(documents[0].rows,f.stored.document_json.rows);
+ assert.equal(f.calls.filter(s=>s.includes('FROM srm.mgbi_source_archives')).length,1);
+ assert(f.calls[0].endsWith('FOR SHARE'));assert.equal(f.calls.length,3);
+});
+test('fresh preparation rejects changed source, foreign archive and invalid bytes before writing',async()=>{
+ for(const archive of[{pages_match:false},{organization_id:'22222222-2222-4222-8222-222222222222'},{nip:'6310200831'},{payload_jsonb_sha256:'a'.repeat(64)}]){
+  const f=freshPreparation({archive});await assert.rejects(prepareFreshFinancialDocuments(f.client,archiveOrg,archiveNip,f.pages));
+  assert.equal(f.calls.length,1);
+ }
+});
+test('fresh preparation refuses stale, foreign and altered protected projections',async()=>{
+ for(const stored of[{organization_id:'22222222-2222-4222-8222-222222222222'},{nip:'6310200831'},
+  {archive_jsonb_sha256:'a'.repeat(64)},{mapping_version:'old-mapping'},{document_jsonb_sha256:'b'.repeat(64)}]){
+  const f=freshPreparation({stored});await assert.rejects(prepareFreshFinancialDocuments(f.client,archiveOrg,archiveNip,f.pages));
+ }
+});
+test('fresh preparation preserves an existing better licensed projection instead of returning inferior input',async()=>{
+ const f=freshPreparation(),better={...f.stored.document_json,availability:'IXBRL_SUPPORTED',mappingVersion:'previous-verified-projection'};
+ Object.assign(f.stored,{document_json:better,mapping_version:better.mappingVersion,document_text:JSON.stringify(better),
+  document_jsonb_sha256:createHash('sha256').update(JSON.stringify(better)).digest('hex')});
+ const [actual]=await prepareFreshFinancialDocuments(f.client,archiveOrg,archiveNip,f.pages);
+ assert.equal(actual.availability,'IXBRL_SUPPORTED');assert.equal(actual.mappingVersion,'previous-verified-projection');
+});
+test('fresh provenance comes from verified persisted bytes even if caller pages change while awaiting SQL',async()=>{
+ const f=freshPreparation(),query=f.client.query.bind(f.client);
+ const client={query:async(...args:unknown[])=>{
+  const result=await(query as (...values:unknown[])=>Promise<unknown>)(...args);
+  if(String(args[0]).includes('FROM srm.mgbi_source_archives')){
+   const raw=f.pages[0].results[0] as unknown as {identifiers:{pl_krs:string}};raw.identifiers.pl_krs='1234567890';
+  }
+  return result;
+ }} as unknown as Parameters<typeof prepareFreshFinancialDocuments>[0];
+ const [actual]=await prepareFreshFinancialDocuments(client,archiveOrg,archiveNip,f.pages);
+ assert.equal(actual.sourceKrs,'0000217580');
 });
 test("archive reconstruction rejects other tenants, suppliers and provider models", () => {
   for(const change of [{organization_id:"22222222-2222-4222-8222-222222222222"},{nip:"6310200831"},{model:"pl-krs-wp-record"}])

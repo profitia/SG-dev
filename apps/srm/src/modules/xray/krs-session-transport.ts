@@ -74,6 +74,15 @@ export function createKrsSessionTransport(getToken:(options?:{skipCache?:boolean
    // One immediate metadata read after this exact ready main company only.
    // Keep no token or ALLOW decision; use the existing SDK credential cache.
    if(main&&input==='/api/xray/search'&&response.ok&&!grant){try{
+    // This header is an expiry-refresh hint only. It carries no access proof;
+    // the immediate metadata request keeps its independent server H1/H2.
+    // Reading a second full response body delayed the original consumer and
+    // duplicated large reports. Older servers retain their existing fallback.
+    const companyHint=response.headers.get('X-SRM-Prepared-Company')
+    if(companyHint===body?.identifier&&/^\d{10}$/.test(companyHint??'')){
+     cachedMetadataRead={nip:companyHint!,until:Date.now()+15000}
+     return response
+    }
     const found=await response.clone().json(),card=found?.card
     if(found?.entityType==='COMPANY'&&card?.identity?.nip===body?.identifier&&/^\d{10}$/.test(card.identity.nip)&&!found.krsSelection)
      cachedMetadataRead={nip:card.identity.nip,until:Date.now()+15000}

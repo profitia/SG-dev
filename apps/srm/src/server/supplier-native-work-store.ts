@@ -14,7 +14,7 @@ import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
 import { reprojectFinancialArchive, type FinancialSourceFact } from './mgbi-financial'
 import { saveMgbiArchive } from './mgbi-archive'
-import { applyFinancialDocumentMetadata, financialRecordsFromPages, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
+import { applyFinancialDocumentMetadata, financialRecordsFromPages, prepareFreshFinancialDocuments, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
 import type {MgbiGeneralResult} from './mgbi-general'
 import type {MgbiFinancialResult} from './mgbi-financial'
 import {isCompanyReportRestricted} from '@profitia/srm-xray'
@@ -323,8 +323,8 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
         // A revoked account at its outcome rolls every one of these back.
         await diagnosticRun('MGBI_GENERAL_ARCHIVE',()=>saveMgbiArchive(selected.organisationId,selected.command.nip,'pl-krs-wp-record',g.rawResponse!.pages,g.rawResponse!.recordCount,g.section.retrievedAt!,selected.requestId,pool))
         await diagnosticRun('MGBI_FINANCIAL_ARCHIVE',()=>saveMgbiArchive(selected.organisationId,selected.command.nip,'pl-krs-rdf-record',f.rawResponse!.pages,f.rawResponse!.recordCount,f.section.retrievedAt!,selected.requestId,pool))
-        await saveFinancialDocuments(selected.organisationId,selected.command.nip,f.rawResponse!.pages,pool)
-        const documents=await readPreparedFinancialDocuments(client,selected.organisationId,selected.command.nip)
+        const documents=await withOrganization(selected.organisationId,actual=>
+          prepareFreshFinancialDocuments(actual,selected.organisationId,selected.command.nip,f.rawResponse!.pages),pool)
         const sectionWithDocuments=applyFinancialDocumentMetadata(f.section,documents,g.section.data?.registryHistory)
         // The original pages are now durably archived in this transaction.
         // Return only the prepared result needed by Source publication, not
