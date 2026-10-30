@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { limitsDigest, identityDigest } from "./install.mjs";
+import { limitsDigest, identityDigest, dashboardDigest } from "./install.mjs";
 const root = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     "../../..",
@@ -82,6 +82,7 @@ fs.writeFileSync(
       files,
       limitsDigest,
       identityDigest,
+      dashboardDigest,
       validationScope: "SOURCE_AND_ISOLATED_SYNTHETIC_POSTGRES_ONLY",
       cloudCredentialsUsed: false,
       liveRuntimeVerified: false,

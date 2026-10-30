@@ -4,6 +4,7 @@ import type { Actor } from "@profitia/platform-contracts/operation-context";
 import { Fault, type Dict } from "./domain.js";
 export interface Session {
   call(operation: string, data: unknown): Promise<any>;
+  summary(): Promise<any>;
 }
 export function signature(
   key: Uint8Array,
@@ -46,6 +47,26 @@ export class Store {
         .rows[0].tx as string;
       const until = Math.min(Date.parse(actor.expiresAt), Date.now() + 5000);
       const session: Session = {
+        summary: async () =>
+          (
+            await c.query(
+              "SELECT profitia_limits.dashboard($1::uuid,$2::bigint,$3,$4,$5) AS data",
+              [
+                actor.userId,
+                until,
+                tx,
+                "{}",
+                signature(
+                  this.key,
+                  actor.userId!,
+                  until,
+                  tx,
+                  "authorize",
+                  "{}",
+                ),
+              ],
+            )
+          ).rows[0].data,
         call: async (operation, data) => {
           const json = JSON.stringify(data);
           return (
@@ -103,7 +124,10 @@ export class Store {
     }
   }
   async health() {
-    return (await this.pool.query("SELECT profitia_limits.health() AS data"))
-      .rows[0].data;
+    return (
+      await this.pool.query(
+        "SELECT profitia_limits.health() || jsonb_build_object('dashboardDigest',profitia_limits.dashboard_health()) AS data",
+      )
+    ).rows[0].data;
   }
 }

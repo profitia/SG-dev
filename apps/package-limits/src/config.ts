@@ -16,6 +16,7 @@ export interface Config {
   sourceSha: string;
   limitsDigest: string;
   identityDigest: string;
+  dashboardDigest: string;
   port: number;
   limits: PoolConfig;
   identity: PoolConfig;
@@ -102,6 +103,7 @@ export function configuration(env: NodeJS.ProcessEnv = process.env): Config {
     sourceSha: source.sha,
     limitsDigest: schema.limitsDigest,
     identityDigest: schema.identityDigest,
+    dashboardDigest: schema.dashboardDigest,
     port,
     limits: poolConfig(env.LIMITS_DATABASE_URL ?? "", "limits"),
     identity: poolConfig(env.IDENTITY_DATABASE_URL ?? "", "identity"),

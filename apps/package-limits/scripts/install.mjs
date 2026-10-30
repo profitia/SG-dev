@@ -11,6 +11,15 @@ const l = fs.readFileSync(
     new URL("../migrations/002-identity-read.sql", import.meta.url),
     "utf8",
   );
+const dashboardSource = fs.readFileSync(
+  new URL("../migrations/003-dashboard-summary.sql", import.meta.url),
+  "utf8",
+);
+export const dashboardDigest = hash(dashboardSource);
+export const dashboardSql = dashboardSource.replaceAll(
+  "__DASHBOARD_SCHEMA_DIGEST__",
+  dashboardDigest,
+);
 const quote = (s) => "'" + String(s).replaceAll("'", "''") + "'";
 export const seedSql =
   capabilities
@@ -55,11 +64,13 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
 CREATE ROLE profitia_limits_owner NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
 DO $r$ BEGIN IF (SELECT count(*) FROM pg_roles WHERE rolname IN('profitia_limits_runtime','profitia_limits_migrator') AND rolcanlogin AND NOT(rolsuper OR rolcreatedb OR rolcreaterole OR rolbypassrls OR rolinherit))<>2 OR EXISTS(SELECT 1 FROM pg_auth_members a JOIN pg_roles r ON r.oid=a.member WHERE r.rolname IN('profitia_limits_runtime','profitia_limits_migrator')) THEN RAISE EXCEPTION 'SQL_CREATED_ORDINARY_LOGIN_REQUIRED';END IF; END $r$;
 GRANT profitia_limits_owner TO profitia_limits_migrator;
+GRANT CONNECT ON DATABASE neondb TO profitia_limits_runtime,profitia_limits_migrator;
 GRANT CREATE ON DATABASE neondb TO profitia_limits_owner;`;
 export const identityPrefix = String.raw`DO $guard$ BEGIN
  IF current_database()<>'platform_private' OR session_user='profitia_limits_identity_reader' OR EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='profitia_limits_identity_read') THEN RAISE EXCEPTION 'EXACT_EMPTY_ADAPTER_REQUIRED';END IF;
 END $guard$;
 DO $r$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='profitia_limits_identity_reader' AND rolcanlogin AND NOT(rolsuper OR rolcreatedb OR rolcreaterole OR rolbypassrls OR rolinherit)) OR EXISTS(SELECT 1 FROM pg_auth_members a JOIN pg_roles r ON r.oid=a.member WHERE r.rolname='profitia_limits_identity_reader') THEN RAISE EXCEPTION 'SQL_CREATED_ORDINARY_READER_REQUIRED';END IF; END $r$;
+GRANT CONNECT ON DATABASE platform_private TO profitia_limits_identity_reader;
 CREATE SCHEMA profitia_limits_identity_read AUTHORIZATION profitia_access_owner;
 SET LOCAL ROLE profitia_access_owner;`;
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -84,6 +95,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           mode: "REVIEWED_PLAN_ONLY_NO_CONNECTION",
           limitsDigest,
           identityDigest,
+          dashboardDigest,
           limits: {
             loginRolesSql: limitsLoginRolesSql,
             rolesSql,
@@ -91,7 +103,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
               "SET LOCAL ROLE profitia_limits_owner;\n" +
               limitsSql +
               "\n" +
-              seedSql,
+              seedSql +
+              "\n" +
+              dashboardSql,
+            dashboardMigrationSql:
+              "SET LOCAL ROLE profitia_limits_owner;\n" + dashboardSql,
             postInstallSql:
               "REVOKE CREATE ON DATABASE neondb FROM profitia_limits_owner;",
             verificationSql: verificationSql("limits"),
@@ -112,7 +128,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 
 export function expectedFunctions(which) {
   const sql =
-    which === "limits" ? limitsSql : which === "identity" ? identitySql : null;
+    which === "limits"
+      ? limitsSql + "\n" + dashboardSql
+      : which === "identity"
+        ? identitySql
+        : null;
   if (!sql) throw Error("UNKNOWN_INSTALLATION");
   const result = [];
   for (const m of sql.matchAll(
@@ -159,7 +179,11 @@ export function verificationSql(which) {
     owner =
       which === "limits" ? "profitia_limits_owner" : "profitia_access_owner";
   return (
-    "SELECT jsonb_build_object('schemaDigest',(SELECT schema_digest FROM " +
+    "SELECT jsonb_build_object(" +
+    (which === "limits"
+      ? "'dashboardDigest',(SELECT schema_digest FROM profitia_limits.dashboard_installation WHERE singleton),"
+      : "") +
+    "'schemaDigest',(SELECT schema_digest FROM " +
     schema +
     ".installation WHERE singleton),'schemaOwner',(SELECT pg_get_userbyid(nspowner) FROM pg_namespace WHERE nspname='" +
     schema +
@@ -198,10 +222,11 @@ export function verifyInstallation(snapshot, which) {
     digest = which === "limits" ? limitsDigest : identityDigest;
   const allowed =
     which === "limits"
-      ? ["api", "health"]
+      ? ["api", "dashboard", "dashboard_health", "health"]
       : ["binding", "descriptor", "lock_organisation", "organisations"];
   if (
     snapshot.schemaDigest !== digest ||
+    (which === "limits" && snapshot.dashboardDigest !== dashboardDigest) ||
     snapshot.schemaOwner !== owner ||
     snapshot.allTablesForceRls !== true ||
     snapshot.runtimeTableAccess !== false ||

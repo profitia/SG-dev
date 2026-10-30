@@ -24,8 +24,10 @@ console.log(
   "Package Limits executable and browser assets built; no database or provider call.",
 );
 
-const { limitsDigest, identityDigest } = await import("./install.mjs");
+const { limitsDigest, identityDigest, dashboardDigest } = await import(
+  "./install.mjs"
+);
 fs.writeFileSync(
   "dist/schema.json",
-  JSON.stringify({ limitsDigest, identityDigest }),
+  JSON.stringify({ limitsDigest, identityDigest, dashboardDigest }),
 );

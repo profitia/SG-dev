@@ -7,6 +7,7 @@ import {
   seedSql,
   rolesSql,
   identityPrefix,
+  dashboardSql,
 } from "../scripts/install.mjs";
 export const actorId = "11111111-1111-4111-8111-111111111111",
   otherId = "22222222-2222-4222-8222-222222222222",
@@ -74,6 +75,7 @@ export async function fixture() {
     await c.query("SET LOCAL ROLE profitia_limits_owner");
     await c.query(limitsSql);
     await c.query(seedSql);
+    await c.query(dashboardSql);
     await c.query("COMMIT");
   } catch (e) {
     await c.query("ROLLBACK");
@@ -92,6 +94,9 @@ export async function fixture() {
   const privUrl = new URL(raw);
   privUrl.pathname = "/platform_private";
   const privateOwner = new pg.Pool({ connectionString: privUrl.toString() });
+  await privateOwner.query(
+    "REVOKE CONNECT ON DATABASE platform_private FROM PUBLIC",
+  );
   await privateOwner.query(
     "CREATE ROLE profitia_access_owner NOLOGIN NOINHERIT",
   );
