@@ -38,3 +38,10 @@ test('category adapter carries explicit seed organisation only as a revalidated 
  const next=request('{}');await new Promise(r=>setTimeout(r,0));assert.equal(signals[0].aborted,true);assert.equal(signals[1].aborted,false)
  resolve();assert.equal(await old,'AbortError');assert.equal((await next).status,200);request.close()
  })
+
+test('temporary missing credential does not poison the requester or dispatch an unauthorised action',async()=>{
+ let token:string|null=null,sent=0
+ const requester=createPciRequester({getToken:async()=>token,fetch:async()=>{sent++;return Response.json({})}})
+ await assert.rejects(requester('{}'),/SESSION_UNAVAILABLE/);assert.equal(sent,0)
+ token='synthetic.refreshed.signature';assert.equal((await requester('{}')).status,200);assert.equal(sent,1);requester.close()
+})
