@@ -23,6 +23,16 @@ export interface ExternalCallEvidence{
  readonly transportProtocol?:'profitia.external-native-http'
 }
 export declare function externalCallEvidence(value:unknown):Readonly<ExternalCallEvidence>|null
+export declare const EXTERNAL_CALL_FAILURE_OBSERVATION:Readonly<{id:'profitia.external-call.failure-observation';version:'1.0.0'}>
+export interface ExternalCallFailureEvidence{
+ readonly contractId:typeof EXTERNAL_CALL_FAILURE_OBSERVATION.id;readonly contractVersion:'1.0.0'
+ readonly sourceId:string;readonly resourceId:string;readonly applicationId:string;readonly environment:string
+ readonly callId:string;readonly attemptEffectId:string;readonly settlementEffectId:string
+ readonly status:'UNVERIFIED';readonly reason:'NATIVE_RESPONSE_REJECTED';readonly httpStatus:number;readonly retryAllowed:false
+}
+/** Non-serializable original-host observation after committed current settlement.
+ * It grants no identity, data access, provider retry or fallback authorization. */
+export declare function externalCallFailureEvidence(value:unknown):Readonly<ExternalCallFailureEvidence>|null
 /** Runtime verifies the original successful settlement, including result identity. */
 export declare function externalNativeResponse(value:NativeExternalResult):Response
 export interface ExternalCallOptions<Transaction,Command>{
