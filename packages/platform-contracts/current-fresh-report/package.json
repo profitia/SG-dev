@@ -1,0 +1,25 @@
+{
+  "name": "@profitia/platform-current-fresh-report",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional current FRESH composition of the unchanged canonical platform contracts",
+  "files": ["src"],
+  "exports": {
+    ".": {
+      "types": "./src/current-fresh-report.d.mts",
+      "import": "./src/current-fresh-report.mjs",
+      "require": "./src/current-fresh-report.mjs"
+    }
+  },
+  "scripts": {
+    "build": "node --check src/current-fresh-report.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "peerDependencies": {
+    "@profitia/platform-contracts": "1.32.3"
+  },
+  "devDependencies": {
+    "@profitia/platform-contracts": "file:.."
+  }
+}
