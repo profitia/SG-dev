@@ -16,6 +16,6 @@ test('tampered current file, receipt, historical digest, engine and rollback evi
 })
 test('every changed SG2 source in the candidate has an exact additive binding',()=>{
  const a=receipt().pciSmartPreparationCompatibility
- const changed=execFileSync('git',['diff','--name-only',a.previousReceiptSourceSha,'--','apps/sg-runtime','packages/sg2-price-change-index-ui','apps/sg2-price-change-index-demo'],{encoding:'utf8'}).trim().split('\n').filter(f=>f&&f!=='apps/sg-runtime/operation-integration.json').sort()
+ const changed=execFileSync('git',['diff','--name-only',a.previousReceiptSourceSha,'--','apps/sg-runtime','packages/sg2-price-change-index-ui','apps/sg2-price-change-index-demo'],{encoding:'utf8',cwd:new URL('../../../',import.meta.url)}).trim().split('\n').filter(f=>f&&f!=='apps/sg-runtime/operation-integration.json').sort()
  assert.deepEqual(a.changedSourcePaths,changed)
 })
