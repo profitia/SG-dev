@@ -144,18 +144,20 @@ test('account page uses official pinned SDK, closed destination and a parseable 
 })
 
 const browserAccount = (userId = ids.a) => ({ authenticated: true, userId, expiresAt: new Date(Date.now() + 60000).toISOString() })
-function browserFixture({ signedIn = true, response = () => new Response(JSON.stringify(browserAccount())), avatarResponse, languageResponse, browserLanguage = 'pl-PL', loadFailure = false, logoutFailure = false } = {}) {
+function browserFixture({ signedIn = true, response = () => new Response(JSON.stringify(browserAccount())), avatarResponse, languageResponse, browserLanguage = 'pl-PL', loadFailure = false, logoutFailure = false,
+  locale = 'pl', flow = 'registration', returnTo = 'https://sg2.example.test/account', presentationCompletion } = {}) {
   const elements = Object.fromEntries(['account-config', 'status', 'retry', 'logout', 'sign-in'].map(id => [id, { textContent: '', hidden: true, replaceChildren() {} }]))
-  elements['account-config'].textContent = JSON.stringify({ en: false, flow: 'registration', returnTo: 'https://sg2.example.test/account',
+  elements['account-config'].textContent = JSON.stringify({ en: locale === 'en', flow, returnTo,
     signInUrl: origin + '/account/sg2/account/login', signUpUrl: origin + '/account/sg2/account/registration', allowedRedirectOrigins: [origin, 'https://sg2.example.test'], localization: {} })
   const f = { elements, calls: [], redirects: [], restored: [], mounted: 0, reloaded: 0 }
   f.clerk = { session: signedIn ? { id: 'sess_a', getToken: async () => 'synthetic_fixture_only' } : null,
     load: async () => { if (loadFailure) throw Error('synthetic SDK unavailable') }, addListener: fn => { f.listener = fn },
     mountSignIn: () => { f.mounted++ }, mountSignUp: () => { f.mounted++ }, unmountSignUp() {}, unmountSignIn() {}, signOut: async () => { if (logoutFailure) throw Error('synthetic outage'); f.clerk.session = null } }
   const window = { Clerk: f.clerk, __internal_ClerkUICtor: {}, addEventListener: (_name, fn) => { f.start = fn },
+    ...(presentationCompletion ? { spendGuruAccountReady: presentationCompletion } : {}),
     spendGuruRestoreAvatar: value => f.restored.push(value),
     location: { origin, pathname: '/account/sg2/account/registration', replace: url => f.redirects.push(url), reload: () => { f.reloaded++ } } }
-  vm.runInNewContext(accountBrowserScript, { window, navigator:{languages:[browserLanguage,'pl-PL'],language:browserLanguage}, document: { getElementById: id => elements[id] }, AbortController, DOMException,
+  vm.runInNewContext(accountBrowserScript, { window, navigator:{languages:[browserLanguage,'pl-PL'],language:browserLanguage}, document: { getElementById: id => elements[id] }, AbortController, DOMException, Date,
     fetch: async (url, options) => { f.calls.push({ url, options });
       if (url === '/v1/account/communication-language') return languageResponse ? languageResponse(options,f) : Response.json({userId:f.clerk.session?.id==='sess_b'?ids.b:ids.a,language:'pl',source:'migration',version:'1'});
       if (url === '/v1/account/assistant-avatar') return avatarResponse ? avatarResponse(options, f) : new Response(JSON.stringify({userId:f.clerk.session?.id==='sess_b'?ids.b:ids.a,avatarSex:null,version:'1'}));
@@ -165,8 +167,34 @@ function browserFixture({ signedIn = true, response = () => new Response(JSON.st
 test('synthetic browser flow redirects only after confirmed B1 success; native signed-out state mounts the official widget', async () => {
   const f = browserFixture(); await f.start()
   assert.equal(f.calls.length, 3); assert.equal(f.calls[0].url, '/v1/account'); assert.equal(f.calls[0].options.method, 'POST')
-  assert.deepEqual(f.redirects, ['https://sg2.example.test/account']); assert.equal(f.elements.status.textContent, 'Konto gotowe.')
+  assert.deepEqual(f.redirects, ['https://sg2.example.test/account']); assert(!f.elements.status.textContent.includes('Konto gotowe'))
   const signedOut = browserFixture({ signedIn: false }); await signedOut.start(); assert.equal(signedOut.calls.length, 0); assert.equal(signedOut.mounted, 1)
+})
+for (const locale of ['pl', 'en']) for (const flow of ['login', 'registration']) {
+  test(`verified ${flow} returns directly to the registered ${locale} dashboard without a presentation gate`, async () => {
+    let finishProfile, presentationCalls = 0
+    const returnTo = `https://sg2.example.test/${locale}/dashboard`
+    const f = browserFixture({ locale, flow, returnTo,
+      presentationCompletion: () => { presentationCalls++; return new Promise(() => {}) },
+      languageResponse: () => new Promise(resolve => { finishProfile = resolve }) })
+    const completion = f.start()
+    while (!finishProfile) await new Promise(resolve => setImmediate(resolve))
+    assert.deepEqual(f.redirects, [])
+    finishProfile(Response.json({userId:ids.a,language:locale,source:'user',version:'1'}))
+    await completion
+    assert.deepEqual(f.redirects, [returnTo]); assert.equal(presentationCalls, 0)
+    assert(!/Konto gotowe|Your account is ready/.test(f.elements.status.textContent))
+  })
+}
+test('expiry during required profile checks still blocks direct dashboard navigation', async t => {
+  t.mock.timers.enable({apis:['Date'],now:Date.now()})
+  const returnTo = 'https://sg2.example.test/pl/dashboard'
+  const f = browserFixture({returnTo,languageResponse:()=>{
+    t.mock.timers.tick(61000)
+    return Response.json({userId:ids.a,language:'pl',source:'user',version:'1'})
+  }})
+  await f.start(); assert.equal(f.calls.length,3)
+  assert.deepEqual(f.redirects,[]); assert.equal(f.elements.retry.hidden,false)
 })
 test('synthetic interrupted/denied account completion never becomes success or a redirect', async () => {
   for (const response of [() => new Response('{}', { status: 503 }), () => new Response('{}', { status: 401 }), () => { throw Error('synthetic interruption') }]) {

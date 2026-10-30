@@ -191,7 +191,6 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
   resend.onclick = async () => { if (writing || model.state.busy || Date.now() < resendAt) return; resendAt = Date.now()+30000; resend.disabled = true; try { await model.resend(); error.textContent = tr('Nowy kod został wysłany. Sprawdź pocztę.', 'A new code has been sent. Check your inbox.'); } catch { error.textContent = tr('Nie udało się wysłać nowego kodu. Spróbuj za chwilę.', 'We could not send a new code. Try again shortly.'); } setTimeout(() => resend.disabled = false, 30000); };
   switchMethod.onclick = () => { if (!writing && !model.state.busy) { model.state.step = 'method'; void ask(); } };
   document.getElementById('avatar-switch').onclick = () => setAvatar(avatar === 'female' ? 'male' : 'female');
-  window.spendGuruAccountReady = async () => { form.hidden = true; choices.replaceChildren(); await say(tr('Konto gotowe. Za chwilę przeniesiemy Cię do aplikacji.', 'Your account is ready. Taking you to the app.')); await pause(reduced ? 0 : 600); };
   document.getElementById('restart').onclick = () => window.location.reload();
   root.hidden = false;
   if (cfg.flow === 'recovery') { model.state.step = 'challenge'; }
