@@ -1,6 +1,8 @@
 # BQL v1.0 — PCI first
 
-The Benchmark Domain classifies the existing metadata snapshot with `bql-semantic/1.0.0`. This is separate from PCI model eligibility and from historical calculation readiness. No new endpoint, persistence, authentication, E1 lookup, provider lookup, enrichment, history retrieval, retry or deployment is introduced by classification.
+The Benchmark Domain classifies the existing metadata snapshot with `bql-semantic/1.0.1`. This is separate from PCI model eligibility and from historical calculation readiness. No new endpoint, persistence, authentication, E1 lookup, provider lookup, enrichment, history retrieval, retry or deployment is introduced by classification.
+
+Live acceptance refinement: an explicitly named price index with an index unit can retain its market currency (for example, `Steel Price, Index, CNY` with `CNY Index`). It remains `PRICE_INDEX`, never `PRICE_LEVEL`; currency plus an index unit without price-index context remains undetermined. Physical or percentage-unit conflicts still refuse classification. Finder evidence disclosures have their own pointer target above the existing card expansion target, so opening evidence does not load chart history or forecasts.
 
 `classifyBenchmark(candidate)` returns provider/series identity, rule version, semantic class, reason and the ordered metadata inputs. Currency, units and economic description must agree; one signal is insufficient. Provider `DataType` describes sampling and `Class` stock/flow; neither proves that a series is a price. Opaque provider codes and AI ranking do not decide classification. Missing/conflicting evidence stays undetermined.
 
