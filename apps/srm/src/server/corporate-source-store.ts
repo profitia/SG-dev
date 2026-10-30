@@ -21,6 +21,18 @@ export const CORPORATE_SOURCE = Object.freeze({ id: 'srm.catalog.corporate', pay
 export type CorporatePacket = { version: typeof CORPORATE_PUBLICATION_VERSION; nip: string
   general: SectionEnvelope<GeneralCompanyData>; financial: SectionEnvelope<FinancialData>
   facts: FinancialSourceFact[]; preserveGeneral: boolean }
+// Data validation only. A private identity brand cannot be supplied by a caller,
+// and the entire detached graph is immutable before it can be reused. Source
+// admission, current authority, publication checks and audit still run per call.
+const capturedPackets = new WeakMap<object, Readonly<{body:string}>>()
+function freezePacket<T>(value:T):T {
+  if(value&&typeof value==='object'){
+    for(const child of Object.values(value))freezePacket(child)
+    Object.freeze(value)
+  }
+  return value
+}
+const packetBody=(packet:CorporatePacket):string=>capturedPackets.get(packet)?.body??unavailable()
 type Spec = string | Spec[] | { [key: string]: Spec }
 const unavailable = (): never => { throw new TypeError('Classified corporate publication required') }
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
@@ -50,6 +62,7 @@ function factProvenance(path:string,fact:FinancialSourceFact,periods:FinancialDa
 /** Same closed packet shape is installed under controlled SQL ownership. This
  * does not detect personal information hidden inside arbitrary text. */
 export function readCorporatePacket(input: unknown): CorporatePacket {
+  if(input&&typeof input==='object'&&capturedPackets.has(input))return input as CorporatePacket
   let nodes = 0
   const seen = new Set<object>()
   const read = (value: unknown, spec: Spec, depth: number): void => {
@@ -116,14 +129,19 @@ export function readCorporatePacket(input: unknown): CorporatePacket {
       || f.periodStart > f.periodEnd || !/^[A-Z][A-Z0-9_]{1,79}$/.test(f.metricCode)
       || !periods.length) return unavailable()
   }
+  freezePacket(packet)
+  capturedPackets.set(packet,Object.freeze({body:encoded}))
   return packet
 }
 
 /** Complete classified evidence, independent of a private lookup identity. */
 export function corporateRevisionKey(input:unknown,publicationSchemaDigest:string):string {
   if(!/^[a-f0-9]{64}$/.test(publicationSchemaDigest))return unavailable()
-  return hash(JSON.stringify({version:'srm-corporate-revision-v1',source:CORPORATE_SOURCE,
-    publicationSchemaDigest,packet:readCorporatePacket(input)}))
+  const packet=readCorporatePacket(input)
+  const prefix=JSON.stringify({version:'srm-corporate-revision-v1',source:CORPORATE_SOURCE,publicationSchemaDigest})
+  // Exactly the existing JSON envelope and revision bytes; the packet body was
+  // serialized and validated before the detached graph was frozen.
+  return hash(prefix.slice(0,-1)+',"packet":'+packetBody(packet)+'}')
 }
 
 export function createSrmCorporateSourceStore(options: {
@@ -157,7 +175,7 @@ export function createSrmCorporateSourceStore(options: {
       if(options.readyReportSchemaDigest&&(!/^[a-f0-9]{64}$/.test(options.readyReportSchemaDigest)||!documents))return unavailable()
       // Capture once before awaiting. HTTP callers never supply owner IDs,
       // evidence IDs, write callbacks or a mutable body after admission.
-      const packet = readCorporatePacket(input), body = JSON.stringify(packet)
+      const packet = readCorporatePacket(input), body = packetBody(packet)
       const manifest = { bodyDigest: hash(body), nip: packet.nip, version: CORPORATE_PUBLICATION_VERSION }
       const result = await measureSupplierStage('CORPORATE_PUBLICATION',()=>host.ingest({ resourceId: 'srm-corporate:' + packet.nip, payload: manifest, idempotencyKey }, async (_manifest, client, context) => {
         await verify(client)

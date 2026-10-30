@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {createHash} from 'node:crypto'
 import { readCorporatePacket, corporateRevisionKey, unrequestedCorporateGeneral, CORPORATE_PUBLICATION_VERSION, CORPORATE_SOURCE } from './corporate-source-store'
 import { mapMgbiFinancialRecords } from './mgbi-financial'
 import { decodeMsrOriginal } from './msr-source'
@@ -25,6 +26,41 @@ test('closed SOURCE packet preserves original financial mapping and detached dat
   assert.deepEqual(result, input); assert.notEqual(result, input)
   assert.equal(result.facts.find(f => f.metricCode === 'BS_A_CA')!.amount, '300')
   input.general.data.legalName = 'changed'; assert.equal(result.general.data!.legalName, 'Synthetic Company')
+})
+
+test('captured corporate data stays detached and immutable across revision and publication preparation',async()=>{
+  const input=packet(),captured=readCorporatePacket(input),schema='a'.repeat(64)
+  const expected=createHash('sha256').update(JSON.stringify({version:'srm-corporate-revision-v1',
+    source:CORPORATE_SOURCE,publicationSchemaDigest:schema,packet:JSON.parse(JSON.stringify(input))})).digest('hex')
+  assert.equal(corporateRevisionKey(captured,schema),expected)
+  assert.equal(readCorporatePacket(captured),captured)
+  const check=(value:unknown):void=>{
+    if(value&&typeof value==='object'){
+      assert(Object.isFrozen(value))
+      for(const child of Object.values(value))check(child)
+    }
+  }
+  check(captured)
+  assert.equal(Reflect.set(captured.general.data!,'legalName','changed'),false)
+  assert.equal(Reflect.deleteProperty(captured.facts[0],'amount'),false)
+  await Promise.resolve()
+  input.general.data.legalName='changed after capture'
+  assert.equal(captured.general.data!.legalName,'Synthetic Company')
+  assert.equal(corporateRevisionKey(captured,schema),expected)
+  assert.notEqual(corporateRevisionKey(input,schema),expected)
+})
+
+test('a frozen caller value or clone cannot forge a classified packet capture',()=>{
+  const captured=readCorporatePacket(packet())
+  for(const mutate of [
+    (p:any)=>{p.ownerOrganisationId='11111111-1111-4111-8111-111111111111'},
+    (p:any)=>{p.facts[0].sourcePath='private.archive'},
+    (p:any)=>{p.financial.source.provider='VERCLY'},
+  ]){
+    const changed=structuredClone(captured);mutate(changed);Object.freeze(changed)
+    assert.throws(()=>readCorporatePacket(changed),TypeError)
+    assert.throws(()=>corporateRevisionKey(changed,'a'.repeat(64)),TypeError)
+  }
 })
 
 test('Financial-only publication requires General absence and cannot invent its provenance',()=>{

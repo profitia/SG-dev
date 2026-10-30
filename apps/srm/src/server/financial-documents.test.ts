@@ -52,6 +52,24 @@ test('fresh document RETURNING reuses only complete actual rows with the same in
   await assert.rejects(prepareFreshFinancialDocuments(invalid.client,archiveOrg,archiveNip,invalid.pages));
  }
 });
+test('protected canonical document bytes are sufficient without a second JSON column',async()=>{
+ const f=freshPreparation({returning:true}),expected=structuredClone(f.stored.document_json);
+ Reflect.deleteProperty(f.stored,'document_json');
+ const [actual]=await prepareFreshFinancialDocuments(f.client,archiveOrg,archiveNip,f.pages);
+ assert.deepEqual(actual,{...expected,sourceKrs:'0000217580'});
+ const independent=freshPreparation({returning:true});
+ independent.stored.document_json={...independent.stored.document_json,recordId:'untrusted-second-copy'};
+ const [verified]=await prepareFreshFinancialDocuments(independent.client,archiveOrg,archiveNip,independent.pages);
+ assert.equal(verified.recordId,expected.recordId);
+});
+test('canonical-only document decoding refuses malformed or mismatched bytes with a generic error',async()=>{
+ for(const text of ['{private invalid json','null',JSON.stringify({recordId:'another-document'})]){
+  const f=freshPreparation({returning:true,stored:{document_text:text,
+   document_jsonb_sha256:createHash('sha256').update(text).digest('hex')}});
+  await assert.rejects(prepareFreshFinancialDocuments(f.client,archiveOrg,archiveNip,f.pages),
+   error=>error instanceof Error&&error.message==='Financial document identity or checksum mismatch');
+ }
+});
 test('fresh preparation validates locked archive once and returns actual protected documents',async()=>{
  const f=freshPreparation(),documents=await prepareFreshFinancialDocuments(f.client,archiveOrg,archiveNip,f.pages);
  assert.equal(documents.length,1);assert.equal(documents[0].recordId,f.stored.record_id);

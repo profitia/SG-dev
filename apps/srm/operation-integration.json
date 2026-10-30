@@ -7011,5 +7011,40 @@
     "stagingProductionPilotsChanged": false,
     "runtimeDeploymentClaimed": false,
     "livePerformanceThresholdsClaimed": false
+  },
+  "freshDataCopyRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "scope": "IMMUTABLE_CORPORATE_PACKET_AND_CANONICAL_DOCUMENT_WIRE_ONLY",
+    "targetEnvironment": "development",
+    "platformVersion": "1.32.3",
+    "previousReceiptSourceSha": "a921dfc23d1e72ea10750993515fb6c41f0bd90b",
+    "previousReceiptDigest": "139f62f98051e0979cfa316e11a91a0537bfcebfb427f8f9b082dc5320afaec3",
+    "applicationSourceDigests": {
+      "scripts/corporate-source.integration.test.mjs": "df86f1a6f8ec16947a66c92e4f6d77c321a87520b41ed8bc16f16d58158f7085",
+      "scripts/native-execution-adoption.test.mjs": "7a19be781f379cd599566b55ca4ad29fb8acb5bae7a625a2c815542c44a0cafd",
+      "scripts/request-quota-adoption.test.mjs": "0f69288f32c21e6ee1ed7a256e79f5c45e47a8822c8dfc76a6fa077a43a0fd24",
+      "scripts/rural-location-release.test.mjs": "a4c92198f034063792b817632288ddb6babace8405bf34f136d62f8739e4dff2",
+      "scripts/xray-performance-adoption.test.mjs": "4cb5a11b361cca7cd41df3ba57306be1ba2dcfe61b72cb0676d13015b9bbd5ac",
+      "scripts/xray-workflow-contract.test.ts": "17402d180e771dd3d87b6afe1a1c52a8ad2428fb3e4ccd6c889c0104c4a6f92c",
+      "src/server/corporate-source-store.test.ts": "60870f2a5f674def40a1fb561895b164aa6944aa098b0d4e822faf9718b550d3",
+      "src/server/corporate-source-store.ts": "27605822dd8ae9fd0b2ae00f2d3e217c0b4d5178e7fafe214259856403ca69f3",
+      "src/server/financial-documents.test.ts": "5fec98afc547d4f8716deeb338c206f8896f0780e40ad580af5c27f195b5dbdc",
+      "src/server/financial-documents.ts": "21895df015351d4f693018b31af7b8c72ea0bda056e68ecc03d5f2cb037421e4",
+      "src/server/peer-read-boundary.test.ts": "9954f84bfacc1ae724601340e4822dae0ed4fccc608800d3374c41c4e479bbf4",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "d5a62ff3818100945fee564d2db2d76e9e244e88c2566b484799186e22b46773"
+    },
+    "moduleOwnedImmutableDataOnly": true,
+    "canonicalDocumentChecksumVerified": true,
+    "revisionKeysByteCompatible": true,
+    "currentAuthorityAndRollbackPreserved": true,
+    "providerAndRoutingPreserved": true,
+    "authorizationChanged": false,
+    "rlsChanged": false,
+    "schemaChanged": false,
+    "providerPolicyChanged": false,
+    "uiChatMapsChanged": false,
+    "excludedEnvironmentsChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "livePerformanceThresholdsClaimed": false
   }
 }
