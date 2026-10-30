@@ -47,7 +47,9 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
       const body=await response.json() as PciPreparationResponse
       if(!response.ok||body.status!=='PREPARED')throw Error('PREPARATION_UNAVAILABLE')
       setPreparation({status:'ready',data:body.preparation,error:null})
-    }catch(e){if(!abort.signal.aborted&&active.current&&version===generation.current){if(e instanceof Error&&e.message==='SESSION_UNAVAILABLE'){onAccessLost();onClose()}else setPreparation({status:'error',data:null,error:'Nie udało się sprawdzić notowań. Ponów sprawdzenie dostępności danych.'})}}},300)
+    }catch(e){if(!abort.signal.aborted&&active.current&&version===generation.current)setPreparation({status:'error',data:null,error:e instanceof Error&&e.message==='SESSION_UNAVAILABLE'
+      ?'Chwilowo nie można potwierdzić sesji. Dane pozostają zachowane. Ponów sprawdzenie dostępności danych.'
+      :'Nie udało się sprawdzić notowań. Ponów sprawdzenie dostępności danych.'})}},300)
     return()=>{clearTimeout(timer);abort.abort()}
   },[step,name,components,purchase,prepareAttempt])
   const changed=()=>{generation.current++;preparationAbort.current?.abort();setPreparation({status:'idle',data:null,error:null});dirty.current=true;setResult(null);setError(null);if(saveStatus==='saved')setSaveStatus('idle')}
@@ -64,7 +66,9 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
         throw Error(message)
       }
       if(active.current){setResult(pciResult(body,components));setStep('result')}
-    }catch(e){if(active.current&&version===generation.current){if(e instanceof Error&&e.message==='SESSION_UNAVAILABLE'){onAccessLost();onClose()}else setError(e instanceof Error?e.message:'Analiza niedostępna.')}}
+    }catch(e){if(active.current&&version===generation.current)setError(e instanceof Error&&e.message==='SESSION_UNAVAILABLE'
+      ?'Chwilowo nie można potwierdzić sesji. Ponów analizę po odzyskaniu połączenia.'
+      :e instanceof Error?e.message:'Analiza niedostępna.')}
     finally{inflight.current=false;if(active.current)setBusy(false)}
   }
   async function saveCategory(){

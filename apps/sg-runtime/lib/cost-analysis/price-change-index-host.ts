@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import type { BenchmarkAnalyticsSeriesResult, SavedBenchmark } from '../benchmark/contracts'
 import { categoryDraftStatus } from '../category/draft'
 import { createCalendarTargetPeriod, normalizeForecastSourceFrequency } from '../forecast/cadence'
-import { pciIssueMessage } from './price-change-index-messages'
+import { pciIssueMessage,pciCategoryIssues } from './price-change-index-messages'
 import type { CciMarketDataRequest } from './market-data-contracts'
 import { calculateCciFromMarketData } from './node-integration'
 import { calculateCciIndexedPrice, CciIndexedPriceValidationError } from './cci-indexed-price'
@@ -58,7 +58,7 @@ export function analysePriceChangeIndex(input:PciAnalysisRequest,selected:readon
     return refuse('REFERENCE_DATE_OUTSIDE_HISTORY','Wybrana data odniesienia jest poza dostępną historią. Sprawdź dostępność danych każdego komponentu. Data zakupu nie została zmieniona.')
   const policyRef=request.components[0].qualification.evidenceRef
   const core=calculateCciFromMarketData(request)
-  if (core.status==='REFUSED') return {contractVersion:PCI_JOURNEY_VERSION,status:'REFUSED',issues:core.issues.map(i=>({...i,message:pciIssueMessage(i)})),core}
+  if (core.status==='REFUSED') return {contractVersion:PCI_JOURNEY_VERSION,status:'REFUSED',issues:pciCategoryIssues(core.issues,input,histories),core}
   if (core.calculation.nodes.length>25000) return refuse('DATA_VOLUME_LIMIT','Pełna historia przekracza limit tej analizy. Nie została sztucznie skrócona.')
   try {
     const indexedPrice=calculateCciIndexedPrice({calculation:core.calculation,basePrice:{amount:input.purchase.amount,
