@@ -1,0 +1,118 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+  "environment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "deployedSha": "fbb78c9560d84031239780ee52bf47df4b923394",
+  "deployId": "dep-dbiedt88v5cc738m3730",
+  "activated": true,
+  "implementation": "IMMUTABLE_POLICY_SUCCESSOR_WITH_REMAINING_ALLOWANCE",
+  "rejectedCandidate": "db/private-store/030-mgbi-record-response-bound.sql",
+  "operatorPolicySql": "db/private-store/031-mgbi-record-bound-versioned.sql",
+  "policyIds": {
+    "v1": "3892aef8-2616-42f6-9b43-50e3e4d7dbef",
+    "v2": "36883038-34b4-4929-9417-4ab66b54730a",
+    "v3": "09062e56-639a-40eb-b437-d66d9515ef0f"
+  },
+  "activationHistoricalUsed": 70,
+  "activationSuccessorCapacity": 930,
+  "cumulativeAttemptLimit": 1000,
+  "maximumResponseBytes": 2097152,
+  "originalFileLimit": 30,
+  "originalClaimsAfterAcceptance": 12,
+  "storedOriginalsAfterAcceptance": 7,
+  "original19MembershipsRestoredBeforeCommit": true,
+  "otherServicesNotMutatedByThisTask": true,
+  "previousPolicy": {
+    "base": {
+      "unit": "UPSTREAM_ATTEMPT_ADMISSION",
+      "origin": "https://api.mgbi.pl",
+      "status": "ACTIVE",
+      "version": 1,
+      "capacity": 1000,
+      "policy_id": "3892aef8-2616-42f6-9b43-50e3e4d7dbef",
+      "source_id": "srm.provider.mgbi",
+      "transport": "HTTPS",
+      "expires_at": "2026-11-19T00:00:00+00:00",
+      "login_role": "srm_provider_development_source",
+      "path_rules": [
+        {
+          "path": "/v1/models/pl-krs-wp-record/records",
+          "method": "GET"
+        },
+        {
+          "path": "/v1/models/pl-krs-rdf-record/records",
+          "method": "GET"
+        }
+      ],
+      "quota_mode": "METERED",
+      "source_ref": "SRM-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+      "timeout_ms": 20000,
+      "window_end": "2026-11-19T00:00:00+00:00",
+      "resource_id": "srm-provider:mgbi",
+      "window_start": "2026-10-20T00:00:00+00:00",
+      "admitted_count": 70,
+      "configuration_version": "srm-native-supplier-e1-v1",
+      "maximum_request_bytes": 8192,
+      "maximum_response_bytes": 1048576
+    },
+    "native": {
+      "status": "ACTIVE",
+      "version": 1,
+      "policy_id": "3892aef8-2616-42f6-9b43-50e3e4d7dbef",
+      "expires_at": "2026-11-19T00:00:00+00:00",
+      "path_rules": [
+        {
+          "path": "/v1/models/pl-krs-wp-record/records",
+          "method": "GET",
+          "requestFormat": "NONE"
+        },
+        {
+          "path": "/v1/models/pl-krs-rdf-record/records",
+          "method": "GET",
+          "requestFormat": "NONE"
+        }
+      ],
+      "source_ref": "SRM-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+      "completion_mode": "ADMITTED_ATTEMPT_CURRENT_SETTLEMENT",
+      "credential_mode": "SERVER_HEADERS",
+      "redirect_origins": [],
+      "base_policy_version": 1,
+      "maximum_response_bytes": 1048576
+    }
+  },
+  "acceptance": {
+    "TERG": {
+      "nip": "7671004218",
+      "mode": "LIVE_FRESH_STANDALONE",
+      "generalStatus": "SUCCESS",
+      "financialStatus": "SUCCESS",
+      "completeBasicReport": true,
+      "browserMs": 13442.6,
+      "handlerMs": 11711.55,
+      "readyBrowserMs": 1224.9
+    },
+    "EuroNet": {
+      "nip": "5270005984",
+      "mode": "LIVE_FRESH_SG2",
+      "generalStatus": "SUCCESS",
+      "financialStatus": "SUCCESS",
+      "completeBasicReport": true,
+      "browserMs": 9614.6,
+      "handlerMs": 9159.513,
+      "readyBrowserMs": 1255
+    }
+  },
+  "freshPerformanceSuccess": false,
+  "readyMeasuredWithin2Seconds": true,
+  "standaloneAndSg2BackendShared": true,
+  "noCacheReset": true,
+  "historyDeleted": false,
+  "rlsOrAuthChanged": false,
+  "sdkChanged": false,
+  "operatorPolicySha256": "6f5e4f553ee8ebef7a499e7f3e4c8e89c6f7a98b4eea8951ad476b1a1f5d9ce4",
+  "operatorTestSha256": "3caa8b9cf938b03b55bc19d4878930edc4585c119dd73ecff06d2b8f0c1b609c",
+  "activationPurpose": "Retain exact executed operator procedure; application remains at deployed PR809 SHA.",
+  "localValidation": "Set SRM_RECORD_BOUND_TEST_OWNER_URL to owned localhost synthetic platform_private database and SRM_RECORD_BOUND_TEST_DIRECTORY to its srm-mgbi-bound-pg-* temporary data directory; node --test scripts/mgbi-record-bound-activation.test.mjs",
+  "priorReceiptsUnchanged": true
+}

@@ -91,6 +91,27 @@ function isPinnedAdpGovernanceReview(files) {
     && files.every(file => Object.hasOwn(ADP_GOVERNANCE_REVIEW.blobs, file?.filename ?? '')
       && file?.sha === ADP_GOVERNANCE_REVIEW.blobs[file.filename])
 }
+// Owner-authorised full Development plan: one frozen G1 review, no runtime/CI access.
+export const LIMITS_G1_GOVERNANCE_REVIEW = Object.freeze({
+  prNumber: 814,
+  branch: 'architecture/package-limits-dashboard-g1-20261030',
+  sourceSha: 'b6f1772ecc23b9efcbac6cb4e7265cfbea375c42',
+  blobs: Object.freeze({
+    "Canon/evidence/2026-10-30-package-limits-dashboard-g1-onboarding.md": "5cc118f2867d89945a17d8745c8f64fe036a9a96",
+    "Canon/registries/architecture-onboarding-v1.json": "ea344b190af2a8383a3dee47f0279f4deb39cfaa",
+    "Canon/registries/current-architecture-baseline-v1.json": "21ef8acac5ff5e978b32c2662a84c0e7573a0ad6",
+    "Canon/registries/governance-manifest-v2.json": "bea6b744f88e63ab7f444596857d11a5ca2e8ec2",
+    "Canon/runbooks/package-limits-development-v1.md": "602097235f734d539041189163e03844190f57ff",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "85eec6853b67b1945392661c3842bcf1349ab42c",
+    "scripts/governance/krs-registry-routing.test.mjs": "301edea91a5a973479f81e649dcbce57c875a610",
+    "scripts/governance/package-limits-routing.test.mjs": "093ae020179a975ff71904ccfd82ae031ed6c871"
+}),
+})
+function isPinnedLimitsG1Review(files) {
+  return Array.isArray(files) && files.length === Object.keys(LIMITS_G1_GOVERNANCE_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(LIMITS_G1_GOVERNANCE_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === LIMITS_G1_GOVERNANCE_REVIEW.blobs[file.filename])
+}
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -102,7 +123,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   const krsReview = files.length === KRS_GOVERNANCE_REVIEW_FILES.length
     && files.every(file => KRS_GOVERNANCE_REVIEW_FILES.includes(file?.filename))
-  const closedReview = krsReview || isPinnedAdpGovernanceReview(files)
+  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files)
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -125,6 +146,8 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
     assertArchitectureFiles(pr, files, repositoryRoot)
     if (isPinnedAdpGovernanceReview(files)
       && (pr.number !== ADP_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== ADP_GOVERNANCE_REVIEW.branch)) fail('ADP_GOVERNANCE_REVIEW_IDENTITY_REJECTED')
+    if (isPinnedLimitsG1Review(files)
+      && (pr.number !== LIMITS_G1_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== LIMITS_G1_GOVERNANCE_REVIEW.branch)) fail('LIMITS_G1_REVIEW_IDENTITY_REJECTED')
   }
   return expectedSha
 }

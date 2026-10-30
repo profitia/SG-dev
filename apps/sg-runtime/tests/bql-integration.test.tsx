@@ -22,7 +22,7 @@ test('BQL labels are localized, explainable, do not claim history readiness and 
   const before=globalThis.fetch;globalThis.fetch=()=>{throw Error('Unexpected BQL request')}
   try{for(const locale of ['pl','en'] as const){
     const html=renderToStaticMarkup(<BenchmarkQualification candidate={inventory} locale={locale} modelContext="PCI"/>)
-    assert.match(html,/data-semantic-class="QUANTITY"/);assert.match(html,/bql-semantic\/1.0.0/)
+    assert.match(html,/data-semantic-class="QUANTITY"/);assert.match(html,/bql-semantic\/1.0.1/)
     assert.ok(html.includes(locale==='pl'?'Dostępność historii':'History and period availability'))
     assert.ok(html.includes(locale==='pl'?'nie cenę':'not a price'))
   }}finally{globalThis.fetch=before}

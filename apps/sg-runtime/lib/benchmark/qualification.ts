@@ -1,7 +1,7 @@
 import type { BenchmarkCandidate, SavedBenchmark } from './contracts'
 
 /** No I/O, authorization, history or calculation. Recomputed from the current metadata snapshot. */
-export const BQL_RULESET_VERSION = 'bql-semantic/1.0.0' as const
+export const BQL_RULESET_VERSION = 'bql-semantic/1.0.1' as const
 export type BenchmarkMeaning = 'PRICE_LEVEL' | 'PRICE_INDEX' | 'QUANTITY' | 'RATE' | 'OTHER' | 'UNDETERMINED'
 export type SemanticReason = 'UNIT_PRICE' | 'PRICE_INDEX' | 'PHYSICAL_QUANTITY' | 'RELATIVE_RATE' | 'EXCHANGE_RATE' | 'NON_PRICE_INDEX' | 'MONETARY_AGGREGATE' | 'CONFLICTING_METADATA' | 'INSUFFICIENT_METADATA'
 export interface BenchmarkSemanticProfile {
@@ -50,7 +50,7 @@ export function classifyBenchmark(input: Input): BenchmarkSemanticProfile {
   const percentUnit = /%|\b(?:percent(?:age)?|procent|basis points?|bps)\b/.test(units)
   const indexUnit = /\b(?:index|indeks|points?|punkty|pts)\b|\b\d{4}(?:\s*[:/-]\s*\d{1,2})?\s*=\s*100\b/.test(units)
   const priceContext = /\b(?:prices?|cena|ceny|cen|spot|futures?|forward|quotation|quotes?|notowania)\b/.test(names)
-  const priceIndexContext = /\b(?:price indices|price index|price indexes|producer prices|consumer prices|indeks cen|indeks cenowy|ppi|cpi)\b/.test(names)
+  const priceIndexContext = /\b(?:price[\s,]+(?:indices|index|indexes)|producer prices|consumer prices|indeks cen|indeks cenowy|ppi|cpi)\b/.test(names)
   const quantityContext = /\b(?:inventor(?:y|ies)|production|output|consumption|tonnage|volumes?|zapasy|zapasow|produkcja|produkcji|zuzycie)\b|\bstocks?\b(?!\s+prices?)/.test(names)
   const relativeContext = /\b(?:rates?|yields?|interest|shares?|returns?|growth|changes?|stopa|stopy|udzial|zmiana|zmiany|rentownosc|inflation|inflacja)\b/.test(names)
   const fxContext = /\b(?:exchange rates?|currency pair|foreign exchange|kurs walut|kurs wymiany)\b/.test(names)
@@ -60,7 +60,9 @@ export function classifyBenchmark(input: Input): BenchmarkSemanticProfile {
     rulesetVersion: BQL_RULESET_VERSION, providerCode: input.providerSeries.provider.providerCode,
     seriesId: input.providerSeries.providerSeriesId, classification, reason, evidence,
   })
-  const dimensionConflict = (percentUnit && (indexUnit || physicalUnit || currency)) || (indexUnit && (physicalUnit || currency))
+  // An explicit price index may retain its market currency (e.g. "CNY Index").
+  // It is still an index, never a nominal currency-per-product observation.
+  const dimensionConflict = (percentUnit && (indexUnit || physicalUnit || currency)) || (indexUnit && (physicalUnit || (currency && !priceIndexContext)))
   const declaredCurrencies = [...new Set((currencies.match(/\b(?:usd|eur|pln|gbp|chf|jpy|cny|rmb|cad|aud|nzd|nok|sek|dkk|inr|brl|zar|krw|mxn|rub)\b/g) ?? []))]
   const unitCurrencies = [...new Set((units.match(/\b(?:usd|eur|pln|gbp|chf|jpy|cny|rmb|cad|aud|nzd|nok|sek|dkk|inr|brl|zar|krw|mxn|rub)\b/g) ?? []))]
   if (dimensionConflict || physicalDimensions>1 || (!currencyPair && declaredCurrencies.length && unitCurrencies.some(c => !declaredCurrencies.includes(c)))) return result('UNDETERMINED', 'CONFLICTING_METADATA')
