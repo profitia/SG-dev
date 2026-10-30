@@ -9,6 +9,20 @@ import {PREPARED_REPORT_RULES} from '../src/server/ready-report.ts'
 import './fresh-report-release.test.mjs'
 const hash=value=>createHash('sha256').update(value).digest('hex')
 const read=file=>fs.readFileSync(new URL('../'+file,import.meta.url))
+const assertCurrentConsumerSource=(file,digest)=>{
+ const current=read(file)
+ if(file!=='../sg-runtime/operation-integration.json')return assert.equal(hash(current),digest,file)
+ const {pciLiveAcceptanceStabilization:pci,...preserved}=JSON.parse(current)
+ // Admit only the approved additive PCI record; retain the SRM historical hash.
+ assert(pci,'approved additive SG2 PCI receipt is required')
+ assert.equal(hash(JSON.stringify(pci)),'bdb51cd9af2ebb03d508e2610d0a57d9aa28a070487ae5772d1cca03c2d233fb','approved SG2 PCI record')
+ const previous=execFileSync('git',['show',pci.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'])
+ assert.equal(hash(previous),digest,'historical '+file)
+ assert.equal(pci.previousReceiptSha256,digest,'SG2 previous receipt binding')
+ assert.deepEqual(preserved,JSON.parse(previous),'all historical SG2 entries remain unchanged')
+ for(const[source,expected]of Object.entries(pci.applicationSourceDigests))assert.equal(hash(read('../sg-runtime/'+source)),expected,'current SG2 '+source)
+ for(const[source,expected]of Object.entries(pci.publicUiSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../../../'+source,import.meta.url))),expected,'current PCI '+source)
+}
 const refinement=JSON.parse(read('operation-integration.json')).freshRuntimeRefinement
 const settled=JSON.parse(read('operation-integration.json')).settledExternalFailureRecovery
 const clock=JSON.parse(read('operation-integration.json')).sourceLeaseClockRecovery
@@ -32,7 +46,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):rural?.applicationSourceDigests[file]?execFileSync('git',['show',rural.authorityBaseSha+':'+posix.normalize('apps/srm/'+file)]):peer?.applicationSourceDigests[file]?execFileSync('git',['show',peer.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fresh.applicationSourceDigests[file]?execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRefinement(file)),digest,'historical '+file)
- for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests}))assertCurrentConsumerSource(file,digest)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))
@@ -106,5 +120,5 @@ test('Source clock adoption preserves complete history and exact producer while 
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
  }
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assertCurrentConsumerSource(file,digest)
 })
