@@ -54,7 +54,9 @@
     "react-dom": "^18.3.1",
     "sharp": "0.35.5",
     "zod": "^3.23.8",
-    "@profitia/srm-adp-ui": "file:../../packages/srm-adp-ui"
+    "@profitia/srm-adp-ui": "file:../../packages/srm-adp-ui",
+    "@profitia/maps-embed": "file:../../packages/maps-embed",
+    "@profitia/maps-contracts": "file:../../packages/maps-contracts"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
