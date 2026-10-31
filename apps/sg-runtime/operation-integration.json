@@ -5340,7 +5340,7 @@
       "components/appshell/platform-appshell.css": "cd8881902f37389c6197be46eb89610328f4b7620b3f4fea511242b4abbf0dff",
       "components/appshell/platform-appshell.tsx": "6a2802b5db188d1cd2446d7f28113056413b118f60bffed1052c40d50d75325c",
       "components/appshell/xray-module-host.tsx": "b8d302e4707a025734bb003d64872311b5640fd5bceb3da73993d63e85c3800e",
-      "docs/xray-full-ui-parity-20261031.md": "c852c528403ccc59b6dc586bbcb83b5e37876b3780900a27d74d2b701305e530",
+      "docs/xray-full-ui-parity-20261031.md": "1c400e00fc5b9284c1aa1deed1259225713138dc38f364facaa267b054316951",
       "lib/appshell/xray-full-transport.ts": "9d030208706df73a4ab3a8761cd9054a03b135502141e2060156b96488c6f76b",
       "lib/platform/xray-presentation-gateway.ts": "f71ddfe8872aefb69787488526d5bb692dde0d9fbf2c98b68c51a29ceefcba9a",
       "package-lock.json": "2fab9fb1d1c9fb5f7805eda1d8e54d4f467fe4fc55433efbadc65578d82226d9",
