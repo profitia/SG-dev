@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -720,4 +720,66 @@ test('missing proof is rejected and proof command refuses a credential before re
   const result = spawnSync(process.execPath, [path.join(authorityRoot, 'scripts/governance/controlled-package-ci.mjs'), 'proof'], {encoding: 'utf8', env: {...process.env, NPM_TOKEN: 'synthetic-canary-no-authority', NODE_AUTH_TOKEN: '', GH_TOKEN: ''}})
   assert.notEqual(result.status, 0)
   assert.match(result.stderr, /CREDENTIAL_PRESENT_IN_EXECUTION_PHASE/)
+})
+
+function readonlyMissCandidate() {
+  const review=READONLY_MISS_REPORT_PRODUCER_REVIEW,p=pr()
+  p.number=review.prNumber;p.head.ref=review.branch;p.head.sha=review.sourceSha;p.base.sha=sha
+  const files=Object.entries(review.blobs).map(([filename,blob])=>({filename,status:'added',sha:blob}))
+  p.changed_files=files.length
+  return {p,files}
+}
+test('read-only MISS review is frozen and admits only the exact nine additive producer blobs',()=>{
+  const review=READONLY_MISS_REPORT_PRODUCER_REVIEW,{p,files}=readonlyMissCandidate()
+  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,9)
+  assert.equal(review.prNumber,831);assert.equal(review.sourceSha,'358f9eaf3a835c39a6d1e75900179d0300b405c7')
+  assert.equal(review.branch,'architecture/current-fresh-miss-20261031')
+  assert(files.every(f=>f.status==='added' && (f.filename.startsWith('packages/platform-contracts/readonly-miss-report/')
+    || f.filename==='apps/architecture-lab/test/readonly-miss-report.test.mjs')))
+  assert(!files.some(f=>f.filename.includes('/current-fresh-report/')))
+  assertArchitectureFiles(p,files)
+  assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+})
+test('read-only MISS review refuses another PR, source SHA or internal branch even with matching caller metadata',()=>{
+  for(const mutate of [p=>p.number++,p=>p.head.ref='architecture/another-candidate',p=>p.head.sha=other]){
+    const {p,files}=readonlyMissCandidate();mutate(p)
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('read-only MISS review preserves trusted main, owner, repository and target fences',()=>{
+  for(const mutate of [p=>p.user.login='attacker',p=>p.head.repo.full_name='profitia/fork',p=>p.base.repo.full_name='other/SG-dev',p=>p.base.ref='staging',p=>p.state='closed']){
+    const {p,files}=readonlyMissCandidate();mutate(p)
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+  for(const change of [{ref:'refs/pull/831/merge'},{event:'pull_request_target'},{triggeringActor:'attacker'},{workflowRef:REPOSITORY+'/'+WORKFLOW+'@refs/heads/untrusted'}]){
+    const {p,files}=readonlyMissCandidate()
+    rejection(()=>selectCandidate({...context(),...change},p,p.head.sha,{files}))
+  }
+})
+test('read-only MISS review rejects omitted, extra, duplicate, modified, renamed and substituted blobs',()=>{
+  for(const mutate of [files=>files.pop(),files=>files.push({filename:'packages/platform-contracts/src/extra.mjs',status:'added',sha}),
+    files=>files[0]={...files[1]},files=>files[0].status='modified',files=>files[0].previous_filename='other.mjs',files=>files[0].sha=other]){
+    const {p,files}=readonlyMissCandidate();mutate(files);p.changed_files=files.length
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('read-only MISS admission cannot include old FRESH, SDK, product, workflow or registry mutations',()=>{
+  for(const filename of ['packages/platform-contracts/current-fresh-report/package.json','packages/platform-contracts/src/operation-context.mjs',
+    'apps/srm/operation-integration.json','apps/sg-runtime/package.json',WORKFLOW,'Canon/registries/profitia-projects-v1.json']){
+    const {p,files}=readonlyMissCandidate();files[0]={filename,status:'modified',sha}
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('read-only MISS API resolution binds the complete exact file list and rechecks candidate metadata',async()=>{
+  const {p,files}=readonlyMissCandidate(),calls=[]
+  const request=async endpoint=>{calls.push(endpoint);return {data:structuredClone(endpoint.includes('/files?')?files:p)}}
+  const resolved=await resolveCandidateAdmission(context(),'831',p.head.sha,request)
+  assert.equal(resolved.sha,p.head.sha);assert.deepEqual(resolved.admission.files,files);assert.equal(calls.length,3)
+  let reads=0
+  const changing=async endpoint=>{
+    if(endpoint.includes('/files?'))return {data:structuredClone(files)}
+    const value=structuredClone(p);if(++reads===2)value.base.sha=other
+    return {data:value}
+  }
+  await assert.rejects(resolveCandidateAdmission(context(),'831',p.head.sha,changing),/CANDIDATE_CHANGED_DURING_RESOLUTION/)
 })
