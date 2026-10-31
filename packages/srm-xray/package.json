@@ -1,6 +1,6 @@
 {
   "name": "@profitia/srm-xray",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "description": "Reusable SRM X-Ray section mounts and host contract",
   "type": "module",
@@ -44,9 +44,46 @@
     "./workflow-controller": {
       "types": "./src/workflow-controller.ts",
       "default": "./src/workflow-controller.ts"
+    },
+    "./full-report": {
+      "types": "./src/full-report.tsx",
+      "default": "./src/full-report.tsx"
+    },
+    "./full-report.css": "./src/full-report.css",
+    "./full-workflow": {
+      "types": "./src/full-workflow.tsx",
+      "default": "./src/full-workflow.tsx"
+    },
+    "./full-report-operations": {
+      "types": "./src/full-report-operations.ts",
+      "default": "./src/full-report-operations.ts"
+    },
+    "./supplier-search-gateway": {
+      "types": "./src/supplier-search-gateway.ts",
+      "default": "./src/supplier-search-gateway.ts"
+    },
+    "./supplier-location-controller": {
+      "types": "./src/supplier-location-controller.ts",
+      "default": "./src/supplier-location-controller.ts"
+    },
+    "./supplier-map-readiness": {
+      "types": "./src/supplier-map-readiness.ts",
+      "default": "./src/supplier-map-readiness.ts"
+    },
+    "./supplier-map-startup": {
+      "types": "./src/supplier-map-startup.ts",
+      "default": "./src/supplier-map-startup.ts"
+    },
+    "./supplier-web-request": {
+      "types": "./src/supplier-web-request.ts",
+      "default": "./src/supplier-web-request.ts"
     }
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.2.4"
+  },
+  "scripts": {
+    "build:presentation-css": "node scripts/build-full-report-css.mjs",
+    "check:presentation-css": "node scripts/build-full-report-css.mjs --check"
   }
 }
