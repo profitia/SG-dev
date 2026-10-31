@@ -26,8 +26,10 @@ const recordBound=JSON.parse(read('operation-integration.json')).mgbiRecordRespo
 const liveBql=JSON.parse(read('operation-integration.json')).bqlLiveAcceptanceIntegrityContinuation
 const dataCopy=JSON.parse(read('operation-integration.json')).freshDataCopyRecovery
 const documentPolicy=JSON.parse(read('operation-integration.json')).freshDocumentPolicyRecovery
+const runtimePreparation=JSON.parse(read('operation-integration.json')).runtimePreparationRecovery
+const beforeRuntimePreparation=file=>runtimePreparation?.applicationSourceDigests[file]?execFileSync('git',['show',runtimePreparation.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
 const locationCache=JSON.parse(read('operation-integration.json')).supplierLocationCacheAdoption
-const beforeLocationCache=file=>locationCache?.applicationSourceDigests[file]?execFileSync('git',['show',locationCache.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const beforeLocationCache=file=>locationCache?.applicationSourceDigests[file]?execFileSync('git',['show',locationCache.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRuntimePreparation(file)
 const inventoryReuse=JSON.parse(read('operation-integration.json')).freshInventoryReuseRecovery
 const beforeInventoryReuse=file=>inventoryReuse?.applicationSourceDigests[file]?execFileSync('git',['show',inventoryReuse.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeLocationCache(file)
 const payloadCapture=JSON.parse(read('operation-integration.json')).freshPayloadCaptureAdoption
@@ -69,7 +71,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):rural?.applicationSourceDigests[file]?execFileSync('git',['show',rural.authorityBaseSha+':'+posix.normalize('apps/srm/'+file)]):peer?.applicationSourceDigests[file]?execFileSync('git',['show',peer.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fresh.applicationSourceDigests[file]?execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRefinement(file)),digest,'historical '+file)
- for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests,...bql?.applicationSourceDigests,...bql?.consumerSourceDigests,...resultCapture?.applicationSourceDigests,...liveBql?.applicationSourceDigests,...liveBql?.consumerSourceDigests,...freshBoundary?.applicationSourceDigests,...dataCopy?.applicationSourceDigests,...documentPolicy?.applicationSourceDigests,...payloadCapture?.applicationSourceDigests,...inventoryReuse?.applicationSourceDigests,...locationCache?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests,...bql?.applicationSourceDigests,...bql?.consumerSourceDigests,...resultCapture?.applicationSourceDigests,...liveBql?.applicationSourceDigests,...liveBql?.consumerSourceDigests,...freshBoundary?.applicationSourceDigests,...dataCopy?.applicationSourceDigests,...documentPolicy?.applicationSourceDigests,...payloadCapture?.applicationSourceDigests,...inventoryReuse?.applicationSourceDigests,...locationCache?.applicationSourceDigests,...runtimePreparation?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))
@@ -343,6 +345,20 @@ test('final PCI integration preserves both accepted histories and rejects unappr
 
 
 export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
+ if(Object.hasOwn(receipt,'runtimePreparationRecovery')){
+  const a=receipt.runtimePreparationRecovery,bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
+  assert.equal(a.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');assert.equal(a.scope,'CURRENT_MSR_CLAIM_COMPOSITION_AND_PERSISTED_MARKER_EXPIRY')
+  assert.equal(a.targetEnvironment,'development');assert.equal(a.platformVersion,'1.32.3')
+  assert.equal(a.previousReceiptSourceSha,'f0f3df2b1b720637cc2241dcf946c0a1b610276e');assert.equal(hash(bytes),a.previousReceiptDigest)
+  const {runtimePreparationRecovery,...preserved}=receipt,prior=JSON.parse(bytes);assert.deepEqual(preserved,prior,'Every previous receipt remains immutable')
+  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),["scripts/corporate-source.integration.test.mjs","scripts/native-execution-adoption.test.mjs","scripts/request-quota-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/supplier-delegated-business.integration.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-workflow-contract.test.ts","src/modules/xray/supplier-location-controller.test.ts","src/modules/xray/supplier-location-controller.ts","src/server/company-source-policy.test.ts","src/server/msr-repository.test.ts","src/server/msr-repository.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts","src/server/supplier-native-work-store.ts"])
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readCurrent('apps/srm/'+file)),digest,'Current runtime preparation '+file)
+  for(const key of ["currentWriteClaimBeforeProvider", "receiveCommitBeforeParser", "concurrentClaimUsesActualReceipt", "currentClerkE1RlsPreserved", "persistedMarkerExpiresInOpenView", "googleTimerBoundedToPlatformLimit", "manualCoordinatesAndOrganisationOwnershipPreserved", "sameReadyAndProviderRouting"])assert.equal(a[key],true,key)
+  for(const key of ["sharedSdkChanged", "sqlSchemaOrPolicyChanged", "providerRetriesAdded", "paidAcquisitionsPerformed", "runtimeDeploymentClaimed", "performanceThresholdsClaimed", "excludedEnvironmentChanges"])assert.equal(a[key],false,key)
+  assertCurrentPciIntegrity(prior,file=>Object.hasOwn(a.applicationSourceDigests,posix.relative('apps/srm',file))?readHistorical(a.previousReceiptSourceSha,file):readCurrent(file),readHistorical)
+  return
+ }
+
  if(Object.hasOwn(receipt,'supplierLocationCacheAdoption')){
   const a=receipt.supplierLocationCacheAdoption,bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
   assert.equal(a.taskId,'SRM-XRAY-LOCATION-CACHE-20261031');assert.equal(a.scope,'EXISTING_ORGANISATION_LOCATIONS_AND_BOUNDED_GOOGLE_CACHE')
@@ -699,4 +715,15 @@ test('bounded location cache rejects changed ownership, retention, Source, histo
   const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
  }
  for(const file of ['apps/srm/src/server/supplier-location-geocoding.ts','apps/srm/db/private-store/033-location-geocoding-cache.sql','apps/srm/scripts/location-cache-maintenance.mjs'])assert.throws(()=>assertCurrentPciIntegrity(receipt,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical))
+})
+
+
+test('runtime preparation rejects changed purchase barriers, expiry, authority and source substitution',()=>{
+ const receipt=JSON.parse(read('operation-integration.json'))
+ const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
+ assertCurrentPciIntegrity(receipt,current,historical)
+ for(const mutate of [r=>r.runtimePreparationRecovery.currentWriteClaimBeforeProvider=false,r=>r.runtimePreparationRecovery.receiveCommitBeforeParser=false,r=>r.runtimePreparationRecovery.currentClerkE1RlsPreserved=false,r=>r.runtimePreparationRecovery.persistedMarkerExpiresInOpenView=false,r=>r.runtimePreparationRecovery.performanceThresholdsClaimed=true,r=>r.supplierLocationCacheAdoption.googleCacheAtMost29Days=false,r=>r.runtimePreparationRecovery.applicationSourceDigests['src/server/unaccepted.ts']='0'.repeat(64)]){
+  const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
+ }
+ for(const file of ['apps/srm/src/server/msr-repository.ts','apps/srm/src/server/supplier-native-work-store.ts','apps/srm/src/modules/xray/supplier-location-controller.ts'])assert.throws(()=>assertCurrentPciIntegrity(receipt,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical))
 })
