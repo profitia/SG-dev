@@ -59,6 +59,16 @@ export type MsrStore = {
   project?(candidate:MsrCandidate,projection:MsrProjection,archiveChecksum:string):Promise<void>;
   block(candidate:MsrCandidate,claimId:string,code:string):Promise<void>;
 };
+/** Data-only selection shared by a protected archive read and the transaction
+ * that just prepared that exact archive. It cannot authorize a paid download. */
+export function msrInventoryFromRecords(records:readonly unknown[],nip:string,archiveChecksum:string,allowedKrs?:readonly string[]):NonNullable<Awaited<ReturnType<MsrStore['candidates']>>> {
+  const candidates=selectMsrCandidates(records,nip,allowedKrs);
+  return {candidates,archiveChecksum,
+    licensedXmlRecordIds:records.filter(isLicensedMsrXmlOriginal).map(r=>String((r as Record<string,unknown>).id)),
+    metadataMissing:candidates.some(c=>records.some(r=>{
+      const v=r as Record<string,unknown>;return v.id===c.recordId&&!Object.hasOwn(v,'files');
+    }))};
+}
 export function msrStore(organizationId:string,nip:string,requestId:string,allowedKrs?:readonly string[],pool?:DatabasePool):MsrStore {
   return {
     candidates:() => withOrganization(organizationId, async client => {
@@ -66,12 +76,7 @@ export function msrStore(organizationId:string,nip:string,requestId:string,allow
         "SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'", [organizationId,nip])).rows[0];
       if (!archive) return null;
       projectArchivedFinancialDocuments(archive,organizationId,nip); // checksum, complete inventory and supplier identity
-      const records=financialRecordsFromPages(JSON.parse(archive.payload_text).pages),candidates=selectMsrCandidates(records,nip,allowedKrs);
-      return {candidates,archiveChecksum:archive.payload_jsonb_sha256,
-        licensedXmlRecordIds:records.filter(isLicensedMsrXmlOriginal).map(r=>String((r as Record<string,unknown>).id)),
-        metadataMissing:candidates.some(c=>records.some(r=>{
-        const v=r as Record<string,unknown>;return v.id===c.recordId && !Object.hasOwn(v,'files');
-      }))};
+      return msrInventoryFromRecords(financialRecordsFromPages(JSON.parse(archive.payload_text).pages),nip,archive.payload_jsonb_sha256,allowedKrs);
     },pool),
     claim:(c,id) => withOrganization(organizationId,client => claimMsrSource(client,organizationId,c,id,requestId),pool),
     read:c => withOrganization(organizationId,async client => (await client.query<MsrReceipt>(
