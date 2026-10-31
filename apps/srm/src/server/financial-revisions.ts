@@ -58,7 +58,10 @@ export function financialContentHash(d: FinancialSourceDocument): string | null 
   return digest([d.sourceKrs ?? null,d.scope,d.from,d.to,d.standard,d.schemaName,d.schemaVersion,d.currency,d.scale,
     [...d.columns].sort((a,b)=>a.sourceColumn.localeCompare(b.sourceColumn)),
     d.rows.map(r=>[r.section,r.sourcePath.replaceAll(">", "."),Object.entries(r.amounts).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,canonicalAmount(v)])])
-      .sort((a,b)=>JSON.stringify(a.slice(0,2)).localeCompare(JSON.stringify(b.slice(0,2))))]);
+      // Keep exactly the historical serialized comparison key and collation;
+      // only prepare that immutable key once per row.
+      .map(row=>({key:JSON.stringify(row.slice(0,2)),value:row}))
+      .sort((a,b)=>a.key.localeCompare(b.key)).map(row=>row.value)]);
 }
 
 /** G0: MGBI's correction flag currently carries no replacement/scope evidence.
