@@ -80,3 +80,45 @@ Formalna koordynacja wspólnego E1, wymagana w zleceniu SRM Performance Recovery
 Stosuje się dotychczasowy osobny bootstrap sg2/ z profilem ARCHITECTURE, własnym PMOS, pełnym przeglądem i testami negatywnymi. Stary zaufany main wykonuje rzeczywisty kontrolowany CI dokładnego bootstrapu. Dopiero po jego przyjęciu nowa polityka main może sprawdzić dokładnego producenta817; nowy digest polityki wymaga nowego proof. Techniczna aktualizacja bazy817 może zachować przyjęcie wyłącznie przy identycznych dziesięciu blobach; każda zmiana blobu lub zestawu wymaga nowego przeglądu. Nadal obowiązują owner, API/Git/tree, aktualny HEAD, main-only, dotychczasowe pakiety prywatne i piny, brak lifecycle w fazie poświadczenia, usunięcie poświadczeń przed wykonaniem oraz rzeczywiste testy i weryfikacja proof. Nie zmienia się Environment ani dostępu do infrastruktury. Zwykły revert usuwa jedynie tę klasę.
 
 Przejście kontrolowanego CI nie przyjmuje paczki w SRM, nie daje prawa do deploymentu i nie dowodzi celu FRESH≤6s. Producent i odbiorca zachowują oddzielne zadania oraz dowody. Do SOURCE GO potrzebny jest kompletny wynik CI dokładnego źródła, niezależnie od przejścia samego dopuszczenia.
+
+
+## Projekt zamkniętego przeglądu payload capture — wymaga decyzji ownera
+
+Status tego dodatku: DRAFT_ONLY / OWNER_DECISION_PENDING. Task
+ARCHITECTURE-PAYLOAD-CAPTURE-CI-BOOTSTRAP-CANDIDATE-20261031 przygotowuje
+kandydata polityki; nie upoważnia do jego merge, aktywacji ani SOURCE_GO.
+Aktywny kontroler na main pozostaje niezmieniony do osobnej decyzji.
+
+Proponowana stała PAYLOAD_CAPTURE_PRODUCER_REVIEW obejmuje wyłącznie otwarty
+PR827, gałąź architecture/payload-capture-source-publication-20261031,
+HEAD9d44684b968ca3a067d414f7c450b6016ecc8d19 i dokładnie dziesięć jawnych
+blobów added. Zestaw to sześć plików optional data-only payload-capture1.0.0,
+dwa istniejącego laboratorium i dwa datowane dowody. Nie zawiera workflow,
+kontrolera, zmian SDK1.32.3, aplikacji ani receiptów odbiorców. Każda zmiana
+HEAD, blobu, statusu lub zestawu wymaga nowego przeglądu; nie dopuszcza się
+technicznego rebase na podstawie samych niezmienionych blobów.
+
+Nie powstaje ogólna reguła dla optional packages, apps/architecture-lab ani
+Canon. Obowiązują kompletne metadane API i ponowny odczyt, rzeczywisty diff,
+tree/blob i regularny plik bez symlinków, bieżący routing/owner/ALIGNED,
+wewnętrzny autor/repozytorium, main-only kontroler, dotychczasowe nazwy/piny
+pakietów prywatnych i rozdzielenie instalacji od wykonania bez poświadczeń.
+LOCAL_PACKAGES, workflow, Environment, sekret, format i weryfikacja proof
+pozostają bez zmian. Admission nie jest uprawnieniem do danych produktu.
+
+Osobny draft bootstrapu używa udokumentowanego namespace sg2/ wyłącznie jako
+transportu polityki; profil, własność czterech ścieżek i PMOS pozostają
+ARCHITECTURE. Sam draft nie zmienia aktywnej polityki. Po osobnej zgodzie
+właścicielskiej możliwa jest istniejąca kolejność: rzeczywisty kontrolowany CI
+dokładnego bootstrapu ze starego main, właściwe wymagane checki, kontrolowany
+merge polityki, niezależny odczyt nowego main, nowe validate-sg2 dokładnego
+PR827, nowy proof i ponowienie jego publicznego weryfikatora. Żaden z tych
+przyszłych kroków nie jest autoryzowany przez niniejszy projekt dodatku.
+Nowy digest polityki nie akceptuje starych proofów, w szczególności PR817.
+
+Dopiero pełne CI dokładnego producenta i formalny SOURCE_GO umożliwiają jego
+osobne przyjęcie przez SRM. Przyjęcie kontraktu, wdrożenie i wynik FRESH≤6s
+pozostają osobnymi dowodami. Brak deploymentów, SQL/ról, uprawnień dostawców,
+sekretów i nowych zasobów. Przed aktywacją można zamknąć draft; po osobno
+zaakceptowanym merge wycofanie polega na zwykłym przeglądanym revercie tej
+jednej klasy, z zachowaniem historii i aktualnych wymagań proof.
