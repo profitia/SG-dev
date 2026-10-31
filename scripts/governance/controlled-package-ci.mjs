@@ -195,6 +195,23 @@ function isPinnedReadonlyMissReportReview(files) {
     && files.every(file => Object.hasOwn(READONLY_MISS_REPORT_PRODUCER_REVIEW.blobs, file?.filename ?? '')
       && file?.sha === READONLY_MISS_REPORT_PRODUCER_REVIEW.blobs[file.filename] && file.status === 'added')
 }
+// Proposed owner-reviewed test-fixture repair only; not a generic path grant.
+export const FRESH_FIXTURE_TEARDOWN_REVIEW = Object.freeze({
+  prNumber: 843,
+  branch: "architecture/current-fresh-report-fixture-teardown-20261031",
+  sourceSha: "6bb7ebec1c1795b452eb37e8fb8d8532b7415e64",
+  blobs: Object.freeze({
+    "apps/architecture-lab/src/operation-postgres-fixture.mjs": "2c830f159f30e4a84bbf19d4649adc2fdaf57bb6",
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report-postgres.test.mjs": "e606950c4ca5f9b77543b236b6192884ef424b01",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report-postgres.test.mjs": "c6cd4fcb1d24893fb1ab193edca89f2980d35a11"
+}),
+})
+function isPinnedFreshFixtureTeardownReview(files) {
+  return Array.isArray(files) && files.length === Object.keys(FRESH_FIXTURE_TEARDOWN_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(FRESH_FIXTURE_TEARDOWN_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === FRESH_FIXTURE_TEARDOWN_REVIEW.blobs[file.filename] && file.status === 'modified')
+}
+
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -209,7 +226,8 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const freshReportReview = isPinnedFreshReportReview(files)
   const payloadCaptureReview = isPinnedPayloadCaptureReview(files)
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
-  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview
+  const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
+  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -225,6 +243,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
       || freshReportReview && r.normalizedPath === 'apps/architecture-lab/current-fresh-report-acceptance.json'
       || payloadCaptureReview && r.normalizedPath.startsWith('apps/architecture-lab/')
       || readonlyMissReview && r.normalizedPath === 'apps/architecture-lab/test/readonly-miss-report.test.mjs'
+      || freshFixtureReview && r.normalizedPath === 'apps/architecture-lab/src/operation-postgres-fixture.mjs'
       ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
   if (!closedReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
 }
@@ -243,6 +262,9 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
     if (isPinnedPayloadCaptureReview(files)
       && (pr.number !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.prNumber || pr.head.ref !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.branch
         || expectedSha !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.sourceSha)) fail('PAYLOAD_CAPTURE_REVIEW_IDENTITY_REJECTED')
+    if (isPinnedFreshFixtureTeardownReview(files)
+      && (pr.number !== FRESH_FIXTURE_TEARDOWN_REVIEW.prNumber || pr.head.ref !== FRESH_FIXTURE_TEARDOWN_REVIEW.branch
+        || expectedSha !== FRESH_FIXTURE_TEARDOWN_REVIEW.sourceSha)) fail('FRESH_FIXTURE_TEARDOWN_REVIEW_IDENTITY_REJECTED')
     if (isPinnedReadonlyMissReportReview(files)
       && (pr.number !== READONLY_MISS_REPORT_PRODUCER_REVIEW.prNumber || pr.head.ref !== READONLY_MISS_REPORT_PRODUCER_REVIEW.branch
         || expectedSha !== READONLY_MISS_REPORT_PRODUCER_REVIEW.sourceSha)) fail('READONLY_MISS_REVIEW_IDENTITY_REJECTED')

@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -835,4 +835,57 @@ test('read-only MISS API resolution binds the complete exact file list and reche
     return {data:value}
   }
   await assert.rejects(resolveCandidateAdmission(context(),'831',p.head.sha,changing),/CANDIDATE_CHANGED_DURING_RESOLUTION/)
+})
+
+function freshTeardownCandidate() {
+ const review=FRESH_FIXTURE_TEARDOWN_REVIEW,p=pr()
+ p.number=review.prNumber;p.head.ref=review.branch;p.head.sha=review.sourceSha;p.base.sha=sha
+ const files=Object.entries(review.blobs).map(([filename,blob])=>({filename,status:'modified',sha:blob}))
+ p.changed_files=files.length;return {p,files}
+}
+test('FRESH fixture teardown admits only the exact three modified test/support blobs',()=>{
+ const review=FRESH_FIXTURE_TEARDOWN_REVIEW,{p,files}=freshTeardownCandidate()
+ assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,3)
+ assert.equal(review.prNumber,843);assert.equal(review.sourceSha,'6bb7ebec1c1795b452eb37e8fb8d8532b7415e64')
+ assert.deepEqual(files.map(f=>f.filename).sort(),[
+  'apps/architecture-lab/src/operation-postgres-fixture.mjs',
+  'packages/platform-contracts/current-fresh-report/test/current-fresh-report-postgres.test.mjs',
+  'packages/platform-contracts/readonly-miss-report/test/readonly-miss-report-postgres.test.mjs'])
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+})
+test('FRESH fixture teardown refuses another PR, branch or source SHA',()=>{
+ for(const mutate of[p=>p.number++,p=>p.head.ref='architecture/another-fixture',p=>p.head.sha=other]){
+  const {p,files}=freshTeardownCandidate();mutate(p);rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+ }
+})
+test('FRESH fixture teardown retains main workflow, owner, repository and target fences',()=>{
+ for(const mutate of[p=>p.user.login='attacker',p=>p.head.repo.full_name='profitia/fork',p=>p.base.repo.full_name='other/SG-dev',p=>p.base.ref='staging',p=>p.state='closed']){
+  const {p,files}=freshTeardownCandidate();mutate(p);rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+ }
+ for(const change of[{ref:'refs/pull/843/merge'},{event:'pull_request_target'},{triggeringActor:'attacker'}]){
+  const {p,files}=freshTeardownCandidate();rejection(()=>selectCandidate({...context(),...change},p,p.head.sha,{files}))
+ }
+})
+test('FRESH fixture teardown rejects omissions, additions, duplicates, renamed or substituted blobs and statuses',()=>{
+ for(const mutate of[files=>files.pop(),files=>files.push({filename:'packages/platform-contracts/src/extra.mjs',status:'modified',sha}),
+  files=>files[0]={...files[1]},files=>files[0].status='added',files=>files[0].status='removed',
+  files=>files[0].previous_filename='other.mjs',files=>files[0].sha=other]){
+  const {p,files}=freshTeardownCandidate();mutate(files);p.changed_files=files.length
+  rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+ }
+})
+test('FRESH fixture teardown cannot admit a runtime, schema, app, workflow, package policy or registry substitution',()=>{
+ for(const filename of['packages/platform-contracts/current-fresh-report/src/current-fresh-report.mjs',
+  'packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/migrations/access/007-delegated-jobs.sql',
+  'apps/srm/operation-integration.json','apps/sg-runtime/package.json',WORKFLOW,
+  'scripts/governance/controlled-package-ci.mjs','Canon/registries/profitia-projects-v1.json']){
+  const {p,files}=freshTeardownCandidate();files[0]={filename,status:'modified',sha}
+  rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+ }
+})
+test('FRESH fixture API admission rechecks complete file metadata before checkout',async()=>{
+ const {p,files}=freshTeardownCandidate(),calls=[]
+ const request=async endpoint=>{calls.push(endpoint);return{data:structuredClone(endpoint.includes('/files?')?files:p)}}
+ const result=await resolveCandidateAdmission(context(),'843',p.head.sha,request)
+ assert.equal(result.sha,p.head.sha);assert.deepEqual(result.admission.files,files);assert.equal(calls.length,3)
 })
