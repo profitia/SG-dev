@@ -5330,7 +5330,7 @@
         "projectKey": "SRM",
         "taskId": "SRM-XRAY-FULL-UI-PARITY-B-20261031",
         "pullRequest": 832,
-        "sourceSha": "1f6868d51c2db26fd612a6fa6c8469e9dcf29845"
+        "sourceSha": "f3e801c5edcf1da55645df28dfaa2c6d155dfa7c"
       }
     },
     "applicationSourceDigests": {
@@ -5363,7 +5363,7 @@
       "tests/xray-full-presentation.test.ts": "4bf6a7a6c6f9a6c0f3b5dc81bffd2e21ee22d5b34bfd8e350e7dfe9a795a4b1d",
       "tests/xray-full-ui-adoption.test.ts": "3845529332e1df17db90aed824859e6c57227fac2b4118a22b217adff7ae4425",
       "tests/xray-gateway.test.ts": "4c0385ef6e8254f99b3e0af1f98f692cfa2a181812f90bb54529064e4a0f887c",
-      "xray-appshell-integration.json": "fb9f3cb741e086910de9878eb8e539c46a55106ec0759e016a05de2f1611bbb3"
+      "xray-appshell-integration.json": "0da5d37c99bd8232e902726fd0f2ba5f0d265bc366a87b3a06ccf12fb40bab99"
     },
     "presentationContract": "profitia.srm-xray.presentation/1.0.0",
     "presentationOperations": [
