@@ -1,4 +1,4 @@
-import {createCurrentFreshReportHost,type CurrentFreshReportRefreshOptions,type CurrentFreshReportReadOptions,type CurrentFreshReportReadOnlyProbeOptions} from '../../src/current-fresh-report.mjs'
+import {createCurrentFreshReportHost,type CurrentFreshReportRefreshOptions,type CurrentFreshReportReadOptions} from '../../src/current-fresh-report.mjs'
 import type {ClerkIdentityClient} from '@profitia/platform-contracts/identity-provider'
 import type {PublicIdentityApplication} from '@profitia/platform-contracts/public-request'
 declare const clerk:ClerkIdentityClient,identity:PublicIdentityApplication
@@ -17,16 +17,3 @@ createCurrentFreshReportHost({clerk,identity,receiverBoundary,probe,refresh,read
 host.execute(input,{...actions,work:async()=>({status:'READY',value:'bypass'})})
 // @ts-expect-error A raw actor is not an opening input.
 host.execute({...input,actor:{kind:'HUMAN'}},actions)
-declare const readOnlyProbe:CurrentFreshReportReadOnlyProbeOptions<{query(sql:string):Promise<void>}>
-const guarded=createCurrentFreshReportHost({clerk,identity,receiverBoundary,probe:readOnlyProbe,refresh,read:probe,probeReadOnly:{statements:['SELECT 1']}})
-const closedResult:Promise<{ok:boolean}>=guarded.execute(input,{...actions,probe:async(_context,port)=>{
- await port.query('SELECT 1',[])
- // @ts-expect-error No raw transaction or connection is exposed to a probe.
- port.release()
- return {status:'MISS'}
-},ready:async(value,_context,transaction)=>{await transaction.query('SELECT 1');return {ok:!!value}}})
-void closedResult
-// @ts-expect-error Read-only adoption requires explicit READY handling.
-guarded.execute(input,actions)
-// @ts-expect-error Default mode has no implicit READY effect writer.
-host.execute(input,{...actions,ready:async()=>({ok:true})})

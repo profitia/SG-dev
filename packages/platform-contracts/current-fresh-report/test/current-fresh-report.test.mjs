@@ -22,7 +22,7 @@ function fixture(){
   probe,refresh:{...probe,application:{...application,operations:['supplier.report.refresh']},requestLedger:{schemaDigest:'d'.repeat(64),externalSchemaDigest:'e'.repeat(64)}},read:{...probe}}
 }
 test('additive producer has an independent fingerprint and preserves existing READY and host digests',async()=>{
- assert.deepEqual(CURRENT_FRESH_REPORT_CONTRACT,{id:'profitia.current-fresh-report',version:'1.1.0'})
+ assert.deepEqual(CURRENT_FRESH_REPORT_CONTRACT,{id:'profitia.current-fresh-report',version:'1.0.0'})
  assert.deepEqual(CURRENT_HUMAN_READ_CONTRACT,{id:'profitia.current-human-read',version:'1.1.0'})
  const accepted=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
  assert.equal(await currentHumanReadSourceDigest(),accepted.freshPostfetchRecovery.sdkDigests.currentHumanReadSourceDigest)
@@ -57,7 +57,7 @@ test('packed public install uses exactly one unchanged SDK 1.32.3 peer, without 
    import {CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read';
    const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'));
    assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,'1.32.3');
-   assert.equal(CURRENT_HUMAN_READ_CONTRACT.version,'1.1.0');assert.equal(fresh.CURRENT_FRESH_REPORT_CONTRACT.version,'1.1.0');
+   assert.equal(CURRENT_HUMAN_READ_CONTRACT.version,'1.1.0');assert.equal(fresh.CURRENT_FRESH_REPORT_CONTRACT.version,'1.0.0');
    assert.equal(await fresh.currentFreshReportSourceDigest(),${JSON.stringify(expected)});
    const require=createRequire(import.meta.url),inside=createRequire(import.meta.resolve('@profitia/platform-current-fresh-report'));
    assert.equal(require('@profitia/platform-current-fresh-report').createCurrentFreshReportHost,fresh.createCurrentFreshReportHost);
@@ -76,14 +76,6 @@ for(const key of ['clerk','identity','receiverBoundary','probe','refresh','read'
 })
 for(const key of ['reportAdmission','cache','authenticate','createAuthenticator','readExternalAccount','allow'])test('does not accept another authorization path '+key,()=>{
  assert.throws(()=>createCurrentFreshReportHost({...fixture(),[key]:()=>true}),TypeError)
-})
-for(const statements of [[],['COMMIT'],[' SELECT 1'],['SELECT 1; COMMIT'],['SELECT 1','SELECT 1'],[()=>true]])test('read-only policy rejects non-closed statements '+String(statements),()=>{
- assert.throws(()=>createCurrentFreshReportHost({...fixture(),probeReadOnly:{statements}}),TypeError)
-})
-test('read-only adoption requires a separate READY callback before making external calls',async()=>{
- const host=createCurrentFreshReportHost({...fixture(),probeReadOnly:{statements:['SELECT 1']}}),bad=async()=>assert.fail('No external call')
- await assert.rejects(host.execute({request:new Request('https://srm.fixture.test/api/search'),organisationId:'11111111-1111-4111-8111-111111111111',nip:'5272443955',idempotencyKey:null},
- {probe:bad,refresh:bad,work:bad,read:bad}),e=>e.reasonCode==='CONTEXT_INVALID')
 })
 for(const key of ['probe','refresh','read'])for(const mutation of ['application','store','service','module','operation','authenticator'])test(key+' rejects foreign '+mutation,()=>{
  const f=fixture(),base={...f[key]};f[key]=base
@@ -109,7 +101,7 @@ test('abort refuses the opening before authentication or SQL',async()=>{
 })
 test('public declarations compile positive calls and reject alternate authority and Work output',async()=>{
  const require=createRequire(new URL('../../../../apps/architecture-lab/package.json',import.meta.url)),ts=require('typescript')
- const file=fileURLToPath(new URL('./types/current-fresh-report.mts',import.meta.url))
+ const file=new URL('./types/current-fresh-report.mts',import.meta.url).pathname
  const program=ts.createProgram([file],{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.NodeNext,moduleResolution:ts.ModuleResolutionKind.NodeNext,strict:true,noEmit:true,types:[],lib:['lib.es2022.d.ts','lib.dom.d.ts']})
  const errors=ts.getPreEmitDiagnostics(program)
  assert.equal(errors.length,0,ts.formatDiagnosticsWithColorAndContext(errors,{getCanonicalFileName:x=>x,getCurrentDirectory:()=>process.cwd(),getNewLine:()=> '\n'}))
