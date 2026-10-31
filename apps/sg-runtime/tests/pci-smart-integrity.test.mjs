@@ -17,15 +17,16 @@ test('smart preparation strictly binds all new/current sources while retaining e
 test('tampered current file, receipt, historical digest, engine and rollback evidence are rejected',()=>{
  const r=receipt(),file=r.pciSmartPreparationCompatibility.changedSourcePaths[0]
  assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
- for(const mutate of [r=>r.pciSmartPreparationCompatibility.sourceDigests[file]='0'.repeat(64),r=>r.pciSmartPreparationCompatibility.srmRuntimeChanged=true,r=>r.bqlPciFirstSourceCompatibility.rulesetVersion='tampered']){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
+ for(const mutate of [r=>r.pciSmartPreparationCompatibility.sourceDigests[file]='0'.repeat(64),r=>r.pciSmartPreparationCompatibility.srmRuntimeChanged=true,r=>r.bqlPciFirstSourceCompatibility.rulesetVersion='tampered',r=>{if(r.fullUiParityAdoption)r.fullUiParityAdoption.previousReceiptDigest='0'.repeat(64);else r.pciSmartPreparationCompatibility.previousReceiptSha256='0'.repeat(64)}]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
  assert.throws(()=>assertPciSmartIntegrity(r,current,(sha,f)=>Buffer.concat([historical(sha,f),Buffer.from('tamper')])))
  const engine=r.pciSmartPreparationCompatibility.preservedEnginePaths[0]
  assert.throws(()=>assertPciSmartIntegrity(r,f=>f===engine?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
 })
 test('every changed SG2 source in the candidate has an exact additive binding',()=>{
- const a=receipt().pciSmartPreparationCompatibility
+ const r=receipt(),a=r.pciSmartPreparationCompatibility
  // Prisma lifecycle output is independently generated, never an authored source change.
- assert.deepEqual(a.changedSourcePaths,candidateSourcePaths(new URL('../../../',import.meta.url)))
+ const bound=r.fullUiParityAdoption?Object.keys(r.fullUiParityAdoption.applicationSourceDigests).map(f=>'apps/sg-runtime/'+f).sort():a.changedSourcePaths
+ assert.deepEqual(bound,candidateSourcePaths(new URL('../../../',import.meta.url)))
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))

@@ -3,6 +3,18 @@ import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const digest=bytes=>createHash('sha256').update(bytes).digest('hex')
 export function assertPciSmartIntegrity(receipt,current,historical){
+ // The later UI candidate binds every changed current host byte, then exposes
+ // the exact accepted PCI predecessor to the unchanged PCI integrity checks.
+ if(receipt.fullUiParityAdoption){
+  const ui=receipt.fullUiParityAdoption,bytes=historical(ui.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json'),prior=JSON.parse(bytes)
+  assert.equal(ui.projectKey,'SG2');assert.equal(ui.taskId,'SG2-XRAY-FULL-UI-PARITY-B-20261031')
+  assert.equal(digest(bytes),ui.previousReceiptDigest)
+  const {fullUiParityAdoption,...preserved}=receipt
+  assert.deepEqual(preserved,prior,'UI preserves the complete accepted PCI receipt')
+  for(const[file,hash]of Object.entries(ui.applicationSourceDigests))assert.equal(digest(current('apps/sg-runtime/'+file)),hash,'current UI continuation '+file)
+  const previous=file=>Object.hasOwn(ui.applicationSourceDigests,file.replace(/^apps\/sg-runtime\//,''))?historical(ui.previousReceiptSourceSha,file):current(file)
+  return assertPciSmartIntegrity(prior,previous,historical)
+ }
  const a=receipt.pciSmartPreparationCompatibility
  assert(a,'smart source receipt required')
  assert.equal(a.taskId,'SG2-PCI-SMART-PREPARATION-FULL-IMPLEMENTATION-20261030')
