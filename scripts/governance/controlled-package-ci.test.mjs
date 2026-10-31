@@ -732,7 +732,7 @@ function readonlyMissCandidate() {
 test('read-only MISS review is frozen and admits only the exact nine additive producer blobs',()=>{
   const review=READONLY_MISS_REPORT_PRODUCER_REVIEW,{p,files}=readonlyMissCandidate()
   assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,9)
-  assert.equal(review.prNumber,831);assert.equal(review.sourceSha,'358f9eaf3a835c39a6d1e75900179d0300b405c7')
+  assert.equal(review.prNumber,831);assert.equal(review.sourceSha,'b2b52c6a61ab3c3882f60ab5033670046715a5bc')
   assert.equal(review.branch,'architecture/current-fresh-miss-20261031')
   assert(files.every(f=>f.status==='added' && (f.filename.startsWith('packages/platform-contracts/readonly-miss-report/')
     || f.filename==='apps/architecture-lab/test/readonly-miss-report.test.mjs')))
