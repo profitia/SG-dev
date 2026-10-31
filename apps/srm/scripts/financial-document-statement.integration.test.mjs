@@ -8,7 +8,9 @@ import {createSrmSupplierNativeWork} from '../src/server/supplier-request-work.t
 import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-work-store.ts';
 import {mapMgbiGeneralRecords} from '../src/server/mgbi-general.ts';
 import {mapMgbiFinancialRecords} from '../src/server/mgbi-financial.ts';
-import {projectFinancialDocuments,persistFinancialDocuments} from '../src/server/financial-documents.ts';
+import {projectFinancialDocuments,persistFinancialDocuments,prepareFreshFinancialDocuments} from '../src/server/financial-documents.ts';
+import {saveMgbiArchive} from '../src/server/mgbi-archive.ts';
+import {bindOrganizationTransaction,withOrganization,withNativeCompanyStoreTransaction} from '../src/server/db.ts';
 import {captureFinancialDocumentPolicies,documentStatementPolicyPlan} from './financial-document-statement-release.mjs';
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context';
 const ident=x=>'\"'+x.replaceAll('\"','\"\"')+'\"';
@@ -39,9 +41,9 @@ test('ready report document statement guard preserves same-NIP tenant isolation,
   await assert.rejects(controlled(async()=>{await owner.query('ALTER POLICY native_work_read ON srm.financial_source_documents USING(false)');await owner.query(own('032-document-statement-guard.sql'));}),e=>e.code==='42501');
   assert.deepEqual((await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' AND tablename='financial_source_documents' ORDER BY policyname")).rows,policies);
  });
- const results=[],freshWrites=[];
+ const results=[],freshWrites=[],contextProofs=[];
  const actualPool=f.workOptions.pool,connect=actualPool.connect.bind(actualPool);
- actualPool.connect=async()=>{const client=await connect(),query=client.query.bind(client),release=client.release.bind(client);client.query=(...args)=>{const at=performance.now(),result=query(...args);if(typeof args[0]==='string'&&args[0].startsWith('WITH written AS (INSERT INTO srm.financial_source_documents'))return result.then(r=>{freshWrites.push({sqlMs:performance.now()-at,rows:r.rowCount});return r});return result};client.release=(...args)=>{client.query=query;client.release=release;return release(...args)};return client};
+ actualPool.connect=async()=>{const client=await connect(),query=client.query.bind(client),release=client.release.bind(client);client.query=(...args)=>{const at=performance.now(),result=query(...args);if(typeof args[0]==='string'&&args[0].includes('FROM pg_roles')&&args[0].includes('organization_exists'))return result.then(r=>{contextProofs.push({sqlMs:performance.now()-at});return r});if(typeof args[0]==='string'&&args[0].startsWith('WITH written AS (INSERT INTO srm.financial_source_documents'))return result.then(r=>{freshWrites.push({sqlMs:performance.now()-at,rows:r.rowCount});return r});return result};client.release=(...args)=>{client.query=query;client.release=release;return release(...args)};return client};
 
  for(const optimized of [false,true]){
   if(optimized)await controlled(()=>owner.query(own('032-document-statement-guard.sql')));
@@ -65,7 +67,7 @@ test('ready report document statement guard preserves same-NIP tenant isolation,
    const newRecords=records.map((r,i)=>({...r,id:(1000+(optimized?100:0)+trial*24+i).toString(16).padStart(24,'0')}));
    const value={...mapMgbiFinancialRecords(newRecords,{type:'NIP',value:NIP},at,1,g.section.data.registryHistory),rawResponse:{pages:[{count:24,results:newRecords}],recordCount:24}};
    const accepted=await f.parent(A,NIP),selected={requestId:accepted.requestId,organisationId:A,command:accepted.command};await store.registerAndCache(selected);
-   const before=freshWrites.length;assert(await store.freshCompany(selected,g,value));assert.equal(freshWrites.length,before+1);Object.assign(freshWrites.at(-1),{optimized,trial});assert.equal(freshWrites.at(-1).rows,24);
+   const before=freshWrites.length,proofs=contextProofs.length;assert(await store.freshCompany(selected,g,value));assert.equal(freshWrites.length,before+1);const checked=contextProofs.slice(proofs);assert.equal(checked.length,2,'One complete current native context check before and after the company action');Object.assign(freshWrites.at(-1),{optimized,trial,companyContextChecks:checked.length,companyContextSqlMs:checked.reduce((n,p)=>n+p.sqlMs,0)});assert.equal(freshWrites.at(-1).rows,24);
   }
  }
  actualPool.connect=connect;
@@ -88,6 +90,25 @@ test('ready report document statement guard preserves same-NIP tenant isolation,
  });
  await t.test('original READ Work retains its current per-row fallback after optimization',async()=>{
   await work.run(selection,'SRM_READ_DOCUMENTS',{probe:'UNCHANGED_LEGACY_READ'},async(_ctx,c)=>{const rows=(await c.query('SELECT organization_id FROM srm.financial_source_documents WHERE record_id=ANY($1::text[])',[records.map(r=>r.id)])).rows;assert.equal(rows.length,24);assert(rows.every(r=>r.organization_id===A));});
+ });
+ for(const [setting,value] of [['srm.organization_id',B],['profitia.native_work.scope','[]']])await t.test('company transaction refuses changed '+setting+' and rolls back actual prepared documents',async()=>{
+  const accepted=await f.parent(A,NIP),selected={requestId:accepted.requestId,organisationId:A,command:accepted.command};await store.registerAndCache(selected);
+  const state=async()=>(await owner.query("SELECT jsonb_build_object('documents',(SELECT jsonb_agg(to_jsonb(d) ORDER BY organization_id,nip,record_id) FROM srm.financial_source_documents d),'archives',(SELECT jsonb_agg(to_jsonb(a) ORDER BY organization_id,nip,model) FROM srm.mgbi_source_archives a)) state")).rows[0].state;
+  const before=await state(),newRecords=records.map((r,i)=>({...r,id:(7000+(setting==='srm.organization_id'?0:100)+i).toString(16).padStart(24,'0')})),pages=[{count:24,results:newRecords}];let prepared=false;
+  await assert.rejects(work.run(selected,'SRM_STORE_COMPANY',{probe:'COMPANY_CONTEXT_ROLLBACK',setting},async(context,client)=>{
+   await withNativeCompanyStoreTransaction(A,async scoped=>{
+    await withOrganization(A,async current=>{
+     assert.equal(current,client);
+     assert.equal((await current.query('SELECT record_id FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2',[B,NIP])).rowCount,0);
+     assert.equal((await current.query('SELECT record_id FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2',[A,'5272443955'])).rowCount,0);
+     assert((await current.query('SELECT organization_id FROM srm.financial_source_documents')).rows.every(row=>row.organization_id===A));
+    },scoped);
+    let archive;await saveMgbiArchive(A,NIP,'pl-krs-rdf-record',pages,24,at,selected.requestId,scoped,value=>{archive=value});
+    assert.equal((await withOrganization(A,current=>prepareFreshFinancialDocuments(current,A,NIP,pages,archive),scoped)).length,24);prepared=true;
+    await client.query('SELECT set_config($1,$2,true)',[setting,value]);
+   },bindOrganizationTransaction(A,client,context));
+  }));
+  assert.equal(prepared,true,'The current SQL boundary must withhold already prepared effects');assert.deepEqual(await state(),before);
  });
  await t.test('Clerk revocation at Work outcome withholds output and rolls back all newly written documents, facts and archives',async()=>{
   const accepted=await f.parent(A,NIP),selected={requestId:accepted.requestId,organisationId:A,command:accepted.command};await store.registerAndCache(selected);

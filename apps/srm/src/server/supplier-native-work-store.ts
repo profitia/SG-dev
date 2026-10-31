@@ -5,7 +5,7 @@ import {captureFinitePayload} from '@profitia/platform-payload-capture'
 import { createHash } from 'node:crypto'
 import type { PoolClient } from 'pg'
 import { OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
-import { bindOrganizationTransaction, withOrganization, type DatabasePool } from './db'
+import { bindOrganizationTransaction, withOrganization, withNativeCompanyStoreTransaction, type DatabasePool } from './db'
 import { readSupplierRequest } from './supplier-request-operation'
 import type { SupplierNativeWork, SupplierNativeWorkSelection, SupplierNativeWorkUnit } from './supplier-request-work'
 import { createLookup, type ExistingSupplierRegistration } from './xray-repository'
@@ -120,7 +120,9 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
     try{
       const result=await work.run(selection,unitId,{version:SUPPLIER_NATIVE_STORE_VERSION,nip:selection.command.nip,parameters},async(context,client)=>{
         const pool=bindOrganizationTransaction(selection.organisationId,client,context)
-        const value=await action(pool,client,context)
+        const value=unitId==='SRM_STORE_COMPANY'
+          ?await withNativeCompanyStoreTransaction(selection.organisationId,scoped=>action(scoped,client,context),pool)
+          :await action(pool,client,context)
         // Void domain commands have no dataset to capture. This does not
         // replace a read by absence or provide idempotency for a writer.
         captured=value===undefined?value:capture(value);performed=true
