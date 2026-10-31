@@ -121,3 +121,38 @@ test('a late headquarters geocode cannot replace the newly selected manual-locat
  for(let i=0;i<10;i++)await tick()
  assert.equal(controller.getSnapshot().page?.total,0);assert.equal(latestGroup,'USER_LOCATIONS');controller.dispose()
 })
+
+test('persisted 29-day READ coordinates survive long timers and reopening without GEOCODE',async()=>{
+ const actions:string[]=[]
+ const coordinates={...viewCoordinates,fetchedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+29*86400000).toISOString()}
+ const transport:typeof fetch=async(_url,init)=>{actions.push(JSON.parse(String(init?.body)).action);return Response.json({...page,total:1,geocodingAvailable:true,items:[{...addressOnly,geocodingStatus:'RESOLVED',coordinates}]})}
+ for(let i=0;i<2;i++){
+  const controller=new SupplierLocationController(supplier,transport)
+  await controller.load();await new Promise(resolve=>setTimeout(resolve,20))
+  assert.deepEqual(controller.getSnapshot().page?.items[0].coordinates?.position,coordinates.position)
+  await controller.mapPage('SUPPLIER_LOCATIONS',0,new AbortController().signal)
+  controller.dispose()
+ }
+ assert.deepEqual(actions,['READ','READ','READ','READ'])
+})
+test('persisted Google marker expires in the open page without a new request; USER_INPUT remains',async()=>{
+ const actions:string[]=[],coordinates={...viewCoordinates,fetchedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+200).toISOString()}
+ const controller=new SupplierLocationController(supplier,async(_url,init)=>{
+  actions.push(JSON.parse(String(init?.body)).action)
+  return Response.json({...page,total:2,geocodingAvailable:true,items:[{...addressOnly,geocodingStatus:'RESOLVED',coordinates},{...addressOnly,id:'manual-location',geocodingStatus:'RESOLVED',coordinates:{...coordinates,origin:'USER_INPUT',expiresAt:null}}]})
+ })
+ await controller.load();assert(controller.getSnapshot().page?.items[0].coordinates)
+ await new Promise(resolve=>setTimeout(resolve,250))
+ const items=controller.getSnapshot().page!.items
+ assert.equal(items[0].coordinates,null);assert.equal(items[0].geocodingStatus,'EXPIRED')
+ assert.equal(items[1].coordinates?.origin,'USER_INPUT');assert.deepEqual(actions,['READ'])
+ controller.dispose()
+})
+test('disposing a persisted coordinate page cancels its expiry notification',async()=>{
+ const coordinates={...viewCoordinates,fetchedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+100).toISOString()}
+ const controller=new SupplierLocationController(supplier,async()=>Response.json({...page,total:1,items:[{...addressOnly,geocodingStatus:'RESOLVED',coordinates}]}))
+ let updates=0;controller.subscribe(()=>updates++)
+ await controller.load();controller.dispose();const disposedUpdates=updates
+ await new Promise(resolve=>setTimeout(resolve,150))
+ assert.equal(updates,disposedUpdates);assert.equal(controller.getSnapshot().page,null)
+})

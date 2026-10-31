@@ -18,7 +18,7 @@ test('readiness adoption preserves all prior receipts and pins exact map-only co
  for(const[f,d]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapAddressOnlyRepair
   const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
-  const bytes=next?.applicationSourceDigests[f]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+f]):latest?.applicationSourceDigests[f]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+f]):readFileSync(new URL('../../'+f,import.meta.url))
+  const bytes=next?.applicationSourceDigests[f]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+f]):latest?.applicationSourceDigests[f]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+f]):(receipt.fullUiParityAdoption?.applicationSourceDigests as Record<string,string>)[f]?execFileSync('git',['show',receipt.fullUiParityAdoption.previousReceiptSourceSha+':apps/srm/'+f]):readFileSync(new URL('../../'+f,import.meta.url))
   assert.equal(hash(bytes),d,f)
  }
  assert.equal(a.locationAuthorityChanged,false);assert.equal(a.paidProviderCallsAdded,false);assert.equal(a.databaseSchemaChanged,false)
