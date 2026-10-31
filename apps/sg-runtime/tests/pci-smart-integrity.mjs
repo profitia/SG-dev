@@ -3,6 +3,21 @@ import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const digest=bytes=>createHash('sha256').update(bytes).digest('hex')
 export function assertPciSmartIntegrity(receipt,current,historical){
+ if(Object.hasOwn(receipt,'pciSmartResultingMainScopeCompatibility')){
+  const a=receipt.pciSmartResultingMainScopeCompatibility
+  assert.equal(a.taskId,'SG2-PCI-SMART-PREPARATION-DEVELOPMENT-RELEASE-20261031')
+  assert.equal(a.scope,'EXACT_SOURCE_COVERAGE_ON_CANDIDATE_AND_RESULTING_MAIN')
+  assert.equal(a.previousReceiptSourceSha,'10efd606f78cb08ae4fccde84b8c2e958bb54d9d')
+  const bytes=historical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json'),prior=JSON.parse(bytes)
+  assert.equal(digest(bytes),a.previousReceiptSha256)
+  const {pciSmartResultingMainScopeCompatibility,...preserved}=receipt
+  assert.deepEqual(preserved,prior,'all accepted receipts and historical digests stay immutable')
+  assert.deepEqual(Object.keys(a.sourceDigests).sort(),['apps/sg-runtime/tests/pci-smart-integrity.mjs','apps/sg-runtime/tests/pci-smart-integrity.test.mjs'])
+  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([f,d])=>[f.slice(16),d])))
+  for(const[file,hash]of Object.entries(a.sourceDigests))assert.equal(digest(current(file)),hash,'exact resulting-main integrity source '+file)
+  for(const flag of ['productChanged','cciCoreChanged','indexedPriceChanged','authorizationChanged','srmRuntimeChanged','sqlChanged','deploymentPerformed'])assert.equal(a[flag],false,flag)
+  return assertPciSmartIntegrity(prior,file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file),historical)
+ }
  const a=receipt.pciSmartPreparationCompatibility
  assert(a,'smart source receipt required')
  assert.equal(a.taskId,'SG2-PCI-SMART-PREPARATION-FULL-IMPLEMENTATION-20261030')

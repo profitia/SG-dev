@@ -13,6 +13,9 @@ function candidateSourcePaths(root){
  const base=execFileSync('git',['merge-base','HEAD','origin/main'],{encoding:'utf8',cwd:root}).trim()
  return execFileSync('git',['diff','--name-only',base,'HEAD','--','apps/sg-runtime','packages/sg2-price-change-index-ui','apps/sg2-price-change-index-demo'],{encoding:'utf8',cwd:root}).trim().split('\n').filter(f=>f&&f!=='apps/sg-runtime/operation-integration.json').sort()
 }
+function assertSourceCoverage(changed,bound){
+ assert.deepEqual(changed,changed.filter(file=>Object.hasOwn(bound,file)),'every actual candidate amendment requires an exact source binding')
+}
 test('smart preparation strictly binds all new/current sources while retaining every historical acceptance and engine',()=>assertPciSmartIntegrity(receipt(),current,historical))
 test('tampered current file, receipt, historical digest, engine and rollback evidence are rejected',()=>{
  const r=receipt(),file=r.pciSmartPreparationCompatibility.changedSourcePaths[0]
@@ -22,10 +25,12 @@ test('tampered current file, receipt, historical digest, engine and rollback evi
  const engine=r.pciSmartPreparationCompatibility.preservedEnginePaths[0]
  assert.throws(()=>assertPciSmartIntegrity(r,f=>f===engine?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
 })
-test('every changed SG2 source in the candidate has an exact additive binding',()=>{
- const a=receipt().pciSmartPreparationCompatibility
+test('every changed SG2 source in the candidate or resulting main has an exact additive binding',()=>{
+ const r=receipt(),a=r.pciSmartPreparationCompatibility
  // Prisma lifecycle output is independently generated, never an authored source change.
- assert.deepEqual(a.changedSourcePaths,candidateSourcePaths(new URL('../../../',import.meta.url)))
+ // A published receipt retains its original source set after merge. Current
+ // bytes are strictly verified above; an accepted main has no new amendments.
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))
@@ -38,8 +43,20 @@ test('scope coverage retains accepted parallel files but rejects any unbound can
   write(parallel,'accepted independent owner source');commit();git('update-ref','refs/remotes/origin/main','HEAD')
   git('switch','-qc','candidate');write(pci,'PCI source');commit()
   assert.deepEqual(candidateSourcePaths(root),[pci])
+  assertSourceCoverage(candidateSourcePaths(root),{[pci]:'exact digest checked by the integrity verifier'})
+  git('update-ref','refs/remotes/origin/main','HEAD')
+  assert.deepEqual(candidateSourcePaths(root),[])
+  assertSourceCoverage(candidateSourcePaths(root),{[pci]:'retained published binding'})
   write(parallel,'unapproved amendment');commit()
-  assert.deepEqual(candidateSourcePaths(root),[parallel,pci])
-  assert.throws(()=>assert.deepEqual(candidateSourcePaths(root),[pci]),'An amendment to accepted parallel work must remain detectable')
+  assert.deepEqual(candidateSourcePaths(root),[parallel])
+  assert.throws(()=>assertSourceCoverage(candidateSourcePaths(root),{[pci]:'retained published binding'}),'An amendment to accepted parallel work must remain detectable')
  }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+test('resulting-main continuation rejects every amended current source and prior-receipt manipulation',()=>{
+ const r=receipt(),a=r.pciSmartResultingMainScopeCompatibility
+ assert(a)
+ for(const file of Object.keys(a.sourceDigests))assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
+ for(const mutate of [r=>r.pciSmartResultingMainScopeCompatibility.previousReceiptSha256='0'.repeat(64),r=>r.pciSmartResultingMainScopeCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),r=>r.pciSmartResultingMainScopeCompatibility.productChanged=true,r=>r.unapprovedReceipt={}]){
+  const changed=structuredClone(r);mutate(changed);assert.throws(()=>assertPciSmartIntegrity(changed,current,historical))
+ }
 })

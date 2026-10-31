@@ -5374,5 +5374,26 @@
     "newPaidProviderCalls": false,
     "srmRuntimeChanged": false,
     "productDeploymentPerformed": false
+  },
+  "pciSmartResultingMainScopeCompatibility": {
+    "taskId": "SG2-PCI-SMART-PREPARATION-DEVELOPMENT-RELEASE-20261031",
+    "scope": "EXACT_SOURCE_COVERAGE_ON_CANDIDATE_AND_RESULTING_MAIN",
+    "previousReceiptSourceSha": "10efd606f78cb08ae4fccde84b8c2e958bb54d9d",
+    "previousReceiptSha256": "81842b651f9393336b85d46c76fa06b44b5df93dfce534d325f0d1727ca15ffb",
+    "sourceDigests": {
+      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "a270e6254dd1b5d0c1a6ff4cd44cacf00519985a6f7ce72a784e07921de75ce5",
+      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "34260236e67fb6a93e39cece83e90c9d6c4ca44bbf5c8eaee45da2ffb0cdf3ee"
+    },
+    "applicationSourceDigests": {
+      "tests/pci-smart-integrity.mjs": "a270e6254dd1b5d0c1a6ff4cd44cacf00519985a6f7ce72a784e07921de75ce5",
+      "tests/pci-smart-integrity.test.mjs": "34260236e67fb6a93e39cece83e90c9d6c4ca44bbf5c8eaee45da2ffb0cdf3ee"
+    },
+    "productChanged": false,
+    "cciCoreChanged": false,
+    "indexedPriceChanged": false,
+    "authorizationChanged": false,
+    "srmRuntimeChanged": false,
+    "sqlChanged": false,
+    "deploymentPerformed": false
   }
 }
