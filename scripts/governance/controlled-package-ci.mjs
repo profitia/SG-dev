@@ -136,6 +136,30 @@ function isPinnedFreshReportReview(files) {
     && files.every(file => Object.hasOwn(FRESH_REPORT_PRODUCER_REVIEW.blobs, file?.filename ?? '')
       && file?.sha === FRESH_REPORT_PRODUCER_REVIEW.blobs[file.filename])
 }
+// Proposed closed review of ONE data-only producer. Activation requires owner
+// acceptance of this separate bootstrap; no optional-package pattern is opened.
+export const PAYLOAD_CAPTURE_PRODUCER_REVIEW = Object.freeze({
+  prNumber: 827,
+  branch: 'architecture/payload-capture-source-publication-20261031',
+  sourceSha: '9d44684b968ca3a067d414f7c450b6016ecc8d19',
+  blobs: Object.freeze({
+    'Canon/evidence/2026-10-31-payload-capture-candidate.md': '0287f2d237c64d6b1ec76d27e6e02c51105e905d',
+    'Canon/evidence/2026-10-31-payload-capture-source-publication.md': 'f7ad9ae50fa0221d8f3c153f4c3ebe125538d6e1',
+    'apps/architecture-lab/payload-capture-candidate.json': '4e04c1305a43fff5e9e2d1e8bb14eebc0da92a3a',
+    'apps/architecture-lab/test/payload-capture-publication.test.mjs': 'a7422730f1119d340ea03e47a36334a969855c5b',
+    'packages/platform-contracts/payload-capture/package.json': '1824149cfba8909aa20a94656188a9ed3cff862f',
+    'packages/platform-contracts/payload-capture/src/payload-capture.d.mts': '34c108584d6981e2d848320a20869f7510b6e1ad',
+    'packages/platform-contracts/payload-capture/src/payload-capture.mjs': 'd657a5660b6e0989121321d443d16f4b9b04d797',
+    'packages/platform-contracts/payload-capture/test/benchmark.mjs': '529282e609ad6c6446c44f5c6029570550a03b1b',
+    'packages/platform-contracts/payload-capture/test/payload-capture.test.mjs': '190044c554605316bf8d66d997df17b2fbca0d92',
+    'packages/platform-contracts/payload-capture/test/public-package.test.mjs': '9d7ba3a4f6d7f5e2a44323b3e83627e9e5f3d0cf',
+  }),
+})
+function isPinnedPayloadCaptureReview(files) {
+  return Array.isArray(files) && files.length === Object.keys(PAYLOAD_CAPTURE_PRODUCER_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(PAYLOAD_CAPTURE_PRODUCER_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === PAYLOAD_CAPTURE_PRODUCER_REVIEW.blobs[file.filename] && file.status === 'added')
+}
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -148,7 +172,8 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const krsReview = files.length === KRS_GOVERNANCE_REVIEW_FILES.length
     && files.every(file => KRS_GOVERNANCE_REVIEW_FILES.includes(file?.filename))
   const freshReportReview = isPinnedFreshReportReview(files)
-  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview
+  const payloadCaptureReview = isPinnedPayloadCaptureReview(files)
+  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview || payloadCaptureReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -162,6 +187,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   if (!routing.ok || routing.results.some(r => r.projectBoundaryStatus !== 'ALLOWED' || r.baselineClassification !== 'ALIGNED'
     || r.currentOwner !== (r.normalizedPath.startsWith('packages/')
       || freshReportReview && r.normalizedPath === 'apps/architecture-lab/current-fresh-report-acceptance.json'
+      || payloadCaptureReview && r.normalizedPath.startsWith('apps/architecture-lab/')
       ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
   if (!closedReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
 }
@@ -177,6 +203,9 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
       && (pr.number !== LIMITS_G1_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== LIMITS_G1_GOVERNANCE_REVIEW.branch)) fail('LIMITS_G1_REVIEW_IDENTITY_REJECTED')
     if (isPinnedFreshReportReview(files)
       && (pr.number !== FRESH_REPORT_PRODUCER_REVIEW.prNumber || pr.head.ref !== FRESH_REPORT_PRODUCER_REVIEW.branch)) fail('FRESH_REPORT_REVIEW_IDENTITY_REJECTED')
+    if (isPinnedPayloadCaptureReview(files)
+      && (pr.number !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.prNumber || pr.head.ref !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.branch
+        || expectedSha !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.sourceSha)) fail('PAYLOAD_CAPTURE_REVIEW_IDENTITY_REJECTED')
   }
   return expectedSha
 }
