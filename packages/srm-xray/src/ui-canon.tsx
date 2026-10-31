@@ -851,18 +851,19 @@ export function canonAttributes(id: CanonId, usage: string) {
   if (!Object.hasOwn(uiCanon,id) || !usage.trim()) throw new Error('Unregistered SRM UI component or usage');
   return { 'data-library-component': id, 'data-canon-usage': usage, 'data-canon-source': 'srm-ui-v1' };
 }
-export function CanonButton({canonId,usage,...props}: React.ComponentPropsWithRef<'button'> & CanonProps) { return <button {...props} {...canonAttributes(canonId,usage)} />; }
-export function CanonInput({canonId,usage,...props}: React.ComponentPropsWithRef<'input'> & CanonProps) { return <input {...props} {...canonAttributes(canonId,usage)} />; }
-export function CanonSelect({canonId,usage,...props}: React.ComponentPropsWithRef<'select'> & CanonProps) { return <select {...props} {...canonAttributes(canonId,usage)} />; }
-export function CanonTextarea({canonId,usage,...props}: React.ComponentPropsWithRef<'textarea'> & CanonProps) { return <textarea {...props} {...canonAttributes(canonId,usage)} />; }
-export function CanonSummary({canonId,usage,...props}: React.ComponentPropsWithRef<'summary'> & CanonProps) { return <summary {...props} {...canonAttributes(canonId,usage)} />; }
-export function CanonLink({canonId,usage,...props}: React.ComponentPropsWithRef<'a'> & CanonProps) { return <a {...props} {...canonAttributes(canonId,usage)} />; }
-export function CanonElement<T extends keyof React.JSX.IntrinsicElements>({as,canonId,usage,...props}: {as:T} & CanonProps & Omit<React.ComponentPropsWithRef<T>,'as'|'canonId'|'usage'>) {
-  return React.createElement(as,{...props,...canonAttributes(canonId,usage)});
-}
-
-export function CanonCloseButton({ canonId = "SRM-C60", usage, className = "", ...props }: React.ComponentPropsWithRef<'button'> & { canonId?: 'SRM-C60'; usage: string }) {
-  return <CanonButton {...props} canonId={canonId} usage={usage} type="button" className={'srm-close-window ' + className} aria-label={props['aria-label'] ?? 'Zamknij'} title={props.title ?? 'Zamknij'}>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
-  </CanonButton>;
-}
+// forwardRef supports both the standalone React 19 host and React 18 consumers.
+export const CanonButton=React.forwardRef<HTMLButtonElement,React.ComponentPropsWithoutRef<'button'>&CanonProps>(function CanonButton({canonId,usage,...props},ref){return <button {...props} ref={ref} {...canonAttributes(canonId,usage)}/>});
+export const CanonInput=React.forwardRef<HTMLInputElement,React.ComponentPropsWithoutRef<'input'>&CanonProps>(function CanonInput({canonId,usage,...props},ref){return <input {...props} ref={ref} {...canonAttributes(canonId,usage)}/>});
+export const CanonSelect=React.forwardRef<HTMLSelectElement,React.ComponentPropsWithoutRef<'select'>&CanonProps>(function CanonSelect({canonId,usage,...props},ref){return <select {...props} ref={ref} {...canonAttributes(canonId,usage)}/>});
+export const CanonTextarea=React.forwardRef<HTMLTextAreaElement,React.ComponentPropsWithoutRef<'textarea'>&CanonProps>(function CanonTextarea({canonId,usage,...props},ref){return <textarea {...props} ref={ref} {...canonAttributes(canonId,usage)}/>});
+export const CanonSummary=React.forwardRef<HTMLElement,React.ComponentPropsWithoutRef<'summary'>&CanonProps>(function CanonSummary({canonId,usage,...props},ref){return <summary {...props} ref={ref} {...canonAttributes(canonId,usage)}/>});
+export const CanonLink=React.forwardRef<HTMLAnchorElement,React.ComponentPropsWithoutRef<'a'>&CanonProps>(function CanonLink({canonId,usage,...props},ref){return <a {...props} ref={ref} {...canonAttributes(canonId,usage)}/>});
+type CanonElementComponent=<T extends keyof React.JSX.IntrinsicElements>(props:{as:T}&CanonProps&Omit<React.ComponentPropsWithRef<T>,'as'|'canonId'|'usage'>)=>React.ReactElement;
+export const CanonElement=React.forwardRef<Element,{as:keyof React.JSX.IntrinsicElements}&CanonProps&React.HTMLAttributes<Element>>(function CanonElement({as,canonId,usage,...props},ref){
+ return React.createElement(as,{...props,ref,...canonAttributes(canonId,usage)});
+}) as CanonElementComponent;
+export const CanonCloseButton=React.forwardRef<HTMLButtonElement,React.ComponentPropsWithoutRef<'button'>&{canonId?:'SRM-C60';usage:string}>(function CanonCloseButton({canonId='SRM-C60',usage,className='',...props},ref){
+ return <CanonButton {...props} ref={ref} canonId={canonId} usage={usage} type="button" className={'srm-close-window '+className} aria-label={props['aria-label']??'Zamknij'} title={props.title??'Zamknij'}>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+ </CanonButton>;
+});
