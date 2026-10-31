@@ -272,7 +272,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   pool=new pg.Pool({connectionString:humanUrl.toString(),max:2});auditPool=new pg.Pool({connectionString:humanUrl.toString(),max:1});servicePool=new pg.Pool({connectionString:serviceUrl.toString(),max:2});serviceAudit=new pg.Pool({connectionString:serviceUrl.toString(),max:1});rawService=new pg.Client({connectionString:serviceUrl.toString()});await rawService.connect()
   assert.deepEqual((await rawService.query('SELECT current_user::text role,session_user::text login')).rows[0],{role:EXECUTOR,login:EXECUTOR})
   let accountActive=true,failOutcome=false,omitOutcome=false,omitIntent=false,failInspectionCommit=false,omitSourceOutcome=false,sourceCommitted=false,failDeliveryCommit=false
-  let afterIndicatorRead,clerkAccountReads=0;const workIntents=[];const indicatorSelections=[]
+  let afterIndicatorRead,afterMsrClaim,clerkAccountReads=0;const workIntents=[];const indicatorSelections=[]
   sourcePool.on('connect',client=>{const original=client.query.bind(client);client.query=async(sql,args,...rest)=>{
    if(omitSourceOutcome&&typeof sql==='string'&&sql.includes('profitia_ingestion.append_audit')&&JSON.parse(args[0]).phase==='OUTCOME')return {rows:[{recorded:true}]}
    const result=await original(sql,args,...rest);if(sql==='COMMIT')sourceCommitted=true;return result
@@ -289,6 +289,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    }
    if(typeof sql==='string'&&sql.includes('profitia_jobs.append_audit')){const e=JSON.parse(args[0]);if(e.phase==='INTENT'&&e.requestWork)workIntents.push({requestId:e.resourceId,unit:e.requestWork.unitId})}
    return original(sql,args,...rest).catch(error=>traceFailure(error,sql)).then(async result=>{
+    if(typeof sql==='string'&&sql.includes('INSERT INTO srm.msr_sources'))await afterMsrClaim?.()
     if(typeof sql==='string'&&sql.includes('FROM srm.catalog_financial_facts')&&Array.isArray(args?.[1])){indicatorSelections.push([...args[1]]);if(args[1].length===FINANCIAL_INDICATOR_INPUT_CODES.length)await afterIndicatorRead?.()}
     return result
    })
@@ -616,7 +617,7 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
   await t.test('native MSR uses original committed lifecycle and parser, then reuses READY without another acquisition',async()=>{
    msrSelection=selection(await parent(A,OTHER_NIP));await nativeStore.register(msrSelection)
    msrNative=nativeStore.msr(msrSelection,['0000000001'])
-   const base=await prepareMsr('a'.repeat(24)),before=await counts();let acquisitions=0
+   const base=await prepareMsr('a'.repeat(24)),before=await counts(),workStart=workIntents.length;let acquisitions=0
    const download=async recordId=>{
     acquisitions++
     assert.equal((await owner.query('SELECT state FROM srm.msr_sources WHERE organization_id=$1 AND nip=$2 AND record_id=$3',[A,OTHER_NIP,recordId])).rows[0].state,'REQUESTED')
@@ -624,6 +625,10 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
     return decodeMsrOriginal(recordId,Buffer.from(msrXml),'application/xhtml+xml',new Date().toISOString())
    }
    const first=await enrichMsrFinancial(A,OTHER_NIP,base,{store:msrNative,download})
+   const units=workIntents.slice(workStart).map(v=>v.unit)
+   assert.equal(units.filter(v=>v==='SRM_MSR_CLAIM').length,1)
+   assert.equal(units.filter(v=>v==='SRM_MSR_READ').length,0,'receipt read and write-ahead claim share one current authorised Work')
+   assert(units.includes('SRM_MSR_RECEIVE')&&units.includes('SRM_MSR_SAVE'),'original commit and publication remain independent')
    assert.equal(acquisitions,1);assert.equal(first.section.status,'SUCCESS');assert.equal(first.facts.find(f=>f.amount==='123')?.amount,'123')
    const c=(await msrNative.candidates()).candidates[0],stored=await msrNative.read(c)
    assert.equal(stored.state,'READY');assert.equal(verifyMsrReceipt(c,stored).parsed.facts[0].amount,'123')
@@ -631,6 +636,23 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    await enrichMsrFinancial(A,OTHER_NIP,first,{store:msrNative,download})
    assert.equal(acquisitions,1);assert.equal((await counts()).phases,before.phases)
    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.msr_sources WHERE organization_id=$1 AND nip=$2',[A,OTHER_NIP])).rows[0].n,originalRows)
+  })
+  await t.test('combined MSR read/claim rolls back on current revocation or failed outcome before a purchase can start',async()=>{
+   for(const mode of['revoked','audit']){
+    await prepareMsr(mode==='revoked'?'1'.repeat(24):'2'.repeat(24))
+    const c=(await msrNative.candidates()).candidates[0]
+    afterMsrClaim=()=>{if(mode==='revoked')accountActive=false;else failOutcome=true}
+    try{await assert.rejects(msrNative.readAndClaim(c,randomUUID()),isOperationDenied)}
+    finally{afterMsrClaim=undefined;accountActive=true;failOutcome=false}
+    assert.equal((await owner.query('SELECT count(*)::int n FROM srm.msr_sources WHERE organization_id=$1 AND nip=$2 AND record_id=$3',[A,OTHER_NIP,c.recordId])).rows[0].n,0)
+   }
+  })
+  await t.test('concurrent combined MSR claims preserve one durable claim identity and never reset uncertain requests',async()=>{
+   await prepareMsr('3'.repeat(24));const c=(await msrNative.candidates()).candidates[0]
+   const rows=await Promise.all([msrNative.readAndClaim(c,randomUUID()),msrNative.readAndClaim(c,randomUUID())])
+   assert.equal(rows.filter(r=>r.claimed).length,1);assert.equal(rows[0].claimId,rows[1].claimId)
+   const current=await msrNative.readAndClaim(c,randomUUID());assert.equal(current.claimed,false);assert.equal(current.existing.state,'REQUESTED')
+   assert.equal(current.claimId,rows[0].claimId)
   })
   await t.test('native ambiguous MSR acquisition stays BLOCKED and the original engine never retries it',async()=>{
    const base=await prepareMsr('b'.repeat(24));let acquisitions=0
