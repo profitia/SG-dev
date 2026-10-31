@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict'
 import {createHash,randomUUID} from 'node:crypto'
 import pg from 'pg'
-import {readSrmPersistedLocationCoordinates,createSrmLocationGeocodingRequest} from '../src/server/supplier-location-geocoding.ts'
+import {readSrmPersistedLocationCoordinates,createSrmLocationGeocodingDomain} from '../src/server/supplier-location-geocoding.ts'
+import {operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
 import {createSupplierLocationRuntime} from '../src/server/supplier-locations.ts'
 import {runLocationCacheMaintenance,LOCATION_CACHE_MAINTENANCE_ROLE} from './location-cache-maintenance.mjs'
 const hash=s=>createHash('sha256').update(s).digest('hex')
 /** Runs inside the existing isolated E1/Clerk/Source/RLS fixture. No Google,
  * MGBI, network source, cloud database, or persisted production data is used. */
 export async function exerciseLocationCacheFixture(t,f){
- const{root,owner,controlled,own,url,options,WORKER,ROLE,A,B,U,V,S,input,location,cached,geo,page,call,manual,command,ORIGIN,p1}=f
+ const{root,owner,controlled,own,url,options,WORKER,ROLE,A,B,U,V,S,input,location,cached,geo,page,call,manual,command,ORIGIN,p1,worker,workInput,result}=f
  const migration=own('033-location-geocoding-cache.sql'),digest=hash(migration),role=LOCATION_CACHE_MAINTENANCE_ROLE
  await t.test('bounded cache installation refuses a normal login and rolls back interrupted installation',async()=>{
   await assert.rejects(owner.query(migration),e=>e.code==='42501')
@@ -53,6 +54,24 @@ export async function exerciseLocationCacheFixture(t,f){
     assert.deepEqual(await geo.request(input),{status:'RESOLVED',paidCalls:0})
    }
    await assert.rejects(read(U,B))
+  })
+  await t.test('first persistent cache write uses the real current Work and fresh retention installation, then reuses zero paid calls',async()=>{
+   const created=await call({...command,command:{...manual,label:'Persistent cache first result',position:null}},U,'cache-first-'+randomUUID())
+   assert.equal(created.status,202,await created.clone().text())
+   const target=(await(await page()).json()).items.find(v=>v.label==='Persistent cache first result')
+   const targetInput={...input,locationId:target.id},admitted=await geo.request(targetInput);assert.equal(admitted.status,'ACCEPTED')
+   const currentInput={...workInput,resourceId:admitted.receipt.requestId,payload:admitted.payload}
+   const domain=createSrmLocationGeocodingDomain(hash(own('013-supplier-locations.sql')),digest);let selected
+   await worker.runSqlWork(currentInput,{unitId:'MAPS_GEOCODE_READ',accessMode:'READ',inputDigest:operationPayloadDigest({cache:'first-read'})},async(ctx,client)=>{selected=await domain.readCurrent(ctx,client)})
+   assert.equal(selected.alreadyResolved,false)
+   await worker.runSqlWork(currentInput,{unitId:'MAPS_GEOCODE_SAVE',accessMode:'WRITE',inputDigest:operationPayloadDigest({cache:'first-save',result})},async(ctx,client)=>domain.storeCurrent(ctx,client,selected,result))
+   const stored=await readSrmPersistedLocationCoordinates(configured,targetInput)
+   assert.equal(stored.addressVersion,target.addressVersion);assert.equal(stored.coordinates.origin,'GOOGLE_GEOCODING')
+   assert.deepEqual(await geo.request(targetInput),{status:'RESOLVED',paidCalls:0})
+   if(p1)await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id)VALUES($1,'srm',$2,$3,'ALLOW','supplier.location.write','supplier_report',$4)",[randomUUID(),A,U,target.id]))
+   const changed=await call({action:'UPDATE',supplierId:S,locationId:target.id,expectedVersion:stored.version,command:{...manual,label:target.label,position:null,address:{...manual.address,line1:'Changed source 42'}}},U,'cache-address-'+randomUUID())
+   assert.equal(changed.status,202,await changed.clone().text())
+   assert.equal(await readSrmPersistedLocationCoordinates(configured,targetInput),null,'old address marker cannot survive a new address version')
   })
   await t.test('unchanged accepted source sync performs no new write cycle or request reservation',async()=>{
    const runtime=createSupplierLocationRuntime({...configured,sourceScope:'HEADQUARTERS_MANUAL'})

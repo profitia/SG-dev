@@ -285,7 +285,7 @@ for(const p1 of[false,true])test((p1?'P1 SQL020/014':'TASK02 SQL019')+' actual S
    await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='DENY' WHERE grant_id=$1",[grant]));await assert.rejects(save(),isOperationDenied);await controlled(()=>owner.query("UPDATE profitia_access.permission_grants SET effect='ALLOW' WHERE grant_id=$1",[grant]))
    await save();const cached=(await(await page()).json()).items.find(v=>v.id===location.id);assert.equal(cached.coordinates.origin,'GOOGLE_GEOCODING');assert.equal(cached.updatedByUserId,U);assert.equal(Date.parse(cached.coordinates.expiresAt)-Date.parse(cached.coordinates.fetchedAt),29*86400000);assert.doesNotMatch(JSON.stringify(cached),/MUST_NOT_PERSIST/)
    await read();assert.equal(selection.alreadyResolved,true);assert.deepEqual(await geo.request(input),{status:'RESOLVED',paidCalls:0})
-   await exerciseLocationCacheFixture(st,{root,owner,controlled,own,url,options,WORKER,ROLE,A,B,U,V,S,input,location,cached,geo,page,call,manual,command,ORIGIN,p1})
+   await exerciseLocationCacheFixture(st,{root,owner,controlled,own,url,options,WORKER,ROLE,A,B,U,V,S,input,location,cached,geo,page,call,manual,command,ORIGIN,p1,worker,workInput,result})
    await st.test('transient completion retains only CAS/audit metadata and refuses replay, wrong digest and foreign target',async()=>{
     const migration=own('018-transient-location-geocoding.sql')
     await controlled(async()=>{
