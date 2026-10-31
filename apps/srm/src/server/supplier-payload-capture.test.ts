@@ -51,3 +51,10 @@ test('non-finite or cyclic supplier input is refused before Work admission',()=>
  const input=envelope();Object.assign(input.data!,{self:input});assert.throws(()=>f.store.pkd(selection,input),OperationDenied)
  assert.equal(f.calls(),0)
 })
+test('Supplier capture never executes accessors or toJSON on purported provider data',()=>{
+ const f=fixture();let executions=0
+ const accessor=envelope();Object.defineProperty(accessor.data!,'untrusted',{enumerable:true,get(){executions++;return 'value'}})
+ const converted=envelope();Object.assign(converted.data!,{toJSON(){executions++;return {nip:selection.command.nip}}})
+ for(const input of [accessor,converted])assert.throws(()=>f.store.pkd(selection,input),OperationDenied)
+ assert.equal(executions,0);assert.equal(f.calls(),0)
+})

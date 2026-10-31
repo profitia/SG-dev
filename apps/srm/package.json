@@ -33,6 +33,7 @@
     "@profitia/maps-contracts": "file:../../packages/maps-contracts",
     "@profitia/maps-embed": "file:../../packages/maps-embed",
     "@profitia/platform-contracts": "file:../../packages/platform-contracts",
+    "@profitia/platform-payload-capture": "file:../../packages/platform-contracts/payload-capture",
     "@profitia/srm-xray": "file:../../packages/srm-xray",
     "cheerio": "1.1.2",
     "exceljs": "^4.4.0",

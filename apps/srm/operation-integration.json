@@ -7081,5 +7081,56 @@
     "providerControlsChanged": false,
     "excludedEnvironmentsChanged": false,
     "livePerformanceThresholdsClaimed": false
+  },
+  "freshPayloadCaptureAdoption": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "scope": "FINITE_INPUT_DATA_CAPTURE_ONLY",
+    "targetEnvironment": "development",
+    "platformVersion": "1.32.3",
+    "previousReceiptSourceSha": "38241dbcf593e0c58b3b1aed69457383fd5cc4f3",
+    "previousReceiptDigest": "2c4dad4688edafdcef5a2032ab25a01d76150b4a48ec36748538eb622dd0c528",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "pullRequest": 827,
+      "sourceSha": "9d44684b968ca3a067d414f7c450b6016ecc8d19",
+      "publishedMainSha": "38241dbcf593e0c58b3b1aed69457383fd5cc4f3",
+      "sourceGo": true,
+      "sourcePhrCommit": "f189d55371a38d1853be78e27aad1f804d66abac"
+    },
+    "packageName": "@profitia/platform-payload-capture",
+    "packageVersion": "1.0.0",
+    "sdkPeer": "1.32.3",
+    "producerSourceDigests": {
+      "package.json": "1fb87612b1dcfb4459d0728b27e63d05b4c53485fec173a3099bde442ff63a18",
+      "src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f",
+      "src/payload-capture.d.mts": "ac8c8399b33ee143a4191530fd7a236f04b6055c437b6a38bf69a888f86d2634"
+    },
+    "applicationSourceDigests": {
+      "package-lock.json": "bc927adff9fd7c4459131e965f1129891efc4d2956f0f045d46c9c911fce0093",
+      "package.json": "2d042d7f527533cdcbe374f5a4a6af648002ac38eec2dc3f95326835d6b04292",
+      "scripts/corporate-source.integration.test.mjs": "74c7ed97f5c24fd49c4c19045a055ef13bd972953ed3c8370ec2c29440e1346a",
+      "scripts/native-execution-adoption.test.mjs": "b3b2b77ad206493509f27d97901064d90c134775f1407f376b3bca946fb06f94",
+      "scripts/request-quota-adoption.test.mjs": "5b679a714c2c525232361c0548b9c3bb2dc654527f3b4033db59773a746ed2bc",
+      "scripts/rural-location-release.test.mjs": "98b2828c3dae0a25f6836b919dab70e19f8381f5a6da412101f34178c2e2cdf0",
+      "scripts/xray-performance-adoption.test.mjs": "a837f7debf6c7f1892a999fa0e875b9e9bb94408f55b85dd415b2a343cd33da7",
+      "scripts/xray-workflow-contract.test.ts": "430de53f06d5acac7260625f1f96d30bf8d6520e3446897306f79f2441c66b64",
+      "src/server/peer-read-boundary.test.ts": "818d55eac8b8de0b4f136144f58a2b6d38bac367baead5acb7550654f48ea610",
+      "src/server/private-work-json.ts": "bb9dff209e9738bd45ff1fc1d0538d912436560d37a1e184a203549047c769b2",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "6f800dd0a4920f005e83f8471efeb68d88e328d705ca4ee8feb62ddfbb789921",
+      "src/server/supplier-native-work-store.ts": "753d468e0d1c1b44467733df8fa461c3a90f0b24269d2a73996bf28466241574",
+      "src/server/supplier-payload-capture.test.ts": "2251393b0d036aa57d745216c77d920193f53014add93281e4590431fcaff98e"
+    },
+    "canonicalSdkDigestPreserved": true,
+    "currentWorkChecksPreserved": true,
+    "noAuthorizationCache": true,
+    "returnCaptureUnchanged": true,
+    "sourceAndProviderBoundsPreserved": true,
+    "sdkRuntimeChanged": false,
+    "sqlOrPolicyChanged": false,
+    "routingOrUiChanged": false,
+    "runtimeDeploymentClaimed": false,
+    "livePerformanceThresholdsClaimed": false,
+    "paidAcquisitionsPerformed": false,
+    "excludedEnvironmentsChanged": false
   }
 }
