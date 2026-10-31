@@ -7278,7 +7278,7 @@
         "src/workflow.ts",
         "tsconfig.json"
       ],
-      "sourceDigest": "8290f09e23d8eb5a43b78bb74319a65839fbea95406b7234e3a154a09c2ebf45"
+      "sourceDigest": "076e26549e62da5849fdd69bd0201085bd2d8315f175f0c70f41fd1d75bc42b4"
     },
     "applicationSourceDigests": {
       "app/api/xray/presentation/[operation]/route.ts": "205ea3d5d2ed0a50e7ae75a3ca43315a690ce25d16e0cd5a0b629d87ddefc8a2",
@@ -7326,7 +7326,7 @@
       "../../packages/srm-xray/src/presentation-assets.ts": "4150da8e98e312ada47e3d8d44dabce1a8ca398f9f23da771b6ea100501cbeaa",
       "../../packages/srm-xray/src/report-layout.css": "83165e76771af2325ebe143e135f04829dc95d3fccae6cfba7451b474c02161d",
       "../../packages/srm-xray/src/report-navigation.tsx": "b0276538ceff8e94b6d6297811e061c007abbfbe59f3c477f5f89a895a3131bf",
-      "../../packages/srm-xray/src/supplier-location-controller.ts": "9445a9f30e125ae16e00f6a49a3f2da7275cd605f54293718bd00de38ef0d03b",
+      "../../packages/srm-xray/src/supplier-location-controller.ts": "8110fc68c7fcd08ebd8cb53bb2b85443efe4b7cd2ad37587db5eaf1176b0fece",
       "../../packages/srm-xray/src/supplier-locations-view.tsx": "936db6f7713d5380403ba55b998d3a0515d5ba960315371cc10886ac2b74f74d",
       "../../packages/srm-xray/src/supplier-locations.css": "e3956d673f17818547cb6eb9cfbdac83a489563ef16369cfdafcf0f7ddf3302c",
       "../../packages/srm-xray/src/supplier-map-readiness.ts": "f3906c4a679d3f49a131b5e8cd0692d4a6302fd20cd8803185b9b4be35a52c26",
@@ -7338,7 +7338,8 @@
       "../../packages/srm-xray/src/workflow-view.tsx": "55ccb061267adc0b3681976cabba81f88bda44b42fd3185fd0291af7837265a6",
       "../../packages/srm-xray/src/workflow.css": "b9b807de8e1c43af7263376a70ad81c2be94cb5d236dbbcbd99f690be66415e9",
       "../../packages/srm-xray/src/report-availability-view.tsx": "65412adf9f2f9476c0b2256a0f46bba8d5c7aa7fa7c53eb66e5a1a6b1aaa2fc4",
-      "scripts/xray-performance-adoption.test.mjs": "1ec604730204fb6209c6e4ff6f21809d43652144430b0c033612920e04b9daab"
+      "scripts/xray-performance-adoption.test.mjs": "1ec604730204fb6209c6e4ff6f21809d43652144430b0c033612920e04b9daab",
+      "src/modules/xray/supplier-location-controller.test.ts": "939b342f74575ecb60306f3da79cb52188fe752ac6302a7608d659d0f1802944"
     },
     "unchangedDomainSourceDigests": {
       "apps/srm/src/server/financial-excel.ts": "fbd5dc7edf314fb270b9cb9cb1bf58a955d2ec149dcab7aceba84984644cfb4c",
