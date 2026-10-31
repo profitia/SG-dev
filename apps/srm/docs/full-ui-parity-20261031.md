@@ -93,6 +93,6 @@ Samodzielny host zachowuje własne efekty telemetrii. SG2 dostarcza chroniony tr
 
 ## Dowody odbioru
 
-Pełne testy SRM: 920 PASS, 8 SKIP (brak izolowanych połączeń DB); dalsze testy nakładki/kontraktu: 10 PASS. Odbiór React18: 2 PASS. Regresja reguł wydań: 308 PASS, 3 SKIP. Obowiązkowe UI KRS i PORR: PASS. Build SRM i lokalny build SG2: PASS. Stan zdalnego CI należy odczytać przy dokładnym commicie PR; ten dokument nie deklaruje zielonego CI ani zgodności live 1:1.
+Pełne testy SRM: 920 PASS, 8 SKIP (brak izolowanych połączeń DB); dalsze testy nakładki/kontraktu: 10 PASS. Odbiór React18: 3 PASS. Regresja reguł wydań: 308 PASS, 3 SKIP. Obowiązkowe UI KRS i PORR: PASS. Build SRM i lokalny build SG2: PASS. Stan zdalnego CI należy odczytać przy dokładnym commicie PR; ten dokument nie deklaruje zielonego CI ani zgodności live 1:1.
 
 Lokalne porównanie stabilnego stanu: pełny raport 1920×4511 i 390×6505 ma jednakowe wymiary. Średnia bezwzględna różnica kanału RGB to odpowiednio 0,000360 i 0,000652 w skali 0–255. Modale Excel i izolowanej mapy: zerowa różnica pikseli w obu rozmiarach; powiększony wykres: zero na desktopie i 0,000053 na mobile. Wybór wskaźników: poniżej 0,002. Porównanie obejmuje starą kompozycję raportu SRM i nową kompozycję współdzieloną z obecnymi komponentami oraz rzeczywistym arkuszem AppShell. Wyłączono jawny obszar asystenta hosta; nie jest to podwójna zalogowana sesja usług Development.

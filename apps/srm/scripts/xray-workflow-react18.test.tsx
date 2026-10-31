@@ -3,8 +3,8 @@ const acceptProps=(props:SupplierXRayWorkflowProps)=>props;
 import test from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
 const runtime=createRequire(process.env.XRAY_REACT18_RUNTIME||import.meta.url);
 const React=runtime('react'),{JSDOM}=runtime('jsdom'),{createRoot}=runtime('react-dom/client'),{build}=runtime('esbuild');
-async function publicModule(){
- const result=await build({entryPoints:[runtime.resolve('@profitia/srm-xray/workflow')],bundle:true,write:false,platform:'node',format:'cjs',jsx:'automatic',external:['react','react-dom','react/jsx-runtime']});
+async function publicModule(entry='@profitia/srm-xray/workflow'){
+ const result=await build({entryPoints:[runtime.resolve(entry)],bundle:true,write:false,platform:'node',format:'cjs',jsx:'automatic',external:['react','react-dom','react/jsx-runtime']});
  const module={exports:{}};new Function('require','module','exports',result.outputFiles[0].text)(runtime,module,module.exports);return module.exports as any;
 }
 test('public native workflow really mounts under React18, preserves host locale/theme and never acquires a report on mount or reactivation',async()=>{
@@ -17,6 +17,12 @@ test('public native workflow really mounts under React18, preserves host locale/
  await draw('pl','light',false);await draw('pl','light',true);assert.equal(requests,0);assert(document.body.textContent!.includes('Wpisz numer NIP'));
  await React.act(async()=>Array.from(document.querySelectorAll('button')).find(x=>x.textContent==='Wróć do biurka')!.click());assert.equal(returns,1);
  await React.act(async()=>root.unmount());dom.window.close();
+});
+
+test('React18 unavailable full-view skeleton retains native inert SSR semantics',async()=>{
+ const {ReportAvailabilityView}=await publicModule('@profitia/srm-xray'),{renderToStaticMarkup}=runtime('react-dom/server');
+ const html=renderToStaticMarkup(React.createElement(ReportAvailabilityView,{availability:{code:'DEREGISTERED',title:'Unavailable',message:'Reference notice',hideDetails:true}}));
+ assert.match(html,/aria-hidden="true" inert=""/);assert(html.includes('Reference notice'));
 });
 
 test('React18 journey displays real-contract zero/periods and masked KYS, keeps state without refetch, and clears everything on denial',async(t)=>{
