@@ -7324,5 +7324,42 @@
     "providerCallsPerformedByLocalTests": false,
     "deploymentClaimed": false,
     "performanceThresholdsClaimed": false
+  },
+  "financialSortRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "scope": "FINANCIAL_COMPARISON_KEY_PREPARATION",
+    "targetEnvironment": "development",
+    "platformVersion": "1.32.3",
+    "previousReceiptSourceSha": "e87e1e9df10ce43ae1c0ee7ca6045f90ae4769f1",
+    "previousReceiptDigest": "408e30c30033f1ab52750420ef06160020aad3a1d819001a229bde626c50c6ca",
+    "applicationSourceDigests": {
+      "scripts/corporate-source.integration.test.mjs": "41e968460899dee0f4308050ff14695bd4fd8bad3d5f71bf9f40c565d8c2068c",
+      "scripts/native-execution-adoption.test.mjs": "a1efe415c97a213206a130c871d07ffc345e6dc29b43bc1aa16cb85a97a6ff4c",
+      "scripts/request-quota-adoption.test.mjs": "138d55c6c58313d5f4e381bb80561271a99fc2b685698c886e22c67ec43e4d75",
+      "scripts/rural-location-release.test.mjs": "f30059954c26adb3a5ea4bf4aeac5705cb2709745137e7ead67595763e87ef8e",
+      "scripts/xray-performance-adoption.test.mjs": "37aa2a044925db02893ddea0bff68c71905b6406d9d24d6bc0dd9316247819f9",
+      "scripts/xray-workflow-contract.test.ts": "ab28ef0673fc244afffa4cb148a453c14ec4ebc378773900875240e9a927a527",
+      "src/server/company-source-policy.test.ts": "5b2b0450025efa85c10295c35d6e62376f3c427e1afb7cc1c861b501df2dfe96",
+      "src/server/financial-documents.test.ts": "7ed8689e6142845d28d35817a026258afe88f3a66f89fd9b984c1f2f89e4f763",
+      "src/server/financial-documents.ts": "db000830b4a133eccf3769fa87ef9e562d555a672292b2b5c035a706fdb0bf6b",
+      "src/server/financial-revisions.test.ts": "28e0d55f3647db2f1dfa1cc288ee8dc27e74c00f34aa7cb8eb585fd8666446a4",
+      "src/server/financial-revisions.ts": "604953d5efd09cc6c52033db56ac37860ea75d0328166a5894035dd88dbf6b69",
+      "src/server/peer-read-boundary.test.ts": "18a7a2cded19a85ec7bb7c629218523c38ae09fb1041c993f93bc351ca828eb8",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "aa35afac2c78238a568c156769f8e5afcf44fb94042fadccd4bfe5591a5b6de1"
+    },
+    "financialValuesPreserved": true,
+    "sourceChecksumsPreserved": true,
+    "historicalContentHashesPreserved": true,
+    "sameNumericPolishPositionOrder": true,
+    "currentClerkE1RlsPreserved": true,
+    "sameReadyAndProviderRouting": true,
+    "sharedSdkChanged": false,
+    "sqlSchemaOrPolicyChanged": false,
+    "providerRetriesAdded": false,
+    "paidAcquisitionsPerformed": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "uiOrMapsChanged": false,
+    "excludedEnvironmentChanges": false
   }
 }
