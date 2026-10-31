@@ -5543,7 +5543,7 @@
       "lib/appshell/xray-full-transport.ts": "9d030208706df73a4ab3a8761cd9054a03b135502141e2060156b96488c6f76b",
       "lib/platform/xray-presentation-gateway.ts": "f71ddfe8872aefb69787488526d5bb692dde0d9fbf2c98b68c51a29ceefcba9a",
       "package-lock.json": "2fab9fb1d1c9fb5f7805eda1d8e54d4f467fe4fc55433efbadc65578d82226d9",
-      "package.json": "5511a07e5b6da15b292bbcd99e98dc80cfc3994d085dccd7dc51ad3254313799",
+      "package.json": "ecdc405853a93d5e96ff5215de5de4960a323883ed52e46ea51eb16da7775e80",
       "tests/adp-appshell-consumer.test.tsx": "3b970135cc702f9fcd993f6c11aa66458a4c457d677a6495cd6254fcef5135a8",
       "tests/adp-appshell-preview.mjs": "3988b14cd26b73756461fe77199110745546f26c1beff3c2af1cf930154790dd",
       "tests/appshell-product-boundary.test.ts": "73288a172124347e421ae4a8b1b7a41f63a53fe33387331b1f2d6041e412bda2",
