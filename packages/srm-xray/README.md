@@ -1,6 +1,6 @@
 # SRM X-Ray public module ports
 
-Owner: SRM. Package0.2.0 remains private and repository-owned. Installing it does
+Owner: SRM. Package 0.4.0 remains private and repository-owned. Installing it does
 not authorize a product, account, organisation, data source or deployment.
 
 | Public entry | Responsibility | Accepted host boundary |
@@ -9,10 +9,10 @@ not authorize a product, account, organisation, data source or deployment.
 | `/executive-summary-rules` | Existing selection of confirmed facts/limitations | Headless, React resolution forbidden by test |
 | `/financial-value` | Existing exact/compact display formatting | Headless; no financial calculation or persistence |
 | `/executive-summary` | Existing Supplier Intelligence summary UI | Bounded React18.3.1 probe and existing React19.2.4 SRM tests |
-| Root and previous CSS entries | Existing SRM composite/mount surface | Existing React19 acceptance; other React18 mounts are **not** accepted |
+| `/full-workflow`, `/full-report`, `/full-report.css` | Complete shared product composition | React18 SG2 and React19 SRM require independent host acceptance |
+| `/full-report-operations` | Closed presentation commands and bounded responses | Signed same-origin gateway; original native HUMAN/E1 admission |
 
-The peer range permits the tested React18 leaf consumer and existing React19
-host. It does not assert that every root/composite export works on React18.
+The peer range permits the React18 consumer and existing React19 host.
 Consumers must use an explicitly accepted public entry and prove their own
 framework build, input, gateway and protected business flow. No consumer may
 import private `apps/srm/**` source or bypass a peer conflict with force flags.
@@ -53,11 +53,29 @@ The host must remount the entire module when user/session/organisation changes.
 No persistent browser storage is used. Private KYS presentation expires locally
 at the validity returned by its current authorized SRM read.
 
-Import `@profitia/srm-xray/workflow.css` for the scoped public presentation; never
-import the standalone global stylesheet. The embedded Financial view presents
-source periods, amounts, currencies and units without new calculations. Its
-standalone full view, drill-downs, maps, exports and sensitive reveal remain in
-SRM and are not activated by this entry. The host owns the single assistant.
+Version 0.4 replaces the former simplified workflow with the complete
+`FullXRayWorkflow`. The compatibility workflow entry delegates to that same
+composition. Both hosts render the same full scanner, indicators, statements,
+history dialogs, KYS and locations. The host supplies authenticated transport
+and its single assistant slot. Native-only telemetry remains in its native
+adapter. Conditional sections follow the current SRM composition; dormant
+components are not enabled as new product features.
+
+Import `@profitia/srm-xray/full-report.css` (or its compatibility entry
+`workflow.css`). The generated stylesheet scopes product rules to
+`.srm-xray-product`; its font family has a private name. Regenerate using
+`npm run build:presentation-css` in this package and verify with
+`npm run check:presentation-css`. There are no SG2 product style overrides.
+
+The additive presentation contract exposes ten fixed native operations for
+XLSX, KYS/KRS PDF, authorized PESEL reveal, registry search/verification, web
+identity, locations and map readiness. The original five workflow operations
+and their wire version remain unchanged. Binary exports use the existing SRM
+generators. Maps use the existing Maps runtime and protected SRM locations;
+the runtime's host-origin allowlist must explicitly admit the SG2 public origin.
+No provider, financial calculation, identity, grant or database policy moves
+into this package. Local fixtures prove presentation behavior only; deployed
+parity still requires controlled browser acceptance of both live hosts.
 
 `@profitia/srm-xray/workflow-contract` defines the closed command mapping,
 validated versioned response envelope and bounded JSON reader. The wire card

@@ -245,6 +245,6 @@ export function SpendGuruAssessment({
         <CanonButton canonId="SRM-C38" usage="SpendGuruAssessment:14" type="button" className="srm-chat-attach-button" onClick={windowHost.attach} aria-label="Przyłącz czat do dashboardu" title="Przyłącz do dashboardu"><ChatIcon kind="attach" /></CanonButton>
       </div> : chat}
     </section>
-    {windowHost.target && createPortal(<div className="srm-ui srm-detached-shell"><CanonElement as="section" canonId="SRM-C31" usage="SpendGuruAssessment:15" className="srm-chat-slot is-window" aria-label="Asystent SpendGuru w osobnym oknie">{chat}</CanonElement></div>, windowHost.target)}
+    {windowHost.target && createPortal(<div className="srm-ui srm-detached-shell srm-xray-product"><CanonElement as="section" canonId="SRM-C31" usage="SpendGuruAssessment:15" className="srm-chat-slot is-window" aria-label="Asystent SpendGuru w osobnym oknie">{chat}</CanonElement></div>, windowHost.target)}
   </>;
 }
