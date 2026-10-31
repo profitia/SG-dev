@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.34.0",
+  "manifestVersion": "3.35.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,31 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {
+      "id": "pci-smart-preparation-and-reference-methodology-business-and-architecture-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-pci-smart-preparation-and-reference-methodology-business-and-architecture-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 440,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "benchmark-qualification-layer-business-and-architecture-canon",
+        "agent-execution-canon",
+        "repository-routing",
+        "architecture-baseline",
+        "architecture-execution-adapter",
+        "spendguru-srm-target-architecture-canon",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
+        "platform-appshell-business-and-architecture-canon",
+        "profitia-package-and-limits-management",
+        "profitia-package-and-limits-customer-lifecycle"
+      ]
+    },
     {
       "id": "package-limits-development-runbook",
       "version": "1.0",
