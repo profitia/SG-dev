@@ -7515,7 +7515,7 @@
       "scripts/porr-account-ui.test.mjs": "74279651e8e336eb68c57943d8743e587c2c9450bbf0317c47c2b400569c9410",
       "scripts/rural-location-release.test.mjs": "44b1016a3b9aa822afaaa41fc1d260b01d1b45c30ae61027c7c633593910c7be",
       "scripts/xray-performance-adoption.test.mjs": "7df59dc013b6ae657642dd7596846f918ee56220eb4b8d4cae4c6acae433c86d",
-      "scripts/xray-workflow-contract.test.ts": "004fa6611574380e367bec3493e6d04a2b9dc2d8fa4be9a082c0009d1f083e22",
+      "scripts/xray-workflow-contract.test.ts": "a56bb8b9f6a00ccb4c24e24219fc28ad98ff98857cead74f73553eb0d0c2c042",
       "scripts/xray-workflow-react18.test.tsx": "b5a072401279f217c7779c296cd86ed38f58af343a84c1dfc50933c5023f6412",
       "src/modules/xray/financial-period-selector.tsx": "81853c5698fbd0f1112ccdbef3b54fafc5a79d65f107e014d37274983315de0f",
       "src/modules/xray/report-navigation.tsx": "81853c5698fbd0f1112ccdbef3b54fafc5a79d65f107e014d37274983315de0f",
