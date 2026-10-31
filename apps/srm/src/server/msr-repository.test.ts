@@ -46,6 +46,31 @@ test("MSR first retrieval persists original/facts, repeat cache reuse makes no d
   const again=await enrichMsrFinancial("org",c.nip,first,{store:f.store,download});
   assert.equal(downloads,1);assert.equal(f.saves(),1);assert.equal(f.claims(),1);assert.equal(again.msrChanged,false);
 });
+test('native read-and-claim commits before acquisition, avoids a second read/claim and keeps the received-original barrier',async()=>{
+ const f=fixture();let combined=0,reads=0,downloaded=0,received=false;
+ const originalRead=f.store.read,originalClaim=f.store.claim,receive=f.store.receive;
+ f.store.read=async c=>{reads++;return originalRead(c)};
+ f.store.claim=async()=>{throw Error('duplicate separate claim')};
+ f.store.receive=async(...args)=>{await receive(...args);received=true};
+ f.store.readAndClaim=async(candidate,id)=>{
+  combined++;const existing=await originalRead(candidate),claimId=existing?.claim_id??id;
+  const claimed=(!existing||existing.state==='DEFERRED')?await originalClaim(candidate,claimId):false;
+  return{existing,claimId,claimed};
+ };
+ const first=await enrichMsrFinancial('org',c.nip,base(),{store:f.store,download:async()=>{downloaded++;assert.equal(f.get().state,'REQUESTED');return source()},parse:(...args)=>{assert.equal(received,true);return parseMsrOriginal(...args)}});
+ assert.equal(first.section.status,'SUCCESS');assert.equal(combined,1);assert.equal(reads,0);assert.equal(downloaded,1);assert.equal(f.claims(),1);
+ await enrichMsrFinancial('org',c.nip,first,{store:f.store,download:async()=>{throw Error('paid retry')}});
+ assert.equal(combined,2);assert.equal(reads,0);assert.equal(downloaded,1);assert.equal(f.claims(),1);
+});
+test('native combined admission cannot claim an unknown format, exceed its file bound or purchase after a lost claim',async()=>{
+ for(const known of[false,true]){
+  const f=fixture();let combined=0,downloads=0;
+  f.store.candidates=async()=>({candidates:[c],archiveChecksum:'b'.repeat(64),...(known?{licensedXmlRecordIds:[c.recordId]}:{})});
+  f.store.readAndClaim=async()=>{combined++;return{existing:null,claimId:'lost-race',claimed:false}};
+  await enrichMsrFinancial('org',c.nip,base(),{store:f.store,requireLicensedXmlMetadata:true,maximumNewDownloads:1,download:async()=>{downloads++;return source()}});
+  assert.equal(downloads,0);assert.equal(combined,known?1:0);assert.equal(f.claims(),0);
+ }
+});
 test('main MGBI policy blocks a new unknown-format purchase before claiming or calling the provider',async()=>{
   const f=fixture();let calls=0;
   const result=await enrichMsrFinancial('org',c.nip,base(),{store:f.store,requireLicensedXmlMetadata:true,download:async()=>{calls++;return source();}});

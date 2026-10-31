@@ -54,6 +54,9 @@ export type MsrStore = {
   candidates():Promise<{candidates:MsrCandidate[];archiveChecksum:string;metadataMissing?:boolean;licensedXmlRecordIds?:readonly string[]}|null>;
   claim(candidate:MsrCandidate,claimId:string):Promise<boolean>;
   read(candidate:MsrCandidate):Promise<MsrReceipt|null>;
+  /** Optional native composition: one current WRITE Work reads the existing
+   * receipt and commits its claim before any separately admitted purchase. */
+  readAndClaim?(candidate:MsrCandidate,proposedClaimId:string):Promise<{existing:MsrReceipt|null;claimId:string;claimed:boolean}>;
   receive(candidate:MsrCandidate,claimId:string,original:MsrOriginal):Promise<void>;
   save(candidate:MsrCandidate,claimId:string,original:MsrOriginal,parsed:MsrParsed,projection:MsrProjection,archiveChecksum:string):Promise<void>;
   project?(candidate:MsrCandidate,projection:MsrProjection,archiveChecksum:string):Promise<void>;
@@ -120,7 +123,12 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
   if(options.maximumNewDownloads!==undefined&&(!Number.isSafeInteger(options.maximumNewDownloads)||options.maximumNewDownloads<1||options.maximumNewDownloads>100))throw Error('MSR_INVALID_WORK_BOUND');
   let changed = false,newDownloads=0;
   for (const candidate of archive.candidates) {
-    const existing = await store.read(candidate);
+    // Do not reserve a paid attempt for an unknown format or exhausted local
+    // work bound. Historical received originals still use the normal read.
+    const eligible=(!options.requireLicensedXmlMetadata||archive.licensedXmlRecordIds?.includes(candidate.recordId))
+      &&(options.maximumNewDownloads===undefined||newDownloads<options.maximumNewDownloads);
+    const prepared=eligible&&store.readAndClaim?await store.readAndClaim(candidate,randomUUID()):null;
+    const existing = prepared?prepared.existing:await store.read(candidate);
     if (existing && existing.state !== "RECEIVED" && existing.state !== "DEFERRED") {
       const saved = verifyMsrReceipt(candidate,existing);
       if (saved) {
@@ -151,8 +159,8 @@ export async function enrichMsrFinancial(organizationId:string,nip:string,base:M
       warnings.push('MGBI_FINANCIAL_UNKNOWN_FORMAT');continue;
     }
     if(existing?.state!=='RECEIVED'&&options.maximumNewDownloads!==undefined&&newDownloads>=options.maximumNewDownloads){warnings.push('MSR_PROCESSING_PENDING');continue;}
-    const claimId = existing?.claim_id ?? randomUUID();
-    if ((!existing || existing.state === "DEFERRED") && !await store.claim(candidate,claimId)) {warnings.push("MSR_DOWNLOAD_IN_PROGRESS");continue;}
+    const claimId = prepared?.claimId ?? existing?.claim_id ?? randomUUID();
+    if ((!existing || existing.state === "DEFERRED") && !(prepared?prepared.claimed:await store.claim(candidate,claimId))) {warnings.push("MSR_DOWNLOAD_IN_PROGRESS");continue;}
     try {
       const received=existing?.state === "RECEIVED" ? existing : null;
       if (received && (received.identity_sha256 !== identity(candidate) || !received.original_bytes

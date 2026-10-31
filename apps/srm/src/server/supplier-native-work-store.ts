@@ -380,6 +380,21 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       return Object.freeze({
         candidates:()=>run(s,'SRM_MSR_CANDIDATES',{allowedKrs:krs===undefined?null:[...krs]},pool=>domain(pool).candidates()),
         claim:(value,id)=>{const c=candidate(value);return run(s,'SRM_MSR_CLAIM',{candidate:c,claimId:id},pool=>domain(pool).claim(c,id))},
+        readAndClaim:(value,proposedClaimId)=>{
+          const c=candidate(value)
+          if(!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(proposedClaimId))return refuse()
+          return run(s,'SRM_MSR_CLAIM',{candidate:c,claimId:proposedClaimId},async pool=>{
+            const current=domain(pool);let existing=await current.read(c),claimId=existing?.claim_id??proposedClaimId
+            const claimed=(!existing||existing.state==='DEFERRED')?await current.claim(c,claimId):false
+            // A concurrent winner may commit between SELECT and INSERT. Read
+            // its actual durable receipt; never return our unused proposal as
+            // the identity of somebody else's admitted provider attempt.
+            if(!claimed&&(!existing||existing.state==='DEFERRED')){
+              existing=await current.read(c);claimId=existing?.claim_id??claimId
+            }
+            return{existing,claimId,claimed}
+          },value=>({existing:receipt(value.existing),claimId:value.claimId,claimed:value.claimed}))
+        },
         read:value=>{const c=candidate(value);return run(s,'SRM_MSR_READ',{candidate:c},pool=>domain(pool).read(c),receipt)},
         receive:(value,id,source)=>{const c=candidate(value),stored=original(source,c);return run(s,'SRM_MSR_RECEIVE',{candidate:c,claimId:id,originalDigest:stored.checksum},pool=>domain(pool).receive(c,id,stored))},
         save:(value,id,source,parsed,projection,archiveChecksum)=>{
