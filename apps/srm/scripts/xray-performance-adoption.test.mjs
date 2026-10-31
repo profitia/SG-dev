@@ -28,7 +28,7 @@ const dataCopy=JSON.parse(read('operation-integration.json')).freshDataCopyRecov
 const documentPolicy=JSON.parse(read('operation-integration.json')).freshDocumentPolicyRecovery
 const inventoryReuse=JSON.parse(read('operation-integration.json')).freshInventoryReuseRecovery
 const fullUi=JSON.parse(read('operation-integration.json')).fullUiParityAdoption
-const beforeFullUi=file=>fullUi?.applicationSourceDigests[file]?execFileSync('git',['show',fullUi.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):acceptedReceiverBytes(file)
+const beforeFullUi=file=>fullUi?.applicationSourceDigests[file]?execFileSync('git',['show',fullUi.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):hostUiDigests[file]?execFileSync('git',['show',hostReceipt.fullUiParityAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):acceptedReceiverBytes(file)
 const hostReceipt=JSON.parse(read('../sg-runtime/operation-integration.json'))
 const hostUiDigests=Object.fromEntries(Object.entries(hostReceipt.fullUiParityAdoption?.applicationSourceDigests??{}).map(([file,digest])=>[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file)),digest]))
 const acceptedReceiverBytes=file=>{if(file==='../sg-runtime/operation-integration.json'&&hostReceipt.fullUiParityAdoption){const a=hostReceipt.fullUiParityAdoption,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);assert.equal(hash(bytes),a.previousReceiptDigest);const {fullUiParityAdoption,...preserved}=hostReceipt;assert.deepEqual(preserved,JSON.parse(bytes));return bytes}return read(file)}
@@ -361,7 +361,7 @@ export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
    const {fullUiParityAdoption,...preservedHost}=host;assert.deepEqual(preservedHost,JSON.parse(previous));precedingHost=previous
    for(const[file,digest]of Object.entries(h.applicationSourceDigests))assert.equal(hash(readCurrent(posix.normalize('apps/sg-runtime/'+file))),digest,'Current host '+file)
   }
-  assertCurrentPciIntegrity(prior,file=>Object.hasOwn(a.applicationSourceDigests,posix.relative('apps/srm',file))?readHistorical(a.previousReceiptSourceSha,file):precedingHost&&file==='apps/sg-runtime/operation-integration.json'?precedingHost:readCurrent(file),readHistorical)
+  assertCurrentPciIntegrity(prior,file=>Object.hasOwn(a.applicationSourceDigests,posix.relative('apps/srm',file))?readHistorical(a.previousReceiptSourceSha,file):host.fullUiParityAdoption&&Object.hasOwn(host.fullUiParityAdoption.applicationSourceDigests,posix.relative('apps/sg-runtime',file))?readHistorical(host.fullUiParityAdoption.previousReceiptSourceSha,file):precedingHost&&file==='apps/sg-runtime/operation-integration.json'?precedingHost:readCurrent(file),readHistorical)
   return
  }
 
