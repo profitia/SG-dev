@@ -258,12 +258,12 @@
         "src/workflow.ts",
         "tsconfig.json"
       ],
-      "sourceDigest": "8290f09e23d8eb5a43b78bb74319a65839fbea95406b7234e3a154a09c2ebf45",
+      "sourceDigest": "076e26549e62da5849fdd69bd0201085bd2d8315f175f0c70f41fd1d75bc42b4",
       "producer": {
         "projectKey": "SRM",
         "taskId": "SRM-XRAY-FULL-UI-PARITY-B-20261031",
         "pullRequest": 832,
-        "sourceSha": "ef6a2c60d423ff83e03f2ae69fe103dfa10887a2"
+        "sourceSha": "4d6aa9d8f0870f53f7861cb0523d9fc5efbb567c"
       }
     },
     "presentationContract": "profitia.srm-xray.presentation/1.0.0",
