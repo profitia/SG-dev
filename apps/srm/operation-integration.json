@@ -7046,5 +7046,40 @@
     "excludedEnvironmentsChanged": false,
     "runtimeDeploymentClaimed": false,
     "livePerformanceThresholdsClaimed": false
+  },
+  "freshDocumentPolicyRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "scope": "OPTIONAL_DOCUMENT_POLICY_CANDIDATE_AND_TESTS_ONLY",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "9c568135948f9057c3ebbcab5da633cceafdec02",
+    "previousReceiptDigest": "4f9ce7c2241899834aad6283c9c17e1e02cc63a7b1d372ea0431fc31875e6fd0",
+    "applicationSourceDigests": {
+      "db/private-store/032-document-statement-guard.sql": "6207a4bec5c1e89e401657d53478dc753de55132cdfe717a4d634273770805f6",
+      "deployment/financial-document-statement-2026-10-31.json": "be35d40f3edfd06551a8f6a62e109c6c746ad16e7cbd8926e3d6b7817ab6092c",
+      "scripts/corporate-source.integration.test.mjs": "d4f3d23d3e15991b08c0717f43d2f25a97cf3cb7027782d0f2eca583f0047082",
+      "scripts/financial-document-statement-release.mjs": "3dc666b1a2bc116abc058d6ab45a927868ad2ed59a4b3de47e52bb8a83ba6b24",
+      "scripts/financial-document-statement-release.test.mjs": "867dce6f1a917fc7aa66e9e522f0ca499c8232e5decc88995bf290ae8471e1e3",
+      "scripts/financial-document-statement.integration.test.mjs": "7646608d556da4296f01240b7ca4c1577dd462adcfd2dd68c5472e2e64daf39c",
+      "scripts/native-execution-adoption.test.mjs": "84400202fb47d1351be28bd740ab474637edf7da06b9c53a549ab61474f47807",
+      "scripts/ready-report.integration.test.mjs": "8bb3659a94f97b223f029f090f6024525350a6c5dcd26c4ef1e213b2b61496e4",
+      "scripts/request-quota-adoption.test.mjs": "1f3b5b98eba7f3de15e3ed1e4756bc71c911e46ced115731c2f6d808334d988b",
+      "scripts/rural-location-release.test.mjs": "c6b87ac2e30565cd9e0fe1b7208af699422cc1e7a8f85934514e945fbb19c753",
+      "scripts/xray-performance-adoption.test.mjs": "0af2a021c3b403bb4d147ea5ffafdaf54e8b61c6e5600a0d3d70ccc479d3a379",
+      "scripts/xray-workflow-contract.test.ts": "4c6f370fccdb6ea3b8cfde8dc023ea2902ec3eab58f1beefea94e14392157118",
+      "src/server/peer-read-boundary.test.ts": "797adc2e086a2c625b105b91923ee180079368f08261f3c4343ac5969f043a89",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "4add4099c5de5f62ff26c14215de0dce0584644212c1fc940f12f517af51ea33"
+    },
+    "fullNativeCheckPreserved": true,
+    "perRowOrganizationAndNipPreserved": true,
+    "legacyFallbackPreserved": true,
+    "rollbackTested": true,
+    "cloudActivationAuthorized": false,
+    "cloudActivationClaimed": false,
+    "runtimeChanged": false,
+    "rlsDisabled": false,
+    "rolesOrAclChanged": false,
+    "providerControlsChanged": false,
+    "excludedEnvironmentsChanged": false,
+    "livePerformanceThresholdsClaimed": false
   }
 }
