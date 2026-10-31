@@ -9,7 +9,7 @@ import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-wo
 import {mapMgbiGeneralRecords} from '../src/server/mgbi-general.ts';
 import {mapMgbiFinancialRecords} from '../src/server/mgbi-financial.ts';
 import {projectFinancialDocuments,persistFinancialDocuments,prepareFreshFinancialDocuments} from '../src/server/financial-documents.ts';
-import {saveMgbiArchive} from '../src/server/mgbi-archive.ts';
+import {fetchMgbiPages,readPreparedMgbiPages,saveMgbiArchive} from '../src/server/mgbi-archive.ts';
 import {bindOrganizationTransaction,withOrganization,withNativeCompanyStoreTransaction} from '../src/server/db.ts';
 import {captureFinancialDocumentPolicies,documentStatementPolicyPlan} from './financial-document-statement-release.mjs';
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context';
@@ -24,15 +24,26 @@ test('ready report document statement guard preserves same-NIP tenant isolation,
   for(const path of ['028-fresh-report-performance.sql','029-fresh-postfetch-work.sql'])await owner.query(own(path));
  });
  const at=new Date().toISOString(),KRS='0000000001';
+ const sourcePages=async records=>fetchMgbiPages(new URL('https://api.mgbi.pl/records'),{},new AbortController().signal,
+  async()=>Response.json({count:records.length,results:records}));
  const gRecord={id:'a'.repeat(24),identifiers:{pl_nip:NIP,pl_krs:KRS},content:{current_excerpt:{naglowekA:{numerKRS:KRS,dataRejestracjiWKRS:'2001-01-01'},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic local RLS document probe',formaPrawna:'SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ'}}}}}};
- const g={...mapMgbiGeneralRecords([gRecord],{type:'NIP',value:NIP},at),rawResponse:{pages:[{count:1,results:[gRecord]}],recordCount:1}};
+ const gp=await sourcePages([gRecord]);assert.equal(gp.errorCode,null);
+ const g={...mapMgbiGeneralRecords(gp.records,{type:'NIP',value:NIP},at),rawResponse:{pages:gp.pages,recordCount:1}};
  const records=Array.from({length:24},(_,i)=>({id:(i+1).toString(16).padStart(24,'0'),identifiers:{pl_nip:NIP,pl_krs:KRS},files:[],document:{type:'financial_statement',period_from_date:`${2000+i}-01-01`,period_to_date:`${2000+i}-12-31`,is_ias_compliant:false},content:{schema:{name:'JednostkaInnaWZlotych'},extracted_fields:{'Bilans.Aktywa.KwotaA':'100','RZiS.RZiSKalk.A.KwotaA':'200'},standardized_fields:{bs:{a_ta_cfy:'100',a_ca_cfy:'60',lae_lapfl_stl_cfy:'20',lae_lapfl_cfy:'40'},pala:{nrfs_cfy:'200',npl_cfy:'10',plfoa_cfy:'15'}}}}));
- const financial={...mapMgbiFinancialRecords(records,{type:'NIP',value:NIP},at,1,g.section.data.registryHistory),rawResponse:{pages:[{count:records.length,results:records}],recordCount:records.length}};
+ const fp=await sourcePages(records);assert.equal(fp.errorCode,null);
+ const financial={...mapMgbiFinancialRecords(fp.records,{type:'NIP',value:NIP},at,1,g.section.data.registryHistory),rawResponse:{pages:fp.pages,recordCount:records.length}};
  const work=createSrmSupplierNativeWork({...f.workOptions,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))});
  const store=createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),readyCompanyWorkBoundaryDigest:hash(own('026-ready-company-work.sql'))});
  const accepted=await f.parent(A,NIP),selection={requestId:accepted.requestId,organisationId:A,command:accepted.command};
  await store.registerAndCache(selection);const storedA=await store.freshCompany(selection,g,financial);assert(storedA);
  const acceptedB=await f.parent(B,NIP),selectionB={requestId:acceptedB.requestId,organisationId:B,command:acceptedB.command};await store.registerAndCache(selectionB);assert(await store.freshCompany(selectionB,g,financial));
+ await t.test('reader-owned immutable pages preserve exact private archive data in both independently authorized tenants',async()=>{
+  const prepared=readPreparedMgbiPages(fp.pages,records.length);assert(prepared);
+  assert.equal(prepared.payload,JSON.stringify({pages:[{count:records.length,results:records}]}));
+  const archives=(await owner.query("SELECT organization_id,payload_sha256,payload_json=$1::jsonb AS matches FROM srm.mgbi_source_archives WHERE nip=$2 AND model='pl-krs-rdf-record' ORDER BY organization_id",[prepared.payload,NIP])).rows;
+  assert.equal(archives.length,2);assert.deepEqual(archives.map(row=>row.organization_id).sort(),[A,B].sort());
+  assert(archives.every(row=>row.matches&&row.payload_sha256===prepared.digest));
+ });
  const documents=(await owner.query('SELECT document_json FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2 ORDER BY record_id',[A,NIP])).rows.map(r=>r.document_json),archiveChecksum=(await owner.query("SELECT payload_jsonb_sha256 FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'",[A,NIP])).rows[0].payload_jsonb_sha256;
  const policies=(await owner.query("SELECT * FROM pg_policies WHERE schemaname='srm' AND tablename='financial_source_documents' ORDER BY policyname")).rows;
  const backup=await captureFinancialDocumentPolicies(owner);assert.equal(documentStatementPolicyPlan({mode:'install',backup}).statements.length,2);
@@ -117,7 +128,7 @@ test('ready report document statement guard preserves same-NIP tenant isolation,
   const revokedClerk={...f.workOptions.clerk,users:{getUser:async(...args)=>({...await f.workOptions.clerk.users.getUser(...args),banned:++checks===2})}};
   const revokedWork=createSrmSupplierNativeWork({...f.workOptions,clerk:revokedClerk,workSchemaDigest:hash(core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))});
   const revoked=createSrmSupplierNativeWorkStore({work:revokedWork,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),readyCompanyWorkBoundaryDigest:hash(own('026-ready-company-work.sql'))});
-  const newRecords=records.map((r,i)=>({...r,id:(5000+i).toString(16).padStart(24,'0')}));const value={...mapMgbiFinancialRecords(newRecords,{type:'NIP',value:NIP},at,1,g.section.data.registryHistory),rawResponse:{pages:[{count:24,results:newRecords}],recordCount:24}};
+  const newRecords=records.map((r,i)=>({...r,id:(5000+i).toString(16).padStart(24,'0')})),owned=await sourcePages(newRecords);assert(readPreparedMgbiPages(owned.pages,24));const value={...mapMgbiFinancialRecords(owned.records,{type:'NIP',value:NIP},at,1,g.section.data.registryHistory),rawResponse:{pages:owned.pages,recordCount:24}};
   await assert.rejects(revoked.freshCompany(selected,g,value),isOperationDenied);assert.equal(checks,2);assert.deepEqual(await state(),before);
  });
  console.log('LOCAL_DOC_FRESH_WRITES',JSON.stringify(freshWrites));console.log('LOCAL_DOC_STATEMENT_SQL',JSON.stringify(results.map(({plan,...x})=>x)));

@@ -15,7 +15,7 @@ import { FINANCIAL_INDICATOR_INPUT_CODES, type CatalogIndicatorFact } from './fi
 import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
 import { reprojectFinancialArchive, type FinancialSourceFact } from './mgbi-financial'
-import { saveMgbiArchive,type PersistedMgbiArchive } from './mgbi-archive'
+import { readPreparedMgbiPages,saveMgbiArchive,type PersistedMgbiArchive } from './mgbi-archive'
 import { applyFinancialDocumentMetadata, financialRecordsFromPages, prepareFreshFinancialDocuments, prepareFreshFinancialInventory, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
 import type {MgbiGeneralResult} from './mgbi-general'
 import type {MgbiFinancialResult} from './mgbi-financial'
@@ -73,6 +73,40 @@ function json<T>(value:T):T{
    return body
   }catch{return refuse()}
  })
+}
+function freshJson<T extends MgbiGeneralResult|MgbiFinancialResult>(value:T):T{
+  // Only raw pages created and deeply frozen by our JSON reader are reusable.
+  // Every other input, including frozen caller wrappers, uses strict capture.
+  if(!value||Object.getPrototypeOf(value)!==Object.prototype)return json(value)
+  const descriptors=Object.getOwnPropertyDescriptors(value),rawDescriptor=descriptors.rawResponse
+  if(Object.values(descriptors).some(d=>!('value'in d))||!rawDescriptor?.enumerable)return json(value)
+  if(typeof descriptors.toJSON?.value==='function')return json(value)
+  const raw=rawDescriptor.value
+  if(!raw||Object.getPrototypeOf(raw)!==Object.prototype
+    ||Reflect.ownKeys(raw).length!==2||Object.keys(raw).sort().join(',')!=='pages,recordCount')return json(value)
+  const fields=Object.getOwnPropertyDescriptors(raw)
+  if(Object.values(fields).some(d=>!d.enumerable||!('value'in d)))return json(value)
+  if(!Array.isArray(fields.pages.value)||typeof fields.recordCount.value!=='number')return json(value)
+  const prepared=readPreparedMgbiPages(fields.pages.value,fields.recordCount.value)
+  if(!prepared)return json(value)
+  return diagnosticRun('JSON_CAPTURE',()=>{
+    try{
+      const metadata=Object.fromEntries(Object.entries(descriptors).filter(([key,d])=>key!=='rawResponse'&&d.enumerable).map(([key,d])=>[key,d.value]))
+      const captured=captureFinitePayload(metadata,{maximumBytes:MAX_JSON_BYTES})
+      const data=captured.value as Record<string,unknown>
+      const rawBytes=prepared.byteLength+Buffer.byteLength(`,"recordCount":${prepared.recordCount}`)
+      const byteLength=captured.byteLength+Buffer.byteLength('"rawResponse":')+rawBytes+(Object.keys(data).length?1:0)
+      if(byteLength>MAX_JSON_BYTES||Math.max(captured.depth,prepared.depth+2)>128
+        ||captured.nodeCount+prepared.nodeCount+2>1000000)return refuse()
+      const body=Object.fromEntries(Object.keys(value).filter(key=>key==='rawResponse'||Object.hasOwn(data,key)).map(key=>
+        [key,key==='rawResponse'?Object.freeze({pages:prepared.pages,recordCount:prepared.recordCount}):data[key]])) as T
+      Object.freeze(body)
+      // Exact unchanged canonical SDK digest of the COMPLETE original shape;
+      // no composite hash, alternate manifest, identity or ALLOW cache.
+      capturedDigests.set(body,operationPayloadDigest(body as unknown as Json))
+      return body
+    }catch{return refuse()}
+  })
 }
 function select(value:SupplierNativeWorkSelection):SupplierNativeWorkSelection{
   if(!value||Object.getPrototypeOf(value)!==Object.prototype||Reflect.ownKeys(value).length!==3
@@ -320,7 +354,7 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
 },
     section,
     async freshCompany(input:SupplierNativeWorkSelection,general:MgbiGeneralResult,financial:MgbiFinancialResult){
-      const selected=select(input),g=json(general),f=json(financial)
+      const selected=select(input),g=freshJson(general),f=freshJson(financial)
       if(!isStructuredFreshCompany(selected.command.nip,g,f))return null
       if(!options.readyCompanyWorkBoundaryDigest)return refuse()
       return run(selected,'SRM_STORE_COMPANY',{generalDigest:digest(g),financialDigest:digest(f),postfetchVersion:'1.0.0'},async(pool,client,context)=>{
