@@ -7342,7 +7342,7 @@
       "src/modules/xray/supplier-location-controller.test.ts": "939b342f74575ecb60306f3da79cb52188fe752ac6302a7608d659d0f1802944",
       "scripts/native-execution-adoption.test.mjs": "a8c28d7aacf451d1427f1e3406a1a8a10188c911400b25169048ceb64a80d66d",
       "scripts/rural-location-release.test.mjs": "c86ea9d51297d10092993f1beccbe0a5fe30c3f50d4d84d97915a868b7e9a2b5",
-      "src/modules/xray/supplier-locations-view.test.ts": "f76c5a3f5042ddf96e1836ffa8924f3b002f847d3e4309fb554994f374605669"
+      "src/modules/xray/supplier-locations-view.test.ts": "503e9f16543f6b8dd966cbacdc3efdf0e88bc47acda98068a37d0f7d06e264a3"
     },
     "unchangedDomainSourceDigests": {
       "apps/srm/src/server/financial-excel.ts": "fbd5dc7edf314fb270b9cb9cb1bf58a955d2ec149dcab7aceba84984644cfb4c",
