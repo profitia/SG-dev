@@ -22,7 +22,19 @@ export const LOCAL_PACKAGES = Object.freeze({
   '@profitia/sg2-price-change-index-ui': '../../packages/sg2-price-change-index-ui',
   '@profitia/srm-xray': '../../packages/srm-xray',
   '@profitia/srm-adp-ui': '../../packages/srm-adp-ui',
+  '@profitia/maps-embed': '../../packages/maps-embed',
+  '@profitia/maps-contracts': '../../packages/maps-contracts',
 })
+// Owner-reviewed peers of the existing MapsEmbed 0.1.2 package only.
+// App dependencies and every other local dependency still require exact file paths.
+const REVIEWED_MAPS_EMBED_PEERS = Object.freeze({
+  '@profitia/maps-contracts': '0.1.0',
+  '@profitia/platform-contracts': '1.18.0 || 1.19.0 || 1.20.0 || 1.21.0 || 1.22.0 || 1.23.0 || 1.24.0 || 1.25.0 || 1.26.0 || 1.27.0 || 1.28.0 || 1.29.0 || 1.29.1 || 1.29.2 || 1.30.0 || 1.31.0 || 1.32.0 || 1.32.1 || 1.32.2 || 1.32.3',
+})
+function reviewedMapsPeer(owner, version, section, name, spec) {
+  return owner === '@profitia/maps-embed' && version === '0.1.2' && section === 'peerDependencies'
+    && Object.hasOwn(REVIEWED_MAPS_EMBED_PEERS, name) && spec === REVIEWED_MAPS_EMBED_PEERS[name]
+}
 const npmrc = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const shaPattern = /^[a-f0-9]{40}$/
 const fail = code => {throw new Error(code)}
@@ -305,7 +317,8 @@ export function assertPackagePolicy(candidate, authority, configuration) {
     for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
       for (const [name, spec] of Object.entries(entry[section] ?? {})) {
         if ((name.startsWith('@profitia/') && !PRIVATE_PACKAGES.includes(name) && !Object.hasOwn(LOCAL_PACKAGES, name)) || String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
-        if (Object.hasOwn(LOCAL_PACKAGES, name) && spec !== `file:${LOCAL_PACKAGES[name]}`) fail('LOCAL_DEPENDENCY_REJECTED')
+        if (Object.hasOwn(LOCAL_PACKAGES, name) && spec !== `file:${LOCAL_PACKAGES[name]}`
+          && !(key === 'node_modules/@profitia/maps-embed' && reviewedMapsPeer(privateName, entry.version, section, name, spec))) fail('LOCAL_DEPENDENCY_REJECTED')
       }
     }
     if (privateName.startsWith('@profitia/')) {
@@ -339,6 +352,9 @@ export function assertManifestPolicy(candidate, authority) {
     for (const [name, spec] of Object.entries(candidate[section] ?? {})) {
       if (String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
       if (Object.hasOwn(LOCAL_PACKAGES, name) && spec === `file:${LOCAL_PACKAGES[name]}`) continue
+      if (reviewedMapsPeer(candidate.name, candidate.version, section, name, spec)
+        && authority.name === candidate.name && authority.version === candidate.version
+        && authority[section]?.[name] === spec) continue
       if (name.startsWith('@profitia/') && (!PRIVATE_PACKAGES.includes(name) || spec !== authority[section]?.[name])) fail('PRIVATE_MANIFEST_PIN_MISMATCH')
       if (/^(?:file:|link:|workspace:)/.test(String(spec))) fail('LOCAL_DEPENDENCY_REJECTED')
     }

@@ -84,8 +84,8 @@ test('manifest changes cannot hide private aliases, new pins or additional works
   assertManifestPolicy({dependencies: {...authority.dependencies, '@profitia/platform-contracts': 'file:../../packages/platform-contracts'}}, authority)
   for (const candidate of [{dependencies: {'@profitia/cic-core': '9.0.0'}}, {dependencies: {alias: 'npm:@profitia/cic-evals@1.0.0'}}, {dependencies: {'@profitia/cic-evals': '1.0.0'}}, {...authority, workspaces: ['../*']}, {...authority, overrides: {'@profitia/cic-core': '9'}}]) rejection(() => assertManifestPolicy(candidate, authority))
 })
-test('only the four reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
-  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/platform-contracts', '@profitia/sg2-price-change-index-ui', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
+test('only the six reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
+  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/maps-contracts', '@profitia/maps-embed', '@profitia/platform-contracts', '@profitia/sg2-price-change-index-ui', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
   const authority = {dependencies: {'@profitia/cic-core': '1.1.1'}}
   for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) {
     for (const resolved of [relative, `file:${relative}`]) {
@@ -114,6 +114,59 @@ test('only the four reviewed local names bind to their own exact paths, never a 
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
+function reviewedMapsFixture() {
+  const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
+  const candidate = lock()
+  candidate.packages['node_modules/@profitia/maps-embed'] = {
+    version: manifest.version, resolved: 'file:../../packages/maps-embed', peerDependencies: structuredClone(manifest.peerDependencies),
+  }
+  candidate.packages['node_modules/@profitia/maps-contracts'] = {version: '0.1.0', resolved: 'file:../../packages/maps-contracts'}
+  candidate.packages[''] = {dependencies: {'@profitia/maps-embed': 'file:../../packages/maps-embed', '@profitia/maps-contracts': 'file:../../packages/maps-contracts'}}
+  return {manifest, candidate}
+}
+
+test('existing MapsEmbed peers require exact reviewed owner, version, section and trusted manifest values', () => {
+  const {manifest} = reviewedMapsFixture()
+  assert.equal(manifest.name, '@profitia/maps-embed'); assert.equal(manifest.version, '0.1.2')
+  assertManifestPolicy(manifest, manifest)
+  for (const mutate of [
+    m => m.name = '@profitia/srm-xray', m => m.version = '0.1.3',
+    m => m.peerDependencies['@profitia/maps-contracts'] = '*',
+    m => m.peerDependencies['@profitia/platform-contracts'] += ' || 1.32.4',
+    m => {m.dependencies = m.peerDependencies; delete m.peerDependencies},
+    m => {m.devDependencies = m.peerDependencies; delete m.peerDependencies},
+    m => {m.optionalDependencies = m.peerDependencies; delete m.peerDependencies},
+    m => m.peerDependencies['@profitia/other'] = '1.0.0',
+  ]) {const changed = structuredClone(manifest); mutate(changed); rejection(() => assertManifestPolicy(changed, manifest))}
+  for (const mutate of [
+    m => m.name = 'different-authority', m => m.version = '0.1.3',
+    m => delete m.peerDependencies['@profitia/maps-contracts'],
+    m => m.peerDependencies['@profitia/platform-contracts'] = '*',
+  ]) {const changed = structuredClone(manifest); mutate(changed); rejection(() => assertManifestPolicy(manifest, changed))}
+  const app = {name: '@profitia/sg-runtime', version: '0.1.2', peerDependencies: manifest.peerDependencies}
+  rejection(() => assertManifestPolicy(app, app))
+})
+
+test('Maps lock peer exception is confined to the exact top-level installed entry and never admits app or nested peers', () => {
+  const {candidate} = reviewedMapsFixture()
+  assertPackagePolicy(candidate, lock(), configuration)
+  assertLocalPackageSources(authorityRoot, candidate, authorityRoot)
+  for (const mutate of [
+    l => l.packages['node_modules/@profitia/maps-embed'].version = '0.1.3',
+    l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies['@profitia/maps-contracts'] = '^0.1.0',
+    l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies['@profitia/platform-contracts'] = '*',
+    l => {const e = l.packages['node_modules/@profitia/maps-embed']; e.dependencies = e.peerDependencies; delete e.peerDependencies},
+    l => {const e = l.packages['node_modules/@profitia/maps-embed']; e.optionalDependencies = e.peerDependencies; delete e.peerDependencies},
+    l => l.packages[''].peerDependencies = l.packages['node_modules/@profitia/maps-embed'].peerDependencies,
+    l => l.packages['node_modules/unrelated'] = {version: '0.1.2', peerDependencies: l.packages['node_modules/@profitia/maps-embed'].peerDependencies},
+    l => l.packages['node_modules/parent/node_modules/@profitia/maps-embed'] = l.packages['node_modules/@profitia/maps-embed'],
+    l => l.packages['node_modules/@profitia/maps-embed'].resolved = 'file:../../packages/maps-contracts',
+    l => l.packages['node_modules/@profitia/maps-embed'].link = true,
+    l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies.alias = 'npm:@profitia/maps-contracts@0.1.0',
+    l => l.packages['node_modules/@profitia/cic-core'].version = '9.0.0',
+  ]) {const changed = structuredClone(candidate); mutate(changed); rejection(() => assertPackagePolicy(changed, lock(), configuration))}
+})
+
 for (const name of Object.keys(LOCAL_PACKAGES)) test(`actual local source ${name} rejects mismatched names, absent authority, private dependencies and symlinks`, () => {
   const temporary = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'controlled-local-source-')))
   const candidateRoot = path.join(temporary, 'candidate'), authorityRoot = path.join(temporary, 'authority')
