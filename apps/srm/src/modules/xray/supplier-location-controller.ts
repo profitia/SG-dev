@@ -43,6 +43,7 @@ export class SupplierLocationController{
    // Each poll still reauthorizes. Keep the projection mounted only when the
    // fresh protected response is identical; errors/revocation still clear it.
    this.update({page:previous&&JSON.stringify(previous)===JSON.stringify(projected)?previous:projected,busy:false})
+   this.scheduleCoordinateExpiry()
    if((page as SupplierLocationPage&{geocodingAvailable?:boolean}).geocodingAvailable===true)void this.resolveVisible(page,group,offset)
   }catch(e){if(g===this.generation&&seq===this.sequence)this.update({page:null,busy:false,error:e instanceof Error?e.message:'Lokalizacje niedostępne.'});else if(this.state.blocked)this.update({busy:false})}
  }
@@ -65,6 +66,8 @@ export class SupplierLocationController{
  private scheduleCoordinateExpiry(){
   clearTimeout(this.coordinateExpiryTimer)
   const deadlines=[...this.viewCoordinates.values()].map(v=>Date.parse(v.coordinates.expiresAt!))
+   .concat((this.state.page?.items??[]).filter(v=>v.coordinates?.origin==='GOOGLE_GEOCODING')
+    .map(v=>Date.parse(v.coordinates!.expiresAt!))).filter(Number.isFinite)
   if(!deadlines.length)return
   this.coordinateExpiryTimer=setTimeout(()=>{
    const now=Date.now()
@@ -73,7 +76,7 @@ export class SupplierLocationController{
    if(page)this.update({page:{...page,items:page.items.map(location=>location.coordinates?.origin==='GOOGLE_GEOCODING'&&Date.parse(location.coordinates.expiresAt!)<=now
     ?{...location,coordinates:null,geocodingStatus:'EXPIRED' as const}:location)}})
    this.scheduleCoordinateExpiry()
-  },Math.max(1,Math.min(...deadlines)-Date.now()+1))
+  },Math.max(1,Math.min(2147483647,Math.min(...deadlines)-Date.now()+1)))
   // Browser timers are numbers; Node-based presentation tests need no liveness
   // from a view-only expiry timer.
   if(typeof this.coordinateExpiryTimer==='object')this.coordinateExpiryTimer.unref?.()
