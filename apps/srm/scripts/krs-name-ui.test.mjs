@@ -37,7 +37,7 @@ function Fixture(){const [nip,setNip]=useState('');return <main className="appsh
 createRoot(document.getElementById('root')).render(<Fixture/>);`;
   let browser,server;
   try{
-    await build({stdin:{contents:source,resolveDir:app,sourcefile:'krs-search-fixture.tsx',loader:'tsx'},bundle:true,outfile:path.join(directory,'bundle.js'),jsx:'automatic',nodePaths:[path.join(app,'node_modules')],external:['/fonts/*','/spendguru/*'],logLevel:'silent'});
+    await build({stdin:{contents:source,resolveDir:app,sourcefile:'krs-search-fixture.tsx',loader:'tsx'},bundle:true,loader:{'.woff2':'dataurl'},outfile:path.join(directory,'bundle.js'),jsx:'automatic',nodePaths:[path.join(app,'node_modules')],external:['/fonts/*','/spendguru/*'],logLevel:'silent'});
     fs.writeFileSync(path.join(directory,'index.html'),'<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/bundle.css"><div id="root"></div><script type="module" src="/bundle.js"></script></html>');
     server=http.createServer((req,res)=>{
       const pathname=new URL(req.url,'http://localhost').pathname;

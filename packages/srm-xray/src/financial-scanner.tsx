@@ -516,6 +516,9 @@ export function FinancialScannerMount({
   report,
   loading = false,
   assistant,
+  assistantHost,
+  onAssistantContext,
+  supplierIdentity,
   indicatorsTarget,
   availability = AVAILABLE_REPORT,
   selectedScope,
@@ -528,6 +531,9 @@ export function FinancialScannerMount({
   report: SupplierReportData | null;
   loading?: boolean;
   assistant?: { nip?: string; name: string; krs?: string | null; avatars: { male: string; anna: string } };
+  assistantHost?:React.ReactNode;
+  onAssistantContext?:(context:AssistantApplicationContext|null)=>void;
+  supplierIdentity?:AssistantApplicationContext["supplier"];
 }) {
   // Never derive analysis or context from a stale report when availability blocks it.
   if (availability.code !== "AVAILABLE") report = null;
@@ -605,7 +611,7 @@ export function FinancialScannerMount({
     source: { kind: "financial-data-module", version: report?.financial.sourceVersion ?? null,
       capturedOn: report?.financial.freshness.retrievedAt ?? null, statementScope: scope },
     reportAvailability: availability,
-    supplier: { id: assistant?.nip ?? report?.nip ?? "", nip: assistant?.nip ?? report?.nip ?? null, name: assistant?.name ?? "Dostawca", krs: assistant?.krs ?? null },
+    supplier: supplierIdentity ?? { id: assistant?.nip ?? report?.nip ?? "", nip: assistant?.nip ?? report?.nip ?? null, name: assistant?.name ?? "Dostawca", krs: assistant?.krs ?? null },
     view: { page: "supplier-intelligence-dashboard",
       radar: { year: selected ? Number(selected.to.slice(0,4)) : null, comparisonYear: compared && compared.id !== "reference" ? Number(compared.to.slice(0,4)) : null,
         referenceSelection: "history", referenceKind: "history", referenceStatus: selected?.axes.some(a=>a.basis==="HISTORICAL_BEST" && a.normalizedScore!==null) ? "available" : "unconfirmed", referenceFrameId: selected?.referenceFrameId ?? null },
@@ -614,12 +620,14 @@ export function FinancialScannerMount({
       return { code:a.code,name:a.label.join(" "),year:selected?Number(selected.to.slice(0,4)):null,value:v,unit:a.unit,
         availability:v===null?"missing":"available",reason:null }; }),
   };
+  useEffect(()=>{onAssistantContext?.(context)},[onAssistantContext,context]);
+  useEffect(()=>()=>onAssistantContext?.(null),[onAssistantContext]);
   if (availability.code !== "AVAILABLE") return <div className="srm-ui srm-finance-module srm-scanner-unavailable">
     <div className="srm-section-heading"><h2 id="scanner-title">Supplier Finance Scanner</h2></div>
     <CanonElement as="div" canonId="SRM-C43" usage="financial-scanner:unavailable-layout" className="srm-overview">
       <ReportAvailabilityView availability={availability} />
-      {assistant && <SpendGuruAssessment key={`${assistant.nip}:${availability.code}`} context={{...context, financialSummary:[],view:{...context.view,indicators:{tab:"overview",label:availability.title,items:[]},history:null}}}
-        avatars={assistant.avatars} year={null} company={assistant.name} values={[]} formatted={[]} />}
+      {assistantHost ?? (assistant && <SpendGuruAssessment key={`${assistant.nip}:${availability.code}`} context={{...context, financialSummary:[],view:{...context.view,indicators:{tab:"overview",label:availability.title,items:[]},history:null}}}
+        avatars={assistant.avatars} year={null} company={assistant.name} values={[]} formatted={[]} />)}
     </CanonElement>
   </div>;
   const indicators = (<IndicatorExplorer
@@ -769,13 +777,13 @@ export function FinancialScannerMount({
             {frame && <ul className="srm-reference-evidence">{frame.axes.filter(a=>a.code!=="CURRENT_RATIO").map(a=><li key={a.code}><strong>{axes.find(d=>d.code===a.code)!.label.join(" ")}: </strong>{a.periodIds.length ? a.periodIds.map(id=>periods.find(p=>p.id===id)?.to.slice(0,4)).join(", ") : "brak kwalifikowanych lat"}. {a.bestValue!==null ? `Najlepsza wartość: ${fmt(a.bestValue,axes.find(d=>d.code===a.code)!.unit)}.` : ""}</li>)}</ul>}
           </details>
         </section>
-        {assistant ? <SpendGuruAssessment key={report?.nip ?? "loading"} context={context} avatars={assistant.avatars}
+        {assistantHost ?? (assistant ? <SpendGuruAssessment key={report?.nip ?? "loading"} context={context} avatars={assistant.avatars}
           sourceSummary={qualifiedMsr ? null : msr}
           year={selected ? Number(selected.to.slice(0,4)) : null} company={assistant.name}
           values={axes.map(a => { const v=selected?.axes.find(x=>x.code===a.code)?.rawValue;return v==null?null:Number(v); })}
           formatted={axes.map(a => fmt(selected?.axes.find(x=>x.code===a.code)?.rawValue,a.unit))}
           comparisonSummary={comparisonSummary} comparisonYear={compared?.id!=="reference" ? compared?.to.slice(0,4) : undefined} />
-          : <section className="srm-ai-panel" aria-label="Ocena SpendGuru"><h3>Ocena SpendGuru</h3><div className="srm-ai-blank" aria-label="Miejsce na ocenę SpendGuru" /></section>}
+          : <section className="srm-ai-panel" aria-label="Ocena SpendGuru"><h3>Ocena SpendGuru</h3><div className="srm-ai-blank" aria-label="Miejsce na ocenę SpendGuru" /></section>)}
 
       </CanonElement>
       {indicatorsTarget === undefined ? indicators : indicatorsTarget ? createPortal(<div className="srm-ui srm-indicators-slot">{indicators}</div>, indicatorsTarget) : null}
