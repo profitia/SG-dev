@@ -7332,19 +7332,19 @@
     "previousReceiptSourceSha": "e87e1e9df10ce43ae1c0ee7ca6045f90ae4769f1",
     "previousReceiptSha256": "408e30c30033f1ab52750420ef06160020aad3a1d819001a229bde626c50c6ca",
     "previousConsumerSourceSha": "e87e1e9df10ce43ae1c0ee7ca6045f90ae4769f1",
-    "consumerSourceSha": "dc4ab5d6493c53978715e7277f709c3ef3cdb760",
+    "consumerSourceSha": "4a8bede08883264384bcb09300b50e592fd9d43b",
     "consumerPullRequest": 825,
     "applicationSourceDigests": {
       "scripts/native-execution-adoption.test.mjs": "430bd84716b7539a244270d92a4cc375989b49bff4c6bd8a6f3dfd78459a6683",
       "scripts/rural-location-release.test.mjs": "139fc9b9c4a0b82bf1d2a01b5fc9bcedc858afc365b9d48b536897d680fafcb8",
-      "scripts/xray-performance-adoption.test.mjs": "e973bc884851e666174688b2fae9ca017966071bd2cc60dd501c287654eda3c6",
+      "scripts/xray-performance-adoption.test.mjs": "34bc2998bbc62c16907f8125fb89669a4cc74ce35c51ea2ff2ccf949d7e7eddf",
       "scripts/xray-workflow-contract.test.ts": "c1625e26ac3a0bdb8bdb222268a3f58b31ecdf20c928af2cc44e9a749a03f591",
       "src/server/peer-read-boundary.test.ts": "2ab04ee2103add3d8d80f600f3e2a6e8fd3097f98b65302bb8eb885da16443c7",
       "src/server/supplier-location-geocoding-runtime.test.ts": "61d0aab7e4797b81d45714a9778a6eb0bc942c3aeaf4142ff18e72919719c2cd"
     },
     "consumerSourceDigests": {
       "../sg-runtime/components/price-change-index/price-change-index-layer.tsx": "100ee589e72ba53a918e9d6e0a90baba3e24e7ce166527904799c4a72884eaf5",
-      "../sg-runtime/operation-integration.json": "3e546ad9660f812c99ae5ca11d217e30587ef7b9604af5b3b8cf686149bf9f42",
+      "../sg-runtime/operation-integration.json": "81842b651f9393336b85d46c76fa06b44b5df93dfce534d325f0d1727ca15ffb",
       "../sg-runtime/package.json": "db69132b401aa0d78155b94cef5fbd71d2cfc2f1640223dcb9f242799b0e901d",
       "../sg-runtime/tests/adp-appshell-consumer.test.tsx": "a57eb0ea77b625dc77bb7e24251765ee30d8eb71c3ec79b7bce1790e9e1b9bf4",
       "../sg-runtime/tests/category-operation.test.ts": "ca913414fabe0c795bf1af1737009a3541d83fbe2d814c0c91fa150d3ea04083",

@@ -357,7 +357,7 @@ export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
   assert.equal(a.scope,'ADDITIVE_TEST_SOURCE_CONTINUITY_ONLY');assert.equal(a.targetEnvironment,'development')
   assert.equal(a.previousReceiptSourceSha,'e87e1e9df10ce43ae1c0ee7ca6045f90ae4769f1')
   assert.equal(a.previousConsumerSourceSha,a.previousReceiptSourceSha)
-  assert.equal(a.consumerSourceSha,'dc4ab5d6493c53978715e7277f709c3ef3cdb760');assert.equal(a.consumerPullRequest,825)
+  assert.equal(a.consumerSourceSha,'4a8bede08883264384bcb09300b50e592fd9d43b');assert.equal(a.consumerPullRequest,825)
   const bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json'),prior=JSON.parse(bytes)
   assert.equal(hash(bytes),a.previousReceiptSha256)
   const {pciSmartPreparationIntegrityContinuation,...preserved}=receipt
