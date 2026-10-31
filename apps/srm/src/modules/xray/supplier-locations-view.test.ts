@@ -18,7 +18,7 @@ test('map startup repair preserves every prior acceptance and pins current consu
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapRuntimeReadinessRepair
   const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapAddressOnlyRepair
   const final:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
-  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):final?.applicationSourceDigests[file]?execFileSync('git',['show',final.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
+  const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):latest?.applicationSourceDigests[file]?execFileSync('git',['show',latest.previousReceiptSourceSha+':apps/srm/'+file]):final?.applicationSourceDigests[file]?execFileSync('git',['show',final.previousReceiptSourceSha+':apps/srm/'+file]):receipt.fullUiParityAdoption?.applicationSourceDigests[file]?execFileSync('git',['show',receipt.fullUiParityAdoption.previousReceiptSourceSha+':apps/srm/'+file]):readFileSync(new URL('../../../'+file,import.meta.url))
   assert.equal(hash(bytes),digest,file)
  }
  assert.equal(a.maximumAutomaticStartupRetries,1);assert.equal(a.sharedSdkChanged,false);assert.equal(a.locationAuthorityChanged,false)
