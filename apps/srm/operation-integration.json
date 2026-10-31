@@ -7337,7 +7337,8 @@
       "../../packages/srm-xray/src/workflow-render-timing.ts": "600beab6d0e3f854423b1daae2cab1ce5c8ddfb9f1c6144ca7db9863ef2171e9",
       "../../packages/srm-xray/src/workflow-view.tsx": "55ccb061267adc0b3681976cabba81f88bda44b42fd3185fd0291af7837265a6",
       "../../packages/srm-xray/src/workflow.css": "b9b807de8e1c43af7263376a70ad81c2be94cb5d236dbbcbd99f690be66415e9",
-      "../../packages/srm-xray/src/report-availability-view.tsx": "65412adf9f2f9476c0b2256a0f46bba8d5c7aa7fa7c53eb66e5a1a6b1aaa2fc4"
+      "../../packages/srm-xray/src/report-availability-view.tsx": "65412adf9f2f9476c0b2256a0f46bba8d5c7aa7fa7c53eb66e5a1a6b1aaa2fc4",
+      "scripts/xray-performance-adoption.test.mjs": "1ec604730204fb6209c6e4ff6f21809d43652144430b0c033612920e04b9daab"
     },
     "unchangedDomainSourceDigests": {
       "apps/srm/src/server/financial-excel.ts": "fbd5dc7edf314fb270b9cb9cb1bf58a955d2ec149dcab7aceba84984644cfb4c",
