@@ -24,32 +24,52 @@ import {createSrmPrivateOperationHost} from './private-operation-host'
 import {createSupplierLocationHost,type SupplierLocationRuntimeOptions} from './supplier-locations'
 import {locationCollectionId,locationSourceEvidence} from './supplier-location-store'
 import type {LocationSource} from '@profitia/srm-xray'
+import {measureLocation} from './supplier-location-telemetry'
+export async function requireLocationCache(client:Pick<PoolClient,'query'>,schemaDigest:string){
+ const descriptor=(await measureLocation('cacheValidity',()=>client.query('SELECT srm.location_cache_descriptor() AS value'))).rows[0]?.value
+ if(descriptor?.schemaVersion!=='1.0.0'||descriptor.schemaDigest!==schemaDigest||descriptor.maintenanceCurrent!==true||descriptor.maximumCacheDays!==29)
+  throw new OperationDenied('POLICY_UNAVAILABLE')
+}
 export type GeocodingSelection={organisationId:string;supplierId:string;locationId:string;address:string;addressVersion:string;expectedVersion:string;retentionUntil:string|null;alreadyResolved:boolean;uncertain:boolean;geocodingStatus:string;businessSchemaDigest?:string;supplierNip?:string;origin?:'SOURCE'|'MANUAL';group?:SupplierLocation['group'];sources?:LocationSource[]}
 type Selection=GeocodingSelection
 const refuse=():never=>{throw new OperationDenied('RESOURCE_VERSION_CONFLICT')}
 /** Concrete SRM domain ports for the existing delegated Work host. No
  * connection, identity, source budget or provider implementation lives here. */
-export function createSrmLocationGeocodingDomain(businessDigest:string){
+export function createSrmLocationGeocodingDomain(businessDigest:string,cacheSchemaDigest?:string){
  const parent=(context:Readonly<OperationContext>)=>{
   if(context.actorKind!=='SERVICE'||context.delegation?.target.operation!=='supplier.location.geocode'||context.delegation.target.application.appId!=='srm')return refuse()
   return context.delegation.requestId
  }
  return Object.freeze({
   async readCurrent(context:Readonly<OperationContext>,client:PoolClient):Promise<Selection>{
+   if(cacheSchemaDigest)await requireLocationCache(client,cacheSchemaDigest)
    const row=(await client.query('SELECT srm.location_geocode_target($1::uuid) AS value',[parent(context)])).rows[0]?.value
    if(!row||row.businessSchemaDigest!==businessDigest)return refuse()
    return Object.freeze(row as Selection)
   },
   async storeCurrent(context:Readonly<OperationContext>,client:PoolClient,selection:Selection,result:unknown){
+   if(cacheSchemaDigest)await requireLocationCache(client,cacheSchemaDigest)
    const value=result as {status?:string;reason?:string}
    const coordinates=googleCoordinates(result,selection.retentionUntil)
    const status=coordinates?'RESOLVED':value.reason==='ambiguous'?'AMBIGUOUS':value.reason==='low-precision'?'LOW_PRECISION'
     :['delivery-unverified','cancelled'].includes(value.reason??'')?'DELIVERY_UNCERTAIN':value.reason==='quota'?'QUOTA_EXCEEDED':value.status==='unresolved'?'UNRESOLVED':'UNAVAILABLE'
-   await client.query('SELECT srm.location_geocode_store($1::uuid,$2::uuid,$3,$4::bigint,$5::jsonb)',[parent(context),selection.locationId,selection.addressVersion,selection.expectedVersion,JSON.stringify({status,coordinates})])
+   await measureLocation('cacheStore',()=>client.query('SELECT srm.location_geocode_store($1::uuid,$2::uuid,$3,$4::bigint,$5::jsonb)',[parent(context),selection.locationId,selection.addressVersion,selection.expectedVersion,JSON.stringify({status,coordinates})]))
   },
  })
 }
 export type TransientGeocodingResult=Readonly<{locationId:string;addressVersion:string;version:string;coordinates:LocationCoordinates}>
+/** A fresh protected HUMAN read after Work commit. Nothing is published from
+ * the writer's in-memory copy or a caller-supplied coordinate. */
+export async function readSrmPersistedLocationCoordinates(options:SupplierLocationRuntimeOptions,input:{request:Request;organisationId:string;supplierId:string;locationId:string}){
+ if(!options.locationCacheSchemaDigest)throw new OperationDenied('POLICY_UNAVAILABLE')
+ await options.prepareAccess?.(input.request,input.organisationId,input.supplierId,input.locationId)
+ const reader=createSupplierLocationHost(options,'supplier.location.read')
+ return (await reader.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation:'supplier.location.read',organisationId:input.organisationId,resourceId:locationCollectionId(input.supplierId),
+  payload:{action:'READ',supplierId:input.supplierId,locationId:null,addressVersion:null,expectedVersion:null,command:null},request:input.request},async(_context,client)=>{
+   await requireLocationCache(client,options.locationCacheSchemaDigest!)
+   return (await measureLocation('databaseRead',()=>client.query('SELECT srm.location_cache_read($1::uuid,$2::uuid,$3::uuid) AS value',[input.organisationId,input.supplierId,input.locationId]))).rows[0]?.value as TransientGeocodingResult|null
+  })).value
+}
 /** Request-local result, exposed only after Work OUTCOME and a fresh HUMAN
  * read. The guarded receiver advances CAS metadata but never stores Google data. */
 export function createSrmTransientGeocodingDomain(businessDigest:string,transientSchemaDigest:string){
@@ -85,7 +105,7 @@ export function createSrmLocationGeocodingRequest(options:SupplierLocationRuntim
  const store=createDelegatedJobStore({binding:options.binding,...adoption.job})
  if(adoption.job.targetOperation!=='supplier.location.geocode')throw TypeError('Exact existing geocode delegation required')
  // P1 parent attestation belongs only to manual WRITE/SYNC, not GEOCODE.
- const {ledger,businessDigest,readAcceptedKys:_,locationAdmission:__,parentSchemaDigest:___,...driver}=options
+ const {ledger,businessDigest,readAcceptedKys:_,locationAdmission:__,parentSchemaDigest:___,locationCacheSchemaDigest:____,...driver}=options
  const host=createSrmPrivateOperationHost({...driver,application:{...driver.application,operations:['supplier.location.geocode','supplier.report.read','supplier.private.read']},requestLedger:ledger,
   readResources:async({actor,request,scope,query})=>{
    const p=request.payload as unknown as {supplierId:string;locationId:string;addressVersion:string;command:{address:string;executorApplicationId:string}}
