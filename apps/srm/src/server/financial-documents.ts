@@ -232,6 +232,16 @@ function verifyStoredDocuments(rows:StoredDocumentWire[],organizationId:string,n
  * The lock and the caller's original COMMIT/outcome remain authoritative. */
 export async function prepareFreshFinancialDocuments(client: DocumentClient, organizationId: string, nip: string,
   pages: unknown[],persistedArchive?:PersistedMgbiArchive): Promise<FinancialSourceDocument[]> {
+ return (await prepareFreshFinancialInventory(client,organizationId,nip,pages,persistedArchive)).documents;
+}
+
+/** Transaction-local data from the same locked, verified archive. Returning its
+ * records lets MSR select candidates without reading and projecting it again.
+ * This result carries no authorization or permission to use another client. */
+export async function prepareFreshFinancialInventory(client: DocumentClient, organizationId: string, nip: string,
+  pages: unknown[],persistedArchive?:PersistedMgbiArchive): Promise<{
+    documents:FinancialSourceDocument[];records:unknown[];archiveChecksum:string;
+  }> {
  return diagnosticRun('DOCUMENT_PREPARE',async()=>{
   const archive=takePersistedMgbiArchive(persistedArchive,client,pages)??(await client.query<FinancialArchive & {pages_match:boolean}>(
    `SELECT organization_id,nip,model,payload_json::text AS payload_text,payload_jsonb_sha256,record_count,
@@ -261,7 +271,8 @@ export async function prepareFreshFinancialDocuments(client: DocumentClient, org
   const origins=new Map<string,string>();
   for(const raw of records){const r=object(raw),krs=String(object(r.identifiers).pl_krs??'');
    if(r.id!==null&&r.id!==undefined&&/^\d{10}$/.test(krs))origins.set(String(r.id),krs)}
-  return expected.map(r=>origins.has(r.record_id)?{...r.document_json,sourceKrs:origins.get(r.record_id)!}:r.document_json);
+  return {documents:expected.map(r=>origins.has(r.record_id)?{...r.document_json,sourceKrs:origins.get(r.record_id)!}:r.document_json),
+    records,archiveChecksum:archive.payload_jsonb_sha256};
  });
 }
 
