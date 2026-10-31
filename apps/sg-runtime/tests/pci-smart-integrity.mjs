@@ -12,7 +12,7 @@ export function assertPciSmartIntegrity(receipt,current,historical){
   assert.equal(digest(bytes),a.previousReceiptSha256)
   const {pciSmartResultingMainScopeCompatibility,...preserved}=receipt
   assert.deepEqual(preserved,prior,'all accepted receipts and historical digests stay immutable')
-  assert.deepEqual(Object.keys(a.sourceDigests).sort(),['apps/sg-runtime/tests/pci-smart-integrity.mjs','apps/sg-runtime/tests/pci-smart-integrity.test.mjs'])
+  assert.deepEqual(Object.keys(a.sourceDigests).sort(),["apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"])
   assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([f,d])=>[f.slice(16),d])))
   for(const[file,hash]of Object.entries(a.sourceDigests))assert.equal(digest(current(file)),hash,'exact resulting-main integrity source '+file)
   for(const flag of ['productChanged','cciCoreChanged','indexedPriceChanged','authorizationChanged','srmRuntimeChanged','sqlChanged','deploymentPerformed'])assert.equal(a[flag],false,flag)
