@@ -34,7 +34,7 @@ test('saved response derives semantics from existing mapping; no added provider,
   const bqlComponent=readFileSync(new URL('../components/benchmark-picker/benchmark-qualification.tsx',import.meta.url),'utf8')
   assert.doesNotMatch(bqlComponent,/useEffect|useAuth|fetch\(/)
   const host=readFileSync(new URL('../components/price-change-index/price-change-index-layer.tsx',import.meta.url),'utf8')
-  assert.match(host,/modelContext="PCI"/);assert.match(host,/if\(step!==3\|\|qualificationIssue/)
+  assert.match(host,/modelContext="PCI"/);assert.match(host,/if\(step!==3\|\|!pciStructureReady/)
   assert.match(host,/if\(qualificationIssue\)\{setError\(qualificationIssue\);return\}/)
   // Qualification adds no setComponents reset; mutation stays in the existing explicit edits and picker callback.
   assert.doesNotMatch(host,/qualificationIssue[^\n]*setComponents/)
