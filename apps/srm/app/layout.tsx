@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
-import "../src/modules/xray/supplier-locations.css";
-import "@profitia/srm-xray/msr-financial-tables.css";
 import { readSrmIdentityRuntime, type SrmIdentityRuntime } from "../src/server/identity-runtime";
 import { SrmIdentityProvider } from "./session-boundary";
 
@@ -20,7 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   catch { /* Invalid explicit configuration never renders a legacy application. */ }
   return (
     <html lang="pl">
-      <body><SrmIdentityProvider mode={identity?.provider ?? "unavailable"}
+      <body className="srm-xray-product"><SrmIdentityProvider mode={identity?.provider ?? "unavailable"}
         publishableKey={identity?.provider === "clerk" ? identity.publishableKey : undefined}>{children}</SrmIdentityProvider></body>
     </html>
   );
