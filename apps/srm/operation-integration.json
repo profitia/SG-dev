@@ -7238,7 +7238,7 @@
         "src/workflow.ts",
         "tsconfig.json"
       ],
-      "sourceDigest": "eaa9afea6cf4003c553ba853fc2e4c4936cea9b532958ed1817b7b2e0cb0e5e4"
+      "sourceDigest": "f595372df134134d64e8790af940246440a4b8ab3732bea522e39e9d40c396dd"
     },
     "applicationSourceDigests": {
       "app/api/xray/presentation/[operation]/route.ts": "205ea3d5d2ed0a50e7ae75a3ca43315a690ce25d16e0cd5a0b629d87ddefc8a2",
@@ -7249,7 +7249,7 @@
       "package-lock.json": "7f6b9c12258e386af04cdb3c55c6393de2ff36557889c0a8d918772f23b6d0c8",
       "scripts/krs-name-ui.test.mjs": "50999c14601590ade103cd7501d7d66eed15137fb08b93ff551eeba10d6cde2d",
       "scripts/porr-account-ui.test.mjs": "74279651e8e336eb68c57943d8743e587c2c9450bbf0317c47c2b400569c9410",
-      "scripts/xray-workflow-contract.test.ts": "075e3fc0306ccb594910535743b12b8b28e05b4468231cc200f618c4160d7f39",
+      "scripts/xray-workflow-contract.test.ts": "88cc193de3b438c4732449720468f95be3accc80fc663106a409e267e1061f19",
       "scripts/xray-workflow-react18.test.tsx": "c1b32a9251caa6d008910a94d77478b1499ccb5cdd0dfd910d58b2a15d454d38",
       "src/modules/xray/financial-period-selector.tsx": "81853c5698fbd0f1112ccdbef3b54fafc5a79d65f107e014d37274983315de0f",
       "src/modules/xray/report-navigation.tsx": "81853c5698fbd0f1112ccdbef3b54fafc5a79d65f107e014d37274983315de0f",
@@ -7265,7 +7265,7 @@
       "src/server/peer-read-boundary.test.ts": "948207f0dfe7ab89dd256efbea817a54f3e4d6ab76df16872e7c06743e20c747",
       "src/server/peer-xray-presentation.test.ts": "c2b7c0f0194ba213fc7241025649c989685853fffd286af8f1db77a5fa76532e",
       "src/server/peer-xray-presentation.ts": "b25a68842d43f1de4600d512e0b4d1d560ae53b5d0088937ac53dabf8c367e9a",
-      "src/server/supplier-location-geocoding-runtime.test.ts": "5909375273cd38318186aea1d81bc47836376beb19108a388d01cf5cad029e40",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "3e984b8dca92f8b91b2c32cf6ac11ca26bf7e73938b9fafac840a7f48cfc7d24",
       "src/server/supplier-map-readiness.test.ts": "ffc0d67e9e9400576ba104c3d24db297f58a3729288d9050cf727351ec50ca71",
       "src/server/visual-system.test.ts": "f649863d0936d7bfedc0f7f4f007c25626269578f0fa9a889081463620ee8728",
       "src/server/xray-presentation.ts": "83fd2e14d907366ff682001833ef8f0b4d33e783fc077d8e415bafb0606089d4",
@@ -7296,7 +7296,8 @@
       "../../packages/srm-xray/src/ui-canon.tsx": "0c0f1c498a1c202f7257467dab704de4868f046b00fdf2d1b810732d19ea69be",
       "../../packages/srm-xray/src/workflow-render-timing.ts": "600beab6d0e3f854423b1daae2cab1ce5c8ddfb9f1c6144ca7db9863ef2171e9",
       "../../packages/srm-xray/src/workflow-view.tsx": "55ccb061267adc0b3681976cabba81f88bda44b42fd3185fd0291af7837265a6",
-      "../../packages/srm-xray/src/workflow.css": "b9b807de8e1c43af7263376a70ad81c2be94cb5d236dbbcbd99f690be66415e9"
+      "../../packages/srm-xray/src/workflow.css": "b9b807de8e1c43af7263376a70ad81c2be94cb5d236dbbcbd99f690be66415e9",
+      "../../packages/srm-xray/src/report-availability-view.tsx": "02c02b7da98f1321c8147d32f2af77334f0dea52d51e17dec69a0eca990b3e36"
     },
     "unchangedDomainSourceDigests": {
       "apps/srm/src/server/financial-excel.ts": "fbd5dc7edf314fb270b9cb9cb1bf58a955d2ec149dcab7aceba84984644cfb4c",
