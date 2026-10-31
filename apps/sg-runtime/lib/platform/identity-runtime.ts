@@ -1,6 +1,7 @@
 import { createClerkClient } from '@clerk/backend'
 import { readClerkConfiguration, IdentityConfigurationUnavailable } from '@profitia/platform-contracts/clerk-configuration'
 import type { IdentityApplication } from '@profitia/platform-contracts/identity-provider'
+import { withPciTokenReuse } from './pci-identity-scope'
 
 export { IdentityConfigurationUnavailable }
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
@@ -25,6 +26,6 @@ export function readSg2IdentityRuntime(env: EnvironmentInput = process.env): Sg2
 export function createSg2ClerkClient(env: EnvironmentInput = process.env) {
   const config = readSg2IdentityRuntime(env)
   if (config.provider !== 'clerk') throw new IdentityConfigurationUnavailable()
-  try { return createClerkClient({ publishableKey: config.publishableKey, secretKey: env.PROFITIA_CLERK_SECRET_KEY, telemetry: { disabled: true } }) }
+  try { return withPciTokenReuse(createClerkClient({ publishableKey: config.publishableKey, secretKey: env.PROFITIA_CLERK_SECRET_KEY, telemetry: { disabled: true } })) }
   catch { throw new IdentityConfigurationUnavailable() }
 }

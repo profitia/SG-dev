@@ -1,4 +1,5 @@
 import test from 'node:test'
+import {assertPciSmartIntegrity} from './pci-smart-integrity.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
@@ -41,7 +42,7 @@ test('SG2 accepts the exact settled-failure producer while retaining the existin
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??a).platformVersion)
  for(const[file,digest]of Object.entries(a.sourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.freshPostfetchCompatibility?.sourceDigests[file]??receipt.sourceLeaseClockCompatibility?.sourceDigests[file]??digest,file)
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.bqlLiveAcceptanceCompatibility?.applicationSourceDigests[file]??receipt.bqlPciFirstSourceCompatibility?.applicationSourceDigests[file]??receipt.pciMain800IntegrityCompatibility?.applicationSourceDigests[file]??receipt.pciLiveAcceptanceStabilization?.applicationSourceDigests[file]??receipt.freshPostfetchCompatibility?.applicationSourceDigests[file]??receipt.sourceLeaseClockCompatibility?.applicationSourceDigests[file]??digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(fs.readFileSync(new URL('../'+file,import.meta.url))),receipt.pciSmartPreparationCompatibility?.applicationSourceDigests[file]??receipt.bqlLiveAcceptanceCompatibility?.applicationSourceDigests[file]??receipt.bqlPciFirstSourceCompatibility?.applicationSourceDigests[file]??receipt.pciMain800IntegrityCompatibility?.applicationSourceDigests[file]??receipt.pciLiveAcceptanceStabilization?.applicationSourceDigests[file]??receipt.freshPostfetchCompatibility?.applicationSourceDigests[file]??receipt.sourceLeaseClockCompatibility?.applicationSourceDigests[file]??digest,file)
  for(const flag of ['runtimeBehaviorChanged','financialBackendDuplicated','providerPoliciesChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag)
 })
 
@@ -81,6 +82,7 @@ test('SG2 explicitly accepts parallel current identity observations without a se
 
 
 export function assertPciMain800Integrity(receipt, readCurrent, readHistorical) {
+ if(receipt.pciSmartPreparationCompatibility){const next=assertPciSmartIntegrity(receipt,readCurrent,readHistorical);assertPciMain800Integrity(next.prior,next.previousBytes,readHistorical);return}
  if(Object.hasOwn(receipt,'bqlLiveAcceptanceCompatibility')){
   const a=receipt.bqlLiveAcceptanceCompatibility,bytes=readHistorical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json')
   assert.equal(a.taskId,'SG2-BQL-PCI-FIRST-IMPLEMENTATION-20261030');assert.equal(a.rulesetVersion,'bql-semantic/1.0.1')

@@ -8,6 +8,7 @@ import { benchmarkSeriesKey, createPickerController, emptyPickerState, type Pick
 import { benchmarkPriceType, pickerNumber, pickerObservationDate } from './presentation'
 import { formatDisplayMeasurement, sanitizeUserFacingPublisher } from '../../lib/benchmark/presentation'
 import type { BenchmarkCandidate, SavedBenchmark } from '../../lib/benchmark/contracts'
+import {BenchmarkQualificationFilter,matchesQualification,type QualificationFilter} from './benchmark-qualification-filter'
 import { BenchmarkQualification } from './benchmark-qualification'
 
 /** Mount/key a fresh Picker for a different consumer context. It owns no category or model action. */
@@ -24,12 +25,12 @@ export interface SharedBenchmarkPickerProps {
 }
 
 const copy = {
-  pl: { search: 'Szukaj benchmarku', placeholder: 'np. miedź', submit: 'Szukaj', name: 'Benchmark', type: 'Typ', frequency: 'Kadencja',
+  pl: { search: 'Szukaj benchmarku', placeholder: 'np. miedź', submit: 'Szukaj', name: 'Benchmark', type: 'Typ providera', frequency: 'Kadencja',
     last: 'Ostatnia wartość', select: 'Wybierz', use: 'Użyj wybranego', cancel: 'Anuluj', more: 'Pokaż kolejne 5',
     loading: 'Ładowanie…', empty: 'Brak wyników.', start: 'Wpisz nazwę lub identyfikator benchmarku.', current: 'Obecny benchmark',
     unavailable: 'Wybór benchmarku jest chwilowo niedostępny. Sprawdź sesję i uprawnienia.', searchError: 'Nie udało się wyszukać benchmarków.',
     selectionError: 'Nie udało się wybrać benchmarku.', previewError: 'Podgląd niedostępny', disabled: 'Wybór benchmarku jest wyłączony.', date: 'Data obserwacji' },
-  en: { search: 'Search benchmarks', placeholder: 'e.g. copper', submit: 'Search', name: 'Benchmark', type: 'Type', frequency: 'Frequency',
+  en: { search: 'Search benchmarks', placeholder: 'e.g. copper', submit: 'Search', name: 'Benchmark', type: 'Provider type', frequency: 'Frequency',
     last: 'Last', select: 'Select', use: 'Use selected', cancel: 'Cancel', more: 'Show next 5',
     loading: 'Loading…', empty: 'No results.', start: 'Enter a benchmark name or identifier.', current: 'Current benchmark',
     unavailable: 'Benchmark selection is temporarily unavailable. Check your session and permissions.', searchError: 'Benchmark search failed.',
@@ -38,13 +39,13 @@ const copy = {
 const button = 'rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 disabled:cursor-not-allowed disabled:opacity-50'
 
 /** Shared presentational surface; no forecasts, iframes, category identifiers or metric calculation. */
-export function BenchmarkPickerView({ locale, state, query, setQuery, search, more, select, cancel, initialSelectedBenchmarkId, disabled = false, modelContext }: {
+export function BenchmarkPickerView({ locale, state, query, setQuery, search, more, select, cancel, initialSelectedBenchmarkId, disabled = false, modelContext,qualificationFilter='ALL',setQualificationFilter=()=>{} }: {
   locale: 'pl' | 'en'; state: PickerState; query: string; setQuery: (query: string) => void; search: () => void
   more: () => void; select: (candidate: BenchmarkCandidate) => void; cancel?: () => void
   initialSelectedBenchmarkId?: string | null; disabled?: boolean
-  modelContext?: 'PCI'
+  modelContext?: 'PCI';qualificationFilter?:QualificationFilter;setQualificationFilter?:(value:QualificationFilter)=>void
 }) {
-  const t = copy[locale], visible = state.candidates.slice(0, state.visibleCount)
+  const t = copy[locale], visible = state.candidates.slice(0, state.visibleCount).filter(candidate=>!modelContext||matchesQualification(candidate,qualificationFilter))
   const selected = state.saved.find(item => item.businessBenchmarkId === initialSelectedBenchmarkId)
   const error = state.error === 'SESSION_UNAVAILABLE' ? t.unavailable : state.error === 'SELECTION_FAILED' ? t.selectionError : state.error === 'SEARCH_FAILED' ? t.searchError : null
   return <section className="space-y-4 p-4 text-slate-900 sm:p-6" aria-label={t.search} onKeyDown={event => {
@@ -58,6 +59,8 @@ export function BenchmarkPickerView({ locale, state, query, setQuery, search, mo
       <button type="submit" className={button + ' self-end'} disabled={disabled || !state.ready || !query.trim()}>{t.submit}</button>
       {cancel ? <button type="button" className={button + ' self-end'} onClick={cancel}>{t.cancel}</button> : null}
     </form>
+    {modelContext&&<BenchmarkQualificationFilter locale={locale} value={qualificationFilter} onChange={setQualificationFilter}/>}
+    {modelContext&&qualificationFilter!=='ALL'&&<p className="text-xs" role="status">{locale==='pl'?'Filtr obejmuje wyświetloną część wyników, zachowując kolejność źródła. Pokaż kolejne lub wybierz Wszystkie.':'The filter covers the displayed results in source order. Show more or select All.'}</p>}
     {selected ? <p className="rounded-xl bg-teal-50 p-3 text-sm">{t.current}: <strong>{selected.displayName}</strong></p> : null}
     {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
     <p role="status" aria-live="polite" className="text-sm text-slate-500">{disabled ? t.disabled : state.searching || !state.ready && !error ? t.loading
@@ -97,12 +100,12 @@ export function BenchmarkPickerView({ locale, state, query, setQuery, search, mo
         </tr>
       })}</tbody>
     </table> : null}
-    {visible.length < state.candidates.length ? <button type="button" className={button} onClick={more} disabled={disabled || state.searching || !state.ready}>{t.more}</button> : null}
+    {state.visibleCount < state.candidates.length ? <button type="button" className={button} onClick={more} disabled={disabled || state.searching || !state.ready}>{t.more}</button> : null}
   </section>
 }
 
 function PickerSession(props: SharedBenchmarkPickerProps & { mode: 'clerk' | 'legacy_demo'; getToken: () => Promise<string | null> }) {
-  const [state, setState] = useState(emptyPickerState), [query, setQuery] = useState(props.initialQuery ?? '')
+  const [state, setState] = useState(emptyPickerState), [query, setQuery] = useState(props.initialQuery ?? ''),[qualificationFilter,setQualificationFilter]=useState<QualificationFilter>('ALL')
   const live = useRef(props); live.current = props
   const controller = useRef<ReturnType<typeof createPickerController> | null>(null)
   const stop = useRef<(() => void) | null>(null)
@@ -118,7 +121,7 @@ function PickerSession(props: SharedBenchmarkPickerProps & { mode: 'clerk' | 'le
     void current.initialize().then(() => { if (live.current.initialQuery?.trim()) void current.search(live.current.initialQuery) })
     return () => { close(); if (controller.current === current) controller.current = null }
   }, [])
-  return <BenchmarkPickerView {...props} state={state} query={query} setQuery={setQuery}
+  return <BenchmarkPickerView {...props} qualificationFilter={qualificationFilter} setQualificationFilter={setQualificationFilter} state={state} query={query} setQuery={setQuery}
     search={() => { void controller.current?.search(query) }} more={() => { void controller.current?.showMore() }}
     select={candidate => { void controller.current?.select(candidate) }} cancel={props.onCancel ? () => { stop.current?.(); props.onCancel?.() } : undefined} />
 }
