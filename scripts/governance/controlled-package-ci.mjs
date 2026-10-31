@@ -165,9 +165,9 @@ function isPinnedPayloadCaptureReview(files) {
 export const READONLY_MISS_REPORT_PRODUCER_REVIEW = Object.freeze({
   prNumber: 831,
   branch: 'architecture/current-fresh-miss-20261031',
-  sourceSha: '358f9eaf3a835c39a6d1e75900179d0300b405c7',
+  sourceSha: 'b2b52c6a61ab3c3882f60ab5033670046715a5bc',
   blobs: Object.freeze({
-    "apps/architecture-lab/test/readonly-miss-report.test.mjs": "2c895449affee1ba6292917fe1d748867851f710",
+    "apps/architecture-lab/test/readonly-miss-report.test.mjs": "1e072a397829f2b6c5bf44cd929387ad46020ff3",
     "packages/platform-contracts/readonly-miss-report/README.md": "a599714ed85033ba18702d9714b822ddd989183c",
     "packages/platform-contracts/readonly-miss-report/package-lock.json": "bfa16e198a13aa8d23a0a82fc9029b8bee5a7f4e",
     "packages/platform-contracts/readonly-miss-report/package.json": "b3f788881a5c2b0af3a982ca8eaeb714ff1cc79f",
