@@ -1,6 +1,7 @@
 
 import {diagnosticRun} from './diagnostic-trace'
 import {capturePrivateWorkJson} from './private-work-json'
+import {captureFinitePayload} from '@profitia/platform-payload-capture'
 import { createHash } from 'node:crypto'
 import type { PoolClient } from 'pg'
 import { OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
@@ -62,15 +63,15 @@ export function isStructuredFreshCompany(nip:string,g:MgbiGeneralResult,f:MgbiFi
 }
 function json<T>(value:T):T{
  return diagnosticRun('JSON_CAPTURE',()=>{
-  let text:string|undefined
-  try{text=JSON.stringify(value,(_key,v)=>{if(typeof v==='number'&&!Number.isFinite(v))return refuse();return v})}catch{return refuse()}
-  if(!text||Buffer.byteLength(text)>MAX_JSON_BYTES)return refuse()
-  const captured=JSON.parse(text) as T
-  const checksum=operationPayloadDigest(captured as Json)
-  const frozen=freeze(captured)
-  if(frozen&&typeof frozen==='object')capturedDigests.set(frozen,checksum)
-  return frozen
-
+  // The accepted data-only helper detaches and freezes finite input before any
+  // await, using the unchanged SDK digest. A prior immutable DATA snapshot may
+  // be reused; every Work still performs its current E1/Clerk checks.
+  try{
+   const captured=captureFinitePayload(value,{maximumBytes:MAX_JSON_BYTES})
+   const body=captured.value as unknown as T
+   if(body&&typeof body==='object')capturedDigests.set(body,captured.digest)
+   return body
+  }catch{return refuse()}
  })
 }
 function select(value:SupplierNativeWorkSelection):SupplierNativeWorkSelection{
