@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-IMMUTABLE-PAYLOAD-CAPTURE-20261031",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "executionEnvironment": "local",
+  "status": "LOCAL_CANDIDATE_VERIFIED",
+  "sourceGo": "NOT_GRANTED",
+  "baseSha": "a921dfc23d1e72ea10750993515fb6c41f0bd90b",
+  "package": "@profitia/platform-payload-capture",
+  "version": "1.0.0",
+  "sdkPeer": "1.32.3",
+  "sdkCopies": 1,
+  "dataOnly": true,
+  "acceptedSdkChanged": false,
+  "consumerSourceChanged": false,
+  "sourceOrRuntimeDeploymentPerformed": false,
+  "sourceFileSha256": {
+    "package.json": "1fb87612b1dcfb4459d0728b27e63d05b4c53485fec173a3099bde442ff63a18",
+    "src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f",
+    "src/payload-capture.d.mts": "ac8c8399b33ee143a4191530fd7a236f04b6055c437b6a38bf69a888f86d2634"
+  },
+  "packedArtifact": {
+    "filename": "profitia-platform-payload-capture-1.0.0.tgz",
+    "sha256": "ed40d35a73275a64cd74c8f6f0fac2a3d12a70c527a79d467ef59617f688af4c",
+    "integrity": "sha512-6WrF5ROczOipK10fXzmezVoHzbcTTbfVrafEUlysmYpwLP1s99XZ1SUHPCEEVPyROu0fUanXiSEljOROuaBXRQ==",
+    "shasum": "5d9a7c3c517d4b79921c879e0df838f2214ddba2"
+  },
+  "validation": {
+    "tests": 22,
+    "failures": 0,
+    "skips": 0,
+    "deterministicGeneratedCases": 4000,
+    "syntaxBuild": "PASS",
+    "packedPublicTypesAndOneSdk": "PASS"
+  },
+  "localCpuBenchmark": {
+    "schemaVersion": "1.0",
+    "kind": "LOCAL_CPU_ONLY_SANITIZED_RETAINED_GRAPH",
+    "notOriginalProviderResponse": true,
+    "notFullNormalizedMgbiFinancialResult": true,
+    "liveFreshMeasured": false,
+    "inputFileBytes": 607035,
+    "inputSha256": "e2fb10048c0e4f9725dcd2c95fd78038f575bd781e44e303baad27bdfe2c1e6c",
+    "normalizedBytes": 607034,
+    "digestMatchesUnchangedSdk": true,
+    "digest": "229abe958af0873da72d32c178bd553d1d8c91ad980c79301e4dfbabc5fafdee",
+    "nodeCount": 8685,
+    "depth": 8,
+    "samplesMs": {
+      "baseline": [
+        12.319750000000013,
+        45.65454199999999,
+        29.677250000000015,
+        11.600583,
+        13.84575000000001,
+        10.682000000000016,
+        15.119375000000048,
+        10.633249999999975,
+        10.910167000000001,
+        10.345874999999978,
+        10.723458999999991
+      ],
+      "candidate": [
+        32.861209,
+        42.12383399999999,
+        8.649124999999998,
+        8.422584,
+        9.403458,
+        10.672583999999972,
+        9.480000000000018,
+        9.469041000000004,
+        9.228834000000006,
+        9.344790999999987,
+        7.784334000000001
+      ]
+    },
+    "medianMs": {
+      "baseline": 11.600583,
+      "candidate": 9.403458
+    },
+    "reuse1000Ms": 0.6284590000000208
+  },
+  "evidencePath": "Canon/evidence/2026-10-31-payload-capture-candidate.md",
+  "logSha256": {
+    "architecture-payload-capture-tests.log": "36c5e0af82f3b73fdb519fb52a7f1b02a742d2393da2ea18f6d28f777a82229b",
+    "architecture-payload-capture-build.log": "fb475339fc24c2f117a14b468678ee8f97377584e2bc1a9d817555167bf8b48d",
+    "architecture-payload-capture-benchmark.json": "4fa7b8fe85d2cb0680f7a1fa2060838fb3cc99b98b22ac07fc074c97a5519488"
+  },
+  "requiredAdoption": [
+    "FORMAL_PRODUCER_SOURCE_GO_AND_EXACT_CANDIDATE_CI",
+    "SEPARATE_SRM_PACKAGE_LOCK_AND_CAPTURE_ADAPTER_ADOPTION",
+    "COMPLETE_MAPPED_FINANCIAL_INPUT_AND_BUSINESS_REGRESSION",
+    "SEPARATE_RECOVERY_READY_PRODUCT_RELEASE"
+  ],
+  "notRequiredByThisPackage": [
+    "SDK1.33_UPGRADE",
+    "SECOND_SDK_COPY",
+    "NEW_SQL_OR_ROLES",
+    "SG2_RUNTIME_CHANGE"
+  ]
+}
