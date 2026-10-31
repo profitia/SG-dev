@@ -33,6 +33,7 @@
     "@profitia/maps-contracts": "file:../../packages/maps-contracts",
     "@profitia/maps-embed": "file:../../packages/maps-embed",
     "@profitia/platform-contracts": "file:../../packages/platform-contracts",
+    "@profitia/platform-payload-capture": "file:../../packages/platform-contracts/payload-capture",
     "@profitia/srm-xray": "file:../../packages/srm-xray",
     "cheerio": "1.1.2",
     "exceljs": "^4.4.0",
@@ -45,7 +46,8 @@
     "sharp": "0.35.5",
     "@profitia/identity-runtime": "file:../identity-runtime",
     "@profitia/maps-runtime": "file:../maps-runtime",
-    "@profitia/platform-current-fresh-report": "file:../../packages/platform-contracts/current-fresh-report"
+    "@profitia/platform-current-fresh-report": "file:../../packages/platform-contracts/current-fresh-report",
+    "@profitia/platform-readonly-miss-report": "file:../../packages/platform-contracts/readonly-miss-report"
   },
   "devDependencies": {
     "@types/node": "^20",

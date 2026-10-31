@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -84,8 +84,8 @@ test('manifest changes cannot hide private aliases, new pins or additional works
   assertManifestPolicy({dependencies: {...authority.dependencies, '@profitia/platform-contracts': 'file:../../packages/platform-contracts'}}, authority)
   for (const candidate of [{dependencies: {'@profitia/cic-core': '9.0.0'}}, {dependencies: {alias: 'npm:@profitia/cic-evals@1.0.0'}}, {dependencies: {'@profitia/cic-evals': '1.0.0'}}, {...authority, workspaces: ['../*']}, {...authority, overrides: {'@profitia/cic-core': '9'}}]) rejection(() => assertManifestPolicy(candidate, authority))
 })
-test('only the four reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
-  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/platform-contracts', '@profitia/sg2-price-change-index-ui', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
+test('only the six reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
+  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/maps-contracts', '@profitia/maps-embed', '@profitia/platform-contracts', '@profitia/sg2-price-change-index-ui', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
   const authority = {dependencies: {'@profitia/cic-core': '1.1.1'}}
   for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) {
     for (const resolved of [relative, `file:${relative}`]) {
@@ -114,6 +114,59 @@ test('only the four reviewed local names bind to their own exact paths, never a 
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
+function reviewedMapsFixture() {
+  const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
+  const candidate = lock()
+  candidate.packages['node_modules/@profitia/maps-embed'] = {
+    version: manifest.version, resolved: 'file:../../packages/maps-embed', peerDependencies: structuredClone(manifest.peerDependencies),
+  }
+  candidate.packages['node_modules/@profitia/maps-contracts'] = {version: '0.1.0', resolved: 'file:../../packages/maps-contracts'}
+  candidate.packages[''] = {dependencies: {'@profitia/maps-embed': 'file:../../packages/maps-embed', '@profitia/maps-contracts': 'file:../../packages/maps-contracts'}}
+  return {manifest, candidate}
+}
+
+test('existing MapsEmbed peers require exact reviewed owner, version, section and trusted manifest values', () => {
+  const {manifest} = reviewedMapsFixture()
+  assert.equal(manifest.name, '@profitia/maps-embed'); assert.equal(manifest.version, '0.1.2')
+  assertManifestPolicy(manifest, manifest)
+  for (const mutate of [
+    m => m.name = '@profitia/srm-xray', m => m.version = '0.1.3',
+    m => m.peerDependencies['@profitia/maps-contracts'] = '*',
+    m => m.peerDependencies['@profitia/platform-contracts'] += ' || 1.32.4',
+    m => {m.dependencies = m.peerDependencies; delete m.peerDependencies},
+    m => {m.devDependencies = m.peerDependencies; delete m.peerDependencies},
+    m => {m.optionalDependencies = m.peerDependencies; delete m.peerDependencies},
+    m => m.peerDependencies['@profitia/other'] = '1.0.0',
+  ]) {const changed = structuredClone(manifest); mutate(changed); rejection(() => assertManifestPolicy(changed, manifest))}
+  for (const mutate of [
+    m => m.name = 'different-authority', m => m.version = '0.1.3',
+    m => delete m.peerDependencies['@profitia/maps-contracts'],
+    m => m.peerDependencies['@profitia/platform-contracts'] = '*',
+  ]) {const changed = structuredClone(manifest); mutate(changed); rejection(() => assertManifestPolicy(manifest, changed))}
+  const app = {name: '@profitia/sg-runtime', version: '0.1.2', peerDependencies: manifest.peerDependencies}
+  rejection(() => assertManifestPolicy(app, app))
+})
+
+test('Maps lock peer exception is confined to the exact top-level installed entry and never admits app or nested peers', () => {
+  const {candidate} = reviewedMapsFixture()
+  assertPackagePolicy(candidate, lock(), configuration)
+  assertLocalPackageSources(authorityRoot, candidate, authorityRoot)
+  for (const mutate of [
+    l => l.packages['node_modules/@profitia/maps-embed'].version = '0.1.3',
+    l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies['@profitia/maps-contracts'] = '^0.1.0',
+    l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies['@profitia/platform-contracts'] = '*',
+    l => {const e = l.packages['node_modules/@profitia/maps-embed']; e.dependencies = e.peerDependencies; delete e.peerDependencies},
+    l => {const e = l.packages['node_modules/@profitia/maps-embed']; e.optionalDependencies = e.peerDependencies; delete e.peerDependencies},
+    l => l.packages[''].peerDependencies = l.packages['node_modules/@profitia/maps-embed'].peerDependencies,
+    l => l.packages['node_modules/unrelated'] = {version: '0.1.2', peerDependencies: l.packages['node_modules/@profitia/maps-embed'].peerDependencies},
+    l => l.packages['node_modules/parent/node_modules/@profitia/maps-embed'] = l.packages['node_modules/@profitia/maps-embed'],
+    l => l.packages['node_modules/@profitia/maps-embed'].resolved = 'file:../../packages/maps-contracts',
+    l => l.packages['node_modules/@profitia/maps-embed'].link = true,
+    l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies.alias = 'npm:@profitia/maps-contracts@0.1.0',
+    l => l.packages['node_modules/@profitia/cic-core'].version = '9.0.0',
+  ]) {const changed = structuredClone(candidate); mutate(changed); rejection(() => assertPackagePolicy(changed, lock(), configuration))}
+})
+
 for (const name of Object.keys(LOCAL_PACKAGES)) test(`actual local source ${name} rejects mismatched names, absent authority, private dependencies and symlinks`, () => {
   const temporary = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'controlled-local-source-')))
   const candidateRoot = path.join(temporary, 'candidate'), authorityRoot = path.join(temporary, 'authority')
@@ -720,4 +773,66 @@ test('missing proof is rejected and proof command refuses a credential before re
   const result = spawnSync(process.execPath, [path.join(authorityRoot, 'scripts/governance/controlled-package-ci.mjs'), 'proof'], {encoding: 'utf8', env: {...process.env, NPM_TOKEN: 'synthetic-canary-no-authority', NODE_AUTH_TOKEN: '', GH_TOKEN: ''}})
   assert.notEqual(result.status, 0)
   assert.match(result.stderr, /CREDENTIAL_PRESENT_IN_EXECUTION_PHASE/)
+})
+
+function readonlyMissCandidate() {
+  const review=READONLY_MISS_REPORT_PRODUCER_REVIEW,p=pr()
+  p.number=review.prNumber;p.head.ref=review.branch;p.head.sha=review.sourceSha;p.base.sha=sha
+  const files=Object.entries(review.blobs).map(([filename,blob])=>({filename,status:'added',sha:blob}))
+  p.changed_files=files.length
+  return {p,files}
+}
+test('read-only MISS review is frozen and admits only the exact nine additive producer blobs',()=>{
+  const review=READONLY_MISS_REPORT_PRODUCER_REVIEW,{p,files}=readonlyMissCandidate()
+  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,9)
+  assert.equal(review.prNumber,831);assert.equal(review.sourceSha,'b2b52c6a61ab3c3882f60ab5033670046715a5bc')
+  assert.equal(review.branch,'architecture/current-fresh-miss-20261031')
+  assert(files.every(f=>f.status==='added' && (f.filename.startsWith('packages/platform-contracts/readonly-miss-report/')
+    || f.filename==='apps/architecture-lab/test/readonly-miss-report.test.mjs')))
+  assert(!files.some(f=>f.filename.includes('/current-fresh-report/')))
+  assertArchitectureFiles(p,files)
+  assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+})
+test('read-only MISS review refuses another PR, source SHA or internal branch even with matching caller metadata',()=>{
+  for(const mutate of [p=>p.number++,p=>p.head.ref='architecture/another-candidate',p=>p.head.sha=other]){
+    const {p,files}=readonlyMissCandidate();mutate(p)
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('read-only MISS review preserves trusted main, owner, repository and target fences',()=>{
+  for(const mutate of [p=>p.user.login='attacker',p=>p.head.repo.full_name='profitia/fork',p=>p.base.repo.full_name='other/SG-dev',p=>p.base.ref='staging',p=>p.state='closed']){
+    const {p,files}=readonlyMissCandidate();mutate(p)
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+  for(const change of [{ref:'refs/pull/831/merge'},{event:'pull_request_target'},{triggeringActor:'attacker'},{workflowRef:REPOSITORY+'/'+WORKFLOW+'@refs/heads/untrusted'}]){
+    const {p,files}=readonlyMissCandidate()
+    rejection(()=>selectCandidate({...context(),...change},p,p.head.sha,{files}))
+  }
+})
+test('read-only MISS review rejects omitted, extra, duplicate, modified, renamed and substituted blobs',()=>{
+  for(const mutate of [files=>files.pop(),files=>files.push({filename:'packages/platform-contracts/src/extra.mjs',status:'added',sha}),
+    files=>files[0]={...files[1]},files=>files[0].status='modified',files=>files[0].previous_filename='other.mjs',files=>files[0].sha=other]){
+    const {p,files}=readonlyMissCandidate();mutate(files);p.changed_files=files.length
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('read-only MISS admission cannot include old FRESH, SDK, product, workflow or registry mutations',()=>{
+  for(const filename of ['packages/platform-contracts/current-fresh-report/package.json','packages/platform-contracts/src/operation-context.mjs',
+    'apps/srm/operation-integration.json','apps/sg-runtime/package.json',WORKFLOW,'Canon/registries/profitia-projects-v1.json']){
+    const {p,files}=readonlyMissCandidate();files[0]={filename,status:'modified',sha}
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('read-only MISS API resolution binds the complete exact file list and rechecks candidate metadata',async()=>{
+  const {p,files}=readonlyMissCandidate(),calls=[]
+  const request=async endpoint=>{calls.push(endpoint);return {data:structuredClone(endpoint.includes('/files?')?files:p)}}
+  const resolved=await resolveCandidateAdmission(context(),'831',p.head.sha,request)
+  assert.equal(resolved.sha,p.head.sha);assert.deepEqual(resolved.admission.files,files);assert.equal(calls.length,3)
+  let reads=0
+  const changing=async endpoint=>{
+    if(endpoint.includes('/files?'))return {data:structuredClone(files)}
+    const value=structuredClone(p);if(++reads===2)value.base.sha=other
+    return {data:value}
+  }
+  await assert.rejects(resolveCandidateAdmission(context(),'831',p.head.sha,changing),/CANDIDATE_CHANGED_DURING_RESOLUTION/)
 })

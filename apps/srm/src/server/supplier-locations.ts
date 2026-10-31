@@ -10,10 +10,12 @@ import {isSameOriginRequest} from './request-origin'
 import {locationCollectionId,locationCommandDigest,assignedLocationId,manualAddressVersion,readLocationPage,writeManualLocation,reconcileLocations,locationSourceEvidence,type LocationPayload} from './supplier-location-store'
 import {projectSupplierHeadquarters,projectRelatedCompanyLocations,sourceAddressVersion,sourceSyncIdentity,type LocationProjection,type AcceptedCompanyAddress} from './supplier-location-sync'
 import {readLocationCompany,acceptedKysLocations,type AcceptedKysLocations} from './supplier-location-source'
+import {measureLocation,withLocationTelemetry} from './supplier-location-telemetry'
 
 type DriverOptions=Parameters<typeof createSrmPrivateOperationHost>[0]
 export type SupplierLocationRuntimeOptions=Omit<DriverOptions,'readResources'|'projectOutput'|'prepareInputs'|'describeOutcome'|'requestLedger'>&{
  sourceScope?:'HEADQUARTERS_MANUAL';
+ locationCacheSchemaDigest?:string;
  businessDigest:string;parentSchemaDigest?:string;ledger:NonNullable<DriverOptions['requestLedger']>;
  readAcceptedKys?:(request:Request,org:string,nip:string)=>Promise<Response>
  prepareAccess?:(request:Request,organisationId:string,supplierId:string,locationId?:string|null)=>Promise<void>
@@ -24,7 +26,7 @@ const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
 const closed=(v:unknown,keys:string[]):v is Record<string,unknown>=>!!v&&Object.getPrototypeOf(v)===Object.prototype&&Object.keys(v).sort().join(',')===[...keys].sort().join(',')
 const payload=(supplierId:string):LocationPayload=>({action:'READ',supplierId,locationId:null,addressVersion:null,expectedVersion:null,command:null})
 export function createSupplierLocationHost(options:SupplierLocationRuntimeOptions,operation:'supplier.location.read'|'supplier.location.write'|'supplier.location.sync',sources:readonly ReturnType<typeof locationSourceEvidence>[]=[]){
- const {businessDigest,parentSchemaDigest,locationAdmission,ledger,readAcceptedKys:__,sourceScope,...driver}=options
+ const {businessDigest,parentSchemaDigest,locationAdmission,ledger,readAcceptedKys:__,sourceScope,locationCacheSchemaDigest:___,...driver}=options
  if(sourceScope==='HEADQUARTERS_MANUAL'&&sources.some(v=>v.kind!=='MGBI'))return refuse()
  if(!/^[a-f0-9]{64}$/.test(businessDigest)||sources.length>64)throw TypeError('Exact SRM location boundary required')
  if(locationAdmission&&!/^[a-f0-9]{64}$/.test(parentSchemaDigest??''))throw TypeError('Exact P1 receiver digest required')
@@ -71,7 +73,7 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
    organisationId:input.organisationId,resourceId:p.locationId??locationCollectionId(input.supplierId),payload:p as unknown as Json,request:input.request,...(key?{idempotencyKey:key}:{})},run)
  const read=async<T>(input:Input,run:Parameters<typeof reader.execute<T>>[1])=>(await execute(reader,input,payload(input.supplierId),run)).value
  return Object.freeze({
-  async page(input:Input,group:string,offset:number,limit:number){if(options.sourceScope==='HEADQUARTERS_MANUAL'&&!['SUPPLIER_LOCATIONS','USER_LOCATIONS'].includes(group))return refuse();await options.prepareAccess?.(input.request,input.organisationId,input.supplierId);return read(input,(context,client)=>readLocationPage(context,client,input.supplierId,group,offset,limit))},
+  async page(input:Input,group:string,offset:number,limit:number){if(options.sourceScope==='HEADQUARTERS_MANUAL'&&!['SUPPLIER_LOCATIONS','USER_LOCATIONS'].includes(group))return refuse();await options.prepareAccess?.(input.request,input.organisationId,input.supplierId);return read(input,(context,client)=>measureLocation('databaseRead',()=>readLocationPage(context,client,input.supplierId,group,offset,limit)))},
   async write(input:Input,action:'CREATE'|'UPDATE'|'DEACTIVATE',locationId:string|null,expectedVersion:string|null,command:unknown,key:string){
    if(!validRequestIdempotencyKey(key))return refuse()
    const selected=action==='DEACTIVATE'?null:parseManualLocation(command)
@@ -122,6 +124,12 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
    }
    const receipts=[]
    for(const plan of plans){
+    const rows=plan.rows.map(row=>({...row,id:assignedLocationId(input.organisationId,input.supplierId,row.entityKey),addressVersion:sourceAddressVersion(row)}))
+    if(options.locationCacheSchemaDigest&&await read(input,async(_context,client)=>measureLocation('sourceSyncCheck',async()=>{
+     const d=(await client.query('SELECT srm.location_cache_descriptor() AS value')).rows[0]?.value
+     if(d?.schemaVersion!=='1.0.0'||d.schemaDigest!==options.locationCacheSchemaDigest)throw new OperationDenied('POLICY_UNAVAILABLE')
+     return(await client.query('SELECT srm.location_sync_matches($1::uuid,$2::uuid,$3::jsonb) AS value',[input.organisationId,input.supplierId,JSON.stringify(rows)])).rows[0]?.value===true
+    })))continue
     const sources=[...new Map(plan.sources.map(v=>[v.kind+':'+v.reportId,v])).values()]
     const key=sourceSyncIdentity(input.organisationId,input.supplierId,sources,plan.addressProjection)
     const expectedVersion=await read(input,async(context,client)=>{
@@ -130,8 +138,7 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
     })
     const evidence=sources.map(v=>locationSourceEvidence(v,input.organisationId,selected.nip)),host=createSupplierLocationHost(options,'supplier.location.sync',evidence)
     const p:LocationPayload={action:'SYNC',supplierId:input.supplierId,locationId:null,addressVersion:null,expectedVersion,command:{sources:evidence.map(v=>({id:v.resource.id,version:v.resource.version}))}}
-    const rows=plan.rows.map(row=>({...row,id:assignedLocationId(input.organisationId,input.supplierId,row.entityKey),addressVersion:sourceAddressVersion(row)}))
-    receipts.push((await execute(host,input,p,(context,client)=>reconcileLocations(context,client,p,rows),key)).value)
+    receipts.push((await execute(host,input,p,(context,client)=>measureLocation('sourceSyncWrite',()=>reconcileLocations(context,client,p,rows)),key)).value)
    }
    return {status:plans.length?'CURRENT':'NO_ACCEPTED_SOURCE',receipts,branches:'NOT_CONFIRMED' as const}
   },
@@ -140,7 +147,7 @@ export function createSupplierLocationRuntime(options:SupplierLocationRuntimeOpt
 export type SupplierLocationRuntime=ReturnType<typeof createSupplierLocationRuntime>
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}
 export function createSupplierLocationHandler(runtime:SupplierLocationRuntime,defaultOrganisationId:string,geocoding?:Readonly<{resolve(input:Input&{locationId:string}):Promise<unknown>}>){
- return async(request:Request)=>{
+ return async(request:Request)=>withLocationTelemetry(async()=>{
   const fail=(status:number)=>Response.json({error:'Lokalizacje są teraz niedostępne.'},{status,headers})
   if(request.method!=='POST'){const r=fail(405);r.headers.set('Allow','POST');return r}
   if(!isSameOriginRequest(request))return fail(403)
@@ -184,5 +191,5 @@ export function createSupplierLocationHandler(runtime:SupplierLocationRuntime,de
    return fail(reason==='UNVERIFIED_IDENTITY'?401:reason==='RESOURCE_VERSION_CONFLICT'||reason==='IDEMPOTENCY_CONFLICT'||sql==='40001'?409
     :reason==='LIMIT_EXCEEDED'?429:reason&& !['POLICY_UNAVAILABLE','AUDIT_UNAVAILABLE','LIMIT_POLICY_UNAVAILABLE'].includes(reason)?403:503)
   }
- }
+ })
 }

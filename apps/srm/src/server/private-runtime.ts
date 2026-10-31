@@ -225,6 +225,7 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   }
   const core=nativeTargets.coreSchemaDigests
   const locationOptions:SupplierLocationRuntimeOptions|undefined=locationEnabled==='true'?{pool,auditPool,clerk,identity:config.identity,binding:config.binding,module:config.module,
+    ...(geocodingConfig?.cacheSchemaDigest?{locationCacheSchemaDigest:geocodingConfig.cacheSchemaDigest}:{}),
     application:{...config.application,configurationVersion:locationTargets.configurationVersion},businessDigest:locationTargets.businessSchemaDigest,sourceScope:'HEADQUARTERS_MANUAL' as const,
     locationAdmission:createSrmLocationAdmission(admission!),parentSchemaDigest:admission!.parentSchemaDigest,
     ledger:{schemaDigest:core['006-request-reservation.sql'],externalSchemaDigest:core['010-external-request-admission.sql'],operationSchemaDigest:core['017-additional-request-operations.sql'],locationSchemaDigest:locationTargets.sql019Digest},

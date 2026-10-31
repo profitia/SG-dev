@@ -1,0 +1,28 @@
+{
+  "name": "@profitia/platform-readonly-miss-report",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional effect-free read-only MISS composition on the unchanged canonical SDK",
+  "files": [
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/readonly-miss-report.d.mts",
+      "import": "./src/readonly-miss-report.mjs",
+      "require": "./src/readonly-miss-report.mjs"
+    }
+  },
+  "scripts": {
+    "build": "node --check src/readonly-miss-report.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "peerDependencies": {
+    "@profitia/platform-contracts": "1.32.3"
+  },
+  "devDependencies": {
+    "@profitia/platform-contracts": "file:..",
+    "@profitia/platform-current-fresh-report": "file:../current-fresh-report"
+  }
+}

@@ -1,6 +1,7 @@
 
 import {diagnosticRun} from './diagnostic-trace'
 import {capturePrivateWorkJson} from './private-work-json'
+import {captureFinitePayload} from '@profitia/platform-payload-capture'
 import { createHash } from 'node:crypto'
 import type { PoolClient } from 'pg'
 import { OperationDenied, operationPayloadDigest, type Json, type OperationContext } from '@profitia/platform-contracts/operation-context'
@@ -15,12 +16,12 @@ import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
 import { reprojectFinancialArchive, type FinancialSourceFact } from './mgbi-financial'
 import { saveMgbiArchive,type PersistedMgbiArchive } from './mgbi-archive'
-import { applyFinancialDocumentMetadata, financialRecordsFromPages, prepareFreshFinancialDocuments, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
+import { applyFinancialDocumentMetadata, financialRecordsFromPages, prepareFreshFinancialDocuments, prepareFreshFinancialInventory, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
 import type {MgbiGeneralResult} from './mgbi-general'
 import type {MgbiFinancialResult} from './mgbi-financial'
 import {isCompanyReportRestricted} from '@profitia/srm-xray'
 import {isKnownMgbiCompany} from './company-source-policy'
-import { msrStore, type MsrReceipt, type MsrStore } from './msr-repository'
+import { msrStore, msrInventoryFromRecords, type MsrReceipt, type MsrStore } from './msr-repository'
 import { selectMsrCandidates, type MsrCandidate } from './msr-financial'
 import type { MsrOriginal } from './msr-source'
 import type { FinancialData, GeneralCompanyData, SectionEnvelope } from '@profitia/srm-xray'
@@ -62,15 +63,15 @@ export function isStructuredFreshCompany(nip:string,g:MgbiGeneralResult,f:MgbiFi
 }
 function json<T>(value:T):T{
  return diagnosticRun('JSON_CAPTURE',()=>{
-  let text:string|undefined
-  try{text=JSON.stringify(value,(_key,v)=>{if(typeof v==='number'&&!Number.isFinite(v))return refuse();return v})}catch{return refuse()}
-  if(!text||Buffer.byteLength(text)>MAX_JSON_BYTES)return refuse()
-  const captured=JSON.parse(text) as T
-  const checksum=operationPayloadDigest(captured as Json)
-  const frozen=freeze(captured)
-  if(frozen&&typeof frozen==='object')capturedDigests.set(frozen,checksum)
-  return frozen
-
+  // The accepted data-only helper detaches and freezes finite input before any
+  // await, using the unchanged SDK digest. A prior immutable DATA snapshot may
+  // be reused; every Work still performs its current E1/Clerk checks.
+  try{
+   const captured=captureFinitePayload(value,{maximumBytes:MAX_JSON_BYTES})
+   const body=captured.value as unknown as T
+   if(body&&typeof body==='object')capturedDigests.set(body,captured.digest)
+   return body
+  }catch{return refuse()}
  })
 }
 function select(value:SupplierNativeWorkSelection):SupplierNativeWorkSelection{
@@ -301,11 +302,11 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       return run(s,'SRM_FINANCIAL_INVENTORY',{bodyDigest:digest(body)},async(pool,client)=>{
         const d=(await client.query('SELECT srm.financial_inventory_descriptor() AS descriptor')).rows[0]?.descriptor
         if(d?.schemaDigest!==options.financialInventoryBoundaryDigest)return refuse()
-        await saveMgbiArchive(s.organisationId,s.command.nip,'pl-krs-rdf-record',body.pages,body.recordCount,body.retrievedAt,s.requestId,pool)
-        await saveFinancialDocuments(s.organisationId,s.command.nip,body.pages,pool)
-        const candidates=await msrStore(s.organisationId,s.command.nip,s.requestId,body.allowedKrs,pool).candidates()
-        const documents=await withOrganization(s.organisationId,c=>readPreparedFinancialDocuments(c,s.organisationId,s.command.nip),pool)
-        return {candidates,documents}
+        let archive:PersistedMgbiArchive|undefined
+        await saveMgbiArchive(s.organisationId,s.command.nip,'pl-krs-rdf-record',body.pages,body.recordCount,body.retrievedAt,s.requestId,pool,value=>{archive=value})
+        const prepared=await withOrganization(s.organisationId,c=>
+          prepareFreshFinancialInventory(c,s.organisationId,s.command.nip,body.pages,archive),pool)
+        return {candidates:msrInventoryFromRecords(prepared.records,s.command.nip,prepared.archiveChecksum,body.allowedKrs),documents:prepared.documents}
       })
 
  })
@@ -379,6 +380,21 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       return Object.freeze({
         candidates:()=>run(s,'SRM_MSR_CANDIDATES',{allowedKrs:krs===undefined?null:[...krs]},pool=>domain(pool).candidates()),
         claim:(value,id)=>{const c=candidate(value);return run(s,'SRM_MSR_CLAIM',{candidate:c,claimId:id},pool=>domain(pool).claim(c,id))},
+        readAndClaim:(value,proposedClaimId)=>{
+          const c=candidate(value)
+          if(!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(proposedClaimId))return refuse()
+          return run(s,'SRM_MSR_CLAIM',{candidate:c,claimId:proposedClaimId},async pool=>{
+            const current=domain(pool);let existing=await current.read(c),claimId=existing?.claim_id??proposedClaimId
+            const claimed=(!existing||existing.state==='DEFERRED')?await current.claim(c,claimId):false
+            // A concurrent winner may commit between SELECT and INSERT. Read
+            // its actual durable receipt; never return our unused proposal as
+            // the identity of somebody else's admitted provider attempt.
+            if(!claimed&&(!existing||existing.state==='DEFERRED')){
+              existing=await current.read(c);claimId=existing?.claim_id??claimId
+            }
+            return{existing,claimId,claimed}
+          },value=>({existing:receipt(value.existing),claimId:value.claimId,claimed:value.claimed}))
+        },
         read:value=>{const c=candidate(value);return run(s,'SRM_MSR_READ',{candidate:c},pool=>domain(pool).read(c),receipt)},
         receive:(value,id,source)=>{const c=candidate(value),stored=original(source,c);return run(s,'SRM_MSR_RECEIVE',{candidate:c,claimId:id,originalDigest:stored.checksum},pool=>domain(pool).receive(c,id,stored))},
         save:(value,id,source,parsed,projection,archiveChecksum)=>{

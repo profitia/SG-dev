@@ -22,7 +22,19 @@ export const LOCAL_PACKAGES = Object.freeze({
   '@profitia/sg2-price-change-index-ui': '../../packages/sg2-price-change-index-ui',
   '@profitia/srm-xray': '../../packages/srm-xray',
   '@profitia/srm-adp-ui': '../../packages/srm-adp-ui',
+  '@profitia/maps-embed': '../../packages/maps-embed',
+  '@profitia/maps-contracts': '../../packages/maps-contracts',
 })
+// Owner-reviewed peers of the existing MapsEmbed 0.1.2 package only.
+// App dependencies and every other local dependency still require exact file paths.
+const REVIEWED_MAPS_EMBED_PEERS = Object.freeze({
+  '@profitia/maps-contracts': '0.1.0',
+  '@profitia/platform-contracts': '1.18.0 || 1.19.0 || 1.20.0 || 1.21.0 || 1.22.0 || 1.23.0 || 1.24.0 || 1.25.0 || 1.26.0 || 1.27.0 || 1.28.0 || 1.29.0 || 1.29.1 || 1.29.2 || 1.30.0 || 1.31.0 || 1.32.0 || 1.32.1 || 1.32.2 || 1.32.3',
+})
+function reviewedMapsPeer(owner, version, section, name, spec) {
+  return owner === '@profitia/maps-embed' && version === '0.1.2' && section === 'peerDependencies'
+    && Object.hasOwn(REVIEWED_MAPS_EMBED_PEERS, name) && spec === REVIEWED_MAPS_EMBED_PEERS[name]
+}
 const npmrc = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const shaPattern = /^[a-f0-9]{40}$/
 const fail = code => {throw new Error(code)}
@@ -160,6 +172,29 @@ function isPinnedPayloadCaptureReview(files) {
     && files.every(file => Object.hasOwn(PAYLOAD_CAPTURE_PRODUCER_REVIEW.blobs, file?.filename ?? '')
       && file?.sha === PAYLOAD_CAPTURE_PRODUCER_REVIEW.blobs[file.filename] && file.status === 'added')
 }
+// Local proposal: activate only after separate owner acceptance. One exact
+// independent read-only MISS producer; no generic nested-package admission.
+export const READONLY_MISS_REPORT_PRODUCER_REVIEW = Object.freeze({
+  prNumber: 831,
+  branch: 'architecture/current-fresh-miss-20261031',
+  sourceSha: 'b2b52c6a61ab3c3882f60ab5033670046715a5bc',
+  blobs: Object.freeze({
+    "apps/architecture-lab/test/readonly-miss-report.test.mjs": "1e072a397829f2b6c5bf44cd929387ad46020ff3",
+    "packages/platform-contracts/readonly-miss-report/README.md": "a599714ed85033ba18702d9714b822ddd989183c",
+    "packages/platform-contracts/readonly-miss-report/package-lock.json": "bfa16e198a13aa8d23a0a82fc9029b8bee5a7f4e",
+    "packages/platform-contracts/readonly-miss-report/package.json": "b3f788881a5c2b0af3a982ca8eaeb714ff1cc79f",
+    "packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.d.mts": "ecc9f2c55bdcb554acd56ca767a94bc90c0bf77a",
+    "packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.mjs": "cd9e4b6824c7306c900409be97a891d19bfeaebc",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report-postgres.test.mjs": "fb39761a2d0aca4ea6f3f268cc263d262a49766e",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "1d7c9d179eadb4e73bc2dc7a2a619492a7bdb7e0",
+    "packages/platform-contracts/readonly-miss-report/test/types/readonly-miss-report.mts": "76516b13cd02286d6c15f23e185f30fbfe9d437f",
+  }),
+})
+function isPinnedReadonlyMissReportReview(files) {
+  return Array.isArray(files) && files.length === Object.keys(READONLY_MISS_REPORT_PRODUCER_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(READONLY_MISS_REPORT_PRODUCER_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === READONLY_MISS_REPORT_PRODUCER_REVIEW.blobs[file.filename] && file.status === 'added')
+}
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -173,7 +208,8 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
     && files.every(file => KRS_GOVERNANCE_REVIEW_FILES.includes(file?.filename))
   const freshReportReview = isPinnedFreshReportReview(files)
   const payloadCaptureReview = isPinnedPayloadCaptureReview(files)
-  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview || payloadCaptureReview
+  const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
+  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -188,6 +224,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
     || r.currentOwner !== (r.normalizedPath.startsWith('packages/')
       || freshReportReview && r.normalizedPath === 'apps/architecture-lab/current-fresh-report-acceptance.json'
       || payloadCaptureReview && r.normalizedPath.startsWith('apps/architecture-lab/')
+      || readonlyMissReview && r.normalizedPath === 'apps/architecture-lab/test/readonly-miss-report.test.mjs'
       ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
   if (!closedReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
 }
@@ -206,6 +243,9 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
     if (isPinnedPayloadCaptureReview(files)
       && (pr.number !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.prNumber || pr.head.ref !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.branch
         || expectedSha !== PAYLOAD_CAPTURE_PRODUCER_REVIEW.sourceSha)) fail('PAYLOAD_CAPTURE_REVIEW_IDENTITY_REJECTED')
+    if (isPinnedReadonlyMissReportReview(files)
+      && (pr.number !== READONLY_MISS_REPORT_PRODUCER_REVIEW.prNumber || pr.head.ref !== READONLY_MISS_REPORT_PRODUCER_REVIEW.branch
+        || expectedSha !== READONLY_MISS_REPORT_PRODUCER_REVIEW.sourceSha)) fail('READONLY_MISS_REVIEW_IDENTITY_REJECTED')
   }
   return expectedSha
 }
@@ -277,7 +317,8 @@ export function assertPackagePolicy(candidate, authority, configuration) {
     for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
       for (const [name, spec] of Object.entries(entry[section] ?? {})) {
         if ((name.startsWith('@profitia/') && !PRIVATE_PACKAGES.includes(name) && !Object.hasOwn(LOCAL_PACKAGES, name)) || String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
-        if (Object.hasOwn(LOCAL_PACKAGES, name) && spec !== `file:${LOCAL_PACKAGES[name]}`) fail('LOCAL_DEPENDENCY_REJECTED')
+        if (Object.hasOwn(LOCAL_PACKAGES, name) && spec !== `file:${LOCAL_PACKAGES[name]}`
+          && !(key === 'node_modules/@profitia/maps-embed' && reviewedMapsPeer(privateName, entry.version, section, name, spec))) fail('LOCAL_DEPENDENCY_REJECTED')
       }
     }
     if (privateName.startsWith('@profitia/')) {
@@ -311,6 +352,9 @@ export function assertManifestPolicy(candidate, authority) {
     for (const [name, spec] of Object.entries(candidate[section] ?? {})) {
       if (String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
       if (Object.hasOwn(LOCAL_PACKAGES, name) && spec === `file:${LOCAL_PACKAGES[name]}`) continue
+      if (reviewedMapsPeer(candidate.name, candidate.version, section, name, spec)
+        && authority.name === candidate.name && authority.version === candidate.version
+        && authority[section]?.[name] === spec) continue
       if (name.startsWith('@profitia/') && (!PRIVATE_PACKAGES.includes(name) || spec !== authority[section]?.[name])) fail('PRIVATE_MANIFEST_PIN_MISMATCH')
       if (/^(?:file:|link:|workspace:)/.test(String(spec))) fail('LOCAL_DEPENDENCY_REJECTED')
     }

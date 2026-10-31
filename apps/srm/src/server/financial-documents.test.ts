@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { projectFinancialDocuments, applyFinancialDocumentMetadata, projectArchivedFinancialDocuments, prepareFreshFinancialDocuments } from "./financial-documents";
+import { projectFinancialDocuments, applyFinancialDocumentMetadata, projectArchivedFinancialDocuments, prepareFreshFinancialDocuments, prepareFreshFinancialInventory } from "./financial-documents";
 import { createHash } from "node:crypto";
 const record = (overrides: Record<string, unknown> = {}) => ({ id: "xml-1", document: { type: "financial_statement", period_from_date: "2025-02-01", period_to_date: "2026-01-31", is_ias_compliant: true }, content: { schema: { name: "JednostkaInnaWZlotych", version: "1-3" },
  extracted_fields: { "Naglowek.OkresOd": "2025-02-01", "Naglowek.OkresDo": "2026-01-31", "Bilans.Aktywa.KwotaA": "1234567890123456.789", "Bilans.Aktywa.KwotaB": null, "RZiS.RZiSKalk.A.KwotaA": "-17.3456", "RZiS.RZiSKalk.A.KwotaB1": "0", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.NazwaPozycji": "=1+1", "RZiS.RZiSKalk.A.PozycjaUszczegolawiajaca.KwotyPozycji.KwotaA": "1", "RachPrzeplywow.A.KwotaA": "999", "InformacjeDodatkowe.KwotaA": "888" }, standardized_fields: { bs: { a_ta_cfy: 1234567890123456.8 } } }, ...overrides });
@@ -50,6 +50,27 @@ test('fresh document RETURNING reuses only complete actual rows with the same in
   {archive_jsonb_sha256:'a'.repeat(64)},{document_jsonb_sha256:'b'.repeat(64)}]){
   const invalid=freshPreparation({returning:true,stored});
   await assert.rejects(prepareFreshFinancialDocuments(invalid.client,archiveOrg,archiveNip,invalid.pages));
+ }
+});
+test('fresh inventory returns the same protected documents and exact verified source records without another archive read',async()=>{
+ const old=freshPreparation(),expected=await prepareFreshFinancialDocuments(old.client,archiveOrg,archiveNip,old.pages);
+ for(const returning of [false,true]){
+  const f=freshPreparation({returning}),result=await prepareFreshFinancialInventory(f.client,archiveOrg,archiveNip,f.pages);
+  assert.deepEqual(result.documents,expected);
+  assert.deepEqual(result.records,JSON.parse(f.source.payload_text).pages[0].results);
+  assert.equal(result.archiveChecksum,f.source.payload_jsonb_sha256);
+  assert.equal(f.calls.filter(sql=>sql.includes('FROM srm.mgbi_source_archives')).length,1);
+  assert.equal(f.calls.length,returning?2:3);
+  (f.pages[0].results[0] as unknown as {identifiers:{pl_nip:string}}).identifiers.pl_nip='6310200831';
+  assert.equal((result.records[0] as {identifiers:{pl_nip:string}}).identifiers.pl_nip,archiveNip);
+ }
+});
+test('fresh inventory refuses corrupt or foreign persisted evidence before exposing any source records',async()=>{
+ for(const archive of [{organization_id:'22222222-2222-4222-8222-222222222222'},{nip:'6310200831'},
+  {payload_jsonb_sha256:'f'.repeat(64)},{pages_match:false},{record_count:2}]){
+  const f=freshPreparation({archive});
+  await assert.rejects(prepareFreshFinancialInventory(f.client,archiveOrg,archiveNip,f.pages));
+  assert.equal(f.calls.length,1);
  }
 });
 test('protected canonical document bytes are sufficient without a second JSON column',async()=>{
