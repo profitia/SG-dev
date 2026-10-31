@@ -67,7 +67,11 @@ test('current FRESH composition: real ordinary-role SQL, rollback, revocation, a
     CREATE POLICY exact_actor ON fresh_fixture.metadata TO ${ROLE} USING(profitia_access.scope_allows('srm',organisation_id,user_id)) WITH CHECK(profitia_access.scope_allows('srm',organisation_id,user_id));
     GRANT USAGE ON SCHEMA profitia_access,profitia_modules,profitia_requests,fresh_fixture TO ${ROLE};
     GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_access,profitia_modules,profitia_requests TO ${ROLE};
-    GRANT SELECT,INSERT ON fresh_fixture.metadata TO ${ROLE}`)
+    GRANT SELECT,INSERT ON fresh_fixture.metadata TO ${ROLE};
+    CREATE FUNCTION fresh_fixture.attempt_write() RETURNS text LANGUAGE plpgsql AS $$ BEGIN INSERT INTO fresh_fixture.metadata VALUES('${A}','${U}','FORGED_PROBE',null); RETURN 'forged'; END $$;
+    GRANT EXECUTE ON FUNCTION fresh_fixture.attempt_write() TO ${ROLE};
+    CREATE SEQUENCE fresh_fixture.probe_sequence;
+    GRANT USAGE ON SEQUENCE fresh_fixture.probe_sequence TO ${ROLE}`)
   })
   const runtime=new URL(url);runtime.username=ROLE;runtime.password='isolated_ci_only'
   pool=new pg.Pool({connectionString:runtime.toString(),max:4});audit=new pg.Pool({connectionString:runtime.toString(),max:2})
@@ -132,6 +136,125 @@ test('current FRESH composition: real ordinary-role SQL, rollback, revocation, a
    }
    return f
   }
+  const proofSql="SELECT current_setting('transaction_read_only') AS read_only"
+  function readOnlyFixture(){
+   const f=fixture(),read=f.options.probe.readResources,probe=f.actions.probe
+   f.options.probeReadOnly={statements:[proofSql,'SELECT fresh_fixture.attempt_write()',"SELECT nextval('fresh_fixture.probe_sequence')","SELECT set_config('transaction_read_only','off',true)"]}
+   f.options.probe.readResources=async state=>{
+    assert.deepEqual(Object.keys(state.transaction),['query']);assert.equal(state.query,state.transaction.query)
+    assert.equal((await state.query(proofSql,[])).rows[0].read_only,'on')
+    return read(state)
+   }
+   f.actions.probe=async(context,port)=>{
+    assert(Object.isFrozen(port));assert.deepEqual(Object.keys(port),['query'])
+    assert.equal((await port.query(proofSql,[])).rows[0].read_only,'on')
+    f.port=port;return probe(context,port)
+   }
+   f.readyCount=0
+   f.actions.ready=async(value,context,transaction)=>{f.readyCount++;await f.write('READY',context,transaction);return value}
+   return f
+  }
+  await t.test('opt-in MISS is PostgreSQL read-only, commits only canonical audit, and defers one HUMAN pair',async()=>{
+   const f=readOnlyFixture(),before=await count('READY'),rowsBefore=await owner.query('SELECT count(*) n FROM fresh_fixture.metadata')
+   assert.deepEqual(await f.run(),{report:'fresh'})
+   assert.equal(f.calls.filter(x=>x==='session').length,3);assert.equal(f.calls.filter(x=>x==='account').length,3)
+   assert.equal(f.readyCount,0);assert.equal(await count('READY'),before);assert.equal(f.workCount,1)
+   assert.equal(Number((await owner.query('SELECT count(*) n FROM fresh_fixture.metadata')).rows[0].n),Number(rowsBefore.rows[0].n)+2)
+   const rows=(await owner.query('SELECT phase,decision_id FROM profitia_access.security_events ORDER BY event_id DESC LIMIT 6')).rows
+   assert.equal(new Set(rows.map(r=>r.decision_id)).size,3)
+   for(const id of new Set(rows.map(r=>r.decision_id)))assert.deepEqual(rows.filter(r=>r.decision_id===id).map(r=>r.phase).sort(),['INTENT','OUTCOME'])
+   assert.equal(new Set(f.transactions).size,3)
+  })
+  await t.test('opt-in READY writes metadata before fresh H2, never opens Root/Work, and preserves the result',async()=>{
+   const f=readOnlyFixture(),before=await count('READY');f.ready=true
+   assert.deepEqual(await f.run(),{report:'cached'});assert.equal(await count('READY'),before+1)
+   assert.equal(f.calls.filter(x=>x==='session').length,2);assert.equal(f.calls.filter(x=>x==='account').length,2)
+   assert.equal(f.readyCount,1);assert.equal(f.workCount,0);assert.equal(f.rootCount,0)
+  })
+  await t.test('controlled equivalent callbacks report the added SQL cost separately from removed HUMAN calls',async t=>{
+   for(const ready of [false,true]){
+    const baseline=fixture(),candidate=fixture();baseline.ready=ready;candidate.ready=ready
+    candidate.options.probeReadOnly={statements:['SELECT 1']};candidate.actions.ready=async value=>value
+    assert.deepEqual(await baseline.run(),await candidate.run())
+    const accounts=f=>f.calls.filter(x=>x==='account').length
+    assert.equal(accounts(candidate),ready?2:3);assert.equal(accounts(baseline),ready?2:4)
+    assert.equal(candidate.transactions.length,baseline.transactions.length)
+    assert(candidate.canonicalSql>baseline.canonicalSql,'Read-only rollback protection adds SQL; do not claim SQL savings')
+    t.diagnostic(JSON.stringify({mode:ready?'READY':'MISS_FRESH',baselineAccounts:accounts(baseline),candidateAccounts:accounts(candidate),baselineInstrumentedSql:baseline.canonicalSql,candidateInstrumentedSql:candidate.canonicalSql,livePerformanceMeasured:false}))
+   }
+  })
+  for(const field of ['session','account'])await t.test('opt-in READY revocation during its writer rolls back metadata at H2: '+field,async()=>{
+   const f=readOnlyFixture(),before=await count('READY'),ready=f.actions.ready;f.ready=true
+   f.actions.ready=async(...args)=>{const v=await ready(...args);if(field==='session')f.session.status='revoked';else f.user.banned=true;return v}
+   await assert.rejects(f.run(),denied);assert.equal(await count('READY'),before);assert.equal(f.workCount,0)
+  })
+  for(const field of ['session','account'])for(const stage of ['PROBE','ROOT','FINAL'])await t.test('opt-in '+field+' revoked during '+stage+' cannot commit Root or disclose',async()=>{
+   const f=readOnlyFixture(),beforeRoot=await count('ADMISSION'),beforeRead=await count('DISCLOSURE'),beforeIntents=await intents()
+   const name=stage==='PROBE'?'probe':stage==='ROOT'?'refresh':'read',original=f.actions[name]
+   f.actions[name]=async(...args)=>{const v=await original(...args);if(field==='session')f.session.status='revoked';else f.user.banned=true;return v}
+   await assert.rejects(f.run(),denied)
+   assert.equal(await count('ADMISSION'),beforeRoot+(stage==='FINAL'?1:0));assert.equal(await count('DISCLOSURE'),beforeRead)
+   assert.equal(await intents(),beforeIntents+(stage==='FINAL'?1:0));assert.equal(f.workCount,stage==='FINAL'?1:0)
+  })
+  for(const sql of ['SELECT fresh_fixture.attempt_write()',"SELECT nextval('fresh_fixture.probe_sequence')","SELECT set_config('transaction_read_only','off',true)"])
+   await t.test('PostgreSQL blocks a SELECT effect even when the probe swallows its error: '+sql,async()=>{
+    const f=readOnlyFixture(),before=await count('FORGED_PROBE'),beforeIntents=await intents();let code
+    f.actions.probe=async(_context,port)=>{try{await port.query(sql,[])}catch(e){code=e.code}return{status:'MISS'}}
+    await assert.rejects(f.run(),denied);assert.equal(code,sql.includes('set_config')?'25001':'25006')
+    assert.equal(await count('FORGED_PROBE'),before);assert.equal(await intents(),beforeIntents);assert.equal(f.workCount,0)
+   })
+  for(const sql of ['COMMIT','ROLLBACK','SET LOCAL transaction_read_only = off','SELECT 1; COMMIT',"INSERT INTO fresh_fixture.metadata VALUES(null,null,'FORGED_PROBE',null)"])
+   await t.test('closed query port refuses raw control/write SQL even when caught: '+sql,async()=>{
+    const f=readOnlyFixture();f.actions.probe=async(_context,port)=>{await assert.rejects(port.query(sql,[]),denied);return{status:'MISS'}}
+    await assert.rejects(f.run(),denied);assert.equal(f.workCount,0)
+   })
+  await t.test('MISS with an undisclosed value is not a genuine MISS',async()=>{
+   const f=readOnlyFixture();f.actions.probe=async()=>({status:'MISS',value:{report:'forged'}})
+   await assert.rejects(f.run(),denied);assert.equal(f.workCount,0)
+  })
+  for(const stage of ['resource','projection'])await t.test('read-only enforcement also covers the '+stage+' adapter',async()=>{
+   const f=readOnlyFixture(),before=await count('FORGED_PROBE');let code
+   const attempt=async port=>{try{await port.query('SELECT fresh_fixture.attempt_write()',[])}catch(e){code=e.code}}
+   if(stage==='resource'){
+    const read=f.options.probe.readResources
+    f.options.probe.readResources=async state=>{await attempt(state.transaction);return read(state)}
+   }else f.options.probe.projectOutput=async(value,_context,port)=>{await attempt(port);return value}
+   await assert.rejects(f.run(),denied);assert.equal(code,'25006');assert.equal(await count('FORGED_PROBE'),before);assert.equal(f.workCount,0)
+  })
+  await t.test('concurrent probe queries and a caught port error cannot produce a successful MISS',async()=>{
+   const f=readOnlyFixture(),sql='SELECT pg_sleep(0.02)';f.options.probeReadOnly.statements.push(sql)
+   f.actions.probe=async(_context,port)=>{await Promise.allSettled([port.query(sql,[]),port.query(proofSql,[])]);return{status:'MISS'}}
+   await assert.rejects(f.run(),denied);assert.equal(f.workCount,0)
+  })
+  await t.test('opt-in factory cannot be replayed for another request',async()=>{
+   const f=readOnlyFixture();f.ready=true;const host=createCurrentFreshReportHost(f.options)
+   assert.deepEqual(await host.execute(f.input,f.actions),{report:'cached'});const calls=f.calls.length
+   await assert.rejects(host.execute({...f.input,request:new Request(ORIGIN+'/other')},f.actions),e=>e.reasonCode==='ACCESS_BASIS_INVALID')
+   assert.equal(f.calls.length,calls)
+  })
+  await t.test('a leaked probe port cannot execute in Work or another opening',async()=>{
+   const f=readOnlyFixture(),work=f.actions.work
+   f.actions.work=async(...args)=>{await assert.rejects(f.port.query(proofSql,[]),denied);await work(...args)}
+   assert.deepEqual(await f.run(),{report:'fresh'});await assert.rejects(f.port.query(proofSql,[]),denied)
+   const other=readOnlyFixture();other.ready=true;assert.deepEqual(await other.run(),{report:'cached'})
+  })
+  await t.test('opt-in foreign organisation cannot enter the effect-free probe',async()=>{
+   const f=readOnlyFixture();f.input.organisationId=B;let called=false;f.actions.probe=async()=>{called=true;return{status:'MISS'}}
+   await assert.rejects(f.run(),denied);assert.equal(called,false);assert.equal(f.workCount,0)
+  })
+  await t.test('opt-in resource drift on MISS blocks transition before Root',async()=>{
+   const f=readOnlyFixture();f.actions.probe=async()=>{f.version='2';return{status:'MISS'}}
+   await assert.rejects(f.run(),e=>e.reasonCode==='RESOURCE_VERSION_CONFLICT');assert.equal(f.rootCount,0)
+  })
+  for(const mutation of ['abort','expiry'])await t.test('opt-in '+mutation+' cannot promote MISS to Work',async()=>{
+   const f=readOnlyFixture();f.afterProbe=()=>{if(mutation==='abort')f.controller.abort();else f.offset=180000}
+   await assert.rejects(f.run());assert.equal(f.workCount,0)
+  })
+  await t.test('opt-in current product revocation after MISS blocks Root and provider/Work',async()=>{
+   const f=readOnlyFixture(),before=await intents();f.afterProbe=()=>controlled(()=>owner.query("UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id='srm'"))
+   try{await assert.rejects(f.run(),denied);assert.equal(await intents(),before);assert.equal(f.workCount,0)}
+   finally{await controlled(()=>owner.query("UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id='srm'"))}
+  })
   await t.test('READY remains two fresh session/account observations and never enters refresh or Work',async()=>{
    const f=fixture();f.ready=true
    assert.deepEqual(await f.run(),{report:'cached'})
