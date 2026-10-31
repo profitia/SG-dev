@@ -7366,5 +7366,46 @@
     "runtimeDeploymentPerformed": false,
     "paidAcquisitionsPerformed": false,
     "canonActivationPerformed": false
+  },
+  "pciSmartResultingMainIntegrityContinuation": {
+    "taskId": "SRM-PCI-SMART-RESULTING-MAIN-INTEGRITY-20261031",
+    "scope": "ADDITIVE_RESULTING_MAIN_TEST_SOURCE_CONTINUITY_ONLY",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "10efd606f78cb08ae4fccde84b8c2e958bb54d9d",
+    "previousReceiptSha256": "76ca9c269bc9510b07994b92daaf8cbb5a29331e71fcdd199fb84a238399c366",
+    "previousConsumerSourceSha": "10efd606f78cb08ae4fccde84b8c2e958bb54d9d",
+    "consumerSourceSha": "6cceb584fb1d048c89c23a912d935fbcf6cf90c4",
+    "parentProductPullRequest": 825,
+    "applicationSourceDigests": {
+      "scripts/native-execution-adoption.test.mjs": "bf5306a94ec41b7938c937799d1673fe4192b230dfe2f20492262c9a12a2b007",
+      "scripts/rural-location-release.test.mjs": "9610a0fd78c2adfcc15cc06564315e3548cd3e4e8e5f4c6b163393ed3ff080ef",
+      "scripts/xray-performance-adoption.test.mjs": "05bacd0a71ffa16352ba39368f78b750a322823fe295c45329691ec7737c5298",
+      "scripts/xray-workflow-contract.test.ts": "495781f57a1febf579c1633275837a2aad5316a32f72db6291238ff5424025e8",
+      "src/server/peer-read-boundary.test.ts": "87fad6e14015168f738005e47d90a5f9df33daf9890a091fa891a5e236d59e7d",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "5773a72fff42875da81ea72fdc2e84d21b7e63eb38fcc16378bb7905d0891c1f"
+    },
+    "consumerSourceDigests": {
+      "../sg-runtime/components/price-change-index/price-change-index-layer.tsx": "100ee589e72ba53a918e9d6e0a90baba3e24e7ce166527904799c4a72884eaf5",
+      "../sg-runtime/operation-integration.json": "0dc7194beee5767010d00d931febe007ba5e07408b8816060376e93cb0c211c6",
+      "../sg-runtime/package.json": "db69132b401aa0d78155b94cef5fbd71d2cfc2f1640223dcb9f242799b0e901d",
+      "../sg-runtime/tests/adp-appshell-consumer.test.tsx": "a8639c488dc57549f7e0c8f5e209261d22ec40a0abf16788fa67ae68a407d6f0",
+      "../sg-runtime/tests/category-operation.test.ts": "dda520a22abe1dde463a2f3f91fed39afb172d8cac44f6e48b22d275d6fce264",
+      "../sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "ad81a39f107b5c263b2f9dac7ba1b3e85c4a40b7c33460ae531f92fd2a938fe9",
+      "../sg-runtime/tests/identity-runtime.test.ts": "a0a95b0e2ebf4dc11754db9dd5ef5536dc42af9da3ba92bc861cb2d3dc120116",
+      "../sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "32667633194af94985b2f0a96871d8bfe7f4d1c37a3d49da95ad2a3ffd668f31",
+      "../sg-runtime/tests/native-sql-roundtrips.test.mjs": "199f2a2ea018b982f18857f96d9e205dd498f76b9d9faa86bb9041ea1e9639d5",
+      "../sg-runtime/tests/operation-context.test.mjs": "b8d7ff9eb02ef112a6f71053a13fc2152b7fe07f570a2f79b0b627a7b511f1dc",
+      "../sg-runtime/tests/porr-demo-middleware.test.ts": "6395c7cad8ecef3094f604a8b445d8bb11b6266239aedc143dfb73ea47de1d75",
+      "../sg-runtime/tests/self-service-account.test.ts": "73f75fe05c03f981dcb46b1e8e87f22f2c8e679e288dc7e284838cd23bf00313",
+      "../sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "ed3d3effd2502ad13340a8d9f48fa3b5ff84c9578877abee89dd7ac73dbd7f55",
+      "../sg-runtime/tests/xray-gateway.test.ts": "aab696fa3d6453507e84b97f74f4fded6e3fb8a04c017063159c70228f4eb544"
+    },
+    "runtimeChanged": false,
+    "authorizationChanged": false,
+    "sqlChanged": false,
+    "contractsChanged": false,
+    "businessDataChanged": false,
+    "runtimeDeploymentPerformed": false,
+    "paidAcquisitionsPerformed": false
   }
 }

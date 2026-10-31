@@ -5374,5 +5374,48 @@
     "newPaidProviderCalls": false,
     "srmRuntimeChanged": false,
     "productDeploymentPerformed": false
+  },
+  "pciSmartResultingMainScopeCompatibility": {
+    "taskId": "SG2-PCI-SMART-PREPARATION-DEVELOPMENT-RELEASE-20261031",
+    "scope": "EXACT_SOURCE_COVERAGE_ON_CANDIDATE_AND_RESULTING_MAIN",
+    "previousReceiptSourceSha": "10efd606f78cb08ae4fccde84b8c2e958bb54d9d",
+    "previousReceiptSha256": "81842b651f9393336b85d46c76fa06b44b5df93dfce534d325f0d1727ca15ffb",
+    "sourceDigests": {
+      "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "a8639c488dc57549f7e0c8f5e209261d22ec40a0abf16788fa67ae68a407d6f0",
+      "apps/sg-runtime/tests/category-operation.test.ts": "dda520a22abe1dde463a2f3f91fed39afb172d8cac44f6e48b22d275d6fce264",
+      "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "ad81a39f107b5c263b2f9dac7ba1b3e85c4a40b7c33460ae531f92fd2a938fe9",
+      "apps/sg-runtime/tests/identity-runtime.test.ts": "a0a95b0e2ebf4dc11754db9dd5ef5536dc42af9da3ba92bc861cb2d3dc120116",
+      "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "32667633194af94985b2f0a96871d8bfe7f4d1c37a3d49da95ad2a3ffd668f31",
+      "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "199f2a2ea018b982f18857f96d9e205dd498f76b9d9faa86bb9041ea1e9639d5",
+      "apps/sg-runtime/tests/operation-context.test.mjs": "b8d7ff9eb02ef112a6f71053a13fc2152b7fe07f570a2f79b0b627a7b511f1dc",
+      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "0a66ec0cbd0801fe185c7020268e32327212000d3417e01f7d2ff012ad3c65fa",
+      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "34260236e67fb6a93e39cece83e90c9d6c4ca44bbf5c8eaee45da2ffb0cdf3ee",
+      "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "6395c7cad8ecef3094f604a8b445d8bb11b6266239aedc143dfb73ea47de1d75",
+      "apps/sg-runtime/tests/self-service-account.test.ts": "73f75fe05c03f981dcb46b1e8e87f22f2c8e679e288dc7e284838cd23bf00313",
+      "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "ed3d3effd2502ad13340a8d9f48fa3b5ff84c9578877abee89dd7ac73dbd7f55",
+      "apps/sg-runtime/tests/xray-gateway.test.ts": "aab696fa3d6453507e84b97f74f4fded6e3fb8a04c017063159c70228f4eb544"
+    },
+    "applicationSourceDigests": {
+      "tests/adp-appshell-consumer.test.tsx": "a8639c488dc57549f7e0c8f5e209261d22ec40a0abf16788fa67ae68a407d6f0",
+      "tests/category-operation.test.ts": "dda520a22abe1dde463a2f3f91fed39afb172d8cac44f6e48b22d275d6fce264",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "ad81a39f107b5c263b2f9dac7ba1b3e85c4a40b7c33460ae531f92fd2a938fe9",
+      "tests/identity-runtime.test.ts": "a0a95b0e2ebf4dc11754db9dd5ef5536dc42af9da3ba92bc861cb2d3dc120116",
+      "tests/integrated-buyer-journey-package.test.mjs": "32667633194af94985b2f0a96871d8bfe7f4d1c37a3d49da95ad2a3ffd668f31",
+      "tests/native-sql-roundtrips.test.mjs": "199f2a2ea018b982f18857f96d9e205dd498f76b9d9faa86bb9041ea1e9639d5",
+      "tests/operation-context.test.mjs": "b8d7ff9eb02ef112a6f71053a13fc2152b7fe07f570a2f79b0b627a7b511f1dc",
+      "tests/pci-smart-integrity.mjs": "0a66ec0cbd0801fe185c7020268e32327212000d3417e01f7d2ff012ad3c65fa",
+      "tests/pci-smart-integrity.test.mjs": "34260236e67fb6a93e39cece83e90c9d6c4ca44bbf5c8eaee45da2ffb0cdf3ee",
+      "tests/porr-demo-middleware.test.ts": "6395c7cad8ecef3094f604a8b445d8bb11b6266239aedc143dfb73ea47de1d75",
+      "tests/self-service-account.test.ts": "73f75fe05c03f981dcb46b1e8e87f22f2c8e679e288dc7e284838cd23bf00313",
+      "tests/xray-fresh-performance-adoption.test.mjs": "ed3d3effd2502ad13340a8d9f48fa3b5ff84c9578877abee89dd7ac73dbd7f55",
+      "tests/xray-gateway.test.ts": "aab696fa3d6453507e84b97f74f4fded6e3fb8a04c017063159c70228f4eb544"
+    },
+    "productChanged": false,
+    "cciCoreChanged": false,
+    "indexedPriceChanged": false,
+    "authorizationChanged": false,
+    "srmRuntimeChanged": false,
+    "sqlChanged": false,
+    "deploymentPerformed": false
   }
 }
