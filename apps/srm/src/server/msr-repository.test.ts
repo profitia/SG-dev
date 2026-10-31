@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { enrichMsrFinancial,verifyMsrReceipt,recoverStoredMsrSource,type MsrStore,type MsrReceipt } from "./msr-repository";
+import { enrichMsrFinancial,verifyMsrReceipt,recoverStoredMsrSource,msrInventoryFromRecords,type MsrStore,type MsrReceipt } from "./msr-repository";
 import { MSR_PROJECTION_VERSION } from "./msr-financial";
 import { decodeMsrOriginal,MsrSourceError } from "./msr-source";
 import { parseMsrOriginal } from "./msr-parser";
@@ -9,6 +9,25 @@ import type { MsrCandidate } from "./msr-financial";
 import type { MgbiFinancialResult } from "./mgbi-financial";
 const c:MsrCandidate={recordId:"a".repeat(24),nip:"5272443955",from:"2024-01-01",to:"2024-12-31",scope:"standalone",filingDate:null,correction:false,documentId:null};
 const hash=(v:string|Buffer)=>createHash("sha256").update(v).digest("hex");
+test('prepared MSR inventory retains current-filing, company identity and licensed-format decisions without mutating input',()=>{
+ const krs='0000217580',checksum='b'.repeat(64);
+ const raw={id:c.recordId,identifiers:{pl_nip:c.nip,pl_krs:krs},document:{type:'financial_statement',period_from_date:c.from,period_to_date:c.to,is_ias_compliant:true}};
+ for(const [files,expectedLicensed,expectedMissing,expectedCandidates]of [
+  [undefined,[],true,1],
+  [{main_document:{original:{content_type:'application/xhtml+xml'}}},[c.recordId],false,1],
+  [{main_document:{original:{content_type:'application/pdf'}}},[],false,0],
+ ] as const){
+  const records=[{...raw,...(files===undefined?{}:{files})}],before=JSON.stringify(records);
+  const result=msrInventoryFromRecords(records,c.nip,checksum,[krs]);
+  assert.equal(result.archiveChecksum,checksum);assert.deepEqual(result.licensedXmlRecordIds,expectedLicensed);
+  assert.equal(result.metadataMissing,expectedMissing);assert.equal(result.candidates.length,expectedCandidates);
+  assert.equal(msrInventoryFromRecords(records,'5252674798',checksum,[krs]).candidates.length,0);
+  assert.equal(msrInventoryFromRecords(records,c.nip,checksum,['1234567890']).candidates.length,0);
+  assert.equal(JSON.stringify(records),before);
+ }
+ const current={...raw,id:'d'.repeat(24),document:{...raw.document,period_to_date:'2025-12-31',is_ias_compliant:false}};
+ assert.equal(msrInventoryFromRecords([raw,current],c.nip,checksum,[krs]).candidates.length,0);
+});
 const source=()=>decodeMsrOriginal(c.recordId,Buffer.from('<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:x="http://www.xbrl.org/2003/instance" xmlns:f="https://xbrl.ifrs.org/taxonomy/2022-03-24/ifrs-full" xmlns:iso="http://www.xbrl.org/2003/iso4217"><body><ix:resources><x:context id="c"><x:entity><x:identifier scheme="lei">ISSUER</x:identifier></x:entity><x:period><x:startDate>2024-01-01</x:startDate><x:endDate>2024-12-31</x:endDate></x:period></x:context><x:unit id="u"><x:measure>iso:PLN</x:measure></x:unit></ix:resources><ix:nonFraction name="f:Revenue" contextRef="c" unitRef="u">123</ix:nonFraction></body></html>'),"application/xhtml+xml","2026-10-15T00:00:00Z");
 const base=():MgbiFinancialResult=>({section:{status:"EMPTY",data:null,source:{provider:"MGBI",model:"rdf",recordId:null},retrievedAt:"2026-10-14T00:00:00Z",effectiveAt:null,warnings:["MGBI_INTERNATIONAL_STATEMENT_WITHOUT_FACTS"]},facts:[],errorCode:null});
 function fixture(){
