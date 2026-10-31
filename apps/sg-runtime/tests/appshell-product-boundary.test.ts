@@ -9,7 +9,8 @@ test('public AppShell source has no design runtime, fixtures, private module imp
  const files=fs.readdirSync(path.join(root,'components/appshell')).filter(f=>/\.(tsx|css)$/.test(f))
  assert(files.length>=4)
  for(const file of files){
-  const s=fs.readFileSync(path.join(root,'components/appshell',file),'utf8')
+  let s=fs.readFileSync(path.join(root,'components/appshell',file),'utf8')
+  if(file==='xray-module-host.tsx')for(const accepted of ["import type {AssistantApplicationContext} from '@profitia/srm-xray/full-report';","import {FullXRayWorkflow} from '@profitia/srm-xray/full-workflow';","import {createSupplierSearchGateway} from '@profitia/srm-xray/supplier-search-gateway';","import '@profitia/srm-xray/full-report.css';"])s=s.replace(accepted,'')
   assert.doesNotMatch(s,/DeliveryRuntime|DeliveryVisibility|delivery-registry|appshell-provenance|library-registry|DashboardRelations|CanonHistoryDialog|data-delivery|data-magicpath|preparedReply|launchTimer|simulation-suffix|tylko projekt|symulacja|Tomaszu|Tomasz/,'Excluded source: '+file)
   assert.doesNotMatch(s.replaceAll('http://www.w3.org/2000/svg','').replace("import {BenchmarkFinderClient} from '../benchmark-finder/benchmark-finder-client'",'').replace("import {SupplierXRayWorkflow} from '@profitia/srm-xray/workflow';",''),/from ['"].*(?:benchmark-finder|srm-xray|assessment|cic|\/api\/|ui-relations)|https?:\/\//,'No business module or remote design dependency: '+file)
  }

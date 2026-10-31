@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useLayoutEffect, useRef } from 'react'
+import {createPortal} from 'react-dom'
 import { SpendGuruLogo, PorrLogo } from './appshell-brand'
-import {AssistantWidget} from './assistant-widget'
+import {AssistantWidget,type AssistantScreenContext} from './assistant-widget'
 import './platform-appshell.css'
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
   onLaunchXray?: () => void
   onLaunchAdp?: () => void
   onLaunchBenchmark?: () => void
+  assistantTarget?:HTMLElement|null
+  assistantContext?:AssistantScreenContext|null
   moduleActive?: boolean
   moduleWorkspace?: (theme: 'light' | 'dark') => React.ReactNode
 }
@@ -37,7 +40,11 @@ const applications = [
 ]
 
 /** Presentation only. The host owns verified account data and sign-out. */
-export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace }: Props) {
+export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace, assistantTarget, assistantContext }: Props) {
+  const assistantHome=useRef<HTMLElement>(null);
+  const [assistantContainer,setAssistantContainer]=useState<HTMLDivElement|null>(null);
+  useEffect(()=>{const node=document.createElement('div');node.className='as-assistant-portal';setAssistantContainer(node);return()=>node.remove()},[]);
+  useLayoutEffect(()=>{const target=moduleActive&&assistantTarget?.isConnected?assistantTarget:assistantHome.current;if(assistantContainer&&target)target.appendChild(assistantContainer)},[assistantContainer,assistantTarget,moduleActive]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const en = locale === 'en'
   useEffect(() => {
@@ -49,6 +56,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
   }
   const addressed = salutation ? `, ${salutation}` : ''
   const userGreeting = en ? `Good morning${addressed}.` : `Dzień dobry${addressed}.`
+  const assistant=<AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme} screenContext={assistantContext}/>;
   return <div className={`appshell srm-ui${moduleActive ? ' as-module-active' : ''}`} data-theme={theme} style={{ colorScheme: theme }}>
     <a className="as-skip" href="#appshell-main">{en ? 'Skip to applications' : 'Przejdź do aplikacji'}</a>
     <header className="as-header"><div className="as-header-inner">
@@ -76,10 +84,11 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
           </article>)}
         </div></section>
         <section key="module" className="as-module-workspace" hidden={!moduleActive}>{moduleWorkspace?.(theme)}</section>
-        <section key="assistant" className="as-assistant" aria-label={en ? 'Your assistant' : 'Twój asystent'}>
-          <AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme}/>
+        <section ref={assistantHome} key="assistant" className="as-assistant" hidden={!!(moduleActive&&assistantTarget)} aria-label={en ? 'Your assistant' : 'Twój asystent'}>
+          {!assistantContainer&&assistant}
         </section>
       </div>
     </main>
+    {assistantContainer&&createPortal(assistant,assistantContainer)}
   </div>
 }

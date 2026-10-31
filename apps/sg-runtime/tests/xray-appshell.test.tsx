@@ -19,16 +19,30 @@ test('real AppShell composition opens X-Ray, preserves one assistant and clears 
  Object.assign(g,{window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement,IS_REACT_ACT_ENVIRONMENT:true});g.__xrayNav={path:'/pl/dashboard',push:(p:string)=>{g.__xrayNav.path=p;}};g.__xrayAuth={isLoaded:true,isSignedIn:true,userId:'user-a',sessionId:'session-a',orgId:'org-a',getToken:async()=>null};
  const root=createRoot(document.getElementById('root')!),render=()=>React.act(async()=>root.render(React.createElement(AppShellDashboard,{locale:'pl',salutation:'Test',assistantAvatar:'male',onLogout:()=>{}})));
  await render();const launch=document.querySelector<HTMLButtonElement>('[aria-label="Uruchom X-Ray Supplier Intelligence"]')!;assert(!launch.disabled);await React.act(async()=>launch.click());await render();
- assert.equal(g.__xrayNav.path,'/pl/dashboard/xray');assert(document.querySelector('.srm-xray-workflow'));assert.equal(document.querySelectorAll('.srm-chat-slot').length,1);assert(document.querySelector('.as-applications[hidden]'));
+ assert.equal(g.__xrayNav.path,'/pl/dashboard/xray');assert(document.querySelector('.srm-xray-product'));assert.equal(document.querySelectorAll('.srm-chat-slot').length,1);assert(document.querySelector('.as-applications[hidden]'));
  await React.act(async()=>Array.from(document.querySelectorAll('button')).find(x=>x.textContent==='Wróć do biurka')!.click());await render();assert.equal(g.__xrayNav.path,'/pl/dashboard');assert(document.querySelector('.as-module-workspace[hidden]'));
  g.__xrayNav.path='/en/dashboard/xray';await render();assert(!document.querySelector('[data-appshell-module=xray]:not([hidden])'));
- g.__xrayNav.path='/pl/dashboard/xray';g.__xrayAuth={...g.__xrayAuth,isSignedIn:false};await render();assert(!document.querySelector('.srm-xray-workflow'));await React.act(async()=>root.unmount());dom.window.close();
+ g.__xrayNav.path='/pl/dashboard/xray';g.__xrayAuth={...g.__xrayAuth,isSignedIn:false};await render();assert(!document.querySelector('.srm-xray-product'));await React.act(async()=>root.unmount());dom.window.close();
 });
 test('the public UI bundle contains no SRM private imports, peer keys, database clients, providers or second assistant',async()=>{
  const result=await loadXRayModule('components/appshell/xray-module-host.tsx',{metafile:true});
  for(const input of Object.keys(result.metafile.inputs))assert.doesNotMatch(input,/apps\/srm\/(?!node_modules\/)|peer-operation|(?:server\/|xray-gateway|node:crypto|neon|pg\/)/);
  assert.doesNotMatch(result.outputFiles[0].text,/PROFITIA_XRAY_PEER_KEY|CLERK_SECRET|SRM_DEMO_SESSION_SECRET|createPeerOperationSigner|createSrmPrivateOperationHost/);
- const css=fs.readFileSync(path.join(publicUi,'src/workflow.css'),'utf8');assert.doesNotMatch(css,/(^|\})\s*(?:html|body|:root)\s*\{/);assert(css.includes('.srm-xray-workflow[data-theme=dark]'));assert(css.includes('prefers-reduced-motion'));
+ const css=fs.readFileSync(path.join(publicUi,'src/full-report.css'),'utf8');assert.doesNotMatch(css,/(^|\})\s*(?:html|body|:root)\s*\{/);assert(css.includes('@scope (.srm-xray-product)'));assert(css.includes('prefers-reduced-motion'));
+});
+
+test('React18 public dialog opens modally, focuses close and restores focus through canonical refs',async()=>{
+ const React=runtime('react'),{JSDOM}=runtime('jsdom'),{createRoot}=runtime('react-dom/client');
+ const {FinancialHistoryDialog}=await loadXRayModule('../../packages/srm-xray/src/FinancialHistoryDialog.tsx');
+ const dom=new JSDOM('<button id="before">Open</button><div id="root"></div>',{url:'https://host.invalid/pl/dashboard/xray'}),g=globalThis as any;
+ Object.assign(g,{window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement,IS_REACT_ACT_ENVIRONMENT:true,IntersectionObserver:class{observe(){}disconnect(){}}});
+ dom.window.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};
+ dom.window.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open')};
+ const before=document.getElementById('before')!;before.focus();
+ const root=createRoot(document.getElementById('root')!);
+ await React.act(async()=>root.render(React.createElement(FinancialHistoryDialog,{title:'History',onClose:()=>{}},'Content')));
+ const dialog=document.querySelector('dialog')!;assert(dialog.open);assert.equal(document.activeElement,dialog.querySelector('.srm-close-window'));assert.equal(document.body.style.overflow,'hidden');
+ await React.act(async()=>root.unmount());assert.equal(document.activeElement,before);assert.equal(document.body.style.overflow,'');dom.window.close();
 });
 
 
