@@ -121,6 +121,19 @@ test('ready report document statement guard preserves same-NIP tenant isolation,
   }));
   assert.equal(prepared,true,'The current SQL boundary must withhold already prepared effects');assert.deepEqual(await state(),before);
  });
+ await t.test('row RLS refuses foreign data during transient organization GUC changes inside the same company action',async()=>{
+  const accepted=await f.parent(A,NIP),selected={requestId:accepted.requestId,organisationId:A,command:accepted.command};await store.registerAndCache(selected);
+  await work.run(selected,'SRM_STORE_COMPANY',{probe:'TRANSIENT_GUC_CANNOT_CHANGE_ORGANIZATION'},async(context,client)=>{
+   await withNativeCompanyStoreTransaction(A,async scoped=>{
+    await client.query("SELECT set_config('srm.organization_id',$1,true)",[B]);
+    const foreign=await withOrganization(A,current=>current.query('SELECT organization_id FROM srm.financial_source_documents WHERE organization_id=$1 AND nip=$2',[B,NIP]),scoped);
+    assert.equal(foreign.rowCount,0,'A mutable SQL GUC cannot grant another tenant even before the final context proof');
+    const visible=await withOrganization(A,current=>current.query('SELECT organization_id FROM srm.financial_source_documents'),scoped);
+    assert(visible.rows.every(row=>row.organization_id===A),'The independently current native context still binds every row');
+    await client.query("SELECT set_config('srm.organization_id',$1,true)",[A]);
+   },bindOrganizationTransaction(A,client,context));
+  });
+ });
  await t.test('Clerk revocation at Work outcome withholds output and rolls back all newly written documents, facts and archives',async()=>{
   const accepted=await f.parent(A,NIP),selected={requestId:accepted.requestId,organisationId:A,command:accepted.command};await store.registerAndCache(selected);
   const state=async()=>(await owner.query("SELECT jsonb_build_object('documents',(SELECT count(*) FROM srm.financial_source_documents),'facts',(SELECT count(*) FROM srm.financial_facts),'snapshots',(SELECT count(*) FROM srm.source_snapshots),'archives',(SELECT jsonb_agg(to_jsonb(a) ORDER BY organization_id,nip,model) FROM srm.mgbi_source_archives a)) state")).rows[0].state;
