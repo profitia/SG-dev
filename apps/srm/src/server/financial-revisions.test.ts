@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resolveFinancialRevision, resolveDocumentFamily, type Revision, type RevisionCell } from "./financial-revisions";
+import { resolveFinancialRevision, resolveDocumentFamily, financialContentHash, type Revision, type RevisionCell } from "./financial-revisions";
 import { mapMgbiFinancialRecords } from "./mgbi-financial";
 import { projectFinancialDocuments } from "./financial-documents";
 
@@ -8,6 +8,15 @@ const value=(v:string):RevisionCell=>({value:v,state:"VALUE",source:"source:fiel
 const base:Revision={id:"V1",family:"supplier:2025:unit:UOR:PLN",filedAt:"2026-01-01",checksum:"a".repeat(64),kind:"ORIGINAL",cells:{revenue:value("100"),cost:value("80"),net:value("10")}};
 const full:Revision={...base,id:"V2",filedAt:"2026-02-01",checksum:"b".repeat(64),kind:"FULL_REPLACEMENT",parent:"V1",evidence:"explicit replacement",cells:{revenue:value("120"),cost:value("90"),net:value("20")}};
 const correction:Revision={...base,id:"K3",filedAt:"2026-03-01",checksum:"c".repeat(64),kind:"PARTIAL_AMENDMENT",parent:"V2",evidence:"explicit amendment scope",changedFields:["revenue","net"],cells:{revenue:{...value("130"),source:"K3:revenue"},net:{...value("30"),source:"K3:net"}}};
+test('mixed financial paths retain the historical content hash independently of row order',()=>{
+ const source={id:'sort-fixture',identifiers:{pl_nip:'1234563218'},document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31',filing_date:'2026-01-01',is_correction:false,is_ias_compliant:false},content:{schema:{name:'JednostkaInnaWZlotych',version:'1-3'},extracted_fields:{'Bilans>Aktywa>A10>KwotaA':'10.00','Bilans.Aktywa.A2.KwotaA':'2.00','Bilans.Aktywa.A1.KwotaA':'1.00','RZiS.RZiSPor.A.KwotaA':'100.00'}}};
+ const document=projectFinancialDocuments([source])[0],historical='ed7efa623e34aebf22f387f68fd633db429faff7aec7891d820aa0887d2b8a3e';
+ assert.equal(financialContentHash(document),historical);
+ assert.equal(financialContentHash({...document,rows:[...document.rows].reverse()}),historical);
+ const changed=structuredClone(document);changed.rows[0].amounts.KwotaA='2.00';
+ assert.notEqual(financialContentHash(changed),historical);
+ assert.equal(financialContentHash({...document,rows:[...document.rows,document.rows[0]]}),null);
+});
 test("full V1 -> full V2 -> partial K3 -> partial K4 preserves exact lineage and untouched values",()=>{
   const k4={...correction,id:"K4",parent:"K3",filedAt:"2026-04-01",changedFields:["net"],cells:{net:{...value("0"),source:"K4:net"}}};
   const result=resolveFinancialRevision([k4,full,correction,base]);
