@@ -61,7 +61,7 @@ test('fresh inventory returns the same protected documents and exact verified so
   assert.equal(result.archiveChecksum,f.source.payload_jsonb_sha256);
   assert.equal(f.calls.filter(sql=>sql.includes('FROM srm.mgbi_source_archives')).length,1);
   assert.equal(f.calls.length,returning?2:3);
-  (f.pages[0].results[0].identifiers as {pl_nip:string}).pl_nip='6310200831';
+  (f.pages[0].results[0] as unknown as {identifiers:{pl_nip:string}}).identifiers.pl_nip='6310200831';
   assert.equal((result.records[0] as {identifiers:{pl_nip:string}}).identifiers.pl_nip,archiveNip);
  }
 });
