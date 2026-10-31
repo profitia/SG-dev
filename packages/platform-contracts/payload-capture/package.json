@@ -1,0 +1,16 @@
+{
+  "name": "@profitia/platform-payload-capture",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bounded immutable finite-data snapshots using the existing canonical SDK digest",
+  "files": ["src"],
+  "exports": {
+    ".": {"types": "./src/payload-capture.d.mts", "import": "./src/payload-capture.mjs", "require": "./src/payload-capture.mjs"}
+  },
+  "scripts": {
+    "build": "node --check src/payload-capture.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "peerDependencies": {"@profitia/platform-contracts": "1.32.3"}
+}
