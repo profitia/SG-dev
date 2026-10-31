@@ -1,0 +1,13 @@
+{
+  "version": "srm-google-geocoding-cache-v1",
+  "schemaVersion": "1.0.0",
+  "schemaDigest": "2de1be25f66e1a78292a63d3c9da4b5ff70770d92eb9b03b30d503b13b1c431c",
+  "cacheDays": 29,
+  "purgeInterval": "hourly",
+  "hardLicenceLimitDays": 30,
+  "coordinateStorage": "EXISTING_SUPPLIER_LOCATIONS",
+  "owner": "ORGANISATION",
+  "creator": "VERIFIED_USER",
+  "googleOutputRelabelledAsUserInput": false,
+  "cloudActivation": "SEPARATE_APPROVED_RELEASE_REQUIRED"
+}

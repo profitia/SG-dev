@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import {readSrmLocationGeocodingConfiguration,LOCATION_GEOCODING_VERSION,querySrmGeocodingTransaction} from './supplier-location-geocoding-runtime'
+import {readSrmLocationGeocodingConfiguration,LOCATION_GEOCODING_VERSION,LOCATION_CACHED_GEOCODING_VERSION,querySrmGeocodingTransaction} from './supplier-location-geocoding-runtime'
 import type {PoolClient} from 'pg'
 import type {Configuration} from './supplier-native-runtime'
 import targets from '../../deployment/supplier-location-targets.json'
@@ -20,6 +20,8 @@ test('Source control writes stay on the exact admitted transaction and preserve 
 test('a key alone cannot activate geocoding, and only the main registered Development target is eligible',()=>{
  assert.equal(readSrmLocationGeocodingConfiguration({GOOGLE_GEOCODING_API_KEY:'synthetic-only'},true,config),undefined)
  assert.equal(readSrmLocationGeocodingConfiguration(env,true,config)?.apiKey,'synthetic-only')
+ assert.match(readSrmLocationGeocodingConfiguration({...env,PROFITIA_SUPPLIER_LOCATION_GEOCODING_VERSION:LOCATION_CACHED_GEOCODING_VERSION},true,config)?.cacheSchemaDigest??'',/^[a-f0-9]{64}$/)
+ assert.equal(readSrmLocationGeocodingConfiguration(env,true,config)?.cacheSchemaDigest,undefined)
  for(const candidate of[{...env,GOOGLE_GEOCODING_API_KEY:''},{...env,RENDER_SERVICE_ID:'pilot-or-stage'},{...env,PROFITIA_SUPPLIER_LOCATION_GEOCODING_VERSION:'unaccepted'}])assert.throws(()=>readSrmLocationGeocodingConfiguration(candidate,true,config))
  assert.throws(()=>readSrmLocationGeocodingConfiguration(env,false,config));assert.throws(()=>readSrmLocationGeocodingConfiguration(env,true,{...config,runtimeRoles:{} as NonNullable<Configuration['runtimeRoles']>}))
 })
