@@ -46,7 +46,8 @@
     "sharp": "0.35.5",
     "@profitia/identity-runtime": "file:../identity-runtime",
     "@profitia/maps-runtime": "file:../maps-runtime",
-    "@profitia/platform-current-fresh-report": "file:../../packages/platform-contracts/current-fresh-report"
+    "@profitia/platform-current-fresh-report": "file:../../packages/platform-contracts/current-fresh-report",
+    "@profitia/platform-readonly-miss-report": "file:../../packages/platform-contracts/readonly-miss-report"
   },
   "devDependencies": {
     "@types/node": "^20",

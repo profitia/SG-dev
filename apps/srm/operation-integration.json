@@ -7259,5 +7259,70 @@
     "runtimeDeploymentClaimed": false,
     "performanceThresholdsClaimed": false,
     "excludedEnvironmentChanges": false
+  },
+  "readonlyMissReportAdoption": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "scope": "CURRENT_REPORT_READONLY_MISS_ADOPTION",
+    "targetEnvironment": "development",
+    "platformVersion": "1.32.3",
+    "previousReceiptSourceSha": "33e8d0227bfe8e2254239b471eab638ba663be90",
+    "previousReceiptDigest": "5ad856ca9de70a646352c93c475686001cf9d9795061550f67a5ccd8f8010d37",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "pullRequest": 831,
+      "sourceSha": "33e8d0227bfe8e2254239b471eab638ba663be90",
+      "reviewedCandidateSha": "b2b52c6a61ab3c3882f60ab5033670046715a5bc",
+      "publishedMainSha": "33e8d0227bfe8e2254239b471eab638ba663be90",
+      "sourceGo": true,
+      "sourcePhrCommit": "ec7237bff5f4696ba8b99e797cfb83291ac5a926",
+      "proofRunId": 41223966756,
+      "candidateProofRunId": 41222598755,
+      "controlPolicyDigest": "18f0e88395bce3229ea208e8c9721cd94160c67a5b444517263f483526369b28"
+    },
+    "optionalPackage": {
+      "name": "@profitia/platform-readonly-miss-report",
+      "version": "1.0.0",
+      "sourceDigest": "26b77540c4284351d861f4428b6dc60b8e8da111103bc26bb7e5baefdf8c9241"
+    },
+    "producerSourceDigests": {
+      "package.json": "c917ed0489930b0e93bde1969e240bddf6615f353d86bc3263742c5ab3b16752",
+      "src/readonly-miss-report.mjs": "ed0337acb60b334faef60273d9913cf9c71c731fbc7ea6b2bf75f85f2e0d9b3d",
+      "src/readonly-miss-report.d.mts": "84939e1327f7260523f39a7f82385f6285013f8013c0fd8b33675ce676418493"
+    },
+    "applicationSourceDigests": {
+      "package-lock.json": "8ef21e09f9e8ac45bbc7121896207e800b5736dbc98f740f55d697d471aa6b4b",
+      "package.json": "2b4e66bbbc129a310808fc9c0cf849df342c5ef3accbabc020db67d531fcd6d5",
+      "scripts/corporate-source.integration.test.mjs": "954acb96eb80fc19a50fce2bde0bf3d6f1bbc8d5e725460c6cd0afcb2716ea2d",
+      "scripts/native-execution-adoption.test.mjs": "5b1078c38ed1e5d7004713a72abac39ecc318138f21d80cceac1c44682d583c3",
+      "scripts/ready-report.integration.test.mjs": "db477264ac7653d1cb02122ee163cc1a2bba8215a6545b254129477372a52e49",
+      "scripts/request-quota-adoption.test.mjs": "eabc9ed4ad54bda255b8d10f501276e07975be85055a3e6d2bea2d78be1d7f7d",
+      "scripts/rural-location-release.test.mjs": "1fc187f41952a00253b7d030ef8232889824aeb4da31fefd24f8bbbec1a8bded",
+      "scripts/xray-performance-adoption.test.mjs": "1d269e1b23cc55bc168548433e1044ba7c42a918cb4e2ebd3ff1617b3471169b",
+      "scripts/xray-workflow-contract.test.ts": "a5ea794b42539a8f69ee8ca959b898e8aecc4d6c196eb51de246e51b327997ad",
+      "src/server/company-source-policy.test.ts": "b82dbdf01a4db21a027339a15fb9d17ea38f0ca2d17ded7847f1556fbb609334",
+      "src/server/fresh-report.ts": "b2f866d24ecf478512ab6300d0c8c28257b84bb6826fa42f7d324d5f8a65cfc9",
+      "src/server/peer-read-boundary.test.ts": "0887e35667274b31eebc369865c245f83e8089284ca8d6fa0164090124a89d00",
+      "src/server/ready-report-read.ts": "15f6bd99777c5c1d2d4cd9d8c1475db894845b7e3ae590b6771bafd5dc9cc6f7",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "295c31da0f264215b8af5b0fd43efc4da1ba2c592135916a85a3b7a8646bd558"
+    },
+    "effectFreeReadOnlyProbe": true,
+    "onlyReviewedSelectStatements": true,
+    "probeHasNoRawTransactionOrWriter": true,
+    "readyMetadataBeforeCurrentH2": true,
+    "missH3BeforeRootCommitAndWork": true,
+    "finalH4BeforeDisclosure": true,
+    "existingWorkAndSourceChecksPreserved": true,
+    "noAuthorizationDecisionCache": true,
+    "sameCompanyJdgRouting": true,
+    "sameStandaloneAndPeerBackend": true,
+    "currentRlsAndOrganisationIsolation": true,
+    "sharedSdkChanged": false,
+    "databaseChanges": false,
+    "permissionsExpanded": false,
+    "providerPolicyChanged": false,
+    "uiChanged": false,
+    "providerCallsPerformedByLocalTests": false,
+    "deploymentClaimed": false,
+    "performanceThresholdsClaimed": false
   }
 }

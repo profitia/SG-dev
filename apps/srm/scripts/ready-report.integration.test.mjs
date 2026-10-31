@@ -377,25 +377,32 @@ test('ready report native Source and current HUMAN read preserve complete financ
     assert(body.metadata.financial.scanner);assert.deepEqual({sdk,sessions,accounts,companyCalls,classifications},{sdk:1,sessions:2,accounts:2,companyCalls:0,classifications:0})
     const after=await counts();assert.equal(after.reads,before.reads+1);assert.equal(after.quota,before.quota);assert.deepEqual(await commandCounts(),commands)
    })
-   await t.test('MISS admission outcome rechecks Clerk and rolls back its command on revocation',async()=>{
-    reset();banAt=3;const before=await commandCounts()
-    await assert.rejects(run('5261009959'),isOperationDenied)
-    assert.equal(accounts,3);assert.equal(companyCalls,0);assert.deepEqual(await commandCounts(),before)
+   await t.test('READY rolls back its metadata when current H2 revokes access',async()=>{
+    reset();banAt=2;const before=await counts(),commands=await commandCounts()
+    await assert.rejects(run(NIP),isOperationDenied)
+    assert.equal(accounts,2);assert.equal(companyCalls,0);assert.equal(classifications,0)
+    assert.equal((await counts()).reads,before.reads);assert.deepEqual(await commandCounts(),commands)
    })
-   await t.test('FRESH publishes once and uses four current HUMAN account/session observations',async()=>{
+   await t.test('effect-free MISS defers its second account check to root outcome before any command or Work commits',async()=>{
+    reset();banAt=2;const before=await commandCounts(),history=await counts()
+    await assert.rejects(run('5261009959'),isOperationDenied)
+    assert.equal(accounts,2);assert.equal(companyCalls,0);assert.deepEqual(await commandCounts(),before)
+    assert.equal((await counts()).reads,history.reads)
+   })
+   await t.test('FRESH publishes once and uses three current HUMAN account/session observations',async()=>{
     reset();const response=await run('5261009959'),body=await response.json()
     assert.equal(response.status,200);assert.equal(body.card.identity.nip,'5261009959');assert(body.metadata.financial.scanner)
     assert.equal(body.card.general.status,'PARTIAL');assert.equal(body.card.financial.status,'SUCCESS')
-    assert.deepEqual({sdk,sessions,accounts,companyCalls,classifications},{sdk:3,sessions:4,accounts:4,companyCalls:1,classifications:1})
+    assert.deepEqual({sdk,sessions,accounts,companyCalls,classifications},{sdk:3,sessions:3,accounts:3,companyCalls:1,classifications:1})
     const commands=(await owner.query("SELECT request_id FROM profitia_supplier_requests.commands WHERE command_json->>'nip'='5261009959'")).rows
     assert.equal(commands.length,1)
     const units=(await owner.query("SELECT event->'requestWork'->>'unitId' unit FROM profitia_access.security_events WHERE event->'requestWork'->>'requestId'=$1 AND phase='OUTCOME' ORDER BY event_id",[commands[0].request_id])).rows.map(r=>r.unit)
     assert.deepEqual(units,['SRM_REGISTER_LOOKUP','SRM_STORE_COMPANY'])
    })
    await t.test('final revocation withholds report and rolls back read history while accepted Source stays committed',async()=>{
-    reset();banAt=4;const before=await counts()
+    reset();banAt=3;const before=await counts()
     await assert.rejects(run('5242718525'),isOperationDenied)
-    assert.equal(accounts,4);assert.equal(companyCalls,1)
+    assert.equal(accounts,3);assert.equal(companyCalls,1)
     assert.equal((await counts()).reads,before.reads)
     assert.equal((await owner.query('SELECT count(*)::int n FROM srm.ready_company_reports WHERE nip=$1',['5242718525'])).rows[0].n,1)
     reset();const result=await run('5242718525');assert.equal((await result.json()).card.identity.nip,'5242718525');assert.equal(companyCalls,0)
@@ -455,7 +462,7 @@ test('ready report native Source and current HUMAN read preserve complete financ
     assert.deepEqual({sessions,accounts,companyCalls,classifications},{sessions:2,accounts:2,companyCalls:0,classifications:0})
     reset();const fresh=await peerRun('7671004218');assert.equal(fresh.status,200)
     assert.equal((await fresh.json()).data.card.identity.nip,'7671004218')
-    assert.deepEqual({sessions,accounts,companyCalls,classifications},{sessions:4,accounts:4,companyCalls:1,classifications:1})
+    assert.deepEqual({sessions,accounts,companyCalls,classifications},{sessions:3,accounts:3,companyCalls:1,classifications:1})
    })
   })
   await t.test('complete native FRESH pipeline prepares the report once and the next READY opening performs no Work',async()=>{

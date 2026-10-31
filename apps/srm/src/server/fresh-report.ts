@@ -1,11 +1,11 @@
 import type {PoolClient} from 'pg'
-import {createCurrentFreshReportHost,type CurrentFreshReportReadOptions} from '@profitia/platform-current-fresh-report'
+import {createReadonlyMissReportHost,type ReadonlyMissReportReadOptions,type ReadonlyMissReportReadOnlyProbeOptions} from '@profitia/platform-readonly-miss-report'
 import {createDelegatedJobStore} from '@profitia/platform-contracts/delegated-job'
 import {OperationDenied} from '@profitia/platform-contracts/operation-context'
 import {isCompanyReportRestricted} from '@profitia/srm-xray'
 import type {SupplierXRayCard} from '@profitia/srm-xray'
 import targets from '../../deployment/private-runtime-targets.json'
-import {createSrmReadyCompanyReadPhase} from './ready-report-read'
+import {createSrmReadyCompanyReadPhase,READY_REPORT_PROBE_STATEMENTS} from './ready-report-read'
 import {createSrmNativePgDriver} from './native-pg-driver'
 import {srmSupplierRequestDefinition} from './supplier-request-host'
 import {persistSupplierRequest} from './supplier-request-operation'
@@ -37,7 +37,7 @@ async function companyResponse(response:Response,request:Request,nip:string){
   ...(new URL(request.url).origin===targets.environments.development.summaryPeerRead.targetOrigin?{'X-SRM-Prepared-Company':nip}:{})}})
 }
 
-function phaseOptions(phase:ReturnType<typeof createSrmReadyCompanyReadPhase>):CurrentFreshReportReadOptions<PoolClient>{
+function phaseOptions(phase:ReturnType<typeof createSrmReadyCompanyReadPhase>):ReadonlyMissReportReadOptions<PoolClient>{
  const base=phase.hostOptions
  if(base.module?.id!=='supplier_report')return refuse()
  return {application:base.application,binding:base.binding,module:{...base.module,id:'supplier_report'},
@@ -48,6 +48,14 @@ function phaseOptions(phase:ReturnType<typeof createSrmReadyCompanyReadPhase>):C
   if(accepted!==phase.result())return refuse()
   const result=phase.result()
   return result.response?{status:'READY',value:result.response}:{status:'MISS'}
+ }}
+}
+
+function probeOptions(phase:ReturnType<typeof createSrmReadyCompanyReadPhase>):ReadonlyMissReportReadOnlyProbeOptions<PoolClient>{
+ return {...phaseOptions(phase),readResources:phase.readResources,projectOutput:value=>{
+  const selected=phase.probeResult()
+  if(value!==selected)return refuse()
+  return selected.ready?{status:'READY',value:selected}:{status:'MISS'}
  }}
 }
 
@@ -69,12 +77,18 @@ export function createSrmFreshReportSearch(options:CompanyOptions,ports:Ports){
   const root={application:request.application,binding:request.binding,module:request.module,
    ...createSrmNativePgDriver(request.pool,request.auditPool),requestLedger:request.requestLedger,
    transactionTimeoutMs:request.transactionTimeoutMs,...definition}
-  const host=createCurrentFreshReportHost<PoolClient>({clerk:read.clerk,identity:read.identity,receiverBoundary,
-   probe:phaseOptions(probe),refresh:root,read:phaseOptions(final),...(read.now?{now:read.now}:{})})
+  const host=createReadonlyMissReportHost<PoolClient>({clerk:read.clerk,identity:read.identity,receiverBoundary,
+   probe:probeOptions(probe),probeReadOnly:{statements:READY_REPORT_PROBE_STATEMENTS},
+   refresh:root,read:phaseOptions(final),...(read.now?{now:read.now}:{})})
   try{
    const result=await host.execute<Response>({request:input.request,organisationId:input.organisationId,nip,
     idempotencyKey:childIdempotencyKey},{
-    probe:probe.action,
+    probe:probe.probeAction,
+    ready:async(value,context,client)=>{
+     const accepted=await probe.complete(value,context,client)
+     if(accepted!==probe.result()||!accepted.response)return refuse()
+     return accepted.response
+    },
     refresh:async(context,client)=>{
      const receipt=await persistSupplierRequest(context,client)
      const dispatch=await jobs.createDispatch(client.query.bind(client),context)

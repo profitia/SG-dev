@@ -1,3 +1,5 @@
+import {readonlyMissReportSourceDigest,READONLY_MISS_REPORT_CONTRACT} from '@profitia/platform-readonly-miss-report'
+import {READY_REPORT_PROBE_STATEMENTS} from '../src/server/ready-report-read.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -26,8 +28,10 @@ const recordBound=JSON.parse(read('operation-integration.json')).mgbiRecordRespo
 const liveBql=JSON.parse(read('operation-integration.json')).bqlLiveAcceptanceIntegrityContinuation
 const dataCopy=JSON.parse(read('operation-integration.json')).freshDataCopyRecovery
 const documentPolicy=JSON.parse(read('operation-integration.json')).freshDocumentPolicyRecovery
+const readonlyMiss=JSON.parse(read('operation-integration.json')).readonlyMissReportAdoption
+const beforeReadonlyMiss=file=>readonlyMiss?.applicationSourceDigests[file]?execFileSync('git',['show',readonlyMiss.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
 const runtimePreparation=JSON.parse(read('operation-integration.json')).runtimePreparationRecovery
-const beforeRuntimePreparation=file=>runtimePreparation?.applicationSourceDigests[file]?execFileSync('git',['show',runtimePreparation.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const beforeRuntimePreparation=file=>runtimePreparation?.applicationSourceDigests[file]?execFileSync('git',['show',runtimePreparation.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeReadonlyMiss(file)
 const locationCache=JSON.parse(read('operation-integration.json')).supplierLocationCacheAdoption
 const beforeLocationCache=file=>locationCache?.applicationSourceDigests[file]?execFileSync('git',['show',locationCache.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRuntimePreparation(file)
 const inventoryReuse=JSON.parse(read('operation-integration.json')).freshInventoryReuseRecovery
@@ -71,7 +75,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):rural?.applicationSourceDigests[file]?execFileSync('git',['show',rural.authorityBaseSha+':'+posix.normalize('apps/srm/'+file)]):peer?.applicationSourceDigests[file]?execFileSync('git',['show',peer.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fresh.applicationSourceDigests[file]?execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRefinement(file)),digest,'historical '+file)
- for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests,...bql?.applicationSourceDigests,...bql?.consumerSourceDigests,...resultCapture?.applicationSourceDigests,...liveBql?.applicationSourceDigests,...liveBql?.consumerSourceDigests,...freshBoundary?.applicationSourceDigests,...dataCopy?.applicationSourceDigests,...documentPolicy?.applicationSourceDigests,...payloadCapture?.applicationSourceDigests,...inventoryReuse?.applicationSourceDigests,...locationCache?.applicationSourceDigests,...runtimePreparation?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
+ for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests,...bql?.applicationSourceDigests,...bql?.consumerSourceDigests,...resultCapture?.applicationSourceDigests,...liveBql?.applicationSourceDigests,...liveBql?.consumerSourceDigests,...freshBoundary?.applicationSourceDigests,...dataCopy?.applicationSourceDigests,...documentPolicy?.applicationSourceDigests,...payloadCapture?.applicationSourceDigests,...inventoryReuse?.applicationSourceDigests,...locationCache?.applicationSourceDigests,...runtimePreparation?.applicationSourceDigests,...readonlyMiss?.applicationSourceDigests}))assert.equal(hash(read(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))
@@ -345,6 +349,28 @@ test('final PCI integration preserves both accepted histories and rejects unappr
 
 
 export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
+ if(Object.hasOwn(receipt,'readonlyMissReportAdoption')){
+  const a=receipt.readonlyMissReportAdoption,bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
+  assert.equal(a.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');assert.equal(a.scope,'CURRENT_REPORT_READONLY_MISS_ADOPTION')
+  assert.equal(a.targetEnvironment,'development');assert.equal(a.platformVersion,'1.32.3')
+  assert.equal(a.previousReceiptSourceSha,'33e8d0227bfe8e2254239b471eab638ba663be90');assert.equal(hash(bytes),a.previousReceiptDigest)
+  const {readonlyMissReportAdoption,...preserved}=receipt,prior=JSON.parse(bytes);assert.deepEqual(preserved,prior,'Every previous receipt remains immutable')
+  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),["package-lock.json","package.json","scripts/corporate-source.integration.test.mjs","scripts/native-execution-adoption.test.mjs","scripts/ready-report.integration.test.mjs","scripts/request-quota-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-workflow-contract.test.ts","src/server/company-source-policy.test.ts","src/server/fresh-report.ts","src/server/peer-read-boundary.test.ts","src/server/ready-report-read.ts","src/server/supplier-location-geocoding-runtime.test.ts"])
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readCurrent('apps/srm/'+file)),digest,'Current readonly MISS '+file)
+  assert.deepEqual(a.producer,{"projectKey":"ARCHITECTURE","pullRequest":831,"sourceSha":"33e8d0227bfe8e2254239b471eab638ba663be90","reviewedCandidateSha":"b2b52c6a61ab3c3882f60ab5033670046715a5bc","publishedMainSha":"33e8d0227bfe8e2254239b471eab638ba663be90","sourceGo":true,"sourcePhrCommit":"ec7237bff5f4696ba8b99e797cfb83291ac5a926","proofRunId":41223966756,"candidateProofRunId":41222598755,"controlPolicyDigest":"18f0e88395bce3229ea208e8c9721cd94160c67a5b444517263f483526369b28"})
+  assert.deepEqual(a.optionalPackage,{name:'@profitia/platform-readonly-miss-report',version:'1.0.0',sourceDigest:'26b77540c4284351d861f4428b6dc60b8e8da111103bc26bb7e5baefdf8c9241'})
+  assert.deepEqual(Object.keys(a.producerSourceDigests).sort(),['package.json','src/readonly-miss-report.d.mts','src/readonly-miss-report.mjs'])
+  for(const[file,digest]of Object.entries(a.producerSourceDigests)){
+   const path='packages/platform-contracts/readonly-miss-report/'+file
+   assert.equal(hash(readHistorical(a.producer.publishedMainSha,path)),digest,'Published producer '+file)
+   assert.equal(hash(readCurrent(path)),digest,'Current producer '+file)
+  }
+  for(const key of ["effectFreeReadOnlyProbe", "onlyReviewedSelectStatements", "probeHasNoRawTransactionOrWriter", "readyMetadataBeforeCurrentH2", "missH3BeforeRootCommitAndWork", "finalH4BeforeDisclosure", "existingWorkAndSourceChecksPreserved", "noAuthorizationDecisionCache", "sameCompanyJdgRouting", "sameStandaloneAndPeerBackend", "currentRlsAndOrganisationIsolation"])assert.equal(a[key],true,key)
+  for(const key of ["sharedSdkChanged", "databaseChanges", "permissionsExpanded", "providerPolicyChanged", "uiChanged", "providerCallsPerformedByLocalTests", "deploymentClaimed", "performanceThresholdsClaimed"])assert.equal(a[key],false,key)
+  assertCurrentPciIntegrity(prior,file=>Object.hasOwn(a.applicationSourceDigests,posix.relative('apps/srm',file))?readHistorical(a.previousReceiptSourceSha,file):readCurrent(file),readHistorical)
+  return
+ }
+
  if(Object.hasOwn(receipt,'runtimePreparationRecovery')){
   const a=receipt.runtimePreparationRecovery,bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
   assert.equal(a.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');assert.equal(a.scope,'CURRENT_MSR_CLAIM_COMPOSITION_AND_PERSISTED_MARKER_EXPIRY')
@@ -726,4 +752,25 @@ test('runtime preparation rejects changed purchase barriers, expiry, authority a
   const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
  }
  for(const file of ['apps/srm/src/server/msr-repository.ts','apps/srm/src/server/supplier-native-work-store.ts','apps/srm/src/modules/xray/supplier-location-controller.ts'])assert.throws(()=>assertCurrentPciIntegrity(receipt,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical))
+})
+
+
+test('readonly MISS adoption rejects forged GO, source, query port and historical/current file substitution',async()=>{
+ const receipt=JSON.parse(read('operation-integration.json')),a=receipt.readonlyMissReportAdoption
+ const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
+ assertCurrentPciIntegrity(receipt,current,historical)
+ assert.deepEqual(READONLY_MISS_REPORT_CONTRACT,{id:'profitia.readonly-miss-report',version:'1.0.0'})
+ assert.equal(await readonlyMissReportSourceDigest(),a.optionalPackage.sourceDigest)
+ assert.equal(Object.isFrozen(READY_REPORT_PROBE_STATEMENTS),true)
+ assert.equal(READY_REPORT_PROBE_STATEMENTS.length,2)
+ assert(READY_REPORT_PROBE_STATEMENTS.every(s=>/^SELECT\s/.test(s)&&!s.includes(';')&&!s.includes('register_ready_report_read')))
+ const packageRoot=new URL('../',import.meta.resolve('@profitia/platform-readonly-miss-report'))
+ for(const[file,digest]of Object.entries(a.producerSourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,packageRoot))),digest,'Installed producer '+file)
+ const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
+ const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',packageRoot))
+ assert.equal(realpathSync(own.resolve('@profitia/platform-contracts/operation-context')),realpathSync(peer.resolve('@profitia/platform-contracts/operation-context')))
+ for(const mutate of [r=>r.readonlyMissReportAdoption.producer.sourceGo=false,r=>r.readonlyMissReportAdoption.probeHasNoRawTransactionOrWriter=false,r=>r.readonlyMissReportAdoption.missH3BeforeRootCommitAndWork=false,r=>r.readonlyMissReportAdoption.readyMetadataBeforeCurrentH2=false,r=>r.readonlyMissReportAdoption.finalH4BeforeDisclosure=false,r=>r.readonlyMissReportAdoption.permissionsExpanded=true,r=>r.readonlyMissReportAdoption.applicationSourceDigests['src/server/unaccepted.ts']='0'.repeat(64),r=>r.runtimePreparationRecovery.currentClerkE1RlsPreserved=false]){
+  const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
+ }
+ for(const path of ['apps/srm/src/server/fresh-report.ts','apps/srm/src/server/ready-report-read.ts','packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.mjs'])assert.throws(()=>assertCurrentPciIntegrity(receipt,p=>p===path?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical))
 })
