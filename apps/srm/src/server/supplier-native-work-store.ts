@@ -16,12 +16,12 @@ import { readCompanyRegistration } from './company-activity'
 import { enrichCompanyPkd } from './company-pkd'
 import { reprojectFinancialArchive, type FinancialSourceFact } from './mgbi-financial'
 import { saveMgbiArchive,type PersistedMgbiArchive } from './mgbi-archive'
-import { applyFinancialDocumentMetadata, financialRecordsFromPages, prepareFreshFinancialDocuments, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
+import { applyFinancialDocumentMetadata, financialRecordsFromPages, prepareFreshFinancialDocuments, prepareFreshFinancialInventory, readFinancialDocuments, readPreparedFinancialDocuments, saveFinancialDocuments } from './financial-documents'
 import type {MgbiGeneralResult} from './mgbi-general'
 import type {MgbiFinancialResult} from './mgbi-financial'
 import {isCompanyReportRestricted} from '@profitia/srm-xray'
 import {isKnownMgbiCompany} from './company-source-policy'
-import { msrStore, type MsrReceipt, type MsrStore } from './msr-repository'
+import { msrStore, msrInventoryFromRecords, type MsrReceipt, type MsrStore } from './msr-repository'
 import { selectMsrCandidates, type MsrCandidate } from './msr-financial'
 import type { MsrOriginal } from './msr-source'
 import type { FinancialData, GeneralCompanyData, SectionEnvelope } from '@profitia/srm-xray'
@@ -302,11 +302,11 @@ export function createSrmSupplierNativeWorkStore(options:{work:Readonly<Supplier
       return run(s,'SRM_FINANCIAL_INVENTORY',{bodyDigest:digest(body)},async(pool,client)=>{
         const d=(await client.query('SELECT srm.financial_inventory_descriptor() AS descriptor')).rows[0]?.descriptor
         if(d?.schemaDigest!==options.financialInventoryBoundaryDigest)return refuse()
-        await saveMgbiArchive(s.organisationId,s.command.nip,'pl-krs-rdf-record',body.pages,body.recordCount,body.retrievedAt,s.requestId,pool)
-        await saveFinancialDocuments(s.organisationId,s.command.nip,body.pages,pool)
-        const candidates=await msrStore(s.organisationId,s.command.nip,s.requestId,body.allowedKrs,pool).candidates()
-        const documents=await withOrganization(s.organisationId,c=>readPreparedFinancialDocuments(c,s.organisationId,s.command.nip),pool)
-        return {candidates,documents}
+        let archive:PersistedMgbiArchive|undefined
+        await saveMgbiArchive(s.organisationId,s.command.nip,'pl-krs-rdf-record',body.pages,body.recordCount,body.retrievedAt,s.requestId,pool,value=>{archive=value})
+        const prepared=await withOrganization(s.organisationId,c=>
+          prepareFreshFinancialInventory(c,s.organisationId,s.command.nip,body.pages,archive),pool)
+        return {candidates:msrInventoryFromRecords(prepared.records,s.command.nip,prepared.archiveChecksum,body.allowedKrs),documents:prepared.documents}
       })
 
  })

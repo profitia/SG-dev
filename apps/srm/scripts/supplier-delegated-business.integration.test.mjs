@@ -676,6 +676,14 @@ export async function supplierBusinessFixture(t,full=false,probe,options={}){
    assert(result.documents.length>0);assert.equal(result.candidates.candidates.length,0)
    const events=(await owner.query("SELECT event FROM profitia_access.security_events WHERE event->'requestWork'->>'unitId'='SRM_FINANCIAL_INVENTORY' AND event->>'resourceId'=$1 ORDER BY event_id",[s.requestId])).rows.map(r=>r.event)
    assert.deepEqual(events.map(e=>e.phase),['INTENT','OUTCOME'])
+   const queries=[],observedWork={run:(selected,unit,input,action)=>nativeWork.run(selected,unit,input,(context,client)=>
+    action(context,{query:(sql,...values)=>{queries.push(sql);return client.query(sql,...values)}}))}
+   const reused=createSrmSupplierNativeWorkStore({work:observedWork,namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql'))})
+   const repeated=await reused.financialInventory(s,f.rawResponse.pages,f.rawResponse.recordCount,at,['0000000001'])
+   assert.deepEqual(repeated,result,'unchanged source and protected documents retain the exact inventory')
+   assert.equal(queries.filter(sql=>sql.includes('FROM srm.mgbi_source_archives')).length,0,'the actual writer receipt replaces repeated archive reads')
+   assert.equal(queries.filter(sql=>sql.includes('FROM srm.financial_source_documents')).length,1,'unchanged better-quality rows retain the protected fallback read')
+   assert.equal(queries.filter(sql=>sql.includes('profitia_request_work.scope_allows')).length,2,'each remaining domain action still checks its current transaction')
    const before=(await owner.query("SELECT payload_jsonb_sha256 FROM srm.mgbi_source_archives WHERE organization_id=$1 AND nip=$2 AND model='pl-krs-rdf-record'",[A,NIP])).rows[0]
    failOutcome=true
    try{await assert.rejects(nativeStore.financialInventory(s,f.rawResponse.pages,f.rawResponse.recordCount,new Date(Date.now()+1000).toISOString(),['0000000001']),isOperationDenied)}finally{failOutcome=false}
