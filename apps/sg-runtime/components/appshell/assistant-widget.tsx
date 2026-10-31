@@ -2,11 +2,12 @@
 
 import React,{useId,useRef,useState} from 'react'
 import {createPortal} from 'react-dom'
+export type AssistantScreenContext=Readonly<{supplier:Readonly<{name:string}>;view:Readonly<{radar:Readonly<{year:number|null}>}>}>
 import {SpendGuruLogo} from './appshell-brand'
 import {useAssistantWindow} from './use-assistant-window'
 
 type AvatarChoice='male'|'female'|null|undefined
-type Props={locale:'pl'|'en';salutation?:string|null;avatar:AvatarChoice;theme:'light'|'dark'}
+type Props={locale:'pl'|'en';salutation?:string|null;avatar:AvatarChoice;theme:'light'|'dark';screenContext?:AssistantScreenContext|null}
 function Glyph({kind}:{kind:'collapse'|'expand'|'detach'|'attach'|'clock'|'more'|'send'}){
  return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
   {kind==='collapse'&&<path d="m9 6 6 6-6 6"/>}{kind==='expand'&&<path d="m15 6-6 6 6 6"/>}
@@ -25,8 +26,8 @@ function Avatar({choice,en,ribbon=false}:{choice:AvatarChoice;en:boolean;ribbon?
  </span>
 }
 
-/** Presentation controls only; no conversation, draft, history, model or screen data. */
-export function AssistantWidget({locale,salutation,avatar,theme}:Props){
+/** One host-owned widget; a report context label does not invoke a model or grant data access. */
+export function AssistantWidget({locale,salutation,avatar,theme,screenContext}:Props){
  const en=locale==='en',id=useId(),inputId=useId(),[collapsed,setCollapsed]=useState(false)
  const collapseTrigger=useRef<HTMLButtonElement>(null),expandTrigger=useRef<HTMLButtonElement>(null),detachTrigger=useRef<HTMLButtonElement>(null)
  const host=useAssistantWindow(()=>{setCollapsed(false);requestAnimationFrame(()=>detachTrigger.current?.focus({preventScroll:true}))},en)
@@ -42,6 +43,7 @@ export function AssistantWidget({locale,salutation,avatar,theme}:Props){
     <button className="srm-chat-tool" type="button" disabled aria-label={en?'Change SpendGuru avatar':'Zmień awatar SpendGuru'} title={en?'Change avatar':'Zmień awatar'}><Glyph kind="more"/></button>
    </div>
   </header>
+  {screenContext&&<p className="srm-chat-screen-context" aria-label={en?"Assistant context":"Kontekst asystenta"}>X-Ray · {screenContext.supplier.name}{screenContext.view.radar.year?` · ${screenContext.view.radar.year}`:""}</p>}
   {host.error&&<p className="srm-chat-window-error" role="alert">{host.error}</p>}
   <div className="srm-chat-transcript" role="region" aria-label={en?'SpendGuru introduction':'Powitanie SpendGuru'} tabIndex={0}>
    <div className="srm-chat-welcome-live"><div className="srm-chat-incoming"><Avatar choice={avatar} en={en}/>
