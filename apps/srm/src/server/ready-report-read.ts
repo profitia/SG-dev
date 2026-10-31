@@ -25,6 +25,9 @@ export const READY_REPORT_PROBE_STATEMENTS=Object.freeze([true,false].map(first=
         AND r.schema_digest=$2 ORDER BY r.prepared_at DESC LIMIT 1) r ON true WHERE c.nip=$1`))
 type ReadySelection=Readonly<{known:boolean;ready:boolean}>
 type ReadyProjection=NonNullable<ReturnType<typeof projectPreparedCompanyReport>>
+type ReadyReadOptions=Parameters<typeof createCurrentHumanReadHost<PoolClient>>[0]
+type ReadyResourceReader=NonNullable<ReadyReadOptions['readResources']>
+type ReadyResourceInput=Pick<Parameters<ReadyResourceReader>[0],'actor'|'request'|'scope'|'query'>
 
 /** One current HUMAN read per opening. Only the classified Source view crosses
  * this boundary. History/frame effects are local metadata, never a refresh,
@@ -37,9 +40,9 @@ export function createSrmReadyCompanyReadPhase(options:CompanyReadOptions,schema
   let body:PreparedCompanyReport|null=null,entry:ReadyRow|undefined,reads=0
   let accepted:Readonly<{known:boolean;response:Response|null}>|undefined
   let selection:ReadySelection|undefined,prepared:Readonly<{view:ReadyProjection;actorId:string;organisationId:string;applicationId:string}>|null=null,completed=false
-  const hostOptions:Parameters<typeof createCurrentHumanReadHost<PoolClient>>[0]={application,binding,module,clerk,identity,now,
-   ...createSrmNativePgDriver(pool,auditPool),
-   readResources:async({actor,request:operation,scope,query})=>{
+  // The resource reader has only the four read inputs it actually needs.
+  // A read-only probe port never masquerades as a raw PoolClient.
+  const readResources=async({actor,request:operation,scope,query}:ReadyResourceInput)=>{
     if(actor.kind!=='HUMAN'||scope.userId!==actor.actorId||scope.organisationId!==organisationId
      ||operation.operation!=='supplier.report.read'||operation.resourceId!==resourceId)return refuse()
     const first=++reads===1
@@ -50,8 +53,10 @@ export function createSrmReadyCompanyReadPhase(options:CompanyReadOptions,schema
     return {resource:{id:resourceId,type:'supplier_report',dataClass:'SHARED_KNOWLEDGE',environment:scope.environment,
      ownerOrganisationId:null,ownerUserId:null,version:row?.body_digest??'NO_PREPARED_REPORT',
      projectionVersion:PREPARED_REPORT_VERSION+':'+operationPayloadDigest(row?{general:row.general_sha256,financial:row.financial_sha256,
-      generalCheckedAt:stamp(row.general_checked_at),financialCheckedAt:stamp(row.financial_checked_at)}:null),approvedSharedProjection:true}}
-   },
+      generalCheckedAt:stamp(row.general_checked_at),financialCheckedAt:stamp(row.financial_checked_at)}:null),approvedSharedProjection:true} as const}
+   }
+  const hostOptions:ReadyReadOptions={application,binding,module,clerk,identity,now,
+   ...createSrmNativePgDriver(pool,auditPool),readResources,
    projectOutput:(value,context)=>{
     if(value!==accepted||!accepted||accepted.response&&context.resource.version!==entry?.body_digest)return refuse()
     return value
@@ -96,7 +101,7 @@ export function createSrmReadyCompanyReadPhase(options:CompanyReadOptions,schema
    const value=probeAction(context)
    return value.ready?complete(value,context,client):accepted!
   }
-  return Object.freeze({hostOptions,input,action,probeAction,complete,
+  return Object.freeze({hostOptions,input,action,readResources,probeAction,complete,
    probeResult:()=>{if(!selection)return refuse();return selection},result:()=>{if(!accepted)return refuse();return accepted}})
 }
 
