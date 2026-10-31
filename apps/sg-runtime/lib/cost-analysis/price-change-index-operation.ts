@@ -3,6 +3,9 @@ import type { SavedBenchmark, BenchmarkAnalyticsSeriesResult } from '../benchmar
 import { analysePriceChangeIndex } from './price-change-index-host'
 import { preparePriceChangeIndex } from './price-change-index-preparation'
 import { pciAnalysisRequest } from './price-change-index-contracts'
+import { PCI_SMART_VERSION, pciOperationRequest } from './pci-smart-preparation-contracts'
+import { analyseSmartPci } from './pci-smart-analysis'
+import { prepareSmartPci, smartSelectionIssues } from './pci-smart-preparation'
 
 export const PCI_PRIVATE_HEADERS = Object.freeze({'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'})
 type Options = { isClerk:()=>boolean; selections:(request:NextRequest)=>Promise<Response>;
@@ -16,7 +19,7 @@ async function body(request:Request) {
     if(bytes>32768 || request.signal.aborted)throw Error('INVALID_BODY');chunks.push(item.value)}}
   finally {await reader.cancel().catch(()=>{});reader.releaseLock()}
   const all=new Uint8Array(bytes);let offset=0;for(const c of chunks){all.set(c,offset);offset+=c.length}
-  return pciAnalysisRequest.parse(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(all)))
+  return pciOperationRequest.parse(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(all)))
 }
 /** Stateless BFF composition. Every private selection and shared history read
  * still executes its existing accepted E1 operation. No new permission/cache,
@@ -27,7 +30,7 @@ export function createPriceChangeIndexHandler(options:Options) {
     if(!/^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(request.headers.get('authorization')??''))return unavailable(401)
     if(!options.isClerk())return unavailable(503)
     if(new URL(request.url).search)return unavailable(400)
-    let input:ReturnType<typeof pciAnalysisRequest.parse>
+    let input:ReturnType<typeof pciOperationRequest.parse>
     try {input=await body(request)}catch{return unavailable(400)}
     const subrequest=(path:string)=>{
       const headers=new Headers()
@@ -42,9 +45,15 @@ export function createPriceChangeIndexHandler(options:Options) {
       if(!Array.isArray(selected.items) || selected.items.some(b=>b.organizationId!==input.organisationId))return unavailable(403)
       const wanted=input.category.components.map(c=>selected.items.find(b=>b.businessBenchmarkId===c.businessBenchmarkId))
       if(wanted.some(b=>!b))return unavailable(403)
+      if(input.contractVersion===PCI_SMART_VERSION){
+        const issues=smartSelectionIssues(input,selected.items)
+        if(issues.length)return reply({contractVersion:PCI_SMART_VERSION,status:input.mode==='PREPARE'?'PREPARED':'REFUSED',
+          preparation:prepareSmartPci(input,selected.items,new Map(),options.now()).preparation,...(input.mode==='PREPARE'?{}:{issues})},input.mode==='PREPARE'?200:422)
+      }
       const histories=new Map<string,BenchmarkAnalyticsSeriesResult>()
       // Bounded parallel reads use the same existing E1 handler as Finder.
-      const unique=[...new Map(wanted.map(b=>[b!.businessBenchmarkId,b!])).values()]
+      const active=input.contractVersion===PCI_SMART_VERSION?wanted.filter((_,i)=>input.category.components[i].weightPercent>0):wanted
+      const unique=[...new Map(active.map(b=>[b!.businessBenchmarkId,b!])).values()]
       for(let i=0;i<unique.length;i+=3){
         const results=await Promise.all(unique.slice(i,i+3).map(async benchmark=>{
           if(request.signal.aborted)throw new DOMException('Aborted','AbortError')
@@ -57,6 +66,10 @@ export function createPriceChangeIndexHandler(options:Options) {
         const failed=results.find(r=>r.status!==200);if(failed)return unavailable(failed.status)
       }
       if(request.signal.aborted)return unavailable(499)
+      if(input.contractVersion===PCI_SMART_VERSION){
+        const result=analyseSmartPci(input,selected.items,histories,options.now())
+        return reply(result,result.status==='REFUSED'?422:200)
+      }
       if(input.mode==='PREPARE')return reply(preparePriceChangeIndex(input,selected.items,histories,options.now()))
       const result=analysePriceChangeIndex(input,selected.items,histories,options.now())
       return reply(result,result.status==='CALCULATED'?200:422)
