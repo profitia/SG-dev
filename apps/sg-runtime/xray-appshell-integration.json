@@ -263,7 +263,7 @@
         "projectKey": "SRM",
         "taskId": "SRM-XRAY-FULL-UI-PARITY-B-20261031",
         "pullRequest": 832,
-        "sourceSha": "6551633efbea8bf4e58e4b355f2832dfe2c90ae3"
+        "sourceSha": "1f6868d51c2db26fd612a6fa6c8469e9dcf29845"
       }
     },
     "presentationContract": "profitia.srm-xray.presentation/1.0.0",
