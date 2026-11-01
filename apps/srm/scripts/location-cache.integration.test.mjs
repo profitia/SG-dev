@@ -42,7 +42,14 @@ export async function exerciseLocationCacheFixture(t,f){
    await assert.rejects(maintenance.query('SELECT * FROM srm.supplier_locations'),e=>e.code==='42501')
    await assert.rejects(maintenance.query('SET ROLE profitia_access_owner'),e=>e.code==='42501')
    assert.deepEqual(await purge(),{completed:true,expiredCoordinates:0})
-   assert.doesNotMatch(JSON.stringify((await controlled(()=>owner.query('SELECT * FROM srm.location_cache_maintenance_runs'))).rows),/52\.1|21\.1|synthetic-only/)
+   const rows=(await controlled(()=>owner.query('SELECT * FROM srm.location_cache_maintenance_runs'))).rows
+   assert.equal(rows.length,1)
+   const audit=rows[0]
+   assert.deepEqual(Object.keys(audit).sort(),['actor_role','completed_at','expired_coordinates','locations','run_id'])
+   assert.match(String(audit.run_id),/^\d+$/)
+   assert(Number.isFinite(new Date(audit.completed_at).getTime()))
+   assert.deepEqual({actor_role:audit.actor_role,expired_coordinates:audit.expired_coordinates,locations:audit.locations},
+    {actor_role:role,expired_coordinates:0,locations:[]})
   })
   await t.test('committed Google result survives new runtime instances and reads by another authorised member without Geocoding',async()=>{
    assert.deepEqual((await read()).coordinates,cached.coordinates)

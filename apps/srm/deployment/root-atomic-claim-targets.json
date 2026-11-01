@@ -1,0 +1,19 @@
+{
+  "contractId": "profitia.root-atomic-claim",
+  "contractVersion": "1.0.0",
+  "environment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "foregroundRole": "srm_private_development_runtime",
+  "executorRole": "srm_private_development_jobs",
+  "activationVariable": "PROFITIA_ROOT_ATOMIC_CLAIM_ENABLED",
+  "enabledByDefault": false,
+  "producerPullRequest": 854,
+  "producerSourceRef": "3a494b5432555935168c060be5950589d550d276",
+  "sourceDigest": "254ba501e76c0b55ce7c6cdba74f0dc441b2959c7c8506d2b3dc380d6e47830f",
+  "schemaDigest": "1c1784b3c92753ccc28f7c34af89e26f1784a632859d5dbe45a9f5f3d08f6c0d",
+  "formalSourceAcceptanceRequired": true,
+  "cloudInstallationRequiresSeparateApproval": true
+}
