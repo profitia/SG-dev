@@ -7611,14 +7611,14 @@
     "applicationSourceDigests": {
       "middleware.test.ts": "e23f9e7d162af0493856dbba5433ecadb1ccb9bb3dfb412e07f2448bb0a9a2b3",
       "middleware.ts": "32715172d8bf6b0bfc5e33ba0e8e8c64264ef33916272bf27e44a6f2a8043eb5",
-      "package.json": "f90bcf25f98ad6bf351245f8fa29ae849d9c1c29c42ff8d4c278237d0ee25633",
+      "package.json": "2b4e66bbbc129a310808fc9c0cf849df342c5ef3accbabc020db67d531fcd6d5",
       "scripts/corporate-source.integration.test.mjs": "ce861e539daf0efe24cf2e7a65e8b87ef502fc1ffef33105072aa5fbdfb959d7",
       "scripts/financial-document-statement.integration.test.mjs": "53b6194b139dd56fdbfbe523368a6e12c7e423b7301e9de5ce04fce14fbbffcc",
       "scripts/native-execution-adoption.test.mjs": "144a701529e38b71d4686e3d7c080cced76d78c5b664929ed890d49d02b77c4a",
       "scripts/organisation-location-grants.integration.test.mjs": "526bcb802be272d5c46df899b9795ac4b00e3bf339316d8a974704d21a006333",
       "scripts/request-quota-adoption.test.mjs": "df1f75ae428e25dcb51e7ec5753fdadb8713a6d9b2bf48be88dd7699dc370f4e",
       "scripts/rural-location-release.test.mjs": "94073039d44decc49eed6a33d56ec4dcbfba7ff3ce928386153e209805b2fbb5",
-      "scripts/xray-performance-adoption.test.mjs": "0f87e2f74364037f1e704df40c3e7f9280b86de85790311be5974de57b0ba07b",
+      "scripts/xray-performance-adoption.test.mjs": "db9ae3809d6ee0638e8602b415b320c0daffd9e93a99ad645bd40a7d44538e71",
       "scripts/xray-workflow-contract.test.ts": "945bdc9838d7cfd77f2bd1e753a65740506778888f5470c95a8c236e5f788409",
       "src/server/company-source-policy.test.ts": "e13f801e76289b5d3533e633a1a5824e81946c15d9f92000a36dbdc354fa55ad",
       "src/server/db-native-work.test.ts": "40ca3c9d98d60cefe9a26e697ebb862acbf4ff5f2a0da1d5033e471f2579145d",
@@ -7627,6 +7627,7 @@
       "src/server/financial-documents.ts": "db000830b4a133eccf3769fa87ef9e562d555a672292b2b5c035a706fdb0bf6b",
       "src/server/financial-revisions.test.ts": "28e0d55f3647db2f1dfa1cc288ee8dc27e74c00f34aa7cb8eb585fd8666446a4",
       "src/server/financial-revisions.ts": "604953d5efd09cc6c52033db56ac37860ea75d0328166a5894035dd88dbf6b69",
+      "src/server/full-ui-parity-adoption.test.ts": "63054a245ec9b5906da40952215cee9e6740c6d6521814c242baf5bf52abc2a0",
       "src/server/mgbi-archive.test.ts": "4cf24b0d4202b29cd96d1c0a5d1794a971fcc5d7918deb18df47077e32c0f7c4",
       "src/server/mgbi-archive.ts": "ffd735d97d30355ada8f283b59204b9074b45eb517f25a95ad298bb1215b1632",
       "src/server/peer-read-boundary.test.ts": "b63eb720100efc2960cca4fed2a25bd38fc2f119bcf83205522c615f11efdba7",
@@ -7657,7 +7658,7 @@
     "paidAcquisitionsPerformed": false,
     "runtimeDeploymentClaimed": false,
     "performanceThresholdsClaimed": false,
-    "uiOrMapsChanged": false,
-    "excludedEnvironmentChanges": false
+    "excludedEnvironmentChanges": false,
+    "publicUiOrMapsEngineChanged": false
   }
 }
