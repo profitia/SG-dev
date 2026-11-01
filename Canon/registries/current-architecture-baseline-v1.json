@@ -760,6 +760,57 @@
         "SRM"
       ],
       "onboardingAuthorization": "Explicit human owner architecture approval of PR #756, 2026-10-27, host 01a17d49-61a6-7821-ba8e-18b45d3c4048; Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md. Authoritative only after required exact-head CI/governance and controlled main acceptance; no automatic merge or product deployment approval."
+    },
+    {
+      "id": "INSIGHTS-BASE-001",
+      "capability": "Procurement Insights",
+      "name": "Procurement Insights Runtime",
+      "pathPatterns": [
+        "apps/insights-runtime/**"
+      ],
+      "currentOwner": "Insights Domain",
+      "currentResponsibility": "Definitions, schedules, durable production orchestration, evidence, independent review, immutable publication and report history; consumes approved owner contracts without taking Forecast mathematics, host UI or CIC conversation ownership.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "b965924a63fafb1a24b84ceb389dfd5e78648f57",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
+    },
+    {
+      "id": "INSIGHTS-BASE-002",
+      "capability": "Procurement Insights",
+      "name": "Procurement Insights Contracts",
+      "pathPatterns": [
+        "packages/insights-contracts/**"
+      ],
+      "currentOwner": "Insights Domain",
+      "currentResponsibility": "Versioned Insights API/DTO/schema contracts for explicit producer and consumer acceptance; no provider transport, platform authorization implementation or cross-owner private imports.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "b965924a63fafb1a24b84ceb389dfd5e78648f57",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
+    },
+    {
+      "id": "INSIGHTS-BASE-003",
+      "capability": "Procurement Insights",
+      "name": "Procurement Insights CI",
+      "pathPatterns": [
+        ".github/workflows/insights-ci.yml"
+      ],
+      "currentOwner": "Insights Domain",
+      "currentResponsibility": "Future independent Insights verification workflow source; registration only, no workflow file or deployment pipeline created by governance onboarding.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "b965924a63fafb1a24b84ceb389dfd5e78648f57",
+      "allowedProjectKeys": [
+        "SG2"
+      ]
     }
   ],
   "cleanupFindings": [
