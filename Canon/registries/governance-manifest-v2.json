@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.35.0",
+  "manifestVersion": "3.36.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,7 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {"id":"macrobond-licensed-access-policy-amendment","version":"1.0","path":"Canon/v1.0-macrobond-licensed-access-policy-amendment.md","status":"ACTIVE","loadOrder":415,"owner":"Architecture Platform","appliesTo":["SG2","ARCHITECTURE"],"dependsOn":["profitia-package-and-limits-management","profitia-package-and-limits-customer-lifecycle","operation-context-and-access-contract","repository-routing","shared-development-contract-integration"]},
     {
       "id": "pci-smart-preparation-and-reference-methodology-business-and-architecture-canon",
       "version": "1.0",
