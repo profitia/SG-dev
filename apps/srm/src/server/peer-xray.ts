@@ -34,10 +34,14 @@ export function withSrmPeerXRay(handler:(request:Request)=>Promise<Response>,env
   try{validateXRayCommand(operation,await readXRayJson(new Response(request.clone().body,{headers:{'content-type':'application/json'}}),XRAY_REQUEST_BYTES,request.signal));}
   catch{return peerFailure(operation,attribution.requestId,400,'XRAY_REQUEST_INVALID');}
   const commandValidated=performance.now(),timings:Record<string,number>={verifyMs:verified-started,commandMs:commandValidated-verified};
-  let nativeTraceId:string|undefined;
+  let nativeTraceId:string|undefined,diagnosticTraceId:string|undefined,diagnosticFragmentId:string|undefined;
   try{
    const response=await handler(request);
    timings.handlerMs=performance.now()-commandValidated;
+   const diagnostic=response.headers.get('X-SRM-Diagnostic-Execution'),fragment=response.headers.get('X-SRM-Diagnostic-Fragment');
+   const diagnosticId=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+   if(diagnosticId.test(diagnostic??''))diagnosticTraceId=diagnostic!;
+   if(diagnosticTraceId&&diagnosticId.test(fragment??''))diagnosticFragmentId=fragment!;
    if(!response.ok)return peerFailure(operation,attribution.requestId,[400,401,403,404,409,422,429,503,504].includes(response.status)?response.status:502,
     response.status===401?'XRAY_SESSION_REQUIRED':response.status===403?'XRAY_ACCESS_DENIED':response.status===404?(operation==='search'?'XRAY_NOT_FOUND':'XRAY_REPORT_UNAVAILABLE'):response.status===429?'XRAY_LIMIT_REACHED':response.status===409?'XRAY_CONFLICT':'XRAY_UNAVAILABLE');
    let phase=performance.now();
@@ -54,6 +58,7 @@ export function withSrmPeerXRay(handler:(request:Request)=>Promise<Response>,env
    // Numeric boundary timings only; no proof, token, identity or report data.
    // A broken logger must never change a committed business response.
    try{console.info(JSON.stringify({event:'srm_xray_peer_timing',operation,requestId:attribution.requestId,...(nativeTraceId?{nativeTraceId}:{}),
+    ...(diagnosticTraceId?{diagnosticTraceId}:{}),...(diagnosticFragmentId?{diagnosticFragmentId}:{}),
     ...Object.fromEntries(Object.entries({...timings,totalMs:performance.now()-started}).map(([k,v])=>[k,Math.round(v*1000)/1000]))}));}catch{}
   }
  };
