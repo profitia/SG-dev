@@ -229,7 +229,7 @@
             "serviceId": "srv-daclno3m8hqs73bb7rrg",
             "name": "sg2-staging-runtime",
             "autoDeploy": false,
-            "baselineDeployId": "dep-dbjqi2e7bikc73898lg0",
+            "baselineDeployId": "dep-dbjr14jbc2fs73dkllb0",
             "baselineSha": "88c9e0a2074bfafd1199a9caeb50497412a200bd",
             "url": "https://spendguru-porr-demo.onrender.com",
             "customDomain": "demo-sg-porr.spendguru.app"
@@ -337,6 +337,25 @@
           "requiredEnvironmentApproval": "APPROVED_BY_PROFITIA",
           "runtimeHealth": "PASS",
           "sentryStatus": "DISABLED_SERVICE_NAME_MISMATCH",
+          "evidence": "Canon/evidence/2026-11-01-sg2-sentry-staging-release.md"
+        },
+        {
+          "recordedAt": "2026-11-01T21:42:03.747776+00:00",
+          "reason": "OWNER_AUTHORIZED_PROTECTED_SAME_SOURCE_CONFIGURATION_VERIFICATION",
+          "taskId": "SG2-SENTRY-STAGING-REGISTRY-20261101",
+          "role": "runtime",
+          "serviceId": "srv-daclno3m8hqs73bb7rrg",
+          "previousBaselineDeployId": "dep-dbjqi2e7bikc73898lg0",
+          "previousBaselineSha": "88c9e0a2074bfafd1199a9caeb50497412a200bd",
+          "observedDeployId": "dep-dbjr14jbc2fs73dkllb0",
+          "observedSha": "88c9e0a2074bfafd1199a9caeb50497412a200bd",
+          "providerTrigger": "deploy_hook",
+          "sourceRevisionChanged": false,
+          "deploymentPerformed": true,
+          "releaseWorkflowRunId": 41352208337,
+          "requiredEnvironmentApproval": "APPROVED_BY_PROFITIA",
+          "runtimeHealth": "PASS",
+          "sentryStatus": "BLOCKED_NATIVE_SERVICE_NAME_REJECTED_BY_PR850",
           "evidence": "Canon/evidence/2026-11-01-sg2-sentry-staging-release.md"
         }
       ]
