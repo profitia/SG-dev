@@ -1,6 +1,6 @@
 import type {Application} from '@profitia/platform-contracts/operation-context'
 import type {AccessStoreBinding} from '@profitia/platform-contracts/access-store'
-import target from '../../deployment/mgbi-record-response-bound-2026-10-30.json'
+import target from '../../deployment/mgbi-record-response-bound-2026-11-01.json'
 /** Technical response size only. This selects no identity, authority or quota;
  * the unchanged Source host must still match the installed ordinary-role policy. */
 export function mainMgbiRecordResponseBound(application:Pick<Application,'appId'|'environment'|'deploymentId'>,

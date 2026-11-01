@@ -1,0 +1,202 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "CANDIDATE_REQUIRES_SEPARATE_OWNER_GO",
+  "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+  "environment": "development",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "implementation": "IMMUTABLE_POLICY_SUCCESSOR_WITH_REMAINING_ALLOWANCE",
+  "operatorPolicySql": "db/private-store/034-mgbi-record-envelope-versioned.sql",
+  "policyIds": {
+    "v1": "3892aef8-2616-42f6-9b43-50e3e4d7dbef",
+    "v2": "36883038-34b4-4929-9417-4ab66b54730a",
+    "v3": "83b5b805-386c-479d-8c14-3b9580e0d78d",
+    "v4": "b92b56bc-08be-4245-8576-bb587b72e0df"
+  },
+  "previousPolicy": {
+    "base": {
+      "unit": "UPSTREAM_ATTEMPT_ADMISSION",
+      "origin": "https://api.mgbi.pl",
+      "status": "ACTIVE",
+      "version": 2,
+      "capacity": 930,
+      "policy_id": "36883038-34b4-4929-9417-4ab66b54730a",
+      "source_id": "srm.provider.mgbi",
+      "transport": "HTTPS",
+      "expires_at": "2026-11-19T00:00:00+00:00",
+      "login_role": "srm_provider_development_source",
+      "path_rules": [
+        {
+          "path": "/v1/models/pl-krs-wp-record/records",
+          "method": "GET"
+        },
+        {
+          "path": "/v1/models/pl-krs-rdf-record/records",
+          "method": "GET"
+        }
+      ],
+      "quota_mode": "METERED",
+      "source_ref": "fbb78c9560d84031239780ee52bf47df4b923394",
+      "timeout_ms": 20000,
+      "window_end": "2026-11-19T00:00:00+00:00",
+      "resource_id": "srm-provider:mgbi",
+      "window_start": "2026-10-20T00:00:00+00:00",
+      "admitted_count": 42,
+      "configuration_version": "srm-native-supplier-e1-v1",
+      "maximum_request_bytes": 8192,
+      "maximum_response_bytes": 2097152
+    },
+    "native": {
+      "status": "ACTIVE",
+      "version": 2,
+      "policy_id": "36883038-34b4-4929-9417-4ab66b54730a",
+      "expires_at": "2026-11-19T00:00:00+00:00",
+      "path_rules": [
+        {
+          "path": "/v1/models/pl-krs-wp-record/records",
+          "method": "GET",
+          "requestFormat": "NONE"
+        },
+        {
+          "path": "/v1/models/pl-krs-rdf-record/records",
+          "method": "GET",
+          "requestFormat": "NONE"
+        }
+      ],
+      "source_ref": "fbb78c9560d84031239780ee52bf47df4b923394",
+      "completion_mode": "ADMITTED_ATTEMPT_CURRENT_SETTLEMENT",
+      "credential_mode": "SERVER_HEADERS",
+      "redirect_origins": [],
+      "base_policy_version": 2,
+      "maximum_response_bytes": 2097152
+    }
+  },
+  "historicalPolicies": [
+    {
+      "base": {
+        "unit": "UPSTREAM_ATTEMPT_ADMISSION",
+        "origin": "https://api.mgbi.pl",
+        "status": "ACTIVE",
+        "version": 2,
+        "capacity": 930,
+        "policy_id": "36883038-34b4-4929-9417-4ab66b54730a",
+        "source_id": "srm.provider.mgbi",
+        "transport": "HTTPS",
+        "expires_at": "2026-11-19T00:00:00+00:00",
+        "login_role": "srm_provider_development_source",
+        "path_rules": [
+          {
+            "path": "/v1/models/pl-krs-wp-record/records",
+            "method": "GET"
+          },
+          {
+            "path": "/v1/models/pl-krs-rdf-record/records",
+            "method": "GET"
+          }
+        ],
+        "quota_mode": "METERED",
+        "source_ref": "fbb78c9560d84031239780ee52bf47df4b923394",
+        "timeout_ms": 20000,
+        "window_end": "2026-11-19T00:00:00+00:00",
+        "resource_id": "srm-provider:mgbi",
+        "window_start": "2026-10-20T00:00:00+00:00",
+        "admitted_count": 42,
+        "configuration_version": "srm-native-supplier-e1-v1",
+        "maximum_request_bytes": 8192,
+        "maximum_response_bytes": 2097152
+      },
+      "native": {
+        "status": "ACTIVE",
+        "version": 2,
+        "policy_id": "36883038-34b4-4929-9417-4ab66b54730a",
+        "expires_at": "2026-11-19T00:00:00+00:00",
+        "path_rules": [
+          {
+            "path": "/v1/models/pl-krs-wp-record/records",
+            "method": "GET",
+            "requestFormat": "NONE"
+          },
+          {
+            "path": "/v1/models/pl-krs-rdf-record/records",
+            "method": "GET",
+            "requestFormat": "NONE"
+          }
+        ],
+        "source_ref": "fbb78c9560d84031239780ee52bf47df4b923394",
+        "completion_mode": "ADMITTED_ATTEMPT_CURRENT_SETTLEMENT",
+        "credential_mode": "SERVER_HEADERS",
+        "redirect_origins": [],
+        "base_policy_version": 2,
+        "maximum_response_bytes": 2097152
+      }
+    },
+    {
+      "base": {
+        "unit": "UPSTREAM_ATTEMPT_ADMISSION",
+        "origin": "https://api.mgbi.pl",
+        "status": "REVOKED",
+        "version": 2,
+        "capacity": 1000,
+        "policy_id": "3892aef8-2616-42f6-9b43-50e3e4d7dbef",
+        "source_id": "srm.provider.mgbi",
+        "transport": "HTTPS",
+        "expires_at": "2026-11-19T00:00:00+00:00",
+        "login_role": "srm_provider_development_source",
+        "path_rules": [
+          {
+            "path": "/v1/models/pl-krs-wp-record/records",
+            "method": "GET"
+          },
+          {
+            "path": "/v1/models/pl-krs-rdf-record/records",
+            "method": "GET"
+          }
+        ],
+        "quota_mode": "METERED",
+        "source_ref": "SRM-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+        "timeout_ms": 20000,
+        "window_end": "2026-11-19T00:00:00+00:00",
+        "resource_id": "srm-provider:mgbi",
+        "window_start": "2026-10-20T00:00:00+00:00",
+        "admitted_count": 70,
+        "configuration_version": "srm-native-supplier-e1-v1",
+        "maximum_request_bytes": 8192,
+        "maximum_response_bytes": 1048576
+      },
+      "native": {
+        "status": "REVOKED",
+        "version": 2,
+        "policy_id": "3892aef8-2616-42f6-9b43-50e3e4d7dbef",
+        "expires_at": "2026-11-19T00:00:00+00:00",
+        "path_rules": [
+          {
+            "path": "/v1/models/pl-krs-wp-record/records",
+            "method": "GET",
+            "requestFormat": "NONE"
+          },
+          {
+            "path": "/v1/models/pl-krs-rdf-record/records",
+            "method": "GET",
+            "requestFormat": "NONE"
+          }
+        ],
+        "source_ref": "SRM-E1-CONTROLLED-DEVELOPMENT-RELEASE-20261020",
+        "completion_mode": "ADMITTED_ATTEMPT_CURRENT_SETTLEMENT",
+        "credential_mode": "SERVER_HEADERS",
+        "redirect_origins": [],
+        "base_policy_version": 1,
+        "maximum_response_bytes": 1048576
+      }
+    }
+  ],
+  "cumulativeAttemptLimit": 1000,
+  "maximumResponseBytes": 4194304,
+  "rollbackMaximumResponseBytes": 2097152,
+  "observedFinancialResponseBytes": 2815139,
+  "originalFileLimit": 30,
+  "conservativeOriginalClaimsAtReview": 15,
+  "cloudMutationPerformed": false,
+  "sourceHistoryDeleted": false,
+  "quotaIncrease": false,
+  "temporaryAdministrationMustBeRemovedBeforeCommit": true,
+  "operatorPolicySha256": "afb8de1ab75348e96cb92a5c58648f530396f8c8a959675858258f823c3222df"
+}
