@@ -1,3 +1,4 @@
+import {assertStyleConsumerAcceptance} from './xray-style-acceptance.mjs'
 import {readonlyMissReportSourceDigest,READONLY_MISS_REPORT_CONTRACT} from '@profitia/platform-readonly-miss-report'
 import {READY_REPORT_PROBE_STATEMENTS} from '../src/server/ready-report-read.ts'
 import test from 'node:test'
@@ -43,7 +44,9 @@ const beforeFreshPreparation=file=>freshPreparation?.applicationSourceDigests[fi
 const fullUi=JSON.parse(read('operation-integration.json')).fullUiParityAdoption
 const inputCorrective=JSON.parse(read('operation-integration.json')).pciSmartInputIntegrityContinuation
 const beforeFullUi=file=>inputCorrective?.applicationSourceDigests[file]||inputCorrective?.consumerSourceDigests[file]?execFileSync('git',['show',inputCorrective.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fullUi?.applicationSourceDigests[file]?execFileSync('git',['show',fullUi.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):hostUiDigests[file]?execFileSync('git',['show',hostReceipt.fullUiParityAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeFreshPreparation(file)
-const hostReceipt=JSON.parse(read('../sg-runtime/operation-integration.json'))
+const styleAcceptance=JSON.parse(read('operation-integration.json')).xrayStyleIsolationConsumerAcceptance
+const beforeStyle=file=>styleAcceptance?.applicationSourceDigests[file]||styleAcceptance?.consumerSourceDigests[file]?execFileSync('git',['show',styleAcceptance.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):read(file)
+const hostReceipt=JSON.parse(beforeStyle('../sg-runtime/operation-integration.json'))
 const hostUiDigests=Object.fromEntries(Object.entries(hostReceipt.fullUiParityAdoption?.applicationSourceDigests??{}).map(([file,digest])=>[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file)),digest]))
 const acceptedReceiverBytes=file=>{if(file==='../sg-runtime/operation-integration.json'&&hostReceipt.fullUiParityAdoption){const a=hostReceipt.fullUiParityAdoption,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);assert.equal(hash(bytes),a.previousReceiptDigest);const {fullUiParityAdoption,pciSmartInputCorrective,...preserved}=hostReceipt;assert.deepEqual(preserved,JSON.parse(bytes));return bytes}return read(file)}
 const beforeInventoryReuse=file=>inventoryReuse?.applicationSourceDigests[file]?execFileSync('git',['show',inventoryReuse.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeLocationCache(file)
@@ -377,6 +380,7 @@ export function assertPciInputIntegrity(receipt,readCurrent,readHistorical){
  return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,posix.relative('apps/srm',file))||Object.hasOwn(a.consumerSourceDigests,posix.relative('apps/srm',file))?readHistorical(a.previousReceiptSourceSha,file):readCurrent(file)}
 }
 export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
+ if(receipt.xrayStyleIsolationConsumerAcceptance){const n=assertStyleConsumerAcceptance(receipt,readCurrent,readHistorical);return assertCurrentPciIntegrity(n.prior,n.previousBytes,readHistorical)}
  if(Object.hasOwn(receipt,'freshPreparationRecovery')){
   const a=receipt.freshPreparationRecovery,bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
   assert.equal(a.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');assert.equal(a.scope,'FINITE_DATA_COMPANY_TRANSACTION_AND_CLOSED_PRESENTATION_ADMISSION')
@@ -946,4 +950,14 @@ test('FRESH preparation rejects changed authority, provenance, history and unacc
   const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
  }
  for(const file of ['apps/srm/src/server/financial-documents.ts','apps/srm/src/server/financial-revisions.ts','apps/srm/src/server/db.ts','apps/srm/src/server/supplier-native-work-store.ts','apps/srm/src/server/mgbi-archive.ts'])assert.throws(()=>assertCurrentPciIntegrity(receipt,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical))
+})
+
+
+test('style consumer acceptance preserves every history and rejects source, consumer and scope manipulation',()=>{
+ const r=JSON.parse(read('operation-integration.json')),a=r.xrayStyleIsolationConsumerAcceptance
+ const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
+ assertStyleConsumerAcceptance(r,current,historical)
+ for(const file of [...Object.keys(a.applicationSourceDigests).map(f=>'apps/srm/'+f),...Object.keys(a.consumerSourceDigests).map(f=>'apps/'+f.slice(3))])assert.throws(()=>assertStyleConsumerAcceptance(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
+ for(const mutate of [r=>delete r.xrayStyleIsolationConsumerAcceptance.applicationSourceDigests['scripts/xray-style-acceptance.mjs'],r=>r.xrayStyleIsolationConsumerAcceptance.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),r=>r.xrayStyleIsolationConsumerAcceptance.consumerSourceDigests['../sg-runtime/unapproved.ts']='0'.repeat(64),r=>r.xrayStyleIsolationConsumerAcceptance.previousReceiptSha256='0'.repeat(64),r=>r.xrayStyleIsolationConsumerAcceptance.consumerSourceSha='0'.repeat(40),r=>r.xrayStyleIsolationConsumerAcceptance.authorizationChanged=true,r=>r.freshPreparationRecovery.currentClerkE1RlsPreserved=false,r=>r.unapprovedReceipt={}]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertStyleConsumerAcceptance(x,current,historical))}
+ assert.throws(()=>assertStyleConsumerAcceptance(r,current,(sha,file)=>Buffer.concat([historical(sha,file),Buffer.from(' ')])))
 })
