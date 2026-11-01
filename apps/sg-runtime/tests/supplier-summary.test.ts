@@ -28,10 +28,10 @@ const call = (fetcher: typeof fetch, extra: Partial<Parameters<typeof fetchSuppl
 })
 test('the second host binds the installed public module and its declared producer source', () => {
   const manifest = JSON.parse(readFileSync(new URL('../operation-integration.json', import.meta.url), 'utf8'))
-  const receipt = manifest.supplierSummary, current = manifest.freshPerformanceRecovery.publicUi
+  const receipt = manifest.supplierSummary, current = (manifest.fullUiParityAdoption??manifest.freshPerformanceRecovery).publicUi
   const port = pathToFileURL(createRequire(import.meta.url).resolve('@profitia/srm-xray/shared-financial-summary'))
   const installed = JSON.parse(readFileSync(new URL('../package.json', port), 'utf8'))
-  assert.equal(receipt.version, '0.2.1'); assert.equal(current.version, '0.3.1')
+  assert.equal(receipt.version, '0.2.1'); assert.equal(current.version, manifest.fullUiParityAdoption?'0.4.0':'0.3.1')
   assert.equal(installed.version, current.version); assert.equal(installed.name, receipt.package)
   assert.equal(current.package, receipt.package)
   assert.equal(receipt.producer.projectKey, 'SRM')
