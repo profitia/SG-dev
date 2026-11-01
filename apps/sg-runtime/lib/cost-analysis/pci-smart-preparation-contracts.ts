@@ -11,7 +11,10 @@ export const PCI_PROXY_LOOKBACK = 'THREE_FULL_CALENDAR_MONTHS_V1' as const
 export const smartMethodSchema = z.object({
   componentId: z.string().min(1).max(128),
   valueKind: z.enum(['PRICE_LEVEL', 'PRICE_INDEX']).optional(),
-  periodBasis: z.enum(['POINT_IN_TIME', 'END_OF_PERIOD', 'PERIOD_AVERAGE']).optional(),
+  // Already-open Smart clients can send the select's empty placeholder. It is
+  // an unanswered declaration, never approval or an invented observation basis.
+  periodBasis: z.preprocess(value=>value===''?undefined:value,
+    z.enum(['POINT_IN_TIME', 'END_OF_PERIOD', 'PERIOD_AVERAGE']).optional()),
   reduction: z.enum(['AUTO', 'NATIVE_VALUE', 'END_OF_PERIOD', 'AVAILABLE_OBSERVATION_AVERAGE']).default('AUTO'),
   verified: z.boolean().default(false),
 }).strict()
