@@ -7921,7 +7921,7 @@
       "src/server/fresh-report.ts": "10e5ba45cdcfe90c73476c256c1e986b2044ef8489cb40f739f9dddd0e58a333",
       "src/server/supplier-api-composition.ts": "9f80a4fa0b1e6ba60b9bb7aa07e230cedf8c9ebd7a5f1e452ba06ef95a22c401",
       "src/server/supplier-native-runtime.ts": "72aaa3f01da33f64bf1215c4916bdf6dfba6d5dd77ca233280b8a983521ab530",
-      "src/server/root-atomic-claim-adoption.test.ts": "c65ba799de0001bf894ddd1ff2b08fcf1b129d102d40497a86b6b9490e480513",
+      "src/server/root-atomic-claim-adoption.test.ts": "1a3ca79e2a9ae19458da10e562d18c7f43f5e48430d691b8509c5dd8613e48df",
       "deployment/root-atomic-claim-targets.json": "d8397c1c71d32cb803fc0c301e15fd6dc054ad63137e32e9db583fcd42ea6ce1",
       "scripts/ready-report.integration.test.mjs": "0f37c87c17ccb385a3fbcc880f2ca977a8f49acb5c9c780cd026481124f3e9c7",
       "scripts/root-atomic-claim-release.mjs": "9ead687c65295c3dce3b2f8f7dca6765422fb7cdbc8c07d202d65d70712332a1",
@@ -7930,8 +7930,12 @@
       "src/server/supplier-location-geocoding-runtime.test.ts": "b08988cdaac02c0bba307964d2b2cd2cd40e08f0893c2236410befc874f8a20b",
       "package.json": "f0838f1b92f1229d46a15f3c0119137eefa44aeb7e681a2f4d8926a21e37bbbf",
       "package-lock.json": "1e8ed7d88547d9310b10a8467bbc18e65a450a5d252c6ff0518ad05be70bb1a5",
-      "src/server/full-ui-parity-adoption.test.ts": "77f872da58b613602a2bbf6cc5af38b7894f1810c10699341a2e0a437a0817bc",
-      "scripts/xray-workflow-contract.test.ts": "d91e3f7c597b39eec4ffe0b56863de0e78e79e7e96490a3a5f1f71e0a50e901d"
+      "src/server/full-ui-parity-adoption.test.ts": "439b5fcb85fd33f6d61af4e39ca13a00b1c2a6cdd01b261196d88d4f5a288273",
+      "scripts/xray-workflow-contract.test.ts": "d91e3f7c597b39eec4ffe0b56863de0e78e79e7e96490a3a5f1f71e0a50e901d",
+      "scripts/native-execution-adoption.test.mjs": "56caacd540af7a86e385032a096577097ee55835685b02877cec69920f86302e",
+      "scripts/rural-location-release.test.mjs": "d789a29050966415718a72c263a79fcfa2d0b69a7a360e0af9480985ba4a9c12",
+      "scripts/xray-performance-adoption.test.mjs": "6bcaedeba872e7aa1e4f99d2bd8c26d602526be444f1587b6a06139165e46db9",
+      "scripts/location-cache.integration.test.mjs": "46c527101d77f5c28f3007f878677c24f2448592237dfbf3ed7548748fd15278"
     },
     "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
     "targetEnvironment": "development",

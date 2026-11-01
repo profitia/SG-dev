@@ -96,7 +96,7 @@ test('Root claim adoption preserves every prior receipt and pins only the review
  assert.deepEqual(Object.keys(receipt).sort(),[...Object.keys(parsed),'rootAtomicClaimAdoption'].sort())
  const files=['src/server/company-classification.ts','src/server/fresh-report.ts','src/server/supplier-api-composition.ts',
   'src/server/supplier-native-runtime.ts','src/server/root-atomic-claim-adoption.test.ts','deployment/root-atomic-claim-targets.json',
-  'scripts/ready-report.integration.test.mjs','scripts/xray-workflow-contract.test.ts','scripts/root-atomic-claim-release.mjs','scripts/root-atomic-claim-release.test.mjs',
+  'scripts/ready-report.integration.test.mjs','scripts/xray-workflow-contract.test.ts','scripts/native-execution-adoption.test.mjs','scripts/rural-location-release.test.mjs','scripts/xray-performance-adoption.test.mjs','scripts/location-cache.integration.test.mjs','scripts/root-atomic-claim-release.mjs','scripts/root-atomic-claim-release.test.mjs',
   'src/server/peer-read-boundary.test.ts','src/server/supplier-location-geocoding-runtime.test.ts','src/server/full-ui-parity-adoption.test.ts','package.json','package-lock.json']
  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),files.sort())
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
