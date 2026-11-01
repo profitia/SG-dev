@@ -30,7 +30,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d]))})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d]))})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))
@@ -58,5 +58,13 @@ test('resulting-main continuation rejects every amended current source and prior
  for(const file of Object.keys(a.sourceDigests))assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
  for(const mutate of [r=>r.pciSmartResultingMainScopeCompatibility.previousReceiptSha256='0'.repeat(64),r=>r.pciSmartResultingMainScopeCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),r=>r.pciSmartResultingMainScopeCompatibility.productChanged=true,r=>r.unapprovedReceipt={}]){
   const changed=structuredClone(r);mutate(changed);assert.throws(()=>assertPciSmartIntegrity(changed,current,historical))
+ }
+})
+
+test('input corrective rejects altered current bytes, omitted bindings and rewritten history',()=>{
+ const r=receipt(),a=r.pciSmartInputCorrective;assert(a)
+ for(const file of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
+ for(const mutate of [r=>r.pciSmartInputCorrective.previousReceiptSha256='0'.repeat(64),r=>r.pciSmartInputCorrective.changedSourcePaths.pop(),r=>r.pciSmartInputCorrective.methodologyChanged=true,r=>r.fullUiParityAdoption.publicUi.version='changed']){
+  const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))
  }
 })

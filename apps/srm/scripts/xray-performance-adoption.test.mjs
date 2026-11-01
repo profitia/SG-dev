@@ -39,10 +39,11 @@ const locationCache=JSON.parse(read('operation-integration.json')).supplierLocat
 const beforeLocationCache=file=>locationCache?.applicationSourceDigests[file]?execFileSync('git',['show',locationCache.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRuntimePreparation(file)
 const inventoryReuse=JSON.parse(read('operation-integration.json')).freshInventoryReuseRecovery
 const fullUi=JSON.parse(read('operation-integration.json')).fullUiParityAdoption
-const beforeFullUi=file=>fullUi?.applicationSourceDigests[file]?execFileSync('git',['show',fullUi.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):hostUiDigests[file]?execFileSync('git',['show',hostReceipt.fullUiParityAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):acceptedReceiverBytes(file)
+const inputCorrective=JSON.parse(read('operation-integration.json')).pciSmartInputIntegrityContinuation
+const beforeFullUi=file=>inputCorrective?.applicationSourceDigests[file]||inputCorrective?.consumerSourceDigests[file]?execFileSync('git',['show',inputCorrective.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fullUi?.applicationSourceDigests[file]?execFileSync('git',['show',fullUi.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):hostUiDigests[file]?execFileSync('git',['show',hostReceipt.fullUiParityAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):acceptedReceiverBytes(file)
 const hostReceipt=JSON.parse(read('../sg-runtime/operation-integration.json'))
 const hostUiDigests=Object.fromEntries(Object.entries(hostReceipt.fullUiParityAdoption?.applicationSourceDigests??{}).map(([file,digest])=>[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file)),digest]))
-const acceptedReceiverBytes=file=>{if(file==='../sg-runtime/operation-integration.json'&&hostReceipt.fullUiParityAdoption){const a=hostReceipt.fullUiParityAdoption,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);assert.equal(hash(bytes),a.previousReceiptDigest);const {fullUiParityAdoption,...preserved}=hostReceipt;assert.deepEqual(preserved,JSON.parse(bytes));return bytes}return read(file)}
+const acceptedReceiverBytes=file=>{if(file==='../sg-runtime/operation-integration.json'&&hostReceipt.fullUiParityAdoption){const a=hostReceipt.fullUiParityAdoption,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);assert.equal(hash(bytes),a.previousReceiptDigest);const {fullUiParityAdoption,pciSmartInputCorrective,...preserved}=hostReceipt;assert.deepEqual(preserved,JSON.parse(bytes));return bytes}return read(file)}
 const beforeInventoryReuse=file=>inventoryReuse?.applicationSourceDigests[file]?execFileSync('git',['show',inventoryReuse.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeLocationCache(file)
 const payloadCapture=JSON.parse(read('operation-integration.json')).freshPayloadCaptureAdoption
 const beforePayloadCapture=file=>payloadCapture?.applicationSourceDigests[file]?execFileSync('git',['show',payloadCapture.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeInventoryReuse(file)
@@ -83,7 +84,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):rural?.applicationSourceDigests[file]?execFileSync('git',['show',rural.authorityBaseSha+':'+posix.normalize('apps/srm/'+file)]):peer?.applicationSourceDigests[file]?execFileSync('git',['show',peer.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):fresh.applicationSourceDigests[file]?execFileSync('git',['show',fresh.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)]):beforeRefinement(file)),digest,'historical '+file)
- for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests,...bql?.applicationSourceDigests,...bql?.consumerSourceDigests,...resultCapture?.applicationSourceDigests,...liveBql?.applicationSourceDigests,...liveBql?.consumerSourceDigests,...freshBoundary?.applicationSourceDigests,...dataCopy?.applicationSourceDigests,...documentPolicy?.applicationSourceDigests,...payloadCapture?.applicationSourceDigests,...inventoryReuse?.applicationSourceDigests,...locationCache?.applicationSourceDigests,...runtimePreparation?.applicationSourceDigests,...readonlyMiss?.applicationSourceDigests,...smartPreparation?.applicationSourceDigests,...smartPreparation?.consumerSourceDigests,...resultingMain?.applicationSourceDigests,...resultingMain?.consumerSourceDigests,...fullUi?.applicationSourceDigests,...hostUiDigests}))assert.equal(hash(acceptedReceiverBytes(file)),digest,file)
+ for(const[file,digest]of Object.entries({...xray.applicationSourceDigests,...rural?.applicationSourceDigests,...peer?.applicationSourceDigests,...fresh.applicationSourceDigests,...refinement?.applicationSourceDigests,...settled?.applicationSourceDigests,...clock?.applicationSourceDigests,...postfetch?.applicationSourceDigests,...preparedEvidence?.applicationSourceDigests,...msrEligibility?.applicationSourceDigests,...projectionCpu?.applicationSourceDigests,...persisted?.applicationSourceDigests,...pciOriginal?.consumerSourceDigests,...pciCurrent?.applicationSourceDigests,...documentReuse?.applicationSourceDigests,...recordBound?.applicationSourceDigests,...bql?.applicationSourceDigests,...bql?.consumerSourceDigests,...resultCapture?.applicationSourceDigests,...liveBql?.applicationSourceDigests,...liveBql?.consumerSourceDigests,...freshBoundary?.applicationSourceDigests,...dataCopy?.applicationSourceDigests,...documentPolicy?.applicationSourceDigests,...payloadCapture?.applicationSourceDigests,...inventoryReuse?.applicationSourceDigests,...locationCache?.applicationSourceDigests,...runtimePreparation?.applicationSourceDigests,...readonlyMiss?.applicationSourceDigests,...smartPreparation?.applicationSourceDigests,...smartPreparation?.consumerSourceDigests,...resultingMain?.applicationSourceDigests,...resultingMain?.consumerSourceDigests,...fullUi?.applicationSourceDigests,...hostUiDigests,...inputCorrective?.applicationSourceDigests,...Object.fromEntries(Object.entries(inputCorrective?.consumerSourceDigests??{}).filter(([f])=>f!=='../sg-runtime/operation-integration.json'))}))assert.equal(hash(acceptedReceiverBytes(file)),digest,file)
  const config=JSON.parse(read('deployment/ready-report-targets.json'))
  assert.equal(config.schemaDigest,hash(Buffer.concat([read('db/private-store/024-ready-report-history.sql'),read('db/private-store/025-ready-report-history.sql'),
   read('src/server/ready-report-shape.json'),Buffer.from(JSON.stringify(PREPARED_REPORT_RULES))])))
@@ -356,7 +357,25 @@ test('final PCI integration preserves both accepted histories and rejects unappr
 })
 
 
+const PCI_INPUT_INTEGRITY_FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
+export function assertPciInputIntegrity(receipt,readCurrent,readHistorical){
+ const a=receipt.pciSmartInputIntegrityContinuation
+ assert.equal(a.taskId,'SRM-PCI-SMART-LIVE-400-INTEGRITY-20261101');assert.equal(a.previousReceiptSourceSha,'4040eaf576c6934ede4f9040e52c5c3f9e8bd9fa')
+ const bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json'),prior=JSON.parse(bytes)
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ const {pciSmartInputIntegrityContinuation,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'all original SRM receipts and digests remain immutable')
+ assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),PCI_INPUT_INTEGRITY_FILES)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readCurrent('apps/srm/'+file)),digest,'exact SRM integrity source '+file)
+ const host=JSON.parse(readCurrent('apps/sg-runtime/operation-integration.json'))
+ assert.equal(host.pciSmartInputCorrective.taskId,'SG2-PCI-SMART-LIVE-400-CORRECTIVE-20261101')
+ assert.deepEqual(Object.keys(a.consumerSourceDigests).sort(),['../sg-runtime/operation-integration.json',...Object.keys(host.pciSmartInputCorrective.applicationSourceDigests).map(f=>'../sg-runtime/'+f)].sort())
+ for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(readCurrent(posix.normalize('apps/srm/'+file))),digest,'exact SG2 corrective consumer '+file)
+ for(const flag of ['runtimeChanged','authorizationChanged','sqlChanged','contractsChanged','businessDataChanged','runtimeDeploymentPerformed','paidAcquisitionsPerformed'])assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,posix.relative('apps/srm',file))||Object.hasOwn(a.consumerSourceDigests,posix.relative('apps/srm',file))?readHistorical(a.previousReceiptSourceSha,file):readCurrent(file)}
+}
 export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
+ if(receipt.pciSmartInputIntegrityContinuation){const n=assertPciInputIntegrity(receipt,readCurrent,readHistorical);return assertCurrentPciIntegrity(n.prior,n.previousBytes,readHistorical)}
  if(Object.hasOwn(receipt,'fullUiParityAdoption')){
   const a=receipt.fullUiParityAdoption,bytes=readHistorical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
   assert.equal(a.taskId,'SRM-XRAY-FULL-UI-PARITY-B-20261031');assert.equal(a.projectKey,'SRM');assert.equal(a.targetEnvironment,'development');assert.equal(a.publicUi.version,'0.4.0')
@@ -892,4 +911,12 @@ test('resulting-main integrity continuation refuses new source, history, scope a
  for(const mutate of [r=>r.pciSmartResultingMainIntegrityContinuation.previousReceiptSha256='0'.repeat(64),r=>r.pciSmartResultingMainIntegrityContinuation.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),r=>r.pciSmartResultingMainIntegrityContinuation.runtimeChanged=true,r=>r.unapprovedReceipt={}]){
   const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
  }
+})
+
+test('PCI input corrective rejects source manipulation and rewritten SRM history',()=>{
+ const receipt=JSON.parse(read('operation-integration.json')),current=f=>fs.readFileSync(new URL('../../../'+f,import.meta.url)),historical=(sha,f)=>execFileSync('git',['show',sha+':'+f])
+ assertCurrentPciIntegrity(receipt,current,historical)
+ const a=receipt.pciSmartInputIntegrityContinuation
+ for(const file of [...Object.keys(a.applicationSourceDigests).map(f=>'apps/srm/'+f),...Object.keys(a.consumerSourceDigests).map(f=>posix.normalize('apps/srm/'+f))])assert.throws(()=>assertCurrentPciIntegrity(receipt,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
+ for(const mutate of [r=>r.pciSmartInputIntegrityContinuation.previousReceiptSha256='0'.repeat(64),r=>r.pciSmartInputIntegrityContinuation.runtimeChanged=true,r=>r.fullUiParityAdoption.publicUi.version='tampered']){const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))}
 })

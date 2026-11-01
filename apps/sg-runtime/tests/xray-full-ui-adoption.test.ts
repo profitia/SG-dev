@@ -1,9 +1,11 @@
+import {assertPciInputCorrective} from './pci-smart-integrity.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import {execFileSync} from 'node:child_process';import {createHash} from 'node:crypto';
 const root=path.resolve(import.meta.dirname,'../../..'),app=path.join(root,'apps/sg-runtime');
 const hash=(v:Uint8Array)=>createHash('sha256').update(v).digest('hex');
 const read=(file:string)=>fs.readFileSync(path.join(root,file));
 const historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file],{cwd:root});
 function verify(receipt:any,current=read){
+ if(receipt.pciSmartInputCorrective){const n=assertPciInputCorrective(receipt,current,historical);return verify(n.prior,n.previousBytes)}
  const a=receipt.fullUiParityAdoption;
  assert.equal(a.projectKey,'SG2');assert.equal(a.taskId,'SG2-XRAY-FULL-UI-PARITY-B-20261031');assert.equal(a.status,'SOURCE_CANDIDATE');
  const before=historical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json');assert.equal(hash(before),a.previousReceiptDigest);
