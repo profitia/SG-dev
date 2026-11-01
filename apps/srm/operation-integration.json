@@ -7759,19 +7759,64 @@
     "runtimeDeploymentPerformed": false,
     "paidAcquisitionsPerformed": false
   },
-  "sentryHostIntegrityContinuation": {
-    "taskId": "SRM-SENTRY-HOST-INTEGRITY-20261101",
-    "scope": "TEST_ONLY_SG2_HOST_SOURCE_ACCEPTANCE",
+  "mgbiResponseEnvelopeRecovery": {
+    "taskId": "SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029",
+    "scope": "FINITE_MGBI_RESPONSE_AND_DIAGNOSTIC_CORRELATION",
+    "targetEnvironment": "development",
+    "platformVersion": "1.32.3",
     "previousReceiptSourceSha": "7b0ec69b9c5bbc504483c734b09b4f8f242dea8f",
-    "previousReceiptSha256": "aa729e88073a50e070f19ab31d60bfe153872fc0838dc3b67fd5164816608089",
+    "previousReceiptDigest": "aa729e88073a50e070f19ab31d60bfe153872fc0838dc3b67fd5164816608089",
+    "previousMaximumResponseBytes": 2097152,
+    "maximumResponseBytes": 4194304,
+    "observedFinancialResponseBytes": 2815139,
+    "currentClerkE1RlsPreserved": true,
+    "sourceHistoryAndCountersPreserved": true,
+    "paidQuotaAndOriginalBudgetUnchanged": true,
+    "oldResponseBoundArtifactPreserved": true,
+    "diagnosticIdsAreNotAuthority": true,
+    "separateCloudApprovalRequired": true,
+    "sdkOrCanonicalSecurityContractChanged": false,
+    "uiOrRoutingChanged": false,
+    "providerRetriesAdded": false,
+    "cloudMutationPerformed": false,
+    "runtimeDeploymentClaimed": false,
+    "performanceThresholdsClaimed": false,
+    "excludedEnvironmentChanges": false,
     "applicationSourceDigests": {
-      "scripts/native-execution-adoption.test.mjs": "1abbb28dca9118a7d54c6aefc9f8e57655c65d653f5fe57f3afaa2f3fdbe1fb4",
-      "scripts/rural-location-release.test.mjs": "3f9a294074941a8ec594ae4f848b77b1226547598d3b5bfa03b55ea1c2f4d513",
-      "scripts/xray-performance-adoption.test.mjs": "1d09eeefbc6d00663470e8498c2f83a166734ab8f6819e32d5853df6dec71586",
-      "scripts/xray-style-acceptance.mjs": "73871807a863d55b96c5d069014ee97caa5a1073fdb2c40b5f03e348435b810f",
-      "scripts/xray-workflow-contract.test.ts": "ea348babbd166d486383d910a4993d1aad52320a20b124d3ac98316ecb973d68",
-      "src/server/peer-read-boundary.test.ts": "e488b37ff3df3ccb746d981b2c8ca3f554b04afa1cdb7a40bd5e5f4e597231f6",
-      "src/server/supplier-location-geocoding-runtime.test.ts": "df53bde1e0e10b59006c614c82da848db935b0e1a711be3c2ca1df4ecaadcc5e"
+      "db/private-store/034-mgbi-record-envelope-versioned.sql": "afb8de1ab75348e96cb92a5c58648f530396f8c8a959675858258f823c3222df",
+      "deployment/mgbi-record-envelope-activation-2026-11-01.json": "043d818a1c77663676891a561153084318cea5b0652114a1f502591a84fa96fa",
+      "deployment/mgbi-record-response-bound-2026-11-01.json": "526fc2d081078c5b5144c2d56d124bb03b6bd752d5e98a3a334ad53f8984b558",
+      "scripts/corporate-source.integration.test.mjs": "01f70dbad9d0a2644effa8ce81a3766e92cdabadf93abc7edda2f9676bf5f1e9",
+      "scripts/mgbi-record-envelope-activation.test.mjs": "fe9e6215740632039365f25e606c55aa72ab8864c9fb01e75cb1a4d7aa68ba7c",
+      "scripts/native-execution-adoption.test.mjs": "a2190d5583e11934e5a2acc1c8135f371dee338986b045af07873280e6466faf",
+      "scripts/request-quota-adoption.test.mjs": "0b8c643d86ec6fa8cec2285fcd0abc1d2f522ab2b532fbf79d39ba9ebcca3947",
+      "scripts/rural-location-release.test.mjs": "c8793ab9d7733c89dbd863207bf92257dd235b72b6d52fe5a5ded72ba4d944e6",
+      "scripts/xray-performance-adoption.test.mjs": "2049bf4264f589b90f5ec0e030b9fa025f76770b142334ba397067e5a2e4f35c",
+      "scripts/xray-workflow-contract.test.ts": "caace9683838ab6713d49fc251e60027e11361d0260e664e90d9ae2453dcda8f",
+      "src/server/company-source-policy.test.ts": "4422b90336f64c9a92dd94dc86407ecc2925977edaa8532dbbeba042feba4413",
+      "src/server/full-ui-parity-adoption.test.ts": "37c9dcd6997772ca53e290df3f3bfd0fed6bf781411788c5b4358ee03aca8199",
+      "src/server/mgbi-response-bound.test.ts": "70944ad1950ae2af6b37f94886b54d6d5e165b2e82fb3feb02dd2cafe1f68571",
+      "src/server/mgbi-response-bound.ts": "cf59ba938d6f75817a16e1d683cb4e275a33cdc55022c867fb79538b2881da5a",
+      "src/server/peer-read-boundary.test.ts": "3a699c41cee263c227c12afecd2e14a88a819b3c9b5bb0c585b463a5b73b79b1",
+      "src/server/peer-xray.test.ts": "eb8643c20ffc827f818c7d10502555c42d8a7f7c86274b7d30ae7131804e5dc7",
+      "src/server/peer-xray.ts": "c5ef386337e31eaf06a891a860bb8755e82ea840b04f94bfdf20574ab409c40e",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "4893e0f5bc24be70412c8d007b4aedc149cf6120c115a1c3f2deb1e093ec8670"
+    }
+  },
+  "sentryHostIntegrityContinuation": {
+    "taskId": "SRM-SENTRY-HOST-INTEGRITY-R2-20261101",
+    "scope": "TEST_ONLY_SG2_HOST_SOURCE_ACCEPTANCE",
+    "previousReceiptSourceSha": "019ee20c039fb92b13857e27d2866f7daf13abc3",
+    "previousReceiptSha256": "61fb810d3f9f99720669afdb7a6e7ee5eb6bfe273798c950dfe0fd4451454615",
+    "applicationSourceDigests": {
+      "scripts/native-execution-adoption.test.mjs": "e0af029965cd217eb10256c8bbaf9af2c4c814e21151bf0586d42d473c83f17b",
+      "scripts/rural-location-release.test.mjs": "57350702ff0ba4018c89368f97e77cdf37d08ab2bff147106dd193f4126e2c6e",
+      "scripts/xray-performance-adoption.test.mjs": "524e9371670e105d5aad76cbfddc813a237ae1654d3e2a0e81273554f08582c8",
+      "scripts/xray-style-acceptance.mjs": "9e8590a74e6d70afaae20d8af9da3f49ed921562d090c28a06a9b01814951f22",
+      "scripts/xray-workflow-contract.test.ts": "e3be076ed4281c590696b815b1633b8a549043b5c455348589c8fbdbc24fc9e0",
+      "src/server/full-ui-parity-adoption.test.ts": "c9248e8573f047f6d65c38137c1be5cf1190f26e86ddbcb67a95ee61b2ee9ded",
+      "src/server/peer-read-boundary.test.ts": "5e3231034116da41906b848cd2c9f2cd719a05b7bb5c5a23a5e1707ff21534b4",
+      "src/server/supplier-location-geocoding-runtime.test.ts": "94e442ba0f0f119783243fb789a015325a8bec9aff3ce666312bbc951f56ba8a"
     },
     "consumerSourceSha": "a1503404d7723696706d7b8a176fb2a5d4cafaa7",
     "consumerSourceDigests": {
@@ -7811,6 +7856,8 @@
     "privatePinsChanged": false,
     "ciPolicyChanged": false,
     "runtimeDeploymentPerformed": false,
-    "paidAcquisitionsPerformed": false
+    "paidAcquisitionsPerformed": false,
+    "priorCandidateSourceSha": "405d0e0dbb72106349cd5597571c56e95f803296",
+    "priorCandidateReceiptSha256": "d47df9d957f4bd27bb0bace6815d2e65fbec895bc45a4e782ea51ba718db5327"
   }
 }
