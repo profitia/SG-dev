@@ -20,7 +20,7 @@ const readCurrent=()=>JSON.parse(fs.readFileSync(receiptPath))
 const preBqlBytes=url=>{
  const bql=readCurrent().bqlPciFirstSourceCompatibility,full=readCurrent().fullUiParityAdoption
  const relative=path.relative(path.resolve(appRoot,'../..'),fileURLToPath(url)).split(path.sep).join('/')
- return bql?.sourceDigests[relative]?execFileSync('git',['show',bql.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):readCurrent().pciSmartPreparationCompatibility?.sourceDigests[relative]?execFileSync('git',['show',readCurrent().pciSmartPreparationCompatibility.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):full?.applicationSourceDigests[relative.replace(/^apps\/sg-runtime\//,'')]?execFileSync('git',['show',full.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):fs.readFileSync(url)
+ return bql?.sourceDigests[relative]?execFileSync('git',['show',bql.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):readCurrent().pciSmartPreparationCompatibility?.sourceDigests[relative]?execFileSync('git',['show',readCurrent().pciSmartPreparationCompatibility.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):full?.applicationSourceDigests[relative.replace(/^apps\/sg-runtime\//,'')]?execFileSync('git',['show',full.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):readCurrent().xrayStyleIsolationContinuation?.sourceDigests[relative]?execFileSync('git',['show',readCurrent().xrayStyleIsolationContinuation.previousReceiptSourceSha+':'+relative],{cwd:appRoot}):fs.readFileSync(url)
 }
 const historicalReceipt=()=>JSON.parse(execFileSync('git',['show',readCurrent().pciDatePreparationSourceCompatibility.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot}))
 const historicalBytes=url=>{
