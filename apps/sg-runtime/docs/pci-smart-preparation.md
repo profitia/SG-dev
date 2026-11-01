@@ -15,3 +15,9 @@ Step 3 explains the recommendation, dates and available component histories. Per
 Only SDK token verification is reused inside one incoming PCI request. Current Clerk session/user, internal binding and E1 outcome checks remain fresh at every existing protected boundary, as required by the accepted identity contract. Pure preparation and mathematics perform no identity/provider/DB I/O. Synthetic counter/latency tests are explicitly separate from live Clerk/Macrobond measurements.
 
 Validation comprises domain/operation/security tests, deliberate integrity tampering, public-host browser tests in existing frontend CI and a loopback Dashboard→Finder→PCI browser exercise with real UI/BFF/Core and synthetic external services. Such fixtures do not prove live provider acceptance. No product DB writes, migration, SRM source/runtime/config/binding/deploy, Staging or Production change is part of this candidate. Real live UAT and exact-SHA release remain gated by canon activation and required CI.
+
+## Live corrective — optional observation meaning (2026-11-01)
+
+Clearing the observation-meaning selector represents an unanswered declaration, not an empty enum value. The Smart request builder explicitly projects the wire DTO and omits that empty optional field. It preserves the selected policy, verification state, component identity, purchase date and every other form value. Legacy journey/1.0.0 is unchanged.
+
+Malformed Smart input returns HTTP 400 with a bounded, closed diagnostic code and optional component ordinal; no received values, token, arbitrary property names or private payload are returned or logged. The host renders an actionable Polish correction, separately from business refusal (422), access loss (401/403), rate limit (429) and infrastructure unavailability. A missing source meaning reaches Smart Preparation and its existing verification/business rules; it is never silently approved.

@@ -34,7 +34,11 @@ export function pciSmartInput(name:string,components:readonly PciComponent[],pur
   const legacy=pciInput(name,components,purchase)
   const {referenceDate,economicPeriodApproved,...anchor}=legacy.purchase
   return {contractVersion:'sg2.price-change-index.smart/1.0.0',mode,locale,organisationId:legacy.organisationId,category:legacy.category,purchase:anchor,
-    declarations:components.map(c=>({componentId:c.id,...(c.valueKind?{valueKind:c.valueKind}:{}),...c.preparationMethod,reduction:c.preparationMethod?.reduction??'AUTO',verified:c.preparationMethod?.verified??false})),
+    // A cleared source-meaning select denotes an unanswered optional declaration.
+    // Project the wire contract explicitly: never spread the UI's empty sentinel.
+    declarations:components.map(c=>({componentId:c.id,...(c.valueKind?{valueKind:c.valueKind}:{}),
+      ...(c.preparationMethod?.periodBasis?{periodBasis:c.preparationMethod.periodBasis}:{}),
+      reduction:c.preparationMethod?.reduction??'AUTO',verified:c.preparationMethod?.verified??false})),
     ...(options.olderYear===null?{}:{olderYear:options.olderYear}),...(options.reference?{reference:options.reference}:{})}
 }
 export function pciMarketResult(response:Extract<import('../../lib/cost-analysis/pci-smart-preparation-contracts').SmartPciResponse,{status:'PROXY_MARKET_ONLY'}>):import('@profitia/sg2-price-change-index-ui').PciMarketIndexResult{

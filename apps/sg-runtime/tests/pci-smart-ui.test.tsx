@@ -23,3 +23,15 @@ test('smart payload omits legacy global methods and price anchor substitutions, 
  assert.equal(input.declarations[0].componentId,'stable');assert.equal(input.category.components[0].name,'User name');assert.equal(input.purchase.purchaseDate,'2026-10-22')
  assert(!('referenceDate' in input.purchase));assert(!('economicPeriodApproved' in input.purchase));assert(!('periodBasis' in input.purchase));assert(!input.reference)
 })
+
+test('400 input diagnostics are Polish and actionable, distinct from market-data outage; no arbitrary server details reflected',async()=>{
+ const {pciFailureMessage}=await import('../components/price-change-index/price-change-index-request')
+ const malformed={code:'PCI_INPUT_INVALID',issues:[{code:'SOURCE_METHOD_INVALID',componentIndex:1},{code:'PURCHASE_DATE_INVALID'}]}
+ const pl=pciFailureMessage(400,malformed,'pl');assert.match(pl,/Komponent 2/);assert.match(pl,/pozostaw je bez wyboru/);assert.match(pl,/prawidłową datę/);assert.doesNotMatch(pl,/notowań|chwilowo/)
+ assert.match(pciFailureMessage(400,malformed,'en'),/Component 2/)
+ assert.match(pciFailureMessage(503,{},'pl'),/chwilowo niedostępne/)
+ assert.match(pciFailureMessage(429,{},'pl'),/limit/)
+ for(const body of [null,{issues:'invalid'},{code:'PCI_INPUT_INVALID',issues:[{code:'TOKEN_SECRET',message:'PRIVATE_PAYLOAD_SENTINEL'},null,{code:'SOURCE_METHOD_INVALID',componentIndex:99999}]}]){
+  const message=pciFailureMessage(400,body,'pl');assert(!message.includes('PRIVATE_PAYLOAD_SENTINEL'));assert(!message.includes('99999'))
+ }
+})
