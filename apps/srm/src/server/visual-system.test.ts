@@ -33,9 +33,9 @@ test("empty periods do not manufacture a selection or an unavailable control", (
   assert.match(html, /Wybrany okres: nie ustalono/); assert.doesNotMatch(html, /aria-pressed="true"/);
 });
 test("host skin has full-width report, self-hosted Inter and single semantic palette without a global clipping workaround", () => {
-  const css = readFileSync("app/globals.css", "utf8");
+  const css = readFileSync("../../packages/srm-xray/src/report-layout.css", "utf8");
   assert.match(css, /\.report-page \{ width: 100%; max-width: none;/);
-  assert.match(css, /url\("\/fonts\/InterVariable.woff2"\)/);
+  assert.match(css, /url\("\.\.\/assets\/InterVariable.woff2"\)/);
   assert.match(css, /--srm-brand: #003366/); assert.match(css, /--srm-interaction: #005A9C/);
   assert.match(css, /font-variant-numeric: tabular-nums/);
   assert.doesNotMatch(css, /1680px|@import|fonts\.googleapis|body[^}]*overflow-x:\s*hidden/);

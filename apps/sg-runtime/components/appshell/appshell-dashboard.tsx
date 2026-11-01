@@ -1,7 +1,8 @@
 'use client'
 
-import React, {useEffect, useState} from 'react'
+import React, {useEffect, useState, useCallback} from 'react'
 import {usePathname, useRouter, useSearchParams} from 'next/navigation'
+import type {AssistantScreenContext} from './assistant-widget';
 import {PlatformAppShell} from './platform-appshell'
 import {XRayModuleHost} from './xray-module-host'
 import {isXrayPath,xrayPath} from '@/lib/appshell/xray-navigation'
@@ -19,6 +20,9 @@ export function AppShellDashboard(props: {
   const active = isAdpPath(pathname, props.locale)
   const benchmarkPath=`/${props.locale}/dashboard/benchmark-finder`
   const benchmarkActive=pathname===benchmarkPath||pathname===benchmarkPath+'/'
+  const [xrayAssistantTarget,setXrayAssistantTarget]=useState<HTMLElement|null>(null);
+  const [xrayAssistantContext,setXrayAssistantContext]=useState<AssistantScreenContext|null>(null);
+  const onXrayAssistantContext=useCallback((next:AssistantScreenContext|null)=>setXrayAssistantContext(previous=>JSON.stringify(previous)===JSON.stringify(next)?previous:next),[]);
   const [xrayOpened,setXrayOpened]=useState(xrayActive)
   useEffect(()=>{if(xrayActive)setXrayOpened(true)},[xrayActive])
   const [opened, setOpened] = useState(active)
@@ -26,13 +30,13 @@ export function AppShellDashboard(props: {
   useEffect(() => {if (active) setOpened(true)}, [active])
   useEffect(()=>{if(benchmarkActive)setBenchmarkOpened(true)},[benchmarkActive])
   const navigation = parseAdpNavigation(search.toString())
-  return <PlatformAppShell {...props} moduleActive={active||benchmarkActive||xrayActive}
+  return <PlatformAppShell {...props} assistantTarget={xrayActive?xrayAssistantTarget:null} assistantContext={xrayActive?xrayAssistantContext:null} moduleActive={active||benchmarkActive||xrayActive}
     onLaunchXray={()=>{setXrayOpened(true);router.push(xrayPath(props.locale))}}
     onLaunchBenchmark={()=>{setBenchmarkOpened(true);router.push(benchmarkPath)}}
     onLaunchAdp={() => {setOpened(true); router.push(adpPath(props.locale))}}
     moduleWorkspace={theme => <>
       <section hidden={!xrayActive} aria-label="X-Ray Supplier Intelligence" data-appshell-module="xray">
-        {xrayOpened&&<Sg2ModuleSession locale={props.locale}><XRayModuleHost locale={props.locale} theme={theme} active={xrayActive} onReturn={()=>router.push(dashboardPath(props.locale))}/></Sg2ModuleSession>}
+        {xrayOpened&&<Sg2ModuleSession locale={props.locale}><XRayModuleHost locale={props.locale} theme={theme} active={xrayActive} onAssistantTargetChange={setXrayAssistantTarget} onAssistantContextChange={onXrayAssistantContext} onReturn={()=>router.push(dashboardPath(props.locale))}/></Sg2ModuleSession>}
       </section>
       <section hidden={!benchmarkActive} aria-label="Benchmark Finder" data-appshell-module="benchmark-finder">
         {benchmarkOpened&&<Sg2ModuleSession locale={props.locale}><div className="as-benchmark-module">
