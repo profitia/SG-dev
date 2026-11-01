@@ -3,7 +3,29 @@ import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
+
+const SENTRY_HOST_FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
+export function assertSentryHostContinuation(receipt,current,historical){
+ const a=receipt.sentryHostIntegrityContinuation
+ assert.equal(a.taskId,'SRM-SENTRY-HOST-INTEGRITY-20261101')
+ assert.equal(a.scope,'TEST_ONLY_SG2_HOST_SOURCE_ACCEPTANCE')
+ assert.equal(a.previousReceiptSourceSha,'7b0ec69b9c5bbc504483c734b09b4f8f242dea8f')
+ const bytes=historical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json'),prior=JSON.parse(bytes)
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ const {sentryHostIntegrityContinuation,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every earlier SRM receipt and hash remains immutable')
+ assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),SENTRY_HOST_FILES)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(current('apps/srm/'+file)),digest,'exact SRM test-only Sentry continuation '+file)
+ assert.equal(a.consumerSourceSha,'a1503404d7723696706d7b8a176fb2a5d4cafaa7')
+ const hostBytes=historical(a.consumerSourceSha,'apps/sg-runtime/operation-integration.json'),host=JSON.parse(hostBytes)
+ const expected={'../sg-runtime/operation-integration.json':hash(hostBytes),...Object.fromEntries(Object.entries(host.sentryObservabilityCompatibility.sourceDigests).map(([file,digest])=>['../sg-runtime/'+file.slice(16),digest]))}
+ assert.deepEqual(a.consumerSourceDigests,expected,'exact immutable SG2 Sentry host closure')
+ for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(current('apps/'+file.slice(3))),digest,'exact SG2 Sentry host '+file)
+ for(const flag of ['runtimeChanged','monitoringAddedToSrm','authorizationChanged','financialEngineChanged','schemaChanged','sharedContractsChanged','privatePinsChanged','ciPolicyChanged','runtimeDeploymentPerformed','paidAcquisitionsPerformed'])assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,file.replace(/^apps\/srm\//,''))||Object.hasOwn(a.consumerSourceDigests,'../'+file.slice(5))?historical(a.previousReceiptSourceSha,file):current(file)}
+}
 export function assertStyleConsumerAcceptance(receipt,current,historical){
+ if(receipt.sentryHostIntegrityContinuation){const n=assertSentryHostContinuation(receipt,current,historical);return assertStyleConsumerAcceptance(n.prior,n.previousBytes,historical)}
  const a=receipt.xrayStyleIsolationConsumerAcceptance
  assert.equal(a.taskId,'SRM-XRAY-STYLE-CONSUMER-ACCEPTANCE-B-20261101-R17')
  assert.equal(a.previousReceiptSourceSha,'b965924a63fafb1a24b84ceb389dfd5e78648f57')
