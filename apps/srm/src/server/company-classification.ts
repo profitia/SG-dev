@@ -1,5 +1,6 @@
 import type {PoolClient} from 'pg'
 import {createDelegatedJobHost} from '@profitia/platform-contracts/private-operation-host'
+import {createRootAtomicClaimDeliveryHost,type CommittedRootClaim} from '@profitia/platform-root-atomic-claim'
 import {createClerkAccountStatusReader} from '@profitia/platform-contracts/identity-provider'
 import {OPERATION_CONTRACT,OperationDenied,operationPayloadDigest} from '@profitia/platform-contracts/operation-context'
 import {externalCallFailureEvidence} from '@profitia/platform-contracts/external-call'
@@ -34,18 +35,32 @@ export function createSrmCompanyClassifier(options:Readonly<{
  const {work,source,provider}=options
  if(work.privateAcquisition||work.reportAdmission||work.job.targetOperation!=='supplier.report.refresh'
   ||!options.apiKey?.trim()||provider.application.appId!=='srm-provider-source')return refuse()
- const dispatch=createDelegatedJobHost<PoolClient>({application:work.application,binding:work.binding,job:work.job,
+ const deliveryOptions={application:work.application,binding:work.binding,job:work.job,
   sourceDelivery:source.port,now:work.now,transactionTimeoutMs:work.transactionTimeoutMs,
   readExternalAccount:createClerkAccountStatusReader({client:work.clerk,...work.accountIdentity,now:work.now}),
-  ...createSrmNativePgDriver(work.pool,work.auditPool)})
- return Object.freeze({async classify(input:SupplierNativeWorkSelection,signal:AbortSignal):Promise<CompanyClassification>{
+  ...createSrmNativePgDriver(work.pool,work.auditPool)}
+ const dispatch=createDelegatedJobHost<PoolClient>(deliveryOptions)
+ const operation=(input:SupplierNativeWorkSelection)=>({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
+  operation:'job.execute' as const,organisationId:input.organisationId,resourceId:input.requestId,
+  payload:readSupplierRequest(input.command),request:null})
+ const deliverRootClaim=async(input:SupplierNativeWorkSelection,signal:AbortSignal,rootClaim:CommittedRootClaim):Promise<void>=>{
+  signal.throwIfAborted()
+  const result=await createRootAtomicClaimDeliveryHost<PoolClient>(deliveryOptions).deliver(operation(input),rootClaim)
+  signal.throwIfAborted()
+  if(result.value.status!=='CONFIRMED')throw new OperationDenied('DELIVERY_UNCERTAIN')
+ }
+ return Object.freeze({deliverRootClaim,async classify(input:SupplierNativeWorkSelection,signal:AbortSignal,rootClaim?:CommittedRootClaim|null):Promise<CompanyClassification>{
   const command=readSupplierRequest(input.command)
   signal.throwIfAborted()
-  const operation={contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
-   operation:'job.execute' as const,organisationId:input.organisationId,resourceId:input.requestId,payload:command,request:null}
-  let admission=(await dispatch.admit(operation)).value
-  if(admission.status==='READY')admission=(await dispatch.deliver!(operation,admission)).value
-  if(admission.status!=='CONFIRMED')throw new OperationDenied('DELIVERY_UNCERTAIN')
+  if(rootClaim!==undefined&&rootClaim!==null)await deliverRootClaim(input,signal,rootClaim)
+  else{
+   // A canonical replay has no new Root claim. Keep its original admission,
+   // lease and Source reconciliation path; a refused proof never falls back.
+   const selected=operation(input)
+   let admission=(await dispatch.admit(selected)).value
+   if(admission.status==='READY')admission=(await dispatch.deliver!(selected,admission)).value
+   if(admission.status!=='CONFIRMED')throw new OperationDenied('DELIVERY_UNCERTAIN')
+  }
   signal.throwIfAborted()
   const transport=createSrmProviderSourceTransport({...provider,provider:'CEIDG',providerOrigin:'https://dane.biznes.gov.pl',nip:command.nip,
    operationKey:operationPayloadDigest({version:'srm-company-classification-v1',requestId:input.requestId,nip:command.nip}),

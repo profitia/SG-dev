@@ -31,7 +31,7 @@ type SensitiveOptions=Parameters<typeof createSrmNativeSensitiveLookup>[0]
 type PrivateReadOptions=Parameters<typeof createSrmSensitiveOperationHost>[0]
 type PrivateFlow=Readonly<{request:RequestOptions;lookup:SensitiveOptions}>
 export type SupplierApiOptions=Readonly<{
- company:Readonly<{request:RequestOptions;lookup:CompanyOptions;read:CompanyReadOptions;classification?:Readonly<{apiKey:string;provider:Parameters<typeof createSrmCompanyClassifier>[0]['provider']}>;ready?:Readonly<{schemaDigest:string;secret:string}>;fresh?:true}>
+ company:Readonly<{request:RequestOptions;lookup:CompanyOptions;read:CompanyReadOptions;classification?:Readonly<{apiKey:string;provider:Parameters<typeof createSrmCompanyClassifier>[0]['provider']}>;ready?:Readonly<{schemaDigest:string;secret:string}>;fresh?:true;rootAtomicClaim?:Readonly<{schemaDigest:string}>}>
  companyKys:PrivateFlow;jdgKys:PrivateFlow;jdgRegistry:PrivateFlow;privateRead:PrivateReadOptions
  web?:Readonly<{company:Readonly<{request:RequestOptions;lookup:Parameters<typeof createSrmNativeWebLookup>[0]}>;jdg:Readonly<{request:RequestOptions;lookup:Parameters<typeof createSrmNativeWebLookup>[0]}>;read:WebReadOptions}>
  krs?:Readonly<{source:Omit<Parameters<typeof createSrmKrsSourceTransport>[0],'reference'|'operationKey'|'nip'|'headers'>;apiKey:string}>
@@ -126,7 +126,8 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
   return read(input,input.command.nip,entityType,section)
  }
  const fresh=options.company.fresh?createSrmFreshReportSearch(options.company,{
-  ...(classifier?{classify:(selection,signal)=>classifier.classify(selection,signal)}:{}),
+  ...(classifier?{classify:(selection,signal,rootClaim)=>classifier.classify(selection,signal,rootClaim),
+   deliverRootClaim:(selection,signal,rootClaim)=>classifier.deliverRootClaim(selection,signal,rootClaim)}:{}),
   company:selection=>company.run(selection),jdg:input=>sensitive(input,jdgRegistry,'JDG','jdg'),
  }):undefined
  return Object.freeze({
