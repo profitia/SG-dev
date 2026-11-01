@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash,randomUUID} from 'node:crypto'
 import {createRequire} from 'node:module'
-import {assertIsolatedTestConnection} from '../../../../apps/architecture-lab/src/operation-postgres-fixture.mjs'
+import {EventEmitter} from 'node:events'
+import {assertIsolatedTestConnection,trackPoolClose} from '../../../../apps/architecture-lab/src/operation-postgres-fixture.mjs'
 import {createCurrentFreshReportHost} from '../src/current-fresh-report.mjs'
 import {createCurrentHumanReadHost} from '@profitia/platform-contracts/current-human-read'
 import {createPrivateOperationHost} from '@profitia/platform-contracts/private-operation-host'
@@ -19,12 +20,22 @@ const hash=v=>createHash('sha256').update(v).digest('hex')
 const future=()=>new Date(Date.now()+3600000).toISOString()
 const denied=e=>typeof e?.reasonCode==='string'
 
+test('fixture cleanup awaits actual client end after the pool reports completion',async()=>{
+ const pool=new EventEmitter(),client=new EventEmitter()
+ pool.end=async()=>{}
+ const close=trackPoolClose(pool);pool.emit('connect',client)
+ let closed=false;const closing=close().then(()=>{closed=true})
+ await new Promise(resolve=>setImmediate(resolve))
+ assert.equal(closed,false,'Dropping the database here would race the live client')
+ client.emit('end');await closing;assert.equal(closed,true)
+})
+
 test('current FRESH composition: real ordinary-role SQL, rollback, revocation, audit and separate transactions',
  {skip:!process.env.OPERATION_FIXTURE_OWNER_URL},async t=>{
  const rootUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect()
  const database='fresh_report_'+randomUUID().replaceAll('-',''),url=new URL(rootUrl);url.pathname='/'+database
- let owner,pool,audit
+ let owner,pool,audit,closePool,closeAudit
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[database])).rowCount,0)
   await root.query(`CREATE DATABASE ${database}`)
@@ -71,6 +82,7 @@ test('current FRESH composition: real ordinary-role SQL, rollback, revocation, a
   })
   const runtime=new URL(url);runtime.username=ROLE;runtime.password='isolated_ci_only'
   pool=new pg.Pool({connectionString:runtime.toString(),max:4});audit=new pg.Pool({connectionString:runtime.toString(),max:2})
+  closePool=trackPoolClose(pool);closeAudit=trackPoolClose(audit)
   assert.deepEqual((await pool.query('SELECT rolsuper,rolbypassrls,rolinherit FROM pg_roles WHERE rolname=current_user')).rows[0],{rolsuper:false,rolbypassrls:false,rolinherit:false})
   const count=async phase=>Number((await owner.query('SELECT count(*) n FROM fresh_fixture.metadata WHERE phase=$1',[phase])).rows[0].n)
   const intents=async()=>Number((await owner.query('SELECT count(*) n FROM profitia_requests.intents')).rows[0].n)
@@ -275,7 +287,9 @@ test('current FRESH composition: real ordinary-role SQL, rollback, revocation, a
    await assert.rejects(f.run(),denied);assert.equal(await count('DISCLOSURE'),before)
   })
  }finally{
-  if(pool)await pool.end();if(audit)await audit.end();if(owner)await owner.end()
-  await root.query(`DROP DATABASE IF EXISTS ${database} WITH(FORCE)`);await root.end()
+  if(closePool)await closePool();if(closeAudit)await closeAudit();if(owner)await owner.end()
+  // A remaining backend is a fixture leak and must fail, rather than be killed
+  // after its owning subtest already reported success.
+  try{await root.query(`DROP DATABASE IF EXISTS ${database}`)}finally{await root.end()}
  }
 })
