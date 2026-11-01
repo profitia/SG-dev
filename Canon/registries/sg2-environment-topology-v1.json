@@ -229,7 +229,7 @@
             "serviceId": "srv-daclno3m8hqs73bb7rrg",
             "name": "sg2-staging-runtime",
             "autoDeploy": false,
-            "baselineDeployId": "dep-db0dhbm1egvs73f70kr0",
+            "baselineDeployId": "dep-dbi4fv7lot8c73auj9og",
             "baselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
             "url": "https://spendguru-porr-demo.onrender.com",
             "customDomain": "demo-sg-porr.spendguru.app"
@@ -303,7 +303,24 @@
         "sourceRevisionComposition": "MIXED_BY_SERVICE",
         "runtimeMutationPerformed": false,
         "evidence": "Canon/evidence/2026-10-25-sg2-environment-reconciliation.md"
-      }
+      },
+      "deploymentHistory": [
+        {
+          "recordedAt": "2026-11-01T20:49:17.110694+00:00",
+          "reason": "OWNER_AUTHORIZED_RENDER_MANAGED_REPLACEMENT_RECONCILIATION",
+          "taskId": "SG2-SENTRY-STAGING-REGISTRY-20261101",
+          "role": "runtime",
+          "serviceId": "srv-daclno3m8hqs73bb7rrg",
+          "previousBaselineDeployId": "dep-db0dhbm1egvs73f70kr0",
+          "previousBaselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+          "observedDeployId": "dep-dbi4fv7lot8c73auj9og",
+          "observedSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+          "providerTrigger": "deployed_by_render",
+          "sourceRevisionChanged": false,
+          "applicationDeploymentPerformed": false,
+          "evidence": "Canon/evidence/2026-11-01-sg2-sentry-staging-release.md"
+        }
+      ]
     },
     "production": {
       "status": "RESERVED",

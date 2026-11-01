@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW} from './controlled-package-ci.mjs'
+import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -888,4 +888,73 @@ test('FRESH fixture API admission rechecks complete file metadata before checkou
  const request=async endpoint=>{calls.push(endpoint);return{data:structuredClone(endpoint.includes('/files?')?files:p)}}
  const result=await resolveCandidateAdmission(context(),'843',p.head.sha,request)
  assert.equal(result.sha,p.head.sha);assert.deepEqual(result.admission.files,files);assert.equal(calls.length,3)
+})
+
+function rootAtomicClaimCandidate() {
+  const review=ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW,p=pr()
+  p.number=review.prNumber;p.head.ref=review.branch;p.head.sha=review.sourceSha;p.base.sha=sha
+  const files=Object.entries(review.blobs).map(([filename,blob])=>({filename,status:'added',sha:blob}))
+  p.changed_files=files.length
+  return {p,files}
+}
+test('atomic Root claim review is frozen and admits only the exact eleven additive producer blobs',()=>{
+  const review=ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW,{p,files}=rootAtomicClaimCandidate()
+  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,11)
+  assert.equal(review.prNumber,854);assert.equal(review.sourceSha,'3a494b5432555935168c060be5950589d550d276')
+  assert.equal(review.branch,'architecture/root-atomic-claim-producer-20261101')
+  assert(files.every(f=>f.status==='added' && (f.filename.startsWith('packages/platform-contracts/root-atomic-claim/')
+    || f.filename==='apps/architecture-lab/test/root-atomic-claim.test.mjs')))
+  assert(!files.some(f=>f.filename.includes('/current-fresh-report/')))
+  assertArchitectureFiles(p,files)
+  assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+})
+test('atomic Root claim review refuses another PR, source SHA or internal branch even with matching caller metadata',()=>{
+  for(const mutate of [p=>p.number++,p=>p.head.ref='architecture/another-candidate',p=>p.head.sha=other]){
+    const {p,files}=rootAtomicClaimCandidate();mutate(p)
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('atomic Root claim review preserves trusted main, owner, repository and target fences',()=>{
+  for(const mutate of [p=>p.user.login='attacker',p=>p.head.repo.full_name='profitia/fork',p=>p.base.repo.full_name='other/SG-dev',p=>p.base.ref='staging',p=>p.state='closed']){
+    const {p,files}=rootAtomicClaimCandidate();mutate(p)
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+  for(const change of [{ref:'refs/pull/854/merge'},{event:'pull_request_target'},{triggeringActor:'attacker'},{workflowRef:REPOSITORY+'/'+WORKFLOW+'@refs/heads/untrusted'}]){
+    const {p,files}=rootAtomicClaimCandidate()
+    rejection(()=>selectCandidate({...context(),...change},p,p.head.sha,{files}))
+  }
+})
+test('atomic Root claim review rejects omitted, extra, duplicate, modified, renamed and substituted blobs',()=>{
+  for(const mutate of [files=>files.pop(),files=>files.push({filename:'packages/platform-contracts/src/extra.mjs',status:'added',sha}),
+    files=>files[0]={...files[1]},files=>files[0].status='modified',files=>files[0].previous_filename='other.mjs',files=>files[0].sha=other]){
+    const {p,files}=rootAtomicClaimCandidate();mutate(files);p.changed_files=files.length
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('atomic Root claim admission cannot include old FRESH, SDK, product, workflow or registry mutations',()=>{
+  for(const filename of ['packages/platform-contracts/current-fresh-report/package.json','packages/platform-contracts/src/operation-context.mjs',
+    'apps/srm/operation-integration.json','apps/sg-runtime/package.json',WORKFLOW,'Canon/registries/profitia-projects-v1.json']){
+    const {p,files}=rootAtomicClaimCandidate();files[0]={filename,status:'modified',sha}
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('atomic Root claim API resolution binds the complete exact file list and rechecks candidate metadata',async()=>{
+  const {p,files}=rootAtomicClaimCandidate(),calls=[]
+  const request=async endpoint=>{calls.push(endpoint);return {data:structuredClone(endpoint.includes('/files?')?files:p)}}
+  const resolved=await resolveCandidateAdmission(context(),'854',p.head.sha,request)
+  assert.equal(resolved.sha,p.head.sha);assert.deepEqual(resolved.admission.files,files);assert.equal(calls.length,3)
+  let reads=0
+  const changing=async endpoint=>{
+    if(endpoint.includes('/files?'))return {data:structuredClone(files)}
+    const value=structuredClone(p);if(++reads===2)value.base.sha=other
+    return {data:value}
+  }
+  await assert.rejects(resolveCandidateAdmission(context(),'854',p.head.sha,changing),/CANDIDATE_CHANGED_DURING_RESOLUTION/)
+})
+
+test('atomic Root claim review rejects substitution at every pinned producer blob',()=>{
+ for(let i=0;i<11;i++)for(const field of ['sha','status','filename']){
+  const {p,files}=rootAtomicClaimCandidate();files[i][field]=field==='sha'?'f'.repeat(40):field==='status'?'modified':files[i].filename+'.extra';
+  rejection(()=>selectCandidate(context(),p,p.head.sha,{files}));
+ }
 })
