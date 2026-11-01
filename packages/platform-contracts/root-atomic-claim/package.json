@@ -1,0 +1,12 @@
+{
+  "name": "@profitia/platform-root-atomic-claim",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional committed Root dispatch claim on the unchanged canonical SDK",
+  "files": ["src", "migrations"],
+  "exports": {".": {"types": "./src/root-atomic-claim.d.mts", "import": "./src/root-atomic-claim.mjs", "require": "./src/root-atomic-claim.mjs"}},
+  "scripts": {"build": "node --check src/root-atomic-claim.mjs", "test": "node --test test/*.test.mjs"},
+  "peerDependencies": {"@profitia/platform-contracts": "1.32.3", "@profitia/platform-readonly-miss-report": "1.0.0"},
+  "devDependencies": {"@profitia/platform-contracts": "file:..", "@profitia/platform-readonly-miss-report": "file:../readonly-miss-report"}
+}
