@@ -21,7 +21,8 @@ interface DelegatedNativeWorkScope {
   readonly targetOperation:'supplier.report.refresh'|'supplier.private.refresh';readonly targetResourceId:string
 }
 type DelegatedPrivateScope=DelegatedPhaseScope|DelegatedNativeWorkScope
-const boundTransactions = new WeakMap<DatabasePool, { organizationId: string; client: PoolClient; delegated?: Readonly<DelegatedPrivateScope> }>();
+type CompanyStoreLease={active:boolean;inFlight:number};
+const boundTransactions = new WeakMap<DatabasePool, { organizationId: string; client: PoolClient; delegated?: Readonly<DelegatedPrivateScope>; companyStore?:CompanyStoreLease }>();
 
 /** Server-only capability for an already authorised, active transaction. */
 export function bindOrganizationTransaction(organizationId: string, client: PoolClient, serviceContext?: Readonly<OperationContext>): DatabasePool {
@@ -108,6 +109,39 @@ export function assertOrganizationId(value: string): void {
   }
 }
 
+/** One existing SRM_STORE_COMPANY action on its original native transaction.
+ * Full role/Work/organisation checks bound the entire action. Inner domain
+ * helpers retain row-level SQL admission and use the same exact client; they
+ * cannot open another transaction or retain this pool after the action ends.
+ * No account, ALLOW or SQL authority observation is cached. The native host
+ * still owns fresh entry/outcome Clerk, E1 verification, audit and COMMIT. */
+export async function withNativeCompanyStoreTransaction<T>(organizationId:string,
+  action:(pool:DatabasePool)=>Promise<T>,pool:DatabasePool):Promise<T>{
+  const original=boundTransactions.get(pool),native=original?.delegated;
+  if(!original||original.companyStore||original.organizationId!==organizationId
+    ||native?.kind!=='NATIVE_WORK'||native.unitId!=='SRM_STORE_COMPANY'||native.accessMode!=='WRITE'
+    ||native.targetOperation!=='supplier.report.refresh'||typeof action!=='function')
+    throw Error('Explicit active native company store transaction required');
+  return withOrganization(organizationId,async client=>{
+    if(client!==original.client)throw Error('SRM company store client mismatch');
+    const lease:CompanyStoreLease={active:true,inFlight:0};
+    const scoped:DatabasePool=Object.freeze({connect:async()=>{
+      if(!lease.active)throw Error('SRM company store transaction scope is closed');
+      return client;
+    }});
+    boundTransactions.set(scoped,{...original,companyStore:lease});
+    let value:T;
+    try{
+      value=await action(scoped);
+      if(lease.inFlight!==0)throw Error('SRM company store has unfinished domain actions');
+    }finally{lease.active=false;}
+    // Re-read the real role, native policy/scope, transaction and GUC after all
+    // domain work, before either the result or the host's outcome can escape.
+    await withOrganization(organizationId,async()=>undefined,pool);
+    return value;
+  },pool);
+}
+
 export async function withOrganization<T>(
   organizationId: string,
   action: (client: PoolClient) => Promise<T>,
@@ -117,6 +151,16 @@ export async function withOrganization<T>(
   assertOrganizationId(organizationId);
   const bound = boundTransactions.get(pool);
   if (bound && bound.organizationId !== organizationId) throw new Error("SRM bound transaction organization mismatch");
+  if(bound?.companyStore){
+    const lease=bound.companyStore;
+    if(!lease.active)throw Error('SRM company store transaction scope is closed');
+    lease.inFlight++;
+    try{
+      const value=await action(bound.client);
+      if(!lease.active)throw Error('SRM company store transaction scope is closed');
+      return value;
+    }finally{lease.inFlight--;}
+  }
   if (!bound && process.env.TARGET_ENVIRONMENT && organizationId !== productOrganizationId()) {
     throw new Error("SRM configured organization identity mismatch");
   }
