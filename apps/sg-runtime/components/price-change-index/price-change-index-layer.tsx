@@ -9,7 +9,7 @@ import type {SavedBenchmark} from '../../lib/benchmark/contracts'
 import {savedBenchmarkProfile} from '../../lib/benchmark/qualification'
 import {presentQualification} from '../../lib/benchmark/qualification-presentation'
 import type {SmartPciResponse} from '../../lib/cost-analysis/pci-smart-preparation-contracts'
-import {createPciRequester} from './price-change-index-request'
+import {createPciRequester,pciFailureMessage} from './price-change-index-request'
 import {emptyPurchase,seedPciComponent,pciStructureReady,pciSmartInput,pciMarketResult,pciResult,pciCategoryBody,type PciComponent} from './price-change-index-controller'
 import './price-change-index-layer.css'
 
@@ -53,6 +53,9 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
       if(!active.current||abort.signal.aborted||version!==generation.current)return
       if(response.status===401||response.status===403){onAccessLost();onClose();return}
       const body=await response.json() as SmartPciResponse
+      if(!response.ok&&body.status!=='REFUSED'){
+        setPreparation({status:'error',data:null,error:pciFailureMessage(response.status,body,locale)});return
+      }
       if(body.status!=='PREPARED'&&body.status!=='REFUSED')throw Error('PREPARATION_UNAVAILABLE')
       setPreparation({status:'ready',data:body.preparation,error:null});setCandidate(body.preparation.recommendedCandidateId)
     }catch(e){if(!abort.signal.aborted&&active.current&&version===generation.current)setPreparation({status:'error',data:null,error:e instanceof Error&&e.message==='SESSION_UNAVAILABLE'
@@ -72,7 +75,7 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
       const body=await response.json() as SmartPciResponse
       if(body.status==='REFUSED'){setPreparation({status:'ready',data:body.preparation,error:null});setStrict(false);setProxy(false);setCandidate(body.preparation.recommendedCandidateId)}
       if(!response.ok||(body.status!=='CALCULATED'&&body.status!=='PROXY_MARKET_ONLY')){
-        const message=body.status==='REFUSED'?body.issues.map(i=>i.message).join(' '):'Nie udało się obliczyć ceny. Sprawdź dane i dostępność źródła.'
+        const message=body.status==='REFUSED'?body.issues.map(i=>i.message).join(' '):pciFailureMessage(response.status,body,locale)
         throw Error(message)
       }
       if(active.current){setPreparation({status:'ready',data:body.preparation,error:null});if(body.status==='PROXY_MARKET_ONLY')setMarketResult(pciMarketResult(body));else setResult(pciResult(body,components));setStep('result')}

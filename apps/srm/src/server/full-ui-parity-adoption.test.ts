@@ -9,6 +9,15 @@ const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const read=(file:string)=>fs.readFileSync(path.join(root,file));
 const historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file],{cwd:root});
 function assertAdoption(receipt:any,current=read){
+ if(receipt.pciSmartInputIntegrityContinuation){
+  const a=receipt.pciSmartInputIntegrityContinuation,previous=historical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json')
+  assert.equal(a.taskId,'SRM-PCI-SMART-LIVE-400-INTEGRITY-20261101');assert.equal(a.previousReceiptSourceSha,'4040eaf576c6934ede4f9040e52c5c3f9e8bd9fa');assert.equal(hash(previous),a.previousReceiptSha256)
+  const {pciSmartInputIntegrityContinuation,...preserved}=receipt;assert.deepEqual(preserved,JSON.parse(previous.toString()))
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(current('apps/srm/'+file)),digest,file)
+  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(current(path.posix.normalize('apps/srm/'+file))),digest,file)
+  return assertAdoption(JSON.parse(previous.toString()),f=>Object.hasOwn(a.applicationSourceDigests,path.posix.relative('apps/srm',f))?historical(a.previousReceiptSourceSha,f):current(f))
+ }
+
  const a=receipt.fullUiParityAdoption;
  assert.equal(a.projectKey,'SRM');assert.equal(a.taskId,'SRM-XRAY-FULL-UI-PARITY-B-20261031');
  assert.equal(a.status,'SOURCE_CANDIDATE');assert.equal(a.targetEnvironment,'development');

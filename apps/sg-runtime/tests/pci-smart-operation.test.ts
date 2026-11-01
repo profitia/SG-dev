@@ -40,3 +40,47 @@ test('zero weight retains private identity validation but avoids unnecessary his
  const handler=createPriceChangeIndexHandler({isClerk:()=>true,now:()=> '2026-11-02T00:00:00Z',selections:async()=>Response.json({items:f.selected}),history:async r=>{const id=r.nextUrl.searchParams.get('seriesId')!;ids.push(id);return Response.json(f.history(id))}})
  const r=await handler(request(f.input));assert.equal(r.status,200);assert.deepEqual(ids,['s0','s1']);assert.equal((await r.json()).preparation.components.length,3)
 })
+
+test('real client builder: cleared optional source meaning prepares two components and preserves all edits on retry',async()=>{
+ const {pciSmartInput,seedPciComponent,emptyPurchase}=await import('../components/price-change-index/price-change-index-controller')
+ const f=fixture(),components=f.selected.map((b,i)=>({...seedPciComponent(b as any,i===0?'seed':'component-2'),name:i===0?'Copper':'Oil',weightPercent:i===0?90:10,
+  preparationMethod:{reduction:i===0?'END_OF_PERIOD' as const:'NATIVE_VALUE' as const,verified:i===0,periodBasis:i===0?'POINT_IN_TIME' as const:'' as any}}))
+ const purchase={...emptyPurchase(),amount:'1000',currency:'PLN',unit:'tona',taxBasis:'NET' as const,deliveryBasis:'EXW',purchaseDate:'2026-10-06'}
+ const original=structuredClone({components,purchase});let selections=0,histories=0
+ const handler=createPriceChangeIndexHandler({isClerk:()=>true,now:()=> '2026-11-02T00:00:00Z',selections:async()=>{selections++;return Response.json({items:f.selected})},history:async r=>{histories++;return Response.json(f.history(r.nextUrl.searchParams.get('seriesId')!))}})
+ for(const date of ['2026-10-06','2026-10-07','2026-10-06']){
+  const input=pciSmartInput('Category',components,{...purchase,purchaseDate:date},'pl','PREPARE',{olderYear:null})
+  const out=await handler(request(input));assert.equal(out.status,200,JSON.stringify(await out.clone().json()))
+  assert.equal((await out.json()).status,'PREPARED')
+  assert(!('periodBasis' in input.declarations[1]));assert.equal(input.purchase.purchaseDate,date)
+ }
+ assert.equal(selections,3);assert.equal(histories,6);assert.deepEqual({components,purchase},original)
+})
+
+test('malformed smart input returns bounded field codes before E1/provider reads; legacy shape stays compatible',async()=>{
+ const f=fixture();let reads=0
+ const handler=createPriceChangeIndexHandler({isClerk:()=>true,now:()=> '2026-11-02T00:00:00Z',selections:async()=>{reads++;return Response.json({items:f.selected})},history:async()=>{reads++;return Response.json({})}})
+ const malformed={...f.input,declarations:f.input.declarations.map((d,i)=>i?{...d,periodBasis:'INVALID_BASIS'}:d)}
+ const response=await handler(request(malformed));assert.equal(response.status,400)
+ assert.deepEqual(await response.json(),{error:'Nieprawidłowe dane formularza PCI.',code:'PCI_INPUT_INVALID',issues:[{code:'SOURCE_METHOD_INVALID',componentIndex:1}]})
+ const invalidDate=await handler(request({...f.input,purchase:{...f.input.purchase,purchaseDate:'2026-02-30'}}))
+ assert.deepEqual((await invalidDate.json()).issues,[{code:'PURCHASE_DATE_INVALID'}])
+ const secret='PRIVATE_PAYLOAD_SENTINEL'
+ const unsafe=await handler(request({...f.input,[secret]:secret,purchase:{...f.input.purchase,amount:secret}}));const text=await unsafe.text()
+ assert.equal(unsafe.status,400);assert(!text.includes(secret));assert(!text.includes(org));assert(!text.includes('received'))
+ const legacy=await handler(request({...f.input,contractVersion:'sg2.price-change-index.journey/1.0.0'}))
+ assert.equal(legacy.status,400);assert.deepEqual(await legacy.json(),{error:'Operation unavailable'});assert.equal(reads,0)
+})
+
+test('already-open Smart client empty placeholder is unanswered; arbitrary values and legacy inputs stay rejected',async()=>{
+ const f=fixture(),old={...f.input,declarations:f.input.declarations.map(d=>({...d,periodBasis:'',verified:false,reduction:'NATIVE_VALUE'}))}
+ const before=structuredClone(old);let reads=0
+ // No provider sampling metadata: accepting the wire placeholder must not
+ // approve a source meaning or manufacture a candidate/calculation.
+ f.selected.forEach(s=>s.displayName='Synthetic spot price USD/tonne')
+ const handler=createPriceChangeIndexHandler({isClerk:()=>true,now:()=> '2026-11-02T00:00:00Z',selections:async()=>Response.json({items:f.selected}),history:async r=>{reads++;return Response.json(f.history(r.nextUrl.searchParams.get('seriesId')!))}})
+ const response=await handler(request(old));assert.equal(response.status,200)
+ const result=await response.json();assert.equal(result.status,'PREPARED');assert.equal(result.preparation.state,'VERIFICATION_REQUIRED');assert.equal(result.preparation.candidates.length,0);assert.equal(reads,2)
+ assert.deepEqual(old,before)
+ for(const periodBasis of [null,' ','UNKNOWN'])assert(!pciSmartRequest.safeParse({...old,declarations:old.declarations.map(d=>({...d,periodBasis}))}).success)
+})
