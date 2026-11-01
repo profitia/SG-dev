@@ -4,6 +4,29 @@ import {createHash} from 'node:crypto'
 export const digest=bytes=>createHash('sha256').update(bytes).digest('hex')
 const PCI_INPUT_CORRECTIVE_FILES=["apps/sg-runtime/components/price-change-index/price-change-index-controller.ts","apps/sg-runtime/components/price-change-index/price-change-index-layer.tsx","apps/sg-runtime/components/price-change-index/price-change-index-request.ts","apps/sg-runtime/docs/pci-smart-preparation.md","apps/sg-runtime/lib/cost-analysis/pci-smart-preparation-contracts.ts","apps/sg-runtime/lib/cost-analysis/price-change-index-operation.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-browser.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/pci-smart-operation.test.ts","apps/sg-runtime/tests/pci-smart-preview.mjs","apps/sg-runtime/tests/pci-smart-ui.test.tsx","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-full-ui-adoption.test.ts","apps/sg-runtime/tests/xray-gateway.test.ts"]
 const XRAY_STYLE_FILES=["apps/sg-runtime/components/benchmark-finder/visual/magicpath/benchmark-finder.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-dropdown.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-shared.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-theme.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/spacing-bindings.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/srm-interaction-motion.css","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/sg-runtime/tests/xray-style-isolation.test.ts"]
+
+const SENTRY_OBSERVABILITY_FILES=["apps/sg-runtime/app/global-error.tsx","apps/sg-runtime/instrumentation.ts","apps/sg-runtime/lib/observability/config.ts","apps/sg-runtime/lib/observability/sanitize.ts","apps/sg-runtime/lib/observability/server.ts","apps/sg-runtime/next.config.mjs","apps/sg-runtime/package-lock.json","apps/sg-runtime/package.json","apps/sg-runtime/sentry.client.config.ts","apps/sg-runtime/sentry.edge.config.ts","apps/sg-runtime/sentry.server.config.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/sentry-observability.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+export function assertSentryObservabilityContinuation(receipt,current,historical){
+ const a=receipt.sentryObservabilityCompatibility
+ assert.equal(a.taskId,'SG2-SENTRY-INTEGRITY-20261101')
+ assert.equal(a.scope,'SCOPED_TECHNICAL_OBSERVABILITY_ONLY')
+ assert.equal(a.previousReceiptSourceSha,'7b0ec69b9c5bbc504483c734b09b4f8f242dea8f')
+ const bytes=historical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json'),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {sentryObservabilityCompatibility,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'all earlier accepted receipts and hashes remain immutable')
+ assert.deepEqual(a.changedSourcePaths,SENTRY_OBSERVABILITY_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),SENTRY_OBSERVABILITY_FILES)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([file,hash])=>[file.slice(16),hash])))
+ for(const[file,hash]of Object.entries(a.sourceDigests)){
+  assert.match(hash,/^[a-f0-9]{64}$/)
+  assert.equal(digest(current(file)),hash,'exact Sentry receiving source '+file)
+ }
+ for(const flag of ['authorizationChanged','financialEngineChanged','schemaChanged','existingTelemetryChanged','srmRuntimeChanged','privatePinsChanged','ciPolicyChanged','newBusinessProviderCalls','deploymentPerformed'])assert.equal(a[flag],false,flag)
+ const script=JSON.parse(current('apps/sg-runtime/package.json')).scripts['test:operation-context']
+ assert.match(script,/&& npm run test:observability$/)
+ return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
+}
 export function assertXrayStyleIsolationContinuation(receipt,current,historical){
  const a=receipt.xrayStyleIsolationContinuation
  assert.equal(a.taskId,'SG2-XRAY-STYLE-ACCEPTANCE-CLOSURE-B-20261101-R16')
@@ -26,6 +49,7 @@ export function assertXrayStyleIsolationContinuation(receipt,current,historical)
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciInputCorrective(receipt,current,historical){
+ if(receipt.sentryObservabilityCompatibility){const n=assertSentryObservabilityContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.xrayStyleIsolationContinuation){const n=assertXrayStyleIsolationContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  const a=receipt.pciSmartInputCorrective
  assert.equal(a.taskId,'SG2-PCI-SMART-LIVE-400-CORRECTIVE-20261101')

@@ -31,7 +31,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d]))})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d]))})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))
@@ -94,4 +94,22 @@ test('X-Ray style regression remains reachable from the unchanged normal CI entr
  assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?bytes:current(f),historical))
  const pkg='apps/sg-runtime/package.json'
  assert.throws(()=>assertPciSmartIntegrity(receipt(),f=>f===pkg?Buffer.from(current(f).toString().replace('tests/pci-smart-integrity.test.mjs','tests/unlisted.test.mjs')):current(f),historical))
+})
+
+
+test('Sentry receiving continuation rejects changed bytes, missing scope and rewritten earlier evidence',()=>{
+ const r=receipt(),a=r.sentryObservabilityCompatibility;assert(a)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const file of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
+ for(const mutate of [
+  r=>delete r.sentryObservabilityCompatibility.sourceDigests[r.sentryObservabilityCompatibility.changedSourcePaths[0]],
+  r=>r.sentryObservabilityCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),
+  r=>r.sentryObservabilityCompatibility.changedSourcePaths.pop(),
+  r=>r.sentryObservabilityCompatibility.previousReceiptSourceSha='0'.repeat(40),
+  r=>r.sentryObservabilityCompatibility.previousReceiptSha256='0'.repeat(64),
+  r=>r.sentryObservabilityCompatibility.authorizationChanged=true,
+  r=>r.sentryObservabilityCompatibility.existingTelemetryChanged=true,
+  r=>r.fullUiParityAdoption.publicUi.sourceDigest='0'.repeat(64),
+  r=>r.unapprovedReceipt={}
+ ]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
 })
