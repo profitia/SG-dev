@@ -212,6 +212,31 @@ function isPinnedFreshFixtureTeardownReview(files) {
       && file?.sha === FRESH_FIXTURE_TEARDOWN_REVIEW.blobs[file.filename] && file.status === 'modified')
 }
 
+// Proposed exact owner review only; no generic producer or workflow admission.
+export const ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW = Object.freeze({
+  prNumber: 854,
+  branch: "architecture/root-atomic-claim-producer-20261101",
+  sourceSha: "3a494b5432555935168c060be5950589d550d276",
+  blobs: Object.freeze({
+    "apps/architecture-lab/test/root-atomic-claim.test.mjs": "3b383f64c1162b27b16fc40985f2da0bba91b842",
+    "packages/platform-contracts/root-atomic-claim/README.md": "5cb096078acddc99e536fb8c078c89c3decfc960",
+    "packages/platform-contracts/root-atomic-claim/migrations/001-root-atomic-claim.sql": "5a00e639a60f451eb672229be698d4a1d7ff62b6",
+    "packages/platform-contracts/root-atomic-claim/package-lock.json": "3ab364b0d7390d7f8299296bddc2b6329e69d7ad",
+    "packages/platform-contracts/root-atomic-claim/package.json": "cc0fbd66fe0fc3da0b7399d0be28ad3b5463e772",
+    "packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.d.mts": "c93be86bb81072b5bdc452958be5f9c14e1b189a",
+    "packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.mjs": "91af440d729fc8889952c12af422f7719635630e",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-postgres.test.mjs": "eb1fd924623a02e74af322bb572aa2a43281f488",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-types.mts": "f132ee3e8132a75499e25a69afdb0690b9ffed9e",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-types.test.mjs": "796e06efb06f00c318a0a747d3408da000bf5c28",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "4ecf4f28a808c6da724a7475497a48c5b636cc6c"
+}),
+})
+function isPinnedRootAtomicClaimReview(files) {
+  return Array.isArray(files) && files.length === Object.keys(ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW.blobs[file.filename] && file.status === 'added')
+}
+
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -227,7 +252,8 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const payloadCaptureReview = isPinnedPayloadCaptureReview(files)
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
   const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
-  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview
+  const rootAtomicClaimReview = isPinnedRootAtomicClaimReview(files)
+  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -243,6 +269,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
       || freshReportReview && r.normalizedPath === 'apps/architecture-lab/current-fresh-report-acceptance.json'
       || payloadCaptureReview && r.normalizedPath.startsWith('apps/architecture-lab/')
       || readonlyMissReview && r.normalizedPath === 'apps/architecture-lab/test/readonly-miss-report.test.mjs'
+      || rootAtomicClaimReview && r.normalizedPath === 'apps/architecture-lab/test/root-atomic-claim.test.mjs'
       || freshFixtureReview && r.normalizedPath === 'apps/architecture-lab/src/operation-postgres-fixture.mjs'
       ? 'Architecture Platform' : 'Governance Source Layer'))) fail('ARCHITECTURE_ROUTING_REJECTED')
   if (!closedReview && ![...names].some(n => n.startsWith('packages/platform-contracts/'))) fail('ARCHITECTURE_PRODUCER_REQUIRED')
@@ -265,6 +292,9 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
     if (isPinnedFreshFixtureTeardownReview(files)
       && (pr.number !== FRESH_FIXTURE_TEARDOWN_REVIEW.prNumber || pr.head.ref !== FRESH_FIXTURE_TEARDOWN_REVIEW.branch
         || expectedSha !== FRESH_FIXTURE_TEARDOWN_REVIEW.sourceSha)) fail('FRESH_FIXTURE_TEARDOWN_REVIEW_IDENTITY_REJECTED')
+    if (isPinnedRootAtomicClaimReview(files)
+      && (pr.number !== ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW.prNumber || pr.head.ref !== ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW.branch
+        || expectedSha !== ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW.sourceSha)) fail('ROOT_ATOMIC_CLAIM_REVIEW_IDENTITY_REJECTED')
     if (isPinnedReadonlyMissReportReview(files)
       && (pr.number !== READONLY_MISS_REPORT_PRODUCER_REVIEW.prNumber || pr.head.ref !== READONLY_MISS_REPORT_PRODUCER_REVIEW.branch
         || expectedSha !== READONLY_MISS_REPORT_PRODUCER_REVIEW.sourceSha)) fail('READONLY_MISS_REVIEW_IDENTITY_REJECTED')
