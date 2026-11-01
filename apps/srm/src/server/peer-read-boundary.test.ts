@@ -147,7 +147,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   Object.assign(currentDigests,receipt.supplierLocationCacheAdoption?.applicationSourceDigests,receipt.runtimePreparationRecovery?.applicationSourceDigests);
   Object.assign(currentDigests,receipt.readonlyMissReportAdoption?.applicationSourceDigests,receipt.pciSmartPreparationIntegrityContinuation?.applicationSourceDigests,receipt.pciSmartPreparationIntegrityContinuation?.consumerSourceDigests,receipt.pciSmartResultingMainIntegrityContinuation?.applicationSourceDigests,receipt.pciSmartResultingMainIntegrityContinuation?.consumerSourceDigests,receipt.fullUiParityAdoption?.applicationSourceDigests);
   for(const[file,digest]of Object.entries(consumer.fullUiParityAdoption?.applicationSourceDigests??{}))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
-  Object.assign(currentDigests,receipt.pciSmartInputIntegrityContinuation?.applicationSourceDigests,receipt.pciSmartInputIntegrityContinuation?.consumerSourceDigests,receipt.freshPreparationRecovery?.applicationSourceDigests);
+  Object.assign(currentDigests,receipt.pciSmartInputIntegrityContinuation?.applicationSourceDigests,receipt.pciSmartInputIntegrityContinuation?.consumerSourceDigests,receipt.freshPreparationRecovery?.applicationSourceDigests,receipt.mgbiResponseEnvelopeRecovery?.applicationSourceDigests);
   for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

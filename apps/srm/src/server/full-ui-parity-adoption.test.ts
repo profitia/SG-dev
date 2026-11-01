@@ -9,6 +9,21 @@ const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const read=(file:string)=>fs.readFileSync(path.join(root,file));
 const historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file],{cwd:root});
 function assertAdoption(receipt:any,current=read){
+ if(Object.hasOwn(receipt,'mgbiResponseEnvelopeRecovery')){
+
+  const a=receipt.mgbiResponseEnvelopeRecovery,bytes=historical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json');
+  assert.equal(a.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');assert.equal(a.scope,'FINITE_MGBI_RESPONSE_AND_DIAGNOSTIC_CORRELATION');
+  assert.equal(a.targetEnvironment,'development');assert.equal(a.platformVersion,'1.32.3');
+  assert.equal(a.previousReceiptSourceSha,'b965924a63fafb1a24b84ceb389dfd5e78648f57');assert.equal(hash(bytes),a.previousReceiptDigest);
+  assert.equal(a.previousMaximumResponseBytes,2097152);assert.equal(a.maximumResponseBytes,4194304);assert.equal(a.observedFinancialResponseBytes,2815139);
+  const {mgbiResponseEnvelopeRecovery,...preserved}=receipt,prior=JSON.parse(bytes.toString());assert.deepEqual(preserved,prior,'Every accepted receipt remains immutable');
+  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),["deployment/mgbi-record-response-bound-2026-11-01.json","scripts/corporate-source.integration.test.mjs","scripts/native-execution-adoption.test.mjs","scripts/request-quota-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-workflow-contract.test.ts","src/server/company-source-policy.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/mgbi-response-bound.test.ts","src/server/mgbi-response-bound.ts","src/server/peer-read-boundary.test.ts","src/server/peer-xray.test.ts","src/server/peer-xray.ts","src/server/supplier-location-geocoding-runtime.test.ts"]);
+  for(const [file,digest]of Object.entries(a.applicationSourceDigests) as [string,string][])assert.equal(hash(current('apps/srm/'+file)),digest,'Current bounded-response source '+file);
+  for(const key of ['currentClerkE1RlsPreserved','sourceHistoryAndCountersPreserved','paidQuotaAndOriginalBudgetUnchanged','oldResponseBoundArtifactPreserved','diagnosticIdsAreNotAuthority','separateCloudApprovalRequired'])assert.equal(a[key],true,key);
+  for(const key of ['sdkOrCanonicalSecurityContractChanged','uiOrRoutingChanged','providerRetriesAdded','cloudMutationPerformed','runtimeDeploymentClaimed','performanceThresholdsClaimed','excludedEnvironmentChanges'])assert.equal(a[key],false,key);
+  assertAdoption(prior,file=>Object.hasOwn(a.applicationSourceDigests,path.posix.relative('apps/srm',file))?historical(a.previousReceiptSourceSha,file):current(file));return;
+ }
+
  if(Object.hasOwn(receipt,'freshPreparationRecovery')){
   const next=receipt.freshPreparationRecovery;
   assert.equal(next.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');
