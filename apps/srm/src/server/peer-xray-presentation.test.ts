@@ -7,10 +7,28 @@ import {presentationPeerRoutes,withSrmPresentationPeer} from './peer-xray-presen
 import {buildFinancialExcel} from './financial-excel';
 import {projectFinancialDocuments} from './financial-documents';
 import type {FinancialData} from '@profitia/srm-xray';
+import {NextRequest} from 'next/server';
+import {middleware} from '../../middleware';
 const env={PROFITIA_XRAY_PEER_VERSION:'1.0.0',TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',PROFITIA_XRAY_PEER_KEY_ID:'synthetic-test',PROFITIA_XRAY_PEER_KEY:Buffer.alloc(32,42).toString('base64url')};
 const config={...readSrmPeerXRayConfiguration(env)!,routes:presentationPeerRoutes(),internalOrigins:[]};
 const sign=createPeerOperationSigner(config);
 const request=(path:string,body:unknown)=>new Request(config.targetOrigin+path,{method:'POST',headers:{authorization:'Bearer synthetic-user','content-type':'application/json','idempotency-key':crypto.randomUUID()},body:JSON.stringify(body)});
+test('middleware and peer verification compose without turning transport admission into identity authority',async()=>{
+ const before=process.env.PROFITIA_AUTH_PROVIDER;
+ try{
+  process.env.PROFITIA_AUTH_PROVIDER='clerk';
+  let calls=0,status=200;
+  const backend=withSrmPresentationPeer(async r=>{assert(hasVerifiedPeerOperation(r));calls++;return Response.json(status===200?{enabled:true}:{error:'native refusal'},{status})},env);
+  const dispatch=async(r:Request)=>{const original=new NextRequest(r),gate=await middleware(original);return gate.headers.get('x-middleware-next')==='1'?backend(original):gate};
+  const make=()=>new Request(config.targetOrigin+PRESENTATION_ROUTES.registryStatus.path,{method:'GET',headers:{authorization:'Bearer synthetic-user','idempotency-key':crypto.randomUUID()}});
+  assert.equal((await dispatch(make())).status,403);assert.equal(calls,0,'unsigned request never enters the native backend');
+  const signed=await sign(make()),altered=new Headers(signed.headers);altered.set('authorization','Bearer tampered-user');
+  assert.equal((await dispatch(new Request(signed.url,{headers:altered}))).status,403);assert.equal(calls,0);
+  assert.equal((await dispatch(await sign(make()))).status,200);assert.equal(calls,1);
+  for(const denial of [401,403]){status=denial;const denied=await dispatch(await sign(make()));assert.equal(denied.status,denial);assert.deepEqual(await denied.json(),{error:denial===401?'XRAY_SESSION_REQUIRED':'XRAY_ACCESS_DENIED'})}
+  const seen=calls;assert.equal((await dispatch(request('/api/xray/presentation/unknown',{}))).status,401);assert.equal(calls,seen);
+ }finally{if(before===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=before}
+});
 test('presentation peer refuses unsigned, foreign commands and tampered body before native E1 is entered',async()=>{
  let calls=0;const handler=withSrmPresentationPeer(async()=>{calls++;return Response.json({candidates:[],coverage:'PROGRESSIVE'})},env),path=PRESENTATION_ROUTES.registrySearch.path;
  assert.equal((await handler(request(path,{query:'Fixture'}))).status,403);
