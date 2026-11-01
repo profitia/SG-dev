@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash,randomUUID} from 'node:crypto'
 import {createRequire} from 'node:module'
-import {assertIsolatedTestConnection} from '../../../../apps/architecture-lab/src/operation-postgres-fixture.mjs'
+import {assertIsolatedTestConnection,trackPoolClose} from '../../../../apps/architecture-lab/src/operation-postgres-fixture.mjs'
 import {createReadonlyMissReportHost} from '../src/readonly-miss-report.mjs'
 import {createCurrentFreshReportHost} from '@profitia/platform-current-fresh-report'
 import {createCurrentHumanReadHost} from '@profitia/platform-contracts/current-human-read'
@@ -25,7 +25,7 @@ test('current FRESH composition: real ordinary-role SQL, rollback, revocation, a
  const rootUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect()
  const database='fresh_report_'+randomUUID().replaceAll('-',''),url=new URL(rootUrl);url.pathname='/'+database
- let owner,pool,audit
+ let owner,pool,audit,closePool,closeAudit
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[database])).rowCount,0)
   await root.query(`CREATE DATABASE ${database}`)
@@ -76,6 +76,7 @@ test('current FRESH composition: real ordinary-role SQL, rollback, revocation, a
   })
   const runtime=new URL(url);runtime.username=ROLE;runtime.password='isolated_ci_only'
   pool=new pg.Pool({connectionString:runtime.toString(),max:4});audit=new pg.Pool({connectionString:runtime.toString(),max:2})
+  closePool=trackPoolClose(pool);closeAudit=trackPoolClose(audit)
   assert.deepEqual((await pool.query('SELECT rolsuper,rolbypassrls,rolinherit FROM pg_roles WHERE rolname=current_user')).rows[0],{rolsuper:false,rolbypassrls:false,rolinherit:false})
   const count=async phase=>Number((await owner.query('SELECT count(*) n FROM fresh_fixture.metadata WHERE phase=$1',[phase])).rows[0].n)
   const intents=async()=>Number((await owner.query('SELECT count(*) n FROM profitia_requests.intents')).rows[0].n)
@@ -410,7 +411,7 @@ test('current FRESH composition: real ordinary-role SQL, rollback, revocation, a
    await assert.rejects(f.run(),denied);assert.equal(await count('DISCLOSURE'),before)
   })
  }finally{
-  if(pool)await pool.end();if(audit)await audit.end();if(owner)await owner.end()
-  await root.query(`DROP DATABASE IF EXISTS ${database} WITH(FORCE)`);await root.end()
+  if(closePool)await closePool();if(closeAudit)await closeAudit();if(owner)await owner.end()
+  try{await root.query(`DROP DATABASE IF EXISTS ${database}`)}finally{await root.end()}
  }
 })

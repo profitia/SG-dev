@@ -5,6 +5,15 @@ import { createTestIdentityIssuer } from './operation-test-authority.mjs'
 export const TEST_ORGANISATIONS = Object.freeze({ a: '11111111-1111-4111-8111-111111111111', b: '22222222-2222-4222-8222-222222222222' })
 export const TEST_USERS = Object.freeze({ a: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', b: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', c: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' })
 
+// pg-pool removes idle clients before their asynchronous Client.end callback.
+// pool.end() alone therefore does not prove every backend/socket has ended.
+// Track real fixture client lifetimes without suppressing connection errors.
+export function trackPoolClose(pool) {
+  const clientEnds = []
+  pool.on('connect', client => clientEnds.push(new Promise(resolve => client.once('end', resolve))))
+  return async () => { await pool.end(); await Promise.all(clientEnds) }
+}
+
 export function assertIsolatedTestConnection(value, database, role) {
   const url = new URL(value)
   if (!['postgres:', 'postgresql:'].includes(url.protocol) || !['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) || !['sg2_operation_test', 'srm_app'].includes(database) || decodeURIComponent(url.pathname.slice(1)) !== database || decodeURIComponent(url.username) !== role || !/^(architecture_test_owner|sg2_operation_runtime|sg2_operation_reader|srm_app_runtime)$/.test(role)) throw Error('Only the explicit disposable loopback operation-test database and role are allowed')
