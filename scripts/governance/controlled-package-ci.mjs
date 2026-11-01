@@ -199,7 +199,7 @@ function isPinnedReadonlyMissReportReview(files) {
 export const FRESH_FIXTURE_TEARDOWN_REVIEW = Object.freeze({
   prNumber: 843,
   branch: "architecture/current-fresh-report-fixture-teardown-20261031",
-  sourceSha: "6bb7ebec1c1795b452eb37e8fb8d8532b7415e64",
+  sourceSha: "a709995993176d79ab8bdf7874f6c14e1ee0028d",
   blobs: Object.freeze({
     "apps/architecture-lab/src/operation-postgres-fixture.mjs": "2c830f159f30e4a84bbf19d4649adc2fdaf57bb6",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report-postgres.test.mjs": "e606950c4ca5f9b77543b236b6192884ef424b01",
