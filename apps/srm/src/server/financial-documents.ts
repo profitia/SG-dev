@@ -107,7 +107,9 @@ export function projectFinancialDocuments(records: unknown[]): FinancialSourceDo
       schemaSystemCode: text(normalized.get("Naglowek.KodSprawozdania.@kodSystemowy")), currency, scale, unitBasis, correction: typeof document.is_correction === "boolean" ? document.is_correction : null, filingDate: date(document.filing_date),
       checksum: createHash("sha256").update(JSON.stringify(raw)).digest("hex"), mappingVersion: FINANCIAL_DOCUMENT_MAPPING_VERSION,
       validation: availability === "XML_SUPPORTED" && from && to && from <= to && currency && scale && rows.size ? "VALID" as const : "REVIEW" as const,
-      columns, rows: [...rows.values()].sort((a,b) => financialPathCollator.compare(a.sourcePath.replaceAll(">", "."), b.sourcePath.replaceAll(">", "."))) }];
+      // Map keys already hold the exact normalized source paths. Sorting them
+      // avoids normalizing both paths again for every comparison.
+      columns, rows: [...rows.entries()].sort(([a],[b]) => financialPathCollator.compare(a,b)).map(([,row]) => row) }];
   });
 
  })

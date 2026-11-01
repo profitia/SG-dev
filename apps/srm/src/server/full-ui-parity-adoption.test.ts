@@ -9,6 +9,19 @@ const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const read=(file:string)=>fs.readFileSync(path.join(root,file));
 const historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file],{cwd:root});
 function assertAdoption(receipt:any,current=read){
+ if(Object.hasOwn(receipt,'freshPreparationRecovery')){
+  const next=receipt.freshPreparationRecovery;
+  assert.equal(next.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');
+  assert.equal(next.previousReceiptSourceSha,'4040eaf576c6934ede4f9040e52c5c3f9e8bd9fa');
+  assert.equal(next.targetEnvironment,'development');assert.equal(next.acceptedFullUiSourcesUnchanged,true);
+  assert.equal(next.currentClerkE1RlsPreserved,true);assert.equal(next.closedPresentationAdmissionOnly,true);
+  const bytes=historical(next.previousReceiptSourceSha,'apps/srm/operation-integration.json');
+  assert.equal(hash(bytes),next.previousReceiptDigest);
+  const {freshPreparationRecovery,...preserved}=receipt,prior=JSON.parse(bytes.toString());
+  assert.deepEqual(preserved,prior,'the accepted 834 receipt and all preceding history remain immutable');
+  for(const [file,digest] of Object.entries(next.applicationSourceDigests))assert.equal(hash(current('apps/srm/'+file)),digest,file);
+  return assertAdoption(prior,file=>Object.hasOwn(next.applicationSourceDigests,path.posix.relative('apps/srm',file))?historical(next.previousReceiptSourceSha,file):current(file));
+ }
  const a=receipt.fullUiParityAdoption;
  assert.equal(a.projectKey,'SRM');assert.equal(a.taskId,'SRM-XRAY-FULL-UI-PARITY-B-20261031');
  assert.equal(a.status,'SOURCE_CANDIDATE');assert.equal(a.targetEnvironment,'development');
@@ -43,5 +56,8 @@ test('full UI adoption rejects receipt rewriting, public UI drift and financial 
  }
  for(const file of ['packages/srm-xray/src/full-report.tsx','apps/srm/src/server/financial-excel.ts']){
   assert.throws(()=>assertAdoption(receipt,p=>p===file?Buffer.concat([read(p),Buffer.from('\n/* drift */')]):read(p)));
+ }
+ for(const mutate of [(r:any)=>{r.freshPreparationRecovery.previousReceiptSourceSha='UNACCEPTED'},(r:any)=>{r.freshPreparationRecovery.currentClerkE1RlsPreserved=false},(r:any)=>{r.freshPreparationRecovery.acceptedFullUiSourcesUnchanged=false}]){
+  const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertAdoption(changed));
  }
 });
