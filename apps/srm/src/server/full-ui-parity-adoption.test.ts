@@ -1,3 +1,4 @@
+import {assertStyleConsumerAcceptance} from '../../scripts/xray-style-acceptance.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,6 +10,7 @@ const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const read=(file:string)=>fs.readFileSync(path.join(root,file));
 const historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file],{cwd:root});
 function assertAdoption(receipt:any,current=read){
+ if(receipt.xrayStyleIsolationConsumerAcceptance){const n=assertStyleConsumerAcceptance(receipt,current,historical);return assertAdoption(n.prior,n.previousBytes)}
  if(Object.hasOwn(receipt,'freshPreparationRecovery')){
   const next=receipt.freshPreparationRecovery;
   assert.equal(next.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');
