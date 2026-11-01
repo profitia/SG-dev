@@ -4,7 +4,9 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { execFileSync } from 'node:child_process'
 
+import { resolveBaselinePaths, validateRegistry } from '../architecture-classify.mjs'
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
 import { compareProviderSnapshot, loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
 import { runGovernancePreflight } from './governance-preflight.mjs'
@@ -12,6 +14,65 @@ import { resolveHistoricalProjectProfile, resolveProjectProfile } from './projec
 import { resolveProjectRouting, validateProjectBoundaryPolicy } from './routing-engine.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+const insightsReference = 'b965924a63fafb1a24b84ceb389dfd5e78648f57'
+const insightsRegistryPath = 'Canon/registries/current-architecture-baseline-v1.json'
+const insightsTargets = ['apps/insights-runtime/src/index.ts', 'packages/insights-contracts/src/index.ts', '.github/workflows/insights-ci.yml']
+const insightsIds = ['INSIGHTS-BASE-001', 'INSIGHTS-BASE-002', 'INSIGHTS-BASE-003']
+const readInsightsRegistry = () => JSON.parse(fs.readFileSync(path.join(repositoryRoot, insightsRegistryPath), 'utf8'))
+
+test('Insights G1 routes all approved producer surfaces only to SG2', () => {
+  const sg2 = resolveProjectProfile('SG2', repositoryRoot)
+  const result = resolveProjectRouting({ profile: sg2, targets: insightsTargets, repositoryRoot })
+  assert.equal(result.ok, true, result.error)
+  assert.deepEqual(result.results.map((entry) => entry.matchedSurfaceId), insightsIds)
+  assert.ok(result.results.every((entry) => entry.currentOwner === 'Insights Domain'
+    && entry.baselineClassification === 'ALIGNED' && entry.projectBoundaryStatus === 'ALLOWED'))
+  for (const project of ['ARCHITECTURE', 'SRM']) {
+    const denied = resolveProjectRouting({ profile: resolveProjectProfile(project, repositoryRoot), targets: insightsTargets, repositoryRoot })
+    assert.equal(denied.ok, false)
+    assert.ok(denied.results.every((entry) => entry.projectBoundaryStatus === 'DENIED'))
+  }
+  const registry = readInsightsRegistry()
+  const entries = insightsIds.map((id) => registry.surfaces.find((entry) => entry.id === id))
+  assert.deepEqual(entries.map((entry) => entry.pathPatterns), [['apps/insights-runtime/**'], ['packages/insights-contracts/**'], ['.github/workflows/insights-ci.yml']])
+  for (const entry of entries) {
+    assert.deepEqual(entry.allowedProjectKeys, ['SG2'])
+    assert.equal(entry.classificationReferenceSha, insightsReference)
+  }
+})
+
+test('Insights G1 rejects neighbouring scopes, traversal and equal-specificity conflicts', (t) => {
+  const profile = resolveProjectProfile('SG2', repositoryRoot)
+  for (const target of ['apps/insights-runtime-copy/index.ts', 'packages/insights-contract/index.ts', '.github/workflows/insights-deploy.yml', 'apps/insights-runtime/../../srm/src/server.ts']) {
+    const result = resolveProjectRouting({ profile, targets: [target], repositoryRoot })
+    assert.equal(result.ok, false, target)
+  }
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'insights-conflict-'))
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }))
+  const registry = readInsightsRegistry()
+  registry.surfaces.push({ ...structuredClone(registry.surfaces.find((entry) => entry.id === insightsIds[0])), id: 'INSIGHTS-CONFLICT-FIXTURE', currentOwner: 'Conflicting test owner' })
+  const destination = path.join(temporaryRoot, insightsRegistryPath)
+  fs.mkdirSync(path.dirname(destination), { recursive: true })
+  fs.writeFileSync(destination, JSON.stringify(registry))
+  assert.equal(resolveProjectRouting({ profile, targets: [insightsTargets[0]], repositoryRoot: temporaryRoot }).ok, false)
+})
+
+test('Insights G1 preserves pre-onboarding owner rows, frozen metadata and all source routing', () => {
+  // Immutable real main checkpoint, not a reconstructed baseline. Full Git
+  // history is required by governance CI and the existing onboarding tests.
+  const git = (args) => execFileSync('git', args, { cwd: repositoryRoot, encoding: 'utf8' })
+  const original = JSON.parse(git(['show', `${insightsReference}:${insightsRegistryPath}`]))
+  const current = readInsightsRegistry()
+  assert.equal(validateRegistry(current).valid, true)
+  assert.equal(validateProjectBoundaryPolicy(current, { required: true }).valid, true)
+  for (const old of original.surfaces) assert.deepEqual(current.surfaces.find((entry) => entry.id === old.id), old)
+  for (const key of Object.keys(original).filter((key) => key !== 'surfaces')) assert.deepEqual(current[key], original[key])
+  assert.ok(resolveBaselinePaths({ registry: original, inputPaths: insightsTargets, repoRoot: repositoryRoot }).every((entry) => entry.resolutionStatus === 'NO_MATCH'))
+  const tracked = git(['ls-tree', '-r', '--name-only', insightsReference]).trim().split('\n')
+  assert.equal(tracked.length, 3652)
+  assert.deepEqual(resolveBaselinePaths({ registry: current, inputPaths: tracked, repoRoot: repositoryRoot }), resolveBaselinePaths({ registry: original, inputPaths: tracked, repoRoot: repositoryRoot }))
+})
 
 test('repository governance manifest is valid and has one active execution canon', () => {
   const result = validateGovernanceManifest(repositoryRoot)
