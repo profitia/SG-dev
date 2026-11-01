@@ -846,7 +846,7 @@ function freshTeardownCandidate() {
 test('FRESH fixture teardown admits only the exact three modified test/support blobs',()=>{
  const review=FRESH_FIXTURE_TEARDOWN_REVIEW,{p,files}=freshTeardownCandidate()
  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,3)
- assert.equal(review.prNumber,843);assert.equal(review.sourceSha,'6bb7ebec1c1795b452eb37e8fb8d8532b7415e64')
+ assert.equal(review.prNumber,843);assert.equal(review.sourceSha,'a709995993176d79ab8bdf7874f6c14e1ee0028d')
  assert.deepEqual(files.map(f=>f.filename).sort(),[
   'apps/architecture-lab/src/operation-postgres-fixture.mjs',
   'packages/platform-contracts/current-fresh-report/test/current-fresh-report-postgres.test.mjs',
