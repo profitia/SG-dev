@@ -28,9 +28,9 @@ function safeTags(tags: ErrorEvent['tags']) {
     const valid = key === 'application' ? safe === 'sg-runtime'
       : key === 'service' ? /^sg2-(development|staging|production)-runtime$/.test(safe)
       : key === 'request_id' || key === 'diagnostic_id' ? /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(safe)
-      : key === 'module' ? ['forecast', 'provider', 'benchmark', 'category', 'xray', 'api', 'frontend', 'ssr'].includes(safe)
+      : key === 'module' ? ['forecast', 'provider', 'benchmark', 'category', 'xray', 'api', 'frontend', 'ssr', 'market_data'].includes(safe)
       : key === 'runtime' ? ['nodejs', 'edge', 'browser'].includes(safe)
-      : /^(diagnostic|SOURCE_(HTTP|BODY_READ|DECODE|PARSE))$/.test(safe)
+      : /^(diagnostic|market_history_persistence|SOURCE_(HTTP|BODY_READ|DECODE|PARSE))$/.test(safe)
     return valid ? [[key, safe]] : []
   }))
 }
@@ -72,7 +72,10 @@ export function sanitizeSpan(span: SpanJSON): SpanJSON {
     description: span.op?.startsWith('http.server') || span.op === 'pageload' || span.op === 'navigation'
       ? technicalRoute(span.description) : span.op === 'sg.phase' && /^(E1_|SOURCE_|KRS_|GUS_)[A-Z_]{1,40}$/.test(span.description ?? '')
         ? span.description : safeIdentifier(span.op) ?? 'operation',
-    data: typeof status === 'number' && status >= 100 && status <= 599 ? { 'http.response.status_code': status } : {},
+    data: { ...(typeof status === 'number' && status >= 100 && status <= 599 ? { 'http.response.status_code': status } : {}),
+      ...(/^SOURCE_HISTORY_(ACQUIRE|VALIDATE|PERSIST|READBACK|REFRESH_DUE)$/.test(span.description ?? '') ? Object.fromEntries(Object.entries(span.data ?? {}).filter(([key,value]) =>
+        key === 'market.history.outcome' && ['SUCCEEDED','DENIED','FAILED'].includes(String(value))
+        || key === 'market.history.reason' && ['AUTHORIZATION','SOURCE_UNAVAILABLE','PERSISTENCE_UNAVAILABLE'].includes(String(value)))) : {}) },
   }
 }
 
