@@ -12,7 +12,7 @@ the previous audit. No MEMOROS/PHR or closeout was authorized/executed.
 
 Exact D1/D2 attachment bytes, conditions and the complete candidate specification
 are retained in separate documentation Draft PR #868, SHA
-`8637a6fa905b7c1e1c1c6a3942b0a335d6b6792b`, under
+`d330e876ec4dbe5c744e7e34d52509f872f706d4`, under
 `Canon/proposals/oil-market-outlook/`. That PR is not merged or active.
 This source-only partition preserves the trusted CI allowlist. The contract describes
 the proposed human E1 operation, separate Source service controls, optional
