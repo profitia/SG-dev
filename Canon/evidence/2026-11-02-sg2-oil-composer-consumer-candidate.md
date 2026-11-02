@@ -46,7 +46,7 @@ are recorded here instead of mutating accepted global integration history:
 ```json
 {
   "status": "PROPOSED_NOT_ACCEPTED_NOT_ACTIVE",
-  "producer": {"projectKey":"ARCHITECTURE","taskId":"ARCH-OIL-COMPOSER-CONTRACT-PREP-20261102","pullRequest":866,"sourceSha":"f3a826c66ea1a665fe5f380774f72eedcb48de48","packageVersion":"1.33.0-candidate.1","externalCallSourceDigest":"af7c18e1e01deb7868e4986d3da77ec0f2eea7b6c3081fae24014f57e3b456c7","modelSchemaDigest":"12d134c4ee7cdd769fa9b6c59c4b74e419dda3ea7ff6fae859b3a02a58e745c3"},
+  "producer": {"projectKey":"ARCHITECTURE","taskId":"ARCH-OIL-COMPOSER-CONTRACT-PREP-20261102","pullRequest":866,"sourceSha":"2127fe83cca59b5b323f5b14c3b499f72e0bacb7","packageVersion":"1.33.0-candidate.1","externalCallSourceDigest":"40c2d7b8aa6120badd6d3291298241a8fa048fb6da915602ce726ca88f9bd54b","modelSchemaDigest":"5d2574b15bb532fee04a8984dd6a81e4d2f99e8206310076bae3e5bbf73a7653"},
   "documentation": {"pullRequest":868,"approvedAttachmentBytesPreserved":true},
   "liveRouteCreated":false,"runtimeAdoption":false,"sql028Installed":false,
   "grantActivated":false,"globalOpenAiModelChanged":false,"finalOwnerGoGranted":false

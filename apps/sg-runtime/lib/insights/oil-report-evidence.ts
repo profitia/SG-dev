@@ -26,7 +26,9 @@ export function makeOilEvidenceBundle(forecast:OilProjection,market:OilMarketEvi
  const data={schemaVersion:'ReportEvidenceBundle/Oil/1' as const,asOf,forecast,market:structuredClone(market),category:{name:'asfalt drogowy' as const,region:'UNSPECIFIED' as const,exposure:'UNSPECIFIED' as const,userUrls:[] as []},
   evidenceIds:['D0',...forecast.series.flatMap(s=>[s.id,...s.models.map(m=>s.id+':'+m.id)]),...market.filter(e=>e.verification==='INDEPENDENTLY_VERIFIED').map(e=>e.id)],
   warnings:forecast.limitations}
- return {...data,fingerprint:createHash('sha256').update(JSON.stringify(data)).digest('hex')}
+ const bundle={...data,fingerprint:createHash('sha256').update(JSON.stringify(data)).digest('hex')}
+ const freeze=(v:unknown):void=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}}
+ freeze(bundle);return bundle
 }
 export function oilEvidenceCoverage(bundle:OilEvidenceBundle){
  const verified=bundle.market.filter(e=>e.verification==='INDEPENDENTLY_VERIFIED')
