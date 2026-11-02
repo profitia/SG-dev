@@ -39,9 +39,11 @@ Controlled in-memory transport tests validate tracing and exactly-once business
 execution; no event is sent to the live Sentry service. First real trace remains
 part of a future authorized Development run.
 
-The existing `package.json`, lockfile and `operation-integration.json` retain
-their exact main bytes and historical receipts. Proposed, nonactive references
-are recorded here instead of mutating accepted global integration history:
+The existing `package.json` and lockfile retain their exact main bytes.
+The integration receipt adds only the closed CI preparation continuation
+described below; all previously accepted entries and hashes remain unchanged.
+Proposed, nonactive shared-producer references are recorded here and do not
+assert installation or SDK adoption:
 
 ```json
 {
@@ -57,11 +59,12 @@ Run the standalone preparation tests with `node --import tsx --test tests/oil-*.
 from `apps/sg-runtime`. Optional `OIL_D0_READONLY_FILE` points only to the licensed
 frozen local file; no licensed input is committed. Run the preparation CLI with
 `node --import tsx scripts/oil-report-prepare.ts <frozen-file> <new-output-directory> <exact-asOf-UTC>`.
-Neither command calls a model. Existing canonical CI verifies the host's prior
-regressions, whole-source typecheck and build. The new preparation tests are
-separately evidenced locally, not claimed executed by that existing CI entry.
-Adding them to canonical CI through a proper receipt continuation remains a
-mandatory gate before live pilot admission; no test guard is weakened here.
+Neither command calls a model. Canonical CI verifies the host's prior
+regressions, whole-source typecheck and build. The existing PCI integrity entry
+now directly imports all nine Oil test modules, as specified by the continuation
+below. Licensed frozen-file cases require the local read-only input and remain
+explicitly skipped when it is unavailable in CI. Exact-head execution evidence
+is supplied separately; no test guard is weakened here.
 
 This PR does not assert live Source/E1 admission or accepted shared-package installation. Required SRM/other shared
 consumer receipts, exact-head CI/Finder regression, actual E1 human operation,
