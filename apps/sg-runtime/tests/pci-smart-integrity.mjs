@@ -1,7 +1,41 @@
 /** Additive continuation: exact current bytes AND immutable prior evidence, never digest replacement. */
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import {posix} from 'node:path'
+const relativeHostPath=file=>posix.relative('apps/sg-runtime',file)
 export const digest=bytes=>createHash('sha256').update(bytes).digest('hex')
+const XRAY_APPSHELL_PRESENTATION_FILES=["apps/sg-runtime/components/appshell/xray-module-host.tsx","apps/sg-runtime/docs/xray-appshell-ui.md","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/adp-appshell-preview.mjs","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-appshell-ui.test.tsx","apps/sg-runtime/tests/xray-appshell.test.tsx","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/srm/scripts/native-execution-adoption.test.mjs","apps/srm/scripts/pilot2-cold-overlay.mjs","apps/srm/scripts/pilot2-cold-overlay.test.mjs","apps/srm/scripts/pilot2-human-overlay.mjs","apps/srm/scripts/rural-location-release.test.mjs","apps/srm/scripts/xray-performance-adoption.test.mjs","apps/srm/scripts/xray-style-acceptance.mjs","apps/srm/scripts/xray-workflow-contract.test.ts","apps/srm/scripts/xray-workflow-react18.test.tsx","apps/srm/src/server/peer-read-boundary.test.ts","apps/srm/src/server/supplier-location-geocoding-runtime.test.ts","packages/srm-xray/docs/sg2-host-presentation.md","packages/srm-xray/scripts/build-full-report-css.mjs","packages/srm-xray/src/full-report.css","packages/srm-xray/src/full-workflow.tsx","packages/srm-xray/src/sg2-host-theme.css","packages/srm-xray/src/supplier-search.tsx"]
+export function assertXrayAppShellPresentation(receipt,current,historical){
+ const a=receipt.xrayAppShellPresentation
+ assert.equal(a.taskId,'SG2-XRAY-APPSHELL-UI-20261102')
+ assert.equal(a.producerTaskId,'SRM-XRAY-SG2-PRESENTATION-20261102')
+ assert.equal(a.previousReceiptSourceSha,'6fdc75192275e296a443db2f1c1d8b4a659b084c')
+ assert.equal(a.targetEnvironment,'development');assert.equal(a.presentation,'sg2')
+ const file='apps/sg-runtime/operation-integration.json',bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {xrayAppShellPresentation,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every preceding acceptance and digest remains immutable')
+ assert.equal(digest(current(file)),digest(JSON.stringify(receipt,null,2)+'\n'),'exact current owner receipt bytes')
+ const peerFile='apps/srm/operation-integration.json',peerPriorBytes=historical(a.previousReceiptSourceSha,peerFile)
+ const peerExpected={...JSON.parse(peerPriorBytes),xrayAppShellPresentation:{...a,
+  projectKey:'SRM',previousReceiptSha256:digest(peerPriorBytes),
+  applicationSourceDigests:Object.fromEntries(Object.entries(a.sourceDigests).map(([path,value])=>[posix.relative('apps/srm',path),value]))
+ }}
+ assert.equal(digest(current(peerFile)),digest(JSON.stringify(peerExpected,null,2)+'\n'),'exact reciprocal host receipt bytes')
+
+ assert.deepEqual(a.changedSourcePaths,XRAY_APPSHELL_PRESENTATION_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),XRAY_APPSHELL_PRESENTATION_FILES)
+ for(const[path,expected]of Object.entries(a.sourceDigests)){assert.match(expected,/^[a-f0-9]{64}$/);assert.equal(digest(current(path)),expected,'exact host presentation source '+path)}
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([file,value])=>[relativeHostPath(file),value])))
+ const packageFiles=[...new Set([...prior.fullUiParityAdoption.publicUi.sourceFiles,'src/sg2-host-theme.css','docs/sg2-host-presentation.md'])].sort()
+ assert.deepEqual(a.publicUi.sourceFiles,packageFiles);assert.equal(a.publicUi.version,prior.fullUiParityAdoption.publicUi.version)
+ const packageHash=createHash('sha256');for(const file of packageFiles)packageHash.update(file).update('\0').update(current('packages/srm-xray/'+file)).update('\0')
+ assert.equal(packageHash.digest('hex'),a.publicUi.sourceDigest,'exact current public X-Ray variant')
+ for(const flag of ['standaloneDefaultsUnchanged','hostPresentationOnly','canonicalSourceStyles','nameCatalogDisabledInSg2'])assert.equal(a[flag],true,flag)
+ for(const flag of ['businessLogicChanged','transportChanged','authorizationChanged','financialEngineChanged','schemaChanged','srmRuntimeDeploymentPerformed','excludedEnvironmentChanges'])assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:path=>['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json'].includes(path)||Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):current(path)}
+}
+
 const PCI_INPUT_CORRECTIVE_FILES=["apps/sg-runtime/components/price-change-index/price-change-index-controller.ts","apps/sg-runtime/components/price-change-index/price-change-index-layer.tsx","apps/sg-runtime/components/price-change-index/price-change-index-request.ts","apps/sg-runtime/docs/pci-smart-preparation.md","apps/sg-runtime/lib/cost-analysis/pci-smart-preparation-contracts.ts","apps/sg-runtime/lib/cost-analysis/price-change-index-operation.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-browser.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/pci-smart-operation.test.ts","apps/sg-runtime/tests/pci-smart-preview.mjs","apps/sg-runtime/tests/pci-smart-ui.test.tsx","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-full-ui-adoption.test.ts","apps/sg-runtime/tests/xray-gateway.test.ts"]
 const XRAY_STYLE_FILES=["apps/sg-runtime/components/benchmark-finder/visual/magicpath/benchmark-finder.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-dropdown.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-shared.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-theme.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/spacing-bindings.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/srm-interaction-motion.css","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/sg-runtime/tests/xray-style-isolation.test.ts"]
 
@@ -139,6 +173,7 @@ export function assertXrayStyleIsolationContinuation(receipt,current,historical)
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciInputCorrective(receipt,current,historical){
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsMainCompatibility){const n=assertProductAnalyticsMainContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsCompatibility){const n=assertProductAnalyticsContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.marketHistoryIngestionCompatibility){const n=assertMarketHistoryIngestionContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
@@ -163,6 +198,7 @@ export function assertPciInputCorrective(receipt,current,historical){
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciSmartIntegrity(receipt,current,historical){
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
  if(receipt.pciSmartInputCorrective){const n=assertPciInputCorrective(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
  // The later UI candidate binds every changed current host byte, then exposes
  // the exact accepted PCI predecessor to the unchanged PCI integrity checks.

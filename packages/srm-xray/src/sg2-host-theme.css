@@ -1,0 +1,110 @@
+/* SRM-C95/FND-05 host variant. AppShell owns the palette and theme state.
+ * Only the explicit SG2 presentation consumes it; standalone stays unchanged.
+ * These declarations live in the source bundle, including native dialog top layers. */
+:scope[data-presentation="sg2"],
+:scope[data-presentation="sg2"] :is(.srm-ui,.srm-history,.srm-color-canon) {
+ --brand:inherit;--brand-dark:inherit;--brand-light:inherit;--sand:inherit;--mist:inherit;
+ --surface:inherit;--ink:inherit;--blue:inherit;--page:inherit;--canvas:inherit;
+ --text:inherit;--muted:inherit;--line:inherit;--faint-line:inherit;
+ --blue-soft:inherit;--sand-soft:inherit;--neutral:inherit;
+ --success:inherit;--success-text:inherit;--success-soft:inherit;
+ --caution:inherit;--caution-text:inherit;--caution-soft:inherit;
+ --negative:inherit;--negative-text:inherit;--negative-soft:inherit;
+ --unknown:inherit;--unknown-soft:inherit;--reference:inherit;
+}
+:scope[data-presentation="sg2"] {
+ color-scheme:inherit;
+ --srm-brand:var(--ink);--srm-interaction:var(--brand);--srm-data-accent:var(--brand-light);
+ --srm-surface:var(--surface);--srm-background:var(--page);--srm-text:var(--text);
+ --srm-muted:var(--muted);--srm-disabled:var(--unknown);--srm-border:var(--line);
+ --srm-input-border:var(--line);--srm-interaction-soft:var(--blue-soft);
+ --srm-text-secondary:var(--muted);--srm-focus:var(--brand-light);
+ --srm-navigation-hover:var(--blue-soft);--srm-error:var(--negative-text);
+ --srm-warning:var(--caution-text);--srm-warning-soft:var(--caution-soft);--srm-success:var(--success-text);
+ --srm-shadow:0 3px 10px var(--theme-shadow, #242F441A);
+ color:var(--text);background:var(--page);
+}
+/* Preserve the generator's original isolation defaults for standalone.
+ * The SG2 root then deliberately inherits the host's canonical theme roles. */
+:scope:not([data-presentation="sg2"]) {
+ --theme-canvas:initial;--theme-surface:initial;--theme-raised:initial;--theme-chrome:initial;
+ --theme-ink:initial;--theme-muted:initial;--theme-accent:initial;--theme-action:initial;
+ --theme-line:initial;--theme-soft-line:initial;--theme-hover:initial;
+ --theme-positive:initial;--theme-positive-fill:initial;--theme-positive-soft:initial;
+ --theme-negative:initial;--theme-negative-fill:initial;--theme-negative-soft:initial;
+ --theme-caution:initial;--theme-caution-fill:initial;--theme-caution-soft:initial;
+ --theme-sand-soft:initial;--theme-sand-text:initial;--theme-sand-line:initial;
+ --theme-shadow:initial;--theme-overlay:initial;--theme-panel-shadow:initial;
+ --theme-reference:initial;--action-fill:initial;--chrome-strong:initial;
+}
+:scope[data-presentation="sg2"] {
+ --theme-canvas:inherit;--theme-surface:inherit;--theme-raised:inherit;--theme-chrome:inherit;
+ --theme-ink:inherit;--theme-muted:inherit;--theme-accent:inherit;--theme-action:inherit;
+ --theme-line:inherit;--theme-soft-line:inherit;--theme-hover:inherit;
+ --theme-positive:inherit;--theme-positive-fill:inherit;--theme-positive-soft:inherit;
+ --theme-negative:inherit;--theme-negative-fill:inherit;--theme-negative-soft:inherit;
+ --theme-caution:inherit;--theme-caution-fill:inherit;--theme-caution-soft:inherit;
+ --theme-sand-soft:inherit;--theme-sand-text:inherit;--theme-sand-line:inherit;
+ --theme-shadow:inherit;--theme-overlay:inherit;--theme-panel-shadow:inherit;
+ --theme-reference:inherit;--action-fill:inherit;--chrome-strong:inherit;
+}
+:scope[data-presentation="sg2"] .srm-host-actions {display:flex;justify-content:flex-end;padding:16px var(--srm-gutter);}
+:scope[data-presentation="sg2"] .srm-host-actions .appshield-new-report {color:var(--ink);background:var(--surface);border-color:var(--line);}
+:scope[data-presentation="sg2"] .srm-host-actions .appshield-new-report:hover {background:var(--blue-soft);}
+:scope[data-presentation="sg2"] :is(.appshield-search,.xray-section,.kys-summary span,.company-summary,
+ .financial-table-tools button,.financial-table tbody th[scope="row"],.financial-row-chart,
+ .financial-scroll-controls button,.report-skip-link,.report-metadata-note button,.report-kys-action>button,
+ .report-navigation-mobile select,.srm-history-detail-head,.srm-statement-chart-card,.srm-statement-icon,
+ .srm-add-chart-plus,.srm-statement-table-scroll,.srm-statement-table :is(th,td),.srm-statement-dialog,
+ .srm-chart-option,.srm-picker-footer .srm-btn,.srm-details>details,.srm-topbar,.srm-radar-panel,
+ .srm-ai-panel,.srm-metric-card,.srm-details details,.srm-history,.srm-btn,.srm-controls select,
+ .srm-scope button,.srm-close-window,.srm-history-copy,.srm-demo-tabs button.active) {background:var(--surface);}
+:scope[data-presentation="sg2"] :is(.report-navigation,.report-navigation-mobile) {background:var(--theme-chrome,#003366);}
+:scope[data-presentation="sg2"] .kys-panel h3 {background:var(--theme-chrome,#003366);color:white;}
+:scope[data-presentation="sg2"] :is(.kys-step button,.appshield-search button) {background:var(--theme-action,#005A9C);color:white;}
+:scope[data-presentation="sg2"] :is(.kys-step button,.appshield-search button):hover:not(:disabled) {background:var(--theme-chrome,#003366);}
+:scope[data-presentation="sg2"] .report-navigation a[aria-current="location"] {background:var(--surface);color:var(--ink);}
+:scope[data-presentation="sg2"] :is(.financial-chart-dialog,.health-dialog,.srm-statement-dialog,.srm-history,.srm-picker)::backdrop {background:var(--theme-overlay,#242F44B3);}
+:scope[data-presentation="sg2"] :is(.financial-chart-dialog,.srm-statement-dialog,.srm-history,.srm-picker) {box-shadow:0 20px 80px var(--theme-shadow,#00336626);}
+:scope[data-presentation="sg2"] :is(.srm-ui [data-library-component="SRM-C01"],.srm-picker-footer .srm-btn.primary,.srm-primary-button,.srm-year-pills button[aria-checked="true"],.srm-scope button[aria-pressed="true"],.financial-scope button[aria-pressed="true"]) {background:var(--theme-action,#005A9C);color:white;}
+:scope[data-presentation="sg2"] :is(.srm-ui [data-library-component="SRM-C02"],.srm-ui [data-library-component="SRM-C04"]) {background:var(--surface);color:var(--brand);}
+:scope[data-presentation="sg2"] :is(.srm-ui .srm-add-chart-tile,.srm-statement-table .srm-statement-group th,
+ .srm-ui.financial-dashboard .financial-table-group :is(th,td),.srm-statement-table tbody tr:not(.srm-statement-group):hover :is(th,td)) {background:var(--page);border-color:var(--line);}
+:scope[data-presentation="sg2"] :is(.srm-chart-option.is-selected,.srm-add-chart-tile:hover,
+ .srm-chart-option:not(:has(input:disabled)):hover,.srm-period-item:hover,
+ .srm-statement-card-actions .srm-history-view-switch button[aria-pressed="true"],.srm-history-value-table .is-selected-year) {background:var(--blue-soft);}
+:scope[data-presentation="sg2"] :is(.srm-statement-card-actions .srm-history-view-switch,
+ .srm-statement-card-actions .srm-history-copy,.srm-statement-card-actions .srm-statement-icon,
+ .srm-report-unavailable,.srm-availability-notice) {border-color:var(--line);}
+:scope[data-presentation="sg2"] :is(.srm-statement-card-actions .srm-history-view-switch button,
+ .srm-statement-card-actions .srm-history-copy,.srm-statement-card-actions .srm-statement-icon,.supplier-web-address) {color:var(--muted);}
+:scope[data-presentation="sg2"] .supplier-web-address a {color:var(--brand);}
+:scope[data-presentation="sg2"] .supplier-web-address a:hover {color:var(--ink);}
+/* Brand images retain their own colors on a deliberate light stage (FND-05). */
+:scope[data-presentation="sg2"] .supplier-web-logo {border-color:var(--line);}
+:scope[data-presentation="sg2"] .srm-report-unavailable {background:var(--page);color:var(--ink);}
+:scope[data-presentation="sg2"] .srm-availability-notice {background:var(--surface);box-shadow:0 .5rem 2rem var(--theme-shadow,#00336615);}
+:scope[data-presentation="sg2"] .srm-availability-notice :is(h3,p) {color:var(--ink);}
+:scope[data-presentation="sg2"] :is(.srm-availability-controls i,.srm-availability-line) {background:var(--line);}
+:scope[data-presentation="sg2"] .srm-availability-radar {background:repeating-conic-gradient(var(--line) 0deg 58deg,transparent 58deg 60deg);}
+:scope[data-presentation="sg2"] .srm-warning {background:var(--caution-soft);border-color:var(--theme-sand-line,var(--sand));color:var(--caution-text);}
+:scope[data-presentation="sg2"] [data-comparison-tone="positive"] {color:var(--success-text);}
+:scope[data-presentation="sg2"] [data-comparison-tone="negative"] {color:var(--negative-text);}
+:scope[data-presentation="sg2"] [data-comparison-tone="caution"] {color:var(--caution-text);}
+:scope[data-presentation="sg2"] [data-comparison-tone="unknown"] {color:var(--muted);}
+:scope[data-presentation="sg2"] .srm-history-bar-track {background:var(--neutral);}
+:scope[data-presentation="sg2"] .srm-history-year-marker i {box-shadow:0 0 0 4px var(--surface);}
+:scope[data-presentation="sg2"] .is-compact .srm-history-year-marker i {box-shadow:0 0 0 2px var(--surface);}
+:scope[data-presentation="sg2"] .srm-history-grid i.is-zero {border-color:var(--line);}
+:scope[data-presentation="sg2"] .srm-overview-tooltip {background:var(--theme-chrome,#003366);}
+:scope[data-presentation="sg2"] .srm-overview-tooltip span {color:var(--brand-light);}
+:scope[data-presentation="sg2"] .srm-demo-tabs {background:var(--sand-soft);}
+:scope[data-presentation="sg2"] .srm-radar :is(text[fill="#003366"]) {fill:var(--ink);}
+:scope[data-presentation="sg2"] .srm-radar text[fill="#526A82"] {fill:var(--muted);}
+:scope[data-presentation="sg2"] .srm-radar [fill="#f1f4f7"] {fill:var(--neutral);}
+:scope[data-presentation="sg2"] .srm-radar [stroke="#e4eaf0"],
+:scope[data-presentation="sg2"] .srm-radar [stroke="#D6E0E9"] {stroke:var(--line);}
+:scope[data-presentation="sg2"] .srm-radar [stroke="white"] {stroke:var(--surface);}
+:scope[data-presentation="sg2"] .srm-radar [stroke="#465B70"] {stroke:var(--reference);}
+:scope[data-presentation="sg2"] :is(input,textarea,select) {color-scheme:inherit;}
+:scope[data-presentation="sg2"] :is(input,textarea)::placeholder {color:var(--muted);opacity:1;}
