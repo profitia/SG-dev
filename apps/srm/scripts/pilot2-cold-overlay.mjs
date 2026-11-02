@@ -146,6 +146,19 @@ export function coldPilot2(repo,output,proof){
  const workflowPackage='packages/srm-xray/package.json',workflowManifest=JSON.parse(fs.readFileSync(path.join(output,workflowPackage),'utf8'))
  for(const name of ['workflow-controller','workflow-contract'])workflowManifest.exports['./'+name]={types:'./src/'+name+'.ts',default:'./src/'+name+'.ts'}
  write(workflowPackage,JSON.stringify(workflowManifest,null,2)+'\n')
+ // Package the exact existing dependencies of the current native adapters.
+ // This only completes the offline test artifact; no route, runtime source,
+ // dependency version or provider behavior is changed.
+ for(const name of ['private-work-json.ts','diagnostic-trace.ts','supplier-location-telemetry.ts'])write('apps/srm/src/server/'+name,fs.readFileSync(path.join(repo,'apps/srm/src/server/'+name)))
+ const captureRoot='packages/platform-contracts/payload-capture/'
+ for(const name of ['package.json','src/payload-capture.mjs','src/payload-capture.d.mts'])write(captureRoot+name,fs.readFileSync(path.join(repo,captureRoot+name)))
+ const appPackage='apps/srm/package.json',appLock='apps/srm/package-lock.json'
+ const manifest=JSON.parse(fs.readFileSync(path.join(output,appPackage),'utf8')),lock=JSON.parse(fs.readFileSync(path.join(output,appLock),'utf8'))
+ const captureName='@profitia/platform-payload-capture',capturePath='file:../../packages/platform-contracts/payload-capture'
+ manifest.dependencies[captureName]=capturePath;lock.packages[''].dependencies[captureName]=capturePath
+ lock.packages['node_modules/'+captureName]=JSON.parse(fs.readFileSync(path.join(repo,appLock),'utf8')).packages['node_modules/'+captureName]
+ write(appPackage,JSON.stringify(manifest,null,2)+'\n');write(appLock,JSON.stringify(lock,null,2)+'\n')
+
  const transport='apps/srm/src/modules/xray/krs-session-transport.ts'
  write(transport,replace(fs.readFileSync(path.join(output,transport),'utf8'),
   'const paths=new Set([',"const paths=new Set(['/api/xray/financial-excel',"))
@@ -189,7 +202,7 @@ export const POST=(request:Request)=>getPilot2ColdRuntime().lookup(request);\n`)
   exportsStage:'EXISTING_CURRENT_HUMAN_ROOT_FINANCIAL_XLSX',
   privateDataAuthority:'EXISTING_E1_ORGANISATION_NO_CLONED_ARCHIVE',
   externalHttpInHumanTransaction:false,postClickClerkReads:false,paidAcquisitionWhileTyping:false,
-  modifiedFinancialFormulaEngine:false,modifiedMapsRoutes:false,dependencyChanges:0,
+  modifiedFinancialFormulaEngine:false,modifiedMapsRoutes:false,dependencyChanges:1,
   nativeSourceClosure:PILOT2_COLD_SOURCE_FILES.map(name=>({path:name,sha256:hash(fs.readFileSync(path.join(repo,name)))})),
   changedFiles:proof.changedFiles.map(name=>({path:name,sha256:hash(fs.readFileSync(path.join(output,name)))})),
   addedFiles:proof.addedFiles.map(name=>({path:name,sha256:hash(fs.readFileSync(path.join(output,name)))}))}
