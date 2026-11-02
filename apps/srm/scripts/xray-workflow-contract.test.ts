@@ -1,3 +1,4 @@
+import {assertProductAnalyticsHostContinuation} from './xray-style-acceptance.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';
 import {validateXRayData,validateXRayCommand,XRAY_OPERATIONS,XRAY_WORKFLOW_CONTRACT,unwrapXRayResponse,readXRayJson} from '@profitia/srm-xray/workflow-contract';
 import {sampleCard} from '../src/demo/fixture';
@@ -41,9 +42,12 @@ const host=JSON.parse(fs.readFileSync(new URL('../../sg-runtime/operation-integr
 const hostDigests=Object.fromEntries(Object.entries(host.fullUiParityAdoption?.applicationSourceDigests??{}).map(([file,digest])=>[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file)),digest]));
 function currentAcceptedBytes(url:URL){
  if(host.fullUiParityAdoption&&url.pathname.endsWith('/apps/sg-runtime/operation-integration.json')){
-  const a=host.fullUiParityAdoption,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);
+  const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8'));
+  const accepted=assertProductAnalyticsHostContinuation(receipt,file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),(sha,file)=>execFileSync('git',['show',sha+':'+file]));
+  const previousHost=JSON.parse(accepted.previousBytes('apps/sg-runtime/operation-integration.json'));
+  const a=previousHost.fullUiParityAdoption,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);
   assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptDigest);
-  const {fullUiParityAdoption,pciSmartInputCorrective,xrayStyleIsolationContinuation,sentryObservabilityCompatibility,...preserved}=host;assert.deepEqual(preserved,JSON.parse(bytes.toString()));return bytes;
+  const {fullUiParityAdoption,pciSmartInputCorrective,xrayStyleIsolationContinuation,sentryObservabilityCompatibility,...preserved}=previousHost;assert.deepEqual(preserved,JSON.parse(bytes.toString()));return bytes;
  }
  return fs.readFileSync(url);
 }
