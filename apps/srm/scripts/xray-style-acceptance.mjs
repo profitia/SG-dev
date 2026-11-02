@@ -7,7 +7,61 @@ const SENTRY_HOST_FILES=["scripts/native-execution-adoption.test.mjs","scripts/r
 const MARKET_HISTORY_HOST_FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/root-atomic-claim-adoption.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
 const MARKET_HISTORY_BASE='76d9738ff73abb3600cf806d5b01c6b23133b451',MARKET_HISTORY_CANDIDATE='dba0204f439e4c150690e4a135f7e11f4587ecdc'
 const MARKET_HISTORY_BASE_RECEIPT='0e1e80ee4715e4d1caf40723e4d2ccba524809977fe894865c9acc557c6689fa',MARKET_HISTORY_CANDIDATE_RECEIPT='eb356038f460b0ff486dcdb717e0a05ccfb54fe09371dda7d4c4d28a6edef9f0'
+const PRODUCT_ANALYTICS_FLAGS=['runtimeChanged','analyticsAddedToSrm','authorizationChanged','financialEngineChanged','schemaOrRlsChanged','sharedContractsChanged','privatePinsChanged','ciPolicyChanged','providerCallsChanged','runtimeDeploymentPerformed','paidAcquisitionsPerformed']
+export function assertProductAnalyticsHostContinuation(receipt,current,historical){
+ if(receipt.productAnalyticsRootClaimTestContinuation){const n=assertProductAnalyticsRootClaimContinuation(receipt,current,historical);return assertProductAnalyticsHostContinuation(n.productReceipt,n.productBytes,historical)}
+ const a=receipt.productAnalyticsHostIntegrityContinuation
+ assert.equal(a.taskId,'SRM-SG2-POSTHOG-HOST-INTEGRITY-20261102')
+ assert.equal(a.scope,'TEST_ONLY_SG2_POSTHOG_HOST_SOURCE_ACCEPTANCE')
+ assert.equal(a.previousReceiptSourceSha,'968443700dea367134e522bb9fe32de75b2e2697')
+ const bytes=historical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json'),prior=JSON.parse(bytes)
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ const {productAnalyticsHostIntegrityContinuation,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every earlier SRM receipt and original digest remains immutable')
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','previousReceiptSourceSha','previousReceiptSha256','consumerSourceSha','applicationSourceDigests','consumerSourceDigests',...PRODUCT_ANALYTICS_FLAGS].sort(),'closed test-only acceptance metadata')
+ assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),FILES)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(current('apps/srm/'+file)),digest,'exact SRM PostHog host acceptance test '+file)
+ assert.equal(a.consumerSourceSha,'968443700dea367134e522bb9fe32de75b2e2697')
+ const hostBytes=historical(a.consumerSourceSha,'apps/sg-runtime/operation-integration.json'),host=JSON.parse(hostBytes)
+ const expected={'../sg-runtime/operation-integration.json':hash(hostBytes),...Object.fromEntries(Object.entries(host.productAnalyticsCompatibility.sourceDigests).map(([file,digest])=>['../sg-runtime/'+file.slice(16),digest]))}
+ assert.deepEqual(a.consumerSourceDigests,expected,'exact immutable SG2 Product Analytics host closure')
+ for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(current('apps/'+file.slice(3))),digest,'exact SG2 Product Analytics host '+file)
+ const previousHostSha=host.productAnalyticsCompatibility.previousReceiptSourceSha
+ assert.equal(previousHostSha,'76d9738ff73abb3600cf806d5b01c6b23133b451')
+ assert.equal(hash(historical(previousHostSha,'apps/sg-runtime/operation-integration.json')),host.productAnalyticsCompatibility.previousReceiptSha256)
+ for(const flag of PRODUCT_ANALYTICS_FLAGS)assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,file.replace(/^apps\/srm\//,''))?historical(a.previousReceiptSourceSha,file):Object.hasOwn(a.consumerSourceDigests,'../'+file.slice(5))?historical(previousHostSha,file):current(file)}
+}
+const PRODUCT_ANALYTICS_ROOT_FLAGS=[...PRODUCT_ANALYTICS_FLAGS,'sdkChanged','businessDataChanged']
+export function assertProductAnalyticsRootClaimContinuation(receipt,current,historical){
+ const a=receipt.productAnalyticsRootClaimTestContinuation,file='apps/srm/operation-integration.json'
+ assert.equal(a.taskId,'SRM-SG2-POSTHOG-ROOT-TEST-COMPAT-20261102')
+ assert.equal(a.scope,'TEST_ONLY_ROOT_CLAIM_PRODUCT_ANALYTICS_COMPATIBILITY')
+ assert.equal(a.targetEnvironment,'development')
+ assert.equal(a.previousReceiptSourceSha,'5c5602b0041cd22aa5b9f11cbadf9469e35da58d')
+ assert.equal(a.productAnalyticsReceiptSourceSha,'4d2cdd18b7ca3202d2fed6f4f0f602474a489c17')
+ const bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+ const productReceiptBytes=historical(a.productAnalyticsReceiptSourceSha,file),productReceipt=JSON.parse(productReceiptBytes)
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ assert.equal(hash(productReceiptBytes),a.productAnalyticsReceiptSha256)
+ const {productAnalyticsRootClaimTestContinuation,productAnalyticsHostIntegrityContinuation,...mainPreserved}=receipt
+ assert.deepEqual(mainPreserved,prior,'every accepted main receipt and original digest remains immutable')
+ const {productAnalyticsRootClaimTestContinuation:rootContinuation,marketHistoryHostIntegrityContinuation,...productPreserved}=receipt
+ assert.deepEqual(productPreserved,productReceipt,'every previous Product Analytics receipt and original digest remains immutable')
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','targetEnvironment','previousReceiptSourceSha','previousReceiptSha256','productAnalyticsReceiptSourceSha','productAnalyticsReceiptSha256','applicationSourceDigests',...PRODUCT_ANALYTICS_ROOT_FLAGS].sort())
+ assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),MARKET_HISTORY_HOST_FILES)
+ for(const[path,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(current('apps/srm/'+path)),digest,'exact combined SRM test source '+path)
+ for(const flag of PRODUCT_ANALYTICS_ROOT_FLAGS)assert.equal(a[flag],false,flag)
+ const productBytes=path=>path===file?productReceiptBytes:Object.hasOwn(a.applicationSourceDigests,path.replace(/^apps\/srm\//,''))?historical(a.productAnalyticsReceiptSourceSha,path):current(path)
+ // Validate the complete immutable analytics branch against today's exact SG2
+ // bytes before projecting either accepted history for the older guards.
+ assertProductAnalyticsHostContinuation(productReceipt,productBytes,historical)
+ const changedHost=new Set(Object.keys(productReceipt.productAnalyticsHostIntegrityContinuation.consumerSourceDigests).map(path=>'apps/'+path.slice(3)))
+ return {prior,productReceipt,productBytes,previousBytes:path=>path===file?bytes:Object.hasOwn(a.applicationSourceDigests,path.replace(/^apps\/srm\//,''))?historical(a.previousReceiptSourceSha,path):changedHost.has(path)?historical(MARKET_HISTORY_BASE,path):current(path)}
+}
 export function marketHistoryHostSourceView(current,historical){
+ const receipt=JSON.parse(current('apps/srm/operation-integration.json'))
+ if(receipt.productAnalyticsRootClaimTestContinuation){const n=assertProductAnalyticsRootClaimContinuation(receipt,current,historical);return marketHistoryHostSourceView(n.previousBytes,historical)}
  const file='apps/sg-runtime/operation-integration.json',old=historical(MARKET_HISTORY_BASE,file),candidate=historical(MARKET_HISTORY_CANDIDATE,file),actual=current(file)
  assert.equal(hash(old),MARKET_HISTORY_BASE_RECEIPT);assert.equal(hash(candidate),MARKET_HISTORY_CANDIDATE_RECEIPT)
  const proposed=hash(actual)===MARKET_HISTORY_CANDIDATE_RECEIPT
@@ -18,6 +72,7 @@ export function marketHistoryHostSourceView(current,historical){
  return {bytes:old,proposed,consumerDigests:proposed?Object.fromEntries(Object.entries(closure).map(([f,h])=>['../sg-runtime/'+f.slice(16),h])):{},candidateConsumerDigests:Object.fromEntries(Object.entries(closure).map(([f,h])=>['../sg-runtime/'+f.slice(16),h]))}
 }
 export function assertMarketHistoryHostContinuation(receipt,current,historical){
+ if(receipt.productAnalyticsRootClaimTestContinuation){const n=assertProductAnalyticsRootClaimContinuation(receipt,current,historical);return assertMarketHistoryHostContinuation(n.prior,n.previousBytes,historical)}
  const a=receipt.marketHistoryHostIntegrityContinuation
  assert.equal(a.taskId,'SRM-MARKET-HISTORY-HOST-INTEGRITY-20261102');assert.equal(a.scope,'TEST_ONLY_EXACT_SG2_MARKET_HISTORY_HOST_COMPATIBILITY')
  assert.equal(a.status,'PROPOSED_COMPATIBILITY_NOT_RUNTIME_ACCEPTANCE')

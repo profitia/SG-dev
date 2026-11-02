@@ -6,6 +6,32 @@ const PCI_INPUT_CORRECTIVE_FILES=["apps/sg-runtime/components/price-change-index
 const XRAY_STYLE_FILES=["apps/sg-runtime/components/benchmark-finder/visual/magicpath/benchmark-finder.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-dropdown.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-shared.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-theme.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/spacing-bindings.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/srm-interaction-motion.css","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/sg-runtime/tests/xray-style-isolation.test.ts"]
 
 const SENTRY_OBSERVABILITY_FILES=["apps/sg-runtime/app/global-error.tsx","apps/sg-runtime/instrumentation.ts","apps/sg-runtime/lib/observability/config.ts","apps/sg-runtime/lib/observability/sanitize.ts","apps/sg-runtime/lib/observability/server.ts","apps/sg-runtime/next.config.mjs","apps/sg-runtime/package-lock.json","apps/sg-runtime/package.json","apps/sg-runtime/sentry.client.config.ts","apps/sg-runtime/sentry.edge.config.ts","apps/sg-runtime/sentry.server.config.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/sentry-observability.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+
+const PRODUCT_ANALYTICS_FILES=["apps/sg-runtime/.env.example","apps/sg-runtime/app/[locale]/layout.tsx","apps/sg-runtime/components/analytics/product-analytics-provider.tsx","apps/sg-runtime/components/appshell/adp-module-host.tsx","apps/sg-runtime/components/appshell/appshell-dashboard.tsx","apps/sg-runtime/components/appshell/xray-module-host.tsx","apps/sg-runtime/components/auth/session-boundary.tsx","apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx","apps/sg-runtime/components/price-change-index/price-change-index-layer.tsx","apps/sg-runtime/docs/product-analytics.md","apps/sg-runtime/lib/product-analytics/adapter.ts","apps/sg-runtime/lib/product-analytics/config.ts","apps/sg-runtime/lib/product-analytics/contract.ts","apps/sg-runtime/package-lock.json","apps/sg-runtime/package.json","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/appshell-product-boundary.test.ts","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/product-analytics-ui.test.tsx","apps/sg-runtime/tests/product-analytics.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+export function assertProductAnalyticsContinuation(receipt,current,historical){
+ const a=receipt.productAnalyticsCompatibility
+ assert.equal(a.taskId,'SG2-POSTHOG-20261102')
+ assert.equal(a.scope,'DEVELOPMENT_EXPLICIT_TEST_PRODUCT_ANALYTICS_ONLY')
+ assert.equal(a.previousReceiptSourceSha,'76d9738ff73abb3600cf806d5b01c6b23133b451')
+ const bytes=historical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json'),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {productAnalyticsCompatibility,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every historical receipt and original hash remains immutable')
+ assert.deepEqual(a.changedSourcePaths,PRODUCT_ANALYTICS_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),PRODUCT_ANALYTICS_FILES)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([file,hash])=>[file.slice(16),hash])))
+ for(const[file,hash]of Object.entries(a.sourceDigests)){
+  assert.match(hash,/^[a-f0-9]{64}$/)
+  assert.equal(digest(current(file)),hash,'exact product analytics source '+file)
+ }
+ for(const flag of ['authorizationChanged','financialEngineChanged','schemaChanged','existingTelemetryChanged','srmRuntimeChanged','privatePinsChanged','ciPolicyChanged','newBusinessProviderCalls','deploymentPerformed'])assert.equal(a[flag],false,flag)
+ const manifest=JSON.parse(current('apps/sg-runtime/package.json'))
+ assert.equal(manifest.dependencies['posthog-js'],'1.444.0')
+ assert.match(manifest.scripts['test:operation-context'],/tests\/product-analytics\.test\.ts tests\/product-analytics-ui\.test\.tsx/)
+ assert.match(manifest.scripts['test:operation-context'],/&& npm run test:observability$/)
+ return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
+}
+
 export function assertSentryObservabilityContinuation(receipt,current,historical){
  const a=receipt.sentryObservabilityCompatibility
  assert.equal(a.taskId,'SG2-SENTRY-INTEGRITY-20261101')
@@ -49,6 +75,7 @@ export function assertXrayStyleIsolationContinuation(receipt,current,historical)
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciInputCorrective(receipt,current,historical){
+ if(receipt.productAnalyticsCompatibility){const n=assertProductAnalyticsContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.sentryObservabilityCompatibility){const n=assertSentryObservabilityContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.xrayStyleIsolationContinuation){const n=assertXrayStyleIsolationContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  const a=receipt.pciSmartInputCorrective

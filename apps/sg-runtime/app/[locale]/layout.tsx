@@ -8,6 +8,8 @@ import { getEnvironmentBrowserTabTitle } from '@/lib/browser-tab-title'
 import { readSg2IdentityRuntime, type Sg2IdentityRuntime } from '@/lib/platform/identity-runtime'
 import { Sg2IdentityProvider } from '@/components/auth/session-boundary'
 import { readSelfServiceAccountConfiguration, accountCompletionUrl } from '@/lib/platform/account-session'
+import { ProductAnalyticsProvider } from '@/components/analytics/product-analytics-provider'
+import { readProductAnalyticsConfiguration } from '@/lib/product-analytics/config'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,12 +51,14 @@ export default async function LocaleLayout({ children, params: { locale } }: Loc
     <html lang={locale}>
       <body>
         <NextIntlClientProvider messages={messages}>
+          <ProductAnalyticsProvider configuration={readProductAnalyticsConfiguration(process.env)}>
           <Sg2IdentityProvider mode={identity?.provider ?? 'unavailable'} locale={locale as Locale}
             satellite={satellite}
             publishableKey={identity?.provider === 'clerk' ? identity.publishableKey : undefined}>
             {children}
             <SpendGuruAdvisoryWidget locale={locale as Locale} enabled={identity?.provider === 'legacy_demo' && !isPorrDemoProfile} />
           </Sg2IdentityProvider>
+          </ProductAnalyticsProvider>
         </NextIntlClientProvider>
       </body>
     </html>
