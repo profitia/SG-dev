@@ -6213,5 +6213,41 @@
     "newBusinessProviderCalls": false,
     "deploymentPerformed": false,
     "productDataChanged": false
+  },
+  "oilComposerPreparationCandidate": {
+    "status": "PROPOSED_NOT_ACCEPTED_NOT_ACTIVE",
+    "consumerTaskId": "SG2-OIL-COMPOSER-CONSUMER-PREP-20261102",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCH-OIL-COMPOSER-CONTRACT-PREP-20261102",
+      "pullRequest": 866,
+      "sourceSha": "12a6ddac71c68f536c2d2646996396c3b798e083",
+      "packageVersion": "1.33.0-candidate.1",
+      "externalCallSourceDigest": "af7c18e1e01deb7868e4986d3da77ec0f2eea7b6c3081fae24014f57e3b456c7",
+      "modelSchemaDigest": "12d134c4ee7cdd769fa9b6c59c4b74e419dda3ea7ff6fae859b3a02a58e745c3"
+    },
+    "operation": "insight.report.compose",
+    "hostAdapter": "lib/insights/oil-report-operation.ts",
+    "liveRouteCreated": false,
+    "runtimeAdoption": false,
+    "sql028Installed": false,
+    "grantActivated": false,
+    "globalOpenAiModelChanged": false,
+    "finalOwnerGoGranted": false,
+    "frozenD0Sha256": "ec11c696cdd4e9577c462fdadf45953aba57bb76d7281bf034363513dbde006b",
+    "reportCanonInputSha256": "031f9d88f4da52fdaea64f173b9ca5acd258973670f648bf0d3fd38239f23222",
+    "executionProfileInputSha256": "fa71e18c3be77cf5e109ffde33e2e8da1e3548ba8c90eb3da06adaffde2c8240",
+    "acceptedSharedReceiptsAboveUnchanged": true,
+    "monitoring": "EXTENDED_IN_SOURCE_ONLY_CONTROLLED_TRANSPORT_TEST",
+    "missing": [
+      "HUMAN_E1_OPERATION_ADOPTION",
+      "MODEL_COMPATIBLE_TOKENIZER",
+      "KEY_PROJECT_PROOF",
+      "PRIOR_UNVERIFIED_RECONCILIATION",
+      "REAL_SHARED_CONSUMER_ADOPTIONS",
+      "EXACT_CANDIDATE_ACCEPTANCE",
+      "CONTROLLED_RELEASE",
+      "FINAL_EXPLICIT_ONE_ATTEMPT_GO"
+    ]
   }
 }
