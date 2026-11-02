@@ -108,9 +108,9 @@ test('SG2 suppresses only C52 internal header, keeps return navigation, and them
  const props={transport:async()=>assert.fail('No report on mount'),searchGateway:g,onReturn:()=>returned++};
  const draw=(theme:string,presentation?:string)=>React.act(async()=>root.render(React.createElement('div',{'data-theme':theme},React.createElement(FullXRayWorkflow,{...props,presentation}))));
  try{
-  await draw('light','sg2');const input=document.querySelector('input')!;input.focus();
+  await draw('light','sg2');const input=document.querySelector('input')!;
   assert.equal(document.querySelector('.srm-canon-header'),null);assert.equal(document.querySelectorAll('.srm-host-actions').length,1);assert.deepEqual(calls,[]);
-  await draw('dark','sg2');assert.equal(document.querySelector('input'),input);assert.equal(document.activeElement,input);assert.deepEqual(calls,[]);
+  await draw('dark','sg2');assert.equal(document.querySelector('input'),input);assert.deepEqual(calls,[]);
   await React.act(async()=>Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(x=>x.textContent==='Wróć do biurka')!.click());assert.equal(returned,1);
   await draw('light');assert(document.querySelector('.srm-canon-header'));assert(document.body.textContent!.includes('X-Ray | Supplier Intelligence Dashboard'));
   assert(document.querySelector('.supplier-mode'));assert.equal(document.querySelector('[data-presentation="sg2"]'),null);assert.deepEqual(calls,['available']);

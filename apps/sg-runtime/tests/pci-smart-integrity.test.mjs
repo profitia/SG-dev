@@ -31,7 +31,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))
@@ -186,4 +186,10 @@ test('product analytics and accepted main preserve both histories and reject sou
   changed.productAnalyticsMainCompatibility.sourceDigests[file]=hash;changed.productAnalyticsMainCompatibility.applicationSourceDigests['package.json']=hash
   assert.throws(()=>assertPciSmartIntegrity(changed,f=>f===file?bytes:current(f),historical),entry)
  }
+})
+
+test('X-Ray host presentation rejects modified current sources and false standalone guarantees',()=>{
+ const r=receipt(),a=r.xrayAppShellPresentation;assert(a);assertPciSmartIntegrity(r,current,historical);
+ for(const f of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===f?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical));
+ for(const change of [x=>x.xrayAppShellPresentation.standaloneDefaultsUnchanged=false,x=>x.xrayAppShellPresentation.changedSourcePaths.pop(),x=>x.xrayAppShellPresentation.sourceDigests[a.changedSourcePaths[0]]='0'.repeat(64)]){const x=structuredClone(r);change(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
 })
