@@ -73,3 +73,26 @@ the $5 envelope authorizes no additional call, retry, model, tools or paid revie
 No merge, deployment, grant activation, Development configuration, paid provider
 call or report publication is performed or authorized by this candidate. Client
 demo approval requires the exact future report hash and human quality review.
+
+
+## Explicit canonical CI continuation
+
+Separate task `SG2-OIL-COMPOSER-CI-CONTINUITY-20261102`, approved packet
+`4a1728a7565c5f231fb58ccc00d8c665443a8bcbec09f1173cb1762641015168`.
+One new PMOS begin `cmvzobsem0000dc1k7r5lo8ws` was registered and read back as
+running; same-host require-begin passed. This is not a closeout or authority
+to register the previous audit or publish MEMOROS/PHR.
+
+The additive `oilComposerPreparationCompatibility` entry binds exactly the
+21 new preparation files and 13 amended test/verification files. Every prior
+receipt remains byte-equivalent in content and retains its original hashes.
+The only new protected forecast-boundary file is the exact frozen-D0 projection;
+no Forecast mathematics, Finder runtime, global manifest/lock, live grants,
+schema installation or protected workflow is changed. Nine Oil test modules
+are imported by the existing PCI integrity test entry. Negative checks reject
+changed/missing/foreign bindings, historical edits and removed test imports,
+including a matching replacement digest. Controlled telemetry stays in memory.
+
+This closes source-only preparation coverage; it does not claim SDK1.33 adoption,
+E1/live acceptance or readiness for a paid attempt. Exact CI results are provided
+with the new immutable handoff after verification, not predicted here.
