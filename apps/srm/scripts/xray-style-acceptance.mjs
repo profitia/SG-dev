@@ -39,7 +39,7 @@ export function assertProductAnalyticsMainHostContinuation(receipt,current,histo
  assert.equal(a.taskId,'SRM-SG2-POSTHOG-ROOT-TEST-COMPAT-20261102')
  assert.equal(a.scope,'TEST_ONLY_EXACT_CURRENT_MAIN_PRODUCT_ANALYTICS_HOST')
  assert.equal(a.previousReceiptSourceSha,'c1d251397b34e21d528b76f04eef888d457dc5b1')
- assert.equal(a.consumerSourceSha,'c1d251397b34e21d528b76f04eef888d457dc5b1')
+ assert.equal(a.consumerSourceSha,'98dc716c872ce38f88301f056e446c2b9b073332')
  assert.equal(a.previousAnalyticsHostSourceSha,'6389283b83ce942a57cd894724d22c03948f27a8')
  const bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
  assert.equal(hash(bytes),a.previousReceiptSha256)
