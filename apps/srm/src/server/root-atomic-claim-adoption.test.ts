@@ -1,3 +1,4 @@
+import {assertMarketHistoryHostContinuation} from '../../scripts/xray-style-acceptance.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -78,7 +79,8 @@ test('runtime construction refuses altered schema, pilot, provider or ownership 
 
 test('Root claim adoption preserves every prior receipt and pins only the reviewed consumer closure',()=>{
  const hash=(value:Uint8Array)=>createHash('sha256').update(value).digest('hex')
- const receipt=JSON.parse(readFileSync(new URL('../../operation-integration.json',import.meta.url),'utf8')),a=receipt.rootAtomicClaimAdoption
+ const complete=JSON.parse(readFileSync(new URL('../../operation-integration.json',import.meta.url),'utf8')),current=(file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url)),historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]);
+ const view=complete.marketHistoryHostIntegrityContinuation?assertMarketHistoryHostContinuation(complete,current,historical):{prior:complete,previousBytes:current},receipt=view.prior,a=receipt.rootAtomicClaimAdoption
  assert(a,'Formal Root claim source and consumer acceptance must precede publication')
  assert.equal(a.producerSourceRef,root.producerSourceRef);assert.equal(a.sourceDigest,root.sourceDigest);assert.equal(a.schemaDigest,root.schemaDigest)
  assert.equal(a.producerPackage,'@profitia/platform-root-atomic-claim');assert.equal(a.producerVersion,'1.0.0')
@@ -99,7 +101,7 @@ test('Root claim adoption preserves every prior receipt and pins only the review
   'scripts/ready-report.integration.test.mjs','scripts/xray-workflow-contract.test.ts','scripts/native-execution-adoption.test.mjs','scripts/rural-location-release.test.mjs','scripts/xray-performance-adoption.test.mjs','scripts/location-cache.integration.test.mjs','scripts/root-atomic-claim-release.mjs','scripts/root-atomic-claim-release.test.mjs',
   'src/server/peer-read-boundary.test.ts','src/server/supplier-location-geocoding-runtime.test.ts','src/server/full-ui-parity-adoption.test.ts','package.json','package-lock.json']
  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),files.sort())
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(view.previousBytes('apps/srm/'+file)),digest,file)
  assert.equal(a.defaultEnabled,false);assert.equal(a.sharedSdkUnchanged,true);assert.equal(a.paidPoliciesChanged,false)
  assert.equal(a.lateWorkAccountChecksPreserved,true);assert.equal(a.finalDisclosureCheckPreserved,true)
  assert.deepEqual(a.nativeWorkUnits,['SRM_REGISTER_LOOKUP','SRM_STORE_COMPANY']);assert.equal(a.rootActor,'HUMAN');assert.equal(a.deliveryActor,'SERVICE')

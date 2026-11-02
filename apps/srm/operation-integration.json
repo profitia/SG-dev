@@ -7953,10 +7953,11 @@
       "scripts/native-execution-adoption.test.mjs": "de3680dbf8e31c75985a23cd359e35d2cd02b9d9ad0a010561e9727b0f2d3fc4",
       "scripts/rural-location-release.test.mjs": "320aa7e6782f60dd97bb8e8e238e74341e3936c4a5f303a1d5fea916ae825fff",
       "scripts/xray-performance-adoption.test.mjs": "a6e5be183b816e92a86ec9621f00b15c88af384653d6f9a82a268dbe1dc7d7ea",
-      "scripts/xray-style-acceptance.mjs": "a2239dd6427efe2156ec7cdc7812a7c4c3cb6c3c627b40fbd0e4d4e39f3fd689",
+      "scripts/xray-style-acceptance.mjs": "a50f78529be6e02b1fd6a75cae72c5e268c059adac0fd38adf20c1402fd3ccaa",
       "scripts/xray-workflow-contract.test.ts": "d60c36963a4d8f830b46324321ffe8b4f21e38c1495b0e4e9fc8bd5475de4675",
       "src/server/full-ui-parity-adoption.test.ts": "78eaaff9a19f612ee99e0fb1c0ade477d7320d4e766cd7a9178cc1531f1f8020",
       "src/server/peer-read-boundary.test.ts": "310aedd1d1a6feaffa1a82fad9e851a6adf55e01bc3562a39ff2bceb800ba9a6",
+      "src/server/root-atomic-claim-adoption.test.ts": "80ef0f5497e279bee5873e1b1ca18938d0cefaa936035cf493d3190660cccfb7",
       "src/server/supplier-location-geocoding-runtime.test.ts": "b3160121913344675e3eadbb0f484677b8e6955095deded16cda9a6eb04d2751"
     },
     "candidateConsumerSourceDigests": {
