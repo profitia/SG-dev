@@ -31,7 +31,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d]))})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d]))})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))
@@ -112,4 +112,31 @@ test('Sentry receiving continuation rejects changed bytes, missing scope and rew
   r=>r.fullUiParityAdoption.publicUi.sourceDigest='0'.repeat(64),
   r=>r.unapprovedReceipt={}
  ]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
+})
+
+
+test('market-history continuation rejects altered sources, unbound scope, rewritten history and inaccurate authority claims',()=>{
+ const r=receipt(),a=r.marketHistoryIngestionCompatibility;assert(a)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const file of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
+ for(const mutate of [
+  r=>delete r.marketHistoryIngestionCompatibility.sourceDigests[r.marketHistoryIngestionCompatibility.changedSourcePaths[0]],
+  r=>r.marketHistoryIngestionCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),
+  r=>r.marketHistoryIngestionCompatibility.changedSourcePaths.pop(),
+  r=>r.marketHistoryIngestionCompatibility.previousReceiptSourceSha='0'.repeat(40),
+  r=>r.marketHistoryIngestionCompatibility.previousReceiptSha256='0'.repeat(64),
+  r=>r.marketHistoryIngestionCompatibility.authorizationChanged=false,
+  r=>r.marketHistoryIngestionCompatibility.liveInstallationPerformed=true,
+  r=>r.marketHistoryIngestionCompatibility.deploymentPerformed=true,
+  r=>r.marketHistoryIngestionCompatibility.unapprovedFlag=true,
+  r=>r.sentryObservabilityCompatibility.existingTelemetryChanged=true,
+  r=>r.unapprovedReceipt={}
+ ]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
+})
+test('market-history normal CI entry cannot be removed even with a matching replacement digest',()=>{
+ for(const [file,remove] of [['apps/sg-runtime/package.json',' && npm run test:market-history'],['apps/sg-runtime/tests/pci-smart-integrity.test.mjs',"import './xray-style-isolation.test.ts'"]]){
+  const r=receipt(),bytes=Buffer.from(current(file).toString().replace(remove,'')),a=r.marketHistoryIngestionCompatibility
+  a.sourceDigests[file]=digestForTest(bytes);a.applicationSourceDigests[file.slice(16)]=digestForTest(bytes)
+  assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?bytes:current(f),historical))
+ }
 })

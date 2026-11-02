@@ -6,6 +6,36 @@ const PCI_INPUT_CORRECTIVE_FILES=["apps/sg-runtime/components/price-change-index
 const XRAY_STYLE_FILES=["apps/sg-runtime/components/benchmark-finder/visual/magicpath/benchmark-finder.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-dropdown.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-shared.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/canon-theme.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/spacing-bindings.css","apps/sg-runtime/components/benchmark-finder/visual/magicpath/srm-interaction-motion.css","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/sg-runtime/tests/xray-style-isolation.test.ts"]
 
 const SENTRY_OBSERVABILITY_FILES=["apps/sg-runtime/app/global-error.tsx","apps/sg-runtime/instrumentation.ts","apps/sg-runtime/lib/observability/config.ts","apps/sg-runtime/lib/observability/sanitize.ts","apps/sg-runtime/lib/observability/server.ts","apps/sg-runtime/next.config.mjs","apps/sg-runtime/package-lock.json","apps/sg-runtime/package.json","apps/sg-runtime/sentry.client.config.ts","apps/sg-runtime/sentry.edge.config.ts","apps/sg-runtime/sentry.server.config.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/sentry-observability.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+const MARKET_HISTORY_FILES=["apps/sg-runtime/deployment/market-history-targets.json","apps/sg-runtime/docs/market-history-ingestion.md","apps/sg-runtime/lib/benchmark/macrobond.ts","apps/sg-runtime/lib/market-data/history-contract.ts","apps/sg-runtime/lib/market-data/history-ingestion.ts","apps/sg-runtime/lib/market-data/history-observability.ts","apps/sg-runtime/lib/market-data/history-runtime.ts","apps/sg-runtime/lib/market-data/history-source.ts","apps/sg-runtime/lib/observability/sanitize.ts","apps/sg-runtime/package.json","apps/sg-runtime/prisma-market-data/private-write/003-market-history-install.sql","apps/sg-runtime/prisma-market-data/private-write/003-market-history.sql","apps/sg-runtime/scripts/run-market-data-hydration.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/market-history.integration.test.mjs","apps/sg-runtime/tests/market-history.test.ts","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/sentry-observability.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+export function assertMarketHistoryIngestionContinuation(receipt,current,historical){
+ const a=receipt.marketHistoryIngestionCompatibility
+ assert.equal(a.taskId,'SG2-MARKET-HISTORY-INGESTION-20261102')
+ assert.equal(a.scope,'GENERIC_LICENSED_HISTORY_SOURCE_AND_MARKET_DATA')
+ assert.equal(a.previousReceiptSourceSha,'76d9738ff73abb3600cf806d5b01c6b23133b451')
+ const bytes=historical(a.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json'),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {marketHistoryIngestionCompatibility,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'all accepted source and monitoring receipts remain immutable')
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','previousReceiptSourceSha','previousReceiptSha256','changedSourcePaths','sourceDigests','applicationSourceDigests','authorizationChanged','schemaAdded','producerChanged','finderBoundaryChanged','forecastMathChanged','ciWorkflowChanged','testEntryExtended','liveInstallationPerformed','deploymentPerformed'].sort())
+ assert.deepEqual(a.changedSourcePaths,MARKET_HISTORY_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),MARKET_HISTORY_FILES)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([file,hash])=>[file.slice(16),hash])))
+ for(const[file,hash]of Object.entries(a.sourceDigests)){
+  assert.match(hash,/^[a-f0-9]{64}$/)
+  assert.equal(digest(current(file)),hash,'exact generic market-history source '+file)
+ }
+ for(const flag of ['authorizationChanged','schemaAdded','testEntryExtended'])assert.equal(a[flag],true,flag)
+ for(const flag of ['producerChanged','finderBoundaryChanged','forecastMathChanged','ciWorkflowChanged','liveInstallationPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
+ const pkg=JSON.parse(current('apps/sg-runtime/package.json'))
+ assert.match(pkg.scripts['test:operation-context'],/&& npm run test:observability && npm run test:market-history$/)
+ assert.equal(pkg.scripts['test:market-history'],'node --import tsx --test tests/market-history.test.ts tests/market-history.integration.test.mjs')
+ assert.match(current('apps/sg-runtime/tests/pci-smart-integrity.test.mjs').toString(),/^import ['"]\.\/xray-style-isolation\.test\.ts['"]\s*;?$/m)
+ const targets=JSON.parse(current('apps/sg-runtime/deployment/market-history-targets.json'))
+ assert.equal(targets.boundaryDigest,digest(current('apps/sg-runtime/prisma-market-data/private-write/003-market-history.sql')))
+ assert.equal(targets.applicationId,'spendguru-market-history');assert.equal(targets.quotaMode,'UNMETERED')
+ assert.equal(targets.defaultEnabled,false);assert.equal(targets.runtimeRole,'sg2_market_history_development_runtime')
+ return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
+}
 export function assertSentryObservabilityContinuation(receipt,current,historical){
  const a=receipt.sentryObservabilityCompatibility
  assert.equal(a.taskId,'SG2-SENTRY-INTEGRITY-20261101')
@@ -49,6 +79,7 @@ export function assertXrayStyleIsolationContinuation(receipt,current,historical)
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciInputCorrective(receipt,current,historical){
+ if(receipt.marketHistoryIngestionCompatibility){const n=assertMarketHistoryIngestionContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.sentryObservabilityCompatibility){const n=assertSentryObservabilityContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.xrayStyleIsolationContinuation){const n=assertXrayStyleIsolationContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  const a=receipt.pciSmartInputCorrective

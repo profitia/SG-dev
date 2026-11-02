@@ -104,3 +104,15 @@ test('Next 14 initializes all three runtimes without session replay, client logs
   assert.match(source, /NEXT_RUNTIME === 'nodejs'/)
   assert.match(source, /NEXT_RUNTIME === 'edge'/)
 })
+
+
+test('history outcomes are retained only for the dedicated bounded technical stages',()=>{
+ const span: SpanJSON={trace_id:'d'.repeat(32),span_id:'e'.repeat(16),start_timestamp:1,timestamp:2,op:'sg.phase',description:'SOURCE_HISTORY_PERSIST',data:{'market.history.outcome':'FAILED','market.history.reason':'PERSISTENCE_UNAVAILABLE','private':secret}}
+ const clean=sanitizeSpan(span)
+ assert.equal(clean.data['market.history.outcome'],'FAILED');assert.equal(clean.data['market.history.reason'],'PERSISTENCE_UNAVAILABLE')
+ assert.equal(JSON.stringify(clean).includes(secret),false)
+ for(const patch of [{description:'UNREVIEWED_STAGE'},{description:'SOURCE_HISTORY_PERSIST',data:{'market.history.outcome':secret,'market.history.reason':secret}}]){
+  const denied=sanitizeSpan({...span,...patch})
+  assert.equal(denied.data['market.history.outcome'],undefined);assert.equal(denied.data['market.history.reason'],undefined)
+ }
+})

@@ -1371,7 +1371,7 @@ export async function getMacrobondSemanticContexts(seriesNames: string[]) {
   return Object.fromEntries(contexts.entries())
 }
 
-export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<BenchmarkHistoricalSeriesResult> {
+export async function fetchMacrobondSeriesHistory(seriesName: string, options: { enrichDisplay?: boolean } = {}): Promise<BenchmarkHistoricalSeriesResult> {
   const payload = await macrobondRequest<Array<{ metadata?: Record<string, unknown>; dates?: unknown[]; values?: unknown[]; errorCode?: number }>>('/v1/series/fetchseries', {
     method: 'POST',
     body: JSON.stringify([{ name: seriesName, dateEndOfPeriod: true }]),
@@ -1387,7 +1387,7 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
   const seriesUnit = getMetadataString(seriesMetadata, ['Unit', 'DisplayUnit', 'TitleUnit'])
   let metadata = seriesMetadata
 
-  if (seriesDisplayName === seriesName || !seriesUnit) {
+  if (options.enrichDisplay !== false && (seriesDisplayName === seriesName || !seriesUnit)) {
     try {
       const entityMetadata = await fetchMacrobondEntityMetadata(seriesName)
       metadata = {
@@ -1402,7 +1402,7 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
   const entityDisplayName = getMetadataString(metadata, ['Title', 'Description', 'PrimName', 'Name']) ?? seriesName
   const entitySource = getMetadataString(metadata, ['Source'])
   const needsDisplayMetadata = entityDisplayName === seriesName || /^src_/i.test(entitySource ?? '')
-  if (needsDisplayMetadata) {
+  if (options.enrichDisplay !== false && needsDisplayMetadata) {
     try {
       const displayPayload = await searchMacrobondDisplayEntities(seriesName)
       const displayResult = (displayPayload.results ?? []).find((result) => getString(result, 'Name') === seriesName)

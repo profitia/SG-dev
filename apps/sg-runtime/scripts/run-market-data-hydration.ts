@@ -1,90 +1,19 @@
 import './load-env'
-
-import { refreshBenchmarkHistoricalSeries } from '@/lib/market-data/service'
-
-function readArg(name: string) {
-  const prefix = `--${name}=`
-  const argument = process.argv.find((entry) => entry.startsWith(prefix))
-  return argument ? argument.slice(prefix.length).trim() : ''
+import {createMarketHistoryRuntime,readMarketHistoryConfiguration} from '@/lib/market-data/history-runtime'
+import {seriesName} from '@/lib/market-data/history-contract'
+const arg=(name:string)=>process.argv.find(v=>v.startsWith('--'+name+'='))?.slice(name.length+3)
+async function main(){
+ const runId=arg('runId'),ids=arg('seriesIds'),due=arg('dueBefore'),after=arg('after')??'',limit=Number(arg('limit')??100)
+ if(!runId||!/^[A-Za-z0-9_.:-]{1,128}$/.test(runId)||Boolean(ids)===Boolean(due)||!Number.isInteger(limit)||limit<1||limit>200)throw Error('A durable runId and either seriesIds or dueBefore are required')
+ const selected=ids?[...new Set(ids.split(',').map(v=>seriesName.parse(v.trim())))]:undefined
+ const config=readMarketHistoryConfiguration();if(!config)throw Error('Accepted native Market Data history operation is not activated')
+ await import('../sentry.server.config')
+ const runtime=createMarketHistoryRuntime(config),startedAt=new Date().toISOString()
+ try{
+  const series=selected??await runtime.dueSeries(after,due!,limit),results=[]
+  for(const id of series){try{const r=await runtime.refresh(id,runId);results.push({seriesId:id,status:r.receipt.status,replayed:r.replayed,changedObservationCount:r.receipt.changedObservationCount,storedObservationCount:r.receipt.storedObservationCount,latestObservationDate:r.receipt.latestObservationDate,effectId:r.receipt.effectId})}
+   catch(error){results.push({seriesId:id,status:'FAILED',reason:error instanceof Error&&error.name==='OperationDenied'?'AUTHORIZATION_UNAVAILABLE':'HISTORY_OPERATION_UNAVAILABLE'});process.exitCode=1}}
+  console.log(JSON.stringify({operation:'SG2_CANONICAL_MARKET_HISTORY_V1',runId,startedAt,completedAt:new Date().toISOString(),results,nextAfter:due&&series.length===limit?series.at(-1):null,automaticRetry:false},null,2))
+ }finally{await runtime.close()}
 }
-
-function readSeriesIds() {
-  const seriesIds = [...new Set(readArg('seriesIds').split(',').map((item) => item.trim()).filter(Boolean))]
-  if (seriesIds.length === 0) {
-    throw new Error('Missing required --seriesIds=series_a,series_b,...')
-  }
-  return seriesIds
-}
-
-function readConcurrency() {
-  const raw = readArg('concurrency') || '2'
-  const parsed = Number.parseInt(raw, 10)
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 8) {
-    throw new Error(`Invalid --concurrency=${raw}; expected an integer from 1 to 8.`)
-  }
-  return parsed
-}
-
-async function runBounded<T, R>(items: T[], concurrency: number, operation: (item: T) => Promise<R>) {
-  const results = new Array<R>(items.length)
-  let nextIndex = 0
-
-  async function worker() {
-    while (nextIndex < items.length) {
-      const index = nextIndex
-      nextIndex += 1
-      results[index] = await operation(items[index]!)
-    }
-  }
-
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()))
-  return results
-}
-
-async function main() {
-  const seriesIds = readSeriesIds()
-  const concurrency = readConcurrency()
-  const startedAt = new Date().toISOString()
-  const results = await runBounded(seriesIds, concurrency, async (seriesId) => {
-    try {
-      const result = await refreshBenchmarkHistoricalSeries(seriesId)
-      return {
-        seriesId,
-        status: 'SUCCEEDED' as const,
-        observations: result.history.historical.length,
-        latestObservation: result.history.historical.at(-1)?.date ?? null,
-        displayName: result.history.displayName,
-        frequency: result.history.frequency,
-        currency: result.history.currency,
-        unit: result.history.unit,
-        source: result.history.source,
-        hydratedObservationCount: result.hydratedObservationCount,
-      }
-    } catch (error) {
-      return {
-        seriesId,
-        status: 'FAILED' as const,
-        error: error instanceof Error ? error.message : String(error),
-      }
-    }
-  })
-
-  const failed = results.filter((result) => result.status === 'FAILED')
-  console.log(JSON.stringify({
-    operation: 'CANONICAL_MARKET_DATA_HYDRATION_V1',
-    startedAt,
-    completedAt: new Date().toISOString(),
-    concurrency,
-    requestedSeriesCount: seriesIds.length,
-    succeededSeriesCount: results.length - failed.length,
-    failedSeriesCount: failed.length,
-    results,
-  }, null, 2))
-
-  if (failed.length > 0) process.exitCode = 1
-}
-
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error))
-  process.exitCode = 1
-})
+main().catch(()=>{console.error('Canonical Market Data history operation unavailable; no privileged or provider fallback attempted.');process.exitCode=1})
