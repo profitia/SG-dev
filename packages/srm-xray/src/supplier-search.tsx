@@ -13,14 +13,16 @@ export type SupplierSearchGateway = Readonly<{
 }>;
 type Props={nip:string; onNipChange:(value:string)=>void; onNipSearch:()=>void;
   onNameSearch:(selection:SupplierSelection)=>void; gateway:SupplierSearchGateway; busy:boolean;
-  inputRef?:Readonly<{current:HTMLInputElement|null}>;requireAdmission?:boolean};
+  inputRef?:Readonly<{current:HTMLInputElement|null}>;requireAdmission?:boolean;searchMode?:'nip-and-name'|'nip-only'};
 const SearchIcon=()=> <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5"/></svg>;
 
 /** MagicPath EnterPageView / ACT-09, inspected shared revision464012275896954880.
  * The host supplies protected operations; this component owns no provider, session or report. */
-export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway,busy,inputRef,requireAdmission}:Props){
+export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway,busy,inputRef,requireAdmission,searchMode='nip-and-name'}:Props){
   const id=useId(), ownInput=useRef<HTMLInputElement>(null), input=inputRef??ownInput;
-  const [mode,setMode]=useState<'nip'|'name'>('nip'),[available,setAvailable]=useState(false);
+  const nipOnly=searchMode==='nip-only';
+  const [selectedMode,setMode]=useState<'nip'|'name'>('nip'),[available,setAvailable]=useState(false);
+  const mode=nipOnly?'nip':selectedMode;
   const [availabilityReady,setAvailabilityReady]=useState(false);
   const [query,setQuery]=useState(''),[results,setResults]=useState<readonly SupplierCandidate[]>([]);
   const [selection,setSelection]=useState<SupplierSelection|null>(null),[error,setError]=useState('');
@@ -32,7 +34,7 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
   // NIP admission is independent of name catalog availability. A host that
   // requires the existing form grant must not silently fall back to click-time
   // authentication when name search is disabled or its status is unavailable.
-  const preparationRequired=(requireAdmission??available)&&!!gateway.prepare&&/^\d{10}$/.test(selectedNip);
+  const preparationRequired=(requireAdmission??(nipOnly||available))&&!!gateway.prepare&&/^\d{10}$/.test(selectedNip);
   useEffect(()=>{
     const controller=new AbortController();let expiry:ReturnType<typeof setTimeout>|undefined;
     setAdmission({nip:'',state:'idle',error:''});
@@ -49,8 +51,9 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
   const sequence=useRef(0), verification=useRef<AbortController|null>(null), list=useRef<HTMLDivElement>(null);
   const visible=mode==='name'&&available&&open&&!selection&&query.trim().length>=2&&state!=='verifying';
   useEffect(()=>{const controller=new AbortController();setAvailable(false);setAvailabilityReady(false);
+    if(nipOnly){setAvailabilityReady(true);return()=>controller.abort();}
     gateway.available(controller.signal).then(value=>{if(!controller.signal.aborted)setAvailable(value===true)}).catch(()=>{}).finally(()=>{if(!controller.signal.aborted)setAvailabilityReady(true)});
-    return()=>controller.abort();},[gateway]);
+    return()=>controller.abort();},[gateway,nipOnly]);
   useEffect(()=>()=>verification.current?.abort(),[]);
   useEffect(()=>{
     const seq=++sequence.current, controller=new AbortController();setActive(-1);setResults([]);
@@ -95,12 +98,12 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
   }
   return <section id="supplier-search" tabIndex={-1} className="srm-ui srm-krs-entry" aria-label="Wyszukiwanie dostawcy" data-design-source="460628347660177408" data-design-pattern="ACT-09 / SRM-C96">
     <div className="srm-entry-search-shell">
-      <div className="srm-entry-intro"><span className="srm-entry-eyebrow">SUPPLIER INTELLIGENCE</span><h1>Wyszukaj dostawcę</h1><p>Wpisz numer NIP lub znajdź spółkę po nazwie.</p></div>
+      <div className="srm-entry-intro"><span className="srm-entry-eyebrow">SUPPLIER INTELLIGENCE</span><h1>Wyszukaj dostawcę</h1><p>{nipOnly?'Wpisz numer NIP.':'Wpisz numer NIP lub znajdź spółkę po nazwie.'}</p></div>
       <div className="srm-entry-card srm-supplier-search">
-        <div className="supplier-mode" role="group" aria-label="Sposób wyszukiwania">
+        {!nipOnly&&<div className="supplier-mode" role="group" aria-label="Sposób wyszukiwania">
           <CanonButton canonId="SRM-C08" usage="SupplierSearch:nip-mode" type="button" aria-pressed={mode==='nip'} disabled={busy} onClick={()=>changeMode('nip')}>Numer NIP</CanonButton>
           <CanonButton canonId="SRM-C08" usage="SupplierSearch:name-mode" type="button" aria-pressed={mode==='name'} disabled={busy||!available} aria-describedby={!available?id+'-unavailable':undefined} onClick={()=>changeMode('name')}>Nazwa spółki</CanonButton>
-        </div>
+        </div>}
         <form className="supplier-form" aria-label="Wyszukaj dostawcę" onSubmit={event=>{
           event.preventDefault();if(busy||!admitted||gateway.prepare&&!requireAdmission&&!availabilityReady)return;
           if(mode==='nip'){onNipSearch();return;}
@@ -136,7 +139,7 @@ export function SupplierSearch({nip,onNipChange,onNipSearch,onNameSearch,gateway
           {mode==='name'&&selection&&<div className="supplier-selected" role="status"><span className="supplier-selected-mark" aria-hidden="true">✓</span><div><span className="supplier-selected-label">Wybrana spółka</span><strong>{selection.name}</strong><span>NIP {selection.nip} · KRS {selection.krs} · {selection.locality??'Brak miejscowości'}</span></div><CanonButton canonId="SRM-C03" usage="SupplierSearch:change" type="button" disabled={busy} onClick={()=>{update('');input.current?.focus({preventScroll:true})}}>Zmień</CanonButton></div>}
         </form>
         <div className="supplier-catalog-note">{mode==='name'?'Katalog jest rozwijany. Brak podpowiedzi nie oznacza, że spółka nie istnieje.':'Dane finansowe i rejestrowe są pobierane przy wyszukiwaniu. Raport KYS zamawiasz osobno.'}</div>
-        {!available&&<p id={id+'-unavailable'} className="supplier-hint">Wyszukiwanie po nazwie jest obecnie niedostępne. Możesz wyszukać po NIP.</p>}
+        {!nipOnly&&!available&&<p id={id+'-unavailable'} className="supplier-hint">Wyszukiwanie po nazwie jest obecnie niedostępne. Możesz wyszukać po NIP.</p>}
         <span className="supplier-sr-only" role="status" aria-live="polite">{state==='verifying'?'Potwierdzam dane spółki.':state==='ready'&&visible?'Liczba dopasowań: '+results.length:selection?'Wybrano '+selection.name+', NIP '+selection.nip:''}</span>
       </div>
     </div>
