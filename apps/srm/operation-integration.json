@@ -7952,10 +7952,10 @@
       "scripts/rural-location-release.test.mjs": "ab49e08a1fb9ab7878e3b1a8c299bbc3d7b1aec295faad9d8de463d1b59e944c",
       "scripts/xray-performance-adoption.test.mjs": "93c0084131ab8e0b70d7850d8ffc3991bd78b477e6595e12eb1a23b2f75b2953",
       "scripts/xray-style-acceptance.mjs": "4797184c69b87e7a13acc2238ebacf54da7fee68ecc5cdd78e3150bd5bd524b4",
-      "scripts/xray-workflow-contract.test.ts": "466a8b7487d661a89e8cc3293210472941db7de9b0411be08b86b11ccc438d11",
+      "scripts/xray-workflow-contract.test.ts": "42c0fc33d6c6c32da630bfa40e5dac0a58bbd041128a5ee83bd481f34067f094",
       "src/server/full-ui-parity-adoption.test.ts": "ea6ab872e99743aaa0b5d65b0d8a18f731068306853384cd04718e0d26dae398",
       "src/server/peer-read-boundary.test.ts": "3412f01daece8f212014bf5c7b46f63dcae581b14cf5d0b2f724feacfdc555cf",
-      "src/server/supplier-location-geocoding-runtime.test.ts": "efac596541768671fd6e40f4092ac0e444960495bb087ae01c3b7ac954cee744"
+      "src/server/supplier-location-geocoding-runtime.test.ts": "c15fb150084b45076970c1b3240c23322ae31557a995e8672848cd56c3a29090"
     },
     "consumerSourceDigests": {
       "../sg-runtime/operation-integration.json": "aa7ebb474b96bb1472b5f2de89aafe4b7ca035937f974cc75ebdcc60213116dc",

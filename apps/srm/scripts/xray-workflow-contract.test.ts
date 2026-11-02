@@ -43,7 +43,7 @@ const hostDigests=Object.fromEntries(Object.entries(host.fullUiParityAdoption?.a
 function currentAcceptedBytes(url:URL){
  if(host.fullUiParityAdoption&&url.pathname.endsWith('/apps/sg-runtime/operation-integration.json')){
   const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8'));
-  const accepted=assertProductAnalyticsHostContinuation(receipt,file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),(sha,file)=>execFileSync('git',['show',sha+':'+file]));
+  const accepted=assertProductAnalyticsHostContinuation(receipt,(file:string)=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));
   const previousHost=JSON.parse(accepted.previousBytes('apps/sg-runtime/operation-integration.json'));
   const a=previousHost.fullUiParityAdoption,bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json']);
   assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptDigest);
