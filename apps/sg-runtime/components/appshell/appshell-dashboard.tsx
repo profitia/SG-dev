@@ -1,6 +1,7 @@
 'use client'
 
-import React, {useEffect, useState, useCallback} from 'react'
+import React, {useSyncExternalStore,useEffect, useState, useCallback} from 'react'
+import {productAnalytics} from '@/lib/product-analytics/adapter'
 import {usePathname, useRouter, useSearchParams} from 'next/navigation'
 import type {AssistantScreenContext} from './assistant-widget';
 import {PlatformAppShell} from './platform-appshell'
@@ -30,6 +31,15 @@ export function AppShellDashboard(props: {
   useEffect(() => {if (active) setOpened(true)}, [active])
   useEffect(()=>{if(benchmarkActive)setBenchmarkOpened(true)},[benchmarkActive])
   const navigation = parseAdpNavigation(search.toString())
+  const analyticsReady=useSyncExternalStore(productAnalytics.subscribe,productAnalytics.isReady,productAnalytics.serverReady)
+  const analyticsModule=xrayActive?'xray':active?'adp':benchmarkActive?'benchmark_finder':'appshell'
+  useEffect(()=>{
+    if(!analyticsReady)return
+    productAnalytics.once('app','app_opened',{module:'appshell',entry_point:'appshell'})
+    if(analyticsModule==='appshell')productAnalytics.clearTransition('module')
+    else productAnalytics.transition('module',analyticsModule,'module_opened',{module:analyticsModule,entry_point:'appshell'})
+    if(analyticsModule!=='adp')productAnalytics.transition('screen',analyticsModule,'screen_viewed',{module:analyticsModule,view:analyticsModule})
+  },[analyticsReady,analyticsModule])
   return <PlatformAppShell {...props} assistantTarget={xrayActive?xrayAssistantTarget:null} assistantContext={xrayActive?xrayAssistantContext:null} moduleActive={active||benchmarkActive||xrayActive}
     onLaunchXray={()=>{setXrayOpened(true);router.push(xrayPath(props.locale))}}
     onLaunchBenchmark={()=>{setBenchmarkOpened(true);router.push(benchmarkPath)}}

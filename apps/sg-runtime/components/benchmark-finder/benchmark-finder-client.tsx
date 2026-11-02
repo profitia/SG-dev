@@ -1,5 +1,7 @@
 'use client'
 
+import {productAnalytics} from '@/lib/product-analytics/adapter'
+
 import {PriceChangeIndexLayer} from '../price-change-index/price-change-index-layer'
 import {BenchmarkQualificationFilter,matchesQualification,type QualificationFilter} from '../benchmark-picker/benchmark-qualification-filter'
 import {BenchmarkQualification} from '../benchmark-picker/benchmark-qualification'
@@ -999,6 +1001,12 @@ export function BenchmarkFinderClient({
   const [isLoadingSaved, startSavedTransition] = useTransition()
   const searchTimingRef = useRef<SearchTiming | null>(null)
   const searchCounterRef = useRef(0)
+  const [analyticsResults,setAnalyticsResults]=useState<{id:string;mode:'simple'|'advanced'|'exact'|'ai';items:BenchmarkCandidate[]}|null>(null)
+  useEffect(()=>{
+    if(active&&analyticsResults&&analyticsResults.items===results&&!isSearching&&hasSearched)
+      productAnalytics.once(`results:${analyticsResults.id}`,'benchmark_results_displayed',{module:'benchmark_finder',mode:analyticsResults.mode,
+        process_attempt_id:analyticsResults.id,result_count:results.length,status:results.length?'success':'empty'})
+  },[active,analyticsResults,results,isSearching,hasSearched])
   const resultsRef = useRef<HTMLDivElement | null>(null)
   const advancedInputRef = useRef<HTMLInputElement | null>(null)
   const advancedOpenStartedAtRef = useRef<number | null>(null)
@@ -1474,6 +1482,8 @@ export function BenchmarkFinderClient({
 
     const { requestId, controller } = beginSearchRequest()
     const searchId = beginSearchTiming('simple')
+    const analyticsAttempt=productAnalytics.begin('benchmark_finder','benchmark_search')
+    if(analyticsAttempt)productAnalytics.capture('benchmark_search_submitted',{module:'benchmark_finder',mode:'simple',process_attempt_id:analyticsAttempt.id})
     try {
       const params = new URLSearchParams({ q: normalizedQuery, limit: String(SEARCH_RESULTS_FETCH_LIMIT) })
       const payload = await readJson<{ items: BenchmarkCandidate[] }>(await discoveryFetch(`/api/benchmark/search?${params.toString()}`, {
@@ -1488,6 +1498,8 @@ export function BenchmarkFinderClient({
       markSearchResponse(searchId)
       setQuery(normalizedQuery)
       setResults(payload.items)
+      if(analyticsAttempt)setAnalyticsResults({id:analyticsAttempt.id,mode:'simple',items:payload.items})
+      productAnalytics.finish(analyticsAttempt,'success')
       setHasSearched(true)
       setVisibleResultCount(RESULT_PREVIEW_LIMIT)
       pushRecentSearch({
@@ -1504,6 +1516,7 @@ export function BenchmarkFinderClient({
         return
       }
 
+      productAnalytics.finish(analyticsAttempt,'error')
       throw error
     } finally {
       if (searchAbortControllerRef.current === controller) {
@@ -1537,6 +1550,8 @@ export function BenchmarkFinderClient({
 
     const { requestId, controller } = beginSearchRequest()
     const searchId = beginSearchTiming(normalizedExactSeriesId ? 'exact' : 'advanced')
+    const analyticsAttempt=productAnalytics.begin('benchmark_finder','benchmark_search'),analyticsMode=normalizedExactSeriesId?'exact':'advanced'
+    if(analyticsAttempt)productAnalytics.capture('benchmark_search_submitted',{module:'benchmark_finder',mode:analyticsMode,process_attempt_id:analyticsAttempt.id})
     try {
       const payload = await readJson<{ items: BenchmarkCandidate[] }>(await discoveryFetch('/api/benchmark/search', {
         method: 'POST',
@@ -1559,6 +1574,8 @@ export function BenchmarkFinderClient({
       setExactSeriesId(normalizedExactSeriesId)
       setSelectedFilters(nextFilters)
       setResults(payload.items)
+      if(analyticsAttempt)setAnalyticsResults({id:analyticsAttempt.id,mode:analyticsMode,items:payload.items})
+      productAnalytics.finish(analyticsAttempt,'success')
       setHasSearched(true)
       setVisibleResultCount(RESULT_PREVIEW_LIMIT)
       pushRecentSearch({
@@ -1585,6 +1602,7 @@ export function BenchmarkFinderClient({
         return []
       }
 
+      productAnalytics.finish(analyticsAttempt,'error')
       throw error
     } finally {
       if (searchAbortControllerRef.current === controller) {
@@ -1621,6 +1639,9 @@ export function BenchmarkFinderClient({
 
     const { requestId, controller } = beginSearchRequest()
 
+    const analyticsAttempt=productAnalytics.begin('benchmark_finder','benchmark_search')
+    if(analyticsAttempt)productAnalytics.capture('benchmark_search_submitted',{module:'benchmark_finder',mode:'ai',process_attempt_id:analyticsAttempt.id})
+
     try {
       const payload = await readJson<BenchmarkAiSearchResult>(await discoveryFetch('/api/benchmark/ai-search', {
         method: 'POST',
@@ -1636,6 +1657,8 @@ export function BenchmarkFinderClient({
       setAiPrompt(normalizedPrompt)
       setAiIntent(payload.intent)
       setResults(payload.candidates)
+      if(analyticsAttempt)setAnalyticsResults({id:analyticsAttempt.id,mode:'ai',items:payload.candidates})
+      productAnalytics.finish(analyticsAttempt,'success')
       setHasSearched(true)
       setVisibleResultCount(RESULT_PREVIEW_LIMIT)
       pushRecentSearch({
@@ -1652,6 +1675,7 @@ export function BenchmarkFinderClient({
         return
       }
 
+      productAnalytics.finish(analyticsAttempt,'error')
       throw error
     } finally {
       if (searchAbortControllerRef.current === controller) {
@@ -1853,6 +1877,7 @@ export function BenchmarkFinderClient({
   }
 
   async function handleBenchmarkUse(candidate: BenchmarkCandidate) {
+    productAnalytics.capture('benchmark_selected',{module:'benchmark_finder'})
     if (isPickerMode) {
       const existing = saved.find((item) => item.providerSeries.providerSeriesId === candidate.providerSeries.providerSeriesId)
       if (existing) {
@@ -1872,6 +1897,7 @@ export function BenchmarkFinderClient({
 
   async function handleStartBuildingCategory(candidate: BenchmarkCandidate) {
     if(pciLaunching.current || pciSeed || !pciActive.current)return
+    productAnalytics.capture('pci_build_category_clicked',{module:'price_change_index',entry_point:'benchmark_finder'})
     pciLaunching.current=true
     try {
       const existing=saved.find(item=>item.providerSeries.providerSeriesId===candidate.providerSeries.providerSeriesId)

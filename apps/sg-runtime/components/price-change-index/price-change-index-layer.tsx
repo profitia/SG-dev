@@ -1,5 +1,6 @@
 'use client'
-import React,{useEffect,useLayoutEffect,useRef,useState} from 'react'
+import React,{useSyncExternalStore,useEffect,useLayoutEffect,useRef,useState} from 'react'
+import {productAnalytics} from '@/lib/product-analytics/adapter'
 import {PriceChangeIndex,type PciBusinessController,type PciBusinessResult,type PciMarketIndexResult,type PciSmartController} from '@profitia/sg2-price-change-index-ui/business'
 import {useSg2SessionCredential,useSg2IdentityMode} from '../auth/session-boundary'
 import {SharedBenchmarkPicker} from '../benchmark-picker/shared-benchmark-picker'
@@ -25,6 +26,15 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
   const [marketResult,setMarketResult]=useState<PciMarketIndexResult|null>(null)
   const preparationAbort=useRef<AbortController|null>(null),generation=useRef(0)
   const [theme,setTheme]=useState<'light'|'dark'>('light')
+  const analyticsReady=useSyncExternalStore(productAnalytics.subscribe,productAnalytics.isReady,productAnalytics.serverReady),analyticsInstance=useRef<string|null>(null)
+  useEffect(()=>{
+    if(!analyticsReady||!dialog.current?.open)return
+    analyticsInstance.current??=crypto.randomUUID()
+    productAnalytics.once(`pci-open:${analyticsInstance.current}`,'pci_opened',{module:'price_change_index',entry_point:'benchmark_finder'})
+    productAnalytics.once(`pci-module:${analyticsInstance.current}`,'module_opened',{module:'price_change_index',entry_point:'benchmark_finder'})
+    productAnalytics.transition('pci-step',`${analyticsInstance.current}:${step}`,'pci_step_viewed',{module:'price_change_index',step})
+    productAnalytics.transition('screen',`pci:${analyticsInstance.current}:${step}`,'screen_viewed',{module:'price_change_index',step,view:'price_change_index'})
+  },[analyticsReady,step])
   const qualifiedComponents=components.map(c=>({...c,qualification:presentQualification(savedBenchmarkProfile(c.benchmark),locale,'PCI',step===3?c.valueKind:undefined)}))
   const incompatible=qualifiedComponents.filter(c=>c.weightPercent>0&&c.qualification.status==='UNSUITABLE')
   const qualificationIssue=incompatible.length ? `${incompatible[0].name||incompatible[0].benchmark.displayName}: ${incompatible[0].qualification.reason}${incompatible.length>1?(locale==='pl'?' Sprawdź też pozostałe oznaczone komponenty.':' Check the other marked components too.'):''}` : null
@@ -47,57 +57,71 @@ export function PriceChangeIndexLayer({seed,locale,onClose,onAccessLost}:{seed:S
     if(step!==3||!pciStructureReady(name,components)||!purchase.amount||!purchase.currency||!purchase.unit||!purchase.taxBasis||!purchase.deliveryBasis||!purchase.purchaseDate)return
     const abort=new AbortController(),version=generation.current;preparationAbort.current=abort
     setPreparation({status:'loading',data:null,error:null});resetReference()
+    const preparationStarted=performance.now()
     const timer=setTimeout(async()=>{try{
       if(!request.current)return
       const response=await request.current(JSON.stringify(pciSmartInput(name,components,purchase,locale,'PREPARE',{olderYear})),abort.signal)
       if(!active.current||abort.signal.aborted||version!==generation.current)return
-      if(response.status===401||response.status===403){onAccessLost();onClose();return}
+      if(response.status===401||response.status===403){productAnalytics.capture('pci_preparation_finished',{module:'price_change_index',status:'REFUSED',duration_ms:productAnalytics.duration({started:preparationStarted})});onAccessLost();onClose();return}
       const body=await response.json() as SmartPciResponse
+      if(!active.current||abort.signal.aborted||version!==generation.current)return
       if(!response.ok&&body.status!=='REFUSED'){
+        productAnalytics.capture('pci_preparation_finished',{module:'price_change_index',status:'ERROR',duration_ms:productAnalytics.duration({started:preparationStarted})})
         setPreparation({status:'error',data:null,error:pciFailureMessage(response.status,body,locale)});return
       }
       if(body.status!=='PREPARED'&&body.status!=='REFUSED')throw Error('PREPARATION_UNAVAILABLE')
       setPreparation({status:'ready',data:body.preparation,error:null});setCandidate(body.preparation.recommendedCandidateId)
-    }catch(e){if(!abort.signal.aborted&&active.current&&version===generation.current)setPreparation({status:'error',data:null,error:e instanceof Error&&e.message==='SESSION_UNAVAILABLE'
+      productAnalytics.capture('pci_preparation_finished',{module:'price_change_index',status:body.status,duration_ms:productAnalytics.duration({started:preparationStarted})})
+    }catch(e){if(!abort.signal.aborted&&active.current&&version===generation.current){productAnalytics.capture('pci_preparation_finished',{module:'price_change_index',status:'ERROR',duration_ms:productAnalytics.duration({started:preparationStarted})});setPreparation({status:'error',data:null,error:e instanceof Error&&e.message==='SESSION_UNAVAILABLE'
       ?(locale==='pl'?'Chwilowo nie można potwierdzić sesji. Dane pozostają zachowane. Ponów sprawdzenie.':'Session temporarily unavailable. Your data remain intact. Retry preparation.')
-      :(locale==='pl'?'Nie udało się sprawdzić notowań. Ponów sprawdzenie.':'Unable to check observations. Retry preparation.')})}},300)
+      :(locale==='pl'?'Nie udało się sprawdzić notowań. Ponów sprawdzenie.':'Unable to check observations. Retry preparation.')})}}},300)
     return()=>{clearTimeout(timer);abort.abort()}
   },[step,name,components,purchase,prepareAttempt,olderYear,locale])
   const changed=()=>{generation.current++;preparationAbort.current?.abort();setPreparation({status:'idle',data:null,error:null});resetReference();dirty.current=true;setResult(null);setMarketResult(null);setError(null);if(saveStatus==='saved')setSaveStatus('idle')}
-  const close=()=>{if(step!=='result'&&dirty.current&&!window.confirm('Odrzucić niezapisane zmiany i wrócić do Benchmark Findera?'))return;onClose()}
+  const close=()=>{if(step!=='result'&&dirty.current&&!window.confirm('Odrzucić niezapisane zmiany i wrócić do Benchmark Findera?'))return;productAnalytics.capture('pci_closed',{module:'price_change_index',step});productAnalytics.transition('screen','benchmark_finder','screen_viewed',{module:'benchmark_finder',view:'benchmark_finder'});onClose()}
   async function analyse(){
     if(qualificationIssue){setError(qualificationIssue);return}
     if(inflight.current||!request.current)return;const version=generation.current;inflight.current=true;setBusy(true);setError(null);setResult(null);setMarketResult(null)
+    const attempt=productAnalytics.begin('price_change_index','pci_analysis')
+    if(attempt)productAnalytics.capture('pci_analysis_requested',{module:'price_change_index',process_attempt_id:attempt.id})
+    let analyticsStatus:'CALCULATED'|'PROXY_MARKET_ONLY'|'REFUSED'|'error'='error'
     try{
       const response=await request.current(JSON.stringify(pciSmartInput(name,components,purchase,locale,'ANALYSE',{olderYear,reference:preparation.data&&selectedCandidateId?{candidateId:selectedCandidateId,preparationId:preparation.data.id,strictPeriodAccepted,proxyMarketOnlyAccepted}:undefined})))
       if(!active.current||version!==generation.current)return
-      if(response.status===401||response.status===403){onAccessLost();onClose();return}
+      if(response.status===401||response.status===403){analyticsStatus='REFUSED';onAccessLost();onClose();return}
       const body=await response.json() as SmartPciResponse
+      if(!active.current||version!==generation.current)return
+      if(body.status==='REFUSED')analyticsStatus='REFUSED'
       if(body.status==='REFUSED'){setPreparation({status:'ready',data:body.preparation,error:null});setStrict(false);setProxy(false);setCandidate(body.preparation.recommendedCandidateId)}
       if(!response.ok||(body.status!=='CALCULATED'&&body.status!=='PROXY_MARKET_ONLY')){
         const message=body.status==='REFUSED'?body.issues.map(i=>i.message).join(' '):pciFailureMessage(response.status,body,locale)
         throw Error(message)
       }
-      if(active.current){setPreparation({status:'ready',data:body.preparation,error:null});if(body.status==='PROXY_MARKET_ONLY')setMarketResult(pciMarketResult(body));else setResult(pciResult(body,components));setStep('result')}
+      if(active.current){setPreparation({status:'ready',data:body.preparation,error:null});if(body.status==='PROXY_MARKET_ONLY')setMarketResult(pciMarketResult(body));else setResult(pciResult(body,components));setStep('result');analyticsStatus=body.status}
     }catch(e){if(active.current&&version===generation.current)setError(e instanceof Error&&e.message==='SESSION_UNAVAILABLE'
       ?'Chwilowo nie można potwierdzić sesji. Ponów analizę po odzyskaniu połączenia.'
       :e instanceof Error?e.message:'Analiza niedostępna.')}
-    finally{inflight.current=false;if(active.current)setBusy(false)}
+    finally{if(active.current&&version===generation.current&&attempt){productAnalytics.capture('pci_analysis_finished',{module:'price_change_index',status:analyticsStatus==='error'?'ERROR':analyticsStatus,process_attempt_id:attempt.id,duration_ms:productAnalytics.duration(attempt)});productAnalytics.finish(attempt,analyticsStatus)}inflight.current=false;if(active.current)setBusy(false)}
   }
   async function saveCategory(){
     if(saveLock.current||!categoryRequest.current||saveStatus==='saved')return
     saveLock.current=true;setSaveStatus('saving');setError(null)
+    const attempt=productAnalytics.begin('price_change_index','pci_category_save'),saveMode=savedId.current?'update':'create'
+    if(attempt)productAnalytics.capture('pci_category_save_requested',{module:'price_change_index',mode:saveMode,process_attempt_id:attempt.id})
+    let analyticsStatus:'success'|'error'='error'
     try{
       const response=await categoryRequest.current(savedId.current?'/api/category/'+savedId.current:'/api/category',{method:savedId.current?'PATCH':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pciCategoryBody(name,components))})
       if(!active.current)return
       if(response.status===401||response.status===403){onAccessLost();onClose();return}
       if(!response.ok)throw Error('Nie potwierdzono zapisu kategorii. Sprawdź Category Builder przed ponowną próbą.')
       const record=await response.json()
+      if(!active.current)return
       if(typeof record.id!=='string'||record.organizationId!==seed.organizationId)throw Error('Nie potwierdzono zapisu kategorii.')
-      savedId.current=record.id;if(active.current){setSaveStatus('saved');dirty.current=false}
+      savedId.current=record.id;if(active.current){setSaveStatus('saved');dirty.current=false;analyticsStatus='success'}
       // Known resource IDs make future explicit edits updates, not duplicate creates.
       saveLock.current=false
     }catch(e){if(active.current){setSaveStatus('error');setError(e instanceof Error?e.message:'Nie potwierdzono zapisu kategorii.')}}
+    finally{if(active.current&&attempt){productAnalytics.capture('pci_category_save_finished',{module:'price_change_index',mode:saveMode,status:analyticsStatus,process_attempt_id:attempt.id,duration_ms:productAnalytics.duration(attempt)});productAnalytics.finish(attempt,analyticsStatus)}}
     // An unconfirmed write is never automatically retried with a new create identity.
   }
   const controller:PciBusinessController={name,components:qualifiedComponents,purchase,step,busy,error,result,qualificationIssue,smart:{...preparation,selectedCandidateId,strictPeriodAccepted,proxyMarketOnlyAccepted,olderYear,marketResult,reference:preparation.data?.candidates.find(c=>c.id===selectedCandidateId)??null,
