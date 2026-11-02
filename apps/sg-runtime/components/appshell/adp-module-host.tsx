@@ -1,6 +1,7 @@
 'use client'
 
-import React, {useId, useRef, useState} from 'react'
+import React, {useSyncExternalStore,useEffect, useId, useRef, useState} from 'react'
+import {productAnalytics} from '@/lib/product-analytics/adapter'
 import {AdpWorkspace, ADP_UI_CONTRACT_VERSION} from '@profitia/srm-adp-ui'
 import type {AdpLocalEvent, AdpNavigation, AdpTheme} from '@profitia/srm-adp-ui'
 import '@profitia/srm-adp-ui/styles.css'
@@ -26,11 +27,22 @@ export function AdpModuleHost(props: Props) {
   const instanceId = useId(), currentInstance = useRef(instanceId)
   const [model, setModel] = useState(() => createLocalAdpModel(props.organizationDisplayName))
   const context = useRef(createLocalAdpContext(props.locale))
+  const analyticsReady=useSyncExternalStore(productAnalytics.subscribe,productAnalytics.isReady,productAnalytics.serverReady)
+  const {view,section,dataArea}=props.navigation
+  useEffect(()=>{
+    if(!analyticsReady||!props.active)return
+    productAnalytics.transition('adp-view',view,'adp_view_opened',{module:'adp',view})
+    productAnalytics.transition('screen',`adp:${view}:${section}:${dataArea}`,'screen_viewed',{module:'adp',view,...(view==='data'?{section,data_area:dataArea}:{})})
+    if(view==='data')productAnalytics.transition('adp-section',`${section}:${dataArea}`,'adp_form_section_opened',{module:'adp',section,data_area:dataArea})
+  },[analyticsReady,props.active,view,section,dataArea])
+  useEffect(()=>{if(!props.active){productAnalytics.clearTransition('adp-view');productAnalytics.clearTransition('adp-section')}},[props.active])
+  const onReturn=()=>{if(props.active)productAnalytics.capture('adp_returned_to_appshell',{module:'adp'});props.onReturn()}
   function onLocalEvent(event: AdpLocalEvent, incomingInstance: string) {
+    if(props.active&&incomingInstance===currentInstance.current)productAnalytics.capture('adp_local_action_performed',{module:'adp',action_type:event.type})
     setModel(previous => applyScopedAdpEvent(currentInstance.current, incomingInstance, previous, event, context.current))
   }
-  return <MountBoundary locale={props.locale} onReturn={props.onReturn}>
+  return <MountBoundary locale={props.locale} onReturn={onReturn}>
     <AdpWorkspace contractVersion={ADP_UI_CONTRACT_VERSION} instanceId={instanceId} locale={props.locale} theme={props.theme}
-      model={model} navigation={props.navigation} active={props.active} onNavigate={props.onNavigate} onReturn={props.onReturn} onLocalEvent={onLocalEvent}/>
+      model={model} navigation={props.navigation} active={props.active} onNavigate={props.onNavigate} onReturn={onReturn} onLocalEvent={onLocalEvent}/>
   </MountBoundary>
 }

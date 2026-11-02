@@ -1,6 +1,7 @@
 'use client'
 
-import React, { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from 'react'
+import React, {useSyncExternalStore, createContext, Fragment, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { productAnalytics } from '@/lib/product-analytics/adapter'
 import { ClerkProvider, ClerkFailed, SignOutButton, useAuth } from '@clerk/react'
 import { enUS, plPL } from '@clerk/localizations'
 import type { BrowserPersistencePolicy } from '@/lib/platform/browser-session-storage'
@@ -32,9 +33,22 @@ export function Sg2IdentityProvider({ mode, publishableKey, locale, children, sa
       telemetry={{ disabled: true }} afterSignOutUrl={`/${locale}`}
       {...(satellite ? { isSatellite: true, domain: satellite.domain, satelliteAutoSync: true, signInUrl: satellite.signInUrl, signUpUrl: satellite.signUpUrl }
         : { signInUrl: `/${locale}` })}>
-      {children}<ClerkFailed>{unavailable}</ClerkFailed>
+      <AnalyticsSessionObserver />{children}<ClerkFailed>{unavailable}</ClerkFailed>
     </ClerkProvider>
   </ProviderMode.Provider>
+}
+
+/** Observe the existing session only. Raw SDK IDs stay in this volatile ref. */
+function AnalyticsSessionObserver() {
+  const ready = useSyncExternalStore(productAnalytics.subscribe,productAnalytics.isReady,productAnalytics.serverReady), { isLoaded, isSignedIn, sessionId, userId, orgId } = useAuth()
+  const previous = useRef<string | null>(null)
+  useEffect(() => {
+    if (!ready || !isLoaded) return
+    const key = isSignedIn && sessionId && userId ? JSON.stringify([sessionId,userId,orgId ?? null]) : 'signed-out'
+    if (previous.current !== key) { productAnalytics.reset(); previous.current = key }
+    if (key !== 'signed-out') productAnalytics.once('auth','auth_session_established',{ module: 'appshell' })
+  }, [ready,isLoaded,isSignedIn,sessionId,userId,orgId])
+  return null
 }
 
 export type Sg2SessionPresentation = { status: 'loading' | 'signed-out' } | { status: 'signed-in'; userId: string; sessionId: string; organisationId?: string | null }
