@@ -126,7 +126,7 @@ intercepted transport. UI tests exercise actual host callbacks with bounded publ
 UI/transport fixtures, not live accounts or providers.
 
 Existing source-integrity receipts and their tamper tests must be preserved.
-The proposed additive `productAnalyticsCompatibility` record binds the exact 30
+The proposed additive `productAnalyticsCompatibility` record binds the exact 31
 amended source paths and retains all 94 predecessor fields unchanged. Its negative
 tests reject changed bytes, missing/extra scope and rewritten history. Acceptance
 remains subject to normal PR review. Never replace historical hashes, skip integrity
