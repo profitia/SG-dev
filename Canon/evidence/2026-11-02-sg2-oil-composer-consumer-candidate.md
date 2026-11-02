@@ -39,9 +39,31 @@ Controlled in-memory transport tests validate tracing and exactly-once business
 execution; no event is sent to the live Sentry service. First real trace remains
 part of a future authorized Development run.
 
-`operation-integration.json` retains existing accepted receipts and adds only a
-proposed, nonactive adoption reference. This PR does not assert live Source/E1
-admission or accepted shared-package installation. Required SRM/other shared
+The existing `package.json`, lockfile and `operation-integration.json` retain
+their exact main bytes and historical receipts. Proposed, nonactive references
+are recorded here instead of mutating accepted global integration history:
+
+```json
+{
+  "status": "PROPOSED_NOT_ACCEPTED_NOT_ACTIVE",
+  "producer": {"projectKey":"ARCHITECTURE","taskId":"ARCH-OIL-COMPOSER-CONTRACT-PREP-20261102","pullRequest":866,"sourceSha":"f3a826c66ea1a665fe5f380774f72eedcb48de48","packageVersion":"1.33.0-candidate.1","externalCallSourceDigest":"af7c18e1e01deb7868e4986d3da77ec0f2eea7b6c3081fae24014f57e3b456c7","modelSchemaDigest":"12d134c4ee7cdd769fa9b6c59c4b74e419dda3ea7ff6fae859b3a02a58e745c3"},
+  "documentation": {"pullRequest":868,"approvedAttachmentBytesPreserved":true},
+  "liveRouteCreated":false,"runtimeAdoption":false,"sql028Installed":false,
+  "grantActivated":false,"globalOpenAiModelChanged":false,"finalOwnerGoGranted":false
+}
+```
+
+Run the standalone preparation tests with `node --import tsx --test tests/oil-*.test.ts`
+from `apps/sg-runtime`. Optional `OIL_D0_READONLY_FILE` points only to the licensed
+frozen local file; no licensed input is committed. Run the preparation CLI with
+`node --import tsx scripts/oil-report-prepare.ts <frozen-file> <new-output-directory> <exact-asOf-UTC>`.
+Neither command calls a model. Existing canonical CI verifies the host's prior
+regressions, whole-source typecheck and build. The new preparation tests are
+separately evidenced locally, not claimed executed by that existing CI entry.
+Adding them to canonical CI through a proper receipt continuation remains a
+mandatory gate before live pilot admission; no test guard is weakened here.
+
+This PR does not assert live Source/E1 admission or accepted shared-package installation. Required SRM/other shared
 consumer receipts, exact-head CI/Finder regression, actual E1 human operation,
 Source SQL/policy, model-compatible token counter, key project, prior UNVERIFIED
 reconciliation, candidate/release acceptance and LKG/rollback remain separate.
