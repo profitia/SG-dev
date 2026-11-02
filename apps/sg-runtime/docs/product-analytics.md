@@ -126,9 +126,11 @@ intercepted transport. UI tests exercise actual host callbacks with bounded publ
 UI/transport fixtures, not live accounts or providers.
 
 Existing source-integrity receipts and their tamper tests must be preserved.
-Their current byte bindings reject this amendment until it receives a reviewed,
-additive source compatibility acceptance. Never edit historical hashes, skip
-integrity checks or report a passing isolated suite as passing full CI.
+The proposed additive `productAnalyticsCompatibility` record binds the exact 30
+amended source paths and retains all 94 predecessor fields unchanged. Its negative
+tests reject changed bytes, missing/extra scope and rewritten history. Acceptance
+remains subject to normal PR review. Never replace historical hashes, skip integrity
+checks or report a passing isolated suite as passing full CI.
 
 Before deployment: reviewed PR and exact-head applicable CI, accepted exact SHA,
 recorded authorization, verified retained LKG artifact/digest/configuration and
@@ -147,7 +149,8 @@ KPI success can be claimed from the offline tests.
 ## Execution evidence — 2026-11-02
 
 Result: **PARTIAL — activation BLOCKED**. Source implementation is prepared;
-the existing source-integrity acceptance must be reviewed before merge/release.
+the prepared additive source-integrity acceptance requires normal PR review and
+exact-head controlled CI before merge/release.
 
 - Manifest validation, full SG2 preflight, canonical PMOS begin and require-begin:
   PASS, in the registered SG2 PMOS project `lucky-dream-96138453`, `neondb`, exact
@@ -157,11 +160,12 @@ the existing source-integrity acceptance must be reviewed before merge/release.
 - Typecheck and Next.js production build: **PASS**. Build used no product secrets
   or live database/provider calls. Generated Prisma outputs were preserved
   separately and excluded from the authored change.
-- Selected existing AppShell, ADP, PCI, X-Ray adoption and Sentry regressions:
-  **31 PASS, 4 FAIL**. The four failures are expected existing byte-binding
-  refusals in ADP compatibility, PCI integrity (two) and X-Ray adoption. Historical
-  receipts and their tests are unchanged. These failures are an acceptance gate,
-  not a claim that full CI passed.
+- Selected AppShell, ADP, PCI, X-Ray, Sentry and analytics regressions: **44/44 PASS**.
+  Additional account, identity, category, operation, SQL-source, diagnostic and
+  integrated-journey compatibility regressions: **127/127 PASS**. The initially
+  observed byte-binding refusals are resolved through the exact additive record,
+  with historical evidence retained and additional negative tamper tests. Full
+  controlled CI remains independently required.
 - `npm run lint` cannot execute: this app has no configured ESLint rules and Next
   offers interactive first-time setup. No new lint configuration was introduced.
 - Private dependencies used separate local copies of already installed packages
@@ -181,7 +185,6 @@ the existing source-integrity acceptance must be reviewed before merge/release.
 - Monitoring: **REUSED**; existing Sentry tests pass. SRM standalone, Staging and
   Production were not modified or activated.
 
-Next gate: review the concrete task diff and accept a bounded, additive source
-compatibility continuation that retains historical evidence and negative tamper
-tests. Then rerun exact-head controlled CI. Merge/configuration/deployment require
+Next gate: review Draft PR #862 and the bounded additive compatibility proposal,
+then verify exact-head controlled CI. Merge/configuration/deployment require
 their own recorded approval, recovery evidence and consented live UI validation.
