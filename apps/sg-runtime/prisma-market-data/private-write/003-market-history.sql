@@ -1,4 +1,4 @@
--- SG2 consumer of accepted Source SQL008/009/012/023/024. No credentials,
+-- SG2 consumer of accepted Source SQL008/009/012/024. No credentials,
 -- roles, grants, policies, installation row or deployment are activated here.
 -- Execute transactionally as the existing controlled NOLOGIN Source owner,
 -- after separately approved, table-specific grants from the existing table owner.
@@ -9,10 +9,6 @@ DO $guard$ BEGIN
    AND NOT EXISTS(SELECT 1 FROM pg_auth_members WHERE member=oid))
   OR NOT EXISTS(SELECT 1 FROM profitia_ingestion.installation WHERE singleton AND database_name=current_database()
    AND schema_digest='14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b' AND unmetered_schema_digest IS NOT NULL)
-  OR EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname NOT IN('pg_catalog','information_schema') AND has_schema_privilege(session_user,n.oid,'USAGE') AND has_function_privilege(session_user,p.oid,'EXECUTE WITH GRANT OPTION'))
-  OR NOT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='profitia_market_history' AND nspowner='profitia_ingestion_owner'::regrole)
-  OR (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_market_history' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity AND c.relowner='profitia_ingestion_owner'::regrole)<>3
-  OR (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_market_history' AND t.tgenabled='O' AND t.tgname IN('immutable_ingestions','immutable_revisions','installation_revision'))<>3
   OR (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public'
    AND c.relname IN('market_series','market_observations','market_hydration_state') AND c.relkind='r'
    AND has_table_privilege(current_user,c.oid,'SELECT') AND has_table_privilege(current_user,c.oid,'INSERT') AND has_table_privilege(current_user,c.oid,'UPDATE'))<>3
@@ -23,7 +19,7 @@ REVOKE ALL ON SCHEMA profitia_market_history FROM PUBLIC;
 CREATE TABLE profitia_market_history.installation(
  singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),schema_version text NOT NULL CHECK(schema_version='1.0.0'),
  boundary_digest text NOT NULL CHECK(boundary_digest~'^[a-f0-9]{64}$'),project_id text NOT NULL,branch_id text NOT NULL,
- database_name name NOT NULL,runtime_role name NOT NULL,table_owners jsonb NOT NULL,source_ref text NOT NULL,
+ database_name name NOT NULL,runtime_role name NOT NULL,table_owners jsonb NOT NULL,source_ref text NOT NULL,approval_digest text NOT NULL CHECK(approval_digest~'^[a-f0-9]{64}$'),
  expires_at timestamptz NOT NULL CHECK(isfinite(expires_at))
 );
 CREATE TABLE profitia_market_history.ingestions(

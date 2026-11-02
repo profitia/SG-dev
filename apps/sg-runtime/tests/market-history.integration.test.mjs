@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import http from 'node:http'
+import {fileURLToPath} from 'node:url'
 import {randomUUID,createHash} from 'node:crypto'
 import {createRequire} from 'node:module'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
@@ -64,7 +65,7 @@ test('real Source UNMETERED admission and ordinary-role canonical history persis
    await owner.query("INSERT INTO profitia_ingestion.grants(grant_id,login_role,source_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,'ALLOW','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[randomUUID(),ROLE,HISTORY_PERSIST_SOURCE.id])
    await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,unit,quota_mode,status,source_ref) VALUES($1,'spendguru-market-history',$2,'SOURCE_TRANSACTION','UNMETERED','ACTIVE','SYNTHETIC_ONLY')",[randomUUID(),HISTORY_PERSIST_SOURCE.id])
    const owners=(await owner.query("SELECT jsonb_object_agg(c.relname,pg_get_userbyid(c.relowner)) owners FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname IN('market_series','market_observations','market_hydration_state')")).rows[0].owners
-   await owner.query("INSERT INTO profitia_market_history.installation VALUES(true,'1.0.0',$1,'isolated-history','isolated-history-branch',$2,$3,$4::jsonb,'SYNTHETIC_ONLY',now()+interval '1 hour')",[hash(writerSql),DATABASE,ROLE,JSON.stringify(owners)])
+   await owner.query("INSERT INTO profitia_market_history.installation VALUES(true,'1.0.0',$1,'isolated-history','isolated-history-branch',$2,$3,$4::jsonb,'SYNTHETIC_ONLY','dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',now()+interval '1 hour')",[hash(writerSql),DATABASE,ROLE,JSON.stringify(owners)])
    await owner.query(`GRANT USAGE ON SCHEMA profitia_ingestion,profitia_external_call,profitia_external_native,profitia_market_history TO ${ROLE};GRANT EXECUTE ON FUNCTION profitia_ingestion.runtime_descriptor(),profitia_ingestion.current_state(text,text),profitia_ingestion.lock_ingestion(text,text,text),profitia_ingestion.scope_allows(text,text),profitia_ingestion.reserve(text,text,text,text,uuid),profitia_ingestion.complete(uuid,uuid),profitia_ingestion.receipt(text,text,text,text),profitia_ingestion.append_audit(jsonb),profitia_external_call.descriptor(text,text),profitia_external_call.apply_control(uuid,uuid,text),profitia_external_call.read_status(uuid,text,text),profitia_external_native.descriptor(text,text),profitia_external_native.permits_status(uuid,integer),profitia_market_history.runtime_descriptor(),profitia_market_history.apply_history(uuid,uuid,text),profitia_market_history.read_receipt(text,text),profitia_market_history.due_series(text,timestamptz,integer) TO ${ROLE}`)
   })
   await controlled('profitia_market_read_owner',async()=>{
@@ -138,5 +139,60 @@ test('real Source UNMETERED admission and ordinary-role canonical history persis
   })
  }finally{
   await Promise.allSettled([prisma?.$disconnect(),auditPrisma?.$disconnect(),reader?.$disconnect()]);if(server)await new Promise(resolve=>server.close(resolve));if(owner)await owner.end();if(created)await root.query(`DROP DATABASE ${DATABASE} WITH(FORCE)`);await root.end()
+ }
+})
+
+test('reviewed installer is transactional, preserves old metered policies and replays without rewriting history',async()=>{
+ const {execFileSync}=await import('node:child_process')
+ const rootUrl=assertIsolatedTestConnection(process.env.SG2_OPERATION_TEST_OWNER_URL,'sg2_operation_test','architecture_test_owner'),root=new Client({connectionString:rootUrl});await root.connect()
+ const database='sg2_history_install_'+randomUUID().replaceAll('-',''),u=new URL(rootUrl);u.pathname='/'+database
+ const migrationRole='sg2_market_history_development_migrator',runtimeRole='sg2_market_history_development_runtime'
+ let owner,created=false
+ try{
+  await root.query(`CREATE DATABASE ${database}`);created=true;owner=new Client({connectionString:u.href});await owner.connect()
+  await root.query('BEGIN;SELECT pg_advisory_xact_lock(170001,20261017)')
+  try{
+   if(!(await root.query("SELECT 1 FROM pg_roles WHERE rolname='profitia_ingestion_owner'")).rowCount)await root.query('CREATE ROLE profitia_ingestion_owner NOLOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE')
+   assert.equal((await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[migrationRole])).rowCount,0,'Dedicated test migrator must not preexist')
+   await root.query(`CREATE ROLE ${migrationRole} LOGIN NOINHERIT CREATEROLE;GRANT profitia_ingestion_owner TO ${migrationRole}`);await root.query('COMMIT')
+  }catch(e){await root.query('ROLLBACK');throw e}
+  await owner.query(`GRANT CREATE ON DATABASE ${database} TO profitia_ingestion_owner;GRANT CREATE ON DATABASE ${database} TO ${migrationRole} WITH GRANT OPTION;
+   CREATE TABLE public.market_series(id text PRIMARY KEY,"providerCode" text NOT NULL,"providerSeriesId" text NOT NULL,"providerSeriesKey" text,"displayName" text NOT NULL,frequency text,currency text,unit text,"sourceLabel" text,"createdAt" timestamptz NOT NULL,"updatedAt" timestamptz NOT NULL,UNIQUE("providerCode","providerSeriesId"));
+   CREATE TABLE public.market_observations(id text PRIMARY KEY,"seriesId" text NOT NULL REFERENCES public.market_series(id),"observedAt" timestamptz NOT NULL,value numeric(24,8),"createdAt" timestamptz NOT NULL,"updatedAt" timestamptz NOT NULL,UNIQUE("seriesId","observedAt"));
+   CREATE TABLE public.market_hydration_state(id text PRIMARY KEY,"seriesId" text UNIQUE NOT NULL REFERENCES public.market_series(id),"lastProviderFetchAt" timestamptz,"earliestStoredObservationAt" timestamptz,"latestStoredObservationAt" timestamptz,"lastHydrationStatus" text,"lastHydrationMessage" text,"lastHydratedObservationCount" integer,"createdAt" timestamptz NOT NULL,"updatedAt" timestamptz NOT NULL);
+   GRANT SELECT,INSERT,UPDATE ON public.market_series,public.market_observations,public.market_hydration_state TO profitia_ingestion_owner;`)
+  await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner')
+  await owner.query(sourceSql);await owner.query("INSERT INTO profitia_ingestion.installation(schema_version,schema_digest,environment,project_id,branch_id,database_name) VALUES('1.0.0',$1,'development','installer-test','installer-test-branch',$2)",[hash(sourceSql),database])
+  await owner.query(externalSql);await owner.query("INSERT INTO profitia_external_call.installation VALUES(true,'1.0.0',$1,$2,'development','installer-test','installer-test-branch',$3)",[hash(externalSql),hash(sourceSql),database])
+  await owner.query(nativeSql);await owner.query("INSERT INTO profitia_external_native.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[hash(nativeSql)])
+  await owner.query("INSERT INTO profitia_ingestion.runtime_bindings(login_role,binding_id,service_id,application_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES('existing_fixture',gen_random_uuid(),gen_random_uuid(),'existing-app','PLATFORM_INTERNAL','unchanged','existing-v1','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')")
+  await owner.query("INSERT INTO profitia_ingestion.sources VALUES('existing.source','STORED_SQL_TRANSACTION','SHARED_KNOWLEDGE','existing-v1','quality-v1','classification-v1','receipt-v1','ACTIVE',1,'SYNTHETIC_ONLY',now()+interval '1 hour')")
+  await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,unit,capacity,consumed_count,window_start,window_end,expires_at,status,source_ref) VALUES(gen_random_uuid(),'existing-app','existing.source','SOURCE_TRANSACTION',7,5,now()-interval '1 hour',now()+interval '1 hour',now()+interval '1 hour','ACTIVE','SYNTHETIC_ONLY')")
+  await owner.query('COMMIT')
+  const m=new URL(u);m.username=migrationRole
+  const path=new URL('../prisma-market-data/private-write/003-market-history-install.sql',import.meta.url)
+  const variables={project_id:'installer-test',branch_id:'installer-test-branch',database_name:database,source_sha:'a'.repeat(40),boundary_digest:hash(writerSql),unmetered_digest:hash(unmeteredSql),source_digest:hash(sourceSql),external_digest:hash(externalSql),native_digest:hash(nativeSql),approval_digest:'d'.repeat(64),valid_until:new Date(Date.now()+365*86400000).toISOString()}
+  const args=['--no-psqlrc','--single-transaction','--dbname',m.href,...Object.entries(variables).flatMap(([k,v])=>['--set',k+'='+v]),'--file',fileURLToPath(path)]
+  await owner.query("BEGIN;SET LOCAL ROLE profitia_ingestion_owner;INSERT INTO profitia_ingestion.sources VALUES('sg2.market.history.persist','STORED_SQL_TRANSACTION','SHARED_KNOWLEDGE','collision-v1','quality-v1','classification-v1','receipt-v1','ACTIVE',1,'SYNTHETIC_ONLY',now()+interval '1 hour');COMMIT")
+  assert.throws(()=>execFileSync('psql',args,{stdio:['ignore','pipe','pipe'],maxBuffer:4e6}),'late Source-ID collision must roll back all DDL and role creation')
+  assert.equal((await owner.query("SELECT to_regnamespace('profitia_market_history') AS n")).rows[0].n,null)
+  assert.equal((await owner.query('SELECT count(*)::integer n FROM pg_roles WHERE rolname=$1',[runtimeRole])).rows[0].n,0)
+  assert.equal((await owner.query("SELECT count(*)::integer n FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_ingestion' AND c.relname='budgets' AND a.attname='quota_mode' AND NOT a.attisdropped")).rows[0].n,0)
+  assert.equal((await owner.query("SELECT status FROM profitia_ingestion.runtime_bindings WHERE login_role='existing_fixture'")).rows[0].status,'ACTIVE')
+  await owner.query("BEGIN;SET LOCAL ROLE profitia_ingestion_owner;DELETE FROM profitia_ingestion.sources WHERE source_id='sg2.market.history.persist';COMMIT")
+  execFileSync('psql',args,{stdio:['ignore','pipe','pipe'],maxBuffer:4e6})
+  assert.deepEqual((await owner.query("SELECT capacity,consumed_count::integer,quota_mode FROM profitia_ingestion.budgets WHERE source_id='existing.source'")).rows[0],{capacity:7,consumed_count:5,quota_mode:'METERED'})
+  assert.equal((await owner.query("SELECT status FROM profitia_ingestion.runtime_bindings WHERE login_role='existing_fixture'")).rows[0].status,'ACTIVE')
+  assert.equal((await owner.query('SELECT count(*)::integer n FROM profitia_ingestion.budgets WHERE quota_mode=\'UNMETERED\'')).rows[0].n,3)
+  const roles=(await owner.query('SELECT rolsuper,rolbypassrls,rolinherit,rolcreatedb,rolcreaterole,rolreplication,rolconnlimit FROM pg_roles WHERE rolname=$1',[runtimeRole])).rows[0]
+  assert.deepEqual(roles,{rolsuper:false,rolbypassrls:false,rolinherit:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolconnlimit:2})
+  assert.equal((await owner.query("SELECT has_table_privilege($1,'public.market_observations','SELECT,INSERT,UPDATE,DELETE') AS any_table_access",[runtimeRole])).rows[0].any_table_access,false)
+  const before=(await owner.query('SELECT revision::text FROM profitia_ingestion.installation')).rows[0].revision
+  execFileSync('psql',args,{stdio:['ignore','pipe','pipe'],maxBuffer:4e6});assert.equal((await owner.query('SELECT revision::text FROM profitia_ingestion.installation')).rows[0].revision,before,'exact replay cannot change policy version or counters')
+  const wrong=args.map(x=>x.startsWith('approval_digest=')?'approval_digest='+ 'e'.repeat(64):x);assert.throws(()=>execFileSync('psql',wrong,{stdio:['ignore','pipe','pipe']}))
+  assert.equal((await owner.query('SELECT count(*)::integer n FROM public.market_observations')).rows[0].n,0,'installation never hydrates business data')
+ }finally{
+  if(owner)await owner.end();if(created)await root.query(`DROP DATABASE ${database} WITH(FORCE)`)
+  await root.query(`DROP ROLE IF EXISTS ${runtimeRole};DROP ROLE IF EXISTS ${migrationRole}`);await root.end()
  }
 })
