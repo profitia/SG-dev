@@ -6220,7 +6220,7 @@
     "projectKey": "SG2",
     "targetEnvironment": "development",
     "presentation": "sg2",
-    "sourceOwnerCommit": "33ad196780d42a4a4f7e618848dba6d559363e03",
+    "sourceOwnerCommit": "c03f959442bba7365c933dd6670cf0b6f7280687",
     "previousReceiptSourceSha": "6fdc75192275e296a443db2f1c1d8b4a659b084c",
     "previousReceiptSha256": "bb91201aba0f04de88d5327ce6e35f2dec226bdde4515150fa0dec1e6f93e20f",
     "changedSourcePaths": [
@@ -6272,9 +6272,9 @@
       "apps/srm/src/server/supplier-location-geocoding-runtime.test.ts": "d4330d66e9824dfbb0027e13ea4ac0c0a4551b00efd37647070bd3c3bbd077b1",
       "packages/srm-xray/docs/sg2-host-presentation.md": "20d91dc694b4b95999873dc929ed2877c483e514cede020df526a91fb91d3829",
       "packages/srm-xray/scripts/build-full-report-css.mjs": "32fe9bc09f9537b4e6988b1fc66c49ddb6fe4c9da33fe3a40dcdb63d23d4a1fe",
-      "packages/srm-xray/src/full-report.css": "3d1487a014576273258dcaf4e966ac2b4d3657a715a7281d6c6e35b0bd2ada74",
+      "packages/srm-xray/src/full-report.css": "1b2a4e5bd42c5cf53ec797c09454c5c5109a44ce762fbc9292f08dfb63a4a56c",
       "packages/srm-xray/src/full-workflow.tsx": "08877f3ed4d45706d97996ecd5a2c7e6998899a269ca9a98f1346c8e1b8e562c",
-      "packages/srm-xray/src/sg2-host-theme.css": "6ce4cffbdc91049ada4d789cbacbab21d8351d0fe4e2c5c19b7b3f2643df0527",
+      "packages/srm-xray/src/sg2-host-theme.css": "1daf1f40e24395228d2ac19057ac92926fc35d3a27ef294eff0fb87823497326",
       "packages/srm-xray/src/supplier-search.tsx": "8c26457ca208114fec6e249d0f1df408f7ac4913eae1711eff9f8a3a65c64611"
     },
     "standaloneDefaultsUnchanged": true,
@@ -6310,9 +6310,9 @@
       "../srm/src/server/supplier-location-geocoding-runtime.test.ts": "d4330d66e9824dfbb0027e13ea4ac0c0a4551b00efd37647070bd3c3bbd077b1",
       "../../packages/srm-xray/docs/sg2-host-presentation.md": "20d91dc694b4b95999873dc929ed2877c483e514cede020df526a91fb91d3829",
       "../../packages/srm-xray/scripts/build-full-report-css.mjs": "32fe9bc09f9537b4e6988b1fc66c49ddb6fe4c9da33fe3a40dcdb63d23d4a1fe",
-      "../../packages/srm-xray/src/full-report.css": "3d1487a014576273258dcaf4e966ac2b4d3657a715a7281d6c6e35b0bd2ada74",
+      "../../packages/srm-xray/src/full-report.css": "1b2a4e5bd42c5cf53ec797c09454c5c5109a44ce762fbc9292f08dfb63a4a56c",
       "../../packages/srm-xray/src/full-workflow.tsx": "08877f3ed4d45706d97996ecd5a2c7e6998899a269ca9a98f1346c8e1b8e562c",
-      "../../packages/srm-xray/src/sg2-host-theme.css": "6ce4cffbdc91049ada4d789cbacbab21d8351d0fe4e2c5c19b7b3f2643df0527",
+      "../../packages/srm-xray/src/sg2-host-theme.css": "1daf1f40e24395228d2ac19057ac92926fc35d3a27ef294eff0fb87823497326",
       "../../packages/srm-xray/src/supplier-search.tsx": "8c26457ca208114fec6e249d0f1df408f7ac4913eae1711eff9f8a3a65c64611"
     },
     "publicUi": {
@@ -6413,11 +6413,11 @@
         "src/workflow.ts",
         "tsconfig.json"
       ],
-      "sourceDigest": "024c15099bc9a7956ebc2be7bd48a495ebbef20ce5ed6c5d7109faeac045df48",
+      "sourceDigest": "e991f3c9b966697f430396159c62356b0f8bdbc80f32aba0c6392f8317298018",
       "producer": {
         "projectKey": "SRM",
         "taskId": "SRM-XRAY-SG2-PRESENTATION-20261102",
-        "sourceSha": "33ad196780d42a4a4f7e618848dba6d559363e03",
+        "sourceSha": "c03f959442bba7365c933dd6670cf0b6f7280687",
         "pullRequest": 869
       }
     }
