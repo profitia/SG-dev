@@ -6221,7 +6221,7 @@
       "projectKey": "ARCHITECTURE",
       "taskId": "ARCH-OIL-COMPOSER-CONTRACT-PREP-20261102",
       "pullRequest": 866,
-      "sourceSha": "12a6ddac71c68f536c2d2646996396c3b798e083",
+      "sourceSha": "f3a826c66ea1a665fe5f380774f72eedcb48de48",
       "packageVersion": "1.33.0-candidate.1",
       "externalCallSourceDigest": "af7c18e1e01deb7868e4986d3da77ec0f2eea7b6c3081fae24014f57e3b456c7",
       "modelSchemaDigest": "12d134c4ee7cdd769fa9b6c59c4b74e419dda3ea7ff6fae859b3a02a58e745c3"
@@ -6248,6 +6248,11 @@
       "EXACT_CANDIDATE_ACCEPTANCE",
       "CONTROLLED_RELEASE",
       "FINAL_EXPLICIT_ONE_ATTEMPT_GO"
-    ]
+    ],
+    "documentation": {
+      "pullRequest": 868,
+      "sourceSha": "8637a6fa905b7c1e1c1c6a3942b0a335d6b6792b",
+      "activation": "NOT_MERGED_NOT_ACTIVE"
+    }
   }
 }
