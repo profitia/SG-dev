@@ -140,3 +140,50 @@ test('market-history normal CI entry cannot be removed even with a matching repl
   assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?bytes:current(f),historical))
  }
 })
+
+test('product analytics binds only the exact amended sources and rejects changed payload gates or rewritten historical receipts',()=>{
+ const r=receipt(),a=r.productAnalyticsCompatibility;assert(a)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const file of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
+ for(const mutate of [
+  r=>delete r.productAnalyticsCompatibility.sourceDigests[r.productAnalyticsCompatibility.changedSourcePaths[0]],
+  r=>r.productAnalyticsCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),
+  r=>r.productAnalyticsCompatibility.changedSourcePaths.pop(),
+  r=>r.productAnalyticsCompatibility.previousReceiptSourceSha='0'.repeat(40),
+  r=>r.productAnalyticsCompatibility.previousReceiptSha256='0'.repeat(64),
+  r=>r.productAnalyticsCompatibility.authorizationChanged=true,
+  r=>r.productAnalyticsCompatibility.existingTelemetryChanged=true,
+  r=>r.productAnalyticsCompatibility.deploymentPerformed=true,
+  r=>r.sentryObservabilityCompatibility.sourceDigests['apps/sg-runtime/package.json']='0'.repeat(64),
+  r=>r.unapprovedReceipt={}
+ ]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
+})
+
+test('product analytics and accepted main preserve both histories and reject source, scope and runtime substitutions',()=>{
+ const r=receipt(),a=r.productAnalyticsMainCompatibility;assert(a)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const file of Object.keys(a.sourceDigests))assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
+ for(const mutate of [
+  r=>delete r.productAnalyticsMainCompatibility.sourceDigests['apps/sg-runtime/tests/product-analytics-ui.test.tsx'],
+  r=>r.productAnalyticsMainCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),
+  r=>r.productAnalyticsMainCompatibility.changedSourcePaths.pop(),
+  r=>r.productAnalyticsMainCompatibility.previousReceiptSourceSha='0'.repeat(40),
+  r=>r.productAnalyticsMainCompatibility.previousReceiptSha256='0'.repeat(64),
+  r=>r.productAnalyticsMainCompatibility.analyticsReceiptSourceSha='0'.repeat(40),
+  r=>r.productAnalyticsMainCompatibility.analyticsReceiptSha256='0'.repeat(64),
+  r=>r.productAnalyticsMainCompatibility.sharedBaselineSourceSha='0'.repeat(40),
+  r=>r.productAnalyticsMainCompatibility.testMetadataOnly=false,
+  r=>r.productAnalyticsMainCompatibility.unapprovedField=true,
+  r=>r.marketHistoryIngestionCompatibility.authorizationChanged=false,
+  r=>r.productAnalyticsCompatibility.authorizationChanged=true,
+  r=>r.sentryObservabilityCompatibility.existingTelemetryChanged=true,
+  r=>r.unapprovedReceipt={},
+  ...['analyticsRuntimeChanged','marketHistoryRuntimeChanged','authorizationChanged','schemaChanged','existingTelemetryChanged','srmRuntimeChanged','privatePinsChanged','ciPolicyChanged','newBusinessProviderCalls','deploymentPerformed','productDataChanged'].map(flag=>r=>r.productAnalyticsMainCompatibility[flag]=true),
+ ]){const changed=structuredClone(r);mutate(changed);assert.throws(()=>assertPciSmartIntegrity(changed,current,historical))}
+ for(const sha of [a.previousReceiptSourceSha,a.analyticsReceiptSourceSha])assert.throws(()=>assertPciSmartIntegrity(r,current,(s,file)=>s===sha&&file==='apps/sg-runtime/operation-integration.json'?Buffer.concat([historical(s,file),Buffer.from(' ')]):historical(s,file)))
+ for(const entry of ['tests/product-analytics.test.ts','tests/product-analytics-ui.test.tsx','tests/pci-smart-integrity.test.mjs',' && npm run test:market-history']){
+  const file='apps/sg-runtime/package.json',bytes=Buffer.from(current(file).toString().replace(entry,'')),changed=structuredClone(r),hash=digestForTest(bytes)
+  changed.productAnalyticsMainCompatibility.sourceDigests[file]=hash;changed.productAnalyticsMainCompatibility.applicationSourceDigests['package.json']=hash
+  assert.throws(()=>assertPciSmartIntegrity(changed,f=>f===file?bytes:current(f),historical),entry)
+ }
+})
