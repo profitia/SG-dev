@@ -4,7 +4,38 @@ import {createHash} from 'node:crypto'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
 const SENTRY_HOST_FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
+const MARKET_HISTORY_HOST_FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/root-atomic-claim-adoption.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
+const MARKET_HISTORY_BASE='76d9738ff73abb3600cf806d5b01c6b23133b451',MARKET_HISTORY_CANDIDATE='dba0204f439e4c150690e4a135f7e11f4587ecdc'
+const MARKET_HISTORY_BASE_RECEIPT='0e1e80ee4715e4d1caf40723e4d2ccba524809977fe894865c9acc557c6689fa',MARKET_HISTORY_CANDIDATE_RECEIPT='eb356038f460b0ff486dcdb717e0a05ccfb54fe09371dda7d4c4d28a6edef9f0'
+export function marketHistoryHostSourceView(current,historical){
+ const file='apps/sg-runtime/operation-integration.json',old=historical(MARKET_HISTORY_BASE,file),candidate=historical(MARKET_HISTORY_CANDIDATE,file),actual=current(file)
+ assert.equal(hash(old),MARKET_HISTORY_BASE_RECEIPT);assert.equal(hash(candidate),MARKET_HISTORY_CANDIDATE_RECEIPT)
+ const proposed=hash(actual)===MARKET_HISTORY_CANDIDATE_RECEIPT
+ assert(proposed||hash(actual)===MARKET_HISTORY_BASE_RECEIPT,'only exact accepted baseline or proposed history host is allowed')
+ const candidateReceipt=JSON.parse(candidate),closure={...candidateReceipt.marketHistoryIngestionCompatibility.sourceDigests,[file]:MARKET_HISTORY_CANDIDATE_RECEIPT}
+ const baselineReceipt=JSON.parse(old),active=proposed?closure:baselineReceipt.sentryObservabilityCompatibility.sourceDigests
+ for(const[file,digest]of Object.entries(active))assert.equal(hash(current(file)),digest,'exact closed market-history host '+file)
+ return {bytes:old,proposed,consumerDigests:proposed?Object.fromEntries(Object.entries(closure).map(([f,h])=>['../sg-runtime/'+f.slice(16),h])):{},candidateConsumerDigests:Object.fromEntries(Object.entries(closure).map(([f,h])=>['../sg-runtime/'+f.slice(16),h]))}
+}
+export function assertMarketHistoryHostContinuation(receipt,current,historical){
+ const a=receipt.marketHistoryHostIntegrityContinuation
+ assert.equal(a.taskId,'SRM-MARKET-HISTORY-HOST-INTEGRITY-20261102');assert.equal(a.scope,'TEST_ONLY_EXACT_SG2_MARKET_HISTORY_HOST_COMPATIBILITY')
+ assert.equal(a.status,'PROPOSED_COMPATIBILITY_NOT_RUNTIME_ACCEPTANCE')
+ assert.equal(a.previousReceiptSourceSha,MARKET_HISTORY_BASE);assert.equal(a.candidateConsumerSourceSha,MARKET_HISTORY_CANDIDATE)
+ const bytes=historical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json'),prior=JSON.parse(bytes)
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ const {marketHistoryHostIntegrityContinuation,...preserved}=receipt;assert.deepEqual(preserved,prior,'every earlier SRM receipt remains immutable')
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','status','previousReceiptSourceSha','previousReceiptSha256','candidateConsumerSourceSha','candidateConsumerReceiptSha256','applicationSourceDigests','candidateConsumerSourceDigests','runtimeChanged','authorizationChanged','schemaChanged','monitoringChanged','financialEngineChanged','privatePinsChanged','ciPolicyChanged','deploymentPerformed'].sort())
+ assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),MARKET_HISTORY_HOST_FILES)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(current('apps/srm/'+file)),digest,'exact SRM history compatibility '+file)
+ const view=marketHistoryHostSourceView(current,historical)
+ assert.equal(a.candidateConsumerReceiptSha256,MARKET_HISTORY_CANDIDATE_RECEIPT);assert.deepEqual(a.candidateConsumerSourceDigests,view.candidateConsumerDigests)
+ for(const flag of ['runtimeChanged','authorizationChanged','schemaChanged','monitoringChanged','financialEngineChanged','privatePinsChanged','ciPolicyChanged','deploymentPerformed'])assert.equal(a[flag],false,flag)
+ const changedHost=new Set(Object.keys(a.candidateConsumerSourceDigests).map(f=>'apps/'+f.slice(3)))
+ return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,file.replace(/^apps\/srm\//,''))||view.proposed&&changedHost.has(file)?historical(MARKET_HISTORY_BASE,file):current(file)}
+}
 export function assertSentryHostContinuation(receipt,current,historical){
+ if(receipt.marketHistoryHostIntegrityContinuation){const n=assertMarketHistoryHostContinuation(receipt,current,historical);return assertSentryHostContinuation(n.prior,n.previousBytes,historical)}
  const a=receipt.sentryHostIntegrityContinuation
  assert.equal(a.taskId,'SRM-SENTRY-HOST-INTEGRITY-R2-20261101')
  assert.equal(a.scope,'TEST_ONLY_SG2_HOST_SOURCE_ACCEPTANCE')
@@ -26,6 +57,7 @@ export function assertSentryHostContinuation(receipt,current,historical){
  return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,file.replace(/^apps\/srm\//,''))||Object.hasOwn(a.consumerSourceDigests,'../'+file.slice(5))?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertStyleConsumerAcceptance(receipt,current,historical){
+ if(receipt.marketHistoryHostIntegrityContinuation){const n=assertMarketHistoryHostContinuation(receipt,current,historical);return assertStyleConsumerAcceptance(n.prior,n.previousBytes,historical)}
  const a=receipt.xrayStyleIsolationConsumerAcceptance
  assert.equal(a.taskId,'SRM-XRAY-STYLE-CONSUMER-ACCEPTANCE-B-20261101-R17')
  assert.equal(a.previousReceiptSourceSha,'b965924a63fafb1a24b84ceb389dfd5e78648f57')

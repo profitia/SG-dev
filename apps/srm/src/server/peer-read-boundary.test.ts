@@ -1,3 +1,4 @@
+import {marketHistoryHostSourceView} from '../../scripts/xray-style-acceptance.mjs'
 import {posix} from 'node:path'
 const requirePath=(file:string)=>posix.normalize('apps/srm/'+file)
 import { createRequire } from 'node:module'
@@ -148,7 +149,8 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   Object.assign(currentDigests,receipt.readonlyMissReportAdoption?.applicationSourceDigests,receipt.pciSmartPreparationIntegrityContinuation?.applicationSourceDigests,receipt.pciSmartPreparationIntegrityContinuation?.consumerSourceDigests,receipt.pciSmartResultingMainIntegrityContinuation?.applicationSourceDigests,receipt.pciSmartResultingMainIntegrityContinuation?.consumerSourceDigests,receipt.fullUiParityAdoption?.applicationSourceDigests);
   for(const[file,digest]of Object.entries(consumer.fullUiParityAdoption?.applicationSourceDigests??{}))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
   Object.assign(currentDigests,receipt.pciSmartInputIntegrityContinuation?.applicationSourceDigests,receipt.pciSmartInputIntegrityContinuation?.consumerSourceDigests,receipt.freshPreparationRecovery?.applicationSourceDigests,receipt.xrayStyleIsolationConsumerAcceptance?.applicationSourceDigests,receipt.xrayStyleIsolationConsumerAcceptance?.consumerSourceDigests,receipt.mgbiResponseEnvelopeRecovery?.applicationSourceDigests,receipt.sentryHostIntegrityContinuation?.applicationSourceDigests,receipt.sentryHostIntegrityContinuation?.consumerSourceDigests);
-  Object.assign(currentDigests,receipt.rootAtomicClaimAdoption?.applicationSourceDigests);
+  Object.assign(currentDigests,receipt.rootAtomicClaimAdoption?.applicationSourceDigests,receipt.marketHistoryHostIntegrityContinuation?.applicationSourceDigests);
+  const marketHostView=marketHistoryHostSourceView((file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url)),(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));Object.assign(currentDigests,marketHostView.consumerDigests);
   for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })
