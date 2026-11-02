@@ -15,6 +15,14 @@ export function assertXrayAppShellPresentation(receipt,current,historical){
  assert.equal(hash(bytes),a.previousReceiptSha256)
  const {xrayAppShellPresentation,...preserved}=receipt
  assert.deepEqual(preserved,prior,'every preceding acceptance and digest remains immutable')
+ assert.equal(hash(current(file)),hash(JSON.stringify(receipt,null,2)+'\n'),'exact current owner receipt bytes')
+ const peerFile='apps/sg-runtime/operation-integration.json',peerPriorBytes=historical(a.previousReceiptSourceSha,peerFile)
+ const peerExpected={...JSON.parse(peerPriorBytes),xrayAppShellPresentation:{...a,
+  projectKey:'SG2',previousReceiptSha256:hash(peerPriorBytes),
+  applicationSourceDigests:Object.fromEntries(Object.entries(a.sourceDigests).map(([path,value])=>[posix.relative('apps/sg-runtime',path),value]))
+ }}
+ assert.equal(hash(current(peerFile)),hash(JSON.stringify(peerExpected,null,2)+'\n'),'exact reciprocal host receipt bytes')
+
  assert.deepEqual(a.changedSourcePaths,XRAY_APPSHELL_PRESENTATION_FILES)
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),XRAY_APPSHELL_PRESENTATION_FILES)
  for(const[path,digest]of Object.entries(a.sourceDigests)){assert.match(digest,/^[a-f0-9]{64}$/);assert.equal(hash(current(path)),digest,'exact host presentation source '+path)}
