@@ -840,3 +840,163 @@ test('new profile PHR completion requires publisher success while SG2 retains ME
   assert.equal(resolvePmosProjectProfile({ projectName: 'ARCHITECTURE' }).memorosMode, 'disabled')
   assert.throws(() => resolvePmosProjectProfile({ projectName: 'UNREGISTERED_ARCHITECTURE' }), /Unknown PMOS project/)
 })
+
+import { PrismaClient, Prisma } from '@prisma/client'
+import { createHash } from 'node:crypto'
+import net from 'node:net'
+import { createObjectIntegrityMetadata } from '../../../packages/governance/src'
+import { deriveTaskConversationId } from '../src/lib/pmos/execution-registration'
+import { createPublishedRecoveryOperations } from './pmos-save'
+import { resumePublishedCloseout } from '../src/lib/pmos/published-closeout-recovery'
+import { readRuntimeAuthoritySnapshot, renderRuntimeAuthorityMarkdown, buildRuntimeAuthorityIntegrity } from '../src/lib/pmos/runtime-authority'
+import { acquirePmosLock } from '../src/lib/pmos/advisory-lock'
+import { appendExecutionTrailEvent } from '../src/lib/pmos/execution-trail'
+import { ExecutionTrailEventType, ExecutionTrailEventStatus } from '../../../packages/governance/src'
+
+function recoveryCommand(cmd: string, args: string[], cwd: string, env = process.env) {
+  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', env, maxBuffer: 8 * 1024 * 1024 })
+  assert.equal(r.status, 0, r.stderr || r.stdout)
+  return r.stdout.trim()
+}
+function recoveryJson(file: string, value: unknown) {
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n')
+}
+function recoveryHashes(dir: string) {
+  return Object.fromEntries(fs.readdirSync(dir).sort().map(name => [name, createHash('sha256').update(fs.readFileSync(path.join(dir, name))).digest('hex')]))
+}
+
+test('published recovery uses real PostgreSQL/JSONB and the pinned real PHR publisher', async t => {
+  const pgConfig = spawnSync('pg_config', ['--bindir'], { encoding: 'utf8' })
+  const installed = ['/usr/lib/postgresql', '/opt/homebrew/opt', '/usr/local/opt'].flatMap(parent =>
+    fs.existsSync(parent) ? fs.readdirSync(parent).filter(name => parent.endsWith('/opt') ? name.startsWith('postgresql') : /^\d+$/.test(name)).map(name => path.join(parent, name, 'bin')) : [])
+  const bin = [process.env.PG_BIN, pgConfig.status === 0 ? pgConfig.stdout.trim() : undefined, ...installed, ...(process.env.PATH || '').split(path.delimiter)]
+    .find(p => p && ['initdb', 'pg_ctl', 'postgres'].every(command => fs.existsSync(path.join(p, command))))
+  assert.ok(bin, 'PostgreSQL test binaries are required; PG_BIN may select their directory.')
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-published-recovery-'))
+  const socket = net.createServer()
+  await new Promise<void>(resolve => socket.listen(0, '127.0.0.1', resolve))
+  const port = (socket.address() as net.AddressInfo).port
+  await new Promise<void>(resolve => socket.close(() => resolve()))
+  const data = path.join(root, 'postgres')
+  recoveryCommand(path.join(bin, 'initdb'), ['-D', data, '-A', 'trust', '--no-locale', '-E', 'UTF8', '-U', 'pmos_fixture', '--no-sync'], root)
+  recoveryCommand(path.join(bin, 'pg_ctl'), ['-D', data, '-l', path.join(root, 'postgres.log'), '-w', 'start', '-o', `-h 127.0.0.1 -p ${port} -k ${root} -F -c full_page_writes=off -c max_connections=20`], root)
+  const url = `postgresql://pmos_fixture@127.0.0.1:${port}/postgres?schema=public`
+  const client = new PrismaClient({ datasources: { db: { url } } })
+  let sequence = 0
+  try {
+    const app = path.resolve(__dirname, '..')
+    recoveryCommand(path.join(app, 'node_modules/.bin/prisma'), ['db', 'push', '--skip-generate', '--schema', path.join(app, 'prisma/schema.prisma')], app, { ...process.env, DATABASE_URL: url, DIRECT_URL: url })
+    const authority = JSON.parse(fs.readFileSync(path.join(app, 'test-fixtures/phr-publication-authority-v1.json'), 'utf8')) as { files: Record<string, { sha256: string; content: string }> }
+    async function fixture(project = 'ARCHITECTURE') {
+      const id = ++sequence, dir = path.join(root, `case-${id}`)
+      fs.mkdirSync(dir)
+      const stateRoot = path.join(dir, 'pmos'), repositoryPath = path.join(dir, 'phr'), remote = path.join(dir, 'profitia/project-history-repository.git')
+      fs.mkdirSync(path.dirname(remote), { recursive: true })
+      recoveryCommand('git', ['init', '--bare', remote], dir)
+      recoveryCommand('git', ['init', repositoryPath], dir)
+      recoveryCommand('git', ['config', 'user.email', 'recovery-fixture@example.invalid'], repositoryPath)
+      recoveryCommand('git', ['config', 'user.name', 'Recovery fixture'], repositoryPath)
+      for (const [name, file] of Object.entries(authority.files)) {
+        assert.equal(createHash('sha256').update(file.content).digest('hex'), file.sha256)
+        fs.mkdirSync(path.dirname(path.join(repositoryPath, name)), { recursive: true })
+        fs.writeFileSync(path.join(repositoryPath, name), file.content)
+      }
+      for (const args of [['add', '.'], ['commit', '-m', 'Pinned real publisher fixture'], ['branch', '-M', 'main'], ['remote', 'add', 'origin', remote], ['push', '-u', 'origin', 'main']]) recoveryCommand('git', args, repositoryPath)
+      const profile = resolvePmosProjectProfile({ projectName: project }), taskId = `${profile.projectKey}-PUBLISHED-RECOVERY-FIXTURE-${id}`
+      const conversationId = deriveTaskConversationId(profile.projectKey, taskId)
+      const artifact = { ...makeArtifact(), metadata: { conversationId, hostConversationId: 'fixture-host-001', taskId, project: profile.projectName, workspace: profile.workspaces[0], scope: 'implementation', targetEnvironment: 'development', timestamp: '2026-11-02T10:58:28.028Z' }, analysis: { executionSummary: 'Synthetic completed source', reasoningSummary: 'Isolated publication crash fixture' }, findings: { findings: ['Offline fixture'], blockers: [], residualRisks: [] }, completionEvidence: { closeoutState: 'PMOS_SAVE_SUCCEEDED', pmosSaveStatus: 'SUCCEEDED', runtimeContextRefreshStatus: 'NOT_STARTED', archiveCompletenessStatus: 'PASS', executionTrailStatus: 'PARTIAL', handoffPublicationStatus: 'NOT_STARTED' } } as any
+      const registration = await client.promptExecution.create({ data: { taskId, conversationId, title: 'Synthetic original task', project: profile.projectName, workspace: profile.workspaces[0], executionEnvironment: 'local', scope: 'implementation', promptContent: artifact.task.originalTaskRequest, status: 'running', changedFiles: [], gateSnapshot: { hostConversationId: artifact.metadata.hostConversationId, targetEnvironment: 'development', TARGET_ENVIRONMENT_GATE: 'PASS', PMOS_CONTROL_PLANE_GATE: 'PASS' } } })
+      artifact.contextLinks = { promptExecutionIds: [registration.id] }
+      await client.conversationArtifact.create({ data: { conversationId, taskId, project: profile.projectName, timestamp: new Date(artifact.metadata.timestamp), domains: [], tags: [], userPrompt: artifact.task.originalTaskRequest, llmResponse: artifact.analysis.executionSummary, summary: 'Not finalized', flightRecordJson: artifact as Prisma.InputJsonValue } })
+      const base = `2026-11-02-11:58_${taskId.toLowerCase()}`, stem = path.join(stateRoot, '.pmos/conversations', base)
+      for (const eventType of [ExecutionTrailEventType.TASK_RECEIVED, ExecutionTrailEventType.PROMPT_CAPTURED, ExecutionTrailEventType.PLAN_DECLARED, ExecutionTrailEventType.PMOS_SAVE_STARTED, ExecutionTrailEventType.RUNTIME_CONTEXT_REFRESH_STARTED, ExecutionTrailEventType.COMMAND_EXECUTED, ExecutionTrailEventType.PMOS_SAVE_SUCCEEDED]) appendExecutionTrailEvent({ baseName: base, taskId, eventType, summary: 'Synthetic completed step before finalization interruption', status: ExecutionTrailEventStatus.SUCCEEDED }, stateRoot)
+      recoveryJson(stem + '.json', artifact)
+      fs.writeFileSync(stem + '.md', taskId + '\n' + artifact.metadata.timestamp)
+      recoveryJson(stem + '.integrity.json', createObjectIntegrityMetadata(artifact, { generatedBy: 'fixture', sourceRuntime: 'PMOS', sourceProjection: 'fixture' }))
+      recoveryJson(stem + '.lock.json', createArtifactLock(artifact))
+      recoveryJson(path.join(stateRoot, '.pmos/pending-artifact.json'), artifact)
+      const evidence = { ...makeEvidence(), closeoutState: CloseoutState.RECOVERY_REQUIRED, recoveryRequired: true, archiveCompletenessStatus: 'PASS', executionTrailStatus: 'PRESENT', factPreservationStatus: 'BASELINE_PRESENT' } as any
+      const closeoutRef = `apps/pmos/.pmos/recovery/closeouts/${base}.closeout.json`
+      recoveryJson(path.join(stateRoot, '.pmos/recovery/closeouts', base + '.closeout.json'), evidence)
+      recoveryJson(path.join(stateRoot, '.pmos/recovery/active-closeout.json'), { taskId, conversationId, closeoutEvidencePath: closeoutRef })
+      const candidateProfile = profile.memorosEnabled ? resolvePmosProjectProfile({ projectName: 'ARCHITECTURE' }) : profile
+      const candidateSource = profile.memorosEnabled ? { ...artifact, metadata: { ...artifact.metadata, project: candidateProfile.projectName } } : artifact
+      const candidate = buildPhrOnlyPublicationCandidate({ artifact: candidateSource, closeout: evidence, closeoutRef, projectProfile: candidateProfile })
+      const result = writePhrPublicationAttempt({ publication: buildPhrPublicationInput({ artifact, closeout: candidate.closeout, handoff: candidate.handoff, closeoutRef, conversationArtifactPath: `apps/pmos/.pmos/conversations/${base}.json` }), repositoryPath })
+      assert.equal(result.status, 'PUBLISHED', result.error ?? '')
+      const args = { stateRoot, repositoryPath, commitSha: result.commitSha!, bundlePath: result.bundlePath!, projectKey: profile.projectKey, taskId }
+      const options = () => createPublishedRecoveryOperations({ client, stateRoot, profile, taskId, databaseIdentity: async () => { assert.equal(new URL(url).hostname, '127.0.0.1') } })
+      const bundle = path.join(repositoryPath, result.bundlePath!)
+      return { args, options, bundle, hashes: recoveryHashes(bundle), artifact, registration, base, stateRoot, repositoryPath, taskId, conversationId }
+    }
+    for (const phase of ['ACK_VERIFIED', 'POSTGRES_FINALIZED', 'PENDING_CLEARED', 'REGISTRATION_COMPLETED']) await t.test(`interruption at ${phase}; resume and repeated no-op`, async () => {
+      const f = await fixture(), ops = f.options()
+      ops.checkpoint = async at => { if (at === phase) throw new Error('simulated interruption') }
+      await assert.rejects(resumePublishedCloseout({ ...f.args, operations: ops }), /simulated interruption/)
+      assert.equal((await client.promptExecution.findUnique({ where: { id: f.registration.id } }))?.status, phase === 'REGISTRATION_COMPLETED' ? 'completed' : 'running')
+      assert.equal((await resumePublishedCloseout({ ...f.args, operations: f.options() })).status, 'RECOVERED')
+      const record = await client.conversationArtifact.findUnique({ where: { conversationId: f.conversationId } }), handoffs = await client.artifact.findMany({ where: { taskId: f.taskId } })
+      assert.equal((await resumePublishedCloseout({ ...f.args, operations: f.options() })).status, 'ALREADY_COMPLETE')
+      assert.deepEqual(await client.conversationArtifact.findUnique({ where: { conversationId: f.conversationId } }), record)
+      assert.deepEqual(await client.artifact.findMany({ where: { taskId: f.taskId } }), handoffs)
+      assert.equal(await client.conversationArtifact.count({ where: { taskId: f.taskId } }), 1)
+      assert.equal(handoffs.length, 1)
+      assert.ok((handoffs[0].payload as any).currentState.includes('FINAL_VERDICT = PASS'))
+      assert.ok((handoffs[0].payload as any).currentState.includes('PENDING_ARTIFACT_SLOT_FINAL = CLEAR'))
+      assert.equal(fs.existsSync(path.join(f.stateRoot, '.pmos/pending-artifact.json')), false)
+      const snapshot = await readRuntimeAuthoritySnapshot(client)
+      const runtimeIntegrity = buildRuntimeAuthorityIntegrity(snapshot, renderRuntimeAuthorityMarkdown(snapshot))
+      assert.equal(JSON.parse(fs.readFileSync(path.join(f.stateRoot, '.context/runtime-context.integrity.json'), 'utf8')).runtimeStateHash, runtimeIntegrity.runtimeStateHash)
+      assert.deepEqual(recoveryHashes(f.bundle), f.hashes)
+      assert.equal(recoveryCommand('git', ['rev-parse', 'HEAD'], f.repositoryPath), f.args.commitSha)
+    })
+    await t.test('SRM shares recovery; SG2 cannot bypass required MEMOROS', async () => {
+      const srm = await fixture('SRM')
+      assert.equal((await resumePublishedCloseout({ ...srm.args, operations: srm.options() })).status, 'RECOVERED')
+      const sg2 = await fixture('SG2')
+      await assert.rejects(resumePublishedCloseout({ ...sg2.args, operations: sg2.options() }), /MEMOROS/)
+    })
+    for (const kind of ['foreign-pending', 'wrong-task', 'wrong-conversation', 'unconfirmed-commit', 'corrupt-bundle', 'digest-mismatch', 'missing-publication']) await t.test(`reject ${kind}`, async () => {
+      const f = await fixture(), args = { ...f.args }
+      if (kind === 'foreign-pending') recoveryJson(path.join(f.stateRoot, '.pmos/pending-artifact.json'), { ...f.artifact, metadata: { ...f.artifact.metadata, taskId: 'FOREIGN-TASK' } })
+      if (kind === 'wrong-task') args.taskId = 'FOREIGN-TASK'
+      if (kind === 'wrong-conversation') await client.promptExecution.update({ where: { id: f.registration.id }, data: { conversationId: 'foreign-conversation' } })
+      if (kind === 'missing-publication') args.bundlePath = 'history/2026/11/02/absent'
+      if (kind === 'unconfirmed-commit' || kind === 'corrupt-bundle' || kind === 'digest-mismatch') {
+        fs.writeFileSync(path.join(f.bundle, 'conversation-artifact.json'), '{}\n')
+        for (const a of [['add', '.'], kind === 'digest-mismatch' ? ['commit', '--amend', '--no-edit'] : ['commit', '-m', 'Synthetic invalid bundle']]) recoveryCommand('git', a, f.repositoryPath)
+        args.commitSha = recoveryCommand('git', ['rev-parse', 'HEAD'], f.repositoryPath)
+        if (kind === 'corrupt-bundle' || kind === 'digest-mismatch') recoveryCommand('git', ['push', ...(kind === 'digest-mismatch' ? ['--force'] : []), 'origin', 'HEAD:main'], f.repositoryPath)
+      }
+      const pending = fs.readFileSync(path.join(f.stateRoot, '.pmos/pending-artifact.json'), 'utf8')
+      await assert.rejects(resumePublishedCloseout({ ...args, operations: f.options() }))
+      assert.equal(fs.readFileSync(path.join(f.stateRoot, '.pmos/pending-artifact.json'), 'utf8'), pending)
+      assert.equal(await client.artifact.count({ where: { taskId: f.taskId, artifactKind: 'HANDOFF' } }), 0)
+    })
+    await t.test('concurrent recovery cannot displace the same workspace lock', async () => {
+      const f = await fixture()
+      let entered!: () => void, proceed!: () => void
+      const started = new Promise<void>(r => { entered = r }), gate = new Promise<void>(r => { proceed = r }), ops = f.options()
+      ops.checkpoint = async phase => { if (phase === 'ACK_VERIFIED') { entered(); await gate } }
+      const first = resumePublishedCloseout({ ...f.args, operations: ops })
+      await started
+      await assert.rejects(resumePublishedCloseout({ ...f.args, operations: f.options() }), /lock held/)
+      proceed()
+      assert.equal((await first).status, 'RECOVERED')
+      assert.equal(await client.artifact.count({ where: { taskId: f.taskId, artifactKind: 'HANDOFF' } }), 1)
+      assert.deepEqual(recoveryHashes(f.bundle), f.hashes)
+    })
+    await t.test('lock age never permits stealing a live PMOS writer', () => {
+      const file = path.join(root, 'age-lock'), release = acquirePmosLock(file, 'fixture-conversation')
+      const value = JSON.parse(fs.readFileSync(file, 'utf8')); value.startedAt = '2000-01-01T00:00:00Z'
+      fs.writeFileSync(file, JSON.stringify(value))
+      assert.throws(() => acquirePmosLock(file, 'other-conversation'), /lock held/)
+      release()
+    })
+  } finally {
+    await client.$disconnect()
+    recoveryCommand(path.join(bin, 'pg_ctl'), ['-D', data, '-m', 'immediate', '-w', 'stop'], root)
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+})

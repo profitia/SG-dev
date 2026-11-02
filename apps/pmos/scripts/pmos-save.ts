@@ -27,7 +27,6 @@ import {
 } from '@prisma/client'
 import fs from 'fs'
 import path from 'path'
-import os from 'os'
 import { pathToFileURL } from 'url'
 
 // ── Governance import (canonical single source of truth) ─────────────────────
@@ -102,6 +101,11 @@ import {
   SRM_PMOS_PROJECT_NAME,
 } from '../src/lib/pmos/project-profile'
 
+import { isDeepStrictEqual } from 'node:util'
+import { acquirePmosLock } from '../src/lib/pmos/advisory-lock'
+import { resumePublishedCloseout, sameRecoverySource, type RecoveryOperations, type PublishedProof } from '../src/lib/pmos/published-closeout-recovery'
+import { writePhrPublicationSidecar } from '../src/lib/pmos/phr-publication'
+
 const prisma = new PrismaClient()
 const SG_DEV_ROOT = path.resolve(__dirname, '../../..')
 
@@ -132,14 +136,17 @@ const CANONICAL_CONVERSATION_TYPE_NAMES: ReadonlySet<string> = new Set(
 // ── Advisory File Lock ────────────────────────────────────────────────────────
 // Prevents concurrent pmos-save invocations from racing on the same artifact.
 // This is a simple filesystem advisory lock — not a distributed/Redis lock.
-// Stale lock detection: lock older than LOCK_STALE_MS is treated as abandoned.
+// Save and recovery reclaim only a lock whose local owner process has exited.
 const ADVISORY_LOCK_FILE = path.join(PMOS_DIR, '.pmos-save.lock')
-const LOCK_STALE_MS = 60_000 // 60 seconds — enough for any normal save operation
 
 type ParsedArgs = {
   bootstrapInputPath: string | null
   usedLegacyInputFlag: boolean
   refreshHandoffTaskId: string | null
+  recoveryTaskId: string | null
+  recoveryStateRoot: string | null
+  publicationCommit: string | null
+  publicationBundle: string | null
 }
 
 type PersistedConversationArtifactForPublication = {
@@ -315,7 +322,12 @@ function parseArgs(): ParsedArgs {
     }
   }
 
-  return { bootstrapInputPath, usedLegacyInputFlag, refreshHandoffTaskId }
+  const value = (flag: string) => { const index = args.indexOf(flag); return index < 0 ? null : args[index + 1] ?? null }
+  const recoveryTaskId = value('--recover-published-task-id')
+  const recoveryStateRoot = value('--state-root')
+  if (recoveryTaskId && (bootstrapInputPath || refreshHandoffTaskId)) throw new Error('Published recovery cannot be combined with another PMOS save mode.')
+  if (recoveryStateRoot && !recoveryTaskId) throw new Error('--state-root is restricted to published recovery.')
+  return { bootstrapInputPath, usedLegacyInputFlag, refreshHandoffTaskId, recoveryTaskId, recoveryStateRoot, publicationCommit: value('--publication-commit'), publicationBundle: value('--publication-bundle') }
 }
 
 function ensurePendingArtifactReady(params: ParsedArgs): void {
@@ -636,71 +648,13 @@ export function normalizePendingArtifact(artifact: PendingArtifact): PendingArti
   }
 }
 
-interface AdvisoryLock {
-  pid: number
-  hostname: string
-  startedAt: string
-  conversationId?: string
-}
-
+let releaseOwnedPmosLock: (() => void) | null = null
 function acquireAdvisoryLock(conversationId: string): void {
-  while (true) {
-    const lock: AdvisoryLock = {
-      pid: process.pid,
-      hostname: os.hostname(),
-      startedAt: new Date().toISOString(),
-      conversationId,
-    }
-
-    try {
-      const fd = fs.openSync(ADVISORY_LOCK_FILE, 'wx')
-      fs.writeFileSync(fd, JSON.stringify(lock, null, 2), 'utf-8')
-      fs.closeSync(fd)
-      console.log(`[pmos-save] ✓ Advisory lock acquired (pid=${lock.pid})`)
-      return
-    } catch (error) {
-      const nodeError = error as NodeJS.ErrnoException
-      if (nodeError.code !== 'EEXIST') {
-        throw error
-      }
-
-      const raw = fs.readFileSync(ADVISORY_LOCK_FILE, 'utf-8')
-      let existing: AdvisoryLock
-      try {
-        existing = JSON.parse(raw)
-      } catch {
-        console.warn('[pmos-save] ⚠️  Advisory lock file corrupt — treating as stale, removing.')
-        fs.unlinkSync(ADVISORY_LOCK_FILE)
-        continue
-      }
-
-      const lockedAt = new Date(existing.startedAt).getTime()
-      const ageMs = Date.now() - lockedAt
-
-      if (ageMs > LOCK_STALE_MS) {
-        console.warn(`[pmos-save] ⚠️  Stale advisory lock detected (age: ${Math.round(ageMs / 1000)}s, limit: ${LOCK_STALE_MS / 1000}s)`)
-        console.warn(`[pmos-save]    Previous lock: pid=${existing.pid}, host=${existing.hostname}, conversation=${existing.conversationId ?? 'unknown'}`)
-        console.warn('[pmos-save]    Removing stale lock and continuing.')
-        fs.unlinkSync(ADVISORY_LOCK_FILE)
-        continue
-      }
-
-      console.error('[pmos-save] ❌ ADVISORY LOCK HELD: another pmos-save is already running.')
-      console.error(`[pmos-save]    Lock held by: pid=${existing.pid}, host=${existing.hostname}`)
-      console.error(`[pmos-save]    Started at: ${existing.startedAt} (${Math.round(ageMs / 1000)}s ago)`)
-      console.error(`[pmos-save]    Conversation: ${existing.conversationId ?? 'unknown'}`)
-      console.error('[pmos-save]    Wait for the other process to finish or remove the lock:')
-      console.error(`[pmos-save]    rm ${ADVISORY_LOCK_FILE}`)
-      process.exit(1)
-    }
-  }
+  releaseOwnedPmosLock = acquirePmosLock(ADVISORY_LOCK_FILE, conversationId)
 }
-
 function releaseAdvisoryLock(): void {
-  if (fs.existsSync(ADVISORY_LOCK_FILE)) {
-    fs.unlinkSync(ADVISORY_LOCK_FILE)
-    console.log('[pmos-save] ✓ Advisory lock released')
-  }
+  releaseOwnedPmosLock?.()
+  releaseOwnedPmosLock = null
 }
 
 let artifact: PendingArtifact | null = null
@@ -711,6 +665,7 @@ let pendingBackupPath: string | null = null
 let persistedDbRecordId: string | null = null
 let persistedConversationArtifactForPublication: PersistedConversationArtifactForPublication | null = null
 let persistedHandoffArtifactForPublication: GptHandoffArtifactV1 | null = null
+
 
 function ensureDir(dir: string): void {
   if (!fs.existsSync(dir)) {
@@ -865,6 +820,7 @@ function writeConversationArtifactFiles(params: {
   integrityPath: string
   lockPath: string
   recoveryDir: string
+  operationsDirectory?: string
   handoff?: GptHandoffArtifactV1 | null
   traceability: {
     executionTrailPath?: string | null
@@ -905,7 +861,7 @@ function writeConversationArtifactFiles(params: {
     { filePath: lockPath, content: `${JSON.stringify(createArtifactLock(artifact), null, 2)}\n` },
   ], {
     label: `conversation-artifact:${artifact.metadata.conversationId}`,
-    journalPath: path.join(OPERATIONS_DIR, `${baseName}.conversation-write.json`),
+    journalPath: path.join(params.operationsDirectory ?? OPERATIONS_DIR, `${baseName}.conversation-write.json`),
   })
 }
 
@@ -2822,11 +2778,151 @@ async function finalizeRuntimeContextCloseout(params: {
   writeJson(closeoutEvidencePath!, evidence)
 }
 
+
+/** Production adapter also used by isolated PostgreSQL regression tests. */
+export function createPublishedRecoveryOperations(params: {
+  client: PrismaClient
+  stateRoot: string
+  profile: PmosProjectProfile
+  taskId: string
+  databaseIdentity?: () => Promise<void>
+}): RecoveryOperations {
+  const { client, stateRoot, profile, taskId } = params
+  const local = (...parts: string[]) => path.join(stateRoot, ...parts)
+  let registration: Awaited<ReturnType<typeof client.promptExecution.findUnique>> = null
+  let memoros: MemorosPublicationArtifactV1 | null = null
+  let publicationProof: PublishedProof | null = null
+  const readHandoff = async (conversationId: string): Promise<GptHandoffArtifactV1 | null> => {
+    const row = await client.artifact.findUnique({ where: { id: `${conversationId}:HANDOFF:v1` } })
+    if (!row) return null
+    const parsed = readPersistedHandoffArtifactOrThrow(row)
+    const { createdAtDate: _date, ...handoff } = parsed
+    return handoff
+  }
+  return {
+    async load() {
+      registration = await client.promptExecution.findUnique({ where: { taskId } })
+      if (!registration?.conversationId) throw new Error('Original task registration is missing.')
+      const row = await client.conversationArtifact.findUnique({ where: { conversationId: registration.conversationId } })
+      if (!row?.flightRecordJson) throw new Error('Original ConversationArtifact is not durably persisted.')
+      return { registrationStatus: registration.status, artifact: reconstructFlightRecordFromDbOrThrow({ conversationId: row.conversationId, flightRecordJson: row.flightRecordJson }), handoff: await readHandoff(row.conversationId) }
+    },
+    async assertIdentity(state) {
+      if (!registration || registration.project !== profile.projectName || registration.workspace !== (state.artifact.metadata as unknown as { workspace: string }).workspace || state.artifact.metadata.taskId !== taskId || normalizePmosProjectName(state.artifact.metadata.project) !== profile.projectName) throw new Error('Recovery registration/project/workspace identity mismatch.')
+      assertTaskConversationBinding(registration.project, taskId, state.artifact.metadata.conversationId, registration.gateSnapshot, state.artifact.metadata.hostConversationId)
+      assertPmosCloseoutIdentity(state.artifact.metadata.project, registration.project, registration.gateSnapshot, (state.artifact.metadata as unknown as { targetEnvironment?: string }).targetEnvironment)
+      if (params.databaseIdentity) await params.databaseIdentity()
+      else {
+        const rows = await client.$queryRaw<Array<{ current_database: string }>>`SELECT current_database()`
+        assertDatabaseIdentity(rows[0]?.current_database ?? '', profile.projectName, process.env.DATABASE_URL)
+      }
+      if (profile.memorosEnabled) {
+        const row = await client.artifact.findUnique({ where: { id: `${state.artifact.metadata.conversationId}:PUBLICATION:MEMOROS:v1` } })
+        if (!row || row.status !== PrismaArtifactStatus.DELIVERED) throw new Error('Required MEMOROS delivery is not verified; published PHR cannot bypass it.')
+        memoros = readPersistedMemorosPublicationArtifactOrThrow(row)
+        if (!memoros.payload.ack?.threadId || memoros.taskId !== taskId) throw new Error('MEMOROS acknowledgement does not match this task.')
+      }
+    },
+    verifyOriginalArchive(artifact) {
+      const base = buildArtifactBaseName(artifact)
+      const stem = local('.pmos/conversations', base)
+      const archived = readJsonFileSafe<FlightRecordV1>(`${stem}.json`).value
+      const integrity = readJsonFileSafe<IntegrityMetadata>(`${stem}.integrity.json`).value
+      const lock = readJsonFileSafe<ArtifactLockMetadata>(`${stem}.lock.json`).value
+      if (!archived || !integrity || !lock || !sameRecoverySource(artifact, archived) || !verifyObjectIntegrity(archived, integrity).valid || !verifyArtifactLock(archived, lock).valid || validateConversationArtifactSet(stem).status !== 'PASS' || validateExecutionTrail(base, stateRoot).status !== ExecutionTrailStatus.PRESENT) throw new Error('Original local archive/lock/source verification failed.')
+    },
+    buildHandoff(artifact, closeout, pending) {
+      if (!publicationProof) throw new Error('A verified existing publication is required before HANDOFF finalization.')
+      const handoff = createGptHandoffArtifact({ artifact, closeout, closeoutRef: `apps/pmos/.pmos/recovery/closeouts/${buildArtifactBaseName(artifact)}.closeout.json`, createdAt: artifact.metadata.timestamp, finalizationContext: buildHandoffFinalizationContext({ profile, pendingArtifactSlotFinal: pending, phrPublicationStatus: 'IDEMPOTENT', publicationArtifact: memoros, publicationAck: memoros?.payload.ack ?? null }) })
+      handoff.payload.currentState = [...(handoff.payload.currentState ?? []), 'PHR_PUBLICATION_ACK = VERIFIED_EXISTING', `PHR_PUBLICATION_ID = ${publicationProof.publicationId}`, `PHR_PUBLICATION_COMMIT = ${publicationProof.commitSha}`, `PHR_BUNDLE_HASH = ${publicationProof.bundleHash}`]
+      return handoff
+    },
+    acknowledge(proof, base) {
+      publicationProof = proof
+      const sidecarPath = local('.pmos/recovery/phr-publications', `${base}.json`)
+      const existing = readJsonFileSafe<{ status: string; commitSha: string; verification?: { bundleHash: string; sourceSha256: string; verifiedAt: string } }>(sidecarPath).value
+      if (existing?.verification && (existing.commitSha !== proof.commitSha || existing.verification.bundleHash !== proof.bundleHash || existing.verification.sourceSha256 !== proof.sourceSha256)) throw new Error('The accepted publication proof is immutable; another binding cannot replace it.')
+      if (existing?.status === 'IDEMPOTENT' && existing.commitSha === proof.commitSha && existing.verification?.bundleHash === proof.bundleHash && existing.verification.sourceSha256 === proof.sourceSha256) {
+        proof.verifiedAt = existing.verification.verifiedAt
+        return
+      }
+      const result = { status: 'IDEMPOTENT' as const, retryable: false, bundlePath: proof.bundlePath, manifestPath: proof.manifestPath, commitSha: proof.commitSha, publicationId: proof.publicationId, taskId, artifactCount: 5, repositoryPath: process.env.PHR_REPOSITORY_PATH ?? null, error: null, verification: { mode: 'VERIFIED_EXISTING', bundleHash: proof.bundleHash, sourceSha256: proof.sourceSha256, verifiedAt: proof.verifiedAt, conversationId: proof.conversationId } }
+      writePhrPublicationSidecar({ sidecarPath, result, attemptedAt: proof.verifiedAt, closeoutRef: `apps/pmos/.pmos/recovery/closeouts/${base}.closeout.json`, handoffArtifactId: `${proof.conversationId}:HANDOFF:v1`, conversationArtifactPath: `apps/pmos/.pmos/conversations/${base}.json` })
+      const acknowledged = readJsonFileSafe<typeof result>(sidecarPath).value
+      if (acknowledged?.status !== 'IDEMPOTENT' || acknowledged.commitSha !== proof.commitSha || acknowledged.verification?.bundleHash !== proof.bundleHash || acknowledged.publicationId !== proof.publicationId) throw new Error('Verified publication acknowledgement readback failed.')
+    },
+    async persist(artifact, closeout, handoff) {
+      const validation = validateGptHandoffArtifact(handoff)
+      if (!validation.valid) throw new Error(validation.errors.join('; '))
+      await client.$transaction(async tx => {
+        const row = await tx.conversationArtifact.findUnique({ where: { conversationId: artifact.metadata.conversationId } })
+        if (!row?.flightRecordJson || !sameRecoverySource(row.flightRecordJson as unknown as FlightRecordV1, artifact)) throw new Error('Original database source changed during recovery.')
+        const currentHandoff = await tx.artifact.findUnique({ where: { id: handoff.id } })
+        if (currentHandoff && (currentHandoff.taskId !== taskId || currentHandoff.conversationId !== artifact.metadata.conversationId || currentHandoff.artifactKind !== PrismaArtifactKind.HANDOFF)) throw new Error('Another task owns the HANDOFF identity.')
+        const context = buildHandoffFinalizationContext({ profile, pendingArtifactSlotFinal: (handoff.payload.currentState ?? []).some(line => line === 'PENDING_ARTIFACT_SLOT_FINAL = CLEAR') ? 'CLEAR' : 'OCCUPIED', phrPublicationStatus: 'IDEMPOTENT', publicationArtifact: memoros, publicationAck: memoros?.payload.ack ?? null })
+        const projection = buildConversationArtifactProjection(artifact, `apps/pmos/.pmos/conversations/${buildArtifactBaseName(artifact)}.md`, artifact, closeout, context)
+        if (!isDeepStrictEqual(row.flightRecordJson, artifact) || row.summary !== projection.summary) await tx.conversationArtifact.update({ where: { id: row.id }, data: projection })
+        const data = { artifactKind: PrismaArtifactKind.HANDOFF, artifactNature: PrismaArtifactNature.DERIVED, version: handoff.version, status: PrismaArtifactStatus.GENERATED, taskId, conversationId: handoff.conversationId, sourceRefs: handoff.sourceRefs as unknown as Prisma.InputJsonValue, payload: handoff.payload as unknown as Prisma.InputJsonValue, copyReadyText: handoff.payload.copyReadyText }
+        if (!currentHandoff) await tx.artifact.create({ data: { ...data, id: handoff.id, createdAt: new Date(handoff.createdAt) } })
+        else if (!isDeepStrictEqual(currentHandoff.payload, handoff.payload) || !isDeepStrictEqual(currentHandoff.sourceRefs, handoff.sourceRefs)) await tx.artifact.update({ where: { id: handoff.id }, data })
+      })
+      const record = await client.conversationArtifact.findUnique({ where: { conversationId: artifact.metadata.conversationId } })
+      if (!isDeepStrictEqual(record?.flightRecordJson, artifact) || !isDeepStrictEqual(await readHandoff(artifact.metadata.conversationId), handoff)) throw new Error('Recovery PostgreSQL readback failed.')
+    },
+    writeArchive(artifact, closeout, handoff, base) {
+      const stem = local('.pmos/conversations', base)
+      writeConversationArtifactFiles({ artifact, baseName: base, mdPath: `${stem}.md`, jsonPath: `${stem}.json`, integrityPath: `${stem}.integrity.json`, lockPath: `${stem}.lock.json`, recoveryDir: local('.pmos/recovery/quarantine'), operationsDirectory: local('.pmos/recovery/operations'), handoff, traceability: { closeoutEvidencePath: `apps/pmos/.pmos/recovery/closeouts/${base}.closeout.json`, pendingArtifactBackupPath: closeout.pendingArtifactBackupPath, executionTrailPath: `apps/pmos/.pmos/conversations/logs/${base}.execution-trail.jsonl`, executionTrailMarkdownPath: `apps/pmos/.pmos/conversations/logs/${base}.execution-trail.md` } })
+    },
+    async refreshRuntime() {
+      const snapshot = await readRuntimeAuthoritySnapshot(client)
+      const content = renderRuntimeAuthorityMarkdown(snapshot)
+      const integrity = buildRuntimeAuthorityIntegrity(snapshot, content)
+      const result = repairRuntimeContextArtifacts({ contextFilePath: local('.context/runtime-context.md'), integrityFilePath: local('.context/runtime-context.integrity.json'), recoveryDir: local('.pmos/recovery/runtime'), content, integrity: integrity as unknown as Record<string, unknown>, label: `published-recovery:${taskId}` })
+      if (!result.verificationPassed) throw new Error('PMOS runtime context refresh failed.')
+    },
+    runtimeValid() {
+      const content = local('.context/runtime-context.md')
+      const integrity = readJsonFileSafe<IntegrityMetadata>(local('.context/runtime-context.integrity.json')).value
+      return fs.existsSync(content) && Boolean(integrity && verifyTextIntegrity(fs.readFileSync(content, 'utf8'), integrity).valid)
+    },
+    async completeRegistration() {
+      if (!registration) throw new Error('Original registration was not loaded.')
+      const row = await client.promptExecution.findUnique({ where: { id: registration.id } })
+      if (row?.status === 'completed') return
+      if (!row || !['running','queued'].includes(row.status) || row.taskId !== taskId || row.conversationId !== registration.conversationId) throw new Error('Registration ownership changed.')
+      const completed = await client.conversationArtifact.findUnique({ where: { conversationId: row.conversationId! } })
+      const flight = completed?.flightRecordJson as unknown as FlightRecordV1
+      if (!flight || flight.completionEvidence.closeoutState !== 'CLOSEOUT_COMPLETE') throw new Error('Final conversation evidence is not persisted.')
+      await client.promptExecution.update({ where: { id: row.id }, data: { status: 'completed', completedAt: new Date(), executionSummary: flight.analysis.executionSummary, changedFiles: [...new Set([...flight.actions.artifactsCreated, ...flight.actions.artifactsModified])], blockers: flight.findings.blockers.join('\n') || null, nextSteps: flight.actions.recommendations.join('\n') || null } })
+    },
+    appendCompleted(base) {
+      const events = readExecutionTrailEvents(base, stateRoot)
+      for (const type of [ExecutionTrailEventType.HANDOFF_PUBLICATION_SUCCEEDED, ExecutionTrailEventType.CLOSEOUT_COMPLETED, ExecutionTrailEventType.TASK_COMPLETED]) if (!events.some(event => event.eventType === type && event.taskId === taskId)) appendExecutionTrailEvent({ baseName: base, taskId, eventType: type, actor: 'pmos', source: 'pmos-save/published-recovery', summary: 'Existing PHR verified; missing canonical PMOS finalization completed without publication.', status: ExecutionTrailEventStatus.SUCCEEDED }, stateRoot)
+    },
+    trailComplete(base) { return readExecutionTrailEvents(base, stateRoot).some(event => event.taskId === taskId && event.eventType === ExecutionTrailEventType.TASK_COMPLETED) },
+  }
+}
+
 async function main() {
   const args = parseArgs()
   assertDatabaseUrl('pmos:save')
   console.log('[pmos-save] Starting PMOS persistence routine...')
 
+  if (args.recoveryTaskId) {
+    if (!args.publicationCommit || !args.publicationBundle) throw new Error('Published recovery requires exact --publication-commit and --publication-bundle.')
+    const stateRoot = path.resolve(args.recoveryStateRoot ?? path.join(SG_DEV_ROOT, 'apps/pmos'))
+    const profile = resolvePmosProjectProfile({ projectName: process.env.PMOS_PROJECT_NAME ?? '' })
+    const repositoryRoot = path.resolve(stateRoot, '../..')
+    const remote = (await import('node:child_process')).execFileSync('git', ['remote', 'get-url', 'origin'], { cwd: repositoryRoot, encoding: 'utf8' }).trim()
+    if (!new RegExp('^(https://github\\.com/|git@github\\.com:)' + profile.repository.slug + '(\\.git)?$','i').test(remote) || fs.realpathSync(stateRoot) !== stateRoot || !stateRoot.endsWith('/apps/pmos')) throw new Error('Recovery state root is not the registered repository PMOS workspace.')
+    const phrRoot = process.env.PHR_REPOSITORY_PATH ?? ''
+    const phrRemote = (await import('node:child_process')).execFileSync('git', ['remote', 'get-url', 'origin'], { cwd: phrRoot, encoding: 'utf8' }).trim()
+    if (!/^(https:\/\/github\.com\/|git@github\.com:)profitia\/project-history-repository(?:\.git)?$/i.test(phrRemote)) throw new Error('Wrong production PHR authority.')
+    const operations = createPublishedRecoveryOperations({ client: prisma, stateRoot, profile, taskId: args.recoveryTaskId })
+    const result = await resumePublishedCloseout({ stateRoot, repositoryPath: phrRoot, commitSha: args.publicationCommit, bundlePath: args.publicationBundle, projectKey: profile.projectKey, taskId: args.recoveryTaskId, operations })
+    console.log(JSON.stringify({ status: result.status, taskId: args.recoveryTaskId, publicationId: result.proof.publicationId, publicationCommit: result.proof.commitSha, publication: 'VERIFIED_EXISTING', bundleHash: result.proof.bundleHash }, null, 2))
+    return
+  }
   if (args.refreshHandoffTaskId) {
     await refreshPersistedHandoffForCompletedTask(args.refreshHandoffTaskId)
     console.log('[pmos-save] PMOS handoff refresh COMPLETE.')
