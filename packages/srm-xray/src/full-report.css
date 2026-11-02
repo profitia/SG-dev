@@ -3752,6 +3752,9 @@ No financial formula, qualification or normalization is changed here. */
  .srm-ai-panel,.srm-metric-card,.srm-details details,.srm-history,.srm-btn,.srm-controls select,
  .srm-scope button,.srm-close-window,.srm-history-copy,.srm-demo-tabs button.active) {background:var(--surface);}
 :scope[data-presentation="sg2"] :is(.report-navigation,.report-navigation-mobile) {background:var(--theme-chrome,#003366);}
+:scope[data-presentation="sg2"] .kys-panel h3 {background:var(--theme-chrome,#003366);color:white;}
+:scope[data-presentation="sg2"] :is(.kys-step button,.appshield-search button) {background:var(--theme-action,#005A9C);color:white;}
+:scope[data-presentation="sg2"] :is(.kys-step button,.appshield-search button):hover:not(:disabled) {background:var(--theme-chrome,#003366);}
 :scope[data-presentation="sg2"] .report-navigation a[aria-current="location"] {background:var(--surface);color:var(--ink);}
 :scope[data-presentation="sg2"] :is(.financial-chart-dialog,.health-dialog,.srm-statement-dialog,.srm-history,.srm-picker)::backdrop {background:var(--theme-overlay,#242F44B3);}
 :scope[data-presentation="sg2"] :is(.financial-chart-dialog,.srm-statement-dialog,.srm-history,.srm-picker) {box-shadow:0 20px 80px var(--theme-shadow,#00336626);}
