@@ -36,6 +36,8 @@ test('Cold acquisition adopts canonical native engines, guarded HTTP continuatio
   for(const file of['supplier-native-work-store.ts','provider-source-transport.ts','krs-native-financial.ts']){
    assert.equal(read(cold,'src/server/'+file),fs.readFileSync(path.join(repo,'apps/srm/src/server/'+file),'utf8'))
   }
+  assert.equal(fs.readFileSync(path.join(cold,'packages/srm-xray/src/supplier-search-gateway.ts'),'utf8'),fs.readFileSync(path.join(repo,'packages/srm-xray/src/supplier-search-gateway.ts'),'utf8'));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(cold,'packages/srm-xray/package.json'),'utf8')).exports['./supplier-search-gateway'].default,'./src/supplier-search-gateway.ts');
   assert.match(read(cold,'src/modules/xray/report-controller.ts'),/@profitia\/srm-xray\/workflow-controller/)
   assert.equal(fs.readFileSync(path.join(cold,'packages/srm-xray/src/workflow-controller.ts'),'utf8'),fs.readFileSync(path.join(repo,'packages/srm-xray/src/workflow-controller.ts'),'utf8'))
   assert.match(fs.readFileSync(path.join(cold,'packages/srm-xray/src/workflow-controller.ts'),'utf8'),/response\.status!==202/)

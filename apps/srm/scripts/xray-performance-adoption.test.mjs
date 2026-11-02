@@ -90,7 +90,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/current-human-read'))
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.sourceLeaseClockRecovery?.sourceDigests[file]??receipt.settledExternalFailureRecovery?.sourceDigests[file]??fresh.sourceDigests[file]??xray.sourceDigests[file]??digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.sourceLeaseClockRecovery?.sourceDigests[file]??receipt.settledExternalFailureRecovery?.sourceDigests[file]??fresh.sourceDigests[file]??xray.sourceDigests[file]??digest,'installed '+file)
  }
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
@@ -149,7 +149,7 @@ test('settled provider failure adoption pins its producer and never treats Sourc
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(postfetch??clock??settled).platformVersion)
  for(const[file,digest]of Object.entries(settled.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',settled.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(!file.startsWith('test/')&&file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),postfetch?.sourceDigests[file]??clock?.sourceDigests[file]??digest,'installed '+file)
+  if(!file.startsWith('test/')&&file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??clock?.sourceDigests[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(settled.applicationSourceDigests))assert.equal(hash(beforeClock(file)),digest,file)
  for(const flag of ['redirectPolicyChanged','providerRetryAdded','sourceFailureBypassed','humanAuthorityChanged','sqlSchemaChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(settled[flag],false,flag)
@@ -167,7 +167,7 @@ test('Source clock adoption preserves complete history and exact producer while 
  assert.equal(await sdk.externalCallSourceDigest(),postfetch?.sdkDigests.externalCallSourceDigest??a.sdkDigests.externalCallSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),postfetch?.sourceDigests[file]??digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforePostfetch(file)),digest,file)
 })
@@ -185,7 +185,7 @@ test('FRESH postfetch adoption preserves exact history, producer and current sec
  assert.equal(await currentHumanReadSourceDigest(),a.sdkDigests.currentHumanReadSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforePreparedEvidence(file)),digest,file)
 })
@@ -870,7 +870,7 @@ test('finite Supplier input capture accepts only its exact source and preserves 
  assert.deepEqual(Object.keys(a.producerSourceDigests).sort(),['package.json','src/payload-capture.d.mts','src/payload-capture.mjs'])
  for(const[file,digest]of Object.entries(a.producerSourceDigests)){
   assert.equal(hash(historical(a.producer.sourceSha,'packages/platform-contracts/payload-capture/'+file)),digest,'producer '+file)
-  assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'installed '+file)
+  assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
  }
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',root))
