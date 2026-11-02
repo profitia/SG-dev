@@ -2,6 +2,7 @@ import type {Json} from './operation-context.mjs'
 import type {AccessQuery} from './access-store.mjs'
 import type {createPlatformIngestionHost} from './platform-ingestion.mjs'
 import type {NativeExternalTransport,NativeExternalResult} from './native-external-transport.mjs'
+import type {ModelExecutionPolicy} from './model-execution.mjs'
 export {NATIVE_EXTERNAL_TRANSPORT,nativeExternalTransportSchemaUrl} from './native-external-transport.mjs'
 export type {NativeExternalTransport,NativeExternalResult,NativePathRule} from './native-external-transport.mjs'
 export declare const EXTERNAL_CALL_CONTRACT:Readonly<{id:'profitia.external-call';version:'1.0.0';unit:'UPSTREAM_ATTEMPT_ADMISSION'}>
@@ -52,11 +53,17 @@ type ExecuteHost<Result>=Readonly<{contract:typeof EXTERNAL_CALL_CONTRACT
  execute(input:Readonly<{command:unknown;intentKey:string}>,options?:Readonly<{signal?:AbortSignal}>):Promise<Readonly<Result>>}>
 type NativeCredentialOptions=({nativeTransport:NativeExternalTransport&{readonly credentialMode:'NONE'};getHeaders?:never}
  |{nativeTransport:NativeExternalTransport&{readonly credentialMode:'SERVER_HEADERS'}})
-export declare function createExternalCallHost<Transaction,Command>(options:ExternalCallOptions<Transaction,Command>&NativeCredentialOptions&{
+/** Optional SQL028 policy and mandatory server-owned local counter. The counter
+ * is not a remote token-count API, caller integer or serialized permission. */
+type ModelExecutionOptions<Command>=({modelExecution:ModelExecutionPolicy;countModelInputTokens(body:string):Promise<number>|number
+ getHeaders(command:Command,options:{signal:AbortSignal}):Promise<Record<string,string>>|Record<string,string>}
+ |{modelExecution?:never;countModelInputTokens?:never})
+export declare function createExternalCallHost<Transaction,Command>(options:ExternalCallOptions<Transaction,Command>&NativeCredentialOptions&ModelExecutionOptions<Command>&{
  projectResponse?:never
 }):ExecuteHost<NativeExternalResult>
 export declare function createExternalCallHost<Transaction,Command>(options:ExternalCallOptions<Transaction,Command>&{
  nativeTransport?:never
+ modelExecution?:never;countModelInputTokens?:never
  /** Pure bounded projection; no unadmitted I/O or other side effects. */
  projectResponse(value:Json,options:{status:number;signal:AbortSignal}):Json|Promise<Json>
 }):ExecuteHost<ExternalCallResult>

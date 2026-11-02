@@ -4,6 +4,14 @@ import {NATIVE_EXTERNAL_TRANSPORT,captureNativeTransport,validNativePathRules,na
 import {externalNativeResponse,externalCallEvidence,createExternalCallHost} from '../src/external-call.mjs'
 const config={schemaDigest:'a'.repeat(64),pathRules:[{method:'GET',path:'/data',requestFormat:'NONE'}],redirectOrigins:['https://storage.example'],maximumResponseBytes:1024,credentialMode:'NONE',completionMode:NATIVE_EXTERNAL_TRANSPORT.completionMode}
 const options={config,requestUrl:'https://source.example/data',signal:new AbortController().signal,assertActive(){}}
+test('request ID is absent by default and only the explicit model projection preserves its bounded ASCII value',async()=>{
+ const response=()=>new Response('{}',{headers:{'x-request-id':'req_abc-123','set-cookie':'private=value','openai-organization':'private-org'}})
+ const ordinary=await readNativeProviderResponse(response(),options)
+ assert.equal(ordinary.headers['x-request-id'],undefined)
+ const model=await readNativeProviderResponse(response(),{...options,modelRequestId:true})
+ assert.equal(model.headers['x-request-id'],'req_abc-123');assert.equal(model.headers['set-cookie'],undefined);assert.equal(model.headers['openai-organization'],undefined)
+ await assert.rejects(readNativeProviderResponse(new Response('{}',{headers:{'x-request-id':'x'.repeat(513)}}),{...options,modelRequestId:true}))
+})
 for(const [name,patch] of [['null',null],['unbounded bytes',{maximumResponseBytes:33554433}],['zero',{maximumResponseBytes:0}],['unknown format',{pathRules:[{method:'POST',path:'/data',requestFormat:'RAW'}]}],['remote HTTP',{redirectOrigins:['http://storage.example']}],['credential origin',{redirectOrigins:['https://u:p@storage.example']}],['wildcard',{pathRules:[{method:'GET',path:'/*',requestFormat:'NONE'}]}],['extra authority',{organisationId:'untrusted'}]])test(name+' native policy is refused',()=>assert.throws(()=>captureNativeTransport(patch===null?null:{...config,...patch},'HTTPS'),TypeError))
 test('captured policy is deeply immutable and detached from caller',()=>{const v=structuredClone(config),c=captureNativeTransport(v,'HTTPS');v.pathRules[0].path='/changed';assert.equal(c.pathRules[0].path,'/data');assert(Object.isFrozen(c.pathRules[0]))})
 for(const [parameter,value]of [['HEX24','a'.repeat(24)],['UUID','01234567-1234-4123-8123-123456789012'],['OPAQUE','id_123-x'],['STORAGE_PATH','2026/report-a.xml']])test(parameter+' bounded native path and traversal refusal',()=>{
