@@ -4,6 +4,30 @@ import {createHash} from 'node:crypto'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
 const SENTRY_HOST_FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
+const PRODUCT_ANALYTICS_FLAGS=['runtimeChanged','analyticsAddedToSrm','authorizationChanged','financialEngineChanged','schemaOrRlsChanged','sharedContractsChanged','privatePinsChanged','ciPolicyChanged','providerCallsChanged','runtimeDeploymentPerformed','paidAcquisitionsPerformed']
+export function assertProductAnalyticsHostContinuation(receipt,current,historical){
+ const a=receipt.productAnalyticsHostIntegrityContinuation
+ assert.equal(a.taskId,'SRM-SG2-POSTHOG-HOST-INTEGRITY-20261102')
+ assert.equal(a.scope,'TEST_ONLY_SG2_POSTHOG_HOST_SOURCE_ACCEPTANCE')
+ assert.equal(a.previousReceiptSourceSha,'968443700dea367134e522bb9fe32de75b2e2697')
+ const bytes=historical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json'),prior=JSON.parse(bytes)
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ const {productAnalyticsHostIntegrityContinuation,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every earlier SRM receipt and original digest remains immutable')
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','previousReceiptSourceSha','previousReceiptSha256','consumerSourceSha','applicationSourceDigests','consumerSourceDigests',...PRODUCT_ANALYTICS_FLAGS].sort(),'closed test-only acceptance metadata')
+ assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),FILES)
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(current('apps/srm/'+file)),digest,'exact SRM PostHog host acceptance test '+file)
+ assert.equal(a.consumerSourceSha,'968443700dea367134e522bb9fe32de75b2e2697')
+ const hostBytes=historical(a.consumerSourceSha,'apps/sg-runtime/operation-integration.json'),host=JSON.parse(hostBytes)
+ const expected={'../sg-runtime/operation-integration.json':hash(hostBytes),...Object.fromEntries(Object.entries(host.productAnalyticsCompatibility.sourceDigests).map(([file,digest])=>['../sg-runtime/'+file.slice(16),digest]))}
+ assert.deepEqual(a.consumerSourceDigests,expected,'exact immutable SG2 Product Analytics host closure')
+ for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(current('apps/'+file.slice(3))),digest,'exact SG2 Product Analytics host '+file)
+ const previousHostSha=host.productAnalyticsCompatibility.previousReceiptSourceSha
+ assert.equal(previousHostSha,'76d9738ff73abb3600cf806d5b01c6b23133b451')
+ assert.equal(hash(historical(previousHostSha,'apps/sg-runtime/operation-integration.json')),host.productAnalyticsCompatibility.previousReceiptSha256)
+ for(const flag of PRODUCT_ANALYTICS_FLAGS)assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,file.replace(/^apps\/srm\//,''))?historical(a.previousReceiptSourceSha,file):Object.hasOwn(a.consumerSourceDigests,'../'+file.slice(5))?historical(previousHostSha,file):current(file)}
+}
 export function assertSentryHostContinuation(receipt,current,historical){
  const a=receipt.sentryHostIntegrityContinuation
  assert.equal(a.taskId,'SRM-SENTRY-HOST-INTEGRITY-R2-20261101')
