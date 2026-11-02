@@ -12,9 +12,9 @@ test('strict Responses body refuses tools, background, storage, fallback and exc
  for(const patch of [{tools:[]},{background:false},{store:true},{model:'gpt-5.6-luna'},{max_output_tokens:8001},{service_tier:'priority'},{reasoning:{effort:'high'}},{input:[{role:'user',content:'x'.repeat(65536)}]}])assert.throws(()=>assertModelRequest(policy,JSON.stringify({...body,...patch})))
 })
 test('descriptor must independently confirm exact policy and USD hold',()=>{
- const d={modelSchemaVersion:'1.0.0',modelSchemaDigest:policy.schemaDigest,modelPolicyVersion:'1',modelProfileId:policy.profileId,model:policy.model,modelMaximumInputTokens:15000,modelMaximumOutputTokens:8000,modelMaximumBodyBytes:65536,modelReservationMicroUsd:150000,timeoutMs:120000,modelMaximumAttempts:1,modelRequestIdHeader:'x-request-id',modelClientRequestIdHeader:'x-client-request-id'}
+ const d={modelSchemaVersion:'1.0.0',modelSchemaDigest:policy.schemaDigest,modelPolicyVersion:'1',modelProfileId:policy.profileId,model:policy.model,modelMaximumInputTokens:15000,modelMaximumOutputTokens:8000,modelMaximumBodyBytes:65536,modelReservationMicroUsd:150000,timeoutMs:120000,modelMaximumAttempts:1,modelExpiresAt:new Date(Date.now()+3600000).toISOString(),modelRequestIdHeader:'x-request-id',modelClientRequestIdHeader:'x-client-request-id'}
  assertModelDescriptor(policy,d)
- for(const patch of [{modelMaximumAttempts:2},{timeoutMs:20000},{modelSchemaDigest:'b'.repeat(64)},{modelReservationMicroUsd:0}])assert.throws(()=>assertModelDescriptor(policy,{...d,...patch}))
+ for(const patch of [{modelMaximumAttempts:2},{timeoutMs:20000},{modelSchemaDigest:'b'.repeat(64)},{modelReservationMicroUsd:0},{modelExpiresAt:'unconfirmed'}])assert.throws(()=>assertModelDescriptor(policy,{...d,...patch}))
 })
 test('integer USD upper estimate includes output reasoning; unknown usage stays unknown',()=>{
  assert.equal(standardModelCostMicroUsd({input_tokens:15000,output_tokens:8000}),117500)

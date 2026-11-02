@@ -69,12 +69,15 @@ DECLARE d jsonb;p profitia_model_execution.policies%ROWTYPE;i profitia_model_exe
  IF NOT FOUND OR has_schema_privilege(session_user,'profitia_model_execution','CREATE')
   OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_model_execution'
    AND c.relkind='r' AND (has_table_privilege(session_user,c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
-    OR has_any_column_privilege(session_user,c.oid,'INSERT,UPDATE,REFERENCES'))) THEN RETURN NULL;END IF;
+    OR has_any_column_privilege(session_user,c.oid,'INSERT,UPDATE,REFERENCES')))
+  OR has_function_privilege(session_user,'profitia_external_call.apply_control(uuid,uuid,text)','EXECUTE')
+  OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='profitia_external_call.calls'::regclass AND tgname='model_call_cost_coupling'
+   AND tgenabled='O' AND tgdeferrable AND tginitdeferred AND tgfoid='profitia_model_execution.enforce_cost_hold()'::regprocedure) THEN RETURN NULL;END IF;
  RETURN d||jsonb_build_object('modelSchemaVersion',i.schema_version,'modelSchemaDigest',i.schema_digest,
   'modelPolicyVersion',p.version::text,'modelProfileId',p.profile_id,'model',p.model,
   'modelMaximumInputTokens',p.maximum_input_tokens,'modelMaximumOutputTokens',p.maximum_output_tokens,
   'modelMaximumBodyBytes',p.maximum_body_bytes,'modelReservationMicroUsd',p.reservation_micro_usd,
-  'modelMaximumAttempts',p.maximum_attempts,'modelRequestIdHeader','x-request-id','modelClientRequestIdHeader','x-client-request-id');
+  'modelMaximumAttempts',p.maximum_attempts,'modelExpiresAt',p.expires_at,'modelRequestIdHeader','x-request-id','modelClientRequestIdHeader','x-client-request-id');
 END $fn$;
 CREATE FUNCTION profitia_model_execution.apply_control(p_effect uuid,p_decision uuid,p_envelope text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
@@ -103,6 +106,24 @@ DECLARE v jsonb;d jsonb;c jsonb;p profitia_model_execution.policies%ROWTYPE;r js
   updated_at=clock_timestamp() WHERE call_id=h.call_id;
  RETURN r;
 END $fn$;
+-- Enforce cost coupling even if a runtime later receives a legacy base-control
+-- EXECUTE grant. The deferred check runs before the Source transaction commits;
+-- an old SDK cannot commit PLAN/ATTEMPT and then send without the matching hold.
+-- Existing non-model policies retain their original controls and counters.
+CREATE FUNCTION profitia_model_execution.enforce_cost_hold() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE c profitia_external_call.calls%ROWTYPE;h profitia_model_execution.holds%ROWTYPE;BEGIN
+ IF NOT EXISTS(SELECT 1 FROM profitia_model_execution.policies WHERE policy_id=NEW.policy_id) THEN RETURN NEW;END IF;
+ SELECT * INTO STRICT c FROM profitia_external_call.calls WHERE call_id=NEW.call_id;
+ SELECT * INTO h FROM profitia_model_execution.holds WHERE call_id=c.call_id AND policy_id=c.policy_id;
+ IF NOT FOUND OR (c.status='PLANNED' AND h.status<>'HELD') OR (c.status='ATTEMPT_RESERVED' AND h.status<>'ATTEMPTED')
+  OR (c.status='UNVERIFIED' AND h.status<>'UNVERIFIED') OR (c.status='NOT_SENT' AND h.status<>'NOT_SENT')
+  OR (c.status='RESPONSE' AND h.status NOT IN('RESPONSE_USAGE_PENDING','RESPONSE_USAGE_RECORDED')) THEN
+  RAISE EXCEPTION 'Model call requires its atomic cost hold' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END $fn$;
+CREATE CONSTRAINT TRIGGER model_call_cost_coupling AFTER INSERT OR UPDATE ON profitia_external_call.calls
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION profitia_model_execution.enforce_cost_hold();
 CREATE FUNCTION profitia_model_execution.record_usage(p_call uuid,p_usage jsonb,p_request text,p_response text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
 DECLARE r profitia_external_call.calls%ROWTYPE;h profitia_model_execution.holds%ROWTYPE;d jsonb;i bigint;o bigint;c bigint;cost bigint;BEGIN
@@ -111,7 +132,8 @@ DECLARE r profitia_external_call.calls%ROWTYPE;h profitia_model_execution.holds%
  d:=profitia_model_execution.descriptor(r.source_id,r.resource_id);
  IF d IS NULL OR d->>'policyId' IS DISTINCT FROM r.policy_id::text THEN RAISE EXCEPTION 'Current model authority required' USING ERRCODE='42501';END IF;
  SELECT * INTO h FROM profitia_model_execution.holds WHERE call_id=p_call FOR UPDATE;
- IF NOT FOUND OR h.status NOT IN('RESPONSE_USAGE_PENDING','RESPONSE_USAGE_RECORDED') OR jsonb_typeof(p_usage) IS DISTINCT FROM 'object'
+ IF NOT FOUND OR h.policy_version::text IS DISTINCT FROM d->>'modelPolicyVersion' OR h.policy_id IS DISTINCT FROM r.policy_id
+  OR h.status NOT IN('RESPONSE_USAGE_PENDING','RESPONSE_USAGE_RECORDED') OR jsonb_typeof(p_usage) IS DISTINCT FROM 'object'
   OR (SELECT count(*) FROM jsonb_object_keys(p_usage))<>3 OR NOT(p_usage ?& ARRAY['inputTokens','outputTokens','cachedInputTokens'])
   OR jsonb_typeof(p_usage->'inputTokens') IS DISTINCT FROM 'number' OR jsonb_typeof(p_usage->'outputTokens') IS DISTINCT FROM 'number'
   OR jsonb_typeof(p_usage->'cachedInputTokens') IS DISTINCT FROM 'number'

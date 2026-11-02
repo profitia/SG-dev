@@ -54,16 +54,16 @@ test('SQL028 real Source controls: atomic single-attempt hold, current authority
    binding:{applicationId:'model-test-source',environment:'development',projectId:'model-test-project',branchId:'model-test-branch',databaseName:DB,role:ROLE,deploymentId:'synthetic-model',configurationVersion:'source-v1',schemaDigest:rootDigest},
    source:{id:SOURCE,payloadSchema:'external-call-control-v1',qualityVersion:'quality-v1',classificationVersion:'control-v1'},validateSharedPayload:v=>v&&Object.keys(v).sort().join(',')==='action,callId,configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status',independentQuery:(q,v)=>runtime.query(q,v),
    transact:async work=>{const c=new Client({connectionString:runtimeUrl.toString()});await c.connect();try{await c.query('BEGIN');const r=await work({query:c.query.bind(c),transaction:c});await c.query('COMMIT');return r}catch(e){await c.query('ROLLBACK');throw e}finally{await c.end()}}})
-  const configure=async resource=>controlled(async()=>{
+  const configure=async(resource,model=true)=>controlled(async()=>{
    const id=randomUUID()
    await owner.query("INSERT INTO profitia_external_call.policies(policy_id,login_role,source_id,resource_id,configuration_version,origin,transport,path_rules,maximum_request_bytes,maximum_response_bytes,timeout_ms,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,$2,$3,$4,'model-v1','https://api.openai.com','HTTPS','[{\"method\":\"POST\",\"path\":\"/v1/responses\"}]',65536,4000000,120000,'UPSTREAM_ATTEMPT_ADMISSION',100,now()-interval '1 hour',now()+interval '1 hour',now()+interval '1 hour','ACTIVE','SYNTHETIC_ONLY')",[id,ROLE,SOURCE,resource])
    await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,1,'[{\"method\":\"POST\",\"path\":\"/v1/responses\",\"requestFormat\":\"JSON\"}]','[]',4000000,'SERVER_HEADERS','ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '30 minutes','SYNTHETIC_ONLY')",[id])
-   await owner.query("INSERT INTO profitia_model_execution.policies VALUES($1,'oil-test','gpt-6.1-sol',15000,8000,65536,150000,1,'SYNTHETIC_ONLY','SYNTHETIC_ONLY','SYNTHETIC_ONLY','SYNTHETIC_ONLY',$2,now()+interval '30 minutes','ACTIVE',1)",[id,'SYNTHETIC_GO_'+resource]);return id
+   if(model)await owner.query("INSERT INTO profitia_model_execution.policies VALUES($1,'oil-test','gpt-6.1-sol',15000,8000,65536,150000,1,'SYNTHETIC_ONLY','SYNTHETIC_ONLY','SYNTHETIC_ONLY','SYNTHETIC_ONLY',$2,now()+interval '30 minutes','ACTIVE',1)",[id,'SYNTHETIC_GO_'+resource]);return id
   })
-  const host=resource=>createExternalCallHost({sourceHost,sourceId:SOURCE,resourceId:resource,binding:{role:ROLE,configurationVersion:'model-v1',schemaDigest:baseDigest,origin:'https://api.openai.com',transport:'HTTPS',pathRules:[{method:'POST',path:'/v1/responses'}]},
+  const host=(resource,model=true)=>createExternalCallHost({sourceHost,sourceId:SOURCE,resourceId:resource,binding:{role:ROLE,configurationVersion:'model-v1',schemaDigest:baseDigest,origin:'https://api.openai.com',transport:'HTTPS',pathRules:[{method:'POST',path:'/v1/responses'}]},
    nativeTransport:{schemaDigest:nativeDigest,pathRules:[{method:'POST',path:'/v1/responses',requestFormat:'JSON'}],redirectOrigins:[],maximumResponseBytes:4000000,credentialMode:'SERVER_HEADERS',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'},
-   modelExecution:{schemaDigest:modelDigest,profileId:'oil-test',model:'gpt-6.1-sol',maximumInputTokens:15000,maximumOutputTokens:8000,maximumBodyBytes:65536,reservationMicroUsd:150000,timeoutMs:120000},
-   countModelInputTokens:()=>tokenCount,independentQuery:(q,v)=>runtime.query(q,v),query:(c,q,v)=>c.query(q,v),parseCommand:v=>v,buildRequest:()=>({method:'POST',url:'https://api.openai.com/v1/responses',body}),getHeaders:()=>({authorization:'Bearer SYNTHETIC_ONLY','x-client-request-id':'synthetic-'+randomUUID()})})
+   ...(model?{modelExecution:{schemaDigest:modelDigest,profileId:'oil-test',model:'gpt-6.1-sol',maximumInputTokens:15000,maximumOutputTokens:8000,maximumBodyBytes:65536,reservationMicroUsd:150000,timeoutMs:120000},countModelInputTokens:()=>tokenCount}:{}),
+   independentQuery:(q,v)=>runtime.query(q,v),query:(c,q,v)=>c.query(q,v),parseCommand:v=>v,buildRequest:()=>({method:'POST',url:'https://api.openai.com/v1/responses',body}),getHeaders:()=>({authorization:'Bearer SYNTHETIC_ONLY','x-client-request-id':'synthetic-'+randomUUID()})})
   globalThis.fetch=async(url,init)=>{
    assert.equal(String(url),'https://api.openai.com/v1/responses');assert.equal(init.headers.get('authorization'),'Bearer SYNTHETIC_ONLY');hits++
    if(mode==='FAIL')throw Error('SYNTHETIC network outcome unknown')
@@ -75,14 +75,32 @@ test('SQL028 real Source controls: atomic single-attempt hold, current authority
    await assert.rejects(runtime.query('SELECT profitia_model_execution.apply_control($1,$2,$3)',[randomUUID(),randomUUID(),'{}']))
   })
   const id=await configure('successful')
+  await t.test('legacy SDK cannot bypass a model hold even under a base EXECUTE grant; ordinary non-model callers still work',async()=>{
+   await controlled(()=>owner.query(`GRANT EXECUTE ON FUNCTION profitia_external_call.apply_control(uuid,uuid,text),profitia_external_native.descriptor(text,text) TO ${ROLE}`))
+   try{
+    await assert.rejects(host('successful',false).execute({intentKey:randomBytes(32).toString('hex'),command:{}}),ExternalCallUnavailable)
+    assert.equal(hits,0);assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_model_execution.holds')).rows[0].n,0)
+    assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_external_call.calls WHERE policy_id=$1',[id])).rows[0].n,0)
+    await assert.rejects(host('successful').execute({intentKey:randomBytes(32).toString('hex'),command:{}}),ExternalCallUnavailable)
+    await configure('legacy-no-model',false)
+    const old=await host('legacy-no-model',false).execute({intentKey:randomBytes(32).toString('hex'),command:{}})
+    assert.equal(externalNativeResponse(old).status,200);assert.equal(hits,1)
+   }finally{await controlled(()=>owner.query(`REVOKE EXECUTE ON FUNCTION profitia_external_call.apply_control(uuid,uuid,text),profitia_external_native.descriptor(text,text) FROM ${ROLE}`))}
+  })
   await t.test('over-limit or unknown input token count stops before reservation and provider I/O',async()=>{
    const before=hits
    for(const invalid of [15001,NaN,0]){tokenCount=invalid;await assert.rejects(host('successful').execute({intentKey:randomBytes(32).toString('hex'),command:{}}),ExternalCallUnavailable)}
    tokenCount=100;assert.equal(hits,before);assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_model_execution.holds')).rows[0].n,0)
   })
+  await t.test('missing or disabled SQL cost coupling closes the modern descriptor before any attempt',async()=>{
+   const before=hits
+   await controlled(()=>owner.query('ALTER TABLE profitia_external_call.calls DISABLE TRIGGER model_call_cost_coupling'))
+   try{await assert.rejects(host('successful').execute({intentKey:randomBytes(32).toString('hex'),command:{}}),ExternalCallUnavailable);assert.equal(hits,before)}
+   finally{await controlled(()=>owner.query('ALTER TABLE profitia_external_call.calls ENABLE TRIGGER model_call_cost_coupling'))}
+  })
   await t.test('two concurrent intents admit exactly one provider attempt and one 0.15 USD hold',async()=>{
-   const h=host('successful'),r=await Promise.allSettled([1,2].map(()=>h.execute({intentKey:randomBytes(32).toString('hex'),command:{}})))
-   assert.equal(r.filter(x=>x.status==='fulfilled').length,1);assert.equal(hits,1)
+   const before=hits,h=host('successful'),r=await Promise.allSettled([1,2].map(()=>h.execute({intentKey:randomBytes(32).toString('hex'),command:{}})))
+   assert.equal(r.filter(x=>x.status==='fulfilled').length,1);assert.equal(hits,before+1)
    const response=externalNativeResponse(r.find(x=>x.status==='fulfilled').value);assert.equal(response.headers.get('x-request-id'),'req_synthetic');assert.equal(response.headers.get('set-cookie'),null)
    const holds=(await owner.query('SELECT * FROM profitia_model_execution.holds WHERE policy_id=$1',[id])).rows
    assert.equal(holds.length,1);assert.equal(holds[0].reserved_micro_usd,'150000');assert.equal(holds[0].status,'RESPONSE_USAGE_PENDING')

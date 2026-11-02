@@ -91,7 +91,7 @@ export function createExternalCallHost(options){
       ||!(Date.parse(d.expiresAt)>now())||Date.parse(d.expiresAt)>now()+30000
       ||b.transport==='LOCAL_SYNTHETIC_HTTP'&&d.sourceRef!=='SYNTHETIC_ONLY')throw new ExternalCallUnavailable('NOT_SENT')
     if(native){try{assertNativeDescriptor(native,d);if(!(Date.parse(d.nativeExpiresAt)>now()))throw Error()}catch{throw new ExternalCallUnavailable('NOT_SENT')}}
-    if(model){try{assertModelDescriptor(model,d)}catch{throw new ExternalCallUnavailable('NOT_SENT')}}
+    if(model){try{assertModelDescriptor(model,d);if(!(Date.parse(d.modelExpiresAt)>now()))throw Error()}catch{throw new ExternalCallUnavailable('NOT_SENT')}}
     if(publicWeb&&(d.publicWebSchemaVersion!=='1.0.0'||d.publicWebSchemaDigest!==publicBinding.schemaDigest
       ||!/^[1-9][0-9]*$/.test(d.publicWebPolicyVersion??'')||d.publicWebMaximumRedirects!==4
       ||d.publicWebSyntheticOrigin!==(publicBinding.syntheticOrigin??null)||!(Date.parse(d.publicWebExpiresAt)>now())
@@ -106,7 +106,7 @@ export function createExternalCallHost(options){
     &&(!native||['nativeSchemaDigest','nativePolicyVersion','nativeCompletionMode','nativeCredentialMode','nativeMaximumResponseBytes','nativeExpiresAt'].every(k=>a[k]===b[k])
       &&operationPayloadDigest(a.nativePathRules)===operationPayloadDigest(b.nativePathRules)&&operationPayloadDigest(a.nativeRedirectOrigins)===operationPayloadDigest(b.nativeRedirectOrigins))
     &&(!publicWeb||['publicWebSchemaDigest','publicWebPolicyVersion','publicWebMaximumRedirects','publicWebSyntheticOrigin','publicWebSourceRef','publicWebExpiresAt'].every(k=>a[k]===b[k]))
-    &&(!model||['modelSchemaDigest','modelPolicyVersion','modelProfileId','model','modelMaximumInputTokens','modelMaximumOutputTokens','modelMaximumBodyBytes','modelReservationMicroUsd','modelMaximumAttempts'].every(k=>a[k]===b[k]))
+    &&(!model||['modelSchemaDigest','modelPolicyVersion','modelProfileId','model','modelMaximumInputTokens','modelMaximumOutputTokens','modelMaximumBodyBytes','modelReservationMicroUsd','modelMaximumAttempts','modelExpiresAt'].every(k=>a[k]===b[k]))
   const control=(action,callId,status,httpStatus,responseDigest,requestDigest,intentKey)=>diagnosticAsync('SOURCE_'+action,async()=>{
     const intentDigest=hmac(intentKey,JSON.stringify({scope:'intent-v1',applicationId:source.applicationId,environment:source.environment,sourceId,resourceId}))
     // Exactly eight sorted keys: identical to the existing root canonical JSON.
@@ -172,7 +172,7 @@ export function createExternalCallHost(options){
     // An explicit native policy authorizes bounded completion of an admitted
     // upstream attempt, with CURRENT checks immediately before send and at
     // settlement. Its deadline is not a renewed HUMAN/private SQL lease.
-    const abort=new AbortController(),deadline=Math.min(now()+d.timeoutMs,Date.parse(native?d.nativeExpiresAt:d.expiresAt),publicWeb?Date.parse(d.publicWebExpiresAt):Infinity);let timer,listener,sent=false,result,rejectedHttpStatus=null,settledStatus='NOT_SENT'
+    const abort=new AbortController(),deadline=Math.min(now()+d.timeoutMs,Date.parse(native?d.nativeExpiresAt:d.expiresAt),publicWeb?Date.parse(d.publicWebExpiresAt):Infinity,model?Date.parse(d.modelExpiresAt):Infinity);let timer,listener,sent=false,result,rejectedHttpStatus=null,settledStatus='NOT_SENT'
     const assertActive=()=>{if(abort.signal.aborted||now()>=deadline)throw new ExternalCallUnavailable(sent?'UNVERIFIED':'NOT_SENT')}
     try{
       result=await Promise.race([

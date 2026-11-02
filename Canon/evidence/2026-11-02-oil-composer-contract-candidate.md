@@ -24,7 +24,11 @@ disposable loopback PostgreSQL 16. Provider I/O is replaced by a controlled
 synthetic fetch with a synthetic credential, never a real OpenAI call. It checks
 owner/rollback, missing policy, input-token denial, concurrency, response IDs,
 usage immutability, NULL rejection, ordinary-role denial, revoked Source and
-UNVERIFIED hold retention. This does not certify a live human E1 adoption,
+UNVERIFIED hold retention. A deferred SQL constraint also prevents legacy
+base-control bypass without the model hold, including under a synthetic extra
+EXECUTE grant; a normal non-model policy remains usable. The model role must
+not have direct base-control EXECUTE, and a disabled/missing coupling trigger
+closes the model descriptor. This does not certify a live human E1 adoption,
 real key/project, exact provider tokenization or live billing.
 
 The final local evidence index and exact source SHA are supplied in the handoff

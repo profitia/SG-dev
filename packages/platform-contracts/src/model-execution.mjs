@@ -26,6 +26,7 @@ export function assertModelDescriptor(policy,descriptor){
   ||descriptor.modelMaximumInputTokens!==policy.maximumInputTokens||descriptor.modelMaximumOutputTokens!==policy.maximumOutputTokens
   ||descriptor.modelMaximumBodyBytes!==policy.maximumBodyBytes||descriptor.modelReservationMicroUsd!==policy.reservationMicroUsd
   ||descriptor.timeoutMs!==policy.timeoutMs||descriptor.modelMaximumAttempts!==1
+  ||!Number.isFinite(Date.parse(descriptor.modelExpiresAt))
   ||descriptor.modelRequestIdHeader!=='x-request-id'||descriptor.modelClientRequestIdHeader!=='x-client-request-id')invalid()
 }
 export function assertModelRequest(policy,body){
