@@ -153,6 +153,7 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   const marketHostView=marketHistoryHostSourceView((file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url)),(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));Object.assign(currentDigests,marketHostView.consumerDigests);
   Object.assign(currentDigests,receipt.productAnalyticsRootClaimTestContinuation?.applicationSourceDigests,receipt.productAnalyticsHostIntegrityContinuation?.consumerSourceDigests);
   Object.assign(currentDigests,receipt.productAnalyticsMainHostCompatibility?.applicationSourceDigests,receipt.productAnalyticsMainHostCompatibility?.consumerSourceDigests);
+  Object.assign(currentDigests,Object.fromEntries(Object.entries(receipt.xrayAppShellPresentation?.sourceDigests??{}).map(([file,digest])=>[posix.relative('apps/srm',file),digest])));
   for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash(readFileSync(new URL('../../'+file,import.meta.url))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

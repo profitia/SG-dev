@@ -8,7 +8,7 @@ function read(name){
 }
 // Source component styles remain independently usable. The full product gets
 // one deterministic scoped bundle, so ADP/Finder/host controls cannot inherit it.
-const names=['report-layout.css','supplier-locations.css','msr-financial-tables.css','financial-scanner.css','supplier-search.css'];
+const names=['report-layout.css','supplier-locations.css','msr-financial-tables.css','financial-scanner.css','supplier-search.css','sg2-host-theme.css'];
 let css=names.map(read).join('\n'),fonts=[];
 css=css.replace(/@font-face\s*\{[^}]*\}/g,font=>{fonts.push(font);return ''});
 // Unbound component tokens retain their native fallback instead of inheriting

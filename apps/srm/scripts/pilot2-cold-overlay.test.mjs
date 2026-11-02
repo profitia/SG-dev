@@ -21,7 +21,12 @@ test('Cold acquisition adopts canonical native engines, guarded HTTP continuatio
   assert.equal(proof.overlay.privateDataAuthority,'EXISTING_E1_ORGANISATION_NO_CLONED_ARCHIVE')
   assert.equal(proof.overlay.postClickClerkReads,false)
   for(const file of['src/server/financial-indicators.ts','src/server/financial-scanner.ts',
-   'src/server/financial-revisions.ts','package-lock.json'])assert.equal(read(cold,file),read(scanner,file),file)
+   'package-lock.json'])assert.equal(read(cold,file),read(scanner,file),file)
+  // COLD already adopted this exact accepted optimization before the UI task.
+  // Retain the historical scanner bytes and independently pin the accepted COLD bytes.
+  const ordering='04ce255f',revisions='apps/srm/src/server/financial-revisions.ts';
+  assert.equal(read(scanner,'src/server/financial-revisions.ts'),execFileSync('git',['show',ordering+'^:'+revisions],{cwd:repo,encoding:'utf8'}));
+  assert.equal(read(cold,'src/server/financial-revisions.ts'),execFileSync('git',['show',ordering+':'+revisions],{cwd:repo,encoding:'utf8'}));
   assert.equal(read(cold,'app/page.tsx').replace('const response = await transport("/api/xray/financial-excel"','const response = await fetch("/api/xray/financial-excel"'),read(scanner,'app/page.tsx'))
   assert.match(read(cold,'src/modules/xray/krs-session-transport.ts'),/const paths=new Set\(\['\/api\/xray\/financial-excel'/)
   assert.doesNotMatch(read(cold,'src/modules/xray/krs-session-transport.ts').split('\n')[1],/financial-excel/,'Export cannot inherit a report admission')
