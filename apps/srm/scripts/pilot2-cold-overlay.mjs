@@ -157,6 +157,8 @@ export function coldPilot2(repo,output,proof){
  const captureName='@profitia/platform-payload-capture',capturePath='file:../../packages/platform-contracts/payload-capture'
  manifest.dependencies[captureName]=capturePath;lock.packages[''].dependencies[captureName]=capturePath
  lock.packages['node_modules/'+captureName]=JSON.parse(fs.readFileSync(path.join(repo,appLock),'utf8')).packages['node_modules/'+captureName]
+ // The existing local SDK source is current; carry its matching locked version.
+ lock.packages['node_modules/@profitia/platform-contracts']=JSON.parse(fs.readFileSync(path.join(repo,appLock),'utf8')).packages['node_modules/@profitia/platform-contracts']
  write(appPackage,JSON.stringify(manifest,null,2)+'\n');write(appLock,JSON.stringify(lock,null,2)+'\n')
 
  const transport='apps/srm/src/modules/xray/krs-session-transport.ts'

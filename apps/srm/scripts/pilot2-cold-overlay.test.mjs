@@ -22,10 +22,11 @@ test('Cold acquisition adopts canonical native engines, guarded HTTP continuatio
   assert.equal(proof.overlay.postClickClerkReads,false)
   const coldManifest=JSON.parse(read(cold,'package.json')),coldLock=JSON.parse(read(cold,'package-lock.json')),scannerManifest=JSON.parse(read(scanner,'package.json')),scannerLock=JSON.parse(read(scanner,'package-lock.json'));
   const capture='@profitia/platform-payload-capture';
+  assert.deepEqual(coldLock.packages['node_modules/@profitia/platform-contracts'],JSON.parse(fs.readFileSync(path.join(repo,'apps/srm/package-lock.json'),'utf8')).packages['node_modules/@profitia/platform-contracts']);
   assert.equal(coldManifest.dependencies[capture],'file:../../packages/platform-contracts/payload-capture');
   const { [capture]:added,...preservedDependencies}=coldManifest.dependencies;
   assert.deepEqual(preservedDependencies,scannerManifest.dependencies);
-  for(const [name,value]of Object.entries(scannerLock.packages))if(name)assert.deepEqual(coldLock.packages[name],value,'retained locked dependency '+name);
+  for(const [name,value]of Object.entries(scannerLock.packages))if(name && name!=='node_modules/@profitia/platform-contracts')assert.deepEqual(coldLock.packages[name],value,'retained locked dependency '+name);
   for(const name of ['private-work-json.ts','diagnostic-trace.ts','supplier-location-telemetry.ts'])assert.equal(read(cold,'src/server/'+name),fs.readFileSync(path.join(repo,'apps/srm/src/server/'+name),'utf8'));
   for(const name of ['package.json','src/payload-capture.mjs','src/payload-capture.d.mts'])assert.equal(fs.readFileSync(path.join(cold,'packages/platform-contracts/payload-capture',name),'utf8'),fs.readFileSync(path.join(repo,'packages/platform-contracts/payload-capture',name),'utf8'));
 
