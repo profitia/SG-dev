@@ -867,9 +867,13 @@ function recoveryHashes(dir: string) {
 }
 
 test('published recovery uses real PostgreSQL/JSONB and the pinned real PHR publisher', async t => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-published-recovery-'))
-  const bin = [process.env.PG_BIN, '/opt/homebrew/opt/postgresql@16/bin', '/usr/lib/postgresql/16/bin', '/usr/lib/postgresql/17/bin', '/usr/lib/postgresql/15/bin'].find(p => p && fs.existsSync(path.join(p, 'initdb')))
+  const pgConfig = spawnSync('pg_config', ['--bindir'], { encoding: 'utf8' })
+  const installed = ['/usr/lib/postgresql', '/opt/homebrew/opt', '/usr/local/opt'].flatMap(parent =>
+    fs.existsSync(parent) ? fs.readdirSync(parent).filter(name => parent.endsWith('/opt') ? name.startsWith('postgresql') : /^\d+$/.test(name)).map(name => path.join(parent, name, 'bin')) : [])
+  const bin = [process.env.PG_BIN, pgConfig.status === 0 ? pgConfig.stdout.trim() : undefined, ...installed, ...(process.env.PATH || '').split(path.delimiter)]
+    .find(p => p && ['initdb', 'pg_ctl', 'postgres'].every(command => fs.existsSync(path.join(p, command))))
   assert.ok(bin, 'PostgreSQL test binaries are required; PG_BIN may select their directory.')
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pmos-published-recovery-'))
   const socket = net.createServer()
   await new Promise<void>(resolve => socket.listen(0, '127.0.0.1', resolve))
   const port = (socket.address() as net.AddressInfo).port
