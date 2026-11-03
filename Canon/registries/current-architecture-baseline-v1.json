@@ -760,6 +760,60 @@
         "SRM"
       ],
       "onboardingAuthorization": "Explicit human owner architecture approval of PR #756, 2026-10-27, host 01a17d49-61a6-7821-ba8e-18b45d3c4048; Canon/evidence/2026-10-27-srm-adp-ui-onboarding.md. Authoritative only after required exact-head CI/governance and controlled main acceptance; no automatic merge or product deployment approval."
+    },
+    {
+      "id": "NEWSFEED-BASE-001",
+      "capability": "Newsfeed",
+      "name": "Newsfeed independent runtime",
+      "pathPatterns": [
+        "apps/newsfeed-runtime/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Independent reusable publication monitoring, private user observations/history/notification inbox and producer orchestration through versioned contracts; host login, navigation, chat presentation and E1 authority remain outside this owner.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "b4023cb02e10fc7045f8b2bc173224ae3da3cb5a",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner NEWSFEED v1.0 — OWNER APPROVAL & GOVERNANCE ACTIVATION, 2026-11-03, host 01a19fe2-0dc1-7ca2-8acf-28504684e3c1, decision ARCH-NEWSFEED-G1-ACTIVATION-20261103; Canon/evidence/2026-11-03-newsfeed-g1-governance-activation.md. Governance activation only; no implementation, resource creation, data grants or deployment."
+    },
+    {
+      "id": "NEWSFEED-BASE-002",
+      "capability": "Newsfeed Contracts",
+      "name": "Newsfeed versioned integration contracts",
+      "pathPatterns": [
+        "packages/newsfeed-contracts/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Framework-neutral versioned producer-consumer contracts for observations, publication history, monitoring state and private notification events; no provider transport, host UI or independent identity authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "b4023cb02e10fc7045f8b2bc173224ae3da3cb5a",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner NEWSFEED v1.0 — OWNER APPROVAL & GOVERNANCE ACTIVATION, 2026-11-03, host 01a19fe2-0dc1-7ca2-8acf-28504684e3c1, decision ARCH-NEWSFEED-G1-ACTIVATION-20261103; Canon/evidence/2026-11-03-newsfeed-g1-governance-activation.md. Governance activation only; no implementation, resource creation, data grants or deployment."
+    },
+    {
+      "id": "NEWSFEED-BASE-003",
+      "capability": "Newsfeed CI",
+      "name": "Newsfeed offline validation CI",
+      "pathPatterns": [
+        ".github/workflows/newsfeed-ci.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Reserved exact-path independent Newsfeed contract/runtime validation; no workflow creation, deployment pipeline, product credentials or live provider activation authorized by this onboarding.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "b4023cb02e10fc7045f8b2bc173224ae3da3cb5a",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner NEWSFEED v1.0 — OWNER APPROVAL & GOVERNANCE ACTIVATION, 2026-11-03, host 01a19fe2-0dc1-7ca2-8acf-28504684e3c1, decision ARCH-NEWSFEED-G1-ACTIVATION-20261103; Canon/evidence/2026-11-03-newsfeed-g1-governance-activation.md. Governance activation only; no implementation, resource creation, data grants or deployment."
     }
   ],
   "cleanupFindings": [
