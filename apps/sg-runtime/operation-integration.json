@@ -6909,9 +6909,10 @@
       "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "0957fa753220de1b90f931af44b0f169ffaad440410fe910d87fd266673de10f",
       "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "6eeb98ea2c78d7bf0acdc9a015a6b6359fa588bf824961f652113dd859e36c0d",
       "apps/sg-runtime/tests/operation-context.test.mjs": "2eddf25247efa4b461a06f063a82ca5c1ed8359e4de482c5b553ae12ff610496",
-      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "8c6bde3b246a3c76bb2efc798fc6e63926c749ef88132b38dc185e54db688b5b",
+      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "4d0a1926136f4198f870f4457e36e758d77bc660d981fc7cceb87a8386d166a8",
       "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "59906e720fd5c34ee6bd02fcb1408438471ca47f3ad6b33e990ab09c1251020a",
       "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "2e7a23bb388a91eb329ebb571815fb3dab55914eba61210bb38cd6f1e86c2f9c",
+      "apps/sg-runtime/tests/private-host.integration.test.mjs": "d78873daeae49f1350d80f6f610e4272b58d859c5ecdcfcf603b675e0b85fff5",
       "apps/sg-runtime/tests/self-service-account.test.ts": "aae3477946b4d0d0b463cd69d155a970d796aefd1a5180b4611aae588aef5236",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "0a0932a18f63441f76a4faabe6ba1c698c9d5b59933654252666994172e493f4",
       "apps/sg-runtime/tests/xray-gateway.test.ts": "3b93a1dc9ba2e24af0fe4880adc23d0ff396b2d21a99fdf4d2023fd467e56a86"
@@ -6926,9 +6927,10 @@
       "tests/integrated-buyer-journey-package.test.mjs": "0957fa753220de1b90f931af44b0f169ffaad440410fe910d87fd266673de10f",
       "tests/native-sql-roundtrips.test.mjs": "6eeb98ea2c78d7bf0acdc9a015a6b6359fa588bf824961f652113dd859e36c0d",
       "tests/operation-context.test.mjs": "2eddf25247efa4b461a06f063a82ca5c1ed8359e4de482c5b553ae12ff610496",
-      "tests/pci-smart-integrity.mjs": "8c6bde3b246a3c76bb2efc798fc6e63926c749ef88132b38dc185e54db688b5b",
+      "tests/pci-smart-integrity.mjs": "4d0a1926136f4198f870f4457e36e758d77bc660d981fc7cceb87a8386d166a8",
       "tests/pci-smart-integrity.test.mjs": "59906e720fd5c34ee6bd02fcb1408438471ca47f3ad6b33e990ab09c1251020a",
       "tests/porr-demo-middleware.test.ts": "2e7a23bb388a91eb329ebb571815fb3dab55914eba61210bb38cd6f1e86c2f9c",
+      "tests/private-host.integration.test.mjs": "d78873daeae49f1350d80f6f610e4272b58d859c5ecdcfcf603b675e0b85fff5",
       "tests/self-service-account.test.ts": "aae3477946b4d0d0b463cd69d155a970d796aefd1a5180b4611aae588aef5236",
       "tests/xray-fresh-performance-adoption.test.mjs": "0a0932a18f63441f76a4faabe6ba1c698c9d5b59933654252666994172e493f4",
       "tests/xray-gateway.test.ts": "3b93a1dc9ba2e24af0fe4880adc23d0ff396b2d21a99fdf4d2023fd467e56a86"

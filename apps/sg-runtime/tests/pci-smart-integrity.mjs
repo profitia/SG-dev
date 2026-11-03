@@ -366,7 +366,7 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical,{
  assert.equal(digest(bytes),a.previousReceiptSha256)
  const {sourceHubApiPathCompatibility,...preserved}=receipt
  assert.deepEqual(preserved,prior,'every accepted product, analytics and historical receipt is immutable')
- assert.deepEqual(Object.keys(a.consumerSourceDigests).sort(),["apps/dashboard-preview/package-lock.json", "apps/sg-runtime/package-lock.json", "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx", "apps/sg-runtime/tests/category-operation.test.ts", "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs", "apps/sg-runtime/tests/identity-runtime.test.ts", "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs", "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs", "apps/sg-runtime/tests/operation-context.test.mjs", "apps/sg-runtime/tests/pci-smart-integrity.mjs", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs", "apps/sg-runtime/tests/porr-demo-middleware.test.ts", "apps/sg-runtime/tests/self-service-account.test.ts", "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs", "apps/sg-runtime/tests/xray-gateway.test.ts"])
+ assert.deepEqual(Object.keys(a.consumerSourceDigests).sort(),["apps/dashboard-preview/package-lock.json", "apps/sg-runtime/package-lock.json", "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx", "apps/sg-runtime/tests/category-operation.test.ts", "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs", "apps/sg-runtime/tests/identity-runtime.test.ts", "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs", "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs", "apps/sg-runtime/tests/operation-context.test.mjs", "apps/sg-runtime/tests/pci-smart-integrity.mjs", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs", "apps/sg-runtime/tests/porr-demo-middleware.test.ts", "apps/sg-runtime/tests/private-host.integration.test.mjs", "apps/sg-runtime/tests/self-service-account.test.ts", "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs", "apps/sg-runtime/tests/xray-gateway.test.ts"])
  for(const [p,h]of Object.entries(a.consumerSourceDigests))assert.equal(digest(current(p)),h,'current consumer compatibility '+p)
  for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(digest(current('packages/platform-contracts/'+p)),h,'current SDK '+p)
  for(const [p,h]of Object.entries(a.producerMetadataDigests))assert.equal(digest(current(p)),h,'current optional peer metadata '+p)
@@ -377,5 +377,7 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical,{
  const peerFile='apps/srm/operation-integration.json'
  const peerReceipt=validatePeer?JSON.parse(current(peerFile)):null
  const peerView=peerReceipt?.sourceHubApiPathCompatibility?assertPeerApiPathCompatibility(peerReceipt,current,historical,{validatePeer:false}):null
- return {prior,previousBytes:p=>p===file||mapped.has(p)?historical(a.previousReceiptSourceSha,p):peerView?.previousBytes(p)??current(p)}
+ const priorBytes=new Map([[file,bytes]])
+ const predecessor=p=>{if(!priorBytes.has(p))priorBytes.set(p,Buffer.from(historical(a.previousReceiptSourceSha,p)));return Buffer.from(priorBytes.get(p))}
+ return {prior,previousBytes:p=>p===file||mapped.has(p)?predecessor(p):peerView?.previousBytes(p)??current(p)}
 }
