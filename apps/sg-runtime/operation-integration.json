@@ -6486,8 +6486,11 @@
       "apps/sg-runtime/tests/self-service-account.test.ts",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
       "apps/sg-runtime/tests/xray-gateway.test.ts",
+      "apps/srm/scripts/rural-location-release.test.mjs",
       "apps/srm/scripts/xray-performance-adoption.test.mjs",
-      "apps/srm/scripts/xray-style-acceptance.mjs"
+      "apps/srm/scripts/xray-style-acceptance.mjs",
+      "apps/srm/src/server/peer-read-boundary.test.ts",
+      "apps/srm/src/server/supplier-location-geocoding-runtime.test.ts"
     ],
     "addedBoundaryFiles": [
       "apps/sg-runtime/components/appshell/appshell-card-motion.ts"
@@ -6506,14 +6509,17 @@
       "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "45ce3734c7baa42f593c100179b943e1e455b34f5948972768c794406309afcf",
       "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "30ebbfe8448b0d7903c8a339391752af65377d01906753e6eecd53dafbaec123",
       "apps/sg-runtime/tests/operation-context.test.mjs": "f54a716cf297d945572503124f731058a4ef889e579a0d11c072443e7b516745",
-      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "7000424f85f919c8c7b809589935422562aea5839d1e6352db690596f01bf141",
+      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "ab7399955d1229b8c903339219b20ac0a6752c90be8fb717f621e08abb2d687c",
       "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "71c29ec2a33a57d47d48b27108896d40a29f31d67c78c37738d04e7c6c1db1f9",
       "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "2b323b1ad9e78f2310edf41842f4244e6287ec55e1163f7e1f54ff4aace451bd",
       "apps/sg-runtime/tests/self-service-account.test.ts": "fb266891d48746a580c8ba4a19a8b7513ad38cf78d851e87b1bae09e6db74534",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "fb79a90a6c2fa149891dcf25e2ad1532149be6cd9fa941a9f66c301c265c4f37",
       "apps/sg-runtime/tests/xray-gateway.test.ts": "16ba95eadfbedb186f5f7aff813e8dfeab7dacdb24fe01c51f1656730539f965",
+      "apps/srm/scripts/rural-location-release.test.mjs": "58ea06b490266270899055ba4d83e1fdef2fb8fb337118d64cc93283657846d0",
       "apps/srm/scripts/xray-performance-adoption.test.mjs": "1fb86c8d8965f248b9cff2d446959af9c343af489c53aa4428eb910dbe07891c",
-      "apps/srm/scripts/xray-style-acceptance.mjs": "8d4eaa96a973439bab0e8acd97c26fda1083819c04ac0fcb5a9e03bbd448e2da"
+      "apps/srm/scripts/xray-style-acceptance.mjs": "8d4eaa96a973439bab0e8acd97c26fda1083819c04ac0fcb5a9e03bbd448e2da",
+      "apps/srm/src/server/peer-read-boundary.test.ts": "55f39b54a1bb537870fd333322879f7b459a785ce3a8d7461b17033fb48b4c95",
+      "apps/srm/src/server/supplier-location-geocoding-runtime.test.ts": "43fa7b799a1d2f1441fc7a0eabde00bf84a558422b2a81c9afbdc946001ec15d"
     },
     "applicationSourceDigests": {
       "components/appshell/appshell-card-motion.ts": "71138d6b7ddd8085abad29ca4cd8d46346252cb9db242f6fe38716606422fe1d",
@@ -6529,14 +6535,17 @@
       "tests/integrated-buyer-journey-package.test.mjs": "45ce3734c7baa42f593c100179b943e1e455b34f5948972768c794406309afcf",
       "tests/native-sql-roundtrips.test.mjs": "30ebbfe8448b0d7903c8a339391752af65377d01906753e6eecd53dafbaec123",
       "tests/operation-context.test.mjs": "f54a716cf297d945572503124f731058a4ef889e579a0d11c072443e7b516745",
-      "tests/pci-smart-integrity.mjs": "7000424f85f919c8c7b809589935422562aea5839d1e6352db690596f01bf141",
+      "tests/pci-smart-integrity.mjs": "ab7399955d1229b8c903339219b20ac0a6752c90be8fb717f621e08abb2d687c",
       "tests/pci-smart-integrity.test.mjs": "71c29ec2a33a57d47d48b27108896d40a29f31d67c78c37738d04e7c6c1db1f9",
       "tests/porr-demo-middleware.test.ts": "2b323b1ad9e78f2310edf41842f4244e6287ec55e1163f7e1f54ff4aace451bd",
       "tests/self-service-account.test.ts": "fb266891d48746a580c8ba4a19a8b7513ad38cf78d851e87b1bae09e6db74534",
       "tests/xray-fresh-performance-adoption.test.mjs": "fb79a90a6c2fa149891dcf25e2ad1532149be6cd9fa941a9f66c301c265c4f37",
       "tests/xray-gateway.test.ts": "16ba95eadfbedb186f5f7aff813e8dfeab7dacdb24fe01c51f1656730539f965",
+      "../srm/scripts/rural-location-release.test.mjs": "58ea06b490266270899055ba4d83e1fdef2fb8fb337118d64cc93283657846d0",
       "../srm/scripts/xray-performance-adoption.test.mjs": "1fb86c8d8965f248b9cff2d446959af9c343af489c53aa4428eb910dbe07891c",
-      "../srm/scripts/xray-style-acceptance.mjs": "8d4eaa96a973439bab0e8acd97c26fda1083819c04ac0fcb5a9e03bbd448e2da"
+      "../srm/scripts/xray-style-acceptance.mjs": "8d4eaa96a973439bab0e8acd97c26fda1083819c04ac0fcb5a9e03bbd448e2da",
+      "../srm/src/server/peer-read-boundary.test.ts": "55f39b54a1bb537870fd333322879f7b459a785ce3a8d7461b17033fb48b4c95",
+      "../srm/src/server/supplier-location-geocoding-runtime.test.ts": "43fa7b799a1d2f1441fc7a0eabde00bf84a558422b2a81c9afbdc946001ec15d"
     },
     "moduleRuntimeChanged": false,
     "backendChanged": false,
