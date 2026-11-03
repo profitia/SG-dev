@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PROPOSED_NOT_ACTIVE",
+  "capability": "Platform Source Hub",
+  "logicalOwner": "Architecture Platform",
+  "repository": "profitia/SG-dev",
+  "projectKey": "ARCHITECTURE",
+  "targetEnvironment": "development",
+  "directionApproval": "OWNER_APPROVED_2026-11-03",
+  "exactG1Approval": "PENDING",
+  "documentAcceptance": "PENDING",
+  "activeRegistryChanged": false,
+  "implementationAuthorized": false,
+  "resourceCreationByAgentAuthorized": false,
+  "deploymentAuthorized": false,
+  "referenceMain": "ef5d12e458309fcd4d6dddf76be95c03cfca7678",
+  "proposedSurfaces": [
+    {
+      "id": "SOURCE-HUB-BASE-001",
+      "capability": "Platform Source Hub",
+      "name": "Platform Source Hub backend",
+      "pathPatterns": [
+        "apps/platform-source-hub/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Shared external-provider transport, capability catalogue, licensed acquisition, provenance and usage; excludes consumer business logic and Identity authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ]
+    },
+    {
+      "id": "SOURCE-HUB-BASE-002",
+      "capability": "Platform Source Hub Contracts",
+      "name": "Platform Source Hub versioned contract families",
+      "pathPatterns": [
+        "packages/platform-source-hub-contracts/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Framework-neutral independently versioned news, calendar, observations, indicators and external-forecast contracts; common metadata only.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ]
+    },
+    {
+      "id": "SOURCE-HUB-BASE-003",
+      "capability": "Platform Source Hub CI",
+      "name": "Platform Source Hub offline CI",
+      "pathPatterns": [
+        ".github/workflows/platform-source-hub-ci.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Future exact-path offline contracts and backend validation; excludes deployment or live provider credentials.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ]
+    }
+  ],
+  "activationProcedure": [
+    "Owner reviews exact proposal commit and grants G1 for these three paths, owner, repository, profile and Development only; separately accepts exact canon and Newsfeed amendment bytes.",
+    "Freshness-check origin/main and exact PR HEAD; rerun routing collision/negative tests against current active and parallel proposals.",
+    "In an authorized activation change, add only these rows to current-architecture-baseline-v1.json, bind classificationReferenceSha to actual pre-onboarding main and truthful onboardingAuthorization; preserve existing rows and epoch metadata.",
+    "Update architecture-onboarding-v1.json, routing canon, governance-manifest-v2.json and active documents/dependencies/load order with actual approval provenance. No proposal JSON is an executable registry.",
+    "Run all applicable CI and live Architecture PMOS preflight, then controlled main acceptance; record exact main SHA and actual-main CI before declaring ACTIVE.",
+    "Runtime, migrations, consumer adoption, provider calls and deployment each require separately authorized tasks; owner manually provisions all Neon/Render resources."
+  ],
+  "proposedActiveDocuments": [
+    {
+      "id": "platform-source-hub-business-and-architecture-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-platform-source-hub-business-and-architecture-canon.md",
+      "proposalPath": "Canon/proposals/v1.0-platform-source-hub-business-and-architecture-canon.md",
+      "status": "PROPOSED_NOT_ACTIVE",
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "proposedLoadOrder": 460,
+      "dependsOn": [
+        "repository-routing",
+        "shared-development-contract-integration",
+        "newsfeed-business-and-architecture-canon"
+      ]
+    },
+    {
+      "id": "newsfeed-source-hub-responsibility-amendment",
+      "version": "1.1",
+      "path": "Canon/v1.1-newsfeed-source-hub-responsibility-amendment.md",
+      "proposalPath": "Canon/proposals/v1.1-newsfeed-source-hub-responsibility-amendment.md",
+      "status": "PROPOSED_NOT_ACTIVE",
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "proposedLoadOrder": 470,
+      "dependsOn": [
+        "newsfeed-business-and-architecture-canon",
+        "platform-source-hub-business-and-architecture-canon"
+      ]
+    }
+  ],
+  "proposedOnboardingEntry": {
+    "capability": "Platform Source Hub",
+    "owner": "Architecture Platform",
+    "projectKey": "ARCHITECTURE",
+    "targetEnvironment": "development",
+    "pathPattern": "apps/platform-source-hub/**",
+    "contractsPath": "packages/platform-source-hub-contracts/**",
+    "ciPath": ".github/workflows/platform-source-hub-ci.yml",
+    "approval": {
+      "decision": "PENDING",
+      "governanceOnly": true,
+      "implementationAuthorized": false,
+      "resourceCreationByAgentAuthorized": false,
+      "deploymentAuthorized": false
+    },
+    "status": "PROPOSED_NOT_ACTIVE",
+    "consumerAdoption": "SEPARATE_OWNER_TASK_AND_EXACT_CONTRACT_ACCEPTANCE",
+    "runtimeCreated": false,
+    "decisionDocument": "Canon/v1.0-platform-source-hub-business-and-architecture-canon.md",
+    "evidenceDocument": "Canon/evidence/2026-11-03-platform-source-hub-stage1b-foundation.md"
+  },
+  "activationFreshnessNote": "Load orders 460/470 and dependencies are a proposal against referenceMain, not reserved active slots. Recheck current main, parallel proposals and each dependency before activation; preserve active Newsfeed v1.0 and record actual approval provenance."
+}
