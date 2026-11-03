@@ -101,7 +101,7 @@ test('abort refuses the opening before authentication or SQL',async()=>{
 })
 test('public declarations compile positive calls and reject alternate authority and Work output',async()=>{
  const require=createRequire(new URL('../../../../apps/architecture-lab/package.json',import.meta.url)),ts=require('typescript')
- const file=new URL('./types/current-fresh-report.mts',import.meta.url).pathname
+ const file=fileURLToPath(new URL('./types/current-fresh-report.mts',import.meta.url))
  const program=ts.createProgram([file],{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.NodeNext,moduleResolution:ts.ModuleResolutionKind.NodeNext,strict:true,noEmit:true,types:[],lib:['lib.es2022.d.ts','lib.dom.d.ts']})
  const errors=ts.getPreEmitDiagnostics(program)
  assert.equal(errors.length,0,ts.formatDiagnosticsWithColorAndContext(errors,{getCanonicalFileName:x=>x,getCurrentDirectory:()=>process.cwd(),getNewLine:()=> '\n'}))

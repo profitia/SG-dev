@@ -8,6 +8,14 @@ The owner's Stage2A request explicitly authorises two executable APIs, controlle
 
 After reviewing the unapplied API_PATH proposal the owner explicitly approved: “Zatwierdzam ten wąski wyjątek i dalszą realizację”. The approval permits the separately versioned shared SDK extension and only the SG2/SRM contract acceptance records and their tests needed for it. Business logic, UI, grants, infrastructure and deployment of SG2/SRM remain excluded. Those consumer integrations require their own project registrations/routing and evidence. The producer's extended exact targets passed Architecture routing/PMOS preflight; the original PMOS request/registration is retained unchanged with this explicit scope supplement.
 
+Separately governed consumer continuations, carried by this same PR885:
+
+- SG2 task `SG2-SOURCE-HUB-API-PATH-COMPATIBILITY-20261103`, PMOS `cmw185tf50000yjgcwsxeptrp`, source commit `6d680530`: exact SDK/host lock recognition and additive acceptance/test continuation. Existing analytics and Finder exclusion evidence remains immutable.
+- SRM task `SRM-SOURCE-HUB-API-PATH-COMPATIBILITY-20261103`, PMOS `cmw185qo00000jqldxgv0vfd2`, source commit `ffa50221`: additive SRM and Maps peer acceptance/tests. The Root-claim target changes only its optional-package source fingerprint; the test compares all remaining target metadata with the immutable predecessor. Roles, grants, activation defaults, business implementations and UI remain unchanged.
+- Architecture optional packages retain their implementation/type/SQL bytes and exact historical acceptance. Their private source manifests explicitly allow `1.32.3 || 1.33.0`; no registry artifact or private artifact pin is replaced. Current manifest fingerprints are separately accepted rather than rewriting old receipts.
+
+All consumer registrations and required routing/runtime gates passed before their edits. Two backend workflows reuse the canonical ownership resolver, validate the closed consumer acceptance path sets and execute each actual owner's preflight. An unrelated consumer file, widened receipt, unknown route or failed owner gate is rejected. Full exact-candidate CI and resulting-main closeout remain pending until independently recorded.
+
 ## Implemented result
 
 - Source Hub1.0.0: real Node HTTP entrypoint, explicit Development configuration, health/live/ready, peer proof with fresh canonical E1, provider catalogue, versioned acquisition, bounded single attempts, normalized family payloads/errors, licensed provenance and private idempotency/usage persistence.

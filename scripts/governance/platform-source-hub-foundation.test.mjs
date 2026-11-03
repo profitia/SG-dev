@@ -95,7 +95,7 @@ test('accepted Stage1B business sections, family payloads and historical23 NewsA
   assert.equal(normalizeLinks(segment(read('Canon/v1.0-platform-source-hub-business-and-architecture-canon.md'), '## 1.', '## 7.')), normalizeLinks(segment(priorText('Canon/proposals/v1.0-platform-source-hub-business-and-architecture-canon.md'), '## 1.', '## 7.')))
   const normalizeAmendment = s => normalizeLinks(segment(s, '## Minimal clarification', '## Activation')).replace('The proposed [Platform Source Hub', 'The [Platform Source Hub')
   assert.equal(normalizeAmendment(read('Canon/v1.1-newsfeed-source-hub-responsibility-amendment.md')), normalizeAmendment(priorText('Canon/proposals/v1.1-newsfeed-source-hub-responsibility-amendment.md')))
-  const { status, approval, authority, ...actualPayload } = families
+  const { status, approval, authority, stage2aSourceAdoption, ...actualPayload } = families
   const { status: oldStatus, ...approvedPayload } = prior('Canon/proposals/platform-source-hub-contract-families-v1.json')
   assert.equal(status, 'ACTIVE')
   assert.deepEqual(actualPayload, approvedPayload)
@@ -213,4 +213,22 @@ test('new producer admission retains SG2 and SRM owners and reserved execution e
     assert.equal(resolve('ARCHITECTURE', [p]).ok, false)
   }
   for (const targetEnvironment of ['staging', 'production']) assert.throws(() => resolveEnvironmentProfile({ profile: resolveProjectProfile('ARCHITECTURE', root), targetEnvironment, governanceRoot: root }), /not ACTIVE/)
+})
+
+test('Stage2A adopts four separate versioned source families and the real Newsfeed consumer while live admission stays closed',()=>{
+ const a=families.stage2aSourceAdoption
+ assert.equal(a.taskId,'ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103');assert.equal(a.pullRequest,885)
+ assert.equal(a.effectiveOn,'CONTROLLED_MAIN_ACCEPTANCE');assert.equal(a.apiVersion,'1.0.0')
+ assert.equal(a.package,json('packages/platform-source-hub-contracts/package.json').name)
+ assert.equal(a.apiVersion,json('packages/platform-source-hub-contracts/package.json').version)
+ assert.deepEqual(a.implementedFamilies,{'news-discovery':'1.0.0','economic-calendar':'1.0.0','indicators':'1.0.0','external-forecasts':'1.0.0'})
+ assert.deepEqual(a.futureFamilies,['market-observations']);assert.equal(a.legacyCompatibility,'NewsDiscovery 0.1.0')
+ assert.equal(a.consumer.contractPackage,json('packages/newsfeed-contracts/package.json').name)
+ assert.equal(a.consumer.apiVersion,json('packages/newsfeed-contracts/package.json').version)
+ assert.equal(a.consumer.adoptedFamily,'news-discovery')
+ assert.equal(a.runtimeAdmission,'NOT_ACTIVATED');assert.equal(a.infrastructureActivationAuthorized,false)
+ const evidence=json('apps/platform-source-hub/docs/live-evidence.json')
+ assert.equal(evidence.liveProviderCalls,0);assert.equal(evidence.providerResults.length,5)
+ assert(evidence.providerResults.every(x=>x.status==='IMPLEMENTED_OFFLINE_VERIFIED'))
+ assert(fs.existsSync(path.join(root,a.evidenceDocument)));assert(fs.existsSync(path.join(root,a.compatibilityAndRollback)))
 })
