@@ -4,8 +4,10 @@ Task: ARCHITECTURE-SG2-FINDER-D1-OPERATIONAL-READINESS-20261103.
 Consumer readiness task: SG2-FINDER-D1-OPERATIONAL-READINESS-20261103.
 Target Development only. Producer/consumer approvals A1/A2/A3 and all26original
 source blobs remain unchanged. Integrated source149d16da2fa0291ca4470f1488d93855b298ac26;
-current preparation base b09f072476801c289b6b1483d1bcf3b98fc2648d includes only a
-separately accepted Source Hub CI admission since that integration.
+initial preparation base b09f072476801c289b6b1483d1bcf3b98fc2648d included a
+separately accepted Source Hub CI admission since that integration. The candidate
+was subsequently refreshed with accepted main9bce78138e1396765ce67b9b1b29841efdb017f2
+and its Source Hub governance; none of the original D1 sources changed.
 
 ## Existing physical scope and real discovery
 
