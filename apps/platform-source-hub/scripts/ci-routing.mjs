@@ -24,6 +24,7 @@ const acceptedConsumerPaths={
     "apps/sg-runtime/tests/xray-gateway.test.ts"
   ],
   "SRM": [
+    "apps/maps-runtime/package-lock.json",
     "apps/maps-runtime/platform-integration.json",
     "apps/maps-runtime/test/embed.test.mjs",
     "apps/srm/deployment/root-atomic-claim-targets.json",
