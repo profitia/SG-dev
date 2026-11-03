@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {createHash} from 'node:crypto'
 import {pathToFileURL} from 'node:url'
-import {Client as PgClient} from 'pg'
+import {createRequire} from 'node:module'
 import * as Sentry from '@sentry/nextjs'
 import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion'
 import {createExternalCallHost,externalCallEvidence,externalCallFailureEvidence,externalNativeResponse} from '@profitia/platform-contracts/external-call'
@@ -19,7 +19,7 @@ export const B1_INPUT=Object.freeze({requestSha256:'c61df3c984351c1ff3edd1ab43a5
 export const B1_COUNTER=Object.freeze({sourceId:'sg2.oil-report.openai-token-count',resourceId:'sg2-oil-report:token-count',
  role:'sg2_oil_counter_development_source_runtime',url:'https://api.openai.com/v1/responses/input_tokens',timeoutMs:20000})
 const sha=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex')
-const fail=(code:string):never=>{throw Error('OIL_B1_'+code)}
+function fail(code:string):never{throw Error('OIL_B1_'+code)}
 const digest=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
 const ref=(v:unknown):v is string=>typeof v==='string'&&/^[-A-Za-z0-9._:/]{1,256}$/.test(v)&&!/(?:PENDING|PLACEHOLDER|SYNTHETIC)/i.test(v)
 type FileRef={path:string;sha256:string}
@@ -111,7 +111,9 @@ function loadBindings(r:OperatorRelease){
 type Db={connect():Promise<void>;end():Promise<void>;query(sql:string,values?:unknown[]):Promise<{rows:Record<string,unknown>[];rowCount:number|null}>}
 type Root=Parameters<typeof createPlatformIngestionHost<Db>>[0]
 function databaseRoot(url:string,role:string,deploymentId:string,configurationVersion:string){
- const Client=PgClient as new(options:{connectionString:string;connectionTimeoutMillis:number;statement_timeout:number})=>Db
+ // pg belongs to the private released operator artifact, not the SG2 app.
+ // Pure preparation/import never loads an unadmitted application dependency.
+ const Client=createRequire(import.meta.url)('pg').Client as new(options:{connectionString:string;connectionTimeoutMillis:number;statement_timeout:number})=>Db
  const client=(maxWaitMs=10000)=>new Client({connectionString:url,connectionTimeoutMillis:Math.min(10000,maxWaitMs),statement_timeout:20000})
  const query=(c:Db):Root['independentQuery']=>(sql,values)=>c.query(sql,values)
  const root:Omit<Root,'source'|'validateSharedPayload'>={
