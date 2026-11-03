@@ -8,6 +8,7 @@ import {traceOilReport} from './oil-report-observability'
 import {createHash} from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
+import {externalCallFailureEvidence} from '@profitia/platform-contracts/external-call'
 /** Deliberately no live executor. Installing this preparation candidate alone
  * cannot turn user booleans, environment variables or an API key into authority.
  * A future exact accepted release supplies the real current E1/Source bindings. */
@@ -37,7 +38,7 @@ export async function executeOilOwnerEvaluation(source:OilEvaluationSource,goByt
   try{result=await trace('source',()=>trace('author',()=>source.execute(go,AbortSignal.timeout(OIL_REPORT_PROFILE.operationDeadlineMs))))}
   catch(error){
    const certainty=error&&typeof error==='object'&&'certainty'in error&&['NOT_SENT','UNVERIFIED','RESULT_NOT_RETAINED'].includes(String(error.certainty))?String(error.certainty):'UNVERIFIED'
-   const outcome={status:certainty,model:OIL_REPORT_PROFILE.model,requestId:null,responseId:null,usage:null,reportedCostUSD:'UNKNOWN',latencyMs:performance.now()-started,retryAllowed:false,originalApiOutputExists:false}
+   const outcome={status:certainty,source:externalCallFailureEvidence(error),model:OIL_REPORT_PROFILE.model,requestId:null,responseId:null,usage:null,reportedCostUSD:'UNKNOWN',latencyMs:performance.now()-started,retryAllowed:false,originalApiOutputExists:false}
    save('OIL_MARKET_OUTLOOK_RAW_API_OUTPUT.json',JSON.stringify(outcome,null,2)+'\n');return outcome
   }
   // Preserve exact response bytes before any JSON validation or editorial work.
