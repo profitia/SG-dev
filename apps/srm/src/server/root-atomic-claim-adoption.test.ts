@@ -5,7 +5,8 @@ import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {rootAtomicClaimSchemaDigest,rootAtomicClaimSourceDigest,ROOT_ATOMIC_CLAIM_CONTRACT} from '@profitia/platform-root-atomic-claim'
-import root from '../../deployment/root-atomic-claim-targets.json'
+import currentRoot from '../../deployment/root-atomic-claim-targets.json'
+const root=JSON.parse(execFileSync('git',['show','36b07672f572ff7c1c81117e3f3b01fa93ec1e65:apps/srm/deployment/root-atomic-claim-targets.json'],{encoding:'utf8'})) as typeof currentRoot
 import native from '../../deployment/supplier-native-targets.json'
 import privateTargets from '../../deployment/private-runtime-targets.json'
 import ready from '../../deployment/ready-report-targets.json'
@@ -34,7 +35,8 @@ function fixture(){
 test('optional Root claim target pins the exact producer and existing main Development roles without granting or activating them',async()=>{
  assert.deepEqual({id:root.contractId,version:root.contractVersion},ROOT_ATOMIC_CLAIM_CONTRACT)
  assert.equal(root.schemaDigest,await rootAtomicClaimSchemaDigest())
- assert.equal(root.sourceDigest,await rootAtomicClaimSourceDigest())
+ assert.equal(currentRoot.sourceDigest,await rootAtomicClaimSourceDigest())
+ const {sourceDigest,...currentMetadata}=currentRoot;const {sourceDigest:previousDigest,...previousMetadata}=root;assert.deepEqual(currentMetadata,previousMetadata)
  assert.equal(root.producerPullRequest,854);assert.equal(root.producerSourceRef,'3a494b5432555935168c060be5950589d550d276')
  for(const key of ['environment','serviceId','projectId','branchId','databaseName'] as const)assert.equal(root[key],native[key])
  assert.equal(root.foregroundRole,privateTargets.environments.development.runtimeRole);assert.equal(root.executorRole,native.runtimeRoles.jobs)

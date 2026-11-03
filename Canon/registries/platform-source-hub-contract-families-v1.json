@@ -165,12 +165,47 @@
     "TradingEconomics": "FUTURE_NOT_IMPLEMENTED",
     "Brave": "FUTURE_NOT_IMPLEMENTED"
   },
-  "authority": "Canonical design catalogue only; family runtime contracts remain unimplemented and require separate versioned adoption.",
+  "authority": "Original fields preserve the Stage1B design baseline. stage2aSourceAdoption records the explicitly versioned source implementation and consumer adoption, effective only on controlled main acceptance; it does not activate infrastructure or live admission.",
   "approval": {
     "decisionId": "ARCH-SOURCE-HUB-G1-FINAL-ACTIVATION-20261103",
     "approvedCandidate": "b40564130fe7b6ced4d7df233dd6749653846114",
     "sourceSha256": "b9cc3ca170f898c4afd4356e4d3ff7686759ce55f5b32fcaf822fdea4e76d36b",
     "evidenceDocument": "Canon/evidence/2026-11-03-platform-source-hub-final-activation.md",
     "effectiveOn": "CONTROLLED_MAIN_ACCEPTANCE"
+  },
+  "stage2aSourceAdoption": {
+    "taskId": "ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103",
+    "pullRequest": 885,
+    "effectiveOn": "CONTROLLED_MAIN_ACCEPTANCE",
+    "package": "@profitia/platform-source-hub-contracts",
+    "apiVersion": "1.0.0",
+    "legacyCompatibility": "NewsDiscovery 0.1.0",
+    "implementedFamilies": {
+      "news-discovery": "1.0.0",
+      "economic-calendar": "1.0.0",
+      "indicators": "1.0.0",
+      "external-forecasts": "1.0.0"
+    },
+    "futureFamilies": [
+      "market-observations"
+    ],
+    "consumer": {
+      "application": "newsfeed",
+      "contractPackage": "@profitia/newsfeed-contracts",
+      "apiVersion": "1.0.0",
+      "adoptedFamily": "news-discovery"
+    },
+    "providerSourceState": {
+      "NewsAPI": "IMPLEMENTED_OFFLINE_VERIFIED_SINGLE_HUB_IMPLEMENTATION",
+      "Brave": "IMPLEMENTED_OFFLINE_VERIFIED",
+      "TradingEconomicsCalendar": "IMPLEMENTED_OFFLINE_VERIFIED",
+      "TradingEconomicsIndicators": "IMPLEMENTED_OFFLINE_VERIFIED",
+      "TradingEconomicsExternalForecasts": "IMPLEMENTED_OFFLINE_VERIFIED",
+      "GDELT": "NOT_IMPLEMENTED"
+    },
+    "runtimeAdmission": "NOT_ACTIVATED",
+    "infrastructureActivationAuthorized": false,
+    "evidenceDocument": "Canon/evidence/2026-11-03-source-hub-newsfeed-stage2a.md",
+    "compatibilityAndRollback": "apps/platform-source-hub/docs/stage2b-activation.pl.md"
   }
 }

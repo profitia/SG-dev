@@ -1,8 +1,9 @@
 export interface NativeFixedPathRule {readonly method:'GET'|'POST';readonly path:string;readonly requestFormat:'NONE'|'JSON'|'FORM'|'SOAP'}
 export interface NativeTemplatePathRule {readonly method:'GET'|'POST';readonly prefix:string;readonly parameter:'HEX24'|'UUID'|'OPAQUE'|'STORAGE_PATH'|'PUBLIC_PATH';readonly suffix:string;readonly requestFormat:'NONE'|'JSON'|'FORM'|'SOAP'}
-export type NativePathRule=NativeFixedPathRule|NativeTemplatePathRule
+export interface NativeApiPathRule {readonly method:'GET';readonly prefix:string;readonly parameter:'API_PATH';readonly suffix:string;readonly requestFormat:'NONE'}
+export type NativePathRule=NativeFixedPathRule|NativeTemplatePathRule|NativeApiPathRule
 export interface NativeExternalTransport {
- readonly schemaDigest:string;readonly pathRules:readonly NativePathRule[];readonly redirectOrigins:readonly string[]
+ readonly apiPathSchemaDigest?:string;readonly schemaDigest:string;readonly pathRules:readonly NativePathRule[];readonly redirectOrigins:readonly string[]
  readonly maximumResponseBytes:number;readonly credentialMode:'NONE'|'SERVER_HEADERS'
  readonly completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'
 }
