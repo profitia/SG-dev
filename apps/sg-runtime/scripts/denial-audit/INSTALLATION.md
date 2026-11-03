@@ -36,6 +36,8 @@ If one role/schema install fails, stop reads. Disable only that new role if no p
 
 ## Validation and product state
 
+The additive d1AuditReaderPreparation receipt binds all17amended source/test files and retains the entire predecessor receipt from canonical main1d245820f93337a35049b416cb375c1ab5a60183 without rewriting any historical entry. The existing integrity test entry imports the six D1 consumer tests directly; no workflow, normal test command or SRM source is changed. The existing SRM historical-view adapter validates the new amendment before exposing unchanged predecessor bytes. Installation preflight must include effective PUBLIC and inherited privileges in its permissions snapshot and stop on unexpected access, rather than infer least privilege from explicit D1 grants alone.
+
 Run node --test apps/sg-runtime/scripts/denial-audit/d1-reader.test.mjs with the producer exact git object available in the repository. Tests create/remove only their own local synthetic worktree and use fake clients/audit; no database or provider connection. Producer PostgreSQL16/18 tests independently prove ordinary-role RLS/ACL, immutable logs, native execution LOG after rollback, query boundaries and access expiry. Consumer tests do not prove installation or operational PMOS/native-log availability.
 
 Historical reasonCode remains NOT_OBSERVED. Finder503 is not repaired. Forecast status is the prior scoped PARTIAL result, not retested. PostHog remains OFF under prior verified runtime observation, activation prohibited; no SDK/env/deployment/binding changes. Monitoring: NOT_APPLICABLE to unchanged runtime; controlled execution audit is required before installation.
