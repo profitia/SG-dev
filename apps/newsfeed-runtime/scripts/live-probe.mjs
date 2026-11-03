@@ -17,6 +17,7 @@ if (process.env.TARGET_ENVIRONMENT !== 'development' || !key) {
   const provider=createNewsApiProvider({apiKey:key,targetEnvironment:'development',fetchImpl:boundedFetch,onEvent:event=>{lastEvent=event;}});
   const current=new Date(),before=new Date(current.getTime()-86400000).toISOString(),after=new Date(current.getTime()-8*86400000).toISOString();
   const interval={publishedAfter:after,publishedBefore:before,pageSize:5};
+  report.articleWindow={publishedAfter:after,publishedBefore:before,meaning:'seven available days ending24 hours before this probe; not a verified account-plan entitlement'};
   const record = async(id,operation,run,check=()=>[])=>{
     if(stop||report.requestsPerformed>=report.requestBudget)return null;
     const entry={id,operation,checkedAt:new Date().toISOString(),outcome:'PENDING'};report.cases.push(entry);lastEvent=null;
@@ -26,7 +27,7 @@ if (process.env.TARGET_ENVIRONMENT !== 'development' || !key) {
       entry.returnedModelFields=items.length?Object.keys(items[0]).sort():[];
       entry.fieldRepresentation=operation.startsWith('raw-')?'PROVIDER_RESPONSE':'NEUTRAL_CONNECTOR_MODEL';
       entry.constraintViolations=check(result);
-      entry.semanticEvidence=items.length?'CHECK_AVAILABLE_RETURNED_FIELDS':'NOT_PROVEN_EMPTY';
+      entry.semanticEvidence=operation==='raw-negative'?'NO_SUPPORTED_FILTER_CLAIM':items.length?'CHECK_AVAILABLE_RETURNED_FIELDS':'NOT_PROVEN_EMPTY';
       if(entry.constraintViolations.length)entry.outcome='OBSERVED_FILTER_MISMATCH';
       return result;
     }catch(error){
@@ -39,6 +40,11 @@ if (process.env.TARGET_ENVIRONMENT !== 'development' || !key) {
   const sourceCheck=criteria=>result=>result.items.flatMap(s=>Object.entries(criteria).filter(([field,value])=>s[field]!==value).map(([field])=>field));
   const dateCheck=result=>result.items.flatMap(item=>!item.publishedAt?['missingPublishedAt']:Date.parse(item.publishedAt)<Date.parse(after)||Date.parse(item.publishedAt)>Date.parse(before)?['publicationDateOutsideWindow']:[]);
   const newestCheck=result=>dateCheck(result).concat(result.items.some((a,i,items)=>i>0&&Date.parse(items[i-1].publishedAt)<Date.parse(a.publishedAt))?['orderNotDescending']:[]);
+  const domainCheck=(include=[],exclude=[])=>result=>dateCheck(result).concat(result.items.flatMap(item=>{
+    const host=new URL(item.url).hostname.toLowerCase();const matches=d=>host===d||host.endsWith('.'+d);
+    return [...(include.length&&!include.some(matches)?['articleUrlDoesNotMatchSelectedDomain']:[]),...(exclude.some(matches)?['articleUrlMatchesExcludedDomain']:[])];
+  }));
+  const publisherCheck=ids=>result=>dateCheck(result).concat(result.items.some(item=>item.publisher.id!==null&&!ids.includes(item.publisher.id))?['returnedPublisherIdOutsideSelection']:[]);
   // Raw probes are isolated negative/undocumented-behaviour experiments. They do not bypass
   // or extend supported connector criteria, even if a provider accepts an unknown parameter.
   const raw=async(endpoint,params)=>{
@@ -62,7 +68,10 @@ if (process.env.TARGET_ENVIRONMENT !== 'development' || !key) {
     await record('sources-pl-language-undocumented','raw-negative',()=>raw('top-headlines/sources',{language:'pl'}));
     await record('headlines-us-business','headlines',()=>provider.search({mode:'headlines',category:'business',editionCountry:'us',pageSize:5}));
     await record('headlines-pl-business-undocumented','raw-negative',()=>raw('top-headlines',{country:'pl',category:'business',q:'budownictwo',pageSize:'5'}));
-    const ids=(catalogue?.items??[]).filter(s=>['bbc-news','reuters','associated-press','business-insider'].includes(s.id)).slice(0,2).map(s=>s.id);
+    const allPublishers=catalogue?.items??[];
+    const ids=[...new Set([...allPublishers.filter(s=>['bbc-news','reuters','associated-press','business-insider'].includes(s.id)),...allPublishers].map(s=>s.id))].slice(0,2);
+    report.selectedPublisherIds=ids;
+    report.skippedCases=ids.length?[]:['headlines-publishers','headlines-conflicting-filters','everything-multiple-publishers'];
     if(ids.length){
       await record('headlines-publishers','headlines',()=>provider.search({mode:'headlines',publisherIds:ids,pageSize:5}));
       await record('headlines-conflicting-filters','raw-negative',()=>raw('top-headlines',{sources:ids.join(','),country:'us',category:'business',pageSize:'5'}));
@@ -71,18 +80,20 @@ if (process.env.TARGET_ENVIRONMENT !== 'development' || !key) {
     await record('everything-exact-phrase','articles',()=>provider.search({mode:'articles',terms:{phrases:['Budimex SA']},...interval}),dateCheck);
     await record('everything-boolean-title-description-relevance','articles',()=>provider.search({mode:'articles',text:'construction AND (investment OR contract) NOT sports',fields:['headline','summary'],language:'en',order:'relevance',...interval}),dateCheck);
     await record('everything-required-excluded-body-popularity','articles',()=>provider.search({mode:'articles',text:'+construction -sports',fields:['body'],order:'publisherPopularity',...interval}),dateCheck);
-    await record('everything-domain-selection','articles',()=>provider.search({mode:'articles',text:'construction',domains:['bbc.co.uk','reuters.com'],order:'newest',...interval}),newestCheck);
-    await record('everything-domain-exclusion','articles',()=>provider.search({mode:'articles',text:'construction',excludedDomains:['bbc.co.uk'],...interval}),dateCheck);
-    if(ids.length)await record('everything-multiple-publishers','articles',()=>provider.search({mode:'articles',text:'construction',publisherIds:ids,...interval}),dateCheck);
-    await record('everything-page-one','articles',()=>provider.search({mode:'articles',text:'construction',order:'newest',...interval}),newestCheck);
-    await record('everything-page-two','articles',()=>provider.search({mode:'articles',text:'construction',order:'newest',...interval,page:2}),newestCheck);
+    await record('everything-domain-selection','articles',()=>provider.search({mode:'articles',text:'construction',domains:['bbc.co.uk','reuters.com'],order:'newest',...interval}),domainCheck(['bbc.co.uk','reuters.com']));
+    await record('everything-domain-exclusion','articles',()=>provider.search({mode:'articles',text:'construction',excludedDomains:['bbc.co.uk'],...interval}),domainCheck([],['bbc.co.uk']));
+    if(ids.length)await record('everything-multiple-publishers','articles',()=>provider.search({mode:'articles',text:'construction',publisherIds:ids,...interval}),publisherCheck(ids));
+    const firstPage=await record('everything-page-one','articles',()=>provider.search({mode:'articles',text:'construction',order:'newest',...interval}),newestCheck);
+    const secondPage=await record('everything-page-two','articles',()=>provider.search({mode:'articles',text:'construction',order:'newest',...interval,page:2}),newestCheck);
+    if(firstPage&&secondPage)report.paginationObservation={pageOneCount:firstPage.items.length,pageTwoCount:secondPage.items.length,overlappingUrls:firstPage.items.filter(a=>secondPage.items.some(b=>a.url===b.url)).length,interpretation:'Overlap or empty pages requires interpretation; results may change and totalAvailable is not a plan entitlement.'};
     await record('everything-polish-text-no-language','articles',()=>provider.search({mode:'articles',text:'inwestycje',...interval}),dateCheck);
     await record('everything-region-text-not-geographic','articles',()=>provider.search({mode:'articles',terms:{all:['inwestycje'],any:['Mazowieckie','Mazowsze']},...interval}),dateCheck);
     await record('everything-pl-language-undocumented','raw-negative',()=>raw('everything',{q:'inwestycje',language:'pl',pageSize:'5'}));
     await record('everything-history-40-days-plan-probe','raw-plan',()=>raw('everything',{q:'construction',from:new Date(current.getTime()-40*86400000).toISOString(),to:before,pageSize:'1'}));
     await record('everything-invalid-sort','raw-negative',()=>raw('everything',{q:'construction',sortBy:'not-a-sort',pageSize:'1'}));
     await record('everything-high-page-plan-probe','raw-plan',()=>raw('everything',{q:'construction',page:'101',pageSize:'100'}));
-    report.status=stop?'STOPPED_PROVIDER_LIMIT_OR_AUTH':'COMPLETED';
+    report.unexpectedFailures=report.cases.filter(c=>(c.operation==='articles'||c.operation==='headlines'||c.operation==='publishers')&&['ERROR','OBSERVED_FILTER_MISMATCH'].includes(c.outcome)).length;
+    report.status=stop?'STOPPED_PROVIDER_LIMIT_OR_AUTH':report.unexpectedFailures||report.skippedCases.length?'COMPLETED_WITH_GAPS':'COMPLETED';
     report.completedAt=new Date().toISOString();
     report.interpretation='ACCEPTED_EMPTY proves request acceptance only. Undocumented parameters accepted by HTTP do not become supported filters. No article quality or Polish media coverage claim. Account plan and exact quota remain unverified unless independently established.';
   }catch{report.status='PROBE_FAILED';process.exitCode=1;}
