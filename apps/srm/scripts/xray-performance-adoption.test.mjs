@@ -24,8 +24,10 @@ const acceptedAppShellSource=appShellReceipt.appShellFourCardCascade
  :actualAppShellSource
 const actualReceipt=JSON.parse(actualAppShellSource('apps/srm/operation-integration.json'))
 const apiPath=actualReceipt.sourceHubApiPathCompatibility
-const apiPathView=apiPath?assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>execFileSync('git',['show',sha+':'+file])):null
-const read=file=>(apiPathView?.previousBytes??acceptedAppShellSource)(posix.normalize('apps/srm/'+file))
+if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>execFileSync('git',['show',sha+':'+file]))
+// The host view validates both current API_PATH closures and the later AppShell
+// amendments before exposing the presentation predecessor used by these guards.
+const read=file=>acceptedAppShellSource(posix.normalize('apps/srm/'+file))
 const refinement=JSON.parse(read('operation-integration.json')).freshRuntimeRefinement
 const settled=JSON.parse(read('operation-integration.json')).settledExternalFailureRecovery
 const clock=JSON.parse(read('operation-integration.json')).sourceLeaseClockRecovery
@@ -158,7 +160,7 @@ test('settled provider failure adoption pins its producer and never treats Sourc
  assert.deepEqual(settled.contract,sdk.EXTERNAL_CALL_FAILURE_OBSERVATION)
  assert.equal(await sdk.externalCallSourceDigest(),(apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??clock?.sdkDigests.externalCallSourceDigest??settled.sdkDigests.externalCallSourceDigest))
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(postfetch??clock??settled).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(apiPath??postfetch??clock??settled).platformVersion)
  for(const[file,digest]of Object.entries(settled.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',settled.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
   if(!file.startsWith('test/')&&file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??clock?.sourceDigests[file]??digest,'installed '+file)
@@ -883,12 +885,12 @@ test('finite Supplier input capture accepts only its exact source and preserves 
  assert.deepEqual(Object.keys(a.producerSourceDigests).sort(),['package.json','src/payload-capture.d.mts','src/payload-capture.mjs'])
  for(const[file,digest]of Object.entries(a.producerSourceDigests)){
   assert.equal(hash(historical(a.producer.sourceSha,'packages/platform-contracts/payload-capture/'+file)),digest,'producer '+file)
-  assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
+  assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.producerMetadataDigests['packages/platform-contracts/payload-capture/'+file]??digest,'installed '+file)
  }
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',root))
  assert.equal(realpathSync(own.resolve('@profitia/platform-contracts/operation-context')),realpathSync(peer.resolve('@profitia/platform-contracts/operation-context')))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))))).version,'1.32.3')
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))))).version,apiPath?.platformVersion??'1.32.3')
  for(const mutate of [r=>r.freshPayloadCaptureAdoption.producer.sourceGo=false,r=>r.freshPayloadCaptureAdoption.platformVersion='1.33.0',r=>r.freshPayloadCaptureAdoption.currentWorkChecksPreserved=false,r=>r.freshPayloadCaptureAdoption.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),r=>r.freshDocumentPolicyRecovery.fullNativeCheckPreserved=false,r=>r.unapprovedReceipt={}]){
   const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
  }
@@ -938,7 +940,7 @@ test('readonly MISS adoption rejects forged GO, source, query port and historica
  assert.equal(READY_REPORT_PROBE_STATEMENTS.length,2)
  assert(READY_REPORT_PROBE_STATEMENTS.every(s=>/^SELECT\s/.test(s)&&!s.includes(';')&&!s.includes('register_ready_report_read')))
  const packageRoot=new URL('../',import.meta.resolve('@profitia/platform-readonly-miss-report'))
- for(const[file,digest]of Object.entries(a.producerSourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,packageRoot))),digest,'Installed producer '+file)
+ for(const[file,digest]of Object.entries(a.producerSourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,packageRoot))),apiPath?.producerMetadataDigests['packages/platform-contracts/readonly-miss-report/'+file]??digest,'Installed producer '+file)
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',packageRoot))
  assert.equal(realpathSync(own.resolve('@profitia/platform-contracts/operation-context')),realpathSync(peer.resolve('@profitia/platform-contracts/operation-context')))
