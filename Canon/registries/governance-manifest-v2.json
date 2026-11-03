@@ -13,6 +13,7 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {"id":"macrobond-licensed-access-policy-amendment","version":"1.0","path":"Canon/v1.0-macrobond-licensed-access-policy-amendment.md","status":"ACTIVE","loadOrder":415,"owner":"Architecture Platform","appliesTo":["SG2","ARCHITECTURE"],"dependsOn":["profitia-package-and-limits-management","profitia-package-and-limits-customer-lifecycle","operation-context-and-access-contract","repository-routing","shared-development-contract-integration"]},
     {
       "id": "newsfeed-business-and-architecture-canon",
       "version": "1.0",
