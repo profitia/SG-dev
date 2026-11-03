@@ -1,0 +1,15 @@
+{
+  "name": "@profitia/newsfeed-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && node --check src/cli.mjs && node --check scripts/live-probe.mjs",
+    "discover": "node src/cli.mjs",
+    "probe:live": "node scripts/live-probe.mjs"
+  },
+  "devDependencies": { "@types/node": "22.15.3", "typescript": "5.8.3" }
+}
