@@ -6698,7 +6698,7 @@
       "apps/sg-runtime/tests/product-analytics-ui.test.tsx": "fcde30417d5f34a91c514b2aee865e02474ba5639388dc44b464880303aae345",
       "apps/sg-runtime/tests/product-analytics.test.ts": "10259164ba279c391b38c5bde35b8079e867d3b29a2822866ff9a454a483b516",
       "apps/sg-runtime/tests/self-service-account.test.ts": "b96ab03e2d16066336e802e9ca5ee620f54a3a964cd06ccbf615b42224824aca",
-      "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "6ad964ede41851aa4fe4f7f7fa2acc1eaf9f28af3407a184ce862ef037e416ab",
+      "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "8ccf362f7d0ca053b6593a12a57f1870e6730e21e5732c7e24f2b2b82b25d7f8",
       "apps/sg-runtime/tests/xray-gateway.test.ts": "b80c00726d9df1b78326bff9173c16929548271e78607e69d49c70cfd5663440"
     },
     "applicationSourceDigests": {
@@ -6720,7 +6720,7 @@
       "tests/product-analytics-ui.test.tsx": "fcde30417d5f34a91c514b2aee865e02474ba5639388dc44b464880303aae345",
       "tests/product-analytics.test.ts": "10259164ba279c391b38c5bde35b8079e867d3b29a2822866ff9a454a483b516",
       "tests/self-service-account.test.ts": "b96ab03e2d16066336e802e9ca5ee620f54a3a964cd06ccbf615b42224824aca",
-      "tests/xray-fresh-performance-adoption.test.mjs": "6ad964ede41851aa4fe4f7f7fa2acc1eaf9f28af3407a184ce862ef037e416ab",
+      "tests/xray-fresh-performance-adoption.test.mjs": "8ccf362f7d0ca053b6593a12a57f1870e6730e21e5732c7e24f2b2b82b25d7f8",
       "tests/xray-gateway.test.ts": "b80c00726d9df1b78326bff9173c16929548271e78607e69d49c70cfd5663440"
     },
     "finderExcluded": true,
