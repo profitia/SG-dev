@@ -54,6 +54,7 @@ export function assertAppShellFourCardCascade(receipt,current,historical){
 
 const XRAY_APPSHELL_PRESENTATION_FILES=["apps/sg-runtime/components/appshell/xray-module-host.tsx","apps/sg-runtime/docs/xray-appshell-ui.md","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/adp-appshell-preview.mjs","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-appshell-ui.test.tsx","apps/sg-runtime/tests/xray-appshell.test.tsx","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/srm/scripts/native-execution-adoption.test.mjs","apps/srm/scripts/pilot2-cold-overlay.mjs","apps/srm/scripts/pilot2-cold-overlay.test.mjs","apps/srm/scripts/pilot2-human-overlay.mjs","apps/srm/scripts/rural-location-release.test.mjs","apps/srm/scripts/xray-performance-adoption.test.mjs","apps/srm/scripts/xray-style-acceptance.mjs","apps/srm/scripts/xray-workflow-contract.test.ts","apps/srm/scripts/xray-workflow-react18.test.tsx","apps/srm/src/server/peer-read-boundary.test.ts","apps/srm/src/server/supplier-location-geocoding-runtime.test.ts","packages/srm-xray/docs/sg2-host-presentation.md","packages/srm-xray/scripts/build-full-report-css.mjs","packages/srm-xray/src/full-report.css","packages/srm-xray/src/full-workflow.tsx","packages/srm-xray/src/sg2-host-theme.css","packages/srm-xray/src/supplier-search.tsx"]
 export function assertXrayAppShellPresentation(receipt,current,historical){
+ if(receipt.oilComposerPreparationCompatibility){const n=assertOilComposerPreparationContinuation(receipt,current,historical);return assertXrayAppShellPresentation(n.prior,n.previousBytes,historical)}
  if(receipt.appShellFourCardCascade){const n=assertAppShellFourCardCascade(receipt,current,historical);return assertXrayAppShellPresentation(n.prior,n.previousBytes,historical)}
  const a=receipt.xrayAppShellPresentation
  assert.equal(a.taskId,'SG2-XRAY-APPSHELL-UI-20261102')
@@ -222,6 +223,7 @@ export function assertXrayStyleIsolationContinuation(receipt,current,historical)
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciInputCorrective(receipt,current,historical){
+ if(receipt.oilComposerPreparationCompatibility){const n=assertOilComposerPreparationContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.appShellFourCardCascade){const n=assertAppShellFourCardCascade(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsMainCompatibility){const n=assertProductAnalyticsMainContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
@@ -248,6 +250,7 @@ export function assertPciInputCorrective(receipt,current,historical){
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciSmartIntegrity(receipt,current,historical){
+ if(receipt.oilComposerPreparationCompatibility){const n=assertOilComposerPreparationContinuation(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
  if(receipt.appShellFourCardCascade){const n=assertAppShellFourCardCascade(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
  if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
  if(receipt.pciSmartInputCorrective){const n=assertPciInputCorrective(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
@@ -297,4 +300,42 @@ export function assertPciSmartIntegrity(receipt,current,historical){
  for(const file of a.preservedEnginePaths)assert.equal(digest(current(file)),digest(historical(a.previousReceiptSourceSha,file)),'unchanged engine '+file)
  for(const flag of ['cciCoreChanged','indexedPriceChanged','sourceHistoryChanged','authorizationContractChanged','schemaChanged','newPaidProviderCalls','srmRuntimeChanged','productDeploymentPerformed'])assert.equal(a[flag],false,flag)
  return{prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
+}
+
+// Closed preparation receiver. Prior acceptance is read from immutable main,
+// never renewed by replacing any existing receipt or widening a directory.
+const OIL_COMPOSER_FILES=["apps/sg-runtime/lib/forecast/oil-d0-report-projection.ts","apps/sg-runtime/lib/insights/oil-report-contract.ts","apps/sg-runtime/lib/insights/oil-report-cost.ts","apps/sg-runtime/lib/insights/oil-report-evidence.ts","apps/sg-runtime/lib/insights/oil-report-observability.ts","apps/sg-runtime/lib/insights/oil-report-operation.ts","apps/sg-runtime/lib/insights/oil-report-profile.ts","apps/sg-runtime/lib/insights/oil-report-renderer.ts","apps/sg-runtime/lib/insights/oil-report-source.ts","apps/sg-runtime/lib/insights/oil-report-validation.ts","apps/sg-runtime/scripts/oil-report-evaluate.ts","apps/sg-runtime/scripts/oil-report-prepare.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/fixtures/oil-d0-report-projection.json","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/oil-d0-report-projection.test.ts","apps/sg-runtime/tests/oil-report-cost.test.ts","apps/sg-runtime/tests/oil-report-evaluate.test.ts","apps/sg-runtime/tests/oil-report-evidence.test.ts","apps/sg-runtime/tests/oil-report-observability.test.ts","apps/sg-runtime/tests/oil-report-operation.test.ts","apps/sg-runtime/tests/oil-report-profile.test.ts","apps/sg-runtime/tests/oil-report-renderer.test.ts","apps/sg-runtime/tests/oil-report-source.test.ts","apps/sg-runtime/tests/oil-report-validation.test.ts","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+const OIL_COMPOSER_TESTS=["oil-d0-report-projection.test.ts", "oil-report-cost.test.ts", "oil-report-evidence.test.ts", "oil-report-observability.test.ts", "oil-report-operation.test.ts", "oil-report-profile.test.ts", "oil-report-renderer.test.ts", "oil-report-source.test.ts", "oil-report-validation.test.ts","oil-report-evaluate.test.ts"]
+const OIL_COMPOSER_FLAGS=["globalModelChanged", "forecastMathChanged", "finderRuntimeChanged", "authorizationChanged", "schemaInstalled", "liveGrantsChanged", "producerAdoptionClaimed", "ciWorkflowChanged", "deploymentPerformed", "paidProviderCalls", "reportPublished"]
+export function assertOilComposerPreparationContinuation(receipt,current,historical){
+ const a=receipt.oilComposerPreparationCompatibility,file='apps/sg-runtime/operation-integration.json'
+ assert(a,'Oil Composer preparation receipt required')
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','previousReceiptSourceSha','previousReceiptSha256','changedSourcePaths','sourceDigests','applicationSourceDigests','addedBoundaryFiles','testEntryExtended','preparationOnly',...OIL_COMPOSER_FLAGS].sort())
+ assert.equal(a.taskId,'SG2-OIL-COMPOSER-CI-CONTINUITY-20261102')
+ assert.equal(a.scope,'CLOSED_SOURCE_PREPARATION_AND_CANONICAL_CI_ONLY')
+ assert.equal(a.previousReceiptSourceSha,'9bce78138e1396765ce67b9b1b29841efdb017f2')
+ assert.equal(a.previousReceiptSha256,'03d2f573d28d5e0c10e9ebec3f6a7d2fd4a4f0e4e68488650a00406139a852c5')
+ const bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {oilComposerPreparationCompatibility,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every prior accepted receipt and original hash remains immutable')
+ assert.deepEqual(a.changedSourcePaths,OIL_COMPOSER_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),OIL_COMPOSER_FILES)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([path,hash])=>[path.slice(16),hash])))
+ assert.deepEqual(a.addedBoundaryFiles,['apps/sg-runtime/lib/forecast/oil-d0-report-projection.ts'])
+ for(const[path,hash]of Object.entries(a.sourceDigests)){
+  assert.match(hash,/^[a-f0-9]{64}$/)
+  assert.equal(digest(current(path)),hash,'exact Oil preparation source '+path)
+ }
+ assert.equal(a.testEntryExtended,true);assert.equal(a.preparationOnly,true)
+ for(const flag of OIL_COMPOSER_FLAGS)assert.equal(a[flag],false,flag)
+ for(const path of ['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json'])
+  assert.deepEqual(current(path),historical(a.previousReceiptSourceSha,path),'global host manifest remains unchanged '+path)
+ const entry=current('apps/sg-runtime/tests/pci-smart-integrity.test.mjs').toString()
+ for(const test of OIL_COMPOSER_TESTS){
+  const line="import './"+test+"'"
+  assert.equal(entry.split('\n').filter(v=>v===line).length,1,'normal CI imports '+test+' exactly once')
+ }
+ assert.match(entry,/^import ['"]\.\/xray-style-isolation\.test\.ts['"]\s*;?$/m)
+ return {prior,previousBytes:path=>path===file?bytes:Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):current(path)}
 }
