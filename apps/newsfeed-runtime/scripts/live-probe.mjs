@@ -7,7 +7,11 @@ import {createNewsApiProvider,DiscoveryError} from '../src/newsapi.mjs';
 const output = fileURLToPath(new URL('../docs/newsapi-live-evidence.json',import.meta.url));
 const key = process.env.NEWSAPI_API_KEY?.trim();
 const report = {schemaVersion:'1.0',provider:'newsapi',targetEnvironment:'development',startedAt:new Date().toISOString(),status:'IN_PROGRESS',accountPlan:'NOT_VERIFIED',requestBudget:24,requestsPerformed:0,articleContentsPersisted:false,keyPersisted:false,qualityOrPolishCoverageEvaluated:false,cases:[]};
-const save = async()=>fs.writeFile(output,JSON.stringify(report,null,2)+'\n',{mode:0o644});
+const save = async()=>{
+  const serialized=JSON.stringify(report,null,2)+'\n';
+  if(key&&serialized.includes(key))throw new DiscoveryError('SENSITIVE_OUTPUT_REJECTED');
+  await fs.writeFile(output,serialized,{mode:0o644});
+};
 if (process.env.TARGET_ENVIRONMENT !== 'development' || !key) {
   report.status = key ? 'BLOCKED_ENVIRONMENT' : 'BLOCKED_MISSING_CREDENTIAL';
   await save();console.log(JSON.stringify({status:report.status,requestsPerformed:0}));process.exitCode=2;
@@ -64,6 +68,7 @@ if (process.env.TARGET_ENVIRONMENT !== 'development' || !key) {
     const catalogue=await record('sources-all','publishers',()=>provider.listPublishers());
     if(catalogue)report.publisherCatalogue={count:catalogue.items.length,countries:[...new Set(catalogue.items.map(s=>s.publisherCountry))].sort(),languages:[...new Set(catalogue.items.map(s=>s.language))].sort(),polishPublishers:catalogue.items.filter(s=>s.publisherCountry==='pl').map(({id,name,language,publisherCountry})=>({id,name,language,publisherCountry}))};
     await record('sources-business-en-gb','publishers',()=>provider.listPublishers({category:'business',language:'en',publisherCountry:'gb'}),sourceCheck({category:'business',language:'en',publisherCountry:'gb'}));
+    await record('sources-business-en-us','publishers',()=>provider.listPublishers({category:'business',language:'en',publisherCountry:'us'}),sourceCheck({category:'business',language:'en',publisherCountry:'us'}));
     await record('sources-poland','publishers',()=>provider.listPublishers({publisherCountry:'pl'}),sourceCheck({publisherCountry:'pl'}));
     await record('sources-pl-language-undocumented','raw-negative',()=>raw('top-headlines/sources',{language:'pl'}));
     await record('headlines-us-business','headlines',()=>provider.search({mode:'headlines',category:'business',editionCountry:'us',pageSize:5}));

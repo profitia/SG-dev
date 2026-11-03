@@ -73,8 +73,8 @@ test('publisher metadata is returned separately and never used as event location
 test('headlines use their endpoint without inventing article-level category metadata',async()=>{
   const f=fixture();const r=await f.provider.search({mode:'headlines',category:'business',editionCountry:'us'});assert.equal(new URL(f.calls[0].url).pathname,'/v2/top-headlines');assert.equal(r.items[0].category,null);
 });
-for(const [status,code,expected] of [[401,'apiKeyInvalid','AUTHENTICATION_FAILED'],[429,'apiKeyExhausted','QUOTA_EXHAUSTED'],[429,'rateLimited','RATE_LIMITED'],[426,'unknown','PLAN_RESTRICTED'],[400,'parameterInvalid','PROVIDER_REJECTED_CRITERIA'],[400,'maximumResultsReached','PLAN_LIMIT'],[503,'unexpectedError','PROVIDER_UNAVAILABLE']]){
-  test('sanitized provider error '+expected+' is distinct and never retried',async()=>{
+for(const [status,code,expected] of [[401,'apiKeyInvalid','AUTHENTICATION_FAILED'],[429,'apiKeyExhausted','QUOTA_EXHAUSTED'],[429,'rateLimited','RATE_LIMITED'],[426,'unknown','PLAN_RESTRICTED'],[400,'parameterInvalid','PROVIDER_REJECTED_CRITERIA'],[400,'maximumResultsReached','PLAN_LIMIT'],[426,'maximumResultsReached','PLAN_LIMIT'],[503,'unexpectedError','PROVIDER_UNAVAILABLE']]){
+  test('sanitized provider error '+expected+' HTTP'+status+' is distinct and never retried',async()=>{
     let calls=0;const events=[];const p=createNewsApiProvider({apiKey:key,targetEnvironment:'development',onEvent:e=>events.push(e),fetchImpl:async()=>{calls++;return new Response(JSON.stringify({status:'error',code,message:'raw '+key}),{status,headers:{'retry-after':'60'}});}});
     await assert.rejects(p.search({mode:'articles',text:'private search'}),e=>{assert.equal(e.code,expected);assert.equal(e.retryAfterSeconds,60);assert.equal(JSON.stringify(e).includes(key),false);return true;});
     assert.equal(calls,1);assert.equal(JSON.stringify(events).includes(key),false);assert.equal(JSON.stringify(events).includes('private search'),false);
