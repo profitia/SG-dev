@@ -44,11 +44,12 @@ test('last SDK boundary removes enriched PII/URLs/person updates and preserves r
   const raw={event:'adp_local_action_performed',uuid,timestamp,$set:{email:'private'},$set_once:{name:'private'},$unset:['email'],context:'private',
     properties:{module:'adp',action_type:'contact.add',token,distinct_id:id,$device_id:randomUUID(),$session_id:randomUUID(),$window_id:randomUUID(),
       $lib:'web',$lib_version:'1.444.0',$current_url:'https://private/?nip=123',$referrer:'https://private/?token=secret',$pathname:'/supplier/private',
-      $initial_current_url:'private',$set:{email:'private'},email:'private',value:'private',organisationId:'private'}}
+      $initial_current_url:'private',$set:{email:'private'},email:'private',value:'private',organisationId:'private',$geoip_disable:false}}
   const result=filterSdkEvent(raw,true,token)!
   assert(result);assert.equal(result.uuid,uuid);assert.equal(result.timestamp,timestamp)
   assert.equal(result.properties.token,token);assert.equal(result.properties.distinct_id,id)
   assert.equal(result.properties.application,'SG2');assert.equal(result.properties.environment,'development')
+  assert.equal(result.properties.$geoip_disable,true,'ingestion-side GeoIP suppression cannot be overridden by incoming SDK properties')
   assert.deepEqual(Object.keys(result).sort(),['event','properties','timestamp','uuid'])
   assert.doesNotMatch(JSON.stringify(result),/private|nip=|email|organisationId|\$set|current_url|referrer|pathname/)
   assert.equal(filterSdkEvent(raw,false,token),null)
@@ -112,6 +113,7 @@ test('pinned real browser SDK enriches then filters payloads, emits no automatic
   dom.window.eval(fs.readFileSync(new URL('../node_modules/posthog-js/dist/array.no-external.js',import.meta.url),'utf8'))
   const sdk=(dom.window as any).posthog
   const config=productAnalyticsSdkOptions({token,host:env.POSTHOG_HOST},()=>true)
+  try {
   sdk.init(token,{...config,api_transport:'XHR',disable_compression:true,before_send:(data:any)=>{raw.push(data);const clean=filterSdkEvent(data,true,token);filtered.push(clean);return clean}})
   await new Promise(resolve=>setTimeout(resolve,30))
   assert.equal(requests.length,0,'initialization must not fetch flags, recordings or automatic events')
@@ -119,9 +121,16 @@ test('pinned real browser SDK enriches then filters payloads, emits no automatic
   assert.equal(filtered.length,1);assert(raw[0].properties.$current_url.includes('email=private'))
   assert(filtered[0]);assert.doesNotMatch(JSON.stringify(filtered[0]),/private|current_url|referrer|pathname|browser|os_version/)
   assert.equal(filtered[0].properties.token,token)
+  assert.equal(filtered[0].properties.$geoip_disable,true)
   assert.equal(dom.window.document.cookie,'');assert.equal(dom.window.localStorage.length,0);assert.equal(dom.window.sessionStorage.length,0)
   sdk.capture('$exception',{message:'private'});assert.equal(filtered.at(-1),null)
   assert.equal(requests.filter(r=>/flags|decide|\/s\//.test(r.url)).length,0)
   assert.equal(requests.length,1,'only the explicit accepted event may reach the mocked transport')
-  dom.window.close()
+  const body=String(requests[0].body),encoded=new URLSearchParams(body).get('data')
+  const serialized=encoded?(encoded.startsWith('{')?encoded:Buffer.from(encoded,'base64').toString('utf8')):body
+  const sent=JSON.parse(serialized)
+  assert.deepEqual(Object.keys(sent).sort(),['api_key','batch','sent_at'])
+  assert.equal(sent.api_key,token);assert.equal(sent.batch.length,1)
+  assert.equal(sent.batch[0].properties.$geoip_disable,true,'the pinned real SDK must retain the suppression flag in the actual transport body')
+  } finally { dom.window.close() }
 })

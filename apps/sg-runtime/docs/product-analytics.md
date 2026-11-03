@@ -32,6 +32,24 @@ Release acceptance requires actual sanitized event receipt in project329829,
 negative proof for the excluded Finder surface, unchanged unrelated business
 behavior, a verified recovery point and canonical PMOS/PHR closeout.
 
+### Ingestion-side privacy correction
+
+The first controlled live check received three genuine AppShell events but found
+backend-added GeoIP fields on all three. Their location values were not read or
+exported. The operator immediately withdrew tab consent and used the verified
+native OFF recovery target; those earlier test rows remain historical evidence.
+The release is not accepted on those initial events.
+
+`ip: false` and removing client-side geo properties are insufficient to prevent
+PostHog ingestion enrichment. The final SDK boundary therefore forces the
+per-event `$geoip_disable: true` flag after filtering all incoming properties.
+It cannot be overridden by a caller or prior SDK enrichment. This changes no
+event definition, business behavior, identity, Finder exclusion, shared project
+setting or other environment. The pinned real SDK transport test verifies that
+the flag reaches the request body. Acceptance additionally requires real events
+from the corrected exact release with no stored geo fields; the earlier three
+events must be reported separately, never silently deleted or counted as proof.
+
 ## Activation and privacy
 
 `posthog-js` is pinned to `1.444.0`. Next.js `14.2.35` uses one client boundary in

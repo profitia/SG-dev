@@ -10,6 +10,25 @@ import {assertPciSmartIntegrity,digest as digestForTest} from './pci-smart-integ
 const receipt=()=>JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
 
+test('GeoIP privacy continuation binds current SDK/test bytes and preserves every accepted receipt',()=>{
+ const r=receipt(),a=r.productAnalyticsStageOnePrivacyCompatibility;assert(a)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const f of a.boundSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===f?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),f)
+ for(const mutate of [
+  x=>x.productAnalyticsStageOnePrivacyCompatibility.geoipSuppression=false,
+  x=>x.productAnalyticsStageOnePrivacyCompatibility.finderExcluded=false,
+  x=>x.productAnalyticsStageOnePrivacyCompatibility.testConsentRequired=false,
+  x=>x.productAnalyticsStageOnePrivacyCompatibility.previousReceiptSourceSha='0'.repeat(40),
+  x=>x.productAnalyticsStageOnePrivacyCompatibility.previousReceiptSha256='0'.repeat(64),
+  x=>x.productAnalyticsStageOnePrivacyCompatibility.boundSourcePaths.pop(),
+  x=>x.productAnalyticsStageOnePrivacyCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),
+  x=>delete x.productAnalyticsStageOnePrivacyCompatibility.sourceDigests[a.boundSourcePaths[0]],
+  x=>x.productAnalyticsStageOnePrivacyCompatibility.posthogProjectSettingsChanged=true,
+  x=>x.productAnalyticsStageOneCompatibility.finderExcluded=false,
+  x=>x.contract.sourceDigest='0'.repeat(64),
+ ]){const changed=structuredClone(r);mutate(changed);assert.throws(()=>assertPciSmartIntegrity(changed,current,historical))}
+})
+
 test('stage-one analytics receipt preserves all history and rejects Finder-exclusion or scope tampering',()=>{
  const r=receipt(),a=r.productAnalyticsStageOneCompatibility;assert(a)
  assertPciSmartIntegrity(r,current,historical)
