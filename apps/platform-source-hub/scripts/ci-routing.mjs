@@ -71,11 +71,28 @@ export function validateRouting({changedPaths,repositoryRoot,readReceipt,runGove
  return {partition,results:validateOwnerGroups({groups,runGovernance})}
 }
 
+export function validationBase({git,requestedBase,validationSha,event,headSha}){
+ assert(/^[a-f0-9]{40}$/.test(requestedBase)&&/^[a-f0-9]{40}$/.test(validationSha),'Exact event revisions required')
+ assert.equal(git(['rev-parse','HEAD']),validationSha,'Validate the actual event checkout')
+ if(event==='pull_request'){
+  assert(/^[a-f0-9]{40}$/.test(headSha),'Exact PR head required')
+  const parents=git(['rev-list','--parents','-n','1',validationSha]).split(' ')
+  assert.equal(parents.length,3,'Expected the GitHub PR validation merge')
+  assert.equal(parents[0],validationSha);assert.equal(parents[2],headSha,'Validation merge must contain the exact PR head')
+  git(['merge-base','--is-ancestor',requestedBase,parents[1]])
+  return parents[1]
+ }
+ assert.equal(event,'push','Only explicit source CI events are supported')
+ return requestedBase
+}
+
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const repositoryRoot=fileURLToPath(new URL('../../../',import.meta.url))
  const git=args=>execFileSync('git',args,{cwd:repositoryRoot,encoding:'utf8'}).trim()
- const base=process.argv[process.argv.indexOf('--base')+1]
+ const requestedBase=process.argv[process.argv.indexOf('--base')+1]
  const candidate=git(['rev-parse','HEAD'])
+ const base=validationBase({git,requestedBase,validationSha:process.env.CI_ROUTING_VALIDATION,
+  event:process.env.CI_ROUTING_EVENT,headSha:process.env.CI_ROUTING_HEAD})
  validateCandidate({git,candidate,base})
  const changedPaths=git(['diff','--name-only',base,candidate]).split('\n').filter(Boolean)
  const result=validateRouting({changedPaths,repositoryRoot,
@@ -87,5 +104,5 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
    for(const target of targets)args.push('--target',target)
    return JSON.parse(execFileSync(process.execPath,args,{cwd:repositoryRoot,encoding:'utf8'}))
   }})
- console.log(JSON.stringify({candidate,base,...result},null,2))
+ console.log(JSON.stringify({candidate:process.env.CI_ROUTING_HEAD||candidate,validationSha:candidate,base,requestedBase,...result},null,2))
 }

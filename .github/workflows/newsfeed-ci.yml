@@ -46,5 +46,8 @@ jobs:
       - name: Verify every changed path under its actual registered owner
         env:
           CI_ROUTING_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          CI_ROUTING_EVENT: ${{ github.event_name }}
+          CI_ROUTING_VALIDATION: ${{ github.sha }}
+          CI_ROUTING_HEAD: ${{ github.event.pull_request.head.sha }}
         run: node apps/platform-source-hub/scripts/ci-routing.mjs --base "$CI_ROUTING_BASE"
       # Provider credentials, paid/live requests and deployments are deliberately absent.
