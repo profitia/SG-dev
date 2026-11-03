@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.35.0",
+  "manifestVersion": "3.36.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,33 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {
+      "id": "newsfeed-business-and-architecture-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-newsfeed-business-and-architecture-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 450,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "agent-execution-canon",
+        "repository-routing",
+        "architecture-baseline",
+        "architecture-execution-adapter",
+        "spendguru-srm-target-architecture-canon",
+        "srm-business-capability-canon",
+        "srm-architecture-component-placement",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
+        "platform-appshell-business-and-architecture-canon",
+        "srm-adp-presentation-mounting-amendment",
+        "shared-development-contract-integration"
+      ]
+    },
     {
       "id": "pci-smart-preparation-and-reference-methodology-business-and-architecture-canon",
       "version": "1.0",
