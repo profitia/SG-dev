@@ -6815,7 +6815,7 @@
     },
     "consumerSourceDigests": {
       "apps/dashboard-preview/package-lock.json": "eb079d51fe881699a027b4b7c8ddd69758c106973308ebe5468e91482584bfdb",
-      "apps/sg-runtime/package-lock.json": "ab1291237c96ae68dd550942ca82225fd95c0473ccb928389e486c3778b3810c",
+      "apps/sg-runtime/package-lock.json": "40c3bd4a57157bb05a072e5a7671dbf71f183abe7ab63c4fbb58f09d900cc8d7",
       "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "4caeb6a47feadd3bf9a6260a6553eacf9e93f3854cbe771f831d2ab6853214cd",
       "apps/sg-runtime/tests/category-operation.test.ts": "1a480e13e1aea131340425a0ab0a4b0a0bfcf5e817ba4cc7bc5c7634ba72e01b",
       "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "b732149114c96a753eaee7df4a050b12dcbdeb24eddb795484f84287453e9569",
@@ -6832,7 +6832,7 @@
     },
     "applicationSourceDigests": {
       "../dashboard-preview/package-lock.json": "eb079d51fe881699a027b4b7c8ddd69758c106973308ebe5468e91482584bfdb",
-      "package-lock.json": "ab1291237c96ae68dd550942ca82225fd95c0473ccb928389e486c3778b3810c",
+      "package-lock.json": "40c3bd4a57157bb05a072e5a7671dbf71f183abe7ab63c4fbb58f09d900cc8d7",
       "tests/adp-appshell-consumer.test.tsx": "4caeb6a47feadd3bf9a6260a6553eacf9e93f3854cbe771f831d2ab6853214cd",
       "tests/category-operation.test.ts": "1a480e13e1aea131340425a0ab0a4b0a0bfcf5e817ba4cc7bc5c7634ba72e01b",
       "tests/diagnostic-telemetry-adoption.test.mjs": "b732149114c96a753eaee7df4a050b12dcbdeb24eddb795484f84287453e9569",
