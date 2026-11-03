@@ -10,7 +10,7 @@ DO $guard$ BEGIN
  END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles r WHERE r.rolname='sg2_d1_private_denial_reader' AND rolcanlogin
   AND NOT(rolsuper OR rolbypassrls OR rolinherit OR rolcreatedb OR rolcreaterole OR rolreplication)
-  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.member=r.oid OR m.roleid=r.oid)) THEN
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.member=r.oid)) THEN
   RAISE EXCEPTION 'D1_ROLE_DENIED' USING ERRCODE='42501';
  END IF;
 END $guard$;
@@ -34,7 +34,7 @@ BEGIN
  RAISE LOG 'SG2_D1_READ invocation=% store=private phase=INTENT',invocation;
  IF session_user<>'sg2_d1_private_denial_reader' OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles r
   WHERE r.rolname=session_user AND rolcanlogin AND NOT(rolsuper OR rolbypassrls OR rolinherit OR rolcreatedb OR rolcreaterole OR rolreplication)
-  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.member=r.oid OR m.roleid=r.oid))
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.member=r.oid))
   OR NOT EXISTS(SELECT 1 FROM profitia_access.installation WHERE singleton AND environment='development' AND project_id='spring-bread-28217539' AND branch_id='br-sparkling-term-b99l107x' AND database_name='platform_private' AND current_database()=database_name) OR NOT EXISTS(SELECT 1 FROM profitia_sg2_d1_private.authorization WHERE singleton AND expires_at>clock_timestamp()) THEN
   RAISE EXCEPTION 'D1_READER_DENIED' USING ERRCODE='42501';
  END IF;

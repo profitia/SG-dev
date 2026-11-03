@@ -686,7 +686,7 @@ Each dedicated reader gets only USAGE on its new projection schema and EXECUTE o
 read_case(text). No original table/schema privileges, DML, owner membership,
 admin/BYPASSRLS/CREATEROLE/CREATEDB/REPLICATION or inheritance. Both existing FORCE
 RLS policies remain unchanged. session_user must be the dedicated LOGIN principal;
-its role attributes and absence of memberships are rechecked per call. Another
+its role attributes and absence of memberships granted to the reader are rechecked per call. PostgreSQL may retain an incoming administration membership for the approved role creator; that does not authorize another session_user to read. Another
 role, including a controlled owner session, cannot use its EXECUTE to impersonate
 the reader. Function SECURITY DEFINER is required to project under the existing
 owner-only RLS. Fixed pg_catalog,pg_temp search_path, qualified relations and no
@@ -749,7 +749,7 @@ synthetic. No direct PMOS database writes or alternate continuity are introduced
    Unexpected existing objects, endpoint or concurrent authority change stops work.
 3. Separately authorized role administrator executes roles.sql only in its exact
    approved database and provisions credentials using the protected provider path.
-   This is a proposed CREATE ROLE, not a grant of permission to run it now.
+   This is a proposed CREATE ROLE, not a grant of permission to run it now. The operator needs separately approved CREATEROLE and temporary SET ROLE access to the matching controlled owner. roles.sql checks physical installation scope under that owner, then resets to the role administrator for CREATE ROLE. It needs neither superuser nor BYPASSRLS. The same split is used for expiry. Both flows are exercised under a non-superuser, non-BYPASSRLS operator in isolated PostgreSQL16/18. Such an active operator is not established or authorized here. Restore any temporary operator memberships to the approved pre-install state at closeout.
 4. Controlled operator assumes only the approved existing NOLOGIN owner for the
    matching private.sql/source.sql. Each artifact is one transaction; no atomocity
    across databases is claimed. Record source digest, installed function definition,

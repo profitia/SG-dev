@@ -14,7 +14,7 @@ const digest=v=>createHash('sha256').update(v).digest('hex')
 test('D1 actual independent PostgreSQL stores, ordinary roles, fixed SQL projection and rollback-independent audit', {skip:!process.env.OPERATION_FIXTURE_OWNER_URL},async t=>{
  const rootUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
  const admin=new Client({connectionString:rootUrl});await admin.connect()
- const stores=[],created=[]
+ const stores=[],created=[],operators=[]
  try{
   await admin.query('SELECT pg_advisory_lock(20261103,4101)')
   for(const role of ['profitia_access_owner','profitia_ingestion_owner']){
@@ -38,7 +38,13 @@ test('D1 actual independent PostgreSQL stores, ordinary roles, fixed SQL project
     await owner.query(`INSERT INTO ${base}.security_events(recorded_at,application_id,environment,decision_id,phase,event) VALUES($1,$2,$3,$4,'DECISION',$5::jsonb)`,[recorded,priv?'spendguru':'spendguru-benchmark-source',env,randomUUID(),JSON.stringify({applicationId:priv?'spendguru':'spendguru-benchmark-source',environment:env,deploymentId:deployment,operation,decision:'DENY',reasonCode:reason,actorId:'SYNTHETIC_PERSON',organisationId:'SYNTHETIC_ORG',correlationId:randomUUID(),rawPayload:'SYNTHETIC_PRIVATE_PAYLOAD'})])
    }
    for(const c of CASES){await insert(c);await insert(c,{recorded:c.end});await insert(c,{env:'staging'});await insert(c,{deployment:'wrong-deploy'});await insert(c,{operation:'unapproved.operation'})}
-   await owner.query('RESET ROLE');await owner.query(load(prefix+'roles.sql'))
+   await owner.query('RESET ROLE')
+   const operatorRole=`sg2_d1_${store}_test_operator`
+   assert.equal((await admin.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[operatorRole])).rowCount,0)
+   await admin.query(`CREATE ROLE ${operatorRole} LOGIN NOINHERIT CREATEROLE NOSUPERUSER NOBYPASSRLS NOCREATEDB NOREPLICATION PASSWORD 'isolated_ci_only';GRANT ${ownerRole} TO ${operatorRole}`)
+   const operatorUrl=new URL(url);operatorUrl.username=operatorRole;operatorUrl.password='isolated_ci_only'
+   const operator=new Client({connectionString:operatorUrl.toString()});await operator.connect();operators.push({operator,operatorRole})
+   await operator.query(load(prefix+'roles.sql'))
    // Test-only local password. No product/Neon credentials are used.
    await owner.query(`ALTER ROLE ${readerRole} PASSWORD 'isolated_ci_only'`)
    await owner.query(`SET ROLE ${ownerRole}`)
@@ -54,7 +60,7 @@ test('D1 actual independent PostgreSQL stores, ordinary roles, fixed SQL project
    const reader=new Client({connectionString:readerUrl.toString()});await reader.connect()
    const notices=[];reader.on('notice',n=>{if(n.message.startsWith('SG2_D1_READ '))notices.push(n.message)})
    await reader.query('SET client_min_messages=log')
-   stores.push({store,base,database,owner,reader,ownerRole,readerRole,insert,notices,before})
+   stores.push({store,base,database,owner,reader,ownerRole,readerRole,operator,insert,notices,before})
   }
   await t.test('all5cases across2actualstores expose only fixed technical fields; exact boundaries excluded',async()=>{
    let complete
@@ -106,15 +112,17 @@ test('D1 actual independent PostgreSQL stores, ordinary roles, fixed SQL project
     await assert.rejects(s.reader.query(`SELECT profitia_sg2_d1_${s.store}.read_case('H1')`),e=>e.code==='42501');assert.equal((await s.owner.query(`SELECT count(*)::int AS n FROM ${s.base}.security_events`)).rows[0].n,before)
    })
    await t.test(`${s.store}: revoke/NOLOGIN retains history and eliminates access`,async()=>{
-    await s.owner.query('RESET ROLE');await s.owner.query(load(prefix+'expire.sql'));await assert.rejects(query(),e=>e.code==='42501')
+    await s.owner.query('RESET ROLE');await s.operator.query(load(prefix+'expire.sql'));await assert.rejects(query(),e=>e.code==='42501')
     assert.equal((await s.owner.query('SELECT rolcanlogin FROM pg_roles WHERE rolname=$1',[s.readerRole])).rows[0].rolcanlogin,false)
     assert.deepEqual((await s.owner.query(`SELECT * FROM ${s.base}.installation`)).rows,s.before)
    })
   }
  }finally{
   for(const s of stores){await s.reader.end();await s.owner.end()}
+  for(const{operator}of operators)await operator.end()
   for(const database of created.reverse())await admin.query(`DROP DATABASE ${database} WITH (FORCE)`)
   for(const role of ['sg2_d1_private_denial_reader','sg2_d1_source_denial_reader'])if((await admin.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount)await admin.query(`DROP ROLE ${role}`)
+  for(const{operatorRole}of operators)await admin.query(`DROP ROLE ${operatorRole}`)
   await admin.query('SELECT pg_advisory_unlock(20261103,4101)');await admin.end()
  }
 })
