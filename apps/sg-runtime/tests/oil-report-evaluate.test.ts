@@ -41,7 +41,9 @@ test('release is an exact reviewed instruction, not a boolean, placeholder or ex
 test('runtime database cannot use an owner role, another branch host, database or non-TLS connection',()=>{
  const url='postgresql://'+OIL_B1.role+':fixture-password@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'
  assert.equal(checkDatabaseUrl(url,OIL_B1.role),url)
- for(const bad of [url.replace(OIL_B1.role,'neondb_owner'),url.replace('ep-muddy-pine-b22pdyqd-pooler','ep-unapproved'),url.replace('/neondb','/other'),url.replace('sslmode=require','sslmode=disable')])assert.throws(()=>checkDatabaseUrl(bad,OIL_B1.role),/BINDING/)
+ assert.equal(checkDatabaseUrl(url+'&channel_binding=require',OIL_B1.role),url+'&channel_binding=require')
+ for(const bad of [url.replace(OIL_B1.role,'neondb_owner'),url.replace('ep-muddy-pine-b22pdyqd-pooler','ep-unapproved'),url.replace('/neondb','/other'),url.replace('sslmode=require','sslmode=disable'),
+  url+'&host=unapproved.example',url+'&user=neondb_owner',url+'&database=other',url+'&options=-c%20role%3Dneondb_owner',url+'&sslmode=disable',url+'#unapproved',url.replace('/neondb',':443/neondb')])assert.throws(()=>checkDatabaseUrl(bad,OIL_B1.role),/BINDING/)
  assert.throws(()=>checkDatabaseUrl(url,B1_COUNTER.role),/BINDING/)
 })
 test('only the accepted existing key/project/tracking fingerprint can be used; process fallbacks are absent',()=>{

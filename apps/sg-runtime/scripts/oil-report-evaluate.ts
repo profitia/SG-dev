@@ -56,7 +56,11 @@ export function readOperatorRelease(file:FileRef,now=Date.now()){
 export function checkDatabaseUrl(value:string,role:string){
  const u=new URL(value)
  if(!['postgres:','postgresql:'].includes(u.protocol)||!targets.source.hosts.includes(u.hostname)||u.pathname!=='/'+targets.source.databaseName
-  ||decodeURIComponent(u.username)!==role||!u.password||!['require','verify-full'].includes(u.searchParams.get('sslmode')??''))fail('DATABASE_BINDING_MISMATCH')
+  ||decodeURIComponent(u.username)!==role||!u.password||u.hash||u.port&&u.port!=='5432'
+  ||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k))
+  ||u.searchParams.getAll('sslmode').length!==1||u.searchParams.getAll('channel_binding').length>1
+  ||u.searchParams.has('channel_binding')&&u.searchParams.get('channel_binding')!=='require'
+  ||!['require','verify-full'].includes(u.searchParams.get('sslmode')??''))fail('DATABASE_BINDING_MISMATCH')
  return value
 }
 export function checkCredential(c:Bindings['openai'],expectedSha256:string){
