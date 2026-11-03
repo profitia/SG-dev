@@ -1,0 +1,5 @@
+{
+  "mode": "articles",
+  "terms": { "phrases": ["Budimex"], "any": ["inwestycja", "inwestycje", "kontrakt", "kontrakty", "investment", "contract"] },
+  "order": "newest", "pageSize": 5
+}

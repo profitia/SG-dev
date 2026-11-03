@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "provider": "newsapi",
+  "targetEnvironment": "development",
+  "startedAt": "2026-11-03T08:44:41.664Z",
+  "status": "BLOCKED_MISSING_CREDENTIAL",
+  "accountPlan": "NOT_VERIFIED",
+  "requestBudget": 24,
+  "requestsPerformed": 0,
+  "articleContentsPersisted": false,
+  "keyPersisted": false,
+  "qualityOrPolishCoverageEvaluated": false,
+  "cases": []
+}
