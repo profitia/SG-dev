@@ -958,3 +958,52 @@ test('atomic Root claim review rejects substitution at every pinned producer blo
   rejection(()=>selectCandidate(context(),p,p.head.sha,{files}));
  }
 })
+
+import {NEWSFEED_G1_GOVERNANCE_REVIEW} from './controlled-package-ci.mjs'
+
+const newsfeedG1ReviewFiles = () => Object.entries(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:'modified'}))
+const newsfeedG1ReviewPr = () => ({...architecturePr(10),number:NEWSFEED_G1_GOVERNANCE_REVIEW.prNumber,head:{...architecturePr().head,ref:NEWSFEED_G1_GOVERNANCE_REVIEW.branch}})
+
+test('Newsfeed G1 admission binds only the ten frozen blobs of PR872 and its exact branch',()=>{
+ assert(Object.isFrozen(NEWSFEED_G1_GOVERNANCE_REVIEW));assert(Object.isFrozen(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs))
+ assert.equal(NEWSFEED_G1_GOVERNANCE_REVIEW.prNumber,872);assert.equal(NEWSFEED_G1_GOVERNANCE_REVIEW.sourceSha,'d7c425651faa354a21bf20c4679e12345365b6be')
+ assert.equal(Object.keys(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs).length,10)
+ assert(!Object.keys(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs).some(n=>n.startsWith('apps/')||n.startsWith('packages/')||n.startsWith('.github/')))
+ const files=newsfeedG1ReviewFiles(),p=newsfeedG1ReviewPr()
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:files.map(f=>({...f,status:'added'}))}),other)
+ for(const delta of [{number:873},{number:undefined},{head:{...p.head,ref:'architecture/another-review'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...delta},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('Newsfeed G1 review refuses changed blobs, missing/extra/duplicate files, deletion and rename',()=>{
+ const original=newsfeedG1ReviewFiles()
+ for(let i=0;i<original.length;i++){
+  const incomplete=original.filter((_,j)=>i!==j);rejection(()=>selectCandidate(context(),{...newsfeedG1ReviewPr(),changed_files:incomplete.length},other,{files:incomplete}))
+  for(const patch of [{sha:'d'.repeat(40)},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename},{sha:'forged'}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),newsfeedG1ReviewPr(),other,{files}))
+  }
+  const files=original.map((f,j)=>i===j?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),newsfeedG1ReviewPr(),other,{files}))
+ }
+ for(const name of ['apps/sg-runtime/package.json','apps/newsfeed-runtime/src/server.ts','packages/platform-contracts/src/operation-context.mjs',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-10-27-extra.md']){
+  const files=[...original,producerFile(name)];rejection(()=>selectCandidate(context(),{...newsfeedG1ReviewPr(),changed_files:files.length},other,{files}))
+  const replaced=[...original];replaced[0]=producerFile(name);rejection(()=>selectCandidate(context(),newsfeedG1ReviewPr(),other,{files:replaced}))
+ }
+})
+
+test('Newsfeed G1 review preserves trusted actor/repository/main and current owner routing fences',()=>{
+ const files=newsfeedG1ReviewFiles()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='staging',p=>p.state='closed']){const p=newsfeedG1ReviewPr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},newsfeedG1ReviewPr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/architecture/untrusted'},newsfeedG1ReviewPr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'));Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),newsfeedG1ReviewPr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Newsfeed G1 review uses complete API pagination and metadata race fencing before fixed Git checks',async()=>{
+ const files=newsfeedG1ReviewFiles(),candidate=newsfeedG1ReviewPr(),result=await resolveCandidateAdmission(context(),'872',other,apiFixture(candidate,files).request)
+ assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
+ for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'872',other,apiFixture(candidate,files,after).request))
+ await assert.rejects(resolveCandidateAdmission(context(),'872',other,apiFixture(candidate,files.slice(1)).request))
+})
