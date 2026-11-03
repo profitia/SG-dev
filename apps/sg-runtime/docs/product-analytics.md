@@ -3,6 +3,35 @@
 Task: `SG2-POSTHOG-20261102`. Repository authority: `profitia/SG-dev/main`.
 Owner: SG Runtime. Execution: local isolated task branch. Target: Development only.
 
+## Stage one — analytics without Benchmark Finder
+
+Task `SG2-POSTHOG-STAGE1-NO-FINDER-20261103` activates the existing agreed
+instrumentation for the remaining Development surfaces, independently of the
+known Finder outage. Default OFF and explicit consenting test sessions remain
+the activation boundary. No general-user identity, automatic capture or new
+unsupported event signal is introduced.
+
+The central adapter and final SDK filter reject Finder events, module/view and
+entry-point values, and benchmark search/selection operations. The provider
+also disables every capture while the current URL has the exact
+`benchmark-finder` path segment, including PCI opened inside that module. It
+does not transmit the path. Entering Finder after SDK initialization suspends
+capture immediately; returning to another module resumes it with the same SDK.
+Direct Finder entry never initializes the SDK. Definitions are retained for a
+later separately accepted stage.
+
+AppShell, ADP and X-Ray retain their existing allowlisted signals. The current
+PCI entry is inside Finder and is included in that route's exclusion; no new
+PCI entry point is introduced. Five previously unsupported definitions remain
+inactive. Finder business behavior, E1, Source bindings, providers and Forecast
+workers are unchanged. The known Finder live failure is recorded separately
+and is not the acceptance condition for this analytics-only release. Shared
+security, source-integrity, receiving and CI checks remain mandatory.
+
+Release acceptance requires actual sanitized event receipt in project329829,
+negative proof for the excluded Finder surface, unchanged unrelated business
+behavior, a verified recovery point and canonical PMOS/PHR closeout.
+
 ## Activation and privacy
 
 `posthog-js` is pinned to `1.444.0`. Next.js `14.2.35` uses one client boundary in

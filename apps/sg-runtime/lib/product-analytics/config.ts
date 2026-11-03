@@ -6,6 +6,11 @@ export const DEVELOPMENT_SERVICE = 'srv-dapa3tid0e5s73f8bc5g'
 export const DEVELOPMENT_HOSTS = ['sg2-development-runtime.onrender.com', 'dev-sg2.spendguru.app'] as const
 export const TEST_CONSENT_KEY = 'sg2.product-analytics.explicit-test.v1'
 
+/** Local routing decision only. Paths and query strings are never transmitted. */
+export function isProductAnalyticsPathEnabled(pathname: string): boolean {
+  return !pathname.split('/').includes('benchmark-finder')
+}
+
 export function readProductAnalyticsConfiguration(env: Record<string, string | undefined>): ProductAnalyticsConfiguration | null {
   if (env.SG2_PRODUCT_ANALYTICS_ENABLED !== 'true' || env.APP_ENV !== 'development'
     || env.RENDER_SERVICE_ID !== DEVELOPMENT_SERVICE || env.SG2_PRODUCT_ANALYTICS_CONSENT_MODE !== 'explicit_test'

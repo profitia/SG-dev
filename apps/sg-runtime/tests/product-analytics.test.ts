@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {randomUUID} from 'node:crypto'
 import {JSDOM} from 'jsdom'
-import {readProductAnalyticsConfiguration, isAllowedAnalyticsBrowser, productAnalyticsSdkOptions, DEVELOPMENT_SERVICE} from '../lib/product-analytics/config'
-import {filterSdkEvent, validateBusinessEvent} from '../lib/product-analytics/contract'
+import {readProductAnalyticsConfiguration, isAllowedAnalyticsBrowser, isProductAnalyticsPathEnabled, productAnalyticsSdkOptions, DEVELOPMENT_SERVICE} from '../lib/product-analytics/config'
+import {filterSdkEvent, isProductAnalyticsEventEnabled, validateBusinessEvent} from '../lib/product-analytics/contract'
 import {ProductAnalytics} from '../lib/product-analytics/adapter'
 
 const token='phc_'+ 'A'.repeat(43) // Deliberately synthetic, never an actual project token.
@@ -66,7 +66,7 @@ test('default off, consent withdrawal, transport failure and duplicate effects n
   for(let i=0;i<5;i++)analytics.once('app','app_opened',input)
   assert.equal(events.length,1)
   for(const key of ['benchmark_finder','benchmark_finder','adp','adp','benchmark_finder'])analytics.transition('module',key,'module_opened',{module:key as 'adp',entry_point:'appshell'})
-  assert.equal(events.filter(e=>e.event==='module_opened').length,3)
+  assert.equal(events.filter(e=>e.event==='module_opened').length,1)
   const attempt=analytics.begin('price_change_index','pci_analysis')!
   analytics.finish(attempt,'CALCULATED');analytics.finish(attempt,'CALCULATED')
   assert.equal(events.filter(e=>e.event==='operation_completed').length,1)
@@ -76,6 +76,30 @@ test('default off, consent withdrawal, transport failure and duplicate effects n
   permitted=false;assert.equal(analytics.capture('app_opened',input),false)
   analytics.connect(()=>{throw Error('transport failure')},()=>true)
   assert.doesNotThrow(()=>analytics.capture('app_opened',input));assert.equal(analytics.capture('app_opened',input),false)
+})
+
+test('stage one blocks every Finder entry, view, event and operation at adapter and final SDK boundaries',()=>{
+  for(const pathname of ['/pl/dashboard/benchmark-finder','/en/dashboard/benchmark-finder/','/pl/dashboard/benchmark-finder/detail'])
+    assert.equal(isProductAnalyticsPathEnabled(pathname),false)
+  for(const pathname of ['/pl/dashboard','/en/dashboard/adp','/pl/dashboard/xray'])assert.equal(isProductAnalyticsPathEnabled(pathname),true)
+  const analytics=new ProductAnalytics(),sent:any[]=[]
+  analytics.connect((event,properties)=>sent.push({event,properties}),()=>true)
+  const excluded:any[]=[['module_opened',{module:'benchmark_finder',entry_point:'appshell'}],
+    ['screen_viewed',{module:'appshell',view:'benchmark_finder'}],['app_opened',{module:'appshell',entry_point:'benchmark_finder'}],
+    ['benchmark_search_submitted',{module:'benchmark_finder',mode:'simple',process_attempt_id:randomUUID()}],
+    ['benchmark_results_displayed',{module:'benchmark_finder',mode:'simple',status:'success',result_count:1}],
+    ['benchmark_selected',{module:'benchmark_finder'}],
+    ['operation_started',{module:'appshell',operation:'benchmark_search',process_attempt_id:randomUUID()}],
+    ['operation_failed',{module:'benchmark_finder',operation:'benchmark_search',process_attempt_id:randomUUID(),status:'error'}]]
+  for(const[event,properties]of excluded){
+    assert.equal(isProductAnalyticsEventEnabled(event,properties),false,event)
+    assert.equal(analytics.capture(event,properties),false,event)
+    assert.equal(filterSdkEvent({event,properties:{...properties,token,distinct_id:randomUUID()}},true,token),null,event)
+  }
+  assert.equal(sent.length,0)
+  for(const[event,properties]of [['app_opened',{module:'appshell',entry_point:'appshell'}],['adp_view_opened',{module:'adp',view:'data'}],['xray_report_opened',{module:'xray'}]] as const)
+    assert.equal(analytics.capture(event,properties),true,event)
+  assert.equal(sent.length,3)
 })
 
 test('pinned real browser SDK enriches then filters payloads, emits no automatic events and stores no identity',async()=>{

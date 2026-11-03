@@ -1,4 +1,4 @@
-import { validateBusinessEvent, type AnalyticsEvent, type AnalyticsModule, type AnalyticsProperties } from './contract'
+import { isProductAnalyticsEventEnabled, validateBusinessEvent, type AnalyticsEvent, type AnalyticsModule, type AnalyticsProperties } from './contract'
 
 type Attempt = { id: string; started: number; module: AnalyticsModule; operation: string; finished: boolean }
 type Sink = (event: AnalyticsEvent, properties: Record<string, unknown>) => void
@@ -22,7 +22,7 @@ export class ProductAnalytics {
     try {
       if (!this.sink || !this.permitted()) return false
       const properties = validateBusinessEvent(event, { ...input, ...(this.releaseSha ? { release_sha: this.releaseSha } : {}) })
-      if (!properties) return false
+      if (!properties || !isProductAnalyticsEventEnabled(event, properties)) return false
       this.sink(event, properties); return true
     } catch { return false }
   }

@@ -5,9 +5,31 @@ import {posix} from 'node:path'
 const relativeHostPath=file=>posix.relative('apps/sg-runtime',file)
 export const digest=bytes=>createHash('sha256').update(bytes).digest('hex')
 
+const PRODUCT_ANALYTICS_STAGE_ONE_FILES=["apps/sg-runtime/components/analytics/product-analytics-provider.tsx","apps/sg-runtime/docs/product-analytics.md","apps/sg-runtime/lib/product-analytics/adapter.ts","apps/sg-runtime/lib/product-analytics/config.ts","apps/sg-runtime/lib/product-analytics/contract.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/product-analytics-ui.test.tsx","apps/sg-runtime/tests/product-analytics.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+export function assertProductAnalyticsStageOneContinuation(receipt,current,historical){
+ const a=receipt.productAnalyticsStageOneCompatibility,file='apps/sg-runtime/operation-integration.json'
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','targetEnvironment','previousReceiptSourceSha','previousReceiptSha256','changedSourcePaths','sourceDigests','applicationSourceDigests','finderExcluded','testConsentRequired','businessRuntimeChanged','authorizationChanged','sourceBindingsChanged','forecastWorkersChanged','schemaChanged','existingTelemetryChanged','privatePinsChanged','ciPolicyChanged'].sort())
+ assert.equal(a.taskId,'SG2-POSTHOG-STAGE1-NO-FINDER-20261103')
+ assert.equal(a.scope,'DEVELOPMENT_EXISTING_ANALYTICS_WITHOUT_FINDER')
+ assert.equal(a.targetEnvironment,'development')
+ assert.equal(a.previousReceiptSourceSha,'9bce78138e1396765ce67b9b1b29841efdb017f2')
+ const bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {productAnalyticsStageOneCompatibility,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every earlier acceptance, D1 artifact and original hash stays immutable')
+ assert.deepEqual(a.changedSourcePaths,PRODUCT_ANALYTICS_STAGE_ONE_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),PRODUCT_ANALYTICS_STAGE_ONE_FILES)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([f,h])=>[relativeHostPath(f),h])))
+ for(const[f,h]of Object.entries(a.sourceDigests)){assert.match(h,/^[a-f0-9]{64}$/);assert.equal(digest(current(f)),h,'exact stage-one analytics source '+f)}
+ for(const flag of ['finderExcluded','testConsentRequired'])assert.equal(a[flag],true,flag)
+ for(const flag of ['businessRuntimeChanged','authorizationChanged','sourceBindingsChanged','forecastWorkersChanged','schemaChanged','existingTelemetryChanged','privatePinsChanged','ciPolicyChanged'])assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:path=>path===file||Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):current(path)}
+}
+
 const D1_AUDIT_FILES=["apps/sg-runtime/scripts/denial-audit/INSTALLATION.md","apps/sg-runtime/scripts/denial-audit/adoption.json","apps/sg-runtime/scripts/denial-audit/d1-reader.mjs","apps/sg-runtime/scripts/denial-audit/d1-reader.test.mjs","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
 const D1_PRODUCER_FILES=['packages/platform-contracts/src/sg2-denial-audit-reader.mjs','packages/platform-contracts/migrations/denial-audit/private.sql','packages/platform-contracts/migrations/denial-audit/source.sql','packages/platform-contracts/migrations/denial-audit/roles.sql','packages/platform-contracts/migrations/denial-audit/expire.sql'].sort()
 export function assertD1AuditReaderPreparation(receipt,current,historical){
+ if(receipt.productAnalyticsStageOneCompatibility){const n=assertProductAnalyticsStageOneContinuation(receipt,current,historical);return assertD1AuditReaderPreparation(n.prior,n.previousBytes,historical)}
  const a=receipt.d1AuditReaderPreparation,file='apps/sg-runtime/operation-integration.json'
  assert.deepEqual(Object.keys(a).sort(),['taskId','scope','targetEnvironment','previousReceiptSourceSha','previousReceiptSha256','producerSourceSha','producerTaskId','producerPullRequest','producerSourceDigests','changedSourcePaths','sourceDigests','applicationSourceDigests','addedBoundaryFiles','installationApproved','liveReaderInstalled','historicalReadExecuted','runtimeImported','grantsChanged','authorityRevisionsChanged','providerCallsPerformed','deploymentPerformed','posthogActivated'].sort())
  assert.equal(a.taskId,'SG2-FINDER-D1-AUDIT-READER-20261103');assert.equal(a.scope,'TECHNICAL_DENIAL_READER_SOURCE_PREPARATION_ONLY');assert.equal(a.targetEnvironment,'development')
