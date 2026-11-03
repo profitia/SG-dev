@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import './platform-source-hub-foundation.test.mjs'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
 import { compareProviderSnapshot, loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
@@ -12,6 +14,91 @@ import { resolveHistoricalProjectProfile, resolveProjectProfile } from './projec
 import { resolveProjectRouting, validateProjectBoundaryPolicy } from './routing-engine.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+const newsfeedTargets = [
+  'apps/newsfeed-runtime/src/server.ts',
+  'packages/newsfeed-contracts/src/index.ts',
+  '.github/workflows/newsfeed-ci.yml',
+]
+
+test('Newsfeed G1 preserves accepted owners and epoch metadata while adding three exact Architecture routes', () => {
+  const registryPath = 'Canon/registries/current-architecture-baseline-v1.json'
+  const before = JSON.parse(execFileSync('git', ['show', `b4023cb02e10fc7045f8b2bc173224ae3da3cb5a:${registryPath}`], { cwd: repositoryRoot, encoding: 'utf8' }))
+  const current = JSON.parse(fs.readFileSync(path.join(repositoryRoot, registryPath), 'utf8'))
+  const active = new Map(current.surfaces.map(row => [row.id, row]))
+  for (const row of before.surfaces) assert.deepEqual(active.get(row.id), row)
+  const { surfaces: oldSurfaces, ...oldMetadata } = before
+  const { surfaces: currentSurfaces, ...currentMetadata } = current
+  assert.deepEqual(currentMetadata, oldMetadata)
+  const admitted = current.surfaces.filter(row => row.id.startsWith('NEWSFEED-BASE-'))
+  assert.deepEqual(admitted.map(row => row.id), ['NEWSFEED-BASE-001', 'NEWSFEED-BASE-002', 'NEWSFEED-BASE-003'])
+  for (const row of admitted) {
+    assert.equal(row.currentOwner, 'Architecture Platform')
+    assert.deepEqual(row.allowedProjectKeys, ['ARCHITECTURE'])
+    assert.equal(row.classificationReferenceSha, 'b4023cb02e10fc7045f8b2bc173224ae3da3cb5a')
+    assert.match(row.onboardingAuthorization, /G1 GRANTED: explicit owner/)
+  }
+  const resolved = resolveProjectRouting({ profile: resolveProjectProfile('ARCHITECTURE', repositoryRoot), targets: newsfeedTargets, repositoryRoot })
+  assert.equal(resolved.ok, true, resolved.error)
+  assert.deepEqual(resolved.results.map(row => row.matchedSurfaceId), admitted.map(row => row.id))
+  assert.ok(resolved.results.every(row => row.highestSpecificityMatchCount === 1 && row.baselineClassification === 'ALIGNED'))
+})
+
+test('Newsfeed routing denies consumer writes, siblings, traversal and equal-specificity conflicts', () => {
+  const resolve = (project, targets, root = repositoryRoot) => resolveProjectRouting({ profile: resolveProjectProfile(project, repositoryRoot), targets, repositoryRoot: root })
+  for (const project of ['SG2', 'SRM']) {
+    const denied = resolve(project, newsfeedTargets)
+    assert.equal(denied.ok, false)
+    assert.ok(denied.results.every(row => row.projectBoundaryStatus === 'DENIED'))
+  }
+  for (const target of ['apps/newsfeed-runtime-copy/index.ts', 'packages/newsfeed-ui/index.ts', 'packages/newsfeed-contracts-copy/index.ts', '.github/workflows/newsfeed-deploy.yml', 'apps/newsfeed-runtime/../../srm/server.ts']) assert.equal(resolve('ARCHITECTURE', [target]).ok, false, target)
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'newsfeed-conflict-'))
+  try {
+    const relative = 'Canon/registries/current-architecture-baseline-v1.json'
+    const registry = JSON.parse(fs.readFileSync(path.join(repositoryRoot, relative), 'utf8'))
+    registry.surfaces.push({ ...registry.surfaces.find(row => row.id === 'NEWSFEED-BASE-001'), id: 'NEWSFEED-CONFLICT-FIXTURE', currentOwner: 'Conflicting fixture owner' })
+    fs.mkdirSync(path.dirname(path.join(scratch, relative)), { recursive: true })
+    fs.writeFileSync(path.join(scratch, relative), JSON.stringify(registry))
+    const conflict = resolve('ARCHITECTURE', [newsfeedTargets[0]], scratch)
+    assert.equal(conflict.ok, false)
+    assert.equal(conflict.results[0].resolutionStatus, 'CONFLICT')
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true })
+  }
+})
+
+test('Newsfeed admission preserves the SRM intelligence, ADP and SG Runtime consumer owners', () => {
+  for (const [project, owner, target] of [
+    ['SRM', 'SRM Runtime', 'apps/srm/src/modules/intelligence/consumer.ts'],
+    ['SRM', 'SRM Runtime', 'packages/srm-adp-ui/src/index.ts'],
+    ['SG2', 'SG Runtime', 'apps/sg-runtime/app/assistant.ts'],
+  ]) {
+    const result = resolveProjectRouting({ profile: resolveProjectProfile(project, repositoryRoot), targets: [target], repositoryRoot })
+    assert.equal(result.ok, true, result.error)
+    assert.equal(result.results[0].currentOwner, owner)
+    assert.equal(resolveProjectRouting({ profile: resolveProjectProfile('ARCHITECTURE', repositoryRoot), targets: [target], repositoryRoot }).ok, false)
+  }
+})
+
+test('Newsfeed active canon follows its dependencies and retains explicit governance-only G1 provenance', () => {
+  const result = validateGovernanceManifest(repositoryRoot)
+  assert.equal(result.valid, true, result.errors.join('\n'))
+  const doc = result.activeDocuments.find(row => row.id === 'newsfeed-business-and-architecture-canon')
+  assert.equal(doc.owner, 'Architecture Platform')
+  assert.deepEqual(doc.appliesTo, ['SG2', 'SRM', 'ARCHITECTURE'])
+  for (const id of doc.dependsOn) assert.ok(result.activeDocuments.find(row => row.id === id).loadOrder < doc.loadOrder)
+  const canon = fs.readFileSync(path.join(repositoryRoot, doc.path), 'utf8')
+  assert.match(canon, /\*\*Status:\*\* ACTIVE/)
+  assert.match(canon, /OWNER APPROVED \/ G1 GRANTED/)
+  assert.match(canon, /5f2377b07ba6449062f6b5bb1b350fc0bad66664/)
+  const onboarding = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'Canon/registries/architecture-onboarding-v1.json'), 'utf8'))
+  const module = onboarding.plannedModules.find(row => row.capability === 'Newsfeed')
+  assert.equal(module.owner, 'Architecture Platform')
+  assert.equal(module.approval.decision, 'G1 GRANTED')
+  assert.equal(module.approval.governanceOnly, true)
+  for (const key of ['implementationAuthorized', 'resourceCreationAuthorized', 'deploymentAuthorized']) assert.equal(module.approval[key], false)
+  assert.match(fs.readFileSync(path.join(repositoryRoot, module.evidenceDocument), 'utf8'), /ARCH-NEWSFEED-G1-ACTIVATION-20261103/)
+})
 
 test('repository governance manifest is valid and has one active execution canon', () => {
   const result = validateGovernanceManifest(repositoryRoot)

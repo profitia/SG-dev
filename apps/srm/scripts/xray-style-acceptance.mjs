@@ -1,7 +1,48 @@
+import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 /** Test-only additive acceptance. Original receipts and runtime bytes stay immutable. */
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import {posix} from 'node:path'
+const relativeHostPath=file=>posix.relative('apps/srm',file)
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+const XRAY_APPSHELL_PRESENTATION_FILES=["apps/sg-runtime/components/appshell/xray-module-host.tsx","apps/sg-runtime/docs/xray-appshell-ui.md","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/adp-appshell-preview.mjs","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-appshell-ui.test.tsx","apps/sg-runtime/tests/xray-appshell.test.tsx","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/srm/scripts/native-execution-adoption.test.mjs","apps/srm/scripts/pilot2-cold-overlay.mjs","apps/srm/scripts/pilot2-cold-overlay.test.mjs","apps/srm/scripts/pilot2-human-overlay.mjs","apps/srm/scripts/rural-location-release.test.mjs","apps/srm/scripts/xray-performance-adoption.test.mjs","apps/srm/scripts/xray-style-acceptance.mjs","apps/srm/scripts/xray-workflow-contract.test.ts","apps/srm/scripts/xray-workflow-react18.test.tsx","apps/srm/src/server/peer-read-boundary.test.ts","apps/srm/src/server/supplier-location-geocoding-runtime.test.ts","packages/srm-xray/docs/sg2-host-presentation.md","packages/srm-xray/scripts/build-full-report-css.mjs","packages/srm-xray/src/full-report.css","packages/srm-xray/src/full-workflow.tsx","packages/srm-xray/src/sg2-host-theme.css","packages/srm-xray/src/supplier-search.tsx"]
+export function assertXrayAppShellPresentation(receipt,current,historical){
+ // Validate the exact current AppShell amendment before checking its unchanged predecessor.
+ const appShellPeer=JSON.parse(current('apps/sg-runtime/operation-integration.json'))
+ if(appShellPeer.appShellFourCardCascade){
+  const next=assertAppShellFourCardCascade(appShellPeer,current,historical)
+  return assertXrayAppShellPresentation(receipt,next.previousBytes,historical)
+ }
+ const a=receipt.xrayAppShellPresentation
+ assert.equal(a.taskId,'SG2-XRAY-APPSHELL-UI-20261102')
+ assert.equal(a.producerTaskId,'SRM-XRAY-SG2-PRESENTATION-20261102')
+ assert.equal(a.previousReceiptSourceSha,'6fdc75192275e296a443db2f1c1d8b4a659b084c')
+ assert.equal(a.targetEnvironment,'development');assert.equal(a.presentation,'sg2')
+ const file='apps/srm/operation-integration.json',bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ const {xrayAppShellPresentation,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every preceding acceptance and digest remains immutable')
+ assert.equal(hash(current(file)),hash(JSON.stringify(receipt,null,2)+'\n'),'exact current owner receipt bytes')
+ const peerFile='apps/sg-runtime/operation-integration.json',peerPriorBytes=historical(a.previousReceiptSourceSha,peerFile)
+ const peerExpected={...JSON.parse(peerPriorBytes),xrayAppShellPresentation:{...a,
+  projectKey:'SG2',previousReceiptSha256:hash(peerPriorBytes),
+  applicationSourceDigests:Object.fromEntries(Object.entries(a.sourceDigests).map(([path,value])=>[posix.relative('apps/sg-runtime',path),value]))
+ }}
+ assert.equal(hash(current(peerFile)),hash(JSON.stringify(peerExpected,null,2)+'\n'),'exact reciprocal host receipt bytes')
+
+ assert.deepEqual(a.changedSourcePaths,XRAY_APPSHELL_PRESENTATION_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),XRAY_APPSHELL_PRESENTATION_FILES)
+ for(const[path,digest]of Object.entries(a.sourceDigests)){assert.match(digest,/^[a-f0-9]{64}$/);assert.equal(hash(current(path)),digest,'exact host presentation source '+path)}
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([file,value])=>[relativeHostPath(file),value])))
+ const packageFiles=[...new Set([...prior.fullUiParityAdoption.publicUi.sourceFiles,'src/sg2-host-theme.css','docs/sg2-host-presentation.md'])].sort()
+ assert.deepEqual(a.publicUi.sourceFiles,packageFiles);assert.equal(a.publicUi.version,prior.fullUiParityAdoption.publicUi.version)
+ const packageHash=createHash('sha256');for(const file of packageFiles)packageHash.update(file).update('\0').update(current('packages/srm-xray/'+file)).update('\0')
+ assert.equal(packageHash.digest('hex'),a.publicUi.sourceDigest,'exact current public X-Ray variant')
+ for(const flag of ['standaloneDefaultsUnchanged','hostPresentationOnly','canonicalSourceStyles','nameCatalogDisabledInSg2'])assert.equal(a[flag],true,flag)
+ for(const flag of ['businessLogicChanged','transportChanged','authorizationChanged','financialEngineChanged','schemaChanged','srmRuntimeDeploymentPerformed','excludedEnvironmentChanges'])assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:path=>['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json'].includes(path)||Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):current(path)}
+}
+
 const FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
 const SENTRY_HOST_FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
 const MARKET_HISTORY_HOST_FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/root-atomic-claim-adoption.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
@@ -9,6 +50,7 @@ const MARKET_HISTORY_BASE='76d9738ff73abb3600cf806d5b01c6b23133b451',MARKET_HIST
 const MARKET_HISTORY_BASE_RECEIPT='0e1e80ee4715e4d1caf40723e4d2ccba524809977fe894865c9acc557c6689fa',MARKET_HISTORY_CANDIDATE_RECEIPT='eb356038f460b0ff486dcdb717e0a05ccfb54fe09371dda7d4c4d28a6edef9f0'
 const PRODUCT_ANALYTICS_FLAGS=['runtimeChanged','analyticsAddedToSrm','authorizationChanged','financialEngineChanged','schemaOrRlsChanged','sharedContractsChanged','privatePinsChanged','ciPolicyChanged','providerCallsChanged','runtimeDeploymentPerformed','paidAcquisitionsPerformed']
 export function assertProductAnalyticsHostContinuation(receipt,current,historical){
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertProductAnalyticsHostContinuation(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsMainHostCompatibility){const n=assertProductAnalyticsMainHostContinuation(receipt,current,historical);return assertProductAnalyticsHostContinuation(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsRootClaimTestContinuation){const n=assertProductAnalyticsRootClaimContinuation(receipt,current,historical);return assertProductAnalyticsHostContinuation(n.productReceipt,n.productBytes,historical)}
  const a=receipt.productAnalyticsHostIntegrityContinuation
@@ -35,6 +77,7 @@ export function assertProductAnalyticsHostContinuation(receipt,current,historica
 }
 const PRODUCT_ANALYTICS_ROOT_FLAGS=[...PRODUCT_ANALYTICS_FLAGS,'sdkChanged','businessDataChanged']
 export function assertProductAnalyticsMainHostContinuation(receipt,current,historical){
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertProductAnalyticsMainHostContinuation(n.prior,n.previousBytes,historical)}
  const a=receipt.productAnalyticsMainHostCompatibility,file='apps/srm/operation-integration.json'
  assert.equal(a.taskId,'SRM-SG2-POSTHOG-ROOT-TEST-COMPAT-20261102')
  assert.equal(a.scope,'TEST_ONLY_EXACT_CURRENT_MAIN_PRODUCT_ANALYTICS_HOST')
@@ -59,6 +102,7 @@ export function assertProductAnalyticsMainHostContinuation(receipt,current,histo
  return {prior,previousBytes:path=>path===file?bytes:Object.hasOwn(a.applicationSourceDigests,path.replace(/^apps\/srm\//,''))?historical(a.previousReceiptSourceSha,path):hostFiles.has(path)?historical(a.previousAnalyticsHostSourceSha,path):current(path)}
 }
 export function assertProductAnalyticsRootClaimContinuation(receipt,current,historical){
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertProductAnalyticsRootClaimContinuation(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsMainHostCompatibility){const n=assertProductAnalyticsMainHostContinuation(receipt,current,historical);return assertProductAnalyticsRootClaimContinuation(n.prior,n.previousBytes,historical)}
  const a=receipt.productAnalyticsRootClaimTestContinuation,file='apps/srm/operation-integration.json'
  assert.equal(a.taskId,'SRM-SG2-POSTHOG-ROOT-TEST-COMPAT-20261102')
@@ -87,6 +131,7 @@ export function assertProductAnalyticsRootClaimContinuation(receipt,current,hist
 }
 export function marketHistoryHostSourceView(current,historical){
  const receipt=JSON.parse(current('apps/srm/operation-integration.json'))
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return marketHistoryHostSourceView(n.previousBytes,historical)}
  if(receipt.productAnalyticsMainHostCompatibility){const n=assertProductAnalyticsMainHostContinuation(receipt,current,historical);return marketHistoryHostSourceView(n.previousBytes,historical)}
  if(receipt.productAnalyticsRootClaimTestContinuation){const n=assertProductAnalyticsRootClaimContinuation(receipt,current,historical);return marketHistoryHostSourceView(n.previousBytes,historical)}
  const file='apps/sg-runtime/operation-integration.json',old=historical(MARKET_HISTORY_BASE,file),candidate=historical(MARKET_HISTORY_CANDIDATE,file),actual=current(file)
@@ -99,6 +144,7 @@ export function marketHistoryHostSourceView(current,historical){
  return {bytes:old,proposed,consumerDigests:proposed?Object.fromEntries(Object.entries(closure).map(([f,h])=>['../sg-runtime/'+f.slice(16),h])):{},candidateConsumerDigests:Object.fromEntries(Object.entries(closure).map(([f,h])=>['../sg-runtime/'+f.slice(16),h]))}
 }
 export function assertMarketHistoryHostContinuation(receipt,current,historical){
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertMarketHistoryHostContinuation(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsMainHostCompatibility){const n=assertProductAnalyticsMainHostContinuation(receipt,current,historical);return assertMarketHistoryHostContinuation(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsRootClaimTestContinuation){const n=assertProductAnalyticsRootClaimContinuation(receipt,current,historical);return assertMarketHistoryHostContinuation(n.prior,n.previousBytes,historical)}
  const a=receipt.marketHistoryHostIntegrityContinuation
@@ -118,6 +164,7 @@ export function assertMarketHistoryHostContinuation(receipt,current,historical){
  return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,file.replace(/^apps\/srm\//,''))||view.proposed&&changedHost.has(file)?historical(MARKET_HISTORY_BASE,file):current(file)}
 }
 export function assertSentryHostContinuation(receipt,current,historical){
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertSentryHostContinuation(n.prior,n.previousBytes,historical)}
  if(receipt.marketHistoryHostIntegrityContinuation){const n=assertMarketHistoryHostContinuation(receipt,current,historical);return assertSentryHostContinuation(n.prior,n.previousBytes,historical)}
  const a=receipt.sentryHostIntegrityContinuation
  assert.equal(a.taskId,'SRM-SENTRY-HOST-INTEGRITY-R2-20261101')
@@ -140,6 +187,7 @@ export function assertSentryHostContinuation(receipt,current,historical){
  return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,file.replace(/^apps\/srm\//,''))||Object.hasOwn(a.consumerSourceDigests,'../'+file.slice(5))?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertStyleConsumerAcceptance(receipt,current,historical){
+ if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertStyleConsumerAcceptance(n.prior,n.previousBytes,historical)}
  if(receipt.marketHistoryHostIntegrityContinuation){const n=assertMarketHistoryHostContinuation(receipt,current,historical);return assertStyleConsumerAcceptance(n.prior,n.previousBytes,historical)}
  const a=receipt.xrayStyleIsolationConsumerAcceptance
  assert.equal(a.taskId,'SRM-XRAY-STYLE-CONSUMER-ACCEPTANCE-B-20261101-R17')

@@ -1,3 +1,4 @@
+import './xray-appshell-ui.test';
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';
 import {loadXRayModule,runtime,publicUi} from './xray-browser-preview';
 test('closed PL/EN X-Ray routes never accept another origin, locale or descendant as navigation authority',async()=>{

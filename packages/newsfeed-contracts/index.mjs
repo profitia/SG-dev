@@ -1,0 +1,1 @@
+export const NEWS_DISCOVERY_CONTRACT_VERSION = '0.1.0';

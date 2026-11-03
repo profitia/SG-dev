@@ -55,3 +55,70 @@ test('React18 journey displays real-contract zero/periods and masked KYS, keeps 
  denied=true;await React.act(async()=>Array.from(document.querySelectorAll('button')).find(x=>x.textContent==='Pobierz ponownie')!.click());
  assert(!document.body.textContent!.includes('Synthetic supplier'));assert(!document.querySelector('.financial-table'));assert(document.body.textContent!.includes('Nie masz dostępu'));assert.equal(calls.length,5);
 });
+
+import path from 'node:path';
+import fs from 'node:fs';
+const source=process.env.XRAY_UI_SOURCE||path.resolve(path.dirname(runtime.resolve('@profitia/srm-xray/full-workflow')),'..');
+async function moduleFrom(file:string){
+ const result=await build({entryPoints:[path.join(source,'src',file)],bundle:true,write:false,platform:'node',format:'cjs',jsx:'automatic',
+  nodePaths:[path.dirname(runtime.resolve('react/package.json')),path.resolve('node_modules')],external:['react','react-dom','react-dom/client','react/jsx-runtime']});
+ const module={exports:{}};new Function('require','module','exports',result.outputFiles[0].text)(runtime,module,module.exports);return module.exports as any;
+}
+function sg2Environment(){
+ const dom=new JSDOM('<div id="root"></div>',{url:'https://host.invalid/pl/dashboard/xray'});
+ Object.assign(globalThis,{window:dom.window,document:dom.window.document,HTMLElement:dom.window.HTMLElement,IS_REACT_ACT_ENVIRONMENT:true,requestAnimationFrame:(f:()=>void)=>setTimeout(f,0)});
+ return dom;
+}
+function sg2Gateway(calls:string[]){return {available:async()=>{calls.push('available');return true},search:async()=>{calls.push('name');return {candidates:[],coverage:'PROGRESSIVE'}},verify:async()=>{calls.push('verify');throw Error('not selected')}}}
+
+test('SG2 NIP-only renders one field, validates NIP and never invokes name catalog APIs; standalone retains both modes',async()=>{
+ const dom=sg2Environment(),{createRoot}=runtime('react-dom/client'),{SupplierSearch}=await moduleFrom('supplier-search.tsx');
+ const root=createRoot(document.getElementById('root')!),calls:string[]=[];let submissions=0;
+ const g=sg2Gateway(calls);
+ const draw=(searchMode?:string,nip='123')=>React.act(async()=>root.render(React.createElement(SupplierSearch,{nip,onNipChange:()=>{},onNipSearch:()=>submissions++,onNameSearch:()=>assert.fail('name submission'),gateway:g,busy:false,searchMode})));
+ try{
+  await draw('nip-only');assert.equal(document.querySelectorAll('input').length,1);assert.equal(document.querySelector('.supplier-mode'),null);
+  assert.equal(document.querySelector('.srm-entry-intro p')!.textContent,'Wpisz numer NIP.');assert.doesNotMatch(document.body.textContent!,/Nazwa spółki|po nazwie/);
+  assert.equal(document.querySelector<HTMLInputElement>('input')!.checkValidity(),false);
+  document.querySelector<HTMLFormElement>('form')!.requestSubmit();assert.equal(submissions,0);
+  await draw('nip-only','6112830690');assert(document.querySelector<HTMLInputElement>('input')!.checkValidity());
+  await React.act(async()=>document.querySelector<HTMLFormElement>('form')!.requestSubmit());assert.equal(submissions,1);assert.deepEqual(calls,[]);
+  await draw(undefined);assert.deepEqual(calls,['available']);assert.equal(document.querySelectorAll('.supplier-mode button').length,2);
+  const name=Array.from(document.querySelectorAll<HTMLButtonElement>('.supplier-mode button')).find(x=>x.textContent==='Nazwa spółki')!;
+  assert(!name.disabled);await React.act(async()=>name.click());assert(document.querySelector('[role="combobox"]'));
+ }finally{await React.act(async()=>root.unmount());dom.window.close()}
+});
+
+test('NIP-only still honors an existing host admission requirement independently of the name catalog',async()=>{
+ const dom=sg2Environment(),{createRoot}=runtime('react-dom/client'),{SupplierSearch}=await moduleFrom('supplier-search.tsx');
+ const root=createRoot(document.getElementById('root')!),calls:string[]=[];let searches=0;
+ const g={...sg2Gateway(calls),prepare:async()=>{calls.push('prepare');return {readyUntil:new Date(Date.now()+60_000).toISOString()}}};
+ try{
+  await React.act(async()=>root.render(React.createElement(SupplierSearch,{nip:'6112830690',onNipChange:()=>{},onNipSearch:()=>searches++,onNameSearch:()=>{},gateway:g,busy:false,searchMode:'nip-only',requireAdmission:true})));
+  assert(document.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled);
+  await React.act(async()=>new Promise(resolve=>setTimeout(resolve,350)));assert.deepEqual(calls,['prepare']);
+  assert(!document.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled);
+  await React.act(async()=>document.querySelector<HTMLFormElement>('form')!.requestSubmit());assert.equal(searches,1);
+ }finally{await React.act(async()=>root.unmount());dom.window.close()}
+});
+
+test('SG2 suppresses only C52 internal header, keeps return navigation, and theme updates preserve the form node',async()=>{
+ const dom=sg2Environment(),{createRoot}=runtime('react-dom/client'),{FullXRayWorkflow}=await moduleFrom('full-workflow.tsx');
+ const root=createRoot(document.getElementById('root')!),calls:string[]=[];let returned=0;const g=sg2Gateway(calls);
+ const props={transport:async()=>assert.fail('No report on mount'),searchGateway:g,onReturn:()=>returned++};
+ const draw=(theme:string,presentation?:string)=>React.act(async()=>root.render(React.createElement('div',{'data-theme':theme},React.createElement(FullXRayWorkflow,{...props,presentation}))));
+ try{
+  await draw('light','sg2');const input=document.querySelector('input')!;
+  assert.equal(document.querySelector('.srm-canon-header'),null);assert.equal(document.querySelectorAll('.srm-host-actions').length,1);assert.deepEqual(calls,[]);
+  await draw('dark','sg2');assert.equal(document.querySelector('input'),input);assert.deepEqual(calls,[]);
+  await React.act(async()=>Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(x=>x.textContent==='Wróć do biurka')!.click());assert.equal(returned,1);
+  await draw('light');assert(document.querySelector('.srm-canon-header'));assert(document.body.textContent!.includes('X-Ray | Supplier Intelligence Dashboard'));
+  assert(document.querySelector('.supplier-mode'));assert.equal(document.querySelector('[data-presentation="sg2"]'),null);assert.deepEqual(calls,['available']);
+ }finally{await React.act(async()=>root.unmount());dom.window.close()}
+});
+
+test('the source theme is gated to SG2, has no color filters and the generated bundle contains it',()=>{
+ const css=fs.readFileSync(path.join(source,'src/sg2-host-theme.css'),'utf8');assert.doesNotMatch(css,/(?:filter:|invert\()/);
+ assert.match(css,/:scope\[data-presentation="sg2"\]/);assert.match(css,/--surface:inherit/);assert.match(css,/color-scheme:inherit/);
+ assert(fs.readFileSync(path.join(source,'src/full-report.css'),'utf8').includes(css));
+});

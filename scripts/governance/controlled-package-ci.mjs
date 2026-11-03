@@ -124,8 +124,77 @@ function isPinnedLimitsG1Review(files) {
     && files.every(file => Object.hasOwn(LIMITS_G1_GOVERNANCE_REVIEW.blobs, file?.filename ?? '')
       && file?.sha === LIMITS_G1_GOVERNANCE_REVIEW.blobs[file.filename])
 }
+// Owner-approved: one frozen Newsfeed governance review, not generic path admission.
+export const NEWSFEED_G1_GOVERNANCE_REVIEW = Object.freeze({
+  prNumber: 872,
+  branch: 'architecture/newsfeed-g1-activation-20261103',
+  sourceSha: 'd7c425651faa354a21bf20c4679e12345365b6be',
+  blobs: Object.freeze({
+  "Canon/evidence/2026-11-03-newsfeed-canon-save-handoff.md": "911fca6e2326967f459c90064cfc3757e6de967a",
+  "Canon/evidence/2026-11-03-newsfeed-g1-governance-activation.md": "c6af94879c083fbe9c212ca0f9616fd363410bd4",
+  "Canon/registries/architecture-onboarding-v1.json": "6caac9e7fbf6ef92b66102d9d2962e922a4e6ef9",
+  "Canon/registries/current-architecture-baseline-v1.json": "7f70afd307a04ea45f4af05e7b2a88eb86b95157",
+  "Canon/registries/governance-manifest-v2.json": "ff46f5b5cea7973e9047e8381ff9bafd3c04b603",
+  "Canon/v1.0-newsfeed-business-and-architecture-canon.md": "7b9fccbfb062d13e7ff8c53662cf006703ce5f08",
+  "Canon/v1.0-srm-architecture-and-component-placement-canon.md": "4a560258d81c7cc6a9edd1f0a85a6d1643b6b4cb",
+  "Canon/v1.0-srm-business-capability-canon.md": "d44c74ca7c95998d04061f45ab53bd36e798e3bf",
+  "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "4c72b48110d76bbb56d8fb3890c4af4874250fd1",
+  "scripts/governance/governance.test.mjs": "abc57c34556ee6977cb15bf44800f7d67a97fbac"
+}),
+})
+function isPinnedNewsfeedG1Review(files) {
+  return Array.isArray(files) && files.length === Object.keys(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === NEWSFEED_G1_GOVERNANCE_REVIEW.blobs[file.filename])
+}
+
 // Necessary formal FRESH producer review. This is one exact artifact, never a
 // generic optional-package/workflow admission or a new SG2 dependency source.
+// Exact Source Hub G1 review, never generic Architecture or workflow admission.
+export const SOURCE_HUB_G1_GOVERNANCE_REVIEW = Object.freeze({
+  "prNumber": 878,
+  "branch": "architecture/platform-source-hub-foundation-20261103",
+  "sourceSha": "aef76dd768aa52b0fe0f17349cb1c972d6c67eae",
+  "blobs": Object.freeze({
+    "Canon/evidence/2026-11-03-platform-source-hub-final-activation.md": "40a8172ebb6603c4e994145437c4b1fa08dae329",
+    "Canon/evidence/2026-11-03-platform-source-hub-stage1b-foundation.md": "4dbc04ceb70f2e7ff25701088b0febef7bb5b12a",
+    "Canon/proposals/platform-source-hub-g1-onboarding-v1.json": "fe0785b4b872042cc1c5864d3fcd2f43492a04fe",
+    "Canon/registries/architecture-onboarding-v1.json": "af76cafcc0eee18082333ca5644ac399dfe6b65d",
+    "Canon/registries/current-architecture-baseline-v1.json": "768da623490181646e95d8177c70d89a7d2695fe",
+    "Canon/registries/governance-manifest-v2.json": "f16aea6c1710f7471901300566d314c3b4094213",
+    "Canon/registries/newsfeed-source-hub-environment-baseline-v1.json": "618653a9ae96cb3b338842e10e43488cef5e3ea0",
+    "Canon/registries/platform-source-hub-contract-families-v1.json": "1a472402375482c89f5266a91257b70d7aa62637",
+    "Canon/runbooks/newsfeed-source-hub-infrastructure-provisioning-v1.md": "5661e397697b639408ffd9c178a4096199f25b42",
+    "Canon/v1.0-platform-source-hub-business-and-architecture-canon.md": "51d2edc51cf0ff31adb742e64d77888dd8c4f0f0",
+    "Canon/v1.1-newsfeed-source-hub-responsibility-amendment.md": "addb4b2badd05015738afaa9b4ba7be5ab631957",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "11a2c81b48b6c61efc1296d1e01bc901c7bf5e01",
+    "scripts/governance/governance.test.mjs": "125941013df0e2fc027cb57bd3034310499c5072",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "73830ac8aa471cde8ee8f0c1c05133dab7a80fbf"
+  }),
+  "statuses": Object.freeze({
+    "Canon/evidence/2026-11-03-platform-source-hub-final-activation.md": "added",
+    "Canon/evidence/2026-11-03-platform-source-hub-stage1b-foundation.md": "added",
+    "Canon/proposals/platform-source-hub-g1-onboarding-v1.json": "added",
+    "Canon/registries/architecture-onboarding-v1.json": "modified",
+    "Canon/registries/current-architecture-baseline-v1.json": "modified",
+    "Canon/registries/governance-manifest-v2.json": "modified",
+    "Canon/registries/newsfeed-source-hub-environment-baseline-v1.json": "added",
+    "Canon/registries/platform-source-hub-contract-families-v1.json": "added",
+    "Canon/runbooks/newsfeed-source-hub-infrastructure-provisioning-v1.md": "added",
+    "Canon/v1.0-platform-source-hub-business-and-architecture-canon.md": "added",
+    "Canon/v1.1-newsfeed-source-hub-responsibility-amendment.md": "added",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "modified",
+    "scripts/governance/governance.test.mjs": "modified",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "added"
+  })
+})
+function isPinnedSourceHubG1Review(files) {
+  return Array.isArray(files) && files.length === Object.keys(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs).length
+    && files.every(file => Object.hasOwn(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs, file?.filename ?? '')
+      && file?.sha === SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs[file.filename]
+      && file?.status === SOURCE_HUB_G1_GOVERNANCE_REVIEW.statuses[file.filename])
+}
+
 export const FRESH_REPORT_PRODUCER_REVIEW = Object.freeze({
   prNumber: 817,
   branch: 'architecture/fresh-boundary-coordination-20261030',
@@ -253,7 +322,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
   const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
   const rootAtomicClaimReview = isPinnedRootAtomicClaimReview(files)
-  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
+  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -284,6 +353,10 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
       && (pr.number !== ADP_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== ADP_GOVERNANCE_REVIEW.branch)) fail('ADP_GOVERNANCE_REVIEW_IDENTITY_REJECTED')
     if (isPinnedLimitsG1Review(files)
       && (pr.number !== LIMITS_G1_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== LIMITS_G1_GOVERNANCE_REVIEW.branch)) fail('LIMITS_G1_REVIEW_IDENTITY_REJECTED')
+    if (isPinnedNewsfeedG1Review(files)
+      && (pr.number !== NEWSFEED_G1_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== NEWSFEED_G1_GOVERNANCE_REVIEW.branch)) fail('NEWSFEED_G1_REVIEW_IDENTITY_REJECTED')
+    if (isPinnedSourceHubG1Review(files)
+      && (pr.number !== SOURCE_HUB_G1_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== SOURCE_HUB_G1_GOVERNANCE_REVIEW.branch)) fail('SOURCE_HUB_G1_REVIEW_IDENTITY_REJECTED')
     if (isPinnedFreshReportReview(files)
       && (pr.number !== FRESH_REPORT_PRODUCER_REVIEW.prNumber || pr.head.ref !== FRESH_REPORT_PRODUCER_REVIEW.branch)) fail('FRESH_REPORT_REVIEW_IDENTITY_REJECTED')
     if (isPinnedPayloadCaptureReview(files)
