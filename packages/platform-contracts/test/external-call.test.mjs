@@ -36,7 +36,10 @@ for(const [name,patch]of [
 ])test(name+' is refused before database lookup',()=>assert.throws(()=>createExternalCallHost({...base,binding:{...base.binding,...patch}}),TypeError))
 test('extension schema, declarations and source have explicit exact digests',async()=>{
  const sql=fs.readFileSync(new URL(externalCallSchemaUrl));assert.equal(await externalCallSchemaDigest(),hash(sql))
- const expected=createHash('sha256').update(fs.readFileSync(new URL('../src/external-call.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/external-call.d.mts',import.meta.url))).update(hash(sql)).update(fs.readFileSync(new URL('../src/native-external-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/native-external-transport.d.mts',import.meta.url))).update(hash(fs.readFileSync(new URL('../migrations/access/012-native-external-transport.sql',import.meta.url))))
+ const expected=createHash('sha256').update(fs.readFileSync(new URL('../src/external-call.mjs',import.meta.url)))
+  .update(fs.readFileSync(new URL('../src/model-execution.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/model-execution.d.mts',import.meta.url)))
+  .update(fs.readFileSync(new URL('../migrations/access/028-model-execution.sql',import.meta.url)))
+  .update(fs.readFileSync(new URL('../src/external-call.d.mts',import.meta.url))).update(hash(sql)).update(fs.readFileSync(new URL('../src/native-external-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/native-external-transport.d.mts',import.meta.url))).update(hash(fs.readFileSync(new URL('../migrations/access/012-native-external-transport.sql',import.meta.url))))
   .update(fs.readFileSync(new URL('../src/public-web-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/public-web-transport.d.mts',import.meta.url)))
   .update(hash(fs.readFileSync(new URL('../migrations/access/018-public-web-transport.sql',import.meta.url))))
   .update(createHash('sha256').update(fs.readFileSync(new URL('../src/diagnostic-phase.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/diagnostic-phase.d.mts',import.meta.url))).digest('hex'))
