@@ -1,14 +1,14 @@
 # SG2 D1 consumer — installation held
 
-Exact producer source: `57f0524f0d9623983e0957ccd4fca3d4473f9a0d`. Consumer task SG2-FINDER-D1-AUDIT-READER-20261103. This is prepared file-level adoption, not accepted producer/consumer release or installation authority.
+Exact producer source: `15b22feb2e7f0574a7a9e268c9df4c0a3cf3e7e6`. Consumer task SG2-FINDER-D1-AUDIT-READER-20261103. This is prepared file-level adoption, not accepted producer/consumer release or installation authority.
 
 | Approved source artifact | SHA256 |
 |---|---|
 | packages/platform-contracts/src/sg2-denial-audit-reader.mjs | bb2c0b14a2c3de455808484db91c485f7371d82ac806c683db60a6780be23c9b |
-| packages/platform-contracts/migrations/denial-audit/private.sql | caf1abd94fb7d91866f40268ce59b9dd4cddd2313d8698fd2f6069ad21122133 |
-| packages/platform-contracts/migrations/denial-audit/source.sql | 7f1c8460cbf92ca4ad8e77d501fcf5ebdb4dc8c1206ef4e452f9c8b1ac638a4f |
-| packages/platform-contracts/migrations/denial-audit/roles.sql | c0115c3420eac594e59dc8f1d4259d0bcd37601e6666cf61e29a2fa9d5a8d7fc |
-| packages/platform-contracts/migrations/denial-audit/expire.sql | 2fb9732f98e527b16869d8516f7bce06f001cec4c559970f559f5d53876479d1 |
+| packages/platform-contracts/migrations/denial-audit/private.sql | 011cd8a550f738a69fb6983f0ea4437c3a4f2a51374aa7d9048af04d2e7a47cc |
+| packages/platform-contracts/migrations/denial-audit/source.sql | 7f1c21546abc8bfe47908f30b9cab836ada272948ce3ea2ddfdd0eea5475efa7 |
+| packages/platform-contracts/migrations/denial-audit/roles.sql | 09ace8f3621d31c4d411a375b1b31f2f6a48a9f53f86da3b5bb4e05b292f692b |
+| packages/platform-contracts/migrations/denial-audit/expire.sql | 8855e8fabaa95758799a54f366654be1e475d9e1f9270b477bcebe33d5ebdd2b |
 
 The existing SDK version/exports/receipts remain unchanged. No route, application import, provider, worker or build command imports this optional operator script. The producer has a separate Architecture Draft PR; this consumer Draft PR contains only SG2 files. Neither implies approval of the other.
 
@@ -20,7 +20,7 @@ The only reader operation is read() with no arguments: H1/H2/H3/H4/C1 from both 
 
 ## Required installation approvals and operators
 
-INSTALLATION_APPROVED=NO; LIVE_READER_INSTALLED=NO; OPERATOR_AUTHORITY=NOT_ASSIGNED_OR_APPROVED. Identify a named existing authenticated role administrator and a controlled-schema operator independently for each database. The adapter must never substitute a tool default owner connection. Private installation is under profitia_access_owner; Source under profitia_ingestion_owner, both existing NOLOGIN owners. Role administrator creates only the matching ordinary sg2_d1_private_denial_reader or sg2_d1_source_denial_reader, never a product runtime grant. Secret provisioning/credential expiry <=30minutes uses the protected provider mechanism; no values enter source/PMOS/PHR.
+INSTALLATION_APPROVED=NO; LIVE_READER_INSTALLED=NO; OPERATOR_AUTHORITY=NOT_ASSIGNED_OR_APPROVED. Identify a named existing authenticated role administrator and a controlled-schema operator independently for each database. The adapter must never substitute a tool default owner connection. Private installation is under profitia_access_owner; Source under profitia_ingestion_owner, both existing NOLOGIN owners. Operator must have separately approved CREATEROLE and temporary SET ROLE authority for the matching controlled owner, with no superuser/BYPASSRLS. Restore approved temporary operator memberships after completion. Role administrator creates only the matching ordinary sg2_d1_private_denial_reader or sg2_d1_source_denial_reader, never a product runtime grant. Secret provisioning/credential expiry <=30minutes uses the protected provider mechanism; no values enter source/PMOS/PHR.
 
 Require explicit Private producer, Source producer, SG2 consumer and operations approvals of exact source/SQL digests and the specified operator identities. The audit adapter must be bound to real canonical PMOS begin/save acknowledgements, native Neon LOG retrieval and expiry policy before any protected read. In isolated tests those acknowledgements are synthetic; no operational backing is claimed. A callback returning durable:true without a real verified receipt is not sufficient. No alternate PMOS database write or parallel audit framework is authorized.
 
