@@ -1,3 +1,4 @@
+import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 /** Test-only additive acceptance. Original receipts and runtime bytes stay immutable. */
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -6,6 +7,12 @@ const relativeHostPath=file=>posix.relative('apps/srm',file)
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const XRAY_APPSHELL_PRESENTATION_FILES=["apps/sg-runtime/components/appshell/xray-module-host.tsx","apps/sg-runtime/docs/xray-appshell-ui.md","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/adp-appshell-preview.mjs","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-appshell-ui.test.tsx","apps/sg-runtime/tests/xray-appshell.test.tsx","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/srm/scripts/native-execution-adoption.test.mjs","apps/srm/scripts/pilot2-cold-overlay.mjs","apps/srm/scripts/pilot2-cold-overlay.test.mjs","apps/srm/scripts/pilot2-human-overlay.mjs","apps/srm/scripts/rural-location-release.test.mjs","apps/srm/scripts/xray-performance-adoption.test.mjs","apps/srm/scripts/xray-style-acceptance.mjs","apps/srm/scripts/xray-workflow-contract.test.ts","apps/srm/scripts/xray-workflow-react18.test.tsx","apps/srm/src/server/peer-read-boundary.test.ts","apps/srm/src/server/supplier-location-geocoding-runtime.test.ts","packages/srm-xray/docs/sg2-host-presentation.md","packages/srm-xray/scripts/build-full-report-css.mjs","packages/srm-xray/src/full-report.css","packages/srm-xray/src/full-workflow.tsx","packages/srm-xray/src/sg2-host-theme.css","packages/srm-xray/src/supplier-search.tsx"]
 export function assertXrayAppShellPresentation(receipt,current,historical){
+ // Validate the exact current AppShell amendment before checking its unchanged predecessor.
+ const appShellPeer=JSON.parse(current('apps/sg-runtime/operation-integration.json'))
+ if(appShellPeer.appShellFourCardCascade){
+  const next=assertAppShellFourCardCascade(appShellPeer,current,historical)
+  return assertXrayAppShellPresentation(receipt,next.previousBytes,historical)
+ }
  const a=receipt.xrayAppShellPresentation
  assert.equal(a.taskId,'SG2-XRAY-APPSHELL-UI-20261102')
  assert.equal(a.producerTaskId,'SRM-XRAY-SG2-PRESENTATION-20261102')

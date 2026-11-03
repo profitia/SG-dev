@@ -7,7 +7,7 @@ import {SpendGuruLogo} from './appshell-brand'
 import {useAssistantWindow} from './use-assistant-window'
 
 type AvatarChoice='male'|'female'|null|undefined
-type Props={locale:'pl'|'en';salutation?:string|null;avatar:AvatarChoice;theme:'light'|'dark';screenContext?:AssistantScreenContext|null}
+type Props={locale:'pl'|'en';salutation?:string|null;avatar:AvatarChoice;theme:'light'|'dark';screenContext?:AssistantScreenContext|null;onCollapsedChange?:(collapsed:boolean)=>void}
 function Glyph({kind}:{kind:'collapse'|'expand'|'detach'|'attach'|'clock'|'more'|'send'}){
  return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
   {kind==='collapse'&&<path d="m9 6 6 6-6 6"/>}{kind==='expand'&&<path d="m15 6-6 6 6 6"/>}
@@ -27,12 +27,12 @@ function Avatar({choice,en,ribbon=false}:{choice:AvatarChoice;en:boolean;ribbon?
 }
 
 /** One host-owned widget; a report context label does not invoke a model or grant data access. */
-export function AssistantWidget({locale,salutation,avatar,theme,screenContext}:Props){
+export function AssistantWidget({locale,salutation,avatar,theme,screenContext,onCollapsedChange}:Props){
  const en=locale==='en',id=useId(),inputId=useId(),[collapsed,setCollapsed]=useState(false)
  const collapseTrigger=useRef<HTMLButtonElement>(null),expandTrigger=useRef<HTMLButtonElement>(null),detachTrigger=useRef<HTMLButtonElement>(null)
- const host=useAssistantWindow(()=>{setCollapsed(false);requestAnimationFrame(()=>detachTrigger.current?.focus({preventScroll:true}))},en)
- function collapse(){setCollapsed(true);requestAnimationFrame(()=>expandTrigger.current?.focus({preventScroll:true}))}
- function expand(){setCollapsed(false);requestAnimationFrame(()=>collapseTrigger.current?.focus({preventScroll:true}))}
+ const host=useAssistantWindow(()=>{setCollapsed(false);onCollapsedChange?.(false);requestAnimationFrame(()=>detachTrigger.current?.focus({preventScroll:true}))},en)
+ function collapse(){setCollapsed(true);onCollapsedChange?.(true);requestAnimationFrame(()=>expandTrigger.current?.focus({preventScroll:true}))}
+ function expand(){setCollapsed(false);onCollapsedChange?.(false);requestAnimationFrame(()=>collapseTrigger.current?.focus({preventScroll:true}))}
  const greeting=(en?'Hello':'Cześć')+(salutation?`, ${salutation}`:'')+'!'
  const panel=<div className="srm-chat-motion" id={id} aria-hidden={collapsed&&!host.target||undefined} ref={node=>{if(node)node.inert=collapsed&&!host.target}}>
   {!host.target&&<button ref={collapseTrigger} className="srm-chat-collapse" type="button" onClick={collapse} aria-expanded={!collapsed} aria-controls={id} aria-label={en?'Hide assistant':'Schowaj asystenta'} title={en?'Hide assistant':'Schowaj asystenta'}><Glyph kind="collapse"/></button>}
