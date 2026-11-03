@@ -1,3 +1,9 @@
+# Newsfeed contracts1.0.0
+
+Public typed observation API, server-owned persisted identity fields, optimistic updates and ACTIVE/PAUSED lifecycle. Observation requests are News Discovery search requests under Source Hub1.0.0; Calendar/Indicators/Forecasts cannot be silently stored as publication observations. The package does not authenticate or grant access.
+
+Legacy NewsDiscovery0.1.0 types/version remain re-exported from the single producer package, `@profitia/platform-source-hub-contracts`. Existing consumers retain article/headline/publisher semantics and unsupported-filter behavior. Old import paths and the31 original connector tests remain compatible. Package major1 describes the added observation API; it does not change the preserved NewsDiscovery wire version.
+
 # News Discovery contract 0.1.0
 
 Architecture Platform producer contract; no SG2/SRM adoption or deployment is implied.

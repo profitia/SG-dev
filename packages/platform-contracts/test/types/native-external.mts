@@ -1,3 +1,4 @@
+import './api-path.mjs'
 import {createExternalCallHost,externalNativeResponse,type ExternalCallOptions,type NativeExternalTransport} from '../../src/external-call.mjs'
 declare const base:Omit<ExternalCallOptions<unknown,{path:string}>, 'getHeaders'>
 const policy:NativeExternalTransport&{credentialMode:'NONE'}={schemaDigest:'a'.repeat(64),pathRules:[{method:'GET',prefix:'/records/',parameter:'HEX24',suffix:'/files/main_document_uri',requestFormat:'NONE'}],redirectOrigins:[],maximumResponseBytes:1024,credentialMode:'NONE',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'}

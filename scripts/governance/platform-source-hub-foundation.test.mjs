@@ -26,6 +26,7 @@ const families = json('Canon/registries/platform-source-hub-contract-families-v1
 const targets = ['apps/platform-source-hub/src/server.ts', 'packages/platform-source-hub-contracts/index.mjs', '.github/workflows/platform-source-hub-ci.yml']
 const resolve = (project, paths, repositoryRoot = root) => resolveProjectRouting({ profile: resolveProjectProfile(project, root), targets: paths, repositoryRoot })
 const decision = 'ARCH-SOURCE-HUB-G1-FINAL-ACTIVATION-20261103'
+const stage1b = '9bce78138e1396765ce67b9b1b29841efdb017f2'
 
 // Source assertions do not replace actual-main acceptance and readback.
 test('Source Hub exact G1 appends approved rows and preserves all prior governance authority', () => {
@@ -83,10 +84,12 @@ test('actual Hub routing uniquely permits Architecture and denies consumers, sib
   const conflict = resolve('ARCHITECTURE', [targets[0]], scratch)
   assert.equal(conflict.ok, false)
   assert.equal(conflict.results[0].resolutionStatus, 'CONFLICT')
-  for (const p of ['apps/platform-source-hub', 'packages/platform-source-hub-contracts', '.github/workflows/platform-source-hub-ci.yml']) assert.equal(fs.existsSync(path.join(root, p)), false)
+  // Stage1B admitted empty producer surfaces. Stage2A is the separately
+  // authorised implementation; preserve the historical absence at its SHA.
+  for (const p of ['apps/platform-source-hub', 'packages/platform-source-hub-contracts', '.github/workflows/platform-source-hub-ci.yml']) assert.equal(git(['ls-tree','-r',stage1b,'--',p]), '')
 })
 
-test('accepted business sections, family payloads and all23 NewsAPI blobs remain unchanged', () => {
+test('accepted Stage1B business sections, family payloads and historical23 NewsAPI blobs remain unchanged', () => {
   const segment = (s, start, end) => s.slice(s.indexOf(start), s.indexOf(end))
   const normalizeLinks = s => s.replace(/\]\(([^)]+)\)/g, (whole, dest) => /^https:\/\//.test(dest) ? whole : '](' + path.posix.basename(dest) + ')')
   assert.equal(normalizeLinks(segment(read('Canon/v1.0-platform-source-hub-business-and-architecture-canon.md'), '## 1.', '## 7.')), normalizeLinks(segment(priorText('Canon/proposals/v1.0-platform-source-hub-business-and-architecture-canon.md'), '## 1.', '## 7.')))
@@ -101,10 +104,18 @@ test('accepted business sections, family payloads and all23 NewsAPI blobs remain
   const scope = ['apps/newsfeed-runtime', 'packages/newsfeed-contracts', '.github/workflows/newsfeed-ci.yml']
   const before = git(['ls-tree', '-r', accepted, '--', ...scope]).split('\n')
   assert.equal(before.length, 23)
-  assert.equal(git(['ls-tree', '-r', 'HEAD', '--', ...scope]), before.join('\n'))
+  assert.equal(git(['ls-tree', '-r', stage1b, '--', ...scope]), before.join('\n'))
+  const extracted = new Set(['apps/newsfeed-runtime/package.json','apps/newsfeed-runtime/package-lock.json','apps/newsfeed-runtime/tsconfig.json','apps/newsfeed-runtime/README.md','apps/newsfeed-runtime/src/newsapi.mjs','apps/newsfeed-runtime/src/query.mjs','apps/newsfeed-runtime/src/capabilities.mjs','packages/newsfeed-contracts/package.json','packages/newsfeed-contracts/index.mjs','packages/newsfeed-contracts/index.d.ts','packages/newsfeed-contracts/README.md','.github/workflows/newsfeed-ci.yml'])
   for (const row of before) {
     const [metadata, p] = row.split('\t')
-    assert.equal(git(['hash-object', p]), metadata.split(' ')[2], p)
+    if(!extracted.has(p))assert.equal(git(['hash-object', p]), metadata.split(' ')[2], p)
+  }
+  for(const [legacy,producer]of [['newsapi','newsapi'],['query','newsapi-query'],['capabilities','newsapi-capabilities']]){
+    const oldPath='apps/newsfeed-runtime/src/'+legacy+'.mjs',newPath='apps/platform-source-hub/src/providers/'+producer+'.mjs'
+    assert.match(read(oldPath),new RegExp('^export \\* from .*'+producer+'\\.mjs','m'))
+    const original=execFileSync('git',['show',stage1b+':'+oldPath],{cwd:root,encoding:'utf8'})
+    const normalize=s=>s.replaceAll('../../../packages/newsfeed-contracts/','../../../../packages/platform-source-hub-contracts/').replaceAll('./capabilities.mjs','./newsapi-capabilities.mjs').replaceAll('./query.mjs','./newsapi-query.mjs')
+    assert.equal(read(newPath),normalize(original),newPath+' is the single preserved implementation')
   }
 })
 
